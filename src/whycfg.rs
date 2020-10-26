@@ -2,10 +2,38 @@ use std::fmt::Display;
 
 use rustc_middle::mir::Local;
 
+pub struct MlCfgBlock {
+    label: String,
+    statments: Vec<MlCfgStatement>,
+    terminator: MlCfgTerminator,
+}
+
+#[derive(Debug)]
+pub struct Block(usize);
+
+#[derive(Debug)]
+pub enum MlCfgTerminator {
+    Goto(Block),
+}
+
 #[derive(Debug)]
 pub enum MlCfgStatement {
     Assign { lhs: Local, rhs: MlCfgExp },
 }
+
+#[derive(Debug)]
+pub enum MlCfgType {
+    Bool,
+    Char,
+    Int(rustc_ast::ast::IntTy),
+    Uint(rustc_ast::ast::UintTy),
+    MutableBorrow(Box<MlCfgType>),
+    TVar(String),
+    TConstructor(String),
+    TApp(Box<MlCfgType>, Vec<MlCfgType>),
+    Tuple(Vec<MlCfgType>),
+}
+
 #[derive(Debug)]
 pub enum MlCfgExp {
     Current(Box<MlCfgExp>),

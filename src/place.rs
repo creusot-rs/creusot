@@ -1,13 +1,17 @@
 use rustc_hir::def::CtorKind;
-use rustc_middle::{mir::{Body, ProjectionElem::*, Local, Place}, ty::TyCtxt};
+use rustc_middle::{mir::{Body, Local, Place, *}, ty::TyCtxt};
 use rustc_span::{symbol::Ident, Symbol};
+
+// This representation is not strictly needed, but I find that it still splits up the
+// work between the translation to MLCfg and MIR nicely.
+pub use rustc_hir::Mutability;
 
 #[derive(Clone, Debug)]
 pub enum Projection {
-    MutDeref,
+    Deref(Mutability),
     FieldAccess { ctor: Symbol, ix: usize, size: usize, field: Ident, kind: CtorKind },
     TupleAccess { size: usize, ix: usize },
-    Down { ctor: Symbol },
+    // Down { ctor: Symbol },
 }
 use Projection::*;
 
@@ -20,21 +24,14 @@ pub struct MirPlace {
 pub fn from_place<'tcx>(tcx: TyCtxt<'tcx>, decls: &Body<'tcx>, place: &Place<'tcx>) -> MirPlace {
     let mut place_ty = Place::ty_from(place.local, &[], decls, tcx);
 
-    // TODO: Use a more appropriate type than Vec<ProjElem>
     let mut res_proj = Vec::new();
     for proj in place.projection.iter() {
         match proj {
-            Deref => {
-                match place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl {
-                    rustc_hir::Mutability::Mut => {
-                        res_proj.push(MutDeref);
-                    }
-                    rustc_hir::Mutability::Not => {
-                        // Since in the translation [&T] ::= [T], we drop any projections for immutable deref
-                    }
-                }
+            ProjectionElem::Deref => {
+                let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
+                res_proj.push(Deref(mutability));
             }
-            Field(ix, _) => match place_ty.ty.kind() {
+            ProjectionElem::Field(ix, _) => match place_ty.ty.kind() {
                 rustc_middle::ty::TyKind::Adt(def, _) => {
                     use rustc_target::abi::VariantIdx;
                     let variant = &def.variants[place_ty.variant_index.unwrap_or(VariantIdx::from_usize(0))];
@@ -55,10 +52,7 @@ pub fn from_place<'tcx>(tcx: TyCtxt<'tcx>, decls: &Body<'tcx>, place: &Place<'tc
                     panic!("accessing field on unexpected tykind");
                 }
             },
-            Downcast(Some(symbol), _) => res_proj.push(Down { ctor: symbol }),
-            Downcast(None, _) => {
-                panic!("downcast projection with no symbol");
-            }
+            ProjectionElem::Downcast(_, _) => { }
             _ => {
                 panic!("unsupported place projection");
             }

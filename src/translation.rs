@@ -1,9 +1,22 @@
-use rustc_hir::def::CtorKind;
+use rustc_hir::{def::CtorKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 
-use crate::place::{MirPlace, Projection::*};
+use crate::place::{MirPlace, Projection::*, Mutability::*};
 
 use crate::whycfg::{*, MlCfgExp::*, MlCfgPattern::*, MlCfgStatement::*};
+
+mod terminator;
+mod ty;
+
+pub struct TranslationCtx<'tcx> {
+    pub tcx: TyCtxt<'tcx>,
+}
+
+impl<'tcx> TranslationCtx<'tcx> {
+    fn translate_defid(&self, def_id: DefId) -> String {
+      self.tcx.def_path_str(def_id)
+    }
+}
 
 /// Correctly translate an assignment from one place to another. The challenge here is correctly
 /// construction the expression that assigns deep inside a structure.
@@ -16,7 +29,7 @@ use crate::whycfg::{*, MlCfgExp::*, MlCfgPattern::*, MlCfgStatement::*};
 
 /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-pub fn create_assign<'tcx>(tcx: TyCtxt<'tcx>, lhs: &MirPlace, rhs: MlCfgExp) -> MlCfgStatement {
+pub fn create_assign(lhs: &MirPlace, rhs: MlCfgExp) -> MlCfgStatement {
     // Translation happens inside to outside, which means we scan projection elements in reverse
     // building up the inner expression. We start with the RHS expression which is at the deepest
     // level.
@@ -28,12 +41,15 @@ pub fn create_assign<'tcx>(tcx: TyCtxt<'tcx>, lhs: &MirPlace, rhs: MlCfgExp) -> 
         stump.proj.pop();
 
         match proj {
-            MutDeref => {
+            Deref(Mut) => {
                 inner = RecUp {
                     record: box rhs_to_why_exp(&stump),
                     label: "current".into(),
                     val: box inner,
                 }
+            }
+            Deref(Not) => {
+                // Immutable references are erased in MLCFG
             }
             FieldAccess { ctor, ix, size, field, kind } => match kind {
                 CtorKind::Fn => {
@@ -68,7 +84,6 @@ pub fn create_assign<'tcx>(tcx: TyCtxt<'tcx>, lhs: &MirPlace, rhs: MlCfgExp) -> 
                     body: box Tuple(varexps),
                 }
             }
-            Down { .. } => {}
         }
     }
 
@@ -83,8 +98,11 @@ pub fn rhs_to_why_exp(rhs: &MirPlace) -> MlCfgExp {
 
     for proj in rhs.proj.iter() {
         match proj {
-            MutDeref => {
+            Deref(Mut) => {
                 inner = Current(box inner);
+            }
+            Deref(Not) => {
+                // Immutable references are erased in MLCFG
             }
             FieldAccess { ctor, ix, size, field, kind } => {
                 match kind {
@@ -124,7 +142,6 @@ pub fn rhs_to_why_exp(rhs: &MirPlace) -> MlCfgExp {
 
                 inner = Let { pattern: TupleP(pat), arg: box inner, body: box Var("a".into()) }
             }
-            Down { .. } => {}
         }
     }
     return inner;
