@@ -14,7 +14,7 @@ pub struct TranslationCtx<'tcx> {
 
 impl<'tcx> TranslationCtx<'tcx> {
     fn translate_defid(&self, def_id: DefId) -> String {
-      self.tcx.def_path_str(def_id)
+      self.tcx.def_path_str(def_id).replace("::", ".")
     }
 }
 

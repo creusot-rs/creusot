@@ -34,6 +34,23 @@ pub enum MlCfgType {
     Tuple(Vec<MlCfgType>),
 }
 
+impl MlCfgType {
+    fn complex(&self) -> bool {
+        use MlCfgType::*;
+        match self {
+            Bool | Char | Int(_) | Uint(_) | TVar(_) | Tuple(_) | TConstructor(_) => false,
+            _ => true,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct MlTyDecl {
+    pub ty_name: String,
+    pub ty_params: Vec<String>,
+    pub ty_constructors: Vec<(String, Vec<MlCfgType>)>,
+}
+
 #[derive(Debug)]
 pub enum MlCfgExp {
     Current(Box<MlCfgExp>),
@@ -130,6 +147,44 @@ impl Display for MlCfgStatement {
                 write!(f, "{:?} <- {}", lhs, rhs)?;
             }
         }
+        Ok(())
+    }
+}
+
+impl Display for MlCfgType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use MlCfgType::*;
+
+        if self.complex() { write!(f, "(")?; }
+        match self {
+            Bool => { write!(f, "bool")?; }
+            Char => { write!(f, "char")?; }
+            Int(_) => { write!(f, "int")?; } // TODO machine ints
+            Uint(_) => { write!(f, "uint")?; } // TODO uints
+            MutableBorrow(t) => { write!(f, "borrowed {}", t)?; }
+            TVar(v) => { write!(f, "{}", v)?; }
+            TConstructor(ty) => { write!(f, "{}", ty)?; }
+            TApp(tyf, args) => { write!(f, "{} {}", tyf, args.iter().format(" "))?; }
+            Tuple(tys) => { write!(f, "({})", tys.iter().format(", "))?; }
+        }
+        if self.complex() { write!(f, ")")?; }
+        Ok(())
+    }
+}
+
+
+impl Display for MlTyDecl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "type {} {} =\n", self.ty_name, self.ty_params.iter().format(" "))?;
+
+        for (cons, args) in self.ty_constructors.iter() {
+            if args.is_empty() {
+                write!(f, "| {}\n", cons)?;
+            } else {
+                write!(f, "| {}({}) \n", cons, args.iter().format(", "))?;
+            }
+        }
+
         Ok(())
     }
 }

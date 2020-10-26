@@ -95,7 +95,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
             let adt = tcx.adt_def(*def_id);
             let res = TranslationCtx { tcx: tcx}.translate_tydecl(adt);
 
-            log::debug!("Result {:?}", res);
+            log::debug!("Result {}", res);
         }
 
         for def_id in mod_bodies.iter() {
@@ -124,23 +124,6 @@ fn translate(tcx: TyCtxt) -> Result<()> {
         }
     }
 
-    // Option 1:
-    // 1. Get modules being translated from crate
-    // 2. Translate all modules
-    // 3. Dump modules
-
-    // Option 2:
-    // 1. Traverse from main function
-    // 2. When a new DefId is encountered, translate it
-    // 3. Accumulate results in a Map for each module
-    // 4. Dump resulting modules
-
-    // Advantage of first approach: Clear control flow of compilation
-    // Advantage of second approach: More minimal translated result
-    // Disadvantage of first approach: Must translate all of a module
-    // Disadvantage of second approach: More complex control flow and
-    // accumlating map makes things more complex
-
     Ok(())
 }
 
@@ -163,7 +146,7 @@ impl<'a, 'tcx> Visitor<'tcx> for S<'a, 'tcx> {
     fn visit_ty(&mut self, ty: Ty<'tcx>, _: TyContext) {
         let t = TranslationCtx { tcx: self.tcx }.translate_ty(ty);
 
-        dbg!(t);
+        log::debug!("{}", t);
     }
 
     fn visit_statement(&mut self, statement: &Statement<'tcx>, _: Location) {
