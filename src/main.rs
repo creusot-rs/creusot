@@ -1,6 +1,7 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_syntax, box_patterns)]
 #![register_tool(wprust)]
+#![feature(const_panic)]
 
 extern crate rustc_ast;
 extern crate rustc_ast_pretty;
@@ -12,24 +13,28 @@ extern crate rustc_middle;
 extern crate rustc_mir;
 extern crate rustc_span;
 extern crate rustc_target;
+extern crate rustc_serialize;
+// extern crate serde;
+// extern crate polonius;
+extern crate polonius_engine;
 
+// #[macro_use] use lazy_static;
+
+use analysis::LocationIntervalMap;
+use polonius::PoloniusInfo;
 use rustc_driver::{run_compiler, Callbacks, Compilation};
 use rustc_hir::{def_id::LOCAL_CRATE, Item};
 use rustc_interface::{interface::Compiler, Queries};
-use rustc_middle::{
-    mir::{
-        visit::{PlaceContext, TyContext},
-        Body, Location, MirPhase, Place, Statement,
-    },
-    ty::{InstanceDef, Ty, TyCtxt, WithOptConstParam},
-};
-use rustc_mir::transform::run_passes;
+use rustc_middle::{mir::{Body, Location, Place, Statement, Terminator, visit::{PlaceContext, TyContext}}, ty::{Ty, TyCtxt, WithOptConstParam}};
 
 mod place;
 use place::*;
 
 mod translation;
 use translation::*;
+mod polonius;
+mod analysis;
+
 mod whycfg;
 
 struct ToWhy {}
@@ -53,6 +58,8 @@ fn main() {
     // args.push("-Znll-facts".to_owned());
     args.push("-Cpanic=abort".to_owned());
     args.push("-Coverflow-checks=off".to_owned());
+    args.push("-Znll-facts".to_owned());
+    // args.push("-Zdump-mir=".to_owned());
     run_compiler(&args, &mut ToWhy {}, None, None, None).unwrap();
 }
 
@@ -93,7 +100,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
         for def_id in ty_decls.iter() {
             log::debug!("Translating type declaration {:?}", def_id);
             let adt = tcx.adt_def(*def_id);
-            let res = TranslationCtx { tcx: tcx}.translate_tydecl(adt);
+            let res = TranslationCtx { tcx }.translate_tydecl(adt);
 
             log::debug!("Result {}", res);
         }
@@ -108,19 +115,23 @@ fn translate(tcx: TyCtxt) -> Result<()> {
             // 'assign each field and the discriminant' seperately stuff.
             let _ = tcx.mir_borrowck(*def_id);
 
+            // Read Polonius facts.
+            let def_path = tcx.def_path(def_id.to_def_id());
+
             let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(*def_id));
             let mut body = body.steal();
+
+            let polonius_info = polonius::PoloniusInfo::new(&body, def_path);
+
+            // dbg!(&polonius_info.facts);
+
+            // dbg!(&polonius_info.in_facts.path_is_var);
+            // dbg!(&polonius_info.in_facts.path_moved_at_base);
             let def_id = def_id.to_def_id();
 
-            run_passes(
-                tcx,
-                &mut body,
-                InstanceDef::Item(WithOptConstParam::unknown(def_id)),
-                None,
-                MirPhase::Build,
-                &[],
-            );
-            (S { tcx, body: &body }).visit_body(&body);
+            let mut move_map = analysis::VarMoves::new().compute(&body);
+
+            (S { tcx, body: &body, pol: polonius_info, move_map }).visit_body(&body);
         }
     }
 
@@ -130,6 +141,8 @@ fn translate(tcx: TyCtxt) -> Result<()> {
 struct S<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     body: &'a Body<'tcx>,
+    pol: PoloniusInfo,
+    move_map: LocationIntervalMap<analysis::MoveMap>,
 }
 
 use crate::whycfg::MlCfgExp::{BorrowMut, Final};
@@ -149,10 +162,29 @@ impl<'a, 'tcx> Visitor<'tcx> for S<'a, 'tcx> {
         log::debug!("{}", t);
     }
 
-    fn visit_statement(&mut self, statement: &Statement<'tcx>, _: Location) {
+    fn visit_terminator(&mut self, terminator: &Terminator< 'tcx>, loc:Location) {
+        // println!("{:<35} {:?} live={:?} dying={:?} origins={:?} restricts={:?}\n", format!("{:?}", terminator.kind), loc, self.pol.loans_live_here(loc), self.pol.loans_dying_here(loc), self.pol.origins_live_at_entry(loc), self.pol.restricts(loc));
+        println!("{:<35} {:?} dying={:?} var_moves={:?}", format!("{:?}",terminator.kind), loc, self.pol.loans_dying_here(loc), self.move_map.get(loc));
+    }
+    fn visit_statement(&mut self, statement: &Statement<'tcx>, loc: Location) {
+        // println!("{:<35} {:?} live={:?} dying={:?} origins={:?} restricts={:?}", format!("{:?}",statement), loc, self.pol.loans_live_here(loc), self.pol.loans_dying_here(loc), self.pol.origins_live_at_entry(loc), self.pol.restricts(loc));
+        println!("{:<35} {:?} dying={:?} var_moves={:?}", format!("{:?}",statement), loc, self.pol.loans_dying_here(loc), self.move_map.get(loc));
+
+        for loan in self.pol.loans_dying_here(loc) {
+            let loc = self.pol.loan_created_at(loan);
+
+            let bbd = &self.body.basic_blocks()[loc.block];
+
+            if loc.statement_index == bbd.statements.len() {
+                dbg!(&bbd.terminator().kind);
+            } else {
+                dbg!(&bbd.statements[loc.statement_index]);
+            }
+        }
+
         match &statement.kind {
             Assign(box (l, op)) => {
-                println!("[[[{:?}]]]", statement);
+                // println!("[[[{:?}]]]", statement);
                 let lhs = from_place(self.tcx, self.body, l);
                 match op {
                     Use(u) => {
@@ -162,7 +194,7 @@ impl<'a, 'tcx> Visitor<'tcx> for S<'a, 'tcx> {
 
                         let rhs =
                             rhs_to_why_exp(&from_place(self.tcx, self.body, &u.place().unwrap()));
-                        println!("{}", create_assign(&lhs, rhs));
+                        // println!("{}", create_assign(&lhs, rhs));
                     }
                     Ref(_, bk, pl) => {
                         if let Mut { .. } = bk {
@@ -171,8 +203,8 @@ impl<'a, 'tcx> Visitor<'tcx> for S<'a, 'tcx> {
                             let s1 = create_assign(&lhs, BorrowMut(box rhs_to_why_exp(&rhs)));
                             let s2 = create_assign(&rhs, Final(box rhs_to_why_exp(&lhs)));
 
-                            println!("{}", s1);
-                            println!("{}", s2);
+                            // println!("{}", s1);
+                            // println!("{}", s2);
                         }
                     }
                     _ => {}
@@ -182,3 +214,9 @@ impl<'a, 'tcx> Visitor<'tcx> for S<'a, 'tcx> {
         }
     }
 }
+
+
+// fn xxx(x: polonius_engine::Output<polonius::CreusotFacts>, l: Location) {
+//     x.borrow_live_at.
+
+// }

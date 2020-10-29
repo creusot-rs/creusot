@@ -68,7 +68,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 MlT::Tuple(tys)
             }
             Param(_) => unimplemented!("param"),
-
+            Ref(_, _, _) => unimplemented!("reference"),
             _ => unimplemented!(),
         }
     }
