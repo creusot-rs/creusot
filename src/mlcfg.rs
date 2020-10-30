@@ -3,8 +3,8 @@ use std::fmt::Display;
 use rustc_middle::mir::Local;
 
 pub struct MlCfgBlock {
-    label: String,
-    statments: Vec<MlCfgStatement>,
+    label: Block,
+    statements: Vec<MlCfgStatement>,
     terminator: MlCfgTerminator,
 }
 

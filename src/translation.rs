@@ -1,20 +1,56 @@
 use rustc_hir::{def::CtorKind, def_id::DefId};
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::{mir::*, mir::visit::Visitor, ty::TyCtxt, mir::traversal::preorder};
 
-use crate::place::{MirPlace, Projection::*, Mutability::*};
+use crate::{
+    analysis::{self, LocationIntervalMap},
+    place::{MirPlace, Mutability::*, Projection::*},
+    polonius::PoloniusInfo,
+};
 
-use crate::whycfg::{*, MlCfgExp::*, MlCfgPattern::*, MlCfgStatement::*};
+use crate::mlcfg::{MlCfgExp::*, MlCfgPattern::*, MlCfgStatement::*, *};
 
 mod terminator;
+mod statement;
+
 mod ty;
 
-pub struct TranslationCtx<'tcx> {
+pub struct FunctionTranslator<'a, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
+    body: &'a Body<'tcx>,
+    pol: PoloniusInfo,
+    move_map: LocationIntervalMap<analysis::MoveMap>,
+
+    // Current block being generated
+    current_block: (String, Vec<MlCfgStatement>, Option<MlCfgTerminator>),
+
+    past_blocks: Vec<MlCfgBlock>,
 }
 
-impl<'tcx> TranslationCtx<'tcx> {
+impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     fn translate_defid(&self, def_id: DefId) -> String {
-      self.tcx.def_path_str(def_id).replace("::", ".")
+        self.tcx.def_path_str(def_id).replace("::", ".")
+    }
+
+    fn emit_statement(&mut self, s: MlCfgStatement) {
+        self.current_block.1.push(s);
+    }
+
+    fn emit_terminator(&mut self, t: MlCfgTerminator) {
+        assert!(self.current_block.2.is_none());
+
+        self.current_block.2 = Some(t);
+    }
+
+    pub fn translate(&mut self) -> () {
+        for (bb, bbd) in preorder(self.body) {
+            self.current_block = (format!("BB{}", bb.as_u32()), vec![], None);
+
+            for statement in &bbd.statements {
+                self.translate_statement(statement);
+            }
+
+            self.translate_terminator(bbd.terminator());
+        }
     }
 }
 
@@ -87,7 +123,7 @@ pub fn create_assign(lhs: &MirPlace, rhs: MlCfgExp) -> MlCfgStatement {
         }
     }
 
-    return Assign { lhs: lhs.local, rhs: inner};
+    return Assign { lhs: lhs.local, rhs: inner };
 }
 
 // [(P as Some)]   ---> [_1]
@@ -126,12 +162,6 @@ pub fn rhs_to_why_exp(rhs: &MirPlace) -> MlCfgExp {
                     // Struct
                     CtorKind::Fictive => {
                         inner = RecField { rec: box inner, field: field.name.to_string() }
-
-                        // Let {
-                        //     pattern: RecP(field.name.to_string(), "a".into()),
-                        //     arg: box inner,
-                        //     body: box Var("a".into()),
-                        // }
                     }
                 }
             }

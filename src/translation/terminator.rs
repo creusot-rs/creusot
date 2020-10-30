@@ -1,11 +1,13 @@
-use rustc_middle::mir::{Terminator, TerminatorKind::*};
+use rustc_middle::mir::{Location, Terminator, TerminatorKind::*, visit::Visitor};
 
-use super::TranslationCtx;
+use super::FunctionTranslator;
 
-impl<'tcx> TranslationCtx<'tcx> {
-    pub fn term_to_why(term: &Terminator<'tcx>) -> () {
-        match &term.kind {
-            Goto { target } => {}
+impl<'tcx> FunctionTranslator<'_, 'tcx> {
+    pub fn translate_terminator(&mut self, terminator: &Terminator< 'tcx>) {
+        match &terminator.kind {
+            Goto { target } => {
+
+            }
             SwitchInt { discr, switch_ty, targets, .. } => {}
             Abort => {}
             Return => {}

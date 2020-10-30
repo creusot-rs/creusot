@@ -3,11 +3,11 @@ use rustc_middle::ty::{
 };
 
 
-use super::TranslationCtx;
+use super::FunctionTranslator;
 
-use crate::whycfg::{MlCfgType as MlT, MlTyDecl};
+use crate::mlcfg::{MlCfgType as MlT, MlTyDecl};
 
-impl<'tcx> TranslationCtx<'tcx> {
+impl<'tcx> FunctionTranslator<'_, 'tcx> {
     // TODO: actually translate the type declaration
     pub fn translate_tydecl<'a>(&self, adt: &'a AdtDef) -> MlTyDecl {
         let gens = self.tcx.generics_of(adt.did);

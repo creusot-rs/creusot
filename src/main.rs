@@ -35,7 +35,7 @@ use translation::*;
 mod polonius;
 mod analysis;
 
-mod whycfg;
+mod mlcfg;
 
 struct ToWhy {}
 
@@ -97,13 +97,13 @@ fn translate(tcx: TyCtxt) -> Result<()> {
 
         log::debug!("Translationg module {:?}", modk);
 
-        for def_id in ty_decls.iter() {
-            log::debug!("Translating type declaration {:?}", def_id);
-            let adt = tcx.adt_def(*def_id);
-            let res = TranslationCtx { tcx }.translate_tydecl(adt);
+        // for def_id in ty_decls.iter() {
+        //     log::debug!("Translating type declaration {:?}", def_id);
+        //     let adt = tcx.adt_def(*def_id);
+        //     let res = TranslationCtx { tcx }.translate_tydecl(adt);
 
-            log::debug!("Result {}", res);
-        }
+        //     log::debug!("Result {}", res);
+        // }
 
         for def_id in mod_bodies.iter() {
             log::debug!("Translating body {:?}", def_id);
@@ -145,23 +145,11 @@ struct S<'a, 'tcx> {
     move_map: LocationIntervalMap<analysis::MoveMap>,
 }
 
-use crate::whycfg::MlCfgExp::{BorrowMut, Final};
+use crate::mlcfg::MlCfgExp::{BorrowMut, Final};
 use rustc_middle::mir::visit::Visitor;
 use rustc_middle::mir::{BorrowKind::*, Rvalue::*, StatementKind::*};
 
 impl<'a, 'tcx> Visitor<'tcx> for S<'a, 'tcx> {
-    fn visit_place(&mut self, place: &Place<'tcx>, _: PlaceContext, _: Location) {
-        // let mp = from_place(self.tcx, self.body, place);
-        // dbg!(&mp);
-        // println!("{}", rhs_to_why_exp(&mp));
-    }
-
-    fn visit_ty(&mut self, ty: Ty<'tcx>, _: TyContext) {
-        let t = TranslationCtx { tcx: self.tcx }.translate_ty(ty);
-
-        log::debug!("{}", t);
-    }
-
     fn visit_terminator(&mut self, terminator: &Terminator< 'tcx>, loc:Location) {
         // println!("{:<35} {:?} live={:?} dying={:?} origins={:?} restricts={:?}\n", format!("{:?}", terminator.kind), loc, self.pol.loans_live_here(loc), self.pol.loans_dying_here(loc), self.pol.origins_live_at_entry(loc), self.pol.restricts(loc));
         println!("{:<35} {:?} dying={:?} var_moves={:?}", format!("{:?}",terminator.kind), loc, self.pol.loans_dying_here(loc), self.move_map.get(loc));
