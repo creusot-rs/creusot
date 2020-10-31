@@ -1,16 +1,21 @@
+use std::collections::HashMap;
+
 use rustc_hir::{def::CtorKind, def_id::DefId};
-use rustc_middle::{mir::*, mir::visit::Visitor, ty::TyCtxt, mir::traversal::preorder};
+use rustc_middle::{ty::AdtDef, mir::traversal::preorder, mir::*, mir, ty::TyCtxt};
 
 use crate::{
     analysis::{self, LocationIntervalMap},
+    place::from_place,
     place::{MirPlace, Mutability::*, Projection::*},
     polonius::PoloniusInfo,
 };
 
-use crate::mlcfg::{MlCfgExp::*, MlCfgPattern::*, MlCfgStatement::*, *};
+use crate::mlcfg::{MlCfgExp::*, MlCfgPattern::*, *};
 
-mod terminator;
+use self::ty::TyTranslator;
+
 mod statement;
+mod terminator;
 
 mod ty;
 
@@ -19,17 +24,37 @@ pub struct FunctionTranslator<'a, 'tcx> {
     body: &'a Body<'tcx>,
     pol: PoloniusInfo,
     move_map: LocationIntervalMap<analysis::MoveMap>,
+    discr_map: HashMap<(BasicBlock, mir::Local), Place<'tcx>>,
 
     // Current block being generated
-    current_block: (String, Vec<MlCfgStatement>, Option<MlCfgTerminator>),
+    current_block: (Block, Vec<MlCfgStatement>, Option<MlCfgTerminator>),
 
     past_blocks: Vec<MlCfgBlock>,
 }
 
+pub fn translate_tydecl<'tcx>(tcx: TyCtxt<'tcx>, adt: &AdtDef) -> MlTyDecl {
+    TyTranslator::new(tcx).translate_tydecl(adt)
+}
+
 impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
-    fn translate_defid(&self, def_id: DefId) -> String {
-        self.tcx.def_path_str(def_id).replace("::", ".")
+    pub fn new(
+        tcx: TyCtxt<'tcx>,
+        body: &'a Body<'tcx>,
+        pol: PoloniusInfo,
+        move_map: LocationIntervalMap<analysis::MoveMap>,
+        discr_map: HashMap<(BasicBlock, mir::Local), Place<'tcx>>,
+    ) -> Self {
+        FunctionTranslator {
+            tcx,
+            body,
+            pol,
+            move_map,
+            discr_map,
+            current_block: (BasicBlock::MAX.into(), Vec::new(), None),
+            past_blocks: Vec::new(),
+        }
     }
+
 
     fn emit_statement(&mut self, s: MlCfgStatement) {
         self.current_block.1.push(s);
@@ -41,90 +66,56 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         self.current_block.2 = Some(t);
     }
 
-    pub fn translate(&mut self) -> () {
+    pub fn translate(mut self, nm: DefId) -> MlCfgFunction {
         for (bb, bbd) in preorder(self.body) {
-            self.current_block = (format!("BB{}", bb.as_u32()), vec![], None);
+            self.current_block = (bb.into(), vec![], None);
 
+            let mut loc = bb.start_location();
             for statement in &bbd.statements {
                 self.translate_statement(statement);
+                loc = loc.successor_within_block();
             }
 
-            self.translate_terminator(bbd.terminator());
+            self.translate_terminator(bbd.terminator(), loc);
+
+            self.past_blocks.push(MlCfgBlock{
+                label: self.current_block.0,
+                statements: self.current_block.1,
+                terminator: self.current_block.2.unwrap()
+            });
+        }
+
+        let ty_trans = TyTranslator::new(self.tcx);
+        let mut vars = self.body.local_decls.iter_enumerated().map(|(loc, decl)| {
+            (loc, ty_trans.translate_ty(decl.ty) )
+        });
+        let _retty = vars.nth(0).unwrap();
+
+        let name = self.tcx.def_path(nm).to_filename_friendly_no_crate();
+        MlCfgFunction {
+            name: name,
+            args: vars.by_ref().take(self.body.arg_count).collect(),
+            vars: vars.collect::<Vec<_>>(),
+            blocks: self.past_blocks,
+        }
+    }
+
+    // Useful helper to translate an operand
+    pub fn translate_operand(&self, operand: &Operand<'tcx>) -> MlCfgExp {
+        match operand {
+            Operand::Copy(pl)
+            | Operand::Move(pl) => rhs_to_why_exp(&from_place(self.tcx, self.body, pl)),
+            Operand::Constant(c) => Const(MlCfgConstant::from_mir_constant(self.tcx, c))
+,
         }
     }
 }
 
-/// Correctly translate an assignment from one place to another. The challenge here is correctly
-/// construction the expression that assigns deep inside a structure.
-/// (_1 as Some) = P      ---> let _1 = P ??
-/// (*_1) = P             ---> let _1 = { current = P, .. }
-/// (_1.2) = P            ---> let _1 = { _1 with [[2]] = P } (struct)
-///                       ---> let _1 = (let Cons(a, b, c) = _1 in Cons(a, b, P)) (tuple)
-/// (*_1).1 = P           ---> let _1 = { _1 with current = ({ * _1 with [[1]] = P })}
-/// ((*_1) as Some).0 = P ---> let _1 = { _1 with current = (let Some(X) = _1 in Some(P) )}
 
-/// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
-/// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-pub fn create_assign(lhs: &MirPlace, rhs: MlCfgExp) -> MlCfgStatement {
-    // Translation happens inside to outside, which means we scan projection elements in reverse
-    // building up the inner expression. We start with the RHS expression which is at the deepest
-    // level.
-    let mut inner = rhs;
-    // The stump represents the projection up to the element being translated
-    let mut stump = lhs.clone();
-    for proj in lhs.proj.iter().rev() {
-        // Remove the last element from the projection
-        stump.proj.pop();
-
-        match proj {
-            Deref(Mut) => {
-                inner = RecUp {
-                    record: box rhs_to_why_exp(&stump),
-                    label: "current".into(),
-                    val: box inner,
-                }
-            }
-            Deref(Not) => {
-                // Immutable references are erased in MLCFG
-            }
-            FieldAccess { ctor, ix, size, field, kind } => match kind {
-                CtorKind::Fn => {
-                    let varpats = ('a'..).map(|c| VarP(c.to_string())).take(*size).collect();
-                    let mut varexps: Vec<MlCfgExp> =
-                        ('a'..).map(|c| Var(c.to_string())).take(*size).collect();
-                    varexps[*ix] = inner;
-
-                    inner = Let {
-                        pattern: ConsP(ctor.to_string(), varpats),
-                        arg: box rhs_to_why_exp(&stump),
-                        body: box Constructor { ctor: ctor.to_string(), args: varexps },
-                    }
-                }
-                CtorKind::Const => unimplemented!(),
-                CtorKind::Fictive => {
-                    inner = RecUp {
-                        record: box rhs_to_why_exp(&stump),
-                        label: field.to_string(),
-                        val: box inner,
-                    }
-                }
-            },
-            TupleAccess { size, ix } => {
-                let varpats = ('a'..).map(|c| VarP(c.to_string())).take(*size).collect();
-                let mut varexps: Vec<_> = ('a'..).map(|c| Var(c.to_string())).take(*size).collect();
-                varexps[*ix] = inner;
-
-                inner = Let {
-                    pattern: TupleP(varpats),
-                    arg: box rhs_to_why_exp(&stump),
-                    body: box Tuple(varexps),
-                }
-            }
-        }
-    }
-
-    return Assign { lhs: lhs.local, rhs: inner };
+fn translate_defid<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> String {
+    tcx.def_path_str(def_id).replace("::", ".")
 }
+
 
 // [(P as Some)]   ---> [_1]
 // [(P as Some).0] ---> let Some(a) = [_1] in a
@@ -143,7 +134,7 @@ pub fn rhs_to_why_exp(rhs: &MirPlace) -> MlCfgExp {
             FieldAccess { ctor, ix, size, field, kind } => {
                 match kind {
                     // Tuple
-                    CtorKind::Fn => {
+                    CtorKind::Fn | CtorKind::Fictive => {
                         let mut pat = vec![Wildcard; *ix];
                         pat.push(VarP("a".into()));
                         pat.append(&mut vec![Wildcard; size - ix - 1]);
@@ -158,10 +149,6 @@ pub fn rhs_to_why_exp(rhs: &MirPlace) -> MlCfgExp {
                     CtorKind::Const => {
                         assert!(*size == 1 && *ix == 0);
                         unimplemented!();
-                    }
-                    // Struct
-                    CtorKind::Fictive => {
-                        inner = RecField { rec: box inner, field: field.name.to_string() }
                     }
                 }
             }

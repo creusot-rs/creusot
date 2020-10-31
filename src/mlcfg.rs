@@ -1,19 +1,58 @@
 use std::fmt::Display;
 
-use rustc_middle::mir::Local;
+// Imports related to MLCfg Constatns
+use rustc_middle::{mir::{BinOp, Constant}, ty::{print::PrettyPrinter, TyCtxt, print::FmtPrinter}};
 
+use rustc_hir::def::Namespace;
+use rustc_middle::mir::{BasicBlock, Local};
+
+pub const PRELUDE : &str = "use Ref \n\
+              use int.Int \n\
+              (** Generic Type for borrowed values *) \n\
+              type borrowed 'a = \n\
+                {{ current : 'a ; \n\
+                  final : 'a; (* The \"future\" value when borrow will end *) \n\
+                }} \n\
+              let function ( *_ ) x = x.current \n\
+              let function ( ^_ ) x = x.final \n\
+              val borrow_mut (a : 'a) : borrowed 'a \n\
+                 ensures {{ *result = a }}";
+
+#[derive(Debug)]
+pub struct MlCfgFunction {
+    pub name: String,
+    pub args: Vec<(Local, MlCfgType)>,
+    pub vars: Vec<(Local, MlCfgType)>,
+    pub blocks: Vec<MlCfgBlock>,
+}
+
+#[derive(Debug)]
 pub struct MlCfgBlock {
-    label: Block,
-    statements: Vec<MlCfgStatement>,
-    terminator: MlCfgTerminator,
+    pub label: Block,
+    pub statements: Vec<MlCfgStatement>,
+    pub terminator: MlCfgTerminator,
 }
 
 #[derive(Debug)]
 pub struct Block(usize);
 
+impl From<&BasicBlock> for Block {
+    fn from(b: &BasicBlock) -> Self {
+        Block((*b).into())
+    }
+}
+impl From<BasicBlock> for Block {
+    fn from(b: BasicBlock) -> Self {
+        Block(b.into())
+    }
+}
+
 #[derive(Debug)]
 pub enum MlCfgTerminator {
     Goto(Block),
+    Absurd,
+    Return,
+    Switch(MlCfgExp, Vec<(MlCfgPattern, Block)>),
 }
 
 #[derive(Debug)]
@@ -62,8 +101,39 @@ pub enum MlCfgExp {
     Tuple(Vec<MlCfgExp>),
     Constructor { ctor: String, args: Vec<MlCfgExp> },
     BorrowMut(Box<MlCfgExp>),
-    RecField { rec: Box<MlCfgExp>, field: String },
+    // RecField { rec: Box<MlCfgExp>, field: String },
+    Const(MlCfgConstant),
+    BinaryOp(BinOp, Box<MlCfgExp>, Box<MlCfgExp>),
+    Call(Box<MlCfgExp>, Vec<MlCfgExp>),
 }
+
+impl MlCfgExp {
+    fn complex_exp(&self) -> bool {
+        use MlCfgExp::*;
+        match self {
+            | Local(_) | Var(_) | Tuple(_) | Const(_) => false,
+            // | RecField { .. } => false,
+            _ => true,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct MlCfgConstant(String, ConstantType);
+
+impl MlCfgConstant {
+    pub fn from_mir_constant<'tcx> (tcx: TyCtxt<'tcx>, c: &Constant<'tcx>) -> Self {
+        let mut fmt = String::new();
+        let cx = FmtPrinter::new(tcx, &mut fmt, Namespace::ValueNS);
+        cx.pretty_print_const(c.literal, false).unwrap();
+
+        MlCfgConstant(fmt, ())
+    }
+}
+
+// TODO: Add Constant Types
+type ConstantType = ();
+// enum ConstantType { Bool }
 
 impl MlCfgExp {
     fn complex(&self) -> bool {
@@ -80,7 +150,7 @@ pub enum MlCfgPattern {
     VarP(String),
     TupleP(Vec<MlCfgPattern>),
     ConsP(String, Vec<MlCfgPattern>),
-    RecP(String, String),
+    // RecP(String, String),
 }
 
 impl Display for MlCfgPattern {
@@ -89,8 +159,14 @@ impl Display for MlCfgPattern {
             MlCfgPattern::Wildcard => { write!(f, "_")?; }
             MlCfgPattern::VarP(v) => { write!(f, "{}", v)?; }
             MlCfgPattern::TupleP(vs) => { write!(f, "({})", vs.iter().format(", "))?; }
-            MlCfgPattern::ConsP(c, pats) => { write!(f, "{}({})", c, pats.iter().format(", "))?; }
-            MlCfgPattern::RecP(l, n) => { write!(f, "{{ {} = {} }}", l, n)?; }
+            MlCfgPattern::ConsP(c, pats) => {
+                if pats.is_empty() {
+                    write!(f, "{}", c)?;
+                } else {
+                    write!(f, "{}({})", c, pats.iter().format(", "))?;
+                }
+            }
+            // MlCfgPattern::RecP(l, n) => { write!(f, "{{ {} = {} }}", l, n)?; }
         }
         Ok(())
     }
@@ -103,6 +179,98 @@ macro_rules! parens {
         if $i.complex() { format!("({})", $i) } else { format!("{}", $i)}
     };
 }
+
+macro_rules! parens_exp {
+    ($i:ident) => {
+        if $i.complex_exp() { format!("({})", $i) } else { format!("{}", $i)}
+    };
+}
+
+
+impl Display for Block {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "BB{}", self.0)
+    }
+}
+impl Display for MlCfgFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "let cfg {} ", self.name)?;
+        for (nm, ty) in &self.args {
+            write!(f, "({:?} : {})", nm, ty)?;
+        }
+
+        writeln!(f, " =")?;
+
+        // Forward declare all arguments
+        for (var, ty) in self.args.iter() {
+            writeln!(f, "var {:?} : {};", var, ty)?;
+        }
+
+        // Forward declare all variables
+        for (var, ty) in self.vars.iter() {
+            writeln!(f, "var {:?} : {};", var, ty)?;
+        }
+        writeln!(f, "{{")?;
+
+        for (arg, _) in self.args.iter() {
+          writeln!(f, "  {:?} <- {:?}_o;", arg, arg)?;
+        }
+
+        writeln!(f, "  goto BB0;")?;
+        writeln!(f, "}}")?;
+
+        for block in &self.blocks {
+            write!(f, "{}", block)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl Display for MlCfgBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{} {{", self.label)?;
+
+        for stmt in &self.statements {
+            writeln!(f, "  {};", stmt)?;
+        }
+
+        writeln!(f, "  {}", self.terminator)?;
+
+
+        writeln!(f, "}}")?;
+
+        Ok(())
+    }
+}
+
+impl Display for MlCfgTerminator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use MlCfgTerminator::*;
+        match self {
+            Goto(tgt) => {
+                write!(f, "goto {}", tgt)?;
+            }
+            Absurd => {
+                write!(f, "absurd")?;
+            }
+            Return => {
+                write!(f, "return _0")?;
+            }
+            Switch(discr, brs) => {
+                writeln!(f,"switch {} {{", discr)?;
+
+                for (pat, tgt) in brs {
+                    writeln!(f, "  | {} -> goto {}", pat, tgt)?;
+                }
+
+                writeln!(f, "}}")?;
+            }
+        }
+        Ok(())
+    }
+}
+
 
 impl Display for MlCfgExp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -127,16 +295,50 @@ impl Display for MlCfgExp {
                 write!(f, "({})", vs.iter().format(", "))?;
             }
             MlCfgExp::Constructor { ctor, args } => {
-                write!(f, "{}({})", ctor, args.iter().format(", "))?;
+                if args.is_empty() {
+                    write!(f, "{}", ctor)?;
+                } else {
+                    write!(f, "{}({})", ctor, args.iter().format(", "))?;
+                }
             }
             MlCfgExp::BorrowMut(exp) => {
                 write!(f, "borrow_mut {}", parens!(exp))?;
             }
-            MlCfgExp::RecField{rec, field} => {
-                write!(f, "{}.{}", parens!(rec), field)?;
+            // MlCfgExp::RecField{rec, field} => {
+            //     write!(f, "{}.{}", parens!(rec), field)?;
+            // }
+            MlCfgExp::Const(c) => { write!(f, "{}", c)?; }
+            MlCfgExp::BinaryOp(op, l, r) => {
+                write!(f, "{} {} {}", l, bin_op_to_string(op), r)?;
+            }
+            MlCfgExp::Call(fun, args) => {
+                write!(f, "{} {}", fun, args.iter().map(|a| parens_exp!(a)).format(" "))?;
             }
         }
         Ok(())
+    }
+}
+
+fn bin_op_to_string(op: &BinOp) -> &str {
+    use rustc_middle::mir::BinOp::*;
+    match op {
+        Add => "+",
+        Sub => "-",
+        Mul => "*",
+        Div => "/",
+        Eq => "=",
+        Ne => "<>",
+        Gt => ">",
+        Ge => ">=",
+        Lt => "<",
+        Le => "<=",
+        _ => unimplemented!("unsupported bin op"),
+    }
+}
+
+impl Display for MlCfgConstant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -179,9 +381,9 @@ impl Display for MlTyDecl {
 
         for (cons, args) in self.ty_constructors.iter() {
             if args.is_empty() {
-                write!(f, "| {}\n", cons)?;
+                writeln!(f, "  | {}", cons)?;
             } else {
-                write!(f, "| {}({}) \n", cons, args.iter().format(", "))?;
+                writeln!(f, "  | {}({})", cons, args.iter().format(", "))?;
             }
         }
 

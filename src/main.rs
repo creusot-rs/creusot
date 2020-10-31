@@ -1,7 +1,7 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_syntax, box_patterns)]
 #![register_tool(wprust)]
-#![feature(const_panic)]
+#![feature(const_panic, or_patterns)]
 
 extern crate rustc_ast;
 extern crate rustc_ast_pretty;
@@ -20,12 +20,10 @@ extern crate polonius_engine;
 
 // #[macro_use] use lazy_static;
 
-use analysis::LocationIntervalMap;
-use polonius::PoloniusInfo;
-use rustc_driver::{run_compiler, Callbacks, Compilation};
+use rustc_driver::{RunCompiler, Callbacks, Compilation};
 use rustc_hir::{def_id::LOCAL_CRATE, Item};
 use rustc_interface::{interface::Compiler, Queries};
-use rustc_middle::{mir::{Body, Location, Place, Statement, Terminator, visit::{PlaceContext, TyContext}}, ty::{Ty, TyCtxt, WithOptConstParam}};
+use rustc_middle::ty::{TyCtxt, WithOptConstParam};
 
 mod place;
 use place::*;
@@ -52,15 +50,15 @@ impl Callbacks for ToWhy {
 
 use std::env::args as get_args;
 fn main() {
-    env_logger::init_from_env(
-        env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "debug"));
+    // env_logger::init_from_env(
+        // env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "debug"));
     let mut args = get_args().collect::<Vec<String>>();
     // args.push("-Znll-facts".to_owned());
     args.push("-Cpanic=abort".to_owned());
     args.push("-Coverflow-checks=off".to_owned());
     args.push("-Znll-facts".to_owned());
     // args.push("-Zdump-mir=".to_owned());
-    run_compiler(&args, &mut ToWhy {}, None, None, None).unwrap();
+    RunCompiler::new(&args, &mut ToWhy {}).run().unwrap();
 }
 
 use std::io::Result;
@@ -95,15 +93,31 @@ fn translate(tcx: TyCtxt) -> Result<()> {
             }
         }
 
-        log::debug!("Translationg module {:?}", modk);
+        let def_path = hir_map.def_path_from_hir_id(*modk).unwrap();
 
-        // for def_id in ty_decls.iter() {
-        //     log::debug!("Translating type declaration {:?}", def_id);
-        //     let adt = tcx.adt_def(*def_id);
-        //     let res = TranslationCtx { tcx }.translate_tydecl(adt);
+        log::debug!("Translationg module {:?}", def_path);
 
-        //     log::debug!("Result {}", res);
-        // }
+        if def_path.data.is_empty() {
+            // main module
+            println!("module Main");
+        } else {
+            // other modules
+            for seg in def_path.data[0..def_path.data.len() - 1].iter() {
+                println!("scope {}", seg);
+            }
+
+            println!("module {}", def_path.data.last().unwrap());
+        }
+        println!("{}", mlcfg::PRELUDE);
+
+        for def_id in ty_decls.iter() {
+            log::debug!("Translating type declaration {:?}", def_id);
+            let adt = tcx.adt_def(*def_id);
+            let res = translation::translate_tydecl(tcx, adt);
+
+            println!("{}", res);
+        }
+
 
         for def_id in mod_bodies.iter() {
             log::debug!("Translating body {:?}", def_id);
@@ -119,92 +133,25 @@ fn translate(tcx: TyCtxt) -> Result<()> {
             let def_path = tcx.def_path(def_id.to_def_id());
 
             let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(*def_id));
-            let mut body = body.steal();
+            let body = body.steal();
 
             let polonius_info = polonius::PoloniusInfo::new(&body, def_path);
 
-            // dbg!(&polonius_info.facts);
-
-            // dbg!(&polonius_info.in_facts.path_is_var);
-            // dbg!(&polonius_info.in_facts.path_moved_at_base);
             let def_id = def_id.to_def_id();
 
-            let mut move_map = analysis::VarMoves::new().compute(&body);
+            let move_map = analysis::VarMoves::new().compute(&body);
+            let discr_map = analysis::DiscrTyMap::analyze(&body);
+            let translated = FunctionTranslator::new(tcx, &body, polonius_info, move_map, discr_map).translate(def_id);
 
-            (S { tcx, body: &body, pol: polonius_info, move_map }).visit_body(&body);
+            print!("{}", translated);
+
+        }
+
+        for _ in 0..def_path.data.len() + 1 {
+            println!("end");
         }
     }
 
     Ok(())
 }
 
-struct S<'a, 'tcx> {
-    tcx: TyCtxt<'tcx>,
-    body: &'a Body<'tcx>,
-    pol: PoloniusInfo,
-    move_map: LocationIntervalMap<analysis::MoveMap>,
-}
-
-use crate::mlcfg::MlCfgExp::{BorrowMut, Final};
-use rustc_middle::mir::visit::Visitor;
-use rustc_middle::mir::{BorrowKind::*, Rvalue::*, StatementKind::*};
-
-impl<'a, 'tcx> Visitor<'tcx> for S<'a, 'tcx> {
-    fn visit_terminator(&mut self, terminator: &Terminator< 'tcx>, loc:Location) {
-        // println!("{:<35} {:?} live={:?} dying={:?} origins={:?} restricts={:?}\n", format!("{:?}", terminator.kind), loc, self.pol.loans_live_here(loc), self.pol.loans_dying_here(loc), self.pol.origins_live_at_entry(loc), self.pol.restricts(loc));
-        println!("{:<35} {:?} dying={:?} var_moves={:?}", format!("{:?}",terminator.kind), loc, self.pol.loans_dying_here(loc), self.move_map.get(loc));
-    }
-    fn visit_statement(&mut self, statement: &Statement<'tcx>, loc: Location) {
-        // println!("{:<35} {:?} live={:?} dying={:?} origins={:?} restricts={:?}", format!("{:?}",statement), loc, self.pol.loans_live_here(loc), self.pol.loans_dying_here(loc), self.pol.origins_live_at_entry(loc), self.pol.restricts(loc));
-        println!("{:<35} {:?} dying={:?} var_moves={:?}", format!("{:?}",statement), loc, self.pol.loans_dying_here(loc), self.move_map.get(loc));
-
-        for loan in self.pol.loans_dying_here(loc) {
-            let loc = self.pol.loan_created_at(loan);
-
-            let bbd = &self.body.basic_blocks()[loc.block];
-
-            if loc.statement_index == bbd.statements.len() {
-                dbg!(&bbd.terminator().kind);
-            } else {
-                dbg!(&bbd.statements[loc.statement_index]);
-            }
-        }
-
-        match &statement.kind {
-            Assign(box (l, op)) => {
-                // println!("[[[{:?}]]]", statement);
-                let lhs = from_place(self.tcx, self.body, l);
-                match op {
-                    Use(u) => {
-                        if u.place().is_none() {
-                            return;
-                        }
-
-                        let rhs =
-                            rhs_to_why_exp(&from_place(self.tcx, self.body, &u.place().unwrap()));
-                        // println!("{}", create_assign(&lhs, rhs));
-                    }
-                    Ref(_, bk, pl) => {
-                        if let Mut { .. } = bk {
-                            let rhs = from_place(self.tcx, self.body, pl);
-
-                            let s1 = create_assign(&lhs, BorrowMut(box rhs_to_why_exp(&rhs)));
-                            let s2 = create_assign(&rhs, Final(box rhs_to_why_exp(&lhs)));
-
-                            // println!("{}", s1);
-                            // println!("{}", s2);
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            _ => {}
-        }
-    }
-}
-
-
-// fn xxx(x: polonius_engine::Output<polonius::CreusotFacts>, l: Location) {
-//     x.borrow_live_at.
-
-// }

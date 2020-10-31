@@ -1,5 +1,5 @@
-use rustc_middle::mir::{BasicBlock, Body, Local, Location, Operand, visit::Visitor, traversal::preorder};
-use std::{ops::Index, collections::{BTreeMap, HashMap}};
+use rustc_middle::mir::{BasicBlock, Body, Local, Location, Operand, Place, Rvalue, traversal::preorder, visit::Visitor};
+use std::{collections::{BTreeMap, HashMap}};
 // a mostly incorrect move analysis
 // the result of this should explain how locals flowed into each other.
 
@@ -118,68 +118,21 @@ impl<'tcx> Visitor<'tcx> for VarMoves {
     }
 }
 
-// use rustc_index::{bit_set::BitSet, vec::IndexVec};
-// use rustc_middle::mir::Local;
-// use rustc_mir::dataflow::*;
-// use rustc_middle::mir;
+pub struct DiscrTyMap<'tcx> { discr_map: HashMap<(BasicBlock, Local), Place<'tcx>>}
 
-// use mir::StatementKind::Assign;
-// use mir::Rvalue::Use;
-// use mir::Operand::Move;
+impl<'tcx> DiscrTyMap<'tcx> {
+    pub fn analyze(body: &Body<'tcx>) -> HashMap<(BasicBlock, Local), Place<'tcx>> {
+        let mut m = DiscrTyMap { discr_map: HashMap::new() };
+        m.visit_body(body);
+        m.discr_map
+    }
+}
 
-// struct MoveAnalysis { local_count: usize }
-
-// impl<'tcx> AnalysisDomain<'tcx> for MoveAnalysis {
-//   type Domain = IndexVec<Local, BitSet<Local>>;
-
-//   const NAME: &'static str = "move analysis";
-
-//   fn bottom_value(&self, body: &mir::Body<'tcx>) -> Self::Domain {
-//       IndexVec::new()
-//   }
-
-//   fn initialize_start_block(&self, body: &mir::Body<'tcx>, state: &mut Self::Domain) {
-
-//   }
-// }
-
-// impl<'tcx> Analysis<'tcx> for MoveAnalysis {
-//     fn apply_statement_effect(
-//         &self,
-//         state: &mut Self::Domain,
-//         statement: &mir::Statement<'tcx>,
-//         location: mir::Location,
-//     ) {
-//         if let mir::StatementKind::Assign(box (pl, Use(Move(rpl)))) = statement.kind {
-//           if let Some(rloc) = rpl.as_local() {
-//             let mut b = BitSet::new_empty(self.local_count);
-//             b.insert(pl.local);
-//             state[rloc] = b;
-//           }
-//         }
-//     }
-
-//     fn apply_terminator_effect(
-//         &self,
-//         state: &mut Self::Domain,
-//         terminator: &mir::Terminator<'tcx>,
-//         location: mir::Location,
-//     ) {
-//     }
-
-//     fn apply_call_return_effect(
-//         &self,
-//         state: &mut Self::Domain,
-//         block: mir::BasicBlock,
-//         func: &mir::Operand<'tcx>,
-//         args: &[mir::Operand<'tcx>],
-//         return_place: mir::Place<'tcx>,
-//     ) {
-//         for arg in args {
-//           if let Move(rpl) = arg {
-//             let mut b = BitSet::new_empty(self.local_count);
-//             state[rpl.local] = b;
-//           }
-//         }
-//     }
-// }
+impl<'tcx> Visitor<'tcx> for DiscrTyMap<'tcx> {
+    fn visit_assign(&mut self, place: &Place< 'tcx>, rvalue: &Rvalue< 'tcx>, location: Location) {
+        match rvalue {
+            Rvalue::Discriminant(pl) => { self.discr_map.insert((location.block, place.local), pl.to_owned()); }
+            _ => {}
+        }
+    }
+}

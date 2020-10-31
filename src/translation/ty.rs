@@ -1,15 +1,15 @@
-use rustc_middle::ty::{
-    self, subst::InternalSubsts, AdtDef, Ty, TyKind::*,
-};
-
-
-use super::FunctionTranslator;
+use rustc_middle::ty::{self, AdtDef, Ty, TyCtxt, TyKind::*, subst::InternalSubsts};
 
 use crate::mlcfg::{MlCfgType as MlT, MlTyDecl};
 
-impl<'tcx> FunctionTranslator<'_, 'tcx> {
-    // TODO: actually translate the type declaration
-    pub fn translate_tydecl<'a>(&self, adt: &'a AdtDef) -> MlTyDecl {
+pub struct TyTranslator<'tcx> { tcx: TyCtxt<'tcx> }
+
+impl<'tcx> TyTranslator<'tcx> {
+    pub fn new(tcx: TyCtxt<'tcx>) -> Self {
+        TyTranslator { tcx}
+    }
+
+    pub fn translate_tydecl(&self, adt: &AdtDef) -> MlTyDecl {
         let gens = self.tcx.generics_of(adt.did);
 
         let ty_args: Vec<_> = gens
@@ -37,7 +37,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             ml_ty_def.push((var_def.ident.to_string(), field_tys));
         }
 
-        let ty_name = self.translate_defid(adt.did).split(".").last().unwrap().to_string();
+        let ty_name = super::translate_defid(self.tcx, adt.did).split(".").last().unwrap().to_string();
         return MlTyDecl {
             ty_name,
             ty_params: ty_args,
@@ -58,7 +58,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 }
                 let args = s.types().map(|t| self.translate_ty(t)).collect();
 
-                MlT::TApp(box MlT::TConstructor(self.translate_defid(def.did)), args)
+                MlT::TApp(box MlT::TConstructor(super::translate_defid(self.tcx, def.did)), args)
             }
             Str => unimplemented!("str"),
             Array(_, _) => unimplemented!("array"),
@@ -67,8 +67,20 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 let tys = args.types().map(|t| self.translate_ty(t)).collect();
                 MlT::Tuple(tys)
             }
-            Param(_) => unimplemented!("param"),
-            Ref(_, _, _) => unimplemented!("reference"),
+            Param(p) => {
+                MlT::TVar(p.name.to_string())
+            }
+            Ref(_, ty, borkind) => {
+                use rustc_ast::Mutability::*;
+                match borkind {
+                    Mut => {
+                        MlT::MutableBorrow(box self.translate_ty(ty))
+                    }
+                    Not => {
+                        self.translate_ty(ty)
+                    }
+                }
+            },
             _ => unimplemented!(),
         }
     }
