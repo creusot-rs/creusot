@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use rustc_hir::{def::CtorKind, def_id::DefId};
 use rustc_middle::{ty::AdtDef, mir::traversal::preorder, mir::*, mir, ty::TyCtxt};
+use rustc_mir::dataflow::{self, impls::MaybeInitializedLocals};
 
 use crate::{
-    analysis::{self, LocationIntervalMap},
     place::from_place,
     place::{MirPlace, Mutability::*, Projection::*},
     polonius::PoloniusInfo,
@@ -22,8 +22,11 @@ mod ty;
 pub struct FunctionTranslator<'a, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     body: &'a Body<'tcx>,
-    pol: PoloniusInfo,
-    move_map: LocationIntervalMap<analysis::MoveMap>,
+    pol: PoloniusInfo<'a, 'tcx>,
+
+    // Whether a local is initialized or not at a location
+    local_init: dataflow::ResultsCursor<'a, 'tcx, MaybeInitializedLocals>,
+    // Tell me the type of the object we are discriminating
     discr_map: HashMap<(BasicBlock, mir::Local), Place<'tcx>>,
 
     // Current block being generated
@@ -40,15 +43,15 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
         body: &'a Body<'tcx>,
-        pol: PoloniusInfo,
-        move_map: LocationIntervalMap<analysis::MoveMap>,
+        pol: PoloniusInfo<'a, 'tcx>,
+        local_init: dataflow::ResultsCursor<'a, 'tcx, MaybeInitializedLocals>,
         discr_map: HashMap<(BasicBlock, mir::Local), Place<'tcx>>,
     ) -> Self {
         FunctionTranslator {
             tcx,
             body,
             pol,
-            move_map,
+            local_init,
             discr_map,
             current_block: (BasicBlock::MAX.into(), Vec::new(), None),
             past_blocks: Vec::new(),
@@ -70,12 +73,16 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         for (bb, bbd) in preorder(self.body) {
             self.current_block = (bb.into(), vec![], None);
 
+            if bbd.is_cleanup { continue }
+
             let mut loc = bb.start_location();
             for statement in &bbd.statements {
+                self.freeze_borrows_dying_at(loc);
                 self.translate_statement(statement);
                 loc = loc.successor_within_block();
             }
 
+            self.freeze_borrows_dying_at(loc);
             self.translate_terminator(bbd.terminator(), loc);
 
             self.past_blocks.push(MlCfgBlock{
@@ -89,14 +96,37 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         let mut vars = self.body.local_decls.iter_enumerated().map(|(loc, decl)| {
             (loc, ty_trans.translate_ty(decl.ty) )
         });
-        let _retty = vars.nth(0).unwrap();
+        let retty = vars.nth(0).unwrap().1;
 
         let name = self.tcx.def_path(nm).to_filename_friendly_no_crate();
         MlCfgFunction {
-            name: name,
+            name,
+            retty,
             args: vars.by_ref().take(self.body.arg_count).collect(),
             vars: vars.collect::<Vec<_>>(),
             blocks: self.past_blocks,
+        }
+    }
+
+    fn freeze_borrows_dying_at(&mut self, loc: Location) {
+        for loan in self.pol.loans_dying_at_start(loc) {
+            let orig_loc = self.pol.loan_created_at(loan);
+            let local = self.get_local_at(orig_loc);
+
+            self.local_init.seek_before_primary_effect(loc);
+            if self.local_init.contains(local) {
+                self.emit_statement(MlCfgStatement::Freeze(local));
+            }
+        }
+    }
+    // Hacky and ugly replace.
+    pub fn get_local_at(&self, loc: Location) -> rustc_middle::mir::Local {
+        let stmt = &self.body.basic_blocks()[loc.block].statements[loc.statement_index];
+
+        if let StatementKind::Assign(box (pl, _)) = stmt.kind {
+            pl.local
+        } else {
+            panic!("local not assigned at {:?}", loc);
         }
     }
 
@@ -131,7 +161,7 @@ pub fn rhs_to_why_exp(rhs: &MirPlace) -> MlCfgExp {
             Deref(Not) => {
                 // Immutable references are erased in MLCFG
             }
-            FieldAccess { ctor, ix, size, field, kind } => {
+            FieldAccess { ctor, ix, size, field: _, kind } => {
                 match kind {
                     // Tuple
                     CtorKind::Fn | CtorKind::Fictive => {

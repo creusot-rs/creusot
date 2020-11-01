@@ -23,17 +23,19 @@ extern crate polonius_engine;
 use rustc_driver::{RunCompiler, Callbacks, Compilation};
 use rustc_hir::{def_id::LOCAL_CRATE, Item};
 use rustc_interface::{interface::Compiler, Queries};
-use rustc_middle::ty::{TyCtxt, WithOptConstParam};
+use rustc_middle::{ty::{TyCtxt, WithOptConstParam}};
 
 mod place;
 use place::*;
 
 mod translation;
+use rustc_mir::dataflow::{Analysis,impls::MaybeInitializedLocals};
 use translation::*;
 mod polonius;
 mod analysis;
 
 mod mlcfg;
+mod debug;
 
 struct ToWhy {}
 
@@ -139,11 +141,17 @@ fn translate(tcx: TyCtxt) -> Result<()> {
 
             let def_id = def_id.to_def_id();
 
-            let move_map = analysis::VarMoves::new().compute(&body);
             let discr_map = analysis::DiscrTyMap::analyze(&body);
-            let translated = FunctionTranslator::new(tcx, &body, polonius_info, move_map, discr_map).translate(def_id);
+
+            let res = MaybeInitializedLocals
+                .into_engine(tcx, &body)
+                .iterate_to_fixpoint()
+                .into_results_cursor(&body);
+            let translated = FunctionTranslator::new(tcx, &body, polonius_info, res, discr_map).translate(def_id);
 
             print!("{}", translated);
+            // debug::debug(tcx, &body, polonius_info);
+            // debug::DebugBody { tcx, pol: polonius_info, move_map, discr_map }.visit_body(&body);
 
         }
 

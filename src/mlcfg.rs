@@ -10,17 +10,18 @@ pub const PRELUDE : &str = "use Ref \n\
               use int.Int \n\
               (** Generic Type for borrowed values *) \n\
               type borrowed 'a = \n\
-                {{ current : 'a ; \n\
+                { current : 'a ; \n\
                   final : 'a; (* The \"future\" value when borrow will end *) \n\
-                }} \n\
+                } \n\
               let function ( *_ ) x = x.current \n\
               let function ( ^_ ) x = x.final \n\
               val borrow_mut (a : 'a) : borrowed 'a \n\
-                 ensures {{ *result = a }}";
+                 ensures { *result = a }";
 
 #[derive(Debug)]
 pub struct MlCfgFunction {
     pub name: String,
+    pub retty: MlCfgType,
     pub args: Vec<(Local, MlCfgType)>,
     pub vars: Vec<(Local, MlCfgType)>,
     pub blocks: Vec<MlCfgBlock>,
@@ -58,6 +59,7 @@ pub enum MlCfgTerminator {
 #[derive(Debug)]
 pub enum MlCfgStatement {
     Assign { lhs: Local, rhs: MlCfgExp },
+    Freeze(Local),
 }
 
 #[derive(Debug)]
@@ -195,13 +197,20 @@ impl Display for Block {
 impl Display for MlCfgFunction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "let cfg {} ", self.name)?;
-        for (nm, ty) in &self.args {
-            write!(f, "({:?} : {})", nm, ty)?;
+
+        if self.args.is_empty() {
+            write!(f, "()")?;
         }
 
-        writeln!(f, " =")?;
+        for (nm, ty) in &self.args {
+            write!(f, "({:?}_o : {})", nm, ty)?;
+        }
+
+        writeln!(f, " : {} =", self.retty)?;
 
         // Forward declare all arguments
+        writeln!(f, "var _0 : {};", self.retty)?;
+
         for (var, ty) in self.args.iter() {
             writeln!(f, "var {:?} : {};", var, ty)?;
         }
@@ -255,7 +264,7 @@ impl Display for MlCfgTerminator {
                 write!(f, "absurd")?;
             }
             Return => {
-                write!(f, "return _0")?;
+                write!(f, "_0")?;
             }
             Switch(discr, brs) => {
                 writeln!(f,"switch {} {{", discr)?;
@@ -347,6 +356,9 @@ impl Display for MlCfgStatement {
         match self {
             MlCfgStatement::Assign { lhs, rhs } => {
                 write!(f, "{:?} <- {}", lhs, rhs)?;
+            }
+            MlCfgStatement::Freeze(loc) => {
+                write!(f, "assume {{ ^ {:?} = * {:?}", loc, loc)?;
             }
         }
         Ok(())

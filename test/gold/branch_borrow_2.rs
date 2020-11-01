@@ -14,22 +14,9 @@ fn main () {
     2 => { * y = 7; w = y; }
     _ => { * z = 8; w = z; }
   }
-  // if true {
-  //   * x = 6;
-  //   z = x;
 
-  // } else {
-  //   * y = 7;
-  //   z = y;
-  // }
 
   * w = 5;
 
   assert!(a == 5);
-
-  // assume { * z = ^z};
-  // assume { ? = ?};
-  // assume { ? = ?};
-
-  // assert(a == 5 || b == 5 || c == 5);
 }

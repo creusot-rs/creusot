@@ -7,7 +7,7 @@ use rustc_middle::{
 
 use crate::{place::from_place, mlcfg::{MlCfgExp, MlCfgPattern, MlCfgTerminator as MlT}};
 
-use super::{FunctionTranslator, statement::create_assign, rhs_to_why_exp};
+use super::{FunctionTranslator, statement::create_assign};
 
 // Translate the terminator of a basic block.
 // There isn't much that's special about this. The only subtlety is in how
@@ -69,7 +69,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 let fname = self.translate_operand(func);
 
                 let (loc, bb) = destination.unwrap();
-                use crate::mlcfg::MlCfgStatement as MlS;
+                
 
                 let call = MlCfgExp::Call(box fname, func_args);
                 let call_stmt = create_assign(&from_place(self.tcx, self.body, &loc), call);
