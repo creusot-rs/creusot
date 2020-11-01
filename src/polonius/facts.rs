@@ -20,8 +20,6 @@ use std::str::FromStr;
 
 use lazy_static::*;
 
-use polonius_engine;
-
 rustc_index::newtype_index! {
     pub struct MovePathIndex {
         DEBUG_FORMAT = "mp{}" //"

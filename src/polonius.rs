@@ -1,14 +1,11 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     path::PathBuf,
 };
 
 use rustc_hir::definitions::DefPath;
 
-use rustc_middle::mir::{BasicBlock, Body, Local, Location};
-
-// use smallvec::SmallVec;
-// use smallvec::SmallVec;
+use rustc_middle::mir::{Body, Location};
 
 pub mod facts;
 pub mod location_table;
@@ -60,6 +57,7 @@ impl<'a, 'tcx> PoloniusInfo<'a, 'tcx> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn loans_live_here(&self, loc: Location) -> Vec<facts::Loan> {
         (&self.facts.borrow_live_at[&self.loc_table.mid_index(loc)]).to_owned()
     }
@@ -83,24 +81,4 @@ impl<'a, 'tcx> PoloniusInfo<'a, 'tcx> {
 
         (&pred_loans - &live_at_start).into_iter().cloned().collect()
     }
-
-    pub fn origins_live_at_entry(&self, loc: Location) -> &Vec<facts::Region> {
-        let entry_point = self.loc_table.start_index(loc);
-
-        &self.facts.origin_live_on_entry[&entry_point]
-    }
-
-    pub fn restricts(&self, loc: Location) -> &BTreeMap<facts::Region, BTreeSet<facts::Loan>> {
-        let point = self.loc_table.mid_index(loc);
-        &self.facts.restricts[&point]
-    }
-    // pub fn loans_dying_here(&self, loc: Location) -> Vec<facts::Loan> {
-    //     let start_borrows : &Vec<_> = &self.facts.borrow_live_at[&self.loc_table.start_index(loc)];
-    //     let mid_borrows : &Vec<_> = &self.facts.borrow_live_at[&self.loc_table.mid_index(loc)];
-
-    //     dbg!(loc, start_borrows, mid_borrows);
-    //     start_borrows.iter().filter(|loan| {
-    //         !mid_borrows.contains(loan)
-    //     }).cloned().collect()
-    // }
 }

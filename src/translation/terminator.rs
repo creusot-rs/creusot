@@ -1,13 +1,16 @@
 use std::collections::HashMap;
 
 use rustc_middle::{
-    mir::{BasicBlock, Location, Place, Rvalue, Terminator, TerminatorKind::*},
+    mir::{Location, Terminator, TerminatorKind::*},
     ty::VariantDef,
 };
 
-use crate::{place::from_place, mlcfg::{MlCfgExp, MlCfgPattern, MlCfgTerminator as MlT}};
+use crate::{
+    mlcfg::{MlCfgExp, MlCfgPattern, MlCfgTerminator as MlT},
+    place::from_place,
+};
 
-use super::{FunctionTranslator, statement::create_assign};
+use super::{statement::create_assign, FunctionTranslator};
 
 // Translate the terminator of a basic block.
 // There isn't much that's special about this. The only subtlety is in how
@@ -58,18 +61,16 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                     _ => unimplemented!(),
                 }
             }
-            Abort => { self.emit_terminator(MlT::Absurd) }
+            Abort => self.emit_terminator(MlT::Absurd),
             Return => self.emit_terminator(MlT::Return),
             Unreachable => self.emit_terminator(MlT::Absurd),
             Call { func, args, destination, .. } => {
-                let func_args : Vec<_> = args.iter()
-                    .map(|arg| self.translate_operand(arg))
-                    .collect();
+                let func_args: Vec<_> =
+                    args.iter().map(|arg| self.translate_operand(arg)).collect();
 
                 let fname = self.translate_operand(func);
 
                 let (loc, bb) = destination.unwrap();
-                
 
                 let call = MlCfgExp::Call(box fname, func_args);
                 let call_stmt = create_assign(&from_place(self.tcx, self.body, &loc), call);
@@ -77,7 +78,6 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 self.emit_statement(call_stmt);
 
                 self.emit_terminator(MlT::Goto(bb.into()));
-
             }
             Assert { cond: _, expected: _, msg: _, target: _, cleanup: _ } => {}
 
@@ -91,20 +91,6 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             | GeneratorDrop
             | FalseUnwind { .. }
             | InlineAsm { .. } => unreachable!(),
-        }
-    }
-
-    // Return the place that holds the discriminator (assuming there is one).
-    fn get_discriminator_place(&self, bb: BasicBlock) -> &Place<'tcx> {
-        let statement = self.body.basic_blocks()[bb].statements.last();
-        use rustc_middle::mir::StatementKind::*;
-        if let Some(Assign(box (_, rval))) = statement.map(|s| &s.kind) {
-            match rval {
-                Rvalue::Discriminant(pl) => pl,
-                _ => unimplemented!("constant match"),
-            }
-        } else {
-            panic!("expected discriminant as last statement of block");
         }
     }
 }

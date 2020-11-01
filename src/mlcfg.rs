@@ -1,12 +1,15 @@
 use std::fmt::Display;
 
 // Imports related to MLCfg Constatns
-use rustc_middle::{mir::{BinOp, Constant}, ty::{print::PrettyPrinter, TyCtxt, print::FmtPrinter}};
+use rustc_middle::{
+    mir::{BinOp, Constant},
+    ty::{print::FmtPrinter, print::PrettyPrinter, TyCtxt},
+};
 
 use rustc_hir::def::Namespace;
 use rustc_middle::mir::{BasicBlock, Local};
 
-pub const PRELUDE : &str = "use Ref \n\
+pub const PRELUDE: &str = "use Ref \n\
               use int.Int \n\
               (** Generic Type for borrowed values *) \n\
               type borrowed 'a = \n\
@@ -78,10 +81,7 @@ pub enum MlCfgType {
 impl MlCfgType {
     fn complex(&self) -> bool {
         use MlCfgType::*;
-        match self {
-            Bool | Char | Int(_) | Uint(_) | TVar(_) | Tuple(_) | TConstructor(_) => false,
-            _ => true,
-        }
+        !matches!(self, Bool | Char | Int(_) | Uint(_) | TVar(_) | Tuple(_) | TConstructor(_))
     }
 }
 
@@ -112,11 +112,7 @@ pub enum MlCfgExp {
 impl MlCfgExp {
     fn complex_exp(&self) -> bool {
         use MlCfgExp::*;
-        match self {
-            | Local(_) | Var(_) | Tuple(_) | Const(_) => false,
-            // | RecField { .. } => false,
-            _ => true,
-        }
+        !matches!(self, Local(_) | Var(_) | Tuple(_) | Const(_))
     }
 }
 
@@ -124,7 +120,7 @@ impl MlCfgExp {
 pub struct MlCfgConstant(String, ConstantType);
 
 impl MlCfgConstant {
-    pub fn from_mir_constant<'tcx> (tcx: TyCtxt<'tcx>, c: &Constant<'tcx>) -> Self {
+    pub fn from_mir_constant<'tcx>(tcx: TyCtxt<'tcx>, c: &Constant<'tcx>) -> Self {
         let mut fmt = String::new();
         let cx = FmtPrinter::new(tcx, &mut fmt, Namespace::ValueNS);
         cx.pretty_print_const(c.literal, false).unwrap();
@@ -140,10 +136,7 @@ type ConstantType = ();
 impl MlCfgExp {
     fn complex(&self) -> bool {
         use MlCfgExp::*;
-        match self {
-            Local(_) | Var(_) | Tuple(_) | Constructor{..} => false,
-            _ => true,
-        }
+        !matches!(self, Local(_) | Var(_) | Tuple(_) | Constructor{..})
     }
 }
 #[derive(Clone, Debug)]
@@ -158,17 +151,22 @@ pub enum MlCfgPattern {
 impl Display for MlCfgPattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MlCfgPattern::Wildcard => { write!(f, "_")?; }
-            MlCfgPattern::VarP(v) => { write!(f, "{}", v)?; }
-            MlCfgPattern::TupleP(vs) => { write!(f, "({})", vs.iter().format(", "))?; }
+            MlCfgPattern::Wildcard => {
+                write!(f, "_")?;
+            }
+            MlCfgPattern::VarP(v) => {
+                write!(f, "{}", v)?;
+            }
+            MlCfgPattern::TupleP(vs) => {
+                write!(f, "({})", vs.iter().format(", "))?;
+            }
             MlCfgPattern::ConsP(c, pats) => {
                 if pats.is_empty() {
                     write!(f, "{}", c)?;
                 } else {
                     write!(f, "{}({})", c, pats.iter().format(", "))?;
                 }
-            }
-            // MlCfgPattern::RecP(l, n) => { write!(f, "{{ {} = {} }}", l, n)?; }
+            } // MlCfgPattern::RecP(l, n) => { write!(f, "{{ {} = {} }}", l, n)?; }
         }
         Ok(())
     }
@@ -178,16 +176,23 @@ use itertools::*;
 
 macro_rules! parens {
     ($i:ident) => {
-        if $i.complex() { format!("({})", $i) } else { format!("{}", $i)}
+        if $i.complex() {
+            format!("({})", $i)
+        } else {
+            format!("{}", $i)
+        }
     };
 }
 
 macro_rules! parens_exp {
     ($i:ident) => {
-        if $i.complex_exp() { format!("({})", $i) } else { format!("{}", $i)}
+        if $i.complex_exp() {
+            format!("({})", $i)
+        } else {
+            format!("{}", $i)
+        }
     };
 }
-
 
 impl Display for Block {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -222,7 +227,7 @@ impl Display for MlCfgFunction {
         writeln!(f, "{{")?;
 
         for (arg, _) in self.args.iter() {
-          writeln!(f, "  {:?} <- {:?}_o;", arg, arg)?;
+            writeln!(f, "  {:?} <- {:?}_o;", arg, arg)?;
         }
 
         writeln!(f, "  goto BB0;")?;
@@ -246,7 +251,6 @@ impl Display for MlCfgBlock {
 
         writeln!(f, "  {}", self.terminator)?;
 
-
         writeln!(f, "}}")?;
 
         Ok(())
@@ -267,7 +271,7 @@ impl Display for MlCfgTerminator {
                 write!(f, "_0")?;
             }
             Switch(discr, brs) => {
-                writeln!(f,"switch {} {{", discr)?;
+                writeln!(f, "switch {} {{", discr)?;
 
                 for (pat, tgt) in brs {
                     writeln!(f, "  | {} -> goto {}", pat, tgt)?;
@@ -279,7 +283,6 @@ impl Display for MlCfgTerminator {
         Ok(())
     }
 }
-
 
 impl Display for MlCfgExp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -294,9 +297,11 @@ impl Display for MlCfgExp {
                 write!(f, "{:?}", l)?;
             }
             MlCfgExp::Let { pattern, arg, body } => {
-                write!(f, "let {} = {} in {}", pattern, parens!(arg) , parens!(body))?;
+                write!(f, "let {} = {} in {}", pattern, parens!(arg), parens!(body))?;
             }
-            MlCfgExp::Var(v) => { write!(f, "{}", v)?; }
+            MlCfgExp::Var(v) => {
+                write!(f, "{}", v)?;
+            }
             MlCfgExp::RecUp { record, label, val } => {
                 write!(f, "{{ {} with {} = {} }}", parens!(record), label, parens!(val))?;
             }
@@ -316,7 +321,9 @@ impl Display for MlCfgExp {
             // MlCfgExp::RecField{rec, field} => {
             //     write!(f, "{}.{}", parens!(rec), field)?;
             // }
-            MlCfgExp::Const(c) => { write!(f, "{}", c)?; }
+            MlCfgExp::Const(c) => {
+                write!(f, "{}", c)?;
+            }
             MlCfgExp::BinaryOp(op, l, r) => {
                 write!(f, "{} {} {}", l, bin_op_to_string(op), r)?;
             }
@@ -369,27 +376,48 @@ impl Display for MlCfgType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use MlCfgType::*;
 
-        if self.complex() { write!(f, "(")?; }
-        match self {
-            Bool => { write!(f, "bool")?; }
-            Char => { write!(f, "char")?; }
-            Int(_) => { write!(f, "int")?; } // TODO machine ints
-            Uint(_) => { write!(f, "uint")?; } // TODO uints
-            MutableBorrow(t) => { write!(f, "borrowed {}", t)?; }
-            TVar(v) => { write!(f, "{}", v)?; }
-            TConstructor(ty) => { write!(f, "{}", ty)?; }
-            TApp(tyf, args) => { write!(f, "{} {}", tyf, args.iter().format(" "))?; }
-            Tuple(tys) => { write!(f, "({})", tys.iter().format(", "))?; }
+        if self.complex() {
+            write!(f, "(")?;
         }
-        if self.complex() { write!(f, ")")?; }
+        match self {
+            Bool => {
+                write!(f, "bool")?;
+            }
+            Char => {
+                write!(f, "char")?;
+            }
+            Int(_) => {
+                write!(f, "int")?;
+            } // TODO machine ints
+            Uint(_) => {
+                write!(f, "uint")?;
+            } // TODO uints
+            MutableBorrow(t) => {
+                write!(f, "borrowed {}", t)?;
+            }
+            TVar(v) => {
+                write!(f, "{}", v)?;
+            }
+            TConstructor(ty) => {
+                write!(f, "{}", ty)?;
+            }
+            TApp(tyf, args) => {
+                write!(f, "{} {}", tyf, args.iter().format(" "))?;
+            }
+            Tuple(tys) => {
+                write!(f, "({})", tys.iter().format(", "))?;
+            }
+        }
+        if self.complex() {
+            write!(f, ")")?;
+        }
         Ok(())
     }
 }
 
-
 impl Display for MlTyDecl {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "type {} {} =\n", self.ty_name, self.ty_params.iter().format(" "))?;
+        writeln!(f, "type {} {} =", self.ty_name, self.ty_params.iter().format(" "))?;
 
         for (cons, args) in self.ty_constructors.iter() {
             if args.is_empty() {

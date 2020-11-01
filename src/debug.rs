@@ -1,15 +1,9 @@
 use rustc_mir::dataflow::impls::MaybeInitializedLocals;
 use rustc_mir::dataflow::Analysis;
 
+use rustc_middle::{mir::traversal::preorder, mir::Body, ty::TyCtxt};
 
-use rustc_middle::{
-    mir::traversal::preorder,
-    mir::{self, Place},
-    mir::{visit::Visitor, BasicBlock, Body},
-    ty::TyCtxt,
-};
-
-use crate::{polonius::PoloniusInfo};
+use crate::polonius::PoloniusInfo;
 
 pub fn debug<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, pol: PoloniusInfo) {
     let mut res = MaybeInitializedLocals

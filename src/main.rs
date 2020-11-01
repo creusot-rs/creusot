@@ -11,31 +11,32 @@ extern crate rustc_index;
 extern crate rustc_interface;
 extern crate rustc_middle;
 extern crate rustc_mir;
+extern crate rustc_serialize;
 extern crate rustc_span;
 extern crate rustc_target;
-extern crate rustc_serialize;
 // extern crate serde;
 // extern crate polonius;
 extern crate polonius_engine;
 
 // #[macro_use] use lazy_static;
 
-use rustc_driver::{RunCompiler, Callbacks, Compilation};
+use rustc_driver::{Callbacks, Compilation, RunCompiler};
 use rustc_hir::{def_id::LOCAL_CRATE, Item};
 use rustc_interface::{interface::Compiler, Queries};
-use rustc_middle::{ty::{TyCtxt, WithOptConstParam}};
+use rustc_middle::ty::{TyCtxt, WithOptConstParam};
 
 mod place;
 use place::*;
 
 mod translation;
-use rustc_mir::dataflow::{Analysis,impls::MaybeInitializedLocals};
+use rustc_mir::dataflow::{impls::MaybeInitializedLocals, Analysis};
 use translation::*;
-mod polonius;
 mod analysis;
+mod polonius;
 
-mod mlcfg;
+#[allow(dead_code)]
 mod debug;
+mod mlcfg;
 
 struct ToWhy {}
 
@@ -45,7 +46,7 @@ struct ToWhy {}
 impl Callbacks for ToWhy {
     // Register callback for after MIR borrowck and typechecking is finished
     fn after_analysis<'tcx>(&mut self, _c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
-        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| translate(tcx)).unwrap();
+        queries.global_ctxt().unwrap().peek_mut().enter(translate).unwrap();
         Compilation::Stop
     }
 }
@@ -53,7 +54,7 @@ impl Callbacks for ToWhy {
 use std::env::args as get_args;
 fn main() {
     // env_logger::init_from_env(
-        // env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "debug"));
+    // env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "debug"));
     let mut args = get_args().collect::<Vec<String>>();
     // args.push("-Znll-facts".to_owned());
     args.push("-Cpanic=abort".to_owned());
@@ -65,7 +66,7 @@ fn main() {
 
 use std::io::Result;
 
-fn is_type_decl<'tcx>(item: &Item<'tcx>) -> bool {
+fn is_type_decl(item: &Item) -> bool {
     match item.kind {
         rustc_hir::ItemKind::TyAlias(_, _) => true,
         rustc_hir::ItemKind::OpaqueTy(_) => unimplemented!(),
@@ -120,7 +121,6 @@ fn translate(tcx: TyCtxt) -> Result<()> {
             println!("{}", res);
         }
 
-
         for def_id in mod_bodies.iter() {
             log::debug!("Translating body {:?}", def_id);
             // (Mir-)Borrowck uses `mir_validated`, so we have to force it to
@@ -147,12 +147,12 @@ fn translate(tcx: TyCtxt) -> Result<()> {
                 .into_engine(tcx, &body)
                 .iterate_to_fixpoint()
                 .into_results_cursor(&body);
-            let translated = FunctionTranslator::new(tcx, &body, polonius_info, res, discr_map).translate(def_id);
+            let translated = FunctionTranslator::new(tcx, &body, polonius_info, res, discr_map)
+                .translate(def_id);
 
             print!("{}", translated);
             // debug::debug(tcx, &body, polonius_info);
             // debug::DebugBody { tcx, pol: polonius_info, move_map, discr_map }.visit_body(&body);
-
         }
 
         for _ in 0..def_path.data.len() + 1 {
@@ -162,4 +162,3 @@ fn translate(tcx: TyCtxt) -> Result<()> {
 
     Ok(())
 }
-

@@ -1,12 +1,14 @@
-use rustc_middle::ty::{self, AdtDef, Ty, TyCtxt, TyKind::*, subst::InternalSubsts};
+use rustc_middle::ty::{self, subst::InternalSubsts, AdtDef, Ty, TyCtxt, TyKind::*};
 
 use crate::mlcfg::{MlCfgType as MlT, MlTyDecl};
 
-pub struct TyTranslator<'tcx> { tcx: TyCtxt<'tcx> }
+pub struct TyTranslator<'tcx> {
+    tcx: TyCtxt<'tcx>,
+}
 
 impl<'tcx> TyTranslator<'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>) -> Self {
-        TyTranslator { tcx}
+        TyTranslator { tcx }
     }
 
     pub fn translate_tydecl(&self, adt: &AdtDef) -> MlTyDecl {
@@ -37,12 +39,9 @@ impl<'tcx> TyTranslator<'tcx> {
             ml_ty_def.push((var_def.ident.to_string(), field_tys));
         }
 
-        let ty_name = super::translate_defid(self.tcx, adt.did).split(".").last().unwrap().to_string();
-        return MlTyDecl {
-            ty_name,
-            ty_params: ty_args,
-            ty_constructors: ml_ty_def,
-        };
+        let ty_name =
+            super::translate_defid(self.tcx, adt.did).split('.').last().unwrap().to_string();
+        MlTyDecl { ty_name, ty_params: ty_args, ty_constructors: ml_ty_def }
     }
 
     pub fn translate_ty(&self, ty: Ty<'tcx>) -> MlT {
@@ -67,20 +66,14 @@ impl<'tcx> TyTranslator<'tcx> {
                 let tys = args.types().map(|t| self.translate_ty(t)).collect();
                 MlT::Tuple(tys)
             }
-            Param(p) => {
-                MlT::TVar(p.name.to_string())
-            }
+            Param(p) => MlT::TVar(p.name.to_string()),
             Ref(_, ty, borkind) => {
                 use rustc_ast::Mutability::*;
                 match borkind {
-                    Mut => {
-                        MlT::MutableBorrow(box self.translate_ty(ty))
-                    }
-                    Not => {
-                        self.translate_ty(ty)
-                    }
+                    Mut => MlT::MutableBorrow(box self.translate_ty(ty)),
+                    Not => self.translate_ty(ty),
                 }
-            },
+            }
             _ => unimplemented!(),
         }
     }

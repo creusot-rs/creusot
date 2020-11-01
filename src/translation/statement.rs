@@ -127,5 +127,5 @@ pub fn create_assign(lhs: &MirPlace, rhs: MlCfgExp) -> MlCfgStatement {
         }
     }
 
-    return Assign { lhs: lhs.local, rhs: inner };
+    Assign { lhs: lhs.local, rhs: inner }
 }

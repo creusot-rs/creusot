@@ -1,5 +1,8 @@
 use rustc_hir::def::CtorKind;
-use rustc_middle::{mir::{Body, Local, Place, *}, ty::TyCtxt};
+use rustc_middle::{
+    mir::{Body, Local, Place, *},
+    ty::TyCtxt,
+};
 use rustc_span::{symbol::Ident, Symbol};
 
 // This representation is not strictly needed, but I find that it still splits up the
@@ -34,7 +37,8 @@ pub fn from_place<'tcx>(tcx: TyCtxt<'tcx>, decls: &Body<'tcx>, place: &Place<'tc
             ProjectionElem::Field(ix, _) => match place_ty.ty.kind() {
                 rustc_middle::ty::TyKind::Adt(def, _) => {
                     use rustc_target::abi::VariantIdx;
-                    let variant = &def.variants[place_ty.variant_index.unwrap_or(VariantIdx::from_usize(0))];
+                    let variant = &def.variants
+                        [place_ty.variant_index.unwrap_or_else(|| VariantIdx::from_usize(0))];
                     let field = variant.fields[ix.as_usize()].ident;
 
                     res_proj.push(FieldAccess {
@@ -52,7 +56,7 @@ pub fn from_place<'tcx>(tcx: TyCtxt<'tcx>, decls: &Body<'tcx>, place: &Place<'tc
                     panic!("accessing field on unexpected tykind");
                 }
             },
-            ProjectionElem::Downcast(_, _) => { }
+            ProjectionElem::Downcast(_, _) => {}
             _ => {
                 panic!("unsupported place projection");
             }
@@ -60,5 +64,5 @@ pub fn from_place<'tcx>(tcx: TyCtxt<'tcx>, decls: &Body<'tcx>, place: &Place<'tc
         place_ty = place_ty.projection_ty(tcx, proj);
     }
 
-    return MirPlace { local: place.local, proj: res_proj };
+    MirPlace { local: place.local, proj: res_proj }
 }

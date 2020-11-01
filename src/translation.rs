@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use rustc_hir::{def::CtorKind, def_id::DefId};
-use rustc_middle::{ty::AdtDef, mir::traversal::preorder, mir::*, mir, ty::TyCtxt};
+use rustc_middle::{mir, mir::traversal::preorder, mir::*, ty::AdtDef, ty::TyCtxt};
 use rustc_mir::dataflow::{self, impls::MaybeInitializedLocals};
 
 use crate::{
@@ -35,7 +35,7 @@ pub struct FunctionTranslator<'a, 'tcx> {
     past_blocks: Vec<MlCfgBlock>,
 }
 
-pub fn translate_tydecl<'tcx>(tcx: TyCtxt<'tcx>, adt: &AdtDef) -> MlTyDecl {
+pub fn translate_tydecl(tcx: TyCtxt, adt: &AdtDef) -> MlTyDecl {
     TyTranslator::new(tcx).translate_tydecl(adt)
 }
 
@@ -58,7 +58,6 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         }
     }
 
-
     fn emit_statement(&mut self, s: MlCfgStatement) {
         self.current_block.1.push(s);
     }
@@ -73,7 +72,9 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         for (bb, bbd) in preorder(self.body) {
             self.current_block = (bb.into(), vec![], None);
 
-            if bbd.is_cleanup { continue }
+            if bbd.is_cleanup {
+                continue;
+            }
 
             let mut loc = bb.start_location();
             for statement in &bbd.statements {
@@ -85,18 +86,20 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             self.freeze_borrows_dying_at(loc);
             self.translate_terminator(bbd.terminator(), loc);
 
-            self.past_blocks.push(MlCfgBlock{
+            self.past_blocks.push(MlCfgBlock {
                 label: self.current_block.0,
                 statements: self.current_block.1,
-                terminator: self.current_block.2.unwrap()
+                terminator: self.current_block.2.unwrap(),
             });
         }
 
         let ty_trans = TyTranslator::new(self.tcx);
-        let mut vars = self.body.local_decls.iter_enumerated().map(|(loc, decl)| {
-            (loc, ty_trans.translate_ty(decl.ty) )
-        });
-        let retty = vars.nth(0).unwrap().1;
+        let mut vars = self
+            .body
+            .local_decls
+            .iter_enumerated()
+            .map(|(loc, decl)| (loc, ty_trans.translate_ty(decl.ty)));
+        let retty = vars.next().unwrap().1;
 
         let name = self.tcx.def_path(nm).to_filename_friendly_no_crate();
         MlCfgFunction {
@@ -133,19 +136,17 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     // Useful helper to translate an operand
     pub fn translate_operand(&self, operand: &Operand<'tcx>) -> MlCfgExp {
         match operand {
-            Operand::Copy(pl)
-            | Operand::Move(pl) => rhs_to_why_exp(&from_place(self.tcx, self.body, pl)),
-            Operand::Constant(c) => Const(MlCfgConstant::from_mir_constant(self.tcx, c))
-,
+            Operand::Copy(pl) | Operand::Move(pl) => {
+                rhs_to_why_exp(&from_place(self.tcx, self.body, pl))
+            }
+            Operand::Constant(c) => Const(MlCfgConstant::from_mir_constant(self.tcx, c)),
         }
     }
 }
 
-
-fn translate_defid<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> String {
+fn translate_defid(tcx: TyCtxt, def_id: DefId) -> String {
     tcx.def_path_str(def_id).replace("::", ".")
 }
-
 
 // [(P as Some)]   ---> [_1]
 // [(P as Some).0] ---> let Some(a) = [_1] in a
@@ -191,5 +192,5 @@ pub fn rhs_to_why_exp(rhs: &MirPlace) -> MlCfgExp {
             }
         }
     }
-    return inner;
+    inner
 }

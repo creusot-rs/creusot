@@ -4,9 +4,9 @@
 //
 // This file was taken from the Rust compiler
 
-use std::str::FromStr;
 use lazy_static::*;
 use regex::Regex;
+use std::str::FromStr;
 
 use rustc_index::vec::{Idx, IndexVec};
 use rustc_middle::mir::{BasicBlock, Body, Location};
@@ -23,12 +23,10 @@ use rustc_middle::mir::{BasicBlock, Body, Location};
 /// table serves another purpose: it compresses locations from
 /// multiple words into a single u32.
 pub struct LocationTable {
-    num_points: usize,
     statements_before_block: IndexVec<BasicBlock, usize>,
 }
 
-rustc_index
-::newtype_index! {
+rustc_index::newtype_index! {
     pub struct LocationIndex {
         DEBUG_FORMAT = "P({})" //"
     }
@@ -49,8 +47,8 @@ pub enum RichLocation {
 impl RichLocation {
     pub fn to_loc(&self) -> Location {
         match self {
-            RichLocation::Start(l) => { *l }
-            RichLocation::Mid(l) => { *l }
+            RichLocation::Start(l) => *l,
+            RichLocation::Mid(l) => *l,
         }
     }
 }
@@ -66,17 +64,13 @@ impl FromStr for RichLocation {
         let caps = RE.captures(point).unwrap();
         let basic_block: usize = caps["bb"].parse().unwrap();
         let statement_index: usize = caps["stmt"].parse().unwrap();
-        let loc = Location {
-                block: BasicBlock::new(basic_block),
-                statement_index,
-            };
+        let loc = Location { block: BasicBlock::new(basic_block), statement_index };
 
         Ok(match &caps["type"] {
             "Start" => RichLocation::Start(loc),
-            "Mid"   => RichLocation::Mid(loc),
-            _ => unreachable!()
+            "Mid" => RichLocation::Mid(loc),
+            _ => unreachable!(),
         })
-
     }
 }
 
@@ -96,11 +90,7 @@ impl LocationTable {
         log::debug!("LocationTable(statements_before_block={:#?})", statements_before_block);
         log::debug!("LocationTable: num_points={:#?}", num_points);
 
-        Self { num_points, statements_before_block }
-    }
-
-    fn all_points(&self) -> impl Iterator<Item = LocationIndex> {
-        (0..self.num_points).map(LocationIndex::new)
+        Self { statements_before_block }
     }
 
     pub fn start_index(&self, location: Location) -> LocationIndex {
