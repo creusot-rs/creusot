@@ -5,10 +5,7 @@ use rustc_middle::{
     ty::VariantDef,
 };
 
-use crate::{
-    mlcfg::{MlCfgExp, MlCfgPattern, MlCfgTerminator as MlT},
-    place::from_place,
-};
+use crate::{mlcfg::{MlCfgConstant, MlCfgExp, MlCfgPattern, MlCfgTerminator as MlT}, place::from_place};
 
 use super::{statement::create_assign, FunctionTranslator};
 
@@ -27,14 +24,19 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 use rustc_middle::ty::TyKind::*;
                 let _ = targets.otherwise();
 
-                let discr_local = discr.place().and_then(|p| p.as_local()).unwrap();
+                let discr_ty = if let Some(pl) = discr.place() {
+                    let discr_local = pl.as_local().unwrap();
 
-                let discr_place = self
-                    .discr_map
-                    .get(&(location.block, discr_local))
-                    .expect("constant discriminator");
-
-                let discr_ty = discr_place.ty(self.body, self.tcx).ty;
+                    // Look to see if we can find a discriminator assignment
+                    // if not it means that we are switching on a literal
+                    self.discr_map
+                        .get(&(location.block, discr_local))
+                        .unwrap_or(&pl)
+                        .ty(self.body, self.tcx)
+                        .ty
+                } else {
+                    discr.constant().unwrap().literal.ty
+                };
 
                 match discr_ty.kind() {
                     Adt(def, _) => {
@@ -56,8 +58,20 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                         self.emit_terminator(MlT::Switch(discriminant, branches));
                     }
                     Tuple(_) => unimplemented!("tuple"),
+                    Bool => {
+                        let discriminant = self.translate_operand(discr);
+                        assert!(targets.all_targets().len() == 2);
 
-                    Bool | Char | Int(_) | Uint(_) | Float(_) => unimplemented!("literal switch"),
+                        let branches = vec![
+                            (MlCfgPattern::LitP(MlCfgConstant::const_false()), targets.all_targets()[0].into()),
+                            (MlCfgPattern::LitP(MlCfgConstant::const_true()), targets.all_targets()[1].into()),
+                            (MlCfgPattern::Wildcard, targets.otherwise().into()),
+                        ];
+
+                        self.emit_terminator(MlT::Switch(discriminant, branches));
+
+                    }
+                    Char | Int(_) | Uint(_) | Float(_) => unimplemented!("literal switch"),
                     _ => unimplemented!(),
                 }
             }

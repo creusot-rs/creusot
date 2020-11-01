@@ -50,9 +50,31 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             Rvalue::BinaryOp(op, l, r) | Rvalue::CheckedBinaryOp(op, l, r) => {
                 BinaryOp(*op, box self.translate_operand(l), box self.translate_operand(r))
             }
+            | Rvalue::Aggregate(box kind, ops) => {
+                use rustc_middle::mir::AggregateKind::*;
+                let fields = ops
+                    .iter()
+                    .map(|op| self.translate_operand(op))
+                    .collect();
+
+                match kind {
+                    Tuple => {
+                        MlCfgExp::Tuple(fields)
+                    }
+                    Adt(adt, varix, _, _, _) => {
+                        let variant_def = &adt.variants[*varix];
+                        let cons_name = variant_def.ident.to_string();
+
+                        Constructor{ ctor: cons_name, args: fields }
+                    }
+                    Array(_) => { unimplemented!("array") }
+                    Closure(_, _)
+                    | Generator(_, _, _) => unimplemented!()
+                }
+            }
+
             Rvalue::Cast(_, _, _)
             | Rvalue::UnaryOp(_, _)
-            | Rvalue::Aggregate(_, _)
             | Rvalue::NullaryOp(_, _)
             | Rvalue::Repeat(_, _)
             | Rvalue::ThreadLocalRef(_)

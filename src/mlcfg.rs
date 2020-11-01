@@ -116,7 +116,7 @@ impl MlCfgExp {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MlCfgConstant(String, ConstantType);
 
 impl MlCfgConstant {
@@ -126,6 +126,13 @@ impl MlCfgConstant {
         cx.pretty_print_const(c.literal, false).unwrap();
 
         MlCfgConstant(fmt, ())
+    }
+
+    pub fn const_true () -> Self {
+        MlCfgConstant("true".to_owned(), ())
+    }
+    pub fn const_false () -> Self {
+        MlCfgConstant("false".to_owned(), ())
     }
 }
 
@@ -145,6 +152,7 @@ pub enum MlCfgPattern {
     VarP(String),
     TupleP(Vec<MlCfgPattern>),
     ConsP(String, Vec<MlCfgPattern>),
+    LitP(MlCfgConstant),
     // RecP(String, String),
 }
 
@@ -166,7 +174,10 @@ impl Display for MlCfgPattern {
                 } else {
                     write!(f, "{}({})", c, pats.iter().format(", "))?;
                 }
-            } // MlCfgPattern::RecP(l, n) => { write!(f, "{{ {} = {} }}", l, n)?; }
+            }
+            MlCfgPattern::LitP(lit) => {
+                write!(f, "{}", lit)?;
+            }
         }
         Ok(())
     }
@@ -276,8 +287,7 @@ impl Display for MlCfgTerminator {
                 for (pat, tgt) in brs {
                     writeln!(f, "  | {} -> goto {}", pat, tgt)?;
                 }
-
-                writeln!(f, "}}")?;
+                writeln!(f, "  }}")?;
             }
         }
         Ok(())
@@ -365,7 +375,7 @@ impl Display for MlCfgStatement {
                 write!(f, "{:?} <- {}", lhs, rhs)?;
             }
             MlCfgStatement::Freeze(loc) => {
-                write!(f, "assume {{ ^ {:?} = * {:?}", loc, loc)?;
+                write!(f, "assume {{ ^ {:?} = * {:?} }}", loc, loc)?;
             }
         }
         Ok(())
@@ -390,7 +400,7 @@ impl Display for MlCfgType {
                 write!(f, "int")?;
             } // TODO machine ints
             Uint(_) => {
-                write!(f, "uint")?;
+                write!(f, "int")?;
             } // TODO uints
             MutableBorrow(t) => {
                 write!(f, "borrowed {}", t)?;
