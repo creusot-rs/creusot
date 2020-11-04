@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use rustc_hir::{def::CtorKind, def_id::DefId};
+use rustc_index::bit_set::BitSet;
 use rustc_middle::{mir, mir::traversal::preorder, mir::*, ty::AdtDef, ty::TyCtxt};
-use rustc_mir::dataflow::{self, impls::MaybeInitializedLocals};
+use rustc_mir::dataflow::{self, impls::{MaybeInitializedLocals, MaybeLiveLocals}};
 
 use crate::{
     place::from_place,
@@ -22,7 +23,8 @@ mod ty;
 pub struct FunctionTranslator<'a, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     body: &'a Body<'tcx>,
-    pol: PoloniusInfo<'a, 'tcx>,
+    // pol: PoloniusInfo<'a, 'tcx>,
+    local_live: dataflow::ResultsCursor<'a, 'tcx, MaybeLiveLocals>,
 
     // Whether a local is initialized or not at a location
     local_init: dataflow::ResultsCursor<'a, 'tcx, MaybeInitializedLocals>,
@@ -43,14 +45,14 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
         body: &'a Body<'tcx>,
-        pol: PoloniusInfo<'a, 'tcx>,
+        local_live: dataflow::ResultsCursor<'a, 'tcx, MaybeLiveLocals>,
         local_init: dataflow::ResultsCursor<'a, 'tcx, MaybeInitializedLocals>,
         discr_map: HashMap<(BasicBlock, mir::Local), Place<'tcx>>,
     ) -> Self {
         FunctionTranslator {
             tcx,
             body,
-            pol,
+            local_live,
             local_init,
             discr_map,
             current_block: (BasicBlock::MAX.into(), Vec::new(), None),
@@ -112,16 +114,66 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     }
 
     fn freeze_borrows_dying_at(&mut self, loc: Location) {
-        for loan in self.pol.loans_dying_at_start(loc) {
-            let orig_loc = self.pol.loan_created_at(loan);
-            let local = self.get_local_at(orig_loc);
+        let body2 = self.body;
+        let predecessors = if loc.statement_index == 0 {
+            self.body.predecessors()[loc.block].iter()
+            .map(|bb| body2.terminator_loc(*bb)).collect()
+        } else {
+            let mut pred = loc.clone();
+            pred.statement_index -= 1;
+            vec![pred]
+        };
 
+        let mut previous_locals : Vec<BitSet<_>> = predecessors.iter()
+            .map(|pred| {
+                self.local_live.seek_after_primary_effect(*pred);
+                self.local_live.get().clone()
+            }).collect();
+        previous_locals.dedup();
+        if previous_locals.is_empty() { return }
+
+        assert!(previous_locals.len() <= 1, "all predecessors must agree on liveness {:?}", previous_locals);
+
+        let mut dying_locals = previous_locals.remove(0);
+
+        self.local_live.seek_after_primary_effect(loc);
+
+        dying_locals.subtract(self.local_live.get());
+        for local in dying_locals.iter() {
             self.local_init.seek_before_primary_effect(loc);
-            if self.local_init.contains(local) {
+            // Freeze all dying variables that were initialized and are mutable references
+            let local_ty = self.body.local_decls[local].ty;
+
+            if self.local_init.contains(local) && local_ty.is_ref() && local_ty.is_mutable_ptr() {
                 self.emit_statement(MlCfgStatement::Freeze(local));
             }
+
         }
     }
+
+    // fn freeze_borrows_dying_at(&mut self, loc: Location) {
+    //     self.local_live.seek_after_primary_effect(loc);
+    //     let live_at_start = self.local_live.get().clone();
+    //     self.local_live.seek_before_primary_effect(loc);
+    //     let live_at_end = self.local_live.get();
+
+    //     let mut dying_locals = live_at_start;
+
+    //     dying_locals.subtract(live_at_end);
+    //     dbg!(&dying_locals);
+
+
+    //     for local in dying_locals.iter() {
+    //         self.local_init.seek_before_primary_effect(loc);
+    //         // Freeze all dying variables that were initialized and are mutable references
+    //         let local_ty = self.body.local_decls[local].ty;
+    //         println!("{:?} {:?} {:?}", local, local_ty, self.local_init.contains(local) && local_ty.is_ref() && local_ty.is_mutable_ptr());
+    //         if self.local_init.contains(local) && local_ty.is_ref() && local_ty.is_mutable_ptr() {
+    //             self.emit_statement(MlCfgStatement::Freeze(local));
+    //         }
+
+    //     }
+    // }
     // Hacky and ugly replace.
     pub fn get_local_at(&self, loc: Location) -> rustc_middle::mir::Local {
         let stmt = &self.body.basic_blocks()[loc.block].statements[loc.statement_index];

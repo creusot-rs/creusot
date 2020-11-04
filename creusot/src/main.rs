@@ -23,13 +23,13 @@ extern crate polonius_engine;
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
 use rustc_hir::{def_id::LOCAL_CRATE, Item};
 use rustc_interface::{interface::Compiler, Queries};
-use rustc_middle::ty::{TyCtxt, WithOptConstParam};
+use rustc_middle::{mir::{Location, Terminator, visit::MutVisitor}, ty::{TyCtxt, WithOptConstParam}};
 
 mod place;
 use place::*;
 
 mod translation;
-use rustc_mir::dataflow::{impls::MaybeInitializedLocals, Analysis};
+use rustc_mir::dataflow::{impls::MaybeInitializedLocals, impls::MaybeLiveLocals, Analysis};
 use translation::*;
 mod analysis;
 mod polonius;
@@ -135,7 +135,8 @@ fn translate(tcx: TyCtxt) -> Result<()> {
             let def_path = tcx.def_path(def_id.to_def_id());
 
             let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(*def_id));
-            let body = body.steal();
+            let mut body = body.steal();
+            RemoveFalseEdge { tcx }.visit_body(&mut body);
 
             let polonius_info = polonius::PoloniusInfo::new(&body, def_path);
 
@@ -143,15 +144,24 @@ fn translate(tcx: TyCtxt) -> Result<()> {
 
             let discr_map = analysis::DiscrTyMap::analyze(&body);
 
-            let res = MaybeInitializedLocals
+
+            let init = MaybeInitializedLocals
                 .into_engine(tcx, &body)
                 .iterate_to_fixpoint()
                 .into_results_cursor(&body);
-            let translated = FunctionTranslator::new(tcx, &body, polonius_info, res, discr_map)
+
+            // This is called MaybeLiveLocals because pointers don't keep their referees alive.
+            // TODO: Defensive check.
+            let live = MaybeLiveLocals
+                .into_engine(tcx, &body)
+                .iterate_to_fixpoint()
+                .into_results_cursor(&body);
+
+            let translated = FunctionTranslator::new(tcx, &body, live, init, discr_map)
                 .translate(def_id);
 
-            print!("{}", translated);
             // debug::debug(tcx, &body, polonius_info);
+            print!("{}", translated);
             // debug::DebugBody { tcx, pol: polonius_info, move_map, discr_map }.visit_body(&body);
         }
 
@@ -161,4 +171,21 @@ fn translate(tcx: TyCtxt) -> Result<()> {
     }
 
     Ok(())
+}
+
+struct RemoveFalseEdge<'tcx> { tcx: TyCtxt<'tcx> }
+
+impl<'tcx> MutVisitor<'tcx> for RemoveFalseEdge<'tcx> {
+    fn tcx<'a>(&'a self)-> TyCtxt< 'tcx> {
+        self.tcx
+    }
+
+    fn visit_terminator(&mut self, terminator: &mut Terminator< 'tcx>, location: Location) {
+        match terminator.kind {
+            rustc_middle::mir::TerminatorKind::FalseEdge { real_target, .. } => {
+                terminator.kind = rustc_middle::mir::TerminatorKind::Goto{ target: real_target}
+            }
+            _ => {}
+        }
+    }
 }
