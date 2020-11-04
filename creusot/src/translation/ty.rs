@@ -1,4 +1,6 @@
-use rustc_middle::ty::{self, subst::InternalSubsts, AdtDef, Ty, TyCtxt, TyKind::*};
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::{self, AdtDef, Ty, TyCtxt, TyKind::*, subst::InternalSubsts};
+use rustc_span::Symbol;
 
 use crate::mlcfg::{MlCfgType as MlT, MlTyDecl};
 
@@ -11,6 +13,14 @@ impl<'tcx> TyTranslator<'tcx> {
         TyTranslator { tcx }
     }
 
+    fn translate_ty_name(&self, dif: DefId) -> String {
+        super::translate_defid(self.tcx, dif).to_lowercase()
+    }
+
+    fn translate_ty_param(&self, p: Symbol) -> String {
+        format!("'{}", p.to_string().to_lowercase())
+    }
+
     pub fn translate_tydecl(&self, adt: &AdtDef) -> MlTyDecl {
         let gens = self.tcx.generics_of(adt.did);
 
@@ -18,7 +28,9 @@ impl<'tcx> TyTranslator<'tcx> {
             .params
             .iter()
             .filter_map(|param| match param.kind {
-                ty::GenericParamDefKind::Type { .. } => Some(param.name.to_string()),
+                ty::GenericParamDefKind::Type { .. } => {
+                    Some(self.translate_ty_param(param.name))
+                }
                 _ => None,
             })
             .collect();
@@ -40,7 +52,7 @@ impl<'tcx> TyTranslator<'tcx> {
         }
 
         let ty_name =
-            super::translate_defid(self.tcx, adt.did).split('.').last().unwrap().to_string();
+            self.translate_ty_name(adt.did).split('.').last().unwrap().to_string();
         MlTyDecl { ty_name, ty_params: ty_args, ty_constructors: ml_ty_def }
     }
 
@@ -57,7 +69,7 @@ impl<'tcx> TyTranslator<'tcx> {
                 }
                 let args = s.types().map(|t| self.translate_ty(t)).collect();
 
-                MlT::TApp(box MlT::TConstructor(super::translate_defid(self.tcx, def.did)), args)
+                MlT::TApp(box MlT::TConstructor(self.translate_ty_name(def.did)), args)
             }
             Str => unimplemented!("str"),
             Array(_, _) => unimplemented!("array"),
@@ -66,7 +78,7 @@ impl<'tcx> TyTranslator<'tcx> {
                 let tys = args.types().map(|t| self.translate_ty(t)).collect();
                 MlT::Tuple(tys)
             }
-            Param(p) => MlT::TVar(p.name.to_string()),
+            Param(p) => MlT::TVar(self.translate_ty_param(p.name)),
             Ref(_, ty, borkind) => {
                 use rustc_ast::Mutability::*;
                 match borkind {
@@ -74,7 +86,11 @@ impl<'tcx> TyTranslator<'tcx> {
                     Not => self.translate_ty(ty),
                 }
             }
-            _ => unimplemented!(),
+            Never => {
+                // TODO: Does why3 have uninhabited types?
+                MlT::Tuple(vec![])
+            }
+            _ => unimplemented!("{:?}", ty),
         }
     }
 }

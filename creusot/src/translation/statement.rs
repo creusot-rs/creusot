@@ -46,7 +46,8 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                     }
                 }
             }
-            Rvalue::Discriminant(pl) => rhs_to_why_exp(&from_place(self.tcx, self.body, pl)),
+            // Rvalue::Discriminant(pl) => rhs_to_why_exp(&from_place(self.tcx, self.body, pl)),
+            Rvalue::Discriminant(_) => { return },
             Rvalue::BinaryOp(op, l, r) | Rvalue::CheckedBinaryOp(op, l, r) => {
                 BinaryOp(*op, box self.translate_operand(l), box self.translate_operand(r))
             }

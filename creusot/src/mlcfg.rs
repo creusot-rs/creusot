@@ -129,10 +129,10 @@ impl MlCfgConstant {
     }
 
     pub fn const_true () -> Self {
-        MlCfgConstant("true".to_owned(), ())
+        MlCfgConstant("True".to_owned(), ())
     }
     pub fn const_false () -> Self {
-        MlCfgConstant("false".to_owned(), ())
+        MlCfgConstant("False".to_owned(), ())
     }
 }
 
@@ -282,12 +282,12 @@ impl Display for MlCfgTerminator {
                 write!(f, "_0")?;
             }
             Switch(discr, brs) => {
-                writeln!(f, "switch {} {{", discr)?;
+                writeln!(f, "switch ({})", discr)?;
 
                 for (pat, tgt) in brs {
                     writeln!(f, "  | {} -> goto {}", pat, tgt)?;
                 }
-                writeln!(f, "  }}")?;
+                writeln!(f, "  end")?;
             }
         }
         Ok(())
