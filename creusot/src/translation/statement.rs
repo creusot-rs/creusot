@@ -47,30 +47,24 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 }
             }
             // Rvalue::Discriminant(pl) => rhs_to_why_exp(&from_place(self.tcx, self.body, pl)),
-            Rvalue::Discriminant(_) => { return },
+            Rvalue::Discriminant(_) => return,
             Rvalue::BinaryOp(op, l, r) | Rvalue::CheckedBinaryOp(op, l, r) => {
                 BinaryOp(*op, box self.translate_operand(l), box self.translate_operand(r))
             }
-            | Rvalue::Aggregate(box kind, ops) => {
+            Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
-                let fields = ops
-                    .iter()
-                    .map(|op| self.translate_operand(op))
-                    .collect();
+                let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
 
                 match kind {
-                    Tuple => {
-                        MlCfgExp::Tuple(fields)
-                    }
+                    Tuple => MlCfgExp::Tuple(fields),
                     Adt(adt, varix, _, _, _) => {
                         let variant_def = &adt.variants[*varix];
                         let cons_name = variant_def.ident.to_string();
 
-                        Constructor{ ctor: cons_name, args: fields }
+                        Constructor { ctor: cons_name, args: fields }
                     }
-                    Array(_) => { unimplemented!("array") }
-                    Closure(_, _)
-                    | Generator(_, _, _) => unimplemented!()
+                    Array(_) => unimplemented!("array"),
+                    Closure(_, _) | Generator(_, _, _) => unimplemented!("{:?}", kind),
                 }
             }
 
@@ -80,7 +74,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             | Rvalue::Repeat(_, _)
             | Rvalue::ThreadLocalRef(_)
             | Rvalue::AddressOf(_, _)
-            | Rvalue::Len(_) => unimplemented!(),
+            | Rvalue::Len(_) => unimplemented!("{:?}", rvalue),
         };
 
         let mlstmt = create_assign(&lplace, rval);

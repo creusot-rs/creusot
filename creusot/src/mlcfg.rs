@@ -28,6 +28,15 @@ pub struct MlCfgFunction {
     pub args: Vec<(Local, MlCfgType)>,
     pub vars: Vec<(Local, MlCfgType)>,
     pub blocks: Vec<MlCfgBlock>,
+    pub preconds: Vec<String>, // for now we blindly pass contracts down
+    pub postconds: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct MlCfgPredFunction {
+    pub name: String,
+    pub args: Vec<(Local, MlCfgType)>,
+    pub body: MlCfgPred,
 }
 
 #[derive(Debug)]
@@ -92,7 +101,17 @@ pub struct MlTyDecl {
     pub ty_constructors: Vec<(String, Vec<MlCfgType>)>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub enum MlCfgPred {
+    Impl(Box<MlCfgPred>, Box<MlCfgPred>),
+    Exp(MlCfgExp),
+    Conj(Box<MlCfgPred>, Box<MlCfgPred>),
+    Disj(Box<MlCfgPred>, Box<MlCfgPred>),
+    Let(Local, Box<MlCfgPred>, Box<MlCfgPred>),
+    Switch(Box<MlCfgPred>, Vec<(MlCfgPattern, MlCfgPred)>),
+}
+
+#[derive(Debug, Clone)]
 pub enum MlCfgExp {
     Current(Box<MlCfgExp>),
     Final(Box<MlCfgExp>),
@@ -109,13 +128,6 @@ pub enum MlCfgExp {
     Call(Box<MlCfgExp>, Vec<MlCfgExp>),
 }
 
-impl MlCfgExp {
-    fn complex_exp(&self) -> bool {
-        use MlCfgExp::*;
-        !matches!(self, Local(_) | Var(_) | Tuple(_) | Const(_))
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct MlCfgConstant(String, ConstantType);
 
@@ -128,10 +140,10 @@ impl MlCfgConstant {
         MlCfgConstant(fmt, ())
     }
 
-    pub fn const_true () -> Self {
+    pub fn const_true() -> Self {
         MlCfgConstant("True".to_owned(), ())
     }
-    pub fn const_false () -> Self {
+    pub fn const_false() -> Self {
         MlCfgConstant("False".to_owned(), ())
     }
 }
@@ -195,21 +207,24 @@ macro_rules! parens {
     };
 }
 
-macro_rules! parens_exp {
-    ($i:ident) => {
-        if $i.complex_exp() {
-            format!("({})", $i)
-        } else {
-            format!("{}", $i)
-        }
-    };
-}
-
 impl Display for Block {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "BB{}", self.0)
     }
 }
+impl Display for MlCfgPredFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "let ghost predicate {}", self.name)?;
+
+        for (nm, ty) in &self.args {
+            write!(f, "({:?} : {})", nm, ty)?;
+        }
+
+        write!(f, " = {}", self.body)?;
+        Ok(())
+    }
+}
+
 impl Display for MlCfgFunction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "let cfg {} ", self.name)?;
@@ -222,8 +237,16 @@ impl Display for MlCfgFunction {
             write!(f, "({:?}_o : {})", nm, ty)?;
         }
 
-        writeln!(f, " : {} =", self.retty)?;
+        writeln!(f, " : {}", self.retty)?;
 
+        for req in &self.preconds {
+            writeln!(f,"requires {{ {} }}", req)?;
+        }
+        for req in &self.postconds {
+            writeln!(f,"ensures {{ {} }}", req)?;
+        }
+
+        writeln!(f, "=")?;
         // Forward declare all arguments
         writeln!(f, "var _0 : {};", self.retty)?;
 
@@ -294,6 +317,37 @@ impl Display for MlCfgTerminator {
     }
 }
 
+impl Display for MlCfgPred {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MlCfgPred::Impl(h, c) => {
+                write!(f, "{} -> {}", h, c)?;
+            }
+            MlCfgPred::Exp(e) => {
+                write!(f, "{}", e)?;
+            }
+            MlCfgPred::Conj(a, b) => {
+                write!(f, "{} /\\ {}", a, b)?;
+            }
+            MlCfgPred::Disj(a, b) => {
+                write!(f, "{} \\/ {}", a, b)?;
+            }
+
+            MlCfgPred::Switch(discr, brs) => {
+                writeln!(f, "begin case {} of", discr)?;
+
+                for (pat, tgt) in brs {
+                    writeln!(f, "| {} -> {}", pat, tgt)?;
+                }
+                writeln!(f, "end")?;
+            }
+            MlCfgPred::Let(l, e, b) => {
+                write!(f, "let {:?} = {} in {}", l, e, b)?;
+            }
+        }
+        Ok(())
+    }
+}
 impl Display for MlCfgExp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -338,7 +392,7 @@ impl Display for MlCfgExp {
                 write!(f, "{} {} {}", l, bin_op_to_string(op), r)?;
             }
             MlCfgExp::Call(fun, args) => {
-                write!(f, "{} {}", fun, args.iter().map(|a| parens_exp!(a)).format(" "))?;
+                write!(f, "{} {}", fun, args.iter().map(|a| parens!(a)).format(" "))?;
             }
         }
         Ok(())

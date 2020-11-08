@@ -1,9 +1,15 @@
 use std::collections::HashMap;
 
 use rustc_hir::def_id::DefId;
-use rustc_middle::{mir::{Location, Operand, Terminator, TerminatorKind::*}, ty::{self, VariantDef}};
+use rustc_middle::{
+    mir::{Location, Operand, Terminator, TerminatorKind::*},
+    ty::{self, VariantDef},
+};
 
-use crate::{mlcfg::{MlCfgConstant, MlCfgExp, MlCfgPattern, MlCfgTerminator as MlT}, place::from_place};
+use crate::{
+    mlcfg::{MlCfgConstant, MlCfgExp, MlCfgPattern, MlCfgTerminator as MlT},
+    place::from_place,
+};
 
 use super::{statement::create_assign, FunctionTranslator};
 
@@ -18,21 +24,19 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
         match &terminator.kind {
             Goto { target } => self.emit_terminator(MlT::Goto(target.into())),
             SwitchInt { discr, targets, .. } => {
-                let _ = targets.otherwise();
                 use rustc_middle::ty::TyKind::*;
-                let _ = targets.otherwise();
 
                 let real_discr = match discr {
                     Operand::Copy(pl) | Operand::Move(pl) => {
-                    let discr_local = pl.as_local().unwrap();
+                        let discr_local = pl.as_local().unwrap();
 
-                    // Look to see if we can find a discriminator assignment
-                    // if not it means that we are switching on a literal
-                    Operand::Move(*self.discr_map
-                        .get(&(location.block, discr_local))
-                        .unwrap_or(&pl))
+                        // Look to see if we can find a discriminator assignment
+                        // if not it means that we are switching on a literal
+                        Operand::Move(
+                            *self.discr_map.get(&(location.block, discr_local)).unwrap_or(&pl),
+                        )
                     }
-                    _ => { discr.clone() }
+                    _ => discr.clone(),
                 };
 
                 match real_discr.ty(self.body, self.tcx).kind() {
@@ -60,13 +64,18 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                         assert!(targets.all_targets().len() == 2);
 
                         let branches = vec![
-                            (MlCfgPattern::LitP(MlCfgConstant::const_false()), targets.all_targets()[0].into()),
-                            (MlCfgPattern::LitP(MlCfgConstant::const_true()), targets.all_targets()[1].into()),
+                            (
+                                MlCfgPattern::LitP(MlCfgConstant::const_false()),
+                                targets.all_targets()[0].into(),
+                            ),
+                            (
+                                MlCfgPattern::LitP(MlCfgConstant::const_true()),
+                                targets.all_targets()[1].into(),
+                            ),
                             (MlCfgPattern::Wildcard, targets.otherwise().into()),
                         ];
 
                         self.emit_terminator(MlT::Switch(discriminant, branches));
-
                     }
                     Char | Int(_) | Uint(_) | Float(_) => unimplemented!("literal switch"),
                     _ => unimplemented!(),
@@ -76,11 +85,12 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             Return => self.emit_terminator(MlT::Return),
             Unreachable => self.emit_terminator(MlT::Absurd),
             Call { func, args, destination, .. } => {
-
                 let fun_ty = func.constant().unwrap().literal.ty;
-                let fun_def_id =  if let ty::TyKind::FnDef(def_id, _) = fun_ty.kind() {
+                let fun_def_id = if let ty::TyKind::FnDef(def_id, _) = fun_ty.kind() {
                     def_id
-                } else { panic!("function call without function type"); };
+                } else {
+                    panic!("function call without function type");
+                };
 
                 let mut func_args: Vec<_> =
                     args.iter().map(|arg| self.translate_operand(arg)).collect();
@@ -90,7 +100,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 if destination.is_none() {
                     // If we have no target block after the call, then we cannot move past it.
                     self.emit_terminator(MlT::Absurd);
-                    return
+                    return;
                 }
 
                 let call_exp = if self.is_box_new(*fun_def_id) {
@@ -114,17 +124,16 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             FalseEdge { real_target, .. } => self.emit_terminator(MlT::Goto(real_target.into())),
 
             // TODO: Enforce any required obligations
-            Drop { target, .. } => {
-                self.emit_terminator(MlT::Goto(target.into()))
+            Drop { target, .. } => self.emit_terminator(MlT::Goto(target.into())),
+            Resume => {
+                log::debug!("Skipping resume terminator");
             }
-            Resume => { log::debug!("Skipping resume terminator"); }
             FalseUnwind { real_target, .. } => {
                 self.emit_terminator(MlT::Goto(real_target.into()));
             }
-            DropAndReplace { .. }
-            | Yield { .. }
-            | GeneratorDrop
-            | InlineAsm { .. } => unreachable!("{:?}", terminator.kind),
+            DropAndReplace { .. } | Yield { .. } | GeneratorDrop | InlineAsm { .. } => {
+                unreachable!("{:?}", terminator.kind)
+            }
         }
     }
 
@@ -132,8 +141,6 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
         self.tcx.def_path_str(def_id) == "std::boxed::Box::<T>::new"
     }
 }
-
-
 
 fn variant_pattern(var: &VariantDef) -> MlCfgPattern {
     let wilds = var.fields.iter().map(|_| MlCfgPattern::Wildcard).collect();

@@ -1,8 +1,9 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_syntax, box_patterns)]
-#![register_tool(wprust)]
+#![register_tool(creusot)]
 #![feature(const_panic, or_patterns)]
 
+extern crate polonius_engine;
 extern crate rustc_ast;
 extern crate rustc_ast_pretty;
 extern crate rustc_driver;
@@ -14,24 +15,31 @@ extern crate rustc_mir;
 extern crate rustc_serialize;
 extern crate rustc_span;
 extern crate rustc_target;
-// extern crate serde;
-// extern crate polonius;
-extern crate polonius_engine;
 
-// #[macro_use] use lazy_static;
-
+use mlcfg::{MlCfgFunction, MlCfgPredFunction, MlTyDecl};
+use rustc_ast::AttrItem;
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
-use rustc_hir::{def_id::LOCAL_CRATE, Item};
+use rustc_hir::{
+    def_id::{DefId, LOCAL_CRATE},
+    definitions::DefPathData,
+    Item,
+};
 use rustc_interface::{interface::Compiler, Queries};
-use rustc_middle::{mir::{Location, Terminator, visit::MutVisitor}, ty::{TyCtxt, WithOptConstParam}};
+use rustc_middle::{
+    mir::{visit::MutVisitor, Location, Terminator},
+    ty::{TyCtxt, WithOptConstParam},
+};
 
 mod place;
 use place::*;
 
 mod translation;
-use rustc_mir::dataflow::{impls::MaybeInitializedLocals, impls::MaybeLiveLocals, Analysis};
+
+use translation::specification::SpecificationTranslator;
 use translation::*;
 mod analysis;
+
+#[allow(dead_code)]
 mod polonius;
 
 #[allow(dead_code)]
@@ -51,8 +59,9 @@ impl Callbacks for ToWhy {
     }
 }
 
-use std::env::args as get_args;
+use std::{collections::HashMap, env::args as get_args};
 fn main() {
+    env_logger::init();
     // env_logger::init_from_env(
     // env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "debug"));
     let mut args = get_args().collect::<Vec<String>>();
@@ -80,92 +89,107 @@ fn is_type_decl(item: &Item) -> bool {
 fn translate(tcx: TyCtxt) -> Result<()> {
     let hir_map = tcx.hir();
 
-    // For each module in the current crate collect the type and body declarations
-    for (modk, mod_items) in tcx.hir_crate(LOCAL_CRATE).modules.iter() {
-        let mut ty_decls = Vec::new();
-        let mut mod_bodies = Vec::new();
+    // Collect the DefIds of all type declarations in this crate
+    let mut ty_decls = Vec::new();
 
+    for (_, mod_items) in tcx.hir_crate(LOCAL_CRATE).modules.iter() {
         for item_id in mod_items.items.iter() {
-            if hir_map.maybe_body_owned_by(*item_id).is_some() {
-                mod_bodies.push(hir_map.local_def_id(*item_id));
-                continue;
-            }
             let item = hir_map.item(*item_id);
+            // What about inline type declarations?
+            // How do we find those?
             if is_type_decl(item) {
-                ty_decls.push(hir_map.local_def_id(*item_id));
+                ty_decls.push(hir_map.local_def_id(*item_id).to_def_id());
+            }
+        }
+    }
+
+    type MlModule = (Vec<MlCfgPredFunction>, Vec<MlTyDecl>, Vec<MlCfgFunction>);
+    let mut translated_modules: HashMap<_, MlModule> = HashMap::new();
+
+    // Translate all type declarations and push them into the module collection
+    for def_id in ty_decls.iter() {
+        log::debug!("Translating type declaration {:?}", def_id);
+        let adt = tcx.adt_def(*def_id);
+        let res = translation::translate_tydecl(tcx, adt);
+
+        let module = module_of(tcx, *def_id);
+        translated_modules.entry(module).or_default().1.push(res);
+    }
+
+    for def_id in tcx.body_owners() {
+        log::debug!("Translating body {:?}", def_id);
+        // (Mir-)Borrowck uses `mir_validated`, so we have to force it to
+        // execute before we can steal.
+        //
+        // We want to capture MIR here for the simple reason that it is before
+        // Aggregates are destructured. This means that we don't have to deal with the whole
+        // 'assign each field and the discriminant' seperately stuff.
+
+        let _ = tcx.mir_borrowck(def_id);
+
+        let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id));
+        let mut body = body.steal();
+        let def_id = def_id.to_def_id();
+
+        // Parent module
+        let module = module_of(tcx, def_id);
+
+        let attrs = tcx.get_attrs(def_id);
+
+        let mut func_contract = (Vec::new(), Vec::new());
+
+        for attr in attrs.iter().filter(|a| !a.is_doc_comment() && is_attr(a.get_normal_item(), "spec")) {
+            let attr = attr.get_normal_item();
+
+            match attr.path.segments[2].ident.name.to_string().as_ref() {
+                "requires" => {
+                    let req = ts_to_symbol(attr.args.inner_tokens());
+                    func_contract.0.push(req);
+                }
+                "ensures" => {
+                    let req = ts_to_symbol(attr.args.inner_tokens());
+                    func_contract.1.push(req);
+                }
+                _ => { unimplemented!() }
             }
         }
 
-        let def_path = hir_map.def_path_from_hir_id(*modk).unwrap();
+        // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
+        // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
+        // TODO: now that we don't use polonius info: consider using optimized mir instead?
+        RemoveFalseEdge { tcx }.visit_body(&mut body);
 
-        log::debug!("Translationg module {:?}", def_path);
+        let translated =
+            FunctionTranslator::new(tcx, &body).translate(def_id, func_contract);
 
+        // debug::debug(tcx, &body, polonius_info);
+        translated_modules.entry(module).or_default().2.push(translated);
+    }
+
+    for (modk, (pred, ty, funcs)) in translated_modules.iter() {
+        let def_path = tcx.def_path(*modk);
+        let mut opened_scopes = 0;
         if def_path.data.is_empty() {
             // main module
             println!("module Main");
+            opened_scopes = 1;
         } else {
-            // other modules
+            // other modules // filter out closure path elements
             for seg in def_path.data[0..def_path.data.len() - 1].iter() {
                 println!("scope {}", seg);
+                opened_scopes += 1;
             }
 
             println!("module {}", def_path.data.last().unwrap());
-        }
-        println!("{}", mlcfg::PRELUDE);
-
-        for def_id in ty_decls.iter() {
-            log::debug!("Translating type declaration {:?}", def_id);
-            let adt = tcx.adt_def(*def_id);
-            let res = translation::translate_tydecl(tcx, adt);
-
-            println!("{}", res);
+            opened_scopes += 1;
         }
 
-        for def_id in mod_bodies.iter() {
-            log::debug!("Translating body {:?}", def_id);
-            // (Mir-)Borrowck uses `mir_validated`, so we have to force it to
-            // execute before we can steal.
-            //
-            // We want to capture MIR here for the simple reason that it is before
-            // Aggregates are destructured. This means that we don't have to deal with the whole
-            // 'assign each field and the discriminant' seperately stuff.
-            let _ = tcx.mir_borrowck(*def_id);
+        use itertools::*;
+        println!("{}", ty.iter().format("\n"));
+        println!("{}", pred.iter().format("\n"));
+        println!("{}", funcs.iter().format("\n"));
 
-            // Read Polonius facts.
-            let def_path = tcx.def_path(def_id.to_def_id());
-
-            let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(*def_id));
-            let mut body = body.steal();
-            RemoveFalseEdge { tcx }.visit_body(&mut body);
-
-            let polonius_info = polonius::PoloniusInfo::new(&body, def_path);
-
-            let def_id = def_id.to_def_id();
-
-            let discr_map = analysis::DiscrTyMap::analyze(&body);
-
-
-            let init = MaybeInitializedLocals
-                .into_engine(tcx, &body)
-                .iterate_to_fixpoint()
-                .into_results_cursor(&body);
-
-            // This is called MaybeLiveLocals because pointers don't keep their referees alive.
-            // TODO: Defensive check.
-            let live = MaybeLiveLocals
-                .into_engine(tcx, &body)
-                .iterate_to_fixpoint()
-                .into_results_cursor(&body);
-
-            let translated = FunctionTranslator::new(tcx, &body, live, init, discr_map)
-                .translate(def_id);
-
-            // debug::debug(tcx, &body, polonius_info);
-            print!("{}", translated);
-            // debug::DebugBody { tcx, pol: polonius_info, move_map, discr_map }.visit_body(&body);
-        }
-
-        for _ in 0..def_path.data.len() + 1 {
+        for _ in 0..opened_scopes {
             println!("end");
         }
     }
@@ -173,17 +197,57 @@ fn translate(tcx: TyCtxt) -> Result<()> {
     Ok(())
 }
 
-struct RemoveFalseEdge<'tcx> { tcx: TyCtxt<'tcx> }
+fn module_of<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> DefId {
+    let mut def_key = tcx.def_key(def_id);
+    let mut module = def_id;
+    let mut layers = 1;
+
+    while layers > 0 {
+        match def_key.disambiguated_data.data {
+            DefPathData::ClosureExpr => layers += 1,
+            _ => {}
+        }
+        let def_id = DefId { krate: LOCAL_CRATE, index: def_key.parent.unwrap() };
+        def_key = tcx.def_key(def_id);
+        module = def_id;
+        layers -= 1
+    }
+
+    module
+}
+fn is_attr(attr: &AttrItem, str: &str) -> bool {
+    let segments = &attr.path.segments;
+    segments.len() >=2
+        && segments[0].ident.as_str() == "creusot"
+        && segments[1].ident.as_str() == str
+}
+
+use rustc_ast::{token::TokenKind::Literal, tokenstream::{TokenStream, TokenTree::*,}};
+
+fn ts_to_symbol(ts: TokenStream) -> String {
+    assert_eq!(ts.len(), 1);
+
+    if let Token(tok) = ts.trees().next().unwrap() {
+        if let Literal(lit) = tok.kind {
+            return lit.symbol.to_string();
+        }
+    }
+    panic!("not a single token")
+}
+
+struct RemoveFalseEdge<'tcx> {
+    tcx: TyCtxt<'tcx>,
+}
 
 impl<'tcx> MutVisitor<'tcx> for RemoveFalseEdge<'tcx> {
-    fn tcx<'a>(&'a self)-> TyCtxt< 'tcx> {
+    fn tcx<'a>(&'a self) -> TyCtxt<'tcx> {
         self.tcx
     }
 
-    fn visit_terminator(&mut self, terminator: &mut Terminator< 'tcx>, location: Location) {
+    fn visit_terminator(&mut self, terminator: &mut Terminator<'tcx>, _location: Location) {
         match terminator.kind {
             rustc_middle::mir::TerminatorKind::FalseEdge { real_target, .. } => {
-                terminator.kind = rustc_middle::mir::TerminatorKind::Goto{ target: real_target}
+                terminator.kind = rustc_middle::mir::TerminatorKind::Goto { target: real_target }
             }
             _ => {}
         }

@@ -3,13 +3,12 @@ use std::collections::HashMap;
 use rustc_hir::{def::CtorKind, def_id::DefId};
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{mir, mir::traversal::preorder, mir::*, ty::AdtDef, ty::TyCtxt};
-use rustc_mir::dataflow::{self, impls::{MaybeInitializedLocals, MaybeLiveLocals}};
-
-use crate::{
-    place::from_place,
-    place::{MirPlace, Mutability::*, Projection::*},
-    polonius::PoloniusInfo,
+use rustc_mir::dataflow::{
+    self,Analysis,
+    impls::{MaybeInitializedLocals, MaybeLiveLocals},
 };
+
+use crate::{analysis, place::from_place, place::{MirPlace, Mutability::*, Projection::*}};
 
 use crate::mlcfg::{MlCfgExp::*, MlCfgPattern::*, *};
 
@@ -17,9 +16,12 @@ use self::ty::TyTranslator;
 
 mod statement;
 mod terminator;
-
 mod ty;
+mod util;
 
+pub mod specification;
+
+// Split this into several sub-contexts: Core, Analysis, Results?
 pub struct FunctionTranslator<'a, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     body: &'a Body<'tcx>,
@@ -45,10 +47,22 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
         body: &'a Body<'tcx>,
-        local_live: dataflow::ResultsCursor<'a, 'tcx, MaybeLiveLocals>,
-        local_init: dataflow::ResultsCursor<'a, 'tcx, MaybeInitializedLocals>,
-        discr_map: HashMap<(BasicBlock, mir::Local), Place<'tcx>>,
     ) -> Self {
+        let discr_map = analysis::DiscrTyMap::analyze(&body);
+
+        let local_init = MaybeInitializedLocals
+            .into_engine(tcx, &body)
+            .iterate_to_fixpoint()
+            .into_results_cursor(&body);
+
+        // This is called MaybeLiveLocals because pointers don't keep their referees alive.
+        // TODO: Defensive check.
+        let local_live = MaybeLiveLocals
+            .into_engine(tcx, &body)
+            .iterate_to_fixpoint()
+            .into_results_cursor(&body);
+
+
         FunctionTranslator {
             tcx,
             body,
@@ -70,8 +84,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         self.current_block.2 = Some(t);
     }
 
-    pub fn translate(mut self, nm: DefId) -> MlCfgFunction {
-        for (bb, bbd) in preorder(self.body) {
+    pub fn translate(mut self, nm: DefId, contracts: (Vec<String>, Vec<String>)) -> MlCfgFunction {for (bb, bbd) in preorder(self.body) {
             self.current_block = (bb.into(), vec![], None);
 
             if bbd.is_cleanup {
@@ -110,29 +123,38 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             args: vars.by_ref().take(self.body.arg_count).collect(),
             vars: vars.collect::<Vec<_>>(),
             blocks: self.past_blocks,
+            preconds: contracts.0,
+            postconds: contracts.1,
         }
     }
 
     fn freeze_borrows_dying_at(&mut self, loc: Location) {
         let body2 = self.body;
         let predecessors = if loc.statement_index == 0 {
-            self.body.predecessors()[loc.block].iter()
-            .map(|bb| body2.terminator_loc(*bb)).collect()
+            self.body.predecessors()[loc.block].iter().map(|bb| body2.terminator_loc(*bb)).collect()
         } else {
-            let mut pred = loc.clone();
+            let mut pred = loc;
             pred.statement_index -= 1;
             vec![pred]
         };
 
-        let mut previous_locals : Vec<BitSet<_>> = predecessors.iter()
+        let mut previous_locals: Vec<BitSet<_>> = predecessors
+            .iter()
             .map(|pred| {
                 self.local_live.seek_after_primary_effect(*pred);
                 self.local_live.get().clone()
-            }).collect();
+            })
+            .collect();
         previous_locals.dedup();
-        if previous_locals.is_empty() { return }
+        if previous_locals.is_empty() {
+            return;
+        }
 
-        assert!(previous_locals.len() <= 1, "all predecessors must agree on liveness {:?}", previous_locals);
+        assert!(
+            previous_locals.len() <= 1,
+            "all predecessors must agree on liveness {:?}",
+            previous_locals
+        );
 
         let mut dying_locals = previous_locals.remove(0);
 
@@ -147,52 +169,20 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             if self.local_init.contains(local) && local_ty.is_ref() && local_ty.is_mutable_ptr() {
                 self.emit_statement(MlCfgStatement::Freeze(local));
             }
-
-        }
-    }
-
-    // fn freeze_borrows_dying_at(&mut self, loc: Location) {
-    //     self.local_live.seek_after_primary_effect(loc);
-    //     let live_at_start = self.local_live.get().clone();
-    //     self.local_live.seek_before_primary_effect(loc);
-    //     let live_at_end = self.local_live.get();
-
-    //     let mut dying_locals = live_at_start;
-
-    //     dying_locals.subtract(live_at_end);
-    //     dbg!(&dying_locals);
-
-
-    //     for local in dying_locals.iter() {
-    //         self.local_init.seek_before_primary_effect(loc);
-    //         // Freeze all dying variables that were initialized and are mutable references
-    //         let local_ty = self.body.local_decls[local].ty;
-    //         println!("{:?} {:?} {:?}", local, local_ty, self.local_init.contains(local) && local_ty.is_ref() && local_ty.is_mutable_ptr());
-    //         if self.local_init.contains(local) && local_ty.is_ref() && local_ty.is_mutable_ptr() {
-    //             self.emit_statement(MlCfgStatement::Freeze(local));
-    //         }
-
-    //     }
-    // }
-    // Hacky and ugly replace.
-    pub fn get_local_at(&self, loc: Location) -> rustc_middle::mir::Local {
-        let stmt = &self.body.basic_blocks()[loc.block].statements[loc.statement_index];
-
-        if let StatementKind::Assign(box (pl, _)) = stmt.kind {
-            pl.local
-        } else {
-            panic!("local not assigned at {:?}", loc);
         }
     }
 
     // Useful helper to translate an operand
     pub fn translate_operand(&self, operand: &Operand<'tcx>) -> MlCfgExp {
-        match operand {
-            Operand::Copy(pl) | Operand::Move(pl) => {
-                rhs_to_why_exp(&from_place(self.tcx, self.body, pl))
-            }
-            Operand::Constant(c) => Const(MlCfgConstant::from_mir_constant(self.tcx, c)),
-        }
+        operand_to_exp(self.tcx, self.body, operand)
+    }
+}
+
+// Useful helper to translate an operand
+fn operand_to_exp<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, operand: &Operand<'tcx>) -> MlCfgExp {
+    match operand {
+        Operand::Copy(pl) | Operand::Move(pl) => rhs_to_why_exp(&from_place(tcx, body, pl)),
+        Operand::Constant(c) => Const(MlCfgConstant::from_mir_constant(tcx, c)),
     }
 }
 

@@ -4,68 +4,142 @@
 
 extern crate proc_macro;
 
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 
-use syn::parse_macro_input;
+use syn::*;
 
 use quote::quote;
 
-#[proc_macro_attribute]
-pub fn requires(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
-    tokens
-}
+use syn::Term::*;
 
-#[proc_macro_attribute]
-pub fn ensures(_attr: TokenStream, tokens: TokenStream) -> TokenStream {
-    tokens
-}
+fn encode_pred(p: Term) -> TokenStream {
+    match p {
+        // Conj(TermConj { left, right, .. }) => {
+        //   let left = encode_pred(*left);
+        //   let right = encode_pred(*right);
 
-struct Assert(syn::Expr);
+        //   quote!{
+        //     #[creusot::spec="conj"]
+        //     ||{
+        //       #left
+        //       #right
+        //     };
+        //   }
+        // }
+        // Disj(TermDisj{ left, right, .. }) => {
+        // let left = encode_pred(*left);
+        // let right = encode_pred(*right);
 
-impl syn::parse::Parse for Assert {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let e = input.parse()?;
+        // quote!{
+        //   #[creusot::spec="disj"]
+        //   ||{
+        //     #left
+        //     #right
+        //   };
+        // }    }
+        Impl(TermImpl { hyp, cons, .. }) => {
+            let left = encode_pred(*hyp);
+            let right = encode_pred(*cons);
 
-        Ok(Assert(e))
+            quote! {
+              #left;
+              #right;
+              #[creusot::spec="impl"]
+              let _ = ||{};
+            }
+        }
+        Binary(TermBinary { left, right, op }) => {
+            let _t = TokenStream::new();
+            let exp = syn::TermBinary { left, right, op };
+
+            quote! {
+               #exp
+            }
+        }
+        Paren(TermParen { expr, .. }) => { encode_pred(*expr) }
+        // Neg(TermNeg {}) => { quote! { error_eng } }
+        _ => {
+            quote! { #p }
+        } // _ => { quote! { error_non_exhaustive }}
     }
 }
 
-#[proc_macro]
-pub fn assert(tokens: TokenStream) -> TokenStream {
-    let inp: Assert = parse_macro_input!(tokens);
-    let assert_id = uuid::Uuid::new_v4().to_string();
-    let assert_exp = inp.0;
+fn pred_to_why(p : &Term) -> TokenStream {
+  match p {
+      Binary(TermBinary {left, right, op, ..}) => {
+        let left_toks = pred_to_why(&*left);
+        let right_toks = pred_to_why(&*right);
+        quote! { #left_toks #op #right_toks }
+      }
+      Impl(TermImpl {hyp, cons, .. }) => {
+        let hyp_toks = pred_to_why(&*hyp);
+        let cons_toks = pred_to_why(&*cons);
 
-    TokenStream::from(quote! {
-      #[allow(unused_must_use, unused_variables)]
-      #[creusot::ghost]
-      #[creusot::assert_id = #assert_id]
-      ||{ #assert_exp }
+        quote! { #hyp_toks -> #cons_toks }
+      }
+      Term::Lit(TermLit {lit }) => {quote! { #lit }}
+      // Call(TermCall {}) => {}
+      // If(TermIf {}) => {}
+      // Let(TermLet {}) => {}
+      // Match(TermMatch{}) => {}
+      // Paren(TermParen {}) => {}
+      // Tuple(TermTuple {}) => {}
+      // Unary(TermUnary {}) => {}
+      _ => { unimplemented!() }
+    }
+}
+
+#[proc_macro_attribute]
+pub fn requires(
+    attr: proc_macro::TokenStream,
+    tokens: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    let p: syn::Term = parse_macro_input!(attr);
+
+    let f: ItemFn = parse_macro_input!(tokens);
+
+    let req_name = syn::Ident::new("test", syn::export::Span::call_site());
+    // let mut output = TokenStream::new();
+    let req_toks = format!("{}", pred_to_why(&p));
+    let output = encode_pred(p);
+
+    let mut req_sig = f.sig.clone();
+    req_sig.ident = req_name.clone();
+
+
+    // TODO: Parse and pass down all the function's arguments.
+    proc_macro::TokenStream::from(quote! {
+      // #[creusot::spec="expr"]
+      // #[creusot::spec::requires]
+      // #req_sig {
+      //   #output
+      // }
+      #[creusot::spec::requires=#req_toks]
+      // #[creusot::spec]
+      // #[creusot::spec::requires(#req_name)]
+      #f
     })
 }
 
-struct AssertEq(syn::Expr, syn::Expr);
+#[proc_macro_attribute]
+pub fn ensures(
+    attr: proc_macro::TokenStream,
+    tokens: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    let p: syn::Term = parse_macro_input!(attr);
 
-impl syn::parse::Parse for AssertEq {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let e1 = input.parse()?;
-        let e2 = input.parse()?;
-
-        Ok(AssertEq(e1, e2))
-    }
-}
-
-#[proc_macro]
-pub fn assert_eq(tokens: TokenStream) -> TokenStream {
-    let inp: AssertEq = parse_macro_input!(tokens);
-    let assert_id = uuid::Uuid::new_v4().to_string();
-    let left_exp = inp.0;
-    let right_exp = inp.1;
-
-    TokenStream::from(quote! {
-      #[allow(unused_must_use, unused_variables)]
-      #[creusot::ghost]
-      #[creusot::assert_id = #assert_id]
-      ||{ #left_exp == #right_exp }
+    let req_name = syn::Ident::new("test2", syn::export::Span::call_site());
+    let tokens = TokenStream::from(tokens);
+    // let mut output = TokenStream::new();
+    let output = encode_pred(p);
+    // TODO: Parse and pass down all the function's arguments.
+    proc_macro::TokenStream::from(quote! {
+      #[creusot::spec="expr"]
+      #[creusot::spec::ensures]
+      fn #req_name() {
+        #output
+      }
+      #[creusot::spec::ensures(#req_name)]
+      #tokens
     })
 }

@@ -1,5 +1,5 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, AdtDef, Ty, TyCtxt, TyKind::*, subst::InternalSubsts};
+use rustc_middle::ty::{self, subst::InternalSubsts, AdtDef, Ty, TyCtxt, TyKind::*};
 use rustc_span::Symbol;
 
 use crate::mlcfg::{MlCfgType as MlT, MlTyDecl};
@@ -28,9 +28,7 @@ impl<'tcx> TyTranslator<'tcx> {
             .params
             .iter()
             .filter_map(|param| match param.kind {
-                ty::GenericParamDefKind::Type { .. } => {
-                    Some(self.translate_ty_param(param.name))
-                }
+                ty::GenericParamDefKind::Type { .. } => Some(self.translate_ty_param(param.name)),
                 _ => None,
             })
             .collect();
@@ -51,8 +49,7 @@ impl<'tcx> TyTranslator<'tcx> {
             ml_ty_def.push((var_def.ident.to_string(), field_tys));
         }
 
-        let ty_name =
-            self.translate_ty_name(adt.did).split('.').last().unwrap().to_string();
+        let ty_name = self.translate_ty_name(adt.did).split('.').last().unwrap().to_string();
         MlTyDecl { ty_name, ty_params: ty_args, ty_constructors: ml_ty_def }
     }
 
