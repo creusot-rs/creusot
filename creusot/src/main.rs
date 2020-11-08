@@ -16,7 +16,7 @@ extern crate rustc_serialize;
 extern crate rustc_span;
 extern crate rustc_target;
 
-use mlcfg::{MlCfgFunction, MlCfgPredFunction, MlTyDecl};
+use mlcfg::{MlCfgFunction, MlTyDecl};
 use rustc_ast::AttrItem;
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
 use rustc_hir::{
@@ -35,7 +35,7 @@ use place::*;
 
 mod translation;
 
-use translation::specification::SpecificationTranslator;
+// use translation::specification::SpecificationTranslator;
 use translation::*;
 mod analysis;
 
@@ -103,7 +103,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
         }
     }
 
-    type MlModule = (Vec<MlCfgPredFunction>, Vec<MlTyDecl>, Vec<MlCfgFunction>);
+    type MlModule = (Vec<MlTyDecl>, Vec<MlCfgFunction>);
     let mut translated_modules: HashMap<_, MlModule> = HashMap::new();
 
     // Translate all type declarations and push them into the module collection
@@ -113,7 +113,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
         let res = translation::translate_tydecl(tcx, adt);
 
         let module = module_of(tcx, *def_id);
-        translated_modules.entry(module).or_default().1.push(res);
+        translated_modules.entry(module).or_default().0.push(res);
     }
 
     for def_id in tcx.body_owners() {
@@ -144,11 +144,13 @@ fn translate(tcx: TyCtxt) -> Result<()> {
             match attr.path.segments[2].ident.name.to_string().as_ref() {
                 "requires" => {
                     let req = ts_to_symbol(attr.args.inner_tokens());
-                    func_contract.0.push(req);
+                    func_contract.0.push(specification::requires_to_why(&body, req));
+                    // func_contract.0.push(req);
                 }
                 "ensures" => {
                     let req = ts_to_symbol(attr.args.inner_tokens());
-                    func_contract.1.push(req);
+                    let ens_clause = specification::ensures_to_why(&body, req);
+                    func_contract.1.push(ens_clause);
                 }
                 _ => { unimplemented!() }
             }
@@ -163,10 +165,10 @@ fn translate(tcx: TyCtxt) -> Result<()> {
             FunctionTranslator::new(tcx, &body).translate(def_id, func_contract);
 
         // debug::debug(tcx, &body, polonius_info);
-        translated_modules.entry(module).or_default().2.push(translated);
+        translated_modules.entry(module).or_default().1.push(translated);
     }
 
-    for (modk, (pred, ty, funcs)) in translated_modules.iter() {
+    for (modk, (ty, funcs)) in translated_modules.iter() {
         let def_path = tcx.def_path(*modk);
         let mut opened_scopes = 0;
         if def_path.data.is_empty() {
@@ -186,7 +188,6 @@ fn translate(tcx: TyCtxt) -> Result<()> {
 
         use itertools::*;
         println!("{}", ty.iter().format("\n"));
-        println!("{}", pred.iter().format("\n"));
         println!("{}", funcs.iter().format("\n"));
 
         for _ in 0..opened_scopes {

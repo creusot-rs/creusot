@@ -33,13 +33,6 @@ pub struct MlCfgFunction {
 }
 
 #[derive(Debug)]
-pub struct MlCfgPredFunction {
-    pub name: String,
-    pub args: Vec<(Local, MlCfgType)>,
-    pub body: MlCfgPred,
-}
-
-#[derive(Debug)]
 pub struct MlCfgBlock {
     pub label: Block,
     pub statements: Vec<MlCfgStatement>,
@@ -99,16 +92,6 @@ pub struct MlTyDecl {
     pub ty_name: String,
     pub ty_params: Vec<String>,
     pub ty_constructors: Vec<(String, Vec<MlCfgType>)>,
-}
-
-#[derive(Debug, Clone)]
-pub enum MlCfgPred {
-    Impl(Box<MlCfgPred>, Box<MlCfgPred>),
-    Exp(MlCfgExp),
-    Conj(Box<MlCfgPred>, Box<MlCfgPred>),
-    Disj(Box<MlCfgPred>, Box<MlCfgPred>),
-    Let(Local, Box<MlCfgPred>, Box<MlCfgPred>),
-    Switch(Box<MlCfgPred>, Vec<(MlCfgPattern, MlCfgPred)>),
 }
 
 #[derive(Debug, Clone)]
@@ -212,18 +195,6 @@ impl Display for Block {
         write!(f, "BB{}", self.0)
     }
 }
-impl Display for MlCfgPredFunction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "let ghost predicate {}", self.name)?;
-
-        for (nm, ty) in &self.args {
-            write!(f, "({:?} : {})", nm, ty)?;
-        }
-
-        write!(f, " = {}", self.body)?;
-        Ok(())
-    }
-}
 
 impl Display for MlCfgFunction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -317,37 +288,6 @@ impl Display for MlCfgTerminator {
     }
 }
 
-impl Display for MlCfgPred {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            MlCfgPred::Impl(h, c) => {
-                write!(f, "{} -> {}", h, c)?;
-            }
-            MlCfgPred::Exp(e) => {
-                write!(f, "{}", e)?;
-            }
-            MlCfgPred::Conj(a, b) => {
-                write!(f, "{} /\\ {}", a, b)?;
-            }
-            MlCfgPred::Disj(a, b) => {
-                write!(f, "{} \\/ {}", a, b)?;
-            }
-
-            MlCfgPred::Switch(discr, brs) => {
-                writeln!(f, "begin case {} of", discr)?;
-
-                for (pat, tgt) in brs {
-                    writeln!(f, "| {} -> {}", pat, tgt)?;
-                }
-                writeln!(f, "end")?;
-            }
-            MlCfgPred::Let(l, e, b) => {
-                write!(f, "let {:?} = {} in {}", l, e, b)?;
-            }
-        }
-        Ok(())
-    }
-}
 impl Display for MlCfgExp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
