@@ -2,6 +2,7 @@
 #![feature(box_syntax, box_patterns)]
 #![register_tool(creusot)]
 #![feature(const_panic, or_patterns)]
+#![feature(let_chains)]
 
 extern crate polonius_engine;
 extern crate rustc_ast;
@@ -116,7 +117,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
         translated_modules.entry(module).or_default().0.push(res);
     }
 
-    for def_id in tcx.body_owners() {
+    'bodies: for def_id in tcx.body_owners() {
         log::debug!("Translating body {:?}", def_id);
         // (Mir-)Borrowck uses `mir_validated`, so we have to force it to
         // execute before we can steal.
@@ -134,13 +135,11 @@ fn translate(tcx: TyCtxt) -> Result<()> {
         // Parent module
         let module = module_of(tcx, def_id);
 
-        let attrs = tcx.get_attrs(def_id);
-
         let mut func_contract = (Vec::new(), Vec::new());
 
-        for attr in attrs.iter().filter(|a| !a.is_doc_comment() && is_attr(a.get_normal_item(), "spec")) {
-            let attr = attr.get_normal_item();
+        let attrs = tcx.get_attrs(def_id);
 
+        for attr in translation::util::spec_attrs(attrs) {
             match attr.path.segments[2].ident.name.to_string().as_ref() {
                 "requires" => {
                     let req = ts_to_symbol(attr.args.inner_tokens());
@@ -151,6 +150,9 @@ fn translate(tcx: TyCtxt) -> Result<()> {
                     let req = ts_to_symbol(attr.args.inner_tokens());
                     let ens_clause = specification::ensures_to_why(&body, req);
                     func_contract.1.push(ens_clause);
+                }
+                "invariant" => {
+                    continue 'bodies; // this body is an invariant closure, skip it.
                 }
                 _ => { unimplemented!() }
             }
@@ -215,12 +217,6 @@ fn module_of<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> DefId {
     }
 
     module
-}
-fn is_attr(attr: &AttrItem, str: &str) -> bool {
-    let segments = &attr.path.segments;
-    segments.len() >=2
-        && segments[0].ident.as_str() == "creusot"
-        && segments[1].ident.as_str() == str
 }
 
 use rustc_ast::{token::TokenKind::Literal, tokenstream::{TokenStream, TokenTree::*,}};

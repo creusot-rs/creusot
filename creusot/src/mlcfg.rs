@@ -64,6 +64,7 @@ pub enum MlCfgTerminator {
 #[derive(Debug)]
 pub enum MlCfgStatement {
     Assign { lhs: Local, rhs: MlCfgExp },
+    Invariant(MlCfgExp),
     Freeze(Local),
 }
 
@@ -109,6 +110,7 @@ pub enum MlCfgExp {
     Const(MlCfgConstant),
     BinaryOp(BinOp, Box<MlCfgExp>, Box<MlCfgExp>),
     Call(Box<MlCfgExp>, Vec<MlCfgExp>),
+    Verbatim(String),
 }
 
 #[derive(Debug, Clone)]
@@ -334,6 +336,7 @@ impl Display for MlCfgExp {
             MlCfgExp::Call(fun, args) => {
                 write!(f, "{} {}", fun, args.iter().map(|a| parens!(a)).format(" "))?;
             }
+            MlCfgExp::Verbatim(verb) => { write!(f, "{}", verb)?; }
         }
         Ok(())
     }
@@ -370,6 +373,9 @@ impl Display for MlCfgStatement {
             }
             MlCfgStatement::Freeze(loc) => {
                 write!(f, "assume {{ ^ {:?} = * {:?} }}", loc, loc)?;
+            }
+            MlCfgStatement::Invariant(e) => {
+                write!(f, "invariant {{ {} }}", e)?;
             }
         }
         Ok(())

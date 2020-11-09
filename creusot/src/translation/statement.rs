@@ -1,28 +1,23 @@
 use rustc_hir::def::CtorKind;
-use rustc_middle::mir::{BorrowKind::*, Operand::*, Place, Rvalue, Statement, StatementKind};
+use rustc_middle::mir::{BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind};
 
-use crate::{
-    mlcfg::{
+use crate::{Projection::*, mlcfg::{
         MlCfgConstant,
         MlCfgExp::{self, *},
         MlCfgPattern::*,
         MlCfgStatement::{self, *},
-    },
-    place::from_place,
-    place::{MirPlace, Mutability as M},
-    Projection::*,
-};
+    }, place::from_place, place::{MirPlace, Mutability as M}, ts_to_symbol};
 
-use super::{rhs_to_why_exp, FunctionTranslator};
+use super::{FunctionTranslator, rhs_to_why_exp, util::spec_attrs, specification};
 
 impl<'tcx> FunctionTranslator<'_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>) {
         if let StatementKind::Assign(box (ref pl, ref rv)) = statement.kind {
-            self.translate_assign(pl, rv)
+            self.translate_assign(statement.source_info, pl, rv)
         }
     }
 
-    fn translate_assign(&mut self, place: &'_ Place<'tcx>, rvalue: &'_ Rvalue<'tcx>) {
+    fn translate_assign(&mut self, si: SourceInfo, place: &'_ Place<'tcx>, rvalue: &'_ Rvalue<'tcx>) {
         let lplace = from_place(self.tcx, self.body, place);
         let rval = match rvalue {
             Rvalue::Use(rval) => match rval {
@@ -64,7 +59,29 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                         Constructor { ctor: cons_name, args: fields }
                     }
                     Array(_) => unimplemented!("array"),
-                    Closure(_, _) | Generator(_, _, _) => unimplemented!("{:?}", kind),
+                    Closure(def_id, _) => {
+                        let attrs = self.tcx.get_attrs(*def_id);
+
+                        let mut spec_attrs = spec_attrs(attrs);
+
+                        if spec_attrs.len() == 1 {
+                            let attr = spec_attrs.remove(0);
+                            match attr.path.segments[2].ident.name.to_string().as_ref() {
+                                "invariant" => {
+                                    let inv = ts_to_symbol(attr.args.inner_tokens());
+
+                                    let inv_string = specification::invariant_to_why(self.body, si, inv);
+
+                                    self.emit_statement(Invariant(Verbatim(inv_string)));
+                                    return;
+                                }
+                                a => { panic!("unknown kind of specification marker: {}",a)}
+                            }
+                        } else {
+                            unimplemented!("support for program closures isn't implemented");
+                        }
+                    }
+                    Generator(_, _, _) => unimplemented!("{:?}", kind),
                 }
             }
 

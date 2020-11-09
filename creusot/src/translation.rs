@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use rustc_hir::{def::CtorKind, def_id::DefId};
 use rustc_index::bit_set::BitSet;
-use rustc_middle::{mir, mir::traversal::preorder, mir::*, ty::AdtDef, ty::TyCtxt};
+use rustc_middle::{ty::TyKind, mir, mir::traversal::preorder, mir::*, ty::AdtDef, ty::TyCtxt};
 use rustc_mir::dataflow::{
     self,Analysis,
     impls::{MaybeInitializedLocals, MaybeLiveLocals},
@@ -12,12 +12,12 @@ use crate::{analysis, place::from_place, place::{MirPlace, Mutability::*, Projec
 
 use crate::mlcfg::{MlCfgExp::*, MlCfgPattern::*, *};
 
-use self::ty::TyTranslator;
+use self::{ty::TyTranslator, util::spec_attrs};
 
 mod statement;
 mod terminator;
 mod ty;
-mod util;
+pub mod util;
 
 pub mod specification;
 
@@ -84,9 +84,9 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         self.current_block.2 = Some(t);
     }
 
-    pub fn translate(mut self, nm: DefId, contracts: (Vec<String>, Vec<String>)) -> MlCfgFunction {for (bb, bbd) in preorder(self.body) {
+    pub fn translate(mut self, nm: DefId, contracts: (Vec<String>, Vec<String>)) -> MlCfgFunction {
+        for (bb, bbd) in preorder(self.body) {
             self.current_block = (bb.into(), vec![], None);
-
             if bbd.is_cleanup {
                 continue;
             }
@@ -108,12 +108,20 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             });
         }
 
+        self.current_block = (BasicBlock::MAX.into(), Vec::new(), None);
+
         let ty_trans = TyTranslator::new(self.tcx);
         let mut vars = self
             .body
             .local_decls
             .iter_enumerated()
-            .map(|(loc, decl)| (loc, ty_trans.translate_ty(decl.ty)));
+            .filter_map(|(loc, decl)| {
+                if self.artifact_decl(decl) {
+                    None
+                } else{
+                    Some((loc, ty_trans.translate_ty(decl.ty)))
+                }
+            });
         let retty = vars.next().unwrap().1;
 
         let name = self.tcx.def_path(nm).to_filename_friendly_no_crate();
@@ -176,7 +184,17 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     pub fn translate_operand(&self, operand: &Operand<'tcx>) -> MlCfgExp {
         operand_to_exp(self.tcx, self.body, operand)
     }
+
+    fn artifact_decl(&self, decl: &LocalDecl) -> bool {
+        if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
+            if spec_attrs(self.tcx.get_attrs(*def_id)).len() > 0 {
+                return true
+            }
+        }
+        false
+    }
 }
+
 
 // Useful helper to translate an operand
 fn operand_to_exp<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, operand: &Operand<'tcx>) -> MlCfgExp {
