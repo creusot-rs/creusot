@@ -2,23 +2,26 @@
 # Official language image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/rust/tags/
 image: "rust:latest"
+stages:
+  - build
+  - test
 
-# Optional: Pick zero or more services to be used on all builds.
-# Only needed when using a docker container to run your tests in.
-# Check out: http://docs.gitlab.com/ce/ci/docker/using_docker_images.html#what-is-a-service
-# services:
-#   - mysql:latest
-#   - redis:latest
-#   - postgres:latest
+docker:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context $CI_PROJECT_DIR/ci --dockerfile $CI_PROJECT_DIR/ci/Dockerfile.build --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+  rules:
+    - changes:
+      - ci/Dockerfile.build
+    - if: $FORCE_DOCKER_BUILD
 
-# Optional: Install a C compiler, cmake and git into the container.
-# You will often need this when you (or any of your dependencies) depends on C code.
-# before_script:
-#   - apt-get update -yqq
-#   - apt-get install -yqq --no-install-recommends build-essential
-
-# Use cargo to test the project
 test:cargo:
+  stage: test
   script:
     - rustc --version && cargo --version  # Print version info for debugging
     - cargo test --workspace --verbose
