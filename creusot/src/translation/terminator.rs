@@ -48,6 +48,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 let mut func_args: Vec<_> =
                     args.iter().map(|arg| self.translate_operand(arg)).collect();
 
+                // TODO: Get functions to be turned into QPaths!
                 let call_exp = if self.is_box_new(fun_def_id) {
                     assert_eq!(func_args.len(), 1);
 

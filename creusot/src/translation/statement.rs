@@ -68,7 +68,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                     Tuple => Exp::Tuple(fields),
                     Adt(adt, varix, _, _, _) => {
                         let variant_def = &adt.variants[*varix];
-                        let cons_name = variant_def.ident.to_string();
+                        let cons_name = (&variant_def.ident.name).into();
 
                         Constructor { ctor: cons_name, args: fields }
                     }
@@ -151,20 +151,20 @@ pub fn create_assign(lhs: &MirPlace, rhs: Exp) -> mlcfg::Statement {
                 CtorKind::Fn | CtorKind::Fictive => {
                     let varpats = ('a'..).map(|c| VarP(c.to_string())).take(*size).collect();
                     let mut varexps: Vec<Exp> =
-                        ('a'..).map(|c| Var(c.to_string())).take(*size).collect();
+                        ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
                     varexps[*ix] = inner;
 
                     inner = Let {
                         pattern: ConsP(ctor.to_string(), varpats),
                         arg: box rhs_to_why_exp(&stump),
-                        body: box Constructor { ctor: ctor.to_string(), args: varexps },
+                        body: box Constructor { ctor: ctor.into(), args: varexps },
                     }
                 }
-                CtorKind::Const => inner = Constructor { ctor: ctor.to_string(), args: vec![] },
+                CtorKind::Const => inner = Constructor { ctor: ctor.into(), args: vec![] },
             },
             TupleAccess { size, ix } => {
                 let varpats = ('a'..).map(|c| VarP(c.to_string())).take(*size).collect();
-                let mut varexps: Vec<_> = ('a'..).map(|c| Var(c.to_string())).take(*size).collect();
+                let mut varexps: Vec<_> = ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
                 varexps[*ix] = inner;
 
                 inner = Let {

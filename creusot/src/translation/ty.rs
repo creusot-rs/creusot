@@ -2,6 +2,7 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{self, subst::InternalSubsts, AdtDef, Ty, TyCtxt, TyKind::*};
 use rustc_span::Symbol;
 
+use crate::mlcfg::QName;
 use crate::mlcfg::{MlTyDecl, Type as MlT};
 
 pub struct TyTranslator<'tcx> {
@@ -13,8 +14,8 @@ impl<'tcx> TyTranslator<'tcx> {
         TyTranslator { tcx }
     }
 
-    fn translate_ty_name(&self, dif: DefId) -> String {
-        super::translate_defid(self.tcx, dif).to_lowercase()
+    fn translate_ty_name(&self, dif: DefId) -> QName {
+        super::translate_defid(self.tcx, dif)
     }
 
     fn translate_ty_param(&self, p: Symbol) -> String {
@@ -49,7 +50,7 @@ impl<'tcx> TyTranslator<'tcx> {
             ml_ty_def.push((var_def.ident.to_string(), field_tys));
         }
 
-        let ty_name = self.translate_ty_name(adt.did).split('.').last().unwrap().to_string();
+        let ty_name = self.translate_ty_name(adt.did).unqual_name().to_string();
         MlTyDecl { ty_name, ty_params: ty_args, ty_constructors: ml_ty_def }
     }
 

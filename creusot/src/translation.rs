@@ -175,6 +175,8 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         operand_to_exp(self.tcx, self.body, operand)
     }
 
+    /// Checks whether a local declaration is actuall related to specifications
+    /// and should be excluded entirely from the outputted MLCFG
     fn artifact_decl(&self, decl: &LocalDecl) -> bool {
         if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
             if !spec_attrs(self.tcx.get_attrs(*def_id)).is_empty() {
@@ -193,15 +195,15 @@ fn operand_to_exp<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, operand: &Operand<
     }
 }
 
-fn translate_defid(tcx: TyCtxt, def_id: DefId) -> String {
-    tcx.def_path_str(def_id).replace("::", ".")
+fn translate_defid(tcx: TyCtxt, def_id: DefId) -> QName {
+    QName { segments : tcx.def_path_str(def_id).split("::").map(|s| s.to_string()).collect() }
 }
 
 // [(P as Some)]   ---> [_1]
 // [(P as Some).0] ---> let Some(a) = [_1] in a
 // [(* P)] ---> * [P]
 pub fn rhs_to_why_exp(rhs: &MirPlace) -> Exp {
-    let mut inner = Local(rhs.local);
+    let mut inner = Var(rhs.local.into());
 
     for proj in rhs.proj.iter() {
         match proj {

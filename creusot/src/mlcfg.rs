@@ -9,18 +9,6 @@ use rustc_middle::{
 use rustc_hir::def::Namespace;
 use rustc_middle::mir::{BasicBlock, Local};
 
-pub const PRELUDE: &str = "use Ref \n\
-              use int.Int \n\
-              (** Generic Type for borrowed values *) \n\
-              type borrowed 'a = \n\
-                { current : 'a ; \n\
-                  final : 'a; (* The \"future\" value when borrow will end *) \n\
-                } \n\
-              let function ( *_ ) x = x.current \n\
-              let function ( ^_ ) x = x.final \n\
-              val borrow_mut (a : 'a) : borrowed 'a \n\
-                 ensures { *result = a }";
-
 #[derive(Debug)]
 pub struct Function {
     pub name: String,
@@ -76,7 +64,7 @@ pub enum Type {
     Uint(rustc_ast::ast::UintTy),
     MutableBorrow(Box<Type>),
     TVar(String),
-    TConstructor(String),
+    TConstructor(QName),
     TApp(Box<Type>, Vec<Type>),
     Tuple(Vec<Type>),
 }
@@ -96,15 +84,87 @@ pub struct MlTyDecl {
 }
 
 #[derive(Debug, Clone)]
+pub enum LocalIdent {
+    /// A MIR local along with an optional human-readable name
+    Local(Local, Option<String>),
+
+    /// A local variable,
+    Name(String),
+}
+
+impl From<&str> for LocalIdent {
+    fn from(s : &str) -> Self {
+        Self::Name(s.to_owned())
+    }
+}
+
+impl From<String> for LocalIdent {
+    fn from(s : String) -> Self {
+        Self::Name(s)
+    }
+}
+
+impl From<Local> for LocalIdent {
+    fn from(l : Local) -> Self {
+        Self::Local(l, None)
+    }
+}
+
+
+impl From<LocalIdent> for Exp {
+    fn from(li: LocalIdent) -> Self {
+        Exp::Var(li)
+    }
+}
+
+impl Display for LocalIdent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LocalIdent::Local(l, n) => { if let Some(n) = n {
+                write!(f, "{}", n)?;
+                }
+                write!(f, "{:?}", l)
+            }
+            LocalIdent::Name(nm) => { write!(f, "{}", nm) }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct QName {
+    pub segments: Vec<String>,
+}
+
+impl QName {
+    pub fn unqual_name(&self) -> &str {
+        self.segments.last().unwrap()
+    }
+}
+
+impl From<&rustc_span::Symbol> for QName {
+    fn from(nm: &rustc_span::Symbol) -> Self {
+        QName {
+            segments: vec![nm.to_string().into()]
+        }
+    }
+}
+
+impl Display for QName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.segments.iter().format("."))
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Exp {
     Current(Box<Exp>),
     Final(Box<Exp>),
-    Local(Local),
     Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
-    Var(String),
+    Var(LocalIdent),
+    QVar(QName),
     RecUp { record: Box<Exp>, label: String, val: Box<Exp> },
     Tuple(Vec<Exp>),
-    Constructor { ctor: String, args: Vec<Exp> },
+    Constructor { ctor: QName, args: Vec<Exp> },
     BorrowMut(Box<Exp>),
     // RecField { rec: Box<Exp>, field: String },
     Const(Constant),
@@ -140,7 +200,7 @@ type ConstantType = ();
 impl Exp {
     fn complex(&self) -> bool {
         use Exp::*;
-        !matches!(self, Local(_) | Var(_) | Tuple(_) | Constructor{..})
+        !matches!(self, Var(_) | Tuple(_) | Constructor{..})
     }
 }
 #[derive(Clone, Debug)]
@@ -299,13 +359,13 @@ impl Display for Exp {
             Exp::Final(e) => {
                 write!(f, " ^ {}", e)?;
             }
-            Exp::Local(l) => {
-                write!(f, "{:?}", l)?;
-            }
             Exp::Let { pattern, arg, body } => {
                 write!(f, "let {} = {} in {}", pattern, parens!(arg), parens!(body))?;
             }
             Exp::Var(v) => {
+                write!(f, "{}", v)?;
+            }
+            Exp::QVar(v) => {
                 write!(f, "{}", v)?;
             }
             Exp::RecUp { record, label, val } => {
