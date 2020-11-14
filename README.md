@@ -10,12 +10,9 @@
 
 # Using
 
-To use `creusot` you must point it at the sysroot for the toolchain you built with.
-Usually this should be `$HOME/.multirust/toolchains/<toolchain>/lib/rustlib/x86_64-apple-darwin/lib/`.
-You can then compile a Rust source file by running:
 
 ```
-cargo run -- -L $HOME/.multirust/toolchains/<toolchain>/lib/rustlib/x86_64-apple-darwin/lib/ path/to/file.rs
+cargo run -- path/to/file.rs
 ```
 
 This command will print the MLCFG translation to STDOUT.

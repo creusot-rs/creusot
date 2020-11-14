@@ -59,14 +59,12 @@ impl Callbacks for ToWhy {
 use std::{collections::HashMap, env::args as get_args};
 fn main() {
     env_logger::init();
-    // env_logger::init_from_env(
-    // env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "debug"));
+
     let mut args = get_args().collect::<Vec<String>>();
-    // args.push("-Znll-facts".to_owned());
+    args.push(format!("--sysroot={}", sysroot_path()));
     args.push("-Cpanic=abort".to_owned());
     args.push("-Coverflow-checks=off".to_owned());
     args.push("-Znll-facts".to_owned());
-    // args.push("-Zdump-mir=".to_owned());
     RunCompiler::new(&args, &mut ToWhy {}).run().unwrap();
 }
 
@@ -212,6 +210,23 @@ fn module_of<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> DefId {
     }
 
     module
+}
+
+fn sysroot_path () -> String {
+    use std::process::Command;
+    let toolchain = include_str!("../../rust-toolchain").trim();
+    let output = Command::new("rustup")
+        .arg("run")
+        .arg(toolchain)
+        .arg("rustc")
+        .arg("--print")
+        .arg("sysroot")
+        .output()
+        .unwrap();
+
+    print!("{}", String::from_utf8(output.stderr).ok().unwrap());
+
+    String::from_utf8(output.stdout).unwrap().trim().to_owned()
 }
 
 use rustc_ast::{
