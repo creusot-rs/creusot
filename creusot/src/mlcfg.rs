@@ -9,6 +9,18 @@ use rustc_middle::{
 use rustc_hir::def::Namespace;
 use rustc_middle::mir::{BasicBlock, Local};
 
+pub const PRELUDE: &str = "use Ref \n\
+              use int.Int \n\
+              (** Generic Type for borrowed values *) \n\
+              type borrowed 'a = \n\
+                { current : 'a ; \n\
+                  final : 'a; (* The \"future\" value when borrow will end *) \n\
+                } \n\
+              let function ( *_ ) x = x.current \n\
+              let function ( ^_ ) x = x.final \n\
+              val borrow_mut (a : 'a) : borrowed 'a \n\
+                 ensures { *result = a }";
+
 #[derive(Debug)]
 pub struct Function {
     pub name: String,

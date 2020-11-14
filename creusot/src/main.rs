@@ -163,22 +163,24 @@ fn translate(tcx: TyCtxt) -> Result<()> {
         translated_modules.entry(module).or_default().1.push(translated);
     }
 
+    println!("module Ambient");
+    println!("{}", mlcfg::PRELUDE);
+
+    // TODO only open each scope once
     for (modk, (ty, funcs)) in translated_modules.iter() {
         let def_path = tcx.def_path(*modk);
         let mut opened_scopes = 0;
         if def_path.data.is_empty() {
             // main module
-            println!("module Main");
+            println!("scope Main");
             opened_scopes = 1;
         } else {
             // other modules // filter out closure path elements
-            for seg in def_path.data[0..def_path.data.len() - 1].iter() {
+            for seg in def_path.data[0..def_path.data.len()].iter() {
                 println!("scope {}", seg);
                 opened_scopes += 1;
             }
 
-            println!("module {}", def_path.data.last().unwrap());
-            opened_scopes += 1;
         }
 
         use itertools::*;
