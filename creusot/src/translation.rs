@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use rustc_hir::{def::CtorKind, def_id::DefId};
 use rustc_index::bit_set::BitSet;
-use rustc_middle::{mir, mir::traversal::preorder, mir::*, ty::AdtDef, ty::TyCtxt, ty::TyKind};
+use rustc_middle::{mir::traversal::preorder, mir::*, ty::AdtDef, ty::TyCtxt, ty::TyKind};
 use rustc_mir::dataflow::{
     self,
     impls::{MaybeInitializedLocals, MaybeLiveLocals},
@@ -11,7 +9,6 @@ use rustc_mir::dataflow::{
 
 use crate::mlcfg;
 use crate::{
-    analysis,
     place::from_place,
     place::{MirPlace, Mutability::*, Projection::*},
 };
@@ -36,8 +33,6 @@ pub struct FunctionTranslator<'a, 'tcx> {
 
     // Whether a local is initialized or not at a location
     local_init: dataflow::ResultsCursor<'a, 'tcx, MaybeInitializedLocals>,
-    // Tell me the type of the object we are discriminating
-    discr_map: HashMap<(BasicBlock, mir::Local), Place<'tcx>>,
 
     // Current block being generated
     current_block: (BlockId, Vec<mlcfg::Statement>, Option<mlcfg::Terminator>),
@@ -51,8 +46,6 @@ pub fn translate_tydecl(tcx: TyCtxt, adt: &AdtDef) -> MlTyDecl {
 
 impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, body: &'a Body<'tcx>) -> Self {
-        let discr_map = analysis::DiscrTyMap::analyze(&body);
-
         let local_init = MaybeInitializedLocals
             .into_engine(tcx, &body)
             .iterate_to_fixpoint()
@@ -70,7 +63,6 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             body,
             local_live,
             local_init,
-            discr_map,
             current_block: (BasicBlock::MAX.into(), Vec::new(), None),
             past_blocks: Vec::new(),
         }
