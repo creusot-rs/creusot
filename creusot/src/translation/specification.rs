@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use proc_macro2::TokenStream;
 use rustc_middle::mir::{Body, SourceInfo};
-use syn::{Term::*, visit::Visit};
+use syn::{visit::Visit, Term::*};
 
 use syn::*;
 
@@ -33,15 +33,13 @@ pub fn invariant_to_why<'tcx>(body: &Body<'tcx>, info: SourceInfo, attr_val: Str
     let p: Term = syn::parse_str(&attr_val).unwrap();
     let fvs = FreeVars::for_term(&p);
 
-    let vars_in_scope : Vec<_> = body.var_debug_info.iter()
-        .filter(|vdi| vdi.source_info.scope <= info.scope)
-        .collect();
+    let vars_in_scope: Vec<_> =
+        body.var_debug_info.iter().filter(|vdi| vdi.source_info.scope <= info.scope).collect();
 
     // TODO: ensure only one match
     let lcls = fvs.iter().map(|free| {
-        let var_info = vars_in_scope.iter().filter(|vdi| vdi.name.to_ident_string() == free.to_string())
-        .nth(0)
-        .unwrap();
+        let var_info =
+            vars_in_scope.iter().filter(|vdi| *free == vdi.name.to_ident_string()).next().unwrap();
 
         let loc = var_info.place.as_local().unwrap();
         syn::Ident::new(format!("{:?}", loc).as_ref(), syn::export::Span::call_site())
@@ -85,7 +83,7 @@ fn pred_to_why(p: &Term) -> TokenStream {
                 unimplemented!()
             }
         }
-        Paren(TermParen {expr, .. }) => {
+        Paren(TermParen { expr, .. }) => {
             let ttoks = pred_to_why(expr);
             quote! { ( #ttoks ) }
         }
@@ -101,8 +99,10 @@ fn pred_to_why(p: &Term) -> TokenStream {
     }
 }
 
-
-struct FreeVars { free: HashSet<syn::Ident>, bound: HashSet<syn::Ident> }
+struct FreeVars {
+    free: HashSet<syn::Ident>,
+    bound: HashSet<syn::Ident>,
+}
 
 // TODO: Rewrite / clarify scoping rules.
 impl<'ast> Visit<'ast> for FreeVars {
@@ -136,7 +136,6 @@ impl<'ast> Visit<'ast> for FreeVars {
             visit::visit_term(&mut fv, &*else_branch);
             self.free.extend(fv.free);
         }
-
     }
 
     // Occurs in if let / while let
@@ -144,10 +143,9 @@ impl<'ast> Visit<'ast> for FreeVars {
         let mut fv = FreeVars { free: HashSet::new(), bound: HashSet::new() };
         visit::visit_term_let(&mut fv, i);
 
-        let new_free =&fv.free - &self.bound;
+        let new_free = &fv.free - &self.bound;
         self.free.extend(new_free);
         self.bound.extend(fv.bound);
-
     }
 
     fn visit_term_arm(&mut self, i: &'ast TermArm) {
@@ -155,7 +153,7 @@ impl<'ast> Visit<'ast> for FreeVars {
 
         visit::visit_term_arm(&mut fv, i);
 
-        let new_free =&fv.free - &fv.bound;
+        let new_free = &fv.free - &fv.bound;
         self.free.extend(new_free)
     }
     fn visit_pat_ident(&mut self, i: &'ast PatIdent) {

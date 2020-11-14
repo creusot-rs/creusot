@@ -2,14 +2,19 @@ use std::collections::HashMap;
 
 use rustc_hir::{def::CtorKind, def_id::DefId};
 use rustc_index::bit_set::BitSet;
-use rustc_middle::{ty::TyKind, mir, mir::traversal::preorder, mir::*, ty::AdtDef, ty::TyCtxt};
+use rustc_middle::{mir, mir::traversal::preorder, mir::*, ty::AdtDef, ty::TyCtxt, ty::TyKind};
 use rustc_mir::dataflow::{
-    self,Analysis,
+    self,
     impls::{MaybeInitializedLocals, MaybeLiveLocals},
+    Analysis,
 };
 
 use crate::mlcfg;
-use crate::{analysis, place::from_place, place::{MirPlace, Mutability::*, Projection::*}};
+use crate::{
+    analysis,
+    place::from_place,
+    place::{MirPlace, Mutability::*, Projection::*},
+};
 
 use crate::mlcfg::{Exp::*, Pattern::*, *};
 
@@ -45,10 +50,7 @@ pub fn translate_tydecl(tcx: TyCtxt, adt: &AdtDef) -> MlTyDecl {
 }
 
 impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
-    pub fn new(
-        tcx: TyCtxt<'tcx>,
-        body: &'a Body<'tcx>,
-    ) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, body: &'a Body<'tcx>) -> Self {
         let discr_map = analysis::DiscrTyMap::analyze(&body);
 
         let local_init = MaybeInitializedLocals
@@ -62,7 +64,6 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             .into_engine(tcx, &body)
             .iterate_to_fixpoint()
             .into_results_cursor(&body);
-
 
         FunctionTranslator {
             tcx,
@@ -112,17 +113,13 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         self.current_block = (BasicBlock::MAX.into(), Vec::new(), None);
 
         let ty_trans = TyTranslator::new(self.tcx);
-        let mut vars = self
-            .body
-            .local_decls
-            .iter_enumerated()
-            .filter_map(|(loc, decl)| {
-                if self.artifact_decl(decl) {
-                    None
-                } else{
-                    Some((loc, ty_trans.translate_ty(decl.ty)))
-                }
-            });
+        let mut vars = self.body.local_decls.iter_enumerated().filter_map(|(loc, decl)| {
+            if self.artifact_decl(decl) {
+                None
+            } else {
+                Some((loc, ty_trans.translate_ty(decl.ty)))
+            }
+        });
         let retty = vars.next().unwrap().1;
 
         let name = self.tcx.def_path(nm).to_filename_friendly_no_crate();
@@ -188,14 +185,13 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
     fn artifact_decl(&self, decl: &LocalDecl) -> bool {
         if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-            if spec_attrs(self.tcx.get_attrs(*def_id)).len() > 0 {
-                return true
+            if !spec_attrs(self.tcx.get_attrs(*def_id)).is_empty() {
+                return true;
             }
         }
         false
     }
 }
-
 
 // Useful helper to translate an operand
 fn operand_to_exp<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, operand: &Operand<'tcx>) -> Exp {

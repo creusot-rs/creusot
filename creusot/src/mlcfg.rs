@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 // Imports related to MLCfg Constatns
 use rustc_middle::{
-    mir::{BinOp, self},
+    mir::{self, BinOp},
     ty::{print::FmtPrinter, print::PrettyPrinter, TyCtxt},
 };
 
@@ -213,10 +213,10 @@ impl Display for Function {
         writeln!(f, " : {}", self.retty)?;
 
         for req in &self.preconds {
-            writeln!(f,"requires {{ {} }}", req)?;
+            writeln!(f, "requires {{ {} }}", req)?;
         }
         for req in &self.postconds {
-            writeln!(f,"ensures {{ {} }}", req)?;
+            writeln!(f, "ensures {{ {} }}", req)?;
         }
 
         writeln!(f, "=")?;
@@ -336,7 +336,9 @@ impl Display for Exp {
             Exp::Call(fun, args) => {
                 write!(f, "{} {}", fun, args.iter().map(|a| parens!(a)).format(" "))?;
             }
-            Exp::Verbatim(verb) => { write!(f, "{}", verb)?; }
+            Exp::Verbatim(verb) => {
+                write!(f, "{}", verb)?;
+            }
         }
         Ok(())
     }

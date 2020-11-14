@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 
 use rustc_ast::AttrItem;
-use rustc_hir::def_id::DefId;
-use rustc_middle::{mir::{BasicBlockData, Place, Rvalue, StatementKind as StmtK, TerminatorKind}, ty::{Attributes, Ty, TyCtxt, VariantDef}};
+
+use rustc_middle::{
+    mir::{BasicBlockData, Place, Rvalue, StatementKind as StmtK, TerminatorKind},
+    ty::{Attributes, Ty, TyCtxt, VariantDef},
+};
 
 use crate::mlcfg::{Constant, Pattern};
 
@@ -45,10 +48,7 @@ pub fn branches_for_ty<'tcx>(
                 .collect()
         }
         Tuple(_) => unimplemented!("tuple"),
-        Bool => vec![
-            Pattern::LitP(Constant::const_false()),
-            Pattern::LitP(Constant::const_true()),
-        ],
+        Bool => vec![Pattern::LitP(Constant::const_false()), Pattern::LitP(Constant::const_true())],
         _ => unimplemented!("constant pattern"),
     }
 }
@@ -61,11 +61,15 @@ pub fn variant_pattern(var: &VariantDef) -> Pattern {
 
 fn is_attr(attr: &AttrItem, str: &str) -> bool {
     let segments = &attr.path.segments;
-    segments.len() >=2
+    segments.len() >= 2
         && segments[0].ident.as_str() == "creusot"
         && segments[1].ident.as_str() == str
 }
 
 pub fn spec_attrs<'tcx>(a: Attributes<'tcx>) -> Vec<&AttrItem> {
-    a.iter().filter(|a| !a.is_doc_comment()).map(|a| a.get_normal_item()).filter(|ai| is_attr(ai, "spec")).collect()
+    a.iter()
+        .filter(|a| !a.is_doc_comment())
+        .map(|a| a.get_normal_item())
+        .filter(|ai| is_attr(ai, "spec"))
+        .collect()
 }

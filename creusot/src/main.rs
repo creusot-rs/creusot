@@ -152,7 +152,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
                 "invariant" => {
                     continue 'bodies; // this body is an invariant closure, skip it.
                 }
-                _ => { unimplemented!() }
+                _ => unimplemented!(),
             }
         }
 
@@ -161,8 +161,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
         // TODO: now that we don't use polonius info: consider using optimized mir instead?
         RemoveFalseEdge { tcx }.visit_body(&mut body);
 
-        let translated =
-            FunctionTranslator::new(tcx, &body).translate(def_id, func_contract);
+        let translated = FunctionTranslator::new(tcx, &body).translate(def_id, func_contract);
 
         // debug::debug(tcx, &body, polonius_info);
         translated_modules.entry(module).or_default().1.push(translated);
@@ -217,7 +216,10 @@ fn module_of<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> DefId {
     module
 }
 
-use rustc_ast::{token::TokenKind::Literal, tokenstream::{TokenStream, TokenTree::*,}};
+use rustc_ast::{
+    token::TokenKind::Literal,
+    tokenstream::{TokenStream, TokenTree::*},
+};
 
 fn ts_to_symbol(ts: TokenStream) -> String {
     assert_eq!(ts.len(), 1);
