@@ -1,11 +1,12 @@
 use rustc_hir::def::CtorKind;
 use rustc_middle::mir::{BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind};
 
+use crate::mlcfg;
 use crate::{Projection::*, mlcfg::{
-        MlCfgConstant,
-        MlCfgExp::{self, *},
-        MlCfgPattern::*,
-        MlCfgStatement::{self, *},
+        Constant,
+        Exp::{self, *},
+        Pattern::*,
+        Statement::*,
     }, place::from_place, place::{MirPlace, Mutability as M}, ts_to_symbol};
 
 use super::{FunctionTranslator, rhs_to_why_exp, util::spec_attrs, specification};
@@ -22,7 +23,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
         let rval = match rvalue {
             Rvalue::Use(rval) => match rval {
                 Move(pl) | Copy(pl) => rhs_to_why_exp(&from_place(self.tcx, self.body, pl)),
-                Constant(box c) => Const(MlCfgConstant::from_mir_constant(self.tcx, c)),
+                Constant(box c) => Const(Constant::from_mir_constant(self.tcx, c)),
             },
             Rvalue::Ref(_, ss, pl) => {
                 let rplace = from_place(self.tcx, self.body, pl);
@@ -51,7 +52,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
 
                 match kind {
-                    Tuple => MlCfgExp::Tuple(fields),
+                    Tuple => Exp::Tuple(fields),
                     Adt(adt, varix, _, _, _) => {
                         let variant_def = &adt.variants[*varix];
                         let cons_name = variant_def.ident.to_string();
@@ -110,7 +111,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
 
 /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-pub fn create_assign(lhs: &MirPlace, rhs: MlCfgExp) -> MlCfgStatement {
+pub fn create_assign(lhs: &MirPlace, rhs: Exp) -> mlcfg::Statement {
     // Translation happens inside to outside, which means we scan projection elements in reverse
     // building up the inner expression. We start with the RHS expression which is at the deepest
     // level.
@@ -135,7 +136,7 @@ pub fn create_assign(lhs: &MirPlace, rhs: MlCfgExp) -> MlCfgStatement {
             FieldAccess { ctor, ix, size, kind, .. } => match kind {
                 CtorKind::Fn | CtorKind::Fictive => {
                     let varpats = ('a'..).map(|c| VarP(c.to_string())).take(*size).collect();
-                    let mut varexps: Vec<MlCfgExp> =
+                    let mut varexps: Vec<Exp> =
                         ('a'..).map(|c| Var(c.to_string())).take(*size).collect();
                     varexps[*ix] = inner;
 

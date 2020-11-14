@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 // Imports related to MLCfg Constatns
 use rustc_middle::{
-    mir::{BinOp, Constant},
+    mir::{BinOp, self},
     ty::{print::FmtPrinter, print::PrettyPrinter, TyCtxt},
 };
 
@@ -22,68 +22,68 @@ pub const PRELUDE: &str = "use Ref \n\
                  ensures { *result = a }";
 
 #[derive(Debug)]
-pub struct MlCfgFunction {
+pub struct Function {
     pub name: String,
-    pub retty: MlCfgType,
-    pub args: Vec<(Local, MlCfgType)>,
-    pub vars: Vec<(Local, MlCfgType)>,
-    pub blocks: Vec<MlCfgBlock>,
+    pub retty: Type,
+    pub args: Vec<(Local, Type)>,
+    pub vars: Vec<(Local, Type)>,
+    pub blocks: Vec<Block>,
     pub preconds: Vec<String>, // for now we blindly pass contracts down
     pub postconds: Vec<String>,
 }
 
 #[derive(Debug)]
-pub struct MlCfgBlock {
-    pub label: Block,
-    pub statements: Vec<MlCfgStatement>,
-    pub terminator: MlCfgTerminator,
+pub struct Block {
+    pub label: BlockId,
+    pub statements: Vec<Statement>,
+    pub terminator: Terminator,
 }
 
 #[derive(Debug)]
-pub struct Block(usize);
+pub struct BlockId(usize);
 
-impl From<&BasicBlock> for Block {
+impl From<&BasicBlock> for BlockId {
     fn from(b: &BasicBlock) -> Self {
-        Block((*b).into())
+        BlockId((*b).into())
     }
 }
-impl From<BasicBlock> for Block {
+impl From<BasicBlock> for BlockId {
     fn from(b: BasicBlock) -> Self {
-        Block(b.into())
+        BlockId(b.into())
     }
 }
 
 #[derive(Debug)]
-pub enum MlCfgTerminator {
-    Goto(Block),
+pub enum Terminator {
+    Goto(BlockId),
     Absurd,
     Return,
-    Switch(MlCfgExp, Vec<(MlCfgPattern, Block)>),
+    Switch(Exp, Vec<(Pattern, BlockId)>),
 }
 
 #[derive(Debug)]
-pub enum MlCfgStatement {
-    Assign { lhs: Local, rhs: MlCfgExp },
-    Invariant(MlCfgExp),
+pub enum Statement {
+    Assign { lhs: Local, rhs: Exp },
+    Invariant(Exp),
     Freeze(Local),
 }
 
 #[derive(Debug)]
-pub enum MlCfgType {
+pub enum Type {
     Bool,
     Char,
     Int(rustc_ast::ast::IntTy),
     Uint(rustc_ast::ast::UintTy),
-    MutableBorrow(Box<MlCfgType>),
+    MutableBorrow(Box<Type>),
     TVar(String),
     TConstructor(String),
-    TApp(Box<MlCfgType>, Vec<MlCfgType>),
-    Tuple(Vec<MlCfgType>),
+    TApp(Box<Type>, Vec<Type>),
+    Tuple(Vec<Type>),
 }
 
-impl MlCfgType {
+impl Type {
     fn complex(&self) -> bool {
-        use MlCfgType::*;
+        use Type::*;
         !matches!(self, Bool | Char | Int(_) | Uint(_) | TVar(_) | Tuple(_) | TConstructor(_))
     }
 }
@@ -92,44 +92,44 @@ impl MlCfgType {
 pub struct MlTyDecl {
     pub ty_name: String,
     pub ty_params: Vec<String>,
-    pub ty_constructors: Vec<(String, Vec<MlCfgType>)>,
+    pub ty_constructors: Vec<(String, Vec<Type>)>,
 }
 
 #[derive(Debug, Clone)]
-pub enum MlCfgExp {
-    Current(Box<MlCfgExp>),
-    Final(Box<MlCfgExp>),
+pub enum Exp {
+    Current(Box<Exp>),
+    Final(Box<Exp>),
     Local(Local),
-    Let { pattern: MlCfgPattern, arg: Box<MlCfgExp>, body: Box<MlCfgExp> },
+    Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
     Var(String),
-    RecUp { record: Box<MlCfgExp>, label: String, val: Box<MlCfgExp> },
-    Tuple(Vec<MlCfgExp>),
-    Constructor { ctor: String, args: Vec<MlCfgExp> },
-    BorrowMut(Box<MlCfgExp>),
-    // RecField { rec: Box<MlCfgExp>, field: String },
-    Const(MlCfgConstant),
-    BinaryOp(BinOp, Box<MlCfgExp>, Box<MlCfgExp>),
-    Call(Box<MlCfgExp>, Vec<MlCfgExp>),
+    RecUp { record: Box<Exp>, label: String, val: Box<Exp> },
+    Tuple(Vec<Exp>),
+    Constructor { ctor: String, args: Vec<Exp> },
+    BorrowMut(Box<Exp>),
+    // RecField { rec: Box<Exp>, field: String },
+    Const(Constant),
+    BinaryOp(BinOp, Box<Exp>, Box<Exp>),
+    Call(Box<Exp>, Vec<Exp>),
     Verbatim(String),
 }
 
 #[derive(Debug, Clone)]
-pub struct MlCfgConstant(String, ConstantType);
+pub struct Constant(String, ConstantType);
 
-impl MlCfgConstant {
-    pub fn from_mir_constant<'tcx>(tcx: TyCtxt<'tcx>, c: &Constant<'tcx>) -> Self {
+impl Constant {
+    pub fn from_mir_constant<'tcx>(tcx: TyCtxt<'tcx>, c: &mir::Constant<'tcx>) -> Self {
         let mut fmt = String::new();
         let cx = FmtPrinter::new(tcx, &mut fmt, Namespace::ValueNS);
         cx.pretty_print_const(c.literal, false).unwrap();
 
-        MlCfgConstant(fmt, ())
+        Constant(fmt, ())
     }
 
     pub fn const_true() -> Self {
-        MlCfgConstant("True".to_owned(), ())
+        Constant("True".to_owned(), ())
     }
     pub fn const_false() -> Self {
-        MlCfgConstant("False".to_owned(), ())
+        Constant("False".to_owned(), ())
     }
 }
 
@@ -137,42 +137,42 @@ impl MlCfgConstant {
 type ConstantType = ();
 // enum ConstantType { Bool }
 
-impl MlCfgExp {
+impl Exp {
     fn complex(&self) -> bool {
-        use MlCfgExp::*;
+        use Exp::*;
         !matches!(self, Local(_) | Var(_) | Tuple(_) | Constructor{..})
     }
 }
 #[derive(Clone, Debug)]
-pub enum MlCfgPattern {
+pub enum Pattern {
     Wildcard,
     VarP(String),
-    TupleP(Vec<MlCfgPattern>),
-    ConsP(String, Vec<MlCfgPattern>),
-    LitP(MlCfgConstant),
+    TupleP(Vec<Pattern>),
+    ConsP(String, Vec<Pattern>),
+    LitP(Constant),
     // RecP(String, String),
 }
 
-impl Display for MlCfgPattern {
+impl Display for Pattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MlCfgPattern::Wildcard => {
+            Pattern::Wildcard => {
                 write!(f, "_")?;
             }
-            MlCfgPattern::VarP(v) => {
+            Pattern::VarP(v) => {
                 write!(f, "{}", v)?;
             }
-            MlCfgPattern::TupleP(vs) => {
+            Pattern::TupleP(vs) => {
                 write!(f, "({})", vs.iter().format(", "))?;
             }
-            MlCfgPattern::ConsP(c, pats) => {
+            Pattern::ConsP(c, pats) => {
                 if pats.is_empty() {
                     write!(f, "{}", c)?;
                 } else {
                     write!(f, "{}({})", c, pats.iter().format(", "))?;
                 }
             }
-            MlCfgPattern::LitP(lit) => {
+            Pattern::LitP(lit) => {
                 write!(f, "{}", lit)?;
             }
         }
@@ -192,13 +192,13 @@ macro_rules! parens {
     };
 }
 
-impl Display for Block {
+impl Display for BlockId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "BB{}", self.0)
     }
 }
 
-impl Display for MlCfgFunction {
+impl Display for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "let cfg {} ", self.name)?;
 
@@ -248,7 +248,7 @@ impl Display for MlCfgFunction {
     }
 }
 
-impl Display for MlCfgBlock {
+impl Display for Block {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{} {{", self.label)?;
 
@@ -264,9 +264,9 @@ impl Display for MlCfgBlock {
     }
 }
 
-impl Display for MlCfgTerminator {
+impl Display for Terminator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use MlCfgTerminator::*;
+        use Terminator::*;
         match self {
             Goto(tgt) => {
                 write!(f, "goto {}", tgt)?;
@@ -290,53 +290,53 @@ impl Display for MlCfgTerminator {
     }
 }
 
-impl Display for MlCfgExp {
+impl Display for Exp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MlCfgExp::Current(e) => {
+            Exp::Current(e) => {
                 write!(f, " * {}", e)?;
             }
-            MlCfgExp::Final(e) => {
+            Exp::Final(e) => {
                 write!(f, " ^ {}", e)?;
             }
-            MlCfgExp::Local(l) => {
+            Exp::Local(l) => {
                 write!(f, "{:?}", l)?;
             }
-            MlCfgExp::Let { pattern, arg, body } => {
+            Exp::Let { pattern, arg, body } => {
                 write!(f, "let {} = {} in {}", pattern, parens!(arg), parens!(body))?;
             }
-            MlCfgExp::Var(v) => {
+            Exp::Var(v) => {
                 write!(f, "{}", v)?;
             }
-            MlCfgExp::RecUp { record, label, val } => {
+            Exp::RecUp { record, label, val } => {
                 write!(f, "{{ {} with {} = {} }}", parens!(record), label, parens!(val))?;
             }
-            MlCfgExp::Tuple(vs) => {
+            Exp::Tuple(vs) => {
                 write!(f, "({})", vs.iter().format(", "))?;
             }
-            MlCfgExp::Constructor { ctor, args } => {
+            Exp::Constructor { ctor, args } => {
                 if args.is_empty() {
                     write!(f, "{}", ctor)?;
                 } else {
                     write!(f, "{}({})", ctor, args.iter().format(", "))?;
                 }
             }
-            MlCfgExp::BorrowMut(exp) => {
+            Exp::BorrowMut(exp) => {
                 write!(f, "borrow_mut {}", parens!(exp))?;
             }
-            // MlCfgExp::RecField{rec, field} => {
+            // Exp::RecField{rec, field} => {
             //     write!(f, "{}.{}", parens!(rec), field)?;
             // }
-            MlCfgExp::Const(c) => {
+            Exp::Const(c) => {
                 write!(f, "{}", c)?;
             }
-            MlCfgExp::BinaryOp(op, l, r) => {
+            Exp::BinaryOp(op, l, r) => {
                 write!(f, "{} {} {}", l, bin_op_to_string(op), r)?;
             }
-            MlCfgExp::Call(fun, args) => {
+            Exp::Call(fun, args) => {
                 write!(f, "{} {}", fun, args.iter().map(|a| parens!(a)).format(" "))?;
             }
-            MlCfgExp::Verbatim(verb) => { write!(f, "{}", verb)?; }
+            Exp::Verbatim(verb) => { write!(f, "{}", verb)?; }
         }
         Ok(())
     }
@@ -359,22 +359,22 @@ fn bin_op_to_string(op: &BinOp) -> &str {
     }
 }
 
-impl Display for MlCfgConstant {
+impl Display for Constant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl Display for MlCfgStatement {
+impl Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MlCfgStatement::Assign { lhs, rhs } => {
+            Statement::Assign { lhs, rhs } => {
                 write!(f, "{:?} <- {}", lhs, rhs)?;
             }
-            MlCfgStatement::Freeze(loc) => {
+            Statement::Freeze(loc) => {
                 write!(f, "assume {{ ^ {:?} = * {:?} }}", loc, loc)?;
             }
-            MlCfgStatement::Invariant(e) => {
+            Statement::Invariant(e) => {
                 write!(f, "invariant {{ {} }}", e)?;
             }
         }
@@ -382,9 +382,9 @@ impl Display for MlCfgStatement {
     }
 }
 
-impl Display for MlCfgType {
+impl Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use MlCfgType::*;
+        use Type::*;
 
         if self.complex() {
             write!(f, "(")?;

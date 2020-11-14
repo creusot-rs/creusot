@@ -7,7 +7,7 @@ use rustc_middle::{
 };
 
 use crate::{
-    mlcfg::{MlCfgConstant, MlCfgExp, MlCfgPattern, MlCfgTerminator as MlT},
+    mlcfg::{Constant, Exp, Pattern, Terminator as MlT},
     place::from_place,
 };
 
@@ -53,7 +53,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                             })
                             .collect();
 
-                        branches.push((MlCfgPattern::Wildcard, targets.otherwise().into()));
+                        branches.push((Pattern::Wildcard, targets.otherwise().into()));
                         let discriminant = self.translate_operand(&real_discr);
 
                         self.emit_terminator(MlT::Switch(discriminant, branches));
@@ -65,14 +65,14 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
 
                         let branches = vec![
                             (
-                                MlCfgPattern::LitP(MlCfgConstant::const_false()),
+                                Pattern::LitP(Constant::const_false()),
                                 targets.all_targets()[0].into(),
                             ),
                             (
-                                MlCfgPattern::LitP(MlCfgConstant::const_true()),
+                                Pattern::LitP(Constant::const_true()),
                                 targets.all_targets()[1].into(),
                             ),
-                            (MlCfgPattern::Wildcard, targets.otherwise().into()),
+                            (Pattern::Wildcard, targets.otherwise().into()),
                         ];
 
                         self.emit_terminator(MlT::Switch(discriminant, branches));
@@ -108,7 +108,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
 
                     func_args.remove(0)
                 } else {
-                    MlCfgExp::Call(box fname, func_args)
+                    Exp::Call(box fname, func_args)
                 };
 
                 let (loc, bb) = destination.unwrap();
@@ -142,8 +142,8 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
     }
 }
 
-fn variant_pattern(var: &VariantDef) -> MlCfgPattern {
-    let wilds = var.fields.iter().map(|_| MlCfgPattern::Wildcard).collect();
+fn variant_pattern(var: &VariantDef) -> Pattern {
+    let wilds = var.fields.iter().map(|_| Pattern::Wildcard).collect();
     let cons_name = var.ident.to_string();
-    MlCfgPattern::ConsP(cons_name, wilds)
+    Pattern::ConsP(cons_name, wilds)
 }

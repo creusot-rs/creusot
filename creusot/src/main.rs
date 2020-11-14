@@ -2,7 +2,6 @@
 #![feature(box_syntax, box_patterns)]
 #![register_tool(creusot)]
 #![feature(const_panic, or_patterns)]
-#![feature(let_chains)]
 
 extern crate polonius_engine;
 extern crate rustc_ast;
@@ -17,8 +16,7 @@ extern crate rustc_serialize;
 extern crate rustc_span;
 extern crate rustc_target;
 
-use mlcfg::{MlCfgFunction, MlTyDecl};
-use rustc_ast::AttrItem;
+use mlcfg::{Function, MlTyDecl};
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
 use rustc_hir::{
     def_id::{DefId, LOCAL_CRATE},
@@ -104,7 +102,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
         }
     }
 
-    type MlModule = (Vec<MlTyDecl>, Vec<MlCfgFunction>);
+    type MlModule = (Vec<MlTyDecl>, Vec<Function>);
     let mut translated_modules: HashMap<_, MlModule> = HashMap::new();
 
     // Translate all type declarations and push them into the module collection

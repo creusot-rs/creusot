@@ -4,7 +4,7 @@ use rustc_ast::AttrItem;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{mir::{BasicBlockData, Place, Rvalue, StatementKind as StmtK, TerminatorKind}, ty::{Attributes, Ty, TyCtxt, VariantDef}};
 
-use crate::mlcfg::{MlCfgConstant, MlCfgPattern};
+use crate::mlcfg::{Constant, Pattern};
 
 // Find the place being discriminated, if there is one
 pub fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Place<'tcx>> {
@@ -32,7 +32,7 @@ pub fn branches_for_ty<'tcx>(
     tcx: TyCtxt<'tcx>,
     switch_ty: Ty<'tcx>,
     targets: Vec<u128>,
-) -> Vec<MlCfgPattern> {
+) -> Vec<Pattern> {
     use rustc_middle::ty::TyKind::*;
     match switch_ty.kind() {
         Adt(def, _) => {
@@ -46,17 +46,17 @@ pub fn branches_for_ty<'tcx>(
         }
         Tuple(_) => unimplemented!("tuple"),
         Bool => vec![
-            MlCfgPattern::LitP(MlCfgConstant::const_false()),
-            MlCfgPattern::LitP(MlCfgConstant::const_true()),
+            Pattern::LitP(Constant::const_false()),
+            Pattern::LitP(Constant::const_true()),
         ],
         _ => unimplemented!("constant pattern"),
     }
 }
 
-pub fn variant_pattern(var: &VariantDef) -> MlCfgPattern {
-    let wilds = var.fields.iter().map(|_| MlCfgPattern::Wildcard).collect();
+pub fn variant_pattern(var: &VariantDef) -> Pattern {
+    let wilds = var.fields.iter().map(|_| Pattern::Wildcard).collect();
     let cons_name = var.ident.to_string();
-    MlCfgPattern::ConsP(cons_name, wilds)
+    Pattern::ConsP(cons_name, wilds)
 }
 
 fn is_attr(attr: &AttrItem, str: &str) -> bool {

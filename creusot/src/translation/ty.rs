@@ -2,7 +2,7 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{self, subst::InternalSubsts, AdtDef, Ty, TyCtxt, TyKind::*};
 use rustc_span::Symbol;
 
-use crate::mlcfg::{MlCfgType as MlT, MlTyDecl};
+use crate::mlcfg::{Type as MlT, MlTyDecl};
 
 pub struct TyTranslator<'tcx> {
     tcx: TyCtxt<'tcx>,

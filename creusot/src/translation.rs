@@ -8,9 +8,10 @@ use rustc_mir::dataflow::{
     impls::{MaybeInitializedLocals, MaybeLiveLocals},
 };
 
+use crate::mlcfg;
 use crate::{analysis, place::from_place, place::{MirPlace, Mutability::*, Projection::*}};
 
-use crate::mlcfg::{MlCfgExp::*, MlCfgPattern::*, *};
+use crate::mlcfg::{Exp::*, Pattern::*, *};
 
 use self::{ty::TyTranslator, util::spec_attrs};
 
@@ -34,9 +35,9 @@ pub struct FunctionTranslator<'a, 'tcx> {
     discr_map: HashMap<(BasicBlock, mir::Local), Place<'tcx>>,
 
     // Current block being generated
-    current_block: (Block, Vec<MlCfgStatement>, Option<MlCfgTerminator>),
+    current_block: (BlockId, Vec<mlcfg::Statement>, Option<mlcfg::Terminator>),
 
-    past_blocks: Vec<MlCfgBlock>,
+    past_blocks: Vec<mlcfg::Block>,
 }
 
 pub fn translate_tydecl(tcx: TyCtxt, adt: &AdtDef) -> MlTyDecl {
@@ -74,17 +75,17 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         }
     }
 
-    fn emit_statement(&mut self, s: MlCfgStatement) {
+    fn emit_statement(&mut self, s: mlcfg::Statement) {
         self.current_block.1.push(s);
     }
 
-    fn emit_terminator(&mut self, t: MlCfgTerminator) {
+    fn emit_terminator(&mut self, t: mlcfg::Terminator) {
         assert!(self.current_block.2.is_none());
 
         self.current_block.2 = Some(t);
     }
 
-    pub fn translate(mut self, nm: DefId, contracts: (Vec<String>, Vec<String>)) -> MlCfgFunction {
+    pub fn translate(mut self, nm: DefId, contracts: (Vec<String>, Vec<String>)) -> Function {
         for (bb, bbd) in preorder(self.body) {
             self.current_block = (bb.into(), vec![], None);
             if bbd.is_cleanup {
@@ -101,7 +102,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             self.freeze_borrows_dying_at(loc);
             self.translate_terminator(bbd.terminator(), loc);
 
-            self.past_blocks.push(MlCfgBlock {
+            self.past_blocks.push(Block {
                 label: self.current_block.0,
                 statements: self.current_block.1,
                 terminator: self.current_block.2.unwrap(),
@@ -125,7 +126,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         let retty = vars.next().unwrap().1;
 
         let name = self.tcx.def_path(nm).to_filename_friendly_no_crate();
-        MlCfgFunction {
+        Function {
             name,
             retty,
             args: vars.by_ref().take(self.body.arg_count).collect(),
@@ -175,13 +176,13 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             let local_ty = self.body.local_decls[local].ty;
 
             if self.local_init.contains(local) && local_ty.is_ref() && local_ty.is_mutable_ptr() {
-                self.emit_statement(MlCfgStatement::Freeze(local));
+                self.emit_statement(mlcfg::Statement::Freeze(local));
             }
         }
     }
 
     // Useful helper to translate an operand
-    pub fn translate_operand(&self, operand: &Operand<'tcx>) -> MlCfgExp {
+    pub fn translate_operand(&self, operand: &Operand<'tcx>) -> Exp {
         operand_to_exp(self.tcx, self.body, operand)
     }
 
@@ -197,10 +198,10 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
 
 // Useful helper to translate an operand
-fn operand_to_exp<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, operand: &Operand<'tcx>) -> MlCfgExp {
+fn operand_to_exp<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, operand: &Operand<'tcx>) -> Exp {
     match operand {
         Operand::Copy(pl) | Operand::Move(pl) => rhs_to_why_exp(&from_place(tcx, body, pl)),
-        Operand::Constant(c) => Const(MlCfgConstant::from_mir_constant(tcx, c)),
+        Operand::Constant(c) => Const(mlcfg::Constant::from_mir_constant(tcx, c)),
     }
 }
 
@@ -211,7 +212,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId) -> String {
 // [(P as Some)]   ---> [_1]
 // [(P as Some).0] ---> let Some(a) = [_1] in a
 // [(* P)] ---> * [P]
-pub fn rhs_to_why_exp(rhs: &MirPlace) -> MlCfgExp {
+pub fn rhs_to_why_exp(rhs: &MirPlace) -> Exp {
     let mut inner = Local(rhs.local);
 
     for proj in rhs.proj.iter() {
