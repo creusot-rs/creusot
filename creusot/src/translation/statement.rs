@@ -11,8 +11,8 @@ use crate::{
         Pattern::*,
         Statement::*,
     },
-    place::from_place,
-    place::{MirPlace, Mutability as M},
+    place::simplify_place,
+    place::{SimplePlace, Mutability as M},
     ts_to_symbol,
     Projection::*,
 };
@@ -21,8 +21,19 @@ use super::{rhs_to_why_exp, specification, util::spec_attrs, FunctionTranslator}
 
 impl<'tcx> FunctionTranslator<'_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>) {
-        if let StatementKind::Assign(box (ref pl, ref rv)) = statement.kind {
-            self.translate_assign(statement.source_info, pl, rv)
+        use StatementKind::*;
+        match statement.kind {
+            Assign(box (ref pl, ref rv)) => self.translate_assign(statement.source_info, pl, rv),
+            SetDiscriminant { .. } => {
+                // TODO: implement support for set discriminant
+                unimplemented!("SetDiscriminant not supported");
+            }
+            // Erase Storage markers and Nops
+            StorageDead(_) | StorageLive(_) | Nop => {}
+            // Not real instructions
+            FakeRead(_, _) | AscribeUserType(_, _) | Retag(_, _) | Coverage(_) => {}
+            // No assembly!
+            LlvmInlineAsm(_) => unimplemented!("inline assembly is not supported"),
         }
     }
 
@@ -32,14 +43,14 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
         place: &'_ Place<'tcx>,
         rvalue: &'_ Rvalue<'tcx>,
     ) {
-        let lplace = from_place(self.tcx, self.body, place);
+        let lplace = simplify_place(self.tcx, self.body, place);
         let rval = match rvalue {
             Rvalue::Use(rval) => match rval {
-                Move(pl) | Copy(pl) => rhs_to_why_exp(&from_place(self.tcx, self.body, pl)),
+                Move(pl) | Copy(pl) => rhs_to_why_exp(&simplify_place(self.tcx, self.body, pl)),
                 Constant(box c) => Const(Constant::from_mir_constant(self.tcx, c)),
             },
             Rvalue::Ref(_, ss, pl) => {
-                let rplace = from_place(self.tcx, self.body, pl);
+                let rplace = simplify_place(self.tcx, self.body, pl);
                 match ss {
                     Shared | Shallow | Unique => rhs_to_why_exp(&rplace),
                     Mut { .. } => {
@@ -55,7 +66,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                     }
                 }
             }
-            // Rvalue::Discriminant(pl) => rhs_to_why_exp(&from_place(self.tcx, self.body, pl)),
+            // Rvalue::Discriminant(pl) => rhs_to_why_exp(&simplify_place(self.tcx, self.body, pl)),
             Rvalue::Discriminant(_) => return,
             Rvalue::BinaryOp(op, l, r) | Rvalue::CheckedBinaryOp(op, l, r) => {
                 BinaryOp(*op, box self.translate_operand(l), box self.translate_operand(r))
@@ -80,17 +91,16 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
 
                         if spec_attrs.len() == 1 {
                             let attr = spec_attrs.remove(0);
-                            match attr.path.segments[2].ident.name.to_string().as_ref() {
-                                "invariant" => {
-                                    let inv = ts_to_symbol(attr.args.inner_tokens());
+                            if is_invariant_marker(attr) {
+                                let inv = ts_to_symbol(attr.args.inner_tokens());
 
-                                    let inv_string =
-                                        specification::invariant_to_why(self.body, si, inv);
+                                let inv_string =
+                                    specification::invariant_to_why(self.body, si, inv);
 
-                                    self.emit_statement(Invariant(Verbatim(inv_string)));
-                                    return;
-                                }
-                                a => panic!("unknown kind of specification marker: {}", a),
+                                self.emit_statement(Invariant(Verbatim(inv_string)));
+                                return;
+                            } else {
+                                panic!("unsupported spec attribute");
                             }
                         } else {
                             unimplemented!("support for program closures isn't implemented");
@@ -114,6 +124,10 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
     }
 }
 
+fn is_invariant_marker(attr: &rustc_ast::AttrItem) -> bool {
+    attr.path.segments[2].ident.name.to_string() == "invariant"
+}
+
 /// Correctly translate an assignment from one place to another. The challenge here is correctly
 /// construction the expression that assigns deep inside a structure.
 /// (_1 as Some) = P      ---> let _1 = P ??
@@ -125,7 +139,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
 
 /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-pub fn create_assign(lhs: &MirPlace, rhs: Exp) -> mlcfg::Statement {
+pub fn create_assign(lhs: &SimplePlace, rhs: Exp) -> mlcfg::Statement {
     // Translation happens inside to outside, which means we scan projection elements in reverse
     // building up the inner expression. We start with the RHS expression which is at the deepest
     // level.
@@ -164,7 +178,8 @@ pub fn create_assign(lhs: &MirPlace, rhs: Exp) -> mlcfg::Statement {
             },
             TupleAccess { size, ix } => {
                 let varpats = ('a'..).map(|c| VarP(c.to_string())).take(*size).collect();
-                let mut varexps: Vec<_> = ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
+                let mut varexps: Vec<_> =
+                    ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
                 varexps[*ix] = inner;
 
                 inner = Let {
@@ -176,5 +191,5 @@ pub fn create_assign(lhs: &MirPlace, rhs: Exp) -> mlcfg::Statement {
         }
     }
 
-    Assign { lhs: lhs.local, rhs: inner }
+    Assign { lhs: lhs.local.into(), rhs: inner }
 }

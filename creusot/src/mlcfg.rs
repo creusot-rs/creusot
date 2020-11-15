@@ -63,7 +63,7 @@ pub enum Terminator {
 
 #[derive(Debug)]
 pub enum Statement {
-    Assign { lhs: Local, rhs: Exp },
+    Assign { lhs: LocalIdent, rhs: Exp },
     Invariant(Exp),
     Freeze(Local),
 }

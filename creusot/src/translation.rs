@@ -9,8 +9,8 @@ use rustc_mir::dataflow::{
 
 use crate::mlcfg;
 use crate::{
-    place::from_place,
-    place::{MirPlace, Mutability::*, Projection::*},
+    place::simplify_place,
+    place::{SimplePlace, Mutability::*, Projection::*},
 };
 
 use crate::mlcfg::{Exp::*, Pattern::*, *};
@@ -190,7 +190,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 // Useful helper to translate an operand
 fn operand_to_exp<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, operand: &Operand<'tcx>) -> Exp {
     match operand {
-        Operand::Copy(pl) | Operand::Move(pl) => rhs_to_why_exp(&from_place(tcx, body, pl)),
+        Operand::Copy(pl) | Operand::Move(pl) => rhs_to_why_exp(&simplify_place(tcx, body, pl)),
         Operand::Constant(c) => Const(mlcfg::Constant::from_mir_constant(tcx, c)),
     }
 }
@@ -202,7 +202,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId) -> QName {
 // [(P as Some)]   ---> [_1]
 // [(P as Some).0] ---> let Some(a) = [_1] in a
 // [(* P)] ---> * [P]
-pub fn rhs_to_why_exp(rhs: &MirPlace) -> Exp {
+pub fn rhs_to_why_exp(rhs: &SimplePlace) -> Exp {
     let mut inner = Var(rhs.local.into());
 
     for proj in rhs.proj.iter() {

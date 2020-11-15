@@ -19,12 +19,12 @@ pub enum Projection {
 use Projection::*;
 
 #[derive(Clone, Debug)]
-pub struct MirPlace {
+pub struct SimplePlace {
     pub local: Local,
     pub proj: Vec<Projection>,
 }
 
-pub fn from_place<'tcx>(tcx: TyCtxt<'tcx>, decls: &Body<'tcx>, place: &Place<'tcx>) -> MirPlace {
+pub fn simplify_place<'tcx>(tcx: TyCtxt<'tcx>, decls: &Body<'tcx>, place: &Place<'tcx>) -> SimplePlace {
     let mut place_ty = Place::ty_from(place.local, &[], decls, tcx);
 
     let mut res_proj = Vec::new();
@@ -64,5 +64,5 @@ pub fn from_place<'tcx>(tcx: TyCtxt<'tcx>, decls: &Body<'tcx>, place: &Place<'tc
         place_ty = place_ty.projection_ty(tcx, proj);
     }
 
-    MirPlace { local: place.local, proj: res_proj }
+    SimplePlace { local: place.local, proj: res_proj }
 }

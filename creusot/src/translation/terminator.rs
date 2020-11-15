@@ -9,7 +9,7 @@ use rustc_middle::{
 
 use crate::{
     mlcfg::{Constant, Exp, Pattern, Terminator as MlT},
-    place::from_place,
+    place::simplify_place,
 };
 
 use super::{statement::create_assign, FunctionTranslator};
@@ -64,7 +64,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                     return;
                 } else {
                     let (loc, bb) = destination.unwrap();
-                    let call_stmt = create_assign(&from_place(self.tcx, self.body, &loc), call_exp);
+                    let call_stmt = create_assign(&simplify_place(self.tcx, self.body, &loc), call_exp);
                     self.emit_statement(call_stmt);
                     self.emit_terminator(MlT::Goto(bb.into()));
                 }
