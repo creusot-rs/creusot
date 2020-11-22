@@ -2,171 +2,140 @@ use std::collections::HashSet;
 
 use proc_macro2::TokenStream;
 use rustc_middle::mir::{Body, SourceInfo};
-use syn::{visit::Visit, Term::*};
-
-use syn::*;
+use syn::{visit::Visit, visit, term::*, BinOp, term::Term::*, PatIdent};
 
 use quote::quote;
+
+use crate::mlcfg::Exp;
+use crate::mlcfg::LocalIdent;
 
 pub fn requires_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {
     let p: Term = syn::parse_str(&attr_val).unwrap();
 
-    let args = body
-        .args_iter()
-        .map(|l| syn::Ident::new(format!("{:?}_o", l).as_ref(), syn::export::Span::call_site()));
-
-    let params =
+    let subst =
         body.var_debug_info.iter().take(body.arg_count).map(|vdi| {
-            syn::Ident::new(vdi.name.to_string().as_ref(), syn::export::Span::call_site())
-        });
+            let loc = vdi.place.as_local().unwrap();
+            let source_name = vdi.name.to_string();
+            let outer_name = format!("{}_o", source_name);
+            (LocalIdent::Name(source_name), Exp::Var(LocalIdent::Local(loc, Some(outer_name))))
+        }).collect();
 
-    let toks = pred_to_why(&p);
-    format!(
-        "{}",
-        quote! {
-          let f #(#params)* = #toks in f #(#args)*
-        }
-    )
+    let mut e = to_exp(&p);
+    e.subst(subst);
+    format!("{}", e)
 }
 
 pub fn invariant_to_why<'tcx>(body: &Body<'tcx>, info: SourceInfo, attr_val: String) -> String {
     let p: Term = syn::parse_str(&attr_val).unwrap();
-    let fvs = FreeVars::for_term(&p);
+    let mut e = to_exp(&p);
+    let fvs = e.fvs();
 
     let vars_in_scope: Vec<_> =
         body.var_debug_info.iter().filter(|vdi| vdi.source_info.scope <= info.scope).collect();
 
     // TODO: ensure only one match
-    let lcls = fvs.iter().map(|free| {
+    let subst = fvs.iter().map(|free| {
         let var_info =
-            vars_in_scope.iter().filter(|vdi| *free == vdi.name.to_ident_string()).next().unwrap();
+            vars_in_scope.iter().filter(|vdi| free.to_string() == vdi.name.to_ident_string()).next().unwrap();
 
         let loc = var_info.place.as_local().unwrap();
-        syn::Ident::new(format!("{:?}", loc).as_ref(), syn::export::Span::call_site())
-    });
+        (free.clone(), LocalIdent::Local(loc, Some(var_info.name.to_string())).into())
+    }).collect();
 
-    let toks = pred_to_why(&p);
-    let fv_iter = fvs.iter();
-
-    format!(
-        "{}",
-        quote! {
-            let f #(#fv_iter)* = #toks in f #(#lcls)*
-        }
-    )
+    e.subst(subst);
+    format!("{}", e)
 }
 
 pub fn ensures_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {
     requires_to_why(body, attr_val)
 }
 
-fn pred_to_why(p: &Term) -> TokenStream {
+
+fn bin_to_bin(op: &syn::BinOp) -> Option<rustc_middle::mir::BinOp> {
+    use rustc_middle::mir::BinOp::*;
+
+    match op {
+        BinOp::Add(_) => { Some(Add) }
+        BinOp::Sub(_) => { Some(Sub) }
+        BinOp::Mul(_) => { Some(Mul) }
+        BinOp::Div(_) => { Some(Div) }
+        BinOp::Rem(_) => { Some(Rem) }
+        // BinOp::And(_) => { And}
+        // BinOp::Or(_) =>  { Or }
+        BinOp::BitXor(_) => { Some(BitXor) }
+        BinOp::BitAnd(_) => { Some(BitAnd) }
+        BinOp::BitOr(_) => { Some(BitOr) }
+        BinOp::Shl(_) => { Some(Shl) }
+        BinOp::Shr(_) => { Some(Shr) }
+        BinOp::Eq(_) => { Some(Eq) }
+        BinOp::Lt(_) => { Some(Lt) }
+        BinOp::Le(_) => { Some(Le) }
+        BinOp::Ne(_) => { Some(Ne) }
+        BinOp::Ge(_) => { Some(Ge) }
+        BinOp::Gt(_) => { Some(Gt) }
+        _ => None,
+    }
+}
+
+fn to_exp(p: &Term) -> crate::mlcfg::Exp {
+    use crate::mlcfg::Exp::*;
     match p {
         Binary(TermBinary { left, right, op, .. }) => {
-            let left_toks = pred_to_why(&*left);
-            let right_toks = pred_to_why(&*right);
-            quote! { #left_toks #op #right_toks }
+            let op = bin_to_bin(op).unwrap();
+            BinaryOp(op, box to_exp(left), box to_exp(right))
         }
-        Impl(TermImpl { hyp, cons, .. }) => {
-            let hyp_toks = pred_to_why(&*hyp);
-            let cons_toks = pred_to_why(&*cons);
-
-            quote! { #hyp_toks -> #cons_toks }
-        }
-        Term::Lit(TermLit { lit }) => {
-            quote! { #lit }
-        }
-        Path(p) => {
-            if p.path.segments.len() == 1 {
-                quote! { #p }
-            } else {
-                unimplemented!()
+        // Block(_) => {}
+        // Cast(_) => {}
+        // Field(_) => {}
+        // Group(_) => {}
+        // If(_) => {}
+        Lit(TermLit { lit }) => {
+            match lit {
+                syn::Lit::Int(lit) => {
+                    Const(crate::mlcfg::Constant(lit.base10_digits().to_owned(), ()))
+                }
+                syn::Lit::Float(lit) => {
+                    Const(crate::mlcfg::Constant(lit.base10_digits().to_owned(), ()))
+                }
+                syn::Lit::Bool(lit) => {
+                    Const(crate::mlcfg::Constant(format!("{}", lit.value), ()))
+                }
+                _ => unimplemented!(),
             }
         }
+        Unary(TermUnary { op, expr }) => {
+            let e = to_exp(expr);
+
+            match op {
+                syn::UnOp::Deref(_) => {
+                    Current(box e)
+                }
+                syn::UnOp::Not(_) => unimplemented!(),
+                syn::UnOp::Neg(_) => unimplemented!(),
+            }
+        }
+        Term::Final(TermFinal { term, .. }) => {
+            Final(box to_exp(term))
+        }
+        Path(TermPath { path, .. }) => {
+            path_to_exp(path)
+        }
         Paren(TermParen { expr, .. }) => {
-            let ttoks = pred_to_why(expr);
-            quote! { ( #ttoks ) }
+            to_exp(expr)
         }
-        // Call(TermCall {}) => {}
-        // If(TermIf {}) => {}
-        // Let(TermLet {}) => {}
-        // Match(TermMatch{}) => {}
-        // Tuple(TermTuple {}) => {}
-        // Unary(TermUnary {}) => {}
-        _ => {
-            unimplemented!("{:?}", p);
-        }
+        // Match(_) => {}
+        // Paren(_) => {}
+        // Impl(TermImpl { hyp, cons, .. }) => {}
+        // Forall(TermForall { args, term, .. }) => {}
+        // Exists(TermExists { args, term, .. }) => {}
+        _ => unimplemented!("{:?}", p),
     }
 }
 
-struct FreeVars {
-    free: HashSet<syn::Ident>,
-    bound: HashSet<syn::Ident>,
-}
-
-// TODO: Rewrite / clarify scoping rules.
-impl<'ast> Visit<'ast> for FreeVars {
-    fn visit_term_path(&mut self, i: &'ast TermPath) {
-        // variable
-        if i.path.segments.len() == 1 {
-            self.free.insert(i.path.segments[0].ident.clone());
-        }
-    }
-
-    // Scoping.
-    fn visit_tblock(&mut self, i: &'ast TBlock) {
-        let mut bound_in_block = self.bound.clone();
-        for term in &i.stmts {
-            let mut fv = FreeVars { free: HashSet::new(), bound: HashSet::new() };
-            visit::visit_term_stmt(&mut fv, term);
-            self.free.extend(&fv.free - &bound_in_block);
-            bound_in_block.extend(fv.bound);
-        }
-    }
-
-    fn visit_term_if(&mut self, i: &'ast TermIf) {
-        let mut fv = FreeVars { free: HashSet::new(), bound: HashSet::new() };
-        visit::visit_term(&mut fv, &i.cond);
-        visit::visit_tblock(&mut fv, &i.then_branch);
-        self.free.extend(&fv.free - &fv.bound);
-
-        // if let bindings are only visible in the then branch (obviously)
-        if let Some((_, else_branch)) = &i.else_branch {
-            let mut fv = FreeVars { free: HashSet::new(), bound: HashSet::new() };
-            visit::visit_term(&mut fv, &*else_branch);
-            self.free.extend(fv.free);
-        }
-    }
-
-    // Occurs in if let / while let
-    fn visit_term_let(&mut self, i: &'ast TermLet) {
-        let mut fv = FreeVars { free: HashSet::new(), bound: HashSet::new() };
-        visit::visit_term_let(&mut fv, i);
-
-        let new_free = &fv.free - &self.bound;
-        self.free.extend(new_free);
-        self.bound.extend(fv.bound);
-    }
-
-    fn visit_term_arm(&mut self, i: &'ast TermArm) {
-        let mut fv = FreeVars { free: HashSet::new(), bound: HashSet::new() };
-
-        visit::visit_term_arm(&mut fv, i);
-
-        let new_free = &fv.free - &fv.bound;
-        self.free.extend(new_free)
-    }
-    fn visit_pat_ident(&mut self, i: &'ast PatIdent) {
-        self.bound.insert(i.ident.clone());
-    }
-}
-
-impl FreeVars {
-    fn for_term(t: &Term) -> HashSet<syn::Ident> {
-        // dbg!(t);
-        let mut fv = FreeVars { free: HashSet::new(), bound: HashSet::new() };
-        fv.visit_term(t);
-
-        &fv.free - &fv.bound
+fn path_to_exp(path: &syn::Path) -> crate::mlcfg::Exp {
+    if path.segments.len() == 1 {
+        Exp::Var(LocalIdent::Name(path.segments[0].ident.to_string()))
+    } else {
+        panic!()
     }
 }

@@ -30,18 +30,16 @@ use rustc_middle::{
 };
 
 mod place;
-use place::*;
-
 mod translation;
-
-use translation::*;
-
 #[allow(dead_code)]
 mod polonius;
-
 #[allow(dead_code)]
 mod debug;
 mod mlcfg;
+
+use translation::*;
+
+
 
 struct ToWhy {}
 

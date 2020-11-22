@@ -1,23 +1,18 @@
-use rustc_hir::def::CtorKind;
 use rustc_middle::mir::{
     BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind,
 };
 
-use crate::mlcfg;
 use crate::{
     mlcfg::{
-        Constant,
+        // Constant,
         Exp::{self, *},
-        Pattern::*,
         Statement::*,
     },
     place::simplify_place,
-    place::{SimplePlace, Mutability as M},
     ts_to_symbol,
-    Projection::*,
 };
 
-use super::{rhs_to_why_exp, specification, util::spec_attrs, FunctionTranslator};
+use super::{specification, util::spec_attrs, FunctionTranslator};
 
 impl<'tcx> FunctionTranslator<'_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>) {
@@ -46,34 +41,38 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
         let lplace = simplify_place(self.tcx, self.body, place);
         let rval = match rvalue {
             Rvalue::Use(rval) => match rval {
-                Move(pl) | Copy(pl) => rhs_to_why_exp(&simplify_place(self.tcx, self.body, pl)),
-                Constant(box c) => Const(Constant::from_mir_constant(self.tcx, c)),
+                Move(pl) | Copy(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl), si.scope),
+                Constant(box c) => Const(crate::mlcfg::Constant::from_mir_constant(self.tcx, c)),
             },
             Rvalue::Ref(_, ss, pl) => {
                 let rplace = simplify_place(self.tcx, self.body, pl);
+
                 match ss {
-                    Shared | Shallow | Unique => rhs_to_why_exp(&rplace),
+                    Shared | Shallow | Unique => self.translate_rplace(&rplace, si.scope),
                     Mut { .. } => {
-                        self.emit_statement(create_assign(
+
+                        self.emit_assignment(
                             &lplace,
-                            BorrowMut(box rhs_to_why_exp(&rplace)),
-                        ));
-                        self.emit_statement(create_assign(
+                            BorrowMut(box self.translate_rplace(&rplace, si.scope)),
+                            si.scope
+                        );
+                        self.emit_assignment(
                             &rplace,
-                            Final(box rhs_to_why_exp(&lplace)),
-                        ));
+                            Final(box self.translate_rplace(&lplace, si.scope)),
+                            si.scope
+                        );
                         return;
                     }
                 }
             }
-            // Rvalue::Discriminant(pl) => rhs_to_why_exp(&simplify_place(self.tcx, self.body, pl)),
+            // Rvalue::Discriminant(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
             Rvalue::Discriminant(_) => return,
             Rvalue::BinaryOp(op, l, r) | Rvalue::CheckedBinaryOp(op, l, r) => {
-                BinaryOp(*op, box self.translate_operand(l), box self.translate_operand(r))
+                BinaryOp(*op, box self.translate_operand(l, si.scope), box self.translate_operand(r, si.scope))
             }
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
-                let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
+                let fields = ops.iter().map(|op| self.translate_operand(op, si.scope)).collect();
 
                 match kind {
                     Tuple => Exp::Tuple(fields),
@@ -119,8 +118,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             | Rvalue::Len(_) => unimplemented!("{:?}", rvalue),
         };
 
-        let mlstmt = create_assign(&lplace, rval);
-        self.emit_statement(mlstmt);
+        self.emit_assignment(&lplace, rval, si.scope);
     }
 }
 
@@ -128,68 +126,3 @@ fn is_invariant_marker(attr: &rustc_ast::AttrItem) -> bool {
     attr.path.segments[2].ident.name.to_string() == "invariant"
 }
 
-/// Correctly translate an assignment from one place to another. The challenge here is correctly
-/// construction the expression that assigns deep inside a structure.
-/// (_1 as Some) = P      ---> let _1 = P ??
-/// (*_1) = P             ---> let _1 = { current = P, .. }
-/// (_1.2) = P            ---> let _1 = { _1 with [[2]] = P } (struct)
-///                       ---> let _1 = (let Cons(a, b, c) = _1 in Cons(a, b, P)) (tuple)
-/// (*_1).1 = P           ---> let _1 = { _1 with current = ({ * _1 with [[1]] = P })}
-/// ((*_1) as Some).0 = P ---> let _1 = { _1 with current = (let Some(X) = _1 in Some(P) )}
-
-/// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
-/// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-pub fn create_assign(lhs: &SimplePlace, rhs: Exp) -> mlcfg::Statement {
-    // Translation happens inside to outside, which means we scan projection elements in reverse
-    // building up the inner expression. We start with the RHS expression which is at the deepest
-    // level.
-    let mut inner = rhs;
-    // The stump represents the projection up to the element being translated
-    let mut stump = lhs.clone();
-    for proj in lhs.proj.iter().rev() {
-        // Remove the last element from the projection
-        stump.proj.pop();
-
-        match proj {
-            Deref(M::Mut) => {
-                inner = RecUp {
-                    record: box rhs_to_why_exp(&stump),
-                    label: "current".into(),
-                    val: box inner,
-                }
-            }
-            Deref(M::Not) => {
-                // Immutable references are erased in MLCFG
-            }
-            FieldAccess { ctor, ix, size, kind, .. } => match kind {
-                CtorKind::Fn | CtorKind::Fictive => {
-                    let varpats = ('a'..).map(|c| VarP(c.to_string())).take(*size).collect();
-                    let mut varexps: Vec<Exp> =
-                        ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
-                    varexps[*ix] = inner;
-
-                    inner = Let {
-                        pattern: ConsP(ctor.to_string(), varpats),
-                        arg: box rhs_to_why_exp(&stump),
-                        body: box Constructor { ctor: ctor.into(), args: varexps },
-                    }
-                }
-                CtorKind::Const => inner = Constructor { ctor: ctor.into(), args: vec![] },
-            },
-            TupleAccess { size, ix } => {
-                let varpats = ('a'..).map(|c| VarP(c.to_string())).take(*size).collect();
-                let mut varexps: Vec<_> =
-                    ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
-                varexps[*ix] = inner;
-
-                inner = Let {
-                    pattern: TupleP(varpats),
-                    arg: box rhs_to_why_exp(&stump),
-                    body: box Tuple(varexps),
-                }
-            }
-        }
-    }
-
-    Assign { lhs: lhs.local.into(), rhs: inner }
-}

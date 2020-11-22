@@ -12,7 +12,7 @@ use crate::{
     place::simplify_place,
 };
 
-use super::{statement::create_assign, FunctionTranslator};
+use super::FunctionTranslator;
 
 // Translate the terminator of a basic block.
 // There isn't much that's special about this. The only subtlety is in how
@@ -35,7 +35,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 let mut branches : Vec<_> = branch_pats.into_iter().zip(normal_targets.iter().map(|t| t.into())).collect();
 
                 branches.push((Pattern::Wildcard, targets.otherwise().into()));
-                let discriminant = self.translate_operand(&real_discr);
+                let discriminant = self.translate_operand(&real_discr, terminator.source_info.scope);
 
                 self.emit_terminator(MlT::Switch(discriminant, branches));
             }
@@ -46,7 +46,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 let fun_def_id = func_defid(func).expect("expected call with function");
 
                 let mut func_args: Vec<_> =
-                    args.iter().map(|arg| self.translate_operand(arg)).collect();
+                    args.iter().map(|arg| self.translate_operand(arg, terminator.source_info.scope)).collect();
 
                 // TODO: Get functions to be turned into QPaths!
                 let call_exp = if self.is_box_new(fun_def_id) {
@@ -54,8 +54,11 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
 
                     func_args.remove(0)
                 } else {
-                    let fname = self.translate_operand(func);
-                    Exp::Call(box fname, func_args)
+                    let fname = match func {
+                        Operand::Constant(c) => { crate::mlcfg::Constant::from_mir_constant(self.tcx, c) }
+                        _ => { panic!("not a function") }
+                    };
+                    Exp::Call(fname, func_args)
                 };
 
                 if destination.is_none() {
@@ -64,8 +67,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                     return;
                 } else {
                     let (loc, bb) = destination.unwrap();
-                    let call_stmt = create_assign(&simplify_place(self.tcx, self.body, &loc), call_exp);
-                    self.emit_statement(call_stmt);
+                    self.emit_assignment(&simplify_place(self.tcx, self.body, &loc), call_exp, terminator.source_info.scope);
                     self.emit_terminator(MlT::Goto(bb.into()));
                 }
             }

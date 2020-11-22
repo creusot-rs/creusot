@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fmt::Display;
 
 // Imports related to MLCfg Constatns
@@ -25,8 +27,8 @@ pub const PRELUDE: &str = "use Ref \n\
 pub struct Function {
     pub name: String,
     pub retty: Type,
-    pub args: Vec<(Local, Type)>,
-    pub vars: Vec<(Local, Type)>,
+    pub args: Vec<(LocalIdent, Type)>,
+    pub vars: Vec<(LocalIdent, Type)>,
     pub blocks: Vec<Block>,
     pub preconds: Vec<String>, // for now we blindly pass contracts down
     pub postconds: Vec<String>,
@@ -65,7 +67,7 @@ pub enum Terminator {
 pub enum Statement {
     Assign { lhs: LocalIdent, rhs: Exp },
     Invariant(Exp),
-    Freeze(Local),
+    Freeze(LocalIdent),
 }
 
 #[derive(Debug)]
@@ -95,7 +97,7 @@ pub struct MlTyDecl {
     pub ty_constructors: Vec<(String, Vec<Type>)>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum LocalIdent {
     /// A MIR local along with an optional human-readable name
     Local(Local, Option<String>),
@@ -105,23 +107,22 @@ pub enum LocalIdent {
 }
 
 impl From<&str> for LocalIdent {
-    fn from(s : &str) -> Self {
+    fn from(s: &str) -> Self {
         Self::Name(s.to_owned())
     }
 }
 
 impl From<String> for LocalIdent {
-    fn from(s : String) -> Self {
+    fn from(s: String) -> Self {
         Self::Name(s)
     }
 }
 
 impl From<Local> for LocalIdent {
-    fn from(l : Local) -> Self {
+    fn from(l: Local) -> Self {
         Self::Local(l, None)
     }
 }
-
 
 impl From<LocalIdent> for Exp {
     fn from(li: LocalIdent) -> Self {
@@ -129,15 +130,22 @@ impl From<LocalIdent> for Exp {
     }
 }
 
+impl LocalIdent {
+    fn to_string(&self) -> String {
+        format!("{}", self)
+    }
+}
+
 impl Display for LocalIdent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LocalIdent::Local(l, n) => { if let Some(n) = n {
-                write!(f, "{}", n)?;
+            LocalIdent::Local(l, n) => {
+                if let Some(n) = n {
+                    write!(f, "{}", n)?;
                 }
                 write!(f, "{:?}", l)
             }
-            LocalIdent::Name(nm) => { write!(f, "{}", nm) }
+            LocalIdent::Name(nm) => write!(f, "{}", nm),
         }
     }
 }
@@ -155,9 +163,7 @@ impl QName {
 
 impl From<&rustc_span::Symbol> for QName {
     fn from(nm: &rustc_span::Symbol) -> Self {
-        QName {
-            segments: vec![nm.to_string().into()]
-        }
+        QName { segments: vec![nm.to_string().into()] }
     }
 }
 
@@ -178,15 +184,86 @@ pub enum Exp {
     Tuple(Vec<Exp>),
     Constructor { ctor: QName, args: Vec<Exp> },
     BorrowMut(Box<Exp>),
-    // RecField { rec: Box<Exp>, field: String },
     Const(Constant),
     BinaryOp(BinOp, Box<Exp>, Box<Exp>),
-    Call(Box<Exp>, Vec<Exp>),
+    Call(Constant, Vec<Exp>),
     Verbatim(String),
 }
 
+impl Exp {
+    pub fn fvs(&self) -> HashSet<LocalIdent> {
+        match self {
+            Exp::Current(e) => e.fvs(),
+            Exp::Final(e) => e.fvs(),
+            Exp::Let { pattern, arg, body } => {
+                let bound = pattern.binders();
+
+                &(&body.fvs() - &bound) | &arg.fvs()
+            }
+            Exp::Var(v) => {
+                let mut fvs = HashSet::new();
+                fvs.insert(v.clone());
+                fvs
+            }
+            // Exp::QVar(_) => {}
+            // Exp::RecUp { record, label, val } => {}
+            // Exp::Tuple(_) => {}
+            // Exp::Constructor { ctor, args } => {}
+            // Exp::BorrowMut(_) => {}
+            Exp::Const(_) => HashSet::new(),
+            Exp::BinaryOp(_, l, r) => &l.fvs() | &r.fvs(),
+            // Exp::Call(_, _) => {}
+            Exp::Verbatim(_) => HashSet::new(),
+            _ => unimplemented!(),
+        }
+    }
+
+    pub fn subst(&mut self, mut subst: HashMap<LocalIdent, Exp>) {
+        match self {
+            Exp::Current(e) => e.subst(subst),
+            Exp::Final(e) => e.subst(subst),
+            Exp::Let { pattern, arg, body } => {
+                arg.subst(subst.clone());
+                let mut bound = pattern.binders();
+                bound.drain().for_each(|k| {
+                    subst.remove(&k);
+                });
+
+                body.subst(subst);
+            }
+            Exp::Var(v) => {
+                if let Some(e) = subst.get(v) {
+                    *self = e.clone()
+                }
+            }
+            Exp::RecUp { record, val, .. } => {
+                record.subst(subst.clone());
+                val.subst(subst);
+            }
+            Exp::Tuple(tuple) => {
+                for t in tuple {
+                    t.subst(subst.clone());
+                }
+            }
+            Exp::Constructor {args, .. } => {
+                for a in args {
+                    a.subst(subst.clone());
+                }
+            }
+            Exp::BorrowMut(e) => { e.subst(subst) }
+            Exp::BinaryOp(_, l, r) => { l.subst(subst.clone()); r.subst(subst)}
+            Exp::Call(f, a) => {}
+            Exp::QVar(_) => {}
+            Exp::Const(_) => {}
+            Exp::Verbatim(_) => {}
+        }
+    }
+}
+
+type ConstantType = ();
+
 #[derive(Debug, Clone)]
-pub struct Constant(String, ConstantType);
+pub struct Constant(pub String, pub ConstantType);
 
 impl Constant {
     pub fn from_mir_constant<'tcx>(tcx: TyCtxt<'tcx>, c: &mir::Constant<'tcx>) -> Self {
@@ -205,24 +282,46 @@ impl Constant {
     }
 }
 
-// TODO: Add Constant Types
-type ConstantType = ();
-// enum ConstantType { Bool }
-
 impl Exp {
     fn complex(&self) -> bool {
         use Exp::*;
-        !matches!(self, Var(_) | Tuple(_) | Constructor{..})
+        !matches!(self, Var(_) | Tuple(_) | Constructor{..} | Const(_))
     }
 }
 #[derive(Clone, Debug)]
 pub enum Pattern {
     Wildcard,
-    VarP(String),
+    VarP(LocalIdent),
     TupleP(Vec<Pattern>),
     ConsP(String, Vec<Pattern>),
     LitP(Constant),
     // RecP(String, String),
+}
+
+impl Pattern {
+    pub fn binders(&self) -> HashSet<LocalIdent> {
+        match self {
+            Pattern::Wildcard => HashSet::new(),
+            Pattern::VarP(s) => {
+                let mut b = HashSet::new();
+                b.insert(s.clone());
+                b
+            }
+            Pattern::TupleP(pats) => {
+                pats.iter().map(|p| p.binders()).fold(HashSet::new(), |mut set, x| {
+                    set.extend(x);
+                    set
+                })
+            }
+            Pattern::ConsP(_, args) => {
+                args.iter().map(|p| p.binders()).fold(HashSet::new(), |mut set, x| {
+                    set.extend(x);
+                    set
+                })
+            }
+            Pattern::LitP(_) => HashSet::new(),
+        }
+    }
 }
 
 impl Display for Pattern {
@@ -279,7 +378,7 @@ impl Display for Function {
         }
 
         for (nm, ty) in &self.args {
-            write!(f, "({:?}_o : {})", nm, ty)?;
+            write!(f, "({}_o : {})", nm, ty)?;
         }
 
         writeln!(f, " : {}", self.retty)?;
@@ -296,17 +395,17 @@ impl Display for Function {
         writeln!(f, "var _0 : {};", self.retty)?;
 
         for (var, ty) in self.args.iter() {
-            writeln!(f, "var {:?} : {};", var, ty)?;
+            writeln!(f, "var {} : {};", var, ty)?;
         }
 
         // Forward declare all variables
         for (var, ty) in self.vars.iter() {
-            writeln!(f, "var {:?} : {};", var, ty)?;
+            writeln!(f, "var {} : {};", var, ty)?;
         }
         writeln!(f, "{{")?;
 
         for (arg, _) in self.args.iter() {
-            writeln!(f, "  {:?} <- {:?}_o;", arg, arg)?;
+            writeln!(f, "  {} <- {}_o;", arg, arg)?;
         }
 
         writeln!(f, "  goto BB0;")?;
@@ -402,8 +501,11 @@ impl Display for Exp {
             Exp::Const(c) => {
                 write!(f, "{}", c)?;
             }
+            Exp::BinaryOp(BinOp::Div, l, r) => {
+                write!(f, "div {} {}", parens!(l), parens!(r))?;
+            }
             Exp::BinaryOp(op, l, r) => {
-                write!(f, "{} {} {}", l, bin_op_to_string(op), r)?;
+                write!(f, "{} {} {}", parens!(l), bin_op_to_string(op), parens!(r))?;
             }
             Exp::Call(fun, args) => {
                 write!(f, "{} {}", fun, args.iter().map(|a| parens!(a)).format(" "))?;
@@ -422,7 +524,6 @@ fn bin_op_to_string(op: &BinOp) -> &str {
         Add => "+",
         Sub => "-",
         Mul => "*",
-        Div => "/",
         Eq => "=",
         Ne => "<>",
         Gt => ">",
@@ -443,10 +544,10 @@ impl Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Statement::Assign { lhs, rhs } => {
-                write!(f, "{:?} <- {}", lhs, rhs)?;
+                write!(f, "{} <- {}", lhs, rhs)?;
             }
             Statement::Freeze(loc) => {
-                write!(f, "assume {{ ^ {:?} = * {:?} }}", loc, loc)?;
+                write!(f, "assume {{ ^ {} = * {} }}", loc, loc)?;
             }
             Statement::Invariant(e) => {
                 write!(f, "invariant {{ {} }}", e)?;
