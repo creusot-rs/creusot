@@ -209,6 +209,21 @@ pub enum Exp {
     Exists(Vec<(LocalIdent, Type)>, Box<Exp>),
 }
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Precedence {
+    Any,
+    Impl,
+    Or,
+    And,
+    Compare,
+    BitOr,
+    BitXor,
+    BitAnd,
+    Shift,
+    AddSub,
+    MulDiv,
+    Term,
+    FinCur,
 }
 
 impl Exp {
@@ -290,6 +305,51 @@ impl Exp {
             // Exp::QVar(_) => {}
             Exp::Const(_) => {}
             Exp::Verbatim(_) => {}
+        }
+    }
+
+    pub fn precedence(&self) -> Precedence {
+        use Precedence::*;
+        use FullBinOp::Other;
+
+        match self {
+            Exp::Current(_) => { FinCur }
+            Exp::Final(_) => { FinCur }
+            Exp::Let { .. } => { Any }
+            Exp::Var(_) => { Term }
+            Exp::RecUp { .. } => { Term }
+            Exp::Tuple(_) => { Term }
+            Exp::Constructor { .. } => { Term }
+            Exp::BorrowMut(_) => { Any }
+            Exp::Const(_) => { Term }
+            Exp::BinaryOp(FullBinOp::And, _, _) => { And }
+            Exp::BinaryOp(FullBinOp::Or, _, _) => { Or }
+            Exp::BinaryOp(Other(op), _, _) => {
+                match op {
+                    BinOp::Add => AddSub,
+                    BinOp::Sub => AddSub,
+                    BinOp::Mul => MulDiv,
+                    BinOp::Div => MulDiv,
+                    BinOp::Rem => MulDiv,
+                    BinOp::BitXor => BitXor,
+                    BinOp::BitAnd => BitAnd,
+                    BinOp::BitOr => BitOr,
+                    BinOp::Shl => Shift,
+                    BinOp::Shr => Shift,
+                    BinOp::Eq  => Compare,
+                    BinOp::Lt  => Compare,
+                    BinOp::Le  => Compare,
+                    BinOp::Ne  => Compare,
+                    BinOp::Ge  => Compare,
+                    BinOp::Gt  => Compare,
+                    BinOp::Offset => panic!("unsupported operator"),
+                }
+            }
+            Exp::Call(_, _) => { Term }
+            Exp::Verbatim(_) => { Any }
+            Exp::Impl(_, _) => { Impl }
+            Exp::Forall(_, _) => { Any }
+            Exp::Exists(_, _) => { Any }
         }
     }
 }
@@ -388,8 +448,8 @@ impl Display for Pattern {
 use itertools::*;
 
 macro_rules! parens {
-    ($i:ident) => {
-        if $i.complex() {
+    ($e:ident, $i:ident) => {
+        if $i.precedence() < $e.precedence() {
             format!("({})", $i)
         } else {
             format!("{}", $i)
@@ -505,7 +565,7 @@ impl Display for Exp {
                 write!(f, " ^ {}", e)?;
             }
             Exp::Let { pattern, arg, body } => {
-                write!(f, "let {} = {} in {}", pattern, parens!(arg), parens!(body))?;
+                write!(f, "let {} = {} in {}", pattern, parens!(self, arg), parens!(self, body))?;
             }
             Exp::Var(v) => {
                 write!(f, "{}", v)?;
@@ -514,7 +574,7 @@ impl Display for Exp {
             //     write!(f, "{}", v)?;
             // }
             Exp::RecUp { record, label, val } => {
-                write!(f, "{{ {} with {} = {} }}", parens!(record), label, parens!(val))?;
+                write!(f, "{{ {} with {} = {} }}", parens!(self, record), label, parens!(self, val))?;
             }
             Exp::Tuple(vs) => {
                 write!(f, "({})", vs.iter().format(", "))?;
