@@ -68,7 +68,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             // Rvalue::Discriminant(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
             Rvalue::Discriminant(_) => return,
             Rvalue::BinaryOp(op, l, r) | Rvalue::CheckedBinaryOp(op, l, r) => {
-                BinaryOp(*op, box self.translate_operand(l, si.scope), box self.translate_operand(r, si.scope))
+                BinaryOp((*op).into(), box self.translate_operand(l, si.scope), box self.translate_operand(r, si.scope))
             }
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
@@ -91,7 +91,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                         if spec_attrs.len() == 1 {
                             let attr = spec_attrs.remove(0);
                             if is_invariant_marker(attr) {
-                                let inv = ts_to_symbol(attr.args.inner_tokens());
+                                let inv = ts_to_symbol(attr.args.inner_tokens()).unwrap();
 
                                 let inv_string =
                                     specification::invariant_to_why(self.body, si, inv);

@@ -1,13 +1,14 @@
-use std::collections::HashSet;
+// use std::collections::HashSet;
 
-use proc_macro2::TokenStream;
+// use proc_macro2::TokenStream;
 use rustc_middle::mir::{Body, SourceInfo};
-use syn::{visit::Visit, visit, term::*, BinOp, term::Term::*, PatIdent};
+use syn::{term::*, BinOp, term::Term::*};
 
-use quote::quote;
+// use quote::quote;
 
 use crate::mlcfg::Exp;
 use crate::mlcfg::LocalIdent;
+use crate::mlcfg::QName;
 
 pub fn requires_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {
     let p: Term = syn::parse_str(&attr_val).unwrap();
@@ -51,28 +52,29 @@ pub fn ensures_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {
 }
 
 
-fn bin_to_bin(op: &syn::BinOp) -> Option<rustc_middle::mir::BinOp> {
+fn bin_to_bin(op: &syn::BinOp) -> Option<crate::mlcfg::FullBinOp> {
     use rustc_middle::mir::BinOp::*;
+    use crate::mlcfg::FullBinOp::*;
 
     match op {
-        BinOp::Add(_) => { Some(Add) }
-        BinOp::Sub(_) => { Some(Sub) }
-        BinOp::Mul(_) => { Some(Mul) }
-        BinOp::Div(_) => { Some(Div) }
-        BinOp::Rem(_) => { Some(Rem) }
-        // BinOp::And(_) => { And}
-        // BinOp::Or(_) =>  { Or }
-        BinOp::BitXor(_) => { Some(BitXor) }
-        BinOp::BitAnd(_) => { Some(BitAnd) }
-        BinOp::BitOr(_) => { Some(BitOr) }
-        BinOp::Shl(_) => { Some(Shl) }
-        BinOp::Shr(_) => { Some(Shr) }
-        BinOp::Eq(_) => { Some(Eq) }
-        BinOp::Lt(_) => { Some(Lt) }
-        BinOp::Le(_) => { Some(Le) }
-        BinOp::Ne(_) => { Some(Ne) }
-        BinOp::Ge(_) => { Some(Ge) }
-        BinOp::Gt(_) => { Some(Gt) }
+        BinOp::Add(_) => { Some(Other(Add)) }
+        BinOp::Sub(_) => { Some(Other(Sub)) }
+        BinOp::Mul(_) => { Some(Other(Mul)) }
+        BinOp::Div(_) => { Some(Other(Div)) }
+        BinOp::Rem(_) => { Some(Other(Rem)) }
+        BinOp::And(_) => { Some(And) }
+        BinOp::Or(_) =>  { Some(Or) }
+        BinOp::BitXor(_) => { Some(Other(BitXor)) }
+        BinOp::BitAnd(_) => { Some(Other(BitAnd)) }
+        BinOp::BitOr(_) => { Some(Other(BitOr)) }
+        BinOp::Shl(_) => { Some(Other(Shl)) }
+        BinOp::Shr(_) => { Some(Other(Shr)) }
+        BinOp::Eq(_) => { Some(Other(Eq)) }
+        BinOp::Lt(_) => { Some(Other(Lt)) }
+        BinOp::Le(_) => { Some(Other(Le)) }
+        BinOp::Ne(_) => { Some(Other(Ne)) }
+        BinOp::Ge(_) => { Some(Other(Ge)) }
+        BinOp::Gt(_) => { Some(Other(Gt)) }
         _ => None,
     }
 }
@@ -124,11 +126,56 @@ fn to_exp(p: &Term) -> crate::mlcfg::Exp {
             to_exp(expr)
         }
         // Match(_) => {}
-        // Paren(_) => {}
-        // Impl(TermImpl { hyp, cons, .. }) => {}
-        // Forall(TermForall { args, term, .. }) => {}
-        // Exists(TermExists { args, term, .. }) => {}
+        Term::Impl(TermImpl { hyp, cons, .. }) => {
+            Exp::Impl(box to_exp(hyp), box to_exp(cons))
+        }
+        Term::Forall(TermForall { args, term, .. }) => {
+            let binders = args.iter().map(|qa| {
+                (LocalIdent::Name(qa.ident.to_string()), from_ty(&qa.ty))
+            }).collect();
+
+            Exp::Forall(binders, box to_exp(term))
+        }
+        Term::Exists(TermExists { args, term, .. }) => {
+            let binders = args.iter().map(|qa| {
+                (LocalIdent::Name(qa.ident.to_string()), from_ty(&qa.ty))
+            }).collect();
+
+            Exp::Exists(binders, box to_exp(term))
+        }
         _ => unimplemented!("{:?}", p),
+    }
+}
+
+fn from_ty(ty: &syn::Type) -> crate::mlcfg::Type {
+    use syn::*;
+    use crate::mlcfg::Type::*;
+
+    match ty {
+        syn::Type::Paren(TypeParen { elem, .. }) => { from_ty(elem) }
+        syn::Type::Path(TypePath { path, ..}) => {
+            TConstructor(QName { segments: path.segments.iter().map(|s| s.ident.to_string()).collect()})
+        }
+        syn::Type::Reference(TypeReference { mutability, elem, .. }) => {
+            if let Some(_) = mutability {
+                MutableBorrow(box from_ty(elem))
+            } else {
+                from_ty(elem)
+            }
+        }
+        syn::Type::Tuple(TypeTuple { elems, .. }) => {
+            crate::mlcfg::Type::Tuple(elems.iter().map(from_ty).collect())
+        }
+        syn::Type::Never(_) => { unimplemented!("never type")}
+
+        syn::Type::Array(_)
+        | syn::Type::Slice(_) => { unimplemented!("array / slice") }
+        syn::Type::BareFn(_) => { unimplemented!("bare fn") }
+        syn::Type::ImplTrait(_)
+        | syn::Type::TraitObject(_) => { unimplemented!("trait objects") }
+        syn::Type::Infer(_) => { unimplemented!("infer") }
+        syn::Type::Group(_) => { unimplemented!("groupe") }
+        _ => unimplemented!("unsupported type kind"),
     }
 }
 

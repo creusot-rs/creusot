@@ -134,12 +134,12 @@ fn translate(tcx: TyCtxt) -> Result<()> {
         for attr in translation::util::spec_attrs(attrs) {
             match attr.path.segments[2].ident.name.to_string().as_ref() {
                 "requires" => {
-                    let req = ts_to_symbol(attr.args.inner_tokens());
+                    let req = ts_to_symbol(attr.args.inner_tokens()).unwrap();
                     func_contract.0.push(specification::requires_to_why(&body, req));
                     // func_contract.0.push(req);
                 }
                 "ensures" => {
-                    let req = ts_to_symbol(attr.args.inner_tokens());
+                    let req = ts_to_symbol(attr.args.inner_tokens()).unwrap();
                     let ens_clause = specification::ensures_to_why(&body, req);
                     func_contract.1.push(ens_clause);
                 }
@@ -234,15 +234,15 @@ use rustc_ast::{
     tokenstream::{TokenStream, TokenTree::*},
 };
 
-fn ts_to_symbol(ts: TokenStream) -> String {
+fn ts_to_symbol(ts: TokenStream) -> Option<String> {
     assert_eq!(ts.len(), 1);
 
     if let Token(tok) = ts.trees().next().unwrap() {
         if let Literal(lit) = tok.kind {
-            return lit.symbol.to_string();
+            return Some(unescape::unescape(&lit.symbol.as_str())?.to_string());
         }
     }
-    panic!("not a single token")
+    None
 }
 
 struct RemoveFalseEdge<'tcx> {

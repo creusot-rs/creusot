@@ -70,7 +70,7 @@ pub enum Statement {
     Freeze(LocalIdent),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Type {
     Bool,
     Char,
@@ -174,20 +174,41 @@ impl Display for QName {
 }
 
 #[derive(Debug, Clone)]
+pub enum FullBinOp {
+    And,
+    Or,
+    Other(BinOp),
+}
+
+impl From<BinOp> for FullBinOp {
+    fn from(op: BinOp) -> Self {
+        FullBinOp::Other(op)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Exp {
     Current(Box<Exp>),
     Final(Box<Exp>),
     Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
     Var(LocalIdent),
-    QVar(QName),
+    // QVar(QName),
     RecUp { record: Box<Exp>, label: String, val: Box<Exp> },
     Tuple(Vec<Exp>),
     Constructor { ctor: QName, args: Vec<Exp> },
     BorrowMut(Box<Exp>),
     Const(Constant),
-    BinaryOp(BinOp, Box<Exp>, Box<Exp>),
+    BinaryOp(FullBinOp, Box<Exp>, Box<Exp>),
     Call(Constant, Vec<Exp>),
     Verbatim(String),
+
+    // Predicates
+
+    Impl(Box<Exp>, Box<Exp>),
+    Forall(Vec<(LocalIdent, Type)>, Box<Exp>),
+    Exists(Vec<(LocalIdent, Type)>, Box<Exp>),
+}
+
 }
 
 impl Exp {
@@ -252,8 +273,21 @@ impl Exp {
             }
             Exp::BorrowMut(e) => { e.subst(subst) }
             Exp::BinaryOp(_, l, r) => { l.subst(subst.clone()); r.subst(subst)}
-            Exp::Call(f, a) => {}
-            Exp::QVar(_) => {}
+            Exp::Impl(hyp, exp) => { hyp.subst(subst.clone()); exp.subst(subst)}
+            Exp::Forall(binders, exp) => {
+                binders.iter().for_each(|k| { subst.remove(&k.0); });
+                exp.subst(subst);
+            }
+            Exp::Exists(binders, exp) => {
+                binders.iter().for_each(|k| { subst.remove(&k.0); });
+                exp.subst(subst);
+            }
+            Exp::Call(_, a) => {
+                for arg in a {
+                    arg.subst(subst.clone());
+                }
+            }
+            // Exp::QVar(_) => {}
             Exp::Const(_) => {}
             Exp::Verbatim(_) => {}
         }
@@ -476,9 +510,9 @@ impl Display for Exp {
             Exp::Var(v) => {
                 write!(f, "{}", v)?;
             }
-            Exp::QVar(v) => {
-                write!(f, "{}", v)?;
-            }
+            // Exp::QVar(v) => {
+            //     write!(f, "{}", v)?;
+            // }
             Exp::RecUp { record, label, val } => {
                 write!(f, "{{ {} with {} = {} }}", parens!(record), label, parens!(val))?;
             }
@@ -493,43 +527,64 @@ impl Display for Exp {
                 }
             }
             Exp::BorrowMut(exp) => {
-                write!(f, "borrow_mut {}", parens!(exp))?;
+                write!(f, "borrow_mut {}", parens!(self, exp))?;
             }
-            // Exp::RecField{rec, field} => {
-            //     write!(f, "{}.{}", parens!(rec), field)?;
-            // }
             Exp::Const(c) => {
                 write!(f, "{}", c)?;
             }
-            Exp::BinaryOp(BinOp::Div, l, r) => {
-                write!(f, "div {} {}", parens!(l), parens!(r))?;
+            Exp::BinaryOp(FullBinOp::Other(BinOp::Div), l, r) => {
+                write!(f, "div {} {}", parens!(self, l), parens!(self, r))?;
             }
             Exp::BinaryOp(op, l, r) => {
-                write!(f, "{} {} {}", parens!(l), bin_op_to_string(op), parens!(r))?;
+                write!(f, "{} {} {}", parens!(self, l), bin_op_to_string(op), parens!(self, r))?;
             }
             Exp::Call(fun, args) => {
-                write!(f, "{} {}", fun, args.iter().map(|a| parens!(a)).format(" "))?;
+                write!(f, "{} {}", fun, args.iter().map(|a| parens!(self, a)).format(" "))?;
             }
             Exp::Verbatim(verb) => {
                 write!(f, "{}", verb)?;
+            }
+            Exp::Forall(binders, exp) => {
+                write!(f, "forall ")?;
+
+                for (l, ty) in binders {
+                    write!(f, "({} : {}) ", l, ty)?;
+                }
+
+                write!(f, ". {}", exp)?;
+            }
+            Exp::Exists(binders, exp) => {
+                write!(f, "exists ")?;
+
+                for (l, ty) in binders {
+                    write!(f, "({} : {}) ", l, ty)?;
+                }
+
+                write!(f, ". {}", exp)?;
+            }
+            Exp::Impl(hyp, exp) => {
+                write!(f, "{} -> {}", parens!(self, hyp), parens!(self, exp))?;
             }
         }
         Ok(())
     }
 }
 
-fn bin_op_to_string(op: &BinOp) -> &str {
+fn bin_op_to_string(op: &FullBinOp) -> &str {
+    use FullBinOp::*;
     use rustc_middle::mir::BinOp::*;
     match op {
-        Add => "+",
-        Sub => "-",
-        Mul => "*",
-        Eq => "=",
-        Ne => "<>",
-        Gt => ">",
-        Ge => ">=",
-        Lt => "<",
-        Le => "<=",
+        And => "&&",
+        Or => "||",
+        Other(Add) => "+",
+        Other(Sub) => "-",
+        Other(Mul) => "*",
+        Other(Eq )=> "=",
+        Other(Ne )=> "<>",
+        Other(Gt )=> ">",
+        Other(Ge )=> ">=",
+        Other(Lt )=> "<",
+        Other(Le )=> "<=",
         _ => unimplemented!("unsupported bin op"),
     }
 }
