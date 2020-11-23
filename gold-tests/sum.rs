@@ -8,7 +8,7 @@ fn sum_first_n(n: u32) -> u32 {
   let mut sum = 0;
   let mut i = 0;
   while i <= n {
-    invariant!(sum == i * (i - 1) / 2);
+    invariant!(xx, sum == i * (i - 1) / 2);
     sum += i;
     i += 1;
   }

@@ -41,14 +41,30 @@ pub fn ensures(
       #f
     })
 }
+struct Invariant {
+    name : syn::Ident,
+    invariant : syn::Term,
+}
 
+impl syn::parse::Parse for Invariant {
+    fn parse(tokens: syn::parse::ParseStream) -> Result<Self> {
+        let name = tokens.parse()?;
+        let _ : Token![,] = tokens.parse()?;
+        let invariant  = tokens.parse()?;
+
+        Ok(Invariant {name, invariant})
+    }
+}
 #[proc_macro]
 pub fn invariant(invariant: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let p: syn::Term = parse_macro_input!(invariant);
-    let inv_toks = format!("{}", quote! {#p});
+    let inv : Invariant = parse_macro_input!(invariant);
 
+    let term = inv.invariant;
+    let inv_toks = format!("{}", quote! {#term});
+
+    let invariant_name = inv.name;
     proc_macro::TokenStream::from(quote! {
-        #[creusot::spec::invariant=#inv_toks]
+        #[creusot::spec::invariant::#invariant_name=#inv_toks]
         ||{};
     })
 }

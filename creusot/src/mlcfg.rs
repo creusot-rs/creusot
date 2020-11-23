@@ -12,7 +12,11 @@ use rustc_hir::def::Namespace;
 use rustc_middle::mir::{BasicBlock, Local};
 
 pub const PRELUDE: &str = "use Ref \n\
-              use int.Int \n\
+              use mach.int.Int \n\
+              use mach.int.Int32\n\
+              use mach.int.Int64\n\
+              use mach.int.UInt32\n\
+              use mach.int.UInt64\n\
               (** Generic Type for borrowed values *) \n\
               type borrowed 'a = \n\
                 { current : 'a ; \n\
@@ -66,7 +70,7 @@ pub enum Terminator {
 #[derive(Debug)]
 pub enum Statement {
     Assign { lhs: LocalIdent, rhs: Exp },
-    Invariant(Exp),
+    Invariant(String, Exp),
     Freeze(LocalIdent),
 }
 
@@ -221,7 +225,8 @@ enum Precedence {
     BitAnd,
     Shift,
     AddSub,
-    MulDiv,
+    Mul,
+    Div,
     Term,
     FinCur,
 }
@@ -308,7 +313,7 @@ impl Exp {
         }
     }
 
-    pub fn precedence(&self) -> Precedence {
+    fn precedence(&self) -> Precedence {
         use Precedence::*;
         use FullBinOp::Other;
 
@@ -328,9 +333,9 @@ impl Exp {
                 match op {
                     BinOp::Add => AddSub,
                     BinOp::Sub => AddSub,
-                    BinOp::Mul => MulDiv,
-                    BinOp::Div => MulDiv,
-                    BinOp::Rem => MulDiv,
+                    BinOp::Mul => Mul,
+                    BinOp::Div => Div,
+                    BinOp::Rem => Mul,
                     BinOp::BitXor => BitXor,
                     BinOp::BitAnd => BitAnd,
                     BinOp::BitOr => BitOr,
@@ -472,7 +477,7 @@ impl Display for Function {
         }
 
         for (nm, ty) in &self.args {
-            write!(f, "({}_o : {})", nm, ty)?;
+            write!(f, "(o_{} : {})", nm, ty)?;
         }
 
         writeln!(f, " : {}", self.retty)?;
@@ -499,7 +504,7 @@ impl Display for Function {
         writeln!(f, "{{")?;
 
         for (arg, _) in self.args.iter() {
-            writeln!(f, "  {} <- {}_o;", arg, arg)?;
+            writeln!(f, "  {} <- o_{};", arg, arg)?;
         }
 
         writeln!(f, "  goto BB0;")?;
@@ -664,8 +669,8 @@ impl Display for Statement {
             Statement::Freeze(loc) => {
                 write!(f, "assume {{ ^ {} = * {} }}", loc, loc)?;
             }
-            Statement::Invariant(e) => {
-                write!(f, "invariant {{ {} }}", e)?;
+            Statement::Invariant(nm, e) => {
+                write!(f, "invariant {} {{ {} }}", nm, e)?;
             }
         }
         Ok(())
@@ -686,11 +691,27 @@ impl Display for Type {
             Char => {
                 write!(f, "char")?;
             }
-            Int(_) => {
-                write!(f, "int")?;
+            Int(size) => {
+                use rustc_ast::ast::IntTy::*;
+                match size {
+                    I8      => write!(f, "int8"),
+                    I16     => write!(f, "int16"),
+                    I32     => write!(f, "int32"),
+                    I64     => write!(f, "int64"),
+                    I128    => write!(f, "int128"),
+                    Isize   => write!(f, "isize"),
+                }?
             } // TODO machine ints
-            Uint(_) => {
-                write!(f, "int")?;
+            Uint(size) => {
+                use rustc_ast::ast::UintTy::*;
+                match size {
+                    U8      => write!(f, "uint8"),
+                    U16     => write!(f, "uint16"),
+                    U32     => write!(f, "uint32"),
+                    U64     => write!(f, "uint64"),
+                    U128    => write!(f, "uint128"),
+                    Usize   => write!(f, "usize"),
+                }?
             } // TODO uints
             MutableBorrow(t) => {
                 write!(f, "borrowed {}", t)?;

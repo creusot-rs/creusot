@@ -96,7 +96,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                                 let inv_string =
                                     specification::invariant_to_why(self.body, si, inv);
 
-                                self.emit_statement(Invariant(Verbatim(inv_string)));
+                                self.emit_statement(Invariant(invariant_name(attr), Verbatim(inv_string)));
                                 return;
                             } else {
                                 panic!("unsupported spec attribute");
@@ -126,3 +126,6 @@ fn is_invariant_marker(attr: &rustc_ast::AttrItem) -> bool {
     attr.path.segments[2].ident.name.to_string() == "invariant"
 }
 
+fn invariant_name(attr: &rustc_ast::AttrItem) -> String {
+    attr.path.segments[3].ident.name.to_string()
+}
