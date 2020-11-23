@@ -41,25 +41,23 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
         let lplace = simplify_place(self.tcx, self.body, place);
         let rval = match rvalue {
             Rvalue::Use(rval) => match rval {
-                Move(pl) | Copy(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl), si.scope),
+                Move(pl) | Copy(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
                 Constant(box c) => Const(crate::mlcfg::Constant::from_mir_constant(self.tcx, c)),
             },
             Rvalue::Ref(_, ss, pl) => {
                 let rplace = simplify_place(self.tcx, self.body, pl);
 
                 match ss {
-                    Shared | Shallow | Unique => self.translate_rplace(&rplace, si.scope),
+                    Shared | Shallow | Unique => self.translate_rplace(&rplace),
                     Mut { .. } => {
 
                         self.emit_assignment(
                             &lplace,
-                            BorrowMut(box self.translate_rplace(&rplace, si.scope)),
-                            si.scope
+                            BorrowMut(box self.translate_rplace(&rplace)),
                         );
                         self.emit_assignment(
                             &rplace,
-                            Final(box self.translate_rplace(&lplace, si.scope)),
-                            si.scope
+                            Final(box self.translate_rplace(&lplace)),
                         );
                         return;
                     }
@@ -68,11 +66,11 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             // Rvalue::Discriminant(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
             Rvalue::Discriminant(_) => return,
             Rvalue::BinaryOp(op, l, r) | Rvalue::CheckedBinaryOp(op, l, r) => {
-                BinaryOp((*op).into(), box self.translate_operand(l, si.scope), box self.translate_operand(r, si.scope))
+                BinaryOp((*op).into(), box self.translate_operand(l), box self.translate_operand(r))
             }
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
-                let fields = ops.iter().map(|op| self.translate_operand(op, si.scope)).collect();
+                let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
 
                 match kind {
                     Tuple => Exp::Tuple(fields),
@@ -118,7 +116,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             | Rvalue::Len(_) => unimplemented!("{:?}", rvalue),
         };
 
-        self.emit_assignment(&lplace, rval, si.scope);
+        self.emit_assignment(&lplace, rval);
     }
 }
 

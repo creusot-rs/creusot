@@ -35,7 +35,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 let mut branches : Vec<_> = branch_pats.into_iter().zip(normal_targets.iter().map(|t| t.into())).collect();
 
                 branches.push((Pattern::Wildcard, targets.otherwise().into()));
-                let discriminant = self.translate_operand(&real_discr, terminator.source_info.scope);
+                let discriminant = self.translate_operand(&real_discr);
 
                 self.emit_terminator(MlT::Switch(discriminant, branches));
             }
@@ -46,7 +46,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 let fun_def_id = func_defid(func).expect("expected call with function");
 
                 let mut func_args: Vec<_> =
-                    args.iter().map(|arg| self.translate_operand(arg, terminator.source_info.scope)).collect();
+                    args.iter().map(|arg| self.translate_operand(arg)).collect();
 
                 // TODO: Get functions to be turned into QPaths!
                 let call_exp = if self.is_box_new(fun_def_id) {
@@ -67,7 +67,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                     return;
                 } else {
                     let (loc, bb) = destination.unwrap();
-                    self.emit_assignment(&simplify_place(self.tcx, self.body, &loc), call_exp, terminator.source_info.scope);
+                    self.emit_assignment(&simplify_place(self.tcx, self.body, &loc), call_exp);
                     self.emit_terminator(MlT::Goto(bb.into()));
                 }
             }

@@ -1,4 +1,4 @@
-use self::{ty::TyTranslator, util::spec_attrs};
+use self::util::spec_attrs;
 use crate::mlcfg;
 use crate::mlcfg::{Exp::*, Pattern::*, *};
 use crate::{mlcfg::Statement::*, place::Mutability as M};
@@ -38,7 +38,7 @@ pub struct FunctionTranslator<'a, 'tcx> {
 }
 
 pub fn translate_tydecl(tcx: TyCtxt, adt: &AdtDef) -> MlTyDecl {
-    TyTranslator::new(tcx).translate_tydecl(adt)
+    ty::translate_tydecl(tcx, adt)
 }
 
 impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
@@ -75,8 +75,8 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         self.current_block.2 = Some(t);
     }
 
-    fn emit_assignment(&mut self, lhs: &SimplePlace, rhs: mlcfg::Exp, scope: SourceScope) {
-        let assign = self.create_assign(lhs, rhs, scope);
+    fn emit_assignment(&mut self, lhs: &SimplePlace, rhs: mlcfg::Exp) {
+        let assign = self.create_assign(lhs, rhs);
         self.emit_statement(assign);
     }
 
@@ -106,13 +106,12 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
         self.current_block = (BasicBlock::MAX.into(), Vec::new(), None);
 
-        let ty_trans = TyTranslator::new(self.tcx);
         let mut vars = self.body.local_decls.iter_enumerated().filter_map(|(loc, decl)| {
             if self.artifact_decl(decl) {
                 None
             } else {
                 let ident = self.translate_local(loc);
-                Some((ident, ty_trans.translate_ty(decl.ty)))
+                Some((ident, ty::translate_ty(self.tcx, decl.ty)))
             }
         });
         let retty = vars.next().unwrap().1;
@@ -175,10 +174,10 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     }
 
     // Useful helper to translate an operand
-    pub fn translate_operand(&self, operand: &Operand<'tcx>, scope: SourceScope) -> Exp {
+    pub fn translate_operand(&self, operand: &Operand<'tcx>) -> Exp {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => {
-                self.translate_rplace(&simplify_place(self.tcx, self.body, pl), scope)
+                self.translate_rplace(&simplify_place(self.tcx, self.body, pl))
             }
             Operand::Constant(c) => Const(mlcfg::Constant::from_mir_constant(self.tcx, c)),
         }
@@ -216,7 +215,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     // [(P as Some)]   ---> [_1]
     // [(P as Some).0] ---> let Some(a) = [_1] in a
     // [(* P)] ---> * [P]
-    pub fn translate_rplace(&self, rhs: &SimplePlace, scope: SourceScope) -> Exp {
+    pub fn translate_rplace(&self, rhs: &SimplePlace) -> Exp {
         let mut inner = self.translate_local(rhs.local).into();
 
         for proj in rhs.proj.iter() {
@@ -275,7 +274,6 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         &self,
         lhs: &SimplePlace,
         rhs: Exp,
-        scope: rustc_middle::mir::SourceScope,
     ) -> mlcfg::Statement {
         // Translation happens inside to outside, which means we scan projection elements in reverse
         // building up the inner expression. We start with the RHS expression which is at the deepest
@@ -290,7 +288,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             match proj {
                 Deref(M::Mut) => {
                     inner = RecUp {
-                        record: box self.translate_rplace(&stump, scope),
+                        record: box self.translate_rplace(&stump),
                         label: "current".into(),
                         val: box inner,
                     }
@@ -307,7 +305,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
                         inner = Let {
                             pattern: ConsP(ctor.to_string(), varpats),
-                            arg: box self.translate_rplace(&stump, scope),
+                            arg: box self.translate_rplace(&stump),
                             body: box Constructor { ctor: ctor.into(), args: varexps },
                         }
                     }
@@ -321,7 +319,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
                     inner = Let {
                         pattern: TupleP(varpats),
-                        arg: box self.translate_rplace(&stump, scope),
+                        arg: box self.translate_rplace(&stump),
                         body: box Tuple(varexps),
                     }
                 }
