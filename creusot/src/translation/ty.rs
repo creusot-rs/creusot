@@ -57,10 +57,10 @@ impl<'tcx> TyTranslator<'tcx> {
     pub fn translate_ty(&self, ty: Ty<'tcx>) -> MlT {
         match ty.kind() {
             Bool => MlT::Bool,
-            Char => unimplemented!(),
+            Char => MlT::Char,
             Int(ity) => MlT::Int(*ity),
             Uint(uity) => MlT::Uint(*uity),
-            Float(_) => unimplemented!(),
+            Float(flty) => MlT::Float(*flty),
             Adt(def, s) => {
                 if def.is_box() {
                     return self.translate_ty(s[0].expect_ty());

@@ -16,6 +16,9 @@ extern crate rustc_serialize;
 extern crate rustc_span;
 extern crate rustc_target;
 
+#[macro_use]
+extern crate log;
+
 use mlcfg::{Function, MlTyDecl};
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
 use rustc_hir::{
@@ -28,6 +31,8 @@ use rustc_middle::{
     mir::{visit::MutVisitor, Location, Terminator},
     ty::{TyCtxt, WithOptConstParam},
 };
+
+
 
 mod place;
 mod translation;
@@ -70,7 +75,7 @@ use std::io::Result;
 
 fn is_type_decl(item: &Item) -> bool {
     match item.kind {
-        rustc_hir::ItemKind::TyAlias(_, _) => true,
+        // rustc_hir::ItemKind::TyAlias(_, _) => true,
         rustc_hir::ItemKind::OpaqueTy(_) => unimplemented!(),
         rustc_hir::ItemKind::Enum(_, _) => true,
         rustc_hir::ItemKind::Struct(_, _) => true,
@@ -84,6 +89,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
 
     // Collect the DefIds of all type declarations in this crate
     let mut ty_decls = Vec::new();
+    log::debug!("translate");
 
     for (_, mod_items) in tcx.hir_crate(LOCAL_CRATE).modules.iter() {
         for item_id in mod_items.items.iter() {
@@ -101,7 +107,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
 
     // Translate all type declarations and push them into the module collection
     for def_id in ty_decls.iter() {
-        log::debug!("Translating type declaration {:?}", def_id);
+        debug!("Translating type declaration {:?}", def_id);
         let adt = tcx.adt_def(*def_id);
         let res = translation::translate_tydecl(tcx, adt);
 
@@ -110,7 +116,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
     }
 
     'bodies: for def_id in tcx.body_owners() {
-        log::debug!("Translating body {:?}", def_id);
+        debug!("Translating body {:?}", def_id);
         // (Mir-)Borrowck uses `mir_validated`, so we have to force it to
         // execute before we can steal.
         //

@@ -17,6 +17,10 @@ pub const PRELUDE: &str = "use Ref \n\
               use mach.int.Int64\n\
               use mach.int.UInt32\n\
               use mach.int.UInt64\n\
+              use string.Char\n\
+
+              use floating_point.Single\n\
+              use floating_point.Double\n\
               (** Generic Type for borrowed values *) \n\
               type borrowed 'a = \n\
                 { current : 'a ; \n\
@@ -80,6 +84,7 @@ pub enum Type {
     Char,
     Int(rustc_ast::ast::IntTy),
     Uint(rustc_ast::ast::UintTy),
+    Float(rustc_ast::ast::FloatTy),
     MutableBorrow(Box<Type>),
     TVar(String),
     TConstructor(QName),
@@ -226,9 +231,8 @@ enum Precedence {
     Shift,
     AddSub,
     Mul,
-    Div,
-    Term,
     FinCur,
+    Term,
 }
 
 impl Exp {
@@ -334,7 +338,7 @@ impl Exp {
                     BinOp::Add => AddSub,
                     BinOp::Sub => AddSub,
                     BinOp::Mul => Mul,
-                    BinOp::Div => Div,
+                    BinOp::Div => Term,
                     BinOp::Rem => Mul,
                     BinOp::BitXor => BitXor,
                     BinOp::BitAnd => BitAnd,
@@ -381,12 +385,6 @@ impl Constant {
     }
 }
 
-impl Exp {
-    fn complex(&self) -> bool {
-        use Exp::*;
-        !matches!(self, Var(_) | Tuple(_) | Constructor{..} | Const(_))
-    }
-}
 #[derive(Clone, Debug)]
 pub enum Pattern {
     Wildcard,
@@ -452,6 +450,7 @@ impl Display for Pattern {
 
 use itertools::*;
 
+// FIXME: Doesn't take into account associativity when deciding when to put parens
 macro_rules! parens {
     ($e:ident, $i:ident) => {
         if $i.precedence() < $e.precedence() {
@@ -701,7 +700,7 @@ impl Display for Type {
                     I128    => write!(f, "int128"),
                     Isize   => write!(f, "isize"),
                 }?
-            } // TODO machine ints
+            }
             Uint(size) => {
                 use rustc_ast::ast::UintTy::*;
                 match size {
@@ -712,7 +711,14 @@ impl Display for Type {
                     U128    => write!(f, "uint128"),
                     Usize   => write!(f, "usize"),
                 }?
-            } // TODO uints
+            }
+            Float(size) => {
+                use rustc_ast::ast::FloatTy::*;
+                match size {
+                    F32 => write!(f, "single"),
+                    F64 => write!(f, "double"),
+                }?
+            }
             MutableBorrow(t) => {
                 write!(f, "borrowed {}", t)?;
             }
