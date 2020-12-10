@@ -41,8 +41,7 @@ use rustc_middle::{
 
 mod place;
 mod translation;
-#[allow(dead_code)]
-mod polonius;
+
 #[allow(dead_code)]
 mod debug;
 mod mlcfg;
