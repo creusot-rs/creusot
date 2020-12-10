@@ -14,6 +14,8 @@ use rustc_mir::dataflow::{
     impls::{MaybeInitializedLocals, MaybeLiveLocals},
     Analysis,
 };
+use rustc_session::Session;
+use rustc_span::Span;
 
 pub mod specification;
 mod statement;
@@ -23,6 +25,7 @@ pub mod util;
 
 // Split this into several sub-contexts: Core, Analysis, Results?
 pub struct FunctionTranslator<'a, 'tcx> {
+    sess: &'a Session,
     pub tcx: TyCtxt<'tcx>,
     body: &'a Body<'tcx>,
     // pol: PoloniusInfo<'a, 'tcx>,
@@ -37,12 +40,12 @@ pub struct FunctionTranslator<'a, 'tcx> {
     past_blocks: Vec<mlcfg::Block>,
 }
 
-pub fn translate_tydecl(tcx: TyCtxt, adt: &AdtDef) -> MlTyDecl {
-    ty::translate_tydecl(tcx, adt)
+pub fn translate_tydecl(sess: &Session, span: Span, tcx: TyCtxt, adt: &AdtDef) -> MlTyDecl {
+    ty::translate_tydecl(sess, span, tcx, adt)
 }
 
 impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, body: &'a Body<'tcx>) -> Self {
+    pub fn new(sess: &'a Session, tcx: TyCtxt<'tcx>, body: &'a Body<'tcx>) -> Self {
         let local_init = MaybeInitializedLocals
             .into_engine(tcx, &body)
             .iterate_to_fixpoint()
@@ -56,6 +59,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             .into_results_cursor(&body);
 
         FunctionTranslator {
+            sess,
             tcx,
             body,
             local_live,
@@ -111,7 +115,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
                 None
             } else {
                 let ident = self.translate_local(loc);
-                Some((ident, ty::translate_ty(self.tcx, decl.ty)))
+                Some((ident, ty::translate_ty(self.sess, decl.source_info.span,self.tcx, decl.ty)))
             }
         });
         let retty = vars.next().unwrap().1;

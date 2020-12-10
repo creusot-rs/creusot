@@ -1,3 +1,4 @@
+use rustc_errors::DiagnosticId;
 use rustc_middle::mir::{
     BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind,
 };
@@ -21,14 +22,14 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             Assign(box (ref pl, ref rv)) => self.translate_assign(statement.source_info, pl, rv),
             SetDiscriminant { .. } => {
                 // TODO: implement support for set discriminant
-                unimplemented!("SetDiscriminant not supported");
+                self.sess.span_fatal_with_code(statement.source_info.span, "SetDiscriminant is not supported", DiagnosticId::Error(String::from("creusot")))
             }
             // Erase Storage markers and Nops
             StorageDead(_) | StorageLive(_) | Nop => {}
             // Not real instructions
             FakeRead(_, _) | AscribeUserType(_, _) | Retag(_, _) | Coverage(_) => {}
             // No assembly!
-            LlvmInlineAsm(_) => unimplemented!("inline assembly is not supported"),
+            LlvmInlineAsm(_) => self.sess.span_fatal_with_code(statement.source_info.span, "inline assembly is not supported", DiagnosticId::Error(String::from("creusot"))),
         }
     }
 
@@ -80,7 +81,6 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
 
                         Constructor { ctor: cons_name, args: fields }
                     }
-                    Array(_) => unimplemented!("array"),
                     Closure(def_id, _) => {
                         let attrs = self.tcx.get_attrs(*def_id);
 
@@ -97,13 +97,15 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                                 self.emit_statement(Invariant(invariant_name(attr), Verbatim(inv_string)));
                                 return;
                             } else {
-                                panic!("unsupported spec attribute");
+                                self.sess.span_fatal_with_code(si.span, &format!("unexpected specification attribute {:?}", spec_attrs), DiagnosticId::Error(String::from("creusot")))
                             }
                         } else {
-                            unimplemented!("support for program closures isn't implemented");
+                            self.sess.span_fatal_with_code(si.span, "closures are not yet supported", DiagnosticId::Error(String::from("creusot")))
                         }
                     }
-                    Generator(_, _, _) => unimplemented!("{:?}", kind),
+                    _ => {
+                        self.sess.span_fatal_with_code(si.span, &format!("the rvalue {:?} is not currently supported", kind), DiagnosticId::Error("creusot".into()))
+                    }
                 }
             }
 
@@ -113,7 +115,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             | Rvalue::Repeat(_, _)
             | Rvalue::ThreadLocalRef(_)
             | Rvalue::AddressOf(_, _)
-            | Rvalue::Len(_) => unimplemented!("{:?}", rvalue),
+            | Rvalue::Len(_) => self.sess.span_fatal_with_code(si.span, "MIR code used an unsupported Rvalue", DiagnosticId::Error(String::from("creusot"))),
         };
 
         self.emit_assignment(&lplace, rval);

@@ -16,9 +16,13 @@ extern crate rustc_serialize;
 extern crate rustc_span;
 extern crate rustc_target;
 extern crate rustc_errors;
+extern crate rustc_session;
 
 #[macro_use]
 extern crate log;
+
+#[macro_use]
+extern crate lazy_static;
 
 use mlcfg::{Function, MlTyDecl};
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
@@ -43,6 +47,7 @@ mod polonius;
 mod debug;
 mod mlcfg;
 
+use rustc_session::Session;
 use translation::*;
 
 
@@ -55,7 +60,7 @@ struct ToWhy {}
 impl Callbacks for ToWhy {
     // Register callback for after MIR borrowck and typechecking is finished
     fn after_analysis<'tcx>(&mut self, _c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
-        queries.global_ctxt().unwrap().peek_mut().enter(translate).unwrap();
+        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| translate(_c.session(), tcx)).unwrap();
         Compilation::Stop
     }
 }
@@ -85,7 +90,7 @@ fn is_type_decl(item: &Item) -> bool {
     }
 }
 
-fn translate(tcx: TyCtxt) -> Result<()> {
+fn translate(sess: &Session, tcx: TyCtxt) -> Result<()> {
     let hir_map = tcx.hir();
 
     // Collect the DefIds of all type declarations in this crate
@@ -98,7 +103,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
             // What about inline type declarations?
             // How do we find those?
             if is_type_decl(item) {
-                ty_decls.push(hir_map.local_def_id(*item_id).to_def_id());
+                ty_decls.push((hir_map.local_def_id(*item_id).to_def_id(), item.span));
             }
         }
     }
@@ -107,10 +112,10 @@ fn translate(tcx: TyCtxt) -> Result<()> {
     let mut translated_modules: HashMap<_, MlModule> = HashMap::new();
 
     // Translate all type declarations and push them into the module collection
-    for def_id in ty_decls.iter() {
+    for (def_id, span) in ty_decls.iter() {
         debug!("Translating type declaration {:?}", def_id);
         let adt = tcx.adt_def(*def_id);
-        let res = translation::translate_tydecl(tcx, adt);
+        let res = translation::translate_tydecl(sess, *span, tcx, adt);
 
         let module = module_of(tcx, *def_id);
         translated_modules.entry(module).or_default().0.push(res);
@@ -162,7 +167,7 @@ fn translate(tcx: TyCtxt) -> Result<()> {
         // TODO: now that we don't use polonius info: consider using optimized mir instead?
         RemoveFalseEdge { tcx }.visit_body(&mut body);
 
-        let translated = FunctionTranslator::new(tcx, &body).translate(def_id, func_contract);
+        let translated = FunctionTranslator::new(sess, tcx, &body).translate(def_id, func_contract);
 
         // debug::debug(tcx, &body, polonius_info);
         translated_modules.entry(module).or_default().1.push(translated);

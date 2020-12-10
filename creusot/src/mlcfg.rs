@@ -649,7 +649,7 @@ fn bin_op_to_string(op: &FullBinOp) -> &str {
         Other(Ge )=> ">=",
         Other(Lt )=> "<",
         Other(Le )=> "<=",
-        _ => unimplemented!("unsupported bin op"),
+        _ => unreachable!("unexpected bin-op"),
     }
 }
 
