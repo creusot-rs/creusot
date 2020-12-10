@@ -1,6 +1,7 @@
 use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{self, subst::InternalSubsts, AdtDef, Ty, TyCtxt, TyKind::*};
+use rustc_resolve::Namespace;
 use rustc_session::Session;
 use rustc_span::Span;
 use rustc_span::Symbol;
@@ -9,7 +10,7 @@ use crate::mlcfg::QName;
 use crate::mlcfg::{MlTyDecl, Type as MlT};
 
 fn translate_ty_name<'tcx>(tcx: TyCtxt<'tcx>, dif: DefId) -> QName {
-    super::translate_defid(tcx, dif)
+    super::translate_defid(tcx, dif, Namespace::TypeNS)
 }
 
 fn translate_ty_param<'tcx>(p: Symbol) -> String {

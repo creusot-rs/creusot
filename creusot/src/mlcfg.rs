@@ -33,7 +33,7 @@ pub const PRELUDE: &str = "use Ref \n\
 
 #[derive(Debug)]
 pub struct Function {
-    pub name: String,
+    pub name: UQName,
     pub retty: Type,
     pub args: Vec<(LocalIdent, Type)>,
     pub vars: Vec<(LocalIdent, Type)>,
@@ -139,12 +139,6 @@ impl From<LocalIdent> for Exp {
     }
 }
 
-impl LocalIdent {
-    fn to_string(&self) -> String {
-        format!("{}", self)
-    }
-}
-
 impl Display for LocalIdent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -160,25 +154,38 @@ impl Display for LocalIdent {
 }
 
 #[derive(Debug, Clone)]
+pub struct UQName(Vec<String>);
+
+impl Display for UQName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.iter().format("."))
+    }
+}
+#[derive(Debug, Clone)]
 pub struct QName {
-    pub segments: Vec<String>,
+    pub module: Vec<String>,
+    pub name: Vec<String>,
 }
 
 impl QName {
-    pub fn unqual_name(&self) -> &str {
-        self.segments.last().unwrap()
+    pub fn unqual_name(self) -> UQName {
+        UQName(self.name)
+    }
+
+    pub fn replace_name(&mut self, cons: String) {
+        self.name = vec![cons];
     }
 }
 
 impl From<&rustc_span::Symbol> for QName {
     fn from(nm: &rustc_span::Symbol) -> Self {
-        QName { segments: vec![nm.to_string().into()] }
+        QName { module: vec![], name: vec![nm.to_string().into()] }
     }
 }
 
 impl Display for QName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.segments.iter().format("."))
+        write!(f, "{}", self.module.iter().chain(self.name.iter()).format("."))
     }
 }
 
@@ -208,7 +215,7 @@ pub enum Exp {
     BorrowMut(Box<Exp>),
     Const(Constant),
     BinaryOp(FullBinOp, Box<Exp>, Box<Exp>),
-    Call(Constant, Vec<Exp>),
+    Call(QName, Vec<Exp>),
     Verbatim(String),
 
     // Predicates

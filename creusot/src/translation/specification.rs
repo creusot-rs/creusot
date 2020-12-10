@@ -183,7 +183,8 @@ fn type_path_to_type(path: &syn::Path) -> crate::mlcfg::Type {
         "isize" => Type::Int(Isize),
 
         _ => Type::TConstructor(QName {
-            segments: path.segments.iter().map(|s| s.ident.to_string()).collect(),
+            module: vec![],
+            name: path.segments.iter().map(|s| s.ident.to_string()).collect(),
         }),
     }
 }

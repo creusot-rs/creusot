@@ -2,6 +2,7 @@ use rustc_errors::DiagnosticId;
 use rustc_middle::mir::{
     BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind,
 };
+use rustc_hir::def::Namespace;
 
 use crate::{
     mlcfg::{
@@ -77,9 +78,12 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                     Tuple => Exp::Tuple(fields),
                     Adt(adt, varix, _, _, _) => {
                         let variant_def = &adt.variants[*varix];
-                        let cons_name = (&variant_def.ident.name).into();
+                        let cons_name = (&variant_def.ident.name).to_string();
 
-                        Constructor { ctor: cons_name, args: fields }
+                        let mut path = super::translate_defid(self.tcx, adt.did, Namespace::TypeNS);
+                        path.replace_name(cons_name);
+
+                        Constructor { ctor: path, args: fields }
                     }
                     Closure(def_id, _) => {
                         let attrs = self.tcx.get_attrs(*def_id);

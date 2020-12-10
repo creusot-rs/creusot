@@ -17,15 +17,15 @@ extern crate rustc_span;
 extern crate rustc_target;
 extern crate rustc_errors;
 extern crate rustc_session;
+extern crate rustc_resolve;
 
 #[macro_use]
 extern crate log;
 
-#[macro_use]
-extern crate lazy_static;
-
+use def_path_trie::DefPathTrie;
 use mlcfg::{Function, MlTyDecl};
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
+use rustc_hir::definitions::DefPath;
 use rustc_hir::{
     def_id::{DefId, LOCAL_CRATE},
     definitions::DefPathData,
@@ -49,7 +49,7 @@ mod mlcfg;
 use rustc_session::Session;
 use translation::*;
 
-
+mod def_path_trie;
 
 struct ToWhy {}
 
@@ -64,7 +64,7 @@ impl Callbacks for ToWhy {
     }
 }
 
-use std::{collections::HashMap, env::args as get_args};
+use std::env::args as get_args;
 fn main() {
     env_logger::init();
 
@@ -72,7 +72,7 @@ fn main() {
     args.push(format!("--sysroot={}", sysroot_path()));
     args.push("-Cpanic=abort".to_owned());
     args.push("-Coverflow-checks=off".to_owned());
-    args.push("-Znll-facts".to_owned());
+    // args.push("-Znll-facts".to_owned());
     RunCompiler::new(&args, &mut ToWhy {}).run().unwrap();
 }
 
@@ -107,8 +107,10 @@ fn translate(sess: &Session, tcx: TyCtxt) -> Result<()> {
         }
     }
 
+    use def_path_trie::*;
+
     type MlModule = (Vec<MlTyDecl>, Vec<Function>);
-    let mut translated_modules: HashMap<_, MlModule> = HashMap::new();
+    let mut translated_modules: DefPathTrie<MlModule> = DefPathTrie::new();
 
     // Translate all type declarations and push them into the module collection
     for (def_id, span) in ty_decls.iter() {
@@ -117,7 +119,7 @@ fn translate(sess: &Session, tcx: TyCtxt) -> Result<()> {
         let res = translation::translate_tydecl(sess, *span, tcx, adt);
 
         let module = module_of(tcx, *def_id);
-        translated_modules.entry(module).or_default().0.push(res);
+        translated_modules.get_mut_with_default(module).0.push(res);
     }
 
     'bodies: for def_id in tcx.body_owners() {
@@ -169,42 +171,32 @@ fn translate(sess: &Session, tcx: TyCtxt) -> Result<()> {
         let translated = FunctionTranslator::new(sess, tcx, &body).translate(def_id, func_contract);
 
         // debug::debug(tcx, &body, polonius_info);
-        translated_modules.entry(module).or_default().1.push(translated);
+        translated_modules.get_mut_with_default(module).1.push(translated);
     }
-
+    dbg!("omg");
     println!("module Ambient");
     println!("{}", mlcfg::PRELUDE);
-
-    // TODO only open each scope once
-    for (modk, (ty, funcs)) in translated_modules.iter() {
-        let def_path = tcx.def_path(*modk);
-        let mut opened_scopes = 0;
-        if def_path.data.is_empty() {
-            // main module
-            println!("scope Main");
-            opened_scopes = 1;
-        } else {
-            // other modules // filter out closure path elements
-            for seg in def_path.data[0..def_path.data.len()].iter() {
-                println!("scope {}", seg);
-                opened_scopes += 1;
-            }
-
-        }
-
-        use itertools::*;
-        println!("{}", ty.iter().format("\n"));
-        println!("{}", funcs.iter().format("\n"));
-
-        for _ in 0..opened_scopes {
-            println!("end");
-        }
-    }
-
+    print_module_tree(&translated_modules);
+    println!("end");
     Ok(())
 }
 
-fn module_of<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> DefId {
+fn print_module_tree(mod_tree: &DefPathTrie<(Vec<mlcfg::MlTyDecl>, Vec<mlcfg::Function>)> ) {
+    use itertools::*;
+    use heck::CamelCase;
+
+    for (k, child) in mod_tree.children_with_keys() {
+        println!("scope {}", k.to_string()[..].to_camel_case());
+        print_module_tree(child);
+        println!("end")
+    }
+
+    let (ty, funcs) = mod_tree.value().unwrap();
+    println!("{}", ty.iter().format("\n"));
+    println!("{}", funcs.iter().format("\n"));
+}
+
+fn module_of<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> DefPath {
     let mut def_key = tcx.def_key(def_id);
     let mut module = def_id;
     let mut layers = 1;
@@ -219,8 +211,7 @@ fn module_of<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> DefId {
         module = def_id;
         layers -= 1
     }
-
-    module
+    tcx.def_path(module)
 }
 
 fn sysroot_path () -> String {

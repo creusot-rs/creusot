@@ -6,6 +6,7 @@ use crate::{
     place::simplify_place,
     place::{Mutability::*, Projection::*, SimplePlace},
 };
+use rustc_hir::definitions::DefPathData;
 use rustc_hir::{def::CtorKind, def_id::DefId};
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{mir::traversal::preorder, mir::*, ty::AdtDef, ty::TyCtxt, ty::TyKind};
@@ -14,6 +15,7 @@ use rustc_mir::dataflow::{
     impls::{MaybeInitializedLocals, MaybeLiveLocals},
     Analysis,
 };
+use rustc_resolve::Namespace;
 use rustc_session::Session;
 use rustc_span::Span;
 
@@ -115,12 +117,12 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
                 None
             } else {
                 let ident = self.translate_local(loc);
-                Some((ident, ty::translate_ty(self.sess, decl.source_info.span,self.tcx, decl.ty)))
+                Some((ident, ty::translate_ty(self.sess, decl.source_info.span, self.tcx, decl.ty)))
             }
         });
         let retty = vars.next().unwrap().1;
 
-        let name = self.tcx.def_path(nm).to_filename_friendly_no_crate();
+        let name = translate_local_defid(self.tcx, nm, Namespace::ValueNS);
         Function {
             name,
             retty,
@@ -199,22 +201,22 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     }
 
     fn translate_local(&self, loc: Local) -> LocalIdent {
-        let debug_info : Vec<_> = self.body.var_debug_info.iter().filter(|var_info| {
-            match var_info.place.as_local(){
+        let debug_info: Vec<_> = self
+            .body
+            .var_debug_info
+            .iter()
+            .filter(|var_info| match var_info.place.as_local() {
                 Some(l) => l == loc,
-                None => false
-            }
-        }).collect();
+                None => false,
+            })
+            .collect();
 
         assert!(debug_info.len() <= 1, "expected at most one debug entry for local {:?}", loc);
 
         match debug_info.get(0) {
-            Some(info) => {
-                LocalIdent::Local(loc, Some(info.name.to_string()))
-            }
+            Some(info) => LocalIdent::Local(loc, Some(info.name.to_string())),
             None => loc.into(),
         }
-
     }
     // [(P as Some)]   ---> [_1]
     // [(P as Some).0] ---> let Some(a) = [_1] in a
@@ -274,11 +276,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
     /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
     /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-    pub fn create_assign(
-        &self,
-        lhs: &SimplePlace,
-        rhs: Exp,
-    ) -> mlcfg::Statement {
+    pub fn create_assign(&self, lhs: &SimplePlace, rhs: Exp) -> mlcfg::Statement {
         // Translation happens inside to outside, which means we scan projection elements in reverse
         // building up the inner expression. We start with the RHS expression which is at the deepest
         // level.
@@ -302,7 +300,10 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
                 }
                 FieldAccess { ctor, ix, size, kind, .. } => match kind {
                     CtorKind::Fn | CtorKind::Fictive => {
-                        let varpats = ('a'..).map(|c| VarP(LocalIdent::Name(c.to_string()))).take(*size).collect();
+                        let varpats = ('a'..)
+                            .map(|c| VarP(LocalIdent::Name(c.to_string())))
+                            .take(*size)
+                            .collect();
                         let mut varexps: Vec<Exp> =
                             ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
                         varexps[*ix] = inner;
@@ -316,7 +317,10 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
                     CtorKind::Const => inner = Constructor { ctor: ctor.into(), args: vec![] },
                 },
                 TupleAccess { size, ix } => {
-                    let varpats = ('a'..).map(|c| VarP(LocalIdent::Name(c.to_string()))).take(*size).collect();
+                    let varpats = ('a'..)
+                        .map(|c| VarP(LocalIdent::Name(c.to_string())))
+                        .take(*size)
+                        .collect();
                     let mut varexps: Vec<_> =
                         ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
                     varexps[*ix] = inner;
@@ -335,6 +339,44 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     }
 }
 
-fn translate_defid(tcx: TyCtxt, def_id: DefId) -> QName {
-    QName { segments: tcx.def_path_str(def_id).split("::").map(|s| s.to_string()).collect() }
+use heck::{CamelCase, MixedCase};
+
+fn translate_local_defid(tcx: TyCtxt, def_id: DefId, namespace: Namespace) -> UQName {
+    translate_defid(tcx, def_id, namespace).unqual_name()
+}
+
+fn translate_defid(tcx: TyCtxt, def_id: DefId, namespace: Namespace) -> QName {
+    let def_path = tcx.def_path(def_id);
+
+    let krate_name = tcx.crate_name(def_id.krate);
+
+    let mut mod_segs = Vec::new();
+    let mut name_segs = Vec::new();
+
+    for seg in def_path.data[..].iter() {
+        match seg.data {
+            DefPathData::CrateRoot => mod_segs.push(krate_name.to_string()),
+            DefPathData::TypeNs(_) => {
+                mod_segs.push(format!("{}", seg)[..].to_camel_case())
+            }
+            // CORE ASSUMPTION: Once we stop seeing TypeNs we never see it again.
+            _ => {
+                name_segs.push(format!("{}", seg)[..].to_mixed_case())
+            }
+        }
+    }
+
+    match namespace {
+        Namespace::ValueNS => {
+
+        }
+        Namespace::TypeNS => {
+            assert_eq!(name_segs.len(), 0);
+            let type_name = mod_segs.pop().unwrap().to_mixed_case();
+            name_segs.push(type_name);
+        }
+        _ => unreachable!(),
+    }
+
+    QName { module: mod_segs, name: name_segs }
 }

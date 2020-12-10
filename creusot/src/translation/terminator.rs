@@ -6,6 +6,7 @@ use rustc_middle::{
     mir::{Location, Operand, Terminator, TerminatorKind::*},
     ty::{self, VariantDef},
 };
+use rustc_resolve::Namespace;
 
 use crate::{
     mlcfg::{Constant, Exp, Pattern, Terminator as MlT},
@@ -48,15 +49,19 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 let mut func_args: Vec<_> =
                     args.iter().map(|arg| self.translate_operand(arg)).collect();
 
+                if func_args.is_empty() {
+                    // We use tuple as a dummy argument for 0-ary functions
+                    func_args.push(Exp::Tuple(vec![]))
+                }
                 // TODO: Get functions to be turned into QPaths!
                 let call_exp = if self.is_box_new(fun_def_id) {
                     assert_eq!(func_args.len(), 1);
 
                     func_args.remove(0)
                 } else {
-                    let fname = match func {
-                        Operand::Constant(c) => { crate::mlcfg::Constant::from_mir_constant(self.tcx, c) }
-                        _ => { panic!("not a function") }
+                    let fname = match func.ty(self.body, self.tcx).kind() {
+                        ty::TyKind::FnDef(defid, _) => super::translate_defid(self.tcx, *defid, Namespace::ValueNS),
+                        _  => panic!("not a function"),
                     };
                     Exp::Call(fname, func_args)
                 };
