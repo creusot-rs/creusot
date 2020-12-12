@@ -7,17 +7,17 @@ extern crate polonius_engine;
 extern crate rustc_ast;
 extern crate rustc_ast_pretty;
 extern crate rustc_driver;
+extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_index;
 extern crate rustc_interface;
 extern crate rustc_middle;
 extern crate rustc_mir;
+extern crate rustc_resolve;
 extern crate rustc_serialize;
+extern crate rustc_session;
 extern crate rustc_span;
 extern crate rustc_target;
-extern crate rustc_errors;
-extern crate rustc_session;
-extern crate rustc_resolve;
 
 #[macro_use]
 extern crate log;
@@ -37,8 +37,6 @@ use rustc_middle::{
     ty::{TyCtxt, WithOptConstParam},
 };
 
-
-
 mod place;
 mod translation;
 
@@ -51,15 +49,22 @@ use translation::*;
 
 mod def_path_trie;
 
-struct ToWhy {}
+struct ToWhy {
+    output_file: Option<String>,
+}
 
 // use polonius_facts::FactLoader;
 // use polonius_engine::{Algorithm, Output};
 
 impl Callbacks for ToWhy {
     // Register callback for after MIR borrowck and typechecking is finished
-    fn after_analysis<'tcx>(&mut self, _c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
-        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| translate(_c.session(), tcx)).unwrap();
+    fn after_analysis<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
+        queries
+            .global_ctxt()
+            .unwrap()
+            .peek_mut()
+            .enter(|tcx| translate(&self.output_file, c.session(), tcx))
+            .unwrap();
         Compilation::Stop
     }
 }
@@ -69,11 +74,14 @@ fn main() {
     env_logger::init();
 
     let mut args = get_args().collect::<Vec<String>>();
+
+    let output_file = args.iter().position(|a| a == "-o").map(|ix| args[ix + 1].clone());
+
     args.push(format!("--sysroot={}", sysroot_path()));
     args.push("-Cpanic=abort".to_owned());
     args.push("-Coverflow-checks=off".to_owned());
     // args.push("-Znll-facts".to_owned());
-    RunCompiler::new(&args, &mut ToWhy {}).run().unwrap();
+    RunCompiler::new(&args, &mut ToWhy { output_file }).run().unwrap();
 }
 
 use std::io::Result;
@@ -89,7 +97,7 @@ fn is_type_decl(item: &Item) -> bool {
     }
 }
 
-fn translate(sess: &Session, tcx: TyCtxt) -> Result<()> {
+fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()> {
     let hir_map = tcx.hir();
 
     // Collect the DefIds of all type declarations in this crate
@@ -173,37 +181,55 @@ fn translate(sess: &Session, tcx: TyCtxt) -> Result<()> {
         // debug::debug(tcx, &body, polonius_info);
         translated_modules.get_mut_with_default(module).1.push(translated);
     }
-    println!("module Ambient");
-    println!("{}", mlcfg::PRELUDE);
-    print_module_tree(&mut Vec::new(), &translated_modules);
-    println!("end");
+
+    use std::fs::File;
+
+    let mut out = match output {
+        Some(f) => Box::new(std::io::BufWriter::new(File::create(f)?)) as Box<dyn Write>,
+        None => Box::new(std::io::stdout()) as Box<dyn Write>,
+    };
+    writeln!(out, "module Ambient")?;
+    writeln!(out, "{}", mlcfg::PRELUDE)?;
+    print_module_tree(&mut out, &mut Vec::new(), &translated_modules).unwrap();
+    writeln!(out, "end")?;
     Ok(())
 }
+use std::io::Write;
 
-fn print_module_tree(open_scopes: &mut Vec<String>, mod_tree: &DefPathTrie<(Vec<mlcfg::TyDecl>, Vec<mlcfg::Function>)> ) {
+fn print_module_tree<W>(
+    out: &mut W,
+    open_scopes: &mut Vec<String>,
+    mod_tree: &DefPathTrie<(Vec<mlcfg::TyDecl>, Vec<mlcfg::Function>)>,
+) -> std::io::Result<()>
+where
+    W: Write,
+{
     use heck::CamelCase;
+
+    let indent_level = (open_scopes.len() + 1) * 2;
 
     for (k, child) in mod_tree.children_with_keys() {
         let scope_name = k.to_string()[..].to_camel_case();
 
-        println!("{:ident$}scope {}", "", scope_name, ident = (open_scopes.len() + 1) * 2);
+        writeln!(out, "{:ident$}scope {}", "", scope_name, ident = indent_level)?;
         open_scopes.push(scope_name);
-        print_module_tree(open_scopes, child);
+        print_module_tree(out, open_scopes, child)?;
         open_scopes.pop();
-        println!("{:ident$}end", "", ident = (open_scopes.len() + 1) * 2);
+        writeln!(out, "{:ident$}end", "", ident = indent_level)?;
     }
 
-    let fe = mlcfg::printer::FormatEnv { indent: (open_scopes.len() + 1) * 2, scope: &open_scopes[..]};
+    let fe = mlcfg::printer::FormatEnv { indent: indent_level, scope: &open_scopes[..] };
 
     let (ty, funcs) = mod_tree.value().unwrap();
 
     for ty_decl in ty {
-        println!("{}", fe.to(ty_decl));
+        writeln!(out, "{}", fe.to(ty_decl))?;
     }
 
     for func in funcs {
-        println!("{}", fe.to(func));
+        writeln!(out, "{}", fe.to(func))?;
     }
+    Ok(())
 }
 
 fn module_of<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> DefPath {
@@ -224,7 +250,7 @@ fn module_of<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> DefPath {
     tcx.def_path(module)
 }
 
-fn sysroot_path () -> String {
+fn sysroot_path() -> String {
     use std::process::Command;
     let toolchain = include_str!("../../rust-toolchain").trim();
     let output = Command::new("rustup")

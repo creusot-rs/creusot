@@ -1,4 +1,3 @@
 fn main () {
 	return;
 }
-}

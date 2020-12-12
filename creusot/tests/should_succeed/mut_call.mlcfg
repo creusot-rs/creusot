@@ -1,0 +1,69 @@
+module Ambient
+use Ref 
+use mach.int.Int 
+use mach.int.Int32
+use mach.int.Int64
+use mach.int.UInt32
+use mach.int.UInt64
+use string.Char
+use floating_point.Single
+use floating_point.Double
+(** Generic Type for borrowed values *) 
+type borrowed 'a = 
+{ current : 'a ; 
+final : 'a; (* The "future" value when borrow will end *) 
+} 
+let function ( *_ ) x = x.current 
+let function ( ^_ ) x = x.final 
+val borrow_mut (a : 'a) : borrowed 'a 
+ensures { *result = a }
+  let cfg kill (o__1 : borrowed uint32) : ()
+    =
+  var _0 : ();
+  var _1 : borrowed uint32;
+  {
+    _1 <- o__1;
+    goto BB0;
+  }
+  BB0 {
+    _0 <- ();
+    _0
+  }
+
+  let cfg test () : ()
+    =
+  var _0 : ();
+  var a_1 : uint32;
+  var _2 : ();
+  var _3 : borrowed uint32;
+  var _4 : borrowed uint32;
+  {
+    goto BB0;
+  }
+  BB0 {
+    a_1 <- 10;
+    _4 <- borrow_mut a_1;
+    a_1 <-  ^ _4;
+    _3 <- borrow_mut  * _4;
+    _4 <- { _4 with current = ( ^ _3) };
+    assume { ^ _4 = * _4 };
+    _2 <- kill _3;
+    goto BB1
+  }
+  BB1 {
+    _0 <- ();
+    _0
+  }
+
+  let cfg main () : ()
+    =
+  var _0 : ();
+  {
+    goto BB0;
+  }
+  BB0 {
+    _0 <- ();
+    _0
+  }
+
+end

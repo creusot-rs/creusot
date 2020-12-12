@@ -1,5 +1,5 @@
 // make sure that local translation handles variable shadowing well
-fn multiple_scopes {
+fn multiple_scopes() {
 	let mut x = 1;
 	let y = 2;
 	{
@@ -7,3 +7,5 @@ fn multiple_scopes {
 		x = y;
 	}
 }
+
+fn main () {}

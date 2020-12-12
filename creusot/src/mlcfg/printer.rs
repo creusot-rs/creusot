@@ -137,9 +137,16 @@ impl EnvDisplay for Type {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Type::*;
 
-        if self.complex() {
-            write!(f, "(")?;
+        macro_rules! ty_parens {
+            ($fe:ident, $e:ident) => {
+                if $e.complex() {
+                    format!("({})", $fe.to($e))
+                } else {
+                    format!("{}", $fe.to($e))
+                }
+            };
         }
+
         match self {
             Bool => {
                 write!(f, "bool")?;
@@ -176,8 +183,8 @@ impl EnvDisplay for Type {
                     F64 => write!(f, "double"),
                 }?
             }
-            MutableBorrow(t) => {
-                write!(f, "borrowed {}", fe.to(&**t))?;
+            MutableBorrow(box t) => {
+                write!(f, "borrowed {}",ty_parens!(fe, t))?;
             }
             TVar(v) => {
                 write!(f, "{}", v)?;
@@ -185,20 +192,22 @@ impl EnvDisplay for Type {
             TConstructor(ty) => {
                 write!(f, "{}", fe.to(ty))?;
             }
-            TApp(tyf, args) => {
-                write!(f, "{} {}", fe.to(&**tyf), args.iter().format_with(" ", |elt, f| {
-                  f(&format_args!("{}", fe.to(elt)))
-                }))?;
+            TApp(box tyf, args) => {
+                if args.is_empty() {
+                    tyf.fmt(fe, f)?;
+                } else {
+                    write!(f, "{} {}", fe.to(tyf), args.iter().format_with(" ", |elt, f| {
+                      f(&format_args!("{}", ty_parens!(fe, elt)))
+                    }))?;
+                }
             }
             Tuple(tys) => {
-                write!(f, "({})", tys.iter().format_with(" ", |elt, f| {
+                write!(f, "({})", tys.iter().format_with(", ", |elt, f| {
                   f(&format_args!("{}", fe.to(elt)))
                 }))?;
             }
         }
-        if self.complex() {
-            write!(f, ")")?;
-        }
+
         Ok(())
     }
 }

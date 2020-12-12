@@ -4,7 +4,7 @@ fn main () {
 
   let mut x = &mut a;
   let mut y = &mut b;
-  let mut z;
+  let mut w;
   if true {
     *x = 5;
     w = x;

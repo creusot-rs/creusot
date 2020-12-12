@@ -1,0 +1,82 @@
+module Ambient
+use Ref 
+use mach.int.Int 
+use mach.int.Int32
+use mach.int.Int64
+use mach.int.UInt32
+use mach.int.UInt64
+use string.Char
+use floating_point.Single
+use floating_point.Double
+(** Generic Type for borrowed values *) 
+type borrowed 'a = 
+{ current : 'a ; 
+final : 'a; (* The "future" value when borrow will end *) 
+} 
+let function ( *_ ) x = x.current 
+let function ( ^_ ) x = x.final 
+val borrow_mut (a : 'a) : borrowed 'a 
+ensures { *result = a }
+  type list  =
+      | Cons(uint32, list)
+      | Nil
+
+  let cfg allZero (o_l_1 : borrowed (list)) : ()
+    =
+  var _0 : ();
+  var l_1 : borrowed (list);
+  var _2 : ();
+  var _3 : isize;
+  var value_4 : borrowed uint32;
+  var next_5 : borrowed (list);
+  var _6 : borrowed (list);
+  var _7 : ();
+  {
+    l_1 <- o_l_1;
+    goto BB0;
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    switch ( * l_1)
+      | Cons(_, _) -> goto BB2
+      | _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { ^ l_1 = * l_1 };
+    _0 <- ();
+    _0
+  }
+  BB2 {
+    goto BB4
+  }
+  BB4 {
+    value_4 <- borrow_mut let Cons(a, _) =  * l_1 in a;
+    l_1 <- { l_1 with current = (let Cons(a, b) =  * l_1 in Cons( ^ value_4, b)) };
+    next_5 <- borrow_mut let Cons(_, a) =  * l_1 in a;
+    l_1 <- { l_1 with current = (let Cons(a, b) =  * l_1 in Cons(a,  ^ next_5)) };
+    assume { ^ l_1 = * l_1 };
+    value_4 <- { value_4 with current = 0 };
+    assume { ^ value_4 = * value_4 };
+    _6 <- borrow_mut  * next_5;
+    next_5 <- { next_5 with current = ( ^ _6) };
+    assume { ^ next_5 = * next_5 };
+    l_1 <- _6;
+    _2 <- ();
+    goto BB0
+  }
+
+  let cfg main () : ()
+    =
+  var _0 : ();
+  {
+    goto BB0;
+  }
+  BB0 {
+    _0 <- ();
+    _0
+  }
+
+end
