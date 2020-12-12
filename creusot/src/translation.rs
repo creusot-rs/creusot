@@ -42,7 +42,7 @@ pub struct FunctionTranslator<'a, 'tcx> {
     past_blocks: Vec<mlcfg::Block>,
 }
 
-pub fn translate_tydecl(sess: &Session, span: Span, tcx: TyCtxt, adt: &AdtDef) -> MlTyDecl {
+pub fn translate_tydecl(sess: &Session, span: Span, tcx: TyCtxt, adt: &AdtDef) -> TyDecl {
     ty::translate_tydecl(sess, span, tcx, adt)
 }
 
@@ -122,7 +122,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         });
         let retty = vars.next().unwrap().1;
 
-        let name = translate_local_defid(self.tcx, nm, Namespace::ValueNS);
+        let name = translate_defid(self.tcx, nm, Namespace::ValueNS);
         Function {
             name,
             retty,
@@ -340,10 +340,6 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 }
 
 use heck::{CamelCase, MixedCase};
-
-fn translate_local_defid(tcx: TyCtxt, def_id: DefId, namespace: Namespace) -> UQName {
-    translate_defid(tcx, def_id, namespace).unqual_name()
-}
 
 fn translate_defid(tcx: TyCtxt, def_id: DefId, namespace: Namespace) -> QName {
     let def_path = tcx.def_path(def_id);

@@ -23,7 +23,7 @@ extern crate rustc_resolve;
 extern crate log;
 
 use def_path_trie::DefPathTrie;
-use mlcfg::{Function, MlTyDecl};
+use mlcfg::{Function, TyDecl};
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
 use rustc_hir::definitions::DefPath;
 use rustc_hir::{
@@ -109,7 +109,7 @@ fn translate(sess: &Session, tcx: TyCtxt) -> Result<()> {
 
     use def_path_trie::*;
 
-    type MlModule = (Vec<MlTyDecl>, Vec<Function>);
+    type MlModule = (Vec<TyDecl>, Vec<Function>);
     let mut translated_modules: DefPathTrie<MlModule> = DefPathTrie::new();
 
     // Translate all type declarations and push them into the module collection
@@ -173,27 +173,37 @@ fn translate(sess: &Session, tcx: TyCtxt) -> Result<()> {
         // debug::debug(tcx, &body, polonius_info);
         translated_modules.get_mut_with_default(module).1.push(translated);
     }
-    dbg!("omg");
     println!("module Ambient");
     println!("{}", mlcfg::PRELUDE);
-    print_module_tree(&translated_modules);
+    print_module_tree(&mut Vec::new(), &translated_modules);
     println!("end");
     Ok(())
 }
 
-fn print_module_tree(mod_tree: &DefPathTrie<(Vec<mlcfg::MlTyDecl>, Vec<mlcfg::Function>)> ) {
-    use itertools::*;
+fn print_module_tree(open_scopes: &mut Vec<String>, mod_tree: &DefPathTrie<(Vec<mlcfg::TyDecl>, Vec<mlcfg::Function>)> ) {
     use heck::CamelCase;
 
     for (k, child) in mod_tree.children_with_keys() {
-        println!("scope {}", k.to_string()[..].to_camel_case());
-        print_module_tree(child);
-        println!("end")
+        let scope_name = k.to_string()[..].to_camel_case();
+
+        println!("{:ident$}scope {}", "", scope_name, ident = (open_scopes.len() + 1) * 2);
+        open_scopes.push(scope_name);
+        print_module_tree(open_scopes, child);
+        open_scopes.pop();
+        println!("{:ident$}end", "", ident = (open_scopes.len() + 1) * 2);
     }
 
+    let fe = mlcfg::printer::FormatEnv { indent: (open_scopes.len() + 1) * 2, scope: &open_scopes[..]};
+
     let (ty, funcs) = mod_tree.value().unwrap();
-    println!("{}", ty.iter().format("\n"));
-    println!("{}", funcs.iter().format("\n"));
+
+    for ty_decl in ty {
+        println!("{}", fe.to(ty_decl));
+    }
+
+    for func in funcs {
+        println!("{}", fe.to(func));
+    }
 }
 
 fn module_of<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> DefPath {

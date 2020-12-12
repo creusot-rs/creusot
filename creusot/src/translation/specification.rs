@@ -3,6 +3,7 @@ use syn::{term::Term::*, term::*, BinOp};
 use crate::mlcfg::Exp;
 use crate::mlcfg::LocalIdent;
 use crate::mlcfg::QName;
+use crate::mlcfg::printer::FormatEnv;
 
 pub fn requires_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {
     let p: Term = syn::parse_str(&attr_val).unwrap();
@@ -21,7 +22,7 @@ pub fn requires_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {
 
     let mut e = to_exp(&p);
     e.subst(subst);
-    format!("{}", e)
+    format!("{}", FormatEnv { scope: &[], indent: 0}.to(&e))
 }
 
 pub fn invariant_to_why<'tcx>(body: &Body<'tcx>, info: SourceInfo, attr_val: String) -> String {
@@ -48,7 +49,7 @@ pub fn invariant_to_why<'tcx>(body: &Body<'tcx>, info: SourceInfo, attr_val: Str
         .collect();
 
     e.subst(subst);
-    format!("{}", e)
+    format!("{}", FormatEnv { scope: &[], indent: 0}.to(&e))
 }
 
 pub fn ensures_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {

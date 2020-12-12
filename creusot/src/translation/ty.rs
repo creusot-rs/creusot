@@ -7,7 +7,7 @@ use rustc_span::Span;
 use rustc_span::Symbol;
 
 use crate::mlcfg::QName;
-use crate::mlcfg::{MlTyDecl, Type as MlT};
+use crate::mlcfg::{TyDecl, Type as MlT};
 
 fn translate_ty_name<'tcx>(tcx: TyCtxt<'tcx>, dif: DefId) -> QName {
     super::translate_defid(tcx, dif, Namespace::TypeNS)
@@ -17,7 +17,7 @@ fn translate_ty_param<'tcx>(p: Symbol) -> String {
     format!("'{}", p.to_string().to_lowercase())
 }
 
-pub fn translate_tydecl<'tcx>(sess: &Session, span: Span, tcx: TyCtxt<'tcx>, adt: &AdtDef) -> MlTyDecl {
+pub fn translate_tydecl<'tcx>(sess: &Session, span: Span, tcx: TyCtxt<'tcx>, adt: &AdtDef) -> TyDecl {
     let gens = tcx.generics_of(adt.did);
 
     let ty_args: Vec<_> = gens
@@ -45,8 +45,8 @@ pub fn translate_tydecl<'tcx>(sess: &Session, span: Span, tcx: TyCtxt<'tcx>, adt
         ml_ty_def.push((var_def.ident.to_string(), field_tys));
     }
 
-    let ty_name = translate_ty_name(tcx, adt.did).unqual_name().to_string();
-    MlTyDecl { ty_name, ty_params: ty_args, ty_constructors: ml_ty_def }
+    let ty_name = translate_ty_name(tcx, adt.did);
+    TyDecl { ty_name, ty_params: ty_args, ty_constructors: ml_ty_def }
 }
 
 pub fn translate_ty<'tcx>(sess: &Session, span: Span, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> MlT {

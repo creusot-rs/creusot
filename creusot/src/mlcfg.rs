@@ -11,6 +11,8 @@ use rustc_middle::{
 use rustc_hir::def::Namespace;
 use rustc_middle::mir::{BasicBlock, Local};
 
+pub mod printer;
+
 pub const PRELUDE: &str = "use Ref \n\
               use mach.int.Int \n\
               use mach.int.Int32\n\
@@ -33,7 +35,7 @@ pub const PRELUDE: &str = "use Ref \n\
 
 #[derive(Debug)]
 pub struct Function {
-    pub name: UQName,
+    pub name: QName,
     pub retty: Type,
     pub args: Vec<(LocalIdent, Type)>,
     pub vars: Vec<(LocalIdent, Type)>,
@@ -100,8 +102,8 @@ impl Type {
 }
 
 #[derive(Debug)]
-pub struct MlTyDecl {
-    pub ty_name: String,
+pub struct TyDecl {
+    pub ty_name: QName,
     pub ty_params: Vec<String>,
     pub ty_constructors: Vec<(String, Vec<Type>)>,
 }
@@ -153,14 +155,8 @@ impl Display for LocalIdent {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct UQName(Vec<String>);
+use itertools::*;
 
-impl Display for UQName {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0.iter().format("."))
-    }
-}
 #[derive(Debug, Clone)]
 pub struct QName {
     pub module: Vec<String>,
@@ -168,10 +164,6 @@ pub struct QName {
 }
 
 impl QName {
-    pub fn unqual_name(self) -> UQName {
-        UQName(self.name)
-    }
-
     pub fn replace_name(&mut self, cons: String) {
         self.name = vec![cons];
     }
@@ -428,339 +420,3 @@ impl Pattern {
     }
 }
 
-impl Display for Pattern {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Pattern::Wildcard => {
-                write!(f, "_")?;
-            }
-            Pattern::VarP(v) => {
-                write!(f, "{}", v)?;
-            }
-            Pattern::TupleP(vs) => {
-                write!(f, "({})", vs.iter().format(", "))?;
-            }
-            Pattern::ConsP(c, pats) => {
-                if pats.is_empty() {
-                    write!(f, "{}", c)?;
-                } else {
-                    write!(f, "{}({})", c, pats.iter().format(", "))?;
-                }
-            }
-            Pattern::LitP(lit) => {
-                write!(f, "{}", lit)?;
-            }
-        }
-        Ok(())
-    }
-}
-
-use itertools::*;
-
-// FIXME: Doesn't take into account associativity when deciding when to put parens
-macro_rules! parens {
-    ($e:ident, $i:ident) => {
-        if $i.precedence() < $e.precedence() {
-            format!("({})", $i)
-        } else {
-            format!("{}", $i)
-        }
-    };
-}
-
-impl Display for BlockId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "BB{}", self.0)
-    }
-}
-
-impl Display for Function {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "let cfg {} ", self.name)?;
-
-        if self.args.is_empty() {
-            write!(f, "()")?;
-        }
-
-        for (nm, ty) in &self.args {
-            write!(f, "(o_{} : {})", nm, ty)?;
-        }
-
-        writeln!(f, " : {}", self.retty)?;
-
-        for req in &self.preconds {
-            writeln!(f, "requires {{ {} }}", req)?;
-        }
-        for req in &self.postconds {
-            writeln!(f, "ensures {{ {} }}", req)?;
-        }
-
-        writeln!(f, "=")?;
-        // Forward declare all arguments
-        writeln!(f, "var _0 : {};", self.retty)?;
-
-        for (var, ty) in self.args.iter() {
-            writeln!(f, "var {} : {};", var, ty)?;
-        }
-
-        // Forward declare all variables
-        for (var, ty) in self.vars.iter() {
-            writeln!(f, "var {} : {};", var, ty)?;
-        }
-        writeln!(f, "{{")?;
-
-        for (arg, _) in self.args.iter() {
-            writeln!(f, "  {} <- o_{};", arg, arg)?;
-        }
-
-        writeln!(f, "  goto BB0;")?;
-        writeln!(f, "}}")?;
-
-        for block in &self.blocks {
-            write!(f, "{}", block)?;
-        }
-
-        Ok(())
-    }
-}
-
-impl Display for Block {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{} {{", self.label)?;
-
-        for stmt in &self.statements {
-            writeln!(f, "  {};", stmt)?;
-        }
-
-        writeln!(f, "  {}", self.terminator)?;
-
-        writeln!(f, "}}")?;
-
-        Ok(())
-    }
-}
-
-impl Display for Terminator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use Terminator::*;
-        match self {
-            Goto(tgt) => {
-                write!(f, "goto {}", tgt)?;
-            }
-            Absurd => {
-                write!(f, "absurd")?;
-            }
-            Return => {
-                write!(f, "_0")?;
-            }
-            Switch(discr, brs) => {
-                writeln!(f, "switch ({})", discr)?;
-
-                for (pat, tgt) in brs {
-                    writeln!(f, "  | {} -> goto {}", pat, tgt)?;
-                }
-                writeln!(f, "  end")?;
-            }
-        }
-        Ok(())
-    }
-}
-
-impl Display for Exp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Exp::Current(e) => {
-                write!(f, " * {}", e)?;
-            }
-            Exp::Final(e) => {
-                write!(f, " ^ {}", e)?;
-            }
-            Exp::Let { pattern, arg, body } => {
-                write!(f, "let {} = {} in {}", pattern, parens!(self, arg), parens!(self, body))?;
-            }
-            Exp::Var(v) => {
-                write!(f, "{}", v)?;
-            }
-            // Exp::QVar(v) => {
-            //     write!(f, "{}", v)?;
-            // }
-            Exp::RecUp { record, label, val } => {
-                write!(f, "{{ {} with {} = {} }}", parens!(self, record), label, parens!(self, val))?;
-            }
-            Exp::Tuple(vs) => {
-                write!(f, "({})", vs.iter().format(", "))?;
-            }
-            Exp::Constructor { ctor, args } => {
-                if args.is_empty() {
-                    write!(f, "{}", ctor)?;
-                } else {
-                    write!(f, "{}({})", ctor, args.iter().format(", "))?;
-                }
-            }
-            Exp::BorrowMut(exp) => {
-                write!(f, "borrow_mut {}", parens!(self, exp))?;
-            }
-            Exp::Const(c) => {
-                write!(f, "{}", c)?;
-            }
-            Exp::BinaryOp(FullBinOp::Other(BinOp::Div), l, r) => {
-                write!(f, "div {} {}", parens!(self, l), parens!(self, r))?;
-            }
-            Exp::BinaryOp(op, l, r) => {
-                write!(f, "{} {} {}", parens!(self, l), bin_op_to_string(op), parens!(self, r))?;
-            }
-            Exp::Call(fun, args) => {
-                write!(f, "{} {}", fun, args.iter().map(|a| parens!(self, a)).format(" "))?;
-            }
-            Exp::Verbatim(verb) => {
-                write!(f, "{}", verb)?;
-            }
-            Exp::Forall(binders, exp) => {
-                write!(f, "forall ")?;
-
-                for (l, ty) in binders {
-                    write!(f, "({} : {}) ", l, ty)?;
-                }
-
-                write!(f, ". {}", exp)?;
-            }
-            Exp::Exists(binders, exp) => {
-                write!(f, "exists ")?;
-
-                for (l, ty) in binders {
-                    write!(f, "({} : {}) ", l, ty)?;
-                }
-
-                write!(f, ". {}", exp)?;
-            }
-            Exp::Impl(hyp, exp) => {
-                write!(f, "{} -> {}", parens!(self, hyp), parens!(self, exp))?;
-            }
-        }
-        Ok(())
-    }
-}
-
-fn bin_op_to_string(op: &FullBinOp) -> &str {
-    use FullBinOp::*;
-    use rustc_middle::mir::BinOp::*;
-    match op {
-        And => "&&",
-        Or => "||",
-        Other(Add) => "+",
-        Other(Sub) => "-",
-        Other(Mul) => "*",
-        Other(Eq )=> "=",
-        Other(Ne )=> "<>",
-        Other(Gt )=> ">",
-        Other(Ge )=> ">=",
-        Other(Lt )=> "<",
-        Other(Le )=> "<=",
-        _ => unreachable!("unexpected bin-op"),
-    }
-}
-
-impl Display for Constant {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl Display for Statement {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Statement::Assign { lhs, rhs } => {
-                write!(f, "{} <- {}", lhs, rhs)?;
-            }
-            Statement::Freeze(loc) => {
-                write!(f, "assume {{ ^ {} = * {} }}", loc, loc)?;
-            }
-            Statement::Invariant(nm, e) => {
-                write!(f, "invariant {} {{ {} }}", nm, e)?;
-            }
-        }
-        Ok(())
-    }
-}
-
-impl Display for Type {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use Type::*;
-
-        if self.complex() {
-            write!(f, "(")?;
-        }
-        match self {
-            Bool => {
-                write!(f, "bool")?;
-            }
-            Char => {
-                write!(f, "char")?;
-            }
-            Int(size) => {
-                use rustc_ast::ast::IntTy::*;
-                match size {
-                    I8      => write!(f, "int8"),
-                    I16     => write!(f, "int16"),
-                    I32     => write!(f, "int32"),
-                    I64     => write!(f, "int64"),
-                    I128    => write!(f, "int128"),
-                    Isize   => write!(f, "isize"),
-                }?
-            }
-            Uint(size) => {
-                use rustc_ast::ast::UintTy::*;
-                match size {
-                    U8      => write!(f, "uint8"),
-                    U16     => write!(f, "uint16"),
-                    U32     => write!(f, "uint32"),
-                    U64     => write!(f, "uint64"),
-                    U128    => write!(f, "uint128"),
-                    Usize   => write!(f, "usize"),
-                }?
-            }
-            Float(size) => {
-                use rustc_ast::ast::FloatTy::*;
-                match size {
-                    F32 => write!(f, "single"),
-                    F64 => write!(f, "double"),
-                }?
-            }
-            MutableBorrow(t) => {
-                write!(f, "borrowed {}", t)?;
-            }
-            TVar(v) => {
-                write!(f, "{}", v)?;
-            }
-            TConstructor(ty) => {
-                write!(f, "{}", ty)?;
-            }
-            TApp(tyf, args) => {
-                write!(f, "{} {}", tyf, args.iter().format(" "))?;
-            }
-            Tuple(tys) => {
-                write!(f, "({})", tys.iter().format(", "))?;
-            }
-        }
-        if self.complex() {
-            write!(f, ")")?;
-        }
-        Ok(())
-    }
-}
-
-impl Display for MlTyDecl {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "type {} {} =", self.ty_name, self.ty_params.iter().format(" "))?;
-
-        for (cons, args) in self.ty_constructors.iter() {
-            if args.is_empty() {
-                writeln!(f, "  | {}", cons)?;
-            } else {
-                writeln!(f, "  | {}({})", cons, args.iter().format(", "))?;
-            }
-        }
-
-        Ok(())
-    }
-}
