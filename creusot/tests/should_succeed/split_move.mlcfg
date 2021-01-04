@@ -1,27 +1,40 @@
 module Ambient
-use Ref 
-use mach.int.Int 
-use mach.int.Int32
-use mach.int.Int64
-use mach.int.UInt32
-use mach.int.UInt64
-use string.Char
-use floating_point.Single
-use floating_point.Double
-(** Generic Type for borrowed values *) 
-type borrowed 'a = 
-{ current : 'a ; 
-final : 'a; (* The "future" value when borrow will end *) 
-} 
-let function ( *_ ) x = x.current 
-let function ( ^_ ) x = x.final 
-val borrow_mut (a : 'a) : borrowed 'a 
-ensures { *result = a }
-type usize = int
-type isize = int
+  use Ref 
+  use mach.int.Int 
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+
+  type usize = int
+  type isize = int
+
+  (** Generic Type for borrowed values *) 
+  type borrowed 'a = 
+  { current : 'a ; 
+  final : 'a; (* The "future" value when borrow will end *) 
+  } 
+  let function ( *_ ) x = x.current 
+  let function ( ^_ ) x = x.final 
+  val borrow_mut (a : 'a) : borrowed 'a 
+  ensures { *result = a }
+
+  predicate drop_fix (_ : 'a) = true
+  predicate drop_uint (_ : 'a) = true
+  predicate drop_int (_ : 'a) = true
+  predicate drop_float (_ : 'a) = true
+  predicate drop_bool (_ : 'a) = true
+  predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
+  predicate drop_ref (_ : 'a) = true
+
   type myInt  =
       | MyInt(usize)
 
+  predicate drop_myInt (self : myInt) =
+    let MyInt(a) = self in drop_uint a
   let cfg main () : ()
     =
   var _0 : ();
@@ -44,10 +57,10 @@ type isize = int
     a_1 <-  ^ x_4;
     z_5 <- borrow_mut (let (_, a) =  * x_4 in a);
     x_4 <- { x_4 with current = (let (a, b) =  * x_4 in (a,  ^ z_5)) };
-    assume { ^ z_5 = * z_5 };
+    assume { drop_mut_ref z_5 };
     _6 <- MyInt(3);
     x_4 <- { x_4 with current = (let (a, b) =  * x_4 in (_6, b)) };
-    assume { ^ x_4 = * x_4 };
+    assume { drop_mut_ref x_4 };
     _8 <- let MyInt(a) = let (a, _) = a_1 in a in a;
     _7 <- _8 = 3;
     _0 <- ();

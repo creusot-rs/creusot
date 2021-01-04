@@ -1,24 +1,35 @@
 module Ambient
-use Ref 
-use mach.int.Int 
-use mach.int.Int32
-use mach.int.Int64
-use mach.int.UInt32
-use mach.int.UInt64
-use string.Char
-use floating_point.Single
-use floating_point.Double
-(** Generic Type for borrowed values *) 
-type borrowed 'a = 
-{ current : 'a ; 
-final : 'a; (* The "future" value when borrow will end *) 
-} 
-let function ( *_ ) x = x.current 
-let function ( ^_ ) x = x.final 
-val borrow_mut (a : 'a) : borrowed 'a 
-ensures { *result = a }
-type usize = int
-type isize = int
+  use Ref 
+  use mach.int.Int 
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+
+  type usize = int
+  type isize = int
+
+  (** Generic Type for borrowed values *) 
+  type borrowed 'a = 
+  { current : 'a ; 
+  final : 'a; (* The "future" value when borrow will end *) 
+  } 
+  let function ( *_ ) x = x.current 
+  let function ( ^_ ) x = x.final 
+  val borrow_mut (a : 'a) : borrowed 'a 
+  ensures { *result = a }
+
+  predicate drop_fix (_ : 'a) = true
+  predicate drop_uint (_ : 'a) = true
+  predicate drop_int (_ : 'a) = true
+  predicate drop_float (_ : 'a) = true
+  predicate drop_bool (_ : 'a) = true
+  predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
+  predicate drop_ref (_ : 'a) = true
+
   let cfg main () : ()
     =
   var _0 : ();
@@ -49,7 +60,7 @@ type isize = int
       end
   }
   BB1 {
-    assume { ^ y_4 = * y_4 };
+    assume { drop_mut_ref y_4 };
     goto BB3
   }
   BB3 {
@@ -61,16 +72,16 @@ type isize = int
   }
   BB4 {
     _10 <-  * w_5;
-    assume { ^ w_5 = * w_5 };
+    assume { drop_mut_ref w_5 };
     _0 <- ();
     _0
   }
   BB2 {
-    assume { ^ x_3 = * x_3 };
+    assume { drop_mut_ref x_3 };
     y_4 <- { y_4 with current = 6 };
     _9 <- borrow_mut ( * y_4);
     y_4 <- { y_4 with current = ( ^ _9) };
-    assume { ^ y_4 = * y_4 };
+    assume { drop_mut_ref y_4 };
     w_5 <- _9;
     _6 <- ();
     goto BB4

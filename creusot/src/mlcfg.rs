@@ -13,27 +13,22 @@ use rustc_middle::mir::{BasicBlock, Local};
 
 pub mod printer;
 
-pub const PRELUDE: &str = "use Ref \n\
-              use mach.int.Int \n\
-              use mach.int.Int32\n\
-              use mach.int.Int64\n\
-              use mach.int.UInt32\n\
-              use mach.int.UInt64\n\
-              use string.Char\n\
+pub const PRELUDE: &str = include_str!("prelude.mlw");
 
-              use floating_point.Single\n\
-              use floating_point.Double\n\
-              (** Generic Type for borrowed values *) \n\
-              type borrowed 'a = \n\
-                { current : 'a ; \n\
-                  final : 'a; (* The \"future\" value when borrow will end *) \n\
-                } \n\
-              let function ( *_ ) x = x.current \n\
-              let function ( ^_ ) x = x.final \n\
-              val borrow_mut (a : 'a) : borrowed 'a \n\
-                 ensures { *result = a }\n\
-              type usize = int\n\
-              type isize = int";
+pub fn drop_fix()     -> QName { QName { module: vec![], name: vec!["drop_fix".into()] } }
+pub fn drop_uint()    -> QName { QName { module: vec![], name: vec!["drop_uint".into()] } }
+pub fn drop_int()     -> QName { QName { module: vec![], name: vec!["drop_int".into()] } }
+pub fn drop_float()   -> QName { QName { module: vec![], name: vec!["drop_float".into()] } }
+pub fn drop_bool()    -> QName { QName { module: vec![], name: vec!["drop_bool".into()] } }
+pub fn drop_mut_ref() -> QName { QName { module: vec![], name: vec!["drop_mut_ref".into()] } }
+pub fn drop_ref()     -> QName { QName { module: vec![], name: vec!["drop_ref".into()] } }
+
+#[derive(Default)]
+pub struct Module {
+    pub tydecls : Vec<TyDecl>,
+    pub predicates: Vec<Predicate>,
+    pub functions: Vec<Function>,
+}
 
 #[derive(Debug)]
 pub struct Function {
@@ -44,6 +39,13 @@ pub struct Function {
     pub blocks: Vec<Block>,
     pub preconds: Vec<String>, // for now we blindly pass contracts down
     pub postconds: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct Predicate {
+    pub name: QName,
+    pub args: Vec<(LocalIdent, Type)>,
+    pub body: Exp,
 }
 
 #[derive(Debug)]
@@ -79,7 +81,7 @@ pub enum Terminator {
 pub enum Statement {
     Assign { lhs: LocalIdent, rhs: Exp },
     Invariant(String, Exp),
-    Freeze(LocalIdent),
+    Assume(Exp),
 }
 
 #[derive(Debug, Clone)]
@@ -94,9 +96,14 @@ pub enum Type {
     TConstructor(QName),
     TApp(Box<Type>, Vec<Type>),
     Tuple(Vec<Type>),
+    TFun(Box<Type>, Box<Type>),
 }
 
 impl Type {
+    pub fn predicate(ty: Self) -> Self {
+        Self::TFun(box ty, box Self::Bool)
+    }
+
     fn complex(&self) -> bool {
         use Type::*;
         !matches!(self, Bool | Char | Int(_) | Uint(_) | TVar(_) | Tuple(_) | TConstructor(_))
@@ -202,21 +209,37 @@ pub enum Exp {
     Final(Box<Exp>),
     Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
     Var(LocalIdent),
-    // QVar(QName),
+    QVar(QName),
     RecUp { record: Box<Exp>, label: String, val: Box<Exp> },
     Tuple(Vec<Exp>),
     Constructor { ctor: QName, args: Vec<Exp> },
     BorrowMut(Box<Exp>),
     Const(Constant),
     BinaryOp(FullBinOp, Box<Exp>, Box<Exp>),
-    Call(QName, Vec<Exp>),
+    Call(Box<Exp>, Vec<Exp>),
     Verbatim(String),
+    // Seq(Box<Exp>, Box<Exp>),
+    Match(Box<Exp>, Vec<(Pattern, Exp)>),
 
     // Predicates
 
     Impl(Box<Exp>, Box<Exp>),
     Forall(Vec<(LocalIdent, Type)>, Box<Exp>),
     Exists(Vec<(LocalIdent, Type)>, Box<Exp>),
+}
+
+impl Exp {
+    pub fn unit () -> Self {
+        Self::Tuple(vec![])
+    }
+
+    pub fn conj(l: Exp, r: Exp) -> Self {
+        Exp::BinaryOp(FullBinOp::And, box l, box r)
+    }
+
+    pub fn mk_true() -> Self {
+        Exp::Const(Constant::const_true())
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -234,6 +257,7 @@ enum Precedence {
     Mul,
     FinCur,
     Term,
+    Call,
 }
 
 impl Exp {
@@ -296,6 +320,19 @@ impl Exp {
                     a.subst(subst.clone());
                 }
             }
+            // Exp::Seq(box a, box b) => {
+            //     a.subst(subst.clone());
+            //     b.subst(subst);
+            // }
+            Exp::Match(box scrut, brs) => {
+                scrut.subst(subst.clone());
+
+                for (pat, br) in brs {
+                    let mut s = subst.clone();
+                    pat.binders().drain().for_each(|b| {s.remove(&b);});
+                    br.subst(s);
+                }
+            }
             Exp::BorrowMut(e) => { e.subst(subst) }
             Exp::BinaryOp(_, l, r) => { l.subst(subst.clone()); r.subst(subst)}
             Exp::Impl(hyp, exp) => { hyp.subst(subst.clone()); exp.subst(subst)}
@@ -312,12 +349,32 @@ impl Exp {
                     arg.subst(subst.clone());
                 }
             }
-            // Exp::QVar(_) => {}
+            Exp::QVar(_) => {}
             Exp::Const(_) => {}
             Exp::Verbatim(_) => {}
         }
     }
 
+    // Construct an application from this expression and an argument
+    pub fn app_to(mut self, arg: Self) -> Self {
+        match self {
+            Exp::Call(_, ref mut args) => args.push(arg),
+            _ => self = Exp::Call(box self, vec![arg]),
+        }
+        self
+    }
+
+    /// Whether this expression can be unambiguously printed without parentheses.
+    fn simple_print(&self) -> bool {
+        match self {
+            Exp::Var(_) => true,
+            Exp::QVar(_) => true,
+            Exp::Tuple(_) => true,
+            Exp::Constructor { .. } => true,
+            Exp::Const(_) => true,
+            _ => false,
+        }
+    }
     fn precedence(&self) -> Precedence {
         use Precedence::*;
         use FullBinOp::Other;
@@ -327,9 +384,12 @@ impl Exp {
             Exp::Final(_) => { FinCur }
             Exp::Let { .. } => { Any }
             Exp::Var(_) => { Term }
+            Exp::QVar(_) => { Term }
             Exp::RecUp { .. } => { Term }
             Exp::Tuple(_) => { Term }
             Exp::Constructor { .. } => { Term }
+            // Exp::Seq(_, _) => { Term }
+            Exp::Match(_, _) => { Term }
             Exp::BorrowMut(_) => { Term }
             Exp::Const(_) => { Term }
             Exp::BinaryOp(FullBinOp::And, _, _) => { And }
@@ -355,7 +415,7 @@ impl Exp {
                     BinOp::Offset => panic!("unsupported operator"),
                 }
             }
-            Exp::Call(_, _) => { Term }
+            Exp::Call(_, _) => { Call }
             Exp::Verbatim(_) => { Any }
             Exp::Impl(_, _) => { Impl }
             Exp::Forall(_, _) => { Any }

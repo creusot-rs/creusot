@@ -1,27 +1,44 @@
 module Ambient
-use Ref 
-use mach.int.Int 
-use mach.int.Int32
-use mach.int.Int64
-use mach.int.UInt32
-use mach.int.UInt64
-use string.Char
-use floating_point.Single
-use floating_point.Double
-(** Generic Type for borrowed values *) 
-type borrowed 'a = 
-{ current : 'a ; 
-final : 'a; (* The "future" value when borrow will end *) 
-} 
-let function ( *_ ) x = x.current 
-let function ( ^_ ) x = x.final 
-val borrow_mut (a : 'a) : borrowed 'a 
-ensures { *result = a }
-type usize = int
-type isize = int
+  use Ref 
+  use mach.int.Int 
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+
+  type usize = int
+  type isize = int
+
+  (** Generic Type for borrowed values *) 
+  type borrowed 'a = 
+  { current : 'a ; 
+  final : 'a; (* The "future" value when borrow will end *) 
+  } 
+  let function ( *_ ) x = x.current 
+  let function ( ^_ ) x = x.final 
+  val borrow_mut (a : 'a) : borrowed 'a 
+  ensures { *result = a }
+
+  predicate drop_fix (_ : 'a) = true
+  predicate drop_uint (_ : 'a) = true
+  predicate drop_int (_ : 'a) = true
+  predicate drop_float (_ : 'a) = true
+  predicate drop_bool (_ : 'a) = true
+  predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
+  predicate drop_ref (_ : 'a) = true
+
   type list  =
       | Cons(uint32, list)
       | Nil
+
+  predicate drop_list (self : list) =
+    match (self) with
+      | Cons(a, b) -> drop_uint a && drop_fix b
+      | Nil -> True
+      end
 
   let cfg allZero (o_l_1 : borrowed (list)) : ()
     =
@@ -47,7 +64,7 @@ type isize = int
       end
   }
   BB3 {
-    assume { ^ l_1 = * l_1 };
+    assume { drop_mut_ref l_1 };
     _0 <- ();
     _0
   }
@@ -59,12 +76,12 @@ type isize = int
     l_1 <- { l_1 with current = (let Cons(a, b) =  * l_1 in Cons( ^ value_4, b)) };
     next_5 <- borrow_mut (let Cons(_, a) =  * l_1 in a);
     l_1 <- { l_1 with current = (let Cons(a, b) =  * l_1 in Cons(a,  ^ next_5)) };
-    assume { ^ l_1 = * l_1 };
+    assume { drop_mut_ref l_1 };
     value_4 <- { value_4 with current = 0 };
-    assume { ^ value_4 = * value_4 };
+    assume { drop_mut_ref value_4 };
     _6 <- borrow_mut ( * next_5);
     next_5 <- { next_5 with current = ( ^ _6) };
-    assume { ^ next_5 = * next_5 };
+    assume { drop_mut_ref next_5 };
     l_1 <- _6;
     _2 <- ();
     goto BB0

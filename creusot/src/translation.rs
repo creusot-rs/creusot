@@ -177,7 +177,8 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
             if self.local_init.contains(local) && local_ty.is_ref() && local_ty.is_mutable_ptr() {
                 let ident = self.translate_local(local);
-                self.emit_statement(mlcfg::Statement::Freeze(ident));
+                let assumption : Exp = ty::drop_predicate(&mut self.ty_ctx, local_ty).app_to(ident.into());
+                self.emit_statement(mlcfg::Statement::Assume(assumption));
             }
         }
     }

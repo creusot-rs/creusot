@@ -63,7 +63,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                         ty::TyKind::FnDef(defid, _) => super::translate_defid(self.tcx, *defid, Namespace::ValueNS),
                         _  => panic!("not a function"),
                     };
-                    Exp::Call(fname, func_args)
+                    Exp::Call(box Exp::QVar(fname), func_args)
                 };
 
                 if destination.is_none() {

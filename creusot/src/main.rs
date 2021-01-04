@@ -1,7 +1,7 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_syntax, box_patterns)]
 #![register_tool(creusot)]
-#![feature(const_panic, or_patterns)]
+#![feature(const_panic, or_patterns, iterator_fold_self)]
 
 extern crate polonius_engine;
 extern crate rustc_ast;
@@ -23,7 +23,7 @@ extern crate rustc_target;
 extern crate log;
 
 use def_path_trie::DefPathTrie;
-use mlcfg::{Function, TyDecl};
+use mlcfg::Module;
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
 use rustc_hir::{
     def_id::LOCAL_CRATE,
@@ -115,8 +115,7 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
 
     use def_path_trie::*;
 
-    type MlModule = (Vec<TyDecl>, Vec<Function>);
-    let mut translated_modules: DefPathTrie<MlModule> = DefPathTrie::new();
+    let mut translated_modules: DefPathTrie<Module> = DefPathTrie::new();
 
     // Type translation state, including which datatypes have already been translated.
     let mut ty_ctx = translation::ty::Ctx::new(tcx, sess);
@@ -176,7 +175,7 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
         let translated = FunctionTranslator::new(sess, tcx, &body).translate(def_id, func_contract);
 
         // debug::debug(tcx, &body, polonius_info);
-        translated_modules.get_mut_with_default(module).1.push(translated);
+        translated_modules.get_mut_with_default(module).functions.push(translated);
     }
 
     // Collect all the type translations
@@ -198,7 +197,7 @@ use std::io::Write;
 fn print_module_tree<W>(
     out: &mut W,
     open_scopes: &mut Vec<String>,
-    mod_tree: &DefPathTrie<(Vec<mlcfg::TyDecl>, Vec<mlcfg::Function>)>,
+    mod_tree: &DefPathTrie<Module>,
 ) -> std::io::Result<()>
 where
     W: Write,
@@ -219,13 +218,17 @@ where
 
     let fe = mlcfg::printer::FormatEnv { indent: indent_level, scope: &open_scopes[..] };
 
-    let (ty, funcs) = mod_tree.value().unwrap();
+    let module = mod_tree.value().unwrap();
 
-    for ty_decl in ty {
+    for ty_decl in &module.tydecls {
         writeln!(out, "{}", fe.to(ty_decl))?;
     }
 
-    for func in funcs {
+    for pred in &module.predicates {
+        writeln!(out, "{}", fe.to(pred))?;
+    }
+
+    for func in &module.functions {
         writeln!(out, "{}", fe.to(func))?;
     }
     Ok(())

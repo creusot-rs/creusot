@@ -1,24 +1,35 @@
 module Ambient
-use Ref 
-use mach.int.Int 
-use mach.int.Int32
-use mach.int.Int64
-use mach.int.UInt32
-use mach.int.UInt64
-use string.Char
-use floating_point.Single
-use floating_point.Double
-(** Generic Type for borrowed values *) 
-type borrowed 'a = 
-{ current : 'a ; 
-final : 'a; (* The "future" value when borrow will end *) 
-} 
-let function ( *_ ) x = x.current 
-let function ( ^_ ) x = x.final 
-val borrow_mut (a : 'a) : borrowed 'a 
-ensures { *result = a }
-type usize = int
-type isize = int
+  use Ref 
+  use mach.int.Int 
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+
+  type usize = int
+  type isize = int
+
+  (** Generic Type for borrowed values *) 
+  type borrowed 'a = 
+  { current : 'a ; 
+  final : 'a; (* The "future" value when borrow will end *) 
+  } 
+  let function ( *_ ) x = x.current 
+  let function ( ^_ ) x = x.final 
+  val borrow_mut (a : 'a) : borrowed 'a 
+  ensures { *result = a }
+
+  predicate drop_fix (_ : 'a) = true
+  predicate drop_uint (_ : 'a) = true
+  predicate drop_int (_ : 'a) = true
+  predicate drop_float (_ : 'a) = true
+  predicate drop_bool (_ : 'a) = true
+  predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
+  predicate drop_ref (_ : 'a) = true
+
   let cfg projToggle (o_toggle_1 : bool)(o_a_2 : borrowed 't)(o_b_3 : borrowed 't) : borrowed 't
     ensures { o_toggle_1 = false -> result = o_b_3 }
     ensures { o_toggle_1 = true -> result = o_a_2 }
@@ -46,35 +57,35 @@ type isize = int
       end
   }
   BB1 {
-    assume { ^ b_3 = * b_3 };
+    assume { drop_mut_ref b_3 };
     goto BB3
   }
   BB3 {
     _7 <- borrow_mut ( * a_2);
     a_2 <- { a_2 with current = ( ^ _7) };
-    assume { ^ a_2 = * a_2 };
+    assume { drop_mut_ref a_2 };
     _5 <- borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ _5) };
-    assume { ^ _7 = * _7 };
+    assume { drop_mut_ref _7 };
     goto BB4
   }
   BB4 {
     _4 <- borrow_mut ( * _5);
     _5 <- { _5 with current = ( ^ _4) };
-    assume { ^ _5 = * _5 };
+    assume { drop_mut_ref _5 };
     _0 <- borrow_mut ( * _4);
     _4 <- { _4 with current = ( ^ _0) };
-    assume { ^ _4 = * _4 };
+    assume { drop_mut_ref _4 };
     _0
   }
   BB2 {
-    assume { ^ a_2 = * a_2 };
+    assume { drop_mut_ref a_2 };
     _8 <- borrow_mut ( * b_3);
     b_3 <- { b_3 with current = ( ^ _8) };
-    assume { ^ b_3 = * b_3 };
+    assume { drop_mut_ref b_3 };
     _5 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _5) };
-    assume { ^ _8 = * _8 };
+    assume { drop_mut_ref _8 };
     goto BB4
   }
 

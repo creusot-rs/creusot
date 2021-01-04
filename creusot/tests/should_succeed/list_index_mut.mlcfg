@@ -1,30 +1,49 @@
 module Ambient
-use Ref 
-use mach.int.Int 
-use mach.int.Int32
-use mach.int.Int64
-use mach.int.UInt32
-use mach.int.UInt64
-use string.Char
-use floating_point.Single
-use floating_point.Double
-(** Generic Type for borrowed values *) 
-type borrowed 'a = 
-{ current : 'a ; 
-final : 'a; (* The "future" value when borrow will end *) 
-} 
-let function ( *_ ) x = x.current 
-let function ( ^_ ) x = x.final 
-val borrow_mut (a : 'a) : borrowed 'a 
-ensures { *result = a }
-type usize = int
-type isize = int
+  use Ref 
+  use mach.int.Int 
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+
+  type usize = int
+  type isize = int
+
+  (** Generic Type for borrowed values *) 
+  type borrowed 'a = 
+  { current : 'a ; 
+  final : 'a; (* The "future" value when borrow will end *) 
+  } 
+  let function ( *_ ) x = x.current 
+  let function ( ^_ ) x = x.final 
+  val borrow_mut (a : 'a) : borrowed 'a 
+  ensures { *result = a }
+
+  predicate drop_fix (_ : 'a) = true
+  predicate drop_uint (_ : 'a) = true
+  predicate drop_int (_ : 'a) = true
+  predicate drop_float (_ : 'a) = true
+  predicate drop_bool (_ : 'a) = true
+  predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
+  predicate drop_ref (_ : 'a) = true
+
+  type list  =
+      | List(uint32, option (list))
+
   type option 't =
       | None
       | Some('t)
 
-  type list  =
-      | List(uint32, option (list))
+  predicate drop_list (self : list) =
+    let List(a, b) = self in drop_uint a && drop_option drop_fix b
+  predicate drop_option (drop_'t : 't -> bool) (self : option 't) =
+    match (self) with
+      | None -> True
+      | Some(a) -> drop_'t a
+      end
 
   let cfg indexMut (o_l_1 : borrowed (list))(o_ix_2 : usize) : borrowed uint32
     =
@@ -74,7 +93,7 @@ type isize = int
       end
   }
   BB8 {
-    assume { ^ l_1 = * l_1 };
+    assume { drop_mut_ref l_1 };
     absurd
   }
   BB7 {
@@ -83,10 +102,10 @@ type isize = int
   BB9 {
     n_11 <- borrow_mut (let Some(a) = let List(_, a) =  * l_1 in a in a);
     l_1 <- { l_1 with current = (let List(a, b) =  * l_1 in List(a, let Some(a) = let List(_, a) =  * l_1 in a in Some( ^ n_11))) };
-    assume { ^ l_1 = * l_1 };
+    assume { drop_mut_ref l_1 };
     _12 <- borrow_mut ( * n_11);
     n_11 <- { n_11 with current = ( ^ _12) };
-    assume { ^ n_11 = * n_11 };
+    assume { drop_mut_ref n_11 };
     l_1 <- _12;
     _9 <- ();
     ix_2 <- ix_2 - 1;
@@ -94,20 +113,20 @@ type isize = int
     goto BB1
   }
   BB6 {
-    assume { ^ l_1 = * l_1 };
+    assume { drop_mut_ref l_1 };
     absurd
   }
   BB4 {
     _4 <- ();
     _15 <- borrow_mut (let List(a, _) =  * l_1 in a);
     l_1 <- { l_1 with current = (let List(a, b) =  * l_1 in List( ^ _15, b)) };
-    assume { ^ l_1 = * l_1 };
+    assume { drop_mut_ref l_1 };
     _3 <- borrow_mut ( * _15);
     _15 <- { _15 with current = ( ^ _3) };
-    assume { ^ _15 = * _15 };
+    assume { drop_mut_ref _15 };
     _0 <- borrow_mut ( * _3);
     _3 <- { _3 with current = ( ^ _0) };
-    assume { ^ _3 = * _3 };
+    assume { drop_mut_ref _3 };
     _0
   }
 
@@ -131,14 +150,14 @@ type isize = int
     _4 <- val_3;
     _6 <- borrow_mut ( * l_1);
     l_1 <- { l_1 with current = ( ^ _6) };
-    assume { ^ l_1 = * l_1 };
+    assume { drop_mut_ref l_1 };
     _7 <- ix_2;
     _5 <- indexMut _6 _7;
     goto BB1
   }
   BB1 {
     _5 <- { _5 with current = _4 };
-    assume { ^ _5 = * _5 };
+    assume { drop_mut_ref _5 };
     _0 <- ();
     _0
   }
@@ -184,7 +203,7 @@ type isize = int
     l_1 <-  ^ _8;
     _7 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _7) };
-    assume { ^ _8 = * _8 };
+    assume { drop_mut_ref _8 };
     _6 <- write _7 0 2;
     goto BB5
   }
