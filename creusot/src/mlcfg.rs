@@ -31,7 +31,9 @@ pub const PRELUDE: &str = "use Ref \n\
               let function ( *_ ) x = x.current \n\
               let function ( ^_ ) x = x.final \n\
               val borrow_mut (a : 'a) : borrowed 'a \n\
-                 ensures { *result = a }";
+                 ensures { *result = a }\n\
+              type usize = int\n\
+              type isize = int";
 
 #[derive(Debug)]
 pub struct Function {
@@ -328,7 +330,7 @@ impl Exp {
             Exp::RecUp { .. } => { Term }
             Exp::Tuple(_) => { Term }
             Exp::Constructor { .. } => { Term }
-            Exp::BorrowMut(_) => { Any }
+            Exp::BorrowMut(_) => { Term }
             Exp::Const(_) => { Term }
             Exp::BinaryOp(FullBinOp::And, _, _) => { And }
             Exp::BinaryOp(FullBinOp::Or, _, _) => { Or }

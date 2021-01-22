@@ -17,6 +17,12 @@ let function ( *_ ) x = x.current
 let function ( ^_ ) x = x.final 
 val borrow_mut (a : 'a) : borrowed 'a 
 ensures { *result = a }
+type usize = int
+type isize = int
+  type option 't =
+      | Some('t)
+      | None
+
   let cfg main () : ()
     =
   var _0 : ();
@@ -24,13 +30,13 @@ ensures { *result = a }
   var b_2 : borrowed (option int32);
   var _3 : ();
   var _4 : isize;
-  var _5 : option int32;
-  var _6 : ();
+  var _6 : option int32;
+  var _7 : ();
   {
     goto BB0;
   }
   BB0 {
-    a_1 <- Option.Some(10);
+    a_1 <- Some(10);
     b_2 <- borrow_mut a_1;
     a_1 <-  ^ b_2;
     goto BB1
@@ -40,21 +46,22 @@ ensures { *result = a }
   }
   BB2 {
     switch ( * b_2)
-      | Some(_) -> goto BB4
-      | _ -> goto BB3
+      | Some(_) -> goto BB3
+      | _ -> goto BB4
       end
   }
-  BB3 {
+  BB4 {
     assume { ^ b_2 = * b_2 };
     _0 <- ();
     _0
   }
-  BB4 {
+  BB3 {
     goto BB5
   }
   BB5 {
-    _5 <- None;
-    b_2 <- { b_2 with current = _5 };
+    invariant dummy { true };
+    _6 <- None;
+    b_2 <- { b_2 with current = _6 };
     _3 <- ();
     goto BB1
   }

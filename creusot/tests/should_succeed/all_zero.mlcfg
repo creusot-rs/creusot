@@ -17,6 +17,8 @@ let function ( *_ ) x = x.current
 let function ( ^_ ) x = x.final 
 val borrow_mut (a : 'a) : borrowed 'a 
 ensures { *result = a }
+type usize = int
+type isize = int
   type list  =
       | Cons(uint32, list)
       | Nil
@@ -53,14 +55,14 @@ ensures { *result = a }
     goto BB4
   }
   BB4 {
-    value_4 <- borrow_mut let Cons(a, _) =  * l_1 in a;
+    value_4 <- borrow_mut (let Cons(a, _) =  * l_1 in a);
     l_1 <- { l_1 with current = (let Cons(a, b) =  * l_1 in Cons( ^ value_4, b)) };
-    next_5 <- borrow_mut let Cons(_, a) =  * l_1 in a;
+    next_5 <- borrow_mut (let Cons(_, a) =  * l_1 in a);
     l_1 <- { l_1 with current = (let Cons(a, b) =  * l_1 in Cons(a,  ^ next_5)) };
     assume { ^ l_1 = * l_1 };
     value_4 <- { value_4 with current = 0 };
     assume { ^ value_4 = * value_4 };
-    _6 <- borrow_mut  * next_5;
+    _6 <- borrow_mut ( * next_5);
     next_5 <- { next_5 with current = ( ^ _6) };
     assume { ^ next_5 = * next_5 };
     l_1 <- _6;
