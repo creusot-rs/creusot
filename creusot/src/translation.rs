@@ -9,7 +9,7 @@ use crate::{
 use rustc_hir::definitions::DefPathData;
 use rustc_hir::{def::CtorKind, def_id::DefId};
 use rustc_index::bit_set::BitSet;
-use rustc_middle::{mir::traversal::preorder, mir::*, ty::AdtDef, ty::TyCtxt, ty::TyKind};
+use rustc_middle::{mir::traversal::preorder, mir::*, ty::TyCtxt, ty::TyKind};
 use rustc_mir::dataflow::{
     self,
     impls::{MaybeInitializedLocals, MaybeLiveLocals},
@@ -17,12 +17,11 @@ use rustc_mir::dataflow::{
 };
 use rustc_resolve::Namespace;
 use rustc_session::Session;
-use rustc_span::Span;
 
 pub mod specification;
 mod statement;
 mod terminator;
-mod ty;
+pub mod ty;
 pub mod util;
 
 // Split this into several sub-contexts: Core, Analysis, Results?
@@ -40,10 +39,9 @@ pub struct FunctionTranslator<'a, 'tcx> {
     current_block: (BlockId, Vec<mlcfg::Statement>, Option<mlcfg::Terminator>),
 
     past_blocks: Vec<mlcfg::Block>,
-}
 
-pub fn translate_tydecl(sess: &Session, span: Span, tcx: TyCtxt, adt: &AdtDef) -> TyDecl {
-    ty::translate_tydecl(sess, span, tcx, adt)
+    // Type translation context
+    ty_ctx: ty::Ctx<'a, 'tcx>,
 }
 
 impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
@@ -68,6 +66,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             local_init,
             current_block: (BasicBlock::MAX.into(), Vec::new(), None),
             past_blocks: Vec::new(),
+            ty_ctx: ty::Ctx::new(tcx, sess),
         }
     }
 
@@ -117,7 +116,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
                 None
             } else {
                 let ident = self.translate_local(loc);
-                Some((ident, ty::translate_ty(self.sess, decl.source_info.span, self.tcx, decl.ty)))
+                Some((ident, ty::translate_ty(&self.ty_ctx, decl.source_info.span, decl.ty)))
             }
         });
         let retty = vars.next().unwrap().1;
