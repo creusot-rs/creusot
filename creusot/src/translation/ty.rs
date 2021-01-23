@@ -1,4 +1,5 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
+use indexmap::IndexSet;
 use std::collections::VecDeque;
 
 use rustc_errors::DiagnosticId;
@@ -9,14 +10,22 @@ use rustc_session::Session;
 use rustc_span::Span;
 use rustc_span::Symbol;
 
+use crate::def_path_trie::DefPathTrie;
+use crate::mlcfg::Function;
 use crate::mlcfg::QName;
 use crate::mlcfg::{TyDecl, Type as MlT};
 
 // Add Sess to this?
 pub struct Ctx<'a, 'tcx> {
-    translated_tys: HashSet<DefId>,
+    translated_tys: IndexSet<DefId>,
+
+    // Set of type DefIds encountered during translations which haven't been translated
+    // yet. At the end of all translations this set MUST be empty!
+    untranslated_tys: IndexSet<DefId>,
     tcx: TyCtxt<'tcx>,
     sess: &'a Session,
+
+    results: HashMap<DefId, TyDecl>,
 }
 
 impl<'a, 'tcx> Ctx<'a, 'tcx> {
@@ -26,7 +35,19 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
     }
 
     pub fn new(tcx: TyCtxt<'tcx>, sess: &'a Session) -> Self {
-        Self { tcx, translated_tys: HashSet::new(), sess }
+        Self { tcx, translated_tys: IndexSet::new(), sess, untranslated_tys: IndexSet::new(), results: HashMap::new() }
+    }
+
+    pub fn collect(mut self, module_trie: &mut DefPathTrie<(Vec<TyDecl>, Vec<Function>)>) {
+        while let Some(untranslated) = self.untranslated_tys.pop() {
+            translate_tydecl(&mut self, rustc_span::DUMMY_SP, untranslated);
+        }
+
+        for (def_id, res) in self.results {
+            let module = crate::util::module_of(self.tcx, def_id);
+            module_trie.get_mut_with_default(module).0.push(res);
+        }
+
     }
 
     fn crash_and_error(&self, span: Span, msg: &str) -> ! {
@@ -34,8 +55,8 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
     }
 }
 
-use petgraph::graphmap::DiGraphMap;
 use petgraph::algo::tarjan_scc;
+use petgraph::graphmap::DiGraphMap;
 
 pub fn check_not_mutally_recursive<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty_id: DefId, span: Span) {
     let mut graph = DiGraphMap::<_, ()>::new();
@@ -56,7 +77,7 @@ pub fn check_not_mutally_recursive<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty_id: DefId, 
                     match ty.expect_ty().kind() {
                         Adt(def, _) => {
                             if ctx.type_translated(def.did) {
-                               continue
+                                continue;
                             }
                             if !graph.contains_node(def.did) {
                                 to_visit.push_back(def.did);
@@ -80,7 +101,11 @@ pub fn check_not_mutally_recursive<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty_id: DefId, 
     }
 }
 
-fn translate_ty_name(ctx: &Ctx<'_, '_>, did: DefId) -> QName {
+fn translate_ty_name(ctx: &mut Ctx<'_, '_>, did: DefId) -> QName {
+    // Check if we've already translated this type before.
+    if !ctx.translated_tys.contains(&did) {
+        ctx.untranslated_tys.insert(did);
+    };
     super::translate_defid(ctx.tcx, did, Namespace::TypeNS)
 }
 
@@ -95,7 +120,8 @@ fn translate_ty_param<'tcx>(p: Symbol) -> String {
 //
 // Additionally, types are not translated one by one but rather as a *binding group*, so that mutually
 // recursive types are properly translated.
-pub fn translate_tydecl(ctx: &mut Ctx<'_, '_>, span: Span, did: DefId) -> TyDecl {
+// Results are accumulated and can be collected at once by consuming the `Ctx`
+pub fn translate_tydecl(ctx: &mut Ctx<'_, '_>, span: Span, did: DefId) {
     let adt = ctx.tcx.adt_def(did);
     let gens = ctx.tcx.generics_of(did);
 
@@ -117,12 +143,8 @@ pub fn translate_tydecl(ctx: &mut Ctx<'_, '_>, span: Span, did: DefId) -> TyDecl
     let mut ml_ty_def = Vec::new();
 
     for var_def in adt.variants.iter() {
-        let field_tys: Vec<_> = var_def
-            .fields
-            .iter()
-            .map(|f| f.ty(ctx.tcx, substs))
-            .map(|ty| translate_ty(ctx, span, ty))
-            .collect();
+        let field_tys: Vec<_> =
+            var_def.fields.iter().map(|f| translate_ty(ctx, span, f.ty(ctx.tcx, substs))).collect();
         log::debug!("{:?}({:?})", var_def.ident, field_tys);
 
         ml_ty_def.push((var_def.ident.to_string(), field_tys));
@@ -130,12 +152,13 @@ pub fn translate_tydecl(ctx: &mut Ctx<'_, '_>, span: Span, did: DefId) -> TyDecl
 
     // mark this type as translated
     ctx.translated_tys.insert(did);
+    ctx.untranslated_tys.remove(&did);
 
     let ty_name = translate_ty_name(ctx, did);
-    TyDecl { ty_name, ty_params: ty_args, ty_constructors: ml_ty_def }
+    ctx.results.insert(did, TyDecl { ty_name, ty_params: ty_args, ty_constructors: ml_ty_def });
 }
 
-pub fn translate_ty<'tcx>(ctx: &Ctx<'_, 'tcx>, span: Span, ty: Ty<'tcx>) -> MlT {
+pub fn translate_ty<'tcx>(ctx: &mut Ctx<'_, 'tcx>, span: Span, ty: Ty<'tcx>) -> MlT {
     match ty.kind() {
         Bool => MlT::Bool,
         Char => MlT::Char,
@@ -162,7 +185,7 @@ pub fn translate_ty<'tcx>(ctx: &Ctx<'_, 'tcx>, span: Span, ty: Ty<'tcx>) -> MlT 
                 Not => translate_ty(ctx, span, ty),
             }
         }
-        Never => { MlT::Tuple(vec![])}
+        Never => MlT::Tuple(vec![]),
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
 }

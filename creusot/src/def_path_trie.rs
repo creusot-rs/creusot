@@ -1,7 +1,8 @@
-use rustc_hir::definitions::DefPath;
 use rustc_hir::definitions::DefPathData;
 use rustc_hir::definitions::DisambiguatedDefPathData;
 use sequence_trie::*;
+
+use crate::util::ModulePath;
 
 #[derive(Debug)]
 pub struct DefPathTrie<K> {
@@ -37,22 +38,22 @@ impl<V> DefPathTrie<V> {
     }
   }
 
-  pub fn insert(&mut self, key: DefPath, value: V) -> Option<V>
+  pub fn insert(&mut self, key: ModulePath, value: V) -> Option<V>
   {
-    self.inner.insert_owned(key.data.into_iter().map(|dpd| dpd.into()), value)
+    self.inner.insert_owned(key.0.data.into_iter().map(|dpd| dpd.into()), value)
   }
 
-  pub fn get_mut(&mut self, key: DefPath) -> Option<&mut V>
+  pub fn get_mut(&mut self, key: ModulePath) -> Option<&mut V>
   {
-    self.inner.get_mut(unsafe { std::mem::transmute::<Vec<DisambiguatedDefPathData>, Vec<FakeDisambiguatedDefPathData>>(key.data)}.iter())
+    self.inner.get_mut(unsafe { std::mem::transmute::<Vec<DisambiguatedDefPathData>, Vec<FakeDisambiguatedDefPathData>>(key.0.data)}.iter())
   }
 
-  pub fn get(&self, key: DefPath) -> Option<&V>
+  pub fn get(&self, key: ModulePath) -> Option<&V>
   {
-    self.inner.get(unsafe { std::mem::transmute::<Vec<DisambiguatedDefPathData>, Vec<FakeDisambiguatedDefPathData>>(key.data)}.iter())
+    self.inner.get(unsafe { std::mem::transmute::<Vec<DisambiguatedDefPathData>, Vec<FakeDisambiguatedDefPathData>>(key.0.data)}.iter())
   }
 
-  pub fn get_mut_with_default(&mut self, key: DefPath) -> &mut V
+  pub fn get_mut_with_default(&mut self, key: ModulePath) -> &mut V
     where V: Default
   {
     if let None = self.get(key.clone()) {

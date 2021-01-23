@@ -111,22 +111,26 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
         self.current_block = (BasicBlock::MAX.into(), Vec::new(), None);
 
+        let arg_count = self.body.arg_count;
         let mut vars = self.body.local_decls.iter_enumerated().filter_map(|(loc, decl)| {
             if self.artifact_decl(decl) {
                 None
             } else {
                 let ident = self.translate_local(loc);
-                Some((ident, ty::translate_ty(&self.ty_ctx, decl.source_info.span, decl.ty)))
+                Some((ident, ty::translate_ty(&mut self.ty_ctx, decl.source_info.span, decl.ty)))
             }
         });
+
         let retty = vars.next().unwrap().1;
+        let args = vars.by_ref().take(arg_count).collect();
+        let vars = vars.collect::<Vec<_>>();
 
         let name = translate_defid(self.tcx, nm, Namespace::ValueNS);
         Function {
             name,
             retty,
-            args: vars.by_ref().take(self.body.arg_count).collect(),
-            vars: vars.collect::<Vec<_>>(),
+            args,
+            vars,
             blocks: self.past_blocks,
             preconds: contracts.0,
             postconds: contracts.1,
@@ -351,20 +355,14 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, namespace: Namespace) -> QName {
     for seg in def_path.data[..].iter() {
         match seg.data {
             DefPathData::CrateRoot => mod_segs.push(krate_name.to_string()),
-            DefPathData::TypeNs(_) => {
-                mod_segs.push(format!("{}", seg)[..].to_camel_case())
-            }
+            DefPathData::TypeNs(_) => mod_segs.push(format!("{}", seg)[..].to_camel_case()),
             // CORE ASSUMPTION: Once we stop seeing TypeNs we never see it again.
-            _ => {
-                name_segs.push(format!("{}", seg)[..].to_mixed_case())
-            }
+            _ => name_segs.push(format!("{}", seg)[..].to_mixed_case()),
         }
     }
 
     match namespace {
-        Namespace::ValueNS => {
-
-        }
+        Namespace::ValueNS => {}
         Namespace::TypeNS => {
             assert_eq!(name_segs.len(), 0);
             let type_name = mod_segs.pop().unwrap().to_mixed_case();

@@ -25,10 +25,8 @@ extern crate log;
 use def_path_trie::DefPathTrie;
 use mlcfg::{Function, TyDecl};
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
-use rustc_hir::definitions::DefPath;
 use rustc_hir::{
-    def_id::{DefId, LOCAL_CRATE},
-    definitions::DefPathData,
+    def_id::LOCAL_CRATE,
     Item,
 };
 use rustc_interface::{interface::Compiler, Queries};
@@ -126,10 +124,7 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
     // Translate all type declarations and push them into the module collection
     for (def_id, span) in ty_decls.iter() {
         debug!("Translating type declaration {:?}", def_id);
-        let res = translation::ty::translate_tydecl(&mut ty_ctx, *span, *def_id);
-
-        let module = module_of(tcx, *def_id);
-        translated_modules.get_mut_with_default(module).0.push(res);
+        translation::ty::translate_tydecl(&mut ty_ctx, *span, *def_id);
     }
 
     'bodies: for def_id in tcx.body_owners() {
@@ -148,7 +143,7 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
         let def_id = def_id.to_def_id();
 
         // Parent module
-        let module = module_of(tcx, def_id);
+        let module = util::module_of(tcx, def_id);
 
         let mut func_contract = (Vec::new(), Vec::new());
 
@@ -184,6 +179,8 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
         translated_modules.get_mut_with_default(module).1.push(translated);
     }
 
+    // Collect all the type translations
+    ty_ctx.collect(&mut translated_modules);
     use std::fs::File;
 
     let mut out = match output {
@@ -234,23 +231,6 @@ where
     Ok(())
 }
 
-fn module_of<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> DefPath {
-    let mut def_key = tcx.def_key(def_id);
-    let mut module = def_id;
-    let mut layers = 1;
-
-    while layers > 0 {
-        match def_key.disambiguated_data.data {
-            DefPathData::ClosureExpr => layers += 1,
-            _ => {}
-        }
-        let def_id = DefId { krate: LOCAL_CRATE, index: def_key.parent.unwrap() };
-        def_key = tcx.def_key(def_id);
-        module = def_id;
-        layers -= 1
-    }
-    tcx.def_path(module)
-}
 
 fn sysroot_path() -> String {
     use std::process::Command;
