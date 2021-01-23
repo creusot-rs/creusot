@@ -1,0 +1,219 @@
+module Ambient
+use Ref 
+use mach.int.Int 
+use mach.int.Int32
+use mach.int.Int64
+use mach.int.UInt32
+use mach.int.UInt64
+use string.Char
+use floating_point.Single
+use floating_point.Double
+(** Generic Type for borrowed values *) 
+type borrowed 'a = 
+{ current : 'a ; 
+final : 'a; (* The "future" value when borrow will end *) 
+} 
+let function ( *_ ) x = x.current 
+let function ( ^_ ) x = x.final 
+val borrow_mut (a : 'a) : borrowed 'a 
+ensures { *result = a }
+type usize = int
+type isize = int
+  type option 't =
+      | None
+      | Some('t)
+
+  type list  =
+      | List(uint32, option (list))
+
+  let cfg indexMut (o_l_1 : borrowed (list))(o_ix_2 : usize) : borrowed uint32
+    =
+  var _0 : borrowed uint32;
+  var l_1 : borrowed (list);
+  var ix_2 : usize;
+  var _3 : borrowed uint32;
+  var _4 : ();
+  var _5 : ();
+  var _6 : bool;
+  var _7 : usize;
+  var _9 : ();
+  var _10 : isize;
+  var n_11 : borrowed (list);
+  var _12 : borrowed (list);
+  var _13 : ();
+  var _14 : ();
+  var _15 : borrowed uint32;
+  {
+    l_1 <- o_l_1;
+    ix_2 <- o_ix_2;
+    goto BB0;
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    _7 <- ix_2;
+    _6 <- _7 > 0;
+    switch (_6)
+      | False -> goto BB4
+      | _ -> goto BB3
+      end
+  }
+  BB3 {
+    goto BB5
+  }
+  BB5 {
+    invariant todo { true };
+    switch (let List(_, a) =  * l_1 in a)
+      | None -> goto BB6
+      | Some(_) -> goto BB7
+      | _ -> goto BB8
+      end
+  }
+  BB8 {
+    assume { ^ l_1 = * l_1 };
+    absurd
+  }
+  BB7 {
+    goto BB9
+  }
+  BB9 {
+    n_11 <- borrow_mut (let Some(a) = let List(_, a) =  * l_1 in a in a);
+    l_1 <- { l_1 with current = (let List(a, b) =  * l_1 in List(a, let Some(a) = let List(_, a) =  * l_1 in a in Some( ^ n_11))) };
+    assume { ^ l_1 = * l_1 };
+    _12 <- borrow_mut ( * n_11);
+    n_11 <- { n_11 with current = ( ^ _12) };
+    assume { ^ n_11 = * n_11 };
+    l_1 <- _12;
+    _9 <- ();
+    ix_2 <- ix_2 - 1;
+    _5 <- ();
+    goto BB1
+  }
+  BB6 {
+    assume { ^ l_1 = * l_1 };
+    absurd
+  }
+  BB4 {
+    _4 <- ();
+    _15 <- borrow_mut (let List(a, _) =  * l_1 in a);
+    l_1 <- { l_1 with current = (let List(a, b) =  * l_1 in List( ^ _15, b)) };
+    assume { ^ l_1 = * l_1 };
+    _3 <- borrow_mut ( * _15);
+    _15 <- { _15 with current = ( ^ _3) };
+    assume { ^ _15 = * _15 };
+    _0 <- borrow_mut ( * _3);
+    _3 <- { _3 with current = ( ^ _0) };
+    assume { ^ _3 = * _3 };
+    _0
+  }
+
+  let cfg write (o_l_1 : borrowed (list))(o_ix_2 : usize)(o_val_3 : uint32) : ()
+    =
+  var _0 : ();
+  var l_1 : borrowed (list);
+  var ix_2 : usize;
+  var val_3 : uint32;
+  var _4 : uint32;
+  var _5 : borrowed uint32;
+  var _6 : borrowed (list);
+  var _7 : usize;
+  {
+    l_1 <- o_l_1;
+    ix_2 <- o_ix_2;
+    val_3 <- o_val_3;
+    goto BB0;
+  }
+  BB0 {
+    _4 <- val_3;
+    _6 <- borrow_mut ( * l_1);
+    l_1 <- { l_1 with current = ( ^ _6) };
+    assume { ^ l_1 = * l_1 };
+    _7 <- ix_2;
+    _5 <- indexMut _6 _7;
+    goto BB1
+  }
+  BB1 {
+    _5 <- { _5 with current = _4 };
+    assume { ^ _5 = * _5 };
+    _0 <- ();
+    _0
+  }
+
+  let cfg main () : ()
+    =
+  var _0 : ();
+  var l_1 : list;
+  var _2 : option (list);
+  var _3 : list;
+  var _4 : list;
+  var _5 : option (list);
+  var _6 : ();
+  var _7 : borrowed (list);
+  var _8 : borrowed (list);
+  var l2_9 : list;
+  var _10 : option (list);
+  var _11 : list;
+  var _12 : list;
+  var _13 : option (list);
+  {
+    goto BB0;
+  }
+  BB0 {
+    _5 <- None;
+    _4 <- List(10, _5);
+    goto BB1
+  }
+  BB1 {
+    _3 <- _4;
+    goto BB2
+  }
+  BB2 {
+    _2 <- Some(_3);
+    goto BB3
+  }
+  BB3 {
+    l_1 <- List(1, _2);
+    goto BB4
+  }
+  BB4 {
+    _8 <- borrow_mut l_1;
+    l_1 <-  ^ _8;
+    _7 <- borrow_mut ( * _8);
+    _8 <- { _8 with current = ( ^ _7) };
+    assume { ^ _8 = * _8 };
+    _6 <- write _7 0 2;
+    goto BB5
+  }
+  BB5 {
+    _13 <- None;
+    _12 <- List(10, _13);
+    goto BB6
+  }
+  BB6 {
+    _11 <- _12;
+    goto BB7
+  }
+  BB7 {
+    _10 <- Some(_11);
+    goto BB8
+  }
+  BB8 {
+    l2_9 <- List(2, _10);
+    goto BB9
+  }
+  BB9 {
+    _0 <- ();
+    goto BB10
+  }
+  BB10 {
+    goto BB11
+  }
+  BB11 {
+    _0
+  }
+
+end
