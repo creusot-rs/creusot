@@ -120,11 +120,13 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
     type MlModule = (Vec<TyDecl>, Vec<Function>);
     let mut translated_modules: DefPathTrie<MlModule> = DefPathTrie::new();
 
+    // Type translation state, including which datatypes have already been translated.
+    let mut ty_ctx = translation::ty::Ctx::new(tcx, sess);
+
     // Translate all type declarations and push them into the module collection
     for (def_id, span) in ty_decls.iter() {
         debug!("Translating type declaration {:?}", def_id);
-        let adt = tcx.adt_def(*def_id);
-        let res = translation::translate_tydecl(sess, *span, tcx, adt);
+        let res = translation::ty::translate_tydecl(&mut ty_ctx, *span, *def_id);
 
         let module = module_of(tcx, *def_id);
         translated_modules.get_mut_with_default(module).0.push(res);
