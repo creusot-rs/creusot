@@ -440,13 +440,22 @@ impl EnvDisplay for TyDecl {
 
 impl EnvDisplay for QName {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use itertools::EitherOrBoth::*;
         // Strip the shared prefix between currently open scope and the identifier we are printing
         let module_path = format!("{}", fe
             .scope
             .iter()
-            .zip(self.module.iter())
-            .skip_while(|(p, m)| p == m)
-            .map(|t| t.1)
+            .zip_longest(self.module.iter())
+            // Skip the common prefix, and keep everything else.
+            .skip_while(|e| match e {
+                // Skip common prefix
+                Both(p, m) => p == m,
+                _ => false,
+
+            })
+            // If the opened scopes were longer, drop them
+            .filter(|e| !e.is_left())
+            .map(|t| t.reduce(|_, f| f))
             .format("."));
 
         let ident = self.name.iter().format("_");
