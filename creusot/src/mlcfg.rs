@@ -219,6 +219,7 @@ pub enum Exp {
     Call(Box<Exp>, Vec<Exp>),
     Verbatim(String),
     // Seq(Box<Exp>, Box<Exp>),
+    Abs(LocalIdent, Box<Exp>),
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
 
     // Predicates
@@ -272,6 +273,7 @@ impl Exp {
             Exp::Current(_) => { FinCur }
             Exp::Final(_) => { FinCur }
             Exp::Let { .. } => { Let }
+            Exp::Abs(_, _) => { Let }
             Exp::Var(_) => { Closed }
             Exp::QVar(_) => { Closed }
             Exp::RecUp { .. } => { Term }
@@ -371,10 +373,10 @@ impl Exp {
                     a.subst(subst.clone());
                 }
             }
-            // Exp::Seq(box a, box b) => {
-            //     a.subst(subst.clone());
-            //     b.subst(subst);
-            // }
+            Exp::Abs(ident, body) => {
+                subst.remove(ident);
+                body.subst(subst);
+            }
             Exp::Match(box scrut, brs) => {
                 scrut.subst(subst.clone());
 

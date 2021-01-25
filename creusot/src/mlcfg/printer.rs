@@ -345,9 +345,9 @@ impl EnvDisplay for Exp {
             Exp::Verbatim(verb) => {
                 write!(f, "{}", verb)?;
             }
-            // Exp::Seq(box a, box b) => {
-            //     write!(f, "{}; {}", fe.to(a), fe.to(b))?;
-            // }
+            Exp::Abs(ident, box body) => {
+                write!(f, "fun {} -> {}", ident, fe.to(body))?;
+            }
             Exp::Match(box scrut, brs) => {
                 writeln!(f, "match ({}) with", fe.to(scrut))?;
                 fe.indent(2, |fe| {

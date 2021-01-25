@@ -4,18 +4,18 @@ use std::collections::VecDeque;
 
 use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
+use rustc_middle::mir::Mutability;
 use rustc_middle::ty::{self, subst::InternalSubsts, AdtDef, Ty, TyCtxt, TyKind::*, VariantDef};
 use rustc_resolve::Namespace;
 use rustc_session::Session;
 use rustc_span::Span;
 use rustc_span::Symbol;
-use rustc_middle::mir::Mutability;
 
-use crate::def_path_trie::DefPathTrie;
 use crate::mlcfg::printer::FormatEnv;
 use crate::mlcfg::{
     Exp as MlE, Module, Pattern, Pattern::*, Predicate, QName, TyDecl, Type as MlT,
 };
+use crate::{def_path_trie::DefPathTrie, mlcfg::LocalIdent};
 
 pub struct Ctx<'a, 'tcx> {
     translated_tys: IndexSet<DefId>,
@@ -281,9 +281,7 @@ pub fn drop_pred_body<'tcx>(
         Uint(_) => MlE::QVar(crate::mlcfg::drop_uint()),
         Float(_) => MlE::QVar(crate::mlcfg::drop_float()),
         // Recursive calls should be killed off.
-        Adt(def, _) if Some(def.did) == rec_call_did => {
-            MlE::QVar(crate::mlcfg::drop_fix())
-        }
+        Adt(def, _) if Some(def.did) == rec_call_did => MlE::QVar(crate::mlcfg::drop_fix()),
         Adt(def, s) if def.is_box() => drop_pred_body(ctx, s[0].expect_ty(), rec_call_did),
         Adt(def, s) => {
             let args = s.types().map(|ty| drop_pred_body(ctx, ty, rec_call_did)).collect();
@@ -292,17 +290,25 @@ pub fn drop_pred_body<'tcx>(
             MlE::Call(box MlE::QVar(drop_func_name), args)
         }
         Tuple(s) => {
-             s.types().map(|ty| drop_pred_body(ctx, ty, rec_call_did))
+            let binder_name: LocalIdent = "tup".into();
+            let field_names: Vec<LocalIdent> = ('a'..).map(|c| c.to_string().into()).take(s.types().count()).collect();
+
+            let body = s
+                .types()
+                .zip(field_names.iter())
+                .map(|(ty, v)| {
+                    drop_pred_body(ctx, ty, rec_call_did).app_to(v.clone().into())
+                })
                 .fold_first(MlE::conj)
-                .unwrap()
+                .unwrap();
+
+            let field_pat = Pattern::TupleP(field_names.into_iter().map(VarP).collect());
+
+            MlE::Abs(binder_name.clone(), box MlE::Let { pattern: field_pat, arg: box MlE::Var(binder_name), body: box body })
         }
         Param(s) => MlE::Var(format!("drop_{}", translate_ty_param(s.name)).into()),
-        Ref(_, _, Mutability::Mut) => {
-            MlE::QVar(crate::mlcfg::drop_mut_ref())
-        },
-        Ref(_, _, Mutability::Not) => {
-            MlE::QVar(crate::mlcfg::drop_ref())
-        }
+        Ref(_, _, Mutability::Mut) => MlE::QVar(crate::mlcfg::drop_mut_ref()),
+        Ref(_, _, Mutability::Not) => MlE::QVar(crate::mlcfg::drop_ref()),
 
         _ => panic!(),
     }

@@ -30,21 +30,21 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
-  type list  =
-      | List(uint32, option (list))
-
   type option 't =
       | None
       | Some('t)
 
-  predicate drop_list (self : list) =
-    let List(a, b) = self in drop_uint a && drop_option drop_fix b
+  type list  =
+      | List(uint32, option (list))
+
   predicate drop_option (drop_'t : 't -> bool) (self : option 't) =
     match (self) with
       | None -> True
       | Some(a) -> drop_'t a
       end
 
+  predicate drop_list (self : list) =
+    let List(a, b) = self in drop_uint a && drop_option drop_fix b
   let cfg indexMut (o_l_1 : borrowed (list))(o_ix_2 : usize) : borrowed uint32
     =
   var _0 : borrowed uint32;
@@ -82,6 +82,7 @@ module Ambient
       end
   }
   BB3 {
+    assume { drop_bool _6 };
     goto BB5
   }
   BB5 {
@@ -94,6 +95,7 @@ module Ambient
   }
   BB8 {
     assume { drop_mut_ref l_1 };
+    assume { drop_uint ix_2 };
     absurd
   }
   BB7 {
@@ -114,9 +116,12 @@ module Ambient
   }
   BB6 {
     assume { drop_mut_ref l_1 };
+    assume { drop_uint ix_2 };
     absurd
   }
   BB4 {
+    assume { drop_uint ix_2 };
+    assume { drop_bool _6 };
     _4 <- ();
     _15 <- borrow_mut (let List(a, _) =  * l_1 in a);
     l_1 <- { l_1 with current = (let List(a, b) =  * l_1 in List( ^ _15, b)) };
@@ -148,10 +153,12 @@ module Ambient
   }
   BB0 {
     _4 <- val_3;
+    assume { drop_uint val_3 };
     _6 <- borrow_mut ( * l_1);
     l_1 <- { l_1 with current = ( ^ _6) };
     assume { drop_mut_ref l_1 };
     _7 <- ix_2;
+    assume { drop_uint ix_2 };
     _5 <- indexMut _6 _7;
     goto BB1
   }
@@ -187,6 +194,7 @@ module Ambient
     goto BB1
   }
   BB1 {
+    assume { drop_option drop_list  _5 };
     _3 <- _4;
     goto BB2
   }
@@ -195,10 +203,12 @@ module Ambient
     goto BB3
   }
   BB3 {
+    assume { drop_list _3 };
     l_1 <- List(1, _2);
     goto BB4
   }
   BB4 {
+    assume { drop_option drop_list  _2 };
     _8 <- borrow_mut l_1;
     l_1 <-  ^ _8;
     _7 <- borrow_mut ( * _8);
@@ -213,6 +223,7 @@ module Ambient
     goto BB6
   }
   BB6 {
+    assume { drop_option drop_list  _13 };
     _11 <- _12;
     goto BB7
   }
@@ -221,17 +232,21 @@ module Ambient
     goto BB8
   }
   BB8 {
+    assume { drop_list _11 };
     l2_9 <- List(2, _10);
     goto BB9
   }
   BB9 {
+    assume { drop_option drop_list  _10 };
     _0 <- ();
     goto BB10
   }
   BB10 {
+    assume { drop_list l2_9 };
     goto BB11
   }
   BB11 {
+    assume { drop_list l_1 };
     _0
   }
 

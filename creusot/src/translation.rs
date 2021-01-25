@@ -147,14 +147,24 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             vec![pred]
         };
 
-        let mut previous_locals: Vec<BitSet<_>> = predecessors
-            .iter()
-            .map(|pred| {
-                self.local_live.seek_after_primary_effect(*pred);
-                self.local_live.get().clone()
-            })
-            .collect();
+        debug!("predecessors: {:?}", &predecessors);
+
+        let mut previous_locals: Vec<BitSet<_>> = if predecessors.is_empty() {
+            // handle case where we are at start of function
+            self.local_init.seek_before_primary_effect(loc);
+            vec![self.local_init.get().clone()]
+        } else {
+            predecessors
+                .iter()
+                .map(|pred| {
+                    self.local_live.seek_after_primary_effect(*pred);
+                    self.local_live.get().clone()
+                })
+                .collect()
+        };
         previous_locals.dedup();
+
+        debug!("previous locals: {:?}", previous_locals);
         if previous_locals.is_empty() {
             return;
         }
@@ -174,10 +184,11 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             self.local_init.seek_before_primary_effect(loc);
             // Freeze all dying variables that were initialized and are mutable references
             let local_ty = self.body.local_decls[local].ty;
-
-            if self.local_init.contains(local) && local_ty.is_ref() && local_ty.is_mutable_ptr() {
+            let is_mut_bor = local_ty.is_ref() && local_ty.is_mutable_ptr();
+            if self.local_init.contains(local) {
                 let ident = self.translate_local(local);
-                let assumption : Exp = ty::drop_predicate(&mut self.ty_ctx, local_ty).app_to(ident.into());
+                let assumption: Exp =
+                    ty::drop_predicate(&mut self.ty_ctx, local_ty).app_to(ident.into());
                 self.emit_statement(mlcfg::Statement::Assume(assumption));
             }
         }
