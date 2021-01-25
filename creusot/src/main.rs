@@ -174,7 +174,7 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
 
         let translated = FunctionTranslator::new(sess, tcx, &body).translate(def_id, func_contract);
 
-        // debug::debug(tcx, &body, polonius_info);
+        // debug::debug(tcx, &body);
         translated_modules.get_mut_with_default(module).functions.push(translated);
     }
 

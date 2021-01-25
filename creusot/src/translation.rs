@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use self::util::spec_attrs;
 use crate::mlcfg;
 use crate::mlcfg::{Exp::*, Pattern::*, *};
@@ -10,11 +12,8 @@ use rustc_hir::definitions::DefPathData;
 use rustc_hir::{def::CtorKind, def_id::DefId};
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{mir::traversal::preorder, mir::*, ty::TyCtxt, ty::TyKind};
-use rustc_mir::dataflow::{
-    self,
-    impls::{MaybeInitializedLocals, MaybeLiveLocals},
-    Analysis,
-};
+use rustc_mir::dataflow::{self, Analysis, Results, ResultsCursor, impls::{MaybeInitializedLocals, MaybeLiveLocals}};
+
 use rustc_resolve::Namespace;
 use rustc_session::Session;
 
@@ -35,6 +34,8 @@ pub struct FunctionTranslator<'a, 'tcx> {
     // Whether a local is initialized or not at a location
     local_init: dataflow::ResultsCursor<'a, 'tcx, MaybeInitializedLocals>,
 
+    // Spec / Ghost variables
+    erased_locals: BitSet<Local>,
     // Current block being generated
     current_block: (BlockId, Vec<mlcfg::Statement>, Option<mlcfg::Terminator>),
 
@@ -43,6 +44,48 @@ pub struct FunctionTranslator<'a, 'tcx> {
     // Type translation context
     ty_ctx: ty::Ctx<'a, 'tcx>,
 }
+#[derive(Debug, Copy, Clone)]
+enum ExtendedLocation { Start(Location), Mid(Location) }
+
+trait Dir {
+    fn is_forward() -> bool;
+}
+
+impl Dir for dataflow::Forward {
+    fn is_forward() -> bool {
+        true
+    }
+}
+
+
+impl Dir for dataflow::Backward {
+    fn is_forward() -> bool {
+        false
+    }
+}
+
+impl ExtendedLocation {
+    fn seek_to<'tcx, A, R, D>(self, cursor: &mut ResultsCursor<'_, 'tcx, A, R>)
+        where A: Analysis<'tcx, Direction = D>,
+              D: Dir,
+              R: Borrow<Results<'tcx, A>>
+    {
+        use ExtendedLocation::*;
+        if D::is_forward() {
+            match self {
+                Start(loc) => cursor.seek_before_primary_effect(loc),
+                Mid(loc) => cursor.seek_after_primary_effect(loc),
+            }
+        } else {
+            match self {
+                Start(loc) => cursor.seek_after_primary_effect(loc),
+                Mid(loc) => cursor.seek_before_primary_effect(loc),
+            }
+        }
+        // cursor.analysis().
+    }
+}
+
 
 impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     pub fn new(sess: &'a Session, tcx: TyCtxt<'tcx>, body: &'a Body<'tcx>) -> Self {
@@ -58,12 +101,23 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             .iterate_to_fixpoint()
             .into_results_cursor(&body);
 
+        let mut erased_locals = BitSet::new_empty(body.local_decls.len());
+
+        body.local_decls.iter_enumerated().for_each(|(local, decl)| {
+            if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
+                if !spec_attrs(tcx.get_attrs(*def_id)).is_empty() {
+                    erased_locals.insert(local);
+                }
+            }
+        });
+
         FunctionTranslator {
             sess,
             tcx,
             body,
             local_live,
             local_init,
+            erased_locals,
             current_block: (BasicBlock::MAX.into(), Vec::new(), None),
             past_blocks: Vec::new(),
             ty_ctx: ty::Ctx::new(tcx, sess),
@@ -91,15 +145,15 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             if bbd.is_cleanup {
                 continue;
             }
+            self.freeze_borrows_at_block_start(bb);
 
             let mut loc = bb.start_location();
             for statement in &bbd.statements {
-                self.freeze_borrows_dying_at(loc);
                 self.translate_statement(statement);
+                self.freeze_borrows_dying_at(loc);
                 loc = loc.successor_within_block();
             }
 
-            self.freeze_borrows_dying_at(loc);
             self.translate_terminator(bbd.terminator(), loc);
 
             self.past_blocks.push(Block {
@@ -111,9 +165,10 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
         self.current_block = (BasicBlock::MAX.into(), Vec::new(), None);
 
+
         let arg_count = self.body.arg_count;
         let mut vars = self.body.local_decls.iter_enumerated().filter_map(|(loc, decl)| {
-            if self.artifact_decl(decl) {
+            if self.erased_locals.contains(loc) {
                 None
             } else {
                 let ident = self.translate_local(loc);
@@ -137,60 +192,87 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         }
     }
 
-    fn freeze_borrows_dying_at(&mut self, loc: Location) {
-        let body2 = self.body;
-        let predecessors = if loc.statement_index == 0 {
-            self.body.predecessors()[loc.block].iter().map(|bb| body2.terminator_loc(*bb)).collect()
-        } else {
-            let mut pred = loc;
-            pred.statement_index -= 1;
-            vec![pred]
-        };
+    fn freeze_borrows_at_block_start(&mut self, bb: BasicBlock) {
+        let pred_blocks = &self.body.predecessors()[bb];
 
-        debug!("predecessors: {:?}", &predecessors);
-
-        let mut previous_locals: Vec<BitSet<_>> = if predecessors.is_empty() {
-            // handle case where we are at start of function
-            self.local_init.seek_before_primary_effect(loc);
-            vec![self.local_init.get().clone()]
-        } else {
-            predecessors
-                .iter()
-                .map(|pred| {
-                    self.local_live.seek_after_primary_effect(*pred);
-                    self.local_live.get().clone()
-                })
-                .collect()
-        };
-        previous_locals.dedup();
-
-        debug!("previous locals: {:?}", previous_locals);
-        if previous_locals.is_empty() {
+        if pred_blocks.is_empty() {
             return;
         }
 
-        assert!(
-            previous_locals.len() <= 1,
-            "all predecessors must agree on liveness {:?}",
-            previous_locals
-        );
+        let term_loc = self.body.terminator_loc(pred_blocks[0]);
+        self.local_live.seek_before_primary_effect(term_loc);
+        let first = self.local_live.get().clone();
 
-        let mut dying_locals = previous_locals.remove(0);
+        let all_equal = pred_blocks.iter().all(|block| {
+            self.local_live.seek_before_primary_effect(self.body.terminator_loc(*block));
+            self.local_live.get() == &first
+        });
 
-        self.local_live.seek_after_primary_effect(loc);
+        assert!(all_equal, "predecessors don't all agree on live variables!");
+        use ExtendedLocation::*;
+        self.freeze_borrows_dying_between(Start(term_loc), Start(bb.start_location()));
+    }
 
-        dying_locals.subtract(self.local_live.get());
-        for local in dying_locals.iter() {
-            self.local_init.seek_before_primary_effect(loc);
-            // Freeze all dying variables that were initialized and are mutable references
+    fn freeze_borrows_dying_at(&mut self, loc: Location) {
+        use ExtendedLocation::*;
+        self.freeze_borrows_dying_between(Start(loc), Mid(loc));
+    }
+
+    fn freeze_borrows_dying_between(&mut self, start: ExtendedLocation, end: ExtendedLocation) {
+        start.seek_to(&mut self.local_live);
+        let live_at_start = self.local_live.get().clone();
+        end.seek_to(&mut self.local_live);
+        let live_at_end = self.local_live.get();
+
+        start.seek_to(&mut self.local_init);
+        let init_at_start = self.local_init.get().clone();
+
+        end.seek_to(&mut self.local_init);
+        let init_at_end = self.local_init.get().clone();
+
+        debug!("location: {:?}-{:?}", start, end);
+        debug!("live_at_start: {:?}", live_at_start);
+        debug!("live_at_end: {:?}", live_at_end);
+        debug!("init_at_start: {:?}", init_at_start);
+        debug!("init_at_end: {:?}", init_at_end);
+        debug!("erased_locals: {:?}", self.erased_locals);
+
+        // Locals that were just now initialized
+        let mut just_init = init_at_end.clone();
+        just_init.subtract(&init_at_start);
+
+        // Locals that have just become live
+        let mut born = live_at_end.clone();
+        born.subtract(&live_at_start);
+
+        // Locals that were initialized but never live
+        let mut zombies = just_init.clone();
+        zombies.subtract(live_at_end);
+
+        let mut dying = live_at_start;
+
+        // Variables that died in the span
+        dying.subtract(live_at_end);
+        // And were initialized
+        dying.intersect(&init_at_start);
+        // But if we created a new value or brought one back to life
+        if !just_init.is_empty() || !born.is_empty() {
+            // Exclude values that were moved
+            dying.intersect(&init_at_end);
+            // And include the values that never made it past their creation
+            dying.union(&zombies);
+        }
+        // Ignore spec stuff
+        dying.subtract(&self.erased_locals);
+
+        debug!("dying: {:?}", dying);
+
+        for local in dying.iter() {
             let local_ty = self.body.local_decls[local].ty;
-            let is_mut_bor = local_ty.is_ref() && local_ty.is_mutable_ptr();
-            if self.local_init.contains(local) {
-                let ident = self.translate_local(local);
-                let assumption: Exp =
-                    ty::drop_predicate(&mut self.ty_ctx, local_ty).app_to(ident.into());
-                self.emit_statement(mlcfg::Statement::Assume(assumption));
-            }
+            let ident = self.translate_local(local);
+            let assumption: Exp =
+                ty::drop_predicate(&mut self.ty_ctx, local_ty).app_to(ident.into());
+            self.emit_statement(mlcfg::Statement::Assume(assumption));
         }
     }
 
@@ -202,17 +284,6 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             }
             Operand::Constant(c) => Const(mlcfg::Constant::from_mir_constant(self.tcx, c)),
         }
-    }
-
-    /// Checks whether a local declaration is actuall related to specifications
-    /// and should be excluded entirely from the outputted MLCFG
-    fn artifact_decl(&self, decl: &LocalDecl) -> bool {
-        if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-            if !spec_attrs(self.tcx.get_attrs(*def_id)).is_empty() {
-                return true;
-            }
-        }
-        false
     }
 
     fn translate_local(&self, loc: Local) -> LocalIdent {

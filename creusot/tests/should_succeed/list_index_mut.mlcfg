@@ -30,21 +30,21 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
+  type list  =
+      | List(uint32, option (list))
+
   type option 't =
       | None
       | Some('t)
 
-  type list  =
-      | List(uint32, option (list))
-
+  predicate drop_list (self : list) =
+    let List(a, b) = self in drop_uint a && drop_option drop_fix b
   predicate drop_option (drop_'t : 't -> bool) (self : option 't) =
     match (self) with
       | None -> True
       | Some(a) -> drop_'t a
       end
 
-  predicate drop_list (self : list) =
-    let List(a, b) = self in drop_uint a && drop_option drop_fix b
   let cfg indexMut (o_l_1 : borrowed (list))(o_ix_2 : usize) : borrowed uint32
     =
   var _0 : borrowed uint32;
@@ -71,6 +71,7 @@ module Ambient
     goto BB1
   }
   BB1 {
+    assume { (fun tup -> let () = tup in True) _5 };
     goto BB2
   }
   BB2 {
@@ -96,9 +97,11 @@ module Ambient
   BB8 {
     assume { drop_mut_ref l_1 };
     assume { drop_uint ix_2 };
+    assume { drop_int _10 };
     absurd
   }
   BB7 {
+    assume { drop_int _10 };
     goto BB9
   }
   BB9 {
@@ -110,6 +113,7 @@ module Ambient
     assume { drop_mut_ref n_11 };
     l_1 <- _12;
     _9 <- ();
+    assume { (fun tup -> let () = tup in True) _9 };
     ix_2 <- ix_2 - 1;
     _5 <- ();
     goto BB1
@@ -117,12 +121,14 @@ module Ambient
   BB6 {
     assume { drop_mut_ref l_1 };
     assume { drop_uint ix_2 };
+    assume { drop_int _10 };
     absurd
   }
   BB4 {
     assume { drop_uint ix_2 };
     assume { drop_bool _6 };
     _4 <- ();
+    assume { (fun tup -> let () = tup in True) _4 };
     _15 <- borrow_mut (let List(a, _) =  * l_1 in a);
     l_1 <- { l_1 with current = (let List(a, b) =  * l_1 in List( ^ _15, b)) };
     assume { drop_mut_ref l_1 };
@@ -164,6 +170,7 @@ module Ambient
   }
   BB1 {
     _5 <- { _5 with current = _4 };
+    assume { drop_uint _4 };
     assume { drop_mut_ref _5 };
     _0 <- ();
     _0
@@ -218,6 +225,7 @@ module Ambient
     goto BB5
   }
   BB5 {
+    assume { (fun tup -> let () = tup in True) _6 };
     _13 <- None;
     _12 <- List(10, _13);
     goto BB6

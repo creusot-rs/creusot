@@ -300,7 +300,7 @@ pub fn drop_pred_body<'tcx>(
                     drop_pred_body(ctx, ty, rec_call_did).app_to(v.clone().into())
                 })
                 .fold_first(MlE::conj)
-                .unwrap();
+                .unwrap_or(MlE::mk_true());
 
             let field_pat = Pattern::TupleP(field_names.into_iter().map(VarP).collect());
 
@@ -310,6 +310,6 @@ pub fn drop_pred_body<'tcx>(
         Ref(_, _, Mutability::Mut) => MlE::QVar(crate::mlcfg::drop_mut_ref()),
         Ref(_, _, Mutability::Not) => MlE::QVar(crate::mlcfg::drop_ref()),
 
-        _ => panic!(),
+        t => ctx.crash_and_error(rustc_span::DUMMY_SP, &format!("cannot generate drop predicate for type {:?}", ty)),
     }
 }
