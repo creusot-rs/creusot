@@ -244,7 +244,10 @@ impl Exp {
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum Precedence {
+    Closed,
     Any,
+    Let,
+    Assign,
     Impl,
     Or,
     And,
@@ -261,6 +264,54 @@ enum Precedence {
 }
 
 impl Exp {
+    fn precedence(&self) -> Precedence {
+        use Precedence::*;
+        use FullBinOp::Other;
+
+        match self {
+            Exp::Current(_) => { FinCur }
+            Exp::Final(_) => { FinCur }
+            Exp::Let { .. } => { Let }
+            Exp::Var(_) => { Closed }
+            Exp::QVar(_) => { Closed }
+            Exp::RecUp { .. } => { Term }
+            Exp::Tuple(_) => { Closed }
+            Exp::Constructor { .. } => { Term }
+            // Exp::Seq(_, _) => { Term }
+            Exp::Match(_, _) => { Term }
+            Exp::BorrowMut(_) => { Term }
+            Exp::Const(_) => { Closed }
+            Exp::BinaryOp(FullBinOp::And, _, _) => { And }
+            Exp::BinaryOp(FullBinOp::Or, _, _) => { Or }
+            Exp::BinaryOp(Other(op), _, _) => {
+                match op {
+                    BinOp::Add => AddSub,
+                    BinOp::Sub => AddSub,
+                    BinOp::Mul => Mul,
+                    BinOp::Div => Term,
+                    BinOp::Rem => Mul,
+                    BinOp::BitXor => BitXor,
+                    BinOp::BitAnd => BitAnd,
+                    BinOp::BitOr => BitOr,
+                    BinOp::Shl => Shift,
+                    BinOp::Shr => Shift,
+                    BinOp::Eq  => Compare,
+                    BinOp::Lt  => Compare,
+                    BinOp::Le  => Compare,
+                    BinOp::Ne  => Compare,
+                    BinOp::Ge  => Compare,
+                    BinOp::Gt  => Compare,
+                    BinOp::Offset => panic!("unsupported operator"),
+                }
+            }
+            Exp::Call(_, _) => { Call }
+            Exp::Verbatim(_) => { Any }
+            Exp::Impl(_, _) => { Impl }
+            Exp::Forall(_, _) => { Any }
+            Exp::Exists(_, _) => { Any }
+        }
+    }
+
     pub fn fvs(&self) -> HashSet<LocalIdent> {
         match self {
             Exp::Current(e) => e.fvs(),
@@ -364,64 +415,6 @@ impl Exp {
         self
     }
 
-    /// Whether this expression can be unambiguously printed without parentheses.
-    fn simple_print(&self) -> bool {
-        match self {
-            Exp::Var(_) => true,
-            Exp::QVar(_) => true,
-            Exp::Tuple(_) => true,
-            Exp::Constructor { .. } => true,
-            Exp::Const(_) => true,
-            _ => false,
-        }
-    }
-    fn precedence(&self) -> Precedence {
-        use Precedence::*;
-        use FullBinOp::Other;
-
-        match self {
-            Exp::Current(_) => { FinCur }
-            Exp::Final(_) => { FinCur }
-            Exp::Let { .. } => { Any }
-            Exp::Var(_) => { Term }
-            Exp::QVar(_) => { Term }
-            Exp::RecUp { .. } => { Term }
-            Exp::Tuple(_) => { Term }
-            Exp::Constructor { .. } => { Term }
-            // Exp::Seq(_, _) => { Term }
-            Exp::Match(_, _) => { Term }
-            Exp::BorrowMut(_) => { Term }
-            Exp::Const(_) => { Term }
-            Exp::BinaryOp(FullBinOp::And, _, _) => { And }
-            Exp::BinaryOp(FullBinOp::Or, _, _) => { Or }
-            Exp::BinaryOp(Other(op), _, _) => {
-                match op {
-                    BinOp::Add => AddSub,
-                    BinOp::Sub => AddSub,
-                    BinOp::Mul => Mul,
-                    BinOp::Div => Term,
-                    BinOp::Rem => Mul,
-                    BinOp::BitXor => BitXor,
-                    BinOp::BitAnd => BitAnd,
-                    BinOp::BitOr => BitOr,
-                    BinOp::Shl => Shift,
-                    BinOp::Shr => Shift,
-                    BinOp::Eq  => Compare,
-                    BinOp::Lt  => Compare,
-                    BinOp::Le  => Compare,
-                    BinOp::Ne  => Compare,
-                    BinOp::Ge  => Compare,
-                    BinOp::Gt  => Compare,
-                    BinOp::Offset => panic!("unsupported operator"),
-                }
-            }
-            Exp::Call(_, _) => { Call }
-            Exp::Verbatim(_) => { Any }
-            Exp::Impl(_, _) => { Impl }
-            Exp::Forall(_, _) => { Any }
-            Exp::Exists(_, _) => { Any }
-        }
-    }
 }
 
 type ConstantType = ();

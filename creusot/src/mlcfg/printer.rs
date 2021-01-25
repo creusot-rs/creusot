@@ -60,15 +60,22 @@ impl<'a, D: EnvDisplay + ?Sized> fmt::Display for Print<'a, D> {
     }
 }
 
+use itertools::*;
+
 // FIXME: Doesn't take into account associativity when deciding when to put parens
 macro_rules! parens {
-    ($fe:ident, $e:ident, $i:expr) => {
-        if $e.precedence() == Precedence::Call && !$i.simple_print() {
-            format!("({})", $fe.to($i))
-        } else if $i.precedence() < $e.precedence() && !$i.simple_print() {
-            format!("({})", $fe.to($i))
+    ($fe:ident, $parent:ident, $child:ident) => {
+        if $parent.precedence() > $child.precedence() && $child.precedence() != Precedence::Closed {
+            format!("({})", $fe.to($child))
         } else {
-            format!("{}", $fe.to($i))
+            format!("{}", $fe.to($child))
+        }
+    };
+    ($fe:ident, $par_prec:expr, $child:ident) => {
+        if $par_prec > $child.precedence() && $child.precedence() != Precedence::Closed {
+            format!("({})", $fe.to($child))
+        } else {
+            format!("{}", $fe.to($child))
         }
     };
 }
@@ -237,7 +244,8 @@ impl EnvDisplay for Type {
                         "{} {}",
                         fe.to(tyf),
                         args.iter().format_with(" ", |elt, f| {
-                            f(&format_args!("{}", ty_parens!(fe, elt)))
+                            f(&ty_parens!(fe, elt))
+                            // f(&format_args!("{}", ty_parens!(fe, elt)))
                         })
                     )?;
                 }
@@ -292,7 +300,7 @@ impl EnvDisplay for Exp {
                 write!(
                     f,
                     "({})",
-                    vs.iter().format_with(", ", |elt, f| { f(&format_args!("{}", fe.to(elt))) })
+                    vs.iter().format_with(", ", |elt, f| { f(& fe.to(elt)) })
                 )?;
             }
             Exp::Constructor { ctor, args } => {
@@ -304,7 +312,7 @@ impl EnvDisplay for Exp {
                         "{}({})",
                         ctor,
                         args.iter()
-                            .format_with(", ", |elt, f| { f(&format_args!("{}", fe.to(elt))) })
+                            .format_with(", ", |elt, f| { f(&fe.to(elt)) })
                     )?;
                 }
             }
@@ -354,11 +362,13 @@ impl EnvDisplay for Exp {
             Exp::Forall(binders, box exp) => {
                 write!(f, "forall ")?;
 
-                for (l, ty) in binders {
-                    write!(f, "({} : {}) ", l, fe.to(ty))?;
-                }
+                let binder_fmt = binders.iter()
+                    .format_with(", ", |(l, ty), f| {
+                        f(&format_args!("{} : {}", l, fe.to(ty)))
+                    });
 
-                write!(f, ". {}", fe.to(exp))?;
+
+                write!(f, "{} . {}", binder_fmt, fe.to(exp))?;
             }
             Exp::Exists(binders, box exp) => {
                 write!(f, "exists ")?;
@@ -369,8 +379,8 @@ impl EnvDisplay for Exp {
 
                 write!(f, ". {}", fe.to(exp))?;
             }
-            Exp::Impl(hyp, exp) => {
-                write!(f, "{} -> {}", parens!(fe, self, &**hyp), parens!(fe, self, &**exp))?;
+            Exp::Impl(box hyp, box exp) => {
+                write!(f, "{} -> {}", parens!(fe, self, hyp), parens!(fe, self, exp))?;
             }
         }
         Ok(())
@@ -382,7 +392,7 @@ impl EnvDisplay for Statement {
         fe.indent_line(f)?;
         match self {
             Statement::Assign { lhs, rhs } => {
-                write!(f, "{} <- {}", lhs, fe.to(rhs))?;
+                write!(f, "{} <- {}", lhs, parens!(fe, Precedence::Assign, rhs))?;
             }
             Statement::Invariant(nm, e) => {
                 write!(f, "invariant {} {{ {} }}", nm, fe.to(e))?;
@@ -453,7 +463,6 @@ impl Display for Pattern {
     }
 }
 
-use itertools::*;
 
 impl Display for BlockId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -522,7 +531,7 @@ impl EnvDisplay for TyDecl {
                         "  | {}({})",
                         cons,
                         args.iter()
-                            .format_with(", ", |elt, f| { f(&format_args!("{}", fe.to(elt))) })
+                            .format_with(", ", |elt, f| { f(& fe.to(elt)) })
                     )?;
                 }
             }
