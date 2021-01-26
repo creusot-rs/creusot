@@ -35,6 +35,8 @@ use rustc_middle::{
     ty::{TyCtxt, WithOptConstParam},
 };
 
+mod analysis;
+
 mod place;
 mod translation;
 

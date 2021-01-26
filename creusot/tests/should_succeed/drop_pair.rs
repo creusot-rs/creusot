@@ -13,3 +13,7 @@ fn drop_pair(x : (&mut u32, &mut u32)) {
 
 fn drop_pair2(x : (&mut u32, &mut u32)) { x;
 }
+
+fn drop<'a>(mut x: &'a mut u32, y: &'a mut u32) {
+  x = y;
+}

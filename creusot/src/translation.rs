@@ -12,7 +12,11 @@ use rustc_hir::definitions::DefPathData;
 use rustc_hir::{def::CtorKind, def_id::DefId};
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{mir::traversal::preorder, mir::*, ty::TyCtxt, ty::TyKind};
-use rustc_mir::dataflow::{self, Analysis, Results, ResultsCursor, impls::{MaybeInitializedLocals, MaybeLiveLocals}};
+use rustc_mir::dataflow::{
+    self,
+    impls::{MaybeInitializedLocals, MaybeLiveLocals},
+    Analysis, Results, ResultsCursor,
+};
 
 use rustc_resolve::Namespace;
 use rustc_session::Session;
@@ -28,14 +32,18 @@ pub struct FunctionTranslator<'a, 'tcx> {
     sess: &'a Session,
     pub tcx: TyCtxt<'tcx>,
     body: &'a Body<'tcx>,
-    // pol: PoloniusInfo<'a, 'tcx>,
+
     local_live: dataflow::ResultsCursor<'a, 'tcx, MaybeLiveLocals>,
 
     // Whether a local is initialized or not at a location
     local_init: dataflow::ResultsCursor<'a, 'tcx, MaybeInitializedLocals>,
 
+    // Locals that are never read
+    never_live: BitSet<Local>,
+
     // Spec / Ghost variables
     erased_locals: BitSet<Local>,
+
     // Current block being generated
     current_block: (BlockId, Vec<mlcfg::Statement>, Option<mlcfg::Terminator>),
 
@@ -44,9 +52,24 @@ pub struct FunctionTranslator<'a, 'tcx> {
     // Type translation context
     ty_ctx: ty::Ctx<'a, 'tcx>,
 }
-#[derive(Debug, Copy, Clone)]
-enum ExtendedLocation { Start(Location), Mid(Location) }
 
+// Dataflow locations
+#[derive(Debug, Copy, Clone)]
+enum ExtendedLocation {
+    Start(Location),
+    Mid(Location),
+}
+impl ExtendedLocation {
+    fn is_entry_loc(self) -> bool {
+        if let Self::Start(loc) = self {
+            loc == Location::START
+        } else {
+            false
+        }
+    }
+}
+
+// Rust hides the real `Direction` trait from me, this hack recreates it
 trait Dir {
     fn is_forward() -> bool;
 }
@@ -57,7 +80,6 @@ impl Dir for dataflow::Forward {
     }
 }
 
-
 impl Dir for dataflow::Backward {
     fn is_forward() -> bool {
         false
@@ -66,9 +88,10 @@ impl Dir for dataflow::Backward {
 
 impl ExtendedLocation {
     fn seek_to<'tcx, A, R, D>(self, cursor: &mut ResultsCursor<'_, 'tcx, A, R>)
-        where A: Analysis<'tcx, Direction = D>,
-              D: Dir,
-              R: Borrow<Results<'tcx, A>>
+    where
+        A: Analysis<'tcx, Direction = D>,
+        D: Dir,
+        R: Borrow<Results<'tcx, A>>,
     {
         use ExtendedLocation::*;
         if D::is_forward() {
@@ -82,10 +105,8 @@ impl ExtendedLocation {
                 Mid(loc) => cursor.seek_before_primary_effect(loc),
             }
         }
-        // cursor.analysis().
     }
 }
-
 
 impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     pub fn new(sess: &'a Session, tcx: TyCtxt<'tcx>, body: &'a Body<'tcx>) -> Self {
@@ -111,6 +132,8 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             }
         });
 
+        let never_live = crate::analysis::NeverLive::for_body(body);
+        warn!("ever_live_set: {:?}", never_live);
         FunctionTranslator {
             sess,
             tcx,
@@ -118,6 +141,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             local_live,
             local_init,
             erased_locals,
+            never_live,
             current_block: (BasicBlock::MAX.into(), Vec::new(), None),
             past_blocks: Vec::new(),
             ty_ctx: ty::Ctx::new(tcx, sess),
@@ -164,7 +188,6 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         }
 
         self.current_block = (BasicBlock::MAX.into(), Vec::new(), None);
-
 
         let arg_count = self.body.arg_count;
         let mut vars = self.body.local_decls.iter_enumerated().filter_map(|(loc, decl)| {
@@ -220,7 +243,12 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
     fn freeze_borrows_dying_between(&mut self, start: ExtendedLocation, end: ExtendedLocation) {
         start.seek_to(&mut self.local_live);
-        let live_at_start = self.local_live.get().clone();
+        let mut live_at_start = self.local_live.get().clone();
+        if start.is_entry_loc() {
+            // Count arguments that were never live as live here
+            live_at_start.union(&self.never_live);
+        }
+
         end.seek_to(&mut self.local_live);
         let live_at_end = self.local_live.get();
 

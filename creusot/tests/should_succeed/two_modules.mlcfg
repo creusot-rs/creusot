@@ -30,6 +30,22 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
+  scope Mod2
+    let cfg x (o_t_1 : Mod1.t) : bool
+      =
+    var _0 : bool;
+    var t_1 : Mod1.t;
+    {
+      t_1 <- o_t_1;
+      goto BB0;
+    }
+    BB0 {
+      _0 <- true;
+      assume { Mod1.drop_t t_1 };
+      _0
+    }
+
+  end
   scope Mod1
     type t  =
         | A
@@ -42,21 +58,6 @@ module Ambient
         | B -> True
         | C -> True
         end
-
-  end
-  scope Mod2
-    let cfg x (o_t_1 : Mod1.t) : bool
-      =
-    var _0 : bool;
-    var t_1 : Mod1.t;
-    {
-      t_1 <- o_t_1;
-      goto BB0;
-    }
-    BB0 {
-      _0 <- true;
-      _0
-    }
 
   end
   let cfg main () : ()
