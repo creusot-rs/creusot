@@ -53,9 +53,6 @@ struct ToWhy {
     output_file: Option<String>,
 }
 
-// use polonius_facts::FactLoader;
-// use polonius_engine::{Algorithm, Output};
-
 impl Callbacks for ToWhy {
     // Register callback for after MIR borrowck and typechecking is finished
     fn after_analysis<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {

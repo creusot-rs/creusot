@@ -4,6 +4,9 @@ use rustc_middle::mir::{self, Local, Location};
 
 pub struct NeverLive(BitSet<Local>);
 
+/// Count locals which are never used and therefore can never be considered live.
+/// We use this to account for function arguments which are never live when calculating
+/// when to drop them.
 impl NeverLive {
     pub fn for_body(body: &mir::Body) -> BitSet<Local> {
         let mut ever_live = NeverLive(BitSet::new_filled(body.local_decls.len()));
@@ -36,6 +39,11 @@ impl<'tcx> Visitor<'tcx> for NeverLive {
         }
     }
 }
+
+
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #[derive(Eq, PartialEq, Clone)]
 enum DefUse {
