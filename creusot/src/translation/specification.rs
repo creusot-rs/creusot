@@ -1,9 +1,58 @@
-use rustc_middle::mir::{Body, SourceInfo};
-use syn::{term::Term::*, term::*, BinOp};
+use crate::mlcfg::printer::FormatEnv;
 use crate::mlcfg::Exp;
 use crate::mlcfg::LocalIdent;
 use crate::mlcfg::QName;
-use crate::mlcfg::printer::FormatEnv;
+use rustc_middle::mir::{Body, SourceInfo};
+use syn::{term::Term::*, term::*, BinOp};
+
+// Check if a set of invariants includes an invariant tag, indicating the associated body is
+// an invariant closure and should be ignored by translation
+
+pub enum InvariantError {
+    NoInvariant,
+    InvalidAttributes,
+}
+
+pub fn get_invariant(attrs: &[Attribute]) -> Result<(String, String), InvariantError> {
+    use InvariantError::*;
+    let mut attrs = spec_attrs(attrs);
+    if attrs.len() != 1 {
+        return Err(InvalidAttributes);
+    }
+    let attr = attrs.remove(0);
+
+    match attr.path.segments[2].ident.name.to_string().as_ref() {
+        "invariant" => {
+            return Ok((invariant_name(attr), ts_to_symbol(attr.args.inner_tokens()).unwrap()))
+        }
+        _ => {}
+    }
+    Err(NoInvariant)
+}
+
+pub fn translate_contract(attrs: &[Attribute], body: &Body) -> (Vec<String>, Vec<String>) {
+    let mut func_contract = (Vec::new(), Vec::new());
+    for attr in spec_attrs(attrs) {
+        match attr.path.segments[2].ident.name.to_string().as_ref() {
+            "requires" => {
+                let req = ts_to_symbol(attr.args.inner_tokens()).unwrap();
+                func_contract.0.push(requires_to_why(&body, req));
+                // func_contract.0.push(req);
+            }
+            "ensures" => {
+                let req = ts_to_symbol(attr.args.inner_tokens()).unwrap();
+                let ens_clause = ensures_to_why(&body, req);
+                func_contract.1.push(ens_clause);
+            }
+            "invariant" => {
+                break; // this body is an invariant closure, skip it.
+            }
+            _ => unimplemented!(),
+        }
+    }
+
+    func_contract
+}
 
 pub fn requires_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {
     let p: Term = syn::parse_str(&attr_val).unwrap();
@@ -22,7 +71,7 @@ pub fn requires_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {
 
     let mut e = to_exp(&p);
     e.subst(subst);
-    format!("{}", FormatEnv { scope: &[], indent: 0}.to(&e))
+    format!("{}", FormatEnv { scope: &[], indent: 0 }.to(&e))
 }
 
 pub fn invariant_to_why<'tcx>(body: &Body<'tcx>, info: SourceInfo, attr_val: String) -> String {
@@ -49,7 +98,7 @@ pub fn invariant_to_why<'tcx>(body: &Body<'tcx>, info: SourceInfo, attr_val: Str
         .collect();
 
     e.subst(subst);
-    format!("{}", FormatEnv { scope: &[], indent: 0}.to(&e))
+    format!("{}", FormatEnv { scope: &[], indent: 0 }.to(&e))
 }
 
 pub fn ensures_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {
@@ -196,4 +245,43 @@ fn path_to_exp(path: &syn::Path) -> crate::mlcfg::Exp {
     } else {
         panic!()
     }
+}
+
+use rustc_ast::{
+    token::TokenKind::Literal,
+    tokenstream::{TokenStream, TokenTree::*},
+    Attribute,
+};
+use rustc_middle::ty::Attributes;
+
+fn ts_to_symbol(ts: TokenStream) -> Option<String> {
+    assert_eq!(ts.len(), 1);
+
+    if let Token(tok) = ts.trees().next().unwrap() {
+        if let Literal(lit) = tok.kind {
+            return Some(unescape::unescape(&lit.symbol.as_str())?.to_string());
+        }
+    }
+    None
+}
+
+fn invariant_name(attr: &rustc_ast::AttrItem) -> String {
+    attr.path.segments[3].ident.name.to_string()
+}
+
+pub fn spec_attrs<'tcx>(a: Attributes<'tcx>) -> Vec<&AttrItem> {
+    a.iter()
+        .filter(|a| !a.is_doc_comment())
+        .map(|a| a.get_normal_item())
+        .filter(|ai| is_attr(ai, "spec"))
+        .collect()
+}
+
+use rustc_ast::AttrItem;
+
+fn is_attr(attr: &AttrItem, str: &str) -> bool {
+    let segments = &attr.path.segments;
+    segments.len() >= 2
+        && segments[0].ident.as_str() == "creusot"
+        && segments[1].ident.as_str() == str
 }

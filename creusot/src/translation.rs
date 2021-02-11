@@ -1,6 +1,5 @@
 use std::{borrow::Borrow, collections::BTreeMap};
 
-use self::util::spec_attrs;
 use crate::mlcfg;
 use crate::mlcfg::{Exp::*, Pattern::*, *};
 use crate::{mlcfg::Statement::*, place::Mutability as M};
@@ -126,7 +125,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if !spec_attrs(tcx.get_attrs(*def_id)).is_empty() {
+                if specification::spec_attrs(tcx.get_attrs(*def_id)).is_empty() {
                     erased_locals.insert(local);
                 }
             }

@@ -125,7 +125,7 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
         translation::ty::translate_tydecl(&mut ty_ctx, *span, *def_id);
     }
 
-    'bodies: for def_id in tcx.body_owners() {
+    for def_id in tcx.body_owners() {
         debug!("Translating body {:?}", def_id);
         // (Mir-)Borrowck uses `mir_validated`, so we have to force it to
         // execute before we can steal.
@@ -140,31 +140,12 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
         let mut body = body.steal();
         let def_id = def_id.to_def_id();
 
+        let attrs = tcx.get_attrs(def_id);
+        if specification::get_invariant(attrs).is_ok() { continue }
+        let mut func_contract = specification::translate_contract(attrs, &body);
+
         // Parent module
         let module = util::module_of(tcx, def_id);
-
-        let mut func_contract = (Vec::new(), Vec::new());
-
-        let attrs = tcx.get_attrs(def_id);
-
-        for attr in translation::util::spec_attrs(attrs) {
-            match attr.path.segments[2].ident.name.to_string().as_ref() {
-                "requires" => {
-                    let req = ts_to_symbol(attr.args.inner_tokens()).unwrap();
-                    func_contract.0.push(specification::requires_to_why(&body, req));
-                    // func_contract.0.push(req);
-                }
-                "ensures" => {
-                    let req = ts_to_symbol(attr.args.inner_tokens()).unwrap();
-                    let ens_clause = specification::ensures_to_why(&body, req);
-                    func_contract.1.push(ens_clause);
-                }
-                "invariant" => {
-                    continue 'bodies; // this body is an invariant closure, skip it.
-                }
-                _ => unimplemented!(),
-            }
-        }
 
         // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
         // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
@@ -249,22 +230,6 @@ fn sysroot_path() -> String {
     print!("{}", String::from_utf8(output.stderr).ok().unwrap());
 
     String::from_utf8(output.stdout).unwrap().trim().to_owned()
-}
-
-use rustc_ast::{
-    token::TokenKind::Literal,
-    tokenstream::{TokenStream, TokenTree::*},
-};
-
-fn ts_to_symbol(ts: TokenStream) -> Option<String> {
-    assert_eq!(ts.len(), 1);
-
-    if let Token(tok) = ts.trees().next().unwrap() {
-        if let Literal(lit) = tok.kind {
-            return Some(unescape::unescape(&lit.symbol.as_str())?.to_string());
-        }
-    }
-    None
 }
 
 struct RemoveFalseEdge<'tcx> {

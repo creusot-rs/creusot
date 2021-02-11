@@ -11,10 +11,9 @@ use crate::{
         Statement::*,
     },
     place::simplify_place,
-    ts_to_symbol,
 };
 
-use super::{specification, util::spec_attrs, FunctionTranslator};
+use super::{specification, FunctionTranslator};
 
 impl<'tcx> FunctionTranslator<'_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>) {
@@ -88,23 +87,15 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                     Closure(def_id, _) => {
                         let attrs = self.tcx.get_attrs(*def_id);
 
-                        let mut spec_attrs = spec_attrs(attrs);
-
-                        if spec_attrs.len() == 1 {
-                            let attr = spec_attrs.remove(0);
-                            if is_invariant_marker(attr) {
-                                let inv = ts_to_symbol(attr.args.inner_tokens()).unwrap();
-
-                                let inv_string =
-                                    specification::invariant_to_why(self.body, si, inv);
-
-                                self.emit_statement(Invariant(invariant_name(attr), Verbatim(inv_string)));
+                        match specification::get_invariant(attrs) {
+                            Ok((name, inv)) => {
+                                let invariant = specification::invariant_to_why(self.body, si, inv);
+                                self.emit_statement(Invariant(name, Verbatim(invariant)));
                                 return;
-                            } else {
-                                self.sess.span_fatal_with_code(si.span, &format!("unexpected specification attribute {:?}", spec_attrs), DiagnosticId::Error(String::from("creusot")))
                             }
-                        } else {
-                            self.sess.span_fatal_with_code(si.span, "closures are not yet supported", DiagnosticId::Error(String::from("creusot")))
+                            Err(_) =>{
+                                 self.sess.span_fatal_with_code(si.span, "closures are not yet supported", DiagnosticId::Error(String::from("creusot")))
+                            }
                         }
                     }
                     _ => {
@@ -130,6 +121,3 @@ fn is_invariant_marker(attr: &rustc_ast::AttrItem) -> bool {
     attr.path.segments[2].ident.name.to_string() == "invariant"
 }
 
-fn invariant_name(attr: &rustc_ast::AttrItem) -> String {
-    attr.path.segments[3].ident.name.to_string()
-}
