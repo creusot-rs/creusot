@@ -14,6 +14,8 @@ fn drop_pair(x : (&mut u32, &mut u32)) {
 fn drop_pair2(x : (&mut u32, &mut u32)) { x;
 }
 
+// Checks that we generate drop for x which is always init but never live *and* writeen to.
+// However we should *not* get a drop for *y*
 fn drop<'a>(mut x: &'a mut u32, y: &'a mut u32) {
   x = y;
 }

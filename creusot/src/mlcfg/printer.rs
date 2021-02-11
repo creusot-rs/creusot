@@ -159,14 +159,14 @@ impl EnvDisplay for Function {
             }
 
             fe.indent_line(f)?;
-            writeln!(f, "goto BB0;")
+            writeln!(f, "goto BB0")
         })?;
 
         fe.indent_line(f)?;
         writeln!(f, "}}")?;
 
-        for block in &self.blocks {
-            write!(f, "{}", fe.to(block))?;
+        for (id, block) in &self.blocks {
+            write!(f, "{} {}", id, fe.to(block))?;
         }
 
         Ok(())
@@ -418,7 +418,7 @@ impl EnvDisplay for Terminator {
                 writeln!(f, "absurd")?;
             }
             Return => {
-                writeln!(f, "_0")?;
+                writeln!(f, "return _0")?;
             }
             Switch(discr, brs) => {
                 writeln!(f, "switch ({})", fe.to(discr))?;
@@ -473,7 +473,7 @@ impl Display for BlockId {
 impl EnvDisplay for Block {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fe.indent_line(f)?;
-        writeln!(f, "{} {{", self.label)?;
+        writeln!(f, "{{")?;
 
         fe.indent(2, |fe| {
             for stmt in &self.statements {

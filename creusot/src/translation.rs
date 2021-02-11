@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::{borrow::Borrow, collections::BTreeMap};
 
 use self::util::spec_attrs;
 use crate::mlcfg;
@@ -45,9 +45,9 @@ pub struct FunctionTranslator<'a, 'tcx> {
     erased_locals: BitSet<Local>,
 
     // Current block being generated
-    current_block: (BlockId, Vec<mlcfg::Statement>, Option<mlcfg::Terminator>),
+    current_block: (Vec<mlcfg::Statement>, Option<mlcfg::Terminator>),
 
-    past_blocks: Vec<mlcfg::Block>,
+    past_blocks: BTreeMap<mlcfg::BlockId, mlcfg::Block>,
 
     // Type translation context
     ty_ctx: ty::Ctx<'a, 'tcx>,
@@ -142,20 +142,20 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             local_init,
             erased_locals,
             never_live,
-            current_block: (BasicBlock::MAX.into(), Vec::new(), None),
-            past_blocks: Vec::new(),
+            current_block: (Vec::new(), None),
+            past_blocks: BTreeMap::new(),
             ty_ctx: ty::Ctx::new(tcx, sess),
         }
     }
 
     fn emit_statement(&mut self, s: mlcfg::Statement) {
-        self.current_block.1.push(s);
+        self.current_block.0.push(s);
     }
 
     fn emit_terminator(&mut self, t: mlcfg::Terminator) {
-        assert!(self.current_block.2.is_none());
+        assert!(self.current_block.1.is_none());
 
-        self.current_block.2 = Some(t);
+        self.current_block.1 = Some(t);
     }
 
     fn emit_assignment(&mut self, lhs: &SimplePlace, rhs: mlcfg::Exp) {
@@ -164,30 +164,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     }
 
     pub fn translate(mut self, nm: DefId, contracts: (Vec<String>, Vec<String>)) -> Function {
-        for (bb, bbd) in preorder(self.body) {
-            self.current_block = (bb.into(), vec![], None);
-            if bbd.is_cleanup {
-                continue;
-            }
-            self.freeze_borrows_at_block_start(bb);
-
-            let mut loc = bb.start_location();
-            for statement in &bbd.statements {
-                self.translate_statement(statement);
-                self.freeze_borrows_dying_at(loc);
-                loc = loc.successor_within_block();
-            }
-
-            self.translate_terminator(bbd.terminator(), loc);
-
-            self.past_blocks.push(Block {
-                label: self.current_block.0,
-                statements: self.current_block.1,
-                terminator: self.current_block.2.unwrap(),
-            });
-        }
-
-        self.current_block = (BasicBlock::MAX.into(), Vec::new(), None);
+        self.translate_body();
 
         let arg_count = self.body.arg_count;
         let mut vars = self.body.local_decls.iter_enumerated().filter_map(|(loc, decl)| {
@@ -204,6 +181,8 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         let vars = vars.collect::<Vec<_>>();
 
         let name = translate_defid(self.tcx, nm, Namespace::ValueNS);
+
+        move_invariants_into_loop(&mut self.past_blocks);
         Function {
             name,
             retty,
@@ -213,6 +192,31 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             preconds: contracts.0,
             postconds: contracts.1,
         }
+    }
+
+    fn translate_body(&mut self) {
+        for (bb, bbd) in preorder(self.body) {
+            self.current_block = (vec![], None);
+            if bbd.is_cleanup {
+                continue;
+            }
+            self.freeze_borrows_at_block_start(bb);
+
+            let mut loc = bb.start_location();
+            for statement in &bbd.statements {
+                self.translate_statement(statement);
+                self.freeze_borrows_dying_at(loc);
+                loc = loc.successor_within_block();
+            }
+
+            self.translate_terminator(bbd.terminator(), loc);
+
+            self.past_blocks.insert(bb.into(), Block {
+                statements: std::mem::replace(&mut self.current_block.0, Vec::new()),
+                terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
+            });
+        }
+
     }
 
     fn freeze_borrows_at_block_start(&mut self, bb: BasicBlock) {
@@ -450,6 +454,34 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
         let ident = self.translate_local(lhs.local);
         Assign { lhs: ident, rhs: inner }
+    }
+}
+
+fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {
+    // CORRECTNESS: We assume that invariants are placed at the end of the block entering into the loop.
+    // This is enforced syntactically at source level using macros, however it could get broken during
+    // compilation.
+    let mut changes = std::collections::HashMap::new();
+    for (_, block) in body.iter_mut() {
+        let (invariants, rest) = block.statements.clone().into_iter()
+            .partition(|stmt| {
+                if let Invariant(_,_) = stmt { true } else { false }
+            });
+
+        let _ = std::mem::replace(&mut block.statements, rest);
+        if invariants.len() > 0 {
+            if let mlcfg::Terminator::Goto(tgt) = &block.terminator {
+                changes.insert(*tgt, invariants);
+            } else {
+                panic!("BAD INVARIANT BAD!")
+            }
+        }
+    }
+
+    for (tgt, mut invs) in changes.drain() {
+        let tgt = body.get_mut(&tgt).unwrap();
+        invs.append(&mut tgt.statements);
+        let _ = std::mem::replace(&mut tgt.statements, invs);
     }
 }
 

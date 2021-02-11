@@ -15,8 +15,8 @@ fn main() {
     let mut a = Some(10);
     let b = &mut a;
 
+    invariant!(dummy, true);
     while let Some(_) = b {
-        invariant!(dummy, true);
         *b = None;
     }
 }

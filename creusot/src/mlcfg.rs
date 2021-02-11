@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::collections::HashSet;
 use std::fmt::Display;
 
@@ -36,7 +36,7 @@ pub struct Function {
     pub retty: Type,
     pub args: Vec<(LocalIdent, Type)>,
     pub vars: Vec<(LocalIdent, Type)>,
-    pub blocks: Vec<Block>,
+    pub blocks: BTreeMap<BlockId, Block>,
     pub preconds: Vec<String>, // for now we blindly pass contracts down
     pub postconds: Vec<String>,
 }
@@ -50,12 +50,11 @@ pub struct Predicate {
 
 #[derive(Debug)]
 pub struct Block {
-    pub label: BlockId,
     pub statements: Vec<Statement>,
     pub terminator: Terminator,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub struct BlockId(usize);
 
 impl From<&BasicBlock> for BlockId {
@@ -77,7 +76,7 @@ pub enum Terminator {
     Switch(Exp, Vec<(Pattern, BlockId)>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     Assign { lhs: LocalIdent, rhs: Exp },
     Invariant(String, Exp),

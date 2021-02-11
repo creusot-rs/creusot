@@ -17,9 +17,26 @@ pub struct List {
     next: Option<Box<List>>,
 }
 
+
+// Supposer `get ix l` logique `len l` logique
+
+// #[requires(param_ix < len param_l@now)]
+// #[ensures(result@now == get param_ix@pre param_l@pre@now)]
+// #[ensures(result@fin == get param_ix@pre param_l@pre@fin)]
+// #[ensures(forall i <> param_ix. get i param_l@pre@fin == get i param_l@pre@now)]
+// #[ensures(len param_l@pre@fin == len param_l@pre@now)]
 pub fn index_mut(mut l: &mut List, mut ix: usize) -> &mut u32 {
+    // let mut l = param_l;
+    // let mut ix = param_ix;
+
     while ix > 0 {
-        invariant!(todo, true);
+        // invariant!(ix_remaining_now, get ix l@now == get param_ix l@pre@now);
+        // invariant!(ix_remaining_fin, get ix l@fin == get param_ix l@pre@now);
+        // invariant!(seen_unchanged,
+        //     (forall 0 <= i < len (l@now). get i l@fin == get i l@now) ->
+        //     (forall 0 <= i < len (l@pre@now). get i l@pre@fin == get i l@pre@now)
+        // );
+        // invariant!(length, len param_l@fin = len param_l@now);
         match l.next {
             Some(ref mut n) => {
                 l = n;
@@ -46,13 +63,6 @@ fn main() {
         })),
     };
     write(&mut l, 0, 2);
-    let l2 = List {
-        val: 2,
-        next: Some(Box::new(List {
-            val: 10,
-            next: None,
-        })),
-    };
 
-    // assert(l, l2);
+    // assert!(get 0 l == 2 && get 1 l == 10);
 }

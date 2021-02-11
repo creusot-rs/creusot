@@ -31,8 +31,8 @@ module Ambient
   predicate drop_ref (_ : 'a) = true
 
   let cfg projToggle (o_toggle_1 : bool)(o_a_2 : borrowed 't)(o_b_3 : borrowed 't) : borrowed 't
-    ensures { o_toggle_1 = false -> result = o_b_3 }
-    ensures { o_toggle_1 = true -> result = o_a_2 }
+    ensures { o_toggle_1 = false -> result = o_b_3 &&  ^ o_a_2 =  * o_a_2 }
+    ensures { o_toggle_1 = true -> result = o_a_2 &&  ^ o_b_3 =  * o_b_3 }
     =
   var _0 : borrowed 't;
   var toggle_1 : bool;
@@ -47,9 +47,9 @@ module Ambient
     toggle_1 <- o_toggle_1;
     a_2 <- o_a_2;
     b_3 <- o_b_3;
-    goto BB0;
+    goto BB0
   }
-  BB0 {
+BB0   {
     _6 <- toggle_1;
     assume { drop_bool toggle_1 };
     switch (_6)
@@ -57,30 +57,12 @@ module Ambient
       | _ -> goto BB1
       end
   }
-  BB1 {
+BB1   {
     assume { drop_mut_ref b_3 };
     assume { drop_bool _6 };
     goto BB3
   }
-  BB3 {
-    _7 <- borrow_mut ( * a_2);
-    a_2 <- { a_2 with current = ( ^ _7) };
-    assume { drop_mut_ref a_2 };
-    _5 <- borrow_mut ( * _7);
-    _7 <- { _7 with current = ( ^ _5) };
-    assume { drop_mut_ref _7 };
-    goto BB4
-  }
-  BB4 {
-    _4 <- borrow_mut ( * _5);
-    _5 <- { _5 with current = ( ^ _4) };
-    assume { drop_mut_ref _5 };
-    _0 <- borrow_mut ( * _4);
-    _4 <- { _4 with current = ( ^ _0) };
-    assume { drop_mut_ref _4 };
-    _0
-  }
-  BB2 {
+BB2   {
     assume { drop_mut_ref a_2 };
     assume { drop_bool _6 };
     _8 <- borrow_mut ( * b_3);
@@ -91,16 +73,61 @@ module Ambient
     assume { drop_mut_ref _8 };
     goto BB4
   }
+BB3   {
+    _7 <- borrow_mut ( * a_2);
+    a_2 <- { a_2 with current = ( ^ _7) };
+    assume { drop_mut_ref a_2 };
+    _5 <- borrow_mut ( * _7);
+    _7 <- { _7 with current = ( ^ _5) };
+    assume { drop_mut_ref _7 };
+    goto BB4
+  }
+BB4   {
+    _4 <- borrow_mut ( * _5);
+    _5 <- { _5 with current = ( ^ _4) };
+    assume { drop_mut_ref _5 };
+    _0 <- borrow_mut ( * _4);
+    _4 <- { _4 with current = ( ^ _0) };
+    assume { drop_mut_ref _4 };
+    return _0
+  }
 
   let cfg main () : ()
     =
   var _0 : ();
+  var a_1 : int32;
+  var b_2 : int32;
+  var x_3 : borrowed int32;
+  var _4 : borrowed int32;
+  var _5 : borrowed int32;
+  var _6 : borrowed int32;
+  var _7 : borrowed int32;
   {
-    goto BB0;
+    goto BB0
   }
-  BB0 {
+BB0   {
+    a_1 <- 10;
+    b_2 <- 5;
+    _5 <- borrow_mut a_1;
+    a_1 <-  ^ _5;
+    assume { drop_int a_1 };
+    _4 <- borrow_mut ( * _5);
+    _5 <- { _5 with current = ( ^ _4) };
+    assume { drop_mut_ref _5 };
+    _7 <- borrow_mut b_2;
+    b_2 <-  ^ _7;
+    assume { drop_int b_2 };
+    _6 <- borrow_mut ( * _7);
+    _7 <- { _7 with current = ( ^ _6) };
+    assume { drop_mut_ref _7 };
+    x_3 <- projToggle true _4 _6;
+    goto BB1
+  }
+BB1   {
+    x_3 <- { x_3 with current = ( * x_3 + 5) };
+    assume { drop_mut_ref x_3 };
     _0 <- ();
-    _0
+    return _0
   }
 
 end

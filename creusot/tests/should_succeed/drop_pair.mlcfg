@@ -34,11 +34,11 @@ module Ambient
     =
   var _0 : ();
   {
-    goto BB0;
+    goto BB0
   }
-  BB0 {
+BB0   {
     _0 <- ();
-    _0
+    return _0
   }
 
   let cfg dropPair (o_x_1 : (borrowed uint32, borrowed uint32)) : ()
@@ -47,12 +47,12 @@ module Ambient
   var x_1 : (borrowed uint32, borrowed uint32);
   {
     x_1 <- o_x_1;
-    goto BB0;
+    goto BB0
   }
-  BB0 {
+BB0   {
     _0 <- ();
     assume { (fun tup -> let (a, b) = tup in drop_mut_ref a && drop_mut_ref b) x_1 };
-    _0
+    return _0
   }
 
   let cfg dropPair2 (o_x_1 : (borrowed uint32, borrowed uint32)) : ()
@@ -62,13 +62,35 @@ module Ambient
   var _2 : (borrowed uint32, borrowed uint32);
   {
     x_1 <- o_x_1;
-    goto BB0;
+    goto BB0
   }
-  BB0 {
+BB0   {
     _2 <- x_1;
     assume { (fun tup -> let (a, b) = tup in drop_mut_ref a && drop_mut_ref b) _2 };
     _0 <- ();
-    _0
+    return _0
+  }
+
+  let cfg drop (o_x_1 : borrowed uint32)(o_y_2 : borrowed uint32) : ()
+    =
+  var _0 : ();
+  var x_1 : borrowed uint32;
+  var y_2 : borrowed uint32;
+  var _3 : borrowed uint32;
+  {
+    x_1 <- o_x_1;
+    y_2 <- o_y_2;
+    goto BB0
+  }
+BB0   {
+    assume { drop_mut_ref x_1 };
+    _3 <- borrow_mut ( * y_2);
+    y_2 <- { y_2 with current = ( ^ _3) };
+    assume { drop_mut_ref y_2 };
+    x_1 <- _3;
+    assume { drop_mut_ref _3 };
+    _0 <- ();
+    return _0
   }
 
 end

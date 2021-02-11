@@ -31,74 +31,75 @@ module Ambient
   predicate drop_ref (_ : 'a) = true
 
   let cfg sumFirstN (o_n_1 : uint32) : uint32
-    ensures { result = div (o_n_1 * (o_n_1 - 1)) 2 }
+    ensures { result = div (o_n_1 * (o_n_1 + 1)) 2 }
     =
   var _0 : uint32;
   var n_1 : uint32;
   var sum_2 : uint32;
   var i_3 : uint32;
-  var _4 : ();
-  var _5 : ();
-  var _6 : bool;
-  var _7 : uint32;
-  var _8 : uint32;
+  var _6 : ();
+  var _7 : ();
+  var _8 : bool;
+  var _9 : uint32;
   var _10 : uint32;
-  var _11 : ();
+  var _11 : uint32;
+  var _12 : ();
   {
     n_1 <- o_n_1;
-    goto BB0;
+    goto BB0
   }
-  BB0 {
+BB0   {
     sum_2 <- 0;
     i_3 <- 0;
     goto BB1
   }
-  BB1 {
-    assume { (fun tup -> let () = tup in True) _5 };
+BB1   {
+    invariant sum_value { sum_2 = div (i_3 * (i_3 + 1)) 2 };
+    invariant loop_bound { i_3 < n_1 + 1 };
+    assume { (fun tup -> let () = tup in True) _7 };
     goto BB2
   }
-  BB2 {
-    _7 <- i_3;
-    _8 <- n_1;
-    _6 <- _7 <= _8;
-    switch (_6)
+BB2   {
+    _9 <- i_3;
+    _10 <- n_1;
+    _8 <- _9 <= _10;
+    switch (_8)
       | False -> goto BB4
       | _ -> goto BB3
       end
   }
-  BB3 {
-    assume { drop_bool _6 };
+BB3   {
+    assume { drop_bool _8 };
     goto BB5
   }
-  BB5 {
-    invariant xx { sum_2 = div (i_3 * (i_3 - 1)) 2 };
-    _10 <- i_3;
-    sum_2 <- sum_2 + _10;
-    assume { drop_uint _10 };
-    i_3 <- i_3 + 1;
-    _5 <- ();
-    goto BB1
-  }
-  BB4 {
+BB4   {
     assume { drop_uint n_1 };
     assume { drop_uint i_3 };
-    assume { drop_bool _6 };
-    _4 <- ();
-    assume { (fun tup -> let () = tup in True) _4 };
+    assume { drop_bool _8 };
+    _6 <- ();
+    assume { (fun tup -> let () = tup in True) _6 };
     _0 <- sum_2;
     assume { drop_uint sum_2 };
-    _0
+    return _0
+  }
+BB5   {
+    _11 <- i_3;
+    sum_2 <- sum_2 + _11;
+    assume { drop_uint _11 };
+    i_3 <- i_3 + 1;
+    _7 <- ();
+    goto BB1
   }
 
   let cfg main () : ()
     =
   var _0 : ();
   {
-    goto BB0;
+    goto BB0
   }
-  BB0 {
+BB0   {
     _0 <- ();
-    _0
+    return _0
   }
 
 end

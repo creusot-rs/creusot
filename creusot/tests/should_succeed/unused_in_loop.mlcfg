@@ -30,30 +30,51 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
-  type myInt  =
-      | MyInt(usize)
-
-  predicate drop_myInt (self : myInt) =
-    let MyInt(a) = self in drop_uint a
-  let cfg unnest (o_x_1 : borrowed (borrowed uint32)) : borrowed uint32
-    ensures {  ^  * o_x_1 =  ^  ^ o_x_1 }
-    ensures {  * result =  *  * o_x_1 }
-    ensures {  ^ result =  *  ^ o_x_1 }
+  let cfg unusedInLoop (o_b_1 : bool) : uint32
+    ensures { result = 10 }
     =
-  var _0 : borrowed uint32;
-  var x_1 : borrowed (borrowed uint32);
-  var _2 : borrowed uint32;
+  var _0 : uint32;
+  var b_1 : bool;
+  var x_2 : uint32;
+  var _4 : ();
+  var _5 : ();
+  var _6 : bool;
+  var _7 : ();
   {
-    x_1 <- o_x_1;
+    b_1 <- o_b_1;
     goto BB0
   }
 BB0   {
-    _2 <- borrow_mut ( *  * x_1);
-    x_1 <- { x_1 with current = { ( * x_1) with current = ( ^ _2) } };
-    assume { drop_mut_ref x_1 };
-    _0 <- borrow_mut ( * _2);
-    _2 <- { _2 with current = ( ^ _0) };
-    assume { drop_mut_ref _2 };
+    x_2 <- 10;
+    goto BB1
+  }
+BB1   {
+    invariant x { true };
+    assume { (fun tup -> let () = tup in True) _5 };
+    goto BB2
+  }
+BB2   {
+    _6 <- b_1;
+    switch (_6)
+      | False -> goto BB4
+      | _ -> goto BB3
+      end
+  }
+BB3   {
+    assume { drop_bool b_1 };
+    assume { drop_bool _6 };
+    goto BB5
+  }
+BB4   {
+    assume { drop_bool _6 };
+    _5 <- ();
+    goto BB1
+  }
+BB5   {
+    _4 <- ();
+    assume { (fun tup -> let () = tup in True) _4 };
+    _0 <- x_2;
+    assume { drop_uint x_2 };
     return _0
   }
 
