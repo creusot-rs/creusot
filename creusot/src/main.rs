@@ -3,9 +3,7 @@
 #![register_tool(creusot)]
 #![feature(const_panic, or_patterns, iterator_fold_self)]
 
-extern crate polonius_engine;
 extern crate rustc_ast;
-extern crate rustc_ast_pretty;
 extern crate rustc_driver;
 extern crate rustc_errors;
 extern crate rustc_hir;
@@ -14,7 +12,6 @@ extern crate rustc_interface;
 extern crate rustc_middle;
 extern crate rustc_mir;
 extern crate rustc_resolve;
-extern crate rustc_serialize;
 extern crate rustc_session;
 extern crate rustc_span;
 extern crate rustc_target;
@@ -217,10 +214,12 @@ where
 
 fn sysroot_path() -> String {
     use std::process::Command;
-    let toolchain = include_str!("../../rust-toolchain").trim();
+    let toolchain : toml::Value = toml::from_str(include_str!("../../rust-toolchain")).unwrap();
+    let channel = toolchain["toolchain"]["channel"].as_str().unwrap();
+
     let output = Command::new("rustup")
         .arg("run")
-        .arg(toolchain)
+        .arg(channel)
         .arg("rustc")
         .arg("--print")
         .arg("sysroot")
