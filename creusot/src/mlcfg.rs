@@ -4,9 +4,10 @@ use std::fmt::Display;
 
 // Imports related to MLCfg Constatns
 use rustc_middle::{
-    mir::{self, BinOp},
+    mir,
     ty::{print::FmtPrinter, print::PrettyPrinter, TyCtxt},
 };
+pub use mir::{BinOp, UnOp};
 
 use rustc_hir::def::Namespace;
 use rustc_middle::mir::{BasicBlock, Local};
@@ -215,6 +216,7 @@ pub enum Exp {
     BorrowMut(Box<Exp>),
     Const(Constant),
     BinaryOp(FullBinOp, Box<Exp>, Box<Exp>),
+    UnaryOp(UnOp, Box<Exp>),
     Call(Box<Exp>, Vec<Exp>),
     Verbatim(String),
     // Seq(Box<Exp>, Box<Exp>),
@@ -258,7 +260,7 @@ enum Precedence {
     Shift,
     AddSub,
     Mul,
-    FinCur,
+    PrefixOp,
     Term,
     Call,
 }
@@ -269,8 +271,8 @@ impl Exp {
         use FullBinOp::Other;
 
         match self {
-            Exp::Current(_) => { FinCur }
-            Exp::Final(_) => { FinCur }
+            Exp::Current(_) => { PrefixOp }
+            Exp::Final(_) => { PrefixOp }
             Exp::Let { .. } => { Let }
             Exp::Abs(_, _) => { Let }
             Exp::Var(_) => { Closed }
@@ -282,6 +284,8 @@ impl Exp {
             Exp::Match(_, _) => { Term }
             Exp::BorrowMut(_) => { Term }
             Exp::Const(_) => { Closed }
+            Exp::UnaryOp(UnOp::Neg, _) => { PrefixOp }
+            Exp::UnaryOp(UnOp::Not, _) => { Call }
             Exp::BinaryOp(FullBinOp::And, _, _) => { And }
             Exp::BinaryOp(FullBinOp::Or, _, _) => { Or }
             Exp::BinaryOp(Other(op), _, _) => {
@@ -386,6 +390,7 @@ impl Exp {
                 }
             }
             Exp::BorrowMut(e) => { e.subst(subst) }
+            Exp::UnaryOp(_, o) => { o.subst(subst); }
             Exp::BinaryOp(_, l, r) => { l.subst(subst.clone()); r.subst(subst)}
             Exp::Impl(hyp, exp) => { hyp.subst(subst.clone()); exp.subst(subst)}
             Exp::Forall(binders, exp) => {

@@ -323,6 +323,12 @@ impl EnvDisplay for Exp {
             Exp::Const(c) => {
                 write!(f, "{}", c)?;
             }
+            Exp::UnaryOp(UnOp::Not, box op) => {
+                write!(f, "not {}", parens!(fe, self, op))?;
+            }
+            Exp::UnaryOp(UnOp::Neg, box op) => {
+                write!(f, "- {}", parens!(fe, self, op))?;
+            }
             Exp::BinaryOp(FullBinOp::Other(BinOp::Div), box l, box r) => {
                 write!(f, "div {} {}", parens!(fe, self, l), parens!(fe, self, r))?;
             }

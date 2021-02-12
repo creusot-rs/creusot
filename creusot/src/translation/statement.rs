@@ -1,8 +1,8 @@
 use rustc_errors::DiagnosticId;
-use rustc_middle::mir::{
-    BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind,
-};
 use rustc_hir::def::Namespace;
+use rustc_middle::mir::{
+    BorrowKind::*, Operand::*,UnOp, Place, Rvalue, SourceInfo, Statement, StatementKind,
+};
 
 use crate::{
     mlcfg::{
@@ -22,14 +22,22 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
             Assign(box (ref pl, ref rv)) => self.translate_assign(statement.source_info, pl, rv),
             SetDiscriminant { .. } => {
                 // TODO: implement support for set discriminant
-                self.sess.span_fatal_with_code(statement.source_info.span, "SetDiscriminant is not supported", DiagnosticId::Error(String::from("creusot")))
+                self.sess.span_fatal_with_code(
+                    statement.source_info.span,
+                    "SetDiscriminant is not supported",
+                    DiagnosticId::Error(String::from("creusot")),
+                )
             }
             // Erase Storage markers and Nops
             StorageDead(_) | StorageLive(_) | Nop => {}
             // Not real instructions
             FakeRead(_, _) | AscribeUserType(_, _) | Retag(_, _) | Coverage(_) => {}
             // No assembly!
-            LlvmInlineAsm(_) => self.sess.span_fatal_with_code(statement.source_info.span, "inline assembly is not supported", DiagnosticId::Error(String::from("creusot"))),
+            LlvmInlineAsm(_) => self.sess.span_fatal_with_code(
+                statement.source_info.span,
+                "inline assembly is not supported",
+                DiagnosticId::Error(String::from("creusot")),
+            ),
         }
     }
 
@@ -42,7 +50,9 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
         let lplace = simplify_place(self.tcx, self.body, place);
         let rval = match rvalue {
             Rvalue::Use(rval) => match rval {
-                Move(pl) | Copy(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
+                Move(pl) | Copy(pl) => {
+                    self.translate_rplace(&simplify_place(self.tcx, self.body, pl))
+                }
                 Constant(box c) => Const(crate::mlcfg::Constant::from_mir_constant(self.tcx, c)),
             },
             Rvalue::Ref(_, ss, pl) => {
@@ -51,15 +61,11 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 match ss {
                     Shared | Shallow | Unique => self.translate_rplace(&rplace),
                     Mut { .. } => {
-
                         self.emit_assignment(
                             &lplace,
                             BorrowMut(box self.translate_rplace(&rplace)),
                         );
-                        self.emit_assignment(
-                            &rplace,
-                            Final(box self.translate_rplace(&lplace)),
-                        );
+                        self.emit_assignment(&rplace, Final(box self.translate_rplace(&lplace)));
                         return;
                     }
                 }
@@ -93,24 +99,33 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                                 self.emit_statement(Invariant(name, Verbatim(invariant)));
                                 return;
                             }
-                            Err(_) =>{
-                                 self.sess.span_fatal_with_code(si.span, "closures are not yet supported", DiagnosticId::Error(String::from("creusot")))
-                            }
+                            Err(_) => self.sess.span_fatal_with_code(
+                                si.span,
+                                "closures are not yet supported",
+                                DiagnosticId::Error(String::from("creusot")),
+                            ),
                         }
                     }
-                    _ => {
-                        self.sess.span_fatal_with_code(si.span, &format!("the rvalue {:?} is not currently supported", kind), DiagnosticId::Error("creusot".into()))
-                    }
+                    _ => self.sess.span_fatal_with_code(
+                        si.span,
+                        &format!("the rvalue {:?} is not currently supported", kind),
+                        DiagnosticId::Error("creusot".into()),
+                    ),
                 }
             }
-
+            | Rvalue::UnaryOp(op, v) => {
+                UnaryOp(*op, box self.translate_operand(v))
+            }
             Rvalue::Cast(_, _, _)
-            | Rvalue::UnaryOp(_, _)
             | Rvalue::NullaryOp(_, _)
             | Rvalue::Repeat(_, _)
             | Rvalue::ThreadLocalRef(_)
             | Rvalue::AddressOf(_, _)
-            | Rvalue::Len(_) => self.sess.span_fatal_with_code(si.span, "MIR code used an unsupported Rvalue", DiagnosticId::Error(String::from("creusot"))),
+            | Rvalue::Len(_) => self.sess.span_fatal_with_code(
+                si.span,
+                &format!("MIR code used an unsupported Rvalue {:?}", rvalue),
+                DiagnosticId::Error(String::from("creusot")),
+            ),
         };
 
         self.emit_assignment(&lplace, rval);
@@ -120,4 +135,3 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
 fn is_invariant_marker(attr: &rustc_ast::AttrItem) -> bool {
     attr.path.segments[2].ident.name.to_string() == "invariant"
 }
-
