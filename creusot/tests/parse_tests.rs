@@ -31,7 +31,7 @@ fn should_succeed(input: &Path, output: &Path){
     cmd.args(&["-o", &format!("{}/{:?}.mlcfg", dir.as_path().to_str().unwrap(), input.file_stem().unwrap())[..]]);
     println!("Running: {:?}", cmd);
     cmd.assert().success();
-    file_diff::diff(dir.as_path().to_str().unwrap(), output.to_str().unwrap());
+    assert!(!file_diff::diff(dir.as_path().to_str().unwrap(), output.to_str().unwrap()));
 }
 
 #[datatest::files("tests/should_fail", {
