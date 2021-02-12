@@ -93,14 +93,11 @@ pub fn check_not_mutally_recursive<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty_id: DefId, 
         for variant in &def.variants {
             for field in &variant.fields {
                 for ty in field.ty(ctx.tcx, substs).walk() {
-                    match ty.expect_ty().kind() {
-                        Adt(def, _) => {
-                            if !graph.contains_node(def.did) {
-                                to_visit.push_back(def.did);
-                            }
-                            graph.add_edge(next, def.did, ());
+                    if let Adt(def, _) =  ty.expect_ty().kind() {
+                        if !graph.contains_node(def.did) {
+                            to_visit.push_back(def.did);
                         }
-                        _ => {}
+                        graph.add_edge(next, def.did, ());
                     }
                 }
             }
@@ -125,7 +122,7 @@ pub fn translate_ty_name(ctx: &mut Ctx<'_, '_>, did: DefId) -> QName {
     super::translate_defid(ctx.tcx, did, Namespace::TypeNS)
 }
 
-fn translate_ty_param<'tcx>(p: Symbol) -> String {
+fn translate_ty_param(p: Symbol) -> String {
     format!("'{}", p.to_string().to_lowercase())
 }
 
@@ -211,7 +208,7 @@ fn drop_pred_decl(ctx: &mut Ctx<'_, '_>, generics: &[String], adt: &AdtDef, did:
             .zip(drop_fields)
             .map(|(arg, field_drop)| field_drop.app_to(arg))
             .fold_first(MlE::conj)
-            .unwrap_or_else(|| MlE::mk_true());
+            .unwrap_or_else(MlE::mk_true);
         branches.push((variant_pattern(ty_name.clone(), variant), drop_variant));
     }
 
@@ -262,7 +259,7 @@ pub fn drop_pred_body<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty: Ty<'tcx>, rec_call_did:
                 .zip(field_names.iter())
                 .map(|(ty, v)| drop_pred_body(ctx, ty, rec_call_did).app_to(v.clone().into()))
                 .fold_first(MlE::conj)
-                .unwrap_or(MlE::mk_true());
+                .unwrap_or_else(MlE::mk_true);
 
             let field_pat = Pattern::TupleP(field_names.into_iter().map(VarP).collect());
 

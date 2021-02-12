@@ -238,11 +238,8 @@ impl<'tcx> MutVisitor<'tcx> for RemoveFalseEdge<'tcx> {
     }
 
     fn visit_terminator(&mut self, terminator: &mut Terminator<'tcx>, _location: Location) {
-        match terminator.kind {
-            rustc_middle::mir::TerminatorKind::FalseEdge { real_target, .. } => {
-                terminator.kind = rustc_middle::mir::TerminatorKind::Goto { target: real_target }
-            }
-            _ => {}
+        if let rustc_middle::mir::TerminatorKind::FalseEdge { real_target, .. } = terminator.kind {
+            terminator.kind = rustc_middle::mir::TerminatorKind::Goto { target: real_target }
         }
     }
 }

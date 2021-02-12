@@ -463,16 +463,12 @@ fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {
         let (invariants, rest) =
             block.statements.clone().into_iter().partition(
                 |stmt| {
-                    if let Invariant(_, _) = stmt {
-                        true
-                    } else {
-                        false
-                    }
+                    matches!(stmt, Invariant(_, _))
                 },
             );
 
         let _ = std::mem::replace(&mut block.statements, rest);
-        if invariants.len() > 0 {
+        if !invariants.is_empty() {
             if let mlcfg::Terminator::Goto(tgt) = &block.terminator {
                 changes.insert(*tgt, invariants);
             } else {

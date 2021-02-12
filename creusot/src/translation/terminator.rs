@@ -77,7 +77,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 if destination.is_none() {
                     // If we have no target block after the call, then we cannot move past it.
                     self.emit_terminator(MlT::Absurd);
-                    return;
+
                 } else {
                     let (loc, bb) = destination.unwrap();
                     self.emit_assignment(&simplify_place(self.tcx, self.body, &loc), call_exp);
@@ -108,7 +108,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
 }
 
 // Try to extract a function defid from an operand
-fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<DefId> {
+fn func_defid(op: &Operand<'_>) -> Option<DefId> {
     let fun_ty = op.constant().unwrap().literal.ty;
     if let ty::TyKind::FnDef(def_id, _) = fun_ty.kind() {
         Some(*def_id)

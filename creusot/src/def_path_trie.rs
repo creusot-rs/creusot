@@ -62,7 +62,7 @@ impl<V> DefPathTrie<V> {
     where
         V: Default,
     {
-        if let None = self.get(key.clone()) {
+        if self.get(key.clone()).is_none() {
             self.insert(key.clone(), V::default());
         }
         self.get_mut(key).unwrap()

@@ -241,7 +241,7 @@ impl QName {
 
 impl From<&rustc_span::Symbol> for QName {
     fn from(nm: &rustc_span::Symbol) -> Self {
-        QName { module: vec![], name: vec![nm.to_string().into()] }
+        QName { module: vec![], name: vec![nm.to_string()] }
     }
 }
 

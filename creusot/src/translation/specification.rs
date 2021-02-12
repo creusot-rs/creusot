@@ -21,9 +21,8 @@ pub fn get_invariant(attrs: &[Attribute]) -> Result<(String, String), InvariantE
     }
     let attr = attrs.remove(0);
 
-    match attr.path.segments[2].ident.name.to_string().as_ref() {
-        "invariant" => return Ok((invariant_name(attr), ts_to_symbol(attr.args.inner_tokens()).unwrap())),
-        _ => {}
+    if let "invariant" = attr.path.segments[2].ident.name.to_string().as_ref() {
+        return Ok((invariant_name(attr), ts_to_symbol(attr.args.inner_tokens()).unwrap()))
     }
     Err(NoInvariant)
 }
@@ -52,7 +51,7 @@ pub fn translate_contract(attrs: &[Attribute], body: &Body) -> (Vec<String>, Vec
     func_contract
 }
 
-pub fn requires_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {
+pub fn requires_to_why(body: &Body<'_>, attr_val: String) -> String {
     let p: Term = syn::parse_str(&attr_val).unwrap();
 
     let subst = body
@@ -72,7 +71,7 @@ pub fn requires_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {
     format!("{}", FormatEnv { scope: &[], indent: 0 }.to(&e))
 }
 
-pub fn invariant_to_why<'tcx>(body: &Body<'tcx>, info: SourceInfo, attr_val: String) -> String {
+pub fn invariant_to_why(body: &Body<'_>, info: SourceInfo, attr_val: String) -> String {
     let p: Term = syn::parse_str(&attr_val).unwrap();
     let mut e = to_exp(&p);
     let fvs = e.fvs();
@@ -84,7 +83,7 @@ pub fn invariant_to_why<'tcx>(body: &Body<'tcx>, info: SourceInfo, attr_val: Str
         .iter()
         .map(|free| {
             let var_info =
-                vars_in_scope.iter().filter(|vdi| free.to_string() == vdi.name.to_ident_string()).next().unwrap();
+                vars_in_scope.iter().find(|vdi| free.to_string() == vdi.name.to_ident_string()).unwrap();
 
             let loc = var_info.place.as_local().unwrap();
             (free.clone(), LocalIdent::Local(loc, Some(var_info.name.to_string())).into())
@@ -95,7 +94,7 @@ pub fn invariant_to_why<'tcx>(body: &Body<'tcx>, info: SourceInfo, attr_val: Str
     format!("{}", FormatEnv { scope: &[], indent: 0 }.to(&e))
 }
 
-pub fn ensures_to_why<'tcx>(body: &Body<'tcx>, attr_val: String) -> String {
+pub fn ensures_to_why(body: &Body<'_>, attr_val: String) -> String {
     requires_to_why(body, attr_val)
 }
 
@@ -180,7 +179,7 @@ fn from_ty(ty: &syn::Type) -> crate::mlcfg::Type {
         syn::Type::Paren(TypeParen { elem, .. }) => from_ty(elem),
         syn::Type::Path(TypePath { path, .. }) => type_path_to_type(path),
         syn::Type::Reference(TypeReference { mutability, elem, .. }) => {
-            if let Some(_) = mutability {
+            if mutability.is_some() {
                 MutableBorrow(box from_ty(elem))
             } else {
                 from_ty(elem)
@@ -243,7 +242,7 @@ fn ts_to_symbol(ts: TokenStream) -> Option<String> {
 
     if let Token(tok) = ts.trees().next().unwrap() {
         if let Literal(lit) = tok.kind {
-            return Some(unescape::unescape(&lit.symbol.as_str())?.to_string());
+            return Some(unescape::unescape(&lit.symbol.as_str())?);
         }
     }
     None
@@ -253,7 +252,7 @@ fn invariant_name(attr: &rustc_ast::AttrItem) -> String {
     attr.path.segments[3].ident.name.to_string()
 }
 
-pub fn spec_attrs<'tcx>(a: Attributes<'tcx>) -> Vec<&AttrItem> {
+pub fn spec_attrs(a: Attributes<'_>) -> Vec<&AttrItem> {
     a.iter().filter(|a| !a.is_doc_comment()).map(|a| a.get_normal_item()).filter(|ai| is_attr(ai, "spec")).collect()
 }
 
