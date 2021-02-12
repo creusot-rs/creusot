@@ -1,0 +1,154 @@
+module Ambient
+  use Ref 
+  use mach.int.Int 
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+
+  type usize = int
+  type isize = int
+
+  (** Generic Type for borrowed values *) 
+  type borrowed 'a = 
+  { current : 'a ; 
+  final : 'a; (* The "future" value when borrow will end *) 
+  } 
+  let function ( *_ ) x = x.current 
+  let function ( ^_ ) x = x.final 
+  val borrow_mut (a : 'a) : borrowed 'a 
+  ensures { *result = a }
+
+  predicate drop_fix (_ : 'a) = true
+  predicate drop_uint (_ : 'a) = true
+  predicate drop_int (_ : 'a) = true
+  predicate drop_float (_ : 'a) = true
+  predicate drop_bool (_ : 'a) = true
+  predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
+  predicate drop_ref (_ : 'a) = true
+
+  let cfg main () : ()
+    =
+  var _0 : ();
+  var _1 : int32;
+  var _2 : bool;
+  var _3 : bool;
+  var _4 : bool;
+  var _5 : ();
+  var _6 : bool;
+  var _7 : ();
+  var _8 : bool;
+  var _9 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _1 <- 1;
+    _2 <- 0 <= _1;
+    switch (_2)
+      | False -> goto BB3
+      | True -> goto BB1
+      | _ -> goto BB1
+      end
+  }
+  BB1 {
+    assume { drop_bool _2 };
+    _3 <- _1 < 10;
+    switch (_3)
+      | False -> goto BB3
+      | True -> goto BB2
+      | _ -> goto BB2
+      end
+  }
+  BB2 {
+    assume { drop_int _1 };
+    assume { drop_bool _3 };
+    goto BB7
+  }
+  BB3 {
+    assume { drop_bool _2 };
+    switch (_1 = 5)
+      | True -> goto BB4
+      | False -> switch (_1 = 6)
+        | True -> goto BB5
+        | False -> goto BB6
+        end
+      end
+  }
+  BB4 {
+    assume { drop_int _1 };
+    goto BB11
+  }
+  BB5 {
+    assume { drop_int _1 };
+    goto BB11
+  }
+  BB6 {
+    assume { drop_int _1 };
+    _8 <- not false;
+    switch (_8)
+      | False -> goto BB16
+      | True -> goto BB15
+      | _ -> goto BB15
+      end
+  }
+  BB7 {
+    _4 <- not true;
+    switch (_4)
+      | False -> goto BB9
+      | True -> goto BB8
+      | _ -> goto BB8
+      end
+  }
+  BB8 {
+    assume { drop_bool _4 };
+    goto BB10
+  }
+  BB9 {
+    assume { drop_bool _4 };
+    _0 <- ();
+    goto BB18
+  }
+  BB10 {
+    absurd
+  }
+  BB11 {
+    _6 <- not false;
+    switch (_6)
+      | False -> goto BB13
+      | True -> goto BB12
+      | _ -> goto BB12
+      end
+  }
+  BB12 {
+    assume { drop_bool _6 };
+    goto BB14
+  }
+  BB13 {
+    assume { drop_bool _6 };
+    _0 <- ();
+    goto BB18
+  }
+  BB14 {
+    absurd
+  }
+  BB15 {
+    assume { drop_bool _8 };
+    goto BB17
+  }
+  BB16 {
+    assume { drop_bool _8 };
+    _0 <- ();
+    goto BB18
+  }
+  BB17 {
+    absurd
+  }
+  BB18 {
+    return _0
+  }
+
+end

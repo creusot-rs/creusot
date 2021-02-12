@@ -396,7 +396,6 @@ impl EnvDisplay for Exp {
 
 impl EnvDisplay for Statement {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fe.indent_line(f)?;
         match self {
             Statement::Assign { lhs, rhs } => {
                 write!(f, "{} <- {}", lhs, parens!(fe, Precedence::Assign, rhs))?;
@@ -415,8 +414,6 @@ impl EnvDisplay for Statement {
 impl EnvDisplay for Terminator {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Terminator::*;
-        fe.indent_line(f)?;
-
         match self {
             Goto(tgt) => {
                 writeln!(f, "goto {}", tgt)?;
@@ -432,7 +429,7 @@ impl EnvDisplay for Terminator {
                 fe.indent(2, |fe| {
                     for (pat, tgt) in brs {
                         fe.indent_line(f)?;
-                        writeln!(f, "| {} -> goto {}", pat, tgt)?;
+                        write!(f, "| {} -> {}", pat, fe.to(tgt))?;
                     }
                     fe.indent_line(f)?;
                     writeln!(f, "end")
@@ -483,9 +480,11 @@ impl EnvDisplay for Block {
 
         fe.indent(2, |fe| {
             for stmt in &self.statements {
+                fe.indent_line(f)?;
                 writeln!(f, "{};", fe.to(stmt))?;
             }
 
+            fe.indent_line(f)?;
             self.terminator.fmt(fe, f)
         })?;
 
@@ -517,7 +516,13 @@ fn bin_op_to_string(op: &FullBinOp) -> &str {
 
 impl Display for Constant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        match self {
+            Constant::Other(o)   => { write!(f, "{}", o) }
+            Constant::Int(i)     => { write!(f, "{}", i) }
+            Constant::Uint(u)    => { write!(f, "{}", u) }
+            Constant::Float(flt) => { write!(f, "{}", flt) }
+        }
+
     }
 }
 

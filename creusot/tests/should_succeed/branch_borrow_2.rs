@@ -18,5 +18,5 @@ fn main () {
 
   * w = 5;
 
-  assert!(a == 5);
+  assert!(c == 5);
 }

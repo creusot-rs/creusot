@@ -3,7 +3,7 @@
 #![feature(command_access)]
 
 use assert_cmd::prelude::*;
-use std::env;
+use std::{env, fs::File};
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
@@ -27,11 +27,12 @@ fn should_succeed(input: &Path, output: &Path){
     cmd.arg(format!("{}", input.display()));
 
     let dir = Temp::new_dir().unwrap();
+    let result_file = format!("{}/{:?}.mlcfg", dir.as_path().to_str().unwrap(), input.file_stem().unwrap());
+    cmd.args(&["-o", &result_file]);
 
-    cmd.args(&["-o", &format!("{}/{:?}.mlcfg", dir.as_path().to_str().unwrap(), input.file_stem().unwrap())[..]]);
     println!("Running: {:?}", cmd);
     cmd.assert().success();
-    assert!(!file_diff::diff(dir.as_path().to_str().unwrap(), output.to_str().unwrap()));
+    assert!(!file_diff::diff_files(&mut File::open(result_file).unwrap(), &mut File::open(output).unwrap()));
 }
 
 #[datatest::files("tests/should_fail", {

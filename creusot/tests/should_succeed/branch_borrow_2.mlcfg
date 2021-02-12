@@ -1,0 +1,148 @@
+module Ambient
+  use Ref 
+  use mach.int.Int 
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+
+  type usize = int
+  type isize = int
+
+  (** Generic Type for borrowed values *) 
+  type borrowed 'a = 
+  { current : 'a ; 
+  final : 'a; (* The "future" value when borrow will end *) 
+  } 
+  let function ( *_ ) x = x.current 
+  let function ( ^_ ) x = x.final 
+  val borrow_mut (a : 'a) : borrowed 'a 
+  ensures { *result = a }
+
+  predicate drop_fix (_ : 'a) = true
+  predicate drop_uint (_ : 'a) = true
+  predicate drop_int (_ : 'a) = true
+  predicate drop_float (_ : 'a) = true
+  predicate drop_bool (_ : 'a) = true
+  predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
+  predicate drop_ref (_ : 'a) = true
+
+  let cfg main () : ()
+    =
+  var _0 : ();
+  var a_1 : int32;
+  var b_2 : int32;
+  var c_3 : int32;
+  var x_4 : borrowed int32;
+  var y_5 : borrowed int32;
+  var z_6 : borrowed int32;
+  var w_7 : borrowed int32;
+  var _8 : ();
+  var _9 : int32;
+  var _10 : borrowed int32;
+  var _11 : borrowed int32;
+  var _12 : borrowed int32;
+  var _13 : ();
+  var _14 : bool;
+  var _15 : bool;
+  var _16 : int32;
+  var _17 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    a_1 <- 10;
+    b_2 <- 10;
+    c_3 <- 10;
+    x_4 <- borrow_mut a_1;
+    a_1 <-  ^ x_4;
+    assume { drop_int a_1 };
+    y_5 <- borrow_mut b_2;
+    b_2 <-  ^ y_5;
+    assume { drop_int b_2 };
+    z_6 <- borrow_mut c_3;
+    c_3 <-  ^ z_6;
+    _9 <- 3;
+    switch (_9 = 1)
+      | True -> goto BB1
+      | False -> switch (_9 = 2)
+        | True -> goto BB2
+        | False -> goto BB3
+        end
+      end
+  }
+  BB1 {
+    assume { drop_mut_ref y_5 };
+    assume { drop_mut_ref z_6 };
+    assume { drop_int _9 };
+    goto BB4
+  }
+  BB2 {
+    assume { drop_mut_ref x_4 };
+    assume { drop_mut_ref z_6 };
+    assume { drop_int _9 };
+    goto BB5
+  }
+  BB3 {
+    assume { drop_mut_ref x_4 };
+    assume { drop_mut_ref y_5 };
+    assume { drop_int _9 };
+    z_6 <- { z_6 with current = 8 };
+    _12 <- borrow_mut ( * z_6);
+    z_6 <- { z_6 with current = ( ^ _12) };
+    assume { drop_mut_ref z_6 };
+    w_7 <- _12;
+    _8 <- ();
+    assume { (fun tup -> let () = tup in True) _8 };
+    goto BB6
+  }
+  BB4 {
+    x_4 <- { x_4 with current = 6 };
+    _10 <- x_4;
+    w_7 <- _10;
+    _8 <- ();
+    assume { (fun tup -> let () = tup in True) _8 };
+    goto BB6
+  }
+  BB5 {
+    y_5 <- { y_5 with current = 7 };
+    _11 <- borrow_mut ( * y_5);
+    y_5 <- { y_5 with current = ( ^ _11) };
+    assume { drop_mut_ref y_5 };
+    w_7 <- _11;
+    _8 <- ();
+    assume { (fun tup -> let () = tup in True) _8 };
+    goto BB6
+  }
+  BB6 {
+    w_7 <- { w_7 with current = 5 };
+    assume { drop_mut_ref w_7 };
+    _16 <- c_3;
+    assume { drop_int c_3 };
+    _15 <- _16 = 5;
+    _14 <- not _15;
+    switch (_14)
+      | False -> goto BB8
+      | True -> goto BB7
+      | _ -> goto BB7
+      end
+  }
+  BB7 {
+    assume { drop_bool _14 };
+    goto BB9
+  }
+  BB8 {
+    assume { drop_bool _14 };
+    _13 <- ();
+    assume { (fun tup -> let () = tup in True) _13 };
+    _0 <- ();
+    return _0
+  }
+  BB9 {
+    absurd
+  }
+
+end

@@ -145,11 +145,11 @@ fn to_exp(p: &Term) -> crate::mlcfg::Exp {
         // Group(_) => {}
         // If(_) => {}
         Lit(TermLit { lit }) => match lit {
-            syn::Lit::Int(lit) => Const(crate::mlcfg::Constant(lit.base10_digits().to_owned(), ())),
+            syn::Lit::Int(lit) => Const(crate::mlcfg::Constant::Other(lit.base10_digits().to_owned())),
             syn::Lit::Float(lit) => {
-                Const(crate::mlcfg::Constant(lit.base10_digits().to_owned(), ()))
+                Const(crate::mlcfg::Constant::Other(lit.base10_digits().to_owned()))
             }
-            syn::Lit::Bool(lit) => Const(crate::mlcfg::Constant(format!("{}", lit.value), ())),
+            syn::Lit::Bool(lit) => Const(crate::mlcfg::Constant::Other(format!("{}", lit.value))),
             _ => unimplemented!(),
         },
         Unary(TermUnary { op, expr }) => {

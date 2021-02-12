@@ -74,7 +74,7 @@ pub enum Terminator {
     Goto(BlockId),
     Absurd,
     Return,
-    Switch(Exp, Vec<(Pattern, BlockId)>),
+    Switch(Exp, Vec<(Pattern, Terminator)>),
 }
 
 #[derive(Debug, Clone)]
@@ -423,25 +423,27 @@ impl Exp {
 
 }
 
-type ConstantType = ();
-
 #[derive(Debug, Clone)]
-pub struct Constant(pub String, pub ConstantType);
-
+pub enum Constant {
+    Int(i128),
+    Uint(u128),
+    Float(f64),
+    Other(String),
+}
 impl Constant {
     pub fn from_mir_constant<'tcx>(tcx: TyCtxt<'tcx>, c: &mir::Constant<'tcx>) -> Self {
         let mut fmt = String::new();
         let cx = FmtPrinter::new(tcx, &mut fmt, Namespace::ValueNS);
         cx.pretty_print_const(c.literal, false).unwrap();
 
-        Constant(fmt, ())
+        Constant::Other(fmt)
     }
 
     pub fn const_true() -> Self {
-        Constant("True".to_owned(), ())
+        Constant::Other("True".to_owned())
     }
     pub fn const_false() -> Self {
-        Constant("False".to_owned(), ())
+        Constant::Other("False".to_owned())
     }
 }
 
