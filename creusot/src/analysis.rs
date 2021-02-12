@@ -16,30 +16,35 @@ impl NeverLive {
 }
 
 impl<'tcx> Visitor<'tcx> for NeverLive {
-    fn visit_place(&mut self, place: &mir::Place< 'tcx>, context: PlaceContext, location: Location) {
+    fn visit_place(&mut self, place: &mir::Place<'tcx>, context: PlaceContext, location: Location) {
         let mir::Place { projection, local } = *place;
 
         self.visit_projection(local, projection, context, location);
 
         match DefUse::for_place(context) {
             // Treat derefs as a use of the base local. `*p = 4` is not a def of `p` but a use.
-            Some(_) if place.is_indirect() => {self.0.remove(local);},
+            Some(_) if place.is_indirect() => {
+                self.0.remove(local);
+            }
 
-            Some(DefUse::Def) if projection.is_empty() => {},
-            Some(DefUse::Use) => {self.0.remove(local); },
+            Some(DefUse::Def) if projection.is_empty() => {}
+            Some(DefUse::Use) => {
+                self.0.remove(local);
+            }
             _ => {}
         }
     }
 
-    fn visit_local(&mut self, &local: &Local, context:PlaceContext, _location:Location) {
+    fn visit_local(&mut self, &local: &Local, context: PlaceContext, _location: Location) {
         match DefUse::for_place(context) {
-            Some(DefUse::Def) => {},
-            Some(DefUse::Use) => {self.0.remove(local);}
+            Some(DefUse::Def) => {}
+            Some(DefUse::Use) => {
+                self.0.remove(local);
+            }
             _ => {}
         }
     }
 }
-
 
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this

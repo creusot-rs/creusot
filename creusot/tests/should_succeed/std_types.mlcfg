@@ -1,6 +1,6 @@
 module Ambient
-  use Ref 
-  use mach.int.Int 
+  use Ref
+  use mach.int.Int
   use mach.int.Int32
   use mach.int.Int64
   use mach.int.UInt32
@@ -12,14 +12,10 @@ module Ambient
   type usize = int
   type isize = int
 
-  (** Generic Type for borrowed values *) 
-  type borrowed 'a = 
-  { current : 'a ; 
-  final : 'a; (* The "future" value when borrow will end *) 
-  } 
-  let function ( *_ ) x = x.current 
-  let function ( ^_ ) x = x.final 
-  val borrow_mut (a : 'a) : borrowed 'a 
+  type borrowed 'a = { current : 'a ; final : 'a; }
+  let function ( *_ ) x = x.current
+  let function ( ^_ ) x = x.final
+  val borrow_mut (a : 'a) : borrowed 'a
   ensures { *result = a }
 
   predicate drop_fix (_ : 'a) = true
@@ -30,24 +26,24 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
-  scope Option
-    type option 't =
-        | None
-        | Some('t)
+  scope Type
+  type option_option 't =
+      | Option_option_None
+      | Option_option_Some('t)
 
-    predicate drop_option (drop_'t : 't -> bool) (self : option 't) =
-      match (self) with
-        | None -> True
-        | Some(a) -> drop_'t a
-        end
+  predicate drop_option_option (drop_'t : 't -> bool) (self : option_option 't) =
+    match (self) with
+      | Option_option_None -> True
+      | Option_option_Some(a) -> drop_'t a
+      end
 
+  type mytype  =
+      | Mytype_MyType(option_option uint32)
+
+  predicate drop_mytype (self : mytype) =
+    let Mytype_MyType(a) = self in drop_option_option drop_uint a
   end
-  type myType  =
-      | MyType(Option.option uint32)
-
-  predicate drop_myType (self : myType) =
-    let MyType(a) = self in Option.drop_option drop_uint a
-  let cfg main () : ()
+  let rec cfg main () : ()
     =
   var _0 : ();
   {
@@ -57,5 +53,6 @@ module Ambient
     _0 <- ();
     return _0
   }
+
 
 end

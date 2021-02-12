@@ -1,6 +1,6 @@
 module Ambient
-  use Ref 
-  use mach.int.Int 
+  use Ref
+  use mach.int.Int
   use mach.int.Int32
   use mach.int.Int64
   use mach.int.UInt32
@@ -12,14 +12,10 @@ module Ambient
   type usize = int
   type isize = int
 
-  (** Generic Type for borrowed values *) 
-  type borrowed 'a = 
-  { current : 'a ; 
-  final : 'a; (* The "future" value when borrow will end *) 
-  } 
-  let function ( *_ ) x = x.current 
-  let function ( ^_ ) x = x.final 
-  val borrow_mut (a : 'a) : borrowed 'a 
+  type borrowed 'a = { current : 'a ; final : 'a; }
+  let function ( *_ ) x = x.current
+  let function ( ^_ ) x = x.final
+  val borrow_mut (a : 'a) : borrowed 'a
   ensures { *result = a }
 
   predicate drop_fix (_ : 'a) = true
@@ -30,12 +26,14 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
-  type myInt  =
-      | MyInt(usize)
+  scope Type
+  type myint  =
+      | Myint_MyInt(usize)
 
-  predicate drop_myInt (self : myInt) =
-    let MyInt(a) = self in drop_uint a
-  let cfg z () : bool
+  predicate drop_myint (self : myint) =
+    let Myint_MyInt(a) = self in drop_uint a
+  end
+  let rec cfg z () : bool
     =
   var _0 : bool;
   {
@@ -46,28 +44,29 @@ module Ambient
     return _0
   }
 
-  let cfg main () : ()
+
+  let rec cfg main () : ()
     =
   var _0 : ();
-  var x_1 : (myInt, myInt);
-  var _2 : myInt;
-  var _3 : myInt;
-  var y_4 : borrowed (myInt, myInt);
+  var x_1 : (Type.myint, Type.myint);
+  var _2 : Type.myint;
+  var _3 : Type.myint;
+  var y_4 : borrowed (Type.myint, Type.myint);
   var _5 : ();
   var _6 : bool;
-  var _7 : myInt;
-  var _8 : myInt;
+  var _7 : Type.myint;
+  var _8 : Type.myint;
   var _9 : usize;
   {
     goto BB0
   }
   BB0 {
-    _2 <- MyInt(1);
-    _3 <- MyInt(2);
+    _2 <- Type.Myint_MyInt(1);
+    _3 <- Type.Myint_MyInt(2);
     x_1 <- (_2, _3);
     y_4 <- borrow_mut x_1;
     x_1 <-  ^ y_4;
-    assume { (fun tup -> let (a, b) = tup in drop_myInt a && drop_myInt b) x_1 };
+    assume { (fun tup -> let (a, b) = tup in Type.drop_myint a && Type.drop_myint b) x_1 };
     _6 <- z ();
     goto BB1
   }
@@ -84,27 +83,28 @@ module Ambient
   }
   BB3 {
     assume { drop_bool _6 };
-    _8 <- MyInt(10);
+    _8 <- Type.Myint_MyInt(10);
     y_4 <- { y_4 with current = (let (a, b) =  * y_4 in (_8, b)) };
-    assume { drop_myInt _8 };
+    assume { Type.drop_myint _8 };
     _5 <- ();
     assume { (fun tup -> let () = tup in True) _5 };
     goto BB5
   }
   BB4 {
-    _7 <- MyInt(4);
+    _7 <- Type.Myint_MyInt(4);
     y_4 <- { y_4 with current = (let (a, b) =  * y_4 in (a, _7)) };
-    assume { drop_myInt _7 };
+    assume { Type.drop_myint _7 };
     _5 <- ();
     assume { (fun tup -> let () = tup in True) _5 };
     goto BB5
   }
   BB5 {
-    _9 <- (let MyInt(a) = let (a, _) =  * y_4 in a in a);
+    _9 <- (let Type.Myint_MyInt(a) = let (a, _) =  * y_4 in a in a);
     assume { drop_mut_ref y_4 };
     assume { drop_uint _9 };
     _0 <- ();
     return _0
   }
+
 
 end

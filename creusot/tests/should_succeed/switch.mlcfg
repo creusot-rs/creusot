@@ -1,6 +1,6 @@
 module Ambient
-  use Ref 
-  use mach.int.Int 
+  use Ref
+  use mach.int.Int
   use mach.int.Int32
   use mach.int.Int64
   use mach.int.UInt32
@@ -12,14 +12,10 @@ module Ambient
   type usize = int
   type isize = int
 
-  (** Generic Type for borrowed values *) 
-  type borrowed 'a = 
-  { current : 'a ; 
-  final : 'a; (* The "future" value when borrow will end *) 
-  } 
-  let function ( *_ ) x = x.current 
-  let function ( ^_ ) x = x.final 
-  val borrow_mut (a : 'a) : borrowed 'a 
+  type borrowed 'a = { current : 'a ; final : 'a; }
+  let function ( *_ ) x = x.current
+  let function ( ^_ ) x = x.final
+  val borrow_mut (a : 'a) : borrowed 'a
   ensures { *result = a }
 
   predicate drop_fix (_ : 'a) = true
@@ -30,20 +26,22 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
+  scope Type
   type option 't =
-      | Some('t)
-      | None
+      | Option_Some('t)
+      | Option_None
 
   predicate drop_option (drop_'t : 't -> bool) (self : option 't) =
     match (self) with
-      | Some(a) -> drop_'t a
-      | None -> True
+      | Option_Some(a) -> drop_'t a
+      | Option_None -> True
       end
 
-  let cfg test (o_o_1 : option uint32) : bool
+  end
+  let rec cfg test (o_o_1 : Type.option uint32) : bool
     =
   var _0 : bool;
-  var o_1 : option uint32;
+  var o_1 : Type.option uint32;
   var _2 : isize;
   var x_3 : uint32;
   var _4 : uint32;
@@ -53,8 +51,8 @@ module Ambient
   }
   BB0 {
     switch (o_1)
-      | Some(_) -> goto BB1
-      | None -> goto BB2
+      | Type.Option_Some(_) -> goto BB1
+      | Type.Option_None -> goto BB2
       | _ -> goto BB3
       end
   }
@@ -63,19 +61,19 @@ module Ambient
     goto BB4
   }
   BB2 {
-    assume { drop_option drop_uint o_1 };
+    assume { Type.drop_option drop_uint o_1 };
     assume { drop_int _2 };
     _0 <- false;
     goto BB5
   }
   BB3 {
-    assume { drop_option drop_uint o_1 };
+    assume { Type.drop_option drop_uint o_1 };
     assume { drop_int _2 };
     absurd
   }
   BB4 {
-    x_3 <- (let Some(a) = o_1 in a);
-    assume { drop_option drop_uint o_1 };
+    x_3 <- (let Type.Option_Some(a) = o_1 in a);
+    assume { Type.drop_option drop_uint o_1 };
     _4 <- x_3;
     assume { drop_uint x_3 };
     _0 <- _4 > 0;
@@ -85,10 +83,11 @@ module Ambient
     return _0
   }
 
-  let cfg test2 (o_o_1 : (option uint32, uint32)) : uint32
+
+  let rec cfg test2 (o_o_1 : (Type.option uint32, uint32)) : uint32
     =
   var _0 : uint32;
-  var o_1 : (option uint32, uint32);
+  var o_1 : (Type.option uint32, uint32);
   var _2 : isize;
   var x_3 : uint32;
   {
@@ -97,8 +96,8 @@ module Ambient
   }
   BB0 {
     switch (let (a, _) = o_1 in a)
-      | Some(_) -> goto BB1
-      | None -> goto BB2
+      | Type.Option_Some(_) -> goto BB1
+      | Type.Option_None -> goto BB2
       | _ -> goto BB3
       end
   }
@@ -109,17 +108,17 @@ module Ambient
   BB2 {
     assume { drop_int _2 };
     _0 <- (let (_, a) = o_1 in a);
-    assume { (fun tup -> let (a, b) = tup in drop_option drop_uint a && drop_uint b) o_1 };
+    assume { (fun tup -> let (a, b) = tup in Type.drop_option drop_uint a && drop_uint b) o_1 };
     goto BB5
   }
   BB3 {
-    assume { (fun tup -> let (a, b) = tup in drop_option drop_uint a && drop_uint b) o_1 };
+    assume { (fun tup -> let (a, b) = tup in Type.drop_option drop_uint a && drop_uint b) o_1 };
     assume { drop_int _2 };
     absurd
   }
   BB4 {
-    x_3 <- (let Some(a) = let (a, _) = o_1 in a in a);
-    assume { (fun tup -> let (a, b) = tup in drop_option drop_uint a && drop_uint b) o_1 };
+    x_3 <- (let Type.Option_Some(a) = let (a, _) = o_1 in a in a);
+    assume { (fun tup -> let (a, b) = tup in Type.drop_option drop_uint a && drop_uint b) o_1 };
     _0 <- x_3;
     assume { drop_uint x_3 };
     goto BB5
@@ -128,7 +127,8 @@ module Ambient
     return _0
   }
 
-  let cfg main () : ()
+
+  let rec cfg main () : ()
     =
   var _0 : ();
   {
@@ -138,5 +138,6 @@ module Ambient
     _0 <- ();
     return _0
   }
+
 
 end

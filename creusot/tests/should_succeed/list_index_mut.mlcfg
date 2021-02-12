@@ -1,6 +1,6 @@
 module Ambient
-  use Ref 
-  use mach.int.Int 
+  use Ref
+  use mach.int.Int
   use mach.int.Int32
   use mach.int.Int64
   use mach.int.UInt32
@@ -12,14 +12,10 @@ module Ambient
   type usize = int
   type isize = int
 
-  (** Generic Type for borrowed values *) 
-  type borrowed 'a = 
-  { current : 'a ; 
-  final : 'a; (* The "future" value when borrow will end *) 
-  } 
-  let function ( *_ ) x = x.current 
-  let function ( ^_ ) x = x.final 
-  val borrow_mut (a : 'a) : borrowed 'a 
+  type borrowed 'a = { current : 'a ; final : 'a; }
+  let function ( *_ ) x = x.current
+  let function ( ^_ ) x = x.final
+  val borrow_mut (a : 'a) : borrowed 'a
   ensures { *result = a }
 
   predicate drop_fix (_ : 'a) = true
@@ -30,25 +26,27 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
+  scope Type
   type option 't =
-      | None
-      | Some('t)
-
-  type list  =
-      | List(uint32, option (list))
+      | Option_None
+      | Option_Some('t)
 
   predicate drop_option (drop_'t : 't -> bool) (self : option 't) =
     match (self) with
-      | None -> True
-      | Some(a) -> drop_'t a
+      | Option_None -> True
+      | Option_Some(a) -> drop_'t a
       end
 
+  type list  =
+      | List_List(uint32, option (list))
+
   predicate drop_list (self : list) =
-    let List(a, b) = self in drop_uint a && drop_option drop_fix b
-  let cfg indexMut (o_l_1 : borrowed (list))(o_ix_2 : usize) : borrowed uint32
+    let List_List(a, b) = self in drop_uint a && drop_option drop_fix b
+  end
+  let rec cfg indexMut (o_l_1 : borrowed (Type.list))(o_ix_2 : usize) : borrowed uint32
     =
   var _0 : borrowed uint32;
-  var l_1 : borrowed (list);
+  var l_1 : borrowed (Type.list);
   var ix_2 : usize;
   var _3 : borrowed uint32;
   var _4 : ();
@@ -57,8 +55,8 @@ module Ambient
   var _7 : usize;
   var _8 : ();
   var _9 : isize;
-  var n_10 : borrowed (list);
-  var _11 : borrowed (list);
+  var n_10 : borrowed (Type.list);
+  var _11 : borrowed (Type.list);
   var _12 : ();
   var _13 : ();
   var _14 : borrowed uint32;
@@ -92,8 +90,8 @@ module Ambient
     assume { drop_bool _6 };
     _4 <- ();
     assume { (fun tup -> let () = tup in True) _4 };
-    _14 <- borrow_mut (let List(a, _) =  * l_1 in a);
-    l_1 <- { l_1 with current = (let List(a, b) =  * l_1 in List( ^ _14, b)) };
+    _14 <- borrow_mut (let Type.List_List(a, _) =  * l_1 in a);
+    l_1 <- { l_1 with current = (let Type.List_List(a, b) =  * l_1 in Type.List_List( ^ _14, b)) };
     assume { drop_mut_ref l_1 };
     _3 <- borrow_mut ( * _14);
     _14 <- { _14 with current = ( ^ _3) };
@@ -104,9 +102,9 @@ module Ambient
     return _0
   }
   BB5 {
-    switch (let List(_, a) =  * l_1 in a)
-      | None -> goto BB6
-      | Some(_) -> goto BB7
+    switch (let Type.List_List(_, a) =  * l_1 in a)
+      | Type.Option_None -> goto BB6
+      | Type.Option_Some(_) -> goto BB7
       | _ -> goto BB8
       end
   }
@@ -127,8 +125,8 @@ module Ambient
     absurd
   }
   BB9 {
-    n_10 <- borrow_mut (let Some(a) = let List(_, a) =  * l_1 in a in a);
-    l_1 <- { l_1 with current = (let List(a, b) =  * l_1 in List(a, let Some(a) = let List(_, a) =  * l_1 in a in Some( ^ n_10))) };
+    n_10 <- borrow_mut (let Type.Option_Some(a) = let Type.List_List(_, a) =  * l_1 in a in a);
+    l_1 <- { l_1 with current = (let Type.List_List(a, b) =  * l_1 in Type.List_List(a, let Type.Option_Some(a) = let Type.List_List(_, a) =  * l_1 in a in Type.Option_Some( ^ n_10))) };
     assume { drop_mut_ref l_1 };
     _11 <- borrow_mut ( * n_10);
     n_10 <- { n_10 with current = ( ^ _11) };
@@ -141,15 +139,16 @@ module Ambient
     goto BB1
   }
 
-  let cfg write (o_l_1 : borrowed (list))(o_ix_2 : usize)(o_val_3 : uint32) : ()
+
+  let rec cfg write (o_l_1 : borrowed (Type.list))(o_ix_2 : usize)(o_val_3 : uint32) : ()
     =
   var _0 : ();
-  var l_1 : borrowed (list);
+  var l_1 : borrowed (Type.list);
   var ix_2 : usize;
   var val_3 : uint32;
   var _4 : uint32;
   var _5 : borrowed uint32;
-  var _6 : borrowed (list);
+  var _6 : borrowed (Type.list);
   var _7 : usize;
   {
     l_1 <- o_l_1;
@@ -176,41 +175,42 @@ module Ambient
     return _0
   }
 
-  let cfg main () : ()
+
+  let rec cfg main () : ()
     =
   var _0 : ();
-  var l_1 : list;
-  var _2 : option (list);
-  var _3 : list;
-  var _4 : list;
-  var _5 : option (list);
+  var l_1 : Type.list;
+  var _2 : Type.option (Type.list);
+  var _3 : Type.list;
+  var _4 : Type.list;
+  var _5 : Type.option (Type.list);
   var _6 : ();
-  var _7 : borrowed (list);
-  var _8 : borrowed (list);
+  var _7 : borrowed (Type.list);
+  var _8 : borrowed (Type.list);
   {
     goto BB0
   }
   BB0 {
-    _5 <- None;
-    _4 <- List(10, _5);
+    _5 <- Type.Option_None;
+    _4 <- Type.List_List(10, _5);
     goto BB1
   }
   BB1 {
-    assume { drop_option drop_list  _5 };
+    assume { Type.drop_option Type.drop_list  _5 };
     _3 <- _4;
     goto BB2
   }
   BB2 {
-    _2 <- Some(_3);
+    _2 <- Type.Option_Some(_3);
     goto BB3
   }
   BB3 {
-    assume { drop_list _3 };
-    l_1 <- List(1, _2);
+    assume { Type.drop_list _3 };
+    l_1 <- Type.List_List(1, _2);
     goto BB4
   }
   BB4 {
-    assume { drop_option drop_list  _2 };
+    assume { Type.drop_option Type.drop_list  _2 };
     _8 <- borrow_mut l_1;
     l_1 <-  ^ _8;
     _7 <- borrow_mut ( * _8);
@@ -225,8 +225,9 @@ module Ambient
     goto BB6
   }
   BB6 {
-    assume { drop_list l_1 };
+    assume { Type.drop_list l_1 };
     return _0
   }
+
 
 end

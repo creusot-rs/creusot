@@ -1,9 +1,9 @@
-use rustc_hir::def::CtorKind;
+use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{Body, Local, Place, *},
     ty::TyCtxt,
 };
-use rustc_span::{symbol::Ident, Symbol};
+use rustc_target::abi::VariantIdx;
 
 // This representation is not strictly needed, but I find that it still splits up the
 // work between the translation to MLCfg and MIR nicely.
@@ -12,7 +12,7 @@ pub use rustc_hir::Mutability;
 #[derive(Clone, Debug)]
 pub enum Projection {
     Deref(Mutability),
-    FieldAccess { ctor: Symbol, ix: usize, size: usize, field: Ident, kind: CtorKind },
+    FieldAccess { base_ty: DefId, ctor: VariantIdx, ix: usize },
     TupleAccess { size: usize, ix: usize },
     // Down { ctor: Symbol },
 }
@@ -36,18 +36,9 @@ pub fn simplify_place<'tcx>(tcx: TyCtxt<'tcx>, decls: &Body<'tcx>, place: &Place
             }
             ProjectionElem::Field(ix, _) => match place_ty.ty.kind() {
                 rustc_middle::ty::TyKind::Adt(def, _) => {
-                    use rustc_target::abi::VariantIdx;
-                    let variant = &def.variants
-                        [place_ty.variant_index.unwrap_or_else(|| VariantIdx::from_usize(0))];
-                    let field = variant.fields[ix.as_usize()].ident;
+                    let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
 
-                    res_proj.push(FieldAccess {
-                        ctor: variant.ident.name,
-                        ix: ix.as_usize(),
-                        size: variant.fields.len(),
-                        field,
-                        kind: variant.ctor_kind,
-                    });
+                    res_proj.push(FieldAccess { base_ty: def.did, ctor: variant_id, ix: ix.as_usize() });
                 }
                 rustc_middle::ty::TyKind::Tuple(fields) => {
                     res_proj.push(TupleAccess { size: fields.len(), ix: ix.as_usize() })

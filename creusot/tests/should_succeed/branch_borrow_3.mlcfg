@@ -1,6 +1,6 @@
 module Ambient
-  use Ref 
-  use mach.int.Int 
+  use Ref
+  use mach.int.Int
   use mach.int.Int32
   use mach.int.Int64
   use mach.int.UInt32
@@ -12,14 +12,10 @@ module Ambient
   type usize = int
   type isize = int
 
-  (** Generic Type for borrowed values *) 
-  type borrowed 'a = 
-  { current : 'a ; 
-  final : 'a; (* The "future" value when borrow will end *) 
-  } 
-  let function ( *_ ) x = x.current 
-  let function ( ^_ ) x = x.final 
-  val borrow_mut (a : 'a) : borrowed 'a 
+  type borrowed 'a = { current : 'a ; final : 'a; }
+  let function ( *_ ) x = x.current
+  let function ( ^_ ) x = x.final
+  val borrow_mut (a : 'a) : borrowed 'a
   ensures { *result = a }
 
   predicate drop_fix (_ : 'a) = true
@@ -30,20 +26,22 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
-  type myInt  =
-      | MyInt(usize)
+  scope Type
+  type myint  =
+      | Myint_MyInt(usize)
 
-  predicate drop_myInt (self : myInt) =
-    let MyInt(a) = self in drop_uint a
-  let cfg main () : ()
+  predicate drop_myint (self : myint) =
+    let Myint_MyInt(a) = self in drop_uint a
+  end
+  let rec cfg main () : ()
     =
   var _0 : ();
-  var a_1 : (myInt, myInt);
-  var _2 : myInt;
-  var _3 : myInt;
-  var b_4 : borrowed (myInt, myInt);
-  var c_5 : borrowed (myInt);
-  var d_6 : borrowed (myInt);
+  var a_1 : (Type.myint, Type.myint);
+  var _2 : Type.myint;
+  var _3 : Type.myint;
+  var b_4 : borrowed (Type.myint, Type.myint);
+  var c_5 : borrowed (Type.myint);
+  var d_6 : borrowed (Type.myint);
   var _7 : bool;
   var _8 : usize;
   var _9 : usize;
@@ -51,25 +49,26 @@ module Ambient
     goto BB0
   }
   BB0 {
-    _2 <- MyInt(10);
-    _3 <- MyInt(5);
+    _2 <- Type.Myint_MyInt(10);
+    _3 <- Type.Myint_MyInt(5);
     a_1 <- (_2, _3);
     b_4 <- borrow_mut a_1;
     a_1 <-  ^ b_4;
-    assume { (fun tup -> let (a, b) = tup in drop_myInt a && drop_myInt b) a_1 };
+    assume { (fun tup -> let (a, b) = tup in Type.drop_myint a && Type.drop_myint b) a_1 };
     c_5 <- borrow_mut (let (_, a) =  * b_4 in a);
     b_4 <- { b_4 with current = (let (a, b) =  * b_4 in (a,  ^ c_5)) };
     d_6 <- borrow_mut (let (a, _) =  * b_4 in a);
     b_4 <- { b_4 with current = (let (a, b) =  * b_4 in ( ^ d_6, b)) };
     assume { drop_mut_ref b_4 };
-    _8 <- (let MyInt(a) =  * c_5 in a);
+    _8 <- (let Type.Myint_MyInt(a) =  * c_5 in a);
     assume { drop_mut_ref c_5 };
-    _9 <- (let MyInt(a) =  * d_6 in a);
+    _9 <- (let Type.Myint_MyInt(a) =  * d_6 in a);
     assume { drop_mut_ref d_6 };
     _7 <- _8 <> _9;
     assume { drop_bool _7 };
     _0 <- ();
     return _0
   }
+
 
 end

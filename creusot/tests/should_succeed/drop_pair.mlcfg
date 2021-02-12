@@ -1,6 +1,6 @@
 module Ambient
-  use Ref 
-  use mach.int.Int 
+  use Ref
+  use mach.int.Int
   use mach.int.Int32
   use mach.int.Int64
   use mach.int.UInt32
@@ -12,14 +12,10 @@ module Ambient
   type usize = int
   type isize = int
 
-  (** Generic Type for borrowed values *) 
-  type borrowed 'a = 
-  { current : 'a ; 
-  final : 'a; (* The "future" value when borrow will end *) 
-  } 
-  let function ( *_ ) x = x.current 
-  let function ( ^_ ) x = x.final 
-  val borrow_mut (a : 'a) : borrowed 'a 
+  type borrowed 'a = { current : 'a ; final : 'a; }
+  let function ( *_ ) x = x.current
+  let function ( ^_ ) x = x.final
+  val borrow_mut (a : 'a) : borrowed 'a
   ensures { *result = a }
 
   predicate drop_fix (_ : 'a) = true
@@ -30,7 +26,9 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
-  let cfg main () : ()
+  scope Type
+  end
+  let rec cfg main () : ()
     =
   var _0 : ();
   {
@@ -41,7 +39,8 @@ module Ambient
     return _0
   }
 
-  let cfg dropPair (o_x_1 : (borrowed uint32, borrowed uint32)) : ()
+
+  let rec cfg dropPair (o_x_1 : (borrowed uint32, borrowed uint32)) : ()
     =
   var _0 : ();
   var x_1 : (borrowed uint32, borrowed uint32);
@@ -55,7 +54,8 @@ module Ambient
     return _0
   }
 
-  let cfg dropPair2 (o_x_1 : (borrowed uint32, borrowed uint32)) : ()
+
+  let rec cfg dropPair2 (o_x_1 : (borrowed uint32, borrowed uint32)) : ()
     =
   var _0 : ();
   var x_1 : (borrowed uint32, borrowed uint32);
@@ -71,7 +71,8 @@ module Ambient
     return _0
   }
 
-  let cfg drop (o_x_1 : borrowed uint32)(o_y_2 : borrowed uint32) : ()
+
+  let rec cfg drop (o_x_1 : borrowed uint32)(o_y_2 : borrowed uint32) : ()
     =
   var _0 : ();
   var x_1 : borrowed uint32;
@@ -92,5 +93,6 @@ module Ambient
     _0 <- ();
     return _0
   }
+
 
 end

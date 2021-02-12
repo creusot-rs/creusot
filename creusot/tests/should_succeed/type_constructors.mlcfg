@@ -27,24 +27,39 @@ module Ambient
   predicate drop_ref (_ : 'a) = true
 
   scope Type
+  type b_x  =
+      | B_x_A
+      | B_x_B
+      | B_x_C
+
+  predicate drop_b_x (self : b_x) =
+    match (self) with
+      | B_x_A -> True
+      | B_x_B -> True
+      | B_x_C -> True
+      end
+
+  type a_y  =
+      | A_y_Y(b_x)
+
+  predicate drop_a_y (self : a_y) =
+    let A_y_Y(a) = self in drop_b_x a
   end
   let rec cfg main () : ()
     =
   var _0 : ();
-  var a_1 : uint32;
-  var b_2 : borrowed uint32;
-  var c_3 : uint32;
+  var _1 : Type.b_x;
+  var _2 : Type.a_y;
+  var _3 : Type.b_x;
   {
     goto BB0
   }
   BB0 {
-    a_1 <- 10;
-    b_2 <- borrow_mut a_1;
-    a_1 <-  ^ b_2;
-    assume { drop_uint a_1 };
-    c_3 <-  * b_2;
-    assume { drop_mut_ref b_2 };
-    assume { drop_ref c_3 };
+    _1 <- Type.B_x_A;
+    assume { Type.drop_b_x _1 };
+    _3 <- Type.B_x_B;
+    _2 <- Type.A_y_Y(_3);
+    assume { Type.drop_a_y _2 };
     _0 <- ();
     return _0
   }

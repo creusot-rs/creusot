@@ -1,8 +1,5 @@
 use rustc_errors::DiagnosticId;
-use rustc_hir::def::Namespace;
-use rustc_middle::mir::{
-    BorrowKind::*, Operand::*,UnOp, Place, Rvalue, SourceInfo, Statement, StatementKind,
-};
+use rustc_middle::mir::{BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind};
 
 use crate::{
     mlcfg::{
@@ -15,7 +12,7 @@ use crate::{
 
 use super::{specification, FunctionTranslator};
 
-impl<'tcx> FunctionTranslator<'_, 'tcx> {
+impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>) {
         use StatementKind::*;
         match statement.kind {
@@ -41,18 +38,11 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
         }
     }
 
-    fn translate_assign(
-        &mut self,
-        si: SourceInfo,
-        place: &'_ Place<'tcx>,
-        rvalue: &'_ Rvalue<'tcx>,
-    ) {
+    fn translate_assign(&mut self, si: SourceInfo, place: &'_ Place<'tcx>, rvalue: &'_ Rvalue<'tcx>) {
         let lplace = simplify_place(self.tcx, self.body, place);
         let rval = match rvalue {
             Rvalue::Use(rval) => match rval {
-                Move(pl) | Copy(pl) => {
-                    self.translate_rplace(&simplify_place(self.tcx, self.body, pl))
-                }
+                Move(pl) | Copy(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
                 Constant(box c) => Const(crate::mlcfg::Constant::from_mir_constant(self.tcx, c)),
             },
             Rvalue::Ref(_, ss, pl) => {
@@ -61,11 +51,10 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                 match ss {
                     Shared | Shallow | Unique => self.translate_rplace(&rplace),
                     Mut { .. } => {
-                        self.emit_assignment(
-                            &lplace,
-                            BorrowMut(box self.translate_rplace(&rplace)),
-                        );
-                        self.emit_assignment(&rplace, Final(box self.translate_rplace(&lplace)));
+                        let borrow = BorrowMut(box self.translate_rplace(&rplace));
+                        self.emit_assignment(&lplace, borrow);
+                        let reassign = Final(box self.translate_rplace(&lplace));
+                        self.emit_assignment(&rplace, reassign);
                         return;
                     }
                 }
@@ -85,10 +74,10 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                         let variant_def = &adt.variants[*varix];
                         let cons_name = (&variant_def.ident.name).to_string();
 
-                        let mut path = super::translate_defid(self.tcx, adt.did, Namespace::TypeNS);
-                        path.replace_name(cons_name);
+                        let mut qname = super::ty::translate_ty_name(&mut self.ty_ctx, adt.did);
+                        qname.make_constructor(cons_name);
 
-                        Constructor { ctor: path, args: fields }
+                        Constructor { ctor: qname, args: fields }
                     }
                     Closure(def_id, _) => {
                         let attrs = self.tcx.get_attrs(*def_id);
@@ -113,9 +102,7 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
                     ),
                 }
             }
-            | Rvalue::UnaryOp(op, v) => {
-                UnaryOp(*op, box self.translate_operand(v))
-            }
+            Rvalue::UnaryOp(op, v) => UnaryOp(*op, box self.translate_operand(v)),
             Rvalue::Cast(_, _, _)
             | Rvalue::NullaryOp(_, _)
             | Rvalue::Repeat(_, _)
@@ -130,8 +117,4 @@ impl<'tcx> FunctionTranslator<'_, 'tcx> {
 
         self.emit_assignment(&lplace, rval);
     }
-}
-
-fn is_invariant_marker(attr: &rustc_ast::AttrItem) -> bool {
-    attr.path.segments[2].ident.name.to_string() == "invariant"
 }

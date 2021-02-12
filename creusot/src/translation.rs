@@ -1,14 +1,14 @@
 use std::{borrow::Borrow, collections::BTreeMap};
 
-use crate::mlcfg;
 use crate::mlcfg::{Exp::*, Pattern::*, *};
+use crate::{def_path_trie::DefPathTrie, mlcfg};
 use crate::{mlcfg::Statement::*, place::Mutability as M};
 use crate::{
     place::simplify_place,
     place::{Mutability::*, Projection::*, SimplePlace},
 };
+use rustc_hir::def_id::DefId;
 use rustc_hir::definitions::DefPathData;
-use rustc_hir::{def::CtorKind, def_id::DefId};
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{mir::traversal::preorder, mir::*, ty::TyCtxt, ty::TyKind};
 use rustc_mir::dataflow::{
@@ -26,8 +26,34 @@ mod terminator;
 pub mod ty;
 pub mod util;
 
+pub struct TranslatedCrate {
+    types: Vec<(TyDecl, Predicate)>,
+    // TODO: Hide this
+    pub modules: DefPathTrie<Module>,
+}
+
+impl TranslatedCrate {
+    pub fn new() -> Self {
+        TranslatedCrate { types: Vec::new(), modules: DefPathTrie::new() }
+    }
+
+    pub fn types(&self) -> impl Iterator<Item = &(TyDecl, Predicate)> {
+        self.types.iter()
+    }
+
+    pub fn add_type(&mut self, ty_decl: TyDecl, drop_pred: Predicate) {
+        let mut dependencies = ty_decl.used_types();
+        let mut pos = 0;
+        while !dependencies.is_empty() && pos < self.types.len() {
+            dependencies.remove(&self.types[0].0.ty_name);
+            pos += 1;
+        }
+        self.types.insert(pos, (ty_decl, drop_pred));
+    }
+}
+
 // Split this into several sub-contexts: Core, Analysis, Results?
-pub struct FunctionTranslator<'a, 'tcx> {
+pub struct FunctionTranslator<'a, 'b, 'tcx> {
     sess: &'a Session,
     pub tcx: TyCtxt<'tcx>,
     body: &'a Body<'tcx>,
@@ -49,7 +75,7 @@ pub struct FunctionTranslator<'a, 'tcx> {
     past_blocks: BTreeMap<mlcfg::BlockId, mlcfg::Block>,
 
     // Type translation context
-    ty_ctx: ty::Ctx<'a, 'tcx>,
+    ty_ctx: &'a mut ty::Ctx<'b, 'tcx>,
 }
 
 // Dataflow locations
@@ -107,19 +133,14 @@ impl ExtendedLocation {
     }
 }
 
-impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
-    pub fn new(sess: &'a Session, tcx: TyCtxt<'tcx>, body: &'a Body<'tcx>) -> Self {
-        let local_init = MaybeInitializedLocals
-            .into_engine(tcx, &body)
-            .iterate_to_fixpoint()
-            .into_results_cursor(&body);
+impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
+    pub fn new(sess: &'a Session, tcx: TyCtxt<'tcx>, ctx: &'a mut ty::Ctx<'b, 'tcx>, body: &'a Body<'tcx>) -> Self {
+        let local_init =
+            MaybeInitializedLocals.into_engine(tcx, &body).iterate_to_fixpoint().into_results_cursor(&body);
 
         // This is called MaybeLiveLocals because pointers don't keep their referees alive.
         // TODO: Defensive check.
-        let local_live = MaybeLiveLocals
-            .into_engine(tcx, &body)
-            .iterate_to_fixpoint()
-            .into_results_cursor(&body);
+        let local_live = MaybeLiveLocals.into_engine(tcx, &body).iterate_to_fixpoint().into_results_cursor(&body);
 
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
@@ -143,7 +164,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
             never_live,
             current_block: (Vec::new(), None),
             past_blocks: BTreeMap::new(),
-            ty_ctx: ty::Ctx::new(tcx, sess),
+            ty_ctx: ctx,
         }
     }
 
@@ -182,15 +203,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         let name = translate_defid(self.tcx, nm, Namespace::ValueNS);
 
         move_invariants_into_loop(&mut self.past_blocks);
-        Function {
-            name,
-            retty,
-            args,
-            vars,
-            blocks: self.past_blocks,
-            preconds: contracts.0,
-            postconds: contracts.1,
-        }
+        Function { name, retty, args, vars, blocks: self.past_blocks, preconds: contracts.0, postconds: contracts.1 }
     }
 
     fn translate_body(&mut self) {
@@ -210,12 +223,14 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
             self.translate_terminator(bbd.terminator(), loc);
 
-            self.past_blocks.insert(bb.into(), Block {
-                statements: std::mem::replace(&mut self.current_block.0, Vec::new()),
-                terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
-            });
+            self.past_blocks.insert(
+                bb.into(),
+                Block {
+                    statements: std::mem::replace(&mut self.current_block.0, Vec::new()),
+                    terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
+                },
+            );
         }
-
     }
 
     fn freeze_borrows_at_block_start(&mut self, bb: BasicBlock) {
@@ -301,18 +316,15 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
         for local in dying.iter() {
             let local_ty = self.body.local_decls[local].ty;
             let ident = self.translate_local(local);
-            let assumption: Exp =
-                ty::drop_predicate(&mut self.ty_ctx, local_ty).app_to(ident.into());
+            let assumption: Exp = ty::drop_predicate(&mut self.ty_ctx, local_ty).app_to(ident.into());
             self.emit_statement(mlcfg::Statement::Assume(assumption));
         }
     }
 
     // Useful helper to translate an operand
-    pub fn translate_operand(&self, operand: &Operand<'tcx>) -> Exp {
+    pub fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Exp {
         match operand {
-            Operand::Copy(pl) | Operand::Move(pl) => {
-                self.translate_rplace(&simplify_place(self.tcx, self.body, pl))
-            }
+            Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
             Operand::Constant(c) => Const(mlcfg::Constant::from_mir_constant(self.tcx, c)),
         }
     }
@@ -338,7 +350,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
     // [(P as Some)]   ---> [_1]
     // [(P as Some).0] ---> let Some(a) = [_1] in a
     // [(* P)] ---> * [P]
-    pub fn translate_rplace(&self, rhs: &SimplePlace) -> Exp {
+    pub fn translate_rplace(&mut self, rhs: &SimplePlace) -> Exp {
         let mut inner = self.translate_local(rhs.local).into();
 
         for proj in rhs.proj.iter() {
@@ -349,26 +361,19 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
                 Deref(Not) => {
                     // Immutable references are erased in MLCFG
                 }
-                FieldAccess { ctor, ix, size, field: _, kind } => {
-                    match kind {
-                        // Tuple
-                        CtorKind::Fn | CtorKind::Fictive => {
-                            let mut pat = vec![Wildcard; *ix];
-                            pat.push(VarP("a".into()));
-                            pat.append(&mut vec![Wildcard; size - ix - 1]);
+                FieldAccess { base_ty, ctor, ix } => {
+                    let def = self.tcx.adt_def(*base_ty);
+                    let variant = &def.variants[*ctor];
+                    let size = variant.fields.len();
 
-                            inner = Let {
-                                pattern: ConsP(ctor.to_string(), pat),
-                                arg: box inner,
-                                body: box Var("a".into()),
-                            }
-                        }
-                        // Unit
-                        CtorKind::Const => {
-                            assert!(*size == 1 && *ix == 0);
-                            unimplemented!();
-                        }
-                    }
+                    let mut tyname = ty::translate_ty_name(&mut self.ty_ctx, *base_ty);
+                    tyname.make_constructor(variant.ident.to_string());
+
+                    let mut pat = vec![Wildcard; *ix];
+                    pat.push(VarP("a".into()));
+                    pat.append(&mut vec![Wildcard; size - ix - 1]);
+
+                    inner = Let { pattern: ConsP(tyname, pat), arg: box inner, body: box Var("a".into()) }
                 }
                 TupleAccess { size, ix } => {
                     let mut pat = vec![Wildcard; *ix];
@@ -393,7 +398,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
     /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
     /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-    pub fn create_assign(&self, lhs: &SimplePlace, rhs: Exp) -> mlcfg::Statement {
+    pub fn create_assign(&mut self, lhs: &SimplePlace, rhs: Exp) -> mlcfg::Statement {
         // Translation happens inside to outside, which means we scan projection elements in reverse
         // building up the inner expression. We start with the RHS expression which is at the deepest
         // level.
@@ -406,40 +411,33 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
             match proj {
                 Deref(M::Mut) => {
-                    inner = RecUp {
-                        record: box self.translate_rplace(&stump),
-                        label: "current".into(),
-                        val: box inner,
-                    }
+                    inner = RecUp { record: box self.translate_rplace(&stump), label: "current".into(), val: box inner }
                 }
                 Deref(M::Not) => {
                     // Immutable references are erased in MLCFG
                 }
-                FieldAccess { ctor, ix, size, kind, .. } => match kind {
-                    CtorKind::Fn | CtorKind::Fictive => {
-                        let varpats = ('a'..)
-                            .map(|c| VarP(LocalIdent::Name(c.to_string())))
-                            .take(*size)
-                            .collect();
-                        let mut varexps: Vec<Exp> =
-                            ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
-                        varexps[*ix] = inner;
+                FieldAccess { ctor, base_ty, ix, .. } => {
+                    let def = self.tcx.adt_def(*base_ty);
+                    let variant = &def.variants[*ctor];
+                    let size = variant.fields.len();
+                    let varpats = ('a'..).map(|c| VarP(LocalIdent::Name(c.to_string()))).take(size).collect();
 
-                        inner = Let {
-                            pattern: ConsP(ctor.to_string(), varpats),
-                            arg: box self.translate_rplace(&stump),
-                            body: box Constructor { ctor: ctor.into(), args: varexps },
-                        }
+                    let mut varexps: Vec<Exp> = ('a'..).map(|c| Var(c.to_string().into())).take(size).collect();
+
+                    varexps[*ix] = inner;
+
+                    let mut tyname = ty::translate_ty_name(&mut self.ty_ctx, *base_ty);
+                    tyname.make_constructor(variant.ident.to_string());
+
+                    inner = Let {
+                        pattern: ConsP(tyname.clone(), varpats),
+                        arg: box self.translate_rplace(&stump),
+                        body: box Constructor { ctor: tyname, args: varexps },
                     }
-                    CtorKind::Const => inner = Constructor { ctor: ctor.into(), args: vec![] },
-                },
+                }
                 TupleAccess { size, ix } => {
-                    let varpats = ('a'..)
-                        .map(|c| VarP(LocalIdent::Name(c.to_string())))
-                        .take(*size)
-                        .collect();
-                    let mut varexps: Vec<_> =
-                        ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
+                    let varpats = ('a'..).map(|c| VarP(LocalIdent::Name(c.to_string()))).take(*size).collect();
+                    let mut varexps: Vec<_> = ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
                     varexps[*ix] = inner;
 
                     inner = Let {
@@ -462,10 +460,16 @@ fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {
     // compilation.
     let mut changes = std::collections::HashMap::new();
     for (_, block) in body.iter_mut() {
-        let (invariants, rest) = block.statements.clone().into_iter()
-            .partition(|stmt| {
-                if let Invariant(_,_) = stmt { true } else { false }
-            });
+        let (invariants, rest) =
+            block.statements.clone().into_iter().partition(
+                |stmt| {
+                    if let Invariant(_, _) = stmt {
+                        true
+                    } else {
+                        false
+                    }
+                },
+            );
 
         let _ = std::mem::replace(&mut block.statements, rest);
         if invariants.len() > 0 {
@@ -507,8 +511,8 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, namespace: Namespace) -> QName {
         Namespace::ValueNS => {}
         Namespace::TypeNS => {
             assert_eq!(name_segs.len(), 0);
-            let type_name = mod_segs.pop().unwrap().to_mixed_case();
-            name_segs.push(type_name);
+            name_segs = mod_segs.into_iter().map(|seg| seg.to_lowercase()).collect();
+            mod_segs = vec!["Type".to_owned()];
         }
         _ => unreachable!(),
     }

@@ -1,6 +1,6 @@
 module Ambient
-  use Ref 
-  use mach.int.Int 
+  use Ref
+  use mach.int.Int
   use mach.int.Int32
   use mach.int.Int64
   use mach.int.UInt32
@@ -12,14 +12,10 @@ module Ambient
   type usize = int
   type isize = int
 
-  (** Generic Type for borrowed values *) 
-  type borrowed 'a = 
-  { current : 'a ; 
-  final : 'a; (* The "future" value when borrow will end *) 
-  } 
-  let function ( *_ ) x = x.current 
-  let function ( ^_ ) x = x.final 
-  val borrow_mut (a : 'a) : borrowed 'a 
+  type borrowed 'a = { current : 'a ; final : 'a; }
+  let function ( *_ ) x = x.current
+  let function ( ^_ ) x = x.final
+  val borrow_mut (a : 'a) : borrowed 'a
   ensures { *result = a }
 
   predicate drop_fix (_ : 'a) = true
@@ -30,20 +26,22 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
+  scope Type
   type m 't =
-      | F(uint32)
-      | G('t)
+      | M_F(uint32)
+      | M_G('t)
 
   predicate drop_m (drop_'t : 't -> bool) (self : m 't) =
     match (self) with
-      | F(a) -> drop_uint a
-      | G(a) -> drop_'t a
+      | M_F(a) -> drop_uint a
+      | M_G(a) -> drop_'t a
       end
 
-  let cfg test (o_o_1 : m uint32) : bool
+  end
+  let rec cfg test (o_o_1 : Type.m uint32) : bool
     =
   var _0 : bool;
-  var o_1 : m uint32;
+  var o_1 : Type.m uint32;
   var _2 : isize;
   var field1_3 : uint32;
   var _4 : uint32;
@@ -55,8 +53,8 @@ module Ambient
   }
   BB0 {
     switch (o_1)
-      | F(_) -> goto BB1
-      | G(_) -> goto BB2
+      | Type.M_F(_) -> goto BB1
+      | Type.M_G(_) -> goto BB2
       | _ -> goto BB3
       end
   }
@@ -66,21 +64,21 @@ module Ambient
   }
   BB2 {
     assume { drop_int _2 };
-    field2_5 <- (let G(a) = o_1 in a);
-    assume { drop_m drop_uint o_1 };
+    field2_5 <- (let Type.M_G(a) = o_1 in a);
+    assume { Type.drop_m drop_uint o_1 };
     _6 <- field2_5;
     assume { drop_uint field2_5 };
     _0 <- _6 = 0;
     goto BB5
   }
   BB3 {
-    assume { drop_m drop_uint o_1 };
+    assume { Type.drop_m drop_uint o_1 };
     assume { drop_int _2 };
     absurd
   }
   BB4 {
-    field1_3 <- (let F(a) = o_1 in a);
-    assume { drop_m drop_uint o_1 };
+    field1_3 <- (let Type.M_F(a) = o_1 in a);
+    assume { Type.drop_m drop_uint o_1 };
     _4 <- field1_3;
     assume { drop_uint field1_3 };
     _0 <- _4 > 0;
@@ -90,7 +88,8 @@ module Ambient
     return _0
   }
 
-  let cfg main () : ()
+
+  let rec cfg main () : ()
     =
   var _0 : ();
   {
@@ -100,5 +99,6 @@ module Ambient
     _0 <- ();
     return _0
   }
+
 
 end

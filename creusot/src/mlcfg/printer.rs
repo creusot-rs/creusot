@@ -80,6 +80,15 @@ macro_rules! parens {
     };
 }
 
+impl EnvDisplay for Decl {
+    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Decl::FunDecl(fun) => writeln!(f, "{}", fe.to(fun)), // Decl::TyDecl(t) => { writeln!(f, "{}", fe.to(t)) }
+                                                                 // Decl::PredDecl(p) => { writeln!(f, "{}", fe.to(p)) }
+        }
+    }
+}
+
 impl EnvDisplay for Predicate {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fe.indent_line(f)?;
@@ -107,7 +116,7 @@ impl EnvDisplay for Predicate {
 impl EnvDisplay for Function {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fe.indent_line(f)?;
-        write!(f, "let cfg {} ", fe.to(&self.name))?;
+        write!(f, "let rec cfg {} ", fe.to(&self.name))?;
 
         if self.args.is_empty() {
             write!(f, "()")?;
@@ -252,11 +261,7 @@ impl EnvDisplay for Type {
                 }
             }
             Tuple(tys) => {
-                write!(
-                    f,
-                    "({})",
-                    tys.iter().format_with(", ", |elt, f| { f(&format_args!("{}", fe.to(elt))) })
-                )?;
+                write!(f, "({})", tys.iter().format_with(", ", |elt, f| { f(&format_args!("{}", fe.to(elt))) }))?;
             }
         }
 
@@ -274,47 +279,25 @@ impl EnvDisplay for Exp {
                 write!(f, " ^ {}", fe.to(e))?;
             }
             Exp::Let { pattern, box arg, box body } => {
-                write!(
-                    f,
-                    "let {} = {} in {}",
-                    pattern,
-                    parens!(fe, self, arg),
-                    parens!(fe, self, body)
-                )?;
+                write!(f, "let {} = {} in {}", fe.to(pattern), parens!(fe, self, arg), parens!(fe, self, body))?;
             }
             Exp::Var(v) => {
                 write!(f, "{}", v)?;
             }
             Exp::QVar(v) => {
-                write!(f, "{}", v)?;
+                write!(f, "{}", fe.to(v))?;
             }
             Exp::RecUp { box record, label, box val } => {
-                write!(
-                    f,
-                    "{{ {} with {} = {} }}",
-                    parens!(fe, self, record),
-                    label,
-                    parens!(fe, self, val)
-                )?;
+                write!(f, "{{ {} with {} = {} }}", parens!(fe, self, record), label, parens!(fe, self, val))?;
             }
             Exp::Tuple(vs) => {
-                write!(
-                    f,
-                    "({})",
-                    vs.iter().format_with(", ", |elt, f| { f(& fe.to(elt)) })
-                )?;
+                write!(f, "({})", vs.iter().format_with(", ", |elt, f| { f(&fe.to(elt)) }))?;
             }
             Exp::Constructor { ctor, args } => {
                 if args.is_empty() {
                     EnvDisplay::fmt(ctor, fe, f)?;
                 } else {
-                    write!(
-                        f,
-                        "{}({})",
-                        ctor,
-                        args.iter()
-                            .format_with(", ", |elt, f| { f(&fe.to(elt)) })
-                    )?;
+                    write!(f, "{}({})", fe.to(ctor), args.iter().format_with(", ", |elt, f| { f(&fe.to(elt)) }))?;
                 }
             }
             Exp::BorrowMut(box exp) => {
@@ -333,21 +316,10 @@ impl EnvDisplay for Exp {
                 write!(f, "div {} {}", parens!(fe, self, l), parens!(fe, self, r))?;
             }
             Exp::BinaryOp(op, box l, box r) => {
-                write!(
-                    f,
-                    "{} {} {}",
-                    parens!(fe, self, l),
-                    bin_op_to_string(op),
-                    parens!(fe, self, r)
-                )?;
+                write!(f, "{} {} {}", parens!(fe, self, l), bin_op_to_string(op), parens!(fe, self, r))?;
             }
             Exp::Call(box fun, args) => {
-                write!(
-                    f,
-                    "{} {}",
-                    parens!(fe, self, fun),
-                    args.iter().map(|a| parens!(fe, self, a)).format(" ")
-                )?;
+                write!(f, "{} {}", parens!(fe, self, fun), args.iter().map(|a| parens!(fe, self, a)).format(" "))?;
             }
             Exp::Verbatim(verb) => {
                 write!(f, "{}", verb)?;
@@ -360,7 +332,7 @@ impl EnvDisplay for Exp {
                 fe.indent(2, |fe| {
                     for (pat, tgt) in brs {
                         fe.indent_line(f)?;
-                        writeln!(f, "| {} -> {}", pat, fe.to(tgt))?;
+                        writeln!(f, "| {} -> {}", fe.to(pat), fe.to(tgt))?;
                     }
                     fe.indent_line(f)?;
                     writeln!(f, "end")
@@ -369,11 +341,8 @@ impl EnvDisplay for Exp {
             Exp::Forall(binders, box exp) => {
                 write!(f, "forall ")?;
 
-                let binder_fmt = binders.iter()
-                    .format_with(", ", |(l, ty), f| {
-                        f(&format_args!("{} : {}", l, fe.to(ty)))
-                    });
-
+                let binder_fmt =
+                    binders.iter().format_with(", ", |(l, ty), f| f(&format_args!("{} : {}", l, fe.to(ty))));
 
                 write!(f, "{} . {}", binder_fmt, fe.to(exp))?;
             }
@@ -429,7 +398,7 @@ impl EnvDisplay for Terminator {
                 fe.indent(2, |fe| {
                     for (pat, tgt) in brs {
                         fe.indent_line(f)?;
-                        write!(f, "| {} -> {}", pat, fe.to(tgt))?;
+                        write!(f, "| {} -> {}", fe.to(pat), fe.to(tgt))?;
                     }
                     fe.indent_line(f)?;
                     writeln!(f, "end")
@@ -440,8 +409,8 @@ impl EnvDisplay for Terminator {
     }
 }
 
-impl Display for Pattern {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl EnvDisplay for Pattern {
+    fn fmt(&self, fe: FormatEnv, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Pattern::Wildcard => {
                 write!(f, "_")?;
@@ -450,13 +419,13 @@ impl Display for Pattern {
                 write!(f, "{}", v)?;
             }
             Pattern::TupleP(vs) => {
-                write!(f, "({})", vs.iter().format(", "))?;
+                write!(f, "({})", vs.iter().map(|x| fe.to(x)).format(", "))?;
             }
             Pattern::ConsP(c, pats) => {
                 if pats.is_empty() {
-                    write!(f, "{}", c)?;
+                    write!(f, "{}", fe.to(c))?;
                 } else {
-                    write!(f, "{}({})", c, pats.iter().format(", "))?;
+                    write!(f, "{}({})", fe.to(c), pats.iter().map(|p| fe.to(p)).format(", "))?;
                 }
             }
             Pattern::LitP(lit) => {
@@ -466,7 +435,6 @@ impl Display for Pattern {
         Ok(())
     }
 }
-
 
 impl Display for BlockId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -517,12 +485,10 @@ fn bin_op_to_string(op: &FullBinOp) -> &str {
 impl Display for Constant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Constant::Other(o)   => { write!(f, "{}", o) }
-            Constant::Int(i)     => { write!(f, "{}", i) }
-            Constant::Uint(u)    => { write!(f, "{}", u) }
-            Constant::Float(flt) => { write!(f, "{}", flt) }
+            Constant::Other(o) => write!(f, "{}", o),
+            Constant::Int(i) => write!(f, "{}", i),
+            Constant::Uint(u) => write!(f, "{}", u), // Constant::Float(flt) => { write!(f, "{}", flt) }
         }
-
     }
 }
 
@@ -537,13 +503,7 @@ impl EnvDisplay for TyDecl {
                 if args.is_empty() {
                     writeln!(f, "  | {}", cons)?;
                 } else {
-                    writeln!(
-                        f,
-                        "  | {}({})",
-                        cons,
-                        args.iter()
-                            .format_with(", ", |elt, f| { f(& fe.to(elt)) })
-                    )?;
+                    writeln!(f, "  | {}({})", cons, args.iter().format_with(", ", |elt, f| { f(&fe.to(elt)) }))?;
                 }
             }
             Ok(())
@@ -574,12 +534,10 @@ impl EnvDisplay for QName {
                 .format(".")
         );
 
-        let ident = self.name.iter().format("_");
-
         if module_path == "" {
-            write!(f, "{}", ident)
+            write!(f, "{}", self.name())
         } else {
-            write!(f, "{}.{}", module_path, ident)
+            write!(f, "{}.{}", module_path, self.name())
         }
     }
 }

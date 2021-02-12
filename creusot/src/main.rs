@@ -22,10 +22,7 @@ extern crate log;
 use def_path_trie::DefPathTrie;
 use mlcfg::Module;
 use rustc_driver::{Callbacks, Compilation, RunCompiler};
-use rustc_hir::{
-    def_id::LOCAL_CRATE,
-    Item,
-};
+use rustc_hir::{def_id::LOCAL_CRATE, Item};
 use rustc_interface::{interface::Compiler, Queries};
 use rustc_middle::{
     mir::{visit::MutVisitor, Location, Terminator},
@@ -53,12 +50,7 @@ struct ToWhy {
 impl Callbacks for ToWhy {
     // Register callback for after MIR borrowck and typechecking is finished
     fn after_analysis<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
-        queries
-            .global_ctxt()
-            .unwrap()
-            .peek_mut()
-            .enter(|tcx| translate(&self.output_file, c.session(), tcx))
-            .unwrap();
+        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| translate(&self.output_file, c.session(), tcx)).unwrap();
         Compilation::Stop
     }
 }
@@ -109,9 +101,7 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
         }
     }
 
-    use def_path_trie::*;
-
-    let mut translated_modules: DefPathTrie<Module> = DefPathTrie::new();
+    let mut krate = TranslatedCrate::new();
 
     // Type translation state, including which datatypes have already been translated.
     let mut ty_ctx = translation::ty::Ctx::new(tcx, sess);
@@ -138,8 +128,10 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
         let def_id = def_id.to_def_id();
 
         let attrs = tcx.get_attrs(def_id);
-        if specification::get_invariant(attrs).is_ok() { continue }
-        let mut func_contract = specification::translate_contract(attrs, &body);
+        if specification::get_invariant(attrs).is_ok() {
+            continue;
+        }
+        let func_contract = specification::translate_contract(attrs, &body);
 
         // Parent module
         let module = util::module_of(tcx, def_id);
@@ -149,28 +141,48 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
         // TODO: now that we don't use polonius info: consider using optimized mir instead?
         RemoveFalseEdge { tcx }.visit_body(&mut body);
 
-        let translated = FunctionTranslator::new(sess, tcx, &body).translate(def_id, func_contract);
+        let translated = FunctionTranslator::new(sess, tcx, &mut ty_ctx, &body).translate(def_id, func_contract);
 
         // debug::debug(tcx, &body);
-        translated_modules.get_mut_with_default(module).functions.push(translated);
+        use mlcfg::Decl;
+        krate.modules.get_mut_with_default(module).decls.push(Decl::FunDecl(translated));
     }
 
     // Collect all the type translations
-    ty_ctx.collect(&mut translated_modules);
+    ty_ctx.collect(&mut krate);
     use std::fs::File;
 
-    let mut out = match output {
-        Some(f) => Box::new(std::io::BufWriter::new(File::create(f)?)) as Box<dyn Write>,
-        None => Box::new(std::io::stdout()) as Box<dyn Write>,
+    let mut out: Box<dyn Write> = match output {
+        Some(f) => Box::new(std::io::BufWriter::new(File::create(f)?)),
+        None => Box::new(std::io::stdout()),
     };
-    writeln!(out, "module Ambient")?;
-    writeln!(out, "{}", mlcfg::PRELUDE)?;
-    print_module_tree(&mut out, &mut Vec::new(), &translated_modules).unwrap();
-    writeln!(out, "end")?;
+
+    print_crate(&mut out, krate)?;
     Ok(())
 }
 use std::io::Write;
 
+fn print_crate<W>(out: &mut W, krate: TranslatedCrate) -> std::io::Result<()>
+where
+    W: Write,
+{
+    writeln!(out, "module Ambient")?;
+    writeln!(out, "{}", mlcfg::PRELUDE)?;
+
+    writeln!(out, "  scope Type")?;
+    for (decl, pred) in krate.types() {
+        let fe = mlcfg::printer::FormatEnv { indent: 2, scope: &["Type".into()] };
+
+        writeln!(out, "{}", fe.to(decl))?;
+        writeln!(out, "{}", fe.to(pred))?;
+    }
+    writeln!(out, "  end")?;
+
+    print_module_tree(out, &mut Vec::new(), &krate.modules).unwrap();
+    writeln!(out, "end")?;
+
+    Ok(())
+}
 fn print_module_tree<W>(
     out: &mut W,
     open_scopes: &mut Vec<String>,
@@ -197,34 +209,19 @@ where
 
     let module = mod_tree.value().unwrap();
 
-    for ty_decl in &module.tydecls {
-        writeln!(out, "{}", fe.to(ty_decl))?;
-    }
-
-    for pred in &module.predicates {
-        writeln!(out, "{}", fe.to(pred))?;
-    }
-
-    for func in &module.functions {
+    for func in &module.decls {
         writeln!(out, "{}", fe.to(func))?;
     }
     Ok(())
 }
 
-
 fn sysroot_path() -> String {
     use std::process::Command;
-    let toolchain : toml::Value = toml::from_str(include_str!("../../rust-toolchain")).unwrap();
+    let toolchain: toml::Value = toml::from_str(include_str!("../../rust-toolchain")).unwrap();
     let channel = toolchain["toolchain"]["channel"].as_str().unwrap();
 
-    let output = Command::new("rustup")
-        .arg("run")
-        .arg(channel)
-        .arg("rustc")
-        .arg("--print")
-        .arg("sysroot")
-        .output()
-        .unwrap();
+    let output =
+        Command::new("rustup").arg("run").arg(channel).arg("rustc").arg("--print").arg("sysroot").output().unwrap();
 
     print!("{}", String::from_utf8(output.stderr).ok().unwrap());
 

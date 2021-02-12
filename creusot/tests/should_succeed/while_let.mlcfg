@@ -1,6 +1,6 @@
 module Ambient
-  use Ref 
-  use mach.int.Int 
+  use Ref
+  use mach.int.Int
   use mach.int.Int32
   use mach.int.Int64
   use mach.int.UInt32
@@ -12,14 +12,10 @@ module Ambient
   type usize = int
   type isize = int
 
-  (** Generic Type for borrowed values *) 
-  type borrowed 'a = 
-  { current : 'a ; 
-  final : 'a; (* The "future" value when borrow will end *) 
-  } 
-  let function ( *_ ) x = x.current 
-  let function ( ^_ ) x = x.final 
-  val borrow_mut (a : 'a) : borrowed 'a 
+  type borrowed 'a = { current : 'a ; final : 'a; }
+  let function ( *_ ) x = x.current
+  let function ( ^_ ) x = x.final
+  val borrow_mut (a : 'a) : borrowed 'a
   ensures { *result = a }
 
   predicate drop_fix (_ : 'a) = true
@@ -30,33 +26,35 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
+  scope Type
   type option 't =
-      | Some('t)
-      | None
+      | Option_Some('t)
+      | Option_None
 
   predicate drop_option (drop_'t : 't -> bool) (self : option 't) =
     match (self) with
-      | Some(a) -> drop_'t a
-      | None -> True
+      | Option_Some(a) -> drop_'t a
+      | Option_None -> True
       end
 
-  let cfg main () : ()
+  end
+  let rec cfg main () : ()
     =
   var _0 : ();
-  var a_1 : option int32;
-  var b_2 : borrowed (option int32);
+  var a_1 : Type.option int32;
+  var b_2 : borrowed (Type.option int32);
   var _4 : ();
   var _5 : isize;
-  var _6 : option int32;
+  var _6 : Type.option int32;
   var _7 : ();
   {
     goto BB0
   }
   BB0 {
-    a_1 <- Some(10);
+    a_1 <- Type.Option_Some(10);
     b_2 <- borrow_mut a_1;
     a_1 <-  ^ b_2;
-    assume { drop_option drop_int a_1 };
+    assume { Type.drop_option drop_int a_1 };
     goto BB1
   }
   BB1 {
@@ -66,7 +64,7 @@ module Ambient
   }
   BB2 {
     switch ( * b_2)
-      | Some(_) -> goto BB3
+      | Type.Option_Some(_) -> goto BB3
       | _ -> goto BB4
       end
   }
@@ -81,11 +79,12 @@ module Ambient
     return _0
   }
   BB5 {
-    _6 <- None;
+    _6 <- Type.Option_None;
     b_2 <- { b_2 with current = _6 };
-    assume { drop_option drop_int _6 };
+    assume { Type.drop_option drop_int _6 };
     _4 <- ();
     goto BB1
   }
+
 
 end

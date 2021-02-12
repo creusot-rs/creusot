@@ -3,19 +3,18 @@
 #![feature(command_access)]
 
 use assert_cmd::prelude::*;
-use std::{env, fs::File};
+use mktemp::Temp;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
-use mktemp::Temp;
-
+use std::{env, fs::File};
 
 #[datatest::files("tests/should_succeed", {
-  input in r"^(.*).rs",
+  input in r"^(.*).rs$",
   output = r"${1}.mlcfg",
 })]
 
-fn should_succeed(input: &Path, output: &Path){
+fn should_succeed(input: &Path, output: &Path) {
     let mut cmd = Command::cargo_bin("creusot").unwrap();
     let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     d.pop();
@@ -32,13 +31,13 @@ fn should_succeed(input: &Path, output: &Path){
 
     println!("Running: {:?}", cmd);
     cmd.assert().success();
-    assert!(!file_diff::diff_files(&mut File::open(result_file).unwrap(), &mut File::open(output).unwrap()));
+    assert!(file_diff::diff_files(&mut File::open(result_file).unwrap(), &mut File::open(output).unwrap()));
 }
 
 #[datatest::files("tests/should_fail", {
   input in r"^(.*).rs",
 })]
-fn should_fail(input: &Path){
+fn should_fail(input: &Path) {
     let mut cmd = Command::cargo_bin("creusot").unwrap();
     let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     d.pop();

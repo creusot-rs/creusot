@@ -22,9 +22,7 @@ pub fn get_invariant(attrs: &[Attribute]) -> Result<(String, String), InvariantE
     let attr = attrs.remove(0);
 
     match attr.path.segments[2].ident.name.to_string().as_ref() {
-        "invariant" => {
-            return Ok((invariant_name(attr), ts_to_symbol(attr.args.inner_tokens()).unwrap()))
-        }
+        "invariant" => return Ok((invariant_name(attr), ts_to_symbol(attr.args.inner_tokens()).unwrap())),
         _ => {}
     }
     Err(NoInvariant)
@@ -79,18 +77,14 @@ pub fn invariant_to_why<'tcx>(body: &Body<'tcx>, info: SourceInfo, attr_val: Str
     let mut e = to_exp(&p);
     let fvs = e.fvs();
 
-    let vars_in_scope: Vec<_> =
-        body.var_debug_info.iter().filter(|vdi| vdi.source_info.scope <= info.scope).collect();
+    let vars_in_scope: Vec<_> = body.var_debug_info.iter().filter(|vdi| vdi.source_info.scope <= info.scope).collect();
 
     // TODO: ensure only one match
     let subst = fvs
         .iter()
         .map(|free| {
-            let var_info = vars_in_scope
-                .iter()
-                .filter(|vdi| free.to_string() == vdi.name.to_ident_string())
-                .next()
-                .unwrap();
+            let var_info =
+                vars_in_scope.iter().filter(|vdi| free.to_string() == vdi.name.to_ident_string()).next().unwrap();
 
             let loc = var_info.place.as_local().unwrap();
             (free.clone(), LocalIdent::Local(loc, Some(var_info.name.to_string())).into())
@@ -146,9 +140,7 @@ fn to_exp(p: &Term) -> crate::mlcfg::Exp {
         // If(_) => {}
         Lit(TermLit { lit }) => match lit {
             syn::Lit::Int(lit) => Const(crate::mlcfg::Constant::Other(lit.base10_digits().to_owned())),
-            syn::Lit::Float(lit) => {
-                Const(crate::mlcfg::Constant::Other(lit.base10_digits().to_owned()))
-            }
+            syn::Lit::Float(lit) => Const(crate::mlcfg::Constant::Other(lit.base10_digits().to_owned())),
             syn::Lit::Bool(lit) => Const(crate::mlcfg::Constant::Other(format!("{}", lit.value))),
             _ => unimplemented!(),
         },
@@ -167,18 +159,12 @@ fn to_exp(p: &Term) -> crate::mlcfg::Exp {
         // Match(_) => {}
         Term::Impl(TermImpl { hyp, cons, .. }) => Exp::Impl(box to_exp(hyp), box to_exp(cons)),
         Term::Forall(TermForall { args, term, .. }) => {
-            let binders = args
-                .iter()
-                .map(|qa| (LocalIdent::Name(qa.ident.to_string()), from_ty(&qa.ty)))
-                .collect();
+            let binders = args.iter().map(|qa| (LocalIdent::Name(qa.ident.to_string()), from_ty(&qa.ty))).collect();
 
             Exp::Forall(binders, box to_exp(term))
         }
         Term::Exists(TermExists { args, term, .. }) => {
-            let binders = args
-                .iter()
-                .map(|qa| (LocalIdent::Name(qa.ident.to_string()), from_ty(&qa.ty)))
-                .collect();
+            let binders = args.iter().map(|qa| (LocalIdent::Name(qa.ident.to_string()), from_ty(&qa.ty))).collect();
 
             Exp::Exists(binders, box to_exp(term))
         }
@@ -200,9 +186,7 @@ fn from_ty(ty: &syn::Type) -> crate::mlcfg::Type {
                 from_ty(elem)
             }
         }
-        syn::Type::Tuple(TypeTuple { elems, .. }) => {
-            crate::mlcfg::Type::Tuple(elems.iter().map(from_ty).collect())
-        }
+        syn::Type::Tuple(TypeTuple { elems, .. }) => crate::mlcfg::Type::Tuple(elems.iter().map(from_ty).collect()),
         syn::Type::Never(_) => unimplemented!("never type"),
 
         syn::Type::Array(_) | syn::Type::Slice(_) => unimplemented!("array / slice"),
@@ -270,18 +254,12 @@ fn invariant_name(attr: &rustc_ast::AttrItem) -> String {
 }
 
 pub fn spec_attrs<'tcx>(a: Attributes<'tcx>) -> Vec<&AttrItem> {
-    a.iter()
-        .filter(|a| !a.is_doc_comment())
-        .map(|a| a.get_normal_item())
-        .filter(|ai| is_attr(ai, "spec"))
-        .collect()
+    a.iter().filter(|a| !a.is_doc_comment()).map(|a| a.get_normal_item()).filter(|ai| is_attr(ai, "spec")).collect()
 }
 
 use rustc_ast::AttrItem;
 
 fn is_attr(attr: &AttrItem, str: &str) -> bool {
     let segments = &attr.path.segments;
-    segments.len() >= 2
-        && segments[0].ident.as_str() == "creusot"
-        && segments[1].ident.as_str() == str
+    segments.len() >= 2 && segments[0].ident.as_str() == "creusot" && segments[1].ident.as_str() == str
 }

@@ -1,6 +1,6 @@
 module Ambient
-  use Ref 
-  use mach.int.Int 
+  use Ref
+  use mach.int.Int
   use mach.int.Int32
   use mach.int.Int64
   use mach.int.UInt32
@@ -12,14 +12,10 @@ module Ambient
   type usize = int
   type isize = int
 
-  (** Generic Type for borrowed values *) 
-  type borrowed 'a = 
-  { current : 'a ; 
-  final : 'a; (* The "future" value when borrow will end *) 
-  } 
-  let function ( *_ ) x = x.current 
-  let function ( ^_ ) x = x.final 
-  val borrow_mut (a : 'a) : borrowed 'a 
+  type borrowed 'a = { current : 'a ; final : 'a; }
+  let function ( *_ ) x = x.current
+  let function ( ^_ ) x = x.final
+  val borrow_mut (a : 'a) : borrowed 'a
   ensures { *result = a }
 
   predicate drop_fix (_ : 'a) = true
@@ -30,7 +26,9 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
-  let cfg projToggle (o_toggle_1 : bool)(o_a_2 : borrowed 't)(o_b_3 : borrowed 't) : borrowed 't
+  scope Type
+  end
+  let rec cfg projToggle (o_toggle_1 : bool)(o_a_2 : borrowed 't)(o_b_3 : borrowed 't) : borrowed 't
     ensures { o_toggle_1 = false -> result = o_b_3 &&  ^ o_a_2 =  * o_a_2 }
     ensures { o_toggle_1 = true -> result = o_a_2 &&  ^ o_b_3 =  * o_b_3 }
     =
@@ -93,7 +91,8 @@ module Ambient
     return _0
   }
 
-  let cfg main () : ()
+
+  let rec cfg main () : ()
     =
   var _0 : ();
   var a_1 : int32;
@@ -130,5 +129,6 @@ module Ambient
     _0 <- ();
     return _0
   }
+
 
 end

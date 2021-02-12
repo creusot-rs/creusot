@@ -4,20 +4,12 @@ use rustc_mir::dataflow::Analysis;
 use rustc_middle::{mir::traversal::preorder, mir::Body, ty::TyCtxt};
 
 pub fn debug<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) {
-    let mut init = MaybeInitializedLocals
-        .into_engine(tcx, body)
-        .iterate_to_fixpoint()
-        .into_results_cursor(body);
+    let mut init = MaybeInitializedLocals.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
 
-    let mut init2 = MaybeInitializedLocals
-        .into_engine(tcx, body)
-        .iterate_to_fixpoint()
-        .into_results_cursor(body);
+    let mut init2 = MaybeInitializedLocals.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
 
-    let mut live =
-        MaybeLiveLocals.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
-    let mut live2 =
-        MaybeLiveLocals.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
+    let mut live = MaybeLiveLocals.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
+    let mut live2 = MaybeLiveLocals.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
 
     for (bb, bbd) in preorder(body) {
         if bbd.is_cleanup {

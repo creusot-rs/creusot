@@ -1,6 +1,6 @@
 module Ambient
-  use Ref 
-  use mach.int.Int 
+  use Ref
+  use mach.int.Int
   use mach.int.Int32
   use mach.int.Int64
   use mach.int.UInt32
@@ -12,14 +12,10 @@ module Ambient
   type usize = int
   type isize = int
 
-  (** Generic Type for borrowed values *) 
-  type borrowed 'a = 
-  { current : 'a ; 
-  final : 'a; (* The "future" value when borrow will end *) 
-  } 
-  let function ( *_ ) x = x.current 
-  let function ( ^_ ) x = x.final 
-  val borrow_mut (a : 'a) : borrowed 'a 
+  type borrowed 'a = { current : 'a ; final : 'a; }
+  let function ( *_ ) x = x.current
+  let function ( ^_ ) x = x.final
+  val borrow_mut (a : 'a) : borrowed 'a
   ensures { *result = a }
 
   predicate drop_fix (_ : 'a) = true
@@ -30,46 +26,47 @@ module Ambient
   predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
   predicate drop_ref (_ : 'a) = true
 
-  scope Mod1
-    type t  =
-        | A
-        | B
-        | C
+  scope Type
+  type mod1_t  =
+      | Mod1_t_A
+      | Mod1_t_B
+      | Mod1_t_C
 
-    predicate drop_t (self : t) =
-      match (self) with
-        | A -> True
-        | B -> True
-        | C -> True
-        end
+  predicate drop_mod1_t (self : mod1_t) =
+    match (self) with
+      | Mod1_t_A -> True
+      | Mod1_t_B -> True
+      | Mod1_t_C -> True
+      end
 
   end
   scope Mod2
-    let cfg x (o_t_1 : Mod1.t) : bool
+    let rec cfg x (o_t_1 : Type.mod1_t) : bool
       =
     var _0 : bool;
-    var t_1 : Mod1.t;
+    var t_1 : Type.mod1_t;
     {
       t_1 <- o_t_1;
       goto BB0
     }
     BB0 {
       _0 <- true;
-      assume { Mod1.drop_t t_1 };
+      assume { Type.drop_mod1_t t_1 };
       return _0
     }
 
+
   end
-  let cfg main () : ()
+  let rec cfg main () : ()
     =
   var _0 : ();
   var _1 : bool;
-  var _2 : Mod1.t;
+  var _2 : Type.mod1_t;
   {
     goto BB0
   }
   BB0 {
-    _2 <- Mod1.B;
+    _2 <- Type.Mod1_t_B;
     _1 <- Mod2.x _2;
     goto BB1
   }
@@ -78,5 +75,6 @@ module Ambient
     _0 <- ();
     return _0
   }
+
 
 end

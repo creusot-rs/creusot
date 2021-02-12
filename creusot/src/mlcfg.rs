@@ -1,13 +1,13 @@
-use std::collections::{BTreeMap, HashMap};
 use std::collections::HashSet;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Display;
 
 // Imports related to MLCfg Constatns
+pub use mir::{BinOp, UnOp};
 use rustc_middle::{
     mir,
     ty::{print::FmtPrinter, print::PrettyPrinter, TyCtxt},
 };
-pub use mir::{BinOp, UnOp};
 
 use rustc_hir::def::Namespace;
 use rustc_middle::mir::{BasicBlock, Local};
@@ -16,19 +16,37 @@ pub mod printer;
 
 pub const PRELUDE: &str = include_str!("prelude.mlw");
 
-pub fn drop_fix()     -> QName { QName { module: vec![], name: vec!["drop_fix".into()] } }
-pub fn drop_uint()    -> QName { QName { module: vec![], name: vec!["drop_uint".into()] } }
-pub fn drop_int()     -> QName { QName { module: vec![], name: vec!["drop_int".into()] } }
-pub fn drop_float()   -> QName { QName { module: vec![], name: vec!["drop_float".into()] } }
-pub fn drop_bool()    -> QName { QName { module: vec![], name: vec!["drop_bool".into()] } }
-pub fn drop_mut_ref() -> QName { QName { module: vec![], name: vec!["drop_mut_ref".into()] } }
-pub fn drop_ref()     -> QName { QName { module: vec![], name: vec!["drop_ref".into()] } }
+pub fn drop_fix() -> QName {
+    QName { module: vec![], name: vec!["drop_fix".into()] }
+}
+pub fn drop_uint() -> QName {
+    QName { module: vec![], name: vec!["drop_uint".into()] }
+}
+pub fn drop_int() -> QName {
+    QName { module: vec![], name: vec!["drop_int".into()] }
+}
+pub fn drop_float() -> QName {
+    QName { module: vec![], name: vec!["drop_float".into()] }
+}
+pub fn drop_bool() -> QName {
+    QName { module: vec![], name: vec!["drop_bool".into()] }
+}
+pub fn drop_mut_ref() -> QName {
+    QName { module: vec![], name: vec!["drop_mut_ref".into()] }
+}
+pub fn drop_ref() -> QName {
+    QName { module: vec![], name: vec!["drop_ref".into()] }
+}
 
 #[derive(Default)]
 pub struct Module {
-    pub tydecls : Vec<TyDecl>,
-    pub predicates: Vec<Predicate>,
-    pub functions: Vec<Function>,
+    pub decls: Vec<Decl>,
+}
+
+pub enum Decl {
+    FunDecl(Function),
+    // TyDecl(TyDecl),
+    // PredDecl(Predicate),
 }
 
 #[derive(Debug)]
@@ -108,6 +126,29 @@ impl Type {
         use Type::*;
         !matches!(self, Bool | Char | Int(_) | Uint(_) | TVar(_) | Tuple(_) | TConstructor(_))
     }
+
+    fn find_used_types(&self, tys: &mut HashSet<QName>) {
+        use Type::*;
+
+        match self {
+            MutableBorrow(t) => t.find_used_types(tys),
+            TConstructor(qn) => {
+                tys.insert(qn.clone());
+            }
+            TApp(f, args) => {
+                f.find_used_types(tys);
+                args.iter().for_each(|arg| arg.find_used_types(tys));
+            }
+            Tuple(args) => {
+                args.iter().for_each(|arg| arg.find_used_types(tys));
+            }
+            TFun(a, b) => {
+                a.find_used_types(tys);
+                b.find_used_types(tys);
+            }
+            _ => (),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -115,6 +156,18 @@ pub struct TyDecl {
     pub ty_name: QName,
     pub ty_params: Vec<String>,
     pub ty_constructors: Vec<(String, Vec<Type>)>,
+}
+
+impl TyDecl {
+    pub fn used_types(&self) -> HashSet<QName> {
+        let mut used = HashSet::new();
+        for (_, var_decl) in &self.ty_constructors {
+            for ty in var_decl {
+                ty.find_used_types(&mut used);
+            }
+        }
+        used
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -166,15 +219,23 @@ impl Display for LocalIdent {
 
 use itertools::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct QName {
     pub module: Vec<String>,
+    // TODO: get rid of the vec here!
     pub name: Vec<String>,
 }
 
 impl QName {
-    pub fn replace_name(&mut self, cons: String) {
-        self.name = vec![cons];
+    pub fn name(&self) -> String {
+        format!("{}", self.name.iter().format("_"))
+    }
+
+    pub fn make_constructor(&mut self, cons_name: String) {
+        use heck::CamelCase;
+
+        self.name[0] = self.name[0].to_camel_case();
+        self.name.push(cons_name);
     }
 }
 
@@ -184,11 +245,11 @@ impl From<&rustc_span::Symbol> for QName {
     }
 }
 
-impl Display for QName {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.module.iter().chain(self.name.iter()).format("."))
-    }
-}
+// impl Display for QName {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "{}", self.module.iter().chain(self.name.iter()).format("."))
+//     }
+// }
 
 #[derive(Debug, Clone)]
 pub enum FullBinOp {
@@ -224,17 +285,12 @@ pub enum Exp {
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
 
     // Predicates
-
     Impl(Box<Exp>, Box<Exp>),
     Forall(Vec<(LocalIdent, Type)>, Box<Exp>),
     Exists(Vec<(LocalIdent, Type)>, Box<Exp>),
 }
 
 impl Exp {
-    pub fn unit () -> Self {
-        Self::Tuple(vec![])
-    }
-
     pub fn conj(l: Exp, r: Exp) -> Self {
         Exp::BinaryOp(FullBinOp::And, box l, box r)
     }
@@ -267,53 +323,51 @@ enum Precedence {
 
 impl Exp {
     fn precedence(&self) -> Precedence {
-        use Precedence::*;
         use FullBinOp::Other;
+        use Precedence::*;
 
         match self {
-            Exp::Current(_) => { PrefixOp }
-            Exp::Final(_) => { PrefixOp }
-            Exp::Let { .. } => { Let }
-            Exp::Abs(_, _) => { Let }
-            Exp::Var(_) => { Closed }
-            Exp::QVar(_) => { Closed }
-            Exp::RecUp { .. } => { Term }
-            Exp::Tuple(_) => { Closed }
-            Exp::Constructor { .. } => { Term }
+            Exp::Current(_) => PrefixOp,
+            Exp::Final(_) => PrefixOp,
+            Exp::Let { .. } => Let,
+            Exp::Abs(_, _) => Let,
+            Exp::Var(_) => Closed,
+            Exp::QVar(_) => Closed,
+            Exp::RecUp { .. } => Term,
+            Exp::Tuple(_) => Closed,
+            Exp::Constructor { .. } => Term,
             // Exp::Seq(_, _) => { Term }
-            Exp::Match(_, _) => { Term }
-            Exp::BorrowMut(_) => { Term }
-            Exp::Const(_) => { Closed }
-            Exp::UnaryOp(UnOp::Neg, _) => { PrefixOp }
-            Exp::UnaryOp(UnOp::Not, _) => { Call }
-            Exp::BinaryOp(FullBinOp::And, _, _) => { And }
-            Exp::BinaryOp(FullBinOp::Or, _, _) => { Or }
-            Exp::BinaryOp(Other(op), _, _) => {
-                match op {
-                    BinOp::Add => AddSub,
-                    BinOp::Sub => AddSub,
-                    BinOp::Mul => Mul,
-                    BinOp::Div => Term,
-                    BinOp::Rem => Mul,
-                    BinOp::BitXor => BitXor,
-                    BinOp::BitAnd => BitAnd,
-                    BinOp::BitOr => BitOr,
-                    BinOp::Shl => Shift,
-                    BinOp::Shr => Shift,
-                    BinOp::Eq  => Compare,
-                    BinOp::Lt  => Compare,
-                    BinOp::Le  => Compare,
-                    BinOp::Ne  => Compare,
-                    BinOp::Ge  => Compare,
-                    BinOp::Gt  => Compare,
-                    BinOp::Offset => panic!("unsupported operator"),
-                }
-            }
-            Exp::Call(_, _) => { Call }
-            Exp::Verbatim(_) => { Any }
-            Exp::Impl(_, _) => { Impl }
-            Exp::Forall(_, _) => { Any }
-            Exp::Exists(_, _) => { Any }
+            Exp::Match(_, _) => Term,
+            Exp::BorrowMut(_) => Term,
+            Exp::Const(_) => Closed,
+            Exp::UnaryOp(UnOp::Neg, _) => PrefixOp,
+            Exp::UnaryOp(UnOp::Not, _) => Call,
+            Exp::BinaryOp(FullBinOp::And, _, _) => And,
+            Exp::BinaryOp(FullBinOp::Or, _, _) => Or,
+            Exp::BinaryOp(Other(op), _, _) => match op {
+                BinOp::Add => AddSub,
+                BinOp::Sub => AddSub,
+                BinOp::Mul => Mul,
+                BinOp::Div => Term,
+                BinOp::Rem => Mul,
+                BinOp::BitXor => BitXor,
+                BinOp::BitAnd => BitAnd,
+                BinOp::BitOr => BitOr,
+                BinOp::Shl => Shift,
+                BinOp::Shr => Shift,
+                BinOp::Eq => Compare,
+                BinOp::Lt => Compare,
+                BinOp::Le => Compare,
+                BinOp::Ne => Compare,
+                BinOp::Ge => Compare,
+                BinOp::Gt => Compare,
+                BinOp::Offset => panic!("unsupported operator"),
+            },
+            Exp::Call(_, _) => Call,
+            Exp::Verbatim(_) => Any,
+            Exp::Impl(_, _) => Impl,
+            Exp::Forall(_, _) => Any,
+            Exp::Exists(_, _) => Any,
         }
     }
 
@@ -371,7 +425,7 @@ impl Exp {
                     t.subst(subst.clone());
                 }
             }
-            Exp::Constructor {args, .. } => {
+            Exp::Constructor { args, .. } => {
                 for a in args {
                     a.subst(subst.clone());
                 }
@@ -385,20 +439,34 @@ impl Exp {
 
                 for (pat, br) in brs {
                     let mut s = subst.clone();
-                    pat.binders().drain().for_each(|b| {s.remove(&b);});
+                    pat.binders().drain().for_each(|b| {
+                        s.remove(&b);
+                    });
                     br.subst(s);
                 }
             }
-            Exp::BorrowMut(e) => { e.subst(subst) }
-            Exp::UnaryOp(_, o) => { o.subst(subst); }
-            Exp::BinaryOp(_, l, r) => { l.subst(subst.clone()); r.subst(subst)}
-            Exp::Impl(hyp, exp) => { hyp.subst(subst.clone()); exp.subst(subst)}
+            Exp::BorrowMut(e) => e.subst(subst),
+            Exp::UnaryOp(_, o) => {
+                o.subst(subst);
+            }
+            Exp::BinaryOp(_, l, r) => {
+                l.subst(subst.clone());
+                r.subst(subst)
+            }
+            Exp::Impl(hyp, exp) => {
+                hyp.subst(subst.clone());
+                exp.subst(subst)
+            }
             Exp::Forall(binders, exp) => {
-                binders.iter().for_each(|k| { subst.remove(&k.0); });
+                binders.iter().for_each(|k| {
+                    subst.remove(&k.0);
+                });
                 exp.subst(subst);
             }
             Exp::Exists(binders, exp) => {
-                binders.iter().for_each(|k| { subst.remove(&k.0); });
+                binders.iter().for_each(|k| {
+                    subst.remove(&k.0);
+                });
                 exp.subst(subst);
             }
             Exp::Call(_, a) => {
@@ -420,14 +488,13 @@ impl Exp {
         }
         self
     }
-
 }
 
 #[derive(Debug, Clone)]
 pub enum Constant {
     Int(i128),
     Uint(u128),
-    Float(f64),
+    // Float(f64),
     Other(String),
 }
 impl Constant {
@@ -452,7 +519,7 @@ pub enum Pattern {
     Wildcard,
     VarP(LocalIdent),
     TupleP(Vec<Pattern>),
-    ConsP(String, Vec<Pattern>),
+    ConsP(QName, Vec<Pattern>),
     LitP(Constant),
     // RecP(String, String),
 }
@@ -466,20 +533,15 @@ impl Pattern {
                 b.insert(s.clone());
                 b
             }
-            Pattern::TupleP(pats) => {
-                pats.iter().map(|p| p.binders()).fold(HashSet::new(), |mut set, x| {
-                    set.extend(x);
-                    set
-                })
-            }
-            Pattern::ConsP(_, args) => {
-                args.iter().map(|p| p.binders()).fold(HashSet::new(), |mut set, x| {
-                    set.extend(x);
-                    set
-                })
-            }
+            Pattern::TupleP(pats) => pats.iter().map(|p| p.binders()).fold(HashSet::new(), |mut set, x| {
+                set.extend(x);
+                set
+            }),
+            Pattern::ConsP(_, args) => args.iter().map(|p| p.binders()).fold(HashSet::new(), |mut set, x| {
+                set.extend(x);
+                set
+            }),
             Pattern::LitP(_) => HashSet::new(),
         }
     }
 }
-
