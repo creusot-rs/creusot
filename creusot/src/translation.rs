@@ -125,7 +125,7 @@ impl<'a, 'tcx> FunctionTranslator<'a, 'tcx> {
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if specification::spec_attrs(tcx.get_attrs(*def_id)).is_empty() {
+                if !specification::spec_attrs(tcx.get_attrs(*def_id)).is_empty() {
                     erased_locals.insert(local);
                 }
             }
