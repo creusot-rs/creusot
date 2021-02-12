@@ -166,6 +166,7 @@ impl EnvDisplay for Function {
         writeln!(f, "}}")?;
 
         for (id, block) in &self.blocks {
+            fe.indent_line(f)?;
             write!(f, "{} {}", id, fe.to(block))?;
         }
 
@@ -472,7 +473,6 @@ impl Display for BlockId {
 
 impl EnvDisplay for Block {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fe.indent_line(f)?;
         writeln!(f, "{{")?;
 
         fe.indent(2, |fe| {
