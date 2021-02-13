@@ -1,4 +1,4 @@
-#![feature(register_tool)]
+#![feature(register_tool, stmt_expr_attributes, proc_macro_hygiene)]
 #![register_tool(creusot)]
 
 extern crate creusot_contracts;
@@ -15,7 +15,7 @@ fn main() {
     let mut a = Some(10);
     let b = &mut a;
 
-    invariant!(dummy, true);
+    #[invariant(dummy, true)]
     while let Some(_) = b {
         *b = None;
     }

@@ -49,16 +49,21 @@ impl syn::parse::Parse for Invariant {
         Ok(Invariant { name, invariant })
     }
 }
-#[proc_macro]
-pub fn invariant(invariant: proc_macro::TokenStream) -> proc_macro::TokenStream {
+#[proc_macro_attribute]
+pub fn invariant(invariant: proc_macro::TokenStream, loopb: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let inv: Invariant = parse_macro_input!(invariant);
-
     let term = inv.invariant;
     let inv_toks = format!("{}", quote! {#term});
-
+    let loopb = proc_macro2::TokenStream::from(loopb);
     let invariant_name = inv.name;
     proc_macro::TokenStream::from(quote! {
-        #[creusot::spec::invariant::#invariant_name=#inv_toks]
-        ||{};
+        {
+            #[allow(unused_must_use)]
+            let _ = {
+                #[creusot::spec::invariant::#invariant_name=#inv_toks]
+                ||{}
+            };
+            #loopb
+        }
     })
 }
