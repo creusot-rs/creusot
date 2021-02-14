@@ -45,10 +45,43 @@ pub struct Module {
 
 pub enum Decl {
     FunDecl(Function),
+    LogicDecl(Logic),
     // TyDecl(TyDecl),
     // PredDecl(Predicate),
 }
 
+#[derive(Debug, Default)]
+pub struct Contract {
+    pub requires: Vec<Exp>,
+    pub ensures: Vec<Exp>,
+    pub variant: Option<Exp>,
+}
+
+impl Contract {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn subst(&mut self, subst: &HashMap<LocalIdent, Exp>) {
+        for req in self.requires.iter_mut() {
+            req.subst(subst);
+        }
+        for ens in self.ensures.iter_mut() {
+            ens.subst(subst);
+        }
+        if let Some(variant) = &mut self.variant {
+            variant.subst(subst);
+        }
+    }
+}
+#[derive(Debug)]
+pub struct Logic {
+    pub name: QName,
+    pub retty: Type,
+    pub args: Vec<(LocalIdent, Type)>,
+    pub body: Exp,
+    pub contract: Contract,
+}
 
 #[derive(Debug)]
 pub struct Function {
@@ -57,8 +90,7 @@ pub struct Function {
     pub args: Vec<(LocalIdent, Type)>,
     pub vars: Vec<(LocalIdent, Type)>,
     pub blocks: BTreeMap<BlockId, Block>,
-    pub preconds: Vec<String>, // for now we blindly pass contracts down
-    pub postconds: Vec<String>,
+    pub contract: Contract,
 }
 
 #[derive(Debug)]
@@ -107,6 +139,7 @@ pub enum Statement {
 pub enum Type {
     Bool,
     Char,
+    Integer,
     Int(rustc_middle::ty::IntTy),
     Uint(rustc_middle::ty::UintTy),
     Float(rustc_middle::ty::FloatTy),
@@ -125,7 +158,10 @@ impl Type {
 
     fn complex(&self) -> bool {
         use Type::*;
-        !matches!(self, Bool | Char | Int(_) | Uint(_) | TVar(_) | Tuple(_) | TConstructor(_))
+        !matches!(
+            self,
+            Bool | Char | Integer | Int(_) | Uint(_) | TVar(_) | Tuple(_) | TConstructor(_)
+        )
     }
 
     fn find_used_types(&self, tys: &mut HashSet<QName>) {
@@ -286,6 +322,7 @@ pub enum Exp {
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
 
     // Predicates
+    Absurd,
     Impl(Box<Exp>, Box<Exp>),
     Forall(Vec<(LocalIdent, Type)>, Box<Exp>),
     Exists(Vec<(LocalIdent, Type)>, Box<Exp>),
@@ -369,6 +406,7 @@ impl Exp {
             Exp::Impl(_, _) => Impl,
             Exp::Forall(_, _) => Any,
             Exp::Exists(_, _) => Any,
+            Exp::Absurd => Closed,
         }
     }
 
@@ -386,31 +424,38 @@ impl Exp {
                 fvs.insert(v.clone());
                 fvs
             }
-            // Exp::QVar(_) => {}
+            Exp::QVar(_) => HashSet::new(),
             // Exp::RecUp { record, label, val } => {}
             // Exp::Tuple(_) => {}
             // Exp::Constructor { ctor, args } => {}
             // Exp::BorrowMut(_) => {}
             Exp::Const(_) => HashSet::new(),
             Exp::BinaryOp(_, l, r) => &l.fvs() | &r.fvs(),
-            // Exp::Call(_, _) => {}
+            Exp::Call(f, args) => args.iter().fold(f.fvs(), |acc, a| &acc | &a.fvs()),
+            Exp::Impl(h, c) => &h.fvs() | &c.fvs(),
+            Exp::Forall(bnds, exp) => bnds.iter().fold(exp.fvs(), |mut acc, (l, _)| {
+                acc.remove(l);
+                acc
+            }),
+            Exp::BorrowMut(e) => e.fvs(),
             Exp::Verbatim(_) => HashSet::new(),
             _ => unimplemented!(),
         }
     }
 
-    pub fn subst(&mut self, mut subst: HashMap<LocalIdent, Exp>) {
+    pub fn subst(&mut self, subst: &HashMap<LocalIdent, Exp>) {
         match self {
             Exp::Current(e) => e.subst(subst),
             Exp::Final(e) => e.subst(subst),
             Exp::Let { pattern, arg, body } => {
-                arg.subst(subst.clone());
+                arg.subst(subst);
                 let mut bound = pattern.binders();
+                let mut subst = subst.clone();
                 bound.drain().for_each(|k| {
                     subst.remove(&k);
                 });
 
-                body.subst(subst);
+                body.subst(&subst);
             }
             Exp::Var(v) => {
                 if let Some(e) = subst.get(v) {
@@ -418,32 +463,33 @@ impl Exp {
                 }
             }
             Exp::RecUp { record, val, .. } => {
-                record.subst(subst.clone());
+                record.subst(subst);
                 val.subst(subst);
             }
             Exp::Tuple(tuple) => {
                 for t in tuple {
-                    t.subst(subst.clone());
+                    t.subst(subst);
                 }
             }
             Exp::Constructor { args, .. } => {
                 for a in args {
-                    a.subst(subst.clone());
+                    a.subst(subst);
                 }
             }
             Exp::Abs(ident, body) => {
+                let mut subst = subst.clone();
                 subst.remove(ident);
-                body.subst(subst);
+                body.subst(&subst);
             }
             Exp::Match(box scrut, brs) => {
-                scrut.subst(subst.clone());
+                scrut.subst(subst);
 
                 for (pat, br) in brs {
                     let mut s = subst.clone();
                     pat.binders().drain().for_each(|b| {
                         s.remove(&b);
                     });
-                    br.subst(s);
+                    br.subst(&s);
                 }
             }
             Exp::BorrowMut(e) => e.subst(subst),
@@ -451,33 +497,36 @@ impl Exp {
                 o.subst(subst);
             }
             Exp::BinaryOp(_, l, r) => {
-                l.subst(subst.clone());
+                l.subst(subst);
                 r.subst(subst)
             }
             Exp::Impl(hyp, exp) => {
-                hyp.subst(subst.clone());
+                hyp.subst(subst);
                 exp.subst(subst)
             }
             Exp::Forall(binders, exp) => {
+                let mut subst = subst.clone();
                 binders.iter().for_each(|k| {
                     subst.remove(&k.0);
                 });
-                exp.subst(subst);
+                exp.subst(&subst);
             }
             Exp::Exists(binders, exp) => {
+                let mut subst = subst.clone();
                 binders.iter().for_each(|k| {
                     subst.remove(&k.0);
                 });
-                exp.subst(subst);
+                exp.subst(&subst);
             }
             Exp::Call(_, a) => {
                 for arg in a {
-                    arg.subst(subst.clone());
+                    arg.subst(subst);
                 }
             }
             Exp::QVar(_) => {}
             Exp::Const(_) => {}
             Exp::Verbatim(_) => {}
+            Exp::Absurd => {}
         }
     }
 
@@ -526,11 +575,11 @@ pub enum Pattern {
 
 impl Pattern {
     pub fn mk_true() -> Self {
-        Self::ConsP(QName { module: vec![], name: vec!["True".into()]} , vec![])
+        Self::ConsP(QName { module: vec![], name: vec!["True".into()] }, vec![])
     }
 
     pub fn mk_false() -> Self {
-        Self::ConsP(QName { module: vec![], name: vec!["False".into()]} , vec![])
+        Self::ConsP(QName { module: vec![], name: vec!["False".into()] }, vec![])
     }
 
     pub fn binders(&self) -> HashSet<LocalIdent> {
@@ -541,14 +590,18 @@ impl Pattern {
                 b.insert(s.clone());
                 b
             }
-            Pattern::TupleP(pats) => pats.iter().map(|p| p.binders()).fold(HashSet::new(), |mut set, x| {
-                set.extend(x);
-                set
-            }),
-            Pattern::ConsP(_, args) => args.iter().map(|p| p.binders()).fold(HashSet::new(), |mut set, x| {
-                set.extend(x);
-                set
-            }),
+            Pattern::TupleP(pats) => {
+                pats.iter().map(|p| p.binders()).fold(HashSet::new(), |mut set, x| {
+                    set.extend(x);
+                    set
+                })
+            }
+            Pattern::ConsP(_, args) => {
+                args.iter().map(|p| p.binders()).fold(HashSet::new(), |mut set, x| {
+                    set.extend(x);
+                    set
+                })
+            }
         }
     }
 }

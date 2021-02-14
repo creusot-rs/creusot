@@ -84,6 +84,7 @@ impl EnvDisplay for Decl {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Decl::FunDecl(fun) => writeln!(f, "{}", fe.to(fun)),
+            Decl::LogicDecl(log) => writeln!(f, "{}", fe.to(log)),
             // Decl::TyDecl(t) => { writeln!(f, "{}", fe.to(t)) }
             // Decl::PredDecl(p) => { writeln!(f, "{}", fe.to(p)) }
         }
@@ -114,6 +115,56 @@ impl EnvDisplay for Predicate {
     }
 }
 
+impl EnvDisplay for Logic {
+    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fe.indent_line(f)?;
+        write!(f, "let rec function {} ", fe.to(&self.name))?;
+
+        if self.args.is_empty() {
+            write!(f, "()")?;
+        }
+
+        for (nm, ty) in &self.args {
+            write!(f, "({} : {})", nm, fe.to(ty))?;
+        }
+
+        writeln!(f, " : {}", fe.to(&self.retty))?;
+
+        fe.indent(2, |fe| {
+            write!(f, "{}", fe.to(&self.contract))?;
+            fe.indent_line(f)?;
+            writeln!(f, "=")?;
+
+            fe.indent_line(f)?;
+
+            writeln!(f, "{}", fe.to(&self.body))?;
+            Ok(())
+        })?;
+
+        Ok(())
+    }
+}
+
+impl EnvDisplay for Contract {
+    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for req in &self.requires {
+            fe.indent_line(f)?;
+            writeln!(f, "requires {{ {} }}", fe.to(req))?;
+        }
+
+        for req in &self.ensures {
+            fe.indent_line(f)?;
+            writeln!(f, "ensures {{ {} }}", fe.to(req))?;
+        }
+
+        if let Some(variant) = &self.variant {
+            fe.indent_line(f)?;
+            writeln!(f, "variant {{ {} }}", fe.to(variant))?;
+        }
+        Ok(())
+    }
+}
+
 impl EnvDisplay for Function {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fe.indent_line(f)?;
@@ -130,15 +181,7 @@ impl EnvDisplay for Function {
         writeln!(f, " : {}", fe.to(&self.retty))?;
 
         fe.indent(2, |fe| {
-            for req in &self.preconds {
-                fe.indent_line(f)?;
-                writeln!(f, "requires {{ {} }}", req)?;
-            }
-
-            for req in &self.postconds {
-                fe.indent_line(f)?;
-                writeln!(f, "ensures {{ {} }}", req)?;
-            }
+            write!(f, "{}", fe.to(&self.contract))?;
             fe.indent_line(f)?;
             writeln!(f, "=")?;
 
@@ -216,6 +259,7 @@ impl EnvDisplay for Type {
                     Isize => write!(f, "isize"),
                 }?
             }
+            Integer => write!(f, "int")?,
             Uint(size) => {
                 use rustc_middle::ty::UintTy::*;
                 match size {
@@ -262,7 +306,11 @@ impl EnvDisplay for Type {
                 }
             }
             Tuple(tys) => {
-                write!(f, "({})", tys.iter().format_with(", ", |elt, f| { f(&format_args!("{}", fe.to(elt))) }))?;
+                write!(
+                    f,
+                    "({})",
+                    tys.iter().format_with(", ", |elt, f| { f(&format_args!("{}", fe.to(elt))) })
+                )?;
             }
         }
 
@@ -280,7 +328,13 @@ impl EnvDisplay for Exp {
                 write!(f, " ^ {}", fe.to(e))?;
             }
             Exp::Let { pattern, box arg, box body } => {
-                write!(f, "let {} = {} in {}", fe.to(pattern), parens!(fe, self, arg), parens!(fe, self, body))?;
+                write!(
+                    f,
+                    "let {} = {} in {}",
+                    fe.to(pattern),
+                    parens!(fe, self, arg),
+                    parens!(fe, self, body)
+                )?;
             }
             Exp::Var(v) => {
                 write!(f, "{}", v)?;
@@ -289,7 +343,13 @@ impl EnvDisplay for Exp {
                 write!(f, "{}", fe.to(v))?;
             }
             Exp::RecUp { box record, label, box val } => {
-                write!(f, "{{ {} with {} = {} }}", parens!(fe, self, record), label, parens!(fe, self, val))?;
+                write!(
+                    f,
+                    "{{ {} with {} = {} }}",
+                    parens!(fe, self, record),
+                    label,
+                    parens!(fe, self, val)
+                )?;
             }
             Exp::Tuple(vs) => {
                 write!(f, "({})", vs.iter().format_with(", ", |elt, f| { f(&fe.to(elt)) }))?;
@@ -298,7 +358,12 @@ impl EnvDisplay for Exp {
                 if args.is_empty() {
                     EnvDisplay::fmt(ctor, fe, f)?;
                 } else {
-                    write!(f, "{}({})", fe.to(ctor), args.iter().format_with(", ", |elt, f| { f(&fe.to(elt)) }))?;
+                    write!(
+                        f,
+                        "{}({})",
+                        fe.to(ctor),
+                        args.iter().format_with(", ", |elt, f| { f(&fe.to(elt)) })
+                    )?;
                 }
             }
             Exp::BorrowMut(box exp) => {
@@ -317,10 +382,21 @@ impl EnvDisplay for Exp {
                 write!(f, "div {} {}", parens!(fe, self, l), parens!(fe, self, r))?;
             }
             Exp::BinaryOp(op, box l, box r) => {
-                write!(f, "{} {} {}", parens!(fe, self, l), bin_op_to_string(op), parens!(fe, self, r))?;
+                write!(
+                    f,
+                    "{} {} {}",
+                    parens!(fe, self, l),
+                    bin_op_to_string(op),
+                    parens!(fe, self, r)
+                )?;
             }
             Exp::Call(box fun, args) => {
-                write!(f, "{} {}", parens!(fe, self, fun), args.iter().map(|a| parens!(fe, self, a)).format(" "))?;
+                write!(
+                    f,
+                    "{} {}",
+                    parens!(fe, self, fun),
+                    args.iter().map(|a| parens!(fe, self, a)).format(" ")
+                )?;
             }
             Exp::Verbatim(verb) => {
                 write!(f, "{}", verb)?;
@@ -342,8 +418,9 @@ impl EnvDisplay for Exp {
             Exp::Forall(binders, box exp) => {
                 write!(f, "forall ")?;
 
-                let binder_fmt =
-                    binders.iter().format_with(", ", |(l, ty), f| f(&format_args!("{} : {}", l, fe.to(ty))));
+                let binder_fmt = binders
+                    .iter()
+                    .format_with(", ", |(l, ty), f| f(&format_args!("{} : {}", l, fe.to(ty))));
 
                 write!(f, "{} . {}", binder_fmt, fe.to(exp))?;
             }
@@ -359,6 +436,7 @@ impl EnvDisplay for Exp {
             Exp::Impl(box hyp, box exp) => {
                 write!(f, "{} -> {}", parens!(fe, self, hyp), parens!(fe, self, exp))?;
             }
+            Exp::Absurd => write!(f, "absurd")?,
         }
         Ok(())
     }
@@ -501,7 +579,12 @@ impl EnvDisplay for TyDecl {
                 if args.is_empty() {
                     writeln!(f, "  | {}", cons)?;
                 } else {
-                    writeln!(f, "  | {}({})", cons, args.iter().format_with(", ", |elt, f| { f(&fe.to(elt)) }))?;
+                    writeln!(
+                        f,
+                        "  | {}({})",
+                        cons,
+                        args.iter().format_with(", ", |elt, f| { f(&fe.to(elt)) })
+                    )?;
                 }
             }
             Ok(())
@@ -532,7 +615,7 @@ impl EnvDisplay for QName {
                 .format(".")
         );
 
-        if module_path == "" {
+        if module_path.is_empty() {
             write!(f, "{}", self.name())
         } else {
             write!(f, "{}.{}", module_path, self.name())

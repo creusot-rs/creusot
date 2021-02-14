@@ -76,6 +76,9 @@ pub struct FunctionTranslator<'a, 'b, 'tcx> {
 
     // Type translation context
     ty_ctx: &'a mut ty::Ctx<'b, 'tcx>,
+
+    // Name resolution context for specs
+    resolver: crate::specification::RustcResolver<'tcx>,
 }
 
 // Dataflow locations
@@ -134,13 +137,24 @@ impl ExtendedLocation {
 }
 
 impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
-    pub fn new(sess: &'a Session, tcx: TyCtxt<'tcx>, ctx: &'a mut ty::Ctx<'b, 'tcx>, body: &'a Body<'tcx>) -> Self {
-        let local_init =
-            MaybeInitializedLocals.into_engine(tcx, &body).iterate_to_fixpoint().into_results_cursor(&body);
+    pub fn new(
+        sess: &'a Session,
+        tcx: TyCtxt<'tcx>,
+        ctx: &'a mut ty::Ctx<'b, 'tcx>,
+        body: &'a Body<'tcx>,
+        resolver: specification::RustcResolver<'tcx>,
+    ) -> Self {
+        let local_init = MaybeInitializedLocals
+            .into_engine(tcx, &body)
+            .iterate_to_fixpoint()
+            .into_results_cursor(&body);
 
         // This is called MaybeLiveLocals because pointers don't keep their referees alive.
         // TODO: Defensive check.
-        let local_live = MaybeLiveLocals.into_engine(tcx, &body).iterate_to_fixpoint().into_results_cursor(&body);
+        let local_live = MaybeLiveLocals
+            .into_engine(tcx, &body)
+            .iterate_to_fixpoint()
+            .into_results_cursor(&body);
 
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
@@ -165,6 +179,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
             current_block: (Vec::new(), None),
             past_blocks: BTreeMap::new(),
             ty_ctx: ctx,
+            resolver,
         }
     }
 
@@ -183,7 +198,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
         self.emit_statement(assign);
     }
 
-    pub fn translate(mut self, nm: DefId, contracts: (Vec<String>, Vec<String>)) -> Function {
+    pub fn translate(mut self, nm: DefId, contracts: Contract) -> Function {
         self.translate_body();
 
         let arg_count = self.body.arg_count;
@@ -203,7 +218,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
         let name = translate_defid(self.tcx, nm, Namespace::ValueNS);
 
         move_invariants_into_loop(&mut self.past_blocks);
-        Function { name, retty, args, vars, blocks: self.past_blocks, preconds: contracts.0, postconds: contracts.1 }
+        Function { name, retty, args, vars, blocks: self.past_blocks, contract: contracts }
     }
 
     fn translate_body(&mut self) {
@@ -316,7 +331,8 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
         for local in dying.iter() {
             let local_ty = self.body.local_decls[local].ty;
             let ident = self.translate_local(local);
-            let assumption: Exp = ty::drop_predicate(&mut self.ty_ctx, local_ty).app_to(ident.into());
+            let assumption: Exp =
+                ty::drop_predicate(&mut self.ty_ctx, local_ty).app_to(ident.into());
             self.emit_statement(mlcfg::Statement::Assume(assumption));
         }
     }
@@ -324,7 +340,9 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
     // Useful helper to translate an operand
     pub fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Exp {
         match operand {
-            Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
+            Operand::Copy(pl) | Operand::Move(pl) => {
+                self.translate_rplace(&simplify_place(self.tcx, self.body, pl))
+            }
             Operand::Constant(c) => Const(mlcfg::Constant::from_mir_constant(self.tcx, c)),
         }
     }
@@ -374,7 +392,11 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
                     pat.push(VarP("a".into()));
                     pat.append(&mut vec![Wildcard; size - ix - 1]);
 
-                    inner = Let { pattern: ConsP(tyname, pat), arg: box inner, body: box Var("a".into()) }
+                    inner = Let {
+                        pattern: ConsP(tyname, pat),
+                        arg: box inner,
+                        body: box Var("a".into()),
+                    }
                 }
                 TupleAccess { size, ix } => {
                     let mut pat = vec![Wildcard; *ix];
@@ -412,7 +434,11 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
 
             match proj {
                 Deref(M::Mut) => {
-                    inner = RecUp { record: box self.translate_rplace(&stump), label: "current".into(), val: box inner }
+                    inner = RecUp {
+                        record: box self.translate_rplace(&stump),
+                        label: "current".into(),
+                        val: box inner,
+                    }
                 }
                 Deref(M::Not) => {
                     // Immutable references are erased in MLCFG
@@ -421,9 +447,11 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
                     let def = self.tcx.adt_def(*base_ty);
                     let variant = &def.variants[*ctor];
                     let size = variant.fields.len();
-                    let varpats = ('a'..).map(|c| VarP(LocalIdent::Name(c.to_string()))).take(size).collect();
+                    let varpats =
+                        ('a'..).map(|c| VarP(LocalIdent::Name(c.to_string()))).take(size).collect();
 
-                    let mut varexps: Vec<Exp> = ('a'..).map(|c| Var(c.to_string().into())).take(size).collect();
+                    let mut varexps: Vec<Exp> =
+                        ('a'..).map(|c| Var(c.to_string().into())).take(size).collect();
 
                     varexps[*ix] = inner;
 
@@ -437,8 +465,12 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
                     }
                 }
                 TupleAccess { size, ix } => {
-                    let varpats = ('a'..).map(|c| VarP(LocalIdent::Name(c.to_string()))).take(*size).collect();
-                    let mut varexps: Vec<_> = ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
+                    let varpats = ('a'..)
+                        .map(|c| VarP(LocalIdent::Name(c.to_string())))
+                        .take(*size)
+                        .collect();
+                    let mut varexps: Vec<_> =
+                        ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
                     varexps[*ix] = inner;
 
                     inner = Let {
@@ -462,11 +494,7 @@ fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {
     let mut changes = std::collections::HashMap::new();
     for (_, block) in body.iter_mut() {
         let (invariants, rest) =
-            block.statements.clone().into_iter().partition(
-                |stmt| {
-                    matches!(stmt, Invariant(_, _))
-                },
-            );
+            block.statements.clone().into_iter().partition(|stmt| matches!(stmt, Invariant(_, _)));
 
         let _ = std::mem::replace(&mut block.statements, rest);
         if !invariants.is_empty() {
@@ -490,14 +518,12 @@ use heck::{CamelCase, MixedCase};
 fn translate_defid(tcx: TyCtxt, def_id: DefId, namespace: Namespace) -> QName {
     let def_path = tcx.def_path(def_id);
 
-    let krate_name = tcx.crate_name(def_id.krate);
-
     let mut mod_segs = Vec::new();
     let mut name_segs = Vec::new();
 
     for seg in def_path.data[..].iter() {
         match seg.data {
-            DefPathData::CrateRoot => mod_segs.push(krate_name.to_string()),
+            DefPathData::CrateRoot => mod_segs.push(tcx.crate_name(def_id.krate).to_string()),
             DefPathData::TypeNs(_) => mod_segs.push(format!("{}", seg)[..].to_camel_case()),
             // CORE ASSUMPTION: Once we stop seeing TypeNs we never see it again.
             _ => name_segs.push(format!("{}", seg)[..].to_mixed_case()),

@@ -24,7 +24,11 @@ pub struct SimplePlace {
     pub proj: Vec<Projection>,
 }
 
-pub fn simplify_place<'tcx>(tcx: TyCtxt<'tcx>, decls: &Body<'tcx>, place: &Place<'tcx>) -> SimplePlace {
+pub fn simplify_place<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    decls: &Body<'tcx>,
+    place: &Place<'tcx>,
+) -> SimplePlace {
     let mut place_ty = Place::ty_from(place.local, &[], decls, tcx);
 
     let mut res_proj = Vec::new();
@@ -38,7 +42,11 @@ pub fn simplify_place<'tcx>(tcx: TyCtxt<'tcx>, decls: &Body<'tcx>, place: &Place
                 rustc_middle::ty::TyKind::Adt(def, _) => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
 
-                    res_proj.push(FieldAccess { base_ty: def.did, ctor: variant_id, ix: ix.as_usize() });
+                    res_proj.push(FieldAccess {
+                        base_ty: def.did,
+                        ctor: variant_id,
+                        ix: ix.as_usize(),
+                    });
                 }
                 rustc_middle::ty::TyKind::Tuple(fields) => {
                     res_proj.push(TupleAccess { size: fields.len(), ix: ix.as_usize() })

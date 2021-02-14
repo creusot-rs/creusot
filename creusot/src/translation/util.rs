@@ -10,7 +10,7 @@ pub fn module_of(tcx: TyCtxt<'_>, def_id: DefId) -> ModulePath {
     let mut layers = 1;
 
     while layers > 0 {
-        if let DefPathData::ClosureExpr =  def_path.data.last().unwrap().data {
+        if let DefPathData::ClosureExpr = def_path.data.last().unwrap().data {
             layers += 1
         }
         def_path.data.pop();

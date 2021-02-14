@@ -1,0 +1,87 @@
+module Ambient
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+
+  type usize = uint64
+  type isize = int64
+
+  type borrowed 'a = { current : 'a ; final : 'a; }
+  let function ( *_ ) x = x.current
+  let function ( ^_ ) x = x.final
+  val borrow_mut (a : 'a) : borrowed 'a
+  ensures { *result = a }
+
+  predicate drop_fix (_ : 'a) = true
+  predicate drop_uint (_ : 'a) = true
+  predicate drop_int (_ : 'a) = true
+  predicate drop_float (_ : 'a) = true
+  predicate drop_bool (_ : 'a) = true
+  predicate drop_mut_ref (b : borrowed 'a) = ^ b = * b
+  predicate drop_ref (_ : 'a) = true
+
+  scope Type
+  type s 'a 'b =
+      | S_S('a, 'b)
+
+  predicate drop_s (drop_'a : 'a -> bool) (drop_'b : 'b -> bool) (self : s 'a 'b) =
+    let S_S(a, b) = self in drop_'a a && drop_'b b
+  type t  =
+      | T_A
+      | T_B
+
+  predicate drop_t (self : t) =
+    match (self) with
+      | T_A -> true
+      | T_B -> true
+      end
+
+  type list 'a =
+      | List_Cons('a, list 'a)
+      | List_Nil
+
+  predicate drop_list (drop_'a : 'a -> bool) (self : list 'a) =
+    match (self) with
+      | List_Cons(a, b) -> drop_'a a && drop_fix b
+      | List_Nil -> true
+      end
+
+  end
+  let rec cfg testSpecs () : ()
+    ensures { match (Type.List_Nil) with
+      | Type.List_Cons(x, xs) -> true
+      | Type.List_Nil -> false
+      end
+ }
+    ensures { Type.T_A = Type.T_B }
+    ensures { Type.S_S 0 true = Type.S_S 1 false }
+    =
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+
+
+  let rec cfg main () : ()
+    =
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+
+
+end

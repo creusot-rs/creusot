@@ -32,9 +32,10 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         match &terminator.kind {
             Goto { target } => self.emit_terminator(MlT::Goto(target.into())),
             SwitchInt { discr, targets, .. } => {
-                let real_discr = discriminator_for_switch(&self.body.basic_blocks()[location.block])
-                    .map(Operand::Move)
-                    .unwrap_or_else(|| discr.clone());
+                let real_discr =
+                    discriminator_for_switch(&self.body.basic_blocks()[location.block])
+                        .map(Operand::Move)
+                        .unwrap_or_else(|| discr.clone());
 
                 let discriminant = self.translate_operand(&real_discr);
                 let switch = make_switch(
@@ -55,7 +56,8 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             Call { func, args, destination, .. } => {
                 let fun_def_id = func_defid(func).expect("expected call with function");
 
-                let mut func_args: Vec<_> = args.iter().map(|arg| self.translate_operand(arg)).collect();
+                let mut func_args: Vec<_> =
+                    args.iter().map(|arg| self.translate_operand(arg)).collect();
 
                 if func_args.is_empty() {
                     // We use tuple as a dummy argument for 0-ary functions
@@ -68,7 +70,9 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     func_args.remove(0)
                 } else {
                     let fname = match func.ty(self.body, self.tcx).kind() {
-                        ty::TyKind::FnDef(defid, _) => super::translate_defid(self.tcx, *defid, Namespace::ValueNS),
+                        ty::TyKind::FnDef(defid, _) => {
+                            super::translate_defid(self.tcx, *defid, Namespace::ValueNS)
+                        }
                         _ => panic!("not a function"),
                     };
                     Exp::Call(box Exp::QVar(fname), func_args)
@@ -77,14 +81,15 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 if destination.is_none() {
                     // If we have no target block after the call, then we cannot move past it.
                     self.emit_terminator(MlT::Absurd);
-
                 } else {
                     let (loc, bb) = destination.unwrap();
                     self.emit_assignment(&simplify_place(self.tcx, self.body, &loc), call_exp);
                     self.emit_terminator(MlT::Goto(bb.into()));
                 }
             }
-            Assert { cond: _, expected: _, msg: _, target: _, cleanup: _ } => unimplemented!("assert"),
+            Assert { cond: _, expected: _, msg: _, target: _, cleanup: _ } => {
+                unimplemented!("assert")
+            }
 
             FalseEdge { real_target, .. } => self.emit_terminator(MlT::Goto(real_target.into())),
 
@@ -128,7 +133,9 @@ pub fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Plac
         return None;
     };
 
-    if let StatementKind::Assign(box (pl, Rvalue::Discriminant(real_discr))) = bbd.statements.last()?.kind {
+    if let StatementKind::Assign(box (pl, Rvalue::Discriminant(real_discr))) =
+        bbd.statements.last()?.kind
+    {
         if discr.place() == Some(pl) {
             Some(real_discr)
         } else {
@@ -152,35 +159,41 @@ pub fn make_switch<'tcx>(
     use Pattern::*;
     match switch_ty.kind() {
         Adt(def, _) => {
-            let d_to_var: HashMap<_, _> = def.discriminants(tcx).map(|(idx, d)| (d.val, idx)).collect();
+            let d_to_var: HashMap<_, _> =
+                def.discriminants(tcx).map(|(idx, d)| (d.val, idx)).collect();
 
             let mut branches: Vec<_> = targets
                 .iter()
-                .map(|(disc, tgt)| (variant_pattern(ctx, def, d_to_var[&disc]), MlT::Goto(tgt.into())))
+                .map(|(disc, tgt)| {
+                    (variant_pattern(ctx, def, d_to_var[&disc]), MlT::Goto(tgt.into()))
+                })
                 .collect();
             branches.push((Wildcard, MlT::Goto(targets.otherwise().into())));
 
             MlT::Switch(discr, branches)
         }
         Bool => {
-            let mut branches: Vec<(Pattern, _)> =
-                vec![Pattern::mk_false(), Pattern::mk_true()]
-                    .into_iter()
-                    .zip(targets.all_targets().iter().map(|tgt| MlT::Goto(tgt.into())))
-                    .collect();
+            let mut branches: Vec<(Pattern, _)> = vec![Pattern::mk_false(), Pattern::mk_true()]
+                .into_iter()
+                .zip(targets.all_targets().iter().map(|tgt| MlT::Goto(tgt.into())))
+                .collect();
             branches.push((Wildcard, MlT::Goto(targets.otherwise().into())));
             MlT::Switch(discr, branches)
         }
         Uint(_) => {
-            let annoying: Vec<(Constant, MlT)> =
-                targets.iter().map(|(val, tgt)| (Constant::Uint(val), MlT::Goto(tgt.into()))).collect();
+            let annoying: Vec<(Constant, MlT)> = targets
+                .iter()
+                .map(|(val, tgt)| (Constant::Uint(val), MlT::Goto(tgt.into())))
+                .collect();
 
             let default = MlT::Goto(targets.otherwise().into());
             build_constant_switch(discr, annoying.into_iter(), default)
         }
         Int(_) => {
-            let annoying: Vec<(Constant, MlT)> =
-                targets.iter().map(|(val, tgt)| (Constant::Int(val as i128), MlT::Goto(tgt.into()))).collect();
+            let annoying: Vec<(Constant, MlT)> = targets
+                .iter()
+                .map(|(val, tgt)| (Constant::Int(val as i128), MlT::Goto(tgt.into())))
+                .collect();
 
             let default = MlT::Goto(targets.otherwise().into());
             build_constant_switch(discr, annoying.into_iter(), default)

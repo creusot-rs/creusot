@@ -21,13 +21,17 @@ extern crate log;
 
 use def_path_trie::DefPathTrie;
 use mlcfg::Module;
-use rustc_driver::{Callbacks, Compilation, RunCompiler};
+use rustc_driver::{abort_on_err, Callbacks, Compilation, RunCompiler};
 use rustc_hir::{def_id::LOCAL_CRATE, Item};
-use rustc_interface::{interface::Compiler, Queries};
+use rustc_interface::{
+    interface::{BoxedResolver, Compiler},
+    Queries,
+};
 use rustc_middle::{
     mir::{visit::MutVisitor, Location, Terminator},
     ty::{TyCtxt, WithOptConstParam},
 };
+use std::{cell::RefCell, env::args as get_args, rc::Rc};
 
 mod analysis;
 
@@ -48,19 +52,34 @@ struct ToWhy {
 }
 
 impl Callbacks for ToWhy {
-    // Register callback for after MIR borrowck and typechecking is finished
-    fn after_analysis<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
+    fn after_expansion<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
+        let session = c.session();
+        let resolver = {
+            let parts = abort_on_err(queries.expansion(), session).peek();
+            let resolver = parts.1.borrow();
+            resolver.clone()
+        };
+
+        queries.prepare_outputs().unwrap();
+
+        queries.global_ctxt().unwrap();
+
+        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| tcx.analysis(LOCAL_CRATE)).unwrap();
+
         queries
             .global_ctxt()
             .unwrap()
             .peek_mut()
-            .enter(|tcx| translate(&self.output_file, c.session(), tcx))
+            .enter(|tcx| {
+                let session = c.session();
+                // TODO: Resolve extern crates
+                translate(&self.output_file, session, tcx, resolver)
+            })
             .unwrap();
         Compilation::Stop
     }
 }
 
-use std::env::args as get_args;
 fn main() {
     env_logger::init();
 
@@ -88,7 +107,12 @@ fn is_type_decl(item: &Item) -> bool {
     }
 }
 
-fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()> {
+fn translate(
+    output: &Option<String>,
+    sess: &Session,
+    tcx: TyCtxt,
+    resolver: Rc<RefCell<BoxedResolver>>,
+) -> Result<()> {
     let hir_map = tcx.hir();
 
     // Collect the DefIds of all type declarations in this crate
@@ -134,27 +158,39 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
 
         // Parent module of declaration
         let module = util::module_of(tcx, def_id);
-
+        use crate::rustc_middle::ty::DefIdTree;
+        let module_id = tcx.parent(def_id).unwrap();
         let attrs = tcx.get_attrs(def_id);
+        let resolver = specification::RustcResolver(resolver.clone(), module_id, tcx);
 
-        use specification::SpecItem;
-        if specification::get_invariant(attrs).unwrap().is_some() {
-            continue
-        }
-
-        let func_contract = specification::translate_contract(attrs, &body);
-
-        // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
-        // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
-        // TODO: now that we don't use polonius info: consider using optimized mir instead?
-        RemoveFalseEdge { tcx }.visit_body(&mut body);
-
-        let translated =
-            FunctionTranslator::new(sess, tcx, &mut ty_ctx, &body).translate(def_id, func_contract);
-
-        // debug::debug(tcx, &body);
         use mlcfg::Decl;
-        krate.modules.get_mut_with_default(module).decls.push(Decl::FunDecl(translated));
+        use specification::Spec::*;
+        match specification::spec_kind(attrs).unwrap() {
+            Invariant { .. } => continue,
+            Logic { body: exp, contract } => {
+                let out_contract = contract.check_and_lower(&resolver, &body);
+
+                let mut translated = specification::logic_to_why(&resolver, def_id, &body, exp);
+                translated.contract = out_contract;
+                krate.modules.get_mut_with_default(module).decls.push(Decl::LogicDecl(translated));
+            }
+            Program { contract } => {
+                let mut out_contract = contract.check_and_lower(&resolver, &body);
+                let subst = specification::subst_for_arguments(&body);
+
+                out_contract.subst(&subst);
+
+                // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
+                // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
+                // TODO: now that we don't use polonius info: consider using optimized mir instead?
+                RemoveFalseEdge { tcx }.visit_body(&mut body);
+
+                let translated = FunctionTranslator::new(sess, tcx, &mut ty_ctx, &body, resolver)
+                    .translate(def_id, out_contract);
+
+                krate.modules.get_mut_with_default(module).decls.push(Decl::FunDecl(translated));
+            }
+        }
     }
 
     // Collect all the type translations
