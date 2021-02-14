@@ -83,15 +83,20 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                         let attrs = self.tcx.get_attrs(*def_id);
 
                         match specification::get_invariant(attrs) {
-                            Ok((name, inv)) => {
+                            Ok(Some((name, inv))) => {
                                 let invariant = specification::invariant_to_why(self.body, si, inv);
                                 self.emit_statement(Invariant(name, Verbatim(invariant)));
                                 return;
                             }
-                            Err(_) => self.sess.span_fatal_with_code(
+                            Ok(None) => self.sess.span_fatal_with_code(
                                 si.span,
                                 "closures are not yet supported",
                                 DiagnosticId::Error(String::from("creusot")),
+                            ),
+                            Err(err) => self.sess.span_fatal_with_code(
+                                si.span,
+                                &format!("{:?}", err),
+                                DiagnosticId::Error(String::from("creusot"))
                             ),
                         }
                     }

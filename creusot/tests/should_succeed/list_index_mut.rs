@@ -17,7 +17,6 @@ pub struct List {
     next: Option<Box<List>>,
 }
 
-
 // Supposer `get ix l` logique `len l` logique
 
 // #[requires(param_ix < len param_l@now)]

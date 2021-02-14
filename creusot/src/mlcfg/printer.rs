@@ -83,8 +83,9 @@ macro_rules! parens {
 impl EnvDisplay for Decl {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Decl::FunDecl(fun) => writeln!(f, "{}", fe.to(fun)), // Decl::TyDecl(t) => { writeln!(f, "{}", fe.to(t)) }
-                                                                 // Decl::PredDecl(p) => { writeln!(f, "{}", fe.to(p)) }
+            Decl::FunDecl(fun) => writeln!(f, "{}", fe.to(fun)),
+            // Decl::TyDecl(t) => { writeln!(f, "{}", fe.to(t)) }
+            // Decl::PredDecl(p) => { writeln!(f, "{}", fe.to(p)) }
         }
     }
 }

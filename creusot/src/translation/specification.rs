@@ -2,52 +2,35 @@ use crate::mlcfg::printer::FormatEnv;
 use crate::mlcfg::Exp;
 use crate::mlcfg::LocalIdent;
 use crate::mlcfg::QName;
-use rustc_middle::mir::{Body, SourceInfo};
+use rustc_hir::def_id::DefId;
+use rustc_middle::{mir::{Body, SourceInfo}, ty::TyCtxt};
 use syn::{term::Term::*, term::*, BinOp};
 
 // Check if a set of invariants includes an invariant tag, indicating the associated body is
 // an invariant closure and should be ignored by translation
-
-pub enum InvariantError {
-    NoInvariant,
-    InvalidAttributes,
+pub fn get_invariant(attrs: &[Attribute]) -> Result<Option<(String, String)>, SpecAttrError> {
+    if let Invariant { name, expression} = spec_attrs(attrs)?.remove(0) {
+        Ok(Some((name, expression)))
+    } else {
+        Ok(None)
+    }
 }
 
-pub fn get_invariant(attrs: &[Attribute]) -> Result<(String, String), InvariantError> {
-    use InvariantError::*;
-    let mut attrs = spec_attrs(attrs);
-    if attrs.len() != 1 {
-        return Err(InvalidAttributes);
-    }
-    let attr = attrs.remove(0);
-
-    if let "invariant" = attr.path.segments[2].ident.name.to_string().as_ref() {
-        return Ok((invariant_name(attr), ts_to_symbol(attr.args.inner_tokens()).unwrap()))
-    }
-    Err(NoInvariant)
+pub fn is_spec_id(tcx: TyCtxt<'_>, did: DefId) -> Result<bool, SpecAttrError> {
+    let attrs = tcx.get_attrs(did);
+    Ok(!spec_attrs(attrs)?.is_empty())
 }
 
 pub fn translate_contract(attrs: &[Attribute], body: &Body) -> (Vec<String>, Vec<String>) {
     let mut func_contract = (Vec::new(), Vec::new());
-    for attr in spec_attrs(attrs) {
-        match attr.path.segments[2].ident.name.to_string().as_ref() {
-            "requires" => {
-                let req = ts_to_symbol(attr.args.inner_tokens()).unwrap();
-                func_contract.0.push(requires_to_why(&body, req));
-                // func_contract.0.push(req);
-            }
-            "ensures" => {
-                let req = ts_to_symbol(attr.args.inner_tokens()).unwrap();
-                let ens_clause = ensures_to_why(&body, req);
-                func_contract.1.push(ens_clause);
-            }
-            "invariant" => {
-                break; // this body is an invariant closure, skip it.
-            }
-            _ => unimplemented!(),
+
+    for spec_item in spec_attrs(attrs).unwrap() {
+        match spec_item {
+            Requires { expression } => func_contract.0.push(requires_to_why(&body, expression)),
+            Ensures { expression } => func_contract.1.push(ensures_to_why(&body, expression)),
+            _ => panic!("Unexpected spec item in contract position!"),
         }
     }
-
     func_contract
 }
 
@@ -76,14 +59,17 @@ pub fn invariant_to_why(body: &Body<'_>, info: SourceInfo, attr_val: String) -> 
     let mut e = to_exp(&p);
     let fvs = e.fvs();
 
-    let vars_in_scope: Vec<_> = body.var_debug_info.iter().filter(|vdi| vdi.source_info.scope <= info.scope).collect();
+    let vars_in_scope: Vec<_> =
+        body.var_debug_info.iter().filter(|vdi| vdi.source_info.scope <= info.scope).collect();
 
     // TODO: ensure only one match
     let subst = fvs
         .iter()
         .map(|free| {
-            let var_info =
-                vars_in_scope.iter().find(|vdi| free.to_string() == vdi.name.to_ident_string()).unwrap();
+            let var_info = vars_in_scope
+                .iter()
+                .find(|vdi| free.to_string() == vdi.name.to_ident_string())
+                .unwrap();
 
             let loc = var_info.place.as_local().unwrap();
             (free.clone(), LocalIdent::Local(loc, Some(var_info.name.to_string())).into())
@@ -138,8 +124,12 @@ fn to_exp(p: &Term) -> crate::mlcfg::Exp {
         // Group(_) => {}
         // If(_) => {}
         Lit(TermLit { lit }) => match lit {
-            syn::Lit::Int(lit) => Const(crate::mlcfg::Constant::Other(lit.base10_digits().to_owned())),
-            syn::Lit::Float(lit) => Const(crate::mlcfg::Constant::Other(lit.base10_digits().to_owned())),
+            syn::Lit::Int(lit) => {
+                Const(crate::mlcfg::Constant::Other(lit.base10_digits().to_owned()))
+            }
+            syn::Lit::Float(lit) => {
+                Const(crate::mlcfg::Constant::Other(lit.base10_digits().to_owned()))
+            }
             syn::Lit::Bool(lit) => Const(crate::mlcfg::Constant::Other(format!("{}", lit.value))),
             _ => unimplemented!(),
         },
@@ -158,12 +148,18 @@ fn to_exp(p: &Term) -> crate::mlcfg::Exp {
         // Match(_) => {}
         Term::Impl(TermImpl { hyp, cons, .. }) => Exp::Impl(box to_exp(hyp), box to_exp(cons)),
         Term::Forall(TermForall { args, term, .. }) => {
-            let binders = args.iter().map(|qa| (LocalIdent::Name(qa.ident.to_string()), from_ty(&qa.ty))).collect();
+            let binders = args
+                .iter()
+                .map(|qa| (LocalIdent::Name(qa.ident.to_string()), from_ty(&qa.ty)))
+                .collect();
 
             Exp::Forall(binders, box to_exp(term))
         }
         Term::Exists(TermExists { args, term, .. }) => {
-            let binders = args.iter().map(|qa| (LocalIdent::Name(qa.ident.to_string()), from_ty(&qa.ty))).collect();
+            let binders = args
+                .iter()
+                .map(|qa| (LocalIdent::Name(qa.ident.to_string()), from_ty(&qa.ty)))
+                .collect();
 
             Exp::Exists(binders, box to_exp(term))
         }
@@ -185,7 +181,9 @@ fn from_ty(ty: &syn::Type) -> crate::mlcfg::Type {
                 from_ty(elem)
             }
         }
-        syn::Type::Tuple(TypeTuple { elems, .. }) => crate::mlcfg::Type::Tuple(elems.iter().map(from_ty).collect()),
+        syn::Type::Tuple(TypeTuple { elems, .. }) => {
+            crate::mlcfg::Type::Tuple(elems.iter().map(from_ty).collect())
+        }
         syn::Type::Never(_) => unimplemented!("never type"),
 
         syn::Type::Array(_) | syn::Type::Slice(_) => unimplemented!("array / slice"),
@@ -252,13 +250,53 @@ fn invariant_name(attr: &rustc_ast::AttrItem) -> String {
     attr.path.segments[3].ident.name.to_string()
 }
 
-pub fn spec_attrs(a: Attributes<'_>) -> Vec<&AttrItem> {
-    a.iter().filter(|a| !a.is_doc_comment()).map(|a| a.get_normal_item()).filter(|ai| is_attr(ai, "spec")).collect()
+pub enum SpecItem {
+    Invariant { name: String, expression: String },
+    Requires { expression: String },
+    Ensures { expression: String },
+}
+
+#[derive(Debug)]
+pub enum SpecAttrError {
+    UnknownAttribute(String),
+    InvalidTokens,
+}
+
+use SpecItem::*;
+
+pub fn spec_attrs(a: Attributes<'_>) -> Result<Vec<SpecItem>, SpecAttrError> {
+    use SpecAttrError::*;
+    let mut res = Vec::new();
+    for attr in a {
+        if attr.is_doc_comment() {
+            continue;
+        }
+        let attr = attr.get_normal_item();
+        if !is_attr(attr, "spec") {
+            continue;
+        }
+        match attr.path.segments[2].ident.to_string().as_str() {
+            "invariant" => res.push(Invariant {
+                name: invariant_name(attr),
+                expression: ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?,
+            }),
+            "requires" => res.push(Requires {
+                expression: ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?,
+            }),
+            "ensures" => res.push(Ensures {
+                expression: ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?,
+            }),
+            kind => Err(UnknownAttribute(kind.into()))?,
+        }
+    }
+    Ok(res)
 }
 
 use rustc_ast::AttrItem;
 
 fn is_attr(attr: &AttrItem, str: &str) -> bool {
     let segments = &attr.path.segments;
-    segments.len() >= 2 && segments[0].ident.as_str() == "creusot" && segments[1].ident.as_str() == str
+    segments.len() >= 2
+        && segments[0].ident.as_str() == "creusot"
+        && segments[1].ident.as_str() == str
 }

@@ -49,6 +49,7 @@ pub enum Decl {
     // PredDecl(Predicate),
 }
 
+
 #[derive(Debug)]
 pub struct Function {
     pub name: QName,

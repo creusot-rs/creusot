@@ -50,7 +50,12 @@ struct ToWhy {
 impl Callbacks for ToWhy {
     // Register callback for after MIR borrowck and typechecking is finished
     fn after_analysis<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
-        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| translate(&self.output_file, c.session(), tcx)).unwrap();
+        queries
+            .global_ctxt()
+            .unwrap()
+            .peek_mut()
+            .enter(|tcx| translate(&self.output_file, c.session(), tcx))
+            .unwrap();
         Compilation::Stop
     }
 }
@@ -127,21 +132,25 @@ fn translate(output: &Option<String>, sess: &Session, tcx: TyCtxt) -> Result<()>
         let mut body = body.steal();
         let def_id = def_id.to_def_id();
 
-        let attrs = tcx.get_attrs(def_id);
-        if specification::get_invariant(attrs).is_ok() {
-            continue;
-        }
-        let func_contract = specification::translate_contract(attrs, &body);
-
-        // Parent module
+        // Parent module of declaration
         let module = util::module_of(tcx, def_id);
+
+        let attrs = tcx.get_attrs(def_id);
+
+        use specification::SpecItem;
+        if specification::get_invariant(attrs).unwrap().is_some() {
+            continue
+        }
+
+        let func_contract = specification::translate_contract(attrs, &body);
 
         // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
         // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
         // TODO: now that we don't use polonius info: consider using optimized mir instead?
         RemoveFalseEdge { tcx }.visit_body(&mut body);
 
-        let translated = FunctionTranslator::new(sess, tcx, &mut ty_ctx, &body).translate(def_id, func_contract);
+        let translated =
+            FunctionTranslator::new(sess, tcx, &mut ty_ctx, &body).translate(def_id, func_contract);
 
         // debug::debug(tcx, &body);
         use mlcfg::Decl;
@@ -220,8 +229,14 @@ fn sysroot_path() -> String {
     let toolchain: toml::Value = toml::from_str(include_str!("../../rust-toolchain")).unwrap();
     let channel = toolchain["toolchain"]["channel"].as_str().unwrap();
 
-    let output =
-        Command::new("rustup").arg("run").arg(channel).arg("rustc").arg("--print").arg("sysroot").output().unwrap();
+    let output = Command::new("rustup")
+        .arg("run")
+        .arg(channel)
+        .arg("rustc")
+        .arg("--print")
+        .arg("sysroot")
+        .output()
+        .unwrap();
 
     print!("{}", String::from_utf8(output.stderr).ok().unwrap());
 

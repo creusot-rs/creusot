@@ -5,7 +5,6 @@
 extern crate proc_macro;
 
 use syn::*;
-
 use quote::quote;
 
 #[proc_macro_attribute]
@@ -35,6 +34,7 @@ pub fn ensures(attr: proc_macro::TokenStream, tokens: proc_macro::TokenStream) -
       #f
     })
 }
+
 struct Invariant {
     name: syn::Ident,
     invariant: syn::Term,
