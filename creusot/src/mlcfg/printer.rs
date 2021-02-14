@@ -206,7 +206,7 @@ impl EnvDisplay for Type {
                 write!(f, "char")?;
             }
             Int(size) => {
-                use rustc_ast::ast::IntTy::*;
+                use rustc_middle::ty::IntTy::*;
                 match size {
                     I8 => write!(f, "int8"),
                     I16 => write!(f, "int16"),
@@ -217,7 +217,7 @@ impl EnvDisplay for Type {
                 }?
             }
             Uint(size) => {
-                use rustc_ast::ast::UintTy::*;
+                use rustc_middle::ty::UintTy::*;
                 match size {
                     U8 => write!(f, "uint8"),
                     U16 => write!(f, "uint16"),
@@ -228,7 +228,7 @@ impl EnvDisplay for Type {
                 }?
             }
             Float(size) => {
-                use rustc_ast::ast::FloatTy::*;
+                use rustc_middle::ty::FloatTy::*;
                 match size {
                     F32 => write!(f, "single"),
                     F64 => write!(f, "double"),

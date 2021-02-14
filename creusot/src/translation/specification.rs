@@ -36,13 +36,16 @@ pub fn translate_contract(attrs: &[Attribute], body: &Body) -> (Vec<String>, Vec
 
 pub fn requires_to_why(body: &Body<'_>, attr_val: String) -> String {
     let p: Term = syn::parse_str(&attr_val).unwrap();
-
+    use rustc_middle::mir::VarDebugInfoContents::Place;
     let subst = body
         .var_debug_info
         .iter()
         .take(body.arg_count)
         .map(|vdi| {
-            let loc = vdi.place.as_local().unwrap();
+            let loc = match vdi.value {
+                Place(p) => p.as_local().unwrap(),
+                _ => panic!()
+            };
             let source_name = vdi.name.to_string();
             let outer_name = format!("o_{}", source_name);
             (LocalIdent::Name(source_name), Exp::Var(LocalIdent::Local(loc, Some(outer_name))))
@@ -61,6 +64,7 @@ pub fn invariant_to_why(body: &Body<'_>, info: SourceInfo, attr_val: String) -> 
 
     let vars_in_scope: Vec<_> =
         body.var_debug_info.iter().filter(|vdi| vdi.source_info.scope <= info.scope).collect();
+    use rustc_middle::mir::VarDebugInfoContents::Place;
 
     // TODO: ensure only one match
     let subst = fvs
@@ -71,7 +75,10 @@ pub fn invariant_to_why(body: &Body<'_>, info: SourceInfo, attr_val: String) -> 
                 .find(|vdi| free.to_string() == vdi.name.to_ident_string())
                 .unwrap();
 
-            let loc = var_info.place.as_local().unwrap();
+            let loc = match var_info.value {
+                Place(p) => p.as_local().unwrap(),
+                _ => panic!()
+            };
             (free.clone(), LocalIdent::Local(loc, Some(var_info.name.to_string())).into())
         })
         .collect();
@@ -197,7 +204,7 @@ fn from_ty(ty: &syn::Type) -> crate::mlcfg::Type {
 
 fn type_path_to_type(path: &syn::Path) -> crate::mlcfg::Type {
     use crate::mlcfg::Type;
-    use rustc_ast::ast::{IntTy::*, UintTy::*};
+    use rustc_middle::ty::{IntTy::*, UintTy::*};
     match path.segments[0].ident.to_string().as_str() {
         "u8" => Type::Uint(U8),
         "u16" => Type::Uint(U16),

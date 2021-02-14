@@ -107,9 +107,9 @@ pub enum Statement {
 pub enum Type {
     Bool,
     Char,
-    Int(rustc_ast::ast::IntTy),
-    Uint(rustc_ast::ast::UintTy),
-    Float(rustc_ast::ast::FloatTy),
+    Int(rustc_middle::ty::IntTy),
+    Uint(rustc_middle::ty::UintTy),
+    Float(rustc_middle::ty::FloatTy),
     MutableBorrow(Box<Type>),
     TVar(String),
     TConstructor(QName),

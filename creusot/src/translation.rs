@@ -330,13 +330,14 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
     }
 
     fn translate_local(&self, loc: Local) -> LocalIdent {
+        use rustc_middle::mir::VarDebugInfoContents::Place;
         let debug_info: Vec<_> = self
             .body
             .var_debug_info
             .iter()
-            .filter(|var_info| match var_info.place.as_local() {
-                Some(l) => l == loc,
-                None => false,
+            .filter(|var_info| match var_info.value {
+                Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
+                _ => false,
             })
             .collect();
 
