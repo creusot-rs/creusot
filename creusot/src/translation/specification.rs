@@ -9,6 +9,11 @@ use syn::{term::Term::*, term::*, BinOp};
 // Check if a set of invariants includes an invariant tag, indicating the associated body is
 // an invariant closure and should be ignored by translation
 pub fn get_invariant(attrs: &[Attribute]) -> Result<Option<(String, String)>, SpecAttrError> {
+    let specs = spec_attrs(attrs)?;
+    if specs.len() != 1 {
+        return Ok(None)
+    }
+
     if let Invariant { name, expression} = spec_attrs(attrs)?.remove(0) {
         Ok(Some((name, expression)))
     } else {
