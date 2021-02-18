@@ -429,9 +429,6 @@ impl EnvDisplay for Pattern {
                     write!(f, "{}({})", fe.to(c), pats.iter().map(|p| fe.to(p)).format(", "))?;
                 }
             }
-            Pattern::LitP(lit) => {
-                write!(f, "{}", lit)?;
-            }
         }
         Ok(())
     }

@@ -164,7 +164,7 @@ pub fn make_switch<'tcx>(
         }
         Bool => {
             let mut branches: Vec<(Pattern, _)> =
-                vec![Pattern::LitP(Constant::const_false()), Pattern::LitP(Constant::const_true())]
+                vec![Pattern::mk_false(), Pattern::mk_true()]
                     .into_iter()
                     .zip(targets.all_targets().iter().map(|tgt| MlT::Goto(tgt.into())))
                     .collect();
@@ -198,11 +198,10 @@ fn build_constant_switch<T>(discr: Exp, targets: T, default: MlT) -> MlT
 where
     T: Iterator<Item = (Constant, MlT)> + DoubleEndedIterator,
 {
-    use Pattern::LitP;
     targets.rfold(default, |acc, (val, term)| {
         MlT::Switch(
             Exp::BinaryOp(BinOp::Eq.into(), box discr.clone(), box Exp::Const(val)),
-            vec![(LitP(Constant::const_true()), term), (LitP(Constant::const_false()), acc)],
+            vec![(Pattern::mk_true(), term), (Pattern::mk_false(), acc)],
         )
     })
 }

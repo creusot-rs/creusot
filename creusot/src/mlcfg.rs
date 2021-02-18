@@ -508,10 +508,10 @@ impl Constant {
     }
 
     pub fn const_true() -> Self {
-        Constant::Other("True".to_owned())
+        Constant::Other("true".to_owned())
     }
     pub fn const_false() -> Self {
-        Constant::Other("False".to_owned())
+        Constant::Other("false".to_owned())
     }
 }
 
@@ -521,11 +521,18 @@ pub enum Pattern {
     VarP(LocalIdent),
     TupleP(Vec<Pattern>),
     ConsP(QName, Vec<Pattern>),
-    LitP(Constant),
     // RecP(String, String),
 }
 
 impl Pattern {
+    pub fn mk_true() -> Self {
+        Self::ConsP(QName { module: vec![], name: vec!["True".into()]} , vec![])
+    }
+
+    pub fn mk_false() -> Self {
+        Self::ConsP(QName { module: vec![], name: vec!["False".into()]} , vec![])
+    }
+
     pub fn binders(&self) -> HashSet<LocalIdent> {
         match self {
             Pattern::Wildcard => HashSet::new(),
@@ -542,7 +549,6 @@ impl Pattern {
                 set.extend(x);
                 set
             }),
-            Pattern::LitP(_) => HashSet::new(),
         }
     }
 }
