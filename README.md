@@ -8,6 +8,10 @@ Creusot works by translating Rust code to WhyML the verification and specificati
 
 **Note**: :warning: I am developping this in the context of my PhD thesis, the software quality is commensurate. :warning: 
 
+# Example programs that have been proven:
+
+- [Mutably indexing a linked list](creusot/tests/should_succeed/list_index_mut.rs)
+
 # Installing
 
 0. Install Rust using `rustup` to manage toolchains
