@@ -52,18 +52,8 @@ If so, that whole assignment is translated to a why `invariant` statement.
 
 # Translating specifications
 
-To translate a specification, besides the basic syntactic transformations: (&& into /\, match into case, ==> into ->, etc...) we must adjust the variables of specification clauses.
+Specifications are parsed and typechecked by the `pearlite` crate. The resulting pearlite term is lowered to mlcfg inside of `creusot` in the `specification` module. Before lowering we must perform one important change: Changing the names of variables to refer to the lowered MIR name. The names that creusot operates with are not necessarily the same as those of source rust, so we must map source names into these resulting names. 
 
-During the compilation to MIR all variables are replaced by "locals".
-So we must map the variables of the clause to the new locals in MIR.
-The general approach will to close a clause over all its free variables and then apply it to the corresponding mir locals.
+Additionally, we gather the variables which are accessible by a `requires`, `ensures` or `invariant` clause for typechecking. This is especially challenging in the case of an invariant clause. For this reason we use debug information to figure out which names should be in scope at that point. 
 
-For example given: `fn (x: u32) -> u32` and the contract `ensures=x > 0`, we turn it into `let f x = x > 0 in f _1`.
-
-For top-level specfication clauses we will always apply them to every argument of the function.
-
-For `invariant` clauses which could mention local variables we must do something else.
-After calculating the free variables of the clause, we look into the debug information for the function being translated.
-This information contains a mapping of different locals to source variable names, depending on the syntactic scope we are in.
-Using this, we can find out what local each source variable was turned into, and we can construct our new contract.
-
+We also further desugar some pearlite terms at this point though this is relatively minor. 
