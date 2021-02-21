@@ -26,12 +26,16 @@ fn should_succeed(input: &Path, output: &Path) {
     cmd.arg(format!("{}", input.display()));
 
     let dir = Temp::new_dir().unwrap();
-    let result_file = format!("{}/{:?}.mlcfg", dir.as_path().to_str().unwrap(), input.file_stem().unwrap());
+    let result_file =
+        format!("{}/{:?}.mlcfg", dir.as_path().to_str().unwrap(), input.file_stem().unwrap());
     cmd.args(&["-o", &result_file]);
 
     println!("Running: {:?}", cmd);
     cmd.assert().success();
-    assert!(file_diff::diff_files(&mut File::open(result_file).unwrap(), &mut File::open(output).unwrap()));
+    assert!(file_diff::diff_files(
+        &mut File::open(result_file).unwrap(),
+        &mut File::open(output).unwrap()
+    ));
 }
 
 #[datatest::files("tests/should_fail", {

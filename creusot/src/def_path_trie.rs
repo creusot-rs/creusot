@@ -43,7 +43,10 @@ impl<V> DefPathTrie<V> {
     pub fn get_mut(&mut self, key: ModulePath) -> Option<&mut V> {
         self.inner.get_mut(
             unsafe {
-                std::mem::transmute::<Vec<DisambiguatedDefPathData>, Vec<FakeDisambiguatedDefPathData>>(key.0.data)
+                std::mem::transmute::<
+                    Vec<DisambiguatedDefPathData>,
+                    Vec<FakeDisambiguatedDefPathData>,
+                >(key.0.data)
             }
             .iter(),
         )
@@ -52,7 +55,10 @@ impl<V> DefPathTrie<V> {
     pub fn get(&self, key: ModulePath) -> Option<&V> {
         self.inner.get(
             unsafe {
-                std::mem::transmute::<Vec<DisambiguatedDefPathData>, Vec<FakeDisambiguatedDefPathData>>(key.0.data)
+                std::mem::transmute::<
+                    Vec<DisambiguatedDefPathData>,
+                    Vec<FakeDisambiguatedDefPathData>,
+                >(key.0.data)
             }
             .iter(),
         )

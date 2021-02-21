@@ -1,5 +1,7 @@
 use rustc_errors::DiagnosticId;
-use rustc_middle::mir::{BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind};
+use rustc_middle::mir::{
+    BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind,
+};
 
 use crate::{
     mlcfg::{
@@ -10,6 +12,7 @@ use crate::{
     place::simplify_place,
 };
 
+use super::specification::Spec;
 use super::{specification, FunctionTranslator};
 
 impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
@@ -38,11 +41,18 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         }
     }
 
-    fn translate_assign(&mut self, si: SourceInfo, place: &'_ Place<'tcx>, rvalue: &'_ Rvalue<'tcx>) {
+    fn translate_assign(
+        &mut self,
+        si: SourceInfo,
+        place: &'_ Place<'tcx>,
+        rvalue: &'_ Rvalue<'tcx>,
+    ) {
         let lplace = simplify_place(self.tcx, self.body, place);
         let rval = match rvalue {
             Rvalue::Use(rval) => match rval {
-                Move(pl) | Copy(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
+                Move(pl) | Copy(pl) => {
+                    self.translate_rplace(&simplify_place(self.tcx, self.body, pl))
+                }
                 Constant(box c) => Const(crate::mlcfg::Constant::from_mir_constant(self.tcx, c)),
             },
             Rvalue::Ref(_, ss, pl) => {
@@ -82,13 +92,18 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     Closure(def_id, _) => {
                         let attrs = self.tcx.get_attrs(*def_id);
 
-                        match specification::get_invariant(attrs) {
-                            Ok(Some((name, inv))) => {
-                                let invariant = specification::invariant_to_why(self.body, si, inv);
+                        match specification::spec_kind(attrs) {
+                            Ok(Spec::Invariant { name, expression }) => {
+                                let invariant = specification::invariant_to_why(
+                                    &self.resolver,
+                                    self.body,
+                                    si,
+                                    expression,
+                                );
                                 self.emit_statement(Invariant(name, Verbatim(invariant)));
                                 return;
                             }
-                            Ok(None) => self.sess.span_fatal_with_code(
+                            Ok(_) => self.sess.span_fatal_with_code(
                                 si.span,
                                 "closures are not yet supported",
                                 DiagnosticId::Error(String::from("creusot")),
@@ -96,7 +111,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                             Err(err) => self.sess.span_fatal_with_code(
                                 si.span,
                                 &format!("{:?}", err),
-                                DiagnosticId::Error(String::from("creusot"))
+                                DiagnosticId::Error(String::from("creusot")),
                             ),
                         }
                     }

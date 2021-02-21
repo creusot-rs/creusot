@@ -9,8 +9,8 @@ module Ambient
   use floating_point.Single
   use floating_point.Double
 
-  type usize = int
-  type isize = int
+  type usize = uint64
+  type isize = int64
 
   type borrowed 'a = { current : 'a ; final : 'a; }
   let function ( *_ ) x = x.current
@@ -43,104 +43,147 @@ module Ambient
   predicate drop_list (self : list) =
     let List_List(a, b) = self in drop_uint a && drop_option drop_fix b
   end
-  let rec cfg indexMut (o_l_1 : borrowed (Type.list))(o_ix_2 : usize) : borrowed uint32
+  let rec function len (l : Type.list) : int
+    ensures { result >= 0 }
+    =
+    let Type.List_List(_, ls) = l in 1 + match (ls) with
+      | Type.Option_Some(ls) -> len ls
+      | Type.Option_None -> 0
+      end
+
+
+
+  let rec function get (l : Type.list)(ix : int) : Type.option uint32
+    variant { len l }
+    =
+    let Type.List_List(i, ls) = l in match (ix > 0) with
+      | False -> Type.Option_Some i
+      | True -> match (ls) with
+        | Type.Option_Some(ls) -> get ls (ix - 1)
+        | Type.Option_None -> Type.Option_None
+        end
+
+      end
+
+
+
+  let rec cfg indexMut (o_param_l_1 : borrowed (Type.list))(o_param_ix_2 : usize) : borrowed uint32
+    requires { o_param_ix_2 < len ( * o_param_l_1) }
+    ensures { forall i : int . 0 <= i && i < len ( * o_param_l_1) && i <> o_param_ix_2 -> get ( * o_param_l_1) i = get ( ^ o_param_l_1) i }
+    ensures { Type.Option_Some ( * result) = get ( * o_param_l_1) o_param_ix_2 }
+    ensures { Type.Option_Some ( ^ result) = get ( ^ o_param_l_1) o_param_ix_2 }
+    ensures { len ( ^ o_param_l_1) = len ( * o_param_l_1) }
     =
   var _0 : borrowed uint32;
-  var l_1 : borrowed (Type.list);
-  var ix_2 : usize;
+  var param_l_1 : borrowed (Type.list);
+  var param_ix_2 : usize;
   var _3 : borrowed uint32;
-  var _4 : ();
-  var _5 : ();
-  var _6 : bool;
-  var _7 : usize;
-  var _8 : ();
-  var _9 : isize;
-  var n_10 : borrowed (Type.list);
-  var _11 : borrowed (Type.list);
+  var l_4 : borrowed (Type.list);
+  var ix_5 : usize;
+  var _6 : ();
   var _12 : ();
-  var _13 : ();
-  var _14 : borrowed uint32;
+  var _13 : bool;
+  var _14 : usize;
+  var _15 : ();
+  var _16 : isize;
+  var n_17 : borrowed (Type.list);
+  var _18 : borrowed (Type.list);
+  var _19 : ();
+  var _20 : ();
+  var _21 : borrowed uint32;
   {
-    l_1 <- o_l_1;
-    ix_2 <- o_ix_2;
+    param_l_1 <- o_param_l_1;
+    param_ix_2 <- o_param_ix_2;
     goto BB0
   }
   BB0 {
+    l_4 <- param_l_1;
+    ix_5 <- param_ix_2;
+    assume { drop_uint param_ix_2 };
     goto BB1
   }
   BB1 {
-    assume { (fun tup -> let () = tup in true) _5 };
+    invariant valid_ix { 0 <= ix_5 && ix_5 < len ( * l_4) };
+    invariant get_target_now { get ( * l_4) ix_5 = get ( * param_l_1) param_ix_2 };
+    invariant get_target_fin { get ( ^ l_4) ix_5 = get ( ^ param_l_1) param_ix_2 };
+    invariant len { len ( ^ l_4) = len ( * l_4) -> len ( ^ param_l_1) = len ( * param_l_1) };
+    invariant untouched { (forall i : int . 0 <= i && i < len ( * l_4) && i <> ix_5 -> get ( ^ l_4) i = get ( * l_4) i) -> (forall i : int . 0 <= i && i < len ( * param_l_1) && i <> param_ix_2 -> get ( ^ param_l_1) i = get ( * param_l_1) i) };
+    assume { (fun tup -> let () = tup in true) _12 };
     goto BB2
   }
   BB2 {
-    _7 <- ix_2;
-    _6 <- _7 > 0;
-    switch (_6)
+    _14 <- ix_5;
+    _13 <- _14 > 0;
+    switch (_13)
       | False -> goto BB4
       | True -> goto BB3
       | _ -> goto BB3
       end
   }
   BB3 {
-    assume { drop_bool _6 };
+    assume { drop_bool _13 };
     goto BB5
   }
   BB4 {
-    assume { drop_uint ix_2 };
-    assume { drop_bool _6 };
-    _4 <- ();
-    assume { (fun tup -> let () = tup in true) _4 };
-    _14 <- borrow_mut (let Type.List_List(a, _) =  * l_1 in a);
-    l_1 <- { l_1 with current = (let Type.List_List(a, b) =  * l_1 in Type.List_List( ^ _14, b)) };
-    assume { drop_mut_ref l_1 };
-    _3 <- borrow_mut ( * _14);
-    _14 <- { _14 with current = ( ^ _3) };
-    assume { drop_mut_ref _14 };
+    assume { drop_uint ix_5 };
+    assume { drop_bool _13 };
+    _6 <- ();
+    assume { (fun tup -> let () = tup in true) _6 };
+    _21 <- borrow_mut (let Type.List_List(a, _) =  * l_4 in a);
+    l_4 <- { l_4 with current = (let Type.List_List(a, b) =  * l_4 in Type.List_List( ^ _21, b)) };
+    assume { drop_mut_ref l_4 };
+    _3 <- borrow_mut ( * _21);
+    _21 <- { _21 with current = ( ^ _3) };
+    assume { drop_mut_ref _21 };
     _0 <- borrow_mut ( * _3);
     _3 <- { _3 with current = ( ^ _0) };
     assume { drop_mut_ref _3 };
     return _0
   }
   BB5 {
-    switch (let Type.List_List(_, a) =  * l_1 in a)
+    switch (let Type.List_List(_, a) =  * l_4 in a)
       | Type.Option_None -> goto BB6
       | Type.Option_Some(_) -> goto BB7
       | _ -> goto BB8
       end
   }
   BB6 {
-    assume { drop_mut_ref l_1 };
-    assume { drop_uint ix_2 };
-    assume { drop_int _9 };
+    assume { drop_mut_ref l_4 };
+    assume { drop_uint ix_5 };
+    assume { drop_int _16 };
     absurd
   }
   BB7 {
-    assume { drop_int _9 };
+    assume { drop_int _16 };
     goto BB9
   }
   BB8 {
-    assume { drop_mut_ref l_1 };
-    assume { drop_uint ix_2 };
-    assume { drop_int _9 };
+    assume { drop_mut_ref l_4 };
+    assume { drop_uint ix_5 };
+    assume { drop_int _16 };
     absurd
   }
   BB9 {
-    n_10 <- borrow_mut (let Type.Option_Some(a) = let Type.List_List(_, a) =  * l_1 in a in a);
-    l_1 <- { l_1 with current = (let Type.List_List(a, b) =  * l_1 in Type.List_List(a, let Type.Option_Some(a) = let Type.List_List(_, a) =  * l_1 in a in Type.Option_Some( ^ n_10))) };
-    assume { drop_mut_ref l_1 };
-    _11 <- borrow_mut ( * n_10);
-    n_10 <- { n_10 with current = ( ^ _11) };
-    assume { drop_mut_ref n_10 };
-    l_1 <- _11;
-    _8 <- ();
-    assume { (fun tup -> let () = tup in true) _8 };
-    ix_2 <- ix_2 - 1;
-    _5 <- ();
+    n_17 <- borrow_mut (let Type.Option_Some(a) = let Type.List_List(_, a) =  * l_4 in a in a);
+    l_4 <- { l_4 with current = (let Type.List_List(a, b) =  * l_4 in Type.List_List(a, let Type.Option_Some(a) = let Type.List_List(_, a) =  * l_4 in a in Type.Option_Some( ^ n_17))) };
+    assume { drop_mut_ref l_4 };
+    _18 <- borrow_mut ( * n_17);
+    n_17 <- { n_17 with current = ( ^ _18) };
+    assume { drop_mut_ref n_17 };
+    l_4 <- _18;
+    _15 <- ();
+    assume { (fun tup -> let () = tup in true) _15 };
+    ix_5 <- ix_5 - 1;
+    _12 <- ();
     goto BB1
   }
 
 
   let rec cfg write (o_l_1 : borrowed (Type.list))(o_ix_2 : usize)(o_val_3 : uint32) : ()
+    requires { o_ix_2 < len ( * o_l_1) }
+    ensures { forall i : int . 0 <= i && i < len ( * o_l_1) && i <> o_ix_2 -> get ( * o_l_1) i = get ( ^ o_l_1) i }
+    ensures { Type.Option_Some o_val_3 = get ( ^ o_l_1) o_ix_2 }
+    ensures { len ( ^ o_l_1) = len ( * o_l_1) }
     =
   var _0 : ();
   var l_1 : borrowed (Type.list);

@@ -51,6 +51,10 @@ pub fn translate_ty<'tcx>(ctx: &mut Ctx<'_, 'tcx>, span: Span, ty: Ty<'tcx>) -> 
             if def.is_box() {
                 return translate_ty(ctx, span, s[0].expect_ty());
             }
+
+            if format!("{:?}", def).contains("creusot_contracts::Int") {
+                return MlT::Integer;
+            }
             let args = s.types().map(|t| translate_ty(ctx, span, t)).collect();
 
             MlT::TApp(box MlT::TConstructor(translate_ty_name(ctx, def.did)), args)
@@ -93,7 +97,7 @@ pub fn check_not_mutally_recursive<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty_id: DefId, 
         for variant in &def.variants {
             for field in &variant.fields {
                 for ty in field.ty(ctx.tcx, substs).walk() {
-                    if let Adt(def, _) =  ty.expect_ty().kind() {
+                    if let Adt(def, _) = ty.expect_ty().kind() {
                         if !graph.contains_node(def.did) {
                             to_visit.push_back(def.did);
                         }
@@ -161,7 +165,8 @@ pub fn translate_tydecl(ctx: &mut Ctx<'_, '_>, span: Span, did: DefId) {
     let mut ml_ty_def = Vec::new();
 
     for var_def in adt.variants.iter() {
-        let field_tys: Vec<_> = var_def.fields.iter().map(|f| translate_ty(ctx, span, f.ty(ctx.tcx, substs))).collect();
+        let field_tys: Vec<_> =
+            var_def.fields.iter().map(|f| translate_ty(ctx, span, f.ty(ctx.tcx, substs))).collect();
 
         let mut var_name = ty_name.clone();
         var_name.make_constructor(var_def.ident.to_string());
@@ -175,7 +180,8 @@ pub fn translate_tydecl(ctx: &mut Ctx<'_, '_>, span: Span, did: DefId) {
 }
 
 fn variant_pattern(mut ty_name: QName, variant: &VariantDef) -> Pattern {
-    let field_pats = ('a'..).take(variant.fields.len()).map(|c| VarP(c.to_string().into())).collect();
+    let field_pats =
+        ('a'..).take(variant.fields.len()).map(|c| VarP(c.to_string().into())).collect();
     ty_name.make_constructor(variant.ident.to_string());
     ConsP(ty_name, field_pats)
 }
@@ -191,14 +197,20 @@ fn drop_pred_name<'tcx>(ctx: &mut Ctx<'_, 'tcx>, did: DefId) -> QName {
 }
 
 // Generate the drop predicate for a specific type
-fn drop_pred_decl(ctx: &mut Ctx<'_, '_>, generics: &[String], adt: &AdtDef, did: DefId) -> Predicate {
+fn drop_pred_decl(
+    ctx: &mut Ctx<'_, '_>,
+    generics: &[String],
+    adt: &AdtDef,
+    did: DefId,
+) -> Predicate {
     let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
     let mut branches = Vec::new();
 
     let ty_name = translate_ty_name(ctx, did);
 
     for variant in &adt.variants {
-        let drop_fields = variant.fields.iter().map(|f| drop_pred_body(ctx, f.ty(ctx.tcx, substs), Some(did)));
+        let drop_fields =
+            variant.fields.iter().map(|f| drop_pred_body(ctx, f.ty(ctx.tcx, substs), Some(did)));
 
         let field_names: Vec<_> = ('a'..).take(variant.fields.len()).collect();
 
@@ -222,12 +234,17 @@ fn drop_pred_decl(ctx: &mut Ctx<'_, '_>, generics: &[String], adt: &AdtDef, did:
     };
 
     use crate::mlcfg::{Type, Type::*};
-    let mut pred_deps: Vec<_> =
-        generics.iter().map(|arg| (format!("drop_{}", arg).into(), Type::predicate(TVar(arg.clone())))).collect();
+    let mut pred_deps: Vec<_> = generics
+        .iter()
+        .map(|arg| (format!("drop_{}", arg).into(), Type::predicate(TVar(arg.clone()))))
+        .collect();
 
     pred_deps.push((
         "self".into(),
-        TApp(box TConstructor(translate_ty_name(ctx, did)), generics.iter().map(|g| TVar(g.clone())).collect()),
+        TApp(
+            box TConstructor(translate_ty_name(ctx, did)),
+            generics.iter().map(|g| TVar(g.clone())).collect(),
+        ),
     ));
 
     let name = drop_pred_name(ctx, did);
@@ -236,7 +253,11 @@ fn drop_pred_decl(ctx: &mut Ctx<'_, '_>, generics: &[String], adt: &AdtDef, did:
 }
 
 /// Create the body for a drop predicate of type `ty` and name `did`.
-pub fn drop_pred_body<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty: Ty<'tcx>, rec_call_did: Option<DefId>) -> MlE {
+pub fn drop_pred_body<'tcx>(
+    ctx: &mut Ctx<'_, 'tcx>,
+    ty: Ty<'tcx>,
+    rec_call_did: Option<DefId>,
+) -> MlE {
     match ty.kind() {
         Bool => MlE::QVar(crate::mlcfg::drop_bool()),
         Int(_) => MlE::QVar(crate::mlcfg::drop_int()),
@@ -252,7 +273,8 @@ pub fn drop_pred_body<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty: Ty<'tcx>, rec_call_did:
         }
         Tuple(s) => {
             let binder_name: LocalIdent = "tup".into();
-            let field_names: Vec<LocalIdent> = ('a'..).map(|c| c.to_string().into()).take(s.types().count()).collect();
+            let field_names: Vec<LocalIdent> =
+                ('a'..).map(|c| c.to_string().into()).take(s.types().count()).collect();
 
             let body = s
                 .types()
@@ -272,6 +294,9 @@ pub fn drop_pred_body<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty: Ty<'tcx>, rec_call_did:
         Ref(_, _, Mutability::Mut) => MlE::QVar(crate::mlcfg::drop_mut_ref()),
         Ref(_, _, Mutability::Not) => MlE::QVar(crate::mlcfg::drop_ref()),
 
-        _ => ctx.crash_and_error(rustc_span::DUMMY_SP, &format!("cannot generate drop predicate for type {:?}", ty)),
+        _ => ctx.crash_and_error(
+            rustc_span::DUMMY_SP,
+            &format!("cannot generate drop predicate for type {:?}", ty),
+        ),
     }
 }
