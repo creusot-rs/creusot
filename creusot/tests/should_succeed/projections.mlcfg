@@ -27,24 +27,24 @@ module Ambient
   predicate drop_ref (_ : 'a) = true
 
   scope Type
-  type option_option 't =
-      | Option_option_None
-      | Option_option_Some('t)
+  type core_option_option 't =
+      | Core_Option_Option_None
+      | Core_Option_Option_Some('t)
 
-  predicate drop_option_option (drop_'t : 't -> bool) (self : option_option 't) =
+  predicate drop_core_option_option (drop_'t : 't -> bool) (self : core_option_option 't) =
     match (self) with
-      | Option_option_None -> true
-      | Option_option_Some(a) -> drop_'t a
+      | Core_Option_Option_None -> true
+      | Core_Option_Option_Some(a) -> drop_'t a
       end
 
-  type result_result 't 'e =
-      | Result_result_Ok('t)
-      | Result_result_Err('e)
+  type core_result_result 't 'e =
+      | Core_Result_Result_Ok('t)
+      | Core_Result_Result_Err('e)
 
-  predicate drop_result_result (drop_'t : 't -> bool) (drop_'e : 'e -> bool) (self : result_result 't 'e) =
+  predicate drop_core_result_result (drop_'t : 't -> bool) (drop_'e : 'e -> bool) (self : core_result_result 't 'e) =
     match (self) with
-      | Result_result_Ok(a) -> drop_'t a
-      | Result_result_Err(a) -> drop_'e a
+      | Core_Result_Result_Ok(a) -> drop_'t a
+      | Core_Result_Result_Err(a) -> drop_'e a
       end
 
   end
@@ -63,10 +63,10 @@ module Ambient
   }
 
 
-  let rec cfg copyOutOfSum (o_x_1 : Type.result_result (borrowed uint32) (borrowed uint32)) : uint32
+  let rec cfg copyOutOfSum (o_x_1 : Type.core_result_result (borrowed uint32) (borrowed uint32)) : uint32
     =
   var _0 : uint32;
-  var x_1 : Type.result_result (borrowed uint32) (borrowed uint32);
+  var x_1 : Type.core_result_result (borrowed uint32) (borrowed uint32);
   var _2 : isize;
   var x_3 : borrowed uint32;
   var y_4 : borrowed uint32;
@@ -76,8 +76,8 @@ module Ambient
   }
   BB0 {
     switch (x_1)
-      | Type.Result_result_Ok(_) -> goto BB1
-      | Type.Result_result_Err(_) -> goto BB2
+      | Type.Core_Result_Result_Ok(_) -> goto BB1
+      | Type.Core_Result_Result_Err(_) -> goto BB2
       | _ -> goto BB3
       end
   }
@@ -87,20 +87,20 @@ module Ambient
   }
   BB2 {
     assume { drop_int _2 };
-    y_4 <- (let Type.Result_result_Err(a) = x_1 in a);
-    assume { Type.drop_result_result drop_mut_ref drop_mut_ref x_1 };
+    y_4 <- (let Type.Core_Result_Result_Err(a) = x_1 in a);
+    assume { Type.drop_core_result_result drop_mut_ref drop_mut_ref x_1 };
     _0 <-  * y_4;
     assume { drop_mut_ref y_4 };
     goto BB5
   }
   BB3 {
-    assume { Type.drop_result_result drop_mut_ref drop_mut_ref x_1 };
+    assume { Type.drop_core_result_result drop_mut_ref drop_mut_ref x_1 };
     assume { drop_int _2 };
     absurd
   }
   BB4 {
-    x_3 <- (let Type.Result_result_Ok(a) = x_1 in a);
-    assume { Type.drop_result_result drop_mut_ref drop_mut_ref x_1 };
+    x_3 <- (let Type.Core_Result_Result_Ok(a) = x_1 in a);
+    assume { Type.drop_core_result_result drop_mut_ref drop_mut_ref x_1 };
     _0 <-  * x_3;
     assume { drop_mut_ref x_3 };
     goto BB5
@@ -110,10 +110,10 @@ module Ambient
   }
 
 
-  let rec cfg writeIntoSum (o_x_1 : borrowed (Type.option_option uint32)) : ()
+  let rec cfg writeIntoSum (o_x_1 : borrowed (Type.core_option_option uint32)) : ()
     =
   var _0 : ();
-  var x_1 : borrowed (Type.option_option uint32);
+  var x_1 : borrowed (Type.core_option_option uint32);
   var _2 : isize;
   var y_3 : borrowed uint32;
   {
@@ -122,8 +122,8 @@ module Ambient
   }
   BB0 {
     switch ( * x_1)
-      | Type.Option_option_None -> goto BB1
-      | Type.Option_option_Some(_) -> goto BB2
+      | Type.Core_Option_Option_None -> goto BB1
+      | Type.Core_Option_Option_Some(_) -> goto BB2
       | _ -> goto BB3
       end
   }
@@ -143,8 +143,8 @@ module Ambient
     absurd
   }
   BB4 {
-    y_3 <- borrow_mut (let Type.Option_option_Some(a) =  * x_1 in a);
-    x_1 <- { x_1 with current = (let Type.Option_option_Some(a) =  * x_1 in Type.Option_option_Some( ^ y_3)) };
+    y_3 <- borrow_mut (let Type.Core_Option_Option_Some(a) =  * x_1 in a);
+    x_1 <- { x_1 with current = (let Type.Core_Option_Option_Some(a) =  * x_1 in Type.Core_Option_Option_Some( ^ y_3)) };
     assume { drop_mut_ref x_1 };
     y_3 <- { y_3 with current = 10 };
     assume { drop_mut_ref y_3 };
@@ -160,7 +160,7 @@ module Ambient
     =
   var _0 : ();
   var _1 : bool;
-  var _2 : Type.option_option int32;
+  var _2 : Type.core_option_option int32;
   var _3 : isize;
   var x_4 : int32;
   var _5 : int32;
@@ -168,15 +168,15 @@ module Ambient
     goto BB0
   }
   BB0 {
-    _2 <- Type.Option_option_Some(10);
+    _2 <- Type.Core_Option_Option_Some(10);
     switch (_2)
-      | Type.Option_option_None -> goto BB1
-      | Type.Option_option_Some(_) -> goto BB2
+      | Type.Core_Option_Option_None -> goto BB1
+      | Type.Core_Option_Option_Some(_) -> goto BB2
       | _ -> goto BB3
       end
   }
   BB1 {
-    assume { Type.drop_option_option drop_int _2 };
+    assume { Type.drop_core_option_option drop_int _2 };
     assume { drop_int _3 };
     _1 <- false;
     assume { drop_bool _1 };
@@ -187,13 +187,13 @@ module Ambient
     goto BB4
   }
   BB3 {
-    assume { Type.drop_option_option drop_int _2 };
+    assume { Type.drop_core_option_option drop_int _2 };
     assume { drop_int _3 };
     absurd
   }
   BB4 {
-    x_4 <- (let Type.Option_option_Some(a) = _2 in a);
-    assume { Type.drop_option_option drop_int _2 };
+    x_4 <- (let Type.Core_Option_Option_Some(a) = _2 in a);
+    assume { Type.drop_core_option_option drop_int _2 };
     _5 <- x_4;
     assume { drop_int x_4 };
     _1 <- _5 = 0;

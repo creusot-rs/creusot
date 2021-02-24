@@ -215,7 +215,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
         let args = vars.by_ref().take(arg_count).collect();
         let vars = vars.collect::<Vec<_>>();
 
-        let name = translate_defid(self.tcx, nm, Namespace::ValueNS);
+        let name = translate_value_id(self.tcx, nm);
 
         move_invariants_into_loop(&mut self.past_blocks);
         Function { name, retty, args, vars, blocks: self.past_blocks, contract: contracts }
@@ -385,8 +385,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
                     let variant = &def.variants[*ctor];
                     let size = variant.fields.len();
 
-                    let mut tyname = ty::translate_ty_name(&mut self.ty_ctx, *base_ty);
-                    tyname.make_constructor(variant.ident.to_string());
+                    let tyname = translate_value_id(self.tcx, variant.def_id);
 
                     let mut pat = vec![Wildcard; *ix];
                     pat.push(VarP("a".into()));
@@ -455,8 +454,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
 
                     varexps[*ix] = inner;
 
-                    let mut tyname = ty::translate_ty_name(&mut self.ty_ctx, *base_ty);
-                    tyname.make_constructor(variant.ident.to_string());
+                    let tyname = translate_value_id(self.tcx, variant.def_id);
 
                     inner = Let {
                         pattern: ConsP(tyname.clone(), varpats),
@@ -515,29 +513,51 @@ fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {
 
 use heck::{CamelCase, MixedCase};
 
-fn translate_defid(tcx: TyCtxt, def_id: DefId, namespace: Namespace) -> QName {
+fn translate_type_id(tcx: TyCtxt, def_id: DefId) -> QName {
+    translate_defid(tcx, def_id, true)
+}
+
+fn translate_value_id(tcx: TyCtxt, def_id: DefId) -> QName {
+    translate_defid(tcx, def_id, false)
+}
+
+fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
     let def_path = tcx.def_path(def_id);
 
     let mut mod_segs = Vec::new();
     let mut name_segs = Vec::new();
 
+    if def_path.krate.as_u32() != 0 {
+        mod_segs.push(tcx.crate_name(def_id.krate).to_string())
+    }
+
     for seg in def_path.data[..].iter() {
         match seg.data {
-            DefPathData::CrateRoot => mod_segs.push(tcx.crate_name(def_id.krate).to_string()),
+            // DefPathData::CrateRoot => mod_segs.push(tcx.crate_name(def_id.krate).to_string()),
             DefPathData::TypeNs(_) => mod_segs.push(format!("{}", seg)[..].to_camel_case()),
             // CORE ASSUMPTION: Once we stop seeing TypeNs we never see it again.
+            DefPathData::Ctor => {}
             _ => name_segs.push(format!("{}", seg)[..].to_mixed_case()),
         }
     }
 
-    match namespace {
-        Namespace::ValueNS => {}
-        Namespace::TypeNS => {
+    let kind = tcx.def_kind(def_id);
+    use rustc_hir::def::DefKind::*;
+
+    match (kind, kind.ns()) {
+        (_, _) if ty  => {
             assert_eq!(name_segs.len(), 0);
             name_segs = mod_segs.into_iter().map(|seg| seg.to_lowercase()).collect();
             mod_segs = vec!["Type".to_owned()];
         }
-        _ => unreachable!(),
+        (Ctor(_, _) | Variant | Struct, _) => {
+            mod_segs.append(&mut name_segs);
+            mod_segs[0] = mod_segs[0].to_camel_case();
+            name_segs = mod_segs;
+            mod_segs = vec!["Type".to_owned()];
+        }
+        (_, Some(Namespace::ValueNS)) => {}
+        (_, _) => unreachable!()
     }
 
     QName { module: mod_segs, name: name_segs }

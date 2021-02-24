@@ -1,5 +1,4 @@
 use crate::mlcfg::QName;
-use heck::{CamelCase, MixedCase};
 use rustc_hir::def_id::DefId;
 
 use rustc_middle::ty::TyCtxt;
@@ -32,21 +31,29 @@ pub fn lower_term_to_why(tcx: TyCtxt<'_>, t: term::Term) -> Exp {
                 term::UnOp::Not => Exp::UnaryOp(rustc_middle::mir::UnOp::Not, expr),
             }
         }
-        Variable { path } => name_to_exp(tcx, path),
+        Variable { path } => match path {
+            Name::Path { .. } => Exp::QVar(lower_value_path(tcx, path)),
+            Name::Ident(i) => Exp::Var(i.into()),
+        },
         Call { func, args } => {
-            let func = name_to_exp(tcx, func);
+            let is_c = is_constructor(tcx, &func);
+            let name = lower_value_path(tcx, func);
             let args = args.into_iter().map(|t| lower_term_to_why(tcx, t)).collect();
 
-            Exp::Call(box func, args)
+            if is_c {
+                Exp::Constructor { ctor: name, args }
+            } else {
+                Exp::Call(box Exp::QVar(name), args)
+            }
         }
         Lit { lit } => Exp::Const(lit_to_const(lit)),
         Forall { args, box body } => {
-            let args = args.into_iter().map(|(i, t)| (i.0.into(), lower_type_to_why(t))).collect();
+            let args = args.into_iter().map(|(i, t)| (i.0.into(), lower_type_to_why(tcx, t))).collect();
 
             Exp::Forall(args, box lower_term_to_why(tcx, body))
         }
         Exists { args, box body } => {
-            let args = args.into_iter().map(|(i, t)| (i.0.into(), lower_type_to_why(t))).collect();
+            let args = args.into_iter().map(|(i, t)| (i.0.into(), lower_type_to_why(tcx, t))).collect();
 
             Exp::Exists(args, box lower_term_to_why(tcx, body))
         }
@@ -63,17 +70,17 @@ pub fn lower_term_to_why(tcx: TyCtxt<'_>, t: term::Term) -> Exp {
     }
 }
 
-pub fn lower_type_to_why(ty: pearlite::term::Type) -> crate::mlcfg::Type {
+pub fn lower_type_to_why(tcx: TyCtxt<'_>, ty: pearlite::term::Type) -> crate::mlcfg::Type {
     use crate::mlcfg::Type::*;
     use pearlite::term::*;
 
     match ty {
-        term::Type::Path { path } => TConstructor(lower_type_name(path)),
+        term::Type::Path { path } => TConstructor(lower_type_path(tcx, path)),
         term::Type::Reference { kind: RefKind::Mut, box ty } => {
-            MutableBorrow(box lower_type_to_why(ty))
+            MutableBorrow(box lower_type_to_why(tcx, ty))
         }
-        term::Type::Reference { kind: _, box ty } => lower_type_to_why(ty),
-        term::Type::Tuple { elems } => Tuple(elems.into_iter().map(lower_type_to_why).collect()),
+        term::Type::Reference { kind: _, box ty } => lower_type_to_why(tcx, ty),
+        term::Type::Tuple { elems } => Tuple(elems.into_iter().map(|t| lower_type_to_why(tcx, t)).collect()),
         term::Type::Lit(lit) => {
             use pearlite::term::Size::*;
             use rustc_middle::ty::{FloatTy::*, IntTy::*, UintTy::*};
@@ -106,11 +113,11 @@ pub fn lower_type_to_why(ty: pearlite::term::Type) -> crate::mlcfg::Type {
             }
         }
         term::Type::App { box func, args } => {
-            TApp(box lower_type_to_why(func), args.into_iter().map(lower_type_to_why).collect())
+            TApp(box lower_type_to_why(tcx, func), args.into_iter().map(|t| lower_type_to_why(tcx, t)).collect())
         }
         term::Type::Function { args, box res } => args
             .into_iter()
-            .rfold(lower_type_to_why(res), |acc, arg| TFun(box lower_type_to_why(arg), box acc)),
+            .rfold(lower_type_to_why(tcx, res), |acc, arg| TFun(box lower_type_to_why(tcx, arg), box acc)),
         term::Type::Var(tyvar) => TVar(('a'..).nth(tyvar.0 as usize).unwrap().to_string()),
         term::Type::Unknown(_) => {
             panic!()
@@ -140,13 +147,6 @@ fn lit_to_const(lit: pearlite::term::Literal) -> crate::mlcfg::Constant {
                 Constant::const_false()
             }
         }
-    }
-}
-
-fn name_to_exp(tcx: TyCtxt<'_>, nm: pearlite::term::Name) -> Exp {
-    match nm {
-        Name::Path { path: _, name: _, id: _ } => Exp::QVar(lower_value_name(tcx, nm)),
-        Name::Ident(i) => Exp::Var(i.into()),
     }
 }
 
@@ -182,7 +182,7 @@ fn lower_pattern_to_why(tcx: TyCtxt<'_>, p: term::Pattern) -> mlcfg::Pattern {
         term::Pattern::Var(x) => Pattern::VarP(x.0.into()),
         // term::Pattern::Struct { path, fields } => {}
         term::Pattern::TupleStruct { path, fields } => {
-            let name = lower_value_name(tcx, path);
+            let name = lower_value_path(tcx, path);
             let fields = fields.into_iter().map(|p| lower_pattern_to_why(tcx, p)).collect();
 
             Pattern::ConsP(name, fields)
@@ -201,38 +201,34 @@ fn lower_pattern_to_why(tcx: TyCtxt<'_>, p: term::Pattern) -> mlcfg::Pattern {
     }
 }
 
-fn lower_value_name(tcx: TyCtxt<'_>, path: Name) -> QName {
-    if let Name::Path { mut path, name, id } = path {
-        let defid: DefId = super::id_to_def_id(id);
-        let kind = tcx.def_kind(defid);
-
-        use rustc_hir::def::{DefKind::*, Namespace::*};
-        // use rustc_hir::
-        match (kind, kind.ns()) {
-            (Ctor(_, _), _) => {
-                path.push(name.to_camel_case());
-                QName { module: vec!["Type".into()], name: path }
-            }
-            (_, Some(TypeNS)) => {
-                path.push(name.to_lowercase());
-                QName { module: vec!["Type".into()], name: path }
-            }
-            (_, Some(ValueNS)) => QName { module: path, name: vec![name.to_mixed_case()] },
-            (_, _) => {
-                panic!("unsupported")
+fn is_constructor(tcx: TyCtxt<'_>, path: &Name) -> bool {
+    match path {
+        Name::Ident(_) => false,
+        Name::Path { id, ..} => {
+            let kind = tcx.def_kind(super::id_to_def_id(*id));
+            use rustc_hir::def::DefKind::*;
+            match kind {
+                Ctor(_, _) | Variant | Struct => true,
+                _ => false,
             }
         }
-    } else {
-        panic!("unexpected local name in type");
     }
 }
 
-fn lower_type_name(path: Name) -> QName {
-    if let Name::Path { mut path, name, .. } = path {
-        path.push(name.to_lowercase());
-        // path.push(name);
-        QName { module: vec!["Type".into()], name: path }
+fn lower_value_path(tcx: TyCtxt<'_>, path: Name) -> QName {
+    if let Name::Path { id, .. } = path {
+        let defid: DefId = super::id_to_def_id(id);
+        crate::translation::translate_value_id(tcx, defid)
     } else {
-        panic!("unexpected local name in type");
+        panic!("cannot lower a local identifier to a qualified name");
+    }
+}
+
+fn lower_type_path(tcx: TyCtxt<'_>, path: Name) -> QName {
+    if let Name::Path { id, .. } = path {
+        let defid: DefId = super::id_to_def_id(id);
+        crate::translation::translate_type_id(tcx, defid)
+    } else {
+        panic!("cannot lower a local identifier to a qualified name");
     }
 }

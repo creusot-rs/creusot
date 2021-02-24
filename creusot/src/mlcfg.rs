@@ -267,13 +267,6 @@ impl QName {
     pub fn name(&self) -> String {
         format!("{}", self.name.iter().format("_"))
     }
-
-    pub fn make_constructor(&mut self, cons_name: String) {
-        use heck::CamelCase;
-
-        self.name[0] = self.name[0].to_camel_case();
-        self.name.push(cons_name);
-    }
 }
 
 impl From<&rustc_span::Symbol> for QName {

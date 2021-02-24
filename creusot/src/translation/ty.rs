@@ -5,7 +5,6 @@ use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
 use rustc_middle::mir::Mutability;
 use rustc_middle::ty::{self, subst::InternalSubsts, AdtDef, Ty, TyCtxt, TyKind::*, VariantDef};
-use rustc_resolve::Namespace;
 use rustc_session::Session;
 use rustc_span::Span;
 use rustc_span::Symbol;
@@ -118,12 +117,12 @@ pub fn check_not_mutally_recursive<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty_id: DefId, 
     }
 }
 
-pub fn translate_ty_name(ctx: &mut Ctx<'_, '_>, did: DefId) -> QName {
+fn translate_ty_name(ctx: &mut Ctx<'_, '_>, did: DefId) -> QName {
     // Check if we've already translated this type before.
     if !ctx.translated_tys.contains(&did) {
         translate_tydecl(ctx, rustc_span::DUMMY_SP, did);
     };
-    super::translate_defid(ctx.tcx, did, Namespace::TypeNS)
+    super::translate_type_id(ctx.tcx, did)
 }
 
 fn translate_ty_param(p: Symbol) -> String {
@@ -168,8 +167,7 @@ pub fn translate_tydecl(ctx: &mut Ctx<'_, '_>, span: Span, did: DefId) {
         let field_tys: Vec<_> =
             var_def.fields.iter().map(|f| translate_ty(ctx, span, f.ty(ctx.tcx, substs))).collect();
 
-        let mut var_name = ty_name.clone();
-        var_name.make_constructor(var_def.ident.to_string());
+        let var_name = super::translate_value_id(ctx.tcx, var_def.def_id);
         ml_ty_def.push((var_name.name(), field_tys));
     }
 
@@ -179,10 +177,11 @@ pub fn translate_tydecl(ctx: &mut Ctx<'_, '_>, span: Span, did: DefId) {
     ctx.results.insert(did, (ty_decl, pred));
 }
 
-fn variant_pattern(mut ty_name: QName, variant: &VariantDef) -> Pattern {
+fn variant_pattern(tcx: TyCtxt<'_>, variant: &VariantDef) -> Pattern {
     let field_pats =
         ('a'..).take(variant.fields.len()).map(|c| VarP(c.to_string().into())).collect();
-    ty_name.make_constructor(variant.ident.to_string());
+
+    let ty_name = super::translate_value_id(tcx, variant.def_id);
     ConsP(ty_name, field_pats)
 }
 
@@ -206,8 +205,6 @@ fn drop_pred_decl(
     let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
     let mut branches = Vec::new();
 
-    let ty_name = translate_ty_name(ctx, did);
-
     for variant in &adt.variants {
         let drop_fields =
             variant.fields.iter().map(|f| drop_pred_body(ctx, f.ty(ctx.tcx, substs), Some(did)));
@@ -221,7 +218,7 @@ fn drop_pred_decl(
             .map(|(arg, field_drop)| field_drop.app_to(arg))
             .fold_first(MlE::conj)
             .unwrap_or_else(MlE::mk_true);
-        branches.push((variant_pattern(ty_name.clone(), variant), drop_variant));
+        branches.push((variant_pattern(ctx.tcx, variant), drop_variant));
     }
 
     let drop_arg = MlE::Var("self".into());

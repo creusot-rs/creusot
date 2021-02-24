@@ -38,15 +38,15 @@ module Ambient
       end
 
   type list  =
-      | List_List(uint32, option (list))
+      | List(uint32, option (list))
 
   predicate drop_list (self : list) =
-    let List_List(a, b) = self in drop_uint a && drop_option drop_fix b
+    let List(a, b) = self in drop_uint a && drop_option drop_fix b
   end
   let rec function len (l : Type.list) : int
     ensures { result >= 0 }
     =
-    let Type.List_List(_, ls) = l in 1 + match (ls) with
+    let Type.List(_, ls) = l in 1 + match (ls) with
       | Type.Option_Some(ls) -> len ls
       | Type.Option_None -> 0
       end
@@ -56,7 +56,7 @@ module Ambient
   let rec function get (l : Type.list)(ix : int) : Type.option uint32
     variant { len l }
     =
-    let Type.List_List(i, ls) = l in match (ix > 0) with
+    let Type.List(i, ls) = l in match (ix > 0) with
       | False -> Type.Option_Some i
       | True -> match (ls) with
         | Type.Option_Some(ls) -> get ls (ix - 1)
@@ -129,8 +129,8 @@ module Ambient
     assume { drop_bool _13 };
     _6 <- ();
     assume { (fun tup -> let () = tup in true) _6 };
-    _21 <- borrow_mut (let Type.List_List(a, _) =  * l_4 in a);
-    l_4 <- { l_4 with current = (let Type.List_List(a, b) =  * l_4 in Type.List_List( ^ _21, b)) };
+    _21 <- borrow_mut (let Type.List(a, _) =  * l_4 in a);
+    l_4 <- { l_4 with current = (let Type.List(a, b) =  * l_4 in Type.List( ^ _21, b)) };
     assume { drop_mut_ref l_4 };
     _3 <- borrow_mut ( * _21);
     _21 <- { _21 with current = ( ^ _3) };
@@ -141,7 +141,7 @@ module Ambient
     return _0
   }
   BB5 {
-    switch (let Type.List_List(_, a) =  * l_4 in a)
+    switch (let Type.List(_, a) =  * l_4 in a)
       | Type.Option_None -> goto BB6
       | Type.Option_Some(_) -> goto BB7
       | _ -> goto BB8
@@ -164,8 +164,8 @@ module Ambient
     absurd
   }
   BB9 {
-    n_17 <- borrow_mut (let Type.Option_Some(a) = let Type.List_List(_, a) =  * l_4 in a in a);
-    l_4 <- { l_4 with current = (let Type.List_List(a, b) =  * l_4 in Type.List_List(a, let Type.Option_Some(a) = let Type.List_List(_, a) =  * l_4 in a in Type.Option_Some( ^ n_17))) };
+    n_17 <- borrow_mut (let Type.Option_Some(a) = let Type.List(_, a) =  * l_4 in a in a);
+    l_4 <- { l_4 with current = (let Type.List(a, b) =  * l_4 in Type.List(a, let Type.Option_Some(a) = let Type.List(_, a) =  * l_4 in a in Type.Option_Some( ^ n_17))) };
     assume { drop_mut_ref l_4 };
     _18 <- borrow_mut ( * n_17);
     n_17 <- { n_17 with current = ( ^ _18) };
@@ -235,13 +235,13 @@ module Ambient
   }
   BB0 {
     _5 <- Type.Option_None;
-    _4 <- Type.List_List(10, _5);
+    _4 <- Type.List(10, _5);
     _3 <- _4;
     goto BB1
   }
   BB1 {
     _2 <- Type.Option_Some(_3);
-    l_1 <- Type.List_List(1, _2);
+    l_1 <- Type.List(1, _2);
     _8 <- borrow_mut l_1;
     l_1 <-  ^ _8;
     _7 <- borrow_mut ( * _8);

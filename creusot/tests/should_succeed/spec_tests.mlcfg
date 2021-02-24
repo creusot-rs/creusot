@@ -28,10 +28,10 @@ module Ambient
 
   scope Type
   type s 'a 'b =
-      | S_S('a, 'b)
+      | S('a, 'b)
 
   predicate drop_s (drop_'a : 'a -> bool) (drop_'b : 'b -> bool) (self : s 'a 'b) =
-    let S_S(a, b) = self in drop_'a a && drop_'b b
+    let S(a, b) = self in drop_'a a && drop_'b b
   type t  =
       | T_A
       | T_B
@@ -54,13 +54,13 @@ module Ambient
 
   end
   let rec cfg testSpecs () : ()
-    ensures { match (Type.List_Nil) with
+    ensures { match (Type.List_Cons(false, Type.List_Nil)) with
       | Type.List_Cons(x, xs) -> true
       | Type.List_Nil -> false
       end
  }
     ensures { Type.T_A = Type.T_B }
-    ensures { Type.S_S 0 true = Type.S_S 1 false }
+    ensures { Type.S(0, true) = Type.S(1, false) }
     =
   var _0 : ();
   {

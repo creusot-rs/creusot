@@ -10,7 +10,6 @@ use rustc_middle::{
     mir::{Location, Operand, Terminator, TerminatorKind::*},
     ty,
 };
-use rustc_resolve::Namespace;
 use rustc_session::Session;
 use rustc_target::abi::VariantIdx;
 
@@ -19,7 +18,7 @@ use crate::{
     place::simplify_place,
 };
 
-use super::{ty::Ctx, FunctionTranslator};
+use super::FunctionTranslator;
 
 // Translate the terminator of a basic block.
 // There isn't much that's special about this. The only subtlety is in how
@@ -40,7 +39,6 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 let discriminant = self.translate_operand(&real_discr);
                 let switch = make_switch(
                     self.sess,
-                    &mut self.ty_ctx,
                     self.tcx,
                     terminator.source_info,
                     real_discr.ty(self.body, self.tcx),
@@ -71,7 +69,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 } else {
                     let fname = match func.ty(self.body, self.tcx).kind() {
                         ty::TyKind::FnDef(defid, _) => {
-                            super::translate_defid(self.tcx, *defid, Namespace::ValueNS)
+                            super::translate_value_id(self.tcx, *defid)
                         }
                         _ => panic!("not a function"),
                     };
@@ -148,7 +146,6 @@ pub fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Plac
 
 pub fn make_switch<'tcx>(
     sess: &Session,
-    ctx: &mut Ctx<'_, 'tcx>,
     tcx: TyCtxt<'tcx>,
     si: SourceInfo,
     switch_ty: Ty<'tcx>,
@@ -165,7 +162,7 @@ pub fn make_switch<'tcx>(
             let mut branches: Vec<_> = targets
                 .iter()
                 .map(|(disc, tgt)| {
-                    (variant_pattern(ctx, def, d_to_var[&disc]), MlT::Goto(tgt.into()))
+                    (variant_pattern(tcx, def, d_to_var[&disc]), MlT::Goto(tgt.into()))
                 })
                 .collect();
             branches.push((Wildcard, MlT::Goto(targets.otherwise().into())));
@@ -219,11 +216,10 @@ where
     })
 }
 
-pub fn variant_pattern(ctx: &mut Ctx<'_, '_>, def: &AdtDef, vid: VariantIdx) -> Pattern {
+pub fn variant_pattern(tcx: TyCtxt<'_>, def: &AdtDef, vid: VariantIdx) -> Pattern {
     let variant = &def.variants[vid];
     let wilds = variant.fields.iter().map(|_| Pattern::Wildcard).collect();
-    let mut cons_name = super::ty::translate_ty_name(ctx, def.did);
-    cons_name.make_constructor(variant.ident.to_string());
+    let cons_name = super::translate_value_id(tcx, variant.def_id);
 
     Pattern::ConsP(cons_name, wilds)
 }

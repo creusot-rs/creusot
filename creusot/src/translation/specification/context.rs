@@ -45,15 +45,11 @@ fn defid_to_path(tcx: TyCtxt<'_>, did: DefId) -> pearlite::term::Name {
     if path.krate.as_u32() != 0 {
         segs.push(tcx.crate_name(did.krate).to_string())
     }
+
     for seg in &path.data[..] {
         match seg.data {
-            DefPathData::ValueNs(_) | DefPathData::TypeNs(_) => segs.push(seg.data.to_string()),
-            DefPathData::Ctor => {
-                use rustc_hir::def::{CtorOf::*, DefKind::Ctor};
-                if let Ctor(Struct, _) = tcx.def_kind(did) {
-                    segs.push(segs.last().unwrap().to_string())
-                }
-            }
+            DefPathData::TypeNs(_) | DefPathData::ValueNs(_) => segs.push(seg.to_string()),
+            DefPathData::Ctor => {}
             _ => {
                 panic!("{:?}", seg)
             }

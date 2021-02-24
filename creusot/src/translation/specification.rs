@@ -135,13 +135,13 @@ pub fn logic_to_why<'tcx>(
     pearlite::typing::check_term(&mut tyctx, &mut t, &ret_ty).unwrap();
     let body = lower_term_to_why(res.2, t);
 
-    let name = crate::translation::translate_defid(res.2, did, rustc_resolve::Namespace::ValueNS);
+    let name = crate::translation::translate_value_id(res.2, did);
     mlcfg::Logic {
         name,
-        retty: lower_type_to_why(ret_ty),
+        retty: lower_type_to_why(res.2, ret_ty),
         args: entry_ctx
             .into_iter()
-            .map(|(nm, ty)| (LocalIdent::Name(nm), lower_type_to_why(ty)))
+            .map(|(nm, ty)| (LocalIdent::Name(nm), lower_type_to_why(res.2, ty)))
             .collect(),
         body,
         contract: mlcfg::Contract::new(),

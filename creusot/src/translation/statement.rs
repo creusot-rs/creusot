@@ -82,10 +82,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     Tuple => Exp::Tuple(fields),
                     Adt(adt, varix, _, _, _) => {
                         let variant_def = &adt.variants[*varix];
-                        let cons_name = (&variant_def.ident.name).to_string();
-
-                        let mut qname = super::ty::translate_ty_name(&mut self.ty_ctx, adt.did);
-                        qname.make_constructor(cons_name);
+                        let qname = super::translate_value_id(self.tcx, variant_def.def_id);
 
                         Constructor { ctor: qname, args: fields }
                     }
