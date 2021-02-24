@@ -12,10 +12,6 @@ enum List {
 }
 use List::*;
 
-// BUG: logic code doesn't cause types to be translated.
-// Include a dummy definition to force Option to be translated.
-fn dummy() -> Option<u32> { None }
-
 #[logic]
 fn len(l: List) -> Int {
   match l {

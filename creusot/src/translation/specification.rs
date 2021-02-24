@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use crate::mlcfg::printer::FormatEnv;
 use crate::mlcfg::LocalIdent;
 use crate::mlcfg::{self, Exp};
+use crate::translation::ty::Ctx;
+
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{Body, SourceInfo},
@@ -19,6 +21,7 @@ use lower::*;
 
 pub fn requires_to_why<'tcx>(
     res: &RustcResolver<'tcx>,
+    ctx: &mut Ctx<'_, 'tcx>,
     body: &Body<'tcx>,
     attr_val: String,
 ) -> Exp {
@@ -30,10 +33,10 @@ pub fn requires_to_why<'tcx>(
 
     pearlite::typing::check_term(&mut tyctx, &mut t, &term::Type::BOOLEAN).unwrap();
     // TODO: perform substitution on pearlite?
-    lower_term_to_why(res.2, t)
+    lower_term_to_why(ctx, t)
 }
 
-pub fn variant_to_why<'tcx>(res: &RustcResolver<'tcx>, body: &Body<'tcx>, attr_val: String) -> Exp {
+pub fn variant_to_why<'tcx>(res: &RustcResolver<'tcx>, ctx: &mut Ctx<'_, 'tcx>, body: &Body<'tcx>, attr_val: String) -> Exp {
     let p: Term = syn::parse_str(&attr_val).unwrap();
     let entry_ctx = context_at_entry(res.2, body);
     let mut tyctx =
@@ -42,32 +45,34 @@ pub fn variant_to_why<'tcx>(res: &RustcResolver<'tcx>, body: &Body<'tcx>, attr_v
 
     pearlite::typing::infer_term(&mut tyctx, &mut t).unwrap();
     // TODO: perform substitution on pearlite?
-    lower_term_to_why(res.2, t)
+    lower_term_to_why(ctx, t)
 }
 
-pub fn ensures_to_why<'tcx>(res: &RustcResolver<'tcx>, body: &Body<'tcx>, attr_val: String) -> Exp {
+pub fn ensures_to_why<'tcx>(res: &RustcResolver<'tcx>, ctx: &mut Ctx<'_, 'tcx>,
+ body: &Body<'tcx>, attr_val: String) -> Exp {
     let p: Term = syn::parse_str(&attr_val).unwrap();
-    let mut ctx = context_at_entry(res.2, body);
+    let mut tyctx = context_at_entry(res.2, body);
     let ret_ty = return_ty(res.2, body);
-    ctx.push(("result".into(), ret_ty));
+    tyctx.push(("result".into(), ret_ty));
 
-    let mut tyctx = pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), ctx);
+    let mut tyctx = pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), tyctx);
 
     let mut t = term::Term::from_syn(res, p).unwrap();
 
     pearlite::typing::check_term(&mut tyctx, &mut t, &term::Type::BOOLEAN).unwrap();
     // TODO: perform substitution on pearlite?
-    lower_term_to_why(res.2, t)
+    lower_term_to_why(ctx, t)
 }
 
 pub fn invariant_to_why<'tcx>(
     res: &RustcResolver<'tcx>,
+    ctx: &mut Ctx<'_, 'tcx>,
     body: &Body<'tcx>,
     info: SourceInfo,
     attr_val: String,
 ) -> String {
     let p: Term = syn::parse_str(&attr_val).unwrap();
-    let ctx: Vec<_> = body
+    let tyctx: Vec<_> = body
         .var_debug_info
         .iter()
         .filter(|vdi| vdi.source_info.scope <= info.scope)
@@ -82,11 +87,11 @@ pub fn invariant_to_why<'tcx>(
             (vdi.name.to_string(), ty_to_pearlite(res.2, decl.ty))
         })
         .collect();
-    let mut tyctx = pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), ctx);
+    let mut tyctx = pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), tyctx);
 
     let mut t = term::Term::from_syn(res, p).unwrap();
     pearlite::typing::check_term(&mut tyctx, &mut t, &term::Type::BOOLEAN).unwrap();
-    let mut e = lower_term_to_why(res.2, t);
+    let mut e = lower_term_to_why(ctx, t);
     let fvs = e.fvs();
 
     let vars_in_scope: Vec<_> =
@@ -118,6 +123,7 @@ pub fn invariant_to_why<'tcx>(
 // Translate a logical funciton into why.
 pub fn logic_to_why<'tcx>(
     res: &RustcResolver<'tcx>,
+    ctx: &mut Ctx<'_, 'tcx>,
     did: DefId,
     body: &Body<'tcx>,
     exp: String,
@@ -133,15 +139,15 @@ pub fn logic_to_why<'tcx>(
     let mut t = term::Term::from_syn(res, p).unwrap();
 
     pearlite::typing::check_term(&mut tyctx, &mut t, &ret_ty).unwrap();
-    let body = lower_term_to_why(res.2, t);
+    let body = lower_term_to_why(ctx, t);
 
     let name = crate::translation::translate_value_id(res.2, did);
     mlcfg::Logic {
         name,
-        retty: lower_type_to_why(res.2, ret_ty),
+        retty: lower_type_to_why(ctx, ret_ty),
         args: entry_ctx
             .into_iter()
-            .map(|(nm, ty)| (LocalIdent::Name(nm), lower_type_to_why(res.2, ty)))
+            .map(|(nm, ty)| (LocalIdent::Name(nm), lower_type_to_why(ctx, ty)))
             .collect(),
         body,
         contract: mlcfg::Contract::new(),
@@ -242,20 +248,21 @@ impl Contract {
     pub fn check_and_lower<'tcx>(
         self,
         res: &RustcResolver<'tcx>,
+        ctx: &mut Ctx<'_, 'tcx>,
         body: &Body<'tcx>,
     ) -> mlcfg::Contract {
         let mut out = mlcfg::Contract::new();
 
         for req in self.requires {
-            out.requires.push(requires_to_why(res, body, req));
+            out.requires.push(requires_to_why(res, ctx, body, req));
         }
 
         for ens in self.ensures {
-            out.ensures.push(ensures_to_why(res, body, ens));
+            out.ensures.push(ensures_to_why(res, ctx, body, ens));
         }
 
         if let Some(variant) = self.variant {
-            out.variant = Some(variant_to_why(res, body, variant));
+            out.variant = Some(variant_to_why(res, ctx, body, variant));
         };
         out
     }

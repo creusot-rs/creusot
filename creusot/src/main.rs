@@ -168,14 +168,14 @@ fn translate(
         match specification::spec_kind(attrs).unwrap() {
             Invariant { .. } => continue,
             Logic { body: exp, contract } => {
-                let out_contract = contract.check_and_lower(&resolver, &body);
+                let out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, &body);
 
-                let mut translated = specification::logic_to_why(&resolver, def_id, &body, exp);
+                let mut translated = specification::logic_to_why(&resolver, &mut ty_ctx, def_id, &body, exp);
                 translated.contract = out_contract;
                 krate.modules.get_mut_with_default(module).decls.push(Decl::LogicDecl(translated));
             }
             Program { contract } => {
-                let mut out_contract = contract.check_and_lower(&resolver, &body);
+                let mut out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, &body);
                 let subst = specification::subst_for_arguments(&body);
 
                 out_contract.subst(&subst);

@@ -15,7 +15,7 @@ use crate::mlcfg::LocalIdent;
 
 pub struct Ctx<'a, 'tcx> {
     translated_tys: IndexSet<DefId>,
-    tcx: TyCtxt<'tcx>,
+    pub tcx: TyCtxt<'tcx>,
     sess: &'a Session,
 
     results: IndexMap<DefId, (TyDecl, Predicate)>,
@@ -117,7 +117,7 @@ pub fn check_not_mutally_recursive<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty_id: DefId, 
     }
 }
 
-fn translate_ty_name(ctx: &mut Ctx<'_, '_>, did: DefId) -> QName {
+pub fn translate_ty_name(ctx: &mut Ctx<'_, '_>, did: DefId) -> QName {
     // Check if we've already translated this type before.
     if !ctx.translated_tys.contains(&did) {
         translate_tydecl(ctx, rustc_span::DUMMY_SP, did);

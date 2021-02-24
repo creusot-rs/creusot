@@ -93,6 +93,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                             Ok(Spec::Invariant { name, expression }) => {
                                 let invariant = specification::invariant_to_why(
                                     &self.resolver,
+                                    &mut self.ty_ctx,
                                     self.body,
                                     si,
                                     expression,
