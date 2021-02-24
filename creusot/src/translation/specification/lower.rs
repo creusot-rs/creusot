@@ -124,16 +124,18 @@ pub fn lower_type_to_why(tcx: TyCtxt<'_>, ty: pearlite::term::Type) -> crate::ml
         } // _ => panic!("{:?}", ty),
     }
 }
+
 fn lit_to_const(lit: pearlite::term::Literal) -> crate::mlcfg::Constant {
     use crate::mlcfg::Constant::{self, *};
+    use rustc_middle::ty::UintTy::*;
 
     match lit {
-        term::Literal::U8(u) => Uint(u as u128),
-        term::Literal::U16(u) => Uint(u as u128),
-        term::Literal::U32(u) => Uint(u as u128),
-        term::Literal::U64(u) => Uint(u as u128),
-        term::Literal::Usize(u) => Uint(u as u128),
-        term::Literal::Int(u) => Int(u as i128),
+        term::Literal::U8(u) => Uint(u as u128, Some(U8)),
+        term::Literal::U16(u) => Uint(u as u128, Some(U16)),
+        term::Literal::U32(u) => Uint(u as u128, Some(U32)),
+        term::Literal::U64(u) => Uint(u as u128, Some(U64)),
+        term::Literal::Usize(u) => Uint(u as u128, Some(Usize)),
+        term::Literal::Int(u) => Int(u as i128, None),
         term::Literal::F32(_) => {
             unimplemented!()
         }

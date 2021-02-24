@@ -275,12 +275,6 @@ impl From<&rustc_span::Symbol> for QName {
     }
 }
 
-// impl Display for QName {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{}", self.module.iter().chain(self.name.iter()).format("."))
-//     }
-// }
-
 #[derive(Debug, Clone)]
 pub enum FullBinOp {
     And,
@@ -420,8 +414,9 @@ impl Exp {
             Exp::QVar(_) => HashSet::new(),
             // Exp::RecUp { record, label, val } => {}
             // Exp::Tuple(_) => {}
-            // Exp::Constructor { ctor, args } => {}
-            // Exp::BorrowMut(_) => {}
+            Exp::Constructor { ctor: _, args } => {
+                args.iter().fold(HashSet::new(), |acc, v| &acc | &v.fvs())
+            }
             Exp::Const(_) => HashSet::new(),
             Exp::BinaryOp(_, l, r) => &l.fvs() | &r.fvs(),
             Exp::Call(f, args) => args.iter().fold(f.fvs(), |acc, a| &acc | &a.fvs()),
@@ -535,8 +530,8 @@ impl Exp {
 
 #[derive(Debug, Clone)]
 pub enum Constant {
-    Int(i128),
-    Uint(u128),
+    Int(i128, Option<rustc_middle::ty::IntTy>),
+    Uint(u128,  Option<rustc_middle::ty::UintTy>),
     // Float(f64),
     Other(String),
 }

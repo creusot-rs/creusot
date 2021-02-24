@@ -227,6 +227,34 @@ impl EnvDisplay for Function {
     }
 }
 
+impl EnvDisplay for rustc_middle::ty::IntTy {
+    fn fmt(&self, _: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use rustc_middle::ty::IntTy::*;
+        match self {
+            I8 => write!(f, "int8"),
+            I16 => write!(f, "int16"),
+            I32 => write!(f, "int32"),
+            I64 => write!(f, "int64"),
+            I128 => write!(f, "int128"),
+            Isize => write!(f, "isize"),
+        }
+    }
+}
+
+impl EnvDisplay for rustc_middle::ty::UintTy {
+    fn fmt(&self, _: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use rustc_middle::ty::UintTy::*;
+        match self {
+            U8 => write!(f, "uint8"),
+            U16 => write!(f, "uint16"),
+            U32 => write!(f, "uint32"),
+            U64 => write!(f, "uint64"),
+            U128 => write!(f, "uint128"),
+            Usize => write!(f, "usize"),
+        }
+    }
+}
+
 impl EnvDisplay for Type {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Type::*;
@@ -249,27 +277,11 @@ impl EnvDisplay for Type {
                 write!(f, "char")?;
             }
             Int(size) => {
-                use rustc_middle::ty::IntTy::*;
-                match size {
-                    I8 => write!(f, "int8"),
-                    I16 => write!(f, "int16"),
-                    I32 => write!(f, "int32"),
-                    I64 => write!(f, "int64"),
-                    I128 => write!(f, "int128"),
-                    Isize => write!(f, "isize"),
-                }?
+                size.fmt(fe, f)?;
             }
             Integer => write!(f, "int")?,
             Uint(size) => {
-                use rustc_middle::ty::UintTy::*;
-                match size {
-                    U8 => write!(f, "uint8"),
-                    U16 => write!(f, "uint16"),
-                    U32 => write!(f, "uint32"),
-                    U64 => write!(f, "uint64"),
-                    U128 => write!(f, "uint128"),
-                    Usize => write!(f, "usize"),
-                }?
+                size.fmt(fe, f)?;
             }
             Float(size) => {
                 use rustc_middle::ty::FloatTy::*;
@@ -370,7 +382,7 @@ impl EnvDisplay for Exp {
                 write!(f, "borrow_mut {}", parens!(fe, self, exp))?;
             }
             Exp::Const(c) => {
-                write!(f, "{}", c)?;
+                c.fmt(fe, f)?;
             }
             Exp::UnaryOp(UnOp::Not, box op) => {
                 write!(f, "not {}", parens!(fe, self, op))?;
@@ -558,12 +570,14 @@ fn bin_op_to_string(op: &FullBinOp) -> &str {
     }
 }
 
-impl Display for Constant {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl EnvDisplay for Constant {
+    fn fmt(&self, fe: FormatEnv, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Constant::Other(o) => write!(f, "{}", o),
-            Constant::Int(i) => write!(f, "{}", i),
-            Constant::Uint(u) => write!(f, "{}", u), // Constant::Float(flt) => { write!(f, "{}", flt) }
+            Constant::Int(i, Some(t)) => write!(f, "({} : {})", i, fe.to(t)),
+            Constant::Int(i,None) => write!(f, "{}", i),
+            Constant::Uint(i, Some(t)) => write!(f, "({} : {})", i, fe.to(t)),
+            Constant::Uint(i,None) => write!(f, "{}", i),
         }
     }
 }

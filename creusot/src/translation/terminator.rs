@@ -180,7 +180,7 @@ pub fn make_switch<'tcx>(
         Uint(_) => {
             let annoying: Vec<(Constant, MlT)> = targets
                 .iter()
-                .map(|(val, tgt)| (Constant::Uint(val), MlT::Goto(tgt.into())))
+                .map(|(val, tgt)| (Constant::Uint(val, None), MlT::Goto(tgt.into())))
                 .collect();
 
             let default = MlT::Goto(targets.otherwise().into());
@@ -189,7 +189,7 @@ pub fn make_switch<'tcx>(
         Int(_) => {
             let annoying: Vec<(Constant, MlT)> = targets
                 .iter()
-                .map(|(val, tgt)| (Constant::Int(val as i128), MlT::Goto(tgt.into())))
+                .map(|(val, tgt)| (Constant::Int(val as i128, None), MlT::Goto(tgt.into())))
                 .collect();
 
             let default = MlT::Goto(targets.otherwise().into());
