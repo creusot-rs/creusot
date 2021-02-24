@@ -50,10 +50,17 @@ where B : Fn(&Path) -> std::process::Command,
     let mut test_count = 0;
     let mut test_failures = 0;
     let bless =  std::env::args().any(|arg| arg == "--bless");
+    let filter = std::env::args().nth(1);
 
     for entry in glob::glob(s).expect("Failed to read glob pattern") {
         test_count += 1;
         let entry = entry.unwrap();
+
+        if let Some(ref filter) = filter {
+            if !entry.to_str().map(|entry| entry.contains(filter)).unwrap_or(false) {
+                continue;
+            }
+        }
         let output = b(&entry).output().unwrap();
 
         let stderr = entry.with_extension("stderr");
