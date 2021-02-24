@@ -27,6 +27,16 @@ module Ambient
   predicate drop_ref (_ : 'a) = true
 
   scope Type
+  type core_option_option 't =
+      | Core_Option_Option_None
+      | Core_Option_Option_Some('t)
+
+  predicate drop_core_option_option (drop_'t : 't -> bool) (self : core_option_option 't) =
+    match (self) with
+      | Core_Option_Option_None -> true
+      | Core_Option_Option_Some(a) -> drop_'t a
+      end
+
   type list  =
       | List_Cons(uint32, list)
       | List_Nil
@@ -38,54 +48,97 @@ module Ambient
       end
 
   end
+  let rec cfg dummy () : Type.core_option_option uint32
+    =
+  var _0 : Type.core_option_option uint32;
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- Type.Core_Option_Option_None;
+    return _0
+  }
+
+
+  let rec function len (l : Type.list) : int
+    =
+    match (l) with
+      | Type.List_Cons(_, ls) -> 1 + len ls
+      | Type.List_Nil -> 0
+      end
+
+
+
+  let rec function get (l : Type.list)(ix : int) : Type.core_option_option uint32
+    =
+    match (l) with
+      | Type.List_Cons(x, ls) -> match (ix = 0) with
+        | True -> Type.Core_Option_Option_Some(x)
+        | False -> get ls (ix - 1)
+        end
+
+      | Type.List_Nil -> Type.Core_Option_Option_None
+      end
+
+
+
   let rec cfg allZero (o_l_1 : borrowed (Type.list)) : ()
+    ensures { len ( * o_l_1) = len ( ^ o_l_1) }
+    ensures { forall i : int . 0 <= i && i < len ( * o_l_1) -> get ( ^ o_l_1) i = Type.Core_Option_Option_Some((0 : uint32)) }
     =
   var _0 : ();
   var l_1 : borrowed (Type.list);
-  var _2 : ();
-  var _3 : isize;
-  var value_4 : borrowed uint32;
-  var next_5 : borrowed (Type.list);
-  var _6 : borrowed (Type.list);
-  var _7 : ();
+  var loop_l_2 : borrowed (Type.list);
+  var _5 : ();
+  var _6 : isize;
+  var value_7 : borrowed uint32;
+  var next_8 : borrowed (Type.list);
+  var _9 : borrowed (Type.list);
+  var _10 : ();
   {
     l_1 <- o_l_1;
     goto BB0
   }
   BB0 {
+    loop_l_2 <- l_1;
     goto BB1
   }
   BB1 {
-    assume { (fun tup -> let () = tup in true) _2 };
-    switch ( * l_1)
-      | Type.List_Cons(_, _) -> goto BB2
-      | _ -> goto BB3
-      end
+    invariant zeroed { (forall i : int . 0 <= i && i < len ( * loop_l_2) -> get ( ^ loop_l_2) i = Type.Core_Option_Option_Some((0 : uint32))) -> (forall i : int . 0 <= i && i < len ( * l_1) -> get ( ^ l_1) i = Type.Core_Option_Option_Some((0 : uint32))) };
+    invariant in_len { len ( ^ loop_l_2) = len ( * loop_l_2) -> len ( ^ l_1) = len ( * l_1) };
+    assume { (fun tup -> let () = tup in true) _5 };
+    goto BB2
   }
   BB2 {
-    assume { drop_int _3 };
-    goto BB4
+    switch ( * loop_l_2)
+      | Type.List_Cons(_, _) -> goto BB3
+      | _ -> goto BB4
+      end
   }
   BB3 {
-    assume { drop_mut_ref l_1 };
-    assume { drop_int _3 };
+    assume { drop_int _6 };
+    goto BB5
+  }
+  BB4 {
+    assume { drop_mut_ref loop_l_2 };
+    assume { drop_int _6 };
     _0 <- ();
     return _0
   }
-  BB4 {
-    value_4 <- borrow_mut (let Type.List_Cons(a, _) =  * l_1 in a);
-    l_1 <- { l_1 with current = (let Type.List_Cons(a, b) =  * l_1 in Type.List_Cons( ^ value_4, b)) };
-    next_5 <- borrow_mut (let Type.List_Cons(_, a) =  * l_1 in a);
-    l_1 <- { l_1 with current = (let Type.List_Cons(a, b) =  * l_1 in Type.List_Cons(a,  ^ next_5)) };
-    assume { drop_mut_ref l_1 };
-    value_4 <- { value_4 with current = 0 };
-    assume { drop_mut_ref value_4 };
-    _6 <- borrow_mut ( * next_5);
-    next_5 <- { next_5 with current = ( ^ _6) };
-    assume { drop_mut_ref next_5 };
-    l_1 <- _6;
-    _2 <- ();
-    goto BB0
+  BB5 {
+    value_7 <- borrow_mut (let Type.List_Cons(a, _) =  * loop_l_2 in a);
+    loop_l_2 <- { loop_l_2 with current = (let Type.List_Cons(a, b) =  * loop_l_2 in Type.List_Cons( ^ value_7, b)) };
+    next_8 <- borrow_mut (let Type.List_Cons(_, a) =  * loop_l_2 in a);
+    loop_l_2 <- { loop_l_2 with current = (let Type.List_Cons(a, b) =  * loop_l_2 in Type.List_Cons(a,  ^ next_8)) };
+    assume { drop_mut_ref loop_l_2 };
+    value_7 <- { value_7 with current = 0 };
+    assume { drop_mut_ref value_7 };
+    _9 <- borrow_mut ( * next_8);
+    next_8 <- { next_8 with current = ( ^ _9) };
+    assume { drop_mut_ref next_8 };
+    loop_l_2 <- _9;
+    _5 <- ();
+    goto BB1
   }
 
 
