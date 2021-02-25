@@ -1,5 +1,7 @@
 ![](/static/marteau.jpg)
 
+*Le marteau-pilon, forges et aciéries de Saint-Chamond, Joseph-Fortuné LAYRAUD, 1889*
+
 # About
 
 Creusot is a tool for *deductive verification* of Rust code. It allows you to annotate your code with specifications, invariants and assertions and then *check* them formally, returning a *proof* your code satisfies its specification.
