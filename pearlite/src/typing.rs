@@ -210,6 +210,14 @@ where
             }
             Ok(body_ty)
         }
+        If { box cond, box then_branch, box else_branch } => {
+            check_term(ctx, cond, &Type::Lit(LitTy::Boolean))?;
+
+            let ty = infer_term(ctx, then_branch)?;
+            check_term(ctx, else_branch, &ty)?;
+
+            Ok(ty)
+        }
         Binary { left, op, right } => {
             let left_ty = infer_term(ctx, left)?;
             let right_ty = infer_term(ctx, right)?;

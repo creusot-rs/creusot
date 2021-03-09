@@ -22,6 +22,7 @@ pub enum Name {
 #[derive(Debug)]
 pub enum Term {
     Match { expr: Box<Term>, arms: Vec<MatchArm> },
+    If { cond: Box<Term>, then_branch: Box<Term>, else_branch: Box<Term> },
     Binary { left: Box<Term>, op: BinOp, right: Box<Term> },
     Lit { lit: Literal },
     Variable { path: Name },

@@ -27,8 +27,8 @@ use ParseError::*;
 impl Term {
     pub fn from_syn<R: Resolver>(res: &R, term: RT) -> Result<Term, ParseError> {
         use syn::term::{
-            TBlock, TermBinary, TermBlock, TermCall, TermCast, TermExists, TermFinal, TermForall,
-            TermImpl, TermLit, TermMatch, TermParen, TermPath, TermTuple, TermUnary,
+            TermBinary, TermBlock, TermCall, TermCast, TermExists, TermFinal, TermForall,
+            TermImpl, TermLit, TermMatch, TermParen, TermPath, TermTuple, TermUnary, TermIf,
         };
         match term {
             RT::Match(TermMatch { box expr, arms, .. }) => Ok(Match {
@@ -94,17 +94,8 @@ impl Term {
 
                 Ok(Exists { args: targs, body: box Term::from_syn(res, term)? })
             }
-            RT::Block(TermBlock { block: TBlock { mut stmts, .. }, .. }) => {
-                let mut exp =
-                    Term::from_term_stmt(res, stmts.remove(stmts.len() - 1), Term::unit())?;
-
-                for s in stmts.into_iter().rev() {
-                    if let syn::TermStmt::Expr(_) = s {
-                        return Err(Generic);
-                    };
-                    exp = Term::from_term_stmt(res, s, exp)?;
-                }
-                Ok(exp)
+            RT::Block(TermBlock { block, .. }) => {
+                Self::from_tblock(res, block)
             }
             RT::Paren(TermParen { box expr, .. }) => Term::from_syn(res, expr),
             RT::Call(TermCall { box func, args, .. }) => {
@@ -138,6 +129,13 @@ impl Term {
             RT::Cast(TermCast { box expr, box ty, .. }) => {
                 Ok(Cast { expr: box Term::from_syn(res, expr)?, ty: Type::from_syn(res, ty)? })
             }
+            RT::If(TermIf { box cond, then_branch, else_branch: Some((_, box else_branch)), .. }) => {
+                let cond = Term::from_syn(res, cond)?;
+                let then_branch = Self::from_tblock(res, then_branch)?;
+                let else_branch = Self::from_syn(res, else_branch)?;
+
+                Ok(If { cond: box cond, then_branch: box then_branch, else_branch: box else_branch})
+            }
             t => unimplemented!("{:?}", t),
         }
     }
@@ -161,6 +159,21 @@ impl Term {
             _ => Err(Generic),
         }
     }
+
+    fn from_tblock<R: Resolver>(res: &R, block: syn::TBlock) -> Result<Term, ParseError> {
+        let syn::TBlock { mut stmts, .. } = block;
+        let mut exp =
+            Term::from_term_stmt(res, stmts.remove(stmts.len() - 1), Term::unit())?;
+
+        for s in stmts.into_iter().rev() {
+            if let syn::TermStmt::Expr(_) = s {
+                return Err(Generic);
+            };
+            exp = Term::from_term_stmt(res, s, exp)?;
+        }
+
+        Ok(exp)
+    }
 }
 
 impl Type {
@@ -180,6 +193,7 @@ impl Type {
                         "u16" => Ok(Type::Lit(Unsigned(Sixteen))),
                         "u32" => Ok(Type::Lit(Unsigned(ThirtyTwo))),
                         "u64" => Ok(Type::Lit(Unsigned(SixtyFour))),
+                        "usize" => Ok(Type::Lit(Unsigned(Mach))),
                         "i8" => Ok(Type::Lit(Signed(Eight))),
                         "i16" => Ok(Type::Lit(Signed(Sixteen))),
                         "i32" => Ok(Type::Lit(Signed(ThirtyTwo))),
