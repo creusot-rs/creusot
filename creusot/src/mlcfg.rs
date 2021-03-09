@@ -133,6 +133,7 @@ pub enum Statement {
     Assign { lhs: LocalIdent, rhs: Exp },
     Invariant(String, Exp),
     Assume(Exp),
+    Assert(Exp),
 }
 
 #[derive(Debug, Clone)]

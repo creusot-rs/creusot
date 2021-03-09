@@ -466,6 +466,9 @@ impl EnvDisplay for Statement {
             Statement::Assume(assump) => {
                 write!(f, "assume {{ {} }}", fe.to(assump))?;
             }
+            Statement::Assert(assert) => {
+                write!(f, "assert {{ {} }}", fe.to(assert))?;
+            }
         }
         Ok(())
     }

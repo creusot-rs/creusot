@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{BinOp, SourceInfo, SwitchTargets},
+    mir::{BinOp, UnOp, SourceInfo, SwitchTargets},
     ty::AdtDef,
 };
 use rustc_middle::{
@@ -14,7 +14,7 @@ use rustc_session::Session;
 use rustc_target::abi::VariantIdx;
 
 use crate::{
-    mlcfg::{Constant, Exp, Pattern, Terminator as MlT},
+    mlcfg::{Constant, Exp, Pattern, Terminator as MlT, Statement},
     place::simplify_place,
 };
 
@@ -85,8 +85,13 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     self.emit_terminator(MlT::Goto(bb.into()));
                 }
             }
-            Assert { cond: _, expected: _, msg: _, target: _, cleanup: _ } => {
-                unimplemented!("assert")
+            Assert { cond, expected, msg: _, target, cleanup: _ } => {
+                let mut ass = self.translate_operand(cond);
+                if !expected {
+                    ass = Exp::UnaryOp(UnOp::Not, box ass);
+                }
+                self.emit_statement(Statement::Assert(ass));
+                self.emit_terminator(MlT::Goto(target.into()))
             }
 
             FalseEdge { real_target, .. } => self.emit_terminator(MlT::Goto(real_target.into())),

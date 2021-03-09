@@ -64,6 +64,13 @@ pub fn lower_term_to_why(ctx: &mut Ctx, t: term::Term) -> Exp {
         Tuple { elems } => {
             Exp::Tuple(elems.into_iter().map(|t| lower_term_to_why(ctx, t)).collect())
         }
+        If { box cond, box then_branch, box else_branch } => {
+            use mlcfg::Pattern;
+            Exp::Match(box lower_term_to_why(ctx, cond), vec![
+                (Pattern::mk_true(), lower_term_to_why(ctx, then_branch)),
+                (Pattern::mk_false(), lower_term_to_why(ctx, else_branch)),
+            ])
+        }
     }
 }
 
