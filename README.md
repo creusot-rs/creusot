@@ -14,6 +14,9 @@ Creusot works by translating Rust code to WhyML the verification and specificati
 
 - [Mutably indexing a linked list](creusot/tests/should_succeed/list_index_mut.rs)
 - [Zeroing out a list](creusot/tests/should_succeed/all_zero.rs)
+- [Binary Search](creusot/tests/should_succeed/binary_search.rs)
+
+
 
 # Installing
 

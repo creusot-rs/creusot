@@ -3,6 +3,14 @@
 #![register_tool(creusot)]
 #![feature(proc_macro_hygiene, stmt_expr_attributes)]
 
+// Here we prove the Rust stdlib implementation of binary search with a few changes
+// 1. We use a List rather than a slice, this restriction is because creusot cannot yet
+//    axiomitize types, and should be lifted soon.
+// 2. We monomorphize binary_search to u32, this is because we cannot handle trait constraints.
+//    this restriction will be lifted but not in the immediate future. The best approach to handle
+//    traits is not obvious.
+// 3. Lists are restricted to size < 1,000,000 this is because of (1), since there is no upper
+//    bound on the size of a list.
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
