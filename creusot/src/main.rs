@@ -158,8 +158,8 @@ fn translate(
 
         // Parent module of declaration
         let module = util::module_of(tcx, def_id);
-        use crate::rustc_middle::ty::DefIdTree;
-        let module_id = tcx.parent(def_id).unwrap();
+        let module_id = tcx.parent_module_from_def_id(def_id.expect_local()).to_def_id();
+        // let module_id = tcx.parent(def_id).unwrap();
         let attrs = tcx.get_attrs(def_id);
         let resolver = specification::RustcResolver(resolver.clone(), module_id, tcx);
 

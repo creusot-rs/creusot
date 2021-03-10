@@ -2,19 +2,18 @@ use rustc_hir::definitions::DefPath;
 use rustc_hir::{def_id::DefId, definitions::DefPathData};
 use rustc_middle::ty::TyCtxt;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ModulePath(pub(crate) DefPath);
 
 pub fn module_of(tcx: TyCtxt<'_>, def_id: DefId) -> ModulePath {
     let mut def_path = tcx.def_path(def_id);
-    let mut layers = 1;
+    def_path.data.pop();
 
-    while layers > 0 {
-        if let DefPathData::ClosureExpr = def_path.data.last().unwrap().data {
-            layers += 1
+    while !def_path.data.is_empty() {
+        match def_path.data.pop().unwrap().data {
+            DefPathData::ClosureExpr | DefPathData::Impl | DefPathData::ImplTrait => { }
+            _ => { break }
         }
-        def_path.data.pop();
-        layers -= 1;
     }
 
     ModulePath(def_path)
