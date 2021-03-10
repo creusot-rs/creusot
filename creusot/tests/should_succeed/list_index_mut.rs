@@ -21,7 +21,7 @@ pub struct List(u32,Option<Box<List>>);
 fn len(l: List) -> Int {{
     let List(_, ls) = l;
     1 + match ls {
-        Some(ls) => len(ls),
+        Some(ls) => len(*ls),
         None => 0
     }
 }}
@@ -33,7 +33,7 @@ fn get(l : List, ix : Int) -> Option<u32> {{
     match (ix > 0) {
         false => Some(i),
         true => match ls {
-            Some(ls) => get(ls, ix - 1),
+            Some(ls) => get(*ls, ix - 1),
             None => None
         }
     }

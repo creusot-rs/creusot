@@ -15,7 +15,7 @@ use List::*;
 #[logic]
 fn len(l: List) -> Int {
   match l {
-    Cons(_, ls) => 1 + len(ls),
+    Cons(_, ls) => 1 + len(*ls),
     Nil => 0,
   }
 }
@@ -25,7 +25,7 @@ fn get(l: List, ix: Int) -> Option<u32> {
   match l {
     Cons(x, ls) => match (ix == 0) {
       true => Some(x),
-      false => get(ls, ix - 1),
+      false => get(*ls, ix - 1),
     },
     Nil => None
   }

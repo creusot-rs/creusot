@@ -118,7 +118,7 @@ impl Term {
                 let expr = Term::from_syn(res, expr)?;
 
                 let op = match op {
-                    syn::UnOp::Deref(_) => UnOp::Current,
+                    syn::UnOp::Deref(_) => UnOp::Deref(None),
                     syn::UnOp::Neg(_) => UnOp::Neg,
                     syn::UnOp::Not(_) => UnOp::Not,
                 };

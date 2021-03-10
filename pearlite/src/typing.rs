@@ -73,25 +73,15 @@ impl<G: GlobalContext> TypeContext<G> {
 
     fn freshen(&mut self, ty: &mut Type) {
         use Type::*;
-        match ty {
-            Reference { kind: _, ty } => self.freshen(ty),
-            Tuple { elems } => elems.iter_mut().for_each(|t| self.freshen(t)),
-            Function { args, res } => {
-                args.iter_mut().for_each(|arg| self.freshen(arg));
-                self.freshen(res);
-            }
-            App { func, args } => {
-                self.freshen(func);
-                args.iter_mut().for_each(|arg| self.freshen(arg));
-            }
-            Var(_) => *ty = self.fresh_ty(),
-            Path { .. } | Lit(_) | Unknown(_) => {}
-        }
+        let sub : VarSubst = ty.fvs().into_iter().map(|var| (var, self.fresh_ty())).collect();
+
+        sub.subst(ty);
     }
     // Substitute in all solved variables
     pub fn zonk(&mut self, ty: &mut Type) {
         use Type::*;
         match ty {
+            Box { ty } => self.zonk(ty),
             Reference { kind: _, ty } => self.zonk(ty),
             Tuple { elems } => elems.iter_mut().for_each(|t| self.zonk(t)),
             Unknown(uk) => {
@@ -156,6 +146,7 @@ impl<G: GlobalContext> TypeContext<G> {
             {
                 self.unify(t1, t2)
             }
+            (Box { ty: ty1 }, Box { ty: ty2 }) => self.unify(ty1, ty2),
             (App { func: f1, args: a1 }, App { func: f2, args: a2 }) => {
                 self.unify(f1, f2)?;
                 for (a1, a2) in a1.iter().zip(a2.iter()) {
@@ -186,6 +177,9 @@ pub enum TypeError {
     UnknownVariable(Name),
     UnknownConstructor(Name),
     NotFunction(Type, Name),
+    InvalidDeref(Type),
+    NoFuture(Type),
+    InvalidOp(BinOp, Type, Type),
 }
 
 use ena::unify::InPlaceUnificationTable;
@@ -219,21 +213,21 @@ where
             Ok(ty)
         }
         Binary { left, op, right } => {
-            let left_ty = infer_term(ctx, left)?;
-            let right_ty = infer_term(ctx, right)?;
-            let res_ty = binop_type(ctx, &op, &left_ty, &right_ty)?;
+            let mut left_ty = infer_term(ctx, left)?;
+            let mut right_ty = infer_term(ctx, right)?;
+            let res_ty = binop_type(ctx, &op, &mut left_ty, &mut right_ty)?;
 
             Ok(res_ty)
         }
         Lit { lit } => Ok(Type::Lit(typecheck_lit(lit))),
-        Variable { path } => ctx.resolve_name(path).ok_or_else(||UnknownVariable(path.clone())),
+        Variable { path } => ctx.resolve_name(path).ok_or_else(|| UnknownVariable(path.clone())),
         Tuple { elems } => {
             let elem_tys =
                 elems.iter_mut().map(|e| infer_term(ctx, e)).collect::<Result<Vec<_>, _>>()?;
             Ok(Type::Tuple { elems: elem_tys })
         }
         Call { func, args } => {
-            let fty = ctx.resolve_name(func).ok_or_else(||UnknownVariable(func.clone()))?;
+            let fty = ctx.resolve_name(func).ok_or_else(|| UnknownVariable(func.clone()))?;
             // TODO: This is wrong in if we have lambdas
             // ctx.freshen(&mut fty);
             // ctx.zonk(&mut fty);
@@ -263,11 +257,29 @@ where
             check_term(ctx, body, &Type::Lit(LitTy::Boolean))?;
             Ok(Type::Lit(LitTy::Boolean))
         }),
-        Unary { op: UnOp::Final, box expr } | Unary { op: UnOp::Current, box expr } => {
-            let inner = ctx.fresh_ty();
-            let refty = Type::Reference { kind: RefKind::Mut, ty: box inner.clone() };
-            check_term(ctx, expr, &refty)?;
-            Ok(inner)
+        Unary { op: UnOp::Deref(k), box expr } => {
+            let mut inner = infer_term(ctx, expr)?;
+
+            ctx.zonk(&mut inner);
+            match inner {
+                Type::Reference { box ty, kind } => {
+                    *k = Some(DerefKind::Ref(kind));
+                    Ok(ty)
+                }
+                Type::Box { box ty } => {
+                    *k = Some(DerefKind::Box);
+                    Ok(ty)
+                }
+                _ => Err(InvalidDeref(inner)),
+            }
+        }
+        Unary { op: UnOp::Final, box expr } => {
+            let mut inner = infer_term(ctx, expr)?;
+            ctx.zonk(&mut inner);
+            match inner {
+                Type::Reference { box ty, kind: RefKind::Mut } => Ok(ty),
+                _ => Err(NoFuture(inner)),
+            }
         }
         Unary { op: UnOp::Not, box expr } => {
             check_term(ctx, expr, &Type::Lit(LitTy::Boolean))?;
@@ -329,7 +341,7 @@ where
         }
         TupleStruct { path, fields } => {
             let (field_tys, ret_ty) =
-                ctx.fresh_cons_type(path).ok_or_else(||UnknownConstructor(path.clone()))?;
+                ctx.fresh_cons_type(path).ok_or_else(|| UnknownConstructor(path.clone()))?;
             ctx.unify(&ret_ty, expected)?;
 
             for (pat, ty) in fields.iter_mut().zip(field_tys.iter()) {
@@ -345,8 +357,8 @@ where
 fn binop_type<G: GlobalContext>(
     ctx: &mut TypeContext<G>,
     op: &BinOp,
-    left_ty: &Type,
-    right_ty: &Type,
+    left_ty: &mut Type,
+    right_ty: &mut Type,
 ) -> Result<Type, TypeError> {
     use BinOp::*;
     ctx.unify(left_ty, right_ty)?;
@@ -355,15 +367,16 @@ fn binop_type<G: GlobalContext>(
             if left_ty.is_numeric() {
                 Ok(left_ty.clone())
             } else {
-                Err(GenericError)
+                Err(InvalidOp(*op, left_ty.clone(), right_ty.clone()))
             }
         }
         Eq | Ne => Ok(Type::Lit(LitTy::Boolean)),
         Le | Ge | Gt | Lt => {
+            ctx.zonk(left_ty);
             if left_ty.is_numeric() {
                 Ok(Type::Lit(LitTy::Boolean))
             } else {
-                Err(GenericError)
+                Err(InvalidOp(*op, left_ty.clone(), right_ty.clone()))
             }
         }
         And | Or | Impl => {

@@ -1,6 +1,6 @@
 use crate::mlcfg::QName;
 use rustc_hir::def_id::DefId;
-use pearlite::term;
+use pearlite::term::{self, DerefKind, RefKind};
 use pearlite::term::Name;
 use crate::mlcfg::{self, Exp};
 use crate::translation::ty::Ctx;
@@ -23,7 +23,9 @@ pub fn lower_term_to_why(ctx: &mut Ctx, t: term::Term) -> Exp {
             let expr = box lower_term_to_why(ctx, expr);
             match op {
                 term::UnOp::Final => Exp::Final(expr),
-                term::UnOp::Current => Exp::Current(expr),
+                term::UnOp::Deref(Some(DerefKind::Ref(RefKind::Mut))) => Exp::Current(expr),
+                term::UnOp::Deref(Some(_)) => *expr,
+                term::UnOp::Deref(None) => unreachable!(),
                 term::UnOp::Neg => Exp::UnaryOp(rustc_middle::mir::UnOp::Neg, expr),
                 term::UnOp::Not => Exp::UnaryOp(rustc_middle::mir::UnOp::Not, expr),
             }
@@ -80,6 +82,7 @@ pub fn lower_type_to_why(ctx: &mut Ctx, ty: pearlite::term::Type) -> crate::mlcf
 
     match ty {
         term::Type::Path { path } => TConstructor(lower_type_path(ctx, path)),
+        term::Type::Box { box ty } => lower_type_to_why(ctx, ty),
         term::Type::Reference { kind: RefKind::Mut, box ty } => {
             MutableBorrow(box lower_type_to_why(ctx, ty))
         }

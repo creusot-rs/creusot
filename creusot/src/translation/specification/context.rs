@@ -119,7 +119,7 @@ pub fn ty_to_pearlite<'tcx>(tcx: TyCtxt<'tcx>, ty: &TyS<'tcx>) -> pearlite::term
         Adt(def, subst) => {
             // hack
             if def.is_box() {
-                return ty_to_pearlite(tcx, subst[0].expect_ty());
+                return Type::Box { ty: box ty_to_pearlite(tcx, subst[0].expect_ty())};
             }
             if format!("{:?}", def).contains("creusot_contracts::Int") {
                 return Type::Lit(LitTy::Integer);

@@ -57,14 +57,19 @@ pub enum Literal {
 }
 
 #[derive(Debug)]
+pub enum DerefKind {
+    Box, Ref(RefKind),
+}
+
+#[derive(Debug)]
 pub enum UnOp {
-    Current,
+    Deref(Option<DerefKind>),
     Final,
     Neg,
     Not,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum BinOp {
     Add,
     Sub,
@@ -168,6 +173,7 @@ impl UnifyKey for TyUnk {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Path { path: Name },
+    Box { ty: Box<Type> },
     Reference { kind: RefKind, ty: Box<Type> },
     Tuple { elems: Vec<Type> },
     Function { args: Vec<Type>, res: Box<Type> },
@@ -193,6 +199,7 @@ pub trait Substitution {
 impl Substitution for VarSubst {
     fn subst(&self, ty: &mut Type) {
         match ty {
+            Type::Box { ty } => self.subst(ty),
             Type::Reference { ty, .. } => self.subst(ty),
             Type::Tuple { elems } => elems.iter_mut().for_each(|e| self.subst(e)),
             Type::Var(v) => {
@@ -223,6 +230,10 @@ impl Type {
         matches!(self, Type::Lit(Signed(_)) | Type::Lit(Unsigned(_)) | Type::Lit(Float) | Type::Lit(Double) | Type::Lit(Integer))
     }
 
+    pub fn is_reference(&self) -> bool {
+        matches!(self, Type::Reference {..})
+    }
+
     pub fn fvs(&self) -> Vec<TyVar> {
         let mut v = Vec::new();
         self.fvs_(&mut v);
@@ -234,6 +245,7 @@ impl Type {
         use Type::*;
         match self {
             Type::Path { .. } => {}
+            Box { ty } => ty.fvs_(v),
             Reference { ty, .. } => ty.fvs_(v),
             Tuple { elems } => {
                 elems.iter().for_each(|e| e.fvs_(v));
