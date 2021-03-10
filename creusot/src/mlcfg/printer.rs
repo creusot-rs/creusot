@@ -439,11 +439,11 @@ impl EnvDisplay for Exp {
             Exp::Exists(binders, box exp) => {
                 write!(f, "exists ")?;
 
-                for (l, ty) in binders {
-                    write!(f, "({} : {}) ", l, fe.to(ty))?;
-                }
+                let binder_fmt = binders
+                    .iter()
+                    .format_with(", ", |(l, ty), f| f(&format_args!("{} : {}", l, fe.to(ty))));
 
-                write!(f, ". {}", fe.to(exp))?;
+                write!(f, "{} . {}", binder_fmt, fe.to(exp))?;
             }
             Exp::Impl(box hyp, box exp) => {
                 write!(f, "{} -> {}", parens!(fe, self, hyp), parens!(fe, self, exp))?;
