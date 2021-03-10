@@ -126,7 +126,7 @@ pub fn translate_ty_name(ctx: &mut Ctx<'_, '_>, did: DefId) -> QName {
 }
 
 fn translate_ty_param(p: Symbol) -> String {
-    format!("'{}", p.to_string().to_lowercase())
+    p.to_string().to_lowercase()
 }
 
 // Translate a Rust type declation to an ML one

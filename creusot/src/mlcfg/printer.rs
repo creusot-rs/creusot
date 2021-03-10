@@ -294,7 +294,7 @@ impl EnvDisplay for Type {
                 write!(f, "borrowed {}", ty_parens!(fe, t))?;
             }
             TVar(v) => {
-                write!(f, "{}", v)?;
+                write!(f, "'{}", v)?;
             }
             TFun(box a, box b) => {
                 write!(f, "{} -> {}", ty_parens!(fe, a), ty_parens!(fe, b))?;
@@ -588,7 +588,7 @@ impl EnvDisplay for Constant {
 impl EnvDisplay for TyDecl {
     fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fe.indent_line(f)?;
-        writeln!(f, "type {} {} =", fe.to(&self.ty_name), self.ty_params.iter().format(" "))?;
+        writeln!(f, "type {} {} =", fe.to(&self.ty_name), self.ty_params.iter().format_with(" ", |p, f| f(&format_args!("'{}", p))))?;
 
         fe.indent(2, |fe| {
             for (cons, args) in self.ty_constructors.iter() {
