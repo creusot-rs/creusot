@@ -578,9 +578,9 @@ impl EnvDisplay for Constant {
         match self {
             Constant::Other(o) => write!(f, "{}", o),
             Constant::Int(i, Some(t)) => write!(f, "({} : {})", i, fe.to(t)),
-            Constant::Int(i,None) => write!(f, "{}", i),
+            Constant::Int(i, None) => write!(f, "{}", i),
             Constant::Uint(i, Some(t)) => write!(f, "({} : {})", i, fe.to(t)),
-            Constant::Uint(i,None) => write!(f, "{}", i),
+            Constant::Uint(i, None) => write!(f, "{}", i),
         }
     }
 }

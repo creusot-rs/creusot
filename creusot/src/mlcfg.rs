@@ -538,11 +538,32 @@ pub enum Constant {
 }
 impl Constant {
     pub fn from_mir_constant<'tcx>(tcx: TyCtxt<'tcx>, c: &mir::Constant<'tcx>) -> Self {
-        let mut fmt = String::new();
-        let cx = FmtPrinter::new(tcx, &mut fmt, Namespace::ValueNS);
-        cx.pretty_print_const(c.literal, false).unwrap();
+        use rustc_middle::ty::TyKind::{Int, Uint};
+        use rustc_middle::ty::{IntTy::*, UintTy::*};
+        use rustc_target::abi::Size;
 
-        Constant::Other(fmt)
+        match c.literal.ty.kind() {
+            Int(I8) => { Constant::Int(c.literal.val.try_to_bits(Size::from_bytes(1)).unwrap() as i128, Some(I8)) }
+            Int(I16) => { Constant::Int(c.literal.val.try_to_bits(Size::from_bytes(2)).unwrap() as i128, Some(I16)) }
+            Int(I32) => { Constant::Int(c.literal.val.try_to_bits(Size::from_bytes(4)).unwrap() as i128, Some(I32)) }
+            Int(I64) => { Constant::Int(c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap() as i128, Some(I64)) }
+            Int(I128) => { Constant::Int(c.literal.val.try_to_bits(Size::from_bytes(16)).unwrap() as i128, Some(I128)) }
+
+            Uint(U8) => { Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(1)).unwrap(), Some(U8)) }
+            Uint(U16) => { Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(2)).unwrap(), Some(U16)) }
+            Uint(U32) => { Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(4)).unwrap(), Some(U32)) }
+            Uint(U64) => { Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap(), Some(U64)) }
+            Uint(U128) => { Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(16)).unwrap(), Some(U128)) }
+            Uint(Usize) => { Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap(), Some(Usize)) }
+            _ => {
+                let mut fmt = String::new();
+                let cx = FmtPrinter::new(tcx, &mut fmt, Namespace::ValueNS);
+                cx.pretty_print_const(c.literal, false).unwrap();
+
+                Constant::Other(fmt)
+            }
+
+        }
     }
 
     pub fn const_true() -> Self {
