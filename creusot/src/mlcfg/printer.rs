@@ -391,7 +391,7 @@ impl EnvDisplay for Exp {
                 write!(f, "- {}", parens!(fe, self, op))?;
             }
             Exp::BinaryOp(FullBinOp::Other(BinOp::Div), box l, box r) => {
-                write!(f, "div {} {}", parens!(fe, self, l), parens!(fe, self, r))?;
+                write!(f, "{} / {}", parens!(fe, self, l), parens!(fe, self, r))?;
             }
             Exp::BinaryOp(op, box l, box r) => {
                 write!(
