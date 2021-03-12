@@ -70,6 +70,10 @@ pub fn translate_ty<'tcx>(ctx: &mut Ctx<'_, 'tcx>, span: Span, ty: Ty<'tcx>) -> 
                 Not => translate_ty(ctx, span, ty),
             }
         }
+        Slice(ty) => {
+            MlT::TApp(box MlT::TConstructor("array".into()), vec![translate_ty(ctx, span, ty)])
+        }
+        // Slice()
         Never => MlT::Tuple(vec![]),
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }

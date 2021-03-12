@@ -276,6 +276,12 @@ impl From<&rustc_span::Symbol> for QName {
     }
 }
 
+impl From<&str> for QName {
+    fn from(nm: &str) -> Self {
+        QName { module: vec![], name: vec![nm.to_string()] }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum FullBinOp {
     And,
@@ -297,6 +303,7 @@ pub enum Exp {
     Var(LocalIdent),
     QVar(QName),
     RecUp { record: Box<Exp>, label: String, val: Box<Exp> },
+    RecField { record: Box<Exp>, label: String },
     Tuple(Vec<Exp>),
     Constructor { ctor: QName, args: Vec<Exp> },
     BorrowMut(Box<Exp>),
@@ -360,6 +367,7 @@ impl Exp {
             Exp::Var(_) => Closed,
             Exp::QVar(_) => Closed,
             Exp::RecUp { .. } => Term,
+            Exp::RecField { .. } => Any,
             Exp::Tuple(_) => Closed,
             Exp::Constructor { .. } => Term,
             // Exp::Seq(_, _) => { Term }
@@ -454,6 +462,9 @@ impl Exp {
             Exp::RecUp { record, val, .. } => {
                 record.subst(subst);
                 val.subst(subst);
+            }
+            Exp::RecField { record, .. } => {
+                record.subst(subst);
             }
             Exp::Tuple(tuple) => {
                 for t in tuple {

@@ -121,12 +121,14 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 }
             }
             Rvalue::UnaryOp(op, v) => UnaryOp(*op, box self.translate_operand(v)),
+            Rvalue::Len(pl) => {
+                RecField { record: box self.translate_rplace(&simplify_place(self.tcx, self.body, pl)), label: "length".into() }
+            }
             Rvalue::Cast(_, _, _)
             | Rvalue::NullaryOp(_, _)
             | Rvalue::Repeat(_, _)
             | Rvalue::ThreadLocalRef(_)
-            | Rvalue::AddressOf(_, _)
-            | Rvalue::Len(_) => self.sess.span_fatal_with_code(
+            | Rvalue::AddressOf(_, _) => self.sess.span_fatal_with_code(
                 si.span,
                 &format!("MIR code used an unsupported Rvalue {:?}", rvalue),
                 DiagnosticId::Error(String::from("creusot")),

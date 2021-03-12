@@ -363,6 +363,9 @@ impl EnvDisplay for Exp {
                     parens!(fe, self, val)
                 )?;
             }
+            Exp::RecField { box record, label } => {
+                write!(f, "{}.{}", parens!(fe, self, record), label)?;
+            }
             Exp::Tuple(vs) => {
                 write!(f, "({})", vs.iter().format_with(", ", |elt, f| { f(&fe.to(elt)) }))?;
             }
