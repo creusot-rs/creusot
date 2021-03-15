@@ -27,14 +27,15 @@ pub mod ty;
 pub mod util;
 
 pub struct TranslatedCrate {
+    pub name: String,
     types: Vec<(TyDecl, Predicate)>,
     // TODO: Hide this
     pub modules: DefPathTrie<Module>,
 }
 
 impl TranslatedCrate {
-    pub fn new() -> Self {
-        TranslatedCrate { types: Vec::new(), modules: DefPathTrie::new() }
+    pub fn new(name: String) -> Self {
+        TranslatedCrate { name: name.to_camel_case(), types: Vec::new(), modules: DefPathTrie::new() }
     }
 
     pub fn types(&self) -> impl Iterator<Item = &(TyDecl, Predicate)> {

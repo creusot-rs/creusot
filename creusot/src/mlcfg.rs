@@ -14,8 +14,6 @@ use rustc_middle::mir::{BasicBlock, Local};
 
 pub mod printer;
 
-pub const PRELUDE: &str = include_str!("prelude.mlw");
-
 pub fn drop_fix() -> QName {
     QName { module: vec![], name: vec!["drop_fix".into()] }
 }

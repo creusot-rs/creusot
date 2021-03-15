@@ -130,7 +130,7 @@ fn translate(
         }
     }
 
-    let mut krate = TranslatedCrate::new();
+    let mut krate = TranslatedCrate::new(tcx.crate_name(LOCAL_CRATE).to_string());
 
     // Type translation state, including which datatypes have already been translated.
     let mut ty_ctx = translation::ty::Ctx::new(tcx, sess);
@@ -207,13 +207,25 @@ fn translate(
 }
 use std::io::Write;
 
+// TODO: Clean up, this printing code should not be in main.
+const IMPORTS : &'static str =
+"  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude";
+
 fn print_crate<W>(out: &mut W, krate: TranslatedCrate) -> std::io::Result<()>
 where
     W: Write,
 {
-    writeln!(out, "module Ambient")?;
-    writeln!(out, "{}", mlcfg::PRELUDE)?;
-
+    writeln!(out, "module {}", krate.name)?;
+    writeln!(out, "{}\n", IMPORTS)?;
     writeln!(out, "  scope Type")?;
     for (decl, pred) in krate.types() {
         let fe = mlcfg::printer::FormatEnv { indent: 2, scope: &["Type".into()] };
