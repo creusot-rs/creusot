@@ -143,7 +143,6 @@ fn should_fail_case(output: std::process::Output, _stdout: &Path, _stderr: &Path
     Ok((!output.status.success(), buf))
 }
 
-
 fn print_diff<W : WriteColor>(mut buf: W, diff: Vec<Chunk>) {
     let mut line_count = 0;
     let mut last_lines : ArrayDeque<[_; 3], Wrapping> = ArrayDeque::new();

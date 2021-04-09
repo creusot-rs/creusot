@@ -4,9 +4,6 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-// In application the @pre should never be used
-// #[ensures(toggle == true ->  (result@now == a@pre@now && result@fin == a@pre@fin && b@pre@fin == b@pre@now ))]
-// #[ensures(toggle == false ->  (result@now == b@pre@now && result@fin == b@pre@fin && a@pre@fin ==  a@pre@now ))]
 #[ensures(toggle == true  -> (result == a && ^ b == * b))]
 #[ensures(toggle == false -> (result == b && ^ a == * a))]
 fn proj_toggle<'a, T>(toggle: bool, a: &'a mut T, b: &'a mut T) -> &'a mut T {
@@ -24,4 +21,5 @@ fn main () {
   let x = proj_toggle(true, &mut a, &mut b);
 
   *x += 5;
+  assert!(a == 15);
 }
