@@ -100,7 +100,11 @@ pub fn check_not_mutally_recursive<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty_id: DefId, 
         for variant in &def.variants {
             for field in &variant.fields {
                 for ty in field.ty(ctx.tcx, substs).walk() {
-                    if let Adt(def, _) = ty.expect_ty().kind() {
+                    let k = match ty.unpack() {
+                        rustc_middle::ty::subst::GenericArgKind::Type(ty) => ty,
+                        _ => continue,
+                    };
+                    if let Adt(def, _) = k.kind() {
                         if !graph.contains_node(def.did) {
                             to_visit.push_back(def.did);
                         }
