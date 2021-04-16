@@ -20,7 +20,6 @@ extern crate rustc_target;
 extern crate log;
 
 use def_path_trie::DefPathTrie;
-use mlcfg::Module;
 use rustc_driver::{abort_on_err, Callbacks, Compilation, RunCompiler};
 use rustc_hir::{def_id::LOCAL_CRATE, Item};
 use rustc_interface::{
@@ -33,6 +32,8 @@ use rustc_middle::{
 };
 use std::{cell::RefCell, env::args as get_args, rc::Rc};
 
+use why3::mlcfg;
+
 mod analysis;
 
 mod place;
@@ -40,7 +41,6 @@ mod translation;
 
 #[allow(dead_code)]
 mod debug;
-mod mlcfg;
 
 use rustc_session::Session;
 use translation::*;
@@ -127,6 +127,7 @@ fn translate(
             if is_type_decl(item) {
                 ty_decls.push((hir_map.local_def_id(*item_id).to_def_id(), item.span));
             }
+
         }
     }
 
@@ -187,6 +188,7 @@ fn translate(
 
                 let translated = FunctionTranslator::new(sess, tcx, &mut ty_ctx, &body, resolver)
                     .translate(def_id, out_contract);
+                dbg!(tcx.predicates_of(def_id));
 
                 krate.modules.get_mut_with_default(module).decls.push(Decl::FunDecl(translated));
             }
@@ -243,7 +245,7 @@ where
 fn print_module_tree<W>(
     out: &mut W,
     open_scopes: &mut Vec<String>,
-    mod_tree: &DefPathTrie<Module>,
+    mod_tree: &DefPathTrie<mlcfg::Module>,
 ) -> std::io::Result<()>
 where
     W: Write,

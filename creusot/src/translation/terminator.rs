@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{BinOp, UnOp, SourceInfo, SwitchTargets},
+    mir::{SourceInfo, SwitchTargets},
     ty::AdtDef,
 };
 use rustc_middle::{
@@ -13,8 +13,9 @@ use rustc_middle::{
 use rustc_session::Session;
 use rustc_target::abi::VariantIdx;
 
+use why3::mlcfg::{Constant, Exp, Pattern, Terminator as MlT, Statement, BinOp, BlockId};
+
 use crate::{
-    mlcfg::{Constant, Exp, Pattern, Terminator as MlT, Statement},
     place::simplify_place,
 };
 
@@ -29,7 +30,7 @@ use super::FunctionTranslator;
 impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
     pub fn translate_terminator(&mut self, terminator: &Terminator<'tcx>, location: Location) {
         match &terminator.kind {
-            Goto { target } => self.emit_terminator(MlT::Goto(target.into())),
+            Goto { target } => self.emit_terminator(mk_goto(*target)),
             SwitchInt { discr, targets, .. } => {
                 let real_discr =
                     discriminator_for_switch(&self.body.basic_blocks()[location.block])
@@ -82,27 +83,27 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 } else {
                     let (loc, bb) = destination.unwrap();
                     self.emit_assignment(&simplify_place(self.tcx, self.body, &loc), call_exp);
-                    self.emit_terminator(MlT::Goto(bb.into()));
+                    self.emit_terminator(MlT::Goto(BlockId(bb.into())));
                 }
             }
             Assert { cond, expected, msg: _, target, cleanup: _ } => {
                 let mut ass = self.translate_operand(cond);
                 if !expected {
-                    ass = Exp::UnaryOp(UnOp::Not, box ass);
+                    ass = Exp::UnaryOp(why3::mlcfg::UnOp::Not, box ass);
                 }
                 self.emit_statement(Statement::Assert(ass));
-                self.emit_terminator(MlT::Goto(target.into()))
+                self.emit_terminator(mk_goto(*target))
             }
 
-            FalseEdge { real_target, .. } => self.emit_terminator(MlT::Goto(real_target.into())),
+            FalseEdge { real_target, .. } => self.emit_terminator(mk_goto(*real_target)),
 
             // TODO: Do we really need to do anything more?
-            Drop { target, .. } => self.emit_terminator(MlT::Goto(target.into())),
+            Drop { target, .. } => self.emit_terminator(mk_goto(*target)),
             Resume => {
                 log::debug!("Skipping resume terminator");
             }
             FalseUnwind { real_target, .. } => {
-                self.emit_terminator(MlT::Goto(real_target.into()));
+                self.emit_terminator(mk_goto(*real_target));
             }
             DropAndReplace { .. } | Yield { .. } | GeneratorDrop | InlineAsm { .. } => {
                 unreachable!("{:?}", terminator.kind)
@@ -167,37 +168,37 @@ pub fn make_switch<'tcx>(
             let mut branches: Vec<_> = targets
                 .iter()
                 .map(|(disc, tgt)| {
-                    (variant_pattern(tcx, def, d_to_var[&disc]), MlT::Goto(tgt.into()))
+                    (variant_pattern(tcx, def, d_to_var[&disc]), mk_goto(tgt))
                 })
                 .collect();
-            branches.push((Wildcard, MlT::Goto(targets.otherwise().into())));
+            branches.push((Wildcard, mk_goto(targets.otherwise())));
 
             MlT::Switch(discr, branches)
         }
         Bool => {
             let mut branches: Vec<(Pattern, _)> = vec![Pattern::mk_false(), Pattern::mk_true()]
                 .into_iter()
-                .zip(targets.all_targets().iter().map(|tgt| MlT::Goto(tgt.into())))
+                .zip(targets.all_targets().iter().map(|tgt| mk_goto(*tgt)))
                 .collect();
-            branches.push((Wildcard, MlT::Goto(targets.otherwise().into())));
+            branches.push((Wildcard, mk_goto(targets.otherwise())));
             MlT::Switch(discr, branches)
         }
         Uint(_) => {
             let annoying: Vec<(Constant, MlT)> = targets
                 .iter()
-                .map(|(val, tgt)| (Constant::Uint(val, None), MlT::Goto(tgt.into())))
+                .map(|(val, tgt)| (Constant::Uint(val, None), mk_goto(tgt)))
                 .collect();
 
-            let default = MlT::Goto(targets.otherwise().into());
+            let default = mk_goto(targets.otherwise());
             build_constant_switch(discr, annoying.into_iter(), default)
         }
         Int(_) => {
             let annoying: Vec<(Constant, MlT)> = targets
                 .iter()
-                .map(|(val, tgt)| (Constant::Int(val as i128, None), MlT::Goto(tgt.into())))
+                .map(|(val, tgt)| (Constant::Int(val as i128, None), mk_goto(tgt)))
                 .collect();
 
-            let default = MlT::Goto(targets.otherwise().into());
+            let default = mk_goto(targets.otherwise());
             build_constant_switch(discr, annoying.into_iter(), default)
         }
         Float(_) => sess.span_fatal_with_code(
@@ -209,13 +210,17 @@ pub fn make_switch<'tcx>(
     }
 }
 
+fn mk_goto(bb: rustc_middle::mir::BasicBlock) -> MlT {
+    MlT::Goto(BlockId(bb.into()))
+}
+
 fn build_constant_switch<T>(discr: Exp, targets: T, default: MlT) -> MlT
 where
     T: Iterator<Item = (Constant, MlT)> + DoubleEndedIterator,
 {
     targets.rfold(default, |acc, (val, term)| {
         MlT::Switch(
-            Exp::BinaryOp(BinOp::Eq.into(), box discr.clone(), box Exp::Const(val)),
+            Exp::BinaryOp(BinOp::Eq, box discr.clone(), box Exp::Const(val)),
             vec![(Pattern::mk_true(), term), (Pattern::mk_false(), acc)],
         )
     })

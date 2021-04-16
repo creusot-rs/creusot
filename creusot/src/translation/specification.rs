@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::mlcfg::printer::FormatEnv;
-use crate::mlcfg::LocalIdent;
-use crate::mlcfg::{self, Exp};
+use why3::mlcfg::printer::FormatEnv;
+use why3::mlcfg::LocalIdent;
+use why3::mlcfg::{self, Exp};
 use crate::translation::ty::Ctx;
 
 use rustc_hir::def_id::DefId;
@@ -112,7 +112,7 @@ pub fn invariant_to_why<'tcx>(
                 Place(p) => p.as_local().unwrap(),
                 _ => panic!(),
             };
-            (free.clone(), LocalIdent::Local(loc, Some(var_info.name.to_string())).into())
+            (free.clone(), LocalIdent::Anon(loc.into(), Some(var_info.name.to_string())).into())
         })
         .collect();
         //
@@ -127,7 +127,7 @@ pub fn logic_to_why<'tcx>(
     did: DefId,
     body: &Body<'tcx>,
     exp: String,
-) -> crate::mlcfg::Logic {
+) -> why3::mlcfg::Logic {
     // Technically we should pass through translation::ty here in case we mention
     // any untranslated types...
     let ret_ty = return_ty(res.2, body);
@@ -203,7 +203,7 @@ pub fn subst_for_arguments(body: &Body) -> HashMap<LocalIdent, Exp> {
             };
             let source_name = vdi.name.to_string();
             let outer_name = format!("o_{}", source_name);
-            (LocalIdent::Name(source_name), Exp::Var(LocalIdent::Local(loc, Some(outer_name))))
+            (LocalIdent::Name(source_name), Exp::Var(LocalIdent::Anon(loc.into(), Some(outer_name))))
         })
         .collect()
 }

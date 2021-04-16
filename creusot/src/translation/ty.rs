@@ -9,9 +9,9 @@ use rustc_session::Session;
 use rustc_span::Span;
 use rustc_span::Symbol;
 
-use crate::mlcfg::{Exp as MlE, Pattern, Pattern::*, Predicate, QName, TyDecl, Type as MlT};
-
-use crate::mlcfg::LocalIdent;
+use why3::mlcfg::{
+    Exp as MlE, LocalIdent, Pattern, Pattern::*, Predicate, QName, TyDecl, Type as MlT,
+};
 
 pub struct Ctx<'a, 'tcx> {
     translated_tys: IndexSet<DefId>,
@@ -40,12 +40,17 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
 
 /// Translate a Rust type into an MLW one.
 pub fn translate_ty<'tcx>(ctx: &mut Ctx<'_, 'tcx>, span: Span, ty: Ty<'tcx>) -> MlT {
+    use rustc_middle::ty::FloatTy::*;
+
     match ty.kind() {
         Bool => MlT::Bool,
         Char => MlT::Char,
-        Int(ity) => MlT::Int(*ity),
-        Uint(uity) => MlT::Uint(*uity),
-        Float(flty) => MlT::Float(*flty),
+        Int(ity) => intty_to_ty(ity),
+        Uint(uity) => uintty_to_ty(uity),
+        Float(flty) => match flty {
+            F32 => MlT::TConstructor(QName { module: vec![], name: vec!["single".into()] }),
+            F64 => MlT::TConstructor(QName { module: vec![], name: vec!["double".into()] }),
+        },
         Adt(def, s) => {
             if def.is_box() {
                 return translate_ty(ctx, span, s[0].expect_ty());
@@ -238,7 +243,7 @@ fn drop_pred_decl(
         MlE::Match(box drop_arg, branches)
     };
 
-    use crate::mlcfg::{Type, Type::*};
+    use why3::mlcfg::{Type, Type::*};
     let mut pred_deps: Vec<_> = generics
         .iter()
         .map(|arg| (format!("drop_{}", arg).into(), Type::predicate(TVar(arg.clone()))))
@@ -264,12 +269,12 @@ pub fn drop_pred_body<'tcx>(
     rec_call_did: Option<DefId>,
 ) -> MlE {
     match ty.kind() {
-        Bool => MlE::QVar(crate::mlcfg::drop_bool()),
-        Int(_) => MlE::QVar(crate::mlcfg::drop_int()),
-        Uint(_) => MlE::QVar(crate::mlcfg::drop_uint()),
-        Float(_) => MlE::QVar(crate::mlcfg::drop_float()),
+        Bool => MlE::QVar(why3::mlcfg::drop_bool()),
+        Int(_) => MlE::QVar(why3::mlcfg::drop_int()),
+        Uint(_) => MlE::QVar(why3::mlcfg::drop_uint()),
+        Float(_) => MlE::QVar(why3::mlcfg::drop_float()),
         // Recursive calls should be killed off.
-        Adt(def, _) if Some(def.did) == rec_call_did => MlE::QVar(crate::mlcfg::drop_fix()),
+        Adt(def, _) if Some(def.did) == rec_call_did => MlE::QVar(why3::mlcfg::drop_fix()),
         Adt(def, s) if def.is_box() => drop_pred_body(ctx, s[0].expect_ty(), rec_call_did),
         Adt(def, s) => {
             let args = s.types().map(|ty| drop_pred_body(ctx, ty, rec_call_did)).collect();
@@ -296,12 +301,76 @@ pub fn drop_pred_body<'tcx>(
             )
         }
         Param(s) => MlE::Var(format!("drop_{}", translate_ty_param(s.name)).into()),
-        Ref(_, _, Mutability::Mut) => MlE::QVar(crate::mlcfg::drop_mut_ref()),
-        Ref(_, _, Mutability::Not) => MlE::QVar(crate::mlcfg::drop_ref()),
+        Ref(_, _, Mutability::Mut) => MlE::QVar(why3::mlcfg::drop_mut_ref()),
+        Ref(_, _, Mutability::Not) => MlE::QVar(why3::mlcfg::drop_ref()),
 
         _ => ctx.crash_and_error(
             rustc_span::DUMMY_SP,
             &format!("cannot generate drop predicate for type {:?}", ty),
         ),
     }
+}
+
+fn intty_to_ty(ity: &rustc_middle::ty::IntTy) -> MlT {
+    use rustc_middle::ty::IntTy::*;
+    match ity {
+        Isize => isize_ty(),
+        I8 => i8_ty(),
+        I16 => i16_ty(),
+        I32 => i32_ty(),
+        I64 => i64_ty(),
+        I128 => unimplemented!("128 bit integers not yet implemented"),
+    }
+}
+
+fn uintty_to_ty(ity: &rustc_middle::ty::UintTy) -> MlT {
+    use rustc_middle::ty::UintTy::*;
+    match ity {
+        Usize => usize_ty(),
+        U8 => u8_ty(),
+        U16 => u16_ty(),
+        U32 => u32_ty(),
+        U64 => u64_ty(),
+        U128 => unimplemented!("128 bit integers not yet implemented"),
+    }
+}
+
+pub fn u8_ty() -> MlT {
+    MlT::TConstructor(QName { module: vec![], name: vec!["uint8".into()] })
+}
+
+pub fn u16_ty() -> MlT {
+    MlT::TConstructor(QName { module: vec![], name: vec!["uint16".into()] })
+}
+
+pub fn u32_ty() -> MlT {
+    MlT::TConstructor(QName { module: vec![], name: vec!["uint32".into()] })
+}
+
+pub fn u64_ty() -> MlT {
+    MlT::TConstructor(QName { module: vec![], name: vec!["uint64".into()] })
+}
+
+pub fn usize_ty() -> MlT {
+    MlT::TConstructor(QName { module: vec![], name: vec!["usize".into()] })
+}
+
+pub fn i8_ty() -> MlT {
+    MlT::TConstructor(QName { module: vec![], name: vec!["int8".into()] })
+}
+
+pub fn i16_ty() -> MlT {
+    MlT::TConstructor(QName { module: vec![], name: vec!["int16".into()] })
+}
+
+pub fn i32_ty() -> MlT {
+    MlT::TConstructor(QName { module: vec![], name: vec!["int32".into()] })
+}
+
+pub fn i64_ty() -> MlT {
+    MlT::TConstructor(QName { module: vec![], name: vec!["int64".into()] })
+}
+
+pub fn isize_ty() -> MlT {
+    MlT::TConstructor(QName { module: vec![], name: vec!["isize".into()] })
 }

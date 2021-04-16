@@ -1,9 +1,9 @@
-use crate::mlcfg::QName;
-use rustc_hir::def_id::DefId;
-use pearlite::term::{self, DerefKind, RefKind};
-use pearlite::term::Name;
-use crate::mlcfg::{self, Exp};
 use crate::translation::ty::Ctx;
+use pearlite::term::Name;
+use pearlite::term::{self, DerefKind, RefKind};
+use rustc_hir::def_id::DefId;
+use why3::mlcfg::QName;
+use why3::mlcfg::{self, Exp};
 
 pub fn lower_term_to_why(ctx: &mut Ctx, t: term::Term) -> Exp {
     use term::Term::*;
@@ -26,8 +26,8 @@ pub fn lower_term_to_why(ctx: &mut Ctx, t: term::Term) -> Exp {
                 term::UnOp::Deref(Some(DerefKind::Ref(RefKind::Mut))) => Exp::Current(expr),
                 term::UnOp::Deref(Some(_)) => *expr,
                 term::UnOp::Deref(None) => unreachable!(),
-                term::UnOp::Neg => Exp::UnaryOp(rustc_middle::mir::UnOp::Neg, expr),
-                term::UnOp::Not => Exp::UnaryOp(rustc_middle::mir::UnOp::Not, expr),
+                term::UnOp::Neg => Exp::UnaryOp(mlcfg::UnOp::Neg, expr),
+                term::UnOp::Not => Exp::UnaryOp(mlcfg::UnOp::Not, expr),
             }
         }
         Variable { path } => match path {
@@ -47,12 +47,14 @@ pub fn lower_term_to_why(ctx: &mut Ctx, t: term::Term) -> Exp {
         }
         Lit { lit } => Exp::Const(lit_to_const(lit)),
         Forall { args, box body } => {
-            let args = args.into_iter().map(|(i, t)| (i.0.into(), lower_type_to_why(ctx, t))).collect();
+            let args =
+                args.into_iter().map(|(i, t)| (i.0.into(), lower_type_to_why(ctx, t))).collect();
 
             Exp::Forall(args, box lower_term_to_why(ctx, body))
         }
         Exists { args, box body } => {
-            let args = args.into_iter().map(|(i, t)| (i.0.into(), lower_type_to_why(ctx, t))).collect();
+            let args =
+                args.into_iter().map(|(i, t)| (i.0.into(), lower_type_to_why(ctx, t))).collect();
 
             Exp::Exists(args, box lower_term_to_why(ctx, body))
         }
@@ -68,17 +70,20 @@ pub fn lower_term_to_why(ctx: &mut Ctx, t: term::Term) -> Exp {
         }
         If { box cond, box then_branch, box else_branch } => {
             use mlcfg::Pattern;
-            Exp::Match(box lower_term_to_why(ctx, cond), vec![
-                (Pattern::mk_true(), lower_term_to_why(ctx, then_branch)),
-                (Pattern::mk_false(), lower_term_to_why(ctx, else_branch)),
-            ])
+            Exp::Match(
+                box lower_term_to_why(ctx, cond),
+                vec![
+                    (Pattern::mk_true(), lower_term_to_why(ctx, then_branch)),
+                    (Pattern::mk_false(), lower_term_to_why(ctx, else_branch)),
+                ],
+            )
         }
     }
 }
 
-pub fn lower_type_to_why(ctx: &mut Ctx, ty: pearlite::term::Type) -> crate::mlcfg::Type {
-    use crate::mlcfg::Type::*;
+pub fn lower_type_to_why(ctx: &mut Ctx, ty: pearlite::term::Type) -> why3::mlcfg::Type {
     use pearlite::term::*;
+    use why3::mlcfg::Type::*;
 
     match ty {
         term::Type::Path { path } => TConstructor(lower_type_path(ctx, path)),
@@ -87,44 +92,19 @@ pub fn lower_type_to_why(ctx: &mut Ctx, ty: pearlite::term::Type) -> crate::mlcf
             MutableBorrow(box lower_type_to_why(ctx, ty))
         }
         term::Type::Reference { kind: _, box ty } => lower_type_to_why(ctx, ty),
-        term::Type::Tuple { elems } => Tuple(elems.into_iter().map(|t| lower_type_to_why(ctx, t)).collect()),
-        term::Type::Lit(lit) => {
-            use pearlite::term::Size::*;
-            use rustc_middle::ty::{FloatTy::*, IntTy::*, UintTy::*};
-
-            match lit {
-                term::LitTy::Signed(s) => match s {
-                    Eight => Int(I8),
-                    Sixteen => Int(I16),
-                    ThirtyTwo => Int(I32),
-                    SixtyFour => Int(I64),
-                    Mach => Int(Isize),
-                    Unknown => {
-                        unimplemented!("integers")
-                    }
-                },
-                term::LitTy::Unsigned(s) => match s {
-                    Eight => Uint(U8),
-                    Sixteen => Uint(U16),
-                    ThirtyTwo => Uint(U32),
-                    SixtyFour => Uint(U64),
-                    Mach => Uint(Usize),
-                    Unknown => {
-                        unimplemented!("uintegers")
-                    }
-                },
-                term::LitTy::Integer => Integer,
-                term::LitTy::Float => Float(F32),
-                term::LitTy::Double => Float(F64),
-                term::LitTy::Boolean => Bool,
-            }
+        term::Type::Tuple { elems } => {
+            Tuple(elems.into_iter().map(|t| lower_type_to_why(ctx, t)).collect())
         }
-        term::Type::App { box func, args } => {
-            TApp(box lower_type_to_why(ctx, func), args.into_iter().map(|t| lower_type_to_why(ctx, t)).collect())
+        term::Type::Lit(lit) => lit_ty_to_ty(lit),
+        term::Type::App { box func, args } => TApp(
+            box lower_type_to_why(ctx, func),
+            args.into_iter().map(|t| lower_type_to_why(ctx, t)).collect(),
+        ),
+        term::Type::Function { args, box res } => {
+            args.into_iter().rfold(lower_type_to_why(ctx, res), |acc, arg| {
+                TFun(box lower_type_to_why(ctx, arg), box acc)
+            })
         }
-        term::Type::Function { args, box res } => args
-            .into_iter()
-            .rfold(lower_type_to_why(ctx, res), |acc, arg| TFun(box lower_type_to_why(ctx, arg), box acc)),
         term::Type::Var(tyvar) => TVar(('a'..).nth(tyvar.0 as usize).unwrap().to_string()),
         term::Type::Unknown(_) => {
             panic!()
@@ -132,16 +112,44 @@ pub fn lower_type_to_why(ctx: &mut Ctx, ty: pearlite::term::Type) -> crate::mlcf
     }
 }
 
-fn lit_to_const(lit: pearlite::term::Literal) -> crate::mlcfg::Constant {
-    use crate::mlcfg::Constant::{self, *};
-    use rustc_middle::ty::UintTy::*;
+fn lit_ty_to_ty(litty: pearlite::term::LitTy) -> mlcfg::Type {
+    use pearlite::term::Size::*;
+    use why3::mlcfg::Type::*;
+    use crate::ty::*;
 
+    match litty {
+        term::LitTy::Signed(s) => match s {
+            Eight => i8_ty(),
+            Sixteen => i16_ty(),
+            ThirtyTwo => i32_ty(),
+            SixtyFour => i64_ty(),
+            Mach => isize_ty(),
+            Unknown => unimplemented!("integers"),
+        },
+        term::LitTy::Unsigned(s) => match s {
+            Eight => u8_ty(),
+            Sixteen => u16_ty(),
+            ThirtyTwo => u32_ty(),
+            SixtyFour => u64_ty(),
+            Mach => usize_ty(),
+            Unknown => unimplemented!("integers"),
+        },
+        term::LitTy::Float => TConstructor(QName { module: vec![], name: vec!["single".into()] }),
+        term::LitTy::Double => TConstructor(QName { module: vec![], name: vec!["double".into()] }),
+        term::LitTy::Boolean => Bool,
+        term::LitTy::Integer => TConstructor(QName { module: vec![], name: vec!["int".into()]})
+    }
+}
+
+fn lit_to_const(lit: pearlite::term::Literal) -> why3::mlcfg::Constant {
+    use why3::mlcfg::Constant::{self, *};
+    use crate::ty::*;
     match lit {
-        term::Literal::U8(u) => Uint(u as u128, Some(U8)),
-        term::Literal::U16(u) => Uint(u as u128, Some(U16)),
-        term::Literal::U32(u) => Uint(u as u128, Some(U32)),
-        term::Literal::U64(u) => Uint(u as u128, Some(U64)),
-        term::Literal::Usize(u) => Uint(u as u128, Some(Usize)),
+        term::Literal::U8(u) => Uint(u as u128, Some(u8_ty())),
+        term::Literal::U16(u) => Uint(u as u128, Some(u16_ty())),
+        term::Literal::U32(u) => Uint(u as u128, Some(u32_ty())),
+        term::Literal::U64(u) => Uint(u as u128, Some(u64_ty())),
+        term::Literal::Usize(u) => Uint(u as u128, Some(usize_ty())),
         term::Literal::Int(u) => Int(u as i128, None),
         term::Literal::F32(_) => {
             unimplemented!()
@@ -159,20 +167,19 @@ fn lit_to_const(lit: pearlite::term::Literal) -> crate::mlcfg::Constant {
     }
 }
 
-fn op_to_op(op: term::BinOp) -> mlcfg::FullBinOp {
-    use mlcfg::FullBinOp::*;
-    use rustc_middle::mir::BinOp;
+fn op_to_op(op: term::BinOp) -> mlcfg::BinOp {
+    use mlcfg::BinOp::*;
     match op {
-        term::BinOp::Add => Other(BinOp::Add),
-        term::BinOp::Sub => Other(BinOp::Sub),
-        term::BinOp::Mul => Other(BinOp::Mul),
-        term::BinOp::Div => Other(BinOp::Div),
-        term::BinOp::Eq => Other(BinOp::Eq),
-        term::BinOp::Ne => Other(BinOp::Ne),
-        term::BinOp::Le => Other(BinOp::Le),
-        term::BinOp::Ge => Other(BinOp::Ge),
-        term::BinOp::Gt => Other(BinOp::Gt),
-        term::BinOp::Lt => Other(BinOp::Lt),
+        term::BinOp::Add => Add,
+        term::BinOp::Sub => Sub,
+        term::BinOp::Mul => Mul,
+        term::BinOp::Div => Div,
+        term::BinOp::Eq => Eq,
+        term::BinOp::Ne => Ne,
+        term::BinOp::Le => Le,
+        term::BinOp::Ge => Ge,
+        term::BinOp::Gt => Gt,
+        term::BinOp::Lt => Lt,
         term::BinOp::And => And,
         term::BinOp::Or => Or,
         term::BinOp::Impl => {
@@ -213,7 +220,7 @@ fn lower_pattern_to_why(ctx: &mut Ctx, p: term::Pattern) -> mlcfg::Pattern {
 fn is_constructor(ctx: &mut Ctx, path: &Name) -> bool {
     match path {
         Name::Ident(_) => false,
-        Name::Path { id, ..} => {
+        Name::Path { id, .. } => {
             let kind = ctx.tcx.def_kind(super::id_to_def_id(*id));
             use rustc_hir::def::DefKind::*;
             match kind {

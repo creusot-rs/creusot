@@ -1,8 +1,7 @@
 use std::{borrow::Borrow, collections::BTreeMap};
 
-use crate::mlcfg::{Exp::*, Pattern::*, *};
-use crate::{def_path_trie::DefPathTrie, mlcfg};
-use crate::{mlcfg::Statement::*, place::Mutability as M};
+use crate::def_path_trie::DefPathTrie;
+use crate::place::Mutability as M;
 use crate::{
     place::simplify_place,
     place::{Mutability::*, Projection::*, SimplePlace},
@@ -10,12 +9,18 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use rustc_hir::definitions::DefPathData;
 use rustc_index::bit_set::BitSet;
-use rustc_middle::{mir::traversal::preorder, mir::*, ty::TyCtxt, ty::TyKind};
+use rustc_middle::{
+    mir::traversal::preorder,
+    mir::{BasicBlock, Body, Local, Location, Operand, VarDebugInfo},
+    ty::TyCtxt,
+    ty::TyKind,
+};
 use rustc_mir::dataflow::{
     self,
     impls::{MaybeInitializedLocals, MaybeLiveLocals},
     Analysis, Results, ResultsCursor,
 };
+use why3::mlcfg::{self, Exp::*, Pattern::*, Statement::*, *};
 
 use rustc_resolve::Namespace;
 use rustc_session::Session;
@@ -35,7 +40,11 @@ pub struct TranslatedCrate {
 
 impl TranslatedCrate {
     pub fn new(name: String) -> Self {
-        TranslatedCrate { name: name.to_camel_case(), types: Vec::new(), modules: DefPathTrie::new() }
+        TranslatedCrate {
+            name: name.to_camel_case(),
+            types: Vec::new(),
+            modules: DefPathTrie::new(),
+        }
     }
 
     pub fn types(&self) -> impl Iterator<Item = &(TyDecl, Predicate)> {
@@ -240,7 +249,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
             self.translate_terminator(bbd.terminator(), loc);
 
             self.past_blocks.insert(
-                bb.into(),
+                BlockId(bb.into()),
                 Block {
                     statements: std::mem::replace(&mut self.current_block.0, Vec::new()),
                     terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
@@ -344,7 +353,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
             Operand::Copy(pl) | Operand::Move(pl) => {
                 self.translate_rplace(&simplify_place(self.tcx, self.body, pl))
             }
-            Operand::Constant(c) => Const(mlcfg::Constant::from_mir_constant(self.tcx, c)),
+            Operand::Constant(c) => Const(from_mir_constant(self.tcx, c)),
         }
     }
 
@@ -363,8 +372,8 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
         assert!(debug_info.len() <= 1, "expected at most one debug entry for local {:?}", loc);
 
         match debug_info.get(0) {
-            Some(info) => LocalIdent::Local(loc, Some(info.name.to_string())),
-            None => loc.into(),
+            Some(info) => mk_anon_dbg(loc, info),
+            None => mk_anon(loc),
         }
     }
     // [(P as Some)]   ---> [_1]
@@ -546,7 +555,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
     use rustc_hir::def::DefKind::*;
 
     match (kind, kind.ns()) {
-        (_, _) if ty  => {
+        (_, _) if ty => {
             assert_eq!(name_segs.len(), 0);
             name_segs = mod_segs.into_iter().map(|seg| seg.to_lowercase()).collect();
             mod_segs = vec!["Type".to_owned()];
@@ -558,8 +567,70 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
             mod_segs = vec!["Type".to_owned()];
         }
         (_, Some(Namespace::ValueNS)) => {}
-        (_, _) => unreachable!()
+        (_, _) => unreachable!(),
     }
 
     QName { module: mod_segs, name: name_segs }
+}
+
+fn mk_anon(l: Local) -> LocalIdent {
+    LocalIdent::Anon(l.index(), None)
+}
+fn mk_anon_dbg(l: Local, vi: &VarDebugInfo) -> LocalIdent {
+    LocalIdent::Anon(l.index(), Some(vi.name.to_string()))
+}
+
+pub fn from_mir_constant<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    c: &rustc_middle::mir::Constant<'tcx>,
+) -> mlcfg::Constant {
+    use rustc_middle::ty::TyKind::{Int, Uint};
+    use rustc_middle::ty::{IntTy::*, UintTy::*};
+    use rustc_target::abi::Size;
+
+    match c.literal.ty.kind() {
+        Int(I8) => {
+            Constant::Int(c.literal.val.try_to_bits(Size::from_bytes(1)).unwrap() as i128, Some(ty::i8_ty()))
+        }
+        Int(I16) => Constant::Int(
+            c.literal.val.try_to_bits(Size::from_bytes(2)).unwrap() as i128,
+            Some(ty::i16_ty()),
+        ),
+        Int(I32) => Constant::Int(
+            c.literal.val.try_to_bits(Size::from_bytes(4)).unwrap() as i128,
+            Some(ty::i32_ty()),
+        ),
+        Int(I64) => Constant::Int(
+            c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap() as i128,
+            Some(ty::i64_ty()),
+        ),
+        Int(I128) => unimplemented!("128-bit integers are not supported"),
+
+        Uint(U8) => {
+            Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(1)).unwrap(), Some(ty::u8_ty()))
+        }
+        Uint(U16) => {
+            Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(2)).unwrap(), Some(ty::u16_ty()))
+        }
+        Uint(U32) => {
+            Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(4)).unwrap(), Some(ty::u32_ty()))
+        }
+        Uint(U64) => {
+            Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap(), Some(ty::u64_ty()))
+        }
+        Uint(U128) => {
+             unimplemented!("128-bit integers are not supported")
+        }
+        Uint(Usize) => {
+            Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap(), Some(ty::usize_ty()))
+        }
+        _ => {
+            use rustc_middle::ty::print::{PrettyPrinter, FmtPrinter};
+            let mut fmt = String::new();
+            let cx = FmtPrinter::new(tcx, &mut fmt, Namespace::ValueNS);
+            cx.pretty_print_const(c.literal, false).unwrap();
+
+            Constant::Other(fmt)
+        }
+    }
 }

@@ -3,12 +3,13 @@ use rustc_middle::mir::{
     BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind,
 };
 
-use crate::{
-    mlcfg::{
+use why3::mlcfg::{
         // Constant,
         Exp::{self, *},
         Statement::*,
-    },
+    };
+use crate::{
+
     place::simplify_place,
 };
 
@@ -53,7 +54,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 Move(pl) | Copy(pl) => {
                     self.translate_rplace(&simplify_place(self.tcx, self.body, pl))
                 }
-                Constant(box c) => Const(crate::mlcfg::Constant::from_mir_constant(self.tcx, c)),
+                Constant(box c) => Const(super::from_mir_constant(self.tcx, c)),
             },
             Rvalue::Ref(_, ss, pl) => {
                 let rplace = simplify_place(self.tcx, self.body, pl);
@@ -72,7 +73,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             // Rvalue::Discriminant(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
             Rvalue::Discriminant(_) => return,
             Rvalue::BinaryOp(op, l, r) | Rvalue::CheckedBinaryOp(op, l, r) => {
-                BinaryOp((*op).into(), box self.translate_operand(l), box self.translate_operand(r))
+                BinaryOp(binop_to_binop(*op), box self.translate_operand(l), box self.translate_operand(r))
             }
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
@@ -120,7 +121,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     ),
                 }
             }
-            Rvalue::UnaryOp(op, v) => UnaryOp(*op, box self.translate_operand(v)),
+            Rvalue::UnaryOp(op, v) => UnaryOp(unop_to_unop(*op), box self.translate_operand(v)),
             Rvalue::Len(pl) => {
                 RecField { record: box self.translate_rplace(&simplify_place(self.tcx, self.body, pl)), label: "length".into() }
             }
@@ -136,5 +137,29 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         };
 
         self.emit_assignment(&lplace, rval);
+    }
+}
+
+fn unop_to_unop(op: rustc_middle::mir::UnOp) -> why3::mlcfg::UnOp {
+    match op {
+        rustc_middle::mir::UnOp::Not => why3::mlcfg::UnOp::Not,
+        rustc_middle::mir::UnOp::Neg => why3::mlcfg::UnOp::Neg,
+    }
+}
+
+fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::mlcfg::BinOp {
+    use rustc_middle::mir; use why3::mlcfg::BinOp;
+    match op {
+        mir::BinOp::Add => BinOp::Add,
+        mir::BinOp::Sub => BinOp::Sub,
+        mir::BinOp::Mul => BinOp::Mul,
+        mir::BinOp::Div => BinOp::Div,
+        mir::BinOp::Eq => BinOp::Eq,
+        mir::BinOp::Lt => BinOp::Lt,
+        mir::BinOp::Le => BinOp::Le,
+        mir::BinOp::Gt => BinOp::Gt,
+        mir::BinOp::Ge => BinOp::Ge,
+        mir::BinOp::Ne => BinOp::Ne,
+        _ => unimplemented!("unsupported binary operation: {:?}", op),
     }
 }
