@@ -188,7 +188,6 @@ fn translate(
 
                 let translated = FunctionTranslator::new(sess, tcx, &mut ty_ctx, &body, resolver)
                     .translate(def_id, out_contract);
-                dbg!(tcx.predicates_of(def_id));
 
                 krate.modules.get_mut_with_default(module).decls.push(Decl::FunDecl(translated));
             }
