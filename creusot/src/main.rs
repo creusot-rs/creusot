@@ -31,13 +31,12 @@ use rustc_middle::{
     ty::{TyCtxt, WithOptConstParam},
 };
 use std::{cell::RefCell, env::args as get_args, rc::Rc};
-
 use why3::mlcfg;
 
 mod analysis;
-
 mod place;
 mod translation;
+mod extended_location;
 
 #[allow(dead_code)]
 mod debug;

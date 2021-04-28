@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, collections::BTreeMap};
+use std::collections::BTreeMap;
 
 use crate::def_path_trie::DefPathTrie;
 use crate::place::Mutability as M;
@@ -18,9 +18,10 @@ use rustc_middle::{
 use rustc_mir::dataflow::{
     self,
     impls::{MaybeInitializedLocals, MaybeLiveLocals},
-    Analysis, Results, ResultsCursor,
+    Analysis
 };
 use why3::mlcfg::{self, Exp::*, Pattern::*, Statement::*, *};
+use crate::extended_location::*;
 
 use rustc_resolve::Namespace;
 use rustc_session::Session;
@@ -91,60 +92,7 @@ pub struct FunctionTranslator<'a, 'b, 'tcx> {
     resolver: crate::specification::RustcResolver<'tcx>,
 }
 
-// Dataflow locations
-#[derive(Debug, Copy, Clone)]
-enum ExtendedLocation {
-    Start(Location),
-    Mid(Location),
-}
-impl ExtendedLocation {
-    fn is_entry_loc(self) -> bool {
-        if let Self::Start(loc) = self {
-            loc == Location::START
-        } else {
-            false
-        }
-    }
-}
 
-// Rust hides the real `Direction` trait from me, this hack recreates it
-trait Dir {
-    fn is_forward() -> bool;
-}
-
-impl Dir for dataflow::Forward {
-    fn is_forward() -> bool {
-        true
-    }
-}
-
-impl Dir for dataflow::Backward {
-    fn is_forward() -> bool {
-        false
-    }
-}
-
-impl ExtendedLocation {
-    fn seek_to<'tcx, A, R, D>(self, cursor: &mut ResultsCursor<'_, 'tcx, A, R>)
-    where
-        A: Analysis<'tcx, Direction = D>,
-        D: Dir,
-        R: Borrow<Results<'tcx, A>>,
-    {
-        use ExtendedLocation::*;
-        if D::is_forward() {
-            match self {
-                Start(loc) => cursor.seek_before_primary_effect(loc),
-                Mid(loc) => cursor.seek_after_primary_effect(loc),
-            }
-        } else {
-            match self {
-                Start(loc) => cursor.seek_after_primary_effect(loc),
-                Mid(loc) => cursor.seek_before_primary_effect(loc),
-            }
-        }
-    }
-}
 
 impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
     pub fn new(
