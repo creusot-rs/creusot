@@ -99,7 +99,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                                     si,
                                     expression,
                                 );
-                                self.emit_statement(Invariant(name, Verbatim(invariant)));
+                                self.emit_statement(Invariant(name, invariant));
                                 return;
                             }
                             Ok(_) => self.sess.span_fatal_with_code(

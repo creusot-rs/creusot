@@ -1,62 +1,16 @@
-use std::fmt;
-
 use super::*;
+use crate::declaration::*;
+use pretty::*;
 
-/// Original code from https://github.com/digama0/mm0/ (CC-0)
-/// The side information required to print an object in the environment.
-
-#[derive(Copy, Clone, Debug)]
-pub struct FormatEnv<'a> {
-    /// Currently open scopes.
-    pub scope: &'a [String],
-    /// Indentation to prefix lines with
-    pub indent: usize,
+#[derive(Default)]
+pub struct PrintEnv {
+    pub scopes: Vec<String>,
+    in_logic: bool,
 }
 
-/// A trait for displaying data given access to the environment.
-pub trait EnvDisplay {
-    /// Print formatted output to the given formatter. The signature is exactly the same
-    /// as [`Display::fmt`] except it has an extra argument for the environment.
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result;
-}
-
-impl<'a> Default for FormatEnv<'a> {
-    fn default() -> Self {
-        FormatEnv { scope: &[], indent: 0 }
-    }
-}
-
-/// The result of [`FormatEnv::to`], a struct that implements [`Display`] if the
-/// argument implements [`EnvDisplay`].
-pub struct Print<'a, D: ?Sized> {
-    fe: FormatEnv<'a>,
-    e: &'a D,
-}
-
-impl<'a> FormatEnv<'a> {
-    /// Given a [`FormatEnv`], convert an `impl EnvDisplay` into an `impl Display`.
-    /// This can be used in macros like `println!("{}", fe.to(e))` to print objects.
-    pub fn to<D: ?Sized>(self, e: &'a D) -> Print<'a, D> {
-        Print { fe: self, e }
-    }
-
-    pub fn indent<F>(mut self, i: usize, mut f: F) -> std::fmt::Result
-    where
-        F: FnMut(Self) -> std::fmt::Result,
-    {
-        self.indent += i;
-        f(self)
-    }
-
-    // Print the correct indentation for this line
-    pub fn indent_line(self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:indent$}", "", indent = self.indent)
-    }
-}
-
-impl<'a, D: EnvDisplay + ?Sized> fmt::Display for Print<'a, D> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.e.fmt(self.fe, f)
+impl PrintEnv {
+    pub fn new() -> (BoxAllocator, Self) {
+        (BoxAllocator, PrintEnv::default())
     }
 }
 
@@ -64,453 +18,665 @@ use itertools::*;
 
 // FIXME: Doesn't take into account associativity when deciding when to put parens
 macro_rules! parens {
-    ($fe:ident, $parent:ident, $child:ident) => {
+    ($alloc:ident, $env:ident, $parent:ident, $child:ident) => {
         if $parent.precedence() > $child.precedence() && $child.precedence() != Precedence::Closed {
-            format!("({})", $fe.to($child))
+            $child.pretty($alloc, $env).parens()
         } else {
-            format!("{}", $fe.to($child))
+            $child.pretty($alloc, $env)
         }
     };
-    ($fe:ident, $par_prec:expr, $child:ident) => {
+    ($alloc:ident, $env:ident, $par_prec:expr, $child:ident) => {
         if $par_prec > $child.precedence() && $child.precedence() != Precedence::Closed {
-            format!("({})", $fe.to($child))
+            $child.pretty($alloc, $env).parens()
         } else {
-            format!("{}", $fe.to($child))
+            $child.pretty($alloc, $env)
         }
     };
 }
 
-impl EnvDisplay for Decl {
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Decl {
+    pub fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
         match self {
-            Decl::FunDecl(fun) => writeln!(f, "{}", fe.to(fun)),
-            Decl::LogicDecl(log) => writeln!(f, "{}", fe.to(log)),
+            Decl::FunDecl(fun) => fun.pretty(alloc, env),
+            Decl::LogicDecl(log) => log.pretty(alloc, env),
+            Decl::Module(modl) => modl.pretty(alloc, env),
+            Decl::Scope(scope) => scope.pretty(alloc, env),
+            Decl::PredDecl(p) => p.pretty(alloc, env),
             // Decl::TyDecl(t) => { writeln!(f, "{}", fe.to(t)) }
-            // Decl::PredDecl(p) => { writeln!(f, "{}", fe.to(p)) }
         }
     }
 }
 
-impl EnvDisplay for Predicate {
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fe.indent_line(f)?;
-
-        write!(f, "predicate {} ", fe.to(&self.name))?;
-
-        if self.args.is_empty() {
-            write!(f, "() ")?;
-        } else {
-            for (nm, ty) in &self.args {
-                write!(f, "({} : {}) ", nm, fe.to(ty))?;
-            }
-        }
-
-        writeln!(f, "=")?;
-        fe.indent(2, |fe| {
-            fe.indent_line(f)?;
-            write!(f, "{}", fe.to(&self.body))
-        })?;
-
-        Ok(())
+impl Module {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        env.scopes.push(self.name.clone());
+        let doc = alloc
+            .text("module")
+            .append(&self.name)
+            .append(alloc.hardline())
+            .append(
+                alloc
+                    .intersperse(
+                        self.decls.iter().map(|decl| decl.pretty(alloc, env)),
+                        alloc.hardline(),
+                    )
+                    .indent(2),
+            )
+            .append(alloc.hardline())
+            .append("end");
+        env.scopes.pop();
+        doc
     }
 }
 
-impl EnvDisplay for Logic {
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fe.indent_line(f)?;
-        write!(f, "let rec function {} ", fe.to(&self.name))?;
-
-        if self.args.is_empty() {
-            write!(f, "()")?;
-        }
-
-        for (nm, ty) in &self.args {
-            write!(f, "({} : {})", nm, fe.to(ty))?;
-        }
-
-        writeln!(f, " : {}", fe.to(&self.retty))?;
-
-        fe.indent(2, |fe| {
-            write!(f, "{}", fe.to(&self.contract))?;
-            fe.indent_line(f)?;
-            writeln!(f, "=")?;
-
-            fe.indent_line(f)?;
-
-            writeln!(f, "{}", fe.to(&self.body))?;
-            Ok(())
-        })?;
-
-        Ok(())
+impl Scope {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        env.scopes.push(self.name.clone());
+        let doc = alloc
+            .text("scope")
+            .append(alloc.space())
+            .append(&self.name)
+            .append(alloc.hardline())
+            .append(
+                alloc
+                    .intersperse(
+                        self.decls.iter().map(|decl| decl.pretty(alloc, env)),
+                        alloc.hardline(),
+                    )
+                    .indent(2),
+            )
+            .append(alloc.hardline())
+            .append("end");
+        env.scopes.pop();
+        doc
     }
 }
 
-impl EnvDisplay for Contract {
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Predicate {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc
+            .text("predicate ")
+            .append(self.name.pretty(alloc, env))
+            .append(alloc.space())
+            .append(arg_list(alloc, env, &self.args))
+            .append(" = ")
+            .append(alloc.line())
+            .append(self.body.pretty(alloc, env).indent(2))
+    }
+}
+
+fn arg_list<'b: 'a, 'a, A: DocAllocator<'a>>(
+    alloc: &'a A,
+    env: &mut PrintEnv,
+    args: &'a Vec<(LocalIdent, Type)>,
+) -> DocBuilder<'a, A>
+where
+    A::Doc: Clone,
+{
+    if args.is_empty() {
+        alloc.text("()")
+    } else {
+        alloc.intersperse(
+            args.iter().map(|(id, ty)| {
+                id.pretty(alloc, env).append(" : ").append(ty.pretty(alloc, env)).parens()
+            }),
+            alloc.space(),
+        )
+    }
+}
+
+impl Logic {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc
+            .text("let rec function ")
+            .append(self.name.pretty(alloc, env))
+            .append(alloc.space())
+            .append(arg_list(alloc, env, &self.args))
+            .append(alloc.text(" : ").append(self.retty.pretty(alloc, env)))
+            .append(" = ")
+            .append(alloc.hardline())
+            .append(self.contract.pretty(alloc, env).append(alloc.hardline()).indent(2))
+            .append(self.body.pretty(alloc, env).indent(2))
+    }
+}
+
+impl Contract {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        let mut doc = alloc.nil();
+        env.in_logic = true;
+
         for req in &self.requires {
-            fe.indent_line(f)?;
-            writeln!(f, "requires {{ {} }}", fe.to(req))?;
+            doc = doc.append(
+                alloc
+                    .text("requires ")
+                    .append(req.pretty(alloc, env).braces())
+                    .append(alloc.hardline()),
+            )
         }
 
         for req in &self.ensures {
-            fe.indent_line(f)?;
-            writeln!(f, "ensures {{ {} }}", fe.to(req))?;
+            doc = doc.append(
+                alloc
+                    .text("ensures ")
+                    .append(
+                        alloc.space().append(req.pretty(alloc, env)).append(alloc.space()).braces(),
+                    )
+                    .append(alloc.hardline()),
+            )
         }
 
         if let Some(variant) = &self.variant {
-            fe.indent_line(f)?;
-            writeln!(f, "variant {{ {} }}", fe.to(variant))?;
+            doc = doc.append(
+                alloc
+                    .text("variant ")
+                    .append(variant.pretty(alloc, env).braces())
+                    .append(alloc.hardline()),
+            )
         }
-        Ok(())
+        env.in_logic = false;
+        doc
     }
 }
 
-impl EnvDisplay for Function {
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fe.indent_line(f)?;
-        write!(f, "let rec cfg {} ", fe.to(&self.name))?;
-
-        if self.args.is_empty() {
-            write!(f, "()")?;
+impl LocalIdent {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        _: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        use LocalIdent::*;
+        match self {
+            Anon(id, Some(hmn)) => alloc.text(hmn).append("_").append(alloc.as_string(id)),
+            Anon(id, None) => alloc.text("_").append(alloc.as_string(id)),
+            Name(nm) => alloc.text(nm),
         }
-
-        for (nm, ty) in &self.args {
-            write!(f, "(o_{} : {})", nm, fe.to(ty))?;
-        }
-
-        writeln!(f, " : {}", fe.to(&self.retty))?;
-
-        fe.indent(2, |fe| {
-            write!(f, "{}", fe.to(&self.contract))?;
-            fe.indent_line(f)?;
-            writeln!(f, "=")?;
-
-            Ok(())
-        })?;
-
-        // Forward declare all arguments
-        fe.indent_line(f)?;
-        writeln!(f, "var _0 : {};", fe.to(&self.retty))?;
-
-        for (var, ty) in self.args.iter() {
-            fe.indent_line(f)?;
-            writeln!(f, "var {} : {};", var, fe.to(ty))?;
-        }
-
-        // Forward declare all variables
-        for (var, ty) in self.vars.iter() {
-            fe.indent_line(f)?;
-            writeln!(f, "var {} : {};", var, fe.to(ty))?;
-        }
-
-        fe.indent_line(f)?;
-        writeln!(f, "{{")?;
-        fe.indent(2, |fe| {
-            for (arg, _) in self.args.iter() {
-                fe.indent_line(f)?;
-                writeln!(f, "{} <- o_{};", arg, arg)?;
-            }
-
-            fe.indent_line(f)?;
-            writeln!(f, "goto BB0")
-        })?;
-
-        fe.indent_line(f)?;
-        writeln!(f, "}}")?;
-
-        for (id, block) in &self.blocks {
-            fe.indent_line(f)?;
-            write!(f, "{} {}", id, fe.to(block))?;
-        }
-
-        Ok(())
     }
 }
 
-impl EnvDisplay for Type {
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl CfgFunction {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc
+            .text("let rec cfg ")
+            .append(self.name.pretty(alloc, env))
+            .append(alloc.space())
+            .append(if self.args.is_empty() {
+                alloc.text("()")
+            } else {
+                alloc.intersperse(
+                    self.args.iter().map(|(nm, ty)| {
+                        alloc
+                            .text("o_")
+                            .append(nm.pretty(alloc, env))
+                            .append(" : ")
+                            .append(ty.pretty(alloc, env))
+                            .parens()
+                    }),
+                    alloc.space(),
+                )
+            })
+            .append(" : ")
+            .append(self.retty.pretty(alloc, env))
+            .append(alloc.hardline())
+            .append(self.contract.pretty(alloc, env).append("=").indent(2))
+            .append(alloc.hardline())
+            .append(
+                alloc
+                    .text("var _0 : ")
+                    .append(self.retty.pretty(alloc, env))
+                    .append(alloc.text(";"))
+                    .append(alloc.hardline()),
+            )
+            .append(sep_end_by(
+                alloc,
+                self.args.iter().map(|(var, ty)| {
+                    alloc
+                        .text("var ")
+                        .append(alloc.as_string(var))
+                        .append(" : ")
+                        .append(ty.pretty(alloc, env))
+                        .append(";")
+                }),
+                alloc.hardline(),
+            ))
+            .append(sep_end_by(
+                alloc,
+                self.vars.iter().map(|(var, ty)| {
+                    alloc
+                        .text("var ")
+                        .append(alloc.as_string(var))
+                        .append(" : ")
+                        .append(ty.pretty(alloc, env))
+                        .append(";")
+                }),
+                alloc.hardline(),
+            ))
+            .append(
+                alloc
+                    .hardline()
+                    .append(sep_end_by(
+                        alloc,
+                        self.args.iter().map(|(var, _)| {
+                            var.pretty(alloc, env)
+                                .append(alloc.text(" <- o_").append(var.pretty(alloc, env)))
+                                .append(";")
+                        }),
+                        alloc.hardline(),
+                    ))
+                    .append("goto BB0")
+                    .nest(2)
+                    .append(alloc.hardline())
+                    .braces(),
+            )
+            .append(alloc.hardline())
+            .append(sep_end_by(
+                alloc,
+                self.blocks.iter().map(|(id, block)| {
+                    id.pretty(alloc, env).append(alloc.space()).append(block.pretty(alloc, env))
+                }),
+                alloc.hardline(),
+            ))
+    }
+}
+
+impl Type {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
         use Type::*;
 
         macro_rules! ty_parens {
-            ($fe:ident, $e:ident) => {
+            ($alloc:ident, $env:ident, $e:ident) => {
                 if $e.complex() {
-                    format!("({})", $fe.to($e))
+                    $e.pretty($alloc, $env).parens()
                 } else {
-                    format!("{}", $fe.to($e))
+                    $e.pretty($alloc, $env)
                 }
             };
         }
-
         match self {
-            Bool => {
-                write!(f, "bool")?;
-            }
-            Char => {
-                write!(f, "char")?;
-            }
-            Integer => write!(f, "int")?,
+            Bool => alloc.text("bool"),
+            Char => alloc.text("char"),
+            Integer => alloc.text("int"),
+            MutableBorrow(box t) => alloc.text("borrowed ").append(ty_parens!(alloc, env, t)),
+            TVar(v) => alloc.text(format!("'{}", v)),
+            TConstructor(ty) => ty.pretty(alloc, env),
 
-            MutableBorrow(box t) => {
-                write!(f, "borrowed {}", ty_parens!(fe, t))?;
-            }
-            TVar(v) => {
-                write!(f, "'{}", v)?;
-            }
             TFun(box a, box b) => {
-                write!(f, "{} -> {}", ty_parens!(fe, a), ty_parens!(fe, b))?;
-            }
-            TConstructor(ty) => {
-                write!(f, "{}", fe.to(ty))?;
+                ty_parens!(alloc, env, a).append(" -> ").append(ty_parens!(alloc, env, b))
             }
             TApp(box tyf, args) => {
                 if args.is_empty() {
-                    tyf.fmt(fe, f)?;
+                    tyf.pretty(alloc, env)
                 } else {
-                    write!(
-                        f,
-                        "{} {}",
-                        fe.to(tyf),
-                        args.iter().format_with(" ", |elt, f| {
-                            f(&ty_parens!(fe, elt))
-                            // f(&format_args!("{}", ty_parens!(fe, elt)))
-                        })
-                    )?;
+                    tyf.pretty(alloc, env).append(alloc.space()).append(alloc.intersperse(
+                        args.iter().map(|arg| ty_parens!(alloc, env, arg)),
+                        alloc.space(),
+                    ))
                 }
             }
-            Tuple(tys) => {
-                write!(
-                    f,
-                    "({})",
-                    tys.iter().format_with(", ", |elt, f| { f(&format_args!("{}", fe.to(elt))) })
-                )?;
-            }
+            Tuple(tys) => alloc
+                .intersperse(tys.iter().map(|ty| ty.pretty(alloc, env)), alloc.text(", "))
+                .parens(),
         }
-
-        Ok(())
     }
 }
 
-impl EnvDisplay for Exp {
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Exp {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
         match self {
-            Exp::Current(box e) => {
-                write!(f, " * {}", fe.to(e))?;
-            }
-            Exp::Final(box e) => {
-                write!(f, " ^ {}", fe.to(e))?;
-            }
-            Exp::Let { pattern, box arg, box body } => {
-                write!(
-                    f,
-                    "let {} = {} in {}",
-                    fe.to(pattern),
-                    parens!(fe, self, arg),
-                    parens!(fe, self, body)
-                )?;
-            }
-            Exp::Var(v) => {
-                write!(f, "{}", v)?;
-            }
-            Exp::QVar(v) => {
-                write!(f, "{}", fe.to(v))?;
-            }
-            Exp::RecUp { box record, label, box val } => {
-                write!(
-                    f,
-                    "{{ {} with {} = {} }}",
-                    parens!(fe, self, record),
-                    label,
-                    parens!(fe, self, val)
-                )?;
-            }
+            Exp::Current(box e) => alloc.text(" * ").append(e.pretty(alloc, env)),
+            Exp::Final(box e) => alloc.text(" ^ ").append(e.pretty(alloc, env)),
+            // TODO parenthesization
+            Exp::Let { pattern, box arg, box body } => alloc
+                .text("let ")
+                .append(pattern.pretty(alloc, env))
+                .append(" = ")
+                .append(parens!(alloc, env, self, arg))
+                .append(" in ")
+                .append(body.pretty(alloc, env)),
+            Exp::Var(v) => v.pretty(alloc, env),
+            Exp::QVar(v) => v.pretty(alloc, env),
+            Exp::RecUp { box record, label, box val } => alloc
+                .space()
+                .append(parens!(alloc, env, self, record))
+                .append(" with ")
+                .append(alloc.text(label))
+                .append(" = ")
+                .append(parens!(alloc, env, self, val))
+                .append(alloc.space())
+                .braces(),
             Exp::RecField { box record, label } => {
-                write!(f, "{}.{}", parens!(fe, self, record), label)?;
+                record.pretty(alloc, env).append(".").append(label)
             }
-            Exp::Tuple(vs) => {
-                write!(f, "({})", vs.iter().format_with(", ", |elt, f| { f(&fe.to(elt)) }))?;
+
+            Exp::Tuple(args) => {
+                alloc.intersperse(args.iter().map(|a| a.pretty(alloc, env)), ", ").parens()
             }
-            Exp::Constructor { ctor, args } => {
-                if args.is_empty() {
-                    EnvDisplay::fmt(ctor, fe, f)?;
-                } else {
-                    write!(
-                        f,
-                        "{}({})",
-                        fe.to(ctor),
-                        args.iter().format_with(", ", |elt, f| { f(&fe.to(elt)) })
-                    )?;
-                }
-            }
+
+            Exp::Constructor { ctor, args } => ctor.pretty(alloc, env).append(if args.is_empty() {
+                alloc.nil()
+            } else {
+                alloc.intersperse(args.iter().map(|a| a.pretty(alloc, env)), ", ").parens()
+            }),
+
             Exp::BorrowMut(box exp) => {
-                write!(f, "borrow_mut {}", parens!(fe, self, exp))?;
+                alloc.text("borrow_mut ").append(parens!(alloc, env, self, exp))
             }
-            Exp::Const(c) => {
-                c.fmt(fe, f)?;
-            }
-            Exp::UnaryOp(UnOp::Not, box op) => {
-                write!(f, "not {}", parens!(fe, self, op))?;
-            }
-            Exp::UnaryOp(UnOp::Neg, box op) => {
-                write!(f, "- {}", parens!(fe, self, op))?;
-            }
-            Exp::BinaryOp(op, box l, box r) => {
-                write!(
-                    f,
-                    "{} {} {}",
-                    parens!(fe, self, l),
-                    bin_op_to_string(op),
-                    parens!(fe, self, r)
-                )?;
-            }
+
+            Exp::Const(c) => c.pretty(alloc, env),
+
+            Exp::UnaryOp(UnOp::Not, box op) => alloc.text("not ").append(op.pretty(alloc, env)),
+
+            Exp::UnaryOp(UnOp::Neg, box op) => alloc.text("- ").append(op.pretty(alloc, env)),
+
+            Exp::BinaryOp(BinOp::Div, box l, box r) if env.in_logic => alloc
+                .text("div ")
+                .append(parens!(alloc, env, self, l))
+                .append(" ")
+                .append(parens!(alloc, env, self, r)),
+            Exp::BinaryOp(op, box l, box r) => l
+                .pretty(alloc, env)
+                .append(alloc.space())
+                .append(bin_op_to_string(op))
+                .append(alloc.space())
+                .append(r.pretty(alloc, env)),
+
             Exp::Call(box fun, args) => {
-                write!(
-                    f,
-                    "{} {}",
-                    parens!(fe, self, fun),
-                    args.iter().map(|a| parens!(fe, self, a)).format(" ")
-                )?;
+                parens!(alloc, env, self, fun).append(alloc.space()).append(
+                    alloc.intersperse(
+                        args.iter().map(|a| parens!(alloc, env, self, a)),
+                        alloc.space(),
+                    ),
+                )
             }
-            Exp::Verbatim(verb) => {
-                write!(f, "{}", verb)?;
-            }
-            Exp::Abs(ident, box body) => {
-                write!(f, "fun {} -> {}", ident, fe.to(body))?;
-            }
-            Exp::Match(box scrut, brs) => {
-                writeln!(f, "match ({}) with", fe.to(scrut))?;
-                fe.indent(2, |fe| {
-                    for (pat, tgt) in brs {
-                        fe.indent_line(f)?;
-                        writeln!(f, "| {} -> {}", fe.to(pat), fe.to(tgt))?;
-                    }
-                    fe.indent_line(f)?;
-                    writeln!(f, "end")
-                })?;
-            }
-            Exp::Forall(binders, box exp) => {
-                write!(f, "forall ")?;
 
-                let binder_fmt = binders
-                    .iter()
-                    .format_with(", ", |(l, ty), f| f(&format_args!("{} : {}", l, fe.to(ty))));
+            Exp::Verbatim(verb) => alloc.text(verb),
 
-                write!(f, "{} . {}", binder_fmt, fe.to(exp))?;
-            }
-            Exp::Exists(binders, box exp) => {
-                write!(f, "exists ")?;
+            Exp::Abs(ident, box body) => alloc
+                .text("fun ")
+                .append(ident.pretty(alloc, env))
+                .append(" -> ")
+                .append(body.pretty(alloc, env)),
 
-                let binder_fmt = binders
-                    .iter()
-                    .format_with(", ", |(l, ty), f| f(&format_args!("{} : {}", l, fe.to(ty))));
+            Exp::Match(box scrut, brs) => alloc
+                .text("match ")
+                .append(scrut.pretty(alloc, env).parens())
+                .append(" with")
+                .append(alloc.hardline())
+                .append(
+                    sep_end_by(
+                        alloc,
+                        brs.iter().map(|(pat, br)| {
+                            alloc
+                                .text("| ")
+                                .append(pat.pretty(alloc, env))
+                                .append(" -> ")
+                                .append(br.pretty(alloc, env))
+                        }),
+                        alloc.hardline(),
+                    )
+                    .indent(2),
+                )
+                .append("end"),
 
-                write!(f, "{} . {}", binder_fmt, fe.to(exp))?;
-            }
+            Exp::Forall(binders, box exp) => alloc
+                .text("forall ")
+                .append(alloc.intersperse(
+                    binders.iter().map(|(b, t)| {
+                        b.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env))
+                    }),
+                    alloc.text(", "),
+                ))
+                .append(" . ")
+                .append(exp.pretty(alloc, env)),
+            Exp::Exists(binders, box exp) => alloc
+                .text("exists ")
+                .append(alloc.intersperse(
+                    binders.iter().map(|(b, t)| {
+                        b.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env))
+                    }),
+                    alloc.text(", "),
+                ))
+                .append(" . ")
+                .append(exp.pretty(alloc, env)),
             Exp::Impl(box hyp, box exp) => {
-                write!(f, "{} -> {}", parens!(fe, self, hyp), parens!(fe, self, exp))?;
+                parens!(alloc, env, self, hyp).append(" -> ").append(parens!(alloc, env, self, exp))
             }
-            Exp::Absurd => write!(f, "absurd")?,
+            Exp::Absurd => alloc.text("absurd"),
         }
-        Ok(())
     }
 }
 
-impl EnvDisplay for Statement {
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Statement {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
         match self {
-            Statement::Assign { lhs, rhs } => {
-                write!(f, "{} <- {}", lhs, parens!(fe, Precedence::Assign, rhs))?;
-            }
+            Statement::Assign { lhs, rhs } => lhs
+                .pretty(alloc, env)
+                .append(" <- ")
+                .append(parens!(alloc, env, Precedence::Assign, rhs)),
             Statement::Invariant(nm, e) => {
-                write!(f, "invariant {} {{ {} }}", nm, fe.to(e))?;
+                env.in_logic = true;
+                let doc =
+                    alloc.text("invariant ").append(alloc.text(nm)).append(alloc.space()).append(
+                        alloc.space().append(e.pretty(alloc, env)).append(alloc.space()).braces(),
+                    );
+                env.in_logic = false;
+                doc
             }
             Statement::Assume(assump) => {
-                write!(f, "assume {{ {} }}", fe.to(assump))?;
+                env.in_logic = true;
+                let doc = alloc.text("assume ").append(
+                    alloc.space().append(assump.pretty(alloc, env)).append(alloc.space()).braces(),
+                );
+                env.in_logic = false;
+                doc
             }
             Statement::Assert(assert) => {
-                write!(f, "assert {{ {} }}", fe.to(assert))?;
+                env.in_logic = true;
+                let doc = alloc.text("assert ").append(
+                    alloc.space().append(assert.pretty(alloc, env)).append(alloc.space()).braces(),
+                );
+                env.in_logic = false;
+                doc
             }
         }
-        Ok(())
     }
 }
 
-impl EnvDisplay for Terminator {
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Terminator {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
         use Terminator::*;
         match self {
-            Goto(tgt) => {
-                writeln!(f, "goto {}", tgt)?;
-            }
-            Absurd => {
-                writeln!(f, "absurd")?;
-            }
-            Return => {
-                writeln!(f, "return _0")?;
-            }
-            Switch(discr, brs) => {
-                writeln!(f, "switch ({})", fe.to(discr))?;
-                fe.indent(2, |fe| {
-                    for (pat, tgt) in brs {
-                        fe.indent_line(f)?;
-                        write!(f, "| {} -> {}", fe.to(pat), fe.to(tgt))?;
-                    }
-                    fe.indent_line(f)?;
-                    writeln!(f, "end")
-                })?;
-            }
+            Goto(tgt) => alloc.text("goto ").append(tgt.pretty(alloc, env)),
+            Absurd => alloc.text("absurd"),
+            Return => alloc.text("return _0"),
+            Switch(discr, brs) => alloc
+                .text("switch ")
+                .append(discr.pretty(alloc, env).parens())
+                .append(alloc.hardline())
+                .append(
+                    sep_end_by(
+                        alloc,
+                        brs.iter().map(|(pat, tgt)| {
+                            alloc
+                                .text("| ")
+                                .append(pat.pretty(alloc, env))
+                                .append(" -> ")
+                                .append(tgt.pretty(alloc, env))
+                        }),
+                        alloc.hardline(),
+                    )
+                    .indent(2),
+                )
+                .append("end"),
         }
-        Ok(())
     }
 }
 
-impl EnvDisplay for Pattern {
-    fn fmt(&self, fe: FormatEnv, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Pattern {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
         match self {
-            Pattern::Wildcard => {
-                write!(f, "_")?;
-            }
-            Pattern::VarP(v) => {
-                write!(f, "{}", v)?;
-            }
-            Pattern::TupleP(vs) => {
-                write!(f, "({})", vs.iter().map(|x| fe.to(x)).format(", "))?;
-            }
+            Pattern::Wildcard => alloc.text("_"),
+            Pattern::VarP(v) => v.pretty(alloc, env),
+            Pattern::TupleP(pats) => alloc
+                .intersperse(pats.iter().map(|p| p.pretty(alloc, env)), alloc.text(", "))
+                .parens(),
             Pattern::ConsP(c, pats) => {
-                if pats.is_empty() {
-                    write!(f, "{}", fe.to(c))?;
-                } else {
-                    write!(f, "{}({})", fe.to(c), pats.iter().map(|p| fe.to(p)).format(", "))?;
+                let mut doc = c.pretty(alloc, env);
+                if !pats.is_empty() {
+                    doc = doc.append(
+                        alloc
+                            .intersperse(
+                                pats.iter().map(|p| p.pretty(alloc, env)),
+                                alloc.text(", "),
+                            )
+                            .parens(),
+                    )
                 }
+                doc
             }
         }
-        Ok(())
     }
 }
 
-impl Display for BlockId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "BB{}", self.0)
+impl BlockId {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        _: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc.text("BB").append(alloc.as_string(self.0))
     }
 }
 
-impl EnvDisplay for Block {
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{{")?;
+fn sep_end_by<'a, A, D, I, S>(alloc: &'a D, docs: I, separator: S) -> DocBuilder<'a, D, A>
+where
+    D: DocAllocator<'a, A>,
+    I: IntoIterator,
+    I::Item: Into<BuildDoc<'a, D::Doc, A>>,
+    S: Into<BuildDoc<'a, D::Doc, A>> + Clone,
+{
+    let mut result = alloc.nil();
+    let iter = docs.into_iter();
 
-        fe.indent(2, |fe| {
-            for stmt in &self.statements {
-                fe.indent_line(f)?;
-                writeln!(f, "{};", fe.to(stmt))?;
-            }
+    for doc in iter {
+        result = result.append(doc);
+        result = result.append(separator.clone());
+    }
 
-            fe.indent_line(f)?;
-            self.terminator.fmt(fe, f)
-        })?;
+    result
+}
 
-        fe.indent_line(f)?;
-        writeln!(f, "}}")?;
-
-        Ok(())
+impl Block {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc
+            .hardline()
+            .append(
+                sep_end_by(
+                    alloc,
+                    self.statements.iter().map(|stmt| stmt.pretty(alloc, env)),
+                    alloc.text(";").append(alloc.line()),
+                )
+                .append(self.terminator.pretty(alloc, env)),
+            )
+            .nest(2)
+            .append(alloc.hardline())
+            .braces()
     }
 }
 
@@ -532,69 +698,100 @@ fn bin_op_to_string(op: &BinOp) -> &str {
     }
 }
 
-impl EnvDisplay for Constant {
-    fn fmt(&self, fe: FormatEnv, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Constant {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
         match self {
-            Constant::Other(o) => write!(f, "{}", o),
-            Constant::Int(i, Some(t)) => write!(f, "({} : {})", i, fe.to(t)),
-            Constant::Int(i, None) => write!(f, "{}", i),
-            Constant::Uint(i, Some(t)) => write!(f, "({} : {})", i, fe.to(t)),
-            Constant::Uint(i, None) => write!(f, "{}", i),
+            Constant::Other(o) => alloc.text(o),
+            Constant::Int(i, Some(t)) => {
+                alloc.as_string(i).append(" : ").append(t.pretty(alloc, env)).parens()
+            }
+            Constant::Int(i, None) => alloc.as_string(i),
+            Constant::Uint(i, Some(t)) => {
+                alloc.as_string(i).append(" : ").append(t.pretty(alloc, env)).parens()
+            }
+            Constant::Uint(i, None) => alloc.as_string(i),
         }
     }
 }
 
-impl EnvDisplay for TyDecl {
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fe.indent_line(f)?;
-        writeln!(f, "type {} {} =", fe.to(&self.ty_name), self.ty_params.iter().format_with(" ", |p, f| f(&format_args!("'{}", p))))?;
+impl TyDecl {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        let ty_decl = alloc
+            .text("type ")
+            .append(self.ty_name.pretty(alloc, env))
+            .append(" ")
+            .append(alloc.intersperse(
+                self.ty_params.iter().map(|p| alloc.text(format!("'{}", p))),
+                alloc.space(),
+            ))
+            .append(alloc.text(" = ").append(alloc.hardline()));
 
-        fe.indent(2, |fe| {
-            for (cons, args) in self.ty_constructors.iter() {
-                fe.indent_line(f)?;
-                if args.is_empty() {
-                    writeln!(f, "  | {}", cons)?;
-                } else {
-                    writeln!(
-                        f,
-                        "  | {}({})",
-                        cons,
-                        args.iter().format_with(", ", |elt, f| { f(&fe.to(elt)) })
-                    )?;
-                }
+        let mut inner_doc = alloc.nil();
+        for (cons, args) in &self.ty_constructors {
+            let mut ty_cons = alloc.text("| ").append(alloc.text(cons));
+
+            if !args.is_empty() {
+                ty_cons = ty_cons.append(
+                    alloc
+                        .intersperse(
+                            args.iter().map(|ty_arg| ty_arg.pretty(alloc, env)),
+                            alloc.text(", "),
+                        )
+                        .parens(),
+                )
             }
-            Ok(())
-        })?;
 
-        Ok(())
+            inner_doc = inner_doc.append(ty_cons.append(alloc.hardline()))
+        }
+
+        ty_decl.append(inner_doc.indent(2))
     }
 }
 
-impl EnvDisplay for QName {
-    fn fmt(&self, fe: FormatEnv, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl QName {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
         use itertools::EitherOrBoth::*;
         // Strip the shared prefix between currently open scope and the identifier we are printing
-        let module_path = format!(
-            "{}",
-            fe.scope
-                .iter()
-                .zip_longest(self.module.iter())
-                // Skip the common prefix, and keep everything else.
-                .skip_while(|e| match e {
-                    // Skip common prefix
-                    Both(p, m) => p == m,
-                    _ => false,
-                })
-                // If the opened scopes were longer, drop them
-                .filter(|e| !e.is_left())
-                .map(|t| t.reduce(|_, f| f))
-                .format(".")
-        );
+        let module_path = env
+            .scopes
+            .iter()
+            .zip_longest(self.module.iter())
+            // Skip the common prefix, and keep everything else.
+            .skip_while(|e| match e {
+                // Skip common prefix
+                Both(p, m) => p == m,
+                _ => false,
+            })
+            // If the opened scopes were longer, drop them
+            .filter(|e| !e.is_left())
+            .map(|t| t.reduce(|_, f| f))
+            // TODO investigate if this clone can be removed :/
+            .map(|t| alloc.text(t.clone()));
 
-        if module_path.is_empty() {
-            write!(f, "{}", self.name())
-        } else {
-            write!(f, "{}.{}", module_path, self.name())
-        }
+        alloc.intersperse(
+            module_path.chain(std::iter::once(alloc.text(self.name()))),
+            alloc.text("."),
+        )
     }
 }

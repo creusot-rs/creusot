@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
-
-use crate::def_path_trie::DefPathTrie;
+use crate::module_tree::ModuleTree;
 use crate::place::Mutability as M;
 use crate::{
     place::simplify_place,
@@ -21,8 +20,8 @@ use rustc_mir::dataflow::{
     Analysis
 };
 use why3::mlcfg::{self, Exp::*, Pattern::*, Statement::*, *};
+use why3::declaration::{Predicate, CfgFunction, Contract};
 use crate::extended_location::*;
-
 use rustc_resolve::Namespace;
 use rustc_session::Session;
 
@@ -30,13 +29,12 @@ pub mod specification;
 mod statement;
 mod terminator;
 pub mod ty;
-pub mod util;
 
 pub struct TranslatedCrate {
     pub name: String,
     types: Vec<(TyDecl, Predicate)>,
     // TODO: Hide this
-    pub modules: DefPathTrie<Module>,
+    pub modules: ModuleTree,
 }
 
 impl TranslatedCrate {
@@ -44,7 +42,7 @@ impl TranslatedCrate {
         TranslatedCrate {
             name: name.to_camel_case(),
             types: Vec::new(),
-            modules: DefPathTrie::new(),
+            modules: ModuleTree::new(),
         }
     }
 
@@ -156,7 +154,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
         self.emit_statement(assign);
     }
 
-    pub fn translate(mut self, nm: DefId, contracts: Contract) -> Function {
+    pub fn translate(mut self, nm: DefId, contracts: Contract) -> CfgFunction {
         self.translate_body();
 
         let arg_count = self.body.arg_count;
@@ -176,7 +174,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
         let name = translate_value_id(self.tcx, nm);
 
         move_invariants_into_loop(&mut self.past_blocks);
-        Function { name, retty, args, vars, blocks: self.past_blocks, contract: contracts }
+        CfgFunction { name, retty, args, vars, blocks: self.past_blocks, contract: contracts }
     }
 
     fn translate_body(&mut self) {
@@ -471,11 +469,11 @@ fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {
 
 use heck::{CamelCase, MixedCase};
 
-fn translate_type_id(tcx: TyCtxt, def_id: DefId) -> QName {
+pub fn translate_type_id(tcx: TyCtxt, def_id: DefId) -> QName {
     translate_defid(tcx, def_id, true)
 }
 
-fn translate_value_id(tcx: TyCtxt, def_id: DefId) -> QName {
+pub fn translate_value_id(tcx: TyCtxt, def_id: DefId) -> QName {
     translate_defid(tcx, def_id, false)
 }
 
@@ -514,6 +512,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
             name_segs = mod_segs;
             mod_segs = vec!["Type".to_owned()];
         }
+        (Mod, _) => {}
         (_, Some(Namespace::ValueNS)) => {}
         (_, _) => unreachable!(),
     }
@@ -537,9 +536,10 @@ pub fn from_mir_constant<'tcx>(
     use rustc_target::abi::Size;
 
     match c.literal.ty.kind() {
-        Int(I8) => {
-            Constant::Int(c.literal.val.try_to_bits(Size::from_bytes(1)).unwrap() as i128, Some(ty::i8_ty()))
-        }
+        Int(I8) => Constant::Int(
+            c.literal.val.try_to_bits(Size::from_bytes(1)).unwrap() as i128,
+            Some(ty::i8_ty()),
+        ),
         Int(I16) => Constant::Int(
             c.literal.val.try_to_bits(Size::from_bytes(2)).unwrap() as i128,
             Some(ty::i16_ty()),
@@ -554,26 +554,31 @@ pub fn from_mir_constant<'tcx>(
         ),
         Int(I128) => unimplemented!("128-bit integers are not supported"),
 
-        Uint(U8) => {
-            Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(1)).unwrap(), Some(ty::u8_ty()))
-        }
-        Uint(U16) => {
-            Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(2)).unwrap(), Some(ty::u16_ty()))
-        }
-        Uint(U32) => {
-            Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(4)).unwrap(), Some(ty::u32_ty()))
-        }
-        Uint(U64) => {
-            Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap(), Some(ty::u64_ty()))
-        }
+        Uint(U8) => Constant::Uint(
+            c.literal.val.try_to_bits(Size::from_bytes(1)).unwrap(),
+            Some(ty::u8_ty()),
+        ),
+        Uint(U16) => Constant::Uint(
+            c.literal.val.try_to_bits(Size::from_bytes(2)).unwrap(),
+            Some(ty::u16_ty()),
+        ),
+        Uint(U32) => Constant::Uint(
+            c.literal.val.try_to_bits(Size::from_bytes(4)).unwrap(),
+            Some(ty::u32_ty()),
+        ),
+        Uint(U64) => Constant::Uint(
+            c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap(),
+            Some(ty::u64_ty()),
+        ),
         Uint(U128) => {
-             unimplemented!("128-bit integers are not supported")
+            unimplemented!("128-bit integers are not supported")
         }
-        Uint(Usize) => {
-            Constant::Uint(c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap(), Some(ty::usize_ty()))
-        }
+        Uint(Usize) => Constant::Uint(
+            c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap(),
+            Some(ty::usize_ty()),
+        ),
         _ => {
-            use rustc_middle::ty::print::{PrettyPrinter, FmtPrinter};
+            use rustc_middle::ty::print::{FmtPrinter, PrettyPrinter};
             let mut fmt = String::new();
             let cx = FmtPrinter::new(tcx, &mut fmt, Namespace::ValueNS);
             cx.pretty_print_const(c.literal, false).unwrap();

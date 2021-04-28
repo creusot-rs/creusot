@@ -11,55 +11,46 @@ module BinarySearch
   use prelude.Prelude
 
   scope Type
-  type core_result_result 't 'e =
-      | Core_Result_Result_Ok('t)
-      | Core_Result_Result_Err('e)
-
-  predicate drop_core_result_result (drop_t : 't -> bool) (drop_e : 'e -> bool) (self : core_result_result 't 'e) =
+  type core_result_result 't 'e = 
+    | Core_Result_Result_Ok('t)
+    | Core_Result_Result_Err('e)
+    
+  predicate drop_core_result_result (drop_t : 't -> bool) (drop_e : 'e -> bool) (self : core_result_result 't 'e) = 
     match (self) with
       | Core_Result_Result_Ok(a) -> drop_t a
       | Core_Result_Result_Err(a) -> drop_e a
       end
-
-  type list 't =
-      | List_Cons('t, list 't)
-      | List_Nil
-
-  predicate drop_list (drop_t : 't -> bool) (self : list 't) =
+  type list 't = 
+    | List_Cons('t, list 't)
+    | List_Nil
+    
+  predicate drop_list (drop_t : 't -> bool) (self : list 't) = 
     match (self) with
       | List_Cons(a, b) -> drop_t a && drop_fix b
       | List_Nil -> true
       end
-
   end
-  let rec function lenLogic (l : Type.list 'a) : int
+  let rec function lenLogic (l : Type.list 'a) : int = 
     ensures { result >= 0 }
-    =
-    match (l) with
-      | Type.List_Cons(_, ls) -> 1 + lenLogic ls
-      | Type.List_Nil -> 0
-      end
-
-
-
-  let rec function get (l : Type.list 'a)(ix : int) : 'a
-    requires { ix >= 0 }
-    requires { ix < lenLogic l }
-    variant { lenLogic l }
-    =
-    match (l) with
-      | Type.List_Cons(t, ls) -> match (ix = 0) with
-        | True -> t
-        | False -> get ls (ix - 1)
+    
+      match (l) with
+        | Type.List_Cons(_, ls) -> 1 + lenLogic ls
+        | Type.List_Nil -> 0
         end
-
-      | Type.List_Nil -> absurd
-      end
-
-
-
-  let rec cfg impl0_index (o_self_1 : Type.list 't)(o_ix_2 : usize) : 't
-    requires { o_ix_2 < lenLogic o_self_1 }
+  let rec function get (l : Type.list 'a) (ix : int) : 'a = 
+    requires {ix >= 0}
+    requires {ix < lenLogic l}
+    variant {lenLogic l}
+    
+      match (l) with
+        | Type.List_Cons(t, ls) -> match (ix = 0) with
+          | True -> t
+          | False -> get ls (ix - 1)
+          end
+        | Type.List_Nil -> absurd
+        end
+  let rec cfg impl0_index (o_self_1 : Type.list 't) (o_ix_2 : usize) : 't
+    requires {o_ix_2 < lenLogic o_self_1}
     ensures { result = get o_self_1 o_ix_2 }
     =
   var _0 : 't;
@@ -147,10 +138,9 @@ module BinarySearch
     assume { drop_ref t_10 };
     return _0
   }
-
-
+  
   let rec cfg impl0_len (o_self_1 : Type.list 't) : usize
-    requires { lenLogic o_self_1 <= 1000000 }
+    requires {lenLogic o_self_1 <= 1000000}
     ensures { result = lenLogic o_self_1 }
     ensures { result >= (0 : usize) }
     =
@@ -208,11 +198,10 @@ module BinarySearch
     _6 <- ();
     goto BB1
   }
-
-
-  let rec cfg binarySearch (o_arr_1 : Type.list uint32)(o_elem_2 : uint32) : Type.core_result_result usize usize
-    requires { lenLogic o_arr_1 <= 1000000 }
-    requires { forall k1 : int, k2 : int . get o_arr_1 k1 <= get o_arr_1 k2 }
+  
+  let rec cfg binarySearch (o_arr_1 : Type.list uint32) (o_elem_2 : uint32) : Type.core_result_result usize usize
+    requires {lenLogic o_arr_1 <= 1000000}
+    requires {forall k1 : int, k2 : int . get o_arr_1 k1 <= get o_arr_1 k2}
     ensures { forall x : usize . result = Type.Core_Result_Result_Err(x) -> (forall i : int . x < i && i < lenLogic o_arr_1 -> o_elem_2 < get o_arr_1 i) }
     ensures { forall x : usize . result = Type.Core_Result_Result_Ok(x) -> get o_arr_1 x = o_elem_2 }
     ensures { forall x : usize . result = Type.Core_Result_Result_Err(x) -> (forall i : int . 0 <= i && i < x -> get o_arr_1 i < o_elem_2) }
@@ -300,7 +289,7 @@ module BinarySearch
   }
   BB5 {
     invariant size_valid { size_8 + base_10 <= lenLogic arr_1 };
-    invariant in_range { forall i : int . 0 <= i && i < lenLogic arr_1 -> (i < base_10 -> get arr_1 i <= elem_2) && (base_10 + size_8 < i -> elem_2 <= get arr_1 i) };
+    invariant in_range { forall i : int . 0 <= i && i < lenLogic arr_1 -> i < base_10 -> get arr_1 i <= elem_2 && base_10 + size_8 < i -> elem_2 <= get arr_1 i };
     invariant size_pos { size_8 > (0 : usize) };
     assume { (fun tup -> let () = tup in true) _15 };
     goto BB6
@@ -439,8 +428,7 @@ module BinarySearch
     assume { (fun tup -> let () = tup in true) _15 };
     return _0
   }
-
-
+  
   let rec cfg main () : ()
     =
   var _0 : ();
@@ -451,6 +439,5 @@ module BinarySearch
     _0 <- ();
     return _0
   }
-
-
+  
 end

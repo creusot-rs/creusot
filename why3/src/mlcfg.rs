@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::fmt::Display;
 
 pub mod printer;
@@ -24,68 +24,6 @@ pub fn drop_mut_ref() -> QName {
 }
 pub fn drop_ref() -> QName {
     QName { module: vec![], name: vec!["drop_ref".into()] }
-}
-
-#[derive(Default)]
-pub struct Module {
-    pub decls: Vec<Decl>,
-}
-
-pub enum Decl {
-    FunDecl(Function),
-    LogicDecl(Logic),
-    // TyDecl(TyDecl),
-    // PredDecl(Predicate),
-}
-
-#[derive(Debug, Default)]
-pub struct Contract {
-    pub requires: Vec<Exp>,
-    pub ensures: Vec<Exp>,
-    pub variant: Option<Exp>,
-}
-
-impl Contract {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn subst(&mut self, subst: &HashMap<LocalIdent, Exp>) {
-        for req in self.requires.iter_mut() {
-            req.subst(subst);
-        }
-        for ens in self.ensures.iter_mut() {
-            ens.subst(subst);
-        }
-        if let Some(variant) = &mut self.variant {
-            variant.subst(subst);
-        }
-    }
-}
-#[derive(Debug)]
-pub struct Logic {
-    pub name: QName,
-    pub retty: Type,
-    pub args: Vec<(LocalIdent, Type)>,
-    pub body: Exp,
-    pub contract: Contract,
-}
-
-#[derive(Debug)]
-pub struct Function {
-    pub name: QName,
-    pub retty: Type,
-    pub args: Vec<(LocalIdent, Type)>,
-    pub vars: Vec<(LocalIdent, Type)>,
-    pub blocks: BTreeMap<BlockId, Block>,
-    pub contract: Contract,
-}
-
-#[derive(Debug)]
-pub struct Predicate {
-    pub name: QName,
-    pub args: Vec<(LocalIdent, Type)>,
-    pub body: Exp,
 }
 
 #[derive(Debug)]

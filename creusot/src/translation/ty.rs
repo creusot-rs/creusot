@@ -10,8 +10,9 @@ use rustc_span::Span;
 use rustc_span::Symbol;
 
 use why3::mlcfg::{
-    Exp as MlE, LocalIdent, Pattern, Pattern::*, Predicate, QName, TyDecl, Type as MlT,
+    Exp as MlE, LocalIdent, Pattern, Pattern::*, QName, TyDecl, Type as MlT,
 };
+use why3::declaration::Predicate;
 
 pub struct Ctx<'a, 'tcx> {
     translated_tys: IndexSet<DefId>,

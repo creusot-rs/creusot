@@ -11,48 +11,40 @@ module ListIndexMut
   use prelude.Prelude
 
   scope Type
-  type option 't =
-      | Option_None
-      | Option_Some('t)
-
-  predicate drop_option (drop_t : 't -> bool) (self : option 't) =
+  type option 't = 
+    | Option_None
+    | Option_Some('t)
+    
+  predicate drop_option (drop_t : 't -> bool) (self : option 't) = 
     match (self) with
       | Option_None -> true
       | Option_Some(a) -> drop_t a
       end
-
-  type list  =
-      | List(uint32, option (list))
-
-  predicate drop_list (self : list) =
+  type list  = 
+    | List(uint32, option (list))
+    
+  predicate drop_list (self : list) = 
     let List(a, b) = self in drop_uint a && drop_option drop_fix b
   end
-  let rec function len (l : Type.list) : int
+  let rec function len (l : Type.list) : int = 
     ensures { result >= 0 }
-    =
-    let Type.List(_, ls) = l in 1 + match (ls) with
-      | Type.Option_Some(ls) -> len ls
-      | Type.Option_None -> 0
-      end
-
-
-
-  let rec function get (l : Type.list)(ix : int) : Type.option uint32
-    variant { len l }
-    =
-    let Type.List(i, ls) = l in match (ix > 0) with
-      | False -> Type.Option_Some(i)
-      | True -> match (ls) with
-        | Type.Option_Some(ls) -> get ls (ix - 1)
-        | Type.Option_None -> Type.Option_None
+    
+      let Type.List(_, ls) = l in 1 + match (ls) with
+        | Type.Option_Some(ls) -> len ls
+        | Type.Option_None -> 0
         end
-
-      end
-
-
-
-  let rec cfg indexMut (o_param_l_1 : borrowed (Type.list))(o_param_ix_2 : usize) : borrowed uint32
-    requires { o_param_ix_2 < len ( * o_param_l_1) }
+  let rec function get (l : Type.list) (ix : int) : Type.option uint32 = 
+    variant {len l}
+    
+      let Type.List(i, ls) = l in match (ix > 0) with
+        | False -> Type.Option_Some(i)
+        | True -> match (ls) with
+          | Type.Option_Some(ls) -> get ls (ix - 1)
+          | Type.Option_None -> Type.Option_None
+          end
+        end
+  let rec cfg indexMut (o_param_l_1 : borrowed (Type.list)) (o_param_ix_2 : usize) : borrowed uint32
+    requires {o_param_ix_2 < len ( * o_param_l_1)}
     ensures { forall i : int . 0 <= i && i < len ( * o_param_l_1) && i <> o_param_ix_2 -> get ( * o_param_l_1) i = get ( ^ o_param_l_1) i }
     ensures { Type.Option_Some( * result) = get ( * o_param_l_1) o_param_ix_2 }
     ensures { Type.Option_Some( ^ result) = get ( ^ o_param_l_1) o_param_ix_2 }
@@ -161,10 +153,9 @@ module ListIndexMut
     _12 <- ();
     goto BB1
   }
-
-
-  let rec cfg write (o_l_1 : borrowed (Type.list))(o_ix_2 : usize)(o_val_3 : uint32) : ()
-    requires { o_ix_2 < len ( * o_l_1) }
+  
+  let rec cfg write (o_l_1 : borrowed (Type.list)) (o_ix_2 : usize) (o_val_3 : uint32) : ()
+    requires {o_ix_2 < len ( * o_l_1)}
     ensures { forall i : int . 0 <= i && i < len ( * o_l_1) && i <> o_ix_2 -> get ( * o_l_1) i = get ( ^ o_l_1) i }
     ensures { Type.Option_Some(o_val_3) = get ( ^ o_l_1) o_ix_2 }
     ensures { len ( ^ o_l_1) = len ( * o_l_1) }
@@ -201,8 +192,7 @@ module ListIndexMut
     _0 <- ();
     return _0
   }
-
-
+  
   let rec cfg main () : ()
     =
   var _0 : ();
@@ -243,6 +233,5 @@ module ListIndexMut
     assume { Type.drop_list l_1 };
     return _0
   }
-
-
+  
 end

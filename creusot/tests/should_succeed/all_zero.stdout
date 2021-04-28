@@ -11,49 +11,40 @@ module AllZero
   use prelude.Prelude
 
   scope Type
-  type core_option_option 't =
-      | Core_Option_Option_None
-      | Core_Option_Option_Some('t)
-
-  predicate drop_core_option_option (drop_t : 't -> bool) (self : core_option_option 't) =
+  type core_option_option 't = 
+    | Core_Option_Option_None
+    | Core_Option_Option_Some('t)
+    
+  predicate drop_core_option_option (drop_t : 't -> bool) (self : core_option_option 't) = 
     match (self) with
       | Core_Option_Option_None -> true
       | Core_Option_Option_Some(a) -> drop_t a
       end
-
-  type list  =
-      | List_Cons(uint32, list)
-      | List_Nil
-
-  predicate drop_list (self : list) =
+  type list  = 
+    | List_Cons(uint32, list)
+    | List_Nil
+    
+  predicate drop_list (self : list) = 
     match (self) with
       | List_Cons(a, b) -> drop_uint a && drop_fix b
       | List_Nil -> true
       end
-
   end
-  let rec function len (l : Type.list) : int
-    =
-    match (l) with
-      | Type.List_Cons(_, ls) -> 1 + len ls
-      | Type.List_Nil -> 0
-      end
-
-
-
-  let rec function get (l : Type.list)(ix : int) : Type.core_option_option uint32
-    =
-    match (l) with
-      | Type.List_Cons(x, ls) -> match (ix = 0) with
-        | True -> Type.Core_Option_Option_Some(x)
-        | False -> get ls (ix - 1)
+  let rec function len (l : Type.list) : int = 
+    
+      match (l) with
+        | Type.List_Cons(_, ls) -> 1 + len ls
+        | Type.List_Nil -> 0
         end
-
-      | Type.List_Nil -> Type.Core_Option_Option_None
-      end
-
-
-
+  let rec function get (l : Type.list) (ix : int) : Type.core_option_option uint32 = 
+    
+      match (l) with
+        | Type.List_Cons(x, ls) -> match (ix = 0) with
+          | True -> Type.Core_Option_Option_Some(x)
+          | False -> get ls (ix - 1)
+          end
+        | Type.List_Nil -> Type.Core_Option_Option_None
+        end
   let rec cfg allZero (o_l_1 : borrowed (Type.list)) : ()
     ensures { len ( * o_l_1) = len ( ^ o_l_1) }
     ensures { forall i : int . 0 <= i && i < len ( * o_l_1) -> get ( ^ o_l_1) i = Type.Core_Option_Option_Some((0 : uint32)) }
@@ -112,8 +103,7 @@ module AllZero
     _5 <- ();
     goto BB1
   }
-
-
+  
   let rec cfg main () : ()
     =
   var _0 : ();
@@ -124,6 +114,5 @@ module AllZero
     _0 <- ();
     return _0
   }
-
-
+  
 end

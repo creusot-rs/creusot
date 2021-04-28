@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use why3::mlcfg::printer::FormatEnv;
 use why3::mlcfg::LocalIdent;
-use why3::mlcfg::{self, Exp};
+use why3::mlcfg::Exp;
+use why3::declaration::{Logic, Contract};
 use crate::translation::ty::Ctx;
 
 use rustc_hir::def_id::DefId;
@@ -70,7 +70,7 @@ pub fn invariant_to_why<'tcx>(
     body: &Body<'tcx>,
     info: SourceInfo,
     attr_val: String,
-) -> String {
+) -> Exp {
     let p: Term = syn::parse_str(&attr_val).unwrap();
     let tyctx: Vec<_> = body
         .var_debug_info
@@ -117,7 +117,7 @@ pub fn invariant_to_why<'tcx>(
         .collect();
         //
     e.subst(&subst);
-    format!("{}", FormatEnv { scope: &[], indent: 0 }.to(&e))
+    e
 }
 
 // Translate a logical funciton into why.
@@ -127,7 +127,7 @@ pub fn logic_to_why<'tcx>(
     did: DefId,
     body: &Body<'tcx>,
     exp: String,
-) -> why3::mlcfg::Logic {
+) -> Logic {
     // Technically we should pass through translation::ty here in case we mention
     // any untranslated types...
     let ret_ty = return_ty(res.2, body);
@@ -142,7 +142,7 @@ pub fn logic_to_why<'tcx>(
     let body = lower_term_to_why(ctx, t);
 
     let name = crate::translation::translate_value_id(res.2, did);
-    mlcfg::Logic {
+    Logic {
         name,
         retty: lower_type_to_why(ctx, ret_ty),
         args: entry_ctx
@@ -150,7 +150,7 @@ pub fn logic_to_why<'tcx>(
             .map(|(nm, ty)| (LocalIdent::Name(nm), lower_type_to_why(ctx, ty)))
             .collect(),
         body,
-        contract: mlcfg::Contract::new(),
+        contract: Contract::new(),
     }
 }
 
@@ -230,13 +230,13 @@ fn invariant_name(attr: &rustc_ast::AttrItem) -> String {
 }
 
 // TODO: Stop putting strings!!
-pub struct Contract {
+pub struct PreContract {
     pub variant: Option<String>,
     pub requires: Vec<String>,
     pub ensures: Vec<String>,
 }
 
-impl Contract {
+impl PreContract {
     fn new() -> Self {
         Self { variant: None, requires: Vec::new(), ensures: Vec::new() }
     }
@@ -250,8 +250,8 @@ impl Contract {
         res: &RustcResolver<'tcx>,
         ctx: &mut Ctx<'_, 'tcx>,
         body: &Body<'tcx>,
-    ) -> mlcfg::Contract {
-        let mut out = mlcfg::Contract::new();
+    ) -> Contract {
+        let mut out = Contract::new();
 
         for req in self.requires {
             out.requires.push(requires_to_why(res, ctx, body, req));
@@ -276,13 +276,13 @@ pub enum SpecAttrError {
 
 pub enum Spec {
     Invariant { name: String, expression: String },
-    Program { contract: Contract },
-    Logic { body: String, contract: Contract },
+    Program { contract: PreContract },
+    Logic { body: String, contract: PreContract },
 }
 
 pub fn spec_kind(a: Attributes<'_>) -> Result<Spec, SpecAttrError> {
     use SpecAttrError::*;
-    let mut contract = Contract::new();
+    let mut contract = PreContract::new();
     let mut logic = None;
 
     for attr in a {

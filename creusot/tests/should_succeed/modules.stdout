@@ -11,42 +11,42 @@ module Modules
   use prelude.Prelude
 
   scope Type
-  type nested_nested  =
-      | Nested_Nested_Test
-
-  predicate drop_nested_nested (self : nested_nested) =
+  type nested_nested  = 
+    | Nested_Nested_Test
+    
+  predicate drop_nested_nested (self : nested_nested) = 
     let Nested_Nested_Test = self in true
   end
   scope Nested
-    let rec cfg Further.another () : bool
+    scope Further
+      let rec cfg another () : bool
+        =
+      var _0 : bool;
+      {
+        goto BB0
+      }
+      BB0 {
+        _0 <- false;
+        return _0
+      }
+      
+    end
+    let rec cfg innerFunc () : bool
+      ensures { result = true }
       =
     var _0 : bool;
+    var _1 : Type.nested_nested;
     {
       goto BB0
     }
     BB0 {
-      _0 <- false;
+      _1 <- Type.Nested_Nested_Test;
+      assume { Type.drop_nested_nested _1 };
+      _0 <- true;
       return _0
     }
-
-
+    
   end
-  let rec cfg Nested.innerFunc () : bool
-    ensures { result = true }
-    =
-  var _0 : bool;
-  var _1 : Type.nested_nested;
-  {
-    goto BB0
-  }
-  BB0 {
-    _1 <- Type.Nested_Nested_Test;
-    assume { Type.drop_nested_nested _1 };
-    _0 <- true;
-    return _0
-  }
-
-
   let rec cfg main () : ()
     =
   var _0 : ();
@@ -69,6 +69,5 @@ module Modules
     _0 <- ();
     return _0
   }
-
-
+  
 end
