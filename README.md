@@ -8,7 +8,7 @@ Creusot is a tool for *deductive verification* of Rust code. It allows you to an
 
 Creusot works by translating Rust code to WhyML the verification and specification language of ![Why3](https://why3.lri.fr). Users can then leverage the full power of Why3 to (semi)-automatically discharge the verification conditions!
 
-**Note**: :warning: I am developping this in the context of my PhD thesis, the software quality is commensurate. :warning:
+**Note**: :warning: I am developing this in the context of my PhD thesis, the software quality is commensurate. :warning:
 
 # Example programs that have been proven:
 
