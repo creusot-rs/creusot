@@ -3,21 +3,19 @@ use std::collections::HashMap;
 use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{SourceInfo, SwitchTargets},
-    ty::AdtDef,
-};
-use rustc_middle::{
     mir::{Location, Operand, Terminator, TerminatorKind::*},
     ty,
+};
+use rustc_middle::{
+    mir::{SourceInfo, SwitchTargets},
+    ty::AdtDef,
 };
 use rustc_session::Session;
 use rustc_target::abi::VariantIdx;
 
-use why3::mlcfg::{Constant, Exp, Pattern, Terminator as MlT, Statement, BinOp, BlockId};
+use why3::mlcfg::{BinOp, BlockId, Constant, Exp, Pattern, Statement, Terminator as MlT};
 
-use crate::{
-    place::simplify_place,
-};
+use crate::place::simplify_place;
 
 use super::FunctionTranslator;
 
@@ -69,9 +67,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     func_args.remove(0)
                 } else {
                     let fname = match func.ty(self.body, self.tcx).kind() {
-                        ty::TyKind::FnDef(defid, _) => {
-                            super::translate_value_id(self.tcx, *defid)
-                        }
+                        ty::TyKind::FnDef(defid, _) => super::translate_value_id(self.tcx, *defid),
                         _ => panic!("not a function"),
                     };
                     Exp::Call(box Exp::QVar(fname), func_args)
@@ -167,9 +163,7 @@ pub fn make_switch<'tcx>(
 
             let mut branches: Vec<_> = targets
                 .iter()
-                .map(|(disc, tgt)| {
-                    (variant_pattern(tcx, def, d_to_var[&disc]), mk_goto(tgt))
-                })
+                .map(|(disc, tgt)| (variant_pattern(tcx, def, d_to_var[&disc]), mk_goto(tgt)))
                 .collect();
             branches.push((Wildcard, mk_goto(targets.otherwise())));
 

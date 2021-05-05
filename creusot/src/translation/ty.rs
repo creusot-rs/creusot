@@ -127,7 +127,7 @@ fn translate_ty_param(p: Symbol) -> String {
 pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId) {
     // mark this type as translated
     if ctx.used_tys.contains(&did) {
-        return
+        return;
     } else {
         ctx.used_tys.insert(did);
     }

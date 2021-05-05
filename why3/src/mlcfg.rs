@@ -71,10 +71,7 @@ impl Type {
 
     fn complex(&self) -> bool {
         use Type::*;
-        !matches!(
-            self,
-            Bool | Char | Integer | TVar(_) | Tuple(_) | TConstructor(_)
-        )
+        !matches!(self, Bool | Char | Integer | TVar(_) | Tuple(_) | TConstructor(_))
     }
 
     pub(crate) fn find_used_types(&self, tys: &mut HashSet<QName>) {
@@ -180,7 +177,10 @@ pub enum BinOp {
 }
 
 #[derive(Debug, Clone)]
-pub enum UnOp { Not, Neg }
+pub enum UnOp {
+    Not,
+    Neg,
+}
 
 #[derive(Debug, Clone)]
 pub enum Exp {
@@ -258,22 +258,20 @@ impl Exp {
             Exp::Const(_) => Closed,
             Exp::UnaryOp(UnOp::Neg, _) => PrefixOp,
             Exp::UnaryOp(UnOp::Not, _) => Call,
-            Exp::BinaryOp(op, _, _) => {
-                match op {
-                    BinOp::And => And,
-                    BinOp::Or => Or,
-                    BinOp::Add => AddSub,
-                    BinOp::Sub => AddSub,
-                    BinOp::Mul => Mul,
-                    BinOp::Div => Term,
-                    BinOp::Eq => Compare,
-                    BinOp::Lt => Compare,
-                    BinOp::Le => Compare,
-                    BinOp::Ne => Compare,
-                    BinOp::Ge => Compare,
-                    BinOp::Gt => Compare,
-                }
-            }
+            Exp::BinaryOp(op, _, _) => match op {
+                BinOp::And => And,
+                BinOp::Or => Or,
+                BinOp::Add => AddSub,
+                BinOp::Sub => AddSub,
+                BinOp::Mul => Mul,
+                BinOp::Div => Term,
+                BinOp::Eq => Compare,
+                BinOp::Lt => Compare,
+                BinOp::Le => Compare,
+                BinOp::Ne => Compare,
+                BinOp::Ge => Compare,
+                BinOp::Gt => Compare,
+            },
             Exp::Call(_, _) => Call,
             Exp::Verbatim(_) => Any,
             Exp::Impl(_, _) => Impl,
@@ -420,7 +418,7 @@ impl Exp {
 #[derive(Debug, Clone)]
 pub enum Constant {
     Int(i128, Option<Type>),
-    Uint(u128,  Option<Type>),
+    Uint(u128, Option<Type>),
     // Float(f64),
     Other(String),
 }

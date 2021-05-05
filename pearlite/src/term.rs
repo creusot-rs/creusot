@@ -58,7 +58,8 @@ pub enum Literal {
 
 #[derive(Debug)]
 pub enum DerefKind {
-    Box, Ref(RefKind),
+    Box,
+    Ref(RefKind),
 }
 
 #[derive(Debug)]
@@ -227,11 +228,18 @@ impl Type {
 
     pub fn is_numeric(&self) -> bool {
         use LitTy::*;
-        matches!(self, Type::Lit(Signed(_)) | Type::Lit(Unsigned(_)) | Type::Lit(Float) | Type::Lit(Double) | Type::Lit(Integer))
+        matches!(
+            self,
+            Type::Lit(Signed(_))
+                | Type::Lit(Unsigned(_))
+                | Type::Lit(Float)
+                | Type::Lit(Double)
+                | Type::Lit(Integer)
+        )
     }
 
     pub fn is_reference(&self) -> bool {
-        matches!(self, Type::Reference {..})
+        matches!(self, Type::Reference { .. })
     }
 
     pub fn fvs(&self) -> Vec<TyVar> {

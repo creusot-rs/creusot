@@ -1,6 +1,6 @@
-use std::collections::{HashMap, BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
-use crate::mlcfg::{Exp, LocalIdent, Type, QName, BlockId, Block};
+use crate::mlcfg::{Block, BlockId, Exp, LocalIdent, QName, Type};
 
 #[derive(Debug)]
 pub struct Module {

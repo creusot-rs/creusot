@@ -43,12 +43,7 @@ pub struct TranslationCtx<'a, 'tcx> {
 
 impl<'tcx, 'a> TranslationCtx<'a, 'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, sess: &'a Session) -> Self {
-        Self {
-            sess,
-            tcx,
-            used_tys: IndexSet::new(),
-            modules: ModuleTree::new(),
-        }
+        Self { sess, tcx, used_tys: IndexSet::new(), modules: ModuleTree::new() }
     }
 
     fn crash_and_error(&self, span: Span, msg: &str) -> ! {
@@ -298,8 +293,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
         for local in dying.iter() {
             let local_ty = self.body.local_decls[local].ty;
             let ident = self.translate_local(local);
-            let assumption: Exp =
-                ty::drop_predicate(&mut self.ctx, local_ty).app_to(ident.into());
+            let assumption: Exp = ty::drop_predicate(&mut self.ctx, local_ty).app_to(ident.into());
             self.emit_statement(mlcfg::Statement::Assume(assumption));
         }
     }

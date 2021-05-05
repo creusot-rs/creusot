@@ -34,9 +34,9 @@ use std::{cell::RefCell, env::args as get_args, rc::Rc};
 use why3::{declaration::Decl, mlcfg};
 
 mod analysis;
+mod extended_location;
 mod place;
 mod translation;
-mod extended_location;
 
 #[allow(dead_code)]
 mod debug;
@@ -131,7 +131,7 @@ fn translate(
 
     // Type translation state, including which datatypes have already been translated.
     let mut ty_ctx = translation::TranslationCtx::new(tcx, sess);
-    ty_ctx.modules.get_decls_mut(mlcfg::QName { module: vec![], name: vec!["Type".into()]});
+    ty_ctx.modules.get_decls_mut(mlcfg::QName { module: vec![], name: vec!["Type".into()] });
 
     // Translate all type declarations and push them into the module collection
     for (def_id, span) in ty_decls.iter() {
@@ -156,7 +156,7 @@ fn translate(
 
         // Parent module of declaration
         let module_id = tcx.parent_module_from_def_id(def_id.expect_local()).to_def_id();
-        let module = crate::translation::translate_value_id(tcx, module_id   );
+        let module = crate::translation::translate_value_id(tcx, module_id);
         // let module_id = tcx.parent(def_id).unwrap();
         let attrs = tcx.get_attrs(def_id);
         let resolver = specification::RustcResolver(resolver.clone(), module_id, tcx);
@@ -167,7 +167,8 @@ fn translate(
             Logic { body: exp, contract } => {
                 let out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, &body);
 
-                let mut translated = specification::logic_to_why(&resolver, &mut ty_ctx, def_id, &body, exp);
+                let mut translated =
+                    specification::logic_to_why(&resolver, &mut ty_ctx, def_id, &body, exp);
                 translated.contract = out_contract;
 
                 ty_ctx.modules.add_decl(module, Decl::LogicDecl(translated));
@@ -204,8 +205,7 @@ fn translate(
 use std::io::Write;
 
 // TODO: Clean up, this printing code should not be in main.
-const IMPORTS : &'static str =
-"  use Ref
+const IMPORTS: &'static str = "  use Ref
   use mach.int.Int
   use mach.int.Int32
   use mach.int.Int64

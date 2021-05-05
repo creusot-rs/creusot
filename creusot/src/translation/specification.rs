@@ -122,7 +122,7 @@ pub fn invariant_to_why<'tcx>(
             (free.clone(), LocalIdent::Anon(loc.into(), Some(var_info.name.to_string())).into())
         })
         .collect();
-        //
+    //
     e.subst(&subst);
     e
 }
@@ -210,7 +210,10 @@ pub fn subst_for_arguments(body: &Body) -> HashMap<LocalIdent, Exp> {
             };
             let source_name = vdi.name.to_string();
             let outer_name = format!("o_{}", source_name);
-            (LocalIdent::Name(source_name), Exp::Var(LocalIdent::Anon(loc.into(), Some(outer_name))))
+            (
+                LocalIdent::Name(source_name),
+                Exp::Var(LocalIdent::Anon(loc.into(), Some(outer_name))),
+            )
         })
         .collect()
 }

@@ -113,9 +113,9 @@ pub fn lower_type_to_why(ctx: &mut TranslationCtx, ty: pearlite::term::Type) -> 
 }
 
 fn lit_ty_to_ty(litty: pearlite::term::LitTy) -> mlcfg::Type {
+    use crate::ty::*;
     use pearlite::term::Size::*;
     use why3::mlcfg::Type::*;
-    use crate::ty::*;
 
     match litty {
         term::LitTy::Signed(s) => match s {
@@ -137,13 +137,13 @@ fn lit_ty_to_ty(litty: pearlite::term::LitTy) -> mlcfg::Type {
         term::LitTy::Float => TConstructor(QName { module: vec![], name: vec!["single".into()] }),
         term::LitTy::Double => TConstructor(QName { module: vec![], name: vec!["double".into()] }),
         term::LitTy::Boolean => Bool,
-        term::LitTy::Integer => TConstructor(QName { module: vec![], name: vec!["int".into()]})
+        term::LitTy::Integer => TConstructor(QName { module: vec![], name: vec!["int".into()] }),
     }
 }
 
 fn lit_to_const(lit: pearlite::term::Literal) -> why3::mlcfg::Constant {
-    use why3::mlcfg::Constant::{self, *};
     use crate::ty::*;
+    use why3::mlcfg::Constant::{self, *};
     match lit {
         term::Literal::U8(u) => Uint(u as u128, Some(u8_ty())),
         term::Literal::U16(u) => Uint(u as u128, Some(u16_ty())),

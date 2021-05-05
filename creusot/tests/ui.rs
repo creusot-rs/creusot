@@ -1,17 +1,17 @@
 use assert_cmd::prelude::*;
+use std::env;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
-use std::env;
 
 use dissimilar::*;
 
-use termcolor::*;
-use std::io::Write;
 use arraydeque::{ArrayDeque, Wrapping};
 use std::error::Error;
+use std::io::Write;
+use termcolor::*;
 
-fn main () {
+fn main() {
     should_fail("tests/should_fail/*.rs", run_creusot);
     should_succeed("tests/should_succeed/*.rs", run_creusot);
 }
@@ -30,26 +30,29 @@ fn run_creusot(file: &Path) -> std::process::Command {
 }
 
 fn should_succeed<B>(s: &str, b: B)
-where B: Fn(&Path) -> std::process::Command
+where
+    B: Fn(&Path) -> std::process::Command,
 {
     glob_runner(s, b, should_succeed_case);
 }
 
 fn should_fail<B>(s: &str, b: B)
-where B: Fn(&Path) -> std::process::Command
+where
+    B: Fn(&Path) -> std::process::Command,
 {
     glob_runner(s, b, should_fail_case);
 }
 
 fn glob_runner<B, C>(s: &str, b: B, c: C)
-where B : Fn(&Path) -> std::process::Command,
-        C : Fn(std::process::Output, &Path, &Path) -> Result<(bool, Buffer), Box<dyn Error>>
-    {
+where
+    B: Fn(&Path) -> std::process::Command,
+    C: Fn(std::process::Output, &Path, &Path) -> Result<(bool, Buffer), Box<dyn Error>>,
+{
     let mut out = StandardStream::stdout(ColorChoice::Always);
 
     let mut test_count = 0;
     let mut test_failures = 0;
-    let bless =  std::env::args().any(|arg| arg == "--bless");
+    let bless = std::env::args().any(|arg| arg == "--bless");
     let filter = std::env::args().nth(1);
 
     for entry in glob::glob(s).expect("Failed to read glob pattern") {
@@ -99,20 +102,18 @@ where B : Fn(&Path) -> std::process::Command,
 
             BufferWriter::stdout(ColorChoice::Always).print(&buf).unwrap();
         }
-
     }
 
     if test_failures > 0 {
         panic!("{} failures out of {} tests", test_failures, test_count);
     }
-
 }
 
 fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
     let result = diff(expect, got);
 
     match result[..] {
-        [Chunk::Equal(_)] => { true },
+        [Chunk::Equal(_)] => true,
         _ => {
             print_diff(buf, result);
             false
@@ -120,7 +121,11 @@ fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
     }
 }
 
-fn should_succeed_case(output: std::process::Output, stdout: &Path, _stderr: &Path) -> Result<(bool, Buffer), Box<dyn Error>> {
+fn should_succeed_case(
+    output: std::process::Output,
+    stdout: &Path,
+    _stderr: &Path,
+) -> Result<(bool, Buffer), Box<dyn Error>> {
     let output = output.unwrap();
     let mut buf = Buffer::ansi();
     use std::str::from_utf8;
@@ -138,14 +143,18 @@ fn should_succeed_case(output: std::process::Output, stdout: &Path, _stderr: &Pa
     Ok((success, buf))
 }
 
-fn should_fail_case(output: std::process::Output, _stdout: &Path, _stderr: &Path) -> Result<(bool, Buffer), Box<dyn Error>> {
+fn should_fail_case(
+    output: std::process::Output,
+    _stdout: &Path,
+    _stderr: &Path,
+) -> Result<(bool, Buffer), Box<dyn Error>> {
     let buf = Buffer::ansi();
     Ok((!output.status.success(), buf))
 }
 
-fn print_diff<W : WriteColor>(mut buf: W, diff: Vec<Chunk>) {
+fn print_diff<W: WriteColor>(mut buf: W, diff: Vec<Chunk>) {
     let mut line_count = 0;
-    let mut last_lines : ArrayDeque<[_; 3], Wrapping> = ArrayDeque::new();
+    let mut last_lines: ArrayDeque<[_; 3], Wrapping> = ArrayDeque::new();
     let mut multiple_diffs = false;
     for chunk in diff {
         // Print context
@@ -176,8 +185,16 @@ fn print_diff<W : WriteColor>(mut buf: W, diff: Vec<Chunk>) {
 fn chunk_color(chunk: Chunk) -> ColorSpec {
     match chunk {
         Chunk::Equal(_) => ColorSpec::new(),
-        Chunk::Delete(_) => { let mut c = ColorSpec::new(); c.set_fg(Some(Color::Red)); c},
-        Chunk::Insert(_) => { let mut c = ColorSpec::new(); c.set_fg(Some(Color::Green)); c},
+        Chunk::Delete(_) => {
+            let mut c = ColorSpec::new();
+            c.set_fg(Some(Color::Red));
+            c
+        }
+        Chunk::Insert(_) => {
+            let mut c = ColorSpec::new();
+            c.set_fg(Some(Color::Green));
+            c
+        }
     }
 }
 fn print_chunk(chunk: Chunk) -> bool {
