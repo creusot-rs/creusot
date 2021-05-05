@@ -1,16 +1,15 @@
+use indexmap::IndexMap;
 use why3::declaration::Decl;
-
-use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct ModuleTree {
     decls: Vec<Decl>,
-    inner: HashMap<String, ModuleTree>,
+    inner: IndexMap<String, ModuleTree>,
 }
 
 impl ModuleTree {
     pub fn new() -> Self {
-        Self { decls: Vec::new(), inner: HashMap::new() }
+        Self { decls: Vec::new(), inner: IndexMap::new() }
     }
 
     pub fn add_decl(&mut self, key: why3::mlcfg::QName, decl: Decl) {
