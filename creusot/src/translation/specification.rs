@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use why3::mlcfg::LocalIdent;
+use crate::translation::TranslationCtx;
+use why3::declaration::{Contract, Logic};
 use why3::mlcfg::Exp;
-use why3::declaration::{Logic, Contract};
-use crate::translation::ty::Ctx;
+use why3::mlcfg::LocalIdent;
 
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
@@ -21,14 +21,13 @@ use lower::*;
 
 pub fn requires_to_why<'tcx>(
     res: &RustcResolver<'tcx>,
-    ctx: &mut Ctx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'_, 'tcx>,
     body: &Body<'tcx>,
     attr_val: String,
 ) -> Exp {
     let p: Term = syn::parse_str(&attr_val).unwrap();
     let entry_ctx = context_at_entry(res.2, body);
-    let mut tyctx =
-        pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), entry_ctx);
+    let mut tyctx = pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), entry_ctx);
     let mut t = term::Term::from_syn(res, p).unwrap();
 
     pearlite::typing::check_term(&mut tyctx, &mut t, &term::Type::BOOLEAN).unwrap();
@@ -36,11 +35,15 @@ pub fn requires_to_why<'tcx>(
     lower_term_to_why(ctx, t)
 }
 
-pub fn variant_to_why<'tcx>(res: &RustcResolver<'tcx>, ctx: &mut Ctx<'_, 'tcx>, body: &Body<'tcx>, attr_val: String) -> Exp {
+pub fn variant_to_why<'tcx>(
+    res: &RustcResolver<'tcx>,
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    body: &Body<'tcx>,
+    attr_val: String,
+) -> Exp {
     let p: Term = syn::parse_str(&attr_val).unwrap();
     let entry_ctx = context_at_entry(res.2, body);
-    let mut tyctx =
-        pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), entry_ctx);
+    let mut tyctx = pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), entry_ctx);
     let mut t = term::Term::from_syn(res, p).unwrap();
 
     pearlite::typing::infer_term(&mut tyctx, &mut t).unwrap();
@@ -48,8 +51,12 @@ pub fn variant_to_why<'tcx>(res: &RustcResolver<'tcx>, ctx: &mut Ctx<'_, 'tcx>, 
     lower_term_to_why(ctx, t)
 }
 
-pub fn ensures_to_why<'tcx>(res: &RustcResolver<'tcx>, ctx: &mut Ctx<'_, 'tcx>,
- body: &Body<'tcx>, attr_val: String) -> Exp {
+pub fn ensures_to_why<'tcx>(
+    res: &RustcResolver<'tcx>,
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    body: &Body<'tcx>,
+    attr_val: String,
+) -> Exp {
     let p: Term = syn::parse_str(&attr_val).unwrap();
     let mut tyctx = context_at_entry(res.2, body);
     let ret_ty = return_ty(res.2, body);
@@ -66,7 +73,7 @@ pub fn ensures_to_why<'tcx>(res: &RustcResolver<'tcx>, ctx: &mut Ctx<'_, 'tcx>,
 
 pub fn invariant_to_why<'tcx>(
     res: &RustcResolver<'tcx>,
-    ctx: &mut Ctx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'_, 'tcx>,
     body: &Body<'tcx>,
     info: SourceInfo,
     attr_val: String,
@@ -123,7 +130,7 @@ pub fn invariant_to_why<'tcx>(
 // Translate a logical funciton into why.
 pub fn logic_to_why<'tcx>(
     res: &RustcResolver<'tcx>,
-    ctx: &mut Ctx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'_, 'tcx>,
     did: DefId,
     body: &Body<'tcx>,
     exp: String,
@@ -248,7 +255,7 @@ impl PreContract {
     pub fn check_and_lower<'tcx>(
         self,
         res: &RustcResolver<'tcx>,
-        ctx: &mut Ctx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'_, 'tcx>,
         body: &Body<'tcx>,
     ) -> Contract {
         let mut out = Contract::new();

@@ -1,4 +1,4 @@
-use std::collections::{HashMap, BTreeMap};
+use std::collections::{HashMap, BTreeMap, HashSet};
 
 use crate::mlcfg::{Exp, LocalIdent, Type, QName, BlockId, Block};
 
@@ -20,7 +20,7 @@ pub enum Decl {
     LogicDecl(Logic),
     Scope(Scope),
     Module(Module),
-    // TyDecl(TyDecl),
+    TyDecl(TyDecl),
     PredDecl(Predicate),
 }
 
@@ -72,4 +72,23 @@ pub struct Predicate {
     pub name: QName,
     pub args: Vec<(LocalIdent, Type)>,
     pub body: Exp,
+}
+
+#[derive(Debug)]
+pub struct TyDecl {
+    pub ty_name: QName,
+    pub ty_params: Vec<String>,
+    pub ty_constructors: Vec<(String, Vec<Type>)>,
+}
+
+impl TyDecl {
+    pub fn used_types(&self) -> HashSet<QName> {
+        let mut used = HashSet::new();
+        for (_, var_decl) in &self.ty_constructors {
+            for ty in var_decl {
+                ty.find_used_types(&mut used);
+            }
+        }
+        used
+    }
 }

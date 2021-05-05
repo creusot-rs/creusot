@@ -19,6 +19,7 @@ extern crate rustc_target;
 #[macro_use]
 extern crate log;
 
+use heck::CamelCase;
 use rustc_driver::{abort_on_err, Callbacks, Compilation, RunCompiler};
 use rustc_hir::{def_id::LOCAL_CRATE, Item};
 use rustc_interface::{
@@ -125,14 +126,12 @@ fn translate(
             if is_type_decl(item) {
                 ty_decls.push((hir_map.local_def_id(*item_id).to_def_id(), item.span));
             }
-
         }
     }
 
-    let mut krate = TranslatedCrate::new(tcx.crate_name(LOCAL_CRATE).to_string());
-
     // Type translation state, including which datatypes have already been translated.
-    let mut ty_ctx = translation::ty::Ctx::new(tcx, sess);
+    let mut ty_ctx = translation::TranslationCtx::new(tcx, sess);
+    ty_ctx.modules.get_decls_mut(mlcfg::QName { module: vec![], name: vec!["Type".into()]});
 
     // Translate all type declarations and push them into the module collection
     for (def_id, span) in ty_decls.iter() {
@@ -171,7 +170,7 @@ fn translate(
                 let mut translated = specification::logic_to_why(&resolver, &mut ty_ctx, def_id, &body, exp);
                 translated.contract = out_contract;
 
-                krate.modules.add_decl(module, Decl::LogicDecl(translated));
+                ty_ctx.modules.add_decl(module, Decl::LogicDecl(translated));
             }
             Program { contract } => {
                 let mut out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, &body);
@@ -187,13 +186,11 @@ fn translate(
                 let translated = FunctionTranslator::new(sess, tcx, &mut ty_ctx, &body, resolver)
                     .translate(def_id, out_contract);
 
-                krate.modules.add_decl(module, Decl::FunDecl(translated));
+                ty_ctx.modules.add_decl(module, Decl::FunDecl(translated));
             }
         }
     }
 
-    // Collect all the type translations
-    ty_ctx.collect(&mut krate);
     use std::fs::File;
 
     let mut out: Box<dyn Write> = match output {
@@ -201,7 +198,7 @@ fn translate(
         None => Box::new(std::io::stdout()),
     };
 
-    print_crate(&mut out, krate)?;
+    print_crate(&mut out, tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case(), ty_ctx.modules)?;
     Ok(())
 }
 use std::io::Write;
@@ -219,31 +216,18 @@ const IMPORTS : &'static str =
   use floating_point.Double
   use prelude.Prelude";
 
-fn print_crate<W>(out: &mut W, krate: TranslatedCrate) -> std::io::Result<()>
+fn print_crate<W>(out: &mut W, name: String, krate: module_tree::ModuleTree) -> std::io::Result<()>
 where
     W: Write,
 {
-    writeln!(out, "module {}", krate.name)?;
+    writeln!(out, "module {}", name)?;
     writeln!(out, "{}\n", IMPORTS)?;
-    writeln!(out, "  scope Type")?;
-    let (alloc, mut pe) = mlcfg::printer::PrintEnv::new();
-    pe.scopes.push("Type".into());
-
-    for (decl, pred) in krate.types() {
-        // let fe = mlcfg::printer::FormatEnv { indent: 2, scope: &["Type".into()] };
-
-        decl.pretty(&alloc, &mut pe).indent(2).1.render(80, out)?;
-        writeln!(out, "")?;
-        pred.pretty(&alloc, &mut pe).indent(2).1.render(80, out)?;
-        writeln!(out, "")?;
-    }
-    writeln!(out, "  end")?;
 
     // let fe = mlcfg::printer::FormatEnv { indent: 2, scope: &[] };
     let (alloc, mut pe) = mlcfg::printer::PrintEnv::new();
 
-    for decl in krate.modules.reify() {
-        decl.pretty(&alloc, &mut pe).indent(2).1.render(80, out)?;
+    for modl in krate.reify() {
+        modl.pretty(&alloc, &mut pe).indent(2).1.render(120, out)?;
         writeln!(out, "")?;
     }
     // print_module_tree(out, &mut Vec::new(), &krate.modules).unwrap();

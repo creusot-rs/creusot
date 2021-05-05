@@ -1,5 +1,5 @@
-use std::collections::HashSet;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fmt::Display;
 
 pub mod printer;
@@ -77,7 +77,7 @@ impl Type {
         )
     }
 
-    fn find_used_types(&self, tys: &mut HashSet<QName>) {
+    pub(crate) fn find_used_types(&self, tys: &mut HashSet<QName>) {
         use Type::*;
 
         match self {
@@ -98,25 +98,6 @@ impl Type {
             }
             _ => (),
         }
-    }
-}
-
-#[derive(Debug)]
-pub struct TyDecl {
-    pub ty_name: QName,
-    pub ty_params: Vec<String>,
-    pub ty_constructors: Vec<(String, Vec<Type>)>,
-}
-
-impl TyDecl {
-    pub fn used_types(&self) -> HashSet<QName> {
-        let mut used = HashSet::new();
-        for (_, var_decl) in &self.ty_constructors {
-            for ty in var_decl {
-                ty.find_used_types(&mut used);
-            }
-        }
-        used
     }
 }
 

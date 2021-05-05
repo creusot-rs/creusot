@@ -5,6 +5,8 @@ use crate::{
     place::simplify_place,
     place::{Mutability::*, Projection::*, SimplePlace},
 };
+use indexmap::IndexSet;
+use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
 use rustc_hir::definitions::DefPathData;
 use rustc_index::bit_set::BitSet;
@@ -17,47 +19,61 @@ use rustc_middle::{
 use rustc_mir::dataflow::{
     self,
     impls::{MaybeInitializedLocals, MaybeLiveLocals},
-    Analysis
+    Analysis,
 };
-use why3::mlcfg::{self, Exp::*, Pattern::*, Statement::*, *};
-use why3::declaration::{Predicate, CfgFunction, Contract};
-use crate::extended_location::*;
 use rustc_resolve::Namespace;
 use rustc_session::Session;
+use rustc_span::Span;
+use std::collections::BTreeMap;
+use why3::declaration::*;
+use why3::mlcfg::{self, Exp::*, Pattern::*, Statement::*, *};
 
 pub mod specification;
 mod statement;
 mod terminator;
 pub mod ty;
 
-pub struct TranslatedCrate {
-    pub name: String,
-    types: Vec<(TyDecl, Predicate)>,
-    // TODO: Hide this
+pub struct TranslationCtx<'a, 'tcx> {
+    sess: &'a Session,
+    tcx: TyCtxt<'tcx>,
+    used_tys: IndexSet<DefId>,
+
     pub modules: ModuleTree,
 }
 
-impl TranslatedCrate {
-    pub fn new(name: String) -> Self {
-        TranslatedCrate {
-            name: name.to_camel_case(),
-            types: Vec::new(),
+impl<'tcx, 'a> TranslationCtx<'a, 'tcx> {
+    pub fn new(tcx: TyCtxt<'tcx>, sess: &'a Session) -> Self {
+        Self {
+            sess,
+            tcx,
+            used_tys: IndexSet::new(),
             modules: ModuleTree::new(),
         }
     }
 
-    pub fn types(&self) -> impl Iterator<Item = &(TyDecl, Predicate)> {
-        self.types.iter()
+    fn crash_and_error(&self, span: Span, msg: &str) -> ! {
+        self.sess.span_fatal_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
     }
 
     pub fn add_type(&mut self, ty_decl: TyDecl, drop_pred: Predicate) {
         let mut dependencies = ty_decl.used_types();
+        let type_ns = QName { module: vec![], name: vec!["Type".into()] };
+        let module = self.modules.get_decls_mut(type_ns);
+
         let mut pos = 0;
-        while !dependencies.is_empty() && pos < self.types.len() {
-            dependencies.remove(&self.types[0].0.ty_name);
-            pos += 1;
+        while !dependencies.is_empty() && pos < module.len() {
+            match &module[pos] {
+                TyDecl(tyd) => {
+                    dependencies.remove(&tyd.ty_name);
+                }
+                _ => {}
+            }
+
+            pos += 2;
         }
-        self.types.insert(pos, (ty_decl, drop_pred));
+        use why3::declaration::Decl::*;
+        module.insert(pos, PredDecl(drop_pred));
+        module.insert(pos, TyDecl(ty_decl));
     }
 }
 
@@ -84,19 +100,17 @@ pub struct FunctionTranslator<'a, 'b, 'tcx> {
     past_blocks: BTreeMap<mlcfg::BlockId, mlcfg::Block>,
 
     // Type translation context
-    ty_ctx: &'a mut ty::Ctx<'b, 'tcx>,
+    ty_ctx: &'a mut TranslationCtx<'b, 'tcx>,
 
     // Name resolution context for specs
     resolver: crate::specification::RustcResolver<'tcx>,
 }
 
-
-
 impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
     pub fn new(
         sess: &'a Session,
         tcx: TyCtxt<'tcx>,
-        ctx: &'a mut ty::Ctx<'b, 'tcx>,
+        ctx: &'a mut TranslationCtx<'b, 'tcx>,
         body: &'a Body<'tcx>,
         resolver: specification::RustcResolver<'tcx>,
     ) -> Self {

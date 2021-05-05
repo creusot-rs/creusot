@@ -14,6 +14,10 @@ impl ModuleTree {
     }
 
     pub fn add_decl(&mut self, key: why3::mlcfg::QName, decl: Decl) {
+        self.get_decls_mut(key).push(decl);
+    }
+
+    pub fn get_decls_mut(&mut self, key: why3::mlcfg::QName) -> &mut Vec<Decl> {
         let mut node = self;
 
         for elem in key.module.iter().chain(key.name.iter()) {
@@ -23,23 +27,22 @@ impl ModuleTree {
             node = node.inner.get_mut(elem).unwrap();
         }
 
-        node.decls.push(decl);
+        &mut node.decls
     }
 
     pub fn reify(self) -> Vec<Decl> {
-        self.inner.into_iter()
-            .map(|(n, c)| c.reify_(n))
-            .chain(self.decls.into_iter())
-            .collect()
+        self.inner.into_iter().map(|(n, c)| c.reify_(n)).chain(self.decls.into_iter()).collect()
     }
 
     fn reify_(self, nm: String) -> Decl {
         Decl::Scope(why3::declaration::Scope {
             name: nm,
-            decls: self.inner.into_iter()
+            decls: self
+                .inner
+                .into_iter()
                 .map(|(n, c)| c.reify_(n))
                 .chain(self.decls.into_iter())
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>(),
         })
     }
 }

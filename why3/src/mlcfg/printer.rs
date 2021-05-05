@@ -49,7 +49,7 @@ impl Decl {
             Decl::Module(modl) => modl.pretty(alloc, env),
             Decl::Scope(scope) => scope.pretty(alloc, env),
             Decl::PredDecl(p) => p.pretty(alloc, env),
-            // Decl::TyDecl(t) => { writeln!(f, "{}", fe.to(t)) }
+            Decl::TyDecl(t) => t.pretty(alloc, env),
         }
     }
 }

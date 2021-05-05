@@ -1,46 +1,17 @@
-use indexmap::{IndexMap, IndexSet};
-use std::collections::VecDeque;
-
-use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
 use rustc_middle::mir::Mutability;
 use rustc_middle::ty::{self, subst::InternalSubsts, AdtDef, Ty, TyCtxt, TyKind::*, VariantDef};
-use rustc_session::Session;
 use rustc_span::Span;
 use rustc_span::Symbol;
+use std::collections::VecDeque;
 
-use why3::mlcfg::{
-    Exp as MlE, LocalIdent, Pattern, Pattern::*, QName, TyDecl, Type as MlT,
-};
-use why3::declaration::Predicate;
+use why3::declaration::{Predicate, TyDecl};
+use why3::mlcfg::{Exp as MlE, LocalIdent, Pattern, Pattern::*, QName, Type as MlT};
 
-pub struct Ctx<'a, 'tcx> {
-    translated_tys: IndexSet<DefId>,
-    pub tcx: TyCtxt<'tcx>,
-    sess: &'a Session,
-
-    results: IndexMap<DefId, (TyDecl, Predicate)>,
-}
-
-impl<'a, 'tcx> Ctx<'a, 'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, sess: &'a Session) -> Self {
-        Self { tcx, translated_tys: IndexSet::new(), sess, results: IndexMap::new() }
-    }
-
-    /// Gather the translated types and predicates into a module.
-    pub fn collect(self, krate: &mut TranslatedCrate) {
-        for (_, (decl, pred)) in self.results {
-            krate.add_type(decl, pred);
-        }
-    }
-
-    fn crash_and_error(&self, span: Span, msg: &str) -> ! {
-        self.sess.span_fatal_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
-    }
-}
+use super::TranslationCtx;
 
 /// Translate a Rust type into an MLW one.
-pub fn translate_ty<'tcx>(ctx: &mut Ctx<'_, 'tcx>, span: Span, ty: Ty<'tcx>) -> MlT {
+pub fn translate_ty<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, span: Span, ty: Ty<'tcx>) -> MlT {
     use rustc_middle::ty::FloatTy::*;
 
     match ty.kind() {
@@ -88,9 +59,11 @@ pub fn translate_ty<'tcx>(ctx: &mut Ctx<'_, 'tcx>, span: Span, ty: Ty<'tcx>) -> 
 use petgraph::algo::tarjan_scc;
 use petgraph::graphmap::DiGraphMap;
 
-use super::TranslatedCrate;
-
-pub fn check_not_mutally_recursive<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty_id: DefId, span: Span) {
+pub fn check_not_mutally_recursive<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ty_id: DefId,
+    span: Span,
+) {
     let mut graph = DiGraphMap::<_, ()>::new();
     graph.add_node(ty_id);
 
@@ -131,9 +104,9 @@ pub fn check_not_mutally_recursive<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty_id: DefId, 
     }
 }
 
-pub fn translate_ty_name(ctx: &mut Ctx<'_, '_>, did: DefId) -> QName {
+pub fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
     // Check if we've already translated this type before.
-    if !ctx.translated_tys.contains(&did) {
+    if !ctx.used_tys.contains(&did) {
         translate_tydecl(ctx, rustc_span::DUMMY_SP, did);
     };
     super::translate_type_id(ctx.tcx, did)
@@ -151,9 +124,13 @@ fn translate_ty_param(p: Symbol) -> String {
 // Additionally, types are not translated one by one but rather as a *binding group*, so that mutually
 // recursive types are properly translated.
 // Results are accumulated and can be collected at once by consuming the `Ctx`
-pub fn translate_tydecl(ctx: &mut Ctx<'_, '_>, span: Span, did: DefId) {
+pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId) {
     // mark this type as translated
-    ctx.translated_tys.insert(did);
+    if ctx.used_tys.contains(&did) {
+        return
+    } else {
+        ctx.used_tys.insert(did);
+    }
 
     // TODO: allow mutually recursive types
     check_not_mutally_recursive(ctx, did, span);
@@ -188,7 +165,7 @@ pub fn translate_tydecl(ctx: &mut Ctx<'_, '_>, span: Span, did: DefId) {
     let pred = drop_pred_decl(ctx, &ty_args, adt, did);
 
     let ty_decl = TyDecl { ty_name, ty_params: ty_args, ty_constructors: ml_ty_def };
-    ctx.results.insert(did, (ty_decl, pred));
+    ctx.add_type(ty_decl, pred);
 }
 
 fn variant_pattern(tcx: TyCtxt<'_>, variant: &VariantDef) -> Pattern {
@@ -199,11 +176,11 @@ fn variant_pattern(tcx: TyCtxt<'_>, variant: &VariantDef) -> Pattern {
     ConsP(ty_name, field_pats)
 }
 
-pub fn drop_predicate<'tcx>(ctx: &mut Ctx<'_, 'tcx>, ty: Ty<'tcx>) -> MlE {
+pub fn drop_predicate<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, ty: Ty<'tcx>) -> MlE {
     drop_pred_body(ctx, ty, None)
 }
 
-fn drop_pred_name<'tcx>(ctx: &mut Ctx<'_, 'tcx>, did: DefId) -> QName {
+fn drop_pred_name<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, did: DefId) -> QName {
     let mut name = translate_ty_name(ctx, did);
     name.name.insert(0, "drop".to_owned());
     name
@@ -211,7 +188,7 @@ fn drop_pred_name<'tcx>(ctx: &mut Ctx<'_, 'tcx>, did: DefId) -> QName {
 
 // Generate the drop predicate for a specific type
 fn drop_pred_decl(
-    ctx: &mut Ctx<'_, '_>,
+    ctx: &mut TranslationCtx<'_, '_>,
     generics: &[String],
     adt: &AdtDef,
     did: DefId,
@@ -265,7 +242,7 @@ fn drop_pred_decl(
 
 /// Create the body for a drop predicate of type `ty` and name `did`.
 pub fn drop_pred_body<'tcx>(
-    ctx: &mut Ctx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'_, 'tcx>,
     ty: Ty<'tcx>,
     rec_call_did: Option<DefId>,
 ) -> MlE {

@@ -1,11 +1,11 @@
-use crate::translation::ty::Ctx;
+use crate::translation::TranslationCtx;
 use pearlite::term::Name;
 use pearlite::term::{self, DerefKind, RefKind};
 use rustc_hir::def_id::DefId;
 use why3::mlcfg::QName;
 use why3::mlcfg::{self, Exp};
 
-pub fn lower_term_to_why(ctx: &mut Ctx, t: term::Term) -> Exp {
+pub fn lower_term_to_why(ctx: &mut TranslationCtx, t: term::Term) -> Exp {
     use term::Term::*;
     match t {
         Match { box expr, arms } => Exp::Match(
@@ -81,7 +81,7 @@ pub fn lower_term_to_why(ctx: &mut Ctx, t: term::Term) -> Exp {
     }
 }
 
-pub fn lower_type_to_why(ctx: &mut Ctx, ty: pearlite::term::Type) -> why3::mlcfg::Type {
+pub fn lower_type_to_why(ctx: &mut TranslationCtx, ty: pearlite::term::Type) -> why3::mlcfg::Type {
     use pearlite::term::*;
     use why3::mlcfg::Type::*;
 
@@ -188,11 +188,11 @@ fn op_to_op(op: term::BinOp) -> mlcfg::BinOp {
     }
 }
 
-fn lower_arm_to_why(ctx: &mut Ctx, a: term::MatchArm) -> (mlcfg::Pattern, Exp) {
+fn lower_arm_to_why(ctx: &mut TranslationCtx, a: term::MatchArm) -> (mlcfg::Pattern, Exp) {
     (lower_pattern_to_why(ctx, a.pat), lower_term_to_why(ctx, *a.body))
 }
 
-fn lower_pattern_to_why(ctx: &mut Ctx, p: term::Pattern) -> mlcfg::Pattern {
+fn lower_pattern_to_why(ctx: &mut TranslationCtx, p: term::Pattern) -> mlcfg::Pattern {
     use mlcfg::Pattern;
     match p {
         term::Pattern::Var(x) => Pattern::VarP(x.0.into()),
@@ -217,7 +217,7 @@ fn lower_pattern_to_why(ctx: &mut Ctx, p: term::Pattern) -> mlcfg::Pattern {
     }
 }
 
-fn is_constructor(ctx: &mut Ctx, path: &Name) -> bool {
+fn is_constructor(ctx: &mut TranslationCtx, path: &Name) -> bool {
     match path {
         Name::Ident(_) => false,
         Name::Path { id, .. } => {
@@ -231,7 +231,7 @@ fn is_constructor(ctx: &mut Ctx, path: &Name) -> bool {
     }
 }
 
-fn lower_value_path(ctx: &mut Ctx, path: Name) -> QName {
+fn lower_value_path(ctx: &mut TranslationCtx, path: Name) -> QName {
     if let Name::Path { id, .. } = path {
         let defid: DefId = super::id_to_def_id(id);
         crate::translation::translate_value_id(ctx.tcx, defid)
@@ -240,7 +240,7 @@ fn lower_value_path(ctx: &mut Ctx, path: Name) -> QName {
     }
 }
 
-fn lower_type_path(ctx: &mut Ctx, path: Name) -> QName {
+fn lower_type_path(ctx: &mut TranslationCtx, path: Name) -> QName {
     if let Name::Path { id, .. } = path {
         let defid: DefId = super::id_to_def_id(id);
         crate::ty::translate_ty_name(ctx, defid)

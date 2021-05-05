@@ -11,20 +11,20 @@ module ListIndexMut
   use prelude.Prelude
 
   scope Type
-  type option 't = 
-    | Option_None
-    | Option_Some('t)
-    
-  predicate drop_option (drop_t : 't -> bool) (self : option 't) = 
-    match (self) with
-      | Option_None -> true
-      | Option_Some(a) -> drop_t a
-      end
-  type list  = 
-    | List(uint32, option (list))
-    
-  predicate drop_list (self : list) = 
-    let List(a, b) = self in drop_uint a && drop_option drop_fix b
+    type option 't = 
+      | Option_None
+      | Option_Some('t)
+      
+    predicate drop_option (drop_t : 't -> bool) (self : option 't) = 
+      match (self) with
+        | Option_None -> true
+        | Option_Some(a) -> drop_t a
+        end
+    type list  = 
+      | List(uint32, option (list))
+      
+    predicate drop_list (self : list) = 
+      let List(a, b) = self in drop_uint a && drop_option drop_fix b
   end
   let rec function len (l : Type.list) : int = 
     ensures { result >= 0 }
