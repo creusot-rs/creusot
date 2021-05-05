@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use crate::extended_location::*;
 use crate::module_tree::ModuleTree;
 use crate::place::Mutability as M;
 use crate::{

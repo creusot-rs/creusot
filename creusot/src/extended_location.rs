@@ -1,7 +1,7 @@
-use rustc_mir::dataflow::{Results, ResultsCursor,};
-use std::borrow::Borrow;
-use rustc_mir::dataflow::Analysis;
 use rustc_middle::mir::Location;
+use rustc_mir::dataflow::Analysis;
+use rustc_mir::dataflow::{Results, ResultsCursor};
+use std::borrow::Borrow;
 
 // Dataflow locations
 #[derive(Debug, Copy, Clone)]
