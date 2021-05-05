@@ -183,7 +183,7 @@ fn translate(
                 // TODO: now that we don't use polonius info: consider using optimized mir instead?
                 RemoveFalseEdge { tcx }.visit_body(&mut body);
 
-                let translated = FunctionTranslator::new(sess, tcx, &mut ty_ctx, &body, resolver)
+                let translated = FunctionTranslator::new(tcx, &mut ty_ctx, &body, resolver)
                     .translate(def_id, out_contract);
 
                 ty_ctx.modules.add_decl(module, Decl::FunDecl(translated));

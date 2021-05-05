@@ -79,7 +79,6 @@ impl<'tcx, 'a> TranslationCtx<'a, 'tcx> {
 
 // Split this into several sub-contexts: Core, Analysis, Results?
 pub struct FunctionTranslator<'a, 'b, 'tcx> {
-    sess: &'a Session,
     pub tcx: TyCtxt<'tcx>,
     body: &'a Body<'tcx>,
 
@@ -100,7 +99,7 @@ pub struct FunctionTranslator<'a, 'b, 'tcx> {
     past_blocks: BTreeMap<mlcfg::BlockId, mlcfg::Block>,
 
     // Type translation context
-    ty_ctx: &'a mut TranslationCtx<'b, 'tcx>,
+    ctx: &'a mut TranslationCtx<'b, 'tcx>,
 
     // Name resolution context for specs
     resolver: crate::specification::RustcResolver<'tcx>,
@@ -108,7 +107,6 @@ pub struct FunctionTranslator<'a, 'b, 'tcx> {
 
 impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
     pub fn new(
-        sess: &'a Session,
         tcx: TyCtxt<'tcx>,
         ctx: &'a mut TranslationCtx<'b, 'tcx>,
         body: &'a Body<'tcx>,
@@ -139,7 +137,6 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
         let never_live = crate::analysis::NeverLive::for_body(body);
         warn!("ever_live_set: {:?}", never_live);
         FunctionTranslator {
-            sess,
             tcx,
             body,
             local_live,
@@ -148,7 +145,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
             never_live,
             current_block: (Vec::new(), None),
             past_blocks: BTreeMap::new(),
-            ty_ctx: ctx,
+            ctx: ctx,
             resolver,
         }
     }
@@ -177,7 +174,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
                 None
             } else {
                 let ident = self.translate_local(loc);
-                Some((ident, ty::translate_ty(&mut self.ty_ctx, decl.source_info.span, decl.ty)))
+                Some((ident, ty::translate_ty(&mut self.ctx, decl.source_info.span, decl.ty)))
             }
         });
 
@@ -302,7 +299,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
             let local_ty = self.body.local_decls[local].ty;
             let ident = self.translate_local(local);
             let assumption: Exp =
-                ty::drop_predicate(&mut self.ty_ctx, local_ty).app_to(ident.into());
+                ty::drop_predicate(&mut self.ctx, local_ty).app_to(ident.into());
             self.emit_statement(mlcfg::Statement::Assume(assumption));
         }
     }

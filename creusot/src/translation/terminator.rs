@@ -39,7 +39,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
 
                 let discriminant = self.translate_operand(&real_discr);
                 let switch = make_switch(
-                    self.sess,
+                    self.ctx.sess,
                     self.tcx,
                     terminator.source_info,
                     real_discr.ty(self.body, self.tcx),

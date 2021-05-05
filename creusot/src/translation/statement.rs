@@ -23,10 +23,9 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             Assign(box (ref pl, ref rv)) => self.translate_assign(statement.source_info, pl, rv),
             SetDiscriminant { .. } => {
                 // TODO: implement support for set discriminant
-                self.sess.span_fatal_with_code(
+                self.ctx.crash_and_error(
                     statement.source_info.span,
                     "SetDiscriminant is not supported",
-                    DiagnosticId::Error(String::from("creusot")),
                 )
             }
             // Erase Storage markers and Nops
@@ -34,10 +33,9 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             // Not real instructions
             FakeRead(_, _) | AscribeUserType(_, _) | Retag(_, _) | Coverage(_) => {}
             // No assembly!
-            LlvmInlineAsm(_) => self.sess.span_fatal_with_code(
+            LlvmInlineAsm(_) => self.ctx.crash_and_error(
                 statement.source_info.span,
                 "inline assembly is not supported",
-                DiagnosticId::Error(String::from("creusot")),
             ),
         }
     }
@@ -94,7 +92,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                             Ok(Spec::Invariant { name, expression }) => {
                                 let invariant = specification::invariant_to_why(
                                     &self.resolver,
-                                    &mut self.ty_ctx,
+                                    &mut self.ctx,
                                     self.body,
                                     si,
                                     expression,
@@ -102,22 +100,19 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                                 self.emit_statement(Invariant(name, invariant));
                                 return;
                             }
-                            Ok(_) => self.sess.span_fatal_with_code(
+                            Ok(_) => self.ctx.crash_and_error(
                                 si.span,
                                 "closures are not yet supported",
-                                DiagnosticId::Error(String::from("creusot")),
                             ),
-                            Err(err) => self.sess.span_fatal_with_code(
+                            Err(err) => self.ctx.crash_and_error(
                                 si.span,
                                 &format!("{:?}", err),
-                                DiagnosticId::Error(String::from("creusot")),
                             ),
                         }
                     }
-                    _ => self.sess.span_fatal_with_code(
+                    _ => self.ctx.crash_and_error(
                         si.span,
                         &format!("the rvalue {:?} is not currently supported", kind),
-                        DiagnosticId::Error("creusot".into()),
                     ),
                 }
             }
@@ -129,10 +124,9 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             | Rvalue::NullaryOp(_, _)
             | Rvalue::Repeat(_, _)
             | Rvalue::ThreadLocalRef(_)
-            | Rvalue::AddressOf(_, _) => self.sess.span_fatal_with_code(
+            | Rvalue::AddressOf(_, _) => self.ctx.crash_and_error(
                 si.span,
                 &format!("MIR code used an unsupported Rvalue {:?}", rvalue),
-                DiagnosticId::Error(String::from("creusot")),
             ),
         };
 
