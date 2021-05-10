@@ -43,6 +43,16 @@ pub enum Terminator {
     Switch(Exp, Vec<(Pattern, Terminator)>),
 }
 
+impl Terminator {
+    pub fn retarget(&mut self, from: BlockId, to: BlockId) {
+        match self {
+            Self::Goto(id) if *id == from => *id = to,
+            Self::Switch(_, brs) => brs.iter_mut().for_each(|(_, t)| t.retarget(from, to)),
+            _ => {}
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Statement {
     Assign { lhs: LocalIdent, rhs: Exp },

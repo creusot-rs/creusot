@@ -98,6 +98,9 @@ pub struct FunctionTranslator<'a, 'b, 'tcx> {
 
     // Name resolution context for specs
     resolver: crate::specification::RustcResolver<'tcx>,
+
+    // Fresh BlockId
+    fresh_id: usize,
 }
 
 impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
@@ -140,8 +143,9 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
             never_live,
             current_block: (Vec::new(), None),
             past_blocks: BTreeMap::new(),
-            ctx: ctx,
+            ctx,
             resolver,
+            fresh_id: body.basic_blocks().len()
         }
     }
 
@@ -189,7 +193,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
             if bbd.is_cleanup {
                 continue;
             }
-            self.freeze_borrows_at_block_start(bb);
+            self.drop_variables_between_blocks(bb);
 
             let mut loc = bb.start_location();
             for statement in &bbd.statements {
@@ -210,25 +214,47 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
         }
     }
 
-    fn freeze_borrows_at_block_start(&mut self, bb: BasicBlock) {
-        let pred_blocks = &self.body.predecessors()[bb];
+    // Inserts drop statements for variables which died over the course of a goto or switch
+    fn drop_variables_between_blocks(&mut self, bb: BasicBlock) {
+        use ExtendedLocation::*;
 
+        let pred_blocks = &self.body.predecessors()[bb];
         if pred_blocks.is_empty() {
             return;
         }
 
         let term_loc = self.body.terminator_loc(pred_blocks[0]);
         self.local_live.seek_before_primary_effect(term_loc);
-        let first = self.local_live.get().clone();
+        let live_in_bb = self.local_live.get().clone();
 
-        let all_equal = pred_blocks.iter().all(|block| {
-            self.local_live.seek_before_primary_effect(self.body.terminator_loc(*block));
-            self.local_live.get() == &first
-        });
+        for pred in pred_blocks {
+            let term_loc = self.body.terminator_loc(*pred);
+            self.local_live.seek_before_primary_effect(term_loc);
+            let live_at_term = self.local_live.get();
 
-        assert!(all_equal, "predecessors don't all agree on live variables!");
-        use ExtendedLocation::*;
+            // If nothing died in the block transition we can just skip emitting a death block
+            if &live_in_bb == live_at_term {
+                continue
+            }
+
+            self.freeze_borrows_dying_between(Start(term_loc), Start(bb.start_location()));
+            let deaths = std::mem::replace(&mut self.current_block.0, Vec::new());
+
+            let drop_block = self.fresh_block_id();
+            let pred_id = BlockId(pred.index());
+            self.past_blocks.get_mut(&pred_id).unwrap().terminator.retarget(BlockId(bb.index()), drop_block);
+            self.past_blocks.insert(drop_block, Block {
+                statements: deaths,
+                terminator: Terminator::Goto(BlockId(bb.into())),
+            });
+        }
         self.freeze_borrows_dying_between(Start(term_loc), Start(bb.start_location()));
+    }
+
+    fn fresh_block_id(&mut self) -> BlockId {
+        let id = BlockId(BasicBlock::from_usize(self.fresh_id).into());
+        self.fresh_id += 1;
+        id
     }
 
     fn freeze_borrows_dying_at(&mut self, loc: Location) {

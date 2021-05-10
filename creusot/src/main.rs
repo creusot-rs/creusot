@@ -183,7 +183,6 @@ fn translate(
                 // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
                 // TODO: now that we don't use polonius info: consider using optimized mir instead?
                 RemoveFalseEdge { tcx }.visit_body(&mut body);
-
                 let translated = FunctionTranslator::new(tcx, &mut ty_ctx, &body, resolver)
                     .translate(def_id, out_contract);
 
