@@ -1,7 +1,7 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_syntax, box_patterns)]
 #![register_tool(creusot)]
-#![feature(const_panic, or_patterns, iterator_fold_self)]
+#![feature(const_panic)]
 
 extern crate rustc_ast;
 extern crate rustc_driver;
@@ -124,7 +124,7 @@ fn translate(
             // What about inline type declarations?
             // How do we find those?
             if is_type_decl(item) {
-                ty_decls.push((hir_map.local_def_id(*item_id).to_def_id(), item.span));
+                ty_decls.push((item.def_id.to_def_id(), item.span));
             }
         }
     }

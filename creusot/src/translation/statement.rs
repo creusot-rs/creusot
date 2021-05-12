@@ -26,7 +26,10 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             // Erase Storage markers and Nops
             StorageDead(_) | StorageLive(_) | Nop => {}
             // Not real instructions
-            FakeRead(_, _) | AscribeUserType(_, _) | Retag(_, _) | Coverage(_) => {}
+            FakeRead(_) | AscribeUserType(_, _) | Retag(_, _) | Coverage(_) => {}
+            CopyNonOverlapping(_) => {
+                self.ctx.crash_and_error(statement.source_info.span, "copy non overlapping is not supported")
+            }
             // No assembly!
             LlvmInlineAsm(_) => self
                 .ctx
@@ -64,7 +67,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             }
             // Rvalue::Discriminant(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
             Rvalue::Discriminant(_) => return,
-            Rvalue::BinaryOp(op, l, r) | Rvalue::CheckedBinaryOp(op, l, r) => BinaryOp(
+            Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => BinaryOp(
                 binop_to_binop(*op),
                 box self.translate_operand(l),
                 box self.translate_operand(r),

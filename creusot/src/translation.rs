@@ -566,53 +566,58 @@ pub fn from_mir_constant<'tcx>(
     use rustc_middle::ty::{IntTy::*, UintTy::*};
     use rustc_target::abi::Size;
 
-    match c.literal.ty.kind() {
+    match c.literal.ty().kind() {
         Int(I8) => Constant::Int(
-            c.literal.val.try_to_bits(Size::from_bytes(1)).unwrap() as i128,
+            c.literal.try_to_bits(Size::from_bytes(1)).unwrap() as i128,
             Some(ty::i8_ty()),
         ),
         Int(I16) => Constant::Int(
-            c.literal.val.try_to_bits(Size::from_bytes(2)).unwrap() as i128,
+            c.literal.try_to_bits(Size::from_bytes(2)).unwrap() as i128,
             Some(ty::i16_ty()),
         ),
         Int(I32) => Constant::Int(
-            c.literal.val.try_to_bits(Size::from_bytes(4)).unwrap() as i128,
+            c.literal.try_to_bits(Size::from_bytes(4)).unwrap() as i128,
             Some(ty::i32_ty()),
         ),
         Int(I64) => Constant::Int(
-            c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap() as i128,
+            c.literal.try_to_bits(Size::from_bytes(8)).unwrap() as i128,
             Some(ty::i64_ty()),
         ),
         Int(I128) => unimplemented!("128-bit integers are not supported"),
 
         Uint(U8) => Constant::Uint(
-            c.literal.val.try_to_bits(Size::from_bytes(1)).unwrap(),
+            c.literal.try_to_bits(Size::from_bytes(1)).unwrap(),
             Some(ty::u8_ty()),
         ),
         Uint(U16) => Constant::Uint(
-            c.literal.val.try_to_bits(Size::from_bytes(2)).unwrap(),
+            c.literal.try_to_bits(Size::from_bytes(2)).unwrap(),
             Some(ty::u16_ty()),
         ),
         Uint(U32) => Constant::Uint(
-            c.literal.val.try_to_bits(Size::from_bytes(4)).unwrap(),
+            c.literal.try_to_bits(Size::from_bytes(4)).unwrap(),
             Some(ty::u32_ty()),
         ),
         Uint(U64) => Constant::Uint(
-            c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap(),
+            c.literal.try_to_bits(Size::from_bytes(8)).unwrap(),
             Some(ty::u64_ty()),
         ),
         Uint(U128) => {
             unimplemented!("128-bit integers are not supported")
         }
         Uint(Usize) => Constant::Uint(
-            c.literal.val.try_to_bits(Size::from_bytes(8)).unwrap(),
+            c.literal.try_to_bits(Size::from_bytes(8)).unwrap(),
             Some(ty::usize_ty()),
         ),
         _ => {
             use rustc_middle::ty::print::{FmtPrinter, PrettyPrinter};
             let mut fmt = String::new();
             let cx = FmtPrinter::new(tcx, &mut fmt, Namespace::ValueNS);
-            cx.pretty_print_const(c.literal, false).unwrap();
+            // cx.pretty_print_const(c.literal, false).unwrap();
+            use rustc_middle::mir::ConstantKind;
+            match c.literal {
+                ConstantKind::Ty(c) => cx.pretty_print_const(c, false).unwrap(),
+                ConstantKind::Val(val, ty) => cx.pretty_print_const_value(val, ty, false).unwrap(),
+            };
 
             Constant::Other(fmt)
         }

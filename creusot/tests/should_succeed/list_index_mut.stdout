@@ -46,9 +46,9 @@ module ListIndexMut
   let rec cfg indexMut (o_param_l_1 : borrowed (Type.list)) (o_param_ix_2 : usize) : borrowed uint32
     requires {o_param_ix_2 < len ( * o_param_l_1)}
     ensures { forall i : int . 0 <= i && i < len ( * o_param_l_1) && i <> o_param_ix_2 -> get ( * o_param_l_1) i = get ( ^ o_param_l_1) i }
-    ensures { Type.Option_Some( * result) = get ( * o_param_l_1) o_param_ix_2 }
-    ensures { Type.Option_Some( ^ result) = get ( ^ o_param_l_1) o_param_ix_2 }
     ensures { len ( ^ o_param_l_1) = len ( * o_param_l_1) }
+    ensures { Type.Option_Some( ^ result) = get ( ^ o_param_l_1) o_param_ix_2 }
+    ensures { Type.Option_Some( * result) = get ( * o_param_l_1) o_param_ix_2 }
     =
   var _0 : borrowed uint32;
   var param_l_1 : borrowed (Type.list);
@@ -157,8 +157,8 @@ module ListIndexMut
   let rec cfg write (o_l_1 : borrowed (Type.list)) (o_ix_2 : usize) (o_val_3 : uint32) : ()
     requires {o_ix_2 < len ( * o_l_1)}
     ensures { forall i : int . 0 <= i && i < len ( * o_l_1) && i <> o_ix_2 -> get ( * o_l_1) i = get ( ^ o_l_1) i }
-    ensures { Type.Option_Some(o_val_3) = get ( ^ o_l_1) o_ix_2 }
     ensures { len ( ^ o_l_1) = len ( * o_l_1) }
+    ensures { Type.Option_Some(o_val_3) = get ( ^ o_l_1) o_ix_2 }
     =
   var _0 : ();
   var l_1 : borrowed (Type.list);
@@ -210,26 +210,38 @@ module ListIndexMut
   BB0 {
     _5 <- Type.Option_None;
     _4 <- Type.List((10 : uint32), _5);
-    _3 <- _4;
     goto BB1
   }
   BB1 {
+    assume { Type.drop_option Type.drop_list  _5 };
+    _3 <- _4;
+    goto BB2
+  }
+  BB2 {
     _2 <- Type.Option_Some(_3);
+    goto BB3
+  }
+  BB3 {
+    assume { Type.drop_list _3 };
     l_1 <- Type.List((1 : uint32), _2);
+    goto BB4
+  }
+  BB4 {
+    assume { Type.drop_option Type.drop_list  _2 };
     _8 <- borrow_mut l_1;
     l_1 <-  ^ _8;
     _7 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _7) };
     assume { drop_mut_ref _8 };
     _6 <- write _7 (0 : usize) (2 : uint32);
-    goto BB2
+    goto BB5
   }
-  BB2 {
+  BB5 {
     assume { (fun tup -> let () = tup in true) _6 };
     _0 <- ();
-    goto BB3
+    goto BB6
   }
-  BB3 {
+  BB6 {
     assume { Type.drop_list l_1 };
     return _0
   }

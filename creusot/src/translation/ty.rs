@@ -207,7 +207,7 @@ fn drop_pred_decl(
             .map(|c| MlE::Var(c.to_string().into()))
             .zip(drop_fields)
             .map(|(arg, field_drop)| field_drop.app_to(arg))
-            .fold_first(MlE::conj)
+            .reduce(MlE::conj)
             .unwrap_or_else(MlE::mk_true);
         branches.push((variant_pattern(ctx.tcx, variant), drop_variant));
     }
@@ -268,7 +268,7 @@ pub fn drop_pred_body<'tcx>(
                 .types()
                 .zip(field_names.iter())
                 .map(|(ty, v)| drop_pred_body(ctx, ty, rec_call_did).app_to(v.clone().into()))
-                .fold_first(MlE::conj)
+                .reduce(MlE::conj)
                 .unwrap_or_else(MlE::mk_true);
 
             let field_pat = Pattern::TupleP(field_names.into_iter().map(VarP).collect());

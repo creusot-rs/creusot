@@ -114,7 +114,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
 
 // Try to extract a function defid from an operand
 fn func_defid(op: &Operand<'_>) -> Option<DefId> {
-    let fun_ty = op.constant().unwrap().literal.ty;
+    let fun_ty = op.constant().unwrap().literal.ty();
     if let ty::TyKind::FnDef(def_id, _) = fun_ty.kind() {
         Some(*def_id)
     } else {

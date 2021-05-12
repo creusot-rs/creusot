@@ -17,9 +17,9 @@ impl NeverLive {
 
 impl<'tcx> Visitor<'tcx> for NeverLive {
     fn visit_place(&mut self, place: &mir::Place<'tcx>, context: PlaceContext, location: Location) {
-        let mir::Place { projection, local } = *place;
+        self.visit_projection(place.as_ref(), context, location);
 
-        self.visit_projection(local, projection, context, location);
+        let mir::Place { projection, local } = *place;
 
         match DefUse::for_place(context) {
             // Treat derefs as a use of the base local. `*p = 4` is not a def of `p` but a use.
