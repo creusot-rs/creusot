@@ -145,7 +145,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
             past_blocks: BTreeMap::new(),
             ctx,
             resolver,
-            fresh_id: body.basic_blocks().len()
+            fresh_id: body.basic_blocks().len(),
         }
     }
 
@@ -234,7 +234,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
 
             // If nothing died in the block transition we can just skip emitting a death block
             if &live_in_bb == live_at_term {
-                continue
+                continue;
             }
 
             self.freeze_borrows_dying_between(Start(term_loc), Start(bb.start_location()));
@@ -242,11 +242,15 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
 
             let drop_block = self.fresh_block_id();
             let pred_id = BlockId(pred.index());
-            self.past_blocks.get_mut(&pred_id).unwrap().terminator.retarget(BlockId(bb.index()), drop_block);
-            self.past_blocks.insert(drop_block, Block {
-                statements: deaths,
-                terminator: Terminator::Goto(BlockId(bb.into())),
-            });
+            self.past_blocks
+                .get_mut(&pred_id)
+                .unwrap()
+                .terminator
+                .retarget(BlockId(bb.index()), drop_block);
+            self.past_blocks.insert(
+                drop_block,
+                Block { statements: deaths, terminator: Terminator::Goto(BlockId(bb.into())) },
+            );
         }
         self.freeze_borrows_dying_between(Start(term_loc), Start(bb.start_location()));
     }
@@ -585,22 +589,18 @@ pub fn from_mir_constant<'tcx>(
         ),
         Int(I128) => unimplemented!("128-bit integers are not supported"),
 
-        Uint(U8) => Constant::Uint(
-            c.literal.try_to_bits(Size::from_bytes(1)).unwrap(),
-            Some(ty::u8_ty()),
-        ),
-        Uint(U16) => Constant::Uint(
-            c.literal.try_to_bits(Size::from_bytes(2)).unwrap(),
-            Some(ty::u16_ty()),
-        ),
-        Uint(U32) => Constant::Uint(
-            c.literal.try_to_bits(Size::from_bytes(4)).unwrap(),
-            Some(ty::u32_ty()),
-        ),
-        Uint(U64) => Constant::Uint(
-            c.literal.try_to_bits(Size::from_bytes(8)).unwrap(),
-            Some(ty::u64_ty()),
-        ),
+        Uint(U8) => {
+            Constant::Uint(c.literal.try_to_bits(Size::from_bytes(1)).unwrap(), Some(ty::u8_ty()))
+        }
+        Uint(U16) => {
+            Constant::Uint(c.literal.try_to_bits(Size::from_bytes(2)).unwrap(), Some(ty::u16_ty()))
+        }
+        Uint(U32) => {
+            Constant::Uint(c.literal.try_to_bits(Size::from_bytes(4)).unwrap(), Some(ty::u32_ty()))
+        }
+        Uint(U64) => {
+            Constant::Uint(c.literal.try_to_bits(Size::from_bytes(8)).unwrap(), Some(ty::u64_ty()))
+        }
         Uint(U128) => {
             unimplemented!("128-bit integers are not supported")
         }

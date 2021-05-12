@@ -27,9 +27,10 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             StorageDead(_) | StorageLive(_) | Nop => {}
             // Not real instructions
             FakeRead(_) | AscribeUserType(_, _) | Retag(_, _) | Coverage(_) => {}
-            CopyNonOverlapping(_) => {
-                self.ctx.crash_and_error(statement.source_info.span, "copy non overlapping is not supported")
-            }
+            CopyNonOverlapping(_) => self.ctx.crash_and_error(
+                statement.source_info.span,
+                "copy non overlapping is not supported",
+            ),
             // No assembly!
             LlvmInlineAsm(_) => self
                 .ctx
