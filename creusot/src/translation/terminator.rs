@@ -99,7 +99,26 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             FalseUnwind { real_target, .. } => {
                 self.emit_terminator(mk_goto(*real_target));
             }
-            DropAndReplace { .. } | Yield { .. } | GeneratorDrop | InlineAsm { .. } => {
+            DropAndReplace { target, place, value, .. } => {
+                // Drop
+                let ty = place.ty(self.body, self.tcx).ty;
+                let pl_exp = self.translate_rplace(&place);
+                let assumption: Exp = super::ty::drop_predicate(&mut self.ctx, ty).app_to(pl_exp);
+                self.emit_statement(Statement::Assume(assumption));
+
+                // Assign
+                let rhs = match value {
+                    Operand::Move(pl) | Operand::Copy(pl) => {
+                        self.translate_rplace(& pl)
+                    }
+                    Operand::Constant(box c) => Exp::Const(super::from_mir_constant(self.tcx, c)),
+                };
+
+                self.emit_assignment(&place, rhs);
+
+                self.emit_terminator(mk_goto(*target))
+            }
+            Yield { .. } | GeneratorDrop | InlineAsm { .. } => {
                 unreachable!("{:?}", terminator.kind)
             }
         }
