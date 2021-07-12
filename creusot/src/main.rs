@@ -35,7 +35,6 @@ use why3::{declaration::Decl, mlcfg};
 
 mod analysis;
 mod extended_location;
-mod place;
 mod translation;
 
 #[allow(dead_code)]

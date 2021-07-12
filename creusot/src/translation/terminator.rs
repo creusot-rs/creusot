@@ -15,8 +15,6 @@ use rustc_target::abi::VariantIdx;
 
 use why3::mlcfg::{BinOp, BlockId, Constant, Exp, Pattern, Statement, Terminator as MlT};
 
-use crate::place::simplify_place;
-
 use super::FunctionTranslator;
 
 // Translate the terminator of a basic block.
@@ -78,7 +76,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     self.emit_terminator(MlT::Absurd);
                 } else {
                     let (loc, bb) = destination.unwrap();
-                    self.emit_assignment(&simplify_place(self.tcx, self.body, &loc), call_exp);
+                    self.emit_assignment(&loc, call_exp);
                     self.emit_terminator(MlT::Goto(BlockId(bb.into())));
                 }
             }

@@ -1,10 +1,5 @@
 use crate::extended_location::*;
 use crate::module_tree::ModuleTree;
-use crate::place::Mutability as M;
-use crate::{
-    place::simplify_place,
-    place::{Mutability::*, Projection::*, SimplePlace},
-};
 use indexmap::IndexSet;
 use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
@@ -27,6 +22,8 @@ use rustc_span::Span;
 use std::collections::BTreeMap;
 use why3::declaration::*;
 use why3::mlcfg::{self, Exp::*, Pattern::*, Statement::*, *};
+
+use rustc_middle::mir::Place;
 
 pub mod specification;
 mod statement;
@@ -159,7 +156,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
         self.current_block.1 = Some(t);
     }
 
-    fn emit_assignment(&mut self, lhs: &SimplePlace, rhs: mlcfg::Exp) {
+    fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: mlcfg::Exp) {
         let assign = self.create_assign(lhs, rhs);
         self.emit_statement(assign);
     }
@@ -331,9 +328,7 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
     // Useful helper to translate an operand
     pub fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Exp {
         match operand {
-            Operand::Copy(pl) | Operand::Move(pl) => {
-                self.translate_rplace(&simplify_place(self.tcx, self.body, pl))
-            }
+            Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(pl),
             Operand::Constant(c) => Const(from_mir_constant(self.tcx, c)),
         }
     }
@@ -357,46 +352,63 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
             None => mk_anon(loc),
         }
     }
+
+    pub fn translate_rplace(&mut self, rhs: &Place<'tcx>) -> Exp {
+        self.translate_rplace_inner(rhs.local, rhs.projection)
+    }
+
     // [(P as Some)]   ---> [_1]
     // [(P as Some).0] ---> let Some(a) = [_1] in a
     // [(* P)] ---> * [P]
-    pub fn translate_rplace(&mut self, rhs: &SimplePlace) -> Exp {
-        let mut inner = self.translate_local(rhs.local).into();
+    fn translate_rplace_inner(
+        &mut self,
+        loc: Local,
+        proj: &[rustc_middle::mir::PlaceElem<'tcx>],
+    ) -> Exp {
+        let mut inner = self.translate_local(loc).into();
+        use rustc_middle::mir::ProjectionElem::*;
+        let mut place_ty = Place::ty_from(loc, &[], self.body, self.tcx);
 
-        for proj in rhs.proj.iter() {
-            match proj {
-                Deref(Mut) => {
-                    inner = Current(box inner);
-                }
-                Deref(Not) => {
-                    // Immutable references are erased in MLCFG
-                }
-                FieldAccess { base_ty, ctor, ix } => {
-                    let def = self.tcx.adt_def(*base_ty);
-                    let variant = &def.variants[*ctor];
-                    let size = variant.fields.len();
-
-                    let tyname = translate_value_id(self.tcx, variant.def_id);
-
-                    let mut pat = vec![Wildcard; *ix];
-                    pat.push(VarP("a".into()));
-                    pat.append(&mut vec![Wildcard; size - ix - 1]);
-
-                    inner = Let {
-                        pattern: ConsP(tyname, pat),
-                        arg: box inner,
-                        body: box Var("a".into()),
+        for elem in proj {
+            match elem {
+                Deref => {
+                    use rustc_hir::Mutability::*;
+                    let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
+                    if mutability == Mut {
+                        inner = Current(box inner)
                     }
                 }
-                TupleAccess { size, ix } => {
-                    let mut pat = vec![Wildcard; *ix];
-                    pat.push(VarP("a".into()));
-                    pat.append(&mut vec![Wildcard; size - ix - 1]);
+                Field(ix, _) => match place_ty.ty.kind() {
+                    TyKind::Adt(def, _) => {
+                        let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
+                        let variant = &def.variants[variant_id];
 
-                    inner = Let { pattern: TupleP(pat), arg: box inner, body: box Var("a".into()) }
-                }
+                        let mut pat = vec![Wildcard; variant.fields.len()];
+                        pat[ix.as_usize()] = VarP("a".into());
+
+                        let tyname = translate_value_id(self.tcx, variant.def_id);
+
+                        inner = Let {
+                            pattern: ConsP(tyname, pat),
+                            arg: box inner,
+                            body: box Var("a".into()),
+                        }
+                    }
+                    TyKind::Tuple(fields) => {
+                        let mut pat = vec![Wildcard; fields.len()];
+                        pat[ix.as_usize()] = VarP("a".into());
+
+                        inner =
+                            Let { pattern: TupleP(pat), arg: box inner, body: box Var("a".into()) }
+                    }
+                    _ => unreachable!(),
+                },
+                Downcast(_, _) => {}
+                _ => unimplemented!("unimplemented place projection"),
             }
+            place_ty = place_ty.projection_ty(self.tcx, *elem);
         }
+
         inner
     }
 
@@ -411,63 +423,82 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
 
     /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
     /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-    pub fn create_assign(&mut self, lhs: &SimplePlace, rhs: Exp) -> mlcfg::Statement {
+    pub fn create_assign(&mut self, lhs: &Place<'tcx>, rhs: Exp) -> mlcfg::Statement {
         // Translation happens inside to outside, which means we scan projection elements in reverse
         // building up the inner expression. We start with the RHS expression which is at the deepest
         // level.
+
         let mut inner = rhs;
-        // The stump represents the projection up to the element being translated
-        let mut stump = lhs.clone();
-        for proj in lhs.proj.iter().rev() {
-            // Remove the last element from the projection
-            stump.proj.pop();
 
-            match proj {
-                Deref(M::Mut) => {
-                    inner = RecUp {
-                        record: box self.translate_rplace(&stump),
-                        label: "current".into(),
-                        val: box inner,
+        // Each level of the translation needs access to the _previous_ value at this nesting level
+        // So we track the path from the root as we traverse, which we call the stump.
+        let mut stump: &[_] = lhs.projection.clone();
+
+        use rustc_middle::mir::ProjectionElem::*;
+
+        for (proj, elem) in lhs.iter_projections().rev() {
+            // twisted stuff
+            stump = &stump[0..stump.len() - 1];
+            let place_ty = proj.ty(self.body, self.tcx);
+
+            match elem {
+                Deref => {
+                    use rustc_hir::Mutability::*;
+
+                    let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
+                    if mutability == Mut {
+                        inner = RecUp {
+                            record: box self.translate_rplace_inner(lhs.local, stump),
+                            label: "current".into(),
+                            val: box inner,
+                        }
                     }
                 }
-                Deref(M::Not) => {
-                    // Immutable references are erased in MLCFG
-                }
-                FieldAccess { ctor, base_ty, ix, .. } => {
-                    let def = self.tcx.adt_def(*base_ty);
-                    let variant = &def.variants[*ctor];
-                    let size = variant.fields.len();
-                    let varpats =
-                        ('a'..).map(|c| VarP(LocalIdent::Name(c.to_string()))).take(size).collect();
+                Field(ix, _) => match place_ty.ty.kind() {
+                    TyKind::Adt(def, _) => {
+                        let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
+                        let variant = &def.variants[variant_id];
+                        let var_size = variant.fields.len();
 
-                    let mut varexps: Vec<Exp> =
-                        ('a'..).map(|c| Var(c.to_string().into())).take(size).collect();
+                        let field_pats = ('a'..)
+                            .map(|c| VarP(LocalIdent::Name(c.to_string())))
+                            .take(var_size)
+                            .collect();
+                        let mut varexps: Vec<Exp> =
+                            ('a'..).map(|c| Var(c.to_string().into())).take(var_size).collect();
 
-                    varexps[*ix] = inner;
+                        varexps[ix.as_usize()] = inner;
 
-                    let tyname = translate_value_id(self.tcx, variant.def_id);
+                        let tyname = translate_value_id(self.tcx, variant.def_id);
 
-                    inner = Let {
-                        pattern: ConsP(tyname.clone(), varpats),
-                        arg: box self.translate_rplace(&stump),
-                        body: box Constructor { ctor: tyname, args: varexps },
+                        inner = Let {
+                            pattern: ConsP(tyname.clone(), field_pats),
+                            arg: box self.translate_rplace_inner(lhs.local, stump),
+                            body: box Constructor { ctor: tyname, args: varexps },
+                        }
                     }
-                }
-                TupleAccess { size, ix } => {
-                    let varpats = ('a'..)
-                        .map(|c| VarP(LocalIdent::Name(c.to_string())))
-                        .take(*size)
-                        .collect();
-                    let mut varexps: Vec<_> =
-                        ('a'..).map(|c| Var(c.to_string().into())).take(*size).collect();
-                    varexps[*ix] = inner;
+                    TyKind::Tuple(fields) => {
+                        let var_size = fields.len();
 
-                    inner = Let {
-                        pattern: TupleP(varpats),
-                        arg: box self.translate_rplace(&stump),
-                        body: box Tuple(varexps),
+                        let field_pats = ('a'..)
+                            .map(|c| VarP(LocalIdent::Name(c.to_string())))
+                            .take(var_size)
+                            .collect();
+                        let mut varexps: Vec<Exp> =
+                            ('a'..).map(|c| Var(c.to_string().into())).take(var_size).collect();
+
+                        varexps[ix.as_usize()] = inner;
+
+                        inner = Let {
+                            pattern: TupleP(field_pats),
+                            arg: box self.translate_rplace_inner(lhs.local, stump),
+                            body: box Tuple(varexps),
+                        }
                     }
-                }
+                    _ => unreachable!(),
+                },
+                Downcast(_, _) => {}
+                _ => unimplemented!(),
             }
         }
 

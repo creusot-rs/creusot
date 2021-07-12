@@ -1,9 +1,7 @@
-use rustc_errors::DiagnosticId;
 use rustc_middle::mir::{
     BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind,
 };
 
-use crate::place::simplify_place;
 use why3::mlcfg::{
     // Constant,
     Exp::{self, *},
@@ -44,29 +42,21 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         place: &'_ Place<'tcx>,
         rvalue: &'_ Rvalue<'tcx>,
     ) {
-        let lplace = simplify_place(self.tcx, self.body, place);
         let rval = match rvalue {
             Rvalue::Use(rval) => match rval {
-                Move(pl) | Copy(pl) => {
-                    self.translate_rplace(&simplify_place(self.tcx, self.body, pl))
-                }
+                Move(pl) | Copy(pl) => self.translate_rplace(pl),
                 Constant(box c) => Const(super::from_mir_constant(self.tcx, c)),
             },
-            Rvalue::Ref(_, ss, pl) => {
-                let rplace = simplify_place(self.tcx, self.body, pl);
-
-                match ss {
-                    Shared | Shallow | Unique => self.translate_rplace(&rplace),
-                    Mut { .. } => {
-                        let borrow = BorrowMut(box self.translate_rplace(&rplace));
-                        self.emit_assignment(&lplace, borrow);
-                        let reassign = Final(box self.translate_rplace(&lplace));
-                        self.emit_assignment(&rplace, reassign);
-                        return;
-                    }
+            Rvalue::Ref(_, ss, pl) => match ss {
+                Shared | Shallow | Unique => self.translate_rplace(&pl),
+                Mut { .. } => {
+                    let borrow = BorrowMut(box self.translate_rplace(&pl));
+                    self.emit_assignment(&place, borrow);
+                    let reassign = Final(box self.translate_rplace(&place));
+                    self.emit_assignment(&pl, reassign);
+                    return;
                 }
-            }
-            // Rvalue::Discriminant(pl) => self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
+            },
             Rvalue::Discriminant(_) => return,
             Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => BinaryOp(
                 binop_to_binop(*op),
@@ -113,10 +103,9 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 }
             }
             Rvalue::UnaryOp(op, v) => UnaryOp(unop_to_unop(*op), box self.translate_operand(v)),
-            Rvalue::Len(pl) => RecField {
-                record: box self.translate_rplace(&simplify_place(self.tcx, self.body, pl)),
-                label: "length".into(),
-            },
+            Rvalue::Len(pl) => {
+                RecField { record: box self.translate_rplace(&pl), label: "length".into() }
+            }
             Rvalue::Cast(_, _, _)
             | Rvalue::NullaryOp(_, _)
             | Rvalue::Repeat(_, _)
@@ -127,7 +116,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             ),
         };
 
-        self.emit_assignment(&lplace, rval);
+        self.emit_assignment(place, rval);
     }
 }
 
