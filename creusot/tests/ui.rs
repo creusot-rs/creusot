@@ -4,7 +4,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-use dissimilar::*;
+use similar::{TextDiff, ChangeTag};
 
 use arraydeque::{ArrayDeque, Wrapping};
 use std::error::Error;
@@ -76,18 +76,13 @@ where
             writeln!(&mut out, "blessed").unwrap();
             out.reset().unwrap();
 
-            // if output.stderr.is_empty() {
-            //     let _ = std::fs::remove_file(stderr);
-            // } else {
-            //     std::fs::write(stderr, &output.stderr).unwrap();
-            // }
             if output.stdout.is_empty() {
                 let _ = std::fs::remove_file(stdout);
             } else {
                 std::fs::write(stdout, &output.stdout).unwrap();
             }
         } else {
-            let (success, buf) = c(output, &stdout, &stderr).unwrap();
+            let (success, mut buf) = c(output, &stdout, &stderr).unwrap();
 
             if success {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
@@ -100,24 +95,34 @@ where
             };
             out.reset().unwrap();
 
-            BufferWriter::stdout(ColorChoice::Always).print(&buf).unwrap();
+            buf.reset().unwrap();
+            let wrt = BufferWriter::stdout(ColorChoice::Always);
+            wrt.print(&buf).unwrap();
+
         }
     }
 
     if test_failures > 0 {
+        out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+        drop(out);
         panic!("{} failures out of {} tests", test_failures, test_count);
     }
 }
 
 fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
-    let result = diff(expect, got);
+    use std::time::Duration;
+    use similar::Algorithm;
+    let result = TextDiff::configure()
+            .timeout(Duration::from_millis(200))
+            .algorithm(Algorithm::Patience)
+            .diff_lines(expect, got);
 
-    match result[..] {
-        [Chunk::Equal(_)] => true,
-        _ => {
-            print_diff(buf, result);
-            false
-        }
+    // let result = TextDiff::from_lines(expect, got);
+    if result.ratio() == 1.0 {
+        true
+    } else {
+        print_diff(buf, result);
+        false
     }
 }
 
@@ -152,63 +157,54 @@ fn should_fail_case(
     Ok((!output.status.success(), buf))
 }
 
-fn print_diff<W: WriteColor>(mut buf: W, diff: Vec<Chunk>) {
-    let mut line_count = 0;
-    let mut last_lines: ArrayDeque<[_; 3], Wrapping> = ArrayDeque::new();
+fn print_diff<'a, W: WriteColor>(mut buf: W, diff: TextDiff<'a, 'a, 'a, str>) {
+    // let mut last_lines: ArrayDeque<[_; 3], Wrapping> = ArrayDeque::new();
     let mut multiple_diffs = false;
-    for chunk in diff {
-        // Print context
-        if print_chunk(chunk) {
-            if multiple_diffs {
-                writeln!(&mut buf, ".....").unwrap();
-            }
-            for (num, l) in &last_lines {
-                writeln!(&mut buf, "{:>4} {}", num, l).unwrap();
-            }
-            last_lines.clear();
-            multiple_diffs = true;
-        }
 
-        for l in chunk_str(chunk).lines() {
-            if print_chunk(chunk) {
-                buf.set_color(&chunk_color(chunk)).unwrap();
-                writeln!(&mut buf, "{:>4} {}", line_count, l).unwrap();
-            } else {
-                last_lines.push_back((line_count, l));
+    for ops in diff.grouped_ops(3) {
+        for op in ops {
+            for change in diff.iter_changes(&op) {
+                let sign = match change.tag() {
+                    ChangeTag::Delete => "-",
+                    ChangeTag::Insert => "+",
+                    ChangeTag::Equal => " ",
+                };
+
+                if change.tag() != ChangeTag::Equal {
+                    if multiple_diffs {
+                        write!(&mut buf, "...").unwrap();
+                    }
+                    let color = chunk_color(change.tag());
+                    buf.set_color(&color).unwrap();
+                    let index = change.old_index().or(change.new_index()).unwrap();
+
+                    for line in change.value().lines() {
+                        writeln!(&mut buf, "{} {:>2} ┊ {}", sign, index, line).unwrap();
+                    }
+                    buf.set_color(&ColorSpec::new()).unwrap();
+                }
             }
-            line_count += 1;
         }
-        buf.set_color(&ColorSpec::new()).unwrap();
+        multiple_diffs = true;
     }
+    buf.set_color(&ColorSpec::new()).unwrap();
 }
 
-fn chunk_color(chunk: Chunk) -> ColorSpec {
+fn chunk_color(chunk: ChangeTag) -> ColorSpec {
     match chunk {
-        Chunk::Equal(_) => ColorSpec::new(),
-        Chunk::Delete(_) => {
+        ChangeTag::Equal => ColorSpec::new(),
+        ChangeTag::Delete => {
             let mut c = ColorSpec::new();
             c.set_fg(Some(Color::Red));
             c
         }
-        Chunk::Insert(_) => {
+        ChangeTag::Insert => {
             let mut c = ColorSpec::new();
             c.set_fg(Some(Color::Green));
             c
         }
     }
 }
-fn print_chunk(chunk: Chunk) -> bool {
-    if let Chunk::Equal(_) = chunk {
-        false
-    } else {
-        true
-    }
-}
 
-fn chunk_str(chunk: Chunk) -> &str {
-    match chunk {
-        Chunk::Equal(s) => s,
-        Chunk::Delete(s) => s,
-        Chunk::Insert(s) => s,
-    }
-}
+
+
