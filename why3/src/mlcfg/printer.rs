@@ -50,6 +50,8 @@ impl Decl {
             Decl::Scope(scope) => scope.pretty(alloc, env),
             Decl::PredDecl(p) => p.pretty(alloc, env),
             Decl::TyDecl(t) => t.pretty(alloc, env),
+            Decl::Clone(c) => c.pretty(alloc, env),
+            Decl::ValDecl(v) => v.pretty(alloc, env),
         }
     }
 }
@@ -65,7 +67,7 @@ impl Module {
     {
         env.scopes.push(self.name.clone());
         let doc = alloc
-            .text("module")
+            .text("module ")
             .append(&self.name)
             .append(alloc.hardline())
             .append(
@@ -172,6 +174,76 @@ impl Logic {
             .append(alloc.hardline())
             .append(self.contract.pretty(alloc, env).append(alloc.hardline()).indent(2))
             .append(self.body.pretty(alloc, env).indent(2))
+    }
+}
+
+impl DeclClone {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        let as_doc = match &self.as_nm {
+            Some(nm) => alloc.text(" as ").append(nm),
+            None => alloc.nil(),
+        };
+        alloc
+            .text("clone ")
+            .append(self.name.pretty(alloc, env))
+            .append(as_doc)
+            .append(" with ")
+            .append(alloc.intersperse(
+                self.subst.iter().map(|s| s.pretty(alloc, env)),
+                alloc.text(",").append(alloc.softline()),
+            ))
+    }
+}
+
+impl CloneSubst {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        match self {
+            CloneSubst::Type(id, ty) => alloc
+                .text("type ")
+                .append(id.pretty(alloc, env))
+                .append(" = ")
+                .append(ty.pretty(alloc, env)),
+            CloneSubst::Val(id, o) => alloc
+                .text("val ")
+                .append(id.pretty(alloc, env))
+                .append(" = ")
+                .append(o.pretty(alloc, env)),
+        }
+    }
+}
+
+impl Val {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc
+            .text("val ")
+            .append(self.name.pretty(alloc, env))
+            .append(" ")
+            .append(arg_list(alloc, env, &self.params))
+            .append(" : ")
+            .append(self.retty.pretty(alloc, env))
+            .append(alloc.hardline())
+            .append(self.contract.pretty(alloc, env))
     }
 }
 
@@ -730,15 +802,17 @@ impl TyDecl {
     where
         A::Doc: Clone,
     {
-        let ty_decl = alloc
-            .text("type ")
-            .append(self.ty_name.pretty(alloc, env))
-            .append(" ")
-            .append(alloc.intersperse(
-                self.ty_params.iter().map(|p| alloc.text(format!("'{}", p))),
-                alloc.space(),
-            ))
-            .append(alloc.text(" = ").append(alloc.hardline()));
+        let mut ty_decl =
+            alloc.text("type ").append(self.ty_name.pretty(alloc, env)).append(" ").append(
+                alloc.intersperse(
+                    self.ty_params.iter().map(|p| alloc.text(format!("'{}", p))),
+                    alloc.space(),
+                ),
+            );
+
+        if self.ty_constructors.len() > 0 {
+            ty_decl = ty_decl.append(alloc.text(" = ").append(alloc.hardline()));
+        }
 
         let mut inner_doc = alloc.nil();
         for (cons, args) in &self.ty_constructors {
