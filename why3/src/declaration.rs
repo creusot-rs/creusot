@@ -24,6 +24,13 @@ pub enum Decl {
     TyDecl(TyDecl),
     PredDecl(Predicate),
     Clone(DeclClone),
+    UseDecl(Use)
+}
+
+impl Decl {
+    pub fn module_like(&self) -> bool {
+        matches!(self, Self::Scope(_) | Self::Module(_))
+    }
 }
 
 #[derive(Debug, Default)]
@@ -120,4 +127,9 @@ pub struct Val {
     pub contract: Contract,
     pub params: Vec<(LocalIdent, Type)>,
     pub retty: Type,
+}
+
+#[derive(Debug)]
+pub struct Use {
+    pub name: QName,
 }

@@ -52,6 +52,7 @@ impl Decl {
             Decl::TyDecl(t) => t.pretty(alloc, env),
             Decl::Clone(c) => c.pretty(alloc, env),
             Decl::ValDecl(v) => v.pretty(alloc, env),
+            Decl::UseDecl(u) => u.pretty(alloc, env),
         }
     }
 }
@@ -190,15 +191,16 @@ impl DeclClone {
             Some(nm) => alloc.text(" as ").append(nm),
             None => alloc.nil(),
         };
-        alloc
-            .text("clone ")
-            .append(self.name.pretty(alloc, env))
-            .append(as_doc)
-            .append(" with ")
-            .append(alloc.intersperse(
+        let doc = alloc.text("clone ").append(self.name.pretty(alloc, env)).append(as_doc);
+
+        if self.subst.is_empty() {
+            doc
+        } else {
+            doc.append(" with ").append(alloc.intersperse(
                 self.subst.iter().map(|s| s.pretty(alloc, env)),
                 alloc.text(",").append(alloc.softline()),
             ))
+        }
     }
 }
 
@@ -223,6 +225,19 @@ impl CloneSubst {
                 .append(" = ")
                 .append(o.pretty(alloc, env)),
         }
+    }
+}
+
+impl Use {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc.text("use ").append(self.name.pretty(alloc, env))
     }
 }
 
