@@ -24,7 +24,7 @@ pub enum Decl {
     TyDecl(TyDecl),
     PredDecl(Predicate),
     Clone(DeclClone),
-    UseDecl(Use)
+    UseDecl(Use),
 }
 
 impl Decl {
@@ -55,6 +55,22 @@ impl Contract {
         if let Some(variant) = &mut self.variant {
             variant.subst(subst);
         }
+    }
+
+    pub fn qfvs(&self) -> HashSet<QName> {
+        let mut qfvs = HashSet::new();
+
+        for req in &self.requires {
+            qfvs.extend(req.qfvs());
+        }
+        for ens in &self.ensures {
+            qfvs.extend(ens.qfvs());
+        }
+        if let Some(variant) = &self.variant {
+            qfvs.extend(variant.qfvs());
+        }
+
+        qfvs
     }
 }
 #[derive(Debug)]

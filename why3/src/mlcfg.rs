@@ -162,6 +162,10 @@ impl QName {
     pub fn name(&self) -> String {
         format!("{}", self.name.iter().format("_"))
     }
+
+    pub fn module_name(self) -> QName {
+        QName { module: Vec::new(), name: self.module }
+    }
 }
 
 impl From<&str> for QName {
@@ -322,6 +326,33 @@ impl Exp {
             Exp::BorrowMut(e) => e.fvs(),
             Exp::Verbatim(_) => HashSet::new(),
             _ => unimplemented!(),
+        }
+    }
+
+    pub fn qfvs(&self) -> HashSet<QName> {
+        match self {
+            Exp::Current(e) => e.qfvs(),
+            Exp::Final(e) => e.qfvs(),
+            Exp::Let { arg, body, .. } => &body.qfvs() | &arg.qfvs(),
+            Exp::Var(_) => HashSet::new(),
+            Exp::QVar(v) => {
+                let mut fvs = HashSet::new();
+                fvs.insert(v.clone());
+                fvs
+            }
+            Exp::Constructor { ctor: _, args } => {
+                args.iter().fold(HashSet::new(), |acc, v| &acc | &v.qfvs())
+            }
+            Exp::Const(_) => HashSet::new(),
+            Exp::BinaryOp(_, l, r) => &l.qfvs() | &r.qfvs(),
+            Exp::Call(f, args) => args.iter().fold(f.qfvs(), |acc, a| &acc | &a.qfvs()),
+            Exp::Impl(h, c) => &h.qfvs() | &c.qfvs(),
+            Exp::Forall(_, exp) => exp.qfvs(),
+            Exp::Exists(_, exp) => exp.qfvs(),
+            Exp::BorrowMut(e) => e.qfvs(),
+            Exp::Verbatim(_) => HashSet::new(),
+            Exp::Tuple(args) => args.iter().fold(HashSet::new(), |acc, v| &acc | &v.qfvs()),
+            _ => unimplemented!("{:?}", self),
         }
     }
 
