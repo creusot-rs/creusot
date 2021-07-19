@@ -20,8 +20,8 @@ pub fn translate_ty<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, span: Span, ty: Ty
         Int(ity) => intty_to_ty(ity),
         Uint(uity) => uintty_to_ty(uity),
         Float(flty) => match flty {
-            F32 => MlT::TConstructor(QName { module: vec![], name: vec!["single".into()] }),
-            F64 => MlT::TConstructor(QName { module: vec![], name: vec!["double".into()] }),
+            F32 => single_ty(),
+            F64 => double_ty(),
         },
         Adt(def, s) => {
             if def.is_box() {
@@ -182,7 +182,7 @@ pub fn drop_predicate<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, ty: Ty<'tcx>) ->
 
 fn drop_pred_name<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, did: DefId) -> QName {
     let mut name = translate_ty_name(ctx, did);
-    name.name.insert(0, "drop".to_owned());
+    name.name = format!("drop_{}", name.name);
     name
 }
 
@@ -313,42 +313,54 @@ fn uintty_to_ty(ity: &rustc_middle::ty::UintTy) -> MlT {
     }
 }
 
+pub fn double_ty() -> MlT {
+    MlT::TConstructor(QName::from_string("double").unwrap())
+}
+
+pub fn single_ty() -> MlT {
+    MlT::TConstructor(QName::from_string("single").unwrap())
+}
+
+pub fn int_ty() -> MlT {
+    MlT::TConstructor(QName::from_string("int").unwrap())
+}
+
 pub fn u8_ty() -> MlT {
-    MlT::TConstructor(QName { module: vec![], name: vec!["uint8".into()] })
+    MlT::TConstructor(QName::from_string("uint8").unwrap())
 }
 
 pub fn u16_ty() -> MlT {
-    MlT::TConstructor(QName { module: vec![], name: vec!["uint16".into()] })
+    MlT::TConstructor(QName::from_string("uint16").unwrap())
 }
 
 pub fn u32_ty() -> MlT {
-    MlT::TConstructor(QName { module: vec![], name: vec!["uint32".into()] })
+    MlT::TConstructor(QName::from_string("uint32").unwrap())
 }
 
 pub fn u64_ty() -> MlT {
-    MlT::TConstructor(QName { module: vec![], name: vec!["uint64".into()] })
+    MlT::TConstructor(QName::from_string("uint64").unwrap())
 }
 
 pub fn usize_ty() -> MlT {
-    MlT::TConstructor(QName { module: vec![], name: vec!["usize".into()] })
+    MlT::TConstructor(QName::from_string("usize").unwrap())
 }
 
 pub fn i8_ty() -> MlT {
-    MlT::TConstructor(QName { module: vec![], name: vec!["int8".into()] })
+    MlT::TConstructor(QName::from_string("int8").unwrap())
 }
 
 pub fn i16_ty() -> MlT {
-    MlT::TConstructor(QName { module: vec![], name: vec!["int16".into()] })
+    MlT::TConstructor(QName::from_string("int16").unwrap())
 }
 
 pub fn i32_ty() -> MlT {
-    MlT::TConstructor(QName { module: vec![], name: vec!["int32".into()] })
+    MlT::TConstructor(QName::from_string("int32").unwrap())
 }
 
 pub fn i64_ty() -> MlT {
-    MlT::TConstructor(QName { module: vec![], name: vec!["int64".into()] })
+    MlT::TConstructor(QName::from_string("int64").unwrap())
 }
 
 pub fn isize_ty() -> MlT {
-    MlT::TConstructor(QName { module: vec![], name: vec!["isize".into()] })
+    MlT::TConstructor(QName::from_string("isize").unwrap())
 }

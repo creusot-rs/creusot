@@ -134,10 +134,10 @@ fn lit_ty_to_ty(litty: pearlite::term::LitTy) -> mlcfg::Type {
             Mach => usize_ty(),
             Unknown => unimplemented!("integers"),
         },
-        term::LitTy::Float => TConstructor(QName { module: vec![], name: vec!["single".into()] }),
-        term::LitTy::Double => TConstructor(QName { module: vec![], name: vec!["double".into()] }),
+        term::LitTy::Float => crate::translation::ty::single_ty(),
+        term::LitTy::Double => crate::translation::ty::double_ty(),
         term::LitTy::Boolean => Bool,
-        term::LitTy::Integer => TConstructor(QName { module: vec![], name: vec!["int".into()] }),
+        term::LitTy::Integer => crate::translation::ty::int_ty(),
     }
 }
 

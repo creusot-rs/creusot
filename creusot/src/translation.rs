@@ -49,8 +49,8 @@ impl<'tcx, 'a> TranslationCtx<'a, 'tcx> {
 
     pub fn add_type(&mut self, ty_decl: TyDecl, drop_pred: Predicate) {
         let mut dependencies = ty_decl.used_types();
-        let type_ns = QName { module: vec![], name: vec!["Type".into()] };
-        let module = self.modules.get_decls_mut(type_ns);
+        let type_ns = QName::from_string("Type").unwrap();
+        let module = self.modules.get_module_mut(type_ns);
 
         let mut pos = 0;
         while !dependencies.is_empty() && pos < module.len() {
@@ -583,7 +583,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
         (_, _) => unreachable!(),
     }
 
-    QName { module: mod_segs, name: name_segs }
+    QName { module: mod_segs, name: name_segs.join("_") }
 }
 
 fn mk_anon(l: Local) -> LocalIdent {

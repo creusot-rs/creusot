@@ -5,25 +5,25 @@ use std::fmt::Display;
 pub mod printer;
 
 pub fn drop_fix() -> QName {
-    QName { module: vec![], name: vec!["drop_fix".into()] }
+    QName { module: vec![], name: "drop_fix".into() }
 }
 pub fn drop_uint() -> QName {
-    QName { module: vec![], name: vec!["drop_uint".into()] }
+    QName { module: vec![], name: "drop_uint".into() }
 }
 pub fn drop_int() -> QName {
-    QName { module: vec![], name: vec!["drop_int".into()] }
+    QName { module: vec![], name: "drop_int".into() }
 }
 pub fn drop_float() -> QName {
-    QName { module: vec![], name: vec!["drop_float".into()] }
+    QName { module: vec![], name: "drop_float".into() }
 }
 pub fn drop_bool() -> QName {
-    QName { module: vec![], name: vec!["drop_bool".into()] }
+    QName { module: vec![], name: "drop_bool".into() }
 }
 pub fn drop_mut_ref() -> QName {
-    QName { module: vec![], name: vec!["drop_mut_ref".into()] }
+    QName { module: vec![], name: "drop_mut_ref".into() }
 }
 pub fn drop_ref() -> QName {
-    QName { module: vec![], name: vec!["drop_ref".into()] }
+    QName { module: vec![], name: "drop_ref".into() }
 }
 
 #[derive(Debug)]
@@ -154,17 +154,16 @@ use itertools::*;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct QName {
     pub module: Vec<String>,
-    // TODO: get rid of the vec here!
-    pub name: Vec<String>,
+    pub name: String,
 }
 
 impl QName {
     pub fn name(&self) -> String {
-        format!("{}", self.name.iter().format("_"))
+        self.name.clone()
     }
 
     pub fn module_name(self) -> QName {
-        QName { module: Vec::new(), name: self.module }
+        QName { module: Vec::new(), name: self.module.join("") }
     }
 
     pub fn from_string(s : &str) -> Option<QName> {
@@ -173,13 +172,13 @@ impl QName {
         let name = chunks.next_back()?;
         let module = chunks.map(|s| s.into()).collect();
 
-        Some(QName { module, name: vec![name.into()] })
+        Some(QName { module, name: name.into() })
     }
 }
 
 impl From<&str> for QName {
     fn from(nm: &str) -> Self {
-        QName { module: vec![], name: vec![nm.to_string()] }
+        QName { module: vec![], name: nm.to_string() }
     }
 }
 
@@ -492,11 +491,11 @@ pub enum Pattern {
 
 impl Pattern {
     pub fn mk_true() -> Self {
-        Self::ConsP(QName { module: vec![], name: vec!["True".into()] }, vec![])
+        Self::ConsP(QName { module: vec![], name: "True".into() }, vec![])
     }
 
     pub fn mk_false() -> Self {
-        Self::ConsP(QName { module: vec![], name: vec!["False".into()] }, vec![])
+        Self::ConsP(QName { module: vec![], name: "False".into() }, vec![])
     }
 
     pub fn binders(&self) -> HashSet<LocalIdent> {

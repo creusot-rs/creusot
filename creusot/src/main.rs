@@ -130,7 +130,7 @@ fn translate(
 
     // Type translation state, including which datatypes have already been translated.
     let mut ty_ctx = translation::TranslationCtx::new(tcx, sess);
-    ty_ctx.modules.get_decls_mut(mlcfg::QName { module: vec![], name: vec!["Type".into()] });
+    ty_ctx.modules.get_module_mut(mlcfg::QName::from_string("Type").unwrap());
 
     // Translate all type declarations and push them into the module collection
     for (def_id, span) in ty_decls.iter() {
