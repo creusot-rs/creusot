@@ -166,6 +166,15 @@ impl QName {
     pub fn module_name(self) -> QName {
         QName { module: Vec::new(), name: self.module }
     }
+
+    pub fn from_string(s : &str) -> Option<QName> {
+        let mut chunks = s.split('.');
+
+        let name = chunks.next_back()?;
+        let module = chunks.map(|s| s.into()).collect();
+
+        Some(QName { module, name: vec![name.into()] })
+    }
 }
 
 impl From<&str> for QName {
