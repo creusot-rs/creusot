@@ -30,16 +30,16 @@ mod statement;
 mod terminator;
 pub mod ty;
 
-pub struct TranslationCtx<'a, 'tcx> {
-    sess: &'a Session,
+pub struct TranslationCtx<'sess, 'tcx> {
+    sess: &'sess Session,
     tcx: TyCtxt<'tcx>,
     used_tys: IndexSet<DefId>,
 
     pub modules: ModuleTree,
 }
 
-impl<'tcx, 'a> TranslationCtx<'a, 'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, sess: &'a Session) -> Self {
+impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
+    pub fn new(tcx: TyCtxt<'tcx>, sess: &'sess Session) -> Self {
         Self { sess, tcx, used_tys: IndexSet::new(), modules: ModuleTree::new() }
     }
 
@@ -70,14 +70,14 @@ impl<'tcx, 'a> TranslationCtx<'a, 'tcx> {
 }
 
 // Split this into several sub-contexts: Core, Analysis, Results?
-pub struct FunctionTranslator<'a, 'b, 'tcx> {
+pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
-    body: &'a Body<'tcx>,
+    body: &'body Body<'tcx>,
 
-    local_live: dataflow::ResultsCursor<'a, 'tcx, MaybeLiveLocals>,
+    local_live: dataflow::ResultsCursor<'body, 'tcx, MaybeLiveLocals>,
 
     // Whether a local is initialized or not at a location
-    local_init: dataflow::ResultsCursor<'a, 'tcx, MaybeInitializedLocals>,
+    local_init: dataflow::ResultsCursor<'body, 'tcx, MaybeInitializedLocals>,
 
     // Locals that are never read
     never_live: BitSet<Local>,
@@ -91,7 +91,7 @@ pub struct FunctionTranslator<'a, 'b, 'tcx> {
     past_blocks: BTreeMap<mlcfg::BlockId, mlcfg::Block>,
 
     // Type translation context
-    ctx: &'a mut TranslationCtx<'b, 'tcx>,
+    ctx: &'body mut TranslationCtx<'sess, 'tcx>,
 
     // Name resolution context for specs
     resolver: crate::specification::RustcResolver<'tcx>,
@@ -100,11 +100,11 @@ pub struct FunctionTranslator<'a, 'b, 'tcx> {
     fresh_id: usize,
 }
 
-impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
+impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
-        ctx: &'a mut TranslationCtx<'b, 'tcx>,
-        body: &'a Body<'tcx>,
+        ctx: &'body mut TranslationCtx<'sess, 'tcx>,
+        body: &'body Body<'tcx>,
         resolver: specification::RustcResolver<'tcx>,
     ) -> Self {
         let local_init = MaybeInitializedLocals
