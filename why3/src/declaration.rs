@@ -1,4 +1,5 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap};
+use indexmap::IndexSet;
 
 use crate::mlcfg::{Block, BlockId, Exp, LocalIdent, QName, Type};
 
@@ -65,8 +66,8 @@ impl Contract {
         }
     }
 
-    pub fn qfvs(&self) -> HashSet<QName> {
-        let mut qfvs = HashSet::new();
+    pub fn qfvs(&self) -> IndexSet<QName> {
+        let mut qfvs = IndexSet::new();
 
         for req in &self.requires {
             qfvs.extend(req.qfvs());
@@ -120,8 +121,8 @@ pub struct TyDecl {
 }
 
 impl TyDecl {
-    pub fn used_types(&self) -> HashSet<QName> {
-        let mut used = HashSet::new();
+    pub fn used_types(&self) -> IndexSet<QName> {
+        let mut used = IndexSet::new();
         for (_, var_decl) in &self.ty_constructors {
             for ty in var_decl {
                 ty.find_used_types(&mut used);

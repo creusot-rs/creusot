@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::collections::HashSet;
+use indexmap::IndexSet;
 use std::fmt::Display;
 
 pub mod printer;
@@ -84,7 +84,7 @@ impl Type {
         !matches!(self, Bool | Char | Integer | TVar(_) | Tuple(_) | TConstructor(_))
     }
 
-    pub(crate) fn find_used_types(&self, tys: &mut HashSet<QName>) {
+    pub(crate) fn find_used_types(&self, tys: &mut IndexSet<QName>) {
         use Type::*;
 
         match self {
@@ -301,7 +301,7 @@ impl Exp {
         }
     }
 
-    pub fn fvs(&self) -> HashSet<LocalIdent> {
+    pub fn fvs(&self) -> IndexSet<LocalIdent> {
         match self {
             Exp::Current(e) => e.fvs(),
             Exp::Final(e) => e.fvs(),
@@ -311,17 +311,17 @@ impl Exp {
                 &(&body.fvs() - &bound) | &arg.fvs()
             }
             Exp::Var(v) => {
-                let mut fvs = HashSet::new();
+                let mut fvs = IndexSet::new();
                 fvs.insert(v.clone());
                 fvs
             }
-            Exp::QVar(_) => HashSet::new(),
+            Exp::QVar(_) => IndexSet::new(),
             // Exp::RecUp { record, label, val } => {}
             // Exp::Tuple(_) => {}
             Exp::Constructor { ctor: _, args } => {
-                args.iter().fold(HashSet::new(), |acc, v| &acc | &v.fvs())
+                args.iter().fold(IndexSet::new(), |acc, v| &acc | &v.fvs())
             }
-            Exp::Const(_) => HashSet::new(),
+            Exp::Const(_) => IndexSet::new(),
             Exp::BinaryOp(_, l, r) => &l.fvs() | &r.fvs(),
             Exp::Call(f, args) => args.iter().fold(f.fvs(), |acc, a| &acc | &a.fvs()),
             Exp::Impl(h, c) => &h.fvs() | &c.fvs(),
@@ -330,34 +330,34 @@ impl Exp {
                 acc
             }),
             Exp::BorrowMut(e) => e.fvs(),
-            Exp::Verbatim(_) => HashSet::new(),
+            Exp::Verbatim(_) => IndexSet::new(),
             _ => unimplemented!(),
         }
     }
 
-    pub fn qfvs(&self) -> HashSet<QName> {
+    pub fn qfvs(&self) -> IndexSet<QName> {
         match self {
             Exp::Current(e) => e.qfvs(),
             Exp::Final(e) => e.qfvs(),
             Exp::Let { arg, body, .. } => &body.qfvs() | &arg.qfvs(),
-            Exp::Var(_) => HashSet::new(),
+            Exp::Var(_) => IndexSet::new(),
             Exp::QVar(v) => {
-                let mut fvs = HashSet::new();
+                let mut fvs = IndexSet::new();
                 fvs.insert(v.clone());
                 fvs
             }
             Exp::Constructor { ctor: _, args } => {
-                args.iter().fold(HashSet::new(), |acc, v| &acc | &v.qfvs())
+                args.iter().fold(IndexSet::new(), |acc, v| &acc | &v.qfvs())
             }
-            Exp::Const(_) => HashSet::new(),
+            Exp::Const(_) => IndexSet::new(),
             Exp::BinaryOp(_, l, r) => &l.qfvs() | &r.qfvs(),
             Exp::Call(f, args) => args.iter().fold(f.qfvs(), |acc, a| &acc | &a.qfvs()),
             Exp::Impl(h, c) => &h.qfvs() | &c.qfvs(),
             Exp::Forall(_, exp) => exp.qfvs(),
             Exp::Exists(_, exp) => exp.qfvs(),
             Exp::BorrowMut(e) => e.qfvs(),
-            Exp::Verbatim(_) => HashSet::new(),
-            Exp::Tuple(args) => args.iter().fold(HashSet::new(), |acc, v| &acc | &v.qfvs()),
+            Exp::Verbatim(_) => IndexSet::new(),
+            Exp::Tuple(args) => args.iter().fold(IndexSet::new(), |acc, v| &acc | &v.qfvs()),
             _ => unimplemented!("{:?}", self),
         }
     }
@@ -370,7 +370,7 @@ impl Exp {
                 arg.subst(subst);
                 let mut bound = pattern.binders();
                 let mut subst = subst.clone();
-                bound.drain().for_each(|k| {
+                bound.drain(..).for_each(|k| {
                     subst.remove(&k);
                 });
 
@@ -408,7 +408,7 @@ impl Exp {
 
                 for (pat, br) in brs {
                     let mut s = subst.clone();
-                    pat.binders().drain().for_each(|b| {
+                    pat.binders().drain(..).for_each(|b| {
                         s.remove(&b);
                     });
                     br.subst(&s);
@@ -496,22 +496,22 @@ impl Pattern {
         Self::ConsP(QName { module: vec![], name: "False".into() }, vec![])
     }
 
-    pub fn binders(&self) -> HashSet<LocalIdent> {
+    pub fn binders(&self) -> IndexSet<LocalIdent> {
         match self {
-            Pattern::Wildcard => HashSet::new(),
+            Pattern::Wildcard => IndexSet::new(),
             Pattern::VarP(s) => {
-                let mut b = HashSet::new();
+                let mut b = IndexSet::new();
                 b.insert(s.clone());
                 b
             }
             Pattern::TupleP(pats) => {
-                pats.iter().map(|p| p.binders()).fold(HashSet::new(), |mut set, x| {
+                pats.iter().map(|p| p.binders()).fold(IndexSet::new(), |mut set, x| {
                     set.extend(x);
                     set
                 })
             }
             Pattern::ConsP(_, args) => {
-                args.iter().map(|p| p.binders()).fold(HashSet::new(), |mut set, x| {
+                args.iter().map(|p| p.binders()).fold(IndexSet::new(), |mut set, x| {
                     set.extend(x);
                     set
                 })
