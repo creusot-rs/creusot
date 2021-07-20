@@ -133,7 +133,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         self.emit_statement(assign);
     }
 
-    pub fn translate(mut self, contract: Contract) -> Module {
+    pub fn translate(mut self, mut contract: Contract) -> Module {
         self.translate_body();
         move_invariants_into_loop(&mut self.past_blocks);
 
@@ -151,6 +151,10 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 }
             })
             .collect();
+
+        if self.body.local_decls[0u32.into()].ty.is_never() {
+            contract.ensures.push(Exp::Const(Constant::const_false()));
+        }
 
         let retty = vars[0].1.clone();
         let args = vars
@@ -582,6 +586,13 @@ impl Extern {
         );
         let names = ctx.tcx.fn_arg_names(def_id);
 
+        let mut contract = Contract::new();
+
+        // If the return type of the function is ! then add an impossible post-condition
+        if sig.output().is_never() {
+            contract.ensures.push(Exp::Const(Constant::const_false()));
+        }
+
         let name = translate_value_id(ctx.tcx, def_id).module.join("");
 
         let mut decls: Vec<_> = generic_decls_for(ctx.tcx, def_id).collect();
@@ -594,8 +605,7 @@ impl Extern {
                     .zip(sig.inputs())
                     .map(|(id, ty)| (id.name.to_string().into(), ty::translate_ty(ctx, span, ty)))
                     .collect(),
-
-                contract: Contract::new(),
+                contract,
             },
         }));
 
