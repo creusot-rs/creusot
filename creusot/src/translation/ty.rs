@@ -5,7 +5,7 @@ use rustc_span::Span;
 use rustc_span::Symbol;
 use std::collections::VecDeque;
 
-use why3::declaration::{Predicate, TyDecl};
+use why3::declaration::{Predicate, TyDecl, Signature, Contract};
 use why3::mlcfg::{Exp as MlE, LocalIdent, Pattern, Pattern::*, QName, Type as MlT};
 
 use super::TranslationCtx;
@@ -240,7 +240,7 @@ fn drop_pred_decl(
 
     let name = drop_pred_name(ctx, did);
 
-    Predicate { name, args: pred_deps, body: type_drop }
+    Predicate { sig: Signature{ name, args: pred_deps, contract: Contract::new(), retty: None }, body: type_drop }
 }
 
 /// Create the body for a drop predicate of type `ty` and name `did`.

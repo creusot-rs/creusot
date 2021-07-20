@@ -85,29 +85,30 @@ impl Contract {
 }
 
 #[derive(Debug)]
-pub struct Logic {
+pub struct Signature {
     pub name: QName,
-    pub retty: Type,
+    pub retty: Option<Type>,
     pub args: Vec<(LocalIdent, Type)>,
-    pub body: Exp,
     pub contract: Contract,
+}
+
+#[derive(Debug)]
+pub struct Logic {
+    pub sig: Signature,
+    pub body: Exp,
 }
 
 #[derive(Debug)]
 pub struct CfgFunction {
-    pub name: QName,
-    pub retty: Type,
-    pub args: Vec<(LocalIdent, Type)>,
+    pub sig: Signature,
     pub vars: Vec<(LocalIdent, Type)>,
     pub entry: Block,
     pub blocks: BTreeMap<BlockId, Block>,
-    pub contract: Contract,
 }
 
 #[derive(Debug)]
 pub struct Predicate {
-    pub name: QName,
-    pub args: Vec<(LocalIdent, Type)>,
+    pub sig: Signature,
     pub body: Exp,
 }
 
@@ -151,10 +152,7 @@ impl CloneSubst {
 
 #[derive(Debug)]
 pub struct Val {
-    pub name: QName,
-    pub contract: Contract,
-    pub params: Vec<(LocalIdent, Type)>,
-    pub retty: Type,
+    pub sig: Signature
 }
 
 #[derive(Debug)]

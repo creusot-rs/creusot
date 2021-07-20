@@ -222,15 +222,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         move_invariants_into_loop(&mut self.past_blocks);
 
-        CfgFunction {
-            name,
-            retty,
-            args,
-            vars,
-            entry,
-            blocks: self.past_blocks,
-            contract: contracts,
-        }
+        let sig = Signature { name, retty: Some(retty), args, contract: contracts };
+        CfgFunction { sig, vars, entry, blocks: self.past_blocks }
     }
 
     fn translate_body(&mut self) {

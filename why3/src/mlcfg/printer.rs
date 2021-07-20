@@ -116,6 +116,32 @@ impl Scope {
     }
 }
 
+impl Signature {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        self.name
+            .pretty(alloc, env)
+            .append(alloc.space())
+            .append(arg_list(alloc, env, &self.args))
+            .append(
+                self.retty.as_ref().map_or_else(
+                    || alloc.nil(),
+                    |t| alloc.text(" : ").append(t.pretty(alloc, env)),
+                ),
+            )
+            .append(alloc.line_().append(self.contract.pretty(alloc, env))).nest(2)
+            .group()
+        // .append(alloc.line())
+        // .append(self.contract.pretty(alloc, env).indent(2))
+    }
+}
+
 impl Predicate {
     pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
         &'a self,
@@ -127,10 +153,8 @@ impl Predicate {
     {
         alloc
             .text("predicate ")
-            .append(self.name.pretty(alloc, env))
-            .append(alloc.space())
-            .append(arg_list(alloc, env, &self.args))
-            .append(" = ")
+            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
+            .group()
             .append(alloc.line())
             .append(self.body.pretty(alloc, env).indent(2))
     }
@@ -167,13 +191,9 @@ impl Logic {
     {
         alloc
             .text("let rec function ")
-            .append(self.name.pretty(alloc, env))
-            .append(alloc.space())
-            .append(arg_list(alloc, env, &self.args))
-            .append(alloc.text(" : ").append(self.retty.pretty(alloc, env)))
-            .append(" = ")
-            .append(alloc.hardline())
-            .append(self.contract.pretty(alloc, env).append(alloc.hardline()).indent(2))
+            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
+            .group()
+            .append(alloc.line())
             .append(self.body.pretty(alloc, env).indent(2))
     }
 }
@@ -250,15 +270,7 @@ impl Val {
     where
         A::Doc: Clone,
     {
-        alloc
-            .text("val ")
-            .append(self.name.pretty(alloc, env))
-            .append(" ")
-            .append(arg_list(alloc, env, &self.params))
-            .append(" : ")
-            .append(self.retty.pretty(alloc, env))
-            .append(alloc.hardline())
-            .append(self.contract.pretty(alloc, env))
+        alloc.text("val ").append(self.sig.pretty(alloc, env))
     }
 }
 
@@ -337,26 +349,9 @@ impl CfgFunction {
     {
         alloc
             .text("let rec cfg ")
-            .append(self.name.pretty(alloc, env))
-            .append(alloc.space())
-            .append(if self.args.is_empty() {
-                alloc.text("()")
-            } else {
-                alloc.intersperse(
-                    self.args.iter().map(|(nm, ty)| {
-                        nm.pretty(alloc, env)
-                            .append(" : ")
-                            .append(ty.pretty(alloc, env))
-                            .parens()
-                    }),
-                    alloc.space(),
-                )
-            })
-            .append(" : ")
-            .append(self.retty.pretty(alloc, env))
-            .append(alloc.hardline())
-            .append(self.contract.pretty(alloc, env).append("=").indent(2))
-            .append(alloc.hardline())
+            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
+            .group()
+            .append(alloc.line())
             .append(sep_end_by(
                 alloc,
                 self.vars.iter().map(|(var, ty)| {

@@ -26,30 +26,33 @@ module ListIndexMut
     predicate drop_list (self : list) = 
       let List(a, b) = self in drop_uint a && drop_option drop_fix b
   end
-  let rec function len (l : Type.list) : int = 
+  let rec function len (l : Type.list) : int
     ensures { result >= 0 }
     
-      let Type.List(_, ls) = l in 1 + match (ls) with
-        | Type.Option_Some(ls) -> len ls
-        | Type.Option_None -> 0
-        end
-  let rec function get (l : Type.list) (ix : int) : Type.option uint32 = 
+   = 
+    let Type.List(_, ls) = l in 1 + match (ls) with
+      | Type.Option_Some(ls) -> len ls
+      | Type.Option_None -> 0
+      end
+  let rec function get (l : Type.list) (ix : int) : Type.option uint32
     variant {len l}
     
-      let Type.List(i, ls) = l in match (ix > 0) with
-        | False -> Type.Option_Some(i)
-        | True -> match (ls) with
-          | Type.Option_Some(ls) -> get ls (ix - 1)
-          | Type.Option_None -> Type.Option_None
-          end
+   = 
+    let Type.List(i, ls) = l in match (ix > 0) with
+      | False -> Type.Option_Some(i)
+      | True -> match (ls) with
+        | Type.Option_Some(ls) -> get ls (ix - 1)
+        | Type.Option_None -> Type.Option_None
         end
+      end
   let rec cfg indexMut (o_param_l_1 : borrowed (Type.list)) (o_param_ix_2 : usize) : borrowed uint32
     requires {o_param_ix_2 < len ( * o_param_l_1)}
     ensures { forall i : int . 0 <= i && i < len ( * o_param_l_1) && i <> o_param_ix_2 -> get ( * o_param_l_1) i = get ( ^ o_param_l_1) i }
     ensures { len ( ^ o_param_l_1) = len ( * o_param_l_1) }
     ensures { Type.Option_Some( ^ result) = get ( ^ o_param_l_1) o_param_ix_2 }
     ensures { Type.Option_Some( * result) = get ( * o_param_l_1) o_param_ix_2 }
-    =
+    
+   = 
   var _0 : borrowed uint32;
   var param_l_1 : borrowed (Type.list);
   var param_ix_2 : usize;
@@ -163,7 +166,8 @@ module ListIndexMut
     ensures { forall i : int . 0 <= i && i < len ( * o_l_1) && i <> o_ix_2 -> get ( * o_l_1) i = get ( ^ o_l_1) i }
     ensures { len ( ^ o_l_1) = len ( * o_l_1) }
     ensures { Type.Option_Some(o_val_3) = get ( ^ o_l_1) o_ix_2 }
-    =
+    
+   = 
   var _0 : ();
   var l_1 : borrowed (Type.list);
   var ix_2 : usize;
@@ -200,8 +204,7 @@ module ListIndexMut
     return _0
   }
   
-  let rec cfg main () : ()
-    =
+  let rec cfg main () : () = 
   var _0 : ();
   var l_1 : Type.list;
   var _2 : Type.option (Type.list);

@@ -168,7 +168,7 @@ fn translate(
 
                 let mut translated =
                     specification::logic_to_why(&resolver, &mut ty_ctx, def_id, &body, exp);
-                translated.contract = out_contract;
+                translated.sig.contract = out_contract;
 
                 ty_ctx.modules.add_decl(module, Decl::LogicDecl(translated));
             }

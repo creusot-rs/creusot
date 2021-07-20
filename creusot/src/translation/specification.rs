@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::translation::TranslationCtx;
-use why3::declaration::{Contract, Logic};
+use why3::declaration::{Contract, Logic, Signature};
 use why3::mlcfg::Exp;
 use why3::mlcfg::LocalIdent;
 
@@ -150,14 +150,16 @@ pub fn logic_to_why<'tcx>(
 
     let name = crate::translation::translate_value_id(res.2, did);
     Logic {
-        name,
-        retty: lower_type_to_why(ctx, ret_ty),
-        args: entry_ctx
-            .into_iter()
-            .map(|(nm, ty)| (LocalIdent::Name(nm), lower_type_to_why(ctx, ty)))
-            .collect(),
+        sig: Signature {
+            name,
+            retty: Some(lower_type_to_why(ctx, ret_ty)),
+            args: entry_ctx
+                .into_iter()
+                .map(|(nm, ty)| (LocalIdent::Name(nm), lower_type_to_why(ctx, ty)))
+                .collect(),
+            contract: Contract::new(),
+        },
         body,
-        contract: Contract::new(),
     }
 }
 
