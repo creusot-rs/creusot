@@ -135,7 +135,8 @@ impl Signature {
                     |t| alloc.text(" : ").append(t.pretty(alloc, env)),
                 ),
             )
-            .append(alloc.line_().append(self.contract.pretty(alloc, env))).nest(2)
+            .append(alloc.line_().append(self.contract.pretty(alloc, env)))
+            .nest(2)
             .group()
         // .append(alloc.line())
         // .append(self.contract.pretty(alloc, env).indent(2))
@@ -783,7 +784,7 @@ impl TyDecl {
                 ),
             );
 
-        if self.ty_constructors.len() > 0 {
+        if !self.ty_constructors.is_empty() {
             ty_decl = ty_decl.append(alloc.text(" = ").append(alloc.hardline()));
         }
 

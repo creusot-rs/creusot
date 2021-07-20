@@ -4,9 +4,8 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-use similar::{TextDiff, ChangeTag};
+use similar::{ChangeTag, TextDiff};
 
-use arraydeque::{ArrayDeque, Wrapping};
 use std::error::Error;
 use std::io::Write;
 use termcolor::*;
@@ -98,7 +97,6 @@ where
             buf.reset().unwrap();
             let wrt = BufferWriter::stdout(ColorChoice::Always);
             wrt.print(&buf).unwrap();
-
         }
     }
 
@@ -110,12 +108,12 @@ where
 }
 
 fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
-    use std::time::Duration;
     use similar::Algorithm;
+    use std::time::Duration;
     let result = TextDiff::configure()
-            .timeout(Duration::from_millis(200))
-            .algorithm(Algorithm::Patience)
-            .diff_lines(expect, got);
+        .timeout(Duration::from_millis(200))
+        .algorithm(Algorithm::Patience)
+        .diff_lines(expect, got);
 
     // let result = TextDiff::from_lines(expect, got);
     if result.ratio() == 1.0 {
@@ -205,6 +203,3 @@ fn chunk_color(chunk: ChangeTag) -> ColorSpec {
         }
     }
 }
-
-
-

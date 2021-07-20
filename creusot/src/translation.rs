@@ -199,7 +199,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         let name = translate_value_id(self.tcx, nm);
 
-         let entry = Block {
+        let entry = Block {
             statements: vars
                 .iter()
                 .skip(1)
@@ -246,7 +246,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             self.past_blocks.insert(
                 BlockId(bb.into()),
                 Block {
-                    statements: std::mem::replace(&mut self.current_block.0, Vec::new()),
+                    statements: std::mem::take(&mut self.current_block.0),
                     terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
                 },
             );
@@ -277,7 +277,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             }
 
             self.freeze_borrows_dying_between(Start(term_loc), Start(bb.start_location()));
-            let deaths = std::mem::replace(&mut self.current_block.0, Vec::new());
+            let deaths = std::mem::take(&mut self.current_block.0);
 
             let drop_block = self.fresh_block_id();
             let pred_id = BlockId(pred.index());

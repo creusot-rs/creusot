@@ -98,19 +98,14 @@ impl Term {
             RT::Paren(TermParen { box expr, .. }) => Term::from_syn(res, expr),
             RT::Call(TermCall { box func, args, .. }) => {
                 if let RT::Path(TermPath { path, .. }) = func {
-
                     let args = if args.is_empty() {
                         vec![Term::unit()]
                     } else {
-                        args
-                            .into_iter()
+                        args.into_iter()
                             .map(|t| Term::from_syn(res, t))
                             .collect::<Result<Vec<_>, _>>()?
                     };
-                    Ok(Call {
-                        func: Name::from_syn(res, path)?,
-                        args: args,
-                    })
+                    Ok(Call { func: Name::from_syn(res, path)?, args })
                 } else {
                     Err(Generic)
                 }

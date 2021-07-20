@@ -203,7 +203,7 @@ fn translate(
 use std::io::Write;
 
 // TODO: Clean up, this printing code should not be in main.
-const IMPORTS: &'static str = "  use Ref
+const IMPORTS: &str = "  use Ref
   use mach.int.Int
   use mach.int.Int32
   use mach.int.Int64
@@ -226,7 +226,7 @@ where
 
     for modl in krate.reify() {
         modl.pretty(&alloc, &mut pe).indent(2).1.render(120, out)?;
-        writeln!(out, "")?;
+        writeln!(out)?;
     }
     // print_module_tree(out, &mut Vec::new(), &krate.modules).unwrap();
     writeln!(out, "end")?;

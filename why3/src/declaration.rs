@@ -152,7 +152,7 @@ impl CloneSubst {
 
 #[derive(Debug)]
 pub struct Val {
-    pub sig: Signature
+    pub sig: Signature,
 }
 
 #[derive(Debug)]

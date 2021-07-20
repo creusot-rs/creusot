@@ -149,8 +149,6 @@ impl Display for LocalIdent {
     }
 }
 
-use itertools::*;
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct QName {
     pub module: Vec<String>,
@@ -166,7 +164,7 @@ impl QName {
         QName { module: Vec::new(), name: self.module.join("") }
     }
 
-    pub fn from_string(s : &str) -> Option<QName> {
+    pub fn from_string(s: &str) -> Option<QName> {
         let mut chunks = s.split('.');
 
         let name = chunks.next_back()?;

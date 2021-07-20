@@ -48,7 +48,8 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     // TODO: should this be done for *any* form of assignment?
                     let ty = place.ty(self.body, self.tcx).ty;
                     let pl_exp = self.translate_rplace(&place);
-                    let assumption: Exp = super::ty::drop_predicate(&mut self.ctx, ty).app_to(pl_exp);
+                    let assumption: Exp =
+                        super::ty::drop_predicate(&mut self.ctx, ty).app_to(pl_exp);
                     self.emit_statement(Assume(assumption));
                     self.translate_rplace(pl)
                 }

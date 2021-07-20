@@ -72,7 +72,6 @@ impl<G: GlobalContext> TypeContext<G> {
     }
 
     fn freshen(&mut self, ty: &mut Type) {
-        use Type::*;
         let sub: VarSubst = ty.fvs().into_iter().map(|var| (var, self.fresh_ty())).collect();
 
         sub.subst(ty);
