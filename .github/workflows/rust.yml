@@ -11,9 +11,7 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
     - uses: actions/cache@v2
@@ -27,3 +25,22 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+  why3:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    - uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: why3.yml
+        name: why3
+        path: /home/runner/work/creusot/why3
+    - run: |
+        chmod -R +x ~/work/creusot/why3/bin
+    - run: WHY3_PATH=~/work/creusot/why3/bin/why3 cargo test --test why3

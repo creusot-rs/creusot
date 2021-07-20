@@ -1,0 +1,35 @@
+name: Why3
+on:
+  schedule:
+    - cron: '0 0 * * *'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      OCAML_COMPILER: 4.12.x
+
+    steps:
+    - name: Use OCaml ${{ env.OCAML_COMPILER }}
+      uses: ocaml/setup-ocaml@v2
+      with:
+        ocaml-compiler: ${{ env.OCAML_COMPILER }}
+    - name: Fetch code
+      run: git clone --branch stackify --depth 1 https://gitlab.inria.fr/why3/why3.git $GITHUB_WORKSPACE/why3
+    - name: Configure
+      working-directory: why3
+      run: |
+        mkdir -p $GITHUB_WORKSPACE/../why3
+        eval $(opam env)
+        opam install menhir num
+        autoconf
+        ./configure --prefix=$GITHUB_WORKSPACE/../why3
+    - name: Build Why3
+      working-directory: why3
+      run: |
+        eval $(opam env)
+        make
+        make install
+    - uses: actions/upload-artifact@v2
+      with:
+        name: why3
+        path: /home/runner/work/creusot/why3/ # or path/to/artifact
