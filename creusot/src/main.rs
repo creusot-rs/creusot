@@ -36,6 +36,7 @@ use why3::{declaration::Decl, mlcfg};
 mod analysis;
 mod extended_location;
 mod translation;
+pub mod ctx;
 
 #[allow(dead_code)]
 mod debug;
@@ -129,7 +130,7 @@ fn translate(
     }
 
     // Type translation state, including which datatypes have already been translated.
-    let mut ty_ctx = translation::TranslationCtx::new(tcx, sess);
+    let mut ty_ctx = ctx::TranslationCtx::new(tcx, sess);
     ty_ctx.modules.get_module_mut(mlcfg::QName::from_string("Type").unwrap());
 
     // Translate all type declarations and push them into the module collection
@@ -155,7 +156,7 @@ fn translate(
 
         // Parent module of declaration
         let module_id = tcx.parent_module_from_def_id(def_id.expect_local()).to_def_id();
-        let module = crate::translation::translate_value_id(tcx, module_id);
+        let module = crate::ctx::translate_value_id(tcx, module_id);
         // let module_id = tcx.parent(def_id).unwrap();
         let attrs = tcx.get_attrs(def_id);
         let resolver = specification::RustcResolver(resolver.clone(), module_id, tcx);

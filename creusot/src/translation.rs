@@ -1,9 +1,5 @@
 use crate::extended_location::*;
-use crate::module_tree::ModuleTree;
-use indexmap::IndexSet;
-use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
-use rustc_hir::definitions::DefPathData;
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
     mir::traversal::preorder,
@@ -17,8 +13,6 @@ use rustc_mir::dataflow::{
     Analysis,
 };
 use rustc_resolve::Namespace;
-use rustc_session::Session;
-use rustc_span::Span;
 use std::collections::BTreeMap;
 use why3::declaration::*;
 use why3::mlcfg::{self, Exp::*, Pattern::*, Statement::*, *};
@@ -30,44 +24,7 @@ mod statement;
 mod terminator;
 pub mod ty;
 
-pub struct TranslationCtx<'sess, 'tcx> {
-    sess: &'sess Session,
-    tcx: TyCtxt<'tcx>,
-    used_tys: IndexSet<DefId>,
-
-    pub modules: ModuleTree,
-}
-
-impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, sess: &'sess Session) -> Self {
-        Self { sess, tcx, used_tys: IndexSet::new(), modules: ModuleTree::new() }
-    }
-
-    fn crash_and_error(&self, span: Span, msg: &str) -> ! {
-        self.sess.span_fatal_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
-    }
-
-    pub fn add_type(&mut self, ty_decl: TyDecl, drop_pred: Predicate) {
-        let mut dependencies = ty_decl.used_types();
-        let type_ns = QName::from_string("Type").unwrap();
-        let module = self.modules.get_module_mut(type_ns);
-
-        let mut pos = 0;
-        while !dependencies.is_empty() && pos < module.len() {
-            match &module[pos] {
-                TyDecl(tyd) => {
-                    dependencies.remove(&tyd.ty_name);
-                }
-                _ => {}
-            }
-
-            pos += 2;
-        }
-        use why3::declaration::Decl::*;
-        module.insert(pos, PredDecl(drop_pred));
-        module.insert(pos, TyDecl(ty_decl));
-    }
-}
+use crate::ctx::*;
 
 // Split this into several sub-contexts: Core, Analysis, Results?
 pub struct FunctionTranslator<'body, 'sess, 'tcx> {
@@ -163,6 +120,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
     pub fn translate(mut self, nm: DefId, contracts: Contract) -> CfgFunction {
         self.translate_body();
+        move_invariants_into_loop(&mut self.past_blocks);
 
         let arg_count = self.body.arg_count;
         let vars: Vec<_> = self
@@ -220,7 +178,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             terminator: Terminator::Goto(BlockId(0)),
         };
 
-        move_invariants_into_loop(&mut self.past_blocks);
+        let name = translate_value_id(self.tcx, nm);
 
         let sig = Signature { name, retty: Some(retty), args, contract: contracts };
         CfgFunction { sig, vars, entry, blocks: self.past_blocks }
@@ -573,59 +531,6 @@ fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {
         invs.append(&mut tgt.statements);
         let _ = std::mem::replace(&mut tgt.statements, invs);
     }
-}
-
-use heck::{CamelCase, MixedCase};
-
-pub fn translate_type_id(tcx: TyCtxt, def_id: DefId) -> QName {
-    translate_defid(tcx, def_id, true)
-}
-
-pub fn translate_value_id(tcx: TyCtxt, def_id: DefId) -> QName {
-    translate_defid(tcx, def_id, false)
-}
-
-fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
-    let def_path = tcx.def_path(def_id);
-
-    let mut mod_segs = Vec::new();
-    let mut name_segs = Vec::new();
-
-    if def_path.krate.as_u32() != 0 {
-        mod_segs.push(tcx.crate_name(def_id.krate).to_string())
-    }
-
-    for seg in def_path.data[..].iter() {
-        match seg.data {
-            // DefPathData::CrateRoot => mod_segs.push(tcx.crate_name(def_id.krate).to_string()),
-            DefPathData::TypeNs(_) => mod_segs.push(format!("{}", seg)[..].to_camel_case()),
-            // CORE ASSUMPTION: Once we stop seeing TypeNs we never see it again.
-            DefPathData::Ctor => {}
-            _ => name_segs.push(format!("{}", seg)[..].to_mixed_case()),
-        }
-    }
-
-    let kind = tcx.def_kind(def_id);
-    use rustc_hir::def::DefKind::*;
-
-    match (kind, kind.ns()) {
-        (_, _) if ty => {
-            assert_eq!(name_segs.len(), 0);
-            name_segs = mod_segs.into_iter().map(|seg| seg.to_lowercase()).collect();
-            mod_segs = vec!["Type".to_owned()];
-        }
-        (Ctor(_, _) | Variant | Struct, _) => {
-            mod_segs.append(&mut name_segs);
-            mod_segs[0] = mod_segs[0].to_camel_case();
-            name_segs = mod_segs;
-            mod_segs = vec!["Type".to_owned()];
-        }
-        (Mod, _) => {}
-        (_, Some(Namespace::ValueNS)) => {}
-        (_, _) => unreachable!(),
-    }
-
-    QName { module: mod_segs, name: name_segs.join("_") }
 }
 
 fn mk_anon(l: Local) -> LocalIdent {
