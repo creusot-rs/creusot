@@ -1,4 +1,4 @@
-module Modules
+module Type
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -9,45 +9,79 @@ module Modules
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-
-  scope Type
-    type nested_nested  = 
-      | Nested_Nested_Test
-      
-    predicate drop_nested_nested (self : nested_nested) = 
-      let Nested_Nested_Test = self in true
-  end
-  scope Nested
-    scope Further
-      let rec cfg another () : bool = 
-      var _0 : bool;
-      {
-        goto BB0
-      }
-      BB0 {
-        _0 <- false;
-        return _0
-      }
-      
-    end
-    let rec cfg innerFunc () : bool
-      ensures { result = true }
-      
-     = 
-    var _0 : bool;
-    var _1 : Type.nested_nested;
-    {
-      goto BB0
-    }
-    BB0 {
-      _1 <- Type.Nested_Nested_Test;
-      assume { Type.drop_nested_nested _1 };
-      _0 <- true;
-      return _0
-    }
+  type nested_nested  = 
+    | Nested_Nested_Test
     
-  end
-  let rec cfg main () : () = 
+  predicate drop_nested_nested (self : nested_nested) = 
+    let Nested_Nested_Test = self in true
+end
+module NestedInnerFunc
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  let rec cfg impl () : bool
+    ensures { result = true }
+    
+   = 
+  var _0 : bool;
+  var _1 : Type.nested_nested;
+  {
+    goto BB0
+  }
+  BB0 {
+    _1 <- Type.Nested_Nested_Test;
+    assume { Type.drop_nested_nested _1 };
+    _0 <- true;
+    return _0
+  }
+  
+end
+module NestedFurtherAnother
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  let rec cfg impl () : bool = 
+  var _0 : bool;
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- false;
+    return _0
+  }
+  
+end
+module Main
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  clone NestedFurtherAnother as Another1
+  clone NestedInnerFunc as InnerFunc0
+  let rec cfg impl () : () = 
   var _0 : ();
   var _1 : bool;
   var _2 : bool;
@@ -55,12 +89,12 @@ module Modules
     goto BB0
   }
   BB0 {
-    _1 <- Nested.innerFunc ();
+    _1 <- InnerFunc0.impl ();
     goto BB1
   }
   BB1 {
     assume { drop_bool _1 };
-    _2 <- Nested.Further.another ();
+    _2 <- Another1.impl ();
     goto BB2
   }
   BB2 {

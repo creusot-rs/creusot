@@ -1,4 +1,4 @@
-module ListIndexMut
+module Type
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -9,48 +9,102 @@ module ListIndexMut
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-
-  scope Type
-    type option 't = 
-      | Option_None
-      | Option_Some('t)
-      
-    predicate drop_option (drop_t : 't -> bool) (self : option 't) = 
-      match (self) with
-        | Option_None -> true
-        | Option_Some(a) -> drop_t a
-        end
-    type list  = 
-      | List(uint32, option (list))
-      
-    predicate drop_list (self : list) = 
-      let List(a, b) = self in drop_uint a && drop_option drop_fix b
-  end
-  let rec function len (l : Type.list) : int
+  type option 't = 
+    | Option_None
+    | Option_Some('t)
+    
+  predicate drop_option (drop_t : 't -> bool) (self : option 't) = 
+    match (self) with
+      | Option_None -> true
+      | Option_Some(a) -> drop_t a
+      end
+  type list  = 
+    | List(uint32, option (list))
+    
+  predicate drop_list (self : list) = 
+    let List(a, b) = self in drop_uint a && drop_option drop_fix b
+end
+module Len
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  let rec function impl (l : Type.list) : int
     ensures { result >= 0 }
     
    = 
     let Type.List(_, ls) = l in 1 + match (ls) with
-      | Type.Option_Some(ls) -> len ls
+      | Type.Option_Some(ls) -> impl ls
       | Type.Option_None -> 0
       end
-  let rec function get (l : Type.list) (ix : int) : Type.option uint32
-    variant {len l}
+end
+module Get
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  use Len
+  let rec function impl (l : Type.list) (ix : int) : Type.option uint32
+    variant {Len.impl l}
     
    = 
     let Type.List(i, ls) = l in match (ix > 0) with
       | False -> Type.Option_Some(i)
       | True -> match (ls) with
-        | Type.Option_Some(ls) -> get ls (ix - 1)
+        | Type.Option_Some(ls) -> impl ls (ix - 1)
         | Type.Option_None -> Type.Option_None
         end
       end
-  let rec cfg indexMut (o_param_l_1 : borrowed (Type.list)) (o_param_ix_2 : usize) : borrowed uint32
-    requires {o_param_ix_2 < len ( * o_param_l_1)}
-    ensures { forall i : int . 0 <= i && i < len ( * o_param_l_1) && i <> o_param_ix_2 -> get ( * o_param_l_1) i = get ( ^ o_param_l_1) i }
-    ensures { len ( ^ o_param_l_1) = len ( * o_param_l_1) }
-    ensures { Type.Option_Some( ^ result) = get ( ^ o_param_l_1) o_param_ix_2 }
-    ensures { Type.Option_Some( * result) = get ( * o_param_l_1) o_param_ix_2 }
+end
+module StdProcessAbort
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  val impl () : ()
+end
+module IndexMut
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  use Len
+  use Get
+  clone StdProcessAbort as Abort0
+  let rec cfg impl (o_param_l_1 : borrowed (Type.list)) (o_param_ix_2 : usize) : borrowed uint32
+    requires {o_param_ix_2 < Len.impl ( * o_param_l_1)}
+    ensures { forall i : int . 0 <= i && i < Len.impl ( * o_param_l_1) && i <> o_param_ix_2 -> Get.impl ( * o_param_l_1) i = Get.impl ( ^ o_param_l_1) i }
+    ensures { Len.impl ( ^ o_param_l_1) = Len.impl ( * o_param_l_1) }
+    ensures { Type.Option_Some( ^ result) = Get.impl ( ^ o_param_l_1) o_param_ix_2 }
+    ensures { Type.Option_Some( * result) = Get.impl ( * o_param_l_1) o_param_ix_2 }
     
    = 
   var _0 : borrowed uint32;
@@ -84,11 +138,11 @@ module ListIndexMut
     goto BB1
   }
   BB1 {
-    invariant valid_ix { (0 : usize) <= ix_5 && ix_5 < len ( * l_4) };
-    invariant get_target_now { get ( * l_4) ix_5 = get ( * param_l_1) param_ix_2 };
-    invariant get_target_fin { get ( ^ l_4) ix_5 = get ( ^ param_l_1) param_ix_2 };
-    invariant len { len ( ^ l_4) = len ( * l_4) -> len ( ^ param_l_1) = len ( * param_l_1) };
-    invariant untouched { (forall i : int . 0 <= i && i < len ( * l_4) && i <> ix_5 -> get ( ^ l_4) i = get ( * l_4) i) -> (forall i : int . 0 <= i && i < len ( * param_l_1) && i <> param_ix_2 -> get ( ^ param_l_1) i = get ( * param_l_1) i) };
+    invariant valid_ix { (0 : usize) <= ix_5 && ix_5 < Len.impl ( * l_4) };
+    invariant get_target_now { Get.impl ( * l_4) ix_5 = Get.impl ( * param_l_1) param_ix_2 };
+    invariant get_target_fin { Get.impl ( ^ l_4) ix_5 = Get.impl ( ^ param_l_1) param_ix_2 };
+    invariant len { Len.impl ( ^ l_4) = Len.impl ( * l_4) -> Len.impl ( ^ param_l_1) = Len.impl ( * param_l_1) };
+    invariant untouched { (forall i : int . 0 <= i && i < Len.impl ( * l_4) && i <> ix_5 -> Get.impl ( ^ l_4) i = Get.impl ( * l_4) i) -> (forall i : int . 0 <= i && i < Len.impl ( * param_l_1) && i <> param_ix_2 -> Get.impl ( ^ param_l_1) i = Get.impl ( * param_l_1) i) };
     assume { (fun tup -> let () = tup in true) _12 };
     goto BB2
   }
@@ -161,11 +215,27 @@ module ListIndexMut
     goto BB1
   }
   
-  let rec cfg write (o_l_1 : borrowed (Type.list)) (o_ix_2 : usize) (o_val_3 : uint32) : ()
-    requires {o_ix_2 < len ( * o_l_1)}
-    ensures { forall i : int . 0 <= i && i < len ( * o_l_1) && i <> o_ix_2 -> get ( * o_l_1) i = get ( ^ o_l_1) i }
-    ensures { len ( ^ o_l_1) = len ( * o_l_1) }
-    ensures { Type.Option_Some(o_val_3) = get ( ^ o_l_1) o_ix_2 }
+end
+module Write
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  use Len
+  use Get
+  clone IndexMut as IndexMut0
+  let rec cfg impl (o_l_1 : borrowed (Type.list)) (o_ix_2 : usize) (o_val_3 : uint32) : ()
+    requires {o_ix_2 < Len.impl ( * o_l_1)}
+    ensures { forall i : int . 0 <= i && i < Len.impl ( * o_l_1) && i <> o_ix_2 -> Get.impl ( * o_l_1) i = Get.impl ( ^ o_l_1) i }
+    ensures { Len.impl ( ^ o_l_1) = Len.impl ( * o_l_1) }
+    ensures { Type.Option_Some(o_val_3) = Get.impl ( ^ o_l_1) o_ix_2 }
     
    = 
   var _0 : ();
@@ -192,7 +262,7 @@ module ListIndexMut
     assume { drop_uint _7 };
     _7 <- ix_2;
     assume { drop_uint ix_2 };
-    _5 <- indexMut _6 _7;
+    _5 <- IndexMut0.impl _6 _7;
     goto BB1
   }
   BB1 {
@@ -204,7 +274,21 @@ module ListIndexMut
     return _0
   }
   
-  let rec cfg main () : () = 
+end
+module Main
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  clone Write as Write0
+  let rec cfg impl () : () = 
   var _0 : ();
   var l_1 : Type.list;
   var _2 : Type.option (Type.list);
@@ -243,7 +327,7 @@ module ListIndexMut
     _7 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _7) };
     assume { drop_mut_ref _8 };
-    _6 <- write _7 (0 : usize) (2 : uint32);
+    _6 <- Write0.impl _7 (0 : usize) (2 : uint32);
     goto BB5
   }
   BB5 {

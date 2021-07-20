@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use indexmap::IndexSet;
+use std::collections::HashMap;
 use std::fmt::Display;
 
 pub mod printer;
@@ -358,7 +358,11 @@ impl Exp {
             Exp::BorrowMut(e) => e.qfvs(),
             Exp::Verbatim(_) => IndexSet::new(),
             Exp::Tuple(args) => args.iter().fold(IndexSet::new(), |acc, v| &acc | &v.qfvs()),
-            _ => unimplemented!("{:?}", self),
+            Exp::Match(scrut, brs) => {
+                brs.iter().fold(scrut.qfvs(), |acc, (_, br)| &acc | &br.qfvs())
+            }
+            Exp::Absurd => IndexSet::new(),
+            _ => unimplemented!("qvfs: {:?}", self),
         }
     }
 

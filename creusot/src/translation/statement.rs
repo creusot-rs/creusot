@@ -95,6 +95,11 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                                     si,
                                     expression,
                                 );
+
+                                self.imports.extend(
+                                    invariant.qfvs().into_iter().map(|qn| qn.module_name()),
+                                );
+
                                 self.emit_statement(Invariant(name, invariant));
                                 return;
                             }

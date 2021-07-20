@@ -1,5 +1,5 @@
-use std::collections::{BTreeMap, HashMap};
 use indexmap::IndexSet;
+use std::collections::{BTreeMap, HashMap};
 
 use crate::mlcfg::{Block, BlockId, Exp, LocalIdent, QName, Type};
 

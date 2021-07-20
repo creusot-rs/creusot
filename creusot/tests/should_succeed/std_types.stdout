@@ -1,4 +1,4 @@
-module StdTypes
+module Type
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -9,24 +9,34 @@ module StdTypes
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-
-  scope Type
-    type core_option_option 't = 
-      | Core_Option_Option_None
-      | Core_Option_Option_Some('t)
-      
-    predicate drop_core_option_option (drop_t : 't -> bool) (self : core_option_option 't) = 
-      match (self) with
-        | Core_Option_Option_None -> true
-        | Core_Option_Option_Some(a) -> drop_t a
-        end
-    type mytype  = 
-      | MyType(core_option_option uint32)
-      
-    predicate drop_mytype (self : mytype) = 
-      let MyType(a) = self in drop_core_option_option drop_uint a
-  end
-  let rec cfg main () : () = 
+  type core_option_option 't = 
+    | Core_Option_Option_None
+    | Core_Option_Option_Some('t)
+    
+  predicate drop_core_option_option (drop_t : 't -> bool) (self : core_option_option 't) = 
+    match (self) with
+      | Core_Option_Option_None -> true
+      | Core_Option_Option_Some(a) -> drop_t a
+      end
+  type mytype  = 
+    | MyType(core_option_option uint32)
+    
+  predicate drop_mytype (self : mytype) = 
+    let MyType(a) = self in drop_core_option_option drop_uint a
+end
+module Main
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  let rec cfg impl () : () = 
   var _0 : ();
   {
     goto BB0

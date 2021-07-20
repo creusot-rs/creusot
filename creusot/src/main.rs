@@ -31,12 +31,12 @@ use rustc_middle::{
     ty::{TyCtxt, WithOptConstParam},
 };
 use std::{cell::RefCell, env::args as get_args, rc::Rc};
-use why3::{declaration::Decl, mlcfg};
+use why3::mlcfg;
 
 mod analysis;
+pub mod ctx;
 mod extended_location;
 mod translation;
-pub mod ctx;
 
 #[allow(dead_code)]
 mod debug;
@@ -44,7 +44,7 @@ mod debug;
 use rustc_session::Session;
 use translation::*;
 
-mod module_tree;
+mod modules;
 
 struct ToWhy {
     output_file: Option<String>,
@@ -131,7 +131,6 @@ fn translate(
 
     // Type translation state, including which datatypes have already been translated.
     let mut ty_ctx = ctx::TranslationCtx::new(tcx, sess);
-    ty_ctx.modules.get_module_mut(mlcfg::QName::from_string("Type").unwrap());
 
     // Translate all type declarations and push them into the module collection
     for (def_id, span) in ty_decls.iter() {
@@ -156,7 +155,6 @@ fn translate(
 
         // Parent module of declaration
         let module_id = tcx.parent_module_from_def_id(def_id.expect_local()).to_def_id();
-        let module = crate::ctx::translate_value_id(tcx, module_id);
         // let module_id = tcx.parent(def_id).unwrap();
         let attrs = tcx.get_attrs(def_id);
         let resolver = specification::RustcResolver(resolver.clone(), module_id, tcx);
@@ -167,11 +165,16 @@ fn translate(
             Logic { body: exp, contract } => {
                 let out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, &body);
 
-                let mut translated =
-                    specification::logic_to_why(&resolver, &mut ty_ctx, def_id, &body, exp);
-                translated.sig.contract = out_contract;
+                let translated = specification::logic_to_why(
+                    &resolver,
+                    &mut ty_ctx,
+                    def_id,
+                    &body,
+                    exp,
+                    out_contract,
+                );
 
-                ty_ctx.modules.add_decl(module, Decl::LogicDecl(translated));
+                ty_ctx.modules.add_module(translated)
             }
             Program { contract } => {
                 let mut out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, &body);
@@ -183,10 +186,10 @@ fn translate(
                 // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
                 // TODO: now that we don't use polonius info: consider using optimized mir instead?
                 RemoveFalseEdge { tcx }.visit_body(&mut body);
-                let translated = FunctionTranslator::new(tcx, &mut ty_ctx, &body, resolver)
-                    .translate(def_id, out_contract);
+                let translated = FunctionTranslator::new(tcx, &mut ty_ctx, &body, resolver, def_id)
+                    .translate(out_contract);
 
-                ty_ctx.modules.add_decl(module, Decl::FunDecl(translated));
+                ty_ctx.modules.add_module(translated);
             }
         }
     }
@@ -203,34 +206,17 @@ fn translate(
 }
 use std::io::Write;
 
-// TODO: Clean up, this printing code should not be in main.
-const IMPORTS: &str = "  use Ref
-  use mach.int.Int
-  use mach.int.Int32
-  use mach.int.Int64
-  use mach.int.UInt32
-  use mach.int.UInt64
-  use string.Char
-  use floating_point.Single
-  use floating_point.Double
-  use prelude.Prelude";
-
-fn print_crate<W>(out: &mut W, name: String, krate: module_tree::ModuleTree) -> std::io::Result<()>
+// TODO: integrate crate name into the modules
+fn print_crate<W>(out: &mut W, _name: String, krate: modules::Modules) -> std::io::Result<()>
 where
     W: Write,
 {
-    writeln!(out, "module {}", name)?;
-    writeln!(out, "{}\n", IMPORTS)?;
-
-    // let fe = mlcfg::printer::FormatEnv { indent: 2, scope: &[] };
     let (alloc, mut pe) = mlcfg::printer::PrintEnv::new();
 
-    for modl in krate.reify() {
-        modl.pretty(&alloc, &mut pe).indent(2).1.render(120, out)?;
+    for modl in krate.into_iter() {
+        modl.pretty(&alloc, &mut pe).1.render(120, out)?;
         writeln!(out)?;
     }
-    // print_module_tree(out, &mut Vec::new(), &krate.modules).unwrap();
-    writeln!(out, "end")?;
 
     Ok(())
 }

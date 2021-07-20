@@ -1,20 +1,20 @@
 use indexmap::IndexSet;
 use std::collections::BTreeMap;
 
+use why3::declaration::{CloneSubst, Decl, DeclClone, Predicate, TyDecl};
 use why3::mlcfg::QName;
-use why3::declaration::{Predicate, CloneSubst, Decl, DeclClone, TyDecl};
 
-use rustc_hir::def_id::DefId;
-use rustc_session::Session;
-use rustc_middle::ty::TyCtxt;
-use rustc_middle::ty::subst::SubstsRef;
 use rustc_errors::DiagnosticId;
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::subst::SubstsRef;
+use rustc_middle::ty::TyCtxt;
+use rustc_session::Session;
 use rustc_span::Span;
 
 use rustc_hir::definitions::DefPathData;
 use rustc_resolve::Namespace;
 
-use crate::module_tree::ModuleTree;
+use crate::modules::Modules;
 
 pub struct NameMap<'tcx>(TyCtxt<'tcx>, BTreeMap<(DefId, SubstsRef<'tcx>), String>);
 
@@ -33,6 +33,10 @@ impl<'tcx> NameMap<'tcx> {
             (true, self.1[&(def_id, subst)].clone())
         }
     }
+
+    pub fn into_iter(self) -> impl Iterator<Item = ((DefId, SubstsRef<'tcx>), String)> {
+        self.1.into_iter()
+    }
 }
 
 pub struct TranslationCtx<'sess, 'tcx> {
@@ -40,7 +44,8 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     pub used_tys: IndexSet<DefId>,
     pub used_traits: IndexSet<DefId>,
-    pub modules: ModuleTree,
+    pub translated_funcs: IndexSet<DefId>,
+    pub modules: Modules,
 }
 
 impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
@@ -50,7 +55,8 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             tcx,
             used_tys: IndexSet::new(),
             used_traits: IndexSet::new(),
-            modules: ModuleTree::new(),
+            translated_funcs: IndexSet::new(),
+            modules: Modules::new(),
         }
     }
 
@@ -59,25 +65,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn add_type(&mut self, ty_decl: TyDecl, drop_pred: Predicate) {
-        let mut dependencies = ty_decl.used_types();
-        let type_ns = QName::from_string("Type").unwrap();
-        let module = self.modules.get_module_mut(type_ns);
-
-        let mut pos = 0;
-        while !dependencies.is_empty() && pos < module.len() {
-            match &module[pos] {
-                TyDecl(tyd) => {
-                    dependencies.remove(&tyd.ty_name);
-                }
-                _ => {}
-            }
-
-            pos += 2;
-        }
-
-        use why3::declaration::Decl::*;
-        module.insert(pos, PredDecl(drop_pred));
-        module.insert(pos, TyDecl(ty_decl));
+        self.modules.add_type(ty_decl, drop_pred);
     }
 
     pub fn clone_item(
@@ -86,7 +74,6 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         def_id: DefId,
         subst: SubstsRef<'tcx>,
     ) -> why3::declaration::Decl {
-
         let clone_subst = self.type_param_subst(def_id, subst);
         let (_, clone_name) = name_map.name_for(def_id, subst);
 
@@ -116,7 +103,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 }
 
-use heck::{CamelCase, MixedCase};
+use heck::CamelCase;
 
 pub fn translate_type_id(tcx: TyCtxt, def_id: DefId) -> QName {
     translate_defid(tcx, def_id, true)
@@ -133,7 +120,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
     let mut name_segs = Vec::new();
 
     if def_path.krate.as_u32() != 0 {
-        mod_segs.push(tcx.crate_name(def_id.krate).to_string())
+        mod_segs.push(tcx.crate_name(def_id.krate).to_string().to_camel_case())
     }
 
     for seg in def_path.data[..].iter() {
@@ -142,7 +129,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
             DefPathData::TypeNs(_) => mod_segs.push(format!("{}", seg)[..].to_camel_case()),
             // CORE ASSUMPTION: Once we stop seeing TypeNs we never see it again.
             DefPathData::Ctor => {}
-            _ => name_segs.push(format!("{}", seg)[..].to_mixed_case()),
+            _ => name_segs.push(format!("{}", seg)[..].to_camel_case()),
         }
     }
 
@@ -166,7 +153,10 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
             name_segs = vec![mod_segs.pop().unwrap()];
         }
         (Mod | Impl, _) => {}
-        (_, Some(Namespace::ValueNS)) => {}
+        (_, Some(Namespace::ValueNS)) => {
+            mod_segs.extend(name_segs);
+            name_segs = vec!["impl".into()];
+        }
         (a, b) => unreachable!("{:?} {:?} {:?} {:?}", a, b, mod_segs, name_segs),
     }
 

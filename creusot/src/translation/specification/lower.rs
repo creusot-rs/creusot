@@ -234,7 +234,7 @@ fn is_constructor(ctx: &mut TranslationCtx, path: &Name) -> bool {
 fn lower_value_path(ctx: &mut TranslationCtx, path: Name) -> QName {
     if let Name::Path { id, .. } = path {
         let defid: DefId = super::id_to_def_id(id);
-        crate::translation::translate_value_id(ctx.tcx, defid)
+        crate::ctx::translate_value_id(ctx.tcx, defid)
     } else {
         panic!("cannot lower a local identifier to a qualified name");
     }

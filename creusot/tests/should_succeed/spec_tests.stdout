@@ -1,4 +1,4 @@
-module SpecTests
+module Type
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -9,33 +9,44 @@ module SpecTests
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-
-  scope Type
-    type s 'a 'b = 
-      | S('a, 'b)
-      
-    predicate drop_s (drop_a : 'a -> bool) (drop_b : 'b -> bool) (self : s 'a 'b) = 
-      let S(a, b) = self in drop_a a && drop_b b
-    type t  = 
-      | T_A
-      | T_B
-      
-    predicate drop_t (self : t) = 
-      match (self) with
-        | T_A -> true
-        | T_B -> true
-        end
-    type list 'a = 
-      | List_Cons('a, list 'a)
-      | List_Nil
-      
-    predicate drop_list (drop_a : 'a -> bool) (self : list 'a) = 
-      match (self) with
-        | List_Cons(a, b) -> drop_a a && drop_fix b
-        | List_Nil -> true
-        end
-  end
-  let rec cfg testSpecs () : ()
+  type s 'a 'b = 
+    | S('a, 'b)
+    
+  predicate drop_s (drop_a : 'a -> bool) (drop_b : 'b -> bool) (self : s 'a 'b) = 
+    let S(a, b) = self in drop_a a && drop_b b
+  type t  = 
+    | T_A
+    | T_B
+    
+  predicate drop_t (self : t) = 
+    match (self) with
+      | T_A -> true
+      | T_B -> true
+      end
+  type list 'a = 
+    | List_Cons('a, list 'a)
+    | List_Nil
+    
+  predicate drop_list (drop_a : 'a -> bool) (self : list 'a) = 
+    match (self) with
+      | List_Cons(a, b) -> drop_a a && drop_fix b
+      | List_Nil -> true
+      end
+end
+module TestSpecs
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  use Type
+  let rec cfg impl () : ()
     ensures { Type.S((0 : uint32), true) = Type.S((1 : uint32), false) }
     ensures { Type.T_A = Type.T_B }
     
@@ -49,7 +60,20 @@ module SpecTests
     return _0
   }
   
-  let rec cfg main () : () = 
+end
+module Main
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  let rec cfg impl () : () = 
   var _0 : ();
   {
     goto BB0

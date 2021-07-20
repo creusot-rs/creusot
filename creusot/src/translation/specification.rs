@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
 use crate::translation::TranslationCtx;
-use why3::declaration::{Contract, Logic, Signature};
-use why3::mlcfg::Exp;
-use why3::mlcfg::LocalIdent;
+use why3::declaration::{Contract, Decl, Logic, Module, Signature, Use};
+use why3::mlcfg::{Exp, LocalIdent};
 
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
@@ -134,7 +133,8 @@ pub fn logic_to_why<'tcx>(
     did: DefId,
     body: &Body<'tcx>,
     exp: String,
-) -> Logic {
+    contract: Contract,
+) -> Module {
     // Technically we should pass through translation::ty here in case we mention
     // any untranslated types...
     let ret_ty = return_ty(res.2, body);
@@ -148,19 +148,36 @@ pub fn logic_to_why<'tcx>(
     pearlite::typing::check_term(&mut tyctx, &mut t, &ret_ty).unwrap();
     let body = lower_term_to_why(ctx, t);
 
-    let name = crate::translation::translate_value_id(res.2, did);
-    Logic {
+    let name = crate::ctx::translate_value_id(res.2, did);
+
+    // Gather the required imports
+    // TODO: use this to sort logic functions topologically
+    // Remove the self-reference and reference to the Type module
+    let mut imports = body.qfvs();
+    imports.extend(contract.qfvs());
+    imports.remove(&name);
+
+    let mut decls: Vec<_> = imports
+        .into_iter()
+        .map(|qn| qn.module_name())
+        .filter(|qn| qn != &crate::modules::type_module())
+        .map(|qn| Decl::UseDecl(Use { name: qn }))
+        .collect();
+
+    decls.push(Decl::LogicDecl(Logic {
         sig: Signature {
-            name,
+            name: "impl".into(),
             retty: Some(lower_type_to_why(ctx, ret_ty)),
             args: entry_ctx
                 .into_iter()
                 .map(|(nm, ty)| (LocalIdent::Name(nm), lower_type_to_why(ctx, ty)))
                 .collect(),
-            contract: Contract::new(),
+            contract,
         },
         body,
-    }
+    }));
+
+    Module { name: name.module.join(""), decls }
 }
 
 fn return_ty<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> pearlite::term::Type {

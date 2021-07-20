@@ -10,8 +10,35 @@ use why3::mlcfg::{Exp as MlE, LocalIdent, Pattern, Pattern::*, QName, Type as Ml
 
 use super::TranslationCtx;
 
-/// Translate a Rust type into an MLW one.
+/// When we translate a type declaration, generic parameters should be declared using 't notation:
+///
+///   struct A<T>(T) -> type 't a = 't
+///
+/// while when we use a generic type, the generic parameters should have been pre-declared in the
+/// surrounding module.
+///
+/// fn x<T>(a: T) {..} -> type t; let x (a : t) = ..
+///
+/// This enum selects the two behaviors
+/// TODO: perhaps a cleaner solution would be to carry a substitution which chooses how to replace
+/// tyvars with us. Do this if we change the tyvars again.
+#[derive(Copy, Clone, PartialEq, Eq)]
+enum TyTranslation {
+    Declaration,
+    Usage,
+}
+
+// Translate a type usage
 pub fn translate_ty<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, span: Span, ty: Ty<'tcx>) -> MlT {
+    translate_ty_inner(TyTranslation::Usage, ctx, span, ty)
+}
+
+fn translate_ty_inner<'tcx>(
+    trans: TyTranslation,
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    span: Span,
+    ty: Ty<'tcx>,
+) -> MlT {
     use rustc_middle::ty::FloatTy::*;
 
     match ty.kind() {
@@ -25,31 +52,38 @@ pub fn translate_ty<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, span: Span, ty: Ty
         },
         Adt(def, s) => {
             if def.is_box() {
-                return translate_ty(ctx, span, s[0].expect_ty());
+                return translate_ty_inner(trans, ctx, span, s[0].expect_ty());
             }
 
             if format!("{:?}", def).contains("creusot_contracts::Int") {
                 return MlT::Integer;
             }
-            let args = s.types().map(|t| translate_ty(ctx, span, t)).collect();
+            let args = s.types().map(|t| translate_ty_inner(trans, ctx, span, t)).collect();
 
             MlT::TApp(box MlT::TConstructor(translate_ty_name(ctx, def.did)), args)
         }
         Tuple(args) => {
-            let tys = args.types().map(|t| translate_ty(ctx, span, t)).collect();
+            let tys = args.types().map(|t| translate_ty_inner(trans, ctx, span, t)).collect();
             MlT::Tuple(tys)
         }
-        Param(p) => MlT::TVar(translate_ty_param(p.name)),
+        Param(p) => {
+            if let TyTranslation::Declaration = trans {
+                MlT::TVar(translate_ty_param(p.name))
+            } else {
+                MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
+            }
+        }
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
             match borkind {
-                Mut => MlT::MutableBorrow(box translate_ty(ctx, span, ty)),
-                Not => translate_ty(ctx, span, ty),
+                Mut => MlT::MutableBorrow(box translate_ty_inner(trans, ctx, span, ty)),
+                Not => translate_ty_inner(trans, ctx, span, ty),
             }
         }
-        Slice(ty) => {
-            MlT::TApp(box MlT::TConstructor("array".into()), vec![translate_ty(ctx, span, ty)])
-        }
+        Slice(ty) => MlT::TApp(
+            box MlT::TConstructor("array".into()),
+            vec![translate_ty_inner(trans, ctx, span, ty)],
+        ),
         Str => MlT::TConstructor("string".into()),
         // Slice()
         Never => MlT::Tuple(vec![]),
@@ -156,8 +190,13 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     let mut ml_ty_def = Vec::new();
 
     for var_def in adt.variants.iter() {
-        let field_tys: Vec<_> =
-            var_def.fields.iter().map(|f| translate_ty(ctx, span, f.ty(ctx.tcx, substs))).collect();
+        let field_tys: Vec<_> = var_def
+            .fields
+            .iter()
+            .map(|f| {
+                translate_ty_inner(TyTranslation::Declaration, ctx, span, f.ty(ctx.tcx, substs))
+            })
+            .collect();
 
         let var_name = super::translate_value_id(ctx.tcx, var_def.def_id);
         ml_ty_def.push((var_name.name(), field_tys));

@@ -1,3 +1,4 @@
+use rustc_middle::ty::subst::SubstsRef;
 use std::collections::HashMap;
 
 use rustc_errors::DiagnosticId;
@@ -13,7 +14,11 @@ use rustc_middle::{
 use rustc_session::Session;
 use rustc_target::abi::VariantIdx;
 
+use why3::mlcfg::QName;
 use why3::mlcfg::{BinOp, BlockId, Constant, Exp, Pattern, Statement, Terminator as MlT};
+
+use crate::translation::Extern;
+use rustc_hir::def_id::LOCAL_CRATE;
 
 use super::FunctionTranslator;
 
@@ -49,7 +54,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             Return => self.emit_terminator(MlT::Return),
             Unreachable => self.emit_terminator(MlT::Absurd),
             Call { func, args, destination, .. } => {
-                let fun_def_id = func_defid(func).expect("expected call with function");
+                let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
 
                 let mut func_args: Vec<_> =
                     args.iter().map(|arg| self.translate_operand(arg)).collect();
@@ -64,10 +69,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
 
                     func_args.remove(0)
                 } else {
-                    let fname = match func.ty(self.body, self.tcx).kind() {
-                        ty::TyKind::FnDef(defid, _) => super::translate_value_id(self.tcx, *defid),
-                        _ => panic!("not a function"),
-                    };
+                    let fname = self.get_func_name(fun_def_id, subst, terminator.source_info.span);
                     Exp::Call(box Exp::QVar(fname), func_args)
                 };
 
@@ -93,9 +95,6 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
 
             // TODO: Do we really need to do anything more?
             Drop { target, .. } => self.emit_terminator(mk_goto(*target)),
-            Resume => {
-                log::debug!("Skipping resume terminator");
-            }
             FalseUnwind { real_target, .. } => {
                 self.emit_terminator(mk_goto(*real_target));
             }
@@ -116,7 +115,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
 
                 self.emit_terminator(mk_goto(*target))
             }
-            Yield { .. } | GeneratorDrop | InlineAsm { .. } => {
+            Yield { .. } | GeneratorDrop | InlineAsm { .. } | Resume => {
                 unreachable!("{:?}", terminator.kind)
             }
         }
@@ -125,13 +124,41 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
     fn is_box_new(&self, def_id: DefId) -> bool {
         self.tcx.def_path_str(def_id) == "std::boxed::Box::<T>::new"
     }
+
+    fn get_func_name(
+        &mut self,
+        def_id: DefId,
+        subst: SubstsRef<'tcx>,
+        sp: rustc_span::Span,
+    ) -> QName {
+        if def_id == self.def_id {
+            return super::translate_value_id(self.tcx, self.def_id);
+        }
+
+        if let Some(it) = self.tcx.opt_associated_item(def_id) {
+            if let ty::TraitContainer(_) = it.container {
+                self.ctx.crash_and_error(sp, &format!("cannot use associated items {:?}", it));
+            }
+        }
+
+        if def_id.krate != LOCAL_CRATE {
+            Extern::translate(self.ctx, def_id, sp)
+        }
+
+        let (_, clone_name) = self.name_of_clone(def_id, subst);
+        QName { module: vec![clone_name], name: "impl".into() }
+    }
+
+    fn name_of_clone(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> (bool, String) {
+        self.clone_names.name_for(def_id, subst)
+    }
 }
 
 // Try to extract a function defid from an operand
-fn func_defid(op: &Operand<'_>) -> Option<DefId> {
+fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, SubstsRef<'tcx>)> {
     let fun_ty = op.constant().unwrap().literal.ty();
-    if let ty::TyKind::FnDef(def_id, _) = fun_ty.kind() {
-        Some(*def_id)
+    if let ty::TyKind::FnDef(def_id, subst) = fun_ty.kind() {
+        Some((*def_id, subst))
     } else {
         None
     }

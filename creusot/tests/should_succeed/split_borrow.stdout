@@ -1,4 +1,4 @@
-module SplitBorrow
+module Type
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -9,15 +9,25 @@ module SplitBorrow
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-
-  scope Type
-    type myint  = 
-      | MyInt(usize)
-      
-    predicate drop_myint (self : myint) = 
-      let MyInt(a) = self in drop_uint a
-  end
-  let rec cfg z () : bool = 
+  type myint  = 
+    | MyInt(usize)
+    
+  predicate drop_myint (self : myint) = 
+    let MyInt(a) = self in drop_uint a
+end
+module Z
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  let rec cfg impl () : bool = 
   var _0 : bool;
   {
     goto BB0
@@ -27,7 +37,21 @@ module SplitBorrow
     return _0
   }
   
-  let rec cfg main () : () = 
+end
+module Main
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  clone Z as Z0
+  let rec cfg impl () : () = 
   var _0 : ();
   var x_1 : (Type.myint, Type.myint);
   var _2 : Type.myint;
@@ -48,7 +72,7 @@ module SplitBorrow
     y_4 <- borrow_mut x_1;
     x_1 <-  ^ y_4;
     assume { (fun tup -> let (a, b) = tup in Type.drop_myint a && Type.drop_myint b) x_1 };
-    _6 <- z ();
+    _6 <- Z0.impl ();
     goto BB1
   }
   BB1 {

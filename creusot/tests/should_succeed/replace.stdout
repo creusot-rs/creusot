@@ -1,4 +1,4 @@
-module Replace
+module Type
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -9,24 +9,34 @@ module Replace
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-
-  scope Type
-    type core_option_option 't = 
-      | Core_Option_Option_None
-      | Core_Option_Option_Some('t)
-      
-    predicate drop_core_option_option (drop_t : 't -> bool) (self : core_option_option 't) = 
-      match (self) with
-        | Core_Option_Option_None -> true
-        | Core_Option_Option_Some(a) -> drop_t a
-        end
-    type something  = 
-      | Something(uint32, core_option_option (something))
-      
-    predicate drop_something (self : something) = 
-      let Something(a, b) = self in drop_uint a && drop_core_option_option drop_fix b
-  end
-  let rec cfg test (o_a_1 : Type.something) (o_b_2 : Type.something) : () = 
+  type core_option_option 't = 
+    | Core_Option_Option_None
+    | Core_Option_Option_Some('t)
+    
+  predicate drop_core_option_option (drop_t : 't -> bool) (self : core_option_option 't) = 
+    match (self) with
+      | Core_Option_Option_None -> true
+      | Core_Option_Option_Some(a) -> drop_t a
+      end
+  type something  = 
+    | Something(uint32, core_option_option (something))
+    
+  predicate drop_something (self : something) = 
+    let Something(a, b) = self in drop_uint a && drop_core_option_option drop_fix b
+end
+module Test
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  let rec cfg impl (o_a_1 : Type.something) (o_b_2 : Type.something) : () = 
   var _0 : ();
   var a_1 : Type.something;
   var b_2 : Type.something;
@@ -60,7 +70,20 @@ module Replace
     return _0
   }
   
-  let rec cfg main () : () = 
+end
+module Main
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  let rec cfg impl () : () = 
   var _0 : ();
   {
     goto BB0

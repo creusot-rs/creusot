@@ -1,4 +1,4 @@
-module ProjectionToggle
+module Type
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -9,24 +9,34 @@ module ProjectionToggle
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-
-  scope Type
-    
-  end
-  let rec cfg projToggle (o_toggle_1 : bool) (o_a_2 : borrowed 't) (o_b_3 : borrowed 't) : borrowed 't
+end
+module ProjToggle
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  type t   
+  let rec cfg impl (o_toggle_1 : bool) (o_a_2 : borrowed t) (o_b_3 : borrowed t) : borrowed t
     ensures { o_toggle_1 = false -> result = o_b_3 &&  ^ o_a_2 =  * o_a_2 }
     ensures { o_toggle_1 = true -> result = o_a_2 &&  ^ o_b_3 =  * o_b_3 }
     
    = 
-  var _0 : borrowed 't;
+  var _0 : borrowed t;
   var toggle_1 : bool;
-  var a_2 : borrowed 't;
-  var b_3 : borrowed 't;
-  var _4 : borrowed 't;
-  var _5 : borrowed 't;
+  var a_2 : borrowed t;
+  var b_3 : borrowed t;
+  var _4 : borrowed t;
+  var _5 : borrowed t;
   var _6 : bool;
-  var _7 : borrowed 't;
-  var _8 : borrowed 't;
+  var _7 : borrowed t;
+  var _8 : borrowed t;
   {
     toggle_1 <- o_toggle_1;
     a_2 <- o_a_2;
@@ -75,7 +85,36 @@ module ProjectionToggle
     return _0
   }
   
-  let rec cfg main () : () = 
+end
+module CorePanickingPanic
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  val impl (expr : string) : ()
+end
+module Main
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  clone ProjToggle as ProjToggle0 with type t = int32
+  clone CorePanickingPanic as Panic1
+  let rec cfg impl () : () = 
   var _0 : ();
   var a_1 : int32;
   var b_2 : int32;
@@ -106,7 +145,7 @@ module ProjectionToggle
     _6 <- borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ _6) };
     assume { drop_mut_ref _7 };
-    x_3 <- projToggle true _4 _6;
+    x_3 <- ProjToggle0.impl true _4 _6;
     goto BB1
   }
   BB1 {

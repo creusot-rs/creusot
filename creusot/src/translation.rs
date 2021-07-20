@@ -18,6 +18,9 @@ use why3::declaration::*;
 use why3::mlcfg::{self, Exp::*, Pattern::*, Statement::*, *};
 
 use rustc_middle::mir::Place;
+use rustc_middle::ty::GenericParamDefKind;
+
+use indexmap::IndexSet;
 
 pub mod specification;
 mod statement;
@@ -29,6 +32,8 @@ use crate::ctx::*;
 // Split this into several sub-contexts: Core, Analysis, Results?
 pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+
     body: &'body Body<'tcx>,
 
     local_live: dataflow::ResultsCursor<'body, 'tcx, MaybeLiveLocals>,
@@ -55,6 +60,11 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
 
     // Fresh BlockId
     fresh_id: usize,
+
+    // Gives a fresh name to every mono-morphization of a function or trait
+    clone_names: NameMap<'tcx>,
+
+    imports: IndexSet<QName>,
 }
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
@@ -63,6 +73,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         ctx: &'body mut TranslationCtx<'sess, 'tcx>,
         body: &'body Body<'tcx>,
         resolver: specification::RustcResolver<'tcx>,
+        def_id: DefId,
     ) -> Self {
         let local_init = MaybeInitializedLocals
             .into_engine(tcx, &body)
@@ -87,10 +98,12 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         });
 
         let never_live = crate::analysis::NeverLive::for_body(body);
-        warn!("ever_live_set: {:?}", never_live);
+        let imports = IndexSet::new();
+
         FunctionTranslator {
             tcx,
             body,
+            def_id,
             local_live,
             local_init,
             erased_locals,
@@ -100,6 +113,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             ctx,
             resolver,
             fresh_id: body.basic_blocks().len(),
+            clone_names: NameMap::new(tcx),
+            imports,
         }
     }
 
@@ -118,7 +133,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         self.emit_statement(assign);
     }
 
-    pub fn translate(mut self, nm: DefId, contracts: Contract) -> CfgFunction {
+    pub fn translate(mut self, contract: Contract) -> Module {
         self.translate_body();
         move_invariants_into_loop(&mut self.past_blocks);
 
@@ -155,8 +170,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             })
             .collect();
 
-        let name = translate_value_id(self.tcx, nm);
-
         let entry = Block {
             statements: vars
                 .iter()
@@ -178,10 +191,31 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             terminator: Terminator::Goto(BlockId(0)),
         };
 
-        let name = translate_value_id(self.tcx, nm);
+        self.imports.extend(contract.qfvs().into_iter().map(|qn| qn.module_name()));
 
-        let sig = Signature { name, retty: Some(retty), args, contract: contracts };
-        CfgFunction { sig, vars, entry, blocks: self.past_blocks }
+        let mut decls: Vec<_> = generic_decls_for(self.tcx, self.def_id).collect();
+
+        for imp in self.imports {
+            decls.push(Decl::UseDecl(Use { name: imp }))
+        }
+
+        for ((def_id, subst), clone_name) in self.clone_names.into_iter() {
+            let clone_subst = self.ctx.type_param_subst(def_id, subst);
+
+            decls.push(Decl::Clone(DeclClone {
+                name: translate_value_id(self.tcx, def_id).module_name(),
+                subst: clone_subst,
+                as_nm: Some(clone_name),
+            }))
+        }
+
+        let name = translate_value_id(self.tcx, self.def_id).module.join("");
+        let func_name = QName { module: vec![], name: "impl".into() };
+
+        let sig = Signature { name: func_name, retty: Some(retty), args, contract };
+
+        decls.push(Decl::FunDecl(CfgFunction { sig, vars, entry, blocks: self.past_blocks }));
+        Module { name, decls }
     }
 
     fn translate_body(&mut self) {
@@ -531,6 +565,59 @@ fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {
         invs.append(&mut tgt.statements);
         let _ = std::mem::replace(&mut tgt.statements, invs);
     }
+}
+
+// Translate functions that are external to the crate as opaque values
+struct Extern;
+
+impl Extern {
+    fn translate(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_span::Span) {
+        if !ctx.translated_funcs.insert(def_id) {
+            return;
+        }
+
+        let sig = ctx.tcx.normalize_erasing_late_bound_regions(
+            rustc_middle::ty::ParamEnv::reveal_all(),
+            ctx.tcx.fn_sig(def_id),
+        );
+        let names = ctx.tcx.fn_arg_names(def_id);
+
+        let name = translate_value_id(ctx.tcx, def_id).module.join("");
+
+        let mut decls: Vec<_> = generic_decls_for(ctx.tcx, def_id).collect();
+        decls.push(Decl::ValDecl(Val {
+            sig: Signature {
+                name: QName::from_string("impl").unwrap(),
+                retty: Some(ty::translate_ty(ctx, span, sig.output())),
+                args: names
+                    .iter()
+                    .zip(sig.inputs())
+                    .map(|(id, ty)| (id.name.to_string().into(), ty::translate_ty(ctx, span, ty)))
+                    .collect(),
+
+                contract: Contract::new(),
+            },
+        }));
+
+        ctx.modules.add_module(Module { name, decls });
+    }
+}
+
+fn generic_decls_for<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> impl Iterator<Item = Decl> + 'tcx {
+    let generics = tcx.generics_of(def_id);
+
+    (0..generics.count()).filter_map(move |i| {
+        let param = generics.param_at(i, tcx);
+        if let GenericParamDefKind::Type { .. } = param.kind {
+            Some(Decl::TyDecl(TyDecl {
+                ty_name: (&*param.name.as_str().to_lowercase()).into(),
+                ty_params: vec![],
+                ty_constructors: vec![],
+            }))
+        } else {
+            None
+        }
+    })
 }
 
 fn mk_anon(l: Local) -> LocalIdent {
