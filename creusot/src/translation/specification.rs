@@ -272,7 +272,7 @@ impl PreContract {
         }
 
         if let Some(variant) = self.variant {
-            out.variant = Some(variant_to_why(res, ctx, body, variant));
+            out.variant = vec![variant_to_why(res, ctx, body, variant)];
         };
         out
     }

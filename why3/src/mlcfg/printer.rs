@@ -294,14 +294,15 @@ impl Contract {
             )
         }
 
-        if let Some(variant) = &self.variant {
+        for var in &self.variant {
             doc = doc.append(
                 alloc
                     .text("variant ")
-                    .append(variant.pretty(alloc, env).braces())
+                    .append(var.pretty(alloc, env).braces())
                     .append(alloc.hardline()),
             )
         }
+
         env.in_logic = false;
         doc
     }

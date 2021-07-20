@@ -37,7 +37,7 @@ impl Decl {
 pub struct Contract {
     pub requires: Vec<Exp>,
     pub ensures: Vec<Exp>,
-    pub variant: Option<Exp>,
+    pub variant: Vec<Exp>,
 }
 
 impl Contract {
@@ -45,15 +45,23 @@ impl Contract {
         Self::default()
     }
 
+    pub fn extend(&mut self, other: Contract) {
+        self.requires.extend(other.requires);
+        self.ensures.extend(other.ensures);
+        self.variant.extend(other.variant);
+    }
+
     pub fn subst(&mut self, subst: &HashMap<LocalIdent, Exp>) {
         for req in self.requires.iter_mut() {
             req.subst(subst);
         }
+
         for ens in self.ensures.iter_mut() {
             ens.subst(subst);
         }
-        if let Some(variant) = &mut self.variant {
-            variant.subst(subst);
+
+        for var in self.variant.iter_mut() {
+            var.subst(subst);
         }
     }
 
@@ -63,11 +71,13 @@ impl Contract {
         for req in &self.requires {
             qfvs.extend(req.qfvs());
         }
+
         for ens in &self.ensures {
             qfvs.extend(ens.qfvs());
         }
-        if let Some(variant) = &self.variant {
-            qfvs.extend(variant.qfvs());
+
+        for var in &self.variant {
+            qfvs.extend(var.qfvs());
         }
 
         qfvs
