@@ -83,6 +83,7 @@ impl Contract {
         qfvs
     }
 }
+
 #[derive(Debug)]
 pub struct Logic {
     pub name: QName,
@@ -98,6 +99,7 @@ pub struct CfgFunction {
     pub retty: Type,
     pub args: Vec<(LocalIdent, Type)>,
     pub vars: Vec<(LocalIdent, Type)>,
+    pub entry: Block,
     pub blocks: BTreeMap<BlockId, Block>,
     pub contract: Contract,
 }

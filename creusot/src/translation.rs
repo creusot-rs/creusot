@@ -165,23 +165,72 @@ impl<'a, 'b, 'tcx> FunctionTranslator<'a, 'b, 'tcx> {
         self.translate_body();
 
         let arg_count = self.body.arg_count;
-        let mut vars = self.body.local_decls.iter_enumerated().filter_map(|(loc, decl)| {
-            if self.erased_locals.contains(loc) {
-                None
-            } else {
-                let ident = self.translate_local(loc);
-                Some((ident, ty::translate_ty(&mut self.ctx, decl.source_info.span, decl.ty)))
-            }
-        });
+        let vars: Vec<_> = self
+            .body
+            .local_decls
+            .iter_enumerated()
+            .filter_map(|(loc, decl)| {
+                if self.erased_locals.contains(loc) {
+                    None
+                } else {
+                    let ident = self.translate_local(loc);
+                    Some((ident, ty::translate_ty(&mut self.ctx, decl.source_info.span, decl.ty)))
+                }
+            })
+            .collect();
 
-        let retty = vars.next().unwrap().1;
-        let args = vars.by_ref().take(arg_count).collect();
-        let vars = vars.collect::<Vec<_>>();
+        let retty = vars[0].1.clone();
+        let args = vars
+            .iter()
+            .skip(1)
+            .take(arg_count)
+            .map(|(id, ty)| {
+                if let LocalIdent::Anon(u, hmn) = id {
+                    let hmn = match hmn {
+                        None => Some("o".into()),
+                        Some(h) => Some(format!("o_{}", h)),
+                    };
+                    (LocalIdent::Anon(*u, hmn), ty.clone())
+                } else {
+                    unreachable!("{:?}", id)
+                }
+            })
+            .collect();
 
         let name = translate_value_id(self.tcx, nm);
 
+         let entry = Block {
+            statements: vars
+                .iter()
+                .skip(1)
+                .take(arg_count)
+                .map(|(id, _)| {
+                    let rhs = if let LocalIdent::Anon(u, hmn) = id {
+                        let hmn = match hmn {
+                            None => Some("o".into()),
+                            Some(h) => Some(format!("o_{}", h)),
+                        };
+                        LocalIdent::Anon(*u, hmn)
+                    } else {
+                        unreachable!()
+                    };
+                    Assign { lhs: id.clone(), rhs: Exp::Var(rhs) }
+                })
+                .collect(),
+            terminator: Terminator::Goto(BlockId(0)),
+        };
+
         move_invariants_into_loop(&mut self.past_blocks);
-        CfgFunction { name, retty, args, vars, blocks: self.past_blocks, contract: contracts }
+
+        CfgFunction {
+            name,
+            retty,
+            args,
+            vars,
+            entry,
+            blocks: self.past_blocks,
+            contract: contracts,
+        }
     }
 
     fn translate_body(&mut self) {

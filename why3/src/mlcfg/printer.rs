@@ -344,9 +344,7 @@ impl CfgFunction {
             } else {
                 alloc.intersperse(
                     self.args.iter().map(|(nm, ty)| {
-                        alloc
-                            .text("o_")
-                            .append(nm.pretty(alloc, env))
+                        nm.pretty(alloc, env)
                             .append(" : ")
                             .append(ty.pretty(alloc, env))
                             .parens()
@@ -359,25 +357,6 @@ impl CfgFunction {
             .append(alloc.hardline())
             .append(self.contract.pretty(alloc, env).append("=").indent(2))
             .append(alloc.hardline())
-            .append(
-                alloc
-                    .text("var _0 : ")
-                    .append(self.retty.pretty(alloc, env))
-                    .append(alloc.text(";"))
-                    .append(alloc.hardline()),
-            )
-            .append(sep_end_by(
-                alloc,
-                self.args.iter().map(|(var, ty)| {
-                    alloc
-                        .text("var ")
-                        .append(alloc.as_string(var))
-                        .append(" : ")
-                        .append(ty.pretty(alloc, env))
-                        .append(";")
-                }),
-                alloc.hardline(),
-            ))
             .append(sep_end_by(
                 alloc,
                 self.vars.iter().map(|(var, ty)| {
@@ -390,24 +369,7 @@ impl CfgFunction {
                 }),
                 alloc.hardline(),
             ))
-            .append(
-                alloc
-                    .hardline()
-                    .append(sep_end_by(
-                        alloc,
-                        self.args.iter().map(|(var, _)| {
-                            var.pretty(alloc, env)
-                                .append(alloc.text(" <- o_").append(var.pretty(alloc, env)))
-                                .append(";")
-                        }),
-                        alloc.hardline(),
-                    ))
-                    .append("goto BB0")
-                    .nest(2)
-                    .append(alloc.hardline())
-                    .braces(),
-            )
-            .append(alloc.hardline())
+            .append(self.entry.pretty(alloc, env).append(alloc.hardline()))
             .append(sep_end_by(
                 alloc,
                 self.blocks.iter().map(|(id, block)| {
