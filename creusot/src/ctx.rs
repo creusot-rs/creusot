@@ -68,17 +68,17 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.modules.add_type(ty_decl, drop_pred);
     }
 
+    // TODO: No reason for this to be an associated method, move it to a standalone function
     pub fn clone_item(
         &mut self,
-        name_map: &mut NameMap<'tcx>,
         def_id: DefId,
         subst: SubstsRef<'tcx>,
+        clone_name: String,
     ) -> why3::declaration::Decl {
         let clone_subst = self.type_param_subst(def_id, subst);
-        let (_, clone_name) = name_map.name_for(def_id, subst);
 
         Decl::Clone(DeclClone {
-            name: translate_value_id(self.tcx, def_id),
+            name: cloneable_name(self.tcx, def_id),
             subst: clone_subst,
             as_nm: Some(clone_name),
         })
@@ -111,6 +111,16 @@ pub fn translate_type_id(tcx: TyCtxt, def_id: DefId) -> QName {
 
 pub fn translate_value_id(tcx: TyCtxt, def_id: DefId) -> QName {
     translate_defid(tcx, def_id, false)
+}
+
+pub fn cloneable_name(tcx: TyCtxt, def_id: DefId) -> QName {
+    let qname = translate_value_id(tcx, def_id);
+    use rustc_hir::def::DefKind::*;
+
+    match tcx.def_kind(def_id) {
+        Trait => qname,
+        _ => qname.module_name(),
+    }
 }
 
 fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {

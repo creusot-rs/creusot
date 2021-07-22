@@ -203,14 +203,9 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             decls.push(Decl::UseDecl(Use { name: imp }))
         }
 
-        for ((def_id, subst), clone_name) in self.clone_names.into_iter() {
-            let clone_subst = self.ctx.type_param_subst(def_id, subst);
 
-            decls.push(Decl::Clone(DeclClone {
-                name: translate_value_id(self.tcx, def_id).module_name(),
-                subst: clone_subst,
-                as_nm: Some(clone_name),
-            }))
+        for ((def_id, subst), clone_name) in self.clone_names.into_iter() {
+            decls.push(self.ctx.clone_item(def_id, subst, clone_name));
         }
 
         let name = translate_value_id(self.tcx, self.def_id).module.join("");
