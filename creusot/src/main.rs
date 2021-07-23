@@ -156,11 +156,10 @@ fn translate(
         // Parent module of declaration
         let module_id = tcx.parent_module_from_def_id(def_id.expect_local()).to_def_id();
         // let module_id = tcx.parent(def_id).unwrap();
-        let attrs = tcx.get_attrs(def_id);
         let resolver = specification::RustcResolver(resolver.clone(), module_id, tcx);
 
         use specification::Spec::*;
-        match specification::spec_kind(attrs).unwrap() {
+        match specification::spec_kind(tcx, def_id).unwrap() {
             Invariant { .. } => continue,
             Logic { body: exp, contract } => {
                 let out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, &body);

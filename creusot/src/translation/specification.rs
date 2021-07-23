@@ -309,12 +309,12 @@ pub enum Spec {
     Logic { body: String, contract: PreContract },
 }
 
-pub fn spec_kind(a: Attributes<'_>) -> Result<Spec, SpecAttrError> {
+// TODO: remove this function which is mostly useless now
+pub fn spec_kind(tcx: TyCtxt, def_id: DefId) -> Result<Spec, SpecAttrError> {
     use SpecAttrError::*;
     let mut contract = PreContract::new();
-    let mut logic = None;
 
-    for attr in a {
+    for attr in tcx.get_attrs(def_id) {
         if attr.is_doc_comment() {
             continue;
         }
@@ -333,6 +333,36 @@ pub fn spec_kind(a: Attributes<'_>) -> Result<Spec, SpecAttrError> {
                     expression: ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?,
                 });
             }
+            "logic" => {
+                let body = ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?;
+                let contract = contract_of(tcx, def_id)?;
+                return Ok(Spec::Logic { body, contract });
+            }
+            "variant" | "requires" | "ensures" => {}
+            kind => return Err(UnknownAttribute(kind.into())),
+        }
+    }
+
+    Ok(Spec::Program { contract: contract_of(tcx, def_id)? })
+}
+
+pub fn contract_of(tcx: TyCtxt, def_id: DefId) -> Result<PreContract, SpecAttrError> {
+    let attrs = tcx.get_attrs(def_id);
+
+    use SpecAttrError::*;
+    let mut contract = PreContract::new();
+
+    for attr in attrs {
+        if attr.is_doc_comment() {
+            continue;
+        }
+        let attr = attr.get_normal_item();
+
+        if !is_attr(attr, "spec") {
+            continue;
+        }
+
+        match attr.path.segments[2].ident.to_string().as_str() {
             "requires" => {
                 contract.requires.push(ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?)
             }
@@ -343,19 +373,15 @@ pub fn spec_kind(a: Attributes<'_>) -> Result<Spec, SpecAttrError> {
                 contract.variant =
                     Some(ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?)
             }
-            "logic" => logic = Some(ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?),
-            kind => return Err(UnknownAttribute(kind.into())),
+            _ => {}
         }
     }
-    if let Some(body) = logic {
-        Ok(Spec::Logic { body, contract })
-    } else {
-        Ok(Spec::Program { contract })
-    }
+
+    Ok(contract)
 }
 
 pub fn is_spec_id(tcx: TyCtxt<'_>, def_id: DefId) -> Result<bool, SpecAttrError> {
-    match spec_kind(tcx.get_attrs(def_id))? {
+    match spec_kind(tcx, def_id)? {
         Spec::Invariant { .. } => Ok(true),
         Spec::Logic { .. } => Ok(true),
         _ => Ok(false),

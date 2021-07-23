@@ -84,9 +84,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                         Constructor { ctor: qname, args: fields }
                     }
                     Closure(def_id, _) => {
-                        let attrs = self.tcx.get_attrs(*def_id);
-
-                        match specification::spec_kind(attrs) {
+                        match specification::spec_kind(self.tcx, *def_id) {
                             Ok(Spec::Invariant { name, expression }) => {
                                 let invariant = specification::invariant_to_why(
                                     &self.resolver,
