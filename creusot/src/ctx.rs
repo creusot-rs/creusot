@@ -6,8 +6,7 @@ use why3::mlcfg::QName;
 
 use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::subst::SubstsRef;
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{self, TyCtxt, subst::SubstsRef};
 use rustc_session::Session;
 use rustc_span::Span;
 
@@ -126,49 +125,63 @@ pub fn cloneable_name(tcx: TyCtxt, def_id: DefId) -> QName {
 fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
     let def_path = tcx.def_path(def_id);
 
-    let mut mod_segs = Vec::new();
-    let mut name_segs = Vec::new();
+    let mut segments = Vec::new();
 
     if def_path.krate.as_u32() != 0 {
-        mod_segs.push(tcx.crate_name(def_id.krate).to_string().to_camel_case())
+        segments.push(tcx.crate_name(def_id.krate).to_string().to_camel_case())
     }
 
     for seg in def_path.data[..].iter() {
         match seg.data {
-            // DefPathData::CrateRoot => mod_segs.push(tcx.crate_name(def_id.krate).to_string()),
-            DefPathData::TypeNs(_) => mod_segs.push(format!("{}", seg)[..].to_camel_case()),
+            // DefPathData::CrateRoot => segments.push(tcx.crate_name(def_id.krate).to_string()),
             // CORE ASSUMPTION: Once we stop seeing TypeNs we never see it again.
             DefPathData::Ctor => {}
-            _ => name_segs.push(format!("{}", seg)[..].to_camel_case()),
+            _ => segments.push(format!("{}", seg).to_camel_case()),
         }
     }
 
     let kind = tcx.def_kind(def_id);
     use rustc_hir::def::DefKind::*;
 
+    let is_trait_assoc = if let Some(it) = tcx.opt_associated_item(def_id) {
+        if let ty::TraitContainer(_) = it.container {
+            true
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+
+    let name;
     match (kind, kind.ns()) {
         (_, _) if ty => {
-            assert_eq!(name_segs.len(), 0);
-            name_segs = mod_segs.into_iter().map(|seg| seg.to_lowercase()).collect();
-            mod_segs = vec!["Type".to_owned()];
+            name = segments.into_iter().map(|seg| seg.to_lowercase()).collect();
+            segments = vec!["Type".to_owned()];
         }
         (Ctor(_, _) | Variant | Struct, _) => {
-            mod_segs.append(&mut name_segs);
-            mod_segs[0] = mod_segs[0].to_camel_case();
-            name_segs = mod_segs;
-            mod_segs = vec!["Type".to_owned()];
+            segments[0] = segments[0].to_camel_case();
+            name = segments;
+            segments = vec!["Type".to_owned()];
         }
-        (Trait, _) => {
-            assert_eq!(name_segs.len(), 0);
-            name_segs = vec![mod_segs.pop().unwrap()];
+        (Trait | Mod | Impl, _) => {
+            name = segments;
+            segments = Vec::new();
         }
-        (Mod | Impl, _) => {}
         (_, Some(Namespace::ValueNS)) => {
-            mod_segs.extend(name_segs);
-            name_segs = vec!["impl".into()];
+            if is_trait_assoc {
+                name = vec![segments.pop().unwrap().to_lowercase()];
+            } else {
+                name = vec!["impl".into()];
+            }
         }
-        (a, b) => unreachable!("{:?} {:?} {:?} {:?}", a, b, mod_segs, name_segs),
+        (a, b) => unreachable!("{:?} {:?} {:?}", a, b, segments),
     }
+    let module = if segments.is_empty() {
+        Vec::new()
+    } else {
+        vec![segments.join("_")]
+    };
 
-    QName { module: mod_segs, name: name_segs.join("_") }
+    QName { module , name: name.join("_") }
 }

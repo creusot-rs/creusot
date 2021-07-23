@@ -160,8 +160,10 @@ impl QName {
         self.name.clone()
     }
 
-    pub fn module_name(self) -> QName {
-        QName { module: Vec::new(), name: self.module.join("") }
+    pub fn module_name(mut self) -> QName {
+        let name = self.module.pop().unwrap();
+
+        QName { module: self.module, name: name }
     }
 
     pub fn from_string(s: &str) -> Option<QName> {
