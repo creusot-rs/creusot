@@ -20,7 +20,7 @@ enum List<T> {
 }
 use List::*;
 
-#[logic]
+logic!{
 #[ensures(result >= 0)]
 fn len_logic<T>(l : List<T>) -> Int {
     match l {
@@ -28,9 +28,10 @@ fn len_logic<T>(l : List<T>) -> Int {
         Nil => 0,
     }
 }
+}
 
 
-#[logic]
+logic!{
 #[requires(ix >= 0)]
 #[requires(ix < len_logic(l))]
 #[variant(len_logic(l))]
@@ -45,6 +46,7 @@ fn get<T>(l : List<T>, ix : Int) -> T {
         }
         Nil => absurd,
     }
+}
 }
 
 impl<T> List<T> {

@@ -101,8 +101,8 @@ impl syn::parse::Parse for LogicItem {
     }
 }
 
-#[proc_macro_attribute]
-pub fn logic(_: TS1, body: TS1) -> TS1 {
+#[proc_macro]
+pub fn logic(body: TS1) -> TS1 {
     let log: LogicItem = parse_macro_input!(body);
     let term = log.body;
     let term = format!("{}", quote! {#term});

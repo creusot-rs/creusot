@@ -8,12 +8,12 @@ use creusot_contracts::*;
 
 mod nested {
   use creusot_contracts::*;
-	#[logic]
-	fn logical() -> bool { true }
+	logic! {
+	fn logical() -> bool { true } }
 }
 
-#[logic]
-fn logical() -> bool { false }
+logic!{
+fn logical() -> bool { false }}
 
 #[ensures(logical())]
 fn main () {}

@@ -16,7 +16,7 @@ use Option::*;
 
 pub struct List(u32,Option<Box<List>>);
 
-#[logic]
+logic!{
 #[ensures(result >= 0)]
 fn len(l: List) -> Int {{
     let List(_, ls) = l;
@@ -25,8 +25,9 @@ fn len(l: List) -> Int {{
         None => 0
     }
 }}
+}
 
-#[logic]
+logic!{
 #[variant(len(l))]
 fn get(l : List, ix : Int) -> Option<u32> {{
     let List(i, ls) = l;
@@ -38,6 +39,7 @@ fn get(l : List, ix : Int) -> Option<u32> {{
         }
     }
 }}
+}
 
 #[requires((param_ix as Int) < len(*param_l))]
 #[ensures(Some(* result) == get(*param_l, param_ix as Int))]
