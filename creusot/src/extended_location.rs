@@ -36,6 +36,17 @@ impl ExtendedLocation {
         }
     }
 
+    pub fn loc(&self) -> &Location {
+        match self {
+            Self::Start(l) => l,
+            Self::Mid(l) => l,
+        }
+    }
+
+    pub fn same_block(&self, other: Self) -> bool {
+        self.loc().block == other.loc().block
+    }
+
     pub fn seek_to<'tcx, A, R, D>(self, cursor: &mut ResultsCursor<'_, 'tcx, A, R>)
     where
         A: Analysis<'tcx, Direction = D>,

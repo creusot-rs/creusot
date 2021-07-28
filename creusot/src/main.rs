@@ -1,5 +1,7 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_syntax, box_patterns)]
+#![feature(in_band_lifetimes)]
+
 #![register_tool(creusot)]
 #![feature(const_panic)]
 
@@ -35,6 +37,7 @@ use why3::mlcfg;
 
 mod analysis;
 pub mod ctx;
+mod resolve;
 mod extended_location;
 mod translation;
 

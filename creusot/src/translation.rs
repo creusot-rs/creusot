@@ -7,27 +7,22 @@ use rustc_middle::{
     ty::TyCtxt,
     ty::TyKind,
 };
-use rustc_mir::dataflow::{
-    self,
-    impls::{MaybeInitializedLocals, MaybeLiveLocals},
-    Analysis,
-};
 
 use std::collections::BTreeMap;
 use why3::declaration::*;
-use why3::mlcfg::{self, Exp::*, Pattern::*, Statement::*, *};
+use why3::mlcfg::{self, Exp::*, Statement::*, *};
 
 use rustc_middle::mir::Place;
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
 
 use indexmap::IndexSet;
 
+mod constant;
+mod place;
 pub mod specification;
 mod statement;
 mod terminator;
 pub mod ty;
-mod constant;
-mod place;
 
 pub use constant::*;
 
@@ -46,6 +41,7 @@ pub fn translate_function<'tcx, 'sess>(
     let module = func_translator.translate(contract);
     ctx.modules.add_module(module);
 }
+use crate::resolve::EagerResolver;
 
 // Split this into several sub-contexts: Core, Analysis, Results?
 pub struct FunctionTranslator<'body, 'sess, 'tcx> {
@@ -54,13 +50,7 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
 
     body: &'body Body<'tcx>,
 
-    local_live: dataflow::ResultsCursor<'body, 'tcx, MaybeLiveLocals>,
-
-    // Whether a local is initialized or not at a location
-    local_init: dataflow::ResultsCursor<'body, 'tcx, MaybeInitializedLocals>,
-
-    // Locals that are never read
-    never_live: BitSet<Local>,
+    resolver: EagerResolver<'body, 'tcx>,
 
     // Spec / Ghost variables
     erased_locals: BitSet<Local>,
@@ -89,18 +79,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         body: &'body Body<'tcx>,
         def_id: DefId,
     ) -> Self {
-        let local_init = MaybeInitializedLocals
-            .into_engine(tcx, &body)
-            .iterate_to_fixpoint()
-            .into_results_cursor(&body);
-
-        // This is called MaybeLiveLocals because pointers don't keep their referees alive.
-        // TODO: Defensive check.
-        let local_live = MaybeLiveLocals
-            .into_engine(tcx, &body)
-            .iterate_to_fixpoint()
-            .into_results_cursor(&body);
-
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
@@ -111,17 +89,15 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             }
         });
 
-        let never_live = crate::analysis::NeverLive::for_body(body);
+        let resolver = EagerResolver::new(tcx, body);
         let imports = IndexSet::new();
 
         FunctionTranslator {
             tcx,
             body,
             def_id,
-            local_live,
-            local_init,
+            resolver,
             erased_locals,
-            never_live,
             current_block: (Vec::new(), None),
             past_blocks: BTreeMap::new(),
             ctx,
@@ -220,7 +196,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             if bbd.is_cleanup {
                 continue;
             }
-            self.drop_variables_between_blocks(bb);
+            self.freeze_locals_between_blocks(bb);
 
             let mut loc = bb.start_location();
             for statement in &bbd.statements {
@@ -262,33 +238,50 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     }
 
     // Inserts drop statements for variables which died over the course of a goto or switch
-    fn drop_variables_between_blocks(&mut self, bb: BasicBlock) {
+    fn freeze_locals_between_blocks(&mut self, bb: BasicBlock) {
         use ExtendedLocation::*;
 
         let pred_blocks = &self.body.predecessors()[bb];
+
         if pred_blocks.is_empty() {
             return;
         }
 
         let term_loc = self.body.terminator_loc(pred_blocks[0]);
-        self.local_live.seek_before_primary_effect(term_loc);
-        let live_in_bb = self.local_live.get().clone();
+        let dying_in_first =
+            self.resolver.locals_resolved_between(Start(term_loc), Start(bb.start_location()));
+        let mut same_deaths = true;
+
+        // If we have multiple predecessors (join point) but all of them agree on the deaths, then don't introduce a dedicated block.
+        for pred in pred_blocks {
+            let term_loc = self.body.terminator_loc(*pred);
+            let dying =
+                self.resolver.locals_resolved_between(Start(term_loc), Start(bb.start_location()));
+            same_deaths = same_deaths && dying_in_first == dying
+        }
+
+        if same_deaths {
+            self.freeze_borrows_dying_between(Start(term_loc), Start(bb.start_location()));
+            return;
+        }
 
         for pred in pred_blocks {
             let term_loc = self.body.terminator_loc(*pred);
-            self.local_live.seek_before_primary_effect(term_loc);
-            let live_at_term = self.local_live.get();
+            let dying =
+                self.resolver.locals_resolved_between(Start(term_loc), Start(bb.start_location()));
 
-            // If nothing died in the block transition we can just skip emitting a death block
-            if &live_in_bb == live_at_term {
+            // If no deaths occured in block transition then skip entirely
+            if dying.is_empty() {
                 continue;
-            }
+            };
 
             self.freeze_borrows_dying_between(Start(term_loc), Start(bb.start_location()));
             let deaths = std::mem::take(&mut self.current_block.0);
 
             let drop_block = self.fresh_block_id();
             let pred_id = BlockId(pred.index());
+
+            // Otherwise, we emit the deaths and move them to a stand-alone block.
             self.past_blocks
                 .get_mut(&pred_id)
                 .unwrap()
@@ -299,7 +292,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 Block { statements: deaths, terminator: Terminator::Goto(BlockId(bb.into())) },
             );
         }
-        self.freeze_borrows_dying_between(Start(term_loc), Start(bb.start_location()));
     }
 
     fn fresh_block_id(&mut self) -> BlockId {
@@ -314,58 +306,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     }
 
     fn freeze_borrows_dying_between(&mut self, start: ExtendedLocation, end: ExtendedLocation) {
-        start.seek_to(&mut self.local_live);
-        let mut live_at_start = self.local_live.get().clone();
-        if start.is_entry_loc() {
-            // Count arguments that were never live as live here
-            live_at_start.union(&self.never_live);
-        }
-
-        end.seek_to(&mut self.local_live);
-        let live_at_end = self.local_live.get();
-
-        start.seek_to(&mut self.local_init);
-        let init_at_start = self.local_init.get().clone();
-
-        end.seek_to(&mut self.local_init);
-        let init_at_end = self.local_init.get().clone();
-
-        debug!("location: {:?}-{:?}", start, end);
-        debug!("live_at_start: {:?}", live_at_start);
-        debug!("live_at_end: {:?}", live_at_end);
-        debug!("init_at_start: {:?}", init_at_start);
-        debug!("init_at_end: {:?}", init_at_end);
-        debug!("erased_locals: {:?}", self.erased_locals);
-
-        // Locals that were just now initialized
-        let mut just_init = init_at_end.clone();
-        just_init.subtract(&init_at_start);
-
-        // Locals that have just become live
-        let mut born = live_at_end.clone();
-        born.subtract(&live_at_start);
-
-        // Locals that were initialized but never live
-        let mut zombies = just_init.clone();
-        zombies.subtract(live_at_end);
-
-        let mut dying = live_at_start;
-
-        // Variables that died in the span
-        dying.subtract(live_at_end);
-        // And were initialized
-        dying.intersect(&init_at_start);
-        // But if we created a new value or brought one back to life
-        if !just_init.is_empty() || !born.is_empty() {
-            // Exclude values that were moved
-            dying.intersect(&init_at_end);
-            // And include the values that never made it past their creation
-            dying.union(&zombies);
-        }
-        // Ignore spec stuff
+        let mut dying = self.resolver.locals_resolved_between(start, end);
         dying.subtract(&self.erased_locals);
-
-        debug!("dying: {:?}", dying);
 
         for local in dying.iter() {
             let local_ty = self.body.local_decls[local].ty;

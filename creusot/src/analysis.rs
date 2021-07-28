@@ -2,6 +2,8 @@ use rustc_index::bit_set::BitSet;
 use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor};
 use rustc_middle::mir::{self, Local, Location};
 
+pub mod uninit_locals;
+
 pub struct NeverLive(BitSet<Local>);
 
 /// Count locals which are never used and therefore can never be considered live.
