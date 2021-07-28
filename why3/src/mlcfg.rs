@@ -163,7 +163,7 @@ impl QName {
     pub fn module_name(mut self) -> QName {
         let name = self.module.pop().unwrap();
 
-        QName { module: self.module, name: name }
+        QName { module: self.module, name }
     }
 
     pub fn from_string(s: &str) -> Option<QName> {

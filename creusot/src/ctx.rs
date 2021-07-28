@@ -6,7 +6,7 @@ use why3::mlcfg::QName;
 
 use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, TyCtxt, subst::SubstsRef};
+use rustc_middle::ty::{self, subst::SubstsRef, TyCtxt};
 use rustc_session::Session;
 use rustc_span::Span;
 
@@ -14,6 +14,9 @@ use rustc_hir::definitions::DefPathData;
 use rustc_resolve::Namespace;
 
 use crate::modules::Modules;
+
+use rustc_interface::interface::BoxedResolver;
+use std::{cell::RefCell, rc::Rc};
 
 pub struct NameMap<'tcx>(TyCtxt<'tcx>, BTreeMap<(DefId, SubstsRef<'tcx>), String>);
 
@@ -45,16 +48,24 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub used_traits: IndexSet<DefId>,
     pub translated_funcs: IndexSet<DefId>,
     pub modules: Modules,
+
+    // Name resolution context for specs
+    pub resolver: Rc<RefCell<BoxedResolver>>,
 }
 
 impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, sess: &'sess Session) -> Self {
+    pub fn new(
+        tcx: TyCtxt<'tcx>,
+        sess: &'sess Session,
+        resolver: Rc<RefCell<BoxedResolver>>,
+    ) -> Self {
         Self {
             sess,
             tcx,
             used_tys: IndexSet::new(),
             used_traits: IndexSet::new(),
             translated_funcs: IndexSet::new(),
+            resolver,
             modules: Modules::new(),
         }
     }
@@ -66,40 +77,47 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     pub fn add_type(&mut self, ty_decl: TyDecl, drop_pred: Predicate) {
         self.modules.add_type(ty_decl, drop_pred);
     }
+}
 
-    // TODO: No reason for this to be an associated method, move it to a standalone function
-    pub fn clone_item(
-        &mut self,
-        def_id: DefId,
-        subst: SubstsRef<'tcx>,
-        clone_name: String,
-    ) -> why3::declaration::Decl {
-        let clone_subst = self.type_param_subst(def_id, subst);
+pub fn clone_item<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    def_id: DefId,
+    subst: SubstsRef<'tcx>,
+    clone_name: String,
+) -> why3::declaration::Decl {
+    let clone_subst = type_param_subst(ctx, def_id, subst);
 
-        Decl::Clone(DeclClone {
-            name: cloneable_name(self.tcx, def_id),
-            subst: clone_subst,
-            as_nm: Some(clone_name),
-        })
+    Decl::Clone(DeclClone {
+        name: cloneable_name(ctx.tcx, def_id),
+        subst: clone_subst,
+        as_nm: Some(clone_name),
+    })
+}
+
+pub fn type_param_subst<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    def_id: DefId,
+    subst: SubstsRef<'tcx>,
+) -> Vec<CloneSubst> {
+    use heck::SnakeCase;
+    use rustc_middle::ty::GenericParamDefKind;
+
+    let trait_params = ctx.tcx.generics_of(def_id);
+    let mut clone_subst = Vec::new();
+
+    if subst.is_empty() {
+        return Vec::new();
     }
 
-    pub fn type_param_subst(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> Vec<CloneSubst> {
-        use heck::SnakeCase;
-        use rustc_middle::ty::GenericParamDefKind;
-
-        let trait_params = self.tcx.generics_of(def_id);
-        let mut clone_subst = Vec::new();
-
-        for ix in 0..trait_params.count() {
-            let p = trait_params.param_at(ix, self.tcx);
-            let ty = subst[ix];
-            if let GenericParamDefKind::Type { .. } = p.kind {
-                let ty = super::ty::translate_ty(self, rustc_span::DUMMY_SP, ty.expect_ty());
-                clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
-            }
+    for ix in 0..trait_params.count() {
+        let p = trait_params.param_at(ix, ctx.tcx);
+        let ty = subst[ix];
+        if let GenericParamDefKind::Type { .. } = p.kind {
+            let ty = super::ty::translate_ty(ctx, rustc_span::DUMMY_SP, ty.expect_ty());
+            clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
         }
-        clone_subst
     }
+    clone_subst
 }
 
 use heck::CamelCase;
@@ -177,11 +195,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
         }
         (a, b) => unreachable!("{:?} {:?} {:?}", a, b, segments),
     }
-    let module = if segments.is_empty() {
-        Vec::new()
-    } else {
-        vec![segments.join("_")]
-    };
+    let module = if segments.is_empty() { Vec::new() } else { vec![segments.join("_")] };
 
-    QName { module , name: name.join("_") }
+    QName { module, name: name.join("_") }
 }

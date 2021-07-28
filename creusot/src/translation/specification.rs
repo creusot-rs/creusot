@@ -21,11 +21,11 @@ use lower::*;
 pub fn requires_to_why<'tcx>(
     res: &RustcResolver<'tcx>,
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    body: &Body<'tcx>,
+    def_id: DefId,
     attr_val: String,
 ) -> Exp {
     let p: Term = syn::parse_str(&attr_val).unwrap();
-    let entry_ctx = context_at_entry(res.2, body);
+    let entry_ctx = context_at_entry(res.2, def_id);
     let mut tyctx = pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), entry_ctx);
     let mut t = term::Term::from_syn(res, p).unwrap();
 
@@ -37,11 +37,11 @@ pub fn requires_to_why<'tcx>(
 pub fn variant_to_why<'tcx>(
     res: &RustcResolver<'tcx>,
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    body: &Body<'tcx>,
+    def_id: DefId,
     attr_val: String,
 ) -> Exp {
     let p: Term = syn::parse_str(&attr_val).unwrap();
-    let entry_ctx = context_at_entry(res.2, body);
+    let entry_ctx = context_at_entry(res.2, def_id);
     let mut tyctx = pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), entry_ctx);
     let mut t = term::Term::from_syn(res, p).unwrap();
 
@@ -53,12 +53,12 @@ pub fn variant_to_why<'tcx>(
 pub fn ensures_to_why<'tcx>(
     res: &RustcResolver<'tcx>,
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    body: &Body<'tcx>,
+    def_id: DefId,
     attr_val: String,
 ) -> Exp {
     let p: Term = syn::parse_str(&attr_val).unwrap();
-    let mut tyctx = context_at_entry(res.2, body);
-    let ret_ty = return_ty(res.2, body);
+    let mut tyctx = context_at_entry(res.2, def_id);
+    let ret_ty = return_ty(res.2, def_id);
     tyctx.push(("result".into(), ret_ty));
 
     let mut tyctx = pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), tyctx);
@@ -130,15 +130,14 @@ pub fn invariant_to_why<'tcx>(
 pub fn logic_to_why<'tcx>(
     res: &RustcResolver<'tcx>,
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    did: DefId,
-    body: &Body<'tcx>,
+    def_id: DefId,
     exp: String,
     contract: Contract,
 ) -> Module {
     // Technically we should pass through translation::ty here in case we mention
     // any untranslated types...
-    let ret_ty = return_ty(res.2, body);
-    let entry_ctx = context_at_entry(res.2, body);
+    let ret_ty = return_ty(res.2, def_id);
+    let entry_ctx = context_at_entry(res.2, def_id);
     let mut tyctx =
         pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), entry_ctx.clone());
     let p: Term = syn::parse_str(&exp).unwrap();
@@ -148,7 +147,7 @@ pub fn logic_to_why<'tcx>(
     pearlite::typing::check_term(&mut tyctx, &mut t, &ret_ty).unwrap();
     let body = lower_term_to_why(ctx, t);
 
-    let name = crate::ctx::translate_value_id(res.2, did);
+    let name = crate::ctx::translate_value_id(res.2, def_id);
 
     // Gather the required imports
     // TODO: use this to sort logic functions topologically
@@ -180,34 +179,28 @@ pub fn logic_to_why<'tcx>(
     Module { name: name.module.join(""), decls }
 }
 
-fn return_ty<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> pearlite::term::Type {
-    let ret = &body.local_decls[0u32.into()];
+fn return_ty<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> pearlite::term::Type {
+    let sig = tcx.normalize_erasing_late_bound_regions(
+        rustc_middle::ty::ParamEnv::reveal_all(),
+        tcx.fn_sig(def_id),
+    );
 
-    ty_to_pearlite(tcx, ret.ty)
+    ty_to_pearlite(tcx, sig.output())
 }
 
 // Constructs a typing environment which contains entries for all arguments of a mir body.
-fn context_at_entry<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    body: &Body<'tcx>,
-) -> Vec<(String, pearlite::term::Type)> {
-    // CORRECTNESS: Assumes that local_decls and var_debug_info are
-    // ordered the same way and have the same elements (at least for arg_count entries).
-    // This seems reasonable, since we should have debug info for all function arguments
-    let arg_decl = body.local_decls.iter_enumerated().skip(1).take(body.arg_count);
-    let arg_info = body.var_debug_info.iter().take(body.arg_count);
+fn context_at_entry<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Vec<(String, pearlite::term::Type)> {
+    let sig = tcx.normalize_erasing_late_bound_regions(
+        rustc_middle::ty::ParamEnv::reveal_all(),
+        tcx.fn_sig(def_id),
+    );
+    let names = tcx.fn_arg_names(def_id);
 
     let mut ctx = Vec::new();
-    for ((loc, decl), info) in arg_decl.zip(arg_info) {
-        use rustc_middle::mir::VarDebugInfoContents::Place;
-        let info_loc = match info.value {
-            Place(p) => p.as_local().unwrap(),
-            _ => panic!("unexpected constant in body arguments"),
-        };
-        assert_eq!(loc, info_loc, "body local declarations are different from debug info");
 
-        let name = info.name.to_string();
-        let ty = ty_to_pearlite(tcx, decl.ty);
+    for (nm, ty) in names.iter().zip(sig.inputs()) {
+        let name = nm.name.to_string();
+        let ty = ty_to_pearlite(tcx, ty);
 
         ctx.push((name, ty));
     }
@@ -241,7 +234,7 @@ use rustc_ast::{
     token::TokenKind::Literal,
     tokenstream::{TokenStream, TokenTree::*},
 };
-use rustc_middle::ty::Attributes;
+
 
 fn ts_to_symbol(ts: TokenStream) -> Option<String> {
     assert_eq!(ts.len(), 1);
@@ -278,20 +271,20 @@ impl PreContract {
         self,
         res: &RustcResolver<'tcx>,
         ctx: &mut TranslationCtx<'_, 'tcx>,
-        body: &Body<'tcx>,
+        def_id: DefId,
     ) -> Contract {
         let mut out = Contract::new();
 
         for req in self.requires {
-            out.requires.push(requires_to_why(res, ctx, body, req));
+            out.requires.push(requires_to_why(res, ctx, def_id, req));
         }
 
         for ens in self.ensures {
-            out.ensures.push(ensures_to_why(res, ctx, body, ens));
+            out.ensures.push(ensures_to_why(res, ctx, def_id, ens));
         }
 
         if let Some(variant) = self.variant {
-            out.variant = vec![variant_to_why(res, ctx, body, variant)];
+            out.variant = vec![variant_to_why(res, ctx, def_id, variant)];
         };
         out
     }
@@ -312,7 +305,7 @@ pub enum Spec {
 // TODO: remove this function which is mostly useless now
 pub fn spec_kind(tcx: TyCtxt, def_id: DefId) -> Result<Spec, SpecAttrError> {
     use SpecAttrError::*;
-    let mut contract = PreContract::new();
+    let contract = PreContract::new();
 
     for attr in tcx.get_attrs(def_id) {
         if attr.is_doc_comment() {

@@ -130,7 +130,7 @@ fn translate(
     }
 
     // Type translation state, including which datatypes have already been translated.
-    let mut ty_ctx = ctx::TranslationCtx::new(tcx, sess);
+    let mut ty_ctx = ctx::TranslationCtx::new(tcx, sess, resolver.clone());
 
     // Translate all type declarations and push them into the module collection
     for (def_id, span) in ty_decls.iter() {
@@ -162,21 +162,15 @@ fn translate(
         match specification::spec_kind(tcx, def_id).unwrap() {
             Invariant { .. } => continue,
             Logic { body: exp, contract } => {
-                let out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, &body);
+                let out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, def_id);
 
-                let translated = specification::logic_to_why(
-                    &resolver,
-                    &mut ty_ctx,
-                    def_id,
-                    &body,
-                    exp,
-                    out_contract,
-                );
+                let translated =
+                    specification::logic_to_why(&resolver, &mut ty_ctx, def_id, exp, out_contract);
 
                 ty_ctx.modules.add_module(translated)
             }
             Program { contract } => {
-                let mut out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, &body);
+                let mut out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, def_id);
                 let subst = specification::subst_for_arguments(&body);
 
                 out_contract.subst(&subst);
@@ -185,10 +179,7 @@ fn translate(
                 // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
                 // TODO: now that we don't use polonius info: consider using optimized mir instead?
                 RemoveFalseEdge { tcx }.visit_body(&mut body);
-                let translated = FunctionTranslator::new(tcx, &mut ty_ctx, &body, resolver, def_id)
-                    .translate(out_contract);
-
-                ty_ctx.modules.add_module(translated);
+                translation::translate_function(tcx, &mut ty_ctx, &body, def_id, out_contract);
             }
         }
     }

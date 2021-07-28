@@ -18,7 +18,7 @@ use why3::declaration::*;
 use why3::mlcfg::{self, Exp::*, Pattern::*, Statement::*, *};
 
 use rustc_middle::mir::Place;
-use rustc_middle::ty::GenericParamDefKind;
+use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
 
 use indexmap::IndexSet;
 
@@ -28,6 +28,20 @@ mod terminator;
 pub mod ty;
 
 use crate::ctx::*;
+
+use self::specification::RustcResolver;
+
+pub fn translate_function<'tcx, 'sess>(
+    tcx: TyCtxt<'tcx>,
+    ctx: &mut TranslationCtx<'sess, 'tcx>,
+    body: &Body<'tcx>,
+    def_id: DefId,
+    contract: Contract,
+) {
+    let func_translator = FunctionTranslator::build_context(tcx, ctx, body, def_id);
+    let module = func_translator.translate(contract);
+    ctx.modules.add_module(module);
+}
 
 // Split this into several sub-contexts: Core, Analysis, Results?
 pub struct FunctionTranslator<'body, 'sess, 'tcx> {
@@ -55,9 +69,6 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     // Type translation context
     ctx: &'body mut TranslationCtx<'sess, 'tcx>,
 
-    // Name resolution context for specs
-    resolver: crate::specification::RustcResolver<'tcx>,
-
     // Fresh BlockId
     fresh_id: usize,
 
@@ -68,11 +79,10 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
 }
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
-    pub fn new(
+    fn build_context(
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'sess, 'tcx>,
         body: &'body Body<'tcx>,
-        resolver: specification::RustcResolver<'tcx>,
         def_id: DefId,
     ) -> Self {
         let local_init = MaybeInitializedLocals
@@ -111,29 +121,13 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             current_block: (Vec::new(), None),
             past_blocks: BTreeMap::new(),
             ctx,
-            resolver,
             fresh_id: body.basic_blocks().len(),
             clone_names: NameMap::new(tcx),
             imports,
         }
     }
 
-    fn emit_statement(&mut self, s: mlcfg::Statement) {
-        self.current_block.0.push(s);
-    }
-
-    fn emit_terminator(&mut self, t: mlcfg::Terminator) {
-        assert!(self.current_block.1.is_none());
-
-        self.current_block.1 = Some(t);
-    }
-
-    fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: mlcfg::Exp) {
-        let assign = self.create_assign(lhs, rhs);
-        self.emit_statement(assign);
-    }
-
-    pub fn translate(mut self, mut contract: Contract) -> Module {
+    fn translate(mut self, mut contract: Contract) -> Module {
         self.translate_body();
         move_invariants_into_loop(&mut self.past_blocks);
 
@@ -197,15 +191,14 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         self.imports.extend(contract.qfvs().into_iter().map(|qn| qn.module_name()));
 
-        let mut decls: Vec<_> = generic_decls_for(self.tcx, self.def_id).collect();
+        let mut decls: Vec<_> = all_generic_decls_for(self.tcx, self.def_id).collect();
 
         for imp in self.imports {
             decls.push(Decl::UseDecl(Use { name: imp }))
         }
 
-
         for ((def_id, subst), clone_name) in self.clone_names.into_iter() {
-            decls.push(self.ctx.clone_item(def_id, subst, clone_name));
+            decls.push(clone_item(self.ctx, def_id, subst, clone_name));
         }
 
         let name = translate_value_id(self.tcx, self.def_id).module.join("");
@@ -242,6 +235,26 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 },
             );
         }
+    }
+
+    fn resolver(&self) -> RustcResolver<'tcx> {
+        let module_id = self.tcx.parent_module_from_def_id(self.def_id.expect_local()).to_def_id();
+        specification::RustcResolver(self.ctx.resolver.clone(), module_id, self.tcx)
+    }
+
+    fn emit_statement(&mut self, s: mlcfg::Statement) {
+        self.current_block.0.push(s);
+    }
+
+    fn emit_terminator(&mut self, t: mlcfg::Terminator) {
+        assert!(self.current_block.1.is_none());
+
+        self.current_block.1 = Some(t);
+    }
+
+    fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: mlcfg::Exp) {
+        let assign = self.create_assign(lhs, rhs);
+        self.emit_statement(assign);
     }
 
     // Inserts drop statements for variables which died over the course of a goto or switch
@@ -590,7 +603,7 @@ impl Extern {
 
         let name = translate_value_id(ctx.tcx, def_id).module.join("");
 
-        let mut decls: Vec<_> = generic_decls_for(ctx.tcx, def_id).collect();
+        let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
         decls.push(Decl::ValDecl(Val {
             sig: Signature {
                 name: QName::from_string("impl").unwrap(),
@@ -608,11 +621,27 @@ impl Extern {
     }
 }
 
-fn generic_decls_for<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> impl Iterator<Item = Decl> + 'tcx {
+fn all_generic_decls_for<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+) -> impl Iterator<Item = Decl> + 'tcx {
     let generics = tcx.generics_of(def_id);
 
-    (0..generics.count()).filter_map(move |i| {
-        let param = generics.param_at(i, tcx);
+    generic_decls((0..generics.count()).map(move |i| generics.param_at(i, tcx)))
+}
+
+fn own_generic_decls_for<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+) -> impl Iterator<Item = Decl> + 'tcx {
+    let generics = tcx.generics_of(def_id);
+    generic_decls(generics.params.iter())
+}
+
+fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
+    it: I,
+) -> impl Iterator<Item = Decl> + 'tcx {
+    it.filter_map(|param| {
         if let GenericParamDefKind::Type { .. } = param.kind {
             Some(Decl::TyDecl(TyDecl {
                 ty_name: (&*param.name.as_str().to_lowercase()).into(),

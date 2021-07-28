@@ -83,30 +83,27 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
 
                         Constructor { ctor: qname, args: fields }
                     }
-                    Closure(def_id, _) => {
-                        match specification::spec_kind(self.tcx, *def_id) {
-                            Ok(Spec::Invariant { name, expression }) => {
-                                let invariant = specification::invariant_to_why(
-                                    &self.resolver,
-                                    &mut self.ctx,
-                                    self.body,
-                                    si,
-                                    expression,
-                                );
+                    Closure(def_id, _) => match specification::spec_kind(self.tcx, *def_id) {
+                        Ok(Spec::Invariant { name, expression }) => {
+                            let invariant = specification::invariant_to_why(
+                                &self.resolver(),
+                                &mut self.ctx,
+                                self.body,
+                                si,
+                                expression,
+                            );
 
-                                self.imports.extend(
-                                    invariant.qfvs().into_iter().map(|qn| qn.module_name()),
-                                );
+                            self.imports
+                                .extend(invariant.qfvs().into_iter().map(|qn| qn.module_name()));
 
-                                self.emit_statement(Invariant(name, invariant));
-                                return;
-                            }
-                            Ok(_) => {
-                                self.ctx.crash_and_error(si.span, "closures are not yet supported")
-                            }
-                            Err(err) => self.ctx.crash_and_error(si.span, &format!("{:?}", err)),
+                            self.emit_statement(Invariant(name, invariant));
+                            return;
                         }
-                    }
+                        Ok(_) => {
+                            self.ctx.crash_and_error(si.span, "closures are not yet supported")
+                        }
+                        Err(err) => self.ctx.crash_and_error(si.span, &format!("{:?}", err)),
+                    },
                     _ => self.ctx.crash_and_error(
                         si.span,
                         &format!("the rvalue {:?} is not currently supported", kind),
