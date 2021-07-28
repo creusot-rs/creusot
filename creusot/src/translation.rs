@@ -12,7 +12,7 @@ use rustc_mir::dataflow::{
     impls::{MaybeInitializedLocals, MaybeLiveLocals},
     Analysis,
 };
-use rustc_resolve::Namespace;
+
 use std::collections::BTreeMap;
 use why3::declaration::*;
 use why3::mlcfg::{self, Exp::*, Pattern::*, Statement::*, *};
@@ -26,6 +26,10 @@ pub mod specification;
 mod statement;
 mod terminator;
 pub mod ty;
+mod constant;
+mod place;
+
+pub use constant::*;
 
 use crate::ctx::*;
 
@@ -398,159 +402,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             None => mk_anon(loc),
         }
     }
-
-    pub fn translate_rplace(&mut self, rhs: &Place<'tcx>) -> Exp {
-        self.translate_rplace_inner(rhs.local, rhs.projection)
-    }
-
-    // [(P as Some)]   ---> [_1]
-    // [(P as Some).0] ---> let Some(a) = [_1] in a
-    // [(* P)] ---> * [P]
-    fn translate_rplace_inner(
-        &mut self,
-        loc: Local,
-        proj: &[rustc_middle::mir::PlaceElem<'tcx>],
-    ) -> Exp {
-        let mut inner = self.translate_local(loc).into();
-        use rustc_middle::mir::ProjectionElem::*;
-        let mut place_ty = Place::ty_from(loc, &[], self.body, self.tcx);
-
-        for elem in proj {
-            match elem {
-                Deref => {
-                    use rustc_hir::Mutability::*;
-                    let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
-                    if mutability == Mut {
-                        inner = Current(box inner)
-                    }
-                }
-                Field(ix, _) => match place_ty.ty.kind() {
-                    TyKind::Adt(def, _) => {
-                        let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
-                        let variant = &def.variants[variant_id];
-
-                        let mut pat = vec![Wildcard; variant.fields.len()];
-                        pat[ix.as_usize()] = VarP("a".into());
-
-                        let tyname = translate_value_id(self.tcx, variant.def_id);
-
-                        inner = Let {
-                            pattern: ConsP(tyname, pat),
-                            arg: box inner,
-                            body: box Var("a".into()),
-                        }
-                    }
-                    TyKind::Tuple(fields) => {
-                        let mut pat = vec![Wildcard; fields.len()];
-                        pat[ix.as_usize()] = VarP("a".into());
-
-                        inner =
-                            Let { pattern: TupleP(pat), arg: box inner, body: box Var("a".into()) }
-                    }
-                    _ => unreachable!(),
-                },
-                Downcast(_, _) => {}
-                _ => unimplemented!("unimplemented place projection"),
-            }
-            place_ty = place_ty.projection_ty(self.tcx, *elem);
-        }
-
-        inner
-    }
-
-    /// Correctly translate an assignment from one place to another. The challenge here is correctly
-    /// construction the expression that assigns deep inside a structure.
-    /// (_1 as Some) = P      ---> let _1 = P ??
-    /// (*_1) = P             ---> let _1 = { current = P, .. }
-    /// (_1.2) = P            ---> let _1 = { _1 with [[2]] = P } (struct)
-    ///                       ---> let _1 = (let Cons(a, b, c) = _1 in Cons(a, b, P)) (tuple)
-    /// (*_1).1 = P           ---> let _1 = { _1 with current = ({ * _1 with [[1]] = P })}
-    /// ((*_1) as Some).0 = P ---> let _1 = { _1 with current = (let Some(X) = _1 in Some(P) )}
-
-    /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
-    /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-    pub fn create_assign(&mut self, lhs: &Place<'tcx>, rhs: Exp) -> mlcfg::Statement {
-        // Translation happens inside to outside, which means we scan projection elements in reverse
-        // building up the inner expression. We start with the RHS expression which is at the deepest
-        // level.
-
-        let mut inner = rhs;
-
-        // Each level of the translation needs access to the _previous_ value at this nesting level
-        // So we track the path from the root as we traverse, which we call the stump.
-        let mut stump: &[_] = lhs.projection.clone();
-
-        use rustc_middle::mir::ProjectionElem::*;
-
-        for (proj, elem) in lhs.iter_projections().rev() {
-            // twisted stuff
-            stump = &stump[0..stump.len() - 1];
-            let place_ty = proj.ty(self.body, self.tcx);
-
-            match elem {
-                Deref => {
-                    use rustc_hir::Mutability::*;
-
-                    let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
-                    if mutability == Mut {
-                        inner = RecUp {
-                            record: box self.translate_rplace_inner(lhs.local, stump),
-                            label: "current".into(),
-                            val: box inner,
-                        }
-                    }
-                }
-                Field(ix, _) => match place_ty.ty.kind() {
-                    TyKind::Adt(def, _) => {
-                        let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
-                        let variant = &def.variants[variant_id];
-                        let var_size = variant.fields.len();
-
-                        let field_pats = ('a'..)
-                            .map(|c| VarP(LocalIdent::Name(c.to_string())))
-                            .take(var_size)
-                            .collect();
-                        let mut varexps: Vec<Exp> =
-                            ('a'..).map(|c| Var(c.to_string().into())).take(var_size).collect();
-
-                        varexps[ix.as_usize()] = inner;
-
-                        let tyname = translate_value_id(self.tcx, variant.def_id);
-
-                        inner = Let {
-                            pattern: ConsP(tyname.clone(), field_pats),
-                            arg: box self.translate_rplace_inner(lhs.local, stump),
-                            body: box Constructor { ctor: tyname, args: varexps },
-                        }
-                    }
-                    TyKind::Tuple(fields) => {
-                        let var_size = fields.len();
-
-                        let field_pats = ('a'..)
-                            .map(|c| VarP(LocalIdent::Name(c.to_string())))
-                            .take(var_size)
-                            .collect();
-                        let mut varexps: Vec<Exp> =
-                            ('a'..).map(|c| Var(c.to_string().into())).take(var_size).collect();
-
-                        varexps[ix.as_usize()] = inner;
-
-                        inner = Let {
-                            pattern: TupleP(field_pats),
-                            arg: box self.translate_rplace_inner(lhs.local, stump),
-                            body: box Tuple(varexps),
-                        }
-                    }
-                    _ => unreachable!(),
-                },
-                Downcast(_, _) => {}
-                _ => unimplemented!(),
-            }
-        }
-
-        let ident = self.translate_local(lhs.local);
-        Assign { lhs: ident, rhs: inner }
-    }
 }
 
 fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {
@@ -657,68 +508,7 @@ fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
 fn mk_anon(l: Local) -> LocalIdent {
     LocalIdent::Anon(l.index(), None)
 }
+
 fn mk_anon_dbg(l: Local, vi: &VarDebugInfo) -> LocalIdent {
     LocalIdent::Anon(l.index(), Some(vi.name.to_string()))
-}
-
-pub fn from_mir_constant<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    c: &rustc_middle::mir::Constant<'tcx>,
-) -> mlcfg::Constant {
-    use rustc_middle::ty::TyKind::{Int, Uint};
-    use rustc_middle::ty::{IntTy::*, UintTy::*};
-    use rustc_target::abi::Size;
-
-    match c.literal.ty().kind() {
-        Int(I8) => Constant::Int(
-            c.literal.try_to_bits(Size::from_bytes(1)).unwrap() as i128,
-            Some(ty::i8_ty()),
-        ),
-        Int(I16) => Constant::Int(
-            c.literal.try_to_bits(Size::from_bytes(2)).unwrap() as i128,
-            Some(ty::i16_ty()),
-        ),
-        Int(I32) => Constant::Int(
-            c.literal.try_to_bits(Size::from_bytes(4)).unwrap() as i128,
-            Some(ty::i32_ty()),
-        ),
-        Int(I64) => Constant::Int(
-            c.literal.try_to_bits(Size::from_bytes(8)).unwrap() as i128,
-            Some(ty::i64_ty()),
-        ),
-        Int(I128) => unimplemented!("128-bit integers are not supported"),
-
-        Uint(U8) => {
-            Constant::Uint(c.literal.try_to_bits(Size::from_bytes(1)).unwrap(), Some(ty::u8_ty()))
-        }
-        Uint(U16) => {
-            Constant::Uint(c.literal.try_to_bits(Size::from_bytes(2)).unwrap(), Some(ty::u16_ty()))
-        }
-        Uint(U32) => {
-            Constant::Uint(c.literal.try_to_bits(Size::from_bytes(4)).unwrap(), Some(ty::u32_ty()))
-        }
-        Uint(U64) => {
-            Constant::Uint(c.literal.try_to_bits(Size::from_bytes(8)).unwrap(), Some(ty::u64_ty()))
-        }
-        Uint(U128) => {
-            unimplemented!("128-bit integers are not supported")
-        }
-        Uint(Usize) => Constant::Uint(
-            c.literal.try_to_bits(Size::from_bytes(8)).unwrap(),
-            Some(ty::usize_ty()),
-        ),
-        _ => {
-            use rustc_middle::ty::print::{FmtPrinter, PrettyPrinter};
-            let mut fmt = String::new();
-            let cx = FmtPrinter::new(tcx, &mut fmt, Namespace::ValueNS);
-            // cx.pretty_print_const(c.literal, false).unwrap();
-            use rustc_middle::mir::ConstantKind;
-            match c.literal {
-                ConstantKind::Ty(c) => cx.pretty_print_const(c, false).unwrap(),
-                ConstantKind::Val(val, ty) => cx.pretty_print_const_value(val, ty, false).unwrap(),
-            };
-
-            Constant::Other(fmt)
-        }
-    }
 }
