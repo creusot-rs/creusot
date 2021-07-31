@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::translation::TranslationCtx;
+use crate::ctx::TranslationCtx;
 use rustc_middle::ty::Attributes;
 use why3::declaration::Contract;
 use why3::mlcfg::{Exp, LocalIdent};
@@ -346,7 +346,7 @@ pub fn get_attr<'a>(attrs: Attributes<'a>, path: &[&str]) -> Option<&'a AttrItem
     return None;
 }
 
-use rustc_ast::{AttrItem, Attribute};
+use rustc_ast::AttrItem;
 
 fn is_attr(attr: &AttrItem, str: &str) -> bool {
     let segments = &attr.path.segments;

@@ -81,10 +81,10 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             .is_some()
         {
             debug!("translating {:?} as logic", def_id);
-            crate::translation::Logic::translate(self, def_id, rustc_span::DUMMY_SP);
+            crate::translation::translate_logic(self, def_id, rustc_span::DUMMY_SP);
         } else if def_id.krate != rustc_hir::def_id::LOCAL_CRATE {
             debug!("translating {:?} as extern", def_id);
-            crate::translation::Extern::translate(self, def_id, span);
+            crate::translation::translate_extern(self, def_id, span);
         } else if self.tcx.def_kind(def_id) == rustc_hir::def::DefKind::Fn {
             debug!("translating {:?} as program", def_id);
             crate::translation::translate_function(self.tcx, self, def_id);

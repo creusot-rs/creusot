@@ -8,7 +8,7 @@ use std::collections::VecDeque;
 use why3::declaration::{Contract, Predicate, Signature, TyDecl};
 use why3::mlcfg::{Exp as MlE, LocalIdent, Pattern, Pattern::*, QName, Type as MlT};
 
-use super::TranslationCtx;
+use crate::ctx::*;
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:
 ///
@@ -144,7 +144,7 @@ pub fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName 
     if !ctx.used_tys.contains(&did) {
         translate_tydecl(ctx, rustc_span::DUMMY_SP, did);
     };
-    super::translate_type_id(ctx.tcx, did)
+    translate_type_id(ctx.tcx, did)
 }
 
 fn translate_ty_param(p: Symbol) -> String {
@@ -198,7 +198,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
             })
             .collect();
 
-        let var_name = super::translate_value_id(ctx.tcx, var_def.def_id);
+        let var_name = translate_value_id(ctx.tcx, var_def.def_id);
         ml_ty_def.push((var_name.name(), field_tys));
     }
 
@@ -212,7 +212,7 @@ fn variant_pattern(tcx: TyCtxt<'_>, variant: &VariantDef) -> Pattern {
     let field_pats =
         ('a'..).take(variant.fields.len()).map(|c| VarP(c.to_string().into())).collect();
 
-    let ty_name = super::translate_value_id(tcx, variant.def_id);
+    let ty_name = translate_value_id(tcx, variant.def_id);
     ConsP(ty_name, field_pats)
 }
 

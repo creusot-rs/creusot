@@ -2,7 +2,7 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{DefIdTree, TyCtxt};
 use why3::{declaration::Signature, mlcfg::{Exp, Constant, QName}};
 use crate::ctx::TranslationCtx;
-use crate::ty;
+use crate::translation::ty;
 
 pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {
     let mut module_id = def_id;

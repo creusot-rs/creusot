@@ -8,8 +8,8 @@ use why3::mlcfg::{
     Statement::*,
 };
 
-use super::specification::Spec;
-use super::{specification, FunctionTranslator};
+use crate::translation::specification::{self, Spec};
+use super::FunctionTranslator;
 
 impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>) {
@@ -49,11 +49,11 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     let ty = place.ty(self.body, self.tcx).ty;
                     let pl_exp = self.translate_rplace(&place);
                     let assumption: Exp =
-                        super::ty::drop_predicate(&mut self.ctx, ty).app_to(pl_exp);
+                        crate::translation::ty::drop_predicate(&mut self.ctx, ty).app_to(pl_exp);
                     self.emit_statement(Assume(assumption));
                     self.translate_rplace(pl)
                 }
-                Constant(box c) => Const(super::from_mir_constant(self.tcx, c)),
+                Constant(box c) => Const(crate::constant::from_mir_constant(self.tcx, c)),
             },
             Rvalue::Ref(_, ss, pl) => match ss {
                 Shared | Shallow | Unique => self.translate_rplace(&pl),

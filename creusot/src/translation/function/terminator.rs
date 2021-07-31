@@ -17,9 +17,6 @@ use rustc_target::abi::VariantIdx;
 use why3::mlcfg::QName;
 use why3::mlcfg::{BinOp, BlockId, Constant, Exp, Pattern, Statement, Terminator as MlT};
 
-use crate::translation::Extern;
-use rustc_hir::def_id::LOCAL_CRATE;
-
 use super::FunctionTranslator;
 
 // Translate the terminator of a basic block.
@@ -102,13 +99,13 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 // Drop
                 let ty = place.ty(self.body, self.tcx).ty;
                 let pl_exp = self.translate_rplace(&place);
-                let assumption: Exp = super::ty::drop_predicate(&mut self.ctx, ty).app_to(pl_exp);
+                let assumption: Exp = crate::translation::ty::drop_predicate(&mut self.ctx, ty).app_to(pl_exp);
                 self.emit_statement(Statement::Assume(assumption));
 
                 // Assign
                 let rhs = match value {
                     Operand::Move(pl) | Operand::Copy(pl) => self.translate_rplace(&pl),
-                    Operand::Constant(box c) => Exp::Const(super::from_mir_constant(self.tcx, c)),
+                    Operand::Constant(box c) => Exp::Const(crate::constant::from_mir_constant(self.tcx, c)),
                 };
 
                 self.emit_assignment(&place, rhs);
@@ -141,9 +138,8 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             }
         }
 
-        if def_id.krate != LOCAL_CRATE {
-            Extern::translate(self.ctx, def_id, sp)
-        }
+        // TODO: better spans during errors...
+        self.ctx.translate_function(def_id);
 
         let (_, clone_name) = self.name_of_clone(def_id, subst);
         QName { module: vec![clone_name], name: "impl".into() }

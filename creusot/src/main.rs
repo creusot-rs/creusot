@@ -30,7 +30,7 @@ use rustc_interface::{
 };
 use rustc_middle::{
     mir::{visit::MutVisitor, Location, Terminator},
-    ty::{TyCtxt, WithOptConstParam},
+    ty::TyCtxt,
 };
 use std::{cell::RefCell, env::args as get_args, rc::Rc};
 use why3::mlcfg;

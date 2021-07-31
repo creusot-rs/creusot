@@ -1,4 +1,4 @@
-use crate::translation::TranslationCtx;
+use crate::ctx::TranslationCtx;
 use pearlite::term::Name;
 use pearlite::term::{self, DerefKind, RefKind};
 use rustc_hir::def_id::DefId;
@@ -113,7 +113,7 @@ pub fn lower_type_to_why(ctx: &mut TranslationCtx, ty: pearlite::term::Type) -> 
 }
 
 fn lit_ty_to_ty(litty: pearlite::term::LitTy) -> mlcfg::Type {
-    use crate::ty::*;
+    use crate::translation::ty::*;
     use pearlite::term::Size::*;
     use why3::mlcfg::Type::*;
 
@@ -142,7 +142,7 @@ fn lit_ty_to_ty(litty: pearlite::term::LitTy) -> mlcfg::Type {
 }
 
 fn lit_to_const(lit: pearlite::term::Literal) -> why3::mlcfg::Constant {
-    use crate::ty::*;
+    use crate::translation::ty::*;
     use why3::mlcfg::Constant::{self, *};
     match lit {
         term::Literal::U8(u) => Uint(u as u128, Some(u8_ty())),
