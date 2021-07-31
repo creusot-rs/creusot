@@ -1,13 +1,14 @@
-use crate::extended_location::*;
-use rustc_hir::def_id::DefId;
+use crate::{extended_location::*, RemoveFalseEdge};
+use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
     mir::traversal::preorder,
-    mir::{BasicBlock, Body, Local, Location, Operand, VarDebugInfo},
-    ty::TyCtxt,
-    ty::TyKind,
+    mir::{visit::MutVisitor, BasicBlock, Body, Local, Location, Operand, VarDebugInfo},
+    ty::{subst::GenericArg, Ty, TyCtxt},
+    ty::{TyKind, WithOptConstParam},
 };
-
+use rustc_resolve::Namespace;
+use rustc_span::Symbol;
 use std::collections::BTreeMap;
 use why3::declaration::*;
 use why3::mlcfg::{self, Exp::*, Statement::*, *};
@@ -33,12 +34,21 @@ use self::specification::RustcResolver;
 pub fn translate_function<'tcx, 'sess>(
     tcx: TyCtxt<'tcx>,
     ctx: &mut TranslationCtx<'sess, 'tcx>,
-    body: &Body<'tcx>,
     def_id: DefId,
-    contract: Contract,
 ) {
-    let func_translator = FunctionTranslator::build_context(tcx, ctx, body, def_id);
-    let module = func_translator.translate(contract);
+    if !ctx.translated_funcs.insert(def_id) {
+        return;
+    }
+
+    let _ = tcx.mir_borrowck(def_id.expect_local());
+    let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
+    let mut body = body.steal();
+    // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
+    // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
+    RemoveFalseEdge { tcx }.visit_body(&mut body);
+
+    let func_translator = FunctionTranslator::build_context(tcx, ctx, &body, def_id);
+    let module = func_translator.translate();
     ctx.modules.add_module(module);
 }
 use crate::resolve::EagerResolver;
@@ -107,9 +117,16 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         }
     }
 
-    fn translate(mut self, mut contract: Contract) -> Module {
+    fn translate(mut self) -> Module {
         self.translate_body();
         move_invariants_into_loop(&mut self.past_blocks);
+
+        let pre_contract = specification::contract_of(self.tcx, self.def_id).unwrap();
+        let mut contract =
+            pre_contract.check_and_lower(&self.resolver(), &mut self.ctx, self.def_id);
+        let subst = specification::subst_for_arguments(self.body);
+
+        contract.subst(&subst);
 
         let arg_count = self.body.arg_count;
         let vars: Vec<_> = self
@@ -373,44 +390,82 @@ fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {
 }
 
 // Translate functions that are external to the crate as opaque values
-struct Extern;
+pub struct Extern;
 
 impl Extern {
-    fn translate(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_span::Span) {
+    pub fn translate(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_span::Span) {
         if !ctx.translated_funcs.insert(def_id) {
             return;
         }
 
-        let sig = ctx.tcx.normalize_erasing_late_bound_regions(
-            rustc_middle::ty::ParamEnv::reveal_all(),
-            ctx.tcx.fn_sig(def_id),
-        );
-        let names = ctx.tcx.fn_arg_names(def_id);
-
-        let mut contract = Contract::new();
-
-        // If the return type of the function is ! then add an impossible post-condition
-        if sig.output().is_never() {
-            contract.ensures.push(Exp::Const(Constant::const_false()));
+        if specification::get_attr(ctx.tcx.get_attrs(def_id), &["creusot", "spec", "logic"])
+            .is_some()
+        {
+            Logic::translate(ctx, def_id, span);
+            return;
         }
+
+        let sig = crate::util::signature_of(ctx, def_id);
 
         let name = translate_value_id(ctx.tcx, def_id).module.join("");
 
         let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
-        decls.push(Decl::ValDecl(Val {
-            sig: Signature {
-                name: QName::from_string("impl").unwrap(),
-                retty: Some(ty::translate_ty(ctx, span, sig.output())),
-                args: names
-                    .iter()
-                    .zip(sig.inputs())
-                    .map(|(id, ty)| (id.name.to_string().into(), ty::translate_ty(ctx, span, ty)))
-                    .collect(),
-                contract,
-            },
-        }));
+        decls.push(Decl::ValDecl(Val { sig }));
 
         ctx.modules.add_module(Module { name, decls });
+    }
+}
+
+pub struct Logic;
+
+impl Logic {
+    pub fn translate(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_span::Span) {
+        if !ctx.translated_funcs.insert(def_id) {
+            return;
+        }
+
+        let body_attr =
+            specification::get_attr(ctx.tcx.get_attrs(def_id), &["creusot", "spec", "logic"])
+                .unwrap();
+
+        let body = specification::ts_to_symbol(body_attr.args.inner_tokens()).unwrap();
+        let p: syn::Term = syn::parse_str(&body).unwrap();
+
+        let module_id = crate::util::parent_module(ctx.tcx, def_id);
+        let res = specification::RustcResolver(ctx.resolver.clone(), module_id, ctx.tcx);
+
+        let mut t = pearlite::term::Term::from_syn(&res, p).unwrap();
+
+        let mut pearlite_ctx = pearlite::typing::TypeContext::new_with_ctx(
+            specification::RustcContext(ctx.tcx),
+            specification::context_at_entry(ctx.tcx, def_id),
+        );
+        let ret_ty = specification::return_ty(ctx.tcx, def_id);
+
+        pearlite::typing::check_term(&mut pearlite_ctx, &mut t, &ret_ty).unwrap();
+        let body = specification::lower_term_to_why(ctx, t);
+
+        let name = crate::ctx::translate_value_id(ctx.tcx, def_id);
+        let sig = crate::util::signature_of(ctx, def_id);
+
+        // Gather the required imports
+        // TODO: use this to sort logic functions topologically
+        // Remove the self-reference and reference to the Type module
+        let mut imports = body.qfvs();
+        imports.extend(sig.contract.qfvs());
+        imports.remove(&name);
+
+        let mut decls: Vec<_> = imports
+            .into_iter()
+            .map(|qn| qn.module_name())
+            .filter(|qn| qn != &crate::modules::type_module())
+            .map(|qn| Decl::UseDecl(Use { name: qn }))
+            .collect();
+
+        decls.push(Decl::LogicDecl(why3::declaration::Logic { sig, body }));
+        let name = translate_value_id(ctx.tcx, def_id).module.join("");
+
+        ctx.modules.add_module(Module { name, decls })
     }
 }
 

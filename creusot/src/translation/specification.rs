@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use crate::translation::TranslationCtx;
-use why3::declaration::{Contract, Decl, Logic, Module, Signature, Use};
+use rustc_middle::ty::Attributes;
+use why3::declaration::Contract;
 use why3::mlcfg::{Exp, LocalIdent};
 
 use rustc_hir::def_id::DefId;
@@ -16,7 +17,7 @@ mod context;
 mod lower;
 
 pub use context::*;
-use lower::*;
+pub use lower::*;
 
 pub fn requires_to_why<'tcx>(
     res: &RustcResolver<'tcx>,
@@ -57,9 +58,8 @@ pub fn ensures_to_why<'tcx>(
     attr_val: String,
 ) -> Exp {
     let p: Term = syn::parse_str(&attr_val).unwrap();
-    let mut tyctx = context_at_entry(res.2, def_id);
     let ret_ty = return_ty(res.2, def_id);
-    tyctx.push(("result".into(), ret_ty));
+    let tyctx = context_at_entry(res.2, def_id).chain(std::iter::once(("result".into(), ret_ty)));
 
     let mut tyctx = pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), tyctx);
 
@@ -126,60 +126,7 @@ pub fn invariant_to_why<'tcx>(
     e
 }
 
-// Translate a logical funciton into why.
-pub fn logic_to_why<'tcx>(
-    res: &RustcResolver<'tcx>,
-    ctx: &mut TranslationCtx<'_, 'tcx>,
-    def_id: DefId,
-    exp: String,
-    contract: Contract,
-) -> Module {
-    // Technically we should pass through translation::ty here in case we mention
-    // any untranslated types...
-    let ret_ty = return_ty(res.2, def_id);
-    let entry_ctx = context_at_entry(res.2, def_id);
-    let mut tyctx =
-        pearlite::typing::TypeContext::new_with_ctx(RustcContext(res.2), entry_ctx.clone());
-    let p: Term = syn::parse_str(&exp).unwrap();
-
-    let mut t = term::Term::from_syn(res, p).unwrap();
-
-    pearlite::typing::check_term(&mut tyctx, &mut t, &ret_ty).unwrap();
-    let body = lower_term_to_why(ctx, t);
-
-    let name = crate::ctx::translate_value_id(res.2, def_id);
-
-    // Gather the required imports
-    // TODO: use this to sort logic functions topologically
-    // Remove the self-reference and reference to the Type module
-    let mut imports = body.qfvs();
-    imports.extend(contract.qfvs());
-    imports.remove(&name);
-
-    let mut decls: Vec<_> = imports
-        .into_iter()
-        .map(|qn| qn.module_name())
-        .filter(|qn| qn != &crate::modules::type_module())
-        .map(|qn| Decl::UseDecl(Use { name: qn }))
-        .collect();
-
-    decls.push(Decl::LogicDecl(Logic {
-        sig: Signature {
-            name: "impl".into(),
-            retty: Some(lower_type_to_why(ctx, ret_ty)),
-            args: entry_ctx
-                .into_iter()
-                .map(|(nm, ty)| (LocalIdent::Name(nm), lower_type_to_why(ctx, ty)))
-                .collect(),
-            contract,
-        },
-        body,
-    }));
-
-    Module { name: name.module.join(""), decls }
-}
-
-fn return_ty<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> pearlite::term::Type {
+pub fn return_ty<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> pearlite::term::Type {
     let sig = tcx.normalize_erasing_late_bound_regions(
         rustc_middle::ty::ParamEnv::reveal_all(),
         tcx.fn_sig(def_id),
@@ -189,23 +136,19 @@ fn return_ty<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> pearlite::term::Type {
 }
 
 // Constructs a typing environment which contains entries for all arguments of a mir body.
-fn context_at_entry<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Vec<(String, pearlite::term::Type)> {
+pub fn context_at_entry<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> impl Iterator< Item = (String, pearlite::term::Type)> + 'tcx {
     let sig = tcx.normalize_erasing_late_bound_regions(
         rustc_middle::ty::ParamEnv::reveal_all(),
         tcx.fn_sig(def_id),
     );
     let names = tcx.fn_arg_names(def_id);
 
-    let mut ctx = Vec::new();
-
-    for (nm, ty) in names.iter().zip(sig.inputs()) {
+    names.iter().zip(sig.inputs()).map(move |(nm, ty)| {
         let name = nm.name.to_string();
         let ty = ty_to_pearlite(tcx, ty);
 
-        ctx.push((name, ty));
-    }
-
-    ctx
+        (name, ty)
+    })
 }
 
 // Turn a typing context into a substition.
@@ -235,8 +178,7 @@ use rustc_ast::{
     tokenstream::{TokenStream, TokenTree::*},
 };
 
-
-fn ts_to_symbol(ts: TokenStream) -> Option<String> {
+pub fn ts_to_symbol(ts: TokenStream) -> Option<String> {
     assert_eq!(ts.len(), 1);
 
     if let Token(tok) = ts.trees().next().unwrap() {
@@ -311,6 +253,7 @@ pub fn spec_kind(tcx: TyCtxt, def_id: DefId) -> Result<Spec, SpecAttrError> {
         if attr.is_doc_comment() {
             continue;
         }
+
         let attr = attr.get_normal_item();
 
         if !is_attr(attr, "spec") {
@@ -349,12 +292,12 @@ pub fn contract_of(tcx: TyCtxt, def_id: DefId) -> Result<PreContract, SpecAttrEr
         if attr.is_doc_comment() {
             continue;
         }
+
         let attr = attr.get_normal_item();
 
         if !is_attr(attr, "spec") {
             continue;
         }
-
         match attr.path.segments[2].ident.to_string().as_str() {
             "requires" => {
                 contract.requires.push(ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?)
@@ -381,7 +324,29 @@ pub fn is_spec_id(tcx: TyCtxt<'_>, def_id: DefId) -> Result<bool, SpecAttrError>
     }
 }
 
-use rustc_ast::AttrItem;
+pub fn get_attr<'a>(attrs: Attributes<'a>, path: &[&str]) -> Option<&'a AttrItem> {
+    for attr in attrs.iter() {
+        if attr.is_doc_comment() {
+            continue;
+        }
+
+        let attr = attr.get_normal_item();
+
+        let matches = attr
+            .path
+            .segments
+            .iter()
+            .zip(path.into_iter())
+            .fold(true, |acc, (seg, s)| acc && &*seg.ident.as_str() == *s);
+
+        if matches {
+            return Some(attr);
+        }
+    }
+    return None;
+}
+
+use rustc_ast::{AttrItem, Attribute};
 
 fn is_attr(attr: &AttrItem, str: &str) -> bool {
     let segments = &attr.path.segments;

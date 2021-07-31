@@ -35,6 +35,7 @@ use rustc_middle::{
 use std::{cell::RefCell, env::args as get_args, rc::Rc};
 use why3::mlcfg;
 
+pub mod util;
 mod analysis;
 pub mod ctx;
 mod resolve;
@@ -143,48 +144,9 @@ fn translate(
 
     for def_id in tcx.body_owners() {
         debug!("Translating body {:?}", def_id);
-        // (Mir-)Borrowck uses `mir_validated`, so we have to force it to
-        // execute before we can steal.
-        //
-        // We want to capture MIR here for the simple reason that it is before
-        // Aggregates are destructured. This means that we don't have to deal with the whole
-        // 'assign each field and the discriminant' seperately stuff.
 
-        let _ = tcx.mir_borrowck(def_id);
-
-        let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id));
-        let mut body = body.steal();
         let def_id = def_id.to_def_id();
-
-        // Parent module of declaration
-        let module_id = tcx.parent_module_from_def_id(def_id.expect_local()).to_def_id();
-        // let module_id = tcx.parent(def_id).unwrap();
-        let resolver = specification::RustcResolver(resolver.clone(), module_id, tcx);
-
-        use specification::Spec::*;
-        match specification::spec_kind(tcx, def_id).unwrap() {
-            Invariant { .. } => continue,
-            Logic { body: exp, contract } => {
-                let out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, def_id);
-
-                let translated =
-                    specification::logic_to_why(&resolver, &mut ty_ctx, def_id, exp, out_contract);
-
-                ty_ctx.modules.add_module(translated)
-            }
-            Program { contract } => {
-                let mut out_contract = contract.check_and_lower(&resolver, &mut ty_ctx, def_id);
-                let subst = specification::subst_for_arguments(&body);
-
-                out_contract.subst(&subst);
-
-                // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
-                // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
-                // TODO: now that we don't use polonius info: consider using optimized mir instead?
-                RemoveFalseEdge { tcx }.visit_body(&mut body);
-                translation::translate_function(tcx, &mut ty_ctx, &body, def_id, out_contract);
-            }
-        }
+        ty_ctx.translate_function(def_id);
     }
 
     use std::fs::File;

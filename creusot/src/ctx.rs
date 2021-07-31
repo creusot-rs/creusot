@@ -70,8 +70,39 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         }
     }
 
+    // Generic entry point for function translation
+    pub fn translate_function(&mut self, def_id: DefId) {
+        if self.translated_funcs.contains(&def_id) {
+            return;
+        }
+
+        let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
+        if crate::translation::specification::get_attr(self.tcx.get_attrs(def_id), &["creusot", "spec", "logic"])
+            .is_some()
+        {
+            debug!("translating {:?} as logic", def_id);
+            crate::translation::Logic::translate(self, def_id, rustc_span::DUMMY_SP);
+        } else if def_id.krate != rustc_hir::def_id::LOCAL_CRATE {
+            debug!("translating {:?} as extern", def_id);
+            crate::translation::Extern::translate(self, def_id, span);
+        } else if self.tcx.def_kind(def_id) == rustc_hir::def::DefKind::Fn {
+            debug!("translating {:?} as program", def_id);
+            crate::translation::translate_function(self.tcx, self, def_id);
+        } else {
+            unimplemented!()
+        }
+    }
+
     pub fn crash_and_error(&self, span: Span, msg: &str) -> ! {
         self.sess.span_fatal_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
+    }
+
+    pub fn warn(&self, span: Span, msg: &str) {
+        self.sess.span_warn_with_code(
+            span,
+            msg,
+            DiagnosticId::Lint { name: String::from("creusot"), has_future_breakage: false },
+        )
     }
 
     pub fn add_type(&mut self, ty_decl: TyDecl, drop_pred: Predicate) {
