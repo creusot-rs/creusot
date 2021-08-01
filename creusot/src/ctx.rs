@@ -101,7 +101,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.sess.span_warn_with_code(
             span,
             msg,
-            DiagnosticId::Lint { name: String::from("creusot"), has_future_breakage: false },
+            DiagnosticId::Lint { name: String::from("creusot"), has_future_breakage: false, is_force_warn: true },
         )
     }
 

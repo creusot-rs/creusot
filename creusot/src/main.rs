@@ -58,8 +58,7 @@ impl Callbacks for ToWhy {
     fn after_expansion<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
         let session = c.session();
         let resolver = {
-            let parts = abort_on_err(queries.expansion(), session).peek();
-            let resolver = parts.1.borrow();
+            let (_, resolver, _) = &* abort_on_err(queries.expansion(), session).peek();
             resolver.clone()
         };
 
@@ -67,7 +66,7 @@ impl Callbacks for ToWhy {
 
         queries.global_ctxt().unwrap();
 
-        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| tcx.analysis(LOCAL_CRATE)).unwrap();
+        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| tcx.analysis(())).unwrap();
 
         queries
             .global_ctxt()
@@ -122,7 +121,7 @@ fn translate(
     let mut ty_decls = Vec::new();
     log::debug!("translate");
 
-    for (_, mod_items) in tcx.hir_crate(LOCAL_CRATE).modules.iter() {
+    for (_, mod_items) in tcx.hir_crate(()).modules.iter() {
         for item_id in mod_items.items.iter() {
             let item = hir_map.item(*item_id);
             // What about inline type declarations?
