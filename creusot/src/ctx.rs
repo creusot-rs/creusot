@@ -12,8 +12,10 @@ use rustc_span::Span;
 
 use rustc_hir::definitions::DefPathData;
 use rustc_resolve::Namespace;
+use rustc_hir::def::DefKind;
 
 use crate::modules::Modules;
+use crate::translation::specification;
 
 use rustc_interface::interface::BoxedResolver;
 use std::{cell::RefCell, rc::Rc};
@@ -85,11 +87,19 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         } else if def_id.krate != rustc_hir::def_id::LOCAL_CRATE {
             debug!("translating {:?} as extern", def_id);
             crate::translation::translate_extern(self, def_id, span);
-        } else if self.tcx.def_kind(def_id) == rustc_hir::def::DefKind::Fn {
-            debug!("translating {:?} as program", def_id);
-            crate::translation::translate_function(self.tcx, self, def_id);
         } else {
-            unimplemented!()
+            let kind = self.tcx.def_kind(def_id);
+            if kind == DefKind::Fn || kind == DefKind::Closure || kind == DefKind::AssocFn {
+                let is_spec = specification::get_attr(self.tcx.get_attrs(def_id), &["creusot", "spec", "invariant"]).is_some();
+                if is_spec {
+                    return;
+                }
+
+                crate::translation::translate_function(self.tcx, self, def_id);
+            } else {
+                unimplemented!("{:?} {:?}", def_id, self.tcx.def_kind(def_id));
+
+            }
         }
     }
 
@@ -217,7 +227,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
             name = segments;
             segments = Vec::new();
         }
-        (_, Some(Namespace::ValueNS)) => {
+        (_, Some(Namespace::ValueNS)) | (Closure, _) => {
             if is_trait_assoc {
                 name = vec![segments.pop().unwrap().to_lowercase()];
             } else {
