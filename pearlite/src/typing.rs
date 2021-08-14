@@ -348,6 +348,17 @@ where
             }
             Ok(())
         }
+        Tuple { fields } => {
+            let field_tys = (0..fields.len()).map(|_| { ctx.fresh_ty() }).collect::<Vec<_>>();
+            let ret_ty = Type::Tuple { elems: field_tys.clone() };
+            ctx.unify(&ret_ty, expected)?;
+            
+            for (pat, ty) in fields.iter_mut().zip(field_tys.iter()) {
+                check_pattern(ctx, pat, ty)?;
+            }
+   
+            Ok(())
+        }
         Boolean(_) => ctx.unify(&Type::BOOLEAN, expected),
         Wild => Ok(()),
     }

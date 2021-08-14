@@ -28,7 +28,7 @@ impl Term {
     pub fn from_syn<R: Resolver>(res: &R, term: RT) -> Result<Term, ParseError> {
         use syn::term::{
             TermBinary, TermBlock, TermCall, TermCast, TermExists, TermFinal, TermForall, TermIf,
-            TermImpl, TermLit, TermMatch, TermParen, TermPath, TermTuple, TermUnary,
+            TermImpl, TermLit, TermMatch, TermMethodCall, TermParen, TermPath, TermTuple, TermUnary,
         };
         match term {
             RT::Match(TermMatch { box expr, arms, .. }) => Ok(Match {
@@ -109,6 +109,16 @@ impl Term {
                 } else {
                     Err(Generic)
                 }
+            }
+            RT::MethodCall(TermMethodCall { box receiver, method, args, .. }) => {
+                let self_arg = Term::from_syn(res, receiver);
+                let func = Name::Ident(method.to_string());
+
+                let args = std::iter::once(self_arg).chain(args.into_iter().map(
+                    |t| Term::from_syn(res, t))).collect::<Result<Vec<_>, _>>()?;
+
+                Ok(Call { func, args })
+
             }
             RT::Final(TermFinal { box term, .. }) => {
                 Ok(Unary { op: UnOp::Final, expr: box Term::from_syn(res, term)? })
@@ -332,6 +342,15 @@ impl Pattern {
 
                 Ok(Pattern::TupleStruct { path: Name::from_syn(res, path)?, fields })
             }
+            syn::Pat::Tuple(PatTuple { elems, .. }) => {
+                let fields = elems
+                    .into_iter()
+                    .map(|p| Pattern::from_syn(res, p))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                Ok(Pattern::Tuple { fields })
+        
+            }
             syn::Pat::Wild(_) => Ok(Pattern::Wild),
             syn::Pat::Lit(syn::PatLit {
                 expr: box syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Bool(b), .. }),
@@ -349,7 +368,7 @@ impl Pattern {
             | syn::Pat::Rest(_)
             | syn::Pat::Range(_) => Err(Other("hard".into())),
 
-            _ => Err(Other(format!("{:?}", pat))),
+            _ => Err(Other(format!("unsupported pattern {:?}", pat))),
         }
     }
 }

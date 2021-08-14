@@ -98,6 +98,7 @@ pub enum Pattern {
     Var(Ident),
     Struct { path: Name, fields: Vec<(Ident, Pattern)> },
     TupleStruct { path: Name, fields: Vec<Pattern> },
+    Tuple { fields: Vec<Pattern> },
     Boolean(bool),
     Wild,
 }

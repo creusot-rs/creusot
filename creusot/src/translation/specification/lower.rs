@@ -211,6 +211,10 @@ fn lower_pattern_to_why(ctx: &mut TranslationCtx, p: term::Pattern) -> mlcfg::Pa
             }
         }
         term::Pattern::Wild => Pattern::Wildcard,
+        term::Pattern::Tuple { fields } => {
+            let fields = fields.into_iter().map(|p| lower_pattern_to_why(ctx, p)).collect();
+            Pattern::TupleP(fields)
+        }
         _ => {
             unimplemented!()
         }
