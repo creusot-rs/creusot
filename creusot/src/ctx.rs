@@ -27,14 +27,14 @@ impl<'tcx> NameMap<'tcx> {
         NameMap(tcx, BTreeMap::new())
     }
 
-    pub fn name_for(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> (bool, String) {
+    pub fn name_for(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> String {
         if let Some(nm) = self.1.get(&(def_id, subst)) {
-            (false, nm.clone())
+            nm.clone()
         } else {
             let num_entries = self.1.len();
             let name_base = self.0.item_name(def_id).as_str().to_camel_case();
             self.1.insert((def_id, subst), format!("{}{}", name_base, num_entries));
-            (true, self.1[&(def_id, subst)].clone())
+            self.1[&(def_id, subst)].clone()
         }
     }
 
