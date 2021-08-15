@@ -42,12 +42,12 @@ module LenLogic
   use Type
   type t   
   let rec function impl (l : Type.list t) : int
-    ensures { result >= 0 }
+    ensures { result >= Int32.to_int (0 : int32) }
     
    = 
     match (l) with
-      | Type.List_Cons(_, ls) -> 1 + impl ls
-      | Type.List_Nil -> 0
+      | Type.List_Cons(_, ls) -> Int32.to_int (1 : int32) + impl ls
+      | Type.List_Nil -> Int32.to_int (0 : int32)
       end
 end
 module Get
@@ -63,17 +63,17 @@ module Get
   use prelude.Prelude
   use Type
   type t   
-  use LenLogic
+  clone LenLogic as LenLogic0 with type t = t
   let rec function impl (l : Type.list t) (ix : int) : t
-    requires {ix < LenLogic.impl l}
-    requires {ix >= 0}
-    variant {LenLogic.impl l}
+    requires {ix < LenLogic0.impl l}
+    requires {ix >= Int32.to_int (0 : int32)}
+    variant {LenLogic0.impl l}
     
    = 
     match (l) with
-      | Type.List_Cons(t, ls) -> match (ix = 0) with
+      | Type.List_Cons(t, ls) -> match (ix = Int32.to_int (0 : int32)) with
         | True -> t
-        | False -> impl ls (ix - 1)
+        | False -> impl ls (ix - Int32.to_int (1 : int32))
         end
       | Type.List_Nil -> absurd
       end
@@ -107,12 +107,12 @@ module Impl0_Index
   use prelude.Prelude
   use Type
   type t   
-  use LenLogic
-  use Get
-  clone Std_Process_Abort as Abort0
+  clone LenLogic as LenLogic0 with type t = t
+  clone Get as Get1 with type t = t
+  clone Std_Process_Abort as Abort2
   let rec cfg impl (o_self_1 : Type.list t) (o_ix_2 : usize) : t
-    requires {o_ix_2 < LenLogic.impl o_self_1}
-    ensures { result = Get.impl o_self_1 o_ix_2 }
+    requires {UInt64.to_int o_ix_2 < LenLogic0.impl o_self_1}
+    ensures { result = Get1.impl o_self_1 (UInt64.to_int o_ix_2) }
     
    = 
   var _0 : t;
@@ -147,8 +147,8 @@ module Impl0_Index
     goto BB1
   }
   BB1 {
-    invariant ix_valid { ix_2 < LenLogic.impl l_4 };
-    invariant res_get { Get.impl self_1 orig_ix_3 = Get.impl l_4 ix_2 };
+    invariant ix_valid { UInt64.to_int ix_2 < LenLogic0.impl l_4 };
+    invariant res_get { Get1.impl self_1 (UInt64.to_int orig_ix_3) = Get1.impl l_4 (UInt64.to_int ix_2) };
     goto BB2
   }
   BB2 {
@@ -219,10 +219,10 @@ module Impl0_Len
   use prelude.Prelude
   use Type
   type t   
-  use LenLogic
+  clone LenLogic as LenLogic0 with type t = t
   let rec cfg impl (o_self_1 : Type.list t) : usize
-    requires {LenLogic.impl o_self_1 <= 1000000}
-    ensures { result = LenLogic.impl o_self_1 }
+    requires {LenLogic0.impl o_self_1 <= Int32.to_int (1000000 : int32)}
+    ensures { UInt64.to_int result = LenLogic0.impl o_self_1 }
     ensures { result >= (0 : usize) }
     
    = 
@@ -248,7 +248,7 @@ module Impl0_Len
     goto BB1
   }
   BB1 {
-    invariant len_valid { len_2 + LenLogic.impl l_3 = LenLogic.impl self_1 };
+    invariant len_valid { UInt64.to_int len_2 + LenLogic0.impl l_3 = LenLogic0.impl self_1 };
     goto BB2
   }
   BB2 {
@@ -297,16 +297,16 @@ module BinarySearch
   use floating_point.Double
   use prelude.Prelude
   use Type
-  use LenLogic
-  use Get
-  clone Impl0_Index as Index1 with type t = uint32
-  clone Impl0_Len as Len0 with type t = uint32
+  clone LenLogic as LenLogic0 with type t = uint32
+  clone Get as Get1 with type t = uint32
+  clone Impl0_Index as Index3 with type t = uint32
+  clone Impl0_Len as Len2 with type t = uint32
   let rec cfg impl (o_arr_1 : Type.list uint32) (o_elem_2 : uint32) : Type.core_result_result usize usize
-    requires {forall k1 : int, k2 : int . Get.impl o_arr_1 k1 <= Get.impl o_arr_1 k2}
-    requires {LenLogic.impl o_arr_1 <= 1000000}
-    ensures { forall x : usize . result = Type.Core_Result_Result_Err(x) -> (forall i : int . x < i && i < LenLogic.impl o_arr_1 -> o_elem_2 < Get.impl o_arr_1 i) }
-    ensures { forall x : usize . result = Type.Core_Result_Result_Err(x) -> (forall i : int . 0 <= i && i < x -> Get.impl o_arr_1 i < o_elem_2) }
-    ensures { forall x : usize . result = Type.Core_Result_Result_Ok(x) -> Get.impl o_arr_1 x = o_elem_2 }
+    requires {forall k2 : (int) . forall k1 : (int) . Get1.impl o_arr_1 k1 <= Get1.impl o_arr_1 k2}
+    requires {LenLogic0.impl o_arr_1 <= Int32.to_int (1000000 : int32)}
+    ensures { forall x : (usize) . result = Type.Core_Result_Result_Err(x) -> (forall i : (int) . UInt64.to_int x < i && i < LenLogic0.impl o_arr_1 -> o_elem_2 < Get1.impl o_arr_1 i) }
+    ensures { forall x : (usize) . result = Type.Core_Result_Result_Err(x) -> (forall i : (int) . Int32.to_int (0 : int32) <= i && i < UInt64.to_int x -> Get1.impl o_arr_1 i < o_elem_2) }
+    ensures { forall x : (usize) . result = Type.Core_Result_Result_Ok(x) -> Get1.impl o_arr_1 (UInt64.to_int x) = o_elem_2 }
     
    = 
   var _0 : Type.core_result_result usize usize;
@@ -360,7 +360,7 @@ module BinarySearch
   }
   BB0 {
     _6 <- arr_1;
-    _5 <- Len0.impl _6;
+    _5 <- Len2.impl _6;
     goto BB1
   }
   BB1 {
@@ -383,7 +383,7 @@ module BinarySearch
     _3 <- ();
     assume { (fun tup -> let () = tup in true) _3 };
     _9 <- arr_1;
-    size_8 <- Len0.impl _9;
+    size_8 <- Len2.impl _9;
     goto BB4
   }
   BB4 {
@@ -391,8 +391,8 @@ module BinarySearch
     goto BB5
   }
   BB5 {
-    invariant size_valid { size_8 + base_10 <= LenLogic.impl arr_1 };
-    invariant in_range { forall i : int . 0 <= i && i < LenLogic.impl arr_1 -> i < base_10 -> Get.impl arr_1 i <= elem_2 && base_10 + size_8 < i -> elem_2 <= Get.impl arr_1 i };
+    invariant size_valid { UInt64.to_int size_8 + UInt64.to_int base_10 <= LenLogic0.impl arr_1 };
+    invariant in_range { forall i : (int) . Int32.to_int (0 : int32) <= i && i < LenLogic0.impl arr_1 -> i < UInt64.to_int base_10 -> Get1.impl arr_1 i <= elem_2 && UInt64.to_int base_10 + UInt64.to_int size_8 < i -> elem_2 <= Get1.impl arr_1 i };
     invariant size_pos { size_8 > (0 : usize) };
     goto BB6
   }
@@ -419,7 +419,7 @@ module BinarySearch
     assume { drop_ref arr_1 };
     assume { drop_uint _36 };
     _36 <- base_10;
-    _34 <- Index1.impl _35 _36;
+    _34 <- Index3.impl _35 _36;
     goto BB15
   }
   BB9 {
@@ -440,7 +440,7 @@ module BinarySearch
     _28 <- arr_1;
     assume { drop_uint _29 };
     _29 <- mid_21;
-    _27 <- Index1.impl _28 _29;
+    _27 <- Index3.impl _28 _29;
     goto BB11
   }
   BB11 {

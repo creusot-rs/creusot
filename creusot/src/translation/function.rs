@@ -14,14 +14,14 @@ use why3::mlcfg::{self, Exp::*, Statement::*, *};
 use rustc_middle::mir::Place;
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
 
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 
 mod place;
 mod statement;
 mod terminator;
 
 use crate::ctx::*;
-use crate::translation::specification::{self, RustcResolver};
+use crate::translation::specification;
 use crate::translation::ty;
 
 pub fn translate_function<'tcx, 'sess>(
@@ -33,14 +33,16 @@ pub fn translate_function<'tcx, 'sess>(
         return;
     }
 
-    let _ = tcx.mir_borrowck(def_id.expect_local());
+    let mut names = NameMap::new(tcx);
+    let invariants = specification::gather_invariants(ctx, &mut names, def_id);
     let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.steal();
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
     RemoveFalseEdge { tcx }.visit_body(&mut body);
 
-    let func_translator = FunctionTranslator::build_context(tcx, ctx, &body, def_id);
+    let func_translator =
+        FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, def_id);
     let module = func_translator.translate();
     ctx.modules.add_module(module);
 }
@@ -73,6 +75,8 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     clone_names: NameMap<'tcx>,
 
     imports: IndexSet<QName>,
+
+    invariants: IndexMap<DefId, Exp>,
 }
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
@@ -80,13 +84,20 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'sess, 'tcx>,
         body: &'body Body<'tcx>,
+        clone_names: NameMap<'tcx>,
+        invariants: IndexMap<DefId, Exp>,
         def_id: DefId,
     ) -> Self {
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if specification::is_spec_id(tcx, *def_id).unwrap() {
+                if specification::get_attr(
+                    tcx.get_attrs(*def_id),
+                    &["creusot", "spec", "invariant"],
+                )
+                .is_some()
+                {
                     erased_locals.insert(local);
                 }
             }
@@ -105,8 +116,9 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             past_blocks: BTreeMap::new(),
             ctx,
             fresh_id: body.basic_blocks().len(),
-            clone_names: NameMap::new(tcx),
+            clone_names,
             imports,
+            invariants,
         }
     }
 
@@ -116,7 +128,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         let pre_contract = specification::contract_of(self.tcx, self.def_id).unwrap();
         let mut contract =
-            pre_contract.check_and_lower(&self.resolver(), &mut self.ctx, self.def_id);
+            pre_contract.check_and_lower(&mut self.ctx, &mut self.clone_names, self.def_id);
         let subst = specification::subst_for_arguments(self.body);
 
         contract.subst(&subst);
@@ -179,8 +191,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             terminator: Terminator::Goto(BlockId(0)),
         };
 
-        self.imports.extend(contract.qfvs().into_iter().map(|qn| qn.module_name()));
-
         let mut decls: Vec<_> = all_generic_decls_for(self.tcx, self.def_id).collect();
 
         for imp in self.imports {
@@ -225,11 +235,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 },
             );
         }
-    }
-
-    fn resolver(&self) -> RustcResolver<'tcx> {
-        let module_id = self.tcx.parent_module_from_def_id(self.def_id.expect_local()).to_def_id();
-        specification::RustcResolver(self.ctx.resolver.clone(), module_id, self.tcx)
     }
 
     fn emit_statement(&mut self, s: mlcfg::Statement) {
@@ -391,6 +396,7 @@ pub fn all_generic_decls_for<'tcx>(
     generic_decls((0..generics.count()).map(move |i| generics.param_at(i, tcx)))
 }
 
+#[allow(dead_code)]
 pub fn own_generic_decls_for<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,

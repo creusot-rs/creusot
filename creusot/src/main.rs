@@ -1,7 +1,6 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_syntax, box_patterns, control_flow_enum)]
 #![feature(in_band_lifetimes)]
-
 #![register_tool(creusot)]
 #![feature(const_panic)]
 
@@ -14,21 +13,24 @@ extern crate rustc_index;
 extern crate rustc_interface;
 extern crate rustc_middle;
 extern crate rustc_mir;
+extern crate rustc_mir_build;
 extern crate rustc_resolve;
 extern crate rustc_session;
 extern crate rustc_span;
 extern crate rustc_target;
 extern crate rustc_trait_selection;
+extern crate smallvec;
 
 #[macro_use]
 extern crate log;
 
 use heck::CamelCase;
+use indexmap::IndexSet;
 use rustc_driver::{abort_on_err, Callbacks, Compilation, RunCompiler};
 use rustc_hir::{def_id::LOCAL_CRATE, Item};
 use rustc_interface::{
     interface::{BoxedResolver, Compiler},
-    Queries,
+    Config, Queries,
 };
 use rustc_middle::{
     mir::{visit::MutVisitor, Location, Terminator},
@@ -37,31 +39,48 @@ use rustc_middle::{
 use std::{cell::RefCell, env::args as get_args, rc::Rc};
 use why3::mlcfg;
 
-pub mod util;
 mod analysis;
+mod closure_gatherer;
 pub mod ctx;
-mod resolve;
 mod extended_location;
+mod resolve;
 mod translation;
+pub mod util;
 
 #[allow(dead_code)]
 mod debug;
 
+mod modules;
+
+#[allow(dead_code)]
+mod rustc_extensions;
+
+mod cleanup_spec_closures;
+use cleanup_spec_closures::*;
+
 use rustc_session::Session;
 use translation::*;
-
-mod modules;
-mod rustc_extensions;
 
 struct ToWhy {
     output_file: Option<String>,
 }
 
 impl Callbacks for ToWhy {
+    fn config(&mut self, config: &mut Config) {
+        config.override_queries = Some(|_sess, providers, _external_providers| {
+            providers.mir_built = |tcx, def_id| {
+                let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_built)(tcx, def_id);
+                let mut mir = mir.steal();
+                cleanup_spec_closures(tcx, def_id.def_id_for_type_of(), &mut mir);
+                tcx.alloc_steal_mir(mir)
+            };
+        })
+    }
+
     fn after_expansion<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
         let session = c.session();
         let resolver = {
-            let (_, resolver, _) = &* abort_on_err(queries.expansion(), session).peek();
+            let (_, resolver, _) = &*abort_on_err(queries.expansion(), session).peek();
             resolver.clone()
         };
 
@@ -69,7 +88,7 @@ impl Callbacks for ToWhy {
 
         queries.global_ctxt().unwrap();
 
-        queries.global_ctxt().unwrap().peek_mut().enter(|tcx| tcx.analysis(())).unwrap();
+        // queries.global_ctxt().unwrap().peek_mut().enter(|tcx| tcx.analysis(())).unwrap();
 
         queries
             .global_ctxt()
@@ -122,7 +141,6 @@ fn translate(
 
     // Collect the DefIds of all type declarations in this crate
     let mut ty_decls = Vec::new();
-    log::debug!("translate");
 
     for (_, mod_items) in tcx.hir_crate(()).modules.iter() {
         for item_id in mod_items.items.iter() {
@@ -145,9 +163,13 @@ fn translate(
     }
 
     for def_id in tcx.body_owners() {
-        debug!("Translating body {:?}", def_id);
-
         let def_id = def_id.to_def_id();
+        if util::should_translate(tcx, def_id) {
+            debug!("Skipping {:?}", def_id);
+            continue;
+        }
+
+        debug!("Translating body {:?}", def_id);
         ty_ctx.translate_function(def_id);
     }
 

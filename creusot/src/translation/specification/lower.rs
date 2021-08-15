@@ -1,254 +1,147 @@
-use crate::ctx::TranslationCtx;
-use pearlite::term::Name;
-use pearlite::term::{self, DerefKind, RefKind};
-use rustc_hir::def_id::DefId;
-use why3::mlcfg::QName;
-use why3::mlcfg::{self, Exp};
+use crate::ctx::*;
+use crate::rustc_extensions;
+use crate::translation::binop_to_binop;
+use crate::translation::builtins;
+use crate::translation::constant;
+use crate::translation::ty::translate_ty;
+use creusot_contracts::typing::{LogicalOp, Pattern, Term};
+use why3::mlcfg::{BinOp, Exp, Pattern as Pat, QName};
 
-pub fn lower_term_to_why(ctx: &mut TranslationCtx, t: term::Term) -> Exp {
-    use term::Term::*;
-    match t {
-        Match { box expr, arms } => Exp::Match(
-            box lower_term_to_why(ctx, expr),
-            arms.into_iter().map(|t| lower_arm_to_why(ctx, t)).collect(),
+pub fn lower_term_to_why3<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut NameMap<'tcx>,
+    term_id: DefId,
+    term: Term<'tcx>,
+) -> Exp {
+    match term {
+        Term::Const(c) => Exp::Const(constant::from_mir_constant_kind(ctx.tcx, c.into())),
+        Term::Var(v) => Exp::Var(v.into()),
+        Term::Binary { op, box lhs, box rhs } => Exp::BinaryOp(
+            binop_to_binop(op),
+            box lower_term_to_why3(ctx, names, term_id, lhs),
+            box lower_term_to_why3(ctx, names, term_id, rhs),
         ),
-        Binary { box left, op: pearlite::term::BinOp::Impl, box right } => {
-            Exp::Impl(box lower_term_to_why(ctx, left), box lower_term_to_why(ctx, right))
-        }
-        Binary { box left, op, box right } => {
-            let op = op_to_op(op);
-            Exp::BinaryOp(op, box lower_term_to_why(ctx, left), box lower_term_to_why(ctx, right))
-        }
-        Unary { op, box expr } => {
-            let expr = box lower_term_to_why(ctx, expr);
-            match op {
-                term::UnOp::Final => Exp::Final(expr),
-                term::UnOp::Deref(Some(DerefKind::Ref(RefKind::Mut))) => Exp::Current(expr),
-                term::UnOp::Deref(Some(_)) => *expr,
-                term::UnOp::Deref(None) => unreachable!(),
-                term::UnOp::Neg => Exp::UnaryOp(mlcfg::UnOp::Neg, expr),
-                term::UnOp::Not => Exp::UnaryOp(mlcfg::UnOp::Not, expr),
+        Term::Call { id, subst, fun: box Term::Const(_), args } => {
+            let mut args: Vec<_> =
+                args.into_iter().map(|arg| lower_term_to_why3(ctx, names, term_id, arg)).collect();
+
+            if args.is_empty() {
+                args = vec![Exp::Tuple(vec![])];
             }
-        }
-        Variable { path } => match path {
-            Name::Path { .. } => Exp::QVar(lower_value_path(ctx, path)),
-            Name::Ident(i) => Exp::Var(i.into()),
-        },
-        Call { func, args } => {
-            let is_c = is_constructor(ctx, &func);
-            let name = lower_value_path(ctx, func);
-            let args = args.into_iter().map(|t| lower_term_to_why(ctx, t)).collect();
 
-            if is_c {
-                Exp::Constructor { ctor: name, args }
-            } else {
-                Exp::Call(box Exp::QVar(name), args)
+            let params = ctx.tcx.param_env(id);
+
+            let target = match rustc_extensions::resolve_instance(ctx.tcx, params.and((id, subst)))
+            {
+                Ok(Some(inst)) => inst.def_id(),
+                Ok(_) => id,
+                Err(mut err) => {
+                    err.cancel();
+                    id
+                }
+            };
+
+            if is_identity_from(ctx.tcx, id, subst) {
+                return args.remove(0);
             }
-        }
-        Lit { lit } => Exp::Const(lit_to_const(lit)),
-        Forall { args, box body } => {
-            let args =
-                args.into_iter().map(|(i, t)| (i.0.into(), lower_type_to_why(ctx, t))).collect();
 
-            Exp::Forall(args, box lower_term_to_why(ctx, body))
-        }
-        Exists { args, box body } => {
-            let args =
-                args.into_iter().map(|(i, t)| (i.0.into(), lower_type_to_why(ctx, t))).collect();
-
-            Exp::Exists(args, box lower_term_to_why(ctx, body))
-        }
-        Let { pat, box arg, box body } => Exp::Let {
-            pattern: lower_pattern_to_why(ctx, pat),
-            arg: box lower_term_to_why(ctx, arg),
-            body: box lower_term_to_why(ctx, body),
-        },
-        Absurd => Exp::Absurd,
-        Cast { box expr, ty: _ } => lower_term_to_why(ctx, expr),
-        Tuple { elems } => {
-            Exp::Tuple(elems.into_iter().map(|t| lower_term_to_why(ctx, t)).collect())
-        }
-        If { box cond, box then_branch, box else_branch } => {
-            use mlcfg::Pattern;
-            Exp::Match(
-                box lower_term_to_why(ctx, cond),
-                vec![
-                    (Pattern::mk_true(), lower_term_to_why(ctx, then_branch)),
-                    (Pattern::mk_false(), lower_term_to_why(ctx, else_branch)),
-                ],
-            )
-        }
-    }
-}
-
-pub fn lower_type_to_why(ctx: &mut TranslationCtx, ty: pearlite::term::Type) -> why3::mlcfg::Type {
-    use pearlite::term::*;
-    use why3::mlcfg::Type::*;
-
-    match ty {
-        term::Type::Path { path } => TConstructor(lower_type_path(ctx, path)),
-        term::Type::Box { box ty } => lower_type_to_why(ctx, ty),
-        term::Type::Reference { kind: RefKind::Mut, box ty } => {
-            MutableBorrow(box lower_type_to_why(ctx, ty))
-        }
-        term::Type::Reference { kind: _, box ty } => lower_type_to_why(ctx, ty),
-        term::Type::Tuple { elems } => {
-            Tuple(elems.into_iter().map(|t| lower_type_to_why(ctx, t)).collect())
-        }
-        term::Type::Lit(lit) => lit_ty_to_ty(lit),
-        term::Type::App { box func, args } => TApp(
-            box lower_type_to_why(ctx, func),
-            args.into_iter().map(|t| lower_type_to_why(ctx, t)).collect(),
-        ),
-        term::Type::Function { args, box res } => {
-            args.into_iter().rfold(lower_type_to_why(ctx, res), |acc, arg| {
-                TFun(box lower_type_to_why(ctx, arg), box acc)
+            builtins::lookup_builtin(ctx, target, &mut args).unwrap_or_else(|| {
+                if target == term_id {
+                    Exp::Call(box Exp::Var("impl".into()), args)
+                } else {
+                    let clone = names.name_for(target, subst);
+                    let fname = QName { module: vec![clone], name: "impl".into() };
+                    Exp::Call(box Exp::QVar(fname), args)
+                }
             })
         }
-        term::Type::Var(tyvar) => TVar(('a'..).nth(tyvar.0 as usize).unwrap().to_string()),
-        term::Type::Unknown(_) => {
-            panic!()
-        } // _ => panic!("{:?}", ty),
-    }
-}
+        Term::Forall { binder, box body } => {
+            let ty = translate_ty(ctx, rustc_span::DUMMY_SP, binder.1);
+            Exp::Forall(
+                vec![(binder.0.into(), ty)],
+                box lower_term_to_why3(ctx, names, term_id, body),
+            )
+        }
+        Term::Logical { op, box lhs, box rhs } => {
+            let op = match op {
+                LogicalOp::And => BinOp::And,
+                LogicalOp::Or => BinOp::Or,
+            };
 
-fn lit_ty_to_ty(litty: pearlite::term::LitTy) -> mlcfg::Type {
-    use crate::translation::ty::*;
-    use pearlite::term::Size::*;
-    use why3::mlcfg::Type::*;
+            Exp::BinaryOp(
+                op,
+                box lower_term_to_why3(ctx, names, term_id, lhs),
+                box lower_term_to_why3(ctx, names, term_id, rhs),
+            )
+        }
+        Term::Constructor { adt, variant, fields } => {
+            let args =
+                fields.into_iter().map(|f| lower_term_to_why3(ctx, names, term_id, f)).collect();
 
-    match litty {
-        term::LitTy::Signed(s) => match s {
-            Eight => i8_ty(),
-            Sixteen => i16_ty(),
-            ThirtyTwo => i32_ty(),
-            SixtyFour => i64_ty(),
-            Mach => isize_ty(),
-            Unknown => unimplemented!("integers"),
+            let ctor = translate_value_id(ctx.tcx, adt.variants[variant].def_id);
+            Exp::Constructor { ctor, args }
+        }
+        Term::Cur { box term } => Exp::Current(box lower_term_to_why3(ctx, names, term_id, term)),
+        Term::Fin { box term } => Exp::Final(box lower_term_to_why3(ctx, names, term_id, term)),
+        Term::Impl { box lhs, box rhs } => Exp::Impl(
+            box lower_term_to_why3(ctx, names, term_id, lhs),
+            box lower_term_to_why3(ctx, names, term_id, rhs),
+        ),
+        Term::Equals { box lhs, box rhs } => Exp::BinaryOp(
+            BinOp::Eq,
+            box lower_term_to_why3(ctx, names, term_id, lhs),
+            box lower_term_to_why3(ctx, names, term_id, rhs),
+        ),
+        Term::Match { box scrutinee, arms } => {
+            let arms = arms
+                .into_iter()
+                .map(|(pat, body)| {
+                    (
+                        lower_pat_to_why3(ctx, names, pat),
+                        lower_term_to_why3(ctx, names, term_id, body),
+                    )
+                })
+                .collect();
+            Exp::Match(box lower_term_to_why3(ctx, names, term_id, scrutinee), arms)
+        }
+        Term::Let { pattern, box arg, box body } => Exp::Let {
+            pattern: lower_pat_to_why3(ctx, names, pattern),
+            arg: box lower_term_to_why3(ctx, names, term_id, arg),
+            body: box lower_term_to_why3(ctx, names, term_id, body),
         },
-        term::LitTy::Unsigned(s) => match s {
-            Eight => u8_ty(),
-            Sixteen => u16_ty(),
-            ThirtyTwo => u32_ty(),
-            SixtyFour => u64_ty(),
-            Mach => usize_ty(),
-            Unknown => unimplemented!("integers"),
-        },
-        term::LitTy::Float => crate::translation::ty::single_ty(),
-        term::LitTy::Double => crate::translation::ty::double_ty(),
-        term::LitTy::Boolean => Bool,
-        term::LitTy::Integer => crate::translation::ty::int_ty(),
-    }
-}
-
-fn lit_to_const(lit: pearlite::term::Literal) -> why3::mlcfg::Constant {
-    use crate::translation::ty::*;
-    use why3::mlcfg::Constant::{self, *};
-    match lit {
-        term::Literal::U8(u) => Uint(u as u128, Some(u8_ty())),
-        term::Literal::U16(u) => Uint(u as u128, Some(u16_ty())),
-        term::Literal::U32(u) => Uint(u as u128, Some(u32_ty())),
-        term::Literal::U64(u) => Uint(u as u128, Some(u64_ty())),
-        term::Literal::Usize(u) => Uint(u as u128, Some(usize_ty())),
-        term::Literal::Int(u) => Int(u as i128, None),
-        term::Literal::F32(_) => {
-            unimplemented!()
-        }
-        term::Literal::F64(_) => {
-            unimplemented!()
-        }
-        term::Literal::Bool(b) => {
-            if b {
-                Constant::const_true()
-            } else {
-                Constant::const_false()
-            }
-        }
-    }
-}
-
-fn op_to_op(op: term::BinOp) -> mlcfg::BinOp {
-    use mlcfg::BinOp::*;
-    match op {
-        term::BinOp::Add => Add,
-        term::BinOp::Sub => Sub,
-        term::BinOp::Mul => Mul,
-        term::BinOp::Div => Div,
-        term::BinOp::Eq => Eq,
-        term::BinOp::Ne => Ne,
-        term::BinOp::Le => Le,
-        term::BinOp::Ge => Ge,
-        term::BinOp::Gt => Gt,
-        term::BinOp::Lt => Lt,
-        term::BinOp::And => And,
-        term::BinOp::Or => Or,
-        term::BinOp::Impl => {
-            panic!()
-        }
-    }
-}
-
-fn lower_arm_to_why(ctx: &mut TranslationCtx, a: term::MatchArm) -> (mlcfg::Pattern, Exp) {
-    (lower_pattern_to_why(ctx, a.pat), lower_term_to_why(ctx, *a.body))
-}
-
-fn lower_pattern_to_why(ctx: &mut TranslationCtx, p: term::Pattern) -> mlcfg::Pattern {
-    use mlcfg::Pattern;
-    match p {
-        term::Pattern::Var(x) => Pattern::VarP(x.0.into()),
-        // term::Pattern::Struct { path, fields } => {}
-        term::Pattern::TupleStruct { path, fields } => {
-            let name = lower_value_path(ctx, path);
-            let fields = fields.into_iter().map(|p| lower_pattern_to_why(ctx, p)).collect();
-
-            Pattern::ConsP(name, fields)
-        }
-        term::Pattern::Boolean(b) => {
-            if b {
-                Pattern::mk_true()
-            } else {
-                Pattern::mk_false()
-            }
-        }
-        term::Pattern::Wild => Pattern::Wildcard,
-        term::Pattern::Tuple { fields } => {
-            let fields = fields.into_iter().map(|p| lower_pattern_to_why(ctx, p)).collect();
-            Pattern::TupleP(fields)
-        }
         _ => {
-            unimplemented!()
+            todo!()
         }
     }
 }
 
-fn is_constructor(ctx: &mut TranslationCtx, path: &Name) -> bool {
-    match path {
-        Name::Ident(_) => false,
-        Name::Path { id, .. } => {
-            let kind = ctx.tcx.def_kind(super::id_to_def_id(*id));
-            use rustc_hir::def::DefKind::*;
-            match kind {
-                Ctor(_, _) | Variant | Struct => true,
-                _ => false,
+pub fn lower_pat_to_why3<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut NameMap<'tcx>,
+    pat: Pattern<'tcx>,
+) -> Pat {
+    match pat {
+        Pattern::Constructor { adt, variant, fields } => {
+            let variant = &adt.variants[variant];
+            let fields = fields.into_iter().map(|pat| lower_pat_to_why3(ctx, names, pat)).collect();
+            Pat::ConsP(translate_value_id(ctx.tcx, variant.def_id), fields)
+        }
+        Pattern::Wildcard => Pat::Wildcard,
+        Pattern::Binder(name) => Pat::VarP(name.into()),
+        Pattern::Boolean(b) => {
+            if b {
+                Pat::mk_true()
+            } else {
+                Pat::mk_false()
             }
         }
+        _ => todo!(),
     }
 }
 
-fn lower_value_path(ctx: &mut TranslationCtx, path: Name) -> QName {
-    if let Name::Path { id, .. } = path {
-        let defid: DefId = super::id_to_def_id(id);
-        crate::ctx::translate_value_id(ctx.tcx, defid)
-    } else {
-        panic!("cannot lower a local identifier to a qualified name");
-    }
-}
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 
-fn lower_type_path(ctx: &mut TranslationCtx, path: Name) -> QName {
-    if let Name::Path { id, .. } = path {
-        let defid: DefId = super::id_to_def_id(id);
-        crate::ty::translate_ty_name(ctx, defid)
-    } else {
-        panic!("cannot lower a local identifier to a qualified name");
-    }
+fn is_identity_from<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, subst: SubstsRef<'tcx>) -> bool {
+    tcx.def_path_str(id) == "std::convert::From::from" && subst[0] == subst[1]
 }

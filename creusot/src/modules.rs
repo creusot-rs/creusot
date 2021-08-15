@@ -1,10 +1,6 @@
 use why3::declaration::{Decl, Module, Predicate, TyDecl, Use};
 use why3::mlcfg::QName;
 
-pub fn type_module() -> QName {
-    "Type".into()
-}
-
 #[derive(Debug)]
 pub struct Modules {
     types: Vec<(TyDecl, Predicate)>,

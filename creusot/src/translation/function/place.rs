@@ -1,6 +1,12 @@
-use rustc_middle::{mir::{Local, Place}, ty::TyKind};
-use why3::mlcfg::{self, Exp::{self, *}};
-use why3::mlcfg::{Statement::*, Pattern::*, LocalIdent};
+use rustc_middle::{
+    mir::{Local, Place},
+    ty::TyKind,
+};
+use why3::mlcfg::{
+    self,
+    Exp::{self, *},
+};
+use why3::mlcfg::{LocalIdent, Pattern::*, Statement::*};
 
 use crate::ctx::translate_value_id;
 

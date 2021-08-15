@@ -8,8 +8,8 @@ use why3::mlcfg::{
     Statement::*,
 };
 
-use crate::translation::specification::{self, Spec};
 use super::FunctionTranslator;
+use crate::translation::specification;
 
 impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>) {
@@ -67,7 +67,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             },
             Rvalue::Discriminant(_) => return,
             Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => BinaryOp(
-                binop_to_binop(*op),
+                crate::translation::binop_to_binop(*op),
                 box self.translate_operand(l),
                 box self.translate_operand(r),
             ),
@@ -83,27 +83,27 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
 
                         Constructor { ctor: qname, args: fields }
                     }
-                    Closure(def_id, _) => match specification::spec_kind(self.tcx, *def_id) {
-                        Ok(Spec::Invariant { name, expression }) => {
-                            let invariant = specification::invariant_to_why(
-                                &self.resolver(),
-                                &mut self.ctx,
-                                self.body,
-                                si,
-                                expression,
-                            );
+                    Closure(def_id, _) => {
+                        if let Some(mut inv) = self.invariants.remove(def_id) {
+                            let invariant = specification::get_attr(
+                                self.tcx.get_attrs(*def_id),
+                                &["creusot", "spec", "invariant"],
+                            )
+                            .unwrap();
 
-                            self.imports
-                                .extend(invariant.qfvs().into_iter().map(|qn| qn.module_name()));
+                            let subst = specification::inv_subst(self.body);
+                            inv.subst(&subst);
 
-                            self.emit_statement(Invariant(name, invariant));
+                            let name =
+                                specification::ts_to_symbol(invariant.args.inner_tokens()).unwrap();
+
+                            self.emit_statement(Invariant(name.to_string(), inv));
+
                             return;
-                        }
-                        Ok(_) => {
+                        } else {
                             self.ctx.crash_and_error(si.span, "closures are not yet supported")
                         }
-                        Err(err) => self.ctx.crash_and_error(si.span, &format!("{:?}", err)),
-                    },
+                    }
                     _ => self.ctx.crash_and_error(
                         si.span,
                         &format!("the rvalue {:?} is not currently supported", kind),
@@ -132,23 +132,5 @@ fn unop_to_unop(op: rustc_middle::mir::UnOp) -> why3::mlcfg::UnOp {
     match op {
         rustc_middle::mir::UnOp::Not => why3::mlcfg::UnOp::Not,
         rustc_middle::mir::UnOp::Neg => why3::mlcfg::UnOp::Neg,
-    }
-}
-
-fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::mlcfg::BinOp {
-    use rustc_middle::mir;
-    use why3::mlcfg::BinOp;
-    match op {
-        mir::BinOp::Add => BinOp::Add,
-        mir::BinOp::Sub => BinOp::Sub,
-        mir::BinOp::Mul => BinOp::Mul,
-        mir::BinOp::Div => BinOp::Div,
-        mir::BinOp::Eq => BinOp::Eq,
-        mir::BinOp::Lt => BinOp::Lt,
-        mir::BinOp::Le => BinOp::Le,
-        mir::BinOp::Gt => BinOp::Gt,
-        mir::BinOp::Ge => BinOp::Ge,
-        mir::BinOp::Ne => BinOp::Ne,
-        _ => unimplemented!("unsupported binary operation: {:?}", op),
     }
 }

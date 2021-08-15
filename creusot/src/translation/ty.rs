@@ -364,10 +364,6 @@ pub fn single_ty() -> MlT {
     MlT::TConstructor(QName::from_string("single").unwrap())
 }
 
-pub fn int_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("int").unwrap())
-}
-
 pub fn u8_ty() -> MlT {
     MlT::TConstructor(QName::from_string("uint8").unwrap())
 }

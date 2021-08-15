@@ -1,5 +1,5 @@
 // SHOULD_SUCCEED: parse-print
-#![feature(register_tool)]
+#![feature(register_tool, rustc_attrs)]
 #![register_tool(creusot)]
 #![feature(proc_macro_hygiene, stmt_expr_attributes)]
 
@@ -41,21 +41,21 @@ fn get(l : List, ix : Int) -> Option<u32> {{
 }}
 }
 
-#[requires((param_ix as Int) < len(*param_l))]
-#[ensures(Some(* result) == get(*param_l, param_ix as Int))]
-#[ensures(Some(^ result) == get(^param_l, param_ix as Int))]
-#[ensures(len(^param_l) == len(* param_l))]
-#[ensures(forall<i:Int> 0 <= i && i < len(* param_l) && i != (param_ix as Int) -> get(*param_l, i) == get(^param_l, i))]
+#[requires(Int::from(param_ix) < len(*param_l))]
+#[ensures(equal(Some(* result), get(*param_l, Int::from(param_ix))))]
+#[ensures(equal(Some(^ result), get(^param_l, Int::from(param_ix))))]
+#[ensures(equal(len(^param_l), len(* param_l)))]
+#[ensures(forall<i:Int> 0 <= i && i < len(* param_l) && i != (Int::from(param_ix)) -> equal(get(*param_l, i), get(^param_l, i)))]
 pub fn index_mut(param_l: &mut List, param_ix: usize) -> &mut u32 {
     let mut l = param_l;
     let mut ix = param_ix;
-    #[invariant(valid_ix, 0usize <= ix && (ix as Int) < len (* l))]
-    #[invariant(get_target_now, get(*l, ix as Int) == get(*param_l, param_ix as Int))]
-    #[invariant(get_target_fin, get(^l, ix as Int) == get(^param_l, param_ix as Int))]
+    #[invariant(valid_ix, 0usize <= ix && (Int::from(ix)) < len (* l))]
+    #[invariant(get_target_now, equal(get(*l, Int::from(ix)), get(*param_l, Int::from(param_ix))))]
+    #[invariant(get_target_fin, equal(get(^l, Int::from(ix)), get(^param_l, Int::from(param_ix))))]
     #[invariant(len, (len(^l) == len(*l) -> len(^param_l) == len(*param_l)))]
     #[invariant(untouched,
-        (forall<i:Int> 0 <= i && i < len ( * l) && i != (ix as Int) -> get( ^l, i) == get( * l, i)) ->
-        (forall<i:Int> 0 <= i && i < len ( * param_l) && i != (param_ix as Int) -> get ( ^param_l, i) == get ( * param_l, i))
+        (forall<i:Int> 0 <= i && i < len ( * l) && i != Int::from(ix) -> equal(get( ^l, i), get( * l, i))) ->
+        (forall<i:Int> 0 <= i && i < len ( * param_l) && i != (Int::from(param_ix)) -> equal(get ( ^param_l, i), get ( * param_l, i)))
     )]
     while ix > 0 {
         match l.1 {
@@ -71,10 +71,10 @@ pub fn index_mut(param_l: &mut List, param_ix: usize) -> &mut u32 {
 }
 
 // Ensure that this performs a set on the list
-#[requires((ix as Int) < len(*l))]
-#[ensures(Some(val) == get(^l, ix as Int))]
-#[ensures(len(^l) == len(* l))]
-#[ensures(forall<i:Int> 0 <= i && i < len(* l) && i != (ix as Int) -> get(*l, i) == get(^l, i))]
+#[requires(Int::from(ix) < len(*l))]
+#[ensures(equal(Some(val), get(^l, Int::from(ix))))]
+#[ensures(equal(len(^l), len(* l)))]
+#[ensures(forall<i:Int> 0 <= i && i < len(* l) && i != (Int::from(ix)) -> equal(get(*l, i), get(^l, i)))]
 pub fn write(l: &mut List, ix: usize, val: u32) {
     *index_mut(l, ix) = val;
 }

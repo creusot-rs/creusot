@@ -24,6 +24,10 @@ fn run_creusot(file: &Path) -> std::process::Command {
 
     cmd.envs(env::vars());
     cmd.arg(format!("-L{}/", d.display()));
+
+    d.push("deps");
+    cmd.arg(format!("-Ldependency={}/", d.display()));
+
     cmd.arg(format!("{}", file.display()));
     cmd
 }
@@ -129,21 +133,22 @@ fn should_succeed_case(
     stdout: &Path,
     _stderr: &Path,
 ) -> Result<(bool, Buffer), Box<dyn Error>> {
-    let output = output.unwrap();
     let mut buf = Buffer::ansi();
     use std::str::from_utf8;
-    let expect = &std::fs::read(stdout).unwrap_or_else(|_| Vec::new());
-    let gotten = &output.stdout;
+    match output.ok() {
+        Ok(output) => {
+            let expect = &std::fs::read(stdout).unwrap_or_else(|_| Vec::new());
+            let gotten = &output.stdout;
 
-    let success = compare_str(&mut buf, &from_utf8(gotten)?, &from_utf8(expect)?);
-
-    // TODO: enable stderr comparisons
-    // let expect = &std::fs::read(stderr).unwrap_or_else(|_| Vec::new());;
-    // let gotten = &output.stderr;
-
-    // success &= compare_str(&mut buf, &from_utf8(gotten)?, &from_utf8(expect)?);
-
-    Ok((success, buf))
+            let success = compare_str(&mut buf, from_utf8(gotten)?, from_utf8(expect)?);
+            Ok((success, buf))
+        }
+        Err(err) => {
+            let output = err.as_output().unwrap();
+            let _ = compare_str(&mut buf, from_utf8(&output.stderr)?, "");
+            Ok((false, buf))
+        }
+    }
 }
 
 fn should_fail_case(

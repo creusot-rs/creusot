@@ -1,12 +1,12 @@
-#![feature(register_tool)]
+#![feature(register_tool, rustc_attrs)]
 #![register_tool(creusot)]
 
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[ensures(toggle == true  -> (result == a && ^ b == * b))]
-#[ensures(toggle == false -> (result == b && ^ a == * a))]
-fn proj_toggle<'a, T>(toggle: bool, a: &'a mut T, b: &'a mut T) -> &'a mut T {
+#[ensures(equal(toggle, true)  -> (equal(result, a) && equal(^ b, * b)))]
+#[ensures(equal(toggle, false) -> (equal(result, b) && equal(^ a, * a)))]
+fn proj_toggle<'a, T : PartialEq>(toggle: bool, a: &'a mut T, b: &'a mut T) -> &'a mut T {
 	if toggle {
 		a
 	} else {

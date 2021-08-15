@@ -1,5 +1,5 @@
 // SHOULD_SUCCEED: parse-print
-#![feature(register_tool)]
+#![feature(register_tool, rustc_attrs)]
 #![register_tool(creusot)]
 #![feature(proc_macro_hygiene, stmt_expr_attributes)]
 

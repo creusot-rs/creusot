@@ -1,5 +1,5 @@
 // SHOULD_SUCCEED: parse-print
-#![feature(register_tool)]
+#![feature(register_tool, rustc_attrs)]
 #![register_tool(creusot)]
 #![feature(proc_macro_hygiene, stmt_expr_attributes)]
 
@@ -50,14 +50,14 @@ fn get<T>(l : List<T>, ix : Int) -> T {
 }
 
 impl<T> List<T> {
-    #[requires((ix as Int) < len_logic(*self))]
-    #[ensures(*result == get(*self, ix as Int))]
+    #[requires(Int::from(ix) < len_logic(*self))]
+    #[ensures(equal(*result, get(*self, Int::from(ix))))]
     fn index(&self, mut ix: usize) -> &T {
         let orig_ix = ix;
         let mut l = self;
 
-        #[invariant(ix_valid, (ix as Int) < len_logic(*l))]
-        #[invariant(res_get, get(*self, orig_ix as Int) == get(*l, ix as Int))]
+        #[invariant(ix_valid, Int::from(ix) < len_logic(*l))]
+        #[invariant(res_get, equal(get(*self, Int::from(orig_ix)), get(*l, Int::from(ix) )))]
         while let Cons(t, ls) = l {
             if ix > 0 {
                 l = &*ls;
@@ -70,13 +70,13 @@ impl<T> List<T> {
     }
 
     // Temporary until support for usize::MAX is added
-    #[requires(len_logic(*self) <= 1_000_000)]
+    #[requires(len_logic(*self) <= Int::from(1_000_000))]
     #[ensures(result >= 0usize)]
-    #[ensures(result as Int == len_logic(*self))]
+    #[ensures(Int::from(result) == len_logic(*self))]
     fn len(&self) -> usize {
         let mut len = 0;
         let mut l = self;
-        #[invariant(len_valid, len as Int + len_logic(*l) == len_logic(*self))]
+        #[invariant(len_valid, Int::from(len) + len_logic(*l) == len_logic(*self))]
         while let Cons(_, ls) = l {
             len += 1;
             l = ls;
@@ -85,20 +85,20 @@ impl<T> List<T> {
     }
 }
 
-#[requires(len_logic(*arr) <= 1_000_000)]
+#[requires(len_logic(*arr) <= Int::from(1_000_000))]
 #[requires(forall<k1 : Int, k2: Int> get(*arr, k1) <= get(*arr, k2))]
-#[ensures(forall<x:usize> result == Ok(x) -> get(*arr, x as Int) == elem)]
-#[ensures(forall<x:usize> result == Err(x) -> forall<i:Int> 0 <= i && i < (x as Int) -> get(*arr, i) < elem)]
-#[ensures(forall<x:usize> result == Err(x) -> forall<i:Int> (x as Int) < i && i < len_logic(*arr) -> elem < get(*arr, i))]
+#[ensures(forall<x:usize> equal(result, Ok(x)) -> equal(get(*arr, Int::from(x)), elem))]
+#[ensures(forall<x:usize> equal(result, Err(x)) -> forall<i:Int> 0 <= i && i < Int::from(x) -> get(*arr, i) < elem)]
+#[ensures(forall<x:usize> equal(result, Err(x)) -> forall<i:Int> Int::from(x) < i && i < len_logic(*arr) -> elem < get(*arr, i))]
 fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize>
 {
     if arr.len() == 0 { return Err(0) }
     let mut size = arr.len();
     let mut base = 0;
 
-    #[invariant(size_valid, ((size + base) as Int) <= len_logic(*arr))]
+    #[invariant(size_valid, Int::from(size) + Int::from(base) <= len_logic(*arr))]
     #[invariant(in_range, forall<i:Int> 0 <= i && i < len_logic(*arr) ->
-        ((i < (base as Int)) -> get(*arr, i) <= elem) && ((((base + size) as Int) < i) -> elem <= get(*arr, i))
+        ((i < Int::from(base)) -> get(*arr, i) <= elem) && ((Int::from(base) + Int::from(size) < i) -> elem <= get(*arr, i))
     )]
     #[invariant(size_pos, size > 0usize)]
     while size > 1  {

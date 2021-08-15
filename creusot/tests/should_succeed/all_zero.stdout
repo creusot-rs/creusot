@@ -42,8 +42,8 @@ module Len
   use Type
   let rec function impl (l : Type.list) : int = 
     match (l) with
-      | Type.List_Cons(_, ls) -> 1 + impl ls
-      | Type.List_Nil -> 0
+      | Type.List_Cons(_, ls) -> Int32.to_int (1 : int32) + impl ls
+      | Type.List_Nil -> Int32.to_int (0 : int32)
       end
 end
 module Get
@@ -60,9 +60,9 @@ module Get
   use Type
   let rec function impl (l : Type.list) (ix : int) : Type.core_option_option uint32 = 
     match (l) with
-      | Type.List_Cons(x, ls) -> match (ix = 0) with
+      | Type.List_Cons(x, ls) -> match (ix = Int32.to_int (0 : int32)) with
         | True -> Type.Core_Option_Option_Some(x)
-        | False -> impl ls (ix - 1)
+        | False -> impl ls (ix - Int32.to_int (1 : int32))
         end
       | Type.List_Nil -> Type.Core_Option_Option_None
       end
@@ -79,11 +79,11 @@ module AllZero
   use floating_point.Double
   use prelude.Prelude
   use Type
-  use Len
-  use Get
+  clone Len as Len0
+  clone Get as Get1
   let rec cfg impl (o_l_1 : borrowed (Type.list)) : ()
-    ensures { Len.impl ( * o_l_1) = Len.impl ( ^ o_l_1) }
-    ensures { forall i : int . 0 <= i && i < Len.impl ( * o_l_1) -> Get.impl ( ^ o_l_1) i = Type.Core_Option_Option_Some((0 : uint32)) }
+    ensures { Len0.impl ( * o_l_1) = Len0.impl ( ^ o_l_1) }
+    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * o_l_1) -> Get1.impl ( ^ o_l_1) i = Type.Core_Option_Option_Some((0 : uint32)) }
     
    = 
   var _0 : ();
@@ -105,8 +105,8 @@ module AllZero
     goto BB1
   }
   BB1 {
-    invariant zeroed { (forall i : int . 0 <= i && i < Len.impl ( * loop_l_2) -> Get.impl ( ^ loop_l_2) i = Type.Core_Option_Option_Some((0 : uint32))) -> (forall i : int . 0 <= i && i < Len.impl ( * l_1) -> Get.impl ( ^ l_1) i = Type.Core_Option_Option_Some((0 : uint32))) };
-    invariant in_len { Len.impl ( ^ loop_l_2) = Len.impl ( * loop_l_2) -> Len.impl ( ^ l_1) = Len.impl ( * l_1) };
+    invariant zeroed { (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * loop_l_2) -> Get1.impl ( ^ loop_l_2) i = Type.Core_Option_Option_Some((0 : uint32))) -> (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * l_1) -> Get1.impl ( ^ l_1) i = Type.Core_Option_Option_Some((0 : uint32))) };
+    invariant in_len { Len0.impl ( ^ loop_l_2) = Len0.impl ( * loop_l_2) -> Len0.impl ( ^ l_1) = Len0.impl ( * l_1) };
     goto BB2
   }
   BB2 {

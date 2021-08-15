@@ -73,13 +73,13 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         end.seek_to(&mut self.local_uninit);
         let uninit_at_end = self.local_uninit.get().clone();
 
-        debug!("location: {:?}-{:?}", start, end);
-        debug!("live_at_start: {:?}", live_at_start);
-        debug!("live_at_end: {:?}", live_at_end);
-        debug!("init_at_start: {:?}", init_at_start);
-        debug!("init_at_end: {:?}", init_at_end);
-        debug!("uninit_at_start: {:?}", uninit_at_start);
-        debug!("uninit_at_end: {:?}", uninit_at_end);
+        trace!("location: {:?}-{:?}", start, end);
+        trace!("live_at_start: {:?}", live_at_start);
+        trace!("live_at_end: {:?}", live_at_end);
+        trace!("init_at_start: {:?}", init_at_start);
+        trace!("init_at_end: {:?}", init_at_end);
+        trace!("uninit_at_start: {:?}", uninit_at_start);
+        trace!("uninit_at_end: {:?}", uninit_at_end);
 
         let mut def_init_at_start = init_at_start;
         def_init_at_start.subtract(&uninit_at_start);
@@ -89,17 +89,17 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         just_init.subtract(&uninit_at_end);
 
         just_init.subtract(&def_init_at_start);
-        debug!("just_init: {:?}", just_init);
+        trace!("just_init: {:?}", just_init);
 
         // Locals that have just become live
         let mut born = live_at_end.clone();
         born.subtract(&live_at_start);
-        debug!("born: {:?}", born);
+        trace!("born: {:?}", born);
 
         // Locals that were initialized but never live
         let mut zombies = just_init.clone();
         zombies.subtract(live_at_end);
-        debug!("zombies: {:?}", zombies);
+        trace!("zombies: {:?}", zombies);
 
         let mut dying = live_at_start;
 
@@ -109,7 +109,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         dying.intersect(&def_init_at_start);
 
         let same_point = start.same_block(end);
-        debug!("same_block: {:?}", same_point);
+        trace!("same_block: {:?}", same_point);
         // But if we created a new value or brought one back to life
         if (!just_init.is_empty() && same_point) || !born.is_empty() {
             // Exclude values that were moved
@@ -118,7 +118,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             dying.union(&zombies);
         }
 
-        debug!("dying: {:?}", dying);
+        trace!("dying: {:?}", dying);
 
         dying
     }

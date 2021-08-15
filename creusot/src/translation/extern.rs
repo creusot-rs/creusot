@@ -1,11 +1,11 @@
 use rustc_hir::def_id::DefId;
 
-use why3::declaration::{Decl, ValKind, Module};
 use super::logic::*;
+use why3::declaration::{Decl, Module, ValKind};
 
 use crate::ctx::*;
-use crate::translation::specification;
 use crate::function::all_generic_decls_for;
+use crate::translation::specification;
 
 // Translate functions that are external to the crate as opaque values
 pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_span::Span) {
@@ -13,14 +13,13 @@ pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_spa
         return;
     }
 
-    if specification::get_attr(ctx.tcx.get_attrs(def_id), &["creusot", "spec", "logic"])
-        .is_some()
-    {
+    if specification::get_attr(ctx.tcx.get_attrs(def_id), &["creusot", "spec", "logic"]).is_some() {
         translate_logic(ctx, def_id, span);
         return;
     }
 
-    let sig = crate::util::signature_of(ctx, def_id);
+    let mut names = NameMap::new(ctx.tcx);
+    let sig = crate::util::signature_of(ctx, &mut names, def_id);
 
     let name = translate_value_id(ctx.tcx, def_id).module.join("");
 

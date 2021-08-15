@@ -21,6 +21,10 @@ macro_rules! parens {
     ($alloc:ident, $env:ident, $parent:ident, $child:ident) => {
         if $parent.precedence() > $child.precedence() && $child.precedence() != Precedence::Closed {
             $child.pretty($alloc, $env).parens()
+        } else if $parent.precedence() == $child.precedence()
+            && $child.precedence() == Precedence::Call
+        {
+            $child.pretty($alloc, $env).parens()
         } else {
             $child.pretty($alloc, $env)
         }

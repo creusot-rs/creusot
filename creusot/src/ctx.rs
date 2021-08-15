@@ -10,9 +10,9 @@ use rustc_middle::ty::{self, subst::SubstsRef, TyCtxt};
 use rustc_session::Session;
 use rustc_span::Span;
 
+use rustc_hir::def::DefKind;
 use rustc_hir::definitions::DefPathData;
 use rustc_resolve::Namespace;
-use rustc_hir::def::DefKind;
 
 use crate::modules::Modules;
 use crate::translation::specification;
@@ -79,8 +79,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         }
 
         let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
-        if crate::translation::is_logic(self.tcx, def_id)
-        {
+        if crate::translation::is_logic(self.tcx, def_id) {
             debug!("translating {:?} as logic", def_id);
             crate::translation::translate_logic(self, def_id, span);
         } else if crate::translation::is_predicate(self.tcx, def_id) {
@@ -92,7 +91,11 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         } else {
             let kind = self.tcx.def_kind(def_id);
             if kind == DefKind::Fn || kind == DefKind::Closure || kind == DefKind::AssocFn {
-                let is_spec = specification::get_attr(self.tcx.get_attrs(def_id), &["creusot", "spec", "invariant"]).is_some();
+                let is_spec = specification::get_attr(
+                    self.tcx.get_attrs(def_id),
+                    &["creusot", "spec", "invariant"],
+                )
+                .is_some();
                 if is_spec {
                     return;
                 }
@@ -100,7 +103,6 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                 crate::translation::translate_function(self.tcx, self, def_id);
             } else {
                 unimplemented!("{:?} {:?}", def_id, self.tcx.def_kind(def_id));
-
             }
         }
     }
@@ -113,7 +115,11 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.sess.span_warn_with_code(
             span,
             msg,
-            DiagnosticId::Lint { name: String::from("creusot"), has_future_breakage: false, is_force_warn: true },
+            DiagnosticId::Lint {
+                name: String::from("creusot"),
+                has_future_breakage: false,
+                is_force_warn: true,
+            },
         )
     }
 

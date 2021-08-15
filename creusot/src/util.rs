@@ -1,8 +1,11 @@
+use crate::ctx::*;
+use crate::translation::ty;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{DefIdTree, TyCtxt};
-use why3::{declaration::Signature, mlcfg::{Exp, Constant, QName}};
-use crate::ctx::TranslationCtx;
-use crate::translation::ty;
+use why3::{
+    declaration::Signature,
+    mlcfg::{Constant, Exp, QName},
+};
 
 pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {
     let mut module_id = def_id;
@@ -16,26 +19,44 @@ pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {
     module_id
 }
 
-// TODO: Unify with `Extern`
-pub fn signature_of(ctx: &mut TranslationCtx<'_, '_>, def_id: DefId) -> Signature {
+pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
+    loop {
+        if crate::specification::get_attr(
+            tcx.get_attrs(def_id),
+            &["creusot", "spec", "no_translate"],
+        )
+        .is_some()
+        {
+            return true;
+        }
+
+        if tcx.is_closure(def_id) {
+            def_id = tcx.parent(def_id).unwrap();
+        } else {
+            return false;
+        }
+    }
+}
+
+pub fn signature_of<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut NameMap<'tcx>,
+    def_id: DefId,
+) -> Signature {
     let sig = ctx.tcx.normalize_erasing_late_bound_regions(
         rustc_middle::ty::ParamEnv::reveal_all(),
         ctx.tcx.fn_sig(def_id),
     );
-    let names = ctx.tcx.fn_arg_names(def_id);
 
     let pre_contract = crate::specification::contract_of(ctx.tcx, def_id).unwrap();
-    let module_id = crate::util::parent_module(ctx.tcx, def_id);
 
-    let mut contract = pre_contract.check_and_lower(
-        &crate::specification::RustcResolver(ctx.resolver.clone(), module_id, ctx.tcx),
-        ctx,
-        def_id,
-    );
+    let mut contract = pre_contract.check_and_lower(ctx, names, def_id);
 
     if sig.output().is_never() {
         contract.ensures.push(Exp::Const(Constant::const_false()));
     }
+
+    let names = ctx.tcx.fn_arg_names(def_id);
 
     Signature {
         // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure

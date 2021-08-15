@@ -37,12 +37,12 @@ module Len
   use prelude.Prelude
   use Type
   let rec function impl (l : Type.list) : int
-    ensures { result >= 0 }
+    ensures { result >= Int32.to_int (0 : int32) }
     
    = 
-    let Type.List(_, ls) = l in 1 + match (ls) with
+    let Type.List(_, ls) = l in Int32.to_int (1 : int32) + match (ls) with
       | Type.Option_Some(ls) -> impl ls
-      | Type.Option_None -> 0
+      | Type.Option_None -> Int32.to_int (0 : int32)
       end
 end
 module Get
@@ -57,15 +57,15 @@ module Get
   use floating_point.Double
   use prelude.Prelude
   use Type
-  use Len
+  clone Len as Len0
   let rec function impl (l : Type.list) (ix : int) : Type.option uint32
-    variant {Len.impl l}
+    variant {Len0.impl l}
     
    = 
-    let Type.List(i, ls) = l in match (ix > 0) with
+    let Type.List(i, ls) = l in match (ix > Int32.to_int (0 : int32)) with
       | False -> Type.Option_Some(i)
       | True -> match (ls) with
-        | Type.Option_Some(ls) -> impl ls (ix - 1)
+        | Type.Option_Some(ls) -> impl ls (ix - Int32.to_int (1 : int32))
         | Type.Option_None -> Type.Option_None
         end
       end
@@ -98,15 +98,15 @@ module IndexMut
   use floating_point.Double
   use prelude.Prelude
   use Type
-  use Len
-  use Get
-  clone Std_Process_Abort as Abort0
+  clone Len as Len0
+  clone Get as Get1
+  clone Std_Process_Abort as Abort2
   let rec cfg impl (o_param_l_1 : borrowed (Type.list)) (o_param_ix_2 : usize) : borrowed uint32
-    requires {o_param_ix_2 < Len.impl ( * o_param_l_1)}
-    ensures { forall i : int . 0 <= i && i < Len.impl ( * o_param_l_1) && i <> o_param_ix_2 -> Get.impl ( * o_param_l_1) i = Get.impl ( ^ o_param_l_1) i }
-    ensures { Len.impl ( ^ o_param_l_1) = Len.impl ( * o_param_l_1) }
-    ensures { Type.Option_Some( ^ result) = Get.impl ( ^ o_param_l_1) o_param_ix_2 }
-    ensures { Type.Option_Some( * result) = Get.impl ( * o_param_l_1) o_param_ix_2 }
+    requires {UInt64.to_int o_param_ix_2 < Len0.impl ( * o_param_l_1)}
+    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * o_param_l_1) && i <> UInt64.to_int o_param_ix_2 -> Get1.impl ( * o_param_l_1) i = Get1.impl ( ^ o_param_l_1) i }
+    ensures { Len0.impl ( ^ o_param_l_1) = Len0.impl ( * o_param_l_1) }
+    ensures { Type.Option_Some( ^ result) = Get1.impl ( ^ o_param_l_1) (UInt64.to_int o_param_ix_2) }
+    ensures { Type.Option_Some( * result) = Get1.impl ( * o_param_l_1) (UInt64.to_int o_param_ix_2) }
     
    = 
   var _0 : borrowed uint32;
@@ -140,11 +140,11 @@ module IndexMut
     goto BB1
   }
   BB1 {
-    invariant valid_ix { (0 : usize) <= ix_5 && ix_5 < Len.impl ( * l_4) };
-    invariant get_target_now { Get.impl ( * l_4) ix_5 = Get.impl ( * param_l_1) param_ix_2 };
-    invariant get_target_fin { Get.impl ( ^ l_4) ix_5 = Get.impl ( ^ param_l_1) param_ix_2 };
-    invariant len { Len.impl ( ^ l_4) = Len.impl ( * l_4) -> Len.impl ( ^ param_l_1) = Len.impl ( * param_l_1) };
-    invariant untouched { (forall i : int . 0 <= i && i < Len.impl ( * l_4) && i <> ix_5 -> Get.impl ( ^ l_4) i = Get.impl ( * l_4) i) -> (forall i : int . 0 <= i && i < Len.impl ( * param_l_1) && i <> param_ix_2 -> Get.impl ( ^ param_l_1) i = Get.impl ( * param_l_1) i) };
+    invariant valid_ix { (0 : usize) <= ix_5 && UInt64.to_int ix_5 < Len0.impl ( * l_4) };
+    invariant get_target_now { Get1.impl ( * l_4) (UInt64.to_int ix_5) = Get1.impl ( * param_l_1) (UInt64.to_int param_ix_2) };
+    invariant get_target_fin { Get1.impl ( ^ l_4) (UInt64.to_int ix_5) = Get1.impl ( ^ param_l_1) (UInt64.to_int param_ix_2) };
+    invariant len { Len0.impl ( ^ l_4) = Len0.impl ( * l_4) -> Len0.impl ( ^ param_l_1) = Len0.impl ( * param_l_1) };
+    invariant untouched { (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * l_4) && i <> UInt64.to_int ix_5 -> Get1.impl ( ^ l_4) i = Get1.impl ( * l_4) i) -> (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * param_l_1) && i <> UInt64.to_int param_ix_2 -> Get1.impl ( ^ param_l_1) i = Get1.impl ( * param_l_1) i) };
     goto BB2
   }
   BB2 {
@@ -230,14 +230,14 @@ module Write
   use floating_point.Double
   use prelude.Prelude
   use Type
-  use Len
-  use Get
+  clone Len as Len1
+  clone Get as Get2
   clone IndexMut as IndexMut0
   let rec cfg impl (o_l_1 : borrowed (Type.list)) (o_ix_2 : usize) (o_val_3 : uint32) : ()
-    requires {o_ix_2 < Len.impl ( * o_l_1)}
-    ensures { forall i : int . 0 <= i && i < Len.impl ( * o_l_1) && i <> o_ix_2 -> Get.impl ( * o_l_1) i = Get.impl ( ^ o_l_1) i }
-    ensures { Len.impl ( ^ o_l_1) = Len.impl ( * o_l_1) }
-    ensures { Type.Option_Some(o_val_3) = Get.impl ( ^ o_l_1) o_ix_2 }
+    requires {UInt64.to_int o_ix_2 < Len1.impl ( * o_l_1)}
+    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len1.impl ( * o_l_1) && i <> UInt64.to_int o_ix_2 -> Get2.impl ( * o_l_1) i = Get2.impl ( ^ o_l_1) i }
+    ensures { Len1.impl ( ^ o_l_1) = Len1.impl ( * o_l_1) }
+    ensures { Type.Option_Some(o_val_3) = Get2.impl ( ^ o_l_1) (UInt64.to_int o_ix_2) }
     
    = 
   var _0 : ();
