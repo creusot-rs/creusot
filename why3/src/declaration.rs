@@ -18,7 +18,7 @@ pub struct Scope {
 #[derive(Debug)]
 pub enum Decl {
     FunDecl(CfgFunction),
-    ValDecl(Val),
+    ValDecl(ValKind),
     LogicDecl(Logic),
     Scope(Scope),
     Module(Module),
@@ -143,6 +143,7 @@ pub struct DeclClone {
 pub enum CloneSubst {
     Type(LocalIdent, Type),
     Val(LocalIdent, QName),
+    Predicate(LocalIdent, QName),
 }
 
 impl CloneSubst {
@@ -152,8 +153,9 @@ impl CloneSubst {
 }
 
 #[derive(Debug)]
-pub struct Val {
-    pub sig: Signature,
+pub enum ValKind {
+    Val { sig: Signature },
+    Predicate { sig: Signature },
 }
 
 #[derive(Debug)]

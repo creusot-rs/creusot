@@ -79,11 +79,13 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         }
 
         let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
-        if crate::translation::specification::get_attr(self.tcx.get_attrs(def_id), &["creusot", "spec", "logic"])
-            .is_some()
+        if crate::translation::is_logic(self.tcx, def_id)
         {
             debug!("translating {:?} as logic", def_id);
-            crate::translation::translate_logic(self, def_id, rustc_span::DUMMY_SP);
+            crate::translation::translate_logic(self, def_id, span);
+        } else if crate::translation::is_predicate(self.tcx, def_id) {
+            debug!("translating {:?} as predicate", def_id);
+            crate::translation::translate_predicate(self, def_id, span);
         } else if def_id.krate != rustc_hir::def_id::LOCAL_CRATE {
             debug!("translating {:?} as extern", def_id);
             crate::translation::translate_extern(self, def_id, span);

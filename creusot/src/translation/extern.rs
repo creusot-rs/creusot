@@ -1,6 +1,6 @@
 use rustc_hir::def_id::DefId;
 
-use why3::declaration::{Decl, Val, Module};
+use why3::declaration::{Decl, ValKind, Module};
 use super::logic::*;
 
 use crate::ctx::*;
@@ -25,7 +25,7 @@ pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_spa
     let name = translate_value_id(ctx.tcx, def_id).module.join("");
 
     let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
-    decls.push(Decl::ValDecl(Val { sig }));
+    decls.push(Decl::ValDecl(ValKind::Val { sig }));
 
     ctx.modules.add_module(Module { name, decls });
 }

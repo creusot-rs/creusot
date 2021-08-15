@@ -245,6 +245,11 @@ impl CloneSubst {
                 .append(id.pretty(alloc, env))
                 .append(" = ")
                 .append(o.pretty(alloc, env)),
+            CloneSubst::Predicate(id, o) => alloc
+                .text("predicate ")
+                .append(id.pretty(alloc, env))
+                .append(" = ")
+                .append(o.pretty(alloc, env)),
         }
     }
 }
@@ -262,7 +267,7 @@ impl Use {
     }
 }
 
-impl Val {
+impl ValKind {
     pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
@@ -271,7 +276,10 @@ impl Val {
     where
         A::Doc: Clone,
     {
-        alloc.text("val ").append(self.sig.pretty(alloc, env))
+        match self {
+            ValKind::Val { sig } => alloc.text("val ").append(sig.pretty(alloc, env)),
+            ValKind::Predicate { sig } => alloc.text("predicate ").append(sig.pretty(alloc, env)),
+        }
     }
 }
 

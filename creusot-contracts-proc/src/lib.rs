@@ -117,3 +117,57 @@ pub fn logic(body: TS1) -> TS1 {
         }
     })
 }
+
+
+struct PredicateItem {
+    vis: Visibility,
+    attrs: Vec<Attribute>,
+    sig: Signature,
+    body: Term,
+}
+
+impl syn::parse::Parse for PredicateItem {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let attrs = Attribute::parse_outer(input)?;
+        let vis = input.parse()?;
+        let sig = input.parse()?;
+        let body;
+        braced!(body in input);
+        let body = body.parse()?;
+
+        Ok(PredicateItem { vis, attrs, sig, body })
+    }
+}
+
+#[proc_macro]
+pub fn predicate(tokens: TS1) -> TS1 {
+    match syn::parse::<PredicateItem>(tokens.clone()) {
+        Ok(log) => predicate_item(log),
+        Err(_) => match syn::parse(tokens) {
+            Ok(sig) => predicate_sig(sig),
+            Err(err) => TS1::from(err.to_compile_error()),
+        }
+    }
+}
+
+fn predicate_sig(sig: TraitItemMethod) -> TS1 {
+    TS1::from(quote! {
+        #[creusot::spec::predicate]
+        #sig
+    })
+}
+
+fn predicate_item(log: PredicateItem) -> TS1 {
+    let term = log.body;
+    let term = format!("{}", quote! {#term});
+    let vis = log.vis;
+    let sig = log.sig;
+    let attrs = log.attrs;
+    TS1::from(quote! {
+        #[creusot::spec::predicate=#term]
+        #(#attrs)*
+        #vis #sig {
+            std::process::abort()
+        }
+    })
+}
