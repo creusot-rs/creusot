@@ -208,6 +208,7 @@ pub fn predicate(tokens: TS1) -> TS1 {
 
 fn predicate_sig(sig: TraitItemMethod) -> TS1 {
     TS1::from(quote! {
+        #[creusot::spec::no_translate]
         #[creusot::spec::predicate]
         #sig
     })
@@ -220,7 +221,8 @@ fn predicate_item(log: PredicateItem) -> TS1 {
     let sig = log.sig;
     let attrs = log.attrs;
     TS1::from(quote! {
-        #[creusot::spec::predicate=#term]
+
+        #[creusot::spec::predicate]
         #(#attrs)*
         #vis #sig {
             std::process::abort()

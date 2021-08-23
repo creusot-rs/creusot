@@ -4,7 +4,7 @@ use crate::translation::binop_to_binop;
 use crate::translation::builtins;
 use crate::translation::constant;
 use crate::translation::ty::translate_ty;
-use creusot_contracts::typing::{LogicalOp, Pattern, Term};
+use super::typing::{LogicalOp, Pattern, Term};
 use why3::mlcfg::{BinOp, Exp, Pattern as Pat, QName};
 
 pub fn lower_term_to_why3<'tcx>(

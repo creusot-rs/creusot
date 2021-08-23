@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ctx::*;
+use crate::translation::specification;
 use indexmap::IndexMap;
 use rustc_middle::ty::Attributes;
 use rustc_span::Symbol;
@@ -11,6 +12,7 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::{mir::Body, ty::TyCtxt};
 
 mod lower;
+pub mod typing;
 
 pub use lower::*;
 
@@ -20,7 +22,7 @@ pub fn requires_to_why<'tcx>(
     req_id: DefId,
 ) -> Exp {
     log::debug!("require clause {:?}", req_id);
-    let term = creusot_contracts::typing::typecheck(ctx.tcx, req_id.expect_local());
+    let term = specification::typing::typecheck(ctx.tcx, req_id.expect_local());
     lower_term_to_why3(ctx, names, req_id, term)
 }
 
@@ -30,7 +32,7 @@ pub fn variant_to_why<'tcx>(
     var_id: DefId,
 ) -> Exp {
     log::debug!("variant clause {:?}", var_id);
-    let term = creusot_contracts::typing::typecheck(ctx.tcx, var_id.expect_local());
+    let term = specification::typing::typecheck(ctx.tcx, var_id.expect_local());
     lower_term_to_why3(ctx, names, var_id, term)
 }
 
@@ -40,7 +42,7 @@ pub fn ensures_to_why<'tcx>(
     ens_id: DefId,
 ) -> Exp {
     log::debug!("ensures clause {:?}", ens_id);
-    let term = creusot_contracts::typing::typecheck(ctx.tcx, ens_id.expect_local());
+    let term = specification::typing::typecheck(ctx.tcx, ens_id.expect_local());
     lower_term_to_why3(ctx, names, ens_id, term)
 }
 
@@ -61,7 +63,7 @@ pub fn gather_invariants<'tcx>(
         .closures
         .into_iter()
         .map(|clos| {
-            let term = creusot_contracts::typing::typecheck(ctx.tcx, clos.expect_local());
+            let term = specification::typing::typecheck(ctx.tcx, clos.expect_local());
             let exp = lower_term_to_why3(ctx, names, clos, term);
             (clos, exp)
         })

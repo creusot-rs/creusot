@@ -22,7 +22,7 @@ pub fn translate_logic(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_spa
 
     let mut names = NameMap::new(ctx.tcx);
 
-    let term = creusot_contracts::typing::typecheck(ctx.tcx, def_id.expect_local());
+    let term = specification::typing::typecheck(ctx.tcx, def_id.expect_local());
     let body = specification::lower_term_to_why3(ctx, &mut names, def_id, term);
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
 
@@ -48,7 +48,7 @@ pub fn translate_predicate(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc
 
     let mut names = NameMap::new(ctx.tcx);
 
-    let term = creusot_contracts::typing::typecheck(ctx.tcx, def_id.expect_local());
+    let term = specification::typing::typecheck(ctx.tcx, def_id.expect_local());
     let body = specification::lower_term_to_why3(ctx, &mut names, def_id, term);
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
     let func = Decl::PredDecl(Predicate { sig, body });
