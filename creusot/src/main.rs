@@ -1,11 +1,12 @@
 #![feature(rustc_private, register_tool)]
-#![feature(box_syntax, box_patterns)]
+#![feature(box_syntax, box_patterns, control_flow_enum)]
 #![feature(in_band_lifetimes)]
 
 #![register_tool(creusot)]
 #![feature(const_panic)]
 
 extern crate rustc_ast;
+extern crate rustc_data_structures;
 extern crate rustc_driver;
 extern crate rustc_errors;
 extern crate rustc_hir;
@@ -17,6 +18,7 @@ extern crate rustc_resolve;
 extern crate rustc_session;
 extern crate rustc_span;
 extern crate rustc_target;
+extern crate rustc_trait_selection;
 
 #[macro_use]
 extern crate log;
@@ -49,6 +51,7 @@ use rustc_session::Session;
 use translation::*;
 
 mod modules;
+mod rustc_extensions;
 
 struct ToWhy {
     output_file: Option<String>,
