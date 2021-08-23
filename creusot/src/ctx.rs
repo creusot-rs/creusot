@@ -34,6 +34,12 @@ impl<'tcx> NameMap<'tcx> {
         }
     }
 
+    pub fn qname_for(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let module = self.name_for(def_id, subst);
+
+        QName { module: vec![module], name: method_name(self.0, def_id) }
+    }
+
     pub fn into_iter(self) -> impl Iterator<Item = ((DefId, SubstsRef<'tcx>), String)> {
         self.1.into_iter()
     }
@@ -201,6 +207,18 @@ pub fn cloneable_name(tcx: TyCtxt, def_id: DefId) -> QName {
     }
 }
 
+fn method_name(tcx: TyCtxt, def_id: DefId) -> String {
+    if let Some(it) = tcx.opt_associated_item(def_id) {
+        if let ty::TraitContainer(_) = it.container {
+            tcx.item_name(def_id).to_string().to_lowercase()
+        } else {
+            "impl".into()
+        }
+    } else {
+        "impl".into()
+    }
+}
+
 fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
     let def_path = tcx.def_path(def_id);
 
@@ -220,16 +238,6 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
     let kind = tcx.def_kind(def_id);
     use rustc_hir::def::DefKind::*;
 
-    let is_trait_assoc = if let Some(it) = tcx.opt_associated_item(def_id) {
-        if let ty::TraitContainer(_) = it.container {
-            true
-        } else {
-            false
-        }
-    } else {
-        false
-    };
-
     let name;
     match (kind, kind.ns()) {
         (_, _) if ty => {
@@ -246,11 +254,14 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
             segments = Vec::new();
         }
         (_, Some(Namespace::ValueNS)) | (Closure, _) => {
+            // temporary hack, if the method belongs to a trait declaration pop off last segment
+            let is_trait_assoc = method_name(tcx, def_id) != "impl";
+
             if is_trait_assoc {
-                name = vec![segments.pop().unwrap().to_lowercase()];
-            } else {
-                name = vec!["impl".into()];
+                segments.pop().unwrap();
             }
+
+            name = vec![method_name(tcx, def_id)];
         }
         (a, b) => unreachable!("{:?} {:?} {:?}", a, b, segments),
     }

@@ -2,7 +2,8 @@ use indexmap::IndexMap;
 use rustc_hir::def_id::{CrateNum, DefId};
 use rustc_middle::ty::Visibility;
 
-use why3::declaration::{Decl, Module, ValKind};
+use super::logic::*;
+use why3::declaration::{Decl, Module, ValKind::Val};
 
 use crate::ctx::*;
 use crate::function::all_generic_decls_for;
@@ -25,7 +26,7 @@ fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span
     let mut decls : Vec<_> = super::prelude_imports(true);
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
-    decls.push(Decl::ValDecl(ValKind::Val { sig }));
+    decls.push(Decl::ValDecl(Val { sig }));
 
     Module { name, decls }
 }

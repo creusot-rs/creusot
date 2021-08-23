@@ -2,11 +2,13 @@ extern crate proc_macro;
 
 mod pretyping;
 
+use std::string::ParseError;
+
 use proc_macro2::Span;
 use syn::*;
 
-use proc_macro::TokenStream as TS1;
-use quote::quote;
+use proc_macro::{TokenStream as TS1};
+use quote::{TokenStreamExt, quote};
 
 fn generate_unique_ident(prefix: &str) -> Ident {
     let uuid = uuid::Uuid::new_v4();
@@ -15,14 +17,30 @@ fn generate_unique_ident(prefix: &str) -> Ident {
     Ident::new(&ident, Span::call_site())
 }
 
+fn parse_def_or_decl(tokens: TS1) -> Result<Signature>
+{
+    syn::parse::<ItemFn>(tokens.clone())
+        .map(|r| r.sig)
+        .or_else(|_| {
+            syn::parse::<TraitItemMethod>(tokens.clone())
+                .map(|r| r.sig)
+        })
+}
+
 #[proc_macro_attribute]
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     let p: syn::Term = parse_macro_input!(attr);
 
-    let f: ItemFn = parse_macro_input!(tokens);
+    let parse_res = parse_def_or_decl(tokens.clone());
+    let tokens = proc_macro2::TokenStream::from(tokens);
 
-    let req_name = generate_unique_ident(&f.sig.ident.to_string());
-    let mut req_sig = f.sig.clone();
+    let sig = match parse_res {
+        Ok(o) => o,
+        Err(err) => return TS1::from(err.to_compile_error()),
+    };
+
+    let req_name = generate_unique_ident(&sig.ident.to_string());
+    let mut req_sig = sig.clone();
     req_sig.ident = req_name.clone();
     req_sig.output = parse_quote! { -> bool };
     let req_body = pretyping::encode_term(p).unwrap();
@@ -32,12 +50,13 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     TS1::from(quote! {
       #[rustc_diagnostic_item=#name_tag]
       #[creusot::spec::no_translate]
+      #[creusot::spec::contract]
       #req_sig {
         #req_body
       }
 
       #[creusot::spec::requires=#name_tag]
-      #f
+      #tokens
     })
 }
 
@@ -45,10 +64,16 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     let p: syn::Term = parse_macro_input!(attr);
 
-    let f: ItemFn = parse_macro_input!(tokens);
+    let parse_res = parse_def_or_decl(tokens.clone());
+    let tokens = proc_macro2::TokenStream::from(tokens);
 
-    let ens_name = generate_unique_ident(&f.sig.ident.to_string());
-    let mut ens_sig = f.sig.clone();
+    let sig = match parse_res {
+        Ok(o) => o,
+        Err(err) => return TS1::from(err.to_compile_error()),
+    };
+
+    let ens_name = generate_unique_ident(&sig.ident.to_string());
+    let mut ens_sig = sig;
     ens_sig.ident = ens_name.clone();
     let result = match ens_sig.output {
         ReturnType::Default => parse_quote! { result : () },
@@ -63,12 +88,13 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     TS1::from(quote! {
       #[rustc_diagnostic_item=#name_tag]
       #[creusot::spec::no_translate]
+      #[creusot::spec::contract]
       #ens_sig {
         #ens_body
       }
 
       #[creusot::spec::ensures=#name_tag]
-      #f
+      #tokens
     })
 }
 
@@ -89,6 +115,7 @@ pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
     TS1::from(quote! {
       #[rustc_diagnostic_item=#name_tag]
       #[creusot::spec::no_translate]
+      #[creusot::spec::contract]
       #var_sig {
         #var_body
       }
@@ -157,8 +184,24 @@ impl syn::parse::Parse for LogicItem {
 }
 
 #[proc_macro]
-pub fn logic(body: TS1) -> TS1 {
-    let log: LogicItem = parse_macro_input!(body);
+pub fn logic(tokens: TS1) -> TS1 {
+    match syn::parse::<LogicItem>(tokens.clone()) {
+        Ok(log) => logic_item(log),
+        Err(_) => match syn::parse(tokens) {
+            Ok(sig) => logic_sig(sig),
+            Err(err) => TS1::from(err.to_compile_error()),
+        },
+    }
+}
+
+fn logic_sig(sig: TraitItemMethod) -> TS1 {
+    TS1::from(quote! {
+        #[creusot::spec::logic]
+        #sig
+    })
+}
+
+fn logic_item(log: LogicItem) -> TS1 {
     let term = log.body;
     let vis = log.vis;
     let sig = log.sig;
@@ -216,16 +259,17 @@ fn predicate_sig(sig: TraitItemMethod) -> TS1 {
 
 fn predicate_item(log: PredicateItem) -> TS1 {
     let term = log.body;
-    let term = format!("{}", quote! {#term});
     let vis = log.vis;
     let sig = log.sig;
     let attrs = log.attrs;
-    TS1::from(quote! {
 
+    let req_body = pretyping::encode_term(term).unwrap();
+
+    TS1::from(quote! {
         #[creusot::spec::predicate]
         #(#attrs)*
         #vis #sig {
-            std::process::abort()
+            #req_body
         }
     })
 }

@@ -8,6 +8,12 @@ pub mod nested {
 
   enum Nested { Test }
 
+	unsafe impl Resolve for Nested {
+	    predicate! { fn resolve(self) -> bool {
+	        true
+	    } }    
+	}
+
 	#[ensures(result == true)]
 	pub fn inner_func() -> bool {
 		Nested::Test;

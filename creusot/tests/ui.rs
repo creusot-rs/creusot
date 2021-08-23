@@ -9,24 +9,28 @@ use similar::{ChangeTag, TextDiff};
 use std::error::Error;
 use std::io::Write;
 use termcolor::*;
-use mktemp::Temp;
 
 fn main() {
-    let temp_file = Temp::new_file().unwrap().release();
     let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     base_path.pop();
+
+    let mut temp_file = base_path.clone();
+    temp_file.push("target");
+    temp_file.push("debug");
+    temp_file.push("libcreusot_contracts.creusot");
 
     let mut metadata_file = Command::cargo_bin("cargo-creusot").unwrap();
     metadata_file.current_dir(base_path);
     metadata_file
         .args(&["--package", "creusot-contracts", "--features=contracts"])
         .env("CREUSOT_METADATA_PATH", &temp_file)
+        .env("CREUSOT_CONTINUE", "true")
         .env("RUST_LOG", "debug");
 
     metadata_file.output().expect("could not dump metadata for `creusot_contracts`");
 
     should_fail("tests/should_fail/*.rs", |p| run_creusot(p, &temp_file.to_string_lossy()));
-    should_succeed("tests/should_succeed/*.rs", |p| run_creusot(p, &temp_file.to_string_lossy()));
+    should_succeed("tests/should_succeed/**/*.rs", |p| run_creusot(p, &temp_file.to_string_lossy()));
 }
 
 fn run_creusot(file: &Path, contracts: &str) -> std::process::Command {
@@ -50,7 +54,6 @@ fn run_creusot(file: &Path, contracts: &str) -> std::process::Command {
 
     cmd.arg(format!("-Ldependency={}/", dep_path.display()));
     cmd.arg(format!("{}", file.display()));
-
     cmd
 }
 

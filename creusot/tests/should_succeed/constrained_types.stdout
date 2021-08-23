@@ -1,0 +1,130 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type core_option_option 't = 
+    | Core_Option_Option_None
+    | Core_Option_Option_Some('t)
+    
+  predicate drop_core_option_option (drop_t : 't -> bool) (self : core_option_option 't) = 
+    match (self) with
+      | Core_Option_Option_None -> true
+      | Core_Option_Option_Some(a) -> drop_t a
+      end
+  type core_cmp_ordering  = 
+    | Core_Cmp_Ordering_Less
+    | Core_Cmp_Ordering_Equal
+    | Core_Cmp_Ordering_Greater
+    
+  predicate drop_core_cmp_ordering (self : core_cmp_ordering) = 
+    match (self) with
+      | Core_Cmp_Ordering_Less -> true
+      | Core_Cmp_Ordering_Equal -> true
+      | Core_Cmp_Ordering_Greater -> true
+      end
+end
+module Core_Cmp_PartialEq
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  type self   
+  type rhs   
+  val eq (self : self) (other : rhs) : bool
+  val ne (self : self) (other : rhs) : bool
+end
+module Core_Cmp_PartialOrd
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  type self   
+  type rhs   
+  clone Core_Cmp_PartialEq as PartialEq0 with type self = self, type rhs = rhs
+  val partial_cmp (self : self) (other : rhs) : Type.core_option_option (Type.core_cmp_ordering)
+  val lt (self : self) (other : rhs) : bool
+  val le (self : self) (other : rhs) : bool
+  val gt (self : self) (other : rhs) : bool
+  val ge (self : self) (other : rhs) : bool
+end
+module ConstrainedTypes_UsesConcreteInstance
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  clone Core_Cmp_PartialOrd as Lt0 with type self = (uint32, uint32), type rhs = (uint32, uint32)
+  let rec cfg impl (o_x_1 : (uint32, uint32)) (o_y_2 : (uint32, uint32)) : bool = 
+  var _0 : bool;
+  var x_1 : (uint32, uint32);
+  var y_2 : (uint32, uint32);
+  var _3 : (uint32, uint32);
+  var _4 : (uint32, uint32);
+  {
+    x_1 <- o_x_1;
+    y_2 <- o_y_2;
+    goto BB0
+  }
+  BB0 {
+    _3 <- x_1;
+    assume { (fun x -> true) x_1 };
+    _4 <- y_2;
+    assume { (fun x -> true) y_2 };
+    _0 <- Lt0.lt _3 _4;
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end
+module ConstrainedTypes_Main
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  let rec cfg impl () : () = 
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end

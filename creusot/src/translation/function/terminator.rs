@@ -137,7 +137,13 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
 
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(_) = it.container {
-                self.ctx.crash_and_error(sp, &format!("cannot use associated items {:?}", it));
+                // What happens if when we clone a generic function that belongs to a trait?!
+                let clone_name = self.clone_names.name_for(def_id, subst);
+                self.ctx.translate_trait(it.container.id());
+
+                let mut name = super::translate_value_id(self.tcx, def_id);
+                name.module = vec![clone_name];
+                return name;
             }
         }
 

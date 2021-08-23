@@ -12,7 +12,11 @@ use why3::declaration::*;
 use why3::mlcfg::{self, Exp::*, Statement::*, *};
 
 use rustc_middle::mir::Place;
+use rustc_middle::ty::subst::GenericArg;
+use rustc_middle::ty::Ty;
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
+use rustc_resolve::Namespace;
+use rustc_span::Symbol;
 
 use indexmap::{IndexMap, IndexSet};
 
@@ -22,7 +26,8 @@ mod terminator;
 
 use crate::ctx::*;
 use crate::translation::specification;
-use crate::translation::ty;
+use crate::translation::{traits, ty};
+
 
 pub fn translate_function<'tcx, 'sess>(
     tcx: TyCtxt<'tcx>,
@@ -124,6 +129,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         let subst = specification::subst_for_arguments(self.body);
 
         contract.subst(&subst);
+        contract.extend(self.trait_contract().unwrap_or_else(Contract::new));
 
         let arg_count = self.body.arg_count;
         let vars: Vec<_> = self
@@ -190,6 +196,10 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             decls.push(Decl::UseDecl(Use { name: imp }))
         }
 
+        for tp in traits::traits_used_by(self.tcx, self.def_id) {
+            traits::translate_constraint(self.ctx, &mut self.clone_names, tp);
+        }
+
         for ((def_id, subst), clone_name) in self.clone_names.into_iter() {
             decls.push(clone_item(self.ctx, def_id, subst, clone_name));
         }
@@ -243,6 +253,57 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: mlcfg::Exp) {
         let assign = self.create_assign(lhs, rhs);
         self.emit_statement(assign);
+    }
+
+    fn trait_contract(&mut self) -> Option<Contract> {
+        let trait_method_item = self
+            .tcx
+            .impl_of_method(self.def_id)
+            .and_then(|impl_id| self.tcx.trait_id_of_impl(impl_id))
+            .and_then(|trait_id| {
+                let assoc = self.tcx.associated_item(self.def_id);
+                self.tcx.associated_items(trait_id).find_by_name_and_namespace(
+                    self.tcx,
+                    assoc.ident,
+                    Namespace::ValueNS,
+                    trait_id,
+                )
+            })?;
+
+        let pre_contract =
+            crate::specification::contract_of(self.ctx.tcx, trait_method_item.def_id).unwrap();
+        Some(pre_contract.check_and_lower(self.ctx, &mut self.clone_names,trait_method_item.def_id))
+    }
+
+    fn resolve_predicate_of(&mut self, ty: Ty<'tcx>) -> Exp {
+        if !resolve_trait_loaded(self.tcx) {
+            self.ctx.warn(
+                rustc_span::DUMMY_SP,
+                "load the `creusot_contract` crate to enable resolution of mutable borrows.",
+            );
+            return Exp::Abs("x".into(), box Exp::Const(Constant::const_true()));
+        }
+
+        let trait_id = self.tcx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap();
+        let trait_meth_id =
+            self.tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
+        let subst = self.tcx.mk_substs([GenericArg::from(ty)].iter());
+
+        let instance = traits::resolve_instance_opt(self.tcx, self.def_id, trait_meth_id, subst);
+
+        match instance {
+            Some(Some(inst)) => {
+                traits::translate_impl(self.ctx, self.tcx.impl_of_method(inst.def_id()).unwrap());
+
+                let clone_name = self.clone_names.name_for(inst.def_id(), inst.substs);
+                QVar(QName { module: vec![clone_name], name: "impl".into() })
+            }
+            _ => {
+                self.ctx.translate_trait(trait_id);
+                let clone_name = self.clone_names.name_for(trait_id, subst);
+                QVar(QName { module: vec![clone_name], name: "resolve".into() })
+            }
+        }
     }
 
     // Inserts drop statements for variables which died over the course of a goto or switch
@@ -320,7 +381,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         for local in dying.iter() {
             let local_ty = self.body.local_decls[local].ty;
             let ident = self.translate_local(local);
-            let assumption: Exp = ty::drop_predicate(&mut self.ctx, local_ty).app_to(ident.into());
+            let assumption: Exp = self.resolve_predicate_of(local_ty).app_to(ident.into());
             self.emit_statement(mlcfg::Statement::Assume(assumption));
         }
     }
@@ -352,6 +413,10 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             None => mk_anon(loc),
         }
     }
+}
+
+fn resolve_trait_loaded(tcx: TyCtxt) -> bool {
+    tcx.get_diagnostic_item(Symbol::intern("creusot_resolve")).is_some()
 }
 
 fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {

@@ -10,7 +10,7 @@ module Type
   use floating_point.Double
   use prelude.Prelude
 end
-module MutCall_Kill
+module 01_A
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -22,21 +22,11 @@ module MutCall_Kill
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec cfg impl (o_1 : borrowed uint32) : () = 
-  var _0 : ();
-  var _1 : borrowed uint32;
-  {
-    _1 <- o_1;
-    goto BB0
-  }
-  BB0 {
-    _0 <- ();
-    assume { (fun x -> true) _1 };
-    return _0
-  }
-  
+  type self   
+  type b   
+  val from_b (x : self) : b
 end
-module MutCall_Test
+module Core_Marker_Sized
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -48,35 +38,47 @@ module MutCall_Test
   use floating_point.Double
   use prelude.Prelude
   use Type
-  clone MutCall_Kill as Kill0
-  let rec cfg impl () : () = 
-  var _0 : ();
-  var a_1 : uint32;
-  var _2 : ();
-  var _3 : borrowed uint32;
-  var _4 : borrowed uint32;
+  type self   
+end
+module 01_UsesGeneric
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  use Type
+  type t   
+  clone 01_A as A2 with type self = t
+  clone 01_A as FromB0 with type self = t, type b = uint32
+  clone Core_Marker_Sized as Sized1 with type self = t
+  let rec cfg impl (o_b_1 : t) : uint32 = 
+  var _0 : uint32;
+  var b_1 : t;
+  var _2 : t;
   {
+    b_1 <- o_b_1;
     goto BB0
   }
   BB0 {
-    a_1 <- (10 : uint32);
-    _4 <- borrow_mut a_1;
-    a_1 <-  ^ _4;
-    assume { (fun x -> true) a_1 };
-    _3 <- borrow_mut ( * _4);
-    _4 <- { _4 with current = ( ^ _3) };
-    assume { (fun x -> true) _4 };
-    _2 <- Kill0.impl _3;
+    assume { drop_t _2 };
+    _2 <- b_1;
+    _0 <- FromB0.from_b _2;
     goto BB1
   }
   BB1 {
-    assume { (fun x -> true) _3 };
-    _0 <- ();
+    goto BB2
+  }
+  BB2 {
     return _0
   }
   
 end
-module MutCall_Main
+module 01_Main
   use Ref
   use mach.int.Int
   use mach.int.Int32

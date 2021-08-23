@@ -1,12 +1,17 @@
+// SHOULD_SUCCEED: parse-print
 #![feature(register_tool, rustc_attrs)]
 #![register_tool(creusot)]
 #![feature(proc_macro_hygiene, stmt_expr_attributes)]
 
 extern crate creusot_contracts;
-
 use creusot_contracts::*;
 
-#[requires(x != 0u32)]
-fn divide(y: u32, x: u32) -> u32 {
-	y / x
+trait A {
+  #[ensures(result == true)]
+  fn is_true(&self) -> bool;
+}
+
+#[ensures(result == true)]
+fn omg<T : A>(a : T) -> bool{
+  a.is_true()
 }

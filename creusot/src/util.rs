@@ -24,6 +24,26 @@ pub fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
         .is_some()
 }
 
+pub fn is_contract(tcx: TyCtxt, def_id: DefId) -> bool {
+    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "contract"])
+        .is_some()
+}
+
+pub fn is_ensures(tcx: TyCtxt, def_id: DefId) -> bool {
+    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "ensures"])
+        .is_some()
+}
+
+pub fn is_requires(tcx: TyCtxt, def_id: DefId) -> bool {
+    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "requires"])
+        .is_some()
+}
+
+pub fn is_variant(tcx: TyCtxt, def_id: DefId) -> bool {
+    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "variant"])
+        .is_some()
+}
+
 pub fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
     crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "invariant"])
         .is_some()

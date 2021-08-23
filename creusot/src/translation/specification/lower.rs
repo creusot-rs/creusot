@@ -49,9 +49,8 @@ pub fn lower_term_to_why3<'tcx>(
                 if target == term_id {
                     Exp::Call(box Exp::Var("impl".into()), args)
                 } else {
-                    let clone = names.name_for(target, subst);
-                    let fname = QName { module: vec![clone], name: "impl".into() };
-                    Exp::Call(box Exp::QVar(fname), args)
+                    let clone = names.qname_for(target, subst);
+                    Exp::Call(box Exp::QVar(clone), args)
                 }
             })
         }
@@ -136,7 +135,10 @@ pub fn lower_pat_to_why3<'tcx>(
                 Pat::mk_false()
             }
         }
-        _ => todo!(),
+        Pattern::Tuple(pats) => {
+            Pat::TupleP(pats.into_iter().map(|pat| lower_pat_to_why3(ctx, names, pat)).collect())
+        }
+        _ => todo!("{:?}", pat),
     }
 }
 
