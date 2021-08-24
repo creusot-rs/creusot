@@ -16,13 +16,10 @@ use heck::CamelCase;
 
 use rustc_hir::def_id::LOCAL_CRATE;
 use rustc_hir::Item;
-use rustc_interface::interface::BoxedResolver;
 use rustc_middle::ty::TyCtxt;
 use rustc_session::Session;
 
-use std::cell::RefCell;
 use std::io::Result;
-use std::rc::Rc;
 
 use why3::mlcfg;
 
@@ -30,7 +27,6 @@ pub fn translate(
     output: &Option<String>,
     sess: &Session,
     tcx: TyCtxt,
-    resolver: Rc<RefCell<BoxedResolver>>,
 ) -> Result<()> {
     let hir_map = tcx.hir();
 
@@ -49,14 +45,9 @@ pub fn translate(
     }
 
     // Type translation state, including which datatypes have already been translated.
-    let mut ty_ctx = crate::ctx::TranslationCtx::new(tcx, sess, resolver.clone());
+    let mut ty_ctx = crate::ctx::TranslationCtx::new(tcx, sess);
 
-    // Translate all type declarations and push them into the module collection
-    for (def_id, span) in ty_decls.iter() {
-        debug!("Translating type declaration {:?}", def_id);
-        ty::translate_tydecl(&mut ty_ctx, *span, *def_id);
-    }
-
+    debug!("translating bodies={:?}", tcx.body_owners().collect::<Vec<_>>());   
     for def_id in tcx.body_owners() {
         let def_id = def_id.to_def_id();
         if !crate::util::should_translate(tcx, def_id) {

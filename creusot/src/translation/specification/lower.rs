@@ -79,6 +79,7 @@ pub fn lower_term_to_why3<'tcx>(
                 fields.into_iter().map(|f| lower_term_to_why3(ctx, names, term_id, f)).collect();
 
             let ctor = translate_value_id(ctx.tcx, adt.variants[variant].def_id);
+            crate::ty::translate_tydecl(ctx, rustc_span::DUMMY_SP, adt.did);
             Exp::Constructor { ctor, args }
         }
         Term::Cur { box term } => Exp::Current(box lower_term_to_why3(ctx, names, term_id, term)),

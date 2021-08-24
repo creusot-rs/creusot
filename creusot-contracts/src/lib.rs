@@ -12,6 +12,9 @@ pub mod builtins;
 #[cfg(feature = "contracts")]
 pub use builtins::*;
 
+#[cfg(feature = "stubs")]
+pub use stubs::*;
+
 #[cfg(feature = "typechecker")]
 pub mod typing;
 

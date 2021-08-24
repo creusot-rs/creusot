@@ -42,7 +42,7 @@ mod rustc_extensions;
 
 mod cleanup_spec_closures;
 
-use rustc_driver::{abort_on_err, Callbacks, Compilation, RunCompiler};
+use rustc_driver::{Callbacks, Compilation, RunCompiler};
 use rustc_interface::{interface::Compiler, Config, Queries};
 
 use std::{env::args as get_args, path::Path};
@@ -54,6 +54,7 @@ use util::sysroot_path;
 
 struct ToWhy {
     output_file: Option<String>,
+    has_contracts: bool,
 }
 
 impl Callbacks for ToWhy {
@@ -69,25 +70,21 @@ impl Callbacks for ToWhy {
     }
 
     fn after_expansion<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
-        let session = c.session();
-        let resolver = {
-            let (_, resolver, _) = &*abort_on_err(queries.expansion(), session).peek();
-            resolver.clone()
-        };
-
         queries.prepare_outputs().unwrap();
 
-        if !creusot_dependency() {
+        if !creusot_dependency() || self.has_contracts {
             queries
                 .global_ctxt()
                 .unwrap()
                 .peek_mut()
                 .enter(|tcx| {
                     let session = c.session();
-                    // TODO: Resolve extern crates
-                    crate::translation::translate(&self.output_file, session, tcx, resolver)
+
+                    crate::translation::translate(&self.output_file, session, tcx)
                 })
                 .unwrap();
+        } else {
+            debug!("Skipping crate");
         }
 
         c.session().abort_if_errors();
@@ -105,15 +102,22 @@ fn main() {
 
     let mut args = get_args().collect::<Vec<String>>();
 
+    // When invoked by cargo `rustc` is prepended to the argument list so remove it 
     if args.len() > 1 && Path::new(&args[1]).file_stem() == Some("rustc".as_ref()) {
         args.remove(1);
     }
 
+    // Check if the crate we are compiling has a dependency on contracts, or if it is the contract crate itself.
+    // We use this to disable creusot for dependencies if they don't depend on contracts (since that means they will have no real specification)
+    let has_contracts = args.iter().any(|arg| arg.contains("creusot-contracts") || arg.contains("creusot-contracts="));
+
     let output_file = args.iter().position(|a| a == "-o").map(|ix| args[ix + 1].clone());
+
 
     args.push(format!("--sysroot={}", sysroot_path()));
     args.push("-Cpanic=abort".to_owned());
     args.push("-Coverflow-checks=off".to_owned());
+    debug!("creusot args={:?}", args);
     // args.push("-Znll-facts".to_owned());
-    RunCompiler::new(&args, &mut ToWhy { output_file }).run().unwrap();
+    RunCompiler::new(&args, &mut ToWhy { output_file, has_contracts }).run().unwrap();
 }

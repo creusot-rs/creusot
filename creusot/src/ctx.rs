@@ -17,9 +17,6 @@ use rustc_resolve::Namespace;
 use crate::modules::Modules;
 use crate::translation::specification;
 
-use rustc_interface::interface::BoxedResolver;
-use std::{cell::RefCell, rc::Rc};
-
 pub struct NameMap<'tcx>(TyCtxt<'tcx>, BTreeMap<(DefId, SubstsRef<'tcx>), String>);
 
 impl<'tcx> NameMap<'tcx> {
@@ -50,16 +47,12 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub used_traits: IndexSet<DefId>,
     pub translated_funcs: IndexSet<DefId>,
     pub modules: Modules,
-
-    // Name resolution context for specs
-    pub resolver: Rc<RefCell<BoxedResolver>>,
 }
 
 impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
         sess: &'sess Session,
-        resolver: Rc<RefCell<BoxedResolver>>,
     ) -> Self {
         Self {
             sess,
@@ -67,7 +60,6 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             used_tys: IndexSet::new(),
             used_traits: IndexSet::new(),
             translated_funcs: IndexSet::new(),
-            resolver,
             modules: Modules::new(),
         }
     }
