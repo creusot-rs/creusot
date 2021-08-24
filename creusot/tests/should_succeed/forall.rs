@@ -1,4 +1,4 @@
-#![feature(register_tool, rustc_attrs)]
+#![feature(register_tool, rustc_attrs, stmt_expr_attributes)]
 #![register_tool(creusot)]
 
 extern crate creusot_contracts;

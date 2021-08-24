@@ -115,7 +115,10 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
             let mut ts = encode_term(*term)?;
             for arg in args {
                 ts = quote! {
-                  creusot_contracts::stubs::forall(|#arg|{ #ts })
+                    creusot_contracts::stubs::forall(
+                        #[creusot::spec::no_translate]
+                        |#arg|{ #ts }
+                    )
                 }
             }
             Ok(ts)
@@ -124,7 +127,10 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
             let mut ts = encode_term(*term)?;
             for arg in args {
                 ts = quote! {
-                  creusot_contracts::stubs::exists(|#arg|{ #ts })
+                    creusot_contracts::stubs::exists(
+                        #[creusot::spec::no_translate]
+                        |#arg|{ #ts }
+                    )
                 }
             }
             Ok(ts)
@@ -172,7 +178,10 @@ mod tests {
     #[test]
     fn encode_fin() {
         let term: Term = syn::parse_str("^ x").unwrap();
-        assert_eq!(format!("{}", encode_term(term).unwrap()), "creusot_contracts :: stubs :: fin (x)");
+        assert_eq!(
+            format!("{}", encode_term(term).unwrap()),
+            "creusot_contracts :: stubs :: fin (x)"
+        );
 
         let term: Term = syn::parse_str("^ ^ x").unwrap();
         assert_eq!(
@@ -187,7 +196,10 @@ mod tests {
         assert_eq!(format!("{}", encode_term(term).unwrap()), "* x");
         let term: Term = syn::parse_str("* ^ x").unwrap();
 
-        assert_eq!(format!("{}", encode_term(term).unwrap()), "* creusot_contracts :: stubs :: fin (x)");
+        assert_eq!(
+            format!("{}", encode_term(term).unwrap()),
+            "* creusot_contracts :: stubs :: fin (x)"
+        );
     }
 
     #[test]
@@ -195,13 +207,13 @@ mod tests {
         let term: Term = syn::parse_str("forall<x:Int> x == x").unwrap();
         assert_eq!(
             format!("{}", encode_term(term).unwrap()),
-            "creusot_contracts :: stubs :: forall (| x : Int | { x == x })"
+            "creusot_contracts :: stubs :: forall (# [creusot :: spec :: no_translate] | x : Int | { x == x })"
         );
 
         let term: Term = syn::parse_str("forall<x:Int> forall<y:Int> y == x || y != x").unwrap();
         assert_eq!(
             format!("{}", encode_term(term).unwrap()),
-            "creusot_contracts :: stubs :: forall (| x : Int | { creusot_contracts :: stubs :: forall (| y : Int | { y == x || y != x }) })"
+            "creusot_contracts :: stubs :: forall (# [creusot :: spec :: no_translate] | x : Int | { creusot_contracts :: stubs :: forall (# [creusot :: spec :: no_translate] | y : Int | { y == x || y != x }) })"
         );
     }
 
@@ -210,13 +222,13 @@ mod tests {
         let term: Term = syn::parse_str("exists<x:Int> x == x").unwrap();
         assert_eq!(
             format!("{}", encode_term(term).unwrap()),
-            "creusot_contracts :: stubs :: exists (| x : Int | { x == x })"
+            "creusot_contracts :: stubs :: exists (# [creusot :: spec :: no_translate] | x : Int | { x == x })"
         );
 
         let term: Term = syn::parse_str("exists<x:Int> exists<y:Int> y == x || y != x").unwrap();
         assert_eq!(
             format!("{}", encode_term(term).unwrap()),
-            "creusot_contracts :: stubs :: exists (| x : Int | { creusot_contracts :: stubs :: exists (| y : Int | { y == x || y != x }) })"
+            "creusot_contracts :: stubs :: exists (# [creusot :: spec :: no_translate] | x : Int | { creusot_contracts :: stubs :: exists (# [creusot :: spec :: no_translate] | y : Int | { y == x || y != x }) })"
         );
     }
 

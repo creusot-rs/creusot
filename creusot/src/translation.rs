@@ -59,7 +59,7 @@ pub fn translate(
 
     for def_id in tcx.body_owners() {
         let def_id = def_id.to_def_id();
-        if crate::util::should_translate(tcx, def_id) {
+        if !crate::util::should_translate(tcx, def_id) {
             debug!("Skipping {:?}", def_id);
             continue;
         }

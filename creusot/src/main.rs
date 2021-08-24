@@ -42,11 +42,10 @@ mod rustc_extensions;
 
 mod cleanup_spec_closures;
 
-
 use rustc_driver::{abort_on_err, Callbacks, Compilation, RunCompiler};
 use rustc_interface::{interface::Compiler, Config, Queries};
 
-use std::env::args as get_args;
+use std::{env::args as get_args, path::Path};
 
 use cleanup_spec_closures::*;
 
@@ -78,26 +77,37 @@ impl Callbacks for ToWhy {
 
         queries.prepare_outputs().unwrap();
 
-        queries.global_ctxt().unwrap();
+        if !creusot_dependency() {
+            queries
+                .global_ctxt()
+                .unwrap()
+                .peek_mut()
+                .enter(|tcx| {
+                    let session = c.session();
+                    // TODO: Resolve extern crates
+                    crate::translation::translate(&self.output_file, session, tcx, resolver)
+                })
+                .unwrap();
+        }
 
-        queries
-            .global_ctxt()
-            .unwrap()
-            .peek_mut()
-            .enter(|tcx| {
-                let session = c.session();
-                // TODO: Resolve extern crates
-                crate::translation::translate(&self.output_file, session, tcx, resolver)
-            })
-            .unwrap();
+        c.session().abort_if_errors();
+
         Compilation::Stop
     }
+}
+
+fn creusot_dependency() -> bool {
+    std::env::var_os("CREUSOT_DEPENDENCY").is_some()
 }
 
 fn main() {
     env_logger::init();
 
     let mut args = get_args().collect::<Vec<String>>();
+
+    if args.len() > 1 && Path::new(&args[1]).file_stem() == Some("rustc".as_ref()) {
+        args.remove(1);
+    }
 
     let output_file = args.iter().position(|a| a == "-o").map(|ix| args[ix + 1].clone());
 
@@ -107,4 +117,3 @@ fn main() {
     // args.push("-Znll-facts".to_owned());
     RunCompiler::new(&args, &mut ToWhy { output_file }).run().unwrap();
 }
-

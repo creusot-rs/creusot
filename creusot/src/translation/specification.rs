@@ -106,7 +106,6 @@ pub fn ts_to_symbol(ts: TokenStream) -> Option<Symbol> {
     None
 }
 
-// TODO: Stop putting strings!!
 pub struct PreContract {
     pub variant: Option<DefId>,
     pub requires: Vec<DefId>,
@@ -122,7 +121,7 @@ impl PreContract {
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut NameMap<'tcx>,
-        def_id: DefId,
+        _: DefId,
     ) -> Contract {
         let mut out = Contract::new();
 

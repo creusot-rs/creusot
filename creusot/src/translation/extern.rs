@@ -5,7 +5,6 @@ use why3::declaration::{Decl, Module, ValKind};
 
 use crate::ctx::*;
 use crate::function::all_generic_decls_for;
-use crate::translation::specification;
 
 // Translate functions that are external to the crate as opaque values
 pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_span::Span) {
@@ -13,7 +12,7 @@ pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_spa
         return;
     }
 
-    if specification::get_attr(ctx.tcx.get_attrs(def_id), &["creusot", "spec", "logic"]).is_some() {
+    if super::is_logic(ctx.tcx, def_id) {
         translate_logic(ctx, def_id, span);
         return;
     }

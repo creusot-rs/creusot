@@ -12,9 +12,11 @@ use rustc_middle::ty::TyCtxt;
 use crate::specification;
 
 pub fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut Body<'tcx>) {
+    info!("cleanup_spec_closures: {:?}", def_id);
     if specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "no_translate"])
         .is_some()
     {
+        info!("replacing function body");
         *body.basic_blocks_mut() = make_loop(tcx);
         body.var_debug_info = Vec::new();
     } else {
@@ -128,7 +130,6 @@ impl<'tcx> MutVisitor<'tcx> for LocalUpdater<'tcx> {
     }
 
     fn visit_local(&mut self, l: &mut Local, _: PlaceContext, _: Location) {
-        dbg!(&l);
         *l = self.map[*l].unwrap();
     }
 }
