@@ -8,7 +8,7 @@
 // general routines.
 
 use rustc_errors::DiagnosticBuilder;
-use rustc_errors::ErrorReported;
+// use rustc_errors::ErrorReported;
 use rustc_middle::ty::fold::TypeFoldable;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_trait_selection::infer::{InferCtxt, TyCtxtInferExt};

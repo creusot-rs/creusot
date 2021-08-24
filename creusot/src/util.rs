@@ -73,3 +73,22 @@ pub fn signature_of<'tcx>(
         contract,
     }
 }
+
+pub fn sysroot_path() -> String {
+    use std::process::Command;
+    let toolchain: toml::Value = toml::from_str(include_str!("../../rust-toolchain")).unwrap();
+    let channel = toolchain["toolchain"]["channel"].as_str().unwrap();
+
+    let output = Command::new("rustup")
+        .arg("run")
+        .arg(channel)
+        .arg("rustc")
+        .arg("--print")
+        .arg("sysroot")
+        .output()
+        .unwrap();
+
+    print!("{}", String::from_utf8(output.stderr).ok().unwrap());
+
+    String::from_utf8(output.stdout).unwrap().trim().to_owned()
+}

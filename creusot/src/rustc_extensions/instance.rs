@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-use rustc_errors::ErrorReported;
+// use rustc_errors::ErrorReported;
 use rustc_hir::def_id::{DefId, LocalDefId};
 // use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::ty::subst::SubstsRef;

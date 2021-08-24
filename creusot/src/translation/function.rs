@@ -1,4 +1,4 @@
-use crate::{extended_location::*, RemoveFalseEdge};
+use crate::extended_location::*;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
@@ -427,4 +427,24 @@ fn mk_anon(l: Local) -> LocalIdent {
 
 fn mk_anon_dbg(l: Local, vi: &VarDebugInfo) -> LocalIdent {
     LocalIdent::Anon(l.index(), Some(vi.name.to_string()))
+}
+
+struct RemoveFalseEdge<'tcx> {
+    tcx: TyCtxt<'tcx>,
+}
+
+impl<'tcx> MutVisitor<'tcx> for RemoveFalseEdge<'tcx> {
+    fn tcx<'a>(&'a self) -> TyCtxt<'tcx> {
+        self.tcx
+    }
+
+    fn visit_terminator(
+        &mut self,
+        terminator: &mut rustc_middle::mir::Terminator<'tcx>,
+        _location: Location,
+    ) {
+        if let rustc_middle::mir::TerminatorKind::FalseEdge { real_target, .. } = terminator.kind {
+            terminator.kind = rustc_middle::mir::TerminatorKind::Goto { target: real_target }
+        }
+    }
 }
