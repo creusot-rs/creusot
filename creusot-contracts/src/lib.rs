@@ -1,19 +1,17 @@
-#![cfg_attr(feature = "typechecker", feature(rustc_attrs, rustc_private), feature(box_patterns, box_syntax))]
-
-#![cfg(feature = "typechecker")]
-#[macro_use]
-extern crate log; 
+#![cfg_attr(feature = "contracts", feature(rustc_attrs))]
+#![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns, box_syntax))]
 
 pub use creusot_contracts_proc::*;
+
+#[cfg(feature = "contracts")]
+pub mod stubs;
+
+#[cfg(feature = "contracts")]
+pub mod builtins;
+
+#[cfg(feature = "contracts")]
+pub use builtins::*;
 
 #[cfg(feature = "typechecker")]
 pub mod typing;
 
-#[cfg(feature = "typechecker")]
-pub mod stubs;
-
-#[cfg(feature = "typechecker")]
-pub mod builtins;
-
-#[cfg(feature = "typechecker")]
-pub use builtins::*;

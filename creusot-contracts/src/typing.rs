@@ -3,6 +3,7 @@ extern crate rustc_middle;
 extern crate rustc_span;
 extern crate rustc_target;
 
+use log::*;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_middle::thir::{
     Adt, ArmId, Block, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
