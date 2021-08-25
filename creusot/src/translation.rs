@@ -27,33 +27,40 @@ use crate::ctx::TranslationCtx;
 
 pub fn translate(
     mut ctx: TranslationCtx<'_, '_>,
-    output: &Option<String>,
 ) -> Result<()> {
-    debug!("translating bodies={:?}", ctx.tcx.body_owners().collect::<Vec<_>>());   
+    load_exports(&mut ctx);
+
     for def_id in ctx.tcx.body_owners() {
         let def_id = def_id.to_def_id();
         if !crate::util::should_translate(ctx.tcx, def_id) {
-            debug!("Skipping {:?}", def_id);
+            info!("Skipping {:?}", def_id);
             continue;
         }
 
-        debug!("Translating body {:?}", def_id);
+        info!("Translating body {:?}", def_id);
         ctx.translate_function(def_id);
     }
 
-    use std::fs::File;
+    if ctx.should_export() {
+        external::dump_exports(&ctx, &ctx.opts.metadata_path);        
+    }
 
-    let mut out: Box<dyn Write> = match output {
-        Some(f) => Box::new(std::io::BufWriter::new(File::create(f)?)),
-        None => Box::new(std::io::stdout()),
-    };
+    if ctx.should_compile() {
+        use std::fs::File;
 
-    print_crate(
-        &mut out,
-        ctx.tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case(),
-        ctx.types,
-        ctx.functions.values(),
-    )?;
+        let mut out: Box<dyn Write> = match ctx.opts.output_file {
+            Some(ref f) => Box::new(std::io::BufWriter::new(File::create(f)?)),
+            None => Box::new(std::io::stdout()),
+        };
+
+        print_crate(
+            &mut out,
+            ctx.tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case(),
+            ctx.types,
+            ctx.functions.values(),
+        )?;
+    }
+
     Ok(())
 }
 
@@ -98,6 +105,8 @@ pub fn prelude_imports(type_import: bool) -> Vec<Decl> {
 }
 
 use std::io::Write;
+
+use self::external::load_exports;
 
 fn print_crate<'a, W, I: Iterator<Item = &'a Module>>(
     out: &mut W,

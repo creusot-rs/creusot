@@ -12,11 +12,11 @@ use rustc_middle::ty::TyCtxt;
 use crate::specification;
 
 pub fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut Body<'tcx>) {
-    info!("cleanup_spec_closures: {:?}", def_id);
+    debug!("cleanup_spec_closures: {:?}", def_id);
     if specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "no_translate"])
         .is_some()
     {
-        info!("replacing function body");
+        debug!("replacing function body");
         *body.basic_blocks_mut() = make_loop(tcx);
         body.var_debug_info = Vec::new();
     } else {

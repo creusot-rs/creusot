@@ -1,7 +1,7 @@
 // SHOULD_SUCCEED: parse-print
 // Tests that various kinds of projections in Rust successfully translate
 
-fn copy_out_of_ref(x : & u32) -> u32 {
+pub fn copy_out_of_ref(x : & u32) -> u32 {
   *x
 }
 

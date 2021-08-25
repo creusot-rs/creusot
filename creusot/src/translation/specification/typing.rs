@@ -61,6 +61,9 @@ fn lower_expr<'tcx>(
     expr: ExprId,
 ) -> Result<Term<'tcx>, Error> {
     trace!("{:?}", &thir[expr].kind);
+    if thir.exprs.is_empty() {
+        return Err(Error {})
+    };
     match thir[expr].kind {
         ExprKind::Scope { value, .. } => lower_expr(tcx, thir, value),
         ExprKind::Block { body: Block { ref stmts, expr: Some(e), .. } } => {

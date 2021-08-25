@@ -9,27 +9,48 @@ use similar::{ChangeTag, TextDiff};
 use std::error::Error;
 use std::io::Write;
 use termcolor::*;
+use mktemp::Temp;
 
 fn main() {
-    should_fail("tests/should_fail/*.rs", run_creusot);
-    should_succeed("tests/should_succeed/*.rs", run_creusot);
+    let temp_file = Temp::new_file().unwrap().release();
+    let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    base_path.pop();
+
+    let mut metadata_file = Command::cargo_bin("cargo-creusot").unwrap();
+    metadata_file.current_dir(base_path);
+    metadata_file
+        .args(&["--package", "creusot-contracts", "--features=contracts"])
+        .env("CREUSOT_METADATA_PATH", &temp_file)
+        .env("RUST_LOG", "debug");
+
+    metadata_file.output().expect("could not dump metadata for `creusot_contracts`");
+
+    should_fail("tests/should_fail/*.rs", |p| run_creusot(p, &temp_file.to_string_lossy()));
+    should_succeed("tests/should_succeed/*.rs", |p| run_creusot(p, &temp_file.to_string_lossy()));
 }
 
-fn run_creusot(file: &Path) -> std::process::Command {
-    let mut cmd = Command::cargo_bin("creusot").unwrap();
-    let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    d.pop();
-    d.push("target");
-    d.push("debug");
+fn run_creusot(file: &Path, contracts: &str) -> std::process::Command {
+    let mut cmd = Command::cargo_bin("creusot-rustc").unwrap();
+    let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    base_path.pop();
+    base_path.push("target");
+    base_path.push("debug");
+
+    let mut creusot_contract_path = base_path.clone();
+    creusot_contract_path.push("libcreusot_contracts.rlib");
 
     cmd.arg("-Zno-codegen");
     cmd.envs(env::vars());
-    cmd.arg(format!("-L{}/", d.display()));
+    cmd.env("CREUSOT_EXPORT_METADATA", "false");
+    cmd.env("CREUSOT_EXTERNS", format!("{{ \"creusot_contracts\": \"{}\" }}", contracts));
+    cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path.display())]);
 
-    d.push("deps");
-    cmd.arg(format!("-Ldependency={}/", d.display()));
+    let mut dep_path = base_path;
+    dep_path.push("deps");
 
+    cmd.arg(format!("-Ldependency={}/", dep_path.display()));
     cmd.arg(format!("{}", file.display()));
+
     cmd
 }
 

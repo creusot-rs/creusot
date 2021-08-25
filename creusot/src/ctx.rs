@@ -14,7 +14,7 @@ use rustc_hir::def::DefKind;
 use rustc_hir::definitions::DefPathData;
 use rustc_resolve::Namespace;
 
-use crate::util;
+use crate::{util, options::Options};
 
 pub struct NameMap<'tcx>(TyCtxt<'tcx>, BTreeMap<(DefId, SubstsRef<'tcx>), String>);
 
@@ -45,12 +45,15 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub translated_items: IndexSet<DefId>,
     pub types: Vec<(TyDecl, Predicate)>,
     pub functions: IndexMap<DefId, Module>,
+    pub externs: IndexMap<DefId, Module>, 
+    pub opts: &'sess Options,
 }
 
 impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
         sess: &'sess Session,
+        opts: &'sess Options,
     ) -> Self {
         Self {
             sess,
@@ -58,6 +61,8 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             translated_items: IndexSet::new(),
             types: Vec::new(),
             functions: IndexMap::new(),
+            externs: IndexMap::new(),
+            opts,
         }
     }
 
@@ -67,16 +72,21 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             return;
         }
 
+        if !crate::util::should_translate(self.tcx, def_id) {
+            info!("Skipping {:?}", def_id);
+            return;
+        }
+
         let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
-        let module = if crate::translation::is_logic(self.tcx, def_id) {
+        let module = if !def_id.is_local() {
+            debug!("translating {:?} as extern", def_id);
+            crate::translation::translate_extern(self, def_id, span)
+        } else if crate::translation::is_logic(self.tcx, def_id) {
             debug!("translating {:?} as logic", def_id);
             crate::translation::translate_logic(self, def_id, span)
         } else if crate::translation::is_predicate(self.tcx, def_id) {
             debug!("translating {:?} as predicate", def_id);
             crate::translation::translate_predicate(self, def_id, span)
-        } else if def_id.krate != rustc_hir::def_id::LOCAL_CRATE {
-            debug!("translating {:?} as extern", def_id);
-            crate::translation::translate_extern(self, def_id, span)
         } else {
             let kind = self.tcx.def_kind(def_id);
             if kind == DefKind::Fn || kind == DefKind::Closure || kind == DefKind::AssocFn {
@@ -121,6 +131,13 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.types.insert(pos, (decl, drop));
     }
 
+    pub fn should_export(&self) -> bool {
+        self.opts.export_metadata
+    }
+
+    pub fn should_compile(&self) -> bool {
+        ! self.opts.dependency
+    }
 }
 
 pub fn clone_item<'tcx>(
