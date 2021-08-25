@@ -3,19 +3,25 @@ use std::collections::{BTreeMap, HashMap};
 
 use crate::mlcfg::{Block, BlockId, Exp, LocalIdent, QName, Type};
 
+#[cfg(feature = "serialize")]
+use serde::{Serialize, Deserialize};
+
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Module {
     pub name: String,
     pub decls: Vec<Decl>,
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Scope {
     pub name: String,
     pub decls: Vec<Decl>,
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Decl {
     FunDecl(CfgFunction),
     ValDecl(ValKind),
@@ -35,6 +41,7 @@ impl Decl {
 }
 
 #[derive(Debug, Default)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Contract {
     pub requires: Vec<Exp>,
     pub ensures: Vec<Exp>,
@@ -86,6 +93,7 @@ impl Contract {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Signature {
     pub name: QName,
     pub retty: Option<Type>,
@@ -94,12 +102,14 @@ pub struct Signature {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Logic {
     pub sig: Signature,
     pub body: Exp,
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct CfgFunction {
     pub sig: Signature,
     pub vars: Vec<(LocalIdent, Type)>,
@@ -108,12 +118,14 @@ pub struct CfgFunction {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Predicate {
     pub sig: Signature,
     pub body: Exp,
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct TyDecl {
     pub ty_name: QName,
     pub ty_params: Vec<String>,
@@ -133,6 +145,7 @@ impl TyDecl {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct DeclClone {
     pub name: QName,
     pub subst: Vec<CloneSubst>,
@@ -140,6 +153,7 @@ pub struct DeclClone {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum CloneSubst {
     Type(LocalIdent, Type),
     Val(LocalIdent, QName),
@@ -153,12 +167,14 @@ impl CloneSubst {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum ValKind {
     Val { sig: Signature },
     Predicate { sig: Signature },
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Use {
     pub name: QName,
 }

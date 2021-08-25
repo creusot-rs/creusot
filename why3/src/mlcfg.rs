@@ -2,6 +2,9 @@ use indexmap::IndexSet;
 use std::collections::HashMap;
 use std::fmt::Display;
 
+#[cfg(feature = "serialize")]
+use serde::{Serialize, Deserialize};
+
 pub mod printer;
 
 pub fn drop_fix() -> QName {
@@ -27,15 +30,18 @@ pub fn drop_ref() -> QName {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Block {
     pub statements: Vec<Statement>,
     pub terminator: Terminator,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct BlockId(pub usize);
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Terminator {
     Goto(BlockId),
     Absurd,
@@ -54,6 +60,7 @@ impl Terminator {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Statement {
     Assign { lhs: LocalIdent, rhs: Exp },
     Invariant(String, Exp),
@@ -62,6 +69,7 @@ pub enum Statement {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Type {
     Bool,
     Char,
@@ -109,6 +117,7 @@ impl Type {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum LocalIdent {
     /// A MIR local along with an optional human-readable name
     Anon(usize, Option<String>),
@@ -150,6 +159,7 @@ impl Display for LocalIdent {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct QName {
     pub module: Vec<String>,
     pub name: String,
@@ -183,6 +193,7 @@ impl From<&str> for QName {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum BinOp {
     And,
     Or,
@@ -199,12 +210,14 @@ pub enum BinOp {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum UnOp {
     Not,
     Neg,
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
     Current(Box<Exp>),
     Final(Box<Exp>),
@@ -469,6 +482,7 @@ impl Exp {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Constant {
     Int(i128, Option<Type>),
     Uint(u128, Option<Type>),
@@ -485,6 +499,7 @@ impl Constant {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Pattern {
     Wildcard,
     VarP(LocalIdent),
