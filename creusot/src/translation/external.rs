@@ -7,14 +7,9 @@ use crate::ctx::*;
 use crate::function::all_generic_decls_for;
 
 // Translate functions that are external to the crate as opaque values
-pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_span::Span) {
-    if !ctx.translated_funcs.insert(def_id) {
-        return;
-    }
-
+pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_span::Span) -> Module {
     if super::is_logic(ctx.tcx, def_id) {
-        translate_logic(ctx, def_id, span);
-        return;
+        return translate_logic(ctx, def_id, span);
     }
 
     let mut names = NameMap::new(ctx.tcx);
@@ -22,8 +17,10 @@ pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_spa
 
     let name = translate_value_id(ctx.tcx, def_id).module.join("");
 
-    let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
+    let mut decls : Vec<_> = super::prelude_imports(true);
+    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
+
     decls.push(Decl::ValDecl(ValKind::Val { sig }));
 
-    ctx.modules.add_module(Module { name, decls });
+    Module { name, decls }
 }

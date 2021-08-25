@@ -28,11 +28,7 @@ pub fn translate_function<'tcx, 'sess>(
     tcx: TyCtxt<'tcx>,
     ctx: &mut TranslationCtx<'sess, 'tcx>,
     def_id: DefId,
-) {
-    if !ctx.translated_funcs.insert(def_id) {
-        return;
-    }
-
+) -> Module {
     let mut names = NameMap::new(tcx);
     let invariants = specification::gather_invariants(ctx, &mut names, def_id);
     let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
@@ -44,7 +40,7 @@ pub fn translate_function<'tcx, 'sess>(
     let func_translator =
         FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, def_id);
     let module = func_translator.translate();
-    ctx.modules.add_module(module);
+    module
 }
 use crate::resolve::EagerResolver;
 
@@ -92,11 +88,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if specification::get_attr(
-                    tcx.get_attrs(*def_id),
-                    &["creusot", "spec", "invariant"],
-                )
-                .is_some()
+                if crate::util::is_invariant(tcx, *def_id)
                 {
                     erased_locals.insert(local);
                 }
@@ -191,7 +183,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             terminator: Terminator::Goto(BlockId(0)),
         };
 
-        let mut decls: Vec<_> = all_generic_decls_for(self.tcx, self.def_id).collect();
+        let mut decls : Vec<_> = super::prelude_imports(true);
+        decls.extend(all_generic_decls_for(self.tcx, self.def_id));
 
         for imp in self.imports {
             decls.push(Decl::UseDecl(Use { name: imp }))

@@ -1,7 +1,7 @@
-use indexmap::IndexSet;
+use indexmap::{IndexSet, IndexMap};
 use std::collections::BTreeMap;
 
-use why3::declaration::{CloneSubst, Decl, DeclClone, Predicate, TyDecl};
+use why3::declaration::{CloneSubst, Decl, DeclClone, Module, Predicate, TyDecl};
 use why3::mlcfg::QName;
 
 use rustc_errors::DiagnosticId;
@@ -14,8 +14,7 @@ use rustc_hir::def::DefKind;
 use rustc_hir::definitions::DefPathData;
 use rustc_resolve::Namespace;
 
-use crate::modules::Modules;
-use crate::translation::specification;
+use crate::util;
 
 pub struct NameMap<'tcx>(TyCtxt<'tcx>, BTreeMap<(DefId, SubstsRef<'tcx>), String>);
 
@@ -46,7 +45,8 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub used_tys: IndexSet<DefId>,
     pub used_traits: IndexSet<DefId>,
     pub translated_funcs: IndexSet<DefId>,
-    pub modules: Modules,
+    pub types: Vec<(TyDecl, Predicate)>,
+    pub functions: IndexMap<DefId, Module>,
 }
 
 impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
@@ -60,43 +60,42 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             used_tys: IndexSet::new(),
             used_traits: IndexSet::new(),
             translated_funcs: IndexSet::new(),
-            modules: Modules::new(),
+            types: Vec::new(),
+            functions: IndexMap::new(),
         }
     }
 
     // Generic entry point for function translation
     pub fn translate_function(&mut self, def_id: DefId) {
-        if self.translated_funcs.contains(&def_id) {
+        if !self.translated_funcs.insert(def_id) {
             return;
         }
 
         let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
-        if crate::translation::is_logic(self.tcx, def_id) {
+        let module = if crate::translation::is_logic(self.tcx, def_id) {
             debug!("translating {:?} as logic", def_id);
-            crate::translation::translate_logic(self, def_id, span);
+            crate::translation::translate_logic(self, def_id, span)
         } else if crate::translation::is_predicate(self.tcx, def_id) {
             debug!("translating {:?} as predicate", def_id);
-            crate::translation::translate_predicate(self, def_id, span);
+            crate::translation::translate_predicate(self, def_id, span)
         } else if def_id.krate != rustc_hir::def_id::LOCAL_CRATE {
             debug!("translating {:?} as extern", def_id);
-            crate::translation::translate_extern(self, def_id, span);
+            crate::translation::translate_extern(self, def_id, span)
         } else {
             let kind = self.tcx.def_kind(def_id);
             if kind == DefKind::Fn || kind == DefKind::Closure || kind == DefKind::AssocFn {
-                let is_spec = specification::get_attr(
-                    self.tcx.get_attrs(def_id),
-                    &["creusot", "spec", "invariant"],
-                )
-                .is_some();
+                let is_spec = util::is_invariant(self.tcx, def_id);
                 if is_spec {
                     return;
                 }
 
-                crate::translation::translate_function(self.tcx, self, def_id);
+                crate::translation::translate_function(self.tcx, self, def_id)
             } else {
-                unimplemented!("{:?} {:?}", def_id, self.tcx.def_kind(def_id));
+                unimplemented!("{:?} {:?}", def_id, self.tcx.def_kind(def_id))
             }
-        }
+        };
+
+        self.functions.insert(def_id, module);
     }
 
     pub fn crash_and_error(&self, span: Span, msg: &str) -> ! {
@@ -115,9 +114,17 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         )
     }
 
-    pub fn add_type(&mut self, ty_decl: TyDecl, drop_pred: Predicate) {
-        self.modules.add_type(ty_decl, drop_pred);
+    pub fn add_type(&mut self, decl: TyDecl, drop: Predicate) {
+        let mut dependencies = decl.used_types();
+        let mut pos = 0;
+        while !dependencies.is_empty() && pos < self.types.len() {
+            dependencies.remove(&self.types[pos].0.ty_name);
+            pos += 1;
+        }
+
+        self.types.insert(pos, (decl, drop));
     }
+
 }
 
 pub fn clone_item<'tcx>(

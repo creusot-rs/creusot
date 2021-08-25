@@ -19,14 +19,19 @@ pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {
     module_id
 }
 
-pub fn no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
+pub fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
     crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "no_translate"])
+        .is_some()
+}
+
+pub fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
+    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "invariant"])
         .is_some()
 }
 
 pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     loop {
-        if no_translate(tcx, def_id) {
+        if is_no_translate(tcx, def_id) {
             return false;
         }
 

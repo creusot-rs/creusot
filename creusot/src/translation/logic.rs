@@ -15,18 +15,15 @@ pub fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
     specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "predicate"]).is_some()
 }
 
-pub fn translate_logic(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) {
-    if !ctx.translated_funcs.insert(def_id) {
-        return;
-    }
-
+pub fn translate_logic(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) -> Module {
     let mut names = NameMap::new(ctx.tcx);
 
     let term = specification::typing::typecheck(ctx.tcx, def_id.expect_local());
     let body = specification::lower_term_to_why3(ctx, &mut names, def_id, term);
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
 
-    let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
+    let mut decls : Vec<_> = super::prelude_imports(true);
+    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
     for ((def_id, subst), clone_name) in names.into_iter() {
         ctx.translate_function(def_id);
@@ -38,14 +35,10 @@ pub fn translate_logic(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_spa
     decls.push(func);
 
     let name = translate_value_id(ctx.tcx, def_id).module.join("");
-    ctx.modules.add_module(Module { name, decls })
+    Module { name, decls }
 }
 
-pub fn translate_predicate(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) {
-    if !ctx.translated_funcs.insert(def_id) {
-        return;
-    }
-
+pub fn translate_predicate(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) -> Module {
     let mut names = NameMap::new(ctx.tcx);
 
     let term = specification::typing::typecheck(ctx.tcx, def_id.expect_local());
@@ -53,7 +46,9 @@ pub fn translate_predicate(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
     let func = Decl::PredDecl(Predicate { sig, body });
 
-    let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
+    let mut decls : Vec<_> = super::prelude_imports(true);
+    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
+
     for ((def_id, subst), clone_name) in names.into_iter() {
         ctx.translate_function(def_id);
         decls.push(clone_item(ctx, def_id, subst, clone_name));
@@ -62,5 +57,5 @@ pub fn translate_predicate(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc
     decls.push(func);
 
     let name = translate_value_id(ctx.tcx, def_id).module.join("");
-    ctx.modules.add_module(Module { name, decls })
+    Module { name, decls }
 }

@@ -5,20 +5,25 @@ pub mod specification;
 pub mod traits;
 pub mod ty;
 
-mod r#extern;
+pub mod external;
 mod logic;
 
+pub use external::translate_extern;
 pub use function::translate_function;
 pub use logic::*;
-pub use r#extern::translate_extern;
 
 use heck::CamelCase;
 
 use rustc_hir::def_id::LOCAL_CRATE;
+use why3::{
+    declaration::{Decl, Module, Predicate, TyDecl, Use},
+    mlcfg::QName,
+};
 
 use std::io::Result;
 
 use why3::mlcfg;
+use crate::ctx::TranslationCtx;
 
 pub fn translate(
     mut ctx: TranslationCtx<'_, '_>,
@@ -43,7 +48,12 @@ pub fn translate(
         None => Box::new(std::io::stdout()),
     };
 
-    print_crate(&mut out, ctx.tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case(), ctx.modules)?;
+    print_crate(
+        &mut out,
+        ctx.tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case(),
+        ctx.types,
+        ctx.functions.values(),
+    )?;
     Ok(())
 }
 
@@ -65,18 +75,53 @@ pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::mlcfg::BinOp {
     }
 }
 
+pub fn prelude_imports(type_import: bool) -> Vec<Decl> {
+    let mut imports = vec![
+        Decl::UseDecl(Use { name: QName::from_string("Ref").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("mach.int.Int").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("mach.int.Int32").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("mach.int.Int64").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("mach.int.UInt32").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("mach.int.UInt64").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("string.Char").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("floating_point.Single").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("floating_point.Double").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("prelude.Prelude").unwrap() }),
+    ];
+
+    if type_import {
+        imports.push(
+            Decl::UseDecl(Use { name: QName::from_string("Type").unwrap() }),
+        );
+    }
+    imports
+}
+
 use std::io::Write;
 
-use crate::ctx::TranslationCtx;
-
-// TODO: integrate crate name into the modules
-fn print_crate<W>(out: &mut W, _name: String, krate: crate::modules::Modules) -> std::io::Result<()>
+fn print_crate<'a, W, I: Iterator<Item = &'a Module>>(
+    out: &mut W,
+    _name: String,
+    types: Vec<(TyDecl, Predicate)>,
+    functions: I,
+) -> std::io::Result<()>
 where
     W: Write,
 {
     let (alloc, mut pe) = mlcfg::printer::PrintEnv::new();
 
-    for modl in krate.into_iter() {
+    let type_mod = Module {
+        name: "Type".into(),
+        decls: prelude_imports(false)
+            .into_iter()
+            .chain(types.into_iter().flat_map(|(ty, p)| [Decl::TyDecl(ty), Decl::PredDecl(p)]))
+            .collect(),
+    };
+
+    type_mod.pretty(&alloc, &mut pe).1.render(120, out)?;
+    writeln!(out)?;
+
+    for modl in functions {
         modl.pretty(&alloc, &mut pe).1.render(120, out)?;
         writeln!(out)?;
     }

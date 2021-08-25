@@ -35,7 +35,7 @@ pub mod util;
 #[allow(dead_code)]
 mod debug;
 
-mod modules;
+// mod modules;
 
 #[allow(dead_code)]
 mod rustc_extensions;
