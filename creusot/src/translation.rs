@@ -15,48 +15,25 @@ pub use r#extern::translate_extern;
 use heck::CamelCase;
 
 use rustc_hir::def_id::LOCAL_CRATE;
-use rustc_hir::Item;
-use rustc_middle::ty::TyCtxt;
-use rustc_session::Session;
 
 use std::io::Result;
 
 use why3::mlcfg;
 
 pub fn translate(
+    mut ctx: TranslationCtx<'_, '_>,
     output: &Option<String>,
-    sess: &Session,
-    tcx: TyCtxt,
 ) -> Result<()> {
-    let hir_map = tcx.hir();
-
-    // Collect the DefIds of all type declarations in this crate
-    let mut ty_decls = Vec::new();
-
-    for (_, mod_items) in tcx.hir_crate(()).modules.iter() {
-        for item_id in mod_items.items.iter() {
-            let item = hir_map.item(*item_id);
-            // What about inline type declarations?
-            // How do we find those?
-            if is_type_decl(item) {
-                ty_decls.push((item.def_id.to_def_id(), item.span));
-            }
-        }
-    }
-
-    // Type translation state, including which datatypes have already been translated.
-    let mut ty_ctx = crate::ctx::TranslationCtx::new(tcx, sess);
-
-    debug!("translating bodies={:?}", tcx.body_owners().collect::<Vec<_>>());   
-    for def_id in tcx.body_owners() {
+    debug!("translating bodies={:?}", ctx.tcx.body_owners().collect::<Vec<_>>());   
+    for def_id in ctx.tcx.body_owners() {
         let def_id = def_id.to_def_id();
-        if !crate::util::should_translate(tcx, def_id) {
+        if !crate::util::should_translate(ctx.tcx, def_id) {
             debug!("Skipping {:?}", def_id);
             continue;
         }
 
         debug!("Translating body {:?}", def_id);
-        ty_ctx.translate_function(def_id);
+        ctx.translate_function(def_id);
     }
 
     use std::fs::File;
@@ -66,19 +43,8 @@ pub fn translate(
         None => Box::new(std::io::stdout()),
     };
 
-    print_crate(&mut out, tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case(), ty_ctx.modules)?;
+    print_crate(&mut out, ctx.tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case(), ctx.modules)?;
     Ok(())
-}
-
-fn is_type_decl(item: &Item) -> bool {
-    match item.kind {
-        // rustc_hir::ItemKind::TyAlias(_, _) => true,
-        rustc_hir::ItemKind::OpaqueTy(_) => unimplemented!(),
-        rustc_hir::ItemKind::Enum(_, _) => true,
-        rustc_hir::ItemKind::Struct(_, _) => true,
-        rustc_hir::ItemKind::Union(_, _) => unimplemented!(),
-        _ => false,
-    }
 }
 
 pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::mlcfg::BinOp {
@@ -100,6 +66,8 @@ pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::mlcfg::BinOp {
 }
 
 use std::io::Write;
+
+use crate::ctx::TranslationCtx;
 
 // TODO: integrate crate name into the modules
 fn print_crate<W>(out: &mut W, _name: String, krate: crate::modules::Modules) -> std::io::Result<()>

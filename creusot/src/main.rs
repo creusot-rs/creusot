@@ -80,7 +80,8 @@ impl Callbacks for ToWhy {
                 .enter(|tcx| {
                     let session = c.session();
 
-                    crate::translation::translate(&self.output_file, session, tcx)
+                    let ctx = ctx::TranslationCtx::new(tcx, session); 
+                    crate::translation::translate(ctx, &self.output_file)
                 })
                 .unwrap();
         } else {
