@@ -80,7 +80,7 @@ impl Callbacks for ToWhy {
                 .enter(|tcx| {
                     let session = c.session();
 
-                    let ctx = ctx::TranslationCtx::new(tcx, session); 
+                    let ctx = ctx::TranslationCtx::new(tcx, session);
                     crate::translation::translate(ctx, &self.output_file)
                 })
                 .unwrap();
@@ -90,12 +90,12 @@ impl Callbacks for ToWhy {
 
         c.session().abort_if_errors();
 
-        Compilation::Stop
+        if continue_compiler() {
+            Compilation::Continue
+        } else {
+            Compilation::Stop
+        }
     }
-}
-
-fn creusot_dependency() -> bool {
-    std::env::var_os("CREUSOT_DEPENDENCY").is_some()
 }
 
 fn main() {
@@ -103,17 +103,17 @@ fn main() {
 
     let mut args = get_args().collect::<Vec<String>>();
 
-    // When invoked by cargo `rustc` is prepended to the argument list so remove it 
+    // When invoked by cargo `rustc` is prepended to the argument list so remove it
     if args.len() > 1 && Path::new(&args[1]).file_stem() == Some("rustc".as_ref()) {
         args.remove(1);
     }
 
     // Check if the crate we are compiling has a dependency on contracts, or if it is the contract crate itself.
     // We use this to disable creusot for dependencies if they don't depend on contracts (since that means they will have no real specification)
-    let has_contracts = args.iter().any(|arg| arg.contains("creusot-contracts") || arg.contains("creusot-contracts="));
+    let has_contracts =
+        args.iter().any(|arg| arg == "creusot_contracts" || arg.contains("creusot-contracts="));
 
     let output_file = args.iter().position(|a| a == "-o").map(|ix| args[ix + 1].clone());
-
 
     args.push(format!("--sysroot={}", sysroot_path()));
     args.push("-Cpanic=abort".to_owned());
@@ -121,4 +121,12 @@ fn main() {
     debug!("creusot args={:?}", args);
     // args.push("-Znll-facts".to_owned());
     RunCompiler::new(&args, &mut ToWhy { output_file, has_contracts }).run().unwrap();
+}
+
+fn creusot_dependency() -> bool {
+    std::env::var_os("CREUSOT_DEPENDENCY").is_some()
+}
+
+fn continue_compiler() -> bool {
+    std::env::var_os("CREUSOT_CONTINUE").is_some()
 }
