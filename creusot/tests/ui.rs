@@ -22,6 +22,7 @@ fn run_creusot(file: &Path) -> std::process::Command {
     d.push("target");
     d.push("debug");
 
+    cmd.arg("-Zno-codegen");
     cmd.envs(env::vars());
     cmd.arg(format!("-L{}/", d.display()));
 
