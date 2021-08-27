@@ -29,7 +29,7 @@ pub fn drop_ref() -> QName {
     QName { module: vec![], name: "drop_ref".into() }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Block {
     pub statements: Vec<Statement>,
@@ -40,7 +40,7 @@ pub struct Block {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct BlockId(pub usize);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Terminator {
     Goto(BlockId),
