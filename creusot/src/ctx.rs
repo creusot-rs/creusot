@@ -42,9 +42,7 @@ impl<'tcx> NameMap<'tcx> {
 pub struct TranslationCtx<'sess, 'tcx> {
     pub sess: &'sess Session,
     pub tcx: TyCtxt<'tcx>,
-    pub used_tys: IndexSet<DefId>,
-    pub used_traits: IndexSet<DefId>,
-    pub translated_funcs: IndexSet<DefId>,
+    pub translated_items: IndexSet<DefId>,
     pub types: Vec<(TyDecl, Predicate)>,
     pub functions: IndexMap<DefId, Module>,
 }
@@ -57,9 +55,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         Self {
             sess,
             tcx,
-            used_tys: IndexSet::new(),
-            used_traits: IndexSet::new(),
-            translated_funcs: IndexSet::new(),
+            translated_items: IndexSet::new(),
             types: Vec::new(),
             functions: IndexMap::new(),
         }
@@ -67,7 +63,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
     // Generic entry point for function translation
     pub fn translate_function(&mut self, def_id: DefId) {
-        if !self.translated_funcs.insert(def_id) {
+        if !self.translated_items.insert(def_id) {
             return;
         }
 

@@ -141,7 +141,7 @@ pub fn check_not_mutally_recursive<'tcx>(
 
 pub fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
     // Check if we've already translated this type before.
-    if !ctx.used_tys.contains(&did) {
+    if !ctx.translated_items.contains(&did) {
         translate_tydecl(ctx, rustc_span::DUMMY_SP, did);
     };
     translate_type_id(ctx.tcx, did)
@@ -161,10 +161,10 @@ fn translate_ty_param(p: Symbol) -> String {
 // Results are accumulated and can be collected at once by consuming the `Ctx`
 pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId) {
     // mark this type as translated
-    if ctx.used_tys.contains(&did) {
+    if ctx.translated_items.contains(&did) {
         return;
     } else {
-        ctx.used_tys.insert(did);
+        ctx.translated_items.insert(did);
     }
 
     // TODO: allow mutually recursive types
