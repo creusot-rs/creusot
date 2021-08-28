@@ -13,20 +13,10 @@ module Type
     | Core_Result_Result_Ok('t)
     | Core_Result_Result_Err('e)
     
-  predicate drop_core_result_result (drop_t : 't -> bool) (drop_e : 'e -> bool) (self : core_result_result 't 'e) = 
-    match (self) with
-      | Core_Result_Result_Ok(a) -> drop_t a
-      | Core_Result_Result_Err(a) -> drop_e a
-      end
   type binarysearch_list 't = 
     | BinarySearch_List_Cons('t, binarysearch_list 't)
     | BinarySearch_List_Nil
     
-  predicate drop_binarysearch_list (drop_t : 't -> bool) (self : binarysearch_list 't) = 
-    match (self) with
-      | BinarySearch_List_Cons(a, b) -> drop_t a && drop_fix b
-      | BinarySearch_List_Nil -> true
-      end
 end
 module BinarySearch_LenLogic
   use Ref
@@ -312,10 +302,10 @@ module BinarySearch_Impl0_Index
     goto BB0
   }
   BB0 {
-    assume { drop_uint orig_ix_3 };
+    assume { Resolve2.impl orig_ix_3 };
     orig_ix_3 <- ix_2;
     assume { Resolve2.impl orig_ix_3 };
-    assume { drop_ref l_4 };
+    assume { Resolve3.impl l_4 };
     l_4 <- self_1;
     assume { Resolve3.impl self_1 };
     goto BB1
@@ -347,7 +337,7 @@ module BinarySearch_Impl0_Index
     t_10 <- (let Type.BinarySearch_List_Cons(a, _) = l_4 in a);
     ls_11 <- (let Type.BinarySearch_List_Cons(_, a) = l_4 in a);
     assume { Resolve3.impl l_4 };
-    assume { drop_uint _13 };
+    assume { Resolve2.impl _13 };
     _13 <- ix_2;
     _12 <- _13 > (0 : usize);
     switch (_12)
@@ -363,7 +353,7 @@ module BinarySearch_Impl0_Index
     assume { Resolve9.impl ls_11 };
     _14 <- _15;
     assume { Resolve9.impl _15 };
-    assume { drop_ref l_4 };
+    assume { Resolve3.impl l_4 };
     l_4 <- _14;
     ix_2 <- ix_2 - (1 : usize);
     _8 <- ();
@@ -421,7 +411,7 @@ module BinarySearch_Impl0_Len
   }
   BB0 {
     len_2 <- (0 : usize);
-    assume { drop_ref l_3 };
+    assume { Resolve1.impl l_3 };
     l_3 <- self_1;
     assume { Resolve1.impl self_1 };
     goto BB1
@@ -445,7 +435,7 @@ module BinarySearch_Impl0_Len
     assume { Resolve2.impl _7 };
     _4 <- ();
     assume { Resolve3.impl _4 };
-    assume { drop_uint _0 };
+    assume { Resolve4.impl _0 };
     _0 <- len_2;
     assume { Resolve4.impl len_2 };
     return _0
@@ -456,7 +446,7 @@ module BinarySearch_Impl0_Len
     len_2 <- len_2 + (1 : usize);
     _9 <- ls_8;
     assume { Resolve5.impl ls_8 };
-    assume { drop_ref l_3 };
+    assume { Resolve1.impl l_3 };
     l_3 <- _9;
     _6 <- ();
     assume { Resolve3.impl _6 };
@@ -508,13 +498,13 @@ module BinarySearch_BinarySearch
   use Type
   clone BinarySearch_LenLogic as LenLogic0 with type t = uint32
   clone BinarySearch_Get as Get1 with type t = uint32
-  clone BinarySearch_Impl0_Index as Index7 with type t = uint32
+  clone BinarySearch_Impl0_Index as Index8 with type t = uint32
   clone BinarySearch_Impl0_Len as Len2 with type t = uint32
   clone CreusotContracts_Builtins_Impl7_Resolve as Resolve4
-  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve9
+  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve7
   clone CreusotContracts_Builtins_Impl11_Resolve as Resolve6
   clone CreusotContracts_Builtins_Impl12_Resolve as Resolve5
-  clone CreusotContracts_Builtins_Impl13_Resolve as Resolve8 with type t = uint32
+  clone CreusotContracts_Builtins_Impl13_Resolve as Resolve9 with type t = uint32
   clone CreusotContracts_Builtins_Impl13_Resolve as Resolve3 with type t = Type.binarysearch_list uint32
   let rec cfg impl (o_arr_1 : Type.binarysearch_list uint32) (o_elem_2 : uint32) : Type.core_result_result usize usize
     requires {forall k2 : (int) . forall k1 : (int) . Get1.impl o_arr_1 k1 <= Get1.impl o_arr_1 k2}
@@ -612,7 +602,7 @@ module BinarySearch_BinarySearch
     goto BB6
   }
   BB6 {
-    assume { drop_uint _17 };
+    assume { Resolve7.impl _17 };
     _17 <- size_8;
     _16 <- _17 > (1 : usize);
     switch (_16)
@@ -626,19 +616,19 @@ module BinarySearch_BinarySearch
     goto BB9
   }
   BB8 {
-    assume { Resolve9.impl size_8 };
+    assume { Resolve7.impl size_8 };
     assume { Resolve5.impl _16 };
     _11 <- ();
     assume { Resolve6.impl _11 };
     _35 <- arr_1;
     assume { Resolve3.impl arr_1 };
-    assume { drop_uint _36 };
+    assume { Resolve7.impl _36 };
     _36 <- base_10;
-    _34 <- Index7.impl _35 _36;
+    _34 <- Index8.impl _35 _36;
     goto BB15
   }
   BB9 {
-    assume { drop_uint _19 };
+    assume { Resolve7.impl _19 };
     _19 <- size_8;
     _20 <- (2 : usize) = (0 : usize);
     assert { not _20 };
@@ -647,22 +637,22 @@ module BinarySearch_BinarySearch
   BB10 {
     assume { Resolve5.impl _20 };
     half_18 <- _19 / (2 : usize);
-    assume { drop_uint _22 };
+    assume { Resolve7.impl _22 };
     _22 <- base_10;
-    assume { drop_uint _23 };
+    assume { Resolve7.impl _23 };
     _23 <- half_18;
     mid_21 <- _22 + _23;
     _28 <- arr_1;
-    assume { drop_uint _29 };
+    assume { Resolve7.impl _29 };
     _29 <- mid_21;
-    _27 <- Index7.impl _28 _29;
+    _27 <- Index8.impl _28 _29;
     goto BB11
   }
   BB11 {
-    assume { drop_uint _26 };
+    assume { Resolve4.impl _26 };
     _26 <- _27;
-    assume { Resolve8.impl _27 };
-    assume { drop_uint _30 };
+    assume { Resolve9.impl _27 };
+    assume { Resolve4.impl _30 };
     _30 <- elem_2;
     _25 <- _26 > _30;
     switch (_25)
@@ -672,40 +662,40 @@ module BinarySearch_BinarySearch
       end
   }
   BB12 {
-    assume { Resolve9.impl mid_21 };
+    assume { Resolve7.impl mid_21 };
     assume { Resolve5.impl _25 };
-    assume { drop_uint _24 };
+    assume { Resolve7.impl _24 };
     _24 <- base_10;
-    assume { Resolve9.impl base_10 };
+    assume { Resolve7.impl base_10 };
     goto BB14
   }
   BB13 {
-    assume { Resolve9.impl base_10 };
+    assume { Resolve7.impl base_10 };
     assume { Resolve5.impl _25 };
-    assume { drop_uint _24 };
+    assume { Resolve7.impl _24 };
     _24 <- mid_21;
-    assume { Resolve9.impl mid_21 };
+    assume { Resolve7.impl mid_21 };
     goto BB14
   }
   BB14 {
-    assume { drop_uint base_10 };
+    assume { Resolve7.impl base_10 };
     base_10 <- _24;
-    assume { drop_uint _31 };
+    assume { Resolve7.impl _31 };
     _31 <- half_18;
-    assume { Resolve9.impl half_18 };
+    assume { Resolve7.impl half_18 };
     size_8 <- size_8 - _31;
-    assume { Resolve9.impl _31 };
+    assume { Resolve7.impl _31 };
     _15 <- ();
     assume { Resolve6.impl _15 };
     goto BB5
   }
   BB15 {
-    assume { drop_uint cmp_33 };
+    assume { Resolve4.impl cmp_33 };
     cmp_33 <- _34;
-    assume { Resolve8.impl _34 };
-    assume { drop_uint _38 };
+    assume { Resolve9.impl _34 };
+    assume { Resolve4.impl _38 };
     _38 <- cmp_33;
-    assume { drop_uint _39 };
+    assume { Resolve4.impl _39 };
     _39 <- elem_2;
     _37 <- _38 = _39;
     switch (_37)
@@ -718,18 +708,18 @@ module BinarySearch_BinarySearch
     assume { Resolve4.impl elem_2 };
     assume { Resolve4.impl cmp_33 };
     assume { Resolve5.impl _37 };
-    assume { drop_uint _40 };
+    assume { Resolve7.impl _40 };
     _40 <- base_10;
-    assume { Resolve9.impl base_10 };
+    assume { Resolve7.impl base_10 };
     _0 <- Type.Core_Result_Result_Ok(_40);
     goto BB21
   }
   BB17 {
     assume { Resolve5.impl _37 };
-    assume { drop_uint _42 };
+    assume { Resolve4.impl _42 };
     _42 <- cmp_33;
     assume { Resolve4.impl cmp_33 };
-    assume { drop_uint _43 };
+    assume { Resolve4.impl _43 };
     _43 <- elem_2;
     assume { Resolve4.impl elem_2 };
     _41 <- _42 < _43;
@@ -741,18 +731,18 @@ module BinarySearch_BinarySearch
   }
   BB18 {
     assume { Resolve5.impl _41 };
-    assume { drop_uint _45 };
+    assume { Resolve7.impl _45 };
     _45 <- base_10;
-    assume { Resolve9.impl base_10 };
+    assume { Resolve7.impl base_10 };
     _44 <- _45 + (1 : usize);
     _0 <- Type.Core_Result_Result_Err(_44);
     goto BB20
   }
   BB19 {
     assume { Resolve5.impl _41 };
-    assume { drop_uint _46 };
+    assume { Resolve7.impl _46 };
     _46 <- base_10;
-    assume { Resolve9.impl base_10 };
+    assume { Resolve7.impl base_10 };
     _0 <- Type.Core_Result_Result_Err(_46);
     goto BB20
   }

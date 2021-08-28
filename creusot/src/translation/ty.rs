@@ -1,12 +1,11 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::mir::Mutability;
-use rustc_middle::ty::{self, subst::InternalSubsts, AdtDef, Ty, TyCtxt, TyKind::*, VariantDef};
+use rustc_middle::ty::{self, subst::InternalSubsts, Ty, TyKind::*};
 use rustc_span::Span;
 use rustc_span::Symbol;
 use std::collections::VecDeque;
 
-use why3::declaration::{Contract, Predicate, Signature, TyDecl};
-use why3::mlcfg::{Exp as MlE, LocalIdent, Pattern, Pattern::*, QName, Type as MlT};
+use why3::declaration::TyDecl;
+use why3::mlcfg::{QName, Type as MlT};
 
 use crate::ctx::*;
 
@@ -202,134 +201,8 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
         ml_ty_def.push((var_name.name(), field_tys));
     }
 
-    let pred = drop_pred_decl(ctx, &ty_args, adt, did);
-
     let ty_decl = TyDecl { ty_name, ty_params: ty_args, ty_constructors: ml_ty_def };
-    ctx.add_type(ty_decl, pred);
-}
-
-fn variant_pattern(tcx: TyCtxt<'_>, variant: &VariantDef) -> Pattern {
-    let field_pats =
-        ('a'..).take(variant.fields.len()).map(|c| VarP(c.to_string().into())).collect();
-
-    let ty_name = translate_value_id(tcx, variant.def_id);
-    ConsP(ty_name, field_pats)
-}
-
-pub fn drop_predicate<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, ty: Ty<'tcx>) -> MlE {
-    drop_pred_body(ctx, ty, None)
-}
-
-fn drop_pred_name<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, did: DefId) -> QName {
-    let mut name = translate_ty_name(ctx, did);
-    name.name = format!("drop_{}", name.name);
-    name
-}
-
-// Generate the drop predicate for a specific type
-fn drop_pred_decl(
-    ctx: &mut TranslationCtx<'_, '_>,
-    generics: &[String],
-    adt: &AdtDef,
-    did: DefId,
-) -> Predicate {
-    let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
-    let mut branches = Vec::new();
-
-    for variant in &adt.variants {
-        let drop_fields =
-            variant.fields.iter().map(|f| drop_pred_body(ctx, f.ty(ctx.tcx, substs), Some(did)));
-
-        let field_names: Vec<_> = ('a'..).take(variant.fields.len()).collect();
-
-        let drop_variant = field_names
-            .iter()
-            .map(|c| MlE::Var(c.to_string().into()))
-            .zip(drop_fields)
-            .map(|(arg, field_drop)| field_drop.app_to(arg))
-            .reduce(MlE::conj)
-            .unwrap_or_else(MlE::mk_true);
-        branches.push((variant_pattern(ctx.tcx, variant), drop_variant));
-    }
-
-    let drop_arg = MlE::Var("self".into());
-
-    let type_drop = if branches.len() == 1 {
-        let (pat, variant) = branches.remove(0);
-        MlE::Let { pattern: pat, arg: box drop_arg, body: box variant }
-    } else {
-        MlE::Match(box drop_arg, branches)
-    };
-
-    use why3::mlcfg::{Type, Type::*};
-    let mut pred_deps: Vec<_> = generics
-        .iter()
-        .map(|arg| (format!("drop_{}", arg).into(), Type::predicate(TVar(arg.clone()))))
-        .collect();
-
-    pred_deps.push((
-        "self".into(),
-        TApp(
-            box TConstructor(translate_ty_name(ctx, did)),
-            generics.iter().map(|g| TVar(g.clone())).collect(),
-        ),
-    ));
-
-    let name = drop_pred_name(ctx, did);
-
-    Predicate {
-        sig: Signature { name, args: pred_deps, contract: Contract::new(), retty: None },
-        body: type_drop,
-    }
-}
-
-/// Create the body for a drop predicate of type `ty` and name `did`.
-pub fn drop_pred_body<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
-    ty: Ty<'tcx>,
-    rec_call_did: Option<DefId>,
-) -> MlE {
-    match ty.kind() {
-        Bool => MlE::QVar(why3::mlcfg::drop_bool()),
-        Int(_) => MlE::QVar(why3::mlcfg::drop_int()),
-        Uint(_) => MlE::QVar(why3::mlcfg::drop_uint()),
-        Float(_) => MlE::QVar(why3::mlcfg::drop_float()),
-        // Recursive calls should be killed off.
-        Adt(def, _) if Some(def.did) == rec_call_did => MlE::QVar(why3::mlcfg::drop_fix()),
-        Adt(def, s) if def.is_box() => drop_pred_body(ctx, s[0].expect_ty(), rec_call_did),
-        Adt(def, s) => {
-            let args = s.types().map(|ty| drop_pred_body(ctx, ty, rec_call_did)).collect();
-            let drop_func_name = drop_pred_name(ctx, def.did);
-            MlE::Call(box MlE::QVar(drop_func_name), args)
-        }
-        Tuple(s) => {
-            let binder_name: LocalIdent = "tup".into();
-            let field_names: Vec<LocalIdent> =
-                ('a'..).map(|c| c.to_string().into()).take(s.types().count()).collect();
-
-            let body = s
-                .types()
-                .zip(field_names.iter())
-                .map(|(ty, v)| drop_pred_body(ctx, ty, rec_call_did).app_to(v.clone().into()))
-                .reduce(MlE::conj)
-                .unwrap_or_else(MlE::mk_true);
-
-            let field_pat = Pattern::TupleP(field_names.into_iter().map(VarP).collect());
-
-            MlE::Abs(
-                binder_name.clone(),
-                box MlE::Let { pattern: field_pat, arg: box MlE::Var(binder_name), body: box body },
-            )
-        }
-        Param(s) => MlE::Var(format!("drop_{}", translate_ty_param(s.name)).into()),
-        Ref(_, _, Mutability::Mut) => MlE::QVar(why3::mlcfg::drop_mut_ref()),
-        Ref(_, _, Mutability::Not) => MlE::QVar(why3::mlcfg::drop_ref()),
-
-        _ => ctx.crash_and_error(
-            rustc_span::DUMMY_SP,
-            &format!("cannot generate drop predicate for type {:?}", ty),
-        ),
-    }
+    ctx.add_type(ty_decl);
 }
 
 fn intty_to_ty(ity: &rustc_middle::ty::IntTy) -> MlT {

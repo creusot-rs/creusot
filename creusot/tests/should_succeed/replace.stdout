@@ -13,16 +13,9 @@ module Type
     | Core_Option_Option_None
     | Core_Option_Option_Some('t)
     
-  predicate drop_core_option_option (drop_t : 't -> bool) (self : core_option_option 't) = 
-    match (self) with
-      | Core_Option_Option_None -> true
-      | Core_Option_Option_Some(a) -> drop_t a
-      end
   type replace_something  = 
     | Replace_Something(uint32, core_option_option (replace_something))
     
-  predicate drop_replace_something (self : replace_something) = 
-    let Replace_Something(a, b) = self in drop_uint a && drop_core_option_option drop_fix b
 end
 module Replace_Test
   use Ref
@@ -47,9 +40,9 @@ module Replace_Test
     goto BB0
   }
   BB0 {
-    assume { Type.drop_replace_something _3 };
+    assume { (fun x -> true) _3 };
     _3 <- b_2;
-    assume { Type.drop_replace_something a_1 };
+    assume { (fun x -> true) a_1 };
     a_1 <- _3;
     goto BB1
   }

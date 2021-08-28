@@ -2,7 +2,6 @@ use indexmap::IndexMap;
 use rustc_hir::def_id::{CrateNum, DefId};
 use rustc_middle::ty::Visibility;
 
-use super::logic::*;
 use why3::declaration::{Decl, Module, ValKind::Val};
 
 use crate::ctx::*;

@@ -99,8 +99,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 // Drop
                 let ty = place.ty(self.body, self.tcx).ty;
                 let pl_exp = self.translate_rplace(&place);
-                let assumption: Exp =
-                    crate::translation::ty::drop_predicate(&mut self.ctx, ty).app_to(pl_exp);
+                let assumption: Exp = self.resolve_predicate_of(ty).app_to(pl_exp);
                 self.emit_statement(Statement::Assume(assumption));
 
                 // Assign

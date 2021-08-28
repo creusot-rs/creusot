@@ -16,7 +16,7 @@ use heck::CamelCase;
 
 use rustc_hir::def_id::LOCAL_CRATE;
 use why3::{
-    declaration::{Decl, Module, Predicate, TyDecl, Use},
+    declaration::{Decl, Module, TyDecl, Use},
     mlcfg::QName,
 };
 
@@ -111,7 +111,7 @@ use self::external::load_exports;
 fn print_crate<'a, W, I: Iterator<Item = &'a Module>>(
     out: &mut W,
     _name: String,
-    types: Vec<(TyDecl, Predicate)>,
+    types: Vec<TyDecl>,
     functions: I,
 ) -> std::io::Result<()>
 where
@@ -123,7 +123,7 @@ where
         name: "Type".into(),
         decls: prelude_imports(false)
             .into_iter()
-            .chain(types.into_iter().flat_map(|(ty, p)| [Decl::TyDecl(ty), Decl::PredDecl(p)]))
+            .chain(types.into_iter().flat_map(|ty| [Decl::TyDecl(ty)]))
             .collect(),
     };
 

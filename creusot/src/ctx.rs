@@ -1,7 +1,7 @@
 use indexmap::{IndexSet, IndexMap};
 use std::collections::BTreeMap;
 
-use why3::declaration::{CloneSubst, Decl, DeclClone, Module, Predicate, TyDecl};
+use why3::declaration::{CloneSubst, Decl, DeclClone, Module, TyDecl};
 use why3::mlcfg::QName;
 
 use rustc_errors::DiagnosticId;
@@ -49,7 +49,7 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub sess: &'sess Session,
     pub tcx: TyCtxt<'tcx>,
     pub translated_items: IndexSet<DefId>,
-    pub types: Vec<(TyDecl, Predicate)>,
+    pub types: Vec<TyDecl>,
     pub functions: IndexMap<DefId, Module>,
     pub externs: IndexMap<DefId, Module>, 
     pub opts: &'sess Options,
@@ -126,15 +126,15 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         )
     }
 
-    pub fn add_type(&mut self, decl: TyDecl, drop: Predicate) {
+    pub fn add_type(&mut self, decl: TyDecl) {
         let mut dependencies = decl.used_types();
         let mut pos = 0;
         while !dependencies.is_empty() && pos < self.types.len() {
-            dependencies.remove(&self.types[pos].0.ty_name);
+            dependencies.remove(&self.types[pos].ty_name);
             pos += 1;
         }
 
-        self.types.insert(pos, (decl, drop));
+        self.types.insert(pos, decl);
     }
 
     pub fn should_export(&self) -> bool {
