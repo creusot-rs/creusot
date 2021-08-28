@@ -43,7 +43,9 @@ pub fn translate_predicate(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc
 
     let term = specification::typing::typecheck(ctx.tcx, def_id.expect_local());
     let body = specification::lower_term_to_why3(ctx, &mut names, def_id, term);
-    let sig = crate::util::signature_of(ctx, &mut names, def_id);
+    let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
+    sig.retty = None;
+    
     let func = Decl::PredDecl(Predicate { sig, body });
 
     let mut decls : Vec<_> = super::prelude_imports(true);
