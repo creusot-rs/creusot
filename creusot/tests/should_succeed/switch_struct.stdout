@@ -9,17 +9,17 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type m 't = 
-    | M_F(uint32)
-    | M_G('t)
+  type switchstruct_m 't = 
+    | SwitchStruct_M_F(uint32)
+    | SwitchStruct_M_G('t)
     
-  predicate drop_m (drop_t : 't -> bool) (self : m 't) = 
+  predicate drop_switchstruct_m (drop_t : 't -> bool) (self : switchstruct_m 't) = 
     match (self) with
-      | M_F(a) -> drop_uint a
-      | M_G(a) -> drop_t a
+      | SwitchStruct_M_F(a) -> drop_uint a
+      | SwitchStruct_M_G(a) -> drop_t a
       end
 end
-module Test
+module SwitchStruct_Test
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -31,9 +31,9 @@ module Test
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec cfg impl (o_o_1 : Type.m uint32) : bool = 
+  let rec cfg impl (o_o_1 : Type.switchstruct_m uint32) : bool = 
   var _0 : bool;
-  var o_1 : Type.m uint32;
+  var o_1 : Type.switchstruct_m uint32;
   var _2 : isize;
   var field1_3 : uint32;
   var _4 : uint32;
@@ -45,8 +45,8 @@ module Test
   }
   BB0 {
     switch (o_1)
-      | Type.M_F(_) -> goto BB1
-      | Type.M_G(_) -> goto BB2
+      | Type.SwitchStruct_M_F(_) -> goto BB1
+      | Type.SwitchStruct_M_G(_) -> goto BB2
       | _ -> goto BB3
       end
   }
@@ -57,8 +57,8 @@ module Test
   BB2 {
     assume { drop_int _2 };
     assume { drop_uint field2_5 };
-    field2_5 <- (let Type.M_G(a) = o_1 in a);
-    assume { Type.drop_m drop_uint o_1 };
+    field2_5 <- (let Type.SwitchStruct_M_G(a) = o_1 in a);
+    assume { Type.drop_switchstruct_m drop_uint o_1 };
     assume { drop_uint _6 };
     _6 <- field2_5;
     assume { drop_uint field2_5 };
@@ -66,14 +66,14 @@ module Test
     goto BB5
   }
   BB3 {
-    assume { Type.drop_m drop_uint o_1 };
+    assume { Type.drop_switchstruct_m drop_uint o_1 };
     assume { drop_int _2 };
     absurd
   }
   BB4 {
     assume { drop_uint field1_3 };
-    field1_3 <- (let Type.M_F(a) = o_1 in a);
-    assume { Type.drop_m drop_uint o_1 };
+    field1_3 <- (let Type.SwitchStruct_M_F(a) = o_1 in a);
+    assume { Type.drop_switchstruct_m drop_uint o_1 };
     assume { drop_uint _4 };
     _4 <- field1_3;
     assume { drop_uint field1_3 };
@@ -85,7 +85,7 @@ module Test
   }
   
 end
-module Main
+module SwitchStruct_Main
   use Ref
   use mach.int.Int
   use mach.int.Int32

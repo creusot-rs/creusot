@@ -206,9 +206,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
 
     let mut segments = Vec::new();
 
-    if def_path.krate.as_u32() != 0 {
-        segments.push(tcx.crate_name(def_id.krate).to_string().to_camel_case())
-    }
+    segments.push(tcx.crate_name(def_id.krate).to_string().to_camel_case());
 
     for seg in def_path.data[..].iter() {
         match seg.data {

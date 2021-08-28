@@ -9,17 +9,17 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type option 't = 
-    | Option_Some('t)
-    | Option_None
+  type whilelet_option 't = 
+    | WhileLet_Option_Some('t)
+    | WhileLet_Option_None
     
-  predicate drop_option (drop_t : 't -> bool) (self : option 't) = 
+  predicate drop_whilelet_option (drop_t : 't -> bool) (self : whilelet_option 't) = 
     match (self) with
-      | Option_Some(a) -> drop_t a
-      | Option_None -> true
+      | WhileLet_Option_Some(a) -> drop_t a
+      | WhileLet_Option_None -> true
       end
 end
-module Main
+module WhileLet_Main
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -33,20 +33,20 @@ module Main
   use Type
   let rec cfg impl () : () = 
   var _0 : ();
-  var a_1 : Type.option int32;
-  var b_2 : borrowed (Type.option int32);
+  var a_1 : Type.whilelet_option int32;
+  var b_2 : borrowed (Type.whilelet_option int32);
   var _4 : ();
   var _5 : isize;
-  var _6 : Type.option int32;
+  var _6 : Type.whilelet_option int32;
   var _7 : ();
   {
     goto BB0
   }
   BB0 {
-    a_1 <- Type.Option_Some((10 : int32));
+    a_1 <- Type.WhileLet_Option_Some((10 : int32));
     b_2 <- borrow_mut a_1;
     a_1 <-  ^ b_2;
-    assume { Type.drop_option drop_int a_1 };
+    assume { Type.drop_whilelet_option drop_int a_1 };
     goto BB1
   }
   BB1 {
@@ -55,7 +55,7 @@ module Main
   }
   BB2 {
     switch ( * b_2)
-      | Type.Option_Some(_) -> goto BB3
+      | Type.WhileLet_Option_Some(_) -> goto BB3
       | _ -> goto BB4
       end
   }
@@ -70,10 +70,10 @@ module Main
     return _0
   }
   BB5 {
-    _6 <- Type.Option_None;
-    assume { Type.drop_option drop_int ( * b_2) };
+    _6 <- Type.WhileLet_Option_None;
+    assume { Type.drop_whilelet_option drop_int ( * b_2) };
     b_2 <- { b_2 with current = _6 };
-    assume { Type.drop_option drop_int _6 };
+    assume { Type.drop_whilelet_option drop_int _6 };
     _4 <- ();
     assume { (fun tup -> let () = tup in true) _4 };
     goto BB1

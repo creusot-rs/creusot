@@ -18,17 +18,17 @@ module Type
       | Core_Option_Option_None -> true
       | Core_Option_Option_Some(a) -> drop_t a
       end
-  type list  = 
-    | List_Cons(uint32, list)
-    | List_Nil
+  type allzero_list  = 
+    | AllZero_List_Cons(uint32, allzero_list)
+    | AllZero_List_Nil
     
-  predicate drop_list (self : list) = 
+  predicate drop_allzero_list (self : allzero_list) = 
     match (self) with
-      | List_Cons(a, b) -> drop_uint a && drop_fix b
-      | List_Nil -> true
+      | AllZero_List_Cons(a, b) -> drop_uint a && drop_fix b
+      | AllZero_List_Nil -> true
       end
 end
-module Len
+module AllZero_Len
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -40,13 +40,13 @@ module Len
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec function impl (l : Type.list) : int = 
+  let rec function impl (l : Type.allzero_list) : int = 
     match (l) with
-      | Type.List_Cons(_, ls) -> Int32.to_int (1 : int32) + impl ls
-      | Type.List_Nil -> Int32.to_int (0 : int32)
+      | Type.AllZero_List_Cons(_, ls) -> Int32.to_int (1 : int32) + impl ls
+      | Type.AllZero_List_Nil -> Int32.to_int (0 : int32)
       end
 end
-module Get
+module AllZero_Get
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -58,16 +58,16 @@ module Get
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec function impl (l : Type.list) (ix : int) : Type.core_option_option uint32 = 
+  let rec function impl (l : Type.allzero_list) (ix : int) : Type.core_option_option uint32 = 
     match (l) with
-      | Type.List_Cons(x, ls) -> match (ix = Int32.to_int (0 : int32)) with
+      | Type.AllZero_List_Cons(x, ls) -> match (ix = Int32.to_int (0 : int32)) with
         | True -> Type.Core_Option_Option_Some(x)
         | False -> impl ls (ix - Int32.to_int (1 : int32))
         end
-      | Type.List_Nil -> Type.Core_Option_Option_None
+      | Type.AllZero_List_Nil -> Type.Core_Option_Option_None
       end
 end
-module AllZero
+module AllZero_AllZero
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -79,21 +79,21 @@ module AllZero
   use floating_point.Double
   use prelude.Prelude
   use Type
-  clone Len as Len0
-  clone Get as Get1
-  let rec cfg impl (o_l_1 : borrowed (Type.list)) : ()
+  clone AllZero_Len as Len0
+  clone AllZero_Get as Get1
+  let rec cfg impl (o_l_1 : borrowed (Type.allzero_list)) : ()
     ensures { Len0.impl ( * o_l_1) = Len0.impl ( ^ o_l_1) }
     ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * o_l_1) -> Get1.impl ( ^ o_l_1) i = Type.Core_Option_Option_Some((0 : uint32)) }
     
    = 
   var _0 : ();
-  var l_1 : borrowed (Type.list);
-  var loop_l_2 : borrowed (Type.list);
+  var l_1 : borrowed (Type.allzero_list);
+  var loop_l_2 : borrowed (Type.allzero_list);
   var _5 : ();
   var _6 : isize;
   var value_7 : borrowed uint32;
-  var next_8 : borrowed (Type.list);
-  var _9 : borrowed (Type.list);
+  var next_8 : borrowed (Type.allzero_list);
+  var _9 : borrowed (Type.allzero_list);
   var _10 : ();
   {
     l_1 <- o_l_1;
@@ -111,7 +111,7 @@ module AllZero
   }
   BB2 {
     switch ( * loop_l_2)
-      | Type.List_Cons(_, _) -> goto BB3
+      | Type.AllZero_List_Cons(_, _) -> goto BB3
       | _ -> goto BB4
       end
   }
@@ -126,10 +126,10 @@ module AllZero
     return _0
   }
   BB5 {
-    value_7 <- borrow_mut (let Type.List_Cons(a, _) =  * loop_l_2 in a);
-    loop_l_2 <- { loop_l_2 with current = (let Type.List_Cons(a, b) =  * loop_l_2 in Type.List_Cons( ^ value_7, b)) };
-    next_8 <- borrow_mut (let Type.List_Cons(_, a) =  * loop_l_2 in a);
-    loop_l_2 <- { loop_l_2 with current = (let Type.List_Cons(a, b) =  * loop_l_2 in Type.List_Cons(a,  ^ next_8)) };
+    value_7 <- borrow_mut (let Type.AllZero_List_Cons(a, _) =  * loop_l_2 in a);
+    loop_l_2 <- { loop_l_2 with current = (let Type.AllZero_List_Cons(a, b) =  * loop_l_2 in Type.AllZero_List_Cons( ^ value_7, b)) };
+    next_8 <- borrow_mut (let Type.AllZero_List_Cons(_, a) =  * loop_l_2 in a);
+    loop_l_2 <- { loop_l_2 with current = (let Type.AllZero_List_Cons(a, b) =  * loop_l_2 in Type.AllZero_List_Cons(a,  ^ next_8)) };
     assume { drop_mut_ref loop_l_2 };
     value_7 <- { value_7 with current = (0 : uint32) };
     assume { drop_mut_ref value_7 };
@@ -144,7 +144,7 @@ module AllZero
   }
   
 end
-module Main
+module AllZero_Main
   use Ref
   use mach.int.Int
   use mach.int.Int32

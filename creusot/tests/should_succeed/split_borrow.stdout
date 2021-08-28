@@ -9,13 +9,13 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type myint  = 
-    | MyInt(usize)
+  type splitborrow_myint  = 
+    | SplitBorrow_MyInt(usize)
     
-  predicate drop_myint (self : myint) = 
-    let MyInt(a) = self in drop_uint a
+  predicate drop_splitborrow_myint (self : splitborrow_myint) = 
+    let SplitBorrow_MyInt(a) = self in drop_uint a
 end
-module Z
+module SplitBorrow_Z
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -38,7 +38,7 @@ module Z
   }
   
 end
-module Main
+module SplitBorrow_Main
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -50,28 +50,28 @@ module Main
   use floating_point.Double
   use prelude.Prelude
   use Type
-  clone Z as Z0
+  clone SplitBorrow_Z as Z0
   let rec cfg impl () : () = 
   var _0 : ();
-  var x_1 : (Type.myint, Type.myint);
-  var _2 : Type.myint;
-  var _3 : Type.myint;
-  var y_4 : borrowed (Type.myint, Type.myint);
+  var x_1 : (Type.splitborrow_myint, Type.splitborrow_myint);
+  var _2 : Type.splitborrow_myint;
+  var _3 : Type.splitborrow_myint;
+  var y_4 : borrowed (Type.splitborrow_myint, Type.splitborrow_myint);
   var _5 : ();
   var _6 : bool;
-  var _7 : Type.myint;
-  var _8 : Type.myint;
+  var _7 : Type.splitborrow_myint;
+  var _8 : Type.splitborrow_myint;
   var _9 : usize;
   {
     goto BB0
   }
   BB0 {
-    _2 <- Type.MyInt((1 : usize));
-    _3 <- Type.MyInt((2 : usize));
+    _2 <- Type.SplitBorrow_MyInt((1 : usize));
+    _3 <- Type.SplitBorrow_MyInt((2 : usize));
     x_1 <- (_2, _3);
     y_4 <- borrow_mut x_1;
     x_1 <-  ^ y_4;
-    assume { (fun tup -> let (a, b) = tup in Type.drop_myint a && Type.drop_myint b) x_1 };
+    assume { (fun tup -> let (a, b) = tup in Type.drop_splitborrow_myint a && Type.drop_splitborrow_myint b) x_1 };
     _6 <- Z0.impl ();
     goto BB1
   }
@@ -84,27 +84,27 @@ module Main
   }
   BB2 {
     assume { drop_bool _6 };
-    _7 <- Type.MyInt((4 : usize));
-    assume { Type.drop_myint (let (_, a) =  * y_4 in a) };
+    _7 <- Type.SplitBorrow_MyInt((4 : usize));
+    assume { Type.drop_splitborrow_myint (let (_, a) =  * y_4 in a) };
     y_4 <- { y_4 with current = (let (a, b) =  * y_4 in (a, _7)) };
-    assume { Type.drop_myint _7 };
+    assume { Type.drop_splitborrow_myint _7 };
     _5 <- ();
     assume { (fun tup -> let () = tup in true) _5 };
     goto BB4
   }
   BB3 {
     assume { drop_bool _6 };
-    _8 <- Type.MyInt((10 : usize));
-    assume { Type.drop_myint (let (a, _) =  * y_4 in a) };
+    _8 <- Type.SplitBorrow_MyInt((10 : usize));
+    assume { Type.drop_splitborrow_myint (let (a, _) =  * y_4 in a) };
     y_4 <- { y_4 with current = (let (a, b) =  * y_4 in (_8, b)) };
-    assume { Type.drop_myint _8 };
+    assume { Type.drop_splitborrow_myint _8 };
     _5 <- ();
     assume { (fun tup -> let () = tup in true) _5 };
     goto BB4
   }
   BB4 {
     assume { drop_uint _9 };
-    _9 <- (let Type.MyInt(a) = let (a, _) =  * y_4 in a in a);
+    _9 <- (let Type.SplitBorrow_MyInt(a) = let (a, _) =  * y_4 in a in a);
     assume { drop_mut_ref y_4 };
     assume { drop_uint _9 };
     _0 <- ();

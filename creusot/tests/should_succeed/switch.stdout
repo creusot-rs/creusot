@@ -9,17 +9,17 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type option 't = 
-    | Option_Some('t)
-    | Option_None
+  type switch_option 't = 
+    | Switch_Option_Some('t)
+    | Switch_Option_None
     
-  predicate drop_option (drop_t : 't -> bool) (self : option 't) = 
+  predicate drop_switch_option (drop_t : 't -> bool) (self : switch_option 't) = 
     match (self) with
-      | Option_Some(a) -> drop_t a
-      | Option_None -> true
+      | Switch_Option_Some(a) -> drop_t a
+      | Switch_Option_None -> true
       end
 end
-module Test
+module Switch_Test
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -31,9 +31,9 @@ module Test
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec cfg impl (o_o_1 : Type.option uint32) : bool = 
+  let rec cfg impl (o_o_1 : Type.switch_option uint32) : bool = 
   var _0 : bool;
-  var o_1 : Type.option uint32;
+  var o_1 : Type.switch_option uint32;
   var _2 : isize;
   var x_3 : uint32;
   var _4 : uint32;
@@ -43,8 +43,8 @@ module Test
   }
   BB0 {
     switch (o_1)
-      | Type.Option_Some(_) -> goto BB1
-      | Type.Option_None -> goto BB2
+      | Type.Switch_Option_Some(_) -> goto BB1
+      | Type.Switch_Option_None -> goto BB2
       | _ -> goto BB3
       end
   }
@@ -53,20 +53,20 @@ module Test
     goto BB4
   }
   BB2 {
-    assume { Type.drop_option drop_uint o_1 };
+    assume { Type.drop_switch_option drop_uint o_1 };
     assume { drop_int _2 };
     _0 <- false;
     goto BB5
   }
   BB3 {
-    assume { Type.drop_option drop_uint o_1 };
+    assume { Type.drop_switch_option drop_uint o_1 };
     assume { drop_int _2 };
     absurd
   }
   BB4 {
     assume { drop_uint x_3 };
-    x_3 <- (let Type.Option_Some(a) = o_1 in a);
-    assume { Type.drop_option drop_uint o_1 };
+    x_3 <- (let Type.Switch_Option_Some(a) = o_1 in a);
+    assume { Type.drop_switch_option drop_uint o_1 };
     assume { drop_uint _4 };
     _4 <- x_3;
     assume { drop_uint x_3 };
@@ -78,7 +78,7 @@ module Test
   }
   
 end
-module Test2
+module Switch_Test2
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -90,9 +90,9 @@ module Test2
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec cfg impl (o_o_1 : (Type.option uint32, uint32)) : uint32 = 
+  let rec cfg impl (o_o_1 : (Type.switch_option uint32, uint32)) : uint32 = 
   var _0 : uint32;
-  var o_1 : (Type.option uint32, uint32);
+  var o_1 : (Type.switch_option uint32, uint32);
   var _2 : isize;
   var x_3 : uint32;
   {
@@ -101,8 +101,8 @@ module Test2
   }
   BB0 {
     switch (let (a, _) = o_1 in a)
-      | Type.Option_Some(_) -> goto BB1
-      | Type.Option_None -> goto BB2
+      | Type.Switch_Option_Some(_) -> goto BB1
+      | Type.Switch_Option_None -> goto BB2
       | _ -> goto BB3
       end
   }
@@ -114,18 +114,18 @@ module Test2
     assume { drop_int _2 };
     assume { drop_uint _0 };
     _0 <- (let (_, a) = o_1 in a);
-    assume { (fun tup -> let (a, b) = tup in Type.drop_option drop_uint a && drop_uint b) o_1 };
+    assume { (fun tup -> let (a, b) = tup in Type.drop_switch_option drop_uint a && drop_uint b) o_1 };
     goto BB5
   }
   BB3 {
-    assume { (fun tup -> let (a, b) = tup in Type.drop_option drop_uint a && drop_uint b) o_1 };
+    assume { (fun tup -> let (a, b) = tup in Type.drop_switch_option drop_uint a && drop_uint b) o_1 };
     assume { drop_int _2 };
     absurd
   }
   BB4 {
     assume { drop_uint x_3 };
-    x_3 <- (let Type.Option_Some(a) = let (a, _) = o_1 in a in a);
-    assume { (fun tup -> let (a, b) = tup in Type.drop_option drop_uint a && drop_uint b) o_1 };
+    x_3 <- (let Type.Switch_Option_Some(a) = let (a, _) = o_1 in a in a);
+    assume { (fun tup -> let (a, b) = tup in Type.drop_switch_option drop_uint a && drop_uint b) o_1 };
     assume { drop_uint _0 };
     _0 <- x_3;
     assume { drop_uint x_3 };
@@ -136,7 +136,7 @@ module Test2
   }
   
 end
-module Main
+module Switch_Main
   use Ref
   use mach.int.Int
   use mach.int.Int32

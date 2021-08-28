@@ -18,13 +18,13 @@ module Type
       | Core_Option_Option_None -> true
       | Core_Option_Option_Some(a) -> drop_t a
       end
-  type something  = 
-    | Something(uint32, core_option_option (something))
+  type replace_something  = 
+    | Replace_Something(uint32, core_option_option (replace_something))
     
-  predicate drop_something (self : something) = 
-    let Something(a, b) = self in drop_uint a && drop_core_option_option drop_fix b
+  predicate drop_replace_something (self : replace_something) = 
+    let Replace_Something(a, b) = self in drop_uint a && drop_core_option_option drop_fix b
 end
-module Test
+module Replace_Test
   use Ref
   use mach.int.Int
   use mach.int.Int32
@@ -36,20 +36,20 @@ module Test
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec cfg impl (o_a_1 : Type.something) (o_b_2 : Type.something) : () = 
+  let rec cfg impl (o_a_1 : Type.replace_something) (o_b_2 : Type.replace_something) : () = 
   var _0 : ();
-  var a_1 : Type.something;
-  var b_2 : Type.something;
-  var _3 : Type.something;
+  var a_1 : Type.replace_something;
+  var b_2 : Type.replace_something;
+  var _3 : Type.replace_something;
   {
     a_1 <- o_a_1;
     b_2 <- o_b_2;
     goto BB0
   }
   BB0 {
-    assume { Type.drop_something _3 };
+    assume { Type.drop_replace_something _3 };
     _3 <- b_2;
-    assume { Type.drop_something a_1 };
+    assume { Type.drop_replace_something a_1 };
     a_1 <- _3;
     goto BB1
   }
@@ -64,12 +64,12 @@ module Test
     goto BB4
   }
   BB4 {
-    assume { Type.drop_something a_1 };
+    assume { Type.drop_replace_something a_1 };
     return _0
   }
   
 end
-module Main
+module Replace_Main
   use Ref
   use mach.int.Int
   use mach.int.Int32
