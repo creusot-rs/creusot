@@ -22,8 +22,6 @@ fn main() {
   let exit_code = Command::new(creusot_driver_path)
     .args(args)
     .args(vec!["--sysroot".into(), sysroot_path()])
-    .arg("-Cpanic=abort".to_owned())
-    .arg("-Coverflow-checks=off".to_owned())
     .status()
     .expect("creusot-driver failed to execute");
 

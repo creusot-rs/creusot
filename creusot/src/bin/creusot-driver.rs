@@ -15,17 +15,14 @@ fn main() {
 
     let mut args = get_args().collect::<Vec<_>>();
 
-    // When invoked by cargo `rustc` is prepended to the argument list so remove it
-    if args.len() > 1 && Path::new(&args[1]).file_stem() == Some("rustc".as_ref()) {
-        args.remove(1);
-    }
-
     let opts = Options::from_args_and_env(&args);
 
     if !opts.has_contracts || opts.be_rustc {
         rustc_driver::main();
     }
 
+    args.push("-Cpanic=abort".to_owned());
+    args.push("-Coverflow-checks=off".to_owned());
     debug!("creusot args={:?}", args);
 
     let mut callbacks =

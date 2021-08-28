@@ -20,9 +20,15 @@ fn main() {
         (@arg flags: ... "cargo flags")
     ).get_matches_from(std::env::args());
 
+    let cargo_cmd = if std::env::var_os("CREUSOT_CONTINUE").is_some() {
+        "build"
+    } else {
+        "check"
+    };
+
     let mut cmd = Command::new(cargo_path);
     cmd
-    	.arg("check")
+        .arg(&cargo_cmd)
     	.arg("-q")
     	.args(std::env::args().skip(1))
     	.env("RUSTC_WRAPPER", creusot_rustc_path);
