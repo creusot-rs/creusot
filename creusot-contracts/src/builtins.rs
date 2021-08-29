@@ -106,48 +106,6 @@ pub unsafe trait Resolve {
     }
 }
 
-unsafe impl Resolve for u32 {
-    predicate! { fn resolve(self) -> bool {
-        true
-    } }
-}
-
-unsafe impl Resolve for usize {
-    predicate! { fn resolve(self) -> bool {
-        true
-    } }
-}
-
-unsafe impl Resolve for i32 {
-    predicate! { fn resolve(self) -> bool {
-        true
-    } }
-}
-
-unsafe impl Resolve for isize {
-    predicate! { fn resolve(self) -> bool {
-        true
-    } }
-}
-
-unsafe impl Resolve for () {
-    predicate! { fn resolve(self) -> bool {
-        true
-    } }
-}
-
-unsafe impl Resolve for bool {
-    predicate! { fn resolve(self) -> bool {
-        true
-    } }
-}
-
-unsafe impl<T> Resolve for &T {
-    predicate! { fn resolve(self) -> bool {
-        true
-    } }
-}
-
 unsafe impl<T1: Resolve, T2: Resolve> Resolve for (T1, T2) {
     predicate! { fn resolve(self) -> bool { {
         Resolve::resolve(self.0) && Resolve::resolve(self.1)
