@@ -201,6 +201,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         }
 
         for ((def_id, subst), clone_name) in self.clone_names.into_iter() {
+            self.ctx.translate_function(def_id);
             decls.push(clone_item(self.ctx, def_id, subst, clone_name));
         }
 

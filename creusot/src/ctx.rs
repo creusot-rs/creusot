@@ -78,6 +78,10 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             return;
         }
 
+        if self.tcx.trait_of_item(def_id).is_some() {
+            return;
+        }
+
         if !crate::util::should_translate(self.tcx, def_id) {
             info!("Skipping {:?}", def_id);
             return;
@@ -224,7 +228,12 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
 
     let mut segments = Vec::new();
 
-    segments.push(tcx.crate_name(def_id.krate).to_string().to_camel_case());
+    let mut crate_name = tcx.crate_name(def_id.krate).to_string().to_camel_case();
+    if crate_name.chars().nth(0).unwrap().is_numeric() {
+        crate_name = format!("C{}", crate_name);
+    }
+
+    segments.push(crate_name);
 
     for seg in def_path.data[..].iter() {
         match seg.data {
