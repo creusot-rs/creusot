@@ -22,7 +22,7 @@ pub fn translate_logic(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_spa
     let body = specification::lower_term_to_why3(ctx, &mut names, def_id, term);
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
 
-    let mut decls : Vec<_> = super::prelude_imports(true);
+    let mut decls: Vec<_> = super::prelude_imports(true);
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
     for ((def_id, subst), clone_name) in names.into_iter() {
@@ -38,17 +38,21 @@ pub fn translate_logic(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_spa
     Module { name, decls }
 }
 
-pub fn translate_predicate(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) -> Module {
+pub fn translate_predicate(
+    ctx: &mut TranslationCtx,
+    def_id: DefId,
+    _span: rustc_span::Span,
+) -> Module {
     let mut names = NameMap::new(ctx.tcx);
 
     let term = specification::typing::typecheck(ctx.tcx, def_id.expect_local());
     let body = specification::lower_term_to_why3(ctx, &mut names, def_id, term);
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
     sig.retty = None;
-    
+
     let func = Decl::PredDecl(Predicate { sig, body });
 
-    let mut decls : Vec<_> = super::prelude_imports(true);
+    let mut decls: Vec<_> = super::prelude_imports(true);
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
     for ((def_id, subst), clone_name) in names.into_iter() {

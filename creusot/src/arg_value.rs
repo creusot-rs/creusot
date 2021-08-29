@@ -24,7 +24,7 @@ pub fn arg_value<'a, T: Deref<Target = str>>(
 
         match arg.next().or_else(|| args.next()) {
             Some(v) if pred(v) => return Some(v),
-            _ => {},
+            _ => {}
         }
     }
     None

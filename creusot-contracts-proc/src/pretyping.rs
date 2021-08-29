@@ -38,11 +38,11 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
             Ok(quote! { #func (#(#args),*)})
         }
         RT::Cast(_) => todo!("Cast"),
-        RT::Field(TermField {base, member, ..}) => {
+        RT::Field(TermField { base, member, .. }) => {
             let base = encode_term(*base)?;
 
             Ok(quote!({ #base . #member }))
-        },
+        }
         RT::Group(_) => todo!("Group"),
         RT::If(TermIf { cond, then_branch, else_branch, .. }) => {
             let cond = encode_term(*cond)?;

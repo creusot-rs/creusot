@@ -1,8 +1,8 @@
 use rustc_driver::{Callbacks, Compilation};
 use rustc_interface::{interface::Compiler, Config, Queries};
 
-use crate::ctx;
 use crate::cleanup_spec_closures::*;
+use crate::ctx;
 use crate::options::Options;
 
 pub struct ToWhy {
@@ -10,13 +10,9 @@ pub struct ToWhy {
 }
 
 impl ToWhy {
-	pub fn new(
-        opts: Options,
-	) -> Self {
-		ToWhy {
-			opts,
-		}
-	}
+    pub fn new(opts: Options) -> Self {
+        ToWhy { opts }
+    }
 }
 
 impl Callbacks for ToWhy {
@@ -41,12 +37,11 @@ impl Callbacks for ToWhy {
             .enter(|tcx| {
                 let session = c.session();
 
-                let ctx = ctx::TranslationCtx::new(tcx, session, &self.opts); 
+                let ctx = ctx::TranslationCtx::new(tcx, session, &self.opts);
 
                 crate::translation::translate(ctx)
             })
             .unwrap();
-
 
         c.session().abort_if_errors();
 

@@ -128,7 +128,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         &mut self,
         def_id: DefId,
         subst: SubstsRef<'tcx>,
-        sp: rustc_span::Span,
+        _sp: rustc_span::Span,
     ) -> QName {
         if def_id == self.def_id {
             return super::translate_value_id(self.tcx, self.def_id);

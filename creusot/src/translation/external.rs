@@ -22,7 +22,7 @@ fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span
 
     let name = translate_value_id(ctx.tcx, def_id).module.join("");
 
-    let mut decls : Vec<_> = super::prelude_imports(true);
+    let mut decls: Vec<_> = super::prelude_imports(true);
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
     decls.push(Decl::ValDecl(Val { sig }));
@@ -30,8 +30,8 @@ fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span
     Module { name, decls }
 }
 
-use rustc_index::vec::Idx;
 use rustc_hir::def_id::LOCAL_CRATE;
+use rustc_index::vec::Idx;
 
 fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
     out.as_ref().map(|s| s.clone().into()).unwrap_or_else(|| {
@@ -46,17 +46,20 @@ fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
 
 pub fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
     let out_filename = export_file(ctx, out);
-    
-    debug!("dump_exports={:?}", out_filename);  
 
-    let exports : IndexMap<_, _>= ctx.functions.iter().filter(|(def_id, _)| {
-        ctx.tcx.visibility(**def_id) == Visibility::Public && def_id.is_local()
-    })
-    .map(|(def_id, func)| (def_id.expect_local().index(), func)).collect();
+    debug!("dump_exports={:?}", out_filename);
 
-    let res = std::fs::File::create(out_filename).and_then(|mut file| {
-        serde_json::to_writer(&mut file, &exports).map_err(|e| e.into())
-    });
+    let exports: IndexMap<_, _> = ctx
+        .functions
+        .iter()
+        .filter(|(def_id, _)| {
+            ctx.tcx.visibility(**def_id) == Visibility::Public && def_id.is_local()
+        })
+        .map(|(def_id, func)| (def_id.expect_local().index(), func))
+        .collect();
+
+    let res = std::fs::File::create(out_filename)
+        .and_then(|mut file| serde_json::to_writer(&mut file, &exports).map_err(|e| e.into()));
 
     if let Err(err) = res {
         warn!("failed to dump creusot metadata err={:?}", err);
@@ -73,7 +76,11 @@ pub fn load_exports(ctx: &mut TranslationCtx) {
 use rustc_metadata::creader::CStore;
 use rustc_middle::middle::cstore::CrateStore;
 use std::collections::HashMap;
-fn load_crate_creusot_metadata(cstore: &CStore, externs: &HashMap<String, String>, cr: CrateNum) -> IndexMap<DefId, Module> {
+fn load_crate_creusot_metadata(
+    cstore: &CStore,
+    externs: &HashMap<String, String>,
+    cr: CrateNum,
+) -> IndexMap<DefId, Module> {
     let creusot_path = if let Some(path) = externs.get(&cstore.crate_name(cr).to_string()) {
         debug!("loading crate {:?} from extern path", cr);
         path.into()
@@ -90,21 +97,22 @@ fn load_crate_creusot_metadata(cstore: &CStore, externs: &HashMap<String, String
         warn!("could not load metadata for crate={:?} err={:?}", cstore.crate_name(cr), err);
         return IndexMap::new();
     }
-    let map_res : Result<IndexMap<u32, _>, _> = serde_json::from_reader(rdr.unwrap());
+    let map_res: Result<IndexMap<u32, _>, _> = serde_json::from_reader(rdr.unwrap());
 
     if let Err(err) = map_res {
         warn!("error reading metadata for crate={:?} err={:?}", cr, err);
         return IndexMap::new();
     }
 
-    map_res.unwrap().into_iter().map(|(ix, val)| {
-        (DefId { krate: cr, index: ix.into() }, val)
-    }).collect()
-
+    map_res
+        .unwrap()
+        .into_iter()
+        .map(|(ix, val)| (DefId { krate: cr, index: ix.into() }, val))
+        .collect()
 }
 
 use rustc_middle::middle::cstore::CrateSource;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 /// Constructs a path to creusot metadata (if present) using the crate source
 /// We store the metadata in a `.creusot` json file alongside the rest of the build artifacts
 fn crate_creusot_data_path(src: &CrateSource) -> PathBuf {

@@ -37,9 +37,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         let trait_name = translate_trait_name(self.tcx, def_id);
         let mut decls: Vec<_> = super::prelude_imports(true);
-        decls.extend(
-            own_generic_decls_for(self.tcx, def_id)
-        );
+        decls.extend(own_generic_decls_for(self.tcx, def_id));
 
         // The first predicate is a trait reference so we skip it
         for super_trait in traits_used_by(self.tcx, def_id).filter(|t| t.def_id() != def_id) {
@@ -52,7 +50,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             match item.kind {
                 AssocKind::Fn => {
                     if is_contract(self.tcx, item.def_id) {
-                        continue
+                        continue;
                     }
 
                     let mut sig = crate::util::signature_of(self, &mut names, item.def_id);

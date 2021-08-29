@@ -1,11 +1,11 @@
+use super::typing::{LogicalOp, Pattern, Term};
 use crate::ctx::*;
 use crate::rustc_extensions;
 use crate::translation::binop_to_binop;
 use crate::translation::builtins;
 use crate::translation::constant;
 use crate::translation::ty::translate_ty;
-use super::typing::{LogicalOp, Pattern, Term};
-use why3::mlcfg::{BinOp, Exp, Pattern as Pat, QName};
+use why3::mlcfg::{BinOp, Exp, Pattern as Pat};
 
 pub fn lower_term_to_why3<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,

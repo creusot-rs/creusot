@@ -41,8 +41,8 @@ mod rustc_extensions;
 
 mod cleanup_spec_closures;
 
-pub mod callbacks;
 pub mod arg_value;
+pub mod callbacks;
 pub mod options;
 
 use translation::*;

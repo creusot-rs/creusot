@@ -1,4 +1,4 @@
-use indexmap::{IndexSet, IndexMap};
+use indexmap::{IndexMap, IndexSet};
 use std::collections::BTreeMap;
 
 use why3::declaration::{CloneSubst, Decl, DeclClone, Module, TyDecl};
@@ -14,7 +14,7 @@ use rustc_hir::def::DefKind;
 use rustc_hir::definitions::DefPathData;
 use rustc_resolve::Namespace;
 
-use crate::{util, options::Options};
+use crate::{options::Options, util};
 
 pub struct NameMap<'tcx>(TyCtxt<'tcx>, BTreeMap<(DefId, SubstsRef<'tcx>), String>);
 
@@ -51,16 +51,12 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub translated_items: IndexSet<DefId>,
     pub types: Vec<TyDecl>,
     pub functions: IndexMap<DefId, Module>,
-    pub externs: IndexMap<DefId, Module>, 
+    pub externs: IndexMap<DefId, Module>,
     pub opts: &'sess Options,
 }
 
 impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
-    pub fn new(
-        tcx: TyCtxt<'tcx>,
-        sess: &'sess Session,
-        opts: &'sess Options,
-    ) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, sess: &'sess Session, opts: &'sess Options) -> Self {
         Self {
             sess,
             tcx,
@@ -146,7 +142,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn should_compile(&self) -> bool {
-        ! self.opts.dependency
+        !self.opts.dependency
     }
 }
 

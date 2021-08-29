@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, HashMap};
 use crate::mlcfg::{Block, BlockId, Exp, LocalIdent, QName, Type};
 
 #[cfg(feature = "serialize")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]

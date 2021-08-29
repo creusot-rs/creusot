@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fmt::Display;
 
 #[cfg(feature = "serialize")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 pub mod printer;
 

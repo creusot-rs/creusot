@@ -3,7 +3,6 @@ extern crate rustc_middle;
 extern crate rustc_span;
 extern crate rustc_target;
 
-
 use log::*;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_middle::thir::{
@@ -65,7 +64,7 @@ fn lower_expr<'tcx>(
 ) -> Result<Term<'tcx>, Error> {
     trace!("{:?}", &thir[expr].kind);
     if thir.exprs.is_empty() {
-        return Err(Error {})
+        return Err(Error {});
     };
     match thir[expr].kind {
         ExprKind::Scope { value, .. } => lower_expr(tcx, thir, value),
@@ -201,12 +200,11 @@ fn lower_expr<'tcx>(
             }
         }
         ExprKind::Field { lhs, name } => {
-            let pat = field_pattern(thir[lhs].ty, name).expect("lower_expr: could not make pattern for field");
+            let pat = field_pattern(thir[lhs].ty, name)
+                .expect("lower_expr: could not make pattern for field");
             let lhs = lower_expr(tcx, thir, lhs)?;
 
-            Ok(Term::Let {
-                pattern: pat, arg: box lhs, body: box Term::Var("a".into())
-            })
+            Ok(Term::Let { pattern: pat, arg: box lhs, body: box Term::Var("a".into()) })
         }
         ref ek => todo!("lower_expr: {:?}", ek),
     }
@@ -350,13 +348,10 @@ fn lower_quantifier<'tcx>(
     }
 }
 
-fn field_pattern<'tcx>(
-    ty: Ty<'tcx>, 
-    field: Field,
-) -> Option<Pattern<'tcx>> {
+fn field_pattern<'tcx>(ty: Ty<'tcx>, field: Field) -> Option<Pattern<'tcx>> {
     match ty.kind() {
         TyKind::Tuple(fields) => {
-            let mut fields : Vec<_> = (0..fields.len()).map(|_| Pattern::Wildcard).collect();
+            let mut fields: Vec<_> = (0..fields.len()).map(|_| Pattern::Wildcard).collect();
             fields[field.as_usize()] = Pattern::Binder("a".into());
 
             Some(Pattern::Tuple(fields))

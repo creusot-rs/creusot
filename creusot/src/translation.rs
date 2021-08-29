@@ -22,12 +22,10 @@ use why3::{
 
 use std::io::Result;
 
-use why3::mlcfg;
 use crate::ctx::TranslationCtx;
+use why3::mlcfg;
 
-pub fn translate(
-    mut ctx: TranslationCtx<'_, '_>,
-) -> Result<()> {
+pub fn translate(mut ctx: TranslationCtx<'_, '_>) -> Result<()> {
     load_exports(&mut ctx);
 
     for def_id in ctx.tcx.body_owners() {
@@ -42,7 +40,7 @@ pub fn translate(
     }
 
     if ctx.should_export() {
-        external::dump_exports(&ctx, &ctx.opts.metadata_path);        
+        external::dump_exports(&ctx, &ctx.opts.metadata_path);
     }
 
     if ctx.should_compile() {
@@ -97,9 +95,7 @@ pub fn prelude_imports(type_import: bool) -> Vec<Decl> {
     ];
 
     if type_import {
-        imports.push(
-            Decl::UseDecl(Use { name: QName::from_string("Type").unwrap() }),
-        );
+        imports.push(Decl::UseDecl(Use { name: QName::from_string("Type").unwrap() }));
     }
     imports
 }

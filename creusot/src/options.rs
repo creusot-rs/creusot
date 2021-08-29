@@ -1,6 +1,6 @@
 use crate::arg_value;
-use std::collections::HashMap;
 use serde_json::from_str;
+use std::collections::HashMap;
 
 pub struct Options {
     pub extern_paths: HashMap<String, String>,
@@ -8,7 +8,7 @@ pub struct Options {
     pub continue_compilation: bool,
     pub has_contracts: bool,
     pub be_rustc: bool,
-    pub export_metadata: bool, 
+    pub export_metadata: bool,
     pub dependency: bool,
     pub output_file: Option<String>,
 }
@@ -27,7 +27,7 @@ impl Options {
         let dependency = arg_value::arg_value(&args, "--cap-lints", |val| val == "allow").is_some();
 
         let output_file = args.iter().position(|a| a == "-o").map(|ix| args[ix + 1].clone());
-        
+
         let extern_paths = match creusot_externs() {
             Some(val) => from_str(&val).expect("could not parse CREUSOT_EXTERNS"),
             None => HashMap::new(),
@@ -48,7 +48,6 @@ impl Options {
 
 fn creusot_externs() -> Option<String> {
     std::env::var_os("CREUSOT_EXTERNS").map(|m| m.to_string_lossy().to_string())
-
 }
 fn continue_compiler() -> bool {
     std::env::var_os("CREUSOT_CONTINUE").is_some()

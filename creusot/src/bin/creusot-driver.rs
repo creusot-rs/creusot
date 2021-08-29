@@ -6,9 +6,9 @@ extern crate rustc_driver;
 extern crate log;
 
 use creusot::callbacks::*;
-use rustc_driver::RunCompiler;
-use std::{env::args as get_args, path::Path};
 use creusot::options::Options;
+use rustc_driver::RunCompiler;
+use std::env::args as get_args;
 
 fn main() {
     env_logger::init();
@@ -25,8 +25,7 @@ fn main() {
     args.push("-Coverflow-checks=off".to_owned());
     debug!("creusot args={:?}", args);
 
-    let mut callbacks =
-        ToWhy::new(opts);
+    let mut callbacks = ToWhy::new(opts);
 
     RunCompiler::new(&args, &mut callbacks).run().unwrap();
 }

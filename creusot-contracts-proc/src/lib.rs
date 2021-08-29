@@ -2,13 +2,11 @@ extern crate proc_macro;
 
 mod pretyping;
 
-use std::string::ParseError;
-
 use proc_macro2::Span;
 use syn::*;
 
-use proc_macro::{TokenStream as TS1};
-use quote::{TokenStreamExt, quote};
+use proc_macro::TokenStream as TS1;
+use quote::quote;
 
 fn generate_unique_ident(prefix: &str) -> Ident {
     let uuid = uuid::Uuid::new_v4();
@@ -17,14 +15,10 @@ fn generate_unique_ident(prefix: &str) -> Ident {
     Ident::new(&ident, Span::call_site())
 }
 
-fn parse_def_or_decl(tokens: TS1) -> Result<Signature>
-{
+fn parse_def_or_decl(tokens: TS1) -> Result<Signature> {
     syn::parse::<ItemFn>(tokens.clone())
         .map(|r| r.sig)
-        .or_else(|_| {
-            syn::parse::<TraitItemMethod>(tokens.clone())
-                .map(|r| r.sig)
-        })
+        .or_else(|_| syn::parse::<TraitItemMethod>(tokens.clone()).map(|r| r.sig))
 }
 
 #[proc_macro_attribute]
@@ -40,7 +34,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     };
 
     let req_name = generate_unique_ident(&sig.ident.to_string());
-    let mut req_sig = sig.clone();
+    let mut req_sig = sig;
     req_sig.ident = req_name.clone();
     req_sig.output = parse_quote! { -> bool };
     let req_body = pretyping::encode_term(p).unwrap();

@@ -28,7 +28,6 @@ use crate::ctx::*;
 use crate::translation::specification;
 use crate::translation::{traits, ty};
 
-
 pub fn translate_function<'tcx, 'sess>(
     tcx: TyCtxt<'tcx>,
     ctx: &mut TranslationCtx<'sess, 'tcx>,
@@ -93,8 +92,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_invariant(tcx, *def_id)
-                {
+                if crate::util::is_invariant(tcx, *def_id) {
                     erased_locals.insert(local);
                 }
             }
@@ -189,7 +187,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             terminator: Terminator::Goto(BlockId(0)),
         };
 
-        let mut decls : Vec<_> = super::prelude_imports(true);
+        let mut decls: Vec<_> = super::prelude_imports(true);
         decls.extend(all_generic_decls_for(self.tcx, self.def_id));
 
         for imp in self.imports {
@@ -273,7 +271,11 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         let pre_contract =
             crate::specification::contract_of(self.ctx.tcx, trait_method_item.def_id).unwrap();
-        Some(pre_contract.check_and_lower(self.ctx, &mut self.clone_names,trait_method_item.def_id))
+        Some(pre_contract.check_and_lower(
+            self.ctx,
+            &mut self.clone_names,
+            trait_method_item.def_id,
+        ))
     }
 
     fn resolve_predicate_of(&mut self, ty: Ty<'tcx>) -> Exp {

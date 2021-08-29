@@ -30,7 +30,9 @@ fn main() {
     metadata_file.output().expect("could not dump metadata for `creusot_contracts`");
 
     should_fail("tests/should_fail/*.rs", |p| run_creusot(p, &temp_file.to_string_lossy()));
-    should_succeed("tests/should_succeed/**/*.rs", |p| run_creusot(p, &temp_file.to_string_lossy()));
+    should_succeed("tests/should_succeed/**/*.rs", |p| {
+        run_creusot(p, &temp_file.to_string_lossy())
+    });
 }
 
 fn run_creusot(file: &Path, contracts: &str) -> std::process::Command {
