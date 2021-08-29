@@ -138,6 +138,7 @@ pub fn lower_pat_to_why3<'tcx>(
         Pattern::Tuple(pats) => {
             Pat::TupleP(pats.into_iter().map(|pat| lower_pat_to_why3(ctx, names, pat)).collect())
         }
+        #[allow(unreachable_patterns)]
         _ => todo!("{:?}", pat),
     }
 }

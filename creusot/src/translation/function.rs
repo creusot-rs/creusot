@@ -10,6 +10,7 @@ use rustc_middle::{
 use std::collections::BTreeMap;
 use why3::declaration::*;
 use why3::mlcfg::{self, Exp::*, Statement::*, *};
+use why3::QName;
 
 use rustc_middle::mir::Place;
 use rustc_middle::ty::subst::GenericArg;
@@ -204,7 +205,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         }
 
         let name = translate_value_id(self.tcx, self.def_id).module.join("");
-        let func_name = QName { module: vec![], name: "impl".into() };
+        let func_name = "impl".into();
 
         let sig = Signature { name: func_name, retty: Some(retty), args, contract };
 

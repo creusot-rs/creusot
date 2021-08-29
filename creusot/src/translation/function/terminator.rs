@@ -14,7 +14,7 @@ use rustc_middle::{
 use rustc_session::Session;
 use rustc_target::abi::VariantIdx;
 
-use why3::mlcfg::QName;
+use why3::QName;
 use why3::mlcfg::{BinOp, BlockId, Constant, Exp, Pattern, Statement, Terminator as MlT};
 
 use super::FunctionTranslator;

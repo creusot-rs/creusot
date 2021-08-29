@@ -1,7 +1,8 @@
 use indexmap::IndexSet;
 use std::collections::{BTreeMap, HashMap};
 
-use crate::mlcfg::{Block, BlockId, Exp, LocalIdent, QName, Type};
+use crate::mlcfg::{Block, BlockId, Exp, LocalIdent, Type};
+use crate::*;
 
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
@@ -95,7 +96,7 @@ impl Contract {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Signature {
-    pub name: QName,
+    pub name: Ident,
     pub retty: Option<Type>,
     pub args: Vec<(LocalIdent, Type)>,
     pub contract: Contract,
@@ -127,7 +128,7 @@ pub struct Predicate {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct TyDecl {
-    pub ty_name: QName,
+    pub ty_name: Ident,
     pub ty_params: Vec<String>,
     pub ty_constructors: Vec<(String, Vec<Type>)>,
 }

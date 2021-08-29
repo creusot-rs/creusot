@@ -17,7 +17,7 @@ use heck::CamelCase;
 use rustc_hir::def_id::LOCAL_CRATE;
 use why3::{
     declaration::{Decl, Module, TyDecl, Use},
-    mlcfg::QName,
+    QName,
 };
 
 use std::io::Result;

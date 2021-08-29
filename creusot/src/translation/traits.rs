@@ -16,7 +16,8 @@ use rustc_middle::ty::{
 };
 use why3::{
     declaration::{CloneSubst, Decl, DeclClone, Module, ValKind::*},
-    mlcfg::{LocalIdent, QName, Type},
+    mlcfg::{LocalIdent, Type},
+    QName,
 };
 
 use crate::ctx;
@@ -54,8 +55,6 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                     }
 
                     let mut sig = crate::util::signature_of(self, &mut names, item.def_id);
-                    let name = crate::ctx::translate_value_id(self.tcx, item.def_id);
-                    sig.name = name;
 
                     decls.extend(crate::translation::function::own_generic_decls_for(
                         self.tcx,

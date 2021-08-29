@@ -4,6 +4,7 @@ use std::fmt::Display;
 
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
+use crate::*;
 
 pub mod printer;
 
@@ -155,40 +156,6 @@ impl Display for LocalIdent {
             }
             LocalIdent::Name(nm) => write!(f, "{}", nm),
         }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct QName {
-    pub module: Vec<String>,
-    pub name: String,
-}
-
-impl QName {
-    pub fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    pub fn module_name(mut self) -> QName {
-        let name = self.module.pop().unwrap();
-
-        QName { module: self.module, name }
-    }
-
-    pub fn from_string(s: &str) -> Option<QName> {
-        let mut chunks = s.split('.');
-
-        let name = chunks.next_back()?;
-        let module = chunks.map(|s| s.into()).collect();
-
-        Some(QName { module, name: name.into() })
-    }
-}
-
-impl From<&str> for QName {
-    fn from(nm: &str) -> Self {
-        QName { module: vec![], name: nm.to_string() }
     }
 }
 

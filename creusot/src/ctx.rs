@@ -2,7 +2,7 @@ use indexmap::{IndexMap, IndexSet};
 use std::collections::BTreeMap;
 
 use why3::declaration::{CloneSubst, Decl, DeclClone, Module, TyDecl};
-use why3::mlcfg::QName;
+use why3::QName;
 
 use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;

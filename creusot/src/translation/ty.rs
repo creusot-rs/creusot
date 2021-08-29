@@ -5,7 +5,7 @@ use rustc_span::Symbol;
 use std::collections::VecDeque;
 
 use why3::declaration::TyDecl;
-use why3::mlcfg::{QName, Type as MlT};
+use why3::{mlcfg::Type as MlT, QName} ;
 
 use crate::ctx::*;
 
@@ -172,7 +172,8 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     let adt = ctx.tcx.adt_def(did);
     let gens = ctx.tcx.generics_of(did);
 
-    let ty_name = translate_ty_name(ctx, did);
+    // HACK(xavier): Clean up
+    let ty_name = translate_ty_name(ctx, did).name.into();
 
     // Collect type variables of declaration
     let ty_args: Vec<_> = gens

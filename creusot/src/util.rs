@@ -4,7 +4,7 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{DefIdTree, TyCtxt};
 use why3::{
     declaration::Signature,
-    mlcfg::{Constant, Exp, QName},
+    mlcfg::{Constant, Exp},
 };
 
 pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {
@@ -80,10 +80,11 @@ pub fn signature_of<'tcx>(
     }
 
     let names = ctx.tcx.fn_arg_names(def_id);
+    let name = translate_value_id(ctx.tcx, def_id);
 
     Signature {
         // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure
-        name: QName::from_string("impl").unwrap(),
+        name: name.name.into(),
         // TODO: use real span
         retty: Some(ty::translate_ty(ctx, rustc_span::DUMMY_SP, sig.output())),
         args: names

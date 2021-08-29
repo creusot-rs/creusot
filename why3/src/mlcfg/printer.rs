@@ -822,6 +822,20 @@ impl TyDecl {
     }
 }
 
+impl Ident {
+    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        _: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc.text(&self.0)
+    }
+ 
+}
+
 impl QName {
     pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
         &'a self,
