@@ -16,7 +16,7 @@ use rustc_middle::ty::{
 };
 use why3::{
     declaration::{CloneSubst, Decl, DeclClone, Module, ValKind::*},
-    mlcfg::{LocalIdent, Type},
+    mlcfg::Type,
     QName,
 };
 
@@ -149,13 +149,13 @@ pub fn translate_impl(ctx: &mut TranslationCtx<'_, '_>, impl_id: DefId) {
 
         if crate::is_predicate(ctx.tcx, assoc.def_id) {
             subst.push(CloneSubst::Predicate(
-                LocalIdent::Name(assoc.ident.to_string()),
+                assoc.ident.to_string().into(),
                 QName { module: vec![name.clone()], name: "impl".into() },
                 // crate::ctx::translate_value_id(ctx.tcx, assoc.def_id),
             ));
         } else {
             subst.push(CloneSubst::Val(
-                LocalIdent::Name(assoc.ident.to_string()),
+                assoc.ident.to_string().into(),
                 QName { module: vec![name.clone()], name: "impl".into() },
                 // crate::ctx::translate_value_id(ctx.tcx, assoc.def_id),
             ));

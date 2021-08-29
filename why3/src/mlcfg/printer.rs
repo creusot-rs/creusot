@@ -168,7 +168,7 @@ impl Predicate {
 fn arg_list<'b: 'a, 'a, A: DocAllocator<'a>>(
     alloc: &'a A,
     env: &mut PrintEnv,
-    args: &'a Vec<(LocalIdent, Type)>,
+    args: &'a Vec<(Ident, Type)>,
 ) -> DocBuilder<'a, A>
 where
     A::Doc: Clone,
@@ -333,24 +333,6 @@ impl Contract {
     }
 }
 
-impl LocalIdent {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
-        &'a self,
-        alloc: &'a A,
-        _: &mut PrintEnv,
-    ) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        use LocalIdent::*;
-        match self {
-            Anon(id, Some(hmn)) => alloc.text(hmn).append("_").append(alloc.as_string(id)),
-            Anon(id, None) => alloc.text("_").append(alloc.as_string(id)),
-            Name(nm) => alloc.text(nm),
-        }
-    }
-}
-
 impl CfgFunction {
     pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
         &'a self,
@@ -370,7 +352,7 @@ impl CfgFunction {
                 self.vars.iter().map(|(var, ty)| {
                     alloc
                         .text("var ")
-                        .append(alloc.as_string(var))
+                        .append(alloc.as_string(&var.0))
                         .append(" : ")
                         .append(ty.pretty(alloc, env))
                         .append(";")

@@ -6,10 +6,11 @@ use indexmap::IndexMap;
 use rustc_middle::ty::Attributes;
 use rustc_span::Symbol;
 use why3::declaration::Contract;
-use why3::mlcfg::{Exp, LocalIdent};
+use why3::mlcfg::Exp;
 
 use rustc_hir::def_id::DefId;
 use rustc_middle::{mir::Body, ty::TyCtxt};
+use super::LocalIdent;
 
 mod lower;
 pub mod typing;
@@ -71,7 +72,7 @@ pub fn gather_invariants<'tcx>(
 }
 
 // Turn a typing context into a substition.
-pub fn subst_for_arguments(body: &Body) -> HashMap<LocalIdent, Exp> {
+pub fn subst_for_arguments(body: &Body) -> HashMap<why3::Ident, Exp> {
     use rustc_middle::mir::VarDebugInfoContents::Place;
 
     body.var_debug_info
@@ -83,10 +84,9 @@ pub fn subst_for_arguments(body: &Body) -> HashMap<LocalIdent, Exp> {
                 _ => panic!(),
             };
             let source_name = vdi.name.to_string();
-            let outer_name = format!("o_{}", source_name);
             (
-                LocalIdent::Name(source_name),
-                Exp::Var(LocalIdent::Anon(loc.into(), Some(outer_name))),
+                source_name.into(),
+                Exp::Var(LocalIdent::dbg(loc, vdi).arg_name()),
             )
         })
         .collect()
@@ -143,7 +143,7 @@ impl PreContract {
 }
 
 // Turn a typing context into a substition.
-pub fn inv_subst(body: &Body) -> HashMap<LocalIdent, Exp> {
+pub fn inv_subst(body: &Body) -> HashMap<why3::Ident, Exp> {
     use rustc_middle::mir::VarDebugInfoContents::Place;
 
     body.var_debug_info
@@ -155,8 +155,8 @@ pub fn inv_subst(body: &Body) -> HashMap<LocalIdent, Exp> {
             };
             let source_name = vdi.name.to_string();
             (
-                LocalIdent::Name(source_name.clone()),
-                Exp::Var(LocalIdent::Anon(loc.into(), Some(source_name))),
+                source_name.clone().into(),
+                Exp::Var(LocalIdent::dbg(loc, vdi).ident()),
             )
         })
         .collect()

@@ -1,7 +1,7 @@
 use indexmap::IndexSet;
 use std::collections::{BTreeMap, HashMap};
 
-use crate::mlcfg::{Block, BlockId, Exp, LocalIdent, Type};
+use crate::mlcfg::{Block, BlockId, Exp, Type};
 use crate::*;
 
 #[cfg(feature = "serialize")]
@@ -60,7 +60,7 @@ impl Contract {
         self.variant.extend(other.variant);
     }
 
-    pub fn subst(&mut self, subst: &HashMap<LocalIdent, Exp>) {
+    pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
         for req in self.requires.iter_mut() {
             req.subst(subst);
         }
@@ -98,7 +98,7 @@ impl Contract {
 pub struct Signature {
     pub name: Ident,
     pub retty: Option<Type>,
-    pub args: Vec<(LocalIdent, Type)>,
+    pub args: Vec<(Ident, Type)>,
     pub contract: Contract,
 }
 
@@ -113,7 +113,7 @@ pub struct Logic {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct CfgFunction {
     pub sig: Signature,
-    pub vars: Vec<(LocalIdent, Type)>,
+    pub vars: Vec<(Ident, Type)>,
     pub entry: Block,
     pub blocks: BTreeMap<BlockId, Block>,
 }
@@ -156,14 +156,14 @@ pub struct DeclClone {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum CloneSubst {
-    Type(LocalIdent, Type),
-    Val(LocalIdent, QName),
-    Predicate(LocalIdent, QName),
+    Type(Ident, Type),
+    Val(Ident, QName),
+    Predicate(Ident, QName),
 }
 
 impl CloneSubst {
     pub fn self_subst(ty: Type) -> Self {
-        Self::Type(LocalIdent::Name("self".into()), ty)
+        Self::Type("self".into(), ty)
     }
 }
 

@@ -1,6 +1,5 @@
 use indexmap::IndexSet;
 use std::collections::HashMap;
-use std::fmt::Display;
 
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
@@ -63,7 +62,7 @@ impl Terminator {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Statement {
-    Assign { lhs: LocalIdent, rhs: Exp },
+    Assign { lhs: Ident, rhs: Exp },
     Invariant(String, Exp),
     Assume(Exp),
     Assert(Exp),
@@ -117,48 +116,6 @@ impl Type {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub enum LocalIdent {
-    /// A MIR local along with an optional human-readable name
-    Anon(usize, Option<String>),
-
-    /// A local variable,
-    Name(String),
-}
-
-impl From<&str> for LocalIdent {
-    fn from(s: &str) -> Self {
-        Self::Name(s.to_owned())
-    }
-}
-
-impl From<String> for LocalIdent {
-    fn from(s: String) -> Self {
-        Self::Name(s)
-    }
-}
-
-impl From<LocalIdent> for Exp {
-    fn from(li: LocalIdent) -> Self {
-        Exp::Var(li)
-    }
-}
-
-impl Display for LocalIdent {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LocalIdent::Anon(l, n) => {
-                if let Some(n) = n {
-                    write!(f, "{}", n)?;
-                }
-                write!(f, "_{:?}", l)
-            }
-            LocalIdent::Name(nm) => write!(f, "{}", nm),
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum BinOp {
@@ -189,7 +146,7 @@ pub enum Exp {
     Current(Box<Exp>),
     Final(Box<Exp>),
     Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
-    Var(LocalIdent),
+    Var(Ident),
     QVar(QName),
     RecUp { record: Box<Exp>, label: String, val: Box<Exp> },
     RecField { record: Box<Exp>, label: String },
@@ -202,14 +159,14 @@ pub enum Exp {
     Call(Box<Exp>, Vec<Exp>),
     Verbatim(String),
     // Seq(Box<Exp>, Box<Exp>),
-    Abs(LocalIdent, Box<Exp>),
+    Abs(Ident, Box<Exp>),
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
 
     // Predicates
     Absurd,
     Impl(Box<Exp>, Box<Exp>),
-    Forall(Vec<(LocalIdent, Type)>, Box<Exp>),
-    Exists(Vec<(LocalIdent, Type)>, Box<Exp>),
+    Forall(Vec<(Ident, Type)>, Box<Exp>),
+    Exists(Vec<(Ident, Type)>, Box<Exp>),
 }
 
 impl Exp {
@@ -219,6 +176,12 @@ impl Exp {
 
     pub fn mk_true() -> Self {
         Exp::Const(Constant::const_true())
+    }
+}
+
+impl From<Ident> for Exp {
+    fn from(li: Ident) -> Self {
+        Exp::Var(li)
     }
 }
 
@@ -283,7 +246,7 @@ impl Exp {
         }
     }
 
-    pub fn fvs(&self) -> IndexSet<LocalIdent> {
+    pub fn fvs(&self) -> IndexSet<Ident> {
         match self {
             Exp::Current(e) => e.fvs(),
             Exp::Final(e) => e.fvs(),
@@ -348,7 +311,7 @@ impl Exp {
         }
     }
 
-    pub fn subst(&mut self, subst: &HashMap<LocalIdent, Exp>) {
+    pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
         match self {
             Exp::Current(e) => e.subst(subst),
             Exp::Final(e) => e.subst(subst),
@@ -469,7 +432,7 @@ impl Constant {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Pattern {
     Wildcard,
-    VarP(LocalIdent),
+    VarP(Ident),
     TupleP(Vec<Pattern>),
     ConsP(QName, Vec<Pattern>),
     // RecP(String, String),
@@ -484,7 +447,7 @@ impl Pattern {
         Self::ConsP(QName { module: vec![], name: "False".into() }, vec![])
     }
 
-    pub fn binders(&self) -> IndexSet<LocalIdent> {
+    pub fn binders(&self) -> IndexSet<Ident> {
         match self {
             Pattern::Wildcard => IndexSet::new(),
             Pattern::VarP(s) => {

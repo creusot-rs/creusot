@@ -6,10 +6,9 @@ use why3::mlcfg::{
     self,
     Exp::{self, *},
 };
-use why3::mlcfg::{LocalIdent, Pattern::*, Statement::*};
+use why3::mlcfg::{Pattern::*, Statement::*};
 
 use crate::ctx::translate_value_id;
-
 use super::FunctionTranslator;
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
@@ -25,7 +24,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         loc: Local,
         proj: &[rustc_middle::mir::PlaceElem<'tcx>],
     ) -> Exp {
-        let mut inner = self.translate_local(loc).into();
+        let mut inner = self.translate_local(loc).ident().into();
         use rustc_middle::mir::ProjectionElem::*;
         let mut place_ty = Place::ty_from(loc, &[], self.body, self.tcx);
 
@@ -121,7 +120,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                         let var_size = variant.fields.len();
 
                         let field_pats = ('a'..)
-                            .map(|c| VarP(LocalIdent::Name(c.to_string())))
+                            .map(|c| VarP(c.to_string().into()))
                             .take(var_size)
                             .collect();
                         let mut varexps: Vec<Exp> =
@@ -141,7 +140,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                         let var_size = fields.len();
 
                         let field_pats = ('a'..)
-                            .map(|c| VarP(LocalIdent::Name(c.to_string())))
+                            .map(|c| VarP(c.to_string().into()))
                             .take(var_size)
                             .collect();
                         let mut varexps: Vec<Exp> =
@@ -163,6 +162,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         }
 
         let ident = self.translate_local(lhs.local);
-        Assign { lhs: ident, rhs: inner }
+        Assign { lhs: ident.ident(), rhs: inner }
     }
 }

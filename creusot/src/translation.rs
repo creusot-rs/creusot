@@ -11,6 +11,7 @@ mod logic;
 pub use external::translate_extern;
 pub use function::translate_function;
 pub use logic::*;
+pub use function::LocalIdent;
 
 use heck::CamelCase;
 

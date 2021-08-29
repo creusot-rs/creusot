@@ -155,15 +155,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             .skip(1)
             .take(arg_count)
             .map(|(id, ty)| {
-                if let LocalIdent::Anon(u, hmn) = id {
-                    let hmn = match hmn {
-                        None => Some("o".into()),
-                        Some(h) => Some(format!("o_{}", h)),
-                    };
-                    (LocalIdent::Anon(*u, hmn), ty.clone())
-                } else {
-                    unreachable!("{:?}", id)
-                }
+                (id.arg_name(), ty.clone())
             })
             .collect();
 
@@ -173,16 +165,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 .skip(1)
                 .take(arg_count)
                 .map(|(id, _)| {
-                    let rhs = if let LocalIdent::Anon(u, hmn) = id {
-                        let hmn = match hmn {
-                            None => Some("o".into()),
-                            Some(h) => Some(format!("o_{}", h)),
-                        };
-                        LocalIdent::Anon(*u, hmn)
-                    } else {
-                        unreachable!()
-                    };
-                    Assign { lhs: id.clone(), rhs: Exp::Var(rhs) }
+                    let rhs = id.arg_name();
+                    Assign { lhs: id.ident(), rhs: rhs.into() }
                 })
                 .collect(),
             terminator: Terminator::Goto(BlockId(0)),
@@ -209,7 +193,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         let sig = Signature { name: func_name, retty: Some(retty), args, contract };
 
-        decls.push(Decl::FunDecl(CfgFunction { sig, vars, entry, blocks: self.past_blocks }));
+        decls.push(Decl::FunDecl(CfgFunction { sig, vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(), entry, blocks: self.past_blocks }));
         Module { name, decls }
     }
 
@@ -384,7 +368,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         for local in dying.iter() {
             let local_ty = self.body.local_decls[local].ty;
-            let ident = self.translate_local(local);
+            let ident = self.translate_local(local).ident();
             let assumption: Exp = self.resolve_predicate_of(local_ty).app_to(ident.into());
             self.emit_statement(mlcfg::Statement::Assume(assumption));
         }
@@ -413,8 +397,36 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         assert!(debug_info.len() <= 1, "expected at most one debug entry for local {:?}", loc);
 
         match debug_info.get(0) {
-            Some(info) => mk_anon_dbg(loc, info),
-            None => mk_anon(loc),
+            Some(info) => LocalIdent::dbg(loc, *info),
+            None => LocalIdent::anon(loc),
+        }
+    }
+}
+
+/// A MIR local along with an optional human-readable name
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct LocalIdent(Local, Option<String>);
+
+impl LocalIdent {
+    pub fn anon(loc: Local) -> Self {
+        LocalIdent(loc, None)
+    }
+
+    pub fn dbg(loc: Local, dbg: &VarDebugInfo) -> Self {
+        LocalIdent(loc, Some(dbg.name.to_string()))
+    }
+
+    pub fn arg_name(&self) -> why3::Ident {
+        match &self.1 {
+            None => format!("o_{}", self.0.index()).into(),
+            Some(h) => format!("o_{}_{}", h, self.0.index()).into(),
+        }
+    }
+
+    pub fn ident(&self) -> why3::Ident {
+        match &self.1 {
+            Some(id) => format!("{}_{}", id, self.0.index()).into(),
+            None => format!("_{}", self.0.index()).into(),
         }
     }
 }
@@ -481,14 +493,6 @@ fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
             None
         }
     })
-}
-
-fn mk_anon(l: Local) -> LocalIdent {
-    LocalIdent::Anon(l.index(), None)
-}
-
-fn mk_anon_dbg(l: Local, vi: &VarDebugInfo) -> LocalIdent {
-    LocalIdent::Anon(l.index(), Some(vi.name.to_string()))
 }
 
 struct RemoveFalseEdge<'tcx> {
