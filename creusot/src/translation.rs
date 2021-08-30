@@ -16,7 +16,7 @@ pub use function::LocalIdent;
 use heck::CamelCase;
 
 use rustc_hir::def_id::LOCAL_CRATE;
-use why3::{
+use why3::{Pretty,
     declaration::{Decl, Module, TyDecl, Use},
     QName,
 };

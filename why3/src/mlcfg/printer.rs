@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::*;
 use crate::declaration::*;
 use pretty::*;
@@ -11,6 +13,31 @@ pub struct PrintEnv {
 impl PrintEnv {
     pub fn new() -> (BoxAllocator, Self) {
         (BoxAllocator, PrintEnv::default())
+    }
+}
+
+pub struct PrettyDisplay<'a, A : Pretty>(&'a A);
+
+impl<'a, A : Pretty> Display for PrettyDisplay<'a, A> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (alloc, mut env) = PrintEnv::new();
+        self.0.pretty(&alloc, &mut env).1.render_fmt(120, f)?;
+        Ok(())
+    }
+}
+
+pub trait Pretty {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone;
+
+    fn display<'a>(&'a self) -> PrettyDisplay<'a, Self>
+    where Self : Sized {
+        PrettyDisplay(self)
     }
 }
 
@@ -38,8 +65,8 @@ macro_rules! parens {
     };
 }
 
-impl Decl {
-    pub fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+impl Pretty for Decl {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -61,8 +88,8 @@ impl Decl {
     }
 }
 
-impl Module {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Module {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -90,8 +117,8 @@ impl Module {
     }
 }
 
-impl Scope {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Scope {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -120,8 +147,8 @@ impl Scope {
     }
 }
 
-impl Signature {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Signature {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -147,8 +174,8 @@ impl Signature {
     }
 }
 
-impl Predicate {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Predicate {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -185,8 +212,8 @@ where
     }
 }
 
-impl Logic {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Logic {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -203,8 +230,8 @@ impl Logic {
     }
 }
 
-impl DeclClone {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for DeclClone {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -229,8 +256,8 @@ impl DeclClone {
     }
 }
 
-impl CloneSubst {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for CloneSubst {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -258,8 +285,8 @@ impl CloneSubst {
     }
 }
 
-impl Use {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Use {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -271,8 +298,8 @@ impl Use {
     }
 }
 
-impl ValKind {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for ValKind {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -287,8 +314,8 @@ impl ValKind {
     }
 }
 
-impl Contract {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Contract {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -333,8 +360,8 @@ impl Contract {
     }
 }
 
-impl CfgFunction {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for CfgFunction {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -370,8 +397,8 @@ impl CfgFunction {
     }
 }
 
-impl Type {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Type {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -418,8 +445,8 @@ impl Type {
     }
 }
 
-impl Exp {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Exp {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -551,8 +578,8 @@ impl Exp {
     }
 }
 
-impl Statement {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Statement {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -594,8 +621,8 @@ impl Statement {
     }
 }
 
-impl Terminator {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Terminator {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -631,8 +658,8 @@ impl Terminator {
     }
 }
 
-impl Pattern {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Pattern {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -664,8 +691,8 @@ impl Pattern {
     }
 }
 
-impl BlockId {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for BlockId {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         _: &mut PrintEnv,
@@ -695,8 +722,8 @@ where
     result
 }
 
-impl Block {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Block {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -738,8 +765,8 @@ fn bin_op_to_string(op: &BinOp) -> &str {
     }
 }
 
-impl Constant {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Constant {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -761,8 +788,8 @@ impl Constant {
     }
 }
 
-impl TyDecl {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for TyDecl {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
@@ -804,11 +831,11 @@ impl TyDecl {
     }
 }
 
-impl Ident {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for Ident {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
-        _: &mut PrintEnv,
+        _env: &mut PrintEnv,
     ) -> DocBuilder<'a, A>
     where
         A::Doc: Clone,
@@ -818,8 +845,8 @@ impl Ident {
  
 }
 
-impl QName {
-    pub fn pretty<'b: 'a, 'a, A: DocAllocator<'a>>(
+impl Pretty for QName {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
         env: &mut PrintEnv,
