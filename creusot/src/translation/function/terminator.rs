@@ -149,9 +149,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         // TODO: better spans during errors...
         self.ctx.translate_function(def_id);
 
-        let clone_name = self.clone_names.name_for(def_id, subst);
-
-        QName { module: vec![clone_name], name: "impl".into() }
+        self.clone_names.qname_for(def_id, subst)
     }
 }
 
