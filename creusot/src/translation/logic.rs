@@ -16,7 +16,7 @@ pub fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
 }
 
 pub fn translate_logic(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) -> Module {
-    let mut names = NameMap::new(ctx.tcx);
+    let mut names = NameMap::with_self_ref(ctx.tcx, def_id);
 
     let term = specification::typing::typecheck(ctx.tcx, def_id.expect_local());
     let body = specification::lower_term_to_why3(ctx, &mut names, def_id, term);
@@ -43,7 +43,7 @@ pub fn translate_predicate(
     def_id: DefId,
     _span: rustc_span::Span,
 ) -> Module {
-    let mut names = NameMap::new(ctx.tcx);
+    let mut names = NameMap::with_self_ref(ctx.tcx, def_id);
 
     let term = specification::typing::typecheck(ctx.tcx, def_id.expect_local());
     let body = specification::lower_term_to_why3(ctx, &mut names, def_id, term);
@@ -56,7 +56,6 @@ pub fn translate_predicate(
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
     for ((def_id, subst), clone_name) in names.into_iter() {
-        ctx.translate_function(def_id);
         decls.push(clone_item(ctx, def_id, subst, clone_name));
     }
 

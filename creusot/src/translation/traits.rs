@@ -34,7 +34,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             return;
         }
 
-        let mut names = NameMap::new(self.tcx);
+        let mut names = NameMap::with_self_ref(self.tcx, def_id);
 
         let trait_name = translate_trait_name(self.tcx, def_id);
         let mut decls: Vec<_> = super::prelude_imports(true);
@@ -97,7 +97,7 @@ pub fn translate_impl(ctx: &mut TranslationCtx<'_, '_>, impl_id: DefId) {
         return;
     }
 
-    let mut ns = NameMap::new(ctx.tcx);
+    let mut ns = NameMap::with_self_ref(ctx.tcx, impl_id);
 
     let trait_ref = ctx.tcx.impl_trait_ref(impl_id).unwrap();
 

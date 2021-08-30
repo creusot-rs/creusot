@@ -130,20 +130,13 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         subst: SubstsRef<'tcx>,
         _sp: rustc_span::Span,
     ) -> QName {
-        if def_id == self.def_id {
-            return super::translate_value_id(self.tcx, self.def_id);
-        }
-
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(_) = it.container {
-                // What happens if when we clone a generic function that belongs to a trait?!
-                let clone_name = self.clone_names.name_for(it.container.id(), subst);
                 self.ctx.translate_trait(it.container.id());
-
-                let mut name = super::translate_value_id(self.tcx, def_id);
-                name.module = vec![clone_name];
-                return name;
             }
+        } else {
+            // TODO: better spans during errors...
+            self.ctx.translate_function(def_id);
         }
 
         // TODO: better spans during errors...

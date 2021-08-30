@@ -46,12 +46,8 @@ pub fn lower_term_to_why3<'tcx>(
             }
 
             builtins::lookup_builtin(ctx, target, &mut args).unwrap_or_else(|| {
-                if target == term_id {
-                    Exp::Call(box Exp::Var("impl".into()), args)
-                } else {
-                    let clone = names.qname_for(target, subst);
-                    Exp::Call(box Exp::QVar(clone), args)
-                }
+                let clone = names.qname_for(target, subst);
+                Exp::Call(box Exp::QVar(clone), args)
             })
         }
         Term::Forall { binder, box body } => {

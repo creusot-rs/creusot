@@ -34,7 +34,7 @@ pub fn translate_function<'tcx, 'sess>(
     ctx: &mut TranslationCtx<'sess, 'tcx>,
     def_id: DefId,
 ) -> Module {
-    let mut names = NameMap::new(tcx);
+    let mut names = NameMap::with_self_ref(tcx, def_id);
     let invariants = specification::gather_invariants(ctx, &mut names, def_id);
     let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
@@ -184,14 +184,13 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         }
 
         for ((def_id, subst), clone_name) in self.clone_names.into_iter() {
-            self.ctx.translate_function(def_id);
+            // self.ctx.translate_function(def_id);
             decls.push(clone_item(self.ctx, def_id, subst, clone_name));
         }
 
-        let name = translate_value_id(self.tcx, self.def_id).module.join("");
-        let func_name = "impl".into();
+        let name = translate_value_id(self.tcx, self.def_id).module_name().name;
 
-        let sig = Signature { name: func_name, retty: Some(retty), args, contract };
+        let sig = Signature { name: "impl".into(), retty: Some(retty), args, contract };
 
         decls.push(Decl::FunDecl(CfgFunction { sig, vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(), entry, blocks: self.past_blocks }));
         Module { name, decls }

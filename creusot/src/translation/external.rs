@@ -17,7 +17,7 @@ pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_spa
 }
 
 fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) -> Module {
-    let mut names = NameMap::new(ctx.tcx);
+    let mut names = NameMap::with_self_ref(ctx.tcx, def_id);
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
 
     let name = translate_value_id(ctx.tcx, def_id).module.join("");

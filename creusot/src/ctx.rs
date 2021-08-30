@@ -1,5 +1,4 @@
 use indexmap::{IndexMap, IndexSet};
-use std::collections::BTreeMap;
 
 use why3::declaration::{CloneSubst, Decl, DeclClone, Module, TyDecl};
 use why3::QName;
@@ -16,32 +15,55 @@ use rustc_resolve::Namespace;
 
 use crate::{options::Options, util};
 
-pub struct NameMap<'tcx>(TyCtxt<'tcx>, BTreeMap<(DefId, SubstsRef<'tcx>), String>);
+pub struct NameMap<'tcx> {
+    tcx: TyCtxt<'tcx>,
+    names: IndexMap<(DefId, SubstsRef<'tcx>), String>,
+}
 
 impl<'tcx> NameMap<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>) -> Self {
-        NameMap(tcx, BTreeMap::new())
+    pub fn with_self_ref(tcx: TyCtxt<'tcx>, self_id: DefId) -> Self {
+        let mut names = IndexMap::new();
+        let subst = rustc_middle::ty::subst::InternalSubsts::identity_for_item(tcx, self_id);
+        let mut modl = translate_value_id(tcx, self_id);
+
+        let clone_name = if modl.module.is_empty() {
+            modl.name
+        } else {
+            modl.module.remove(0)
+        };
+
+        names.insert((self_id, subst), clone_name);
+        NameMap { tcx, names }
     }
 
-    pub fn name_for(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> String {
-        if let Some(nm) = self.1.get(&(def_id, subst)) {
+    pub fn name_for(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> String {
+        if let Some(it) = self.tcx.opt_associated_item(def_id) {
+            if let ty::TraitContainer(_) = it.container {
+                def_id = it.container.id()
+            }
+        };
+
+        if let Some(nm) = self.names.get(&(def_id, subst)) {
             nm.clone()
         } else {
-            let num_entries = self.1.len();
-            let name_base = self.0.item_name(def_id).as_str().to_camel_case();
-            self.1.insert((def_id, subst), format!("{}{}", name_base, num_entries));
-            self.1[&(def_id, subst)].clone()
+            let num_entries = self.names.len() - 1;
+            let name_base = self.tcx.item_name(def_id).as_str().to_camel_case();
+            self.names.insert((def_id, subst), format!("{}{}", name_base, num_entries));
+            self.names[&(def_id, subst)].clone()
         }
     }
 
     pub fn qname_for(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
         let module = self.name_for(def_id, subst);
+        QName { module: vec![module], name: method_name(self.tcx, def_id) }
+    }
 
-        QName { module: vec![module], name: method_name(self.0, def_id) }
+    pub fn is_empty(&self) -> bool {
+        self.names.len() <= 1
     }
 
     pub fn into_iter(self) -> impl Iterator<Item = ((DefId, SubstsRef<'tcx>), String)> {
-        self.1.into_iter()
+        self.names.into_iter().skip(1)
     }
 }
 
@@ -184,6 +206,7 @@ pub fn type_param_subst<'tcx>(
             clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
         }
     }
+
     clone_subst
 }
 
@@ -249,7 +272,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
             name = segments.into_iter().map(|seg| seg.to_lowercase()).collect();
             segments = vec!["Type".to_owned()];
         }
-        (Ctor(_, _) | Variant | Struct, _) => {
+        (Ctor(_, _) | Variant | Struct | Enum, _) => {
             segments[0] = segments[0].to_camel_case();
             name = segments;
             segments = vec!["Type".to_owned()];
