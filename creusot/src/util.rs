@@ -79,15 +79,15 @@ pub fn signature_of<'tcx>(
         contract.ensures.push(Exp::Const(Constant::const_false()));
     }
 
-    let names = ctx.tcx.fn_arg_names(def_id);
+    let arg_names = ctx.tcx.fn_arg_names(def_id);
     let name = translate_value_id(ctx.tcx, def_id);
 
     Signature {
         // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure
         name: name.name.into(),
         // TODO: use real span
-        retty: Some(ty::translate_ty(ctx, rustc_span::DUMMY_SP, sig.output())),
-        args: names
+        retty: Some(ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, sig.output())),
+        args: arg_names
             .iter()
             .enumerate()
             .zip(sig.inputs())
@@ -97,7 +97,7 @@ pub fn signature_of<'tcx>(
                 } else {
                     id.name.to_string().into()
                 };
-                (name, ty::translate_ty(ctx, rustc_span::DUMMY_SP, ty))
+                (name, ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, ty))
             })
             .collect(),
         contract,

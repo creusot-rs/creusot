@@ -108,7 +108,7 @@ impl<'tcx> CloneMap<'tcx> {
         self.names.into_iter().skip(1).map(|(k, i)| (k, i.name))
     }
 
-    pub fn to_clones(self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) -> Vec<Decl> {
+    pub fn to_clones(mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) -> Vec<Decl> {
         let mut i = 0;
         let mut decls = Vec::new();
         while i < self.names.len() {
@@ -124,7 +124,7 @@ impl<'tcx> CloneMap<'tcx> {
             let def_id = *def_id;
             let subst = *subst;
 
-            decls.push(clone_item(ctx, def_id, subst, clone_info));
+            decls.push(clone_item(ctx, &mut self, def_id, subst, clone_info));
         }
         decls
     }
@@ -132,11 +132,12 @@ impl<'tcx> CloneMap<'tcx> {
 
 fn clone_item<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
     def_id: DefId,
     subst: SubstsRef<'tcx>,
     info: CloneInfo,
 ) -> why3::declaration::Decl {
-    let mut clone_subst = type_param_subst(ctx, def_id, subst);
+    let mut clone_subst = type_param_subst(ctx, names, def_id, subst);
 
     clone_subst.extend(info.projs);
 
@@ -153,6 +154,7 @@ fn clone_item<'tcx>(
 // Create the substitution used to clone `def_id` with the rustc substitution `subst`.
 pub fn type_param_subst<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
     def_id: DefId,
     subst: SubstsRef<'tcx>,
 ) -> Vec<CloneSubst> {
@@ -170,7 +172,7 @@ pub fn type_param_subst<'tcx>(
         let p = trait_params.param_at(ix, ctx.tcx);
         let ty = subst[ix];
         if let GenericParamDefKind::Type { .. } = p.kind {
-            let ty = super::ty::translate_ty(ctx, rustc_span::DUMMY_SP, ty.expect_ty());
+            let ty = super::ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, ty.expect_ty());
             clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
         }
     }

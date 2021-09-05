@@ -51,7 +51,7 @@ pub fn lower_term_to_why3<'tcx>(
             })
         }
         Term::Forall { binder, box body } => {
-            let ty = translate_ty(ctx, rustc_span::DUMMY_SP, binder.1);
+            let ty = translate_ty(ctx, names, rustc_span::DUMMY_SP, binder.1);
             Exp::Forall(
                 vec![(binder.0.into(), ty)],
                 box lower_term_to_why3(ctx, names, term_id, body),

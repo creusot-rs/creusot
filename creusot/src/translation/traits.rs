@@ -6,7 +6,6 @@ use rustc_middle::ty::{
     AssocKind,
     Binder,
     Instance,
-    List,
     ParamEnv,
     PredicateKind,
     TraitPredicate,
@@ -105,7 +104,7 @@ pub fn translate_impl(ctx: &mut TranslationCtx<'_, '_>, impl_id: DefId) {
 
     ctx.translate_trait(trait_ref.def_id);
 
-    let mut subst = ctx::type_param_subst(ctx, trait_ref.def_id, trait_ref.substs);
+    let mut subst = ctx::type_param_subst(ctx, &mut names, trait_ref.def_id, trait_ref.substs);
 
     for assoc in ctx.tcx.associated_items(impl_id).in_definition_order() {
         let assoc_subst = InternalSubsts::identity_for_item(ctx.tcx, impl_id);

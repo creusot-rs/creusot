@@ -1,5 +1,5 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, subst::InternalSubsts, Ty, TyKind::*};
+use rustc_middle::ty::{self, subst::InternalSubsts, Ty, TyKind::*, ProjectionTy};
 use rustc_span::Span;
 use rustc_span::Symbol;
 use why3::declaration::TyDeclKind;
@@ -29,13 +29,14 @@ enum TyTranslation {
 }
 
 // Translate a type usage
-pub fn translate_ty<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, span: Span, ty: Ty<'tcx>) -> MlT {
-    translate_ty_inner(TyTranslation::Usage, ctx, span, ty)
+pub fn translate_ty<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, names: &mut CloneMap<'tcx>, span: Span, ty: Ty<'tcx>) -> MlT {
+    translate_ty_inner(TyTranslation::Usage, ctx, names, span, ty)
 }
 
 fn translate_ty_inner<'tcx>(
     trans: TyTranslation,
     ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
     span: Span,
     ty: Ty<'tcx>,
 ) -> MlT {
@@ -52,18 +53,18 @@ fn translate_ty_inner<'tcx>(
         },
         Adt(def, s) => {
             if def.is_box() {
-                return translate_ty_inner(trans, ctx, span, s[0].expect_ty());
+                return translate_ty_inner(trans, ctx, names, span, s[0].expect_ty());
             }
 
             if format!("{:?}", def).contains("creusot_contracts::Int") {
                 return MlT::Integer;
             }
-            let args = s.types().map(|t| translate_ty_inner(trans, ctx, span, t)).collect();
+            let args = s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
 
             MlT::TApp(box MlT::TConstructor(translate_ty_name(ctx, def.did)), args)
         }
         Tuple(args) => {
-            let tys = args.types().map(|t| translate_ty_inner(trans, ctx, span, t)).collect();
+            let tys = args.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
             MlT::Tuple(tys)
         }
         Param(p) => {
@@ -73,16 +74,19 @@ fn translate_ty_inner<'tcx>(
                 MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
             }
         }
+        Projection(pty) => {
+            translate_projection_ty(ctx, names, &pty)
+        }
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
             match borkind {
-                Mut => MlT::MutableBorrow(box translate_ty_inner(trans, ctx, span, ty)),
-                Not => translate_ty_inner(trans, ctx, span, ty),
+                Mut => MlT::MutableBorrow(box translate_ty_inner(trans, ctx, names, span, ty)),
+                Not => translate_ty_inner(trans, ctx, names, span, ty),
             }
         }
         Slice(ty) => MlT::TApp(
             box MlT::TConstructor("array".into()),
-            vec![translate_ty_inner(trans, ctx, span, ty)],
+            vec![translate_ty_inner(trans, ctx, names, span, ty)],
         ),
         Str => MlT::TConstructor("string".into()),
         // Slice()
@@ -90,6 +94,17 @@ fn translate_ty_inner<'tcx>(
         RawPtr(_) => MlT::TConstructor(QName::from_string("opaque_ptr").unwrap()),
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
+}
+
+pub fn translate_projection_ty(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    pty: &ProjectionTy<'tcx>,
+    ) -> MlT {
+    ctx.translate_trait(pty.trait_def_id(ctx.tcx));
+    let base = names.name_for_mut(pty.trait_def_id(ctx.tcx), pty.substs);
+    let name = ctx.tcx.item_name(pty.item_def_id).to_string().to_lowercase();
+    MlT::TConstructor(QName{ module: vec![base], name })
 }
 
 use petgraph::algo::tarjan_scc;
@@ -171,6 +186,8 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     // TODO: allow mutually recursive types
     check_not_mutally_recursive(ctx, did, span);
 
+    let mut names = CloneMap::new(ctx.tcx);
+
     let adt = ctx.tcx.adt_def(did);
     let gens = ctx.tcx.generics_of(did);
 
@@ -196,7 +213,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
             .fields
             .iter()
             .map(|f| {
-                translate_ty_inner(TyTranslation::Declaration, ctx, span, f.ty(ctx.tcx, substs))
+                translate_ty_inner(TyTranslation::Declaration, ctx, &mut names, span, f.ty(ctx.tcx, substs))
             })
             .collect();
 

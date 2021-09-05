@@ -142,7 +142,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                     None
                 } else {
                     let ident = self.translate_local(loc);
-                    Some((ident, ty::translate_ty(&mut self.ctx, decl.source_info.span, decl.ty)))
+                    Some((ident, ty::translate_ty(&mut self.ctx, &mut self.clone_names, decl.source_info.span, decl.ty)))
                 }
             })
             .collect();
