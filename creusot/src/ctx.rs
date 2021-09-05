@@ -1,6 +1,6 @@
 use indexmap::{IndexMap, IndexSet};
 
-use why3::declaration::{CloneSubst, Decl, DeclClone, Module, TyDecl};
+use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Module, TyDecl};
 use why3::QName;
 
 use rustc_errors::DiagnosticId;
@@ -179,7 +179,7 @@ pub fn clone_item<'tcx>(
     Decl::Clone(DeclClone {
         name: cloneable_name(ctx.tcx, def_id),
         subst: clone_subst,
-        as_nm: Some(clone_name),
+        kind: CloneKind::Named(clone_name),
     })
 }
 

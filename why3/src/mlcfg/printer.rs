@@ -239,11 +239,16 @@ impl Pretty for DeclClone {
     where
         A::Doc: Clone,
     {
-        let as_doc = match &self.as_nm {
-            Some(nm) => alloc.text(" as ").append(nm),
-            None => alloc.nil(),
+        let as_doc = match &self.kind {
+            CloneKind::Named(nm) => alloc.text(" as ").append(nm),
+            _ => alloc.nil(),
         };
-        let doc = alloc.text("clone ").append(self.name.pretty(alloc, env)).append(as_doc);
+        let kind = match &self.kind {
+            CloneKind::Export => alloc.text("export "),
+            _ => alloc.nil()
+        };
+
+        let doc = alloc.text("clone ").append(kind).append(self.name.pretty(alloc, env)).append(as_doc);
 
         if self.subst.is_empty() {
             doc
@@ -255,6 +260,7 @@ impl Pretty for DeclClone {
         }
     }
 }
+
 
 impl Pretty for CloneSubst {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(

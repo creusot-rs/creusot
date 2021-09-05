@@ -14,6 +14,7 @@ use rustc_middle::ty::{
     TyCtxt,
     TypeFoldable,
 };
+use why3::declaration::CloneKind;
 use why3::{
     declaration::{CloneSubst, Decl, DeclClone, Module, ValKind::*},
     mlcfg::Type,
@@ -165,7 +166,7 @@ pub fn translate_impl(ctx: &mut TranslationCtx<'_, '_>, impl_id: DefId) {
     decls.push(Decl::Clone(DeclClone {
         name: translate_trait_name(ctx.tcx, trait_ref.def_id),
         subst,
-        as_nm: None,
+        kind: CloneKind::Bare,
     }));
 
     let name = translate_value_id(ctx.tcx, impl_id);

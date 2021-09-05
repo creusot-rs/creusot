@@ -150,7 +150,15 @@ impl TyDecl {
 pub struct DeclClone {
     pub name: QName,
     pub subst: Vec<CloneSubst>,
-    pub as_nm: Option<String>,
+    pub kind : CloneKind,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub enum CloneKind {
+    Bare,
+    Named(String),
+    Export,
 }
 
 #[derive(Debug, Clone)]
