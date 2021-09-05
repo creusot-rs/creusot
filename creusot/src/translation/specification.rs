@@ -19,7 +19,7 @@ pub use lower::*;
 
 pub fn requires_to_why<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut NameMap<'tcx>,
+    names: &mut CloneMap<'tcx>,
     req_id: DefId,
 ) -> Exp {
     log::debug!("require clause {:?}", req_id);
@@ -29,7 +29,7 @@ pub fn requires_to_why<'tcx>(
 
 pub fn variant_to_why<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut NameMap<'tcx>,
+    names: &mut CloneMap<'tcx>,
     var_id: DefId,
 ) -> Exp {
     log::debug!("variant clause {:?}", var_id);
@@ -39,7 +39,7 @@ pub fn variant_to_why<'tcx>(
 
 pub fn ensures_to_why<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut NameMap<'tcx>,
+    names: &mut CloneMap<'tcx>,
     ens_id: DefId,
 ) -> Exp {
     log::debug!("ensures clause {:?}", ens_id);
@@ -52,7 +52,7 @@ use rustc_mir_build::thir::visit::Visitor;
 
 pub fn gather_invariants<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut NameMap<'tcx>,
+    names: &mut CloneMap<'tcx>,
     base_id: DefId,
 ) -> IndexMap<DefId, Exp> {
     let (thir, expr) = ctx.tcx.thir_body(WithOptConstParam::unknown(base_id.expect_local()));
@@ -122,7 +122,7 @@ impl PreContract {
     pub fn check_and_lower<'tcx>(
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
-        names: &mut NameMap<'tcx>,
+        names: &mut CloneMap<'tcx>,
         _: DefId,
     ) -> Contract {
         let mut out = Contract::new();

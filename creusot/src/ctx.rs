@@ -1,11 +1,11 @@
 use indexmap::{IndexMap, IndexSet};
 
-use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Module, TyDecl};
+use why3::declaration::{Module, TyDecl};
 use why3::QName;
 
 use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, subst::SubstsRef, TyCtxt};
+use rustc_middle::ty::{self, TyCtxt};
 use rustc_session::Session;
 use rustc_span::Span;
 
@@ -15,57 +15,7 @@ use rustc_resolve::Namespace;
 
 use crate::{options::Options, util};
 
-pub struct NameMap<'tcx> {
-    tcx: TyCtxt<'tcx>,
-    names: IndexMap<(DefId, SubstsRef<'tcx>), String>,
-}
-
-impl<'tcx> NameMap<'tcx> {
-    pub fn with_self_ref(tcx: TyCtxt<'tcx>, self_id: DefId) -> Self {
-        let mut names = IndexMap::new();
-        let subst = rustc_middle::ty::subst::InternalSubsts::identity_for_item(tcx, self_id);
-        let mut modl = translate_value_id(tcx, self_id);
-
-        let clone_name = if modl.module.is_empty() {
-            modl.name
-        } else {
-            modl.module.remove(0)
-        };
-
-        names.insert((self_id, subst), clone_name);
-        NameMap { tcx, names }
-    }
-
-    pub fn name_for(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> String {
-        if let Some(it) = self.tcx.opt_associated_item(def_id) {
-            if let ty::TraitContainer(_) = it.container {
-                def_id = it.container.id()
-            }
-        };
-
-        if let Some(nm) = self.names.get(&(def_id, subst)) {
-            nm.clone()
-        } else {
-            let num_entries = self.names.len() - 1;
-            let name_base = self.tcx.item_name(def_id).as_str().to_camel_case();
-            self.names.insert((def_id, subst), format!("{}{}", name_base, num_entries));
-            self.names[&(def_id, subst)].clone()
-        }
-    }
-
-    pub fn qname_for(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        let module = self.name_for(def_id, subst);
-        QName { module: vec![module], name: method_name(self.tcx, def_id) }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.names.len() <= 1
-    }
-
-    pub fn into_iter(self) -> impl Iterator<Item = ((DefId, SubstsRef<'tcx>), String)> {
-        self.names.into_iter().skip(1)
-    }
-}
+pub use crate::clone_map::*;
 
 pub struct TranslationCtx<'sess, 'tcx> {
     pub sess: &'sess Session,
@@ -168,48 +118,6 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 }
 
-pub fn clone_item<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
-    def_id: DefId,
-    subst: SubstsRef<'tcx>,
-    clone_name: String,
-) -> why3::declaration::Decl {
-    let clone_subst = type_param_subst(ctx, def_id, subst);
-
-    Decl::Clone(DeclClone {
-        name: cloneable_name(ctx.tcx, def_id),
-        subst: clone_subst,
-        kind: CloneKind::Named(clone_name),
-    })
-}
-
-pub fn type_param_subst<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
-    def_id: DefId,
-    subst: SubstsRef<'tcx>,
-) -> Vec<CloneSubst> {
-    use heck::SnakeCase;
-    use rustc_middle::ty::GenericParamDefKind;
-
-    let trait_params = ctx.tcx.generics_of(def_id);
-    let mut clone_subst = Vec::new();
-
-    if subst.is_empty() {
-        return Vec::new();
-    }
-
-    for ix in 0..trait_params.count() {
-        let p = trait_params.param_at(ix, ctx.tcx);
-        let ty = subst[ix];
-        if let GenericParamDefKind::Type { .. } = p.kind {
-            let ty = super::ty::translate_ty(ctx, rustc_span::DUMMY_SP, ty.expect_ty());
-            clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
-        }
-    }
-
-    clone_subst
-}
-
 use heck::CamelCase;
 
 pub fn translate_type_id(tcx: TyCtxt, def_id: DefId) -> QName {
@@ -230,7 +138,7 @@ pub fn cloneable_name(tcx: TyCtxt, def_id: DefId) -> QName {
     }
 }
 
-fn method_name(tcx: TyCtxt, def_id: DefId) -> String {
+pub(crate) fn method_name(tcx: TyCtxt, def_id: DefId) -> String {
     if let Some(it) = tcx.opt_associated_item(def_id) {
         if let ty::TraitContainer(_) = it.container {
             tcx.item_name(def_id).to_string().to_lowercase()

@@ -63,7 +63,7 @@ pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
 
 pub fn signature_of<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut NameMap<'tcx>,
+    names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Signature {
     let sig = ctx.tcx.normalize_erasing_late_bound_regions(

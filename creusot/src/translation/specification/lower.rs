@@ -9,7 +9,7 @@ use why3::mlcfg::{BinOp, Exp, Pattern as Pat};
 
 pub fn lower_term_to_why3<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut NameMap<'tcx>,
+    names: &mut CloneMap<'tcx>,
     term_id: DefId,
     term: Term<'tcx>,
 ) -> Exp {
@@ -113,7 +113,7 @@ pub fn lower_term_to_why3<'tcx>(
 
 pub fn lower_pat_to_why3<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut NameMap<'tcx>,
+    names: &mut CloneMap<'tcx>,
     pat: Pattern<'tcx>,
 ) -> Pat {
     match pat {

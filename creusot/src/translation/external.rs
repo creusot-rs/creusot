@@ -17,14 +17,16 @@ pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_spa
 }
 
 fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) -> Module {
-    let mut names = NameMap::with_self_ref(ctx.tcx, def_id);
-    let sig = crate::util::signature_of(ctx, &mut names, def_id);
-
-    let name = translate_value_id(ctx.tcx, def_id).module.join("");
+    debug!("generating default declaration for def_id={:?}", def_id);
+    let mut names = CloneMap::with_self_ref(ctx.tcx, def_id);
 
     let mut decls: Vec<_> = super::prelude_imports(true);
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
+    let sig = crate::util::signature_of(ctx, &mut names, def_id);
+    let name = translate_value_id(ctx.tcx, def_id).module.join("");
+
+    decls.extend(names.to_clones(ctx));
     decls.push(Decl::ValDecl(Val { sig }));
 
     Module { name, decls }

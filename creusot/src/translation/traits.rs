@@ -35,19 +35,15 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             return;
         }
 
-        let mut names = NameMap::with_self_ref(self.tcx, def_id);
-
-        let trait_name = translate_trait_name(self.tcx, def_id);
-        let mut decls: Vec<_> = super::prelude_imports(true);
-        decls.extend(own_generic_decls_for(self.tcx, def_id));
+        let mut names = CloneMap::with_self_ref(self.tcx, def_id);
 
         // The first predicate is a trait reference so we skip it
         for super_trait in traits_used_by(self.tcx, def_id).filter(|t| t.def_id() != def_id) {
             // Ensure trait depends on all super traits
-            self.translate_trait(super_trait.def_id());
-            decls.push(translate_constraint(self, &mut names, super_trait));
+            translate_constraint(self, &mut names, super_trait);
         }
 
+        let mut trait_decls = Vec::new();
         for item in self.tcx.associated_items(def_id).in_definition_order() {
             match item.kind {
                 AssocKind::Fn => {
@@ -57,21 +53,29 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
                     let mut sig = crate::util::signature_of(self, &mut names, item.def_id);
 
-                    decls.extend(crate::translation::function::own_generic_decls_for(
+                    trait_decls.extend(crate::translation::function::own_generic_decls_for(
                         self.tcx,
                         item.def_id,
                     ));
 
                     if crate::is_predicate(self.tcx, item.def_id) {
                         sig.retty = None;
-                        decls.push(Decl::ValDecl(Predicate { sig }));
+                        trait_decls.push(Decl::ValDecl(Predicate { sig }));
                     } else {
-                        decls.push(Decl::ValDecl(Val { sig }));
+                        trait_decls.push(Decl::ValDecl(Val { sig }));
                     }
                 }
                 knd => unimplemented!("{:?} - {:?}", def_id, knd),
             }
         }
+
+        let mut decls: Vec<_> = super::prelude_imports(true);
+        decls.extend(own_generic_decls_for(self.tcx, def_id));
+        decls.extend(names.to_clones(self));
+        decls.extend(trait_decls);
+
+        let trait_name = translate_trait_name(self.tcx, def_id);
+
 
         self.functions.insert(def_id, Module { name: trait_name.name(), decls });
     }
@@ -79,15 +83,13 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
 pub fn translate_constraint<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut NameMap<'tcx>,
+    names: &mut CloneMap<'tcx>,
     tp: TraitPredicate<'tcx>,
-) -> Decl {
-    let clone_name = names.name_for(tp.def_id(), tp.trait_ref.substs);
+) {
+    names.name_for(tp.def_id(), tp.trait_ref.substs);
 
     // If we haven't seen this trait, first translate it
     ctx.translate_trait(tp.def_id());
-
-    ctx::clone_item(ctx, tp.def_id(), tp.trait_ref.substs, clone_name)
 }
 
 use crate::function::{all_generic_decls_for, own_generic_decls_for};
@@ -98,22 +100,16 @@ pub fn translate_impl(ctx: &mut TranslationCtx<'_, '_>, impl_id: DefId) {
         return;
     }
 
-    let mut ns = NameMap::with_self_ref(ctx.tcx, impl_id);
-
     let trait_ref = ctx.tcx.impl_trait_ref(impl_id).unwrap();
+    let mut names = CloneMap::with_self_ref(ctx.tcx, impl_id);
 
     ctx.translate_trait(trait_ref.def_id);
-
-    let mut decls: Vec<_> = super::prelude_imports(true);
-    decls.extend(all_generic_decls_for(ctx.tcx, impl_id));
 
     let mut subst = ctx::type_param_subst(ctx, trait_ref.def_id, trait_ref.substs);
 
     for assoc in ctx.tcx.associated_items(impl_id).in_definition_order() {
-        let name = ns.name_for(assoc.def_id, List::empty());
-
         let assoc_subst = InternalSubsts::identity_for_item(ctx.tcx, impl_id);
-        decls.push(ctx::clone_item(ctx, assoc.def_id, assoc_subst, name.clone()));
+        let name = names.name_for(assoc.def_id, assoc_subst);
 
         ctx.translate_function(assoc.def_id);
 
@@ -162,6 +158,10 @@ pub fn translate_impl(ctx: &mut TranslationCtx<'_, '_>, impl_id: DefId) {
             ));
         }
     }
+
+    let mut decls: Vec<_> = super::prelude_imports(true);
+    decls.extend(all_generic_decls_for(ctx.tcx, impl_id));
+    decls.extend(names.to_clones(ctx));
 
     decls.push(Decl::Clone(DeclClone {
         name: translate_trait_name(ctx.tcx, trait_ref.def_id),

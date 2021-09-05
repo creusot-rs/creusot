@@ -34,7 +34,7 @@ pub fn translate_function<'tcx, 'sess>(
     ctx: &mut TranslationCtx<'sess, 'tcx>,
     def_id: DefId,
 ) -> Module {
-    let mut names = NameMap::with_self_ref(tcx, def_id);
+    let mut names = CloneMap::with_self_ref(tcx, def_id);
     let invariants = specification::gather_invariants(ctx, &mut names, def_id);
     let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
@@ -73,7 +73,7 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     fresh_id: usize,
 
     // Gives a fresh name to every mono-morphization of a function or trait
-    clone_names: NameMap<'tcx>,
+    clone_names: CloneMap<'tcx>,
 
     imports: IndexSet<QName>,
 
@@ -85,7 +85,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'sess, 'tcx>,
         body: &'body Body<'tcx>,
-        clone_names: NameMap<'tcx>,
+        clone_names: CloneMap<'tcx>,
         invariants: IndexMap<DefId, Exp>,
         def_id: DefId,
     ) -> Self {
@@ -183,10 +183,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             traits::translate_constraint(self.ctx, &mut self.clone_names, tp);
         }
 
-        for ((def_id, subst), clone_name) in self.clone_names.into_iter() {
-            // self.ctx.translate_function(def_id);
-            decls.push(clone_item(self.ctx, def_id, subst, clone_name));
-        }
+        decls.extend(self.clone_names.to_clones(self.ctx));
 
         let name = translate_value_id(self.tcx, self.def_id).module_name().name;
 
