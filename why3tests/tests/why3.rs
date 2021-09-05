@@ -7,7 +7,7 @@ fn main() {
     let why3_path = std::env::var("WHY3_PATH").unwrap_or_else(|_| "why3".into());
     let mut out = StandardStream::stdout(ColorChoice::Always);
 
-    for file in glob::glob("../creusot/tests/should_succeed/*.stdout").unwrap() {
+    for file in glob::glob("../creusot/tests/should_succeed/**/*.stdout").unwrap() {
         let file = file.unwrap();
         write!(&mut out, "Testing {} ... ", file.display()).unwrap();
 

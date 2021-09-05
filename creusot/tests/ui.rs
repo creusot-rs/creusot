@@ -22,12 +22,15 @@ fn main() {
     let mut metadata_file = Command::cargo_bin("cargo-creusot").unwrap();
     metadata_file.current_dir(base_path);
     metadata_file
-        .args(&["--package", "creusot-contracts", "--features=contracts"])
+        .args(&["creusot", "--package", "creusot-contracts", "--features=contracts"])
         .env("CREUSOT_METADATA_PATH", &temp_file)
         .env("CREUSOT_CONTINUE", "true")
-        .env("RUST_LOG", "debug");
+        .env("RUST_BACKTRACE", "1");
 
-    metadata_file.output().expect("could not dump metadata for `creusot_contracts`");
+    if !metadata_file.status().expect("could not dump metadata for `creusot_contracts`").success() {
+        eprintln!("{}", String::from_utf8_lossy(&metadata_file.output().unwrap().stderr));
+        std::process::exit(1);
+    }
 
     should_fail("tests/should_fail/*.rs", |p| run_creusot(p, &temp_file.to_string_lossy()));
     should_succeed("tests/should_succeed/**/*.rs", |p| {
