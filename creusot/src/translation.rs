@@ -40,6 +40,12 @@ pub fn translate(mut ctx: TranslationCtx<'_, '_>) -> Result<()> {
         ctx.translate_function(def_id);
     }
 
+    for (_, impls) in ctx.tcx.all_local_trait_impls(()) {
+        for impl_id in impls {
+            traits::translate_impl(&mut ctx, impl_id.to_def_id());
+        }
+    }
+
     if ctx.should_export() {
         external::dump_exports(&ctx, &ctx.opts.metadata_path);
     }
