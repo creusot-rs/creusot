@@ -2,6 +2,7 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{self, subst::InternalSubsts, Ty, TyKind::*};
 use rustc_span::Span;
 use rustc_span::Symbol;
+use why3::declaration::TyDeclKind;
 use std::collections::VecDeque;
 
 use why3::declaration::TyDecl;
@@ -203,7 +204,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
         ml_ty_def.push((var_name.name(), field_tys));
     }
 
-    let ty_decl = TyDecl { ty_name, ty_params: ty_args, ty_constructors: ml_ty_def };
+    let ty_decl = TyDecl { ty_name, ty_params: ty_args, kind: TyDeclKind::Adt(ml_ty_def) };
     ctx.add_type(ty_decl);
 }
 

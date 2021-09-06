@@ -16,9 +16,9 @@ impl PrintEnv {
     }
 }
 
-pub struct PrettyDisplay<'a, A : Pretty>(&'a A);
+pub struct PrettyDisplay<'a, A: Pretty>(&'a A);
 
-impl<'a, A : Pretty> Display for PrettyDisplay<'a, A> {
+impl<'a, A: Pretty> Display for PrettyDisplay<'a, A> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (alloc, mut env) = PrintEnv::new();
         self.0.pretty(&alloc, &mut env).1.render_fmt(120, f)?;
@@ -36,7 +36,9 @@ pub trait Pretty {
         A::Doc: Clone;
 
     fn display<'a>(&'a self) -> PrettyDisplay<'a, Self>
-    where Self : Sized {
+    where
+        Self: Sized,
+    {
         PrettyDisplay(self)
     }
 }
@@ -245,10 +247,11 @@ impl Pretty for DeclClone {
         };
         let kind = match &self.kind {
             CloneKind::Export => alloc.text("export "),
-            _ => alloc.nil()
+            _ => alloc.nil(),
         };
 
-        let doc = alloc.text("clone ").append(kind).append(self.name.pretty(alloc, env)).append(as_doc);
+        let doc =
+            alloc.text("clone ").append(kind).append(self.name.pretty(alloc, env)).append(as_doc);
 
         if self.subst.is_empty() {
             doc
@@ -260,7 +263,6 @@ impl Pretty for DeclClone {
         }
     }
 }
-
 
 impl Pretty for CloneSubst {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
@@ -811,29 +813,49 @@ impl Pretty for TyDecl {
                 ),
             );
 
-        if !self.ty_constructors.is_empty() {
+        if !matches!(self.kind, TyDeclKind::Opaque) {
             ty_decl = ty_decl.append(alloc.text(" = ").append(alloc.hardline()));
         }
 
-        let mut inner_doc = alloc.nil();
-        for (cons, args) in &self.ty_constructors {
-            let mut ty_cons = alloc.text("| ").append(alloc.text(cons));
+        ty_decl.append(self.kind.pretty(alloc, env).indent(2))
 
-            if !args.is_empty() {
-                ty_cons = ty_cons.append(
-                    alloc
-                        .intersperse(
-                            args.iter().map(|ty_arg| ty_arg.pretty(alloc, env)),
-                            alloc.text(", "),
+    }
+}
+
+impl Pretty for TyDeclKind {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        match self {
+            TyDeclKind::Adt(cons) => {
+                let mut inner_doc = alloc.nil();
+                for (cons, args) in cons {
+                    let mut ty_cons = alloc.text("| ").append(alloc.text(cons));
+
+                    if !args.is_empty() {
+                        ty_cons = ty_cons.append(
+                            alloc
+                                .intersperse(
+                                    args.iter().map(|ty_arg| ty_arg.pretty(alloc, env)),
+                                    alloc.text(", "),
+                                )
+                                .parens(),
                         )
-                        .parens(),
-                )
+                    }
+
+                    inner_doc = inner_doc.append(ty_cons.append(alloc.hardline()))
+                }
+
+                inner_doc
             }
-
-            inner_doc = inner_doc.append(ty_cons.append(alloc.hardline()))
+            TyDeclKind::Alias(t) => t.pretty(alloc, env),
+            TyDeclKind::Opaque => alloc.nil(),
         }
-
-        ty_decl.append(inner_doc.indent(2))
     }
 }
 
@@ -848,7 +870,6 @@ impl Pretty for Ident {
     {
         alloc.text(&self.0)
     }
- 
 }
 
 impl Pretty for QName {

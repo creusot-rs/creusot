@@ -130,16 +130,32 @@ pub struct Predicate {
 pub struct TyDecl {
     pub ty_name: Ident,
     pub ty_params: Vec<String>,
-    pub ty_constructors: Vec<(String, Vec<Type>)>,
+    pub kind: TyDeclKind,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub enum TyDeclKind {
+    Adt(Vec<(String, Vec<Type>)>),
+    Alias(Type),
+    Opaque,
 }
 
 impl TyDecl {
     pub fn used_types(&self) -> IndexSet<QName> {
         let mut used = IndexSet::new();
-        for (_, var_decl) in &self.ty_constructors {
-            for ty in var_decl {
+        match &self.kind {
+            TyDeclKind::Adt(cons) => {
+                for (_, var_decl) in cons {
+                    for ty in var_decl {
+                        ty.find_used_types(&mut used);
+                    }
+                }
+            }
+            TyDeclKind::Alias(ty) => {
                 ty.find_used_types(&mut used);
             }
+            TyDeclKind::Opaque => {}
         }
         used
     }

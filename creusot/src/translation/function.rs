@@ -482,7 +482,7 @@ fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
             Some(Decl::TyDecl(TyDecl {
                 ty_name: (&*param.name.as_str().to_lowercase()).into(),
                 ty_params: vec![],
-                ty_constructors: vec![],
+                kind: TyDeclKind::Opaque,
             }))
         } else {
             None
