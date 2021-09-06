@@ -38,7 +38,7 @@ module CreusotContracts_Builtins_Impl8_Resolve
   use prelude.Prelude
   use Type
   type t   
-  predicate impl (self : borrowed t) = 
+  predicate resolve (self : borrowed t) = 
      ^ self =  * self
 end
 module CreusotContracts_Builtins_Impl8
@@ -55,7 +55,7 @@ module CreusotContracts_Builtins_Impl8
   use Type
   type t   
   clone CreusotContracts_Builtins_Impl8_Resolve as Resolve0 with type t = t
-  clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.impl
+  clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.resolve
 end
 module Core_Marker_Sized
   use Ref
@@ -105,7 +105,7 @@ module ProjectionToggle_ProjToggle
   clone CreusotContracts_Builtins_Impl8_Resolve as Resolve1 with type t = t
   clone Core_Marker_Sized as Sized2 with type self = t
   clone Core_Cmp_PartialEq as PartialEq3 with type self = t, type rhs = t
-  let rec cfg impl (o_toggle_1 : bool) (o_a_2 : borrowed t) (o_b_3 : borrowed t) : borrowed t
+  let rec cfg proj_toggle (o_toggle_1 : bool) (o_a_2 : borrowed t) (o_b_3 : borrowed t) : borrowed t
     ensures { o_toggle_1 = false -> result = o_b_3 &&  ^ o_a_2 =  * o_a_2 }
     ensures { o_toggle_1 = true -> result = o_a_2 &&  ^ o_b_3 =  * o_b_3 }
     
@@ -136,34 +136,34 @@ module ProjectionToggle_ProjToggle
       end
   }
   BB1 {
-    assume { Resolve1.impl b_3 };
+    assume { Resolve1.resolve b_3 };
     assume { Resolve0.resolve _6 };
     _7 <- borrow_mut ( * a_2);
     a_2 <- { a_2 with current = ( ^ _7) };
-    assume { Resolve1.impl a_2 };
+    assume { Resolve1.resolve a_2 };
     _5 <- borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ _5) };
-    assume { Resolve1.impl _7 };
+    assume { Resolve1.resolve _7 };
     goto BB3
   }
   BB2 {
-    assume { Resolve1.impl a_2 };
+    assume { Resolve1.resolve a_2 };
     assume { Resolve0.resolve _6 };
     _8 <- borrow_mut ( * b_3);
     b_3 <- { b_3 with current = ( ^ _8) };
-    assume { Resolve1.impl b_3 };
+    assume { Resolve1.resolve b_3 };
     _5 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _5) };
-    assume { Resolve1.impl _8 };
+    assume { Resolve1.resolve _8 };
     goto BB3
   }
   BB3 {
     _4 <- borrow_mut ( * _5);
     _5 <- { _5 with current = ( ^ _4) };
-    assume { Resolve1.impl _5 };
+    assume { Resolve1.resolve _5 };
     _0 <- borrow_mut ( * _4);
     _4 <- { _4 with current = ( ^ _0) };
-    assume { Resolve1.impl _4 };
+    assume { Resolve1.resolve _4 };
     return _0
   }
   
@@ -180,7 +180,7 @@ module Core_Panicking_Panic
   use floating_point.Double
   use prelude.Prelude
   use Type
-  val impl (expr : string) : ()
+  val panic (expr : string) : ()
     ensures { false }
     
 end
@@ -202,7 +202,7 @@ module ProjectionToggle_Main
   clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = bool
   clone Core_Panicking_Panic as Panic4
   clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = ()
-  let rec cfg impl () : () = 
+  let rec cfg main () : () = 
   var _0 : ();
   var a_1 : int32;
   var b_2 : int32;
@@ -226,19 +226,19 @@ module ProjectionToggle_Main
     a_1 <-  ^ _5;
     _4 <- borrow_mut ( * _5);
     _5 <- { _5 with current = ( ^ _4) };
-    assume { Resolve0.impl _5 };
+    assume { Resolve0.resolve _5 };
     _7 <- borrow_mut b_2;
     b_2 <-  ^ _7;
     assume { Resolve1.resolve b_2 };
     _6 <- borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ _6) };
-    assume { Resolve0.impl _7 };
-    x_3 <- ProjToggle2.impl true _4 _6;
+    assume { Resolve0.resolve _7 };
+    x_3 <- ProjToggle2.proj_toggle true _4 _6;
     goto BB1
   }
   BB1 {
     x_3 <- { x_3 with current = ( * x_3 + (5 : int32)) };
-    assume { Resolve0.impl x_3 };
+    assume { Resolve0.resolve x_3 };
     assume { Resolve1.resolve _11 };
     _11 <- a_1;
     assume { Resolve1.resolve a_1 };

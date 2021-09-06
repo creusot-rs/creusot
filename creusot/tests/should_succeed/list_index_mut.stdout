@@ -29,7 +29,7 @@ module ListIndexMut_Impl0_Resolve
   use floating_point.Double
   use prelude.Prelude
   use Type
-  predicate impl (self : Type.listindexmut_list) = 
+  predicate resolve (self : Type.listindexmut_list) = 
     true
 end
 module ListIndexMut_Len
@@ -44,12 +44,12 @@ module ListIndexMut_Len
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec function impl (l : Type.listindexmut_list) : int
+  let rec function len (l : Type.listindexmut_list) : int
     ensures { result >= Int32.to_int (0 : int32) }
     
    = 
     let Type.ListIndexMut_List(_, ls) = l in Int32.to_int (1 : int32) + match (ls) with
-      | Type.ListIndexMut_Option_Some(ls) -> impl ls
+      | Type.ListIndexMut_Option_Some(ls) -> len ls
       | Type.ListIndexMut_Option_None -> Int32.to_int (0 : int32)
       end
 end
@@ -66,14 +66,14 @@ module ListIndexMut_Get
   use prelude.Prelude
   use Type
   clone ListIndexMut_Len as Len0
-  let rec function impl (l : Type.listindexmut_list) (ix : int) : Type.listindexmut_option uint32
-    variant {Len0.impl l}
+  let rec function get (l : Type.listindexmut_list) (ix : int) : Type.listindexmut_option uint32
+    variant {Len0.len l}
     
    = 
     let Type.ListIndexMut_List(i, ls) = l in match (ix > Int32.to_int (0 : int32)) with
       | False -> Type.ListIndexMut_Option_Some(i)
       | True -> match (ls) with
-        | Type.ListIndexMut_Option_Some(ls) -> impl ls (ix - Int32.to_int (1 : int32))
+        | Type.ListIndexMut_Option_Some(ls) -> get ls (ix - Int32.to_int (1 : int32))
         | Type.ListIndexMut_Option_None -> Type.ListIndexMut_Option_None
         end
       end
@@ -106,7 +106,7 @@ module CreusotContracts_Builtins_Impl8_Resolve
   use prelude.Prelude
   use Type
   type t   
-  predicate impl (self : borrowed t) = 
+  predicate resolve (self : borrowed t) = 
      ^ self =  * self
 end
 module CreusotContracts_Builtins_Impl8
@@ -123,7 +123,7 @@ module CreusotContracts_Builtins_Impl8
   use Type
   type t   
   clone CreusotContracts_Builtins_Impl8_Resolve as Resolve0 with type t = t
-  clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.impl
+  clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.resolve
 end
 module Std_Process_Abort
   use Ref
@@ -137,7 +137,7 @@ module Std_Process_Abort
   use floating_point.Double
   use prelude.Prelude
   use Type
-  val impl () : ()
+  val abort () : ()
     ensures { false }
     
 end
@@ -163,12 +163,12 @@ module ListIndexMut_IndexMut
   clone CreusotContracts_Builtins_Resolve as Resolve7 with type self = ()
   clone Std_Process_Abort as Abort8
   clone CreusotContracts_Builtins_Impl8_Resolve as Resolve9 with type t = uint32
-  let rec cfg impl (o_param_l_1 : borrowed (Type.listindexmut_list)) (o_param_ix_2 : usize) : borrowed uint32
-    requires {UInt64.to_int o_param_ix_2 < Len0.impl ( * o_param_l_1)}
-    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * o_param_l_1) && i <> UInt64.to_int o_param_ix_2 -> Get1.impl ( * o_param_l_1) i = Get1.impl ( ^ o_param_l_1) i }
-    ensures { Len0.impl ( ^ o_param_l_1) = Len0.impl ( * o_param_l_1) }
-    ensures { Type.ListIndexMut_Option_Some( ^ result) = Get1.impl ( ^ o_param_l_1) (UInt64.to_int o_param_ix_2) }
-    ensures { Type.ListIndexMut_Option_Some( * result) = Get1.impl ( * o_param_l_1) (UInt64.to_int o_param_ix_2) }
+  let rec cfg index_mut (o_param_l_1 : borrowed (Type.listindexmut_list)) (o_param_ix_2 : usize) : borrowed uint32
+    requires {UInt64.to_int o_param_ix_2 < Len0.len ( * o_param_l_1)}
+    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * o_param_l_1) && i <> UInt64.to_int o_param_ix_2 -> Get1.get ( * o_param_l_1) i = Get1.get ( ^ o_param_l_1) i }
+    ensures { Len0.len ( ^ o_param_l_1) = Len0.len ( * o_param_l_1) }
+    ensures { Type.ListIndexMut_Option_Some( ^ result) = Get1.get ( ^ o_param_l_1) (UInt64.to_int o_param_ix_2) }
+    ensures { Type.ListIndexMut_Option_Some( * result) = Get1.get ( * o_param_l_1) (UInt64.to_int o_param_ix_2) }
     
    = 
   var _0 : borrowed uint32;
@@ -194,7 +194,7 @@ module ListIndexMut_IndexMut
     goto BB0
   }
   BB0 {
-    assume { Resolve2.impl l_4 };
+    assume { Resolve2.resolve l_4 };
     l_4 <- param_l_1;
     assume { Resolve3.resolve ix_5 };
     ix_5 <- param_ix_2;
@@ -202,11 +202,11 @@ module ListIndexMut_IndexMut
     goto BB1
   }
   BB1 {
-    invariant valid_ix { (0 : usize) <= ix_5 && UInt64.to_int ix_5 < Len0.impl ( * l_4) };
-    invariant get_target_now { Get1.impl ( * l_4) (UInt64.to_int ix_5) = Get1.impl ( * param_l_1) (UInt64.to_int param_ix_2) };
-    invariant get_target_fin { Get1.impl ( ^ l_4) (UInt64.to_int ix_5) = Get1.impl ( ^ param_l_1) (UInt64.to_int param_ix_2) };
-    invariant len { Len0.impl ( ^ l_4) = Len0.impl ( * l_4) -> Len0.impl ( ^ param_l_1) = Len0.impl ( * param_l_1) };
-    invariant untouched { (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * l_4) && i <> UInt64.to_int ix_5 -> Get1.impl ( ^ l_4) i = Get1.impl ( * l_4) i) -> (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * param_l_1) && i <> UInt64.to_int param_ix_2 -> Get1.impl ( ^ param_l_1) i = Get1.impl ( * param_l_1) i) };
+    invariant valid_ix { (0 : usize) <= ix_5 && UInt64.to_int ix_5 < Len0.len ( * l_4) };
+    invariant get_target_now { Get1.get ( * l_4) (UInt64.to_int ix_5) = Get1.get ( * param_l_1) (UInt64.to_int param_ix_2) };
+    invariant get_target_fin { Get1.get ( ^ l_4) (UInt64.to_int ix_5) = Get1.get ( ^ param_l_1) (UInt64.to_int param_ix_2) };
+    invariant len { Len0.len ( ^ l_4) = Len0.len ( * l_4) -> Len0.len ( ^ param_l_1) = Len0.len ( * param_l_1) };
+    invariant untouched { (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * l_4) && i <> UInt64.to_int ix_5 -> Get1.get ( ^ l_4) i = Get1.get ( * l_4) i) -> (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * param_l_1) && i <> UInt64.to_int param_ix_2 -> Get1.get ( ^ param_l_1) i = Get1.get ( * param_l_1) i) };
     goto BB2
   }
   BB2 {
@@ -230,13 +230,13 @@ module ListIndexMut_IndexMut
     assume { Resolve7.resolve _6 };
     _21 <- borrow_mut (let Type.ListIndexMut_List(a, _) =  * l_4 in a);
     l_4 <- { l_4 with current = (let Type.ListIndexMut_List(a, b) =  * l_4 in Type.ListIndexMut_List( ^ _21, b)) };
-    assume { Resolve2.impl l_4 };
+    assume { Resolve2.resolve l_4 };
     _3 <- borrow_mut ( * _21);
     _21 <- { _21 with current = ( ^ _3) };
-    assume { Resolve9.impl _21 };
+    assume { Resolve9.resolve _21 };
     _0 <- borrow_mut ( * _3);
     _3 <- { _3 with current = ( ^ _0) };
-    assume { Resolve9.impl _3 };
+    assume { Resolve9.resolve _3 };
     return _0
   }
   BB5 {
@@ -247,7 +247,7 @@ module ListIndexMut_IndexMut
       end
   }
   BB6 {
-    assume { Resolve2.impl l_4 };
+    assume { Resolve2.resolve l_4 };
     assume { Resolve3.resolve ix_5 };
     assume { Resolve5.resolve _16 };
     absurd
@@ -257,7 +257,7 @@ module ListIndexMut_IndexMut
     goto BB9
   }
   BB8 {
-    assume { Resolve2.impl l_4 };
+    assume { Resolve2.resolve l_4 };
     assume { Resolve3.resolve ix_5 };
     assume { Resolve5.resolve _16 };
     absurd
@@ -265,11 +265,11 @@ module ListIndexMut_IndexMut
   BB9 {
     n_17 <- borrow_mut (let Type.ListIndexMut_Option_Some(a) = let Type.ListIndexMut_List(_, a) =  * l_4 in a in a);
     l_4 <- { l_4 with current = (let Type.ListIndexMut_List(a, b) =  * l_4 in Type.ListIndexMut_List(a, let Type.ListIndexMut_Option_Some(a) = let Type.ListIndexMut_List(_, a) =  * l_4 in a in Type.ListIndexMut_Option_Some( ^ n_17))) };
-    assume { Resolve2.impl l_4 };
+    assume { Resolve2.resolve l_4 };
     _18 <- borrow_mut ( * n_17);
     n_17 <- { n_17 with current = ( ^ _18) };
-    assume { Resolve6.impl n_17 };
-    assume { Resolve2.impl l_4 };
+    assume { Resolve6.resolve n_17 };
+    assume { Resolve2.resolve l_4 };
     l_4 <- _18;
     _15 <- ();
     assume { Resolve7.resolve _15 };
@@ -299,11 +299,11 @@ module ListIndexMut_Write
   clone CreusotContracts_Builtins_Impl8_Resolve as Resolve4 with type t = uint32
   clone ListIndexMut_Len as Len5
   clone ListIndexMut_Get as Get6
-  let rec cfg impl (o_l_1 : borrowed (Type.listindexmut_list)) (o_ix_2 : usize) (o_val_3 : uint32) : ()
-    requires {UInt64.to_int o_ix_2 < Len5.impl ( * o_l_1)}
-    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len5.impl ( * o_l_1) && i <> UInt64.to_int o_ix_2 -> Get6.impl ( * o_l_1) i = Get6.impl ( ^ o_l_1) i }
-    ensures { Len5.impl ( ^ o_l_1) = Len5.impl ( * o_l_1) }
-    ensures { Type.ListIndexMut_Option_Some(o_val_3) = Get6.impl ( ^ o_l_1) (UInt64.to_int o_ix_2) }
+  let rec cfg write (o_l_1 : borrowed (Type.listindexmut_list)) (o_ix_2 : usize) (o_val_3 : uint32) : ()
+    requires {UInt64.to_int o_ix_2 < Len5.len ( * o_l_1)}
+    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len5.len ( * o_l_1) && i <> UInt64.to_int o_ix_2 -> Get6.get ( * o_l_1) i = Get6.get ( ^ o_l_1) i }
+    ensures { Len5.len ( ^ o_l_1) = Len5.len ( * o_l_1) }
+    ensures { Type.ListIndexMut_Option_Some(o_val_3) = Get6.get ( ^ o_l_1) (UInt64.to_int o_ix_2) }
     
    = 
   var _0 : ();
@@ -326,18 +326,18 @@ module ListIndexMut_Write
     assume { Resolve0.resolve val_3 };
     _6 <- borrow_mut ( * l_1);
     l_1 <- { l_1 with current = ( ^ _6) };
-    assume { Resolve1.impl l_1 };
+    assume { Resolve1.resolve l_1 };
     assume { Resolve2.resolve _7 };
     _7 <- ix_2;
     assume { Resolve2.resolve ix_2 };
-    _5 <- IndexMut3.impl _6 _7;
+    _5 <- IndexMut3.index_mut _6 _7;
     goto BB1
   }
   BB1 {
     assume { Resolve0.resolve ( * _5) };
     _5 <- { _5 with current = _4 };
     assume { Resolve0.resolve _4 };
-    assume { Resolve4.impl _5 };
+    assume { Resolve4.resolve _5 };
     _0 <- ();
     return _0
   }
@@ -356,7 +356,7 @@ module ListIndexMut_Impl0
   use prelude.Prelude
   use Type
   clone ListIndexMut_Impl0_Resolve as Resolve0
-  clone CreusotContracts_Builtins_Resolve with type self = Type.listindexmut_list, predicate resolve = Resolve0.impl
+  clone CreusotContracts_Builtins_Resolve with type self = Type.listindexmut_list, predicate resolve = Resolve0.resolve
 end
 module ListIndexMut_Main
   use Ref
@@ -373,7 +373,7 @@ module ListIndexMut_Main
   clone CreusotContracts_Builtins_Impl8_Resolve as Resolve0 with type t = Type.listindexmut_list
   clone ListIndexMut_Write as Write1
   clone ListIndexMut_Impl0_Resolve as Resolve2
-  let rec cfg impl () : () = 
+  let rec cfg main () : () = 
   var _0 : ();
   var l_1 : Type.listindexmut_list;
   var _2 : Type.listindexmut_option (Type.listindexmut_list);
@@ -408,17 +408,17 @@ module ListIndexMut_Main
     l_1 <-  ^ _8;
     _7 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _7) };
-    assume { Resolve0.impl _8 };
-    _6 <- Write1.impl _7 (0 : usize) (2 : uint32);
+    assume { Resolve0.resolve _8 };
+    _6 <- Write1.write _7 (0 : usize) (2 : uint32);
     goto BB5
   }
   BB5 {
-    assume { Resolve0.impl _7 };
+    assume { Resolve0.resolve _7 };
     _0 <- ();
     goto BB6
   }
   BB6 {
-    assume { Resolve2.impl l_1 };
+    assume { Resolve2.resolve l_1 };
     return _0
   }
   

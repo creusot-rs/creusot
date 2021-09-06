@@ -139,15 +139,7 @@ pub fn cloneable_name(tcx: TyCtxt, def_id: DefId) -> QName {
 }
 
 pub(crate) fn method_name(tcx: TyCtxt, def_id: DefId) -> String {
-    if let Some(it) = tcx.opt_associated_item(def_id) {
-        if let ty::TraitContainer(_) = it.container {
-            tcx.item_name(def_id).to_string().to_lowercase()
-        } else {
-            "impl".into()
-        }
-    } else {
-        "impl".into()
-    }
+    tcx.item_name(def_id).to_string().to_lowercase()
 }
 
 fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
@@ -190,8 +182,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
             segments = Vec::new();
         }
         (_, Some(Namespace::ValueNS)) | (Closure, _) => {
-            // temporary hack, if the method belongs to a trait declaration pop off last segment
-            let is_trait_assoc = method_name(tcx, def_id) != "impl";
+            let is_trait_assoc = tcx.trait_of_item(def_id).is_some();
 
             if is_trait_assoc {
                 segments.pop().unwrap();

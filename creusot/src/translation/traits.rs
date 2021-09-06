@@ -147,13 +147,13 @@ pub fn translate_impl(ctx: &mut TranslationCtx<'_, '_>, impl_id: DefId) {
         if crate::is_predicate(ctx.tcx, assoc.def_id) {
             subst.push(CloneSubst::Predicate(
                 assoc.ident.to_string().into(),
-                QName { module: vec![name.clone()], name: "impl".into() },
+                names.qname_for(assoc.def_id, assoc_subst)
                 // crate::ctx::translate_value_id(ctx.tcx, assoc.def_id),
             ));
         } else {
             subst.push(CloneSubst::Val(
                 assoc.ident.to_string().into(),
-                QName { module: vec![name.clone()], name: "impl".into() },
+                names.qname_for(assoc.def_id, assoc_subst)
                 // crate::ctx::translate_value_id(ctx.tcx, assoc.def_id),
             ));
         }

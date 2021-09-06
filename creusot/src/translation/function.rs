@@ -185,12 +185,12 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         decls.extend(self.clone_names.to_clones(self.ctx));
 
-        let name = translate_value_id(self.tcx, self.def_id).module_name().name;
+        let name = translate_value_id(self.tcx, self.def_id);
 
-        let sig = Signature { name: "impl".into(), retty: Some(retty), args, contract };
+        let sig = Signature { name: name.name.clone().into(), retty: Some(retty), args, contract };
 
         decls.push(Decl::FunDecl(CfgFunction { sig, vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(), entry, blocks: self.past_blocks }));
-        Module { name, decls }
+        Module { name: name.module_name().name, decls }
     }
 
     fn translate_body(&mut self) {

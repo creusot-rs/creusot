@@ -30,9 +30,9 @@ module AllZero_Len
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec function impl (l : Type.allzero_list) : int = 
+  let rec function len (l : Type.allzero_list) : int = 
     match (l) with
-      | Type.AllZero_List_Cons(_, ls) -> Int32.to_int (1 : int32) + impl ls
+      | Type.AllZero_List_Cons(_, ls) -> Int32.to_int (1 : int32) + len ls
       | Type.AllZero_List_Nil -> Int32.to_int (0 : int32)
       end
 end
@@ -48,11 +48,11 @@ module AllZero_Get
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec function impl (l : Type.allzero_list) (ix : int) : Type.core_option_option uint32 = 
+  let rec function get (l : Type.allzero_list) (ix : int) : Type.core_option_option uint32 = 
     match (l) with
       | Type.AllZero_List_Cons(x, ls) -> match (ix = Int32.to_int (0 : int32)) with
         | True -> Type.Core_Option_Option_Some(x)
-        | False -> impl ls (ix - Int32.to_int (1 : int32))
+        | False -> get ls (ix - Int32.to_int (1 : int32))
         end
       | Type.AllZero_List_Nil -> Type.Core_Option_Option_None
       end
@@ -85,7 +85,7 @@ module CreusotContracts_Builtins_Impl8_Resolve
   use prelude.Prelude
   use Type
   type t   
-  predicate impl (self : borrowed t) = 
+  predicate resolve (self : borrowed t) = 
      ^ self =  * self
 end
 module CreusotContracts_Builtins_Impl8
@@ -102,7 +102,7 @@ module CreusotContracts_Builtins_Impl8
   use Type
   type t   
   clone CreusotContracts_Builtins_Impl8_Resolve as Resolve0 with type t = t
-  clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.impl
+  clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.resolve
 end
 module AllZero_AllZero
   use Ref
@@ -123,9 +123,9 @@ module AllZero_AllZero
   clone CreusotContracts_Builtins_Impl8_Resolve as Resolve4 with type t = uint32
   clone CreusotContracts_Builtins_Impl8_Resolve as Resolve5 with type t = Type.allzero_list
   clone CreusotContracts_Builtins_Resolve as Resolve6 with type self = ()
-  let rec cfg impl (o_l_1 : borrowed (Type.allzero_list)) : ()
-    ensures { Len0.impl ( * o_l_1) = Len0.impl ( ^ o_l_1) }
-    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * o_l_1) -> Get1.impl ( ^ o_l_1) i = Type.Core_Option_Option_Some((0 : uint32)) }
+  let rec cfg all_zero (o_l_1 : borrowed (Type.allzero_list)) : ()
+    ensures { Len0.len ( * o_l_1) = Len0.len ( ^ o_l_1) }
+    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * o_l_1) -> Get1.get ( ^ o_l_1) i = Type.Core_Option_Option_Some((0 : uint32)) }
     
    = 
   var _0 : ();
@@ -142,13 +142,13 @@ module AllZero_AllZero
     goto BB0
   }
   BB0 {
-    assume { Resolve2.impl loop_l_2 };
+    assume { Resolve2.resolve loop_l_2 };
     loop_l_2 <- l_1;
     goto BB1
   }
   BB1 {
-    invariant zeroed { (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * loop_l_2) -> Get1.impl ( ^ loop_l_2) i = Type.Core_Option_Option_Some((0 : uint32))) -> (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.impl ( * l_1) -> Get1.impl ( ^ l_1) i = Type.Core_Option_Option_Some((0 : uint32))) };
-    invariant in_len { Len0.impl ( ^ loop_l_2) = Len0.impl ( * loop_l_2) -> Len0.impl ( ^ l_1) = Len0.impl ( * l_1) };
+    invariant zeroed { (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * loop_l_2) -> Get1.get ( ^ loop_l_2) i = Type.Core_Option_Option_Some((0 : uint32))) -> (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * l_1) -> Get1.get ( ^ l_1) i = Type.Core_Option_Option_Some((0 : uint32))) };
+    invariant in_len { Len0.len ( ^ loop_l_2) = Len0.len ( * loop_l_2) -> Len0.len ( ^ l_1) = Len0.len ( * l_1) };
     goto BB2
   }
   BB2 {
@@ -162,7 +162,7 @@ module AllZero_AllZero
     goto BB5
   }
   BB4 {
-    assume { Resolve2.impl loop_l_2 };
+    assume { Resolve2.resolve loop_l_2 };
     assume { Resolve3.resolve _6 };
     _0 <- ();
     return _0
@@ -172,13 +172,13 @@ module AllZero_AllZero
     loop_l_2 <- { loop_l_2 with current = (let Type.AllZero_List_Cons(a, b) =  * loop_l_2 in Type.AllZero_List_Cons( ^ value_7, b)) };
     next_8 <- borrow_mut (let Type.AllZero_List_Cons(_, a) =  * loop_l_2 in a);
     loop_l_2 <- { loop_l_2 with current = (let Type.AllZero_List_Cons(a, b) =  * loop_l_2 in Type.AllZero_List_Cons(a,  ^ next_8)) };
-    assume { Resolve2.impl loop_l_2 };
+    assume { Resolve2.resolve loop_l_2 };
     value_7 <- { value_7 with current = (0 : uint32) };
-    assume { Resolve4.impl value_7 };
+    assume { Resolve4.resolve value_7 };
     _9 <- borrow_mut ( * next_8);
     next_8 <- { next_8 with current = ( ^ _9) };
-    assume { Resolve5.impl next_8 };
-    assume { Resolve2.impl loop_l_2 };
+    assume { Resolve5.resolve next_8 };
+    assume { Resolve2.resolve loop_l_2 };
     loop_l_2 <- _9;
     _5 <- ();
     assume { Resolve6.resolve _5 };
@@ -198,7 +198,7 @@ module AllZero_Main
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec cfg impl () : () = 
+  let rec cfg main () : () = 
   var _0 : ();
   {
     goto BB0

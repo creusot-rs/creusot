@@ -31,12 +31,12 @@ module BinarySearch_LenLogic
   use prelude.Prelude
   use Type
   type t   
-  let rec function impl (l : Type.binarysearch_list t) : int
+  let rec function len_logic (l : Type.binarysearch_list t) : int
     ensures { result >= Int32.to_int (0 : int32) }
     
    = 
     match (l) with
-      | Type.BinarySearch_List_Cons(_, ls) -> Int32.to_int (1 : int32) + impl ls
+      | Type.BinarySearch_List_Cons(_, ls) -> Int32.to_int (1 : int32) + len_logic ls
       | Type.BinarySearch_List_Nil -> Int32.to_int (0 : int32)
       end
 end
@@ -54,16 +54,16 @@ module BinarySearch_Get
   use Type
   type t   
   clone BinarySearch_LenLogic as LenLogic0 with type t = t
-  let rec function impl (l : Type.binarysearch_list t) (ix : int) : t
-    requires {ix < LenLogic0.impl l}
+  let rec function get (l : Type.binarysearch_list t) (ix : int) : t
+    requires {ix < LenLogic0.len_logic l}
     requires {ix >= Int32.to_int (0 : int32)}
-    variant {LenLogic0.impl l}
+    variant {LenLogic0.len_logic l}
     
    = 
     match (l) with
       | Type.BinarySearch_List_Cons(t, ls) -> match (ix = Int32.to_int (0 : int32)) with
         | True -> t
-        | False -> impl ls (ix - Int32.to_int (1 : int32))
+        | False -> get ls (ix - Int32.to_int (1 : int32))
         end
       | Type.BinarySearch_List_Nil -> absurd
       end
@@ -95,7 +95,7 @@ module Std_Process_Abort
   use floating_point.Double
   use prelude.Prelude
   use Type
-  val impl () : ()
+  val abort () : ()
     ensures { false }
     
 end
@@ -122,9 +122,9 @@ module BinarySearch_Impl0_Index
   clone CreusotContracts_Builtins_Resolve as Resolve7 with type self = t
   clone CreusotContracts_Builtins_Resolve as Resolve8 with type self = bool
   clone CreusotContracts_Builtins_Resolve as Resolve9 with type self = Type.binarysearch_list t
-  let rec cfg impl (o_self_1 : Type.binarysearch_list t) (o_ix_2 : usize) : t
-    requires {UInt64.to_int o_ix_2 < LenLogic0.impl o_self_1}
-    ensures { result = Get1.impl o_self_1 (UInt64.to_int o_ix_2) }
+  let rec cfg index (o_self_1 : Type.binarysearch_list t) (o_ix_2 : usize) : t
+    requires {UInt64.to_int o_ix_2 < LenLogic0.len_logic o_self_1}
+    ensures { result = Get1.get o_self_1 (UInt64.to_int o_ix_2) }
     
    = 
   var _0 : t;
@@ -159,8 +159,8 @@ module BinarySearch_Impl0_Index
     goto BB1
   }
   BB1 {
-    invariant ix_valid { UInt64.to_int ix_2 < LenLogic0.impl l_4 };
-    invariant res_get { Get1.impl self_1 (UInt64.to_int orig_ix_3) = Get1.impl l_4 (UInt64.to_int ix_2) };
+    invariant ix_valid { UInt64.to_int ix_2 < LenLogic0.len_logic l_4 };
+    invariant res_get { Get1.get self_1 (UInt64.to_int orig_ix_3) = Get1.get l_4 (UInt64.to_int ix_2) };
     goto BB2
   }
   BB2 {
@@ -237,9 +237,9 @@ module BinarySearch_Impl0_Len
   clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = ()
   clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = usize
   clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = Type.binarysearch_list t
-  let rec cfg impl (o_self_1 : Type.binarysearch_list t) : usize
-    requires {LenLogic0.impl o_self_1 <= Int32.to_int (1000000 : int32)}
-    ensures { UInt64.to_int result = LenLogic0.impl o_self_1 }
+  let rec cfg len (o_self_1 : Type.binarysearch_list t) : usize
+    requires {LenLogic0.len_logic o_self_1 <= Int32.to_int (1000000 : int32)}
+    ensures { UInt64.to_int result = LenLogic0.len_logic o_self_1 }
     ensures { result >= (0 : usize) }
     
    = 
@@ -265,7 +265,7 @@ module BinarySearch_Impl0_Len
     goto BB1
   }
   BB1 {
-    invariant len_valid { UInt64.to_int len_2 + LenLogic0.impl l_3 = LenLogic0.impl self_1 };
+    invariant len_valid { UInt64.to_int len_2 + LenLogic0.len_logic l_3 = LenLogic0.len_logic self_1 };
     goto BB2
   }
   BB2 {
@@ -324,12 +324,12 @@ module BinarySearch_BinarySearch
   clone CreusotContracts_Builtins_Resolve as Resolve7 with type self = usize
   clone BinarySearch_Impl0_Index as Index8 with type t = uint32
   clone CreusotContracts_Builtins_Resolve as Resolve9 with type self = uint32
-  let rec cfg impl (o_arr_1 : Type.binarysearch_list uint32) (o_elem_2 : uint32) : Type.core_result_result usize usize
-    requires {forall k2 : (int) . forall k1 : (int) . Get1.impl o_arr_1 k1 <= Get1.impl o_arr_1 k2}
-    requires {LenLogic0.impl o_arr_1 <= Int32.to_int (1000000 : int32)}
-    ensures { forall x : (usize) . result = Type.Core_Result_Result_Err(x) -> (forall i : (int) . UInt64.to_int x < i && i < LenLogic0.impl o_arr_1 -> o_elem_2 < Get1.impl o_arr_1 i) }
-    ensures { forall x : (usize) . result = Type.Core_Result_Result_Err(x) -> (forall i : (int) . Int32.to_int (0 : int32) <= i && i < UInt64.to_int x -> Get1.impl o_arr_1 i < o_elem_2) }
-    ensures { forall x : (usize) . result = Type.Core_Result_Result_Ok(x) -> Get1.impl o_arr_1 (UInt64.to_int x) = o_elem_2 }
+  let rec cfg binary_search (o_arr_1 : Type.binarysearch_list uint32) (o_elem_2 : uint32) : Type.core_result_result usize usize
+    requires {forall k2 : (int) . forall k1 : (int) . Get1.get o_arr_1 k1 <= Get1.get o_arr_1 k2}
+    requires {LenLogic0.len_logic o_arr_1 <= Int32.to_int (1000000 : int32)}
+    ensures { forall x : (usize) . result = Type.Core_Result_Result_Err(x) -> (forall i : (int) . UInt64.to_int x < i && i < LenLogic0.len_logic o_arr_1 -> o_elem_2 < Get1.get o_arr_1 i) }
+    ensures { forall x : (usize) . result = Type.Core_Result_Result_Err(x) -> (forall i : (int) . Int32.to_int (0 : int32) <= i && i < UInt64.to_int x -> Get1.get o_arr_1 i < o_elem_2) }
+    ensures { forall x : (usize) . result = Type.Core_Result_Result_Ok(x) -> Get1.get o_arr_1 (UInt64.to_int x) = o_elem_2 }
     
    = 
   var _0 : Type.core_result_result usize usize;
@@ -383,7 +383,7 @@ module BinarySearch_BinarySearch
   }
   BB0 {
     _6 <- arr_1;
-    _5 <- Len2.impl _6;
+    _5 <- Len2.len _6;
     goto BB1
   }
   BB1 {
@@ -406,7 +406,7 @@ module BinarySearch_BinarySearch
     _3 <- ();
     assume { Resolve6.resolve _3 };
     _9 <- arr_1;
-    size_8 <- Len2.impl _9;
+    size_8 <- Len2.len _9;
     goto BB4
   }
   BB4 {
@@ -414,8 +414,8 @@ module BinarySearch_BinarySearch
     goto BB5
   }
   BB5 {
-    invariant size_valid { UInt64.to_int size_8 + UInt64.to_int base_10 <= LenLogic0.impl arr_1 };
-    invariant in_range { forall i : (int) . Int32.to_int (0 : int32) <= i && i < LenLogic0.impl arr_1 -> i < UInt64.to_int base_10 -> Get1.impl arr_1 i <= elem_2 && UInt64.to_int base_10 + UInt64.to_int size_8 < i -> elem_2 <= Get1.impl arr_1 i };
+    invariant size_valid { UInt64.to_int size_8 + UInt64.to_int base_10 <= LenLogic0.len_logic arr_1 };
+    invariant in_range { forall i : (int) . Int32.to_int (0 : int32) <= i && i < LenLogic0.len_logic arr_1 -> i < UInt64.to_int base_10 -> Get1.get arr_1 i <= elem_2 && UInt64.to_int base_10 + UInt64.to_int size_8 < i -> elem_2 <= Get1.get arr_1 i };
     invariant size_pos { size_8 > (0 : usize) };
     goto BB6
   }
@@ -442,7 +442,7 @@ module BinarySearch_BinarySearch
     assume { Resolve3.resolve arr_1 };
     assume { Resolve7.resolve _36 };
     _36 <- base_10;
-    _34 <- Index8.impl _35 _36;
+    _34 <- Index8.index _35 _36;
     goto BB15
   }
   BB9 {
@@ -463,7 +463,7 @@ module BinarySearch_BinarySearch
     _28 <- arr_1;
     assume { Resolve7.resolve _29 };
     _29 <- mid_21;
-    _27 <- Index8.impl _28 _29;
+    _27 <- Index8.index _28 _29;
     goto BB11
   }
   BB11 {
@@ -587,7 +587,7 @@ module BinarySearch_Main
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec cfg impl () : () = 
+  let rec cfg main () : () = 
   var _0 : ();
   {
     goto BB0

@@ -25,7 +25,7 @@ module Modules_Nested_Impl0_Resolve
   use floating_point.Double
   use prelude.Prelude
   use Type
-  predicate impl (self : Type.modules_nested_nested) = 
+  predicate resolve (self : Type.modules_nested_nested) = 
     true
 end
 module CreusotContracts_Builtins_Resolve
@@ -56,7 +56,8 @@ module Modules_Nested_Impl0
   use prelude.Prelude
   use Type
   clone Modules_Nested_Impl0_Resolve as Resolve0
-  clone CreusotContracts_Builtins_Resolve with type self = Type.modules_nested_nested, predicate resolve = Resolve0.impl
+  clone CreusotContracts_Builtins_Resolve with type self = Type.modules_nested_nested,
+  predicate resolve = Resolve0.resolve
 end
 module Modules_Nested_InnerFunc
   use Ref
@@ -71,7 +72,7 @@ module Modules_Nested_InnerFunc
   use prelude.Prelude
   use Type
   clone Modules_Nested_Impl0_Resolve as Resolve0
-  let rec cfg impl () : bool
+  let rec cfg inner_func () : bool
     ensures { result = true }
     
    = 
@@ -82,7 +83,7 @@ module Modules_Nested_InnerFunc
   }
   BB0 {
     _1 <- Type.Modules_Nested_Nested_Test;
-    assume { Resolve0.impl _1 };
+    assume { Resolve0.resolve _1 };
     _0 <- true;
     return _0
   }
@@ -100,7 +101,7 @@ module Modules_Nested_Further_Another
   use floating_point.Double
   use prelude.Prelude
   use Type
-  let rec cfg impl () : bool = 
+  let rec cfg another () : bool = 
   var _0 : bool;
   {
     goto BB0
@@ -125,7 +126,7 @@ module Modules_Main
   use Type
   clone Modules_Nested_InnerFunc as InnerFunc0
   clone Modules_Nested_Further_Another as Another1
-  let rec cfg impl () : () = 
+  let rec cfg main () : () = 
   var _0 : ();
   var _1 : bool;
   var _2 : bool;
@@ -133,11 +134,11 @@ module Modules_Main
     goto BB0
   }
   BB0 {
-    _1 <- InnerFunc0.impl ();
+    _1 <- InnerFunc0.inner_func ();
     goto BB1
   }
   BB1 {
-    _2 <- Another1.impl ();
+    _2 <- Another1.another ();
     goto BB2
   }
   BB2 {
