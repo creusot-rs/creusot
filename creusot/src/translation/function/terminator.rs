@@ -132,11 +132,21 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
     ) -> QName {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(_) = it.container {
-                self.ctx.translate_trait(it.container.id());
+                let params = self.ctx.tcx.param_env(self.def_id);
+                let inst = self.ctx.tcx.resolve_instance(params.and((def_id, subst))).expect("could not find instance");
+
+                match inst {
+                    Some(i) => {
+                        let impl_id = self.ctx.tcx.impl_of_method(i.def_id()).unwrap();
+                        self.ctx.translate_impl(impl_id);
+                        return self.clone_names.qname_for_mut(i.def_id(), i.substs);
+                    },
+                    None => {   // We are working on generics
+                        self.ctx.translate_trait(it.container.id());
+                        return self.clone_names.qname_for_mut(def_id, subst)
+                    }
+                }
             }
-        } else {
-            // TODO: better spans during errors...
-            self.ctx.translate_function(def_id);
         }
 
         // TODO: better spans during errors...

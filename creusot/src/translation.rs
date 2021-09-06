@@ -42,7 +42,7 @@ pub fn translate(mut ctx: TranslationCtx<'_, '_>) -> Result<()> {
 
     for (_, impls) in ctx.tcx.all_local_trait_impls(()) {
         for impl_id in impls {
-            traits::translate_impl(&mut ctx, impl_id.to_def_id());
+            ctx.translate_impl(impl_id.to_def_id());
         }
     }
 

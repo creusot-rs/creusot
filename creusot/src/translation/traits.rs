@@ -23,6 +23,7 @@ use why3::{
 use crate::ctx;
 
 use crate::ctx::*;
+use crate::translation::ty;
 use crate::util::is_contract;
 
 use rustc_resolve::Namespace;
@@ -85,8 +86,65 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         let trait_name = translate_trait_name(self.tcx, def_id);
 
-
         self.functions.insert(def_id, Module { name: trait_name.name(), decls });
+    }
+
+    pub fn translate_impl(&mut self, impl_id: DefId) {
+        if !self.translated_items.insert(impl_id) {
+            return;
+        }
+
+        let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
+        let mut names = CloneMap::new(self.tcx);
+
+        self.translate_trait(trait_ref.def_id);
+
+        let mut subst = ctx::type_param_subst(self, &mut names, trait_ref.def_id, trait_ref.substs);
+
+        let mut assoc_types = Vec::new();
+        for assoc in self.tcx.associated_items(impl_id).in_definition_order() {
+            match assoc.kind {
+                AssocKind::Fn => subst.extend(translate_assoc_function(self, &mut names, assoc)),
+                AssocKind::Type => {
+                    let assoc_ty = self.tcx.type_of(assoc.def_id);
+                    // TODO: Clean up translation of names to handle this automatically
+                    let name = assoc.ident.to_string().to_lowercase();
+                    assoc_types.push(Decl::TyDecl(TyDecl {
+                        ty_name: name.clone().into(),
+                        ty_params: Vec::new(),
+                        kind: TyDeclKind::Alias(ty::translate_ty(
+                            self,
+                            &mut names,
+                            rustc_span::DUMMY_SP,
+                            assoc_ty,
+                        )),
+                    }));
+
+                    subst.push(CloneSubst::Type(
+                        name.clone().into(),
+                        Type::TConstructor(QName { module: vec![], name }),
+                    ))
+                }
+                AssocKind::Const => self.crash_and_error(
+                    self.tcx.span_of_impl(impl_id).unwrap_or(rustc_span::DUMMY_SP),
+                    "Associated constants are not yet supported",
+                ),
+            }
+        }
+
+        let mut decls: Vec<_> = Vec::new();
+        decls.extend(all_generic_decls_for(self.tcx, impl_id));
+        decls.extend(names.to_clones(self));
+        decls.extend(assoc_types);
+
+        decls.push(Decl::Clone(DeclClone {
+            name: translate_trait_name(self.tcx, trait_ref.def_id),
+            subst,
+            kind: CloneKind::Bare,
+        }));
+
+        let name = translate_value_id(self.tcx, impl_id);
+        self.functions.insert(impl_id, Module { name: name.name(), decls });
     }
 }
 
@@ -103,83 +161,60 @@ pub fn translate_constraint<'tcx>(
 
 use crate::function::{all_generic_decls_for, own_generic_decls_for};
 use rustc_middle::ty::subst::InternalSubsts;
+use rustc_middle::ty::AssocItem;
 
-pub fn translate_impl(ctx: &mut TranslationCtx<'_, '_>, impl_id: DefId) {
-    if !ctx.translated_items.insert(impl_id) {
-        return;
-    }
+fn translate_assoc_function(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    assoc: &AssocItem,
+) -> impl Iterator<Item = CloneSubst> + 'tcx {
+    let impl_id = ctx.tcx.impl_of_method(assoc.def_id).unwrap();
+    let trait_id = ctx.tcx.trait_id_of_impl(impl_id).unwrap();
 
-    let trait_ref = ctx.tcx.impl_trait_ref(impl_id).unwrap();
-    let mut names = CloneMap::new(ctx.tcx);
+    let assoc_subst = InternalSubsts::identity_for_item(ctx.tcx, impl_id);
+    let name = names.name_for_mut(assoc.def_id, assoc_subst);
 
-    ctx.translate_trait(trait_ref.def_id);
+    ctx.translate_function(assoc.def_id);
 
-    let mut subst = ctx::type_param_subst(ctx, &mut names, trait_ref.def_id, trait_ref.substs);
+    let tcx = ctx.tcx;
 
-    for assoc in ctx.tcx.associated_items(impl_id).in_definition_order() {
-        let assoc_subst = InternalSubsts::identity_for_item(ctx.tcx, impl_id);
-        let name = names.name_for_mut(assoc.def_id, assoc_subst);
+    // Get the id of the generic version of the trait method
+    let trait_method = tcx
+        .associated_items(trait_id)
+        .find_by_name_and_namespace(
+            ctx.tcx,
+            assoc.ident,
+            Namespace::ValueNS, //TODO generalize this to include associated types
+            trait_id,
+        )
+        .unwrap();
 
-        ctx.translate_function(assoc.def_id);
-
-        // Get the id of the generic version of the trait method
-        let trait_method = ctx
-            .tcx
-            .associated_items(trait_ref.def_id)
-            .find_by_name_and_namespace(
-                ctx.tcx,
-                assoc.ident,
-                Namespace::ValueNS, //TODO generalize this to include associated types
-                trait_ref.def_id,
+    // build the substitution between the concrete and generic versions
+    let method_subst = tcx
+        .generics_of(trait_method.def_id)
+        .params
+        .iter()
+        .zip(tcx.generics_of(assoc.def_id).params.iter())
+        .map(move |(tr_param, inst_param)| {
+            CloneSubst::Type(
+                (&*tr_param.name.as_str().to_lowercase()).into(),
+                Type::TConstructor(QName {
+                    module: vec![name.clone()],
+                    name: inst_param.name.as_str().to_lowercase(),
+                }),
             )
-            .unwrap();
+        });
 
-        // build the substitution between the concrete and generic versions
-        let method_subst = ctx
-            .tcx
-            .generics_of(trait_method.def_id)
-            .params
-            .iter()
-            .zip(ctx.tcx.generics_of(assoc.def_id).params.iter())
-            .map(|(tr_param, inst_param)| {
-                CloneSubst::Type(
-                    (&*tr_param.name.as_str().to_lowercase()).into(),
-                    Type::TConstructor(QName {
-                        module: vec![name.clone()],
-                        name: inst_param.name.as_str().to_lowercase(),
-                    }),
-                )
-            });
+    let assoc_method = if crate::is_predicate(ctx.tcx, assoc.def_id) {
+        CloneSubst::Predicate(
+            assoc.ident.to_string().into(),
+            names.qname_for_mut(assoc.def_id, assoc_subst),
+        )
+    } else {
+        CloneSubst::Val(assoc.ident.to_string().into(), names.qname_for_mut(assoc.def_id, assoc_subst))
+    };
 
-        subst.extend(method_subst);
-
-        if crate::is_predicate(ctx.tcx, assoc.def_id) {
-            subst.push(CloneSubst::Predicate(
-                assoc.ident.to_string().into(),
-                names.qname_for_mut(assoc.def_id, assoc_subst)
-                // crate::ctx::translate_value_id(ctx.tcx, assoc.def_id),
-            ));
-        } else {
-            subst.push(CloneSubst::Val(
-                assoc.ident.to_string().into(),
-                names.qname_for_mut(assoc.def_id, assoc_subst)
-                // crate::ctx::translate_value_id(ctx.tcx, assoc.def_id),
-            ));
-        }
-    }
-
-    let mut decls: Vec<_> = Vec::new();
-    decls.extend(all_generic_decls_for(ctx.tcx, impl_id));
-    decls.extend(names.to_clones(ctx));
-
-    decls.push(Decl::Clone(DeclClone {
-        name: translate_trait_name(ctx.tcx, trait_ref.def_id),
-        subst,
-        kind: CloneKind::Bare,
-    }));
-
-    let name = translate_value_id(ctx.tcx, impl_id);
-    ctx.functions.insert(impl_id, Module { name: name.name(), decls });
+    method_subst.chain(std::iter::once(assoc_method))
 }
 
 fn translate_trait_name(tcx: TyCtxt<'_>, def_id: DefId) -> QName {

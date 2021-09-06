@@ -269,7 +269,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         match instance {
             Some(Some(inst)) => {
-                traits::translate_impl(self.ctx, self.tcx.impl_of_method(inst.def_id()).unwrap());
+                self.ctx.translate_impl(self.tcx.impl_of_method(inst.def_id()).unwrap());
 
                 QVar(self.clone_names.qname_for_mut(inst.def_id(), inst.substs))
             }
