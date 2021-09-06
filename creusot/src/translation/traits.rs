@@ -13,7 +13,7 @@ use rustc_middle::ty::{
     TyCtxt,
     TypeFoldable,
 };
-use why3::declaration::CloneKind;
+use why3::declaration::{CloneKind, TyDecl, TyDeclKind};
 use why3::{
     declaration::{CloneSubst, Decl, DeclClone, Module, ValKind::*},
     mlcfg::Type,
@@ -63,6 +63,16 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                     } else {
                         trait_decls.push(Decl::ValDecl(Val { sig }));
                     }
+                }
+                AssocKind::Type => {
+                    let ty_name: why3::Ident =
+                        self.tcx.item_name(item.def_id).to_string().to_lowercase().into();
+
+                    trait_decls.push(Decl::TyDecl(TyDecl {
+                        ty_name,
+                        ty_params: Vec::new(),
+                        kind: TyDeclKind::Opaque,
+                    }));
                 }
                 knd => unimplemented!("{:?} - {:?}", def_id, knd),
             }
