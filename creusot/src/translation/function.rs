@@ -1,4 +1,4 @@
-use crate::extended_location::*;
+use crate::{extended_location::*, util::signature_of};
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
@@ -149,16 +149,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             contract.ensures.push(Exp::Const(Constant::const_false()));
         }
 
-        let retty = vars[0].1.clone();
-        let args = vars
-            .iter()
-            .skip(1)
-            .take(arg_count)
-            .map(|(id, ty)| {
-                (id.arg_name(), ty.clone())
-            })
-            .collect();
-
         let entry = Block {
             statements: vars
                 .iter()
@@ -183,12 +173,12 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             traits::translate_constraint(self.ctx, &mut self.clone_names, tp);
         }
 
+        let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
         decls.extend(self.clone_names.to_clones(self.ctx));
 
         let name = translate_value_id(self.tcx, self.def_id);
 
-        let sig = Signature { name: name.name.clone().into(), retty: Some(retty), args, contract };
-
+        // let sig = Signature { name: name.name.clone().into(), retty: Some(retty), args, contract };
         decls.push(Decl::FunDecl(CfgFunction { sig, vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(), entry, blocks: self.past_blocks }));
         Module { name: name.module_name().name, decls }
     }
@@ -413,8 +403,8 @@ impl LocalIdent {
 
     pub fn arg_name(&self) -> why3::Ident {
         match &self.1 {
-            None => format!("o_{}", self.0.index()).into(),
-            Some(h) => format!("o_{}_{}", h, self.0.index()).into(),
+            None => format!("{:?}", self.0).into(),
+            Some(h) => h.clone().into(),
         }
     }
 

@@ -89,9 +89,15 @@ pub fn signature_of<'tcx>(
         retty: Some(ty::translate_ty(ctx, rustc_span::DUMMY_SP, sig.output())),
         args: names
             .iter()
+            .enumerate()
             .zip(sig.inputs())
-            .map(|(id, ty)| {
-                (id.name.to_string().into(), ty::translate_ty(ctx, rustc_span::DUMMY_SP, ty))
+            .map(|((ix, id), ty)| {
+                let name = if id.name.is_empty() {
+                    format!("_{}", ix + 1).into()
+                } else {
+                    id.name.to_string().into()
+                };
+                (name, ty::translate_ty(ctx, rustc_span::DUMMY_SP, ty))
             })
             .collect(),
         contract,
