@@ -35,7 +35,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             return;
         }
 
-        let mut names = CloneMap::with_self_ref(self.tcx, def_id);
+        let mut names = CloneMap::new(self.tcx);
 
         // The first predicate is a trait reference so we skip it
         for super_trait in traits_used_by(self.tcx, def_id).filter(|t| t.def_id() != def_id) {
@@ -101,7 +101,7 @@ pub fn translate_impl(ctx: &mut TranslationCtx<'_, '_>, impl_id: DefId) {
     }
 
     let trait_ref = ctx.tcx.impl_trait_ref(impl_id).unwrap();
-    let mut names = CloneMap::with_self_ref(ctx.tcx, impl_id);
+    let mut names = CloneMap::new(ctx.tcx);
 
     ctx.translate_trait(trait_ref.def_id);
 

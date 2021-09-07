@@ -4,7 +4,7 @@ use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone};
 use why3::QName;
 
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, subst::SubstsRef, TyCtxt};
+use rustc_middle::ty::{self, subst::{InternalSubsts, SubstsRef}, TyCtxt};
 
 use heck::CamelCase;
 
@@ -13,6 +13,7 @@ use crate::ctx::{self, *};
 pub struct CloneMap<'tcx> {
     tcx: TyCtxt<'tcx>,
     names: IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo>,
+    count: usize,
 }
 
 #[derive(Clone)]
@@ -33,12 +34,9 @@ impl CloneInfo {
 }
 
 impl<'tcx> CloneMap<'tcx> {
-    pub fn with_self_ref(tcx: TyCtxt<'tcx>, self_id: DefId) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>) -> Self {
         let names = IndexMap::new();
-        let subst = rustc_middle::ty::subst::InternalSubsts::identity_for_item(tcx, self_id);
-        let mut map = CloneMap { tcx, names };
-        map.hidden_clone(self_id, subst, self_id);
-        map
+        CloneMap { tcx, names, count: 0 }
     }
 
     pub fn name_for(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> String {
@@ -51,10 +49,10 @@ impl<'tcx> CloneMap<'tcx> {
         if let Some(nm) = self.names.get(&(def_id, subst)) {
             nm.name.clone()
         } else {
-            let num_entries = self.names.len() - 1;
             let name_base = self.tcx.item_name(def_id).as_str().to_camel_case();
-            let info = CloneInfo::from_name(format!("{}{}", name_base, num_entries));
+            let info = CloneInfo::from_name(format!("{}{}", name_base, self.count));
             self.names.insert((def_id, subst), info);
+            self.count += 1;
             self.names[&(def_id, subst)].name.clone()
         }
     }
@@ -64,13 +62,12 @@ impl<'tcx> CloneMap<'tcx> {
         QName { module: vec![module], name: ctx::method_name(self.tcx, def_id) }
     }
 
-    // This will generate an entry in the clone map but not actually clone it!
-    pub fn hidden_clone(&mut self, def_id: DefId, subst: SubstsRef<'tcx>, self_id: DefId) {
+    pub fn clone_self(&mut self, self_id: DefId) {
         let mut modl = ctx::translate_value_id(self.tcx, self_id);
-
         let clone_name = if modl.module.is_empty() { modl.name } else { modl.module.remove(0) };
+        let subst = InternalSubsts::identity_for_item(self.tcx, self_id);
+        self.names.insert((self_id, subst), CloneInfo::hidden(clone_name));
 
-        self.names.insert((def_id, subst), CloneInfo::hidden(clone_name));
     }
 
     pub fn clone_with_extra_substs(

@@ -34,7 +34,9 @@ pub fn translate_function<'tcx, 'sess>(
     ctx: &mut TranslationCtx<'sess, 'tcx>,
     def_id: DefId,
 ) -> Module {
-    let mut names = CloneMap::with_self_ref(tcx, def_id);
+    let mut names = CloneMap::new(tcx);
+    names.clone_self(def_id);
+
     let invariants = specification::gather_invariants(ctx, &mut names, def_id);
     let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();

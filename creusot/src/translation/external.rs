@@ -18,7 +18,7 @@ pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_spa
 
 fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) -> Module {
     debug!("generating default declaration for def_id={:?}", def_id);
-    let mut names = CloneMap::with_self_ref(ctx.tcx, def_id);
+    let mut names = CloneMap::new(ctx.tcx);
 
     let mut decls: Vec<_> = super::prelude_imports(true);
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
