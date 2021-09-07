@@ -142,7 +142,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         // TODO: better spans during errors...
         self.ctx.translate_function(def_id);
 
-        self.clone_names.qname_for(def_id, subst)
+        self.clone_names.qname_for_mut(def_id, subst)
     }
 }
 

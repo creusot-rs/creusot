@@ -39,7 +39,17 @@ impl<'tcx> CloneMap<'tcx> {
         CloneMap { tcx, names, count: 0 }
     }
 
-    pub fn name_for(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> String {
+    pub fn name_for(&self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> Option<String> {
+        if let Some(it) = self.tcx.opt_associated_item(def_id) {
+            if let ty::TraitContainer(_) = it.container {
+                def_id = it.container.id()
+            }
+        };
+
+        Some(self.names[&(def_id, subst)].name.clone())
+    }
+
+    pub fn name_for_mut(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> String {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(_) = it.container {
                 def_id = it.container.id()
@@ -57,8 +67,13 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
-    pub fn qname_for(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        let module = self.name_for(def_id, subst);
+    pub fn qname_for(&self, def_id: DefId, subst: SubstsRef<'tcx>) -> Option<QName> {
+        let module = self.name_for(def_id, subst)?;
+        Some(QName { module: vec![module], name: ctx::method_name(self.tcx, def_id) })
+    }
+
+    pub fn qname_for_mut(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let module = self.name_for_mut(def_id, subst);
         QName { module: vec![module], name: ctx::method_name(self.tcx, def_id) }
     }
 
@@ -76,7 +91,7 @@ impl<'tcx> CloneMap<'tcx> {
         subst: SubstsRef<'tcx>,
         extra: Vec<CloneSubst>,
     ) {
-        let _ = self.name_for(def_id, subst);
+        let _ = self.name_for_mut(def_id, subst);
 
         if let Some(info) = self.names.get_mut(&(def_id, subst)) {
             info.projs.extend(extra);

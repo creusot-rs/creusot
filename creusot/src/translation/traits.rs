@@ -86,7 +86,7 @@ pub fn translate_constraint<'tcx>(
     names: &mut CloneMap<'tcx>,
     tp: TraitPredicate<'tcx>,
 ) {
-    names.name_for(tp.def_id(), tp.trait_ref.substs);
+    names.name_for_mut(tp.def_id(), tp.trait_ref.substs);
 
     // If we haven't seen this trait, first translate it
     ctx.translate_trait(tp.def_id());
@@ -109,7 +109,7 @@ pub fn translate_impl(ctx: &mut TranslationCtx<'_, '_>, impl_id: DefId) {
 
     for assoc in ctx.tcx.associated_items(impl_id).in_definition_order() {
         let assoc_subst = InternalSubsts::identity_for_item(ctx.tcx, impl_id);
-        let name = names.name_for(assoc.def_id, assoc_subst);
+        let name = names.name_for_mut(assoc.def_id, assoc_subst);
 
         ctx.translate_function(assoc.def_id);
 
@@ -147,13 +147,13 @@ pub fn translate_impl(ctx: &mut TranslationCtx<'_, '_>, impl_id: DefId) {
         if crate::is_predicate(ctx.tcx, assoc.def_id) {
             subst.push(CloneSubst::Predicate(
                 assoc.ident.to_string().into(),
-                names.qname_for(assoc.def_id, assoc_subst)
+                names.qname_for_mut(assoc.def_id, assoc_subst)
                 // crate::ctx::translate_value_id(ctx.tcx, assoc.def_id),
             ));
         } else {
             subst.push(CloneSubst::Val(
                 assoc.ident.to_string().into(),
-                names.qname_for(assoc.def_id, assoc_subst)
+                names.qname_for_mut(assoc.def_id, assoc_subst)
                 // crate::ctx::translate_value_id(ctx.tcx, assoc.def_id),
             ));
         }

@@ -271,12 +271,11 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             Some(Some(inst)) => {
                 traits::translate_impl(self.ctx, self.tcx.impl_of_method(inst.def_id()).unwrap());
 
-                QVar(self.clone_names.qname_for(inst.def_id(), inst.substs))
+                QVar(self.clone_names.qname_for_mut(inst.def_id(), inst.substs))
             }
             _ => {
                 self.ctx.translate_trait(trait_id);
-                let clone_name = self.clone_names.name_for(trait_id, subst);
-                QVar(QName { module: vec![clone_name], name: "resolve".into() })
+                QVar(self.clone_names.qname_for_mut(trait_meth_id, subst))
             }
         }
     }
