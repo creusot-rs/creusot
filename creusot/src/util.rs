@@ -67,7 +67,7 @@ pub fn signature_of<'tcx>(
     def_id: DefId,
 ) -> Signature {
     let sig = ctx.tcx.normalize_erasing_late_bound_regions(
-        rustc_middle::ty::ParamEnv::reveal_all(),
+        ctx.tcx.param_env(def_id),
         ctx.tcx.fn_sig(def_id),
     );
 
