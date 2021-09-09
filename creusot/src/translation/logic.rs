@@ -23,7 +23,7 @@ pub fn translate_logic(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_spa
     let body = specification::lower_term_to_why3(ctx, &mut names, def_id, term);
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
 
-    let mut decls: Vec<_> = super::prelude_imports(true);
+    let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx));
 
@@ -50,7 +50,7 @@ pub fn translate_predicate(
 
     let func = Decl::PredDecl(Predicate { sig, body });
 
-    let mut decls: Vec<_> = super::prelude_imports(true);
+    let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx));
     decls.push(func);

@@ -78,7 +78,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             }
         }
 
-        let mut decls: Vec<_> = super::prelude_imports(true);
+        let mut decls: Vec<_> = Vec::new();
         decls.extend(own_generic_decls_for(self.tcx, def_id));
         decls.extend(names.to_clones(self));
         decls.extend(trait_decls);
@@ -168,7 +168,7 @@ pub fn translate_impl(ctx: &mut TranslationCtx<'_, '_>, impl_id: DefId) {
         }
     }
 
-    let mut decls: Vec<_> = super::prelude_imports(true);
+    let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, impl_id));
     decls.extend(names.to_clones(ctx));
 
