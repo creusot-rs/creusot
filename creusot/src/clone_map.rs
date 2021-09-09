@@ -1,17 +1,56 @@
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 
-use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone};
+use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
 use why3::QName;
 
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, subst::{InternalSubsts, SubstsRef}, TyCtxt};
+use rustc_middle::ty::{
+    self,
+    subst::{InternalSubsts, SubstsRef},
+    TyCtxt,
+};
 
 use heck::CamelCase;
 
 use crate::ctx::{self, *};
 
+// Prelude modules
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum PreludeModule {
+    Int,
+    Int32,
+    Int64,
+    UInt32,
+    UInt64,
+    Char,
+    Single,
+    Double,
+    Prelude,
+    Ref,
+    Type,
+}
+
+impl PreludeModule {
+    fn qname(&self) -> QName {
+        match self {
+            PreludeModule::Int => QName::from_string("mach.int.Int").unwrap(),
+            PreludeModule::Int32 => QName::from_string("mach.int.Int32").unwrap(),
+            PreludeModule::Int64 => QName::from_string("mach.int.Int64").unwrap(),
+            PreludeModule::UInt32 => QName::from_string("mach.int.UInt32").unwrap(),
+            PreludeModule::UInt64 => QName::from_string("mach.int.UInt64").unwrap(),
+            PreludeModule::Char => QName::from_string("string.Char").unwrap(),
+            PreludeModule::Single => QName::from_string("floating_point.Single").unwrap(),
+            PreludeModule::Double => QName::from_string("floating_point.Double").unwrap(),
+            PreludeModule::Prelude => QName::from_string("prelude.Prelude").unwrap(),
+            PreludeModule::Ref => QName::from_string("Ref").unwrap(),
+            PreludeModule::Type => QName::from_string("Type").unwrap(),
+        }
+    }
+}
+
 pub struct CloneMap<'tcx> {
     tcx: TyCtxt<'tcx>,
+    prelude: IndexSet<PreludeModule>,
     names: IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo>,
     count: usize,
 }
@@ -36,7 +75,7 @@ impl CloneInfo {
 impl<'tcx> CloneMap<'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>) -> Self {
         let names = IndexMap::new();
-        CloneMap { tcx, names, count: 0 }
+        CloneMap { tcx, names, count: 0, prelude: IndexSet::new() }
     }
 
     pub fn name_for(&self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> Option<String> {
@@ -82,7 +121,6 @@ impl<'tcx> CloneMap<'tcx> {
         let clone_name = if modl.module.is_empty() { modl.name } else { modl.module.remove(0) };
         let subst = InternalSubsts::identity_for_item(self.tcx, self_id);
         self.names.insert((self_id, subst), CloneInfo::hidden(clone_name));
-
     }
 
     pub fn clone_with_extra_substs(
@@ -100,6 +138,10 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
+    pub fn import_prelude_module(&mut self, module: PreludeModule) {
+        self.prelude.insert(module);
+    }
+
     pub fn is_empty(&self) -> bool {
         self.names.len() <= 1
     }
@@ -111,6 +153,7 @@ impl<'tcx> CloneMap<'tcx> {
     pub fn to_clones(mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) -> Vec<Decl> {
         let mut i = 0;
         let mut decls = Vec::new();
+
         while i < self.names.len() {
             let ((def_id, subst), clone_info) = self.names.get_index(i).unwrap();
             i += 1;
@@ -126,7 +169,12 @@ impl<'tcx> CloneMap<'tcx> {
 
             decls.push(clone_item(ctx, &mut self, def_id, subst, clone_info));
         }
-        decls
+
+        self.prelude
+            .into_iter()
+            .map(|q| Decl::UseDecl(Use { name: q.qname() }))
+            .chain(decls.into_iter())
+            .collect()
     }
 }
 
@@ -142,7 +190,6 @@ fn clone_item<'tcx>(
     clone_subst.extend(info.projs);
 
     // Append each projection to this.
-
 
     Decl::Clone(DeclClone {
         name: cloneable_name(ctx.tcx, def_id),

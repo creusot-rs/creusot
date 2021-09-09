@@ -224,6 +224,7 @@ impl Pretty for Logic {
         A::Doc: Clone,
     {
         alloc
+            // TODO: this should be function...
             .text("let rec function ")
             .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
             .group()

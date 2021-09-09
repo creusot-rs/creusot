@@ -52,7 +52,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     self.emit_statement(Assume(assumption));
                     self.translate_rplace(pl)
                 }
-                Constant(box c) => Const(crate::constant::from_mir_constant(self.tcx, c)),
+                Constant(box c) => Const(crate::constant::from_mir_constant(self.tcx, &mut self.clone_names, c)),
             },
             Rvalue::Ref(_, ss, pl) => match ss {
                 Shared | Shallow | Unique => self.translate_rplace(&pl),

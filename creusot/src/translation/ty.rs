@@ -1,12 +1,12 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, subst::InternalSubsts, Ty, TyKind::*, ProjectionTy};
+use rustc_middle::ty::{self, subst::InternalSubsts, ProjectionTy, Ty, TyKind::*};
 use rustc_span::Span;
 use rustc_span::Symbol;
-use why3::declaration::TyDeclKind;
 use std::collections::VecDeque;
+use why3::declaration::TyDeclKind;
 
 use why3::declaration::TyDecl;
-use why3::{mlcfg::Type as MlT, QName} ;
+use why3::{mlcfg::Type as MlT, QName};
 
 use crate::ctx::*;
 
@@ -29,7 +29,12 @@ enum TyTranslation {
 }
 
 // Translate a type usage
-pub fn translate_ty<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, names: &mut CloneMap<'tcx>, span: Span, ty: Ty<'tcx>) -> MlT {
+pub fn translate_ty<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    span: Span,
+    ty: Ty<'tcx>,
+) -> MlT {
     translate_ty_inner(TyTranslation::Usage, ctx, names, span, ty)
 }
 
@@ -40,31 +45,29 @@ fn translate_ty_inner<'tcx>(
     span: Span,
     ty: Ty<'tcx>,
 ) -> MlT {
-    use rustc_middle::ty::FloatTy::*;
-
     match ty.kind() {
         Bool => MlT::Bool,
         Char => MlT::Char,
-        Int(ity) => intty_to_ty(ity),
-        Uint(uity) => uintty_to_ty(uity),
-        Float(flty) => match flty {
-            F32 => single_ty(),
-            F64 => double_ty(),
-        },
+        Int(ity) => intty_to_ty(names, ity),
+        Uint(uity) => uintty_to_ty(names, uity),
+        Float(flty) => floatty_to_ty(names, flty),
         Adt(def, s) => {
             if def.is_box() {
                 return translate_ty_inner(trans, ctx, names, span, s[0].expect_ty());
             }
 
             if format!("{:?}", def).contains("creusot_contracts::Int") {
+                names.import_prelude_module(PreludeModule::Int);
                 return MlT::Integer;
             }
+            names.import_prelude_module(PreludeModule::Type);
             let args = s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
 
             MlT::TApp(box MlT::TConstructor(translate_ty_name(ctx, def.did)), args)
         }
         Tuple(args) => {
-            let tys = args.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
+            let tys =
+                args.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
             MlT::Tuple(tys)
         }
         Param(p) => {
@@ -74,24 +77,29 @@ fn translate_ty_inner<'tcx>(
                 MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
             }
         }
-        Projection(pty) => {
-            translate_projection_ty(ctx, names, &pty)
-        }
+        Projection(pty) => translate_projection_ty(ctx, names, &pty),
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
+            names.import_prelude_module(PreludeModule::Prelude);
             match borkind {
                 Mut => MlT::MutableBorrow(box translate_ty_inner(trans, ctx, names, span, ty)),
                 Not => translate_ty_inner(trans, ctx, names, span, ty),
             }
         }
-        Slice(ty) => MlT::TApp(
-            box MlT::TConstructor("array".into()),
-            vec![translate_ty_inner(trans, ctx, names, span, ty)],
-        ),
+        Slice(ty) => {
+            names.import_prelude_module(PreludeModule::Prelude);
+            MlT::TApp(
+                box MlT::TConstructor("array".into()),
+                vec![translate_ty_inner(trans, ctx, names, span, ty)],
+            )
+        }
         Str => MlT::TConstructor("string".into()),
         // Slice()
         Never => MlT::Tuple(vec![]),
-        RawPtr(_) => MlT::TConstructor(QName::from_string("opaque_ptr").unwrap()),
+        RawPtr(_) => {
+            names.import_prelude_module(PreludeModule::Prelude);
+            MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
+        }
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
 }
@@ -100,11 +108,11 @@ pub fn translate_projection_ty(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     pty: &ProjectionTy<'tcx>,
-    ) -> MlT {
+) -> MlT {
     ctx.translate_trait(pty.trait_def_id(ctx.tcx));
     let base = names.name_for_mut(pty.trait_def_id(ctx.tcx), pty.substs);
     let name = ctx.tcx.item_name(pty.item_def_id).to_string().to_lowercase();
-    MlT::TConstructor(QName{ module: vec![base], name })
+    MlT::TConstructor(QName { module: vec![base], name })
 }
 
 use petgraph::algo::tarjan_scc;
@@ -213,7 +221,13 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
             .fields
             .iter()
             .map(|f| {
-                translate_ty_inner(TyTranslation::Declaration, ctx, &mut names, span, f.ty(ctx.tcx, substs))
+                translate_ty_inner(
+                    TyTranslation::Declaration,
+                    ctx,
+                    &mut names,
+                    span,
+                    f.ty(ctx.tcx, substs),
+                )
             })
             .collect();
 
@@ -225,27 +239,56 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     ctx.add_type(ty_decl);
 }
 
-fn intty_to_ty(ity: &rustc_middle::ty::IntTy) -> MlT {
+fn intty_to_ty(names: &mut CloneMap<'_>, ity: &rustc_middle::ty::IntTy) -> MlT {
     use rustc_middle::ty::IntTy::*;
+    names.import_prelude_module(PreludeModule::Int);
     match ity {
-        Isize => isize_ty(),
-        I8 => i8_ty(),
-        I16 => i16_ty(),
-        I32 => i32_ty(),
-        I64 => i64_ty(),
+        Isize => {
+            names.import_prelude_module(PreludeModule::Prelude);
+            isize_ty()
+        }
+        I8 => unimplemented!(),
+        I16 => unimplemented!(),
+        I32 => {
+            names.import_prelude_module(PreludeModule::Int32);
+            i32_ty()
+        }
+        I64 => {
+            names.import_prelude_module(PreludeModule::Int64);
+            i64_ty()
+        }
         I128 => unimplemented!("128 bit integers not yet implemented"),
     }
 }
 
-fn uintty_to_ty(ity: &rustc_middle::ty::UintTy) -> MlT {
+fn uintty_to_ty(names: &mut CloneMap<'tcx>, ity: &rustc_middle::ty::UintTy) -> MlT {
     use rustc_middle::ty::UintTy::*;
+    names.import_prelude_module(PreludeModule::Int);
     match ity {
-        Usize => usize_ty(),
-        U8 => u8_ty(),
-        U16 => u16_ty(),
-        U32 => u32_ty(),
-        U64 => u64_ty(),
+        Usize => {
+            names.import_prelude_module(PreludeModule::Prelude);
+            usize_ty()
+        }
+        U8 => unimplemented!(),
+        U16 => unimplemented!(),
+        U32 => {
+            names.import_prelude_module(PreludeModule::UInt32);
+            u32_ty()
+        }
+        U64 => {
+            names.import_prelude_module(PreludeModule::UInt64);
+            u64_ty()
+        }
         U128 => unimplemented!("128 bit integers not yet implemented"),
+    }
+}
+
+fn floatty_to_ty(names: &mut CloneMap<'_>, fty: &rustc_middle::ty::FloatTy) -> MlT {
+    use rustc_middle::ty::FloatTy::*;
+
+    match fty {
+        F32 => single_ty(),
+        F64 => double_ty(),
     }
 }
 

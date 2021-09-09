@@ -14,7 +14,7 @@ pub fn lower_term_to_why3<'tcx>(
     term: Term<'tcx>,
 ) -> Exp {
     match term {
-        Term::Const(c) => Exp::Const(constant::from_mir_constant_kind(ctx.tcx, c.into())),
+        Term::Const(c) => Exp::Const(constant::from_mir_constant_kind(ctx.tcx, names, c.into())),
         Term::Var(v) => Exp::Var(v.into()),
         Term::Binary { op, box lhs, box rhs } => Exp::BinaryOp(
             binop_to_binop(op),
@@ -70,6 +70,7 @@ pub fn lower_term_to_why3<'tcx>(
             )
         }
         Term::Constructor { adt, variant, fields } => {
+            names.import_prelude_module(PreludeModule::Type);
             let args =
                 fields.into_iter().map(|f| lower_term_to_why3(ctx, names, term_id, f)).collect();
 

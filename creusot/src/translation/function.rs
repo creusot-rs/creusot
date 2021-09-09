@@ -164,7 +164,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             terminator: Terminator::Goto(BlockId(0)),
         };
 
-        let mut decls: Vec<_> = super::prelude_imports(true);
+        let mut decls: Vec<_> = Vec::new();
         decls.extend(all_generic_decls_for(self.tcx, self.def_id));
 
         for imp in self.imports {
@@ -364,7 +364,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     pub fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Exp {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(pl),
-            Operand::Constant(c) => Const(crate::constant::from_mir_constant(self.tcx, c)),
+            Operand::Constant(c) => Const(crate::constant::from_mir_constant(self.tcx, &mut self.clone_names, c)),
         }
     }
 
