@@ -225,7 +225,7 @@ impl Pretty for Logic {
     {
         alloc
             // TODO: this should be function...
-            .text("let rec function ")
+            .text("function ")
             .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
             .group()
             .append(alloc.line())
