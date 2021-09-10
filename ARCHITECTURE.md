@@ -1,59 +1,205 @@
-# Overview of project structure
+Creusot is a deductive verifier for (safe) Rust code built on top of the [Why3](https://why3.lri.fr) verification platform.
+This document describes the overarching approach and the structure of the translation that Creusot performs.
 
-- `creusot-contracts` is the crate responsible for parsing specifications and formatting them in a manner readable by `creusot`.
-- `syn`, implements a parser for the specification from a rust `TokenStream`. The fork [here](https://github.com/xldenis/syn-specs) contains the version that can parse specifications. (TODO: bring this directly into the repo, at least as a submodule).
-- `creusot`, a driver for rustc which produces an MLCFG file for Why3.
+With Creusot you can write normal Rust code, annotate it with contracts and run it through Creusot to prove that your code will always satisfy your contracts.
 
-# Creusot Contracts
+```rust
+#[requires(false)]
+#[ensures(true)]
+fn my_cool_code(param1 : T) -> bool {
+	...
+}
+```
 
-The `creusot-contracts` crate is responsible for getting the contract information into a format suitable for `creusot` to read later on.
-For the moment we choose to just pass along the contract encoded into a string.
-In the future, we will perform type checking and validation on the contracts before forwarding them to `creusot`.
+These kinds of tools have been developed for many languages, with varying degrees of success.
+In particular the presence of *mutable pointers* usually causes issues, they are hard to model and force tools to do complex reasoning, which in turns makes them much less usable.
+A key idea behind Creusot is that we can use Rust's type system to simplify verification when using mutable borrows.
 
-A `requires` or `ensures` clause is transformed into a `creusot::spec::{requires, ensures}` _annotation_.
+# The Trick
 
-Translating `invariant` clauses is slightly more tricky.
-In MIR, annotations for everything except top-level definitions are forgotten.
-To get around this, we transform `invariant` clauses into an empty closure with the invariant clause attached as an annotation.
-This works for us since closures are lifted to the top level during MIR creation.
-This means that in MIR, our invariant becomes a reference to a closure and we can access its annotations, recovering our original invariant clause.
+One of the keys to Creusot's translation is its representation of *mutable borrows*, based on the work of RustHorn.
+In this model, each borrow is represented by a pair of a current and a final value, which is *prophecised*.
+When the borrow ends, we *resolve* the prophecy, linking it to the value stored in the borrow at the moment of ending.
+For a more complete explanation of how this aspect works, you can read the following papers:
+- TODO: RustHorn
+- TODO: JFLA
+- TODO: RustHornBelt
+
+The key takeaway is that:
+
+> **Mutable borrows can be represented efficiently without separation logic**
+
+Creusot is built on this insight, we translate Rust programs to **pure, functional** programs.
+By targeting pure functional programs we can leverage extremely powerful automation for proving functional programs that already exists.
+The thesis of Creusot is that this allows for a an asymptotic improvement to the difficulty of verifying pointer programs.
+
+# Input Language
+
+To Creusot programs consist of 3 different kinds of functions:
+
+- **Program functions**: These are normal Rust functions, they may be annotated using the `ensures`, `requires` and `variant` macros. Internally they may also make use of `invariant` to annotate loop invariants.
+- **Logical functions**: These functions **do not exist at runtime**, they exist purely during proofs.
+They may be used inside specification clauses and are written in a language called *Pearlite*, a specification language for Rust which gives them additional expressive power.
+We will cover Pearlite in a future section
+- **Hybrid functions**: Hybrid functions are functions which are both logical and program functions.
+They must therefore be side-effect free, and can be used equivalently in specifications or programs. Here, think of `Vec::len` as an example.
+
+## Pearlite
+
+Pearlite is the Rust specification language used by Creusot.
+It is meant to feel as natural as possible to a Rust user while adding the features needed by a specification language.
+Thus, at its core Pearlite expressions consist of the *pure* subset of Rust expressions.
+In particular, you have bindings, function calls, arithmetic, etcc.. but you cannot borrow or create **mutable** bindings!
+To this fragment of Rust we add a few special operators and syntax:
+- **Quantifiers**: We have `forall` and `exists` to perform quantification of propositions
+- **Logical Equality**: A special built-in function `equals` performs *logical equality*, even for types which aren't `Eq`
+- **Current (`*`) and Final (`^`)**: These two unary operators can only be applied to values of type `&mut T`, and return the current value of the borrow (aka dereference), or its final, *prophetic* value.
+
+### Type System
+
+Pearlite has the same typesystem as Rust, but **does not have ownership**.
+It makes no sense to restrict the usage of values in a logical environment, they aren't machine resources anymore.
 
 
-# How Creusot translates crates
+# Architecture
 
-Creusot is implemented as a `rustc` driver, which means that it runs and hooks into a normal Rust compilation pipeline.
-Notably, this means that we are always working in the context of a _crate_ rather than single file.
+The following sections will discuss the architecture of Creusot as a system, what the major pieces are and how they fit together.
 
-This means that rather than producing a single module, Creusot will produce a scope/module hierarchy for Why3.
-Currently a rust module `x.y.z` is translated to `scope x .. scope y .. module z ...`.
-During translation we build up a map pointing each rust module with the type and function declarations contained within.
+The project is composed of a few main crates which we will cover in the following sections:
+- `creusot`: Implements the compiler, and provides the binaries to run things. Could probably be split up into a few crates at some point.
+- `creusot-contracts`: The crate that provides the specification macros for users. Also provides primitives for various logical operations (equality, resolution, quantification, mathematical integers).
+- `creusot-contracts-proc`: Proc macro crate for `creusot-contracts`
+- `why3`: A why3 AST / printer.
 
-Note: Creusot translates _every_ definition in a crate, rather than trying to lazily translate those reachable from `main`.
+## Binaries
 
-# Translating types
+The binaries are structured following the pattern laid out by [flowistry]():
 
-We begin by requesting every type declaration in the current crate, each of which is translated into an appropriate Why type declaration.
-Struct types are translated to standard Why constructors.
+- `cargo-creusot`, a cargo extension which provides a cargo-like compilation of a project with creusot
+- `creusot-rustc`, a rustc wrapper which provides rustc-like interaction with creusot.
+- `creusot-driver`, an internal binary which does the actual work.
 
-# Translating functions
+## Main Loop
 
-Creusot operates at the level of MIR, and translates all 'body owners' in the current crate.
-A body owner in rustc parlance is anything with MIR code, so not just top level functions but any closures and sometimes things like constructors or drop functions.
 
-For each body owner, we collect all attributes starting with `creusot::spec`.
-If we encounter a `creusot::spec::invariant` annotation, that means we are translating a closure inserted purely for an invariant, which we don't need to translate to Why at all.
-Otherwise, we collect all `requires` and `ensures` annotations, which we will then translate into a WhyML contract.
+## Program functions
 
-Body owners are translated into MLCFG functions.
-During the translation, if we encounter an assignment with a closure on the right hand side, we look to see if it has an `invariant` annotation.
-If so, that whole assignment is translated to a why `invariant` statement.
+Each function is translated as a standalone Why module containing a single MLCFG function.
+We translate program functions from the *MIR* of a program, as we need to ensure that borrow checking succeeds and also use dataflow analysis on the MIR body.
 
-**Expand on translation itself**
+### Encoding contracts
 
-# Translating specifications
+When a function is annotated with a contract (`ensures`, `requires`), the relevant proc-macro rewrites the function to leave an annotation which we can use to recover the contract during compilation.
 
-Specifications are parsed and typechecked by the `pearlite` crate. The resulting pearlite term is lowered to mlcfg inside of `creusot` in the `specification` module. Before lowering we must perform one important change: Changing the names of variables to refer to the lowered MIR name. The names that creusot operates with are not necessarily the same as those of source rust, so we must map source names into these resulting names. 
+```rust
+#[ensures(prop)]
+fn x(param1, param2, ...) -> T { .. }
+```
 
-Additionally, we gather the variables which are accessible by a `requires`, `ensures` or `invariant` clause for typechecking. This is especially challenging in the case of an invariant clause. For this reason we use debug information to figure out which names should be in scope at that point. 
+Is transformed into
 
-We also further desugar some pearlite terms at this point though this is relatively minor. 
+```rust
+#[rustc_diagnostic_item="x_ensures_$UUID"]
+fn x_ensures_$UUID(param1, param2, ..., result: T) -> bool {
+	PROP
+}
+
+#[creusot::spec::ensures="x_ensures_$UUID"]
+fn x(param1, param2, ...) -> T { .. }
+
+```
+We lift specification clauses to top level functions which have the same parameters as the original function.
+The `ensures` macro also gets access to an additional `result` parameter which has the type of the return type of the original function.
+
+We label the lifted specification with `rustc_diagnostic_item` to be able to easily find it later.
+It suffices to look at the attributes of the function we're compiling to then be able to easily recover its specifications.
+The `prop` which is originally written in Pearlite, is encoded as a HOAS term in Rust.
+The section on compiling specifications will cover how this works
+
+### Translating functions
+
+The translation of program functions occurs statement-by-statement from the MIR to MLCFG.
+Most MIR statements have an obvious translation, but there are a few key technicalities.
+
+#### Translating Places
+
+Translating a place requires special attention.
+In MIR we will often have places like `* _1.0.1 as Some`, to make matters worse, these places can appear in both the left and right hand sides of a statement (ie: assignment).
+
+First, lets consider the simple case where the `Place` appears on the right hand side of an `=`.
+Unfortunately, WhyML does not have positional accessors like `.N` nor can we simply downcase to a specific constructor.
+However, we can still give a pretty alright translation by using irrefutable let-bindings.
+
+- `P as Cons` becomes `P`, we ignore downcasting, as they are actually handled when we positionally access a field of the downcasted constructor.
+- `P.0` becomes `let Cons(a, ..) = P in ...`, note, we introduce a binding here
+- `* P` becomes `P.cur` if it is a mutable borrow and `P` otherwise
+- Other cases unhandled.
+
+Translating the lefthand side of an assignment is slightly more complex.
+The key idea is to forward all the irrelevant parts of the value being updated to produce a new copy with just the target place updated.
+
+- `(P as Cons).0 = V` becomes `let Cons(_, b, c, ...) = P in Cons(V, b, c, ..)`
+- `* P = V` becomes `{ current = V, final = P.final}`
+
+These operations are both applied recursively, building up larger accessors and writers from these patterns.
+
+#### Translating `discriminant` / `switchInt`
+
+By the time that we lower to MIR, matching on constructors in Rust has been replaced by matching on the *discriminant* of the type and then switching using `switchInt` in MIR.
+However, Why3 cannot actually perform matches on literal values, so this is a slight issue.
+Instead, we replace the `discriminant` / `switchInt` pair with a match directly on the values construct in Why3.
+
+## Logical functions
+
+Logical functions are created using either the `logic!` or `predicate!` proc macros.
+
+## Specifications
+
+All forms of specifications, both logic functions and contract clauses are encoded in the same manner.
+
+### Parsing Pearlite
+
+During macro execution we parse the relevant logical expression using a custom fork of `syn`.
+This allows us to extend the syntax of Rust with custom operations.
+Once we've actually parsed the expression we print it back in a HOAS-like style, encoding all the custom syntax as stub functions. For example the expression:
+
+```rust
+exists<i : Int> i == 0
+```
+
+becomes
+
+```rust
+creusot_contracts :: stubs :: exists (| i : Int | { i == 0 })
+
+```
+
+Each stub is given the appropriate type so that type checking can then succeed.
+
+### Typechecking Pearlite
+
+When Creusot then starts compiling a logic expression it starts by running it through the Rust type checker.
+Once that happens we recover the THIR for translation.
+Since Pearlite has no notion of ownership, we prevent the borrow checker from running on any specification expressions.
+
+### Translating Pearlite to WhyML
+
+From THIR we emit WhyML functions.
+Each stub symbol is replaced with the correct logical operation, while the rest of the expressions are translated recursively in the obvious manner.
+
+# Translation
+
+## Represention of Rust Items
+
+Each Rust item is translated to a WhyML module.
+Generic types become opaque types declared within this module.
+Predicates are then a question of 'cloning' the relevant module with the correct substitution.
+
+## Translation of traits
+
+Each trait is translated as a module which includes the signatures of all member methods.
+**Note**: This will soon change, traits will instead be translated into a *set* of modules, one for each method.
+
+## Translation of trait implementations
+
+Each trait implementation becomes a module which clones the trait module, instantiating it with the modules of each relevant method.
