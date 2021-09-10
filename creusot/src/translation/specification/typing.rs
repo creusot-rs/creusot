@@ -30,6 +30,7 @@ pub enum Term<'tcx> {
     Exists { binder: (String, Ty<'tcx>), body: Box<Term<'tcx>> },
     Call { id: DefId, subst: SubstsRef<'tcx>, fun: Box<Term<'tcx>>, args: Vec<Term<'tcx>> },
     Constructor { adt: &'tcx AdtDef, variant: VariantIdx, fields: Vec<Term<'tcx>> },
+    Tuple { fields: Vec<Term<'tcx>> },
     Cur { term: Box<Term<'tcx>> },
     Fin { term: Box<Term<'tcx>> },
     Impl { lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
@@ -205,6 +206,11 @@ fn lower_expr<'tcx>(
             let lhs = lower_expr(tcx, thir, lhs)?;
 
             Ok(Term::Let { pattern: pat, arg: box lhs, body: box Term::Var("a".into()) })
+        }
+        ExprKind::Tuple { ref fields } => {
+            let fields : Vec<_> = fields.iter().map(|f| lower_expr(tcx, thir, *f)).collect::<Result<_,_>>()?;
+            Ok(Term::Tuple { fields })
+
         }
         ref ek => todo!("lower_expr: {:?}", ek),
     }

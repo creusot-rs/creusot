@@ -89,11 +89,17 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
             Ok(quote! { (#term ) })
         }
         RT::Path(_) => Ok(quote! { #term }),
-        RT::Range(_) => todo!(),
-        RT::Repeat(_) => todo!(),
-        RT::Struct(_) => todo!(),
-        RT::Tuple(_) => todo!(),
-        RT::Type(_) => todo!(),
+        RT::Range(_) => todo!("Range"),
+        RT::Repeat(_) => todo!("Repeat"),
+        RT::Struct(_) => todo!("Struct"),
+        RT::Tuple(TermTuple { elems, .. }) => {
+            let elems: Vec<_> = elems.into_iter().map(encode_term).collect::<Result<_, _>>()?;
+
+            Ok(quote! {
+                (#(#elems),*)
+            })
+        },
+        RT::Type(_) => todo!("Type"),
         RT::Unary(TermUnary { op, expr }) => {
             let term = encode_term(*expr)?;
             Ok(quote! {

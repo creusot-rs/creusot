@@ -106,6 +106,11 @@ pub fn lower_term_to_why3<'tcx>(
             arg: box lower_term_to_why3(ctx, names, term_id, arg),
             body: box lower_term_to_why3(ctx, names, term_id, body),
         },
+        Term::Tuple { fields } => {
+            Exp::Tuple(
+                fields.into_iter().map(|f| lower_term_to_why3(ctx, names, term_id, f)).collect()
+            )
+        }
         _ => {
             todo!()
         }
