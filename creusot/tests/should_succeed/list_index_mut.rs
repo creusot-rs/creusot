@@ -23,7 +23,6 @@ unsafe impl Resolve for List {
 }
 
 logic!{
-#[ensures(result >= 0)]
 fn len(l: List) -> Int {{
     let List(_, ls) = l;
     1 + match ls {
@@ -34,7 +33,6 @@ fn len(l: List) -> Int {{
 }
 
 logic!{
-#[variant(len(l))]
 fn get(l : List, ix : Int) -> Option<u32> {{
     let List(i, ls) = l;
     match (ix > 0) {

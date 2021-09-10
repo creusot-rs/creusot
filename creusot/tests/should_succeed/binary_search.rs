@@ -21,7 +21,6 @@ enum List<T> {
 use List::*;
 
 logic!{
-#[ensures(result >= 0)]
 fn len_logic<T>(l : List<T>) -> Int {
     match l {
         Cons(_, ls) => 1 + len_logic(*ls),
@@ -32,26 +31,23 @@ fn len_logic<T>(l : List<T>) -> Int {
 
 
 logic!{
-#[requires(ix >= 0)]
-#[requires(ix < len_logic(l))]
-#[variant(len_logic(l))]
-fn get<T>(l : List<T>, ix : Int) -> T {
+fn get<T>(l : List<T>, ix : Int) -> Option<T> {
     match l {
         Cons(t, ls) => {
             if ix == 0 {
-                t
+                Some(t)
             } else {
                  get(*ls, ix - 1)
             }
         }
-        Nil => absurd,
+        Nil => None,
     }
 }
 }
 
 impl<T> List<T> {
     #[requires(Int::from(ix) < len_logic(*self))]
-    #[ensures(equal(*result, get(*self, Int::from(ix))))]
+    #[ensures(equal(Some(*result), get(*self, Int::from(ix))))]
     fn index(&self, mut ix: usize) -> &T {
         let orig_ix = ix;
         let mut l = self;
@@ -85,11 +81,32 @@ impl<T> List<T> {
     }
 }
 
+logic! {
+    fn is_sorted(l : List<u32>) -> bool { {
+        forall<x1 : Int, x2 : Int> x1 <= x2 ->
+            match (get(l, x1), get(l, x2)) {
+                (Some(v1), Some(v2)) => v1 <= v2,
+                (None, None) => true,
+                _ => false
+            }
+        }
+    }
+}
+
+logic! {
+    fn get_default<T>(l : List<T>, ix: Int, def: T) -> T {
+        match get(l, ix) {
+            Some(v) => v,
+            None => def,
+        }
+    }
+}
+
 #[requires(len_logic(*arr) <= Int::from(1_000_000))]
-#[requires(forall<k1 : Int, k2: Int> get(*arr, k1) <= get(*arr, k2))]
-#[ensures(forall<x:usize> equal(result, Ok(x)) -> equal(get(*arr, Int::from(x)), elem))]
-#[ensures(forall<x:usize> equal(result, Err(x)) -> forall<i:Int> 0 <= i && i < Int::from(x) -> get(*arr, i) < elem)]
-#[ensures(forall<x:usize> equal(result, Err(x)) -> forall<i:Int> Int::from(x) < i && i < len_logic(*arr) -> elem < get(*arr, i))]
+#[requires(is_sorted(*arr))]
+#[ensures(forall<x:usize> equal(result, Ok(x)) -> equal(get(*arr, Int::from(x)), Some(elem)))]
+#[ensures(forall<x:usize> equal(result, Err(x)) -> forall<i:Int> 0 <= i && i < Int::from(x) -> get_default(*arr, i, 0u32) < elem)]
+#[ensures(forall<x:usize> equal(result, Err(x)) -> forall<i:Int> Int::from(x) < i && i < len_logic(*arr) -> elem < get_default(*arr, i, 0u32))]
 fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize>
 {
     if arr.len() == 0 { return Err(0) }
@@ -97,9 +114,7 @@ fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize>
     let mut base = 0;
 
     #[invariant(size_valid, Int::from(size) + Int::from(base) <= len_logic(*arr))]
-    #[invariant(in_range, forall<i:Int> 0 <= i && i < len_logic(*arr) ->
-        ((i < Int::from(base)) -> get(*arr, i) <= elem) && ((Int::from(base) + Int::from(size) < i) -> elem <= get(*arr, i))
-    )]
+    #[invariant(in_interval, get_default(*arr, Int::from(base), 0u32) <= elem && elem <= get_default(*arr, Int::from(base) + Int::from(size), 0u32))]
     #[invariant(size_pos, size > 0usize)]
     while size > 1  {
         let half = size / 2;
