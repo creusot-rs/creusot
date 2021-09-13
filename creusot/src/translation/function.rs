@@ -10,7 +10,6 @@ use rustc_middle::{
 use std::collections::BTreeMap;
 use why3::declaration::*;
 use why3::mlcfg::{self, Exp::*, Statement::*, *};
-use why3::QName;
 
 use rustc_middle::mir::Place;
 use rustc_middle::ty::subst::GenericArg;
@@ -19,7 +18,7 @@ use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
 use rustc_resolve::Namespace;
 use rustc_span::Symbol;
 
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 
 mod place;
 mod statement;
@@ -77,8 +76,6 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     // Gives a fresh name to every mono-morphization of a function or trait
     clone_names: CloneMap<'tcx>,
 
-    imports: IndexSet<QName>,
-
     invariants: IndexMap<DefId, Exp>,
 }
 
@@ -102,7 +99,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         });
 
         let resolver = EagerResolver::new(tcx, body);
-        let imports = IndexSet::new();
 
         FunctionTranslator {
             tcx,
@@ -115,7 +111,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             ctx,
             fresh_id: body.basic_blocks().len(),
             clone_names,
-            imports,
             invariants,
         }
     }
@@ -166,10 +161,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         let mut decls: Vec<_> = Vec::new();
         decls.extend(all_generic_decls_for(self.tcx, self.def_id));
-
-        for imp in self.imports {
-            decls.push(Decl::UseDecl(Use { name: imp }))
-        }
 
         for tp in traits::traits_used_by(self.tcx, self.def_id) {
             traits::translate_constraint(self.ctx, &mut self.clone_names, tp);
