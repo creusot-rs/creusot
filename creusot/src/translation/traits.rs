@@ -153,7 +153,7 @@ pub fn translate_constraint<'tcx>(
     names: &mut CloneMap<'tcx>,
     tp: TraitPredicate<'tcx>,
 ) {
-    names.name_for_mut(tp.def_id(), tp.trait_ref.substs);
+    names.qname_for_mut(tp.def_id(), tp.trait_ref.substs);
 
     // If we haven't seen this trait, first translate it
     ctx.translate_trait(tp.def_id());
@@ -172,7 +172,7 @@ fn translate_assoc_function(
     let trait_id = ctx.tcx.trait_id_of_impl(impl_id).unwrap();
 
     let assoc_subst = InternalSubsts::identity_for_item(ctx.tcx, impl_id);
-    let name = names.name_for_mut(assoc.def_id, assoc_subst);
+    let name = names.insert(assoc.def_id, assoc_subst).clone();
 
     ctx.translate_function(assoc.def_id);
 
@@ -198,10 +198,7 @@ fn translate_assoc_function(
         .map(move |(tr_param, inst_param)| {
             CloneSubst::Type(
                 (&*tr_param.name.as_str().to_lowercase()).into(),
-                Type::TConstructor(QName {
-                    module: vec![name.clone()],
-                    name: inst_param.name.as_str().to_lowercase(),
-                }),
+                Type::TConstructor(name.qname(tcx, inst_param.def_id)),
             )
         });
 

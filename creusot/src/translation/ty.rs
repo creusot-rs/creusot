@@ -110,9 +110,8 @@ pub fn translate_projection_ty(
     pty: &ProjectionTy<'tcx>,
 ) -> MlT {
     ctx.translate_trait(pty.trait_def_id(ctx.tcx));
-    let base = names.name_for_mut(pty.trait_def_id(ctx.tcx), pty.substs);
-    let name = ctx.tcx.item_name(pty.item_def_id).to_string().to_lowercase();
-    MlT::TConstructor(QName { module: vec![base], name })
+    let name = names.qname_for_mut(pty.item_def_id, pty.substs);
+    MlT::TConstructor(name)
 }
 
 use petgraph::algo::tarjan_scc;
