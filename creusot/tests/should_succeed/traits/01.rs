@@ -1,3 +1,4 @@
+// WHY3SKIP
 trait A {
 	fn from_b<B>(x: Self) -> B;
 }
