@@ -4,23 +4,24 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
+#[ensures(equal(^mma, *mmb) && equal(^mmb, *mma))]
+fn swap<'a>(mma: &'a mut &'a mut u32, mmb: &'a mut &'a mut u32) {
+  let tmp = *mma;
+  *mma = *mmb;
+  *mmb = tmp;
+}
+
 #[requires(*ma <= 1000_000u32 && *mb <= 1000_000u32 && *mc <= 1000_000u32)]
 #[ensures(^ma != ^mb && ^mb != ^mc && ^mc != ^ma)]
 fn inc_max_3<'a>(ma: &'a mut u32, mb: &'a mut u32, mc: &'a mut u32) {
   if *ma < *mb {
-    let tmp = ma;
-    ma = mb;
-    mb = ma;
+    swap(&mut ma, &mut mb);
   }
   if *mb < *mc {
-    let tmp = mb;
-    mb = mc;
-    mc = mb;
+    swap(&mut mb, &mut mc);
   }
   if *ma < *mb {
-    let tmp = ma;
-    ma = mb;
-    mb = ma;
+    swap(&mut ma, &mut mb);
   }
   *ma += 2;
   *mb += 1;
