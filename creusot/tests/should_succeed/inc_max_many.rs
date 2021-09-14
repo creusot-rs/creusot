@@ -4,7 +4,9 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-fn take_max<'a>(ma: &'a mut i32, mb: &'a mut i32) -> &'a mut i32 {
+#[ensures(if *ma >= *mb { equal(*mb, ^mb) && equal(result, ma) }
+                   else { equal(*ma, ^ma) && equal(result, mb) })]
+fn take_max<'a>(ma: &'a mut u32, mb: &'a mut u32) -> &'a mut u32 {
   if *ma >= *mb {
     ma
   } else {
@@ -12,9 +14,9 @@ fn take_max<'a>(ma: &'a mut i32, mb: &'a mut i32) -> &'a mut i32 {
   }
 }
 
-#[ensures(true)]
-fn inc_max_many(mut a: i32, mut b: i32, k: i32) {
+#[requires(a <= 1_000_000u32 && b <= 1_000_000u32 && k <= 1_000_000u32)]
+fn inc_max_many(mut a: u32, mut b: u32, k: u32) {
   let mc = take_max(&mut a, &mut b);
   *mc += k;
-  assert!((a - b).abs() >= k);
+  assert!(a >= b + k || b >= a + k);
 }
