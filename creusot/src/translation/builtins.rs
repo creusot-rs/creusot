@@ -1,6 +1,9 @@
 use rustc_hir::def_id::DefId;
 use rustc_span::Symbol;
-use why3::{mlcfg::{BinOp, Exp}, QName};
+use why3::{
+    mlcfg::{BinOp, Exp},
+    QName,
+};
 
 use crate::ctx::TranslationCtx;
 

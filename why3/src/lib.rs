@@ -3,5 +3,5 @@ pub mod declaration;
 pub mod mlcfg;
 pub mod name;
 
-pub use name::*;
 pub use mlcfg::printer::Pretty;
+pub use name::*;

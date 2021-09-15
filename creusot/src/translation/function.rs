@@ -137,7 +137,15 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                     None
                 } else {
                     let ident = self.translate_local(loc);
-                    Some((ident, ty::translate_ty(&mut self.ctx, &mut self.clone_names, decl.source_info.span, decl.ty)))
+                    Some((
+                        ident,
+                        ty::translate_ty(
+                            &mut self.ctx,
+                            &mut self.clone_names,
+                            decl.source_info.span,
+                            decl.ty,
+                        ),
+                    ))
                 }
             })
             .collect();
@@ -172,7 +180,12 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         let name = translate_value_id(self.tcx, self.def_id);
 
         // let sig = Signature { name: name.name.clone().into(), retty: Some(retty), args, contract };
-        decls.push(Decl::FunDecl(CfgFunction { sig, vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(), entry, blocks: self.past_blocks }));
+        decls.push(Decl::FunDecl(CfgFunction {
+            sig,
+            vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(),
+            entry,
+            blocks: self.past_blocks,
+        }));
         Module { name: name.module_name().name, decls }
     }
 
@@ -355,7 +368,9 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     pub fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Exp {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(pl),
-            Operand::Constant(c) => Const(crate::constant::from_mir_constant(self.tcx, &mut self.clone_names, c)),
+            Operand::Constant(c) => {
+                Const(crate::constant::from_mir_constant(self.tcx, &mut self.clone_names, c))
+            }
         }
     }
 

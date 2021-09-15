@@ -1,9 +1,9 @@
 use indexmap::IndexSet;
 use std::collections::HashMap;
 
+use crate::*;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
-use crate::*;
 
 pub mod printer;
 

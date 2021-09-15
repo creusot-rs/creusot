@@ -1,7 +1,7 @@
 use assert_cmd::prelude::*;
 use std::fs::File;
-use std::io::{BufReader, BufRead, Write};
-use std::process::{Command, exit};
+use std::io::{BufRead, BufReader, Write};
+use std::process::{exit, Command};
 use termcolor::*;
 
 fn main() {
@@ -12,7 +12,8 @@ fn main() {
     for file in glob::glob("../creusot/tests/should_succeed/**/*.rs").unwrap() {
         let mut file = file.unwrap();
 
-        let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
+        let header_line =
+            BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
 
         file.set_extension("stdout");
 

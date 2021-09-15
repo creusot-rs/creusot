@@ -166,7 +166,7 @@ impl TyDecl {
 pub struct DeclClone {
     pub name: QName,
     pub subst: Vec<CloneSubst>,
-    pub kind : CloneKind,
+    pub kind: CloneKind,
 }
 
 #[derive(Debug, Clone)]

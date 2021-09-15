@@ -10,15 +10,15 @@ mod logic;
 
 pub use external::translate_extern;
 pub use function::translate_function;
-pub use logic::*;
 pub use function::LocalIdent;
+pub use logic::*;
 
 use heck::CamelCase;
 
 use rustc_hir::def_id::LOCAL_CRATE;
-use why3::{Pretty,
+use why3::{
     declaration::{Decl, Module, TyDecl, Use},
-    QName,
+    Pretty, QName,
 };
 
 use std::io::Result;
