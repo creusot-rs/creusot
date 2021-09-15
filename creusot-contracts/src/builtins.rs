@@ -98,6 +98,33 @@ impl Sub<Int> for Int {
     }
 }
 
+impl Mul<Int> for Int {
+    type Output = Int;
+    #[creusot::spec::no_translate]
+    #[rustc_diagnostic_item = "mul_int"]
+    fn mul(self, _: Int) -> Self {
+        panic!()
+    }
+}
+
+impl Div<Int> for Int {
+    type Output = Int;
+    #[creusot::spec::no_translate]
+    #[rustc_diagnostic_item = "div_int"]
+    fn div(self, _: Int) -> Self {
+        panic!()
+    }
+}
+
+impl Neg for Int {
+    type Output = Int;
+    #[creusot::spec::no_translate]
+    #[rustc_diagnostic_item = "neg_int"]
+    fn neg(self) -> Self {
+        panic!()
+    }
+}
+
 #[rustc_diagnostic_item = "creusot_resolve"]
 pub unsafe trait Resolve {
     predicate! {
