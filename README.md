@@ -30,8 +30,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
     - (Optional, Recommended) Also install the Rust compiler sources: `$ rustup component add rustc-src`
 2. Fully build Creusot
     - Build basic parts: `$ cargo build`
-    - Install Cresuot to Cargo: `$ cargo install --path creusot`
-    - Build the contract library: `$ cargo creusot -p creusot-contracts —features=contracts`
+    - Fully initialize by performing tests: `$ cargo test` (TODO: better initialization)
 3. Get Why3
     - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
     - Specify the [`stackify` branch](https://gitlab.inria.fr/why3/why3/-/tree/stackify) for `why3`: `$ opam pin add why3 https://gitlab.inria.fr/why3/why3.git#stackify`
