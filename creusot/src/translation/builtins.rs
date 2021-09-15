@@ -45,7 +45,7 @@ pub fn lookup_builtin(
         let l = args.remove(0);
         let r = args.remove(0);
 
-        return Some(Exp::BinaryOp(BinOp::Mul, box l, box r));
+        return Some(Exp::BinaryOp(BinOp::Le, box l, box r));
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("lt_int")) {
         let l = args.remove(0);
         let r = args.remove(0);

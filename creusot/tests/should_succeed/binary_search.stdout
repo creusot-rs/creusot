@@ -182,7 +182,7 @@ module BinarySearch_Impl0_Len
   clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = usize
   clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = Type.binarysearch_list t
   let rec cfg len (self : Type.binarysearch_list t) : usize
-    requires {LenLogic0.len_logic self * Int32.to_int (1000000 : int32)}
+    requires {LenLogic0.len_logic self <= Int32.to_int (1000000 : int32)}
     ensures { UInt64.to_int result = LenLogic0.len_logic self }
     ensures { result >= (0 : usize) }
     
@@ -252,7 +252,7 @@ module BinarySearch_IsSorted
   use mach.int.UInt32
   clone BinarySearch_Get as Get0 with type t = uint32
   function is_sorted (l : Type.binarysearch_list uint32) : bool = 
-    forall x2 : (int) . forall x1 : (int) . x1 * x2 -> match ((Get0.get l x1, Get0.get l x2)) with
+    forall x2 : (int) . forall x1 : (int) . x1 <= x2 -> match ((Get0.get l x1, Get0.get l x2)) with
       | (Type.Core_Option_Option_Some(v1), Type.Core_Option_Option_Some(v2)) -> v1 <= v2
       | (Type.Core_Option_Option_None, Type.Core_Option_Option_None) -> true
       | _ -> false
@@ -290,9 +290,9 @@ module BinarySearch_BinarySearch
   clone BinarySearch_Get as Get11 with type t = uint32
   let rec cfg binary_search (arr : Type.binarysearch_list uint32) (elem : uint32) : Type.core_result_result usize usize
     requires {IsSorted10.is_sorted arr}
-    requires {LenLogic0.len_logic arr * Int32.to_int (1000000 : int32)}
+    requires {LenLogic0.len_logic arr <= Int32.to_int (1000000 : int32)}
     ensures { forall x : (usize) . result = Type.Core_Result_Result_Err(x) -> (forall i : (int) . UInt64.to_int x < i && i < LenLogic0.len_logic arr -> elem < GetDefault1.get_default arr i (0 : uint32)) }
-    ensures { forall x : (usize) . result = Type.Core_Result_Result_Err(x) -> (forall i : (int) . Int32.to_int (0 : int32) * i && i < UInt64.to_int x -> GetDefault1.get_default arr i (0 : uint32) < elem) }
+    ensures { forall x : (usize) . result = Type.Core_Result_Result_Err(x) -> (forall i : (int) . Int32.to_int (0 : int32) <= i && i < UInt64.to_int x -> GetDefault1.get_default arr i (0 : uint32) < elem) }
     ensures { forall x : (usize) . result = Type.Core_Result_Result_Ok(x) -> Get11.get arr (UInt64.to_int x) = Type.Core_Option_Option_Some(elem) }
     
    = 
@@ -378,7 +378,7 @@ module BinarySearch_BinarySearch
     goto BB5
   }
   BB5 {
-    invariant size_valid { UInt64.to_int size_8 + UInt64.to_int base_10 * LenLogic0.len_logic arr_1 };
+    invariant size_valid { UInt64.to_int size_8 + UInt64.to_int base_10 <= LenLogic0.len_logic arr_1 };
     invariant in_interval { GetDefault1.get_default arr_1 (UInt64.to_int base_10) (0 : uint32) <= elem_2 && elem_2 <= GetDefault1.get_default arr_1 (UInt64.to_int base_10 + UInt64.to_int size_8) (0 : uint32) };
     invariant size_pos { size_8 > (0 : usize) };
     goto BB6
