@@ -31,8 +31,10 @@ logic! {
 }
 
 logic! {
-    fn deref_pat<'a>(p: &'a (Int, Int)) -> Int {
-        let (a, b) = p;
-        *a + *b
+    fn deref_pat<'a>(o: &'a Option<Int>) -> Int {
+        match o {
+            Some(a) => *a,
+            None => Int::from(0),
+        }
     }
 }
