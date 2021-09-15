@@ -10,7 +10,7 @@ use rustc_middle::thir::{
 };
 use rustc_middle::ty::{AdtDef, Ty, TyKind, UpvarSubsts};
 use rustc_middle::{
-    mir::{BinOp, BorrowKind, Mutability::*},
+    mir::{BinOp, BorrowKind, Mutability::*, UnOp},
     ty::{subst::SubstsRef, Const, TyCtxt, WithOptConstParam},
 };
 use rustc_span::Symbol;
@@ -22,10 +22,11 @@ pub use rustc_middle::mir::Field;
 
 #[derive(Debug)]
 pub enum Term<'tcx> {
-    Binary { op: BinOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
-    Logical { op: LogicalOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Var(String),
     Const(&'tcx Const<'tcx>),
+    Binary { op: BinOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
+    Logical { op: LogicalOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
+    Unary { op: UnOp, arg: Box<Term<'tcx>> },
     Forall { binder: (String, Ty<'tcx>), body: Box<Term<'tcx>> },
     Exists { binder: (String, Ty<'tcx>), body: Box<Term<'tcx>> },
     Call { id: DefId, subst: SubstsRef<'tcx>, fun: Box<Term<'tcx>>, args: Vec<Term<'tcx>> },
@@ -81,16 +82,17 @@ fn lower_expr<'tcx>(
         ExprKind::Binary { op, lhs, rhs } => {
             let lhs = lower_expr(tcx, thir, lhs)?;
             let rhs = lower_expr(tcx, thir, rhs)?;
-
             Ok(Term::Binary { op, lhs: box lhs, rhs: box rhs })
         }
         ExprKind::LogicalOp { op, lhs, rhs } => {
             let lhs = lower_expr(tcx, thir, lhs)?;
             let rhs = lower_expr(tcx, thir, rhs)?;
-
             Ok(Term::Logical { op, lhs: box lhs, rhs: box rhs })
         }
-
+        ExprKind::Unary { op, arg } => {
+            let arg = lower_expr(tcx, thir, arg)?;
+            Ok(Term::Unary { op, arg: box arg })
+        }
         ExprKind::VarRef { id } => {
             let map = tcx.hir();
             let name = map.name(id);
