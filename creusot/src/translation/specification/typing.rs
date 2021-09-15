@@ -10,7 +10,7 @@ use rustc_middle::thir::{
 };
 use rustc_middle::ty::{AdtDef, Ty, TyKind, UpvarSubsts};
 use rustc_middle::{
-    mir::{BinOp, BorrowKind, Mutability::Not, UnOp},
+    mir::{BinOp, BorrowKind, Mutability::*, UnOp},
     ty::{subst::SubstsRef, Const, TyCtxt, WithOptConstParam},
 };
 use rustc_span::Symbol;
@@ -265,14 +265,20 @@ fn lower_pattern<'tcx>(
                 Ok(Pattern::Constructor { adt: adt_def, variant: 0u32.into(), fields })
             }
         }
+        PatKind::Deref { subpattern } => {
+            assert!(
+                pat.ty.is_box() || pat.ty.ref_mutability() == Some(Not),
+                "lower_pattern: only dereference over a box or shared reference is supported"
+            );
+            lower_pattern(tcx, thir, subpattern)
+        }
         PatKind::Constant { value } => {
             if !pat.ty.is_bool() {
                 return Err(Error {});
             }
             Ok(Pattern::Boolean(value.val.try_to_bool().unwrap()))
         }
-        _ => unimplemented!(),
-        // _ => todo!(),
+        ref pk => todo!("lower_pattern: unsupported pattern kind {:?}", pk),
     }
 }
 
