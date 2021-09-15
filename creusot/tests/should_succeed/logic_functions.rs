@@ -17,5 +17,22 @@ logic! {
     fn logical() -> bool { false }
 }
 
+logic! {
+    fn arith(n: Int, b: bool) -> Int {
+        if !b {
+            -n + n - n * n / n
+        } else {
+            n
+        }
+    }
+}
+
+logic! {
+    fn deref_pat<'a>(p: &'a (Int, Int)) -> Int {
+        let (a, b) = p;
+        *a + *b
+    }
+}
+
 #[ensures(logical())]
 fn main() {}
