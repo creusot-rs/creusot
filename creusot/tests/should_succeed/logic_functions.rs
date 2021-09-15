@@ -6,21 +6,24 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
+logic! {
+    fn logical() -> bool { true }
+}
+
+#[ensures(logical())]
+fn test_logical() {}
+
 mod nested {
     use creusot_contracts::*;
     logic! {
-        fn logical() -> bool { true }
+        fn nested() -> bool { true }
     }
-}
-
-logic! {
-    fn logical() -> bool { false }
 }
 
 logic! {
     fn arith(n: Int, b: bool) -> Int {
         if !b {
-            -n + n - n * n / n
+            -n + n - n * n
         } else {
             n
         }
@@ -33,6 +36,3 @@ logic! {
         *a + *b
     }
 }
-
-#[ensures(logical())]
-fn main() {}
