@@ -1,0 +1,194 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type incsomelist_list  = 
+    | IncSomeList_List_Cons(uint32, incsomelist_list)
+    | IncSomeList_List_Nil
+    
+end
+module IncSomeList_Random
+  let rec cfg random () : bool = 
+  var _0 : bool;
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- true;
+    return _0
+  }
+  
+end
+module IncSomeList_Clone
+  let rec cfg clone () : () = 
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end
+module IncSomeList_Sum
+  use mach.int.Int
+  use mach.int.Int32
+  use Type
+  function sum (l : Type.incsomelist_list) : int = 
+    match (l) with
+      | Type.IncSomeList_List_Cons(a, l2) -> UInt32.to_int a + sum l2
+      | Type.IncSomeList_List_Nil -> Int32.to_int (0 : int32)
+      end
+end
+module CreusotContracts_Builtins_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Builtins_Impl8_Resolve
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t) = 
+     ^ self =  * self
+end
+module CreusotContracts_Builtins_Impl8
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.resolve
+end
+module IncSomeList_TakeSomeList
+  use prelude.Prelude
+  use mach.int.Int
+  use mach.int.UInt32
+  use Type
+  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve0 with type t = Type.incsomelist_list
+  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = isize
+  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = ()
+  clone IncSomeList_Random as Random3
+  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve4 with type t = Type.incsomelist_list
+  clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = bool
+  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve6 with type t = uint32
+  clone IncSomeList_Sum as Sum7
+  let rec cfg take_some_list (ml : borrowed (Type.incsomelist_list)) : borrowed uint32
+    ensures { Sum7.sum ( * ml) + UInt32.to_int ( ^ result) = Sum7.sum ( ^ ml) + UInt32.to_int ( * result) }
+    
+   = 
+  var _0 : borrowed uint32;
+  var ml_1 : borrowed (Type.incsomelist_list);
+  var _2 : borrowed uint32;
+  var _3 : borrowed uint32;
+  var _4 : isize;
+  var ma_5 : borrowed uint32;
+  var ml2_6 : borrowed (Type.incsomelist_list);
+  var _7 : borrowed uint32;
+  var _8 : borrowed uint32;
+  var _9 : bool;
+  var _10 : borrowed uint32;
+  var _11 : borrowed uint32;
+  var _12 : borrowed uint32;
+  var _13 : borrowed (Type.incsomelist_list);
+  var _14 : ();
+  var _15 : ();
+  {
+    ml_1 <- ml;
+    goto BB0
+  }
+  BB0 {
+    switch ( * ml_1)
+      | Type.IncSomeList_List_Cons(_, _) -> goto BB1
+      | Type.IncSomeList_List_Nil -> goto BB2
+      | _ -> goto BB3
+      end
+  }
+  BB1 {
+    assume { Resolve1.resolve _4 };
+    goto BB4
+  }
+  BB2 {
+    assume { Resolve0.resolve ml_1 };
+    assume { Resolve1.resolve _4 };
+    goto BB10
+  }
+  BB3 {
+    assume { Resolve0.resolve ml_1 };
+    assume { Resolve1.resolve _4 };
+    absurd
+  }
+  BB4 {
+    ma_5 <- borrow_mut (let Type.IncSomeList_List_Cons(a, _) =  * ml_1 in a);
+    ml_1 <- { ml_1 with current = (let Type.IncSomeList_List_Cons(a, b) =  * ml_1 in Type.IncSomeList_List_Cons( ^ ma_5, b)) };
+    ml2_6 <- borrow_mut (let Type.IncSomeList_List_Cons(_, a) =  * ml_1 in a);
+    ml_1 <- { ml_1 with current = (let Type.IncSomeList_List_Cons(a, b) =  * ml_1 in Type.IncSomeList_List_Cons(a,  ^ ml2_6)) };
+    assume { Resolve0.resolve ml_1 };
+    _9 <- Random3.random ();
+    goto BB5
+  }
+  BB5 {
+    switch (_9)
+      | False -> goto BB7
+      | True -> goto BB6
+      | _ -> goto BB6
+      end
+  }
+  BB6 {
+    assume { Resolve4.resolve ml2_6 };
+    assume { Resolve5.resolve _9 };
+    _10 <- borrow_mut ( * ma_5);
+    ma_5 <- { ma_5 with current = ( ^ _10) };
+    assume { Resolve6.resolve ma_5 };
+    _8 <- borrow_mut ( * _10);
+    _10 <- { _10 with current = ( ^ _8) };
+    assume { Resolve6.resolve _10 };
+    goto BB9
+  }
+  BB7 {
+    assume { Resolve6.resolve ma_5 };
+    assume { Resolve5.resolve _9 };
+    _13 <- borrow_mut ( * ml2_6);
+    ml2_6 <- { ml2_6 with current = ( ^ _13) };
+    assume { Resolve4.resolve ml2_6 };
+    _12 <- take_some_list _13;
+    goto BB8
+  }
+  BB8 {
+    _11 <- borrow_mut ( * _12);
+    _12 <- { _12 with current = ( ^ _11) };
+    assume { Resolve6.resolve _12 };
+    _8 <- borrow_mut ( * _11);
+    _11 <- { _11 with current = ( ^ _8) };
+    assume { Resolve6.resolve _11 };
+    goto BB9
+  }
+  BB9 {
+    _7 <- borrow_mut ( * _8);
+    _8 <- { _8 with current = ( ^ _7) };
+    assume { Resolve6.resolve _8 };
+    _3 <- borrow_mut ( * _7);
+    _7 <- { _7 with current = ( ^ _3) };
+    assume { Resolve6.resolve _7 };
+    _2 <- borrow_mut ( * _3);
+    _3 <- { _3 with current = ( ^ _2) };
+    assume { Resolve6.resolve _3 };
+    _0 <- borrow_mut ( * _2);
+    _2 <- { _2 with current = ( ^ _0) };
+    assume { Resolve6.resolve _2 };
+    return _0
+  }
+  BB10 {
+    goto BB11
+  }
+  BB11 {
+    _15 <- ();
+    assume { Resolve2.resolve _15 };
+    goto BB10
+  }
+  
+end
