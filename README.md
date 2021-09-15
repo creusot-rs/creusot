@@ -25,12 +25,12 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 0. Clone the [creusot](https://github.com/xldenis/creusot/) repo, set the current directory to that folder
 1. Set up Rust
     - [Install `rustup`](https://www.rust-lang.org/tools/install), to get suitable Rust toolchains
-    - Make sure you are at the repo dir (so that rustup can load [`rust-toolchain`](rust-toolchain))
+    - Make sure you are at the repo dir
     - Install the basic toolchain: `$ rustup component add rustc-dev`
     - (Optional, Recommended) Also install the Rust compiler sources: `$ rustup component add rustc-src`
 2. Fully build Creusot
     - Build basic parts: `$ cargo build`
-    - Fully initialize by performing tests: `$ cargo test` (TODO: better initialization)
+    - Fully initialize by performing tests: `$ cargo test` (TODO: Better initialization)
 3. Get Why3
     - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
     - Specify the [`stackify` branch](https://gitlab.inria.fr/why3/why3/-/tree/stackify) for `why3`: `$ opam pin add why3 https://gitlab.inria.fr/why3/why3.git#stackify`
@@ -45,13 +45,16 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 
 ## Turning to MLCFG
 
-Creusot can translate the Rust programs into a language supported by Why3, called MLCFG (Call flow graph for OCaml).
+Creusot can translate the Rust programs into a language supported by Why3, called MLCFG (Call flow graph for WhyML).
 
 By running the following, you can have Creusot turn a Rust program to a MLCFG (assuming that you are in the repo dir).
 ```
 cargo run --bin creusot-rustc -- -Zno-codegen --extern creusot_contracts=./creusot/target/debug/libcreusot_contracts.rlib -Ldependency=./creusot/target/debug/deps/ PATH/TO/PROGRAM.rs
 ```
-(You can play with examples in [creusot/tests/should_succeed](creusot/tests/should_succeed).)
+(TODO: Better interface)
+
+You can play with examples in [creusot/tests/should_succeed](creusot/tests/should_succeed).
+Later we show how to write Rust programs with specs for Creusot.
 
 By default the output MLCFG goes to stdout, but you can also specify the output file with `-o PATH/TO/OUTPUT.mlcfg` (file extension is not relevant to Why3).
 
@@ -120,7 +123,7 @@ Finally, there is a `variant` expression which may be useful when defining *logi
 Contracts and logic functions are written in Pearlite, a specification language for Rust we are developing. Pearlite can be seen as a pure, immutable fragment of Rust which has access to a few additional logical operations and connectives. In practice you have:
 
 - Base Rust expressions: matching, function calls, let bindings, binary and unary operators, tuples, structs and enums, projections, primitive casts, and dereferencing.
-- Logical Expressions: quantifiers (`forall` and `exists`), logical implication `->`, *logical* equality `≡` /`===`, labels
+- Logical Expressions: quantifiers (`forall` and `exists`), logical implication `->`, *logical* equality `equal(a, b)` (TODO: Add `a ≡ b` / `a === b`), labels
 - Rust specific logical expressions: Access to the **final** value of a mutable borrow! `^` /`@fin`
 
 You also have two new kinds of declarations: `logic` and `hybrid`.
