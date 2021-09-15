@@ -87,6 +87,13 @@ pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::mlcfg::BinOp {
     }
 }
 
+fn unop_to_unop(op: rustc_middle::mir::UnOp) -> why3::mlcfg::UnOp {
+    match op {
+        rustc_middle::mir::UnOp::Not => why3::mlcfg::UnOp::Not,
+        rustc_middle::mir::UnOp::Neg => why3::mlcfg::UnOp::Neg,
+    }
+}
+
 pub fn prelude_imports(type_import: bool) -> Vec<Decl> {
     let mut imports = vec![
         Decl::UseDecl(Use { name: QName::from_string("Ref").unwrap() }),
