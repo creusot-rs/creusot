@@ -24,9 +24,9 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 
 0. Clone the [creusot](https://github.com/xldenis/creusot/) repo, and *set the current directory to that folder*
 1. Set up **Rust**
-    - [Install `rustup`](https://www.rust-lang.org/tools/install), to get suitable Rust toolchains
+    - [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
     - Install the basic toolchain: `$ rustup component add rustc-dev`
-    - (Optional, Recommended) Also install the Rust compiler sources: `$ rustup component add rustc-src`
+    - (Optional) Also install the Rust compiler sources: `$ rustup component add rustc-src`
 2. Build **Creusot**
     - Build basic parts: `$ cargo build`
     - Fully initialize by performing tests: `$ cargo test` (TODO: better initialization)
@@ -34,10 +34,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
     - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
     - Specify the [`stackify` branch](https://gitlab.inria.fr/why3/why3/-/tree/stackify) for `why3`: `$ opam pin add why3 https://gitlab.inria.fr/why3/why3.git#stackify`
     - Install `why3` and `why3-ide`: `$ opam install why3 why3-ide`
-    - Get some SMT solvers:
-      [Z3](https://github.com/Z3Prover/z3) (available by `brew`, `apt`, etc.),
-      [CVC4](https://cvc4.github.io/) (`brew`, `apt`, etc.),
-      [Alt-Ergo](https://alt-ergo.ocamlpro.com/) (`opam`, `apt`, etc.)
+    - Get some SMT solvers: [Z3](https://github.com/Z3Prover/z3) (available by `brew`, `apt`, etc.), [CVC4](https://cvc4.github.io/) (`brew`, `apt`, etc.), [Alt-Ergo](https://alt-ergo.ocamlpro.com/) (`opam`, `apt`, etc.)
     - Configure Why3: `$ why3 config detect`
 
 # Verifying with Creusot and Why3
