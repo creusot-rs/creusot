@@ -4,8 +4,8 @@
 #![feature(proc_macro_hygiene, stmt_expr_attributes)]
 
 // Here we prove the Rust stdlib implementation of binary search with a few changes
-// 1. We use a List rather than a slice, this restriction is because creusot cannot yet
-//    axiomitize types, and should be lifted soon.
+// 1. We use a List rather than a slice, this restriction is because Creusot cannot yet
+//    axiomatize types, and should be lifted soon.
 // 2. We monomorphize binary_search to u32, this is because we cannot handle trait constraints.
 //    this restriction will be lifted but not in the immediate future. The best approach to handle
 //    traits is not obvious.
@@ -15,12 +15,12 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 enum List<T> {
-  Cons(T, Box<List<T>>),
-  Nil,
+    Cons(T, Box<List<T>>),
+    Nil,
 }
 use List::*;
 
-logic!{
+logic! {
 fn len_logic<T>(l : List<T>) -> Int {
     match l {
         Cons(_, ls) => 1 + len_logic(*ls),
@@ -29,15 +29,14 @@ fn len_logic<T>(l : List<T>) -> Int {
 }
 }
 
-
-logic!{
+logic! {
 fn get<T>(l : List<T>, ix : Int) -> Option<T> {
     match l {
         Cons(t, ls) => {
             if ix == 0 {
                 Some(t)
             } else {
-                 get(*ls, ix - 1)
+                get(*ls, ix - 1)
             }
         }
         Nil => None,
@@ -53,7 +52,7 @@ impl<T> List<T> {
         let mut l = self;
 
         #[invariant(ix_valid, Int::from(ix) < len_logic(*l))]
-        #[invariant(res_get, equal(get(*self, Int::from(orig_ix)), get(*l, Int::from(ix) )))]
+        #[invariant(res_get, equal(get(*self, Int::from(orig_ix)), get(*l, Int::from(ix))))]
         while let Cons(t, ls) = l {
             if ix > 0 {
                 l = &*ls;
@@ -105,18 +104,22 @@ logic! {
 #[requires(len_logic(*arr) <= Int::from(1_000_000))]
 #[requires(is_sorted(*arr))]
 #[ensures(forall<x:usize> equal(result, Ok(x)) -> equal(get(*arr, Int::from(x)), Some(elem)))]
-#[ensures(forall<x:usize> equal(result, Err(x)) -> forall<i:Int> 0 <= i && i < Int::from(x) -> get_default(*arr, i, 0u32) < elem)]
-#[ensures(forall<x:usize> equal(result, Err(x)) -> forall<i:Int> Int::from(x) < i && i < len_logic(*arr) -> elem < get_default(*arr, i, 0u32))]
-fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize>
-{
-    if arr.len() == 0 { return Err(0) }
+#[ensures(forall<x:usize> equal(result, Err(x)) ->
+    forall<i:Int> 0 <= i && i < Int::from(x) -> get_default(*arr, i, 0u32) < elem)]
+#[ensures(forall<x:usize> equal(result, Err(x)) ->
+    forall<i:Int> Int::from(x) < i && i < len_logic(*arr) -> elem < get_default(*arr, i, 0u32))]
+fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
+    if arr.len() == 0 {
+        return Err(0);
+    }
     let mut size = arr.len();
     let mut base = 0;
 
     #[invariant(size_valid, Int::from(size) + Int::from(base) <= len_logic(*arr))]
-    #[invariant(in_interval, get_default(*arr, Int::from(base), 0u32) <= elem && elem <= get_default(*arr, Int::from(base) + Int::from(size), 0u32))]
+    #[invariant(in_interval, get_default(*arr, Int::from(base), 0u32) <= elem &&
+        elem <= get_default(*arr, Int::from(base) + Int::from(size), 0u32))]
     #[invariant(size_pos, size > 0usize)]
-    while size > 1  {
+    while size > 1 {
         let half = size / 2;
         let mid = base + half;
 
@@ -134,4 +137,4 @@ fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize>
     }
 }
 
-fn main () {}
+fn main() {}

@@ -7,13 +7,15 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 mod nested {
-  use creusot_contracts::*;
-  logic! {
-  fn logical() -> bool { true } }
+    use creusot_contracts::*;
+    logic! {
+        fn logical() -> bool { true }
+    }
 }
 
 logic! {
-fn logical() -> bool { false }}
+    fn logical() -> bool { false }
+}
 
 #[ensures(logical())]
 fn main() {}

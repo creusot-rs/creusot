@@ -1,6 +1,5 @@
 // SHOULD_SUCCEED: parse-print
 
-
 // This file tests that the implementation of a trait is correctly translated
 
 // #[derive(PartialEq)]
@@ -10,8 +9,7 @@
 //   III,
 // }
 
-fn main () {}
-
+fn main() {}
 
 // trait MyTrait<U> {
 //   fn some<T>(self, t: T);
@@ -22,15 +20,15 @@ fn main () {}
 // }
 
 trait T<B> {
-  fn x(self);
+    fn x(self);
 }
 
-impl<B, T2, T1 : T<B>> T<B> for (T1, T2) {
-  fn x(self) {}
+impl<B, T2, T1: T<B>> T<B> for (T1, T2) {
+    fn x(self) {}
 }
 
 impl<B> T<B> for u32 {
-  fn x(self) {}
+    fn x(self) {}
 }
 
 // trait PartialEq<R> {
@@ -42,7 +40,6 @@ impl<B> T<B> for u32 {
 //     true
 //   }
 // }
-
 
 // module X
 //   type t1
