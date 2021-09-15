@@ -66,10 +66,9 @@ pub fn signature_of<'tcx>(
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Signature {
-    let sig = ctx.tcx.normalize_erasing_late_bound_regions(
-        ctx.tcx.param_env(def_id),
-        ctx.tcx.fn_sig(def_id),
-    );
+    let sig = ctx
+        .tcx
+        .normalize_erasing_late_bound_regions(ctx.tcx.param_env(def_id), ctx.tcx.fn_sig(def_id));
 
     let pre_contract = crate::specification::contract_of(ctx.tcx, def_id).unwrap();
 

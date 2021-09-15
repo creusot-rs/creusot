@@ -819,7 +819,6 @@ impl Pretty for TyDecl {
         }
 
         ty_decl.append(self.kind.pretty(alloc, env).indent(2))
-
     }
 }
 

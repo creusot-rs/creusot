@@ -211,7 +211,10 @@ fn translate_assoc_function(
             names.qname_for_mut(assoc.def_id, assoc_subst),
         )
     } else {
-        CloneSubst::Val(assoc.ident.to_string().into(), names.qname_for_mut(assoc.def_id, assoc_subst))
+        CloneSubst::Val(
+            assoc.ident.to_string().into(),
+            names.qname_for_mut(assoc.def_id, assoc_subst),
+        )
     };
 
     method_subst.chain(std::iter::once(assoc_method))

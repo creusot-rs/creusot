@@ -14,8 +14,8 @@ use rustc_middle::{
 use rustc_session::Session;
 use rustc_target::abi::VariantIdx;
 
-use why3::QName;
 use why3::mlcfg::{BinOp, BlockId, Constant, Exp, Pattern, Statement, Terminator as MlT};
+use why3::QName;
 
 use super::FunctionTranslator;
 
@@ -105,9 +105,11 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 // Assign
                 let rhs = match value {
                     Operand::Move(pl) | Operand::Copy(pl) => self.translate_rplace(&pl),
-                    Operand::Constant(box c) => {
-                        Exp::Const(crate::constant::from_mir_constant(self.tcx, &mut self.clone_names, c))
-                    }
+                    Operand::Constant(box c) => Exp::Const(crate::constant::from_mir_constant(
+                        self.tcx,
+                        &mut self.clone_names,
+                        c,
+                    )),
                 };
 
                 self.emit_assignment(&place, rhs);
@@ -133,17 +135,22 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(_) = it.container {
                 let params = self.ctx.tcx.param_env(self.def_id);
-                let inst = self.ctx.tcx.resolve_instance(params.and((def_id, subst))).expect("could not find instance");
+                let inst = self
+                    .ctx
+                    .tcx
+                    .resolve_instance(params.and((def_id, subst)))
+                    .expect("could not find instance");
 
                 match inst {
                     Some(i) => {
                         let impl_id = self.ctx.tcx.impl_of_method(i.def_id()).unwrap();
                         self.ctx.translate_impl(impl_id);
                         return self.clone_names.qname_for_mut(i.def_id(), i.substs);
-                    },
-                    None => {   // We are working on generics
+                    }
+                    None => {
+                        // We are working on generics
                         self.ctx.translate_trait(it.container.id());
-                        return self.clone_names.qname_for_mut(def_id, subst)
+                        return self.clone_names.qname_for_mut(def_id, subst);
                     }
                 }
             }

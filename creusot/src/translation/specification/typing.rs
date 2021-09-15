@@ -208,9 +208,9 @@ fn lower_expr<'tcx>(
             Ok(Term::Let { pattern: pat, arg: box lhs, body: box Term::Var("a".into()) })
         }
         ExprKind::Tuple { ref fields } => {
-            let fields : Vec<_> = fields.iter().map(|f| lower_expr(tcx, thir, *f)).collect::<Result<_,_>>()?;
+            let fields: Vec<_> =
+                fields.iter().map(|f| lower_expr(tcx, thir, *f)).collect::<Result<_, _>>()?;
             Ok(Term::Tuple { fields })
-
         }
         ref ek => todo!("lower_expr: {:?}", ek),
     }
