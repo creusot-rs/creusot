@@ -2,31 +2,34 @@
 #![register_tool(creusot)]
 extern crate creusot_contracts;
 
-
 pub mod nested {
-  use creusot_contracts::*;
+    use creusot_contracts::*;
 
-  enum Nested { Test }
+    enum Nested {
+        Test,
+    }
 
-	unsafe impl Resolve for Nested {
-	    predicate! { fn resolve(self) -> bool {
-	        true
-	    } }    
-	}
+    unsafe impl Resolve for Nested {
+        predicate! { fn resolve(self) -> bool {
+            true
+        } }
+    }
 
-	#[ensures(result == true)]
-	pub fn inner_func() -> bool {
-		Nested::Test;
-		true
-	}
-	pub mod further {
-		pub fn another() -> bool {
-			false
-		}
-	}
+    #[ensures(result == true)]
+    pub fn inner_func() -> bool {
+        Nested::Test;
+        true
+    }
+
+    pub mod further {
+        pub fn another() -> bool {
+            false
+        }
+    }
 }
-fn main () {
-	nested::inner_func();
-	use nested::further::*;
-	another();
+
+fn main() {
+    nested::inner_func();
+    use nested::further::*;
+    another();
 }

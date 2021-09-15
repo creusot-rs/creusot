@@ -1,3 +1,3 @@
-fn main () {
-	return;
+fn main() {
+    return;
 }
