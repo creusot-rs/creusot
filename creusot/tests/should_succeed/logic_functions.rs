@@ -6,16 +6,35 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-mod nested {
-    use creusot_contracts::*;
-    logic! {
-        fn logical() -> bool { true }
-    }
-}
-
 logic! {
-    fn logical() -> bool { false }
+    fn logical() -> bool { true }
 }
 
 #[ensures(logical())]
 fn main() {}
+
+mod nested {
+    use creusot_contracts::*;
+    logic! {
+        fn nested() -> bool { true }
+    }
+}
+
+logic! {
+    fn arith(n: Int, b: bool) -> Int {
+        if !b {
+            -n + n - n * n
+        } else {
+            n
+        }
+    }
+}
+
+logic! {
+    fn deref_pat<'a>(o: &'a Option<Int>) -> Int {
+        match o {
+            Some(a) => *a,
+            None => Int::from(0),
+        }
+    }
+}
