@@ -11,7 +11,7 @@ logic! {
 }
 
 #[ensures(logical())]
-fn test_logical() {}
+fn main() {}
 
 mod nested {
     use creusot_contracts::*;
