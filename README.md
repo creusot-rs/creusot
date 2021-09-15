@@ -53,8 +53,7 @@ cargo run --bin creusot-rustc -- -Zno-codegen --extern creusot_contracts=./creus
 ```
 (You can play with examples in [creusot/tests/should_succeed](creusot/tests/should_succeed).)
 
-By default the output MLCFG goes to stdout, but you can also specify the output file with `-o PATH/TO/OUTPUT.mlcfg`
-(file extension is not relevant to Why3).
+By default the output MLCFG goes to stdout, but you can also specify the output file with `-o PATH/TO/OUTPUT.mlcfg` (file extension is not relevant to Why3).
 
 ## Proving in Why3
 
@@ -107,7 +106,7 @@ fn my_function(i: u32) -> bool { ... }
 
 You can attach as many `ensures` and `requires` clauses as you would like, in any order.
 
-Inside a function, you can attach `invariant` clauses to loops, these are attached on _top_ of the loop rather than inside, that is:
+Inside a function, you can attach `invariant` clauses to loops, these are attached on *top* of the loop rather than inside, that is:
 ```rust
 #[invariant(invariant_name, ... loop invariant ...)]
 while ... { ... }
