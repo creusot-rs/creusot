@@ -290,6 +290,11 @@ impl Pretty for CloneSubst {
                 .append(id.pretty(alloc, env))
                 .append(" = ")
                 .append(o.pretty(alloc, env)),
+            CloneSubst::Function(id, o) => alloc
+                .text("function ")
+                .append(id.pretty(alloc, env))
+                .append(" = ")
+                .append(o.pretty(alloc, env)),
         }
     }
 }
@@ -319,6 +324,7 @@ impl Pretty for ValKind {
         match self {
             ValKind::Val { sig } => alloc.text("val ").append(sig.pretty(alloc, env)),
             ValKind::Predicate { sig } => alloc.text("predicate ").append(sig.pretty(alloc, env)),
+            ValKind::Function { sig } => alloc.text("function ").append(sig.pretty(alloc, env)),
         }
     }
 }

@@ -58,3 +58,10 @@ impl From<&str> for QName {
         QName { module: vec![], name: nm.to_string() }
     }
 }
+
+// TODO: deprecate this
+impl From<String> for QName {
+    fn from(nm: String) -> Self {
+        QName { module: vec![], name: nm }
+    }
+}

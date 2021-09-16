@@ -180,9 +180,10 @@ pub enum CloneKind {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum CloneSubst {
-    Type(Ident, Type),
-    Val(Ident, QName),
-    Predicate(Ident, QName),
+    Type(QName, Type),
+    Val(QName, QName),
+    Predicate(QName, QName),
+    Function(QName, QName),
 }
 
 impl CloneSubst {
@@ -196,6 +197,7 @@ impl CloneSubst {
 pub enum ValKind {
     Val { sig: Signature },
     Predicate { sig: Signature },
+    Function { sig: Signature },
 }
 
 #[derive(Debug, Clone)]
