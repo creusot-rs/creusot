@@ -47,6 +47,15 @@ pub fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
         .is_some()
 }
 
+pub fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
+    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "predicate"])
+        .is_some()
+}
+
+pub fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
+    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "logic"]).is_some()
+}
+
 pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     loop {
         if is_no_translate(tcx, def_id) {
@@ -58,6 +67,45 @@ pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
         } else {
             return true;
         }
+    }
+}
+
+pub(crate) fn method_name(tcx: TyCtxt, def_id: DefId) -> String {
+    tcx.item_name(def_id).to_string().to_lowercase()
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ItemType {
+    Logic,
+    Predicate,
+    Program,
+    Trait,
+    Impl,
+    Type,
+    Interface,
+}
+
+impl ItemType {
+    pub fn clone_interfaces(&self) -> bool {
+        use ItemType::*;
+        matches!(self, Logic | Predicate | Type | Interface)
+    }
+}
+
+pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
+    match tcx.def_kind(def_id) {
+        DefKind::Trait => ItemType::Trait,
+        DefKind::Impl => ItemType::Impl,
+        DefKind::Fn | DefKind::AssocFn => {
+            if is_predicate(tcx, def_id) {
+                ItemType::Predicate
+            } else if is_logic(tcx, def_id) {
+                ItemType::Logic
+            } else {
+                ItemType::Program
+            }
+        }
+        _ => todo!(),
     }
 }
 

@@ -1,0 +1,83 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module C04_A_Interface
+  use mach.int.Int
+  use mach.int.UInt32
+  function a (x : uint32) : bool
+end
+module C04_A
+  use mach.int.Int
+  use mach.int.UInt32
+  function a (x : uint32) : bool = 
+    x > (0 : uint32)
+end
+module C04_B_Interface
+  use mach.int.Int
+  use mach.int.UInt32
+  function b (x : uint32) : bool
+end
+module C04_B
+  use mach.int.Int
+  use mach.int.UInt32
+  clone C04_A_Interface as A0
+  function b (x : uint32) : bool = 
+    x > (10 : uint32) && A0.a x
+end
+module C04_C_Interface
+  use mach.int.Int
+  use mach.int.UInt32
+  function c (x : uint32) : bool
+end
+module C04_C
+  use mach.int.Int
+  use mach.int.UInt32
+  clone C04_B_Interface as B0
+  function c (x : uint32) : bool = 
+    x < (50 : uint32) && B0.b x
+end
+module CreusotContracts_Builtins_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module C04_F_Interface
+  use mach.int.Int
+  use mach.int.UInt32
+  clone C04_C_Interface as C0
+  val f (x : uint32) : ()
+    requires {C0.c x}
+    
+end
+module C04_F
+  use mach.int.Int
+  use mach.int.UInt32
+  clone C04_A as A3
+  clone C04_B as B2 with function A0.a = A3.a
+  clone C04_C as C1 with function B0.b = B2.b
+  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = uint32
+  let rec cfg f (x : uint32) : ()
+    requires {C1.c x}
+    
+   = 
+  var _0 : ();
+  var x_1 : uint32;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    assume { Resolve0.resolve x_1 };
+    return _0
+  }
+  
+end

@@ -1,18 +1,24 @@
+use std::ops::ControlFlow;
+
 use indexmap::{IndexMap, IndexSet};
 
+use petgraph::EdgeDirection::Incoming;
 use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
 use why3::QName;
 
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{
     self,
-    subst::{InternalSubsts, SubstsRef},
-    TyCtxt,
+    fold::{TypeFoldable, TypeVisitor},
+    subst::{InternalSubsts, Subst, SubstsRef},
+    AssocKind, ProjectionTy, Ty, TyCtxt, TyKind,
 };
 
 use heck::CamelCase;
 
 use crate::ctx::{self, *};
+use crate::translation::interface;
+use crate::util::{self, method_name};
 
 // Prelude modules
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -48,39 +54,44 @@ impl PreludeModule {
     }
 }
 
+#[derive(Clone)]
 pub struct CloneMap<'tcx> {
     tcx: TyCtxt<'tcx>,
     prelude: IndexSet<PreludeModule>,
     names: IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo>,
     count: usize,
+    item_type: ItemType,
 }
 
 #[derive(Clone)]
 pub struct CloneInfo {
     name: String,
-    projs: Vec<CloneSubst>,
     hidden: bool,
 }
 
 impl CloneInfo {
     fn from_name(name: String) -> Self {
-        CloneInfo { name, projs: Vec::new(), hidden: false }
+        CloneInfo { name, hidden: false }
     }
 
     fn hidden(name: String) -> Self {
-        CloneInfo { name, projs: Vec::new(), hidden: true }
+        CloneInfo { name, hidden: true }
     }
 
     // TODO: When traits stop holding all functions we can remove the last two arguments
     pub fn qname(&self, tcx: TyCtxt, def_id: DefId) -> QName {
-        QName { module: vec![self.name.clone()], name: ctx::method_name(tcx, def_id) }
+        self.qname_raw(method_name(tcx, def_id))
+    }
+
+    fn qname_raw(&self, method: String) -> QName {
+        QName { module: vec![self.name.clone()], name: method }
     }
 }
 
 impl<'tcx> CloneMap<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, item_type: ItemType) -> Self {
         let names = IndexMap::new();
-        CloneMap { tcx, names, count: 0, prelude: IndexSet::new() }
+        CloneMap { tcx, names, count: 0, prelude: IndexSet::new(), item_type }
     }
 
     pub fn insert(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> &CloneInfo {
@@ -100,12 +111,6 @@ impl<'tcx> CloneMap<'tcx> {
         })
     }
 
-    pub fn qname_for_mut(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        let tcx = self.tcx;
-        let module = self.insert(def_id, subst);
-        module.qname(tcx, def_id)
-    }
-
     pub fn clone_self(&mut self, self_id: DefId) {
         let mut modl = ctx::translate_value_id(self.tcx, self_id);
         let clone_name = if modl.module.is_empty() { modl.name } else { modl.module.remove(0) };
@@ -113,51 +118,119 @@ impl<'tcx> CloneMap<'tcx> {
         self.names.insert((self_id, subst), CloneInfo::hidden(clone_name));
     }
 
-    pub fn clone_with_extra_substs(
-        &mut self,
-        def_id: DefId,
-        subst: SubstsRef<'tcx>,
-        extra: Vec<CloneSubst>,
-    ) {
-        let _ = self.qname_for_mut(def_id, subst);
-
-        if let Some(info) = self.names.get_mut(&(def_id, subst)) {
-            info.projs.extend(extra);
-        } else {
-            unreachable!("clone_with_projs: no clone for def_id={:?}, subst={:?}", def_id, subst);
-        }
-    }
-
     pub fn import_prelude_module(&mut self, module: PreludeModule) {
         self.prelude.insert(module);
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.names.len() <= 1
-    }
-
-    pub fn into_iter(self) -> impl Iterator<Item = ((DefId, SubstsRef<'tcx>), String)> {
-        self.names.into_iter().skip(1).map(|(k, i)| (k, i.name))
+    pub fn keys(&self) -> impl Iterator<Item = &(DefId, SubstsRef<'tcx>)> {
+        self.names.keys()
     }
 
     pub fn to_clones(mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) -> Vec<Decl> {
         let mut i = 0;
         let mut decls = Vec::new();
 
+        use petgraph::graphmap::DiGraphMap;
+        use petgraph::visit::{Topo, Walker};
+        let mut dep_graph = DiGraphMap::<(DefId, SubstsRef<'tcx>), _>::new();
+        let empty = Self::new(self.tcx, self.item_type);
+
+        // Construct a maximal sharing graph for all dependencies.
+        // We build edges between each (function, subst) pair, following the call graph
+        // Additionally, when the substitution refers to an associated type, we construct
+        // a relevant edge.
+        //
+        // Along the edge, we include the 'original' substitution, which we can use
+        // to build the correct substitution.
+
         while i < self.names.len() {
-            let ((def_id, subst), clone_info) = self.names.get_index(i).unwrap();
+            let (&key, clone_info) = self.names.get_index(i).unwrap();
             i += 1;
 
             if clone_info.hidden {
                 continue;
             }
 
-            // hack to force borrow to end now.
-            let clone_info = clone_info.clone();
-            let def_id = *def_id;
-            let subst = *subst;
+            dep_graph.add_node(key);
+            {
+                // Gather all the associated types used in a substitution so we can force an edge
+                let mut visitor = ProjectionTyVisitor {
+                    f: Box::new(|pty: ProjectionTy<'tcx>| {
+                        let trait_id = pty.trait_def_id(self.tcx);
+                        dep_graph.add_edge((trait_id, pty.substs), key, None);
+                    }),
+                };
+                key.1.visit_with(&mut visitor);
+            }
 
-            decls.push(clone_item(ctx, &mut self, def_id, subst, clone_info));
+            // We don't need to construct the sharing graph if the base node is a logic function.
+            if self.item_type.clone_interfaces() {
+                continue;
+            }
+
+            for dep in ctx.dependencies(key.0).unwrap_or_else(|| &empty).keys() {
+                let orig = dep.1;
+                let dep = (dep.0, dep.1.subst(self.tcx, key.1));
+                self.insert(dep.0, dep.1);
+
+                // Skip reflexive edges
+                if dep == key {
+                    continue;
+                }
+
+                debug!("edge {:?} -> {:?}", dep, key);
+                dep_graph.add_edge(dep, key, Some(orig));
+            }
+        }
+
+        debug!("dep_graph nodes={} edges={}", dep_graph.node_count(), dep_graph.edge_count());
+
+        // Traverse the dependency graph in topological order to create the minimal amount of
+        // clones that are needed. This allows us to share all the nodes that are higher up in
+        // the dependency graph.
+        for node @ (def_id, subst) in Topo::new(&dep_graph).iter(&dep_graph) {
+            debug!("processing node={:?}", node);
+            let mut clone_subst = base_subst(ctx, &mut self, def_id, subst);
+
+            let node_clones = ctx.dependencies(def_id).unwrap_or_else(|| &empty);
+            for (dep, t, &orig_subst) in dep_graph.edges_directed(node, Incoming) {
+                debug!("s={:?} t={:?} e={:?}", dep, t, orig_subst);
+                let prov_info = match orig_subst {
+                    Some(subst) => &node_clones.names[&(dep.0, subst)],
+                    None => continue,
+                };
+                let user_info = &self.names[&dep];
+                for sym in exported_symbols(ctx.tcx, dep.0) {
+                    let elem = match sym {
+                        SymbolKind::Val(n) => {
+                            CloneSubst::Val(prov_info.qname_raw(n.clone()), user_info.qname_raw(n))
+                        }
+                        SymbolKind::Type(t) => CloneSubst::Type(
+                            prov_info.qname_raw(t.clone()),
+                            why3::mlcfg::Type::TConstructor(user_info.qname_raw(t)),
+                        ),
+                        SymbolKind::Function(f) => CloneSubst::Function(
+                            prov_info.qname_raw(f.clone()),
+                            user_info.qname_raw(f),
+                        ),
+                        SymbolKind::Predicate(p) => CloneSubst::Predicate(
+                            prov_info.qname_raw(p.clone()),
+                            user_info.qname_raw(p),
+                        ),
+                    };
+                    // If we are in an interface, then we should not attempt to share
+                    // dependencies at all.
+                    if self.item_type != ItemType::Interface {
+                        clone_subst.push(elem);
+                    }
+                }
+            }
+
+            decls.push(Decl::Clone(DeclClone {
+                name: cloneable_name(ctx.tcx, def_id, self.item_type.clone_interfaces()),
+                subst: clone_subst,
+                kind: CloneKind::Named(self.names[&node].name.clone()),
+            }));
         }
 
         self.prelude
@@ -168,28 +241,8 @@ impl<'tcx> CloneMap<'tcx> {
     }
 }
 
-fn clone_item<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
-    def_id: DefId,
-    subst: SubstsRef<'tcx>,
-    info: CloneInfo,
-) -> why3::declaration::Decl {
-    let mut clone_subst = type_param_subst(ctx, names, def_id, subst);
-
-    clone_subst.extend(info.projs);
-
-    // Append each projection to this.
-
-    Decl::Clone(DeclClone {
-        name: cloneable_name(ctx.tcx, def_id),
-        subst: clone_subst,
-        kind: CloneKind::Named(info.name),
-    })
-}
-
 // Create the substitution used to clone `def_id` with the rustc substitution `subst`.
-pub fn type_param_subst<'tcx>(
+pub fn base_subst<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
@@ -215,4 +268,82 @@ pub fn type_param_subst<'tcx>(
     }
 
     clone_subst
+}
+
+fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
+    let qname = translate_value_id(tcx, def_id);
+    use util::ItemType::*;
+
+    // TODO: Refactor.
+    match util::item_type(tcx, def_id) {
+        Logic | Predicate => {
+            if interface {
+                // TODO: this should directly be a function...
+                QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
+            } else {
+                qname.module_name()
+            }
+        }
+        Interface | Program => {
+            QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
+        }
+        Trait | Impl => qname,
+        Type => unreachable!(),
+    }
+}
+
+enum SymbolKind {
+    Val(String),
+    Type(String),
+    Function(String),
+    Predicate(String),
+}
+
+// Gather the list of symbols that are exported from a DefId in the eyes of Creusot.
+// In short:
+// - All kinds of functions: function name
+// - Traits & Impls: All functions in the trait/impl + all associated types
+fn exported_symbols(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+) -> Box<dyn Iterator<Item = SymbolKind> + 'tcx> {
+    use util::ItemType::*;
+    match util::item_type(tcx, def_id) {
+        Logic => Box::new(std::iter::once(SymbolKind::Function(method_name(tcx, def_id)))),
+        Predicate => Box::new(std::iter::once(SymbolKind::Predicate(method_name(tcx, def_id)))),
+        Interface | Program => Box::new(std::iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
+        Trait | Impl => {
+            Box::new(tcx.associated_items(def_id).in_definition_order().filter_map(move |a| {
+                match a.kind {
+                    AssocKind::Fn => match util::item_type(tcx, a.def_id) {
+                        Logic => Some(SymbolKind::Function(method_name(tcx, a.def_id))),
+                        Predicate => Some(SymbolKind::Predicate(method_name(tcx, a.def_id))),
+                        Program => Some(SymbolKind::Val(method_name(tcx, a.def_id))),
+                        _ => unreachable!(),
+                    },
+                    AssocKind::Type => {
+                        Some(SymbolKind::Type(crate::translation::ty::ty_name(tcx, a.def_id)))
+                    }
+                    AssocKind::Const => None,
+                }
+            }))
+        }
+        Type => unreachable!(),
+    }
+}
+
+// A basic visitor which can be used to gether ProjectionTys containd in
+// a foldable struct
+struct ProjectionTyVisitor<'a, 'tcx> {
+    f: Box<dyn FnMut(ProjectionTy<'tcx>) + 'a>,
+}
+
+impl TypeVisitor<'tcx> for ProjectionTyVisitor<'a, 'tcx> {
+    fn visit_ty(&mut self, t: Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
+        match t.kind() {
+            TyKind::Projection(t) => (*self.f)(*t),
+            _ => {}
+        }
+        ControlFlow::CONTINUE
+    }
 }

@@ -3,26 +3,56 @@ use indexmap::{IndexMap, IndexSet};
 use why3::declaration::{Module, TyDecl};
 use why3::QName;
 
+use rustc_data_structures::captures::Captures;
 use rustc_errors::DiagnosticId;
+use rustc_hir::def::DefKind;
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, TyCtxt};
+use rustc_hir::definitions::DefPathData;
+use rustc_middle::ty::TyCtxt;
+use rustc_resolve::Namespace;
 use rustc_session::Session;
 use rustc_span::Span;
-
-use rustc_hir::def::DefKind;
-use rustc_hir::definitions::DefPathData;
-use rustc_resolve::Namespace;
 
 use crate::{options::Options, util};
 
 pub use crate::clone_map::*;
+pub use util::ItemType;
 
+use crate::translation::interface::{interface_for, Interface};
+
+pub struct PolyModule<'tcx> {
+    // For the moment traits don't have an interface module
+    interface: Option<Interface>,
+    body: Module,
+    public_dependencies: CloneMap<'tcx>,
+}
+
+impl PolyModule<'tcx> {
+    fn modules(&'a self) -> impl Iterator<Item = &'a Module> {
+        self.interface.as_ref().map(|i| &i.module).into_iter().chain(std::iter::once(&self.body))
+    }
+
+    pub fn body(&self) -> &Module {
+        &self.body
+    }
+
+    fn dependencies(&self) -> &CloneMap<'tcx> {
+        &self.public_dependencies
+    }
+
+    /// Get a reference to the poly module's interface.
+    pub fn interface(&self) -> Option<&Interface> {
+        self.interface.as_ref()
+    }
+}
+
+// TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'sess, 'tcx> {
     pub sess: &'sess Session,
     pub tcx: TyCtxt<'tcx>,
     pub translated_items: IndexSet<DefId>,
     pub types: Vec<TyDecl>,
-    pub functions: IndexMap<DefId, Module>,
+    pub functions: IndexMap<DefId, PolyModule<'tcx>>,
     pub externs: IndexMap<DefId, Module>,
     pub opts: &'sess Options,
 }
@@ -56,13 +86,15 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         }
 
         let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
-        let module = if !def_id.is_local() {
+        let (iface, deps) = interface_for(self, def_id);
+
+        let (module, deps) = if !def_id.is_local() {
             debug!("translating {:?} as extern", def_id);
-            crate::translation::translate_extern(self, def_id, span)
-        } else if crate::translation::is_logic(self.tcx, def_id) {
+            (crate::translation::translate_extern(self, def_id, span), deps)
+        } else if util::is_logic(self.tcx, def_id) {
             debug!("translating {:?} as logic", def_id);
             crate::translation::translate_logic(self, def_id, span)
-        } else if crate::translation::is_predicate(self.tcx, def_id) {
+        } else if util::is_predicate(self.tcx, def_id) {
             debug!("translating {:?} as predicate", def_id);
             crate::translation::translate_predicate(self, def_id, span)
         } else {
@@ -73,12 +105,13 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                     return;
                 }
 
-                crate::translation::translate_function(self.tcx, self, def_id)
+                (crate::translation::translate_function(self.tcx, self, def_id), deps)
             } else {
                 unimplemented!("{:?} {:?}", def_id, self.tcx.def_kind(def_id))
             }
         };
 
+        let module = PolyModule { interface: Some(iface), body: module, public_dependencies: deps };
         self.functions.insert(def_id, module);
     }
 
@@ -109,12 +142,43 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.types.insert(pos, decl);
     }
 
+    pub fn add_trait(&mut self, def_id: DefId, trait_decl: Module) {
+        self.functions.insert(
+            def_id,
+            PolyModule {
+                interface: None,
+                body: trait_decl,
+                public_dependencies: CloneMap::new(self.tcx, ItemType::Trait),
+            },
+        );
+    }
+
+    pub fn add_impl(&mut self, def_id: DefId, trait_impl: Module) {
+        self.functions.insert(
+            def_id,
+            PolyModule {
+                interface: None,
+                body: trait_impl,
+                public_dependencies: CloneMap::new(self.tcx, ItemType::Impl),
+            },
+        );
+    }
+
+    // TODO: Support external functions
+    pub fn dependencies(&self, def_id: DefId) -> Option<&CloneMap<'tcx>> {
+        self.functions.get(&def_id).map(|f| f.dependencies())
+    }
+
     pub fn should_export(&self) -> bool {
         self.opts.export_metadata
     }
 
     pub fn should_compile(&self) -> bool {
         !self.opts.dependency
+    }
+
+    pub fn modules(&'a self) -> impl Iterator<Item = &Module> + 'a + Captures<'tcx> {
+        self.functions.values().flat_map(|m| m.modules())
     }
 }
 
@@ -126,20 +190,6 @@ pub fn translate_type_id(tcx: TyCtxt, def_id: DefId) -> QName {
 
 pub fn translate_value_id(tcx: TyCtxt, def_id: DefId) -> QName {
     translate_defid(tcx, def_id, false)
-}
-
-pub fn cloneable_name(tcx: TyCtxt, def_id: DefId) -> QName {
-    let qname = translate_value_id(tcx, def_id);
-    use rustc_hir::def::DefKind::*;
-
-    match tcx.def_kind(def_id) {
-        Trait => qname,
-        _ => qname.module_name(),
-    }
-}
-
-pub(crate) fn method_name(tcx: TyCtxt, def_id: DefId) -> String {
-    tcx.item_name(def_id).to_string().to_lowercase()
 }
 
 fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
@@ -188,7 +238,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
                 segments.pop().unwrap();
             }
 
-            name = vec![method_name(tcx, def_id)];
+            name = vec![util::method_name(tcx, def_id)];
         }
         (a, b) => unreachable!("{:?} {:?} {:?}", a, b, segments),
     }

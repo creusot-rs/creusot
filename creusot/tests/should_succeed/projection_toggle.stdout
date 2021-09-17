@@ -14,6 +14,11 @@ module CreusotContracts_Builtins_Resolve
   type self   
   predicate resolve (self : self)
 end
+module CreusotContracts_Builtins_Impl11_Resolve_Interface
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t)
+end
 module CreusotContracts_Builtins_Impl11_Resolve
   type t   
   use prelude.Prelude
@@ -36,13 +41,21 @@ module Core_Cmp_PartialEq
   val eq (self : self) (other : rhs) : bool
   val ne (self : self) (other : rhs) : bool
 end
+module ProjectionToggle_ProjToggle_Interface
+  type t   
+  use prelude.Prelude
+  val proj_toggle (toggle : bool) (a : borrowed t) (b : borrowed t) : borrowed t
+    ensures { toggle = false -> result = b &&  ^ a =  * a }
+    ensures { toggle = true -> result = a &&  ^ b =  * b }
+    
+end
 module ProjectionToggle_ProjToggle
   type t   
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = bool
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve1 with type t = t
-  clone Core_Marker_Sized as Sized2 with type self = t
   clone Core_Cmp_PartialEq as PartialEq3 with type self = t, type rhs = t
+  clone Core_Marker_Sized as Sized2 with type self = t
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve1 with type t = t
+  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = bool
   let rec cfg proj_toggle (toggle : bool) (a : borrowed t) (b : borrowed t) : borrowed t
     ensures { toggle = false -> result = b &&  ^ a =  * a }
     ensures { toggle = true -> result = a &&  ^ b =  * b }
@@ -106,22 +119,31 @@ module ProjectionToggle_ProjToggle
   }
   
 end
+module Core_Panicking_Panic_Interface
+  use prelude.Prelude
+  val panic (expr : string) : ()
+    ensures { false }
+    
+end
 module Core_Panicking_Panic
   use prelude.Prelude
   val panic (expr : string) : ()
     ensures { false }
     
 end
+module ProjectionToggle_Main_Interface
+  val main () : ()
+end
 module ProjectionToggle_Main
   use mach.int.Int
   use mach.int.Int32
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t = int32
-  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = int32
-  clone ProjectionToggle_ProjToggle as ProjToggle2 with type t = int32
-  clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = bool
-  clone Core_Panicking_Panic as Panic4
   clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = ()
+  clone Core_Panicking_Panic_Interface as Panic4
+  clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = bool
+  clone ProjectionToggle_ProjToggle_Interface as ProjToggle2 with type t = int32
+  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = int32
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t = int32
   let rec cfg main () : () = 
   var _0 : ();
   var a_1 : int32;

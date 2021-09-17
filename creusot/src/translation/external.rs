@@ -4,8 +4,8 @@ use rustc_middle::ty::Visibility;
 
 use why3::declaration::{Decl, Module, ValKind::Val};
 
-use crate::ctx::*;
 use crate::function::all_generic_decls_for;
+use crate::{ctx::*, util};
 
 // Translate functions that are external to the crate as opaque values
 pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_span::Span) -> Module {
@@ -18,7 +18,7 @@ pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_spa
 
 fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) -> Module {
     debug!("generating default declaration for def_id={:?}", def_id);
-    let mut names = CloneMap::new(ctx.tcx);
+    let mut names = CloneMap::new(ctx.tcx, util::item_type(ctx.tcx, def_id));
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
@@ -57,7 +57,7 @@ pub fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
         .filter(|(def_id, _)| {
             ctx.tcx.visibility(**def_id) == Visibility::Public && def_id.is_local()
         })
-        .map(|(def_id, func)| (def_id.expect_local().index(), func))
+        .map(|(def_id, func)| (def_id.expect_local().index(), func.body()))
         .collect();
 
     let res = std::fs::File::create(out_filename)
