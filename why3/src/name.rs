@@ -6,16 +6,27 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Ident(pub(crate) String);
 
+impl Ident {
+    // Constructs a valid why3 identifier representing a given string
+    fn build(name: &str) -> Self {
+        if RESERVED.contains(&name) {
+            return Ident(format!("{}'", name));
+        }
+        // TODO: ensure that all characters are valid
+        Ident(name.into())
+    }
+}
+
 // TODO: Make this try_from and test for validity
 impl From<&str> for Ident {
     fn from(nm: &str) -> Self {
-        Ident(nm.to_owned())
+        Ident::build(nm)
     }
 }
 
 impl From<String> for Ident {
     fn from(nm: String) -> Self {
-        Ident(nm)
+        Ident::build(&nm)
     }
 }
 
@@ -63,5 +74,75 @@ impl From<&str> for QName {
 impl From<String> for QName {
     fn from(nm: String) -> Self {
         QName { module: vec![], name: nm }
+    }
+}
+
+const RESERVED: &[&'static str] = &[
+    "abstract",
+    "alias",
+    "any",
+    "assert",
+    "assume",
+    "at",
+    "axiom",
+    "break",
+    "by",
+    "check",
+    "clone",
+    "coinductive",
+    "constant",
+    "continue",
+    "diverges",
+    "do",
+    "else",
+    "end",
+    "ensures",
+    "epsilon",
+    "exception",
+    "export",
+    "false",
+    "for",
+    "fun",
+    "function",
+    "ghost",
+    "goal",
+    "if",
+    "import",
+    "inductive",
+    "invariant",
+    "label",
+    "lemma",
+    "let",
+    "match",
+    "module",
+    "mutable",
+    "not",
+    "old",
+    "predicate",
+    "private",
+    "raise",
+    "reads",
+    "rec",
+    "requires",
+    "returns",
+    "scope",
+    "true",
+    "try",
+    "type",
+    "use",
+    "val",
+    "variant",
+    "while",
+    "with",
+    "writes",
+];
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn reserved_idents_made_valid() {
+        assert_eq!(Ident::build("clone").0, "clone'")
     }
 }
