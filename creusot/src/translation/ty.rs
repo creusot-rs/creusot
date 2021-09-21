@@ -4,6 +4,7 @@ use rustc_span::Span;
 use rustc_span::Symbol;
 use std::collections::VecDeque;
 use why3::declaration::TyDeclKind;
+use why3::Ident;
 
 use why3::declaration::TyDecl;
 use why3::{mlcfg::Type as MlT, QName};
@@ -213,6 +214,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
             ty::GenericParamDefKind::Type { .. } => Some(translate_ty_param(param.name)),
             _ => None,
         })
+        .map(Ident::from)
         .collect();
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, did);

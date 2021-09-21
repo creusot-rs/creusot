@@ -1,3 +1,5 @@
+use std::{borrow::Cow, ops::Deref};
+
 use indexmap::Equivalent;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
@@ -8,7 +10,7 @@ pub struct Ident(pub(crate) String);
 
 impl Ident {
     // Constructs a valid why3 identifier representing a given string
-    fn build(name: &str) -> Self {
+    pub fn build(name: &str) -> Self {
         if RESERVED.contains(&name) {
             return Ident(format!("{}'", name));
         }
@@ -30,21 +32,35 @@ impl From<String> for Ident {
     }
 }
 
+impl<'a> Into<Cow<'a, str>> for &'a Ident {
+    fn into(self) -> Cow<'a, str> {
+        (&self.0).into()
+    }
+}
+
+impl Deref for Ident {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl Equivalent<QName> for Ident {
     fn equivalent(&self, key: &QName) -> bool {
-        self.0 == key.name
+        self == &key.name
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct QName {
-    pub module: Vec<String>,
-    pub name: String,
+    pub module: Vec<Ident>,
+    pub name: Ident,
 }
 
 impl QName {
-    pub fn name(&self) -> String {
+    pub fn name(&self) -> Ident {
         self.name.clone()
     }
 
@@ -66,13 +82,20 @@ impl QName {
 
 impl From<&str> for QName {
     fn from(nm: &str) -> Self {
-        QName { module: vec![], name: nm.to_string() }
+        QName { module: vec![], name: nm.into() }
     }
 }
 
 // TODO: deprecate this
 impl From<String> for QName {
     fn from(nm: String) -> Self {
+        QName { module: vec![], name: nm.into() }
+    }
+}
+
+// TODO: deprecate this
+impl From<Ident> for QName {
+    fn from(nm: Ident) -> Self {
         QName { module: vec![], name: nm }
     }
 }
@@ -136,7 +159,6 @@ const RESERVED: &[&'static str] = &[
     "with",
     "writes",
 ];
-
 
 #[cfg(test)]
 mod tests {

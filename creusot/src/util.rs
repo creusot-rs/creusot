@@ -2,9 +2,11 @@ use crate::ctx::*;
 use crate::translation::ty;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{DefIdTree, TyCtxt};
+use rustc_span::Symbol;
 use why3::{
     declaration::Signature,
     mlcfg::{Constant, Exp},
+    Ident,
 };
 
 pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {
@@ -70,8 +72,12 @@ pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     }
 }
 
-pub(crate) fn method_name(tcx: TyCtxt, def_id: DefId) -> String {
-    tcx.item_name(def_id).to_string().to_lowercase()
+pub(crate) fn method_name(tcx: TyCtxt, def_id: DefId) -> Ident {
+    ident_of(tcx.item_name(def_id))
+}
+
+pub fn ident_of(id: Symbol) -> Ident {
+    Ident::build(&id.as_str().to_lowercase())
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]

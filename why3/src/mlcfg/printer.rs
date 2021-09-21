@@ -6,7 +6,7 @@ use pretty::*;
 
 #[derive(Default)]
 pub struct PrintEnv {
-    pub scopes: Vec<String>,
+    pub scopes: Vec<Ident>,
     in_logic: bool,
 }
 
@@ -132,7 +132,7 @@ impl Pretty for Scope {
         let doc = alloc
             .text("scope")
             .append(alloc.space())
-            .append(&self.name)
+            .append(&self.name.0)
             .append(alloc.hardline())
             .append(
                 alloc
@@ -815,7 +815,7 @@ impl Pretty for TyDecl {
         let mut ty_decl =
             alloc.text("type ").append(self.ty_name.pretty(alloc, env)).append(" ").append(
                 alloc.intersperse(
-                    self.ty_params.iter().map(|p| alloc.text(format!("'{}", p))),
+                    self.ty_params.iter().map(|p| alloc.text("'").append(p.pretty(alloc, env))),
                     alloc.space(),
                 ),
             );
@@ -903,10 +903,10 @@ impl Pretty for QName {
             .filter(|e| !e.is_left())
             .map(|t| t.reduce(|_, f| f))
             // TODO investigate if this clone can be removed :/
-            .map(|t| alloc.text(t.clone()));
+            .map(|t| alloc.text(t.0.clone()));
 
         alloc.intersperse(
-            module_path.chain(std::iter::once(alloc.text(self.name()))),
+            module_path.chain(std::iter::once(alloc.text(self.name().0))),
             alloc.text("."),
         )
     }

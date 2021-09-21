@@ -26,7 +26,7 @@ pub fn translate_logic(
 
     decls.push(func);
 
-    let name = translate_value_id(ctx.tcx, def_id).module.join("");
+    let name = translate_value_id(ctx.tcx, def_id).module_name().name();
     (Module { name, decls }, names)
 }
 
@@ -50,6 +50,6 @@ pub fn translate_predicate(
     decls.extend(names.clone().to_clones(ctx));
     decls.push(func);
 
-    let name = translate_value_id(ctx.tcx, def_id).module.join("");
+    let name = translate_value_id(ctx.tcx, def_id).module_name().name();
     (Module { name, decls }, names)
 }

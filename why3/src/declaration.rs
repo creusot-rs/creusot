@@ -10,14 +10,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Module {
-    pub name: String,
+    pub name: Ident,
     pub decls: Vec<Decl>,
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Scope {
-    pub name: String,
+    pub name: Ident,
     pub decls: Vec<Decl>,
 }
 
@@ -129,14 +129,14 @@ pub struct Predicate {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct TyDecl {
     pub ty_name: Ident,
-    pub ty_params: Vec<String>,
+    pub ty_params: Vec<Ident>,
     pub kind: TyDeclKind,
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum TyDeclKind {
-    Adt(Vec<(String, Vec<Type>)>),
+    Adt(Vec<(Ident, Vec<Type>)>),
     Alias(Type),
     Opaque,
 }
@@ -173,7 +173,7 @@ pub struct DeclClone {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum CloneKind {
     Bare,
-    Named(String),
+    Named(Ident),
     Export,
 }
 
