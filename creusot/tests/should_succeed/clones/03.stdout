@@ -1,0 +1,119 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module C03_Omg_Interface
+  type t   
+  function omg (x : t) : bool
+end
+module C03_Omg
+  type t   
+  function omg (x : t) : bool = 
+    true
+end
+module CreusotContracts_Builtins_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module Core_Marker_Sized
+  type self   
+end
+module C03_Prog_Interface
+  type t   
+  clone C03_Omg_Interface as Omg0 with type t = t
+  val prog (x : t) : ()
+    ensures { Omg0.omg x }
+    
+end
+module C03_Prog
+  type t   
+  clone Core_Marker_Sized as Sized2 with type self = t
+  clone C03_Omg as Omg1 with type t = t
+  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = t
+  let rec cfg prog (x : t) : ()
+    ensures { Omg1.omg x }
+    
+   = 
+  var _0 : ();
+  var x_1 : t;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    goto BB1
+  }
+  BB1 {
+    assume { Resolve0.resolve x_1 };
+    return _0
+  }
+  
+end
+module C03_Prog2_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  clone C03_Omg_Interface as Omg0 with type t = int
+  val prog2 () : ()
+    ensures { Omg0.omg (Int32.to_int (0 : int32)) }
+    
+end
+module C03_Prog2
+  use mach.int.Int
+  use mach.int.Int32
+  clone C03_Omg as Omg1 with type t = int
+  clone C03_Omg as Omg2 with type t = int32
+  clone C03_Prog_Interface as Prog0 with type t = int32, function Omg0.omg = Omg2.omg
+  let rec cfg prog2 () : ()
+    ensures { Omg1.omg (Int32.to_int (0 : int32)) }
+    
+   = 
+  var _0 : ();
+  var _1 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _1 <- Prog0.prog (0 : int32);
+    goto BB1
+  }
+  BB1 {
+    _0 <- ();
+    return _0
+  }
+  
+end
+module C03_Prog3_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  clone C03_Omg_Interface as Omg0 with type t = (int, int)
+  val prog3 () : ()
+    ensures { Omg0.omg (Int32.to_int (0 : int32), Int32.to_int (0 : int32)) }
+    
+end
+module C03_Prog3
+  use mach.int.Int
+  use mach.int.Int32
+  clone C03_Omg as Omg0 with type t = (int, int)
+  let rec cfg prog3 () : ()
+    ensures { Omg0.omg (Int32.to_int (0 : int32), Int32.to_int (0 : int32)) }
+    
+   = 
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end

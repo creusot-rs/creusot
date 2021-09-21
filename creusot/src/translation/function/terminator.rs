@@ -145,12 +145,15 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     Some(i) => {
                         let impl_id = self.ctx.tcx.impl_of_method(i.def_id()).unwrap();
                         self.ctx.translate_impl(impl_id);
-                        return self.clone_names.qname_for_mut(i.def_id(), i.substs);
+                        return self
+                            .clone_names
+                            .insert(i.def_id(), i.substs)
+                            .qname(self.tcx, i.def_id());
                     }
                     None => {
                         // We are working on generics
                         self.ctx.translate_trait(it.container.id());
-                        return self.clone_names.qname_for_mut(def_id, subst);
+                        return self.clone_names.insert(def_id, subst).qname(self.tcx, def_id);
                     }
                 }
             }
@@ -159,7 +162,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         // TODO: better spans during errors...
         self.ctx.translate_function(def_id);
 
-        self.clone_names.qname_for_mut(def_id, subst)
+        self.clone_names.insert(def_id, subst).qname(self.tcx, def_id)
     }
 }
 

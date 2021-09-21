@@ -1,0 +1,53 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module C02_Simple_Interface
+  function simple () : bool
+end
+module C02_Simple
+  function simple () : bool = 
+    true
+end
+module C02_UsesSimple_Interface
+  function uses_simple () : bool
+end
+module C02_UsesSimple
+  clone C02_Simple_Interface as Simple0
+  function uses_simple () : bool = 
+    Simple0.simple ()
+end
+module C02_Program_Interface
+  clone C02_Simple_Interface as Simple1
+  clone C02_UsesSimple_Interface as UsesSimple0
+  val program () : ()
+    requires {UsesSimple0.uses_simple ()}
+    ensures { Simple1.simple () }
+    
+end
+module C02_Program
+  clone C02_Simple as Simple1
+  clone C02_UsesSimple as UsesSimple0 with function Simple0.simple = Simple1.simple
+  let rec cfg program () : ()
+    requires {UsesSimple0.uses_simple ()}
+    ensures { Simple1.simple () }
+    
+   = 
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end

@@ -35,7 +35,8 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             return;
         }
 
-        let mut names = CloneMap::new(self.tcx);
+        let mut names = CloneMap::new(self.tcx, ItemType::Trait);
+        names.clone_self(def_id);
 
         // The first predicate is a trait reference so we skip it
         for super_trait in traits_used_by(self.tcx, def_id).filter(|t| t.def_id() != def_id) {
@@ -58,7 +59,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                         item.def_id,
                     ));
 
-                    if crate::is_predicate(self.tcx, item.def_id) {
+                    if crate::util::is_predicate(self.tcx, item.def_id) {
                         sig.retty = None;
                         trait_decls.push(Decl::ValDecl(Predicate { sig }));
                     } else {
@@ -66,8 +67,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                     }
                 }
                 AssocKind::Type => {
-                    let ty_name: why3::Ident =
-                        self.tcx.item_name(item.def_id).to_string().to_lowercase().into();
+                    let ty_name: why3::Ident = ty::ty_name(self.tcx, item.def_id).into();
 
                     trait_decls.push(Decl::TyDecl(TyDecl {
                         ty_name,
@@ -86,7 +86,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         let trait_name = translate_trait_name(self.tcx, def_id);
 
-        self.functions.insert(def_id, Module { name: trait_name.name(), decls });
+        self.add_trait(def_id, Module { name: trait_name.name(), decls });
     }
 
     pub fn translate_impl(&mut self, impl_id: DefId) {
@@ -95,11 +95,11 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         }
 
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
-        let mut names = CloneMap::new(self.tcx);
+        let mut names = CloneMap::new(self.tcx, ItemType::Impl);
 
         self.translate_trait(trait_ref.def_id);
 
-        let mut subst = ctx::type_param_subst(self, &mut names, trait_ref.def_id, trait_ref.substs);
+        let mut subst = ctx::base_subst(self, &mut names, trait_ref.def_id, trait_ref.substs);
 
         let mut assoc_types = Vec::new();
         for assoc in self.tcx.associated_items(impl_id).in_definition_order() {
@@ -144,7 +144,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         }));
 
         let name = translate_value_id(self.tcx, impl_id);
-        self.functions.insert(impl_id, Module { name: name.name(), decls });
+        self.add_impl(impl_id, Module { name: name.name(), decls });
     }
 }
 
@@ -153,7 +153,7 @@ pub fn translate_constraint<'tcx>(
     names: &mut CloneMap<'tcx>,
     tp: TraitPredicate<'tcx>,
 ) {
-    names.name_for_mut(tp.def_id(), tp.trait_ref.substs);
+    names.insert(tp.def_id(), tp.trait_ref.substs);
 
     // If we haven't seen this trait, first translate it
     ctx.translate_trait(tp.def_id());
@@ -172,7 +172,7 @@ fn translate_assoc_function(
     let trait_id = ctx.tcx.trait_id_of_impl(impl_id).unwrap();
 
     let assoc_subst = InternalSubsts::identity_for_item(ctx.tcx, impl_id);
-    let name = names.name_for_mut(assoc.def_id, assoc_subst);
+    let name = names.insert(assoc.def_id, assoc_subst).clone();
 
     ctx.translate_function(assoc.def_id);
 
@@ -198,22 +198,19 @@ fn translate_assoc_function(
         .map(move |(tr_param, inst_param)| {
             CloneSubst::Type(
                 (&*tr_param.name.as_str().to_lowercase()).into(),
-                Type::TConstructor(QName {
-                    module: vec![name.clone()],
-                    name: inst_param.name.as_str().to_lowercase(),
-                }),
+                Type::TConstructor(name.qname(tcx, inst_param.def_id)),
             )
         });
 
-    let assoc_method = if crate::is_predicate(ctx.tcx, assoc.def_id) {
+    let assoc_method = if crate::util::is_predicate(ctx.tcx, assoc.def_id) {
         CloneSubst::Predicate(
             assoc.ident.to_string().into(),
-            names.qname_for_mut(assoc.def_id, assoc_subst),
+            names.insert(assoc.def_id, assoc_subst).qname(ctx.tcx, assoc.def_id),
         )
     } else {
         CloneSubst::Val(
             assoc.ident.to_string().into(),
-            names.qname_for_mut(assoc.def_id, assoc_subst),
+            names.insert(assoc.def_id, assoc_subst).qname(ctx.tcx, assoc.def_id),
         )
     };
 

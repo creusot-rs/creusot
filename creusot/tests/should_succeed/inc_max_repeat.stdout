@@ -14,6 +14,11 @@ module CreusotContracts_Builtins_Resolve
   type self   
   predicate resolve (self : self)
 end
+module CreusotContracts_Builtins_Impl11_Resolve_Interface
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t)
+end
 module CreusotContracts_Builtins_Impl11_Resolve
   type t   
   use prelude.Prelude
@@ -26,13 +31,24 @@ module CreusotContracts_Builtins_Impl11
   clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.resolve
 end
+module IncMaxRepeat_TakeMax_Interface
+  use prelude.Prelude
+  use mach.int.Int
+  use mach.int.UInt32
+  val take_max (ma : borrowed uint32) (mb : borrowed uint32) : borrowed uint32
+    ensures { match ( * ma >=  * mb) with
+      | True ->  * mb =  ^ mb && result = ma
+      | False ->  * ma =  ^ ma && result = mb
+      end }
+    
+end
 module IncMaxRepeat_TakeMax
   use prelude.Prelude
   use mach.int.Int
   use mach.int.UInt32
-  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = uint32
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve1 with type t = uint32
   clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = bool
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve1 with type t = uint32
+  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = uint32
   let rec cfg take_max (ma : borrowed uint32) (mb : borrowed uint32) : borrowed uint32
     ensures { match ( * ma >=  * mb) with
       | True ->  * mb =  ^ mb && result = ma
@@ -100,22 +116,35 @@ module IncMaxRepeat_TakeMax
   }
   
 end
+module Core_Panicking_Panic_Interface
+  use prelude.Prelude
+  val panic (expr : string) : ()
+    ensures { false }
+    
+end
 module Core_Panicking_Panic
   use prelude.Prelude
   val panic (expr : string) : ()
     ensures { false }
     
 end
+module IncMaxRepeat_IncMaxRepeat_Interface
+  use mach.int.Int
+  use mach.int.UInt32
+  val inc_max_repeat (a : uint32) (b : uint32) (n : uint32) : ()
+    requires {a <= (1000000 : uint32) && b <= (1000000 : uint32) && n <= (1000000 : uint32)}
+    
+end
 module IncMaxRepeat_IncMaxRepeat
   use mach.int.Int
   use mach.int.UInt32
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = uint32
-  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = bool
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve2 with type t = uint32
-  clone IncMaxRepeat_TakeMax as TakeMax3
+  clone Core_Panicking_Panic_Interface as Panic5
   clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = ()
-  clone Core_Panicking_Panic as Panic5
+  clone IncMaxRepeat_TakeMax_Interface as TakeMax3
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve2 with type t = uint32
+  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = bool
+  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = uint32
   let rec cfg inc_max_repeat (a : uint32) (b : uint32) (n : uint32) : ()
     requires {a <= (1000000 : uint32) && b <= (1000000 : uint32) && n <= (1000000 : uint32)}
     

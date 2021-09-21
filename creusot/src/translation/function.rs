@@ -33,7 +33,7 @@ pub fn translate_function<'tcx, 'sess>(
     ctx: &mut TranslationCtx<'sess, 'tcx>,
     def_id: DefId,
 ) -> Module {
-    let mut names = CloneMap::new(tcx);
+    let mut names = CloneMap::new(tcx, ItemType::Program);
     names.clone_self(def_id);
 
     let invariants = specification::gather_invariants(ctx, &mut names, def_id);
@@ -275,11 +275,15 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             Some(Some(inst)) => {
                 self.ctx.translate_impl(self.tcx.impl_of_method(inst.def_id()).unwrap());
 
-                QVar(self.clone_names.qname_for_mut(inst.def_id(), inst.substs))
+                QVar(
+                    self.clone_names
+                        .insert(inst.def_id(), inst.substs)
+                        .qname(self.tcx, inst.def_id()),
+                )
             }
             _ => {
                 self.ctx.translate_trait(trait_id);
-                QVar(self.clone_names.qname_for_mut(trait_meth_id, subst))
+                QVar(self.clone_names.insert(trait_meth_id, subst).qname(self.tcx, trait_meth_id))
             }
         }
     }
