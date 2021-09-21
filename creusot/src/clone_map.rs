@@ -4,7 +4,7 @@ use indexmap::{IndexMap, IndexSet};
 
 use petgraph::EdgeDirection::Incoming;
 use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
-use why3::QName;
+use why3::{Ident, QName};
 
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{
@@ -65,17 +65,17 @@ pub struct CloneMap<'tcx> {
 
 #[derive(Clone)]
 pub struct CloneInfo {
-    name: String,
+    name: Ident,
     hidden: bool,
 }
 
 impl CloneInfo {
     fn from_name(name: String) -> Self {
-        CloneInfo { name, hidden: false }
+        CloneInfo { name: name.into(), hidden: false }
     }
 
-    fn hidden(name: String) -> Self {
-        CloneInfo { name, hidden: true }
+    fn hidden(name: Ident) -> Self {
+        CloneInfo { name: name, hidden: true }
     }
 
     // TODO: When traits stop holding all functions we can remove the last two arguments
@@ -83,7 +83,7 @@ impl CloneInfo {
         self.qname_raw(method_name(tcx, def_id))
     }
 
-    fn qname_raw(&self, method: String) -> QName {
+    fn qname_raw(&self, method: Ident) -> QName {
         QName { module: vec![self.name.clone()], name: method }
     }
 }
@@ -293,10 +293,10 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
 }
 
 enum SymbolKind {
-    Val(String),
-    Type(String),
-    Function(String),
-    Predicate(String),
+    Val(Ident),
+    Type(Ident),
+    Function(Ident),
+    Predicate(Ident),
 }
 
 // Gather the list of symbols that are exported from a DefId in the eyes of Creusot.
@@ -321,9 +321,9 @@ fn exported_symbols(
                         Program => Some(SymbolKind::Val(method_name(tcx, a.def_id))),
                         _ => unreachable!(),
                     },
-                    AssocKind::Type => {
-                        Some(SymbolKind::Type(crate::translation::ty::ty_name(tcx, a.def_id)))
-                    }
+                    AssocKind::Type => Some(SymbolKind::Type(
+                        crate::translation::ty::ty_name(tcx, a.def_id).into(),
+                    )),
                     AssocKind::Const => None,
                 }
             }))

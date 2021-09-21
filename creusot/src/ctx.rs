@@ -238,11 +238,11 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
                 segments.pop().unwrap();
             }
 
-            name = vec![util::method_name(tcx, def_id)];
+            name = vec![(&*util::method_name(tcx, def_id)).into()];
         }
         (a, b) => unreachable!("{:?} {:?} {:?}", a, b, segments),
     }
-    let module = if segments.is_empty() { Vec::new() } else { vec![segments.join("_")] };
+    let module = if segments.is_empty() { Vec::new() } else { vec![segments.join("_").into()] };
 
-    QName { module, name: name.join("_") }
+    QName { module, name: name.join("_").into() }
 }

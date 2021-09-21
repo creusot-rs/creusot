@@ -1,3 +1,5 @@
+use std::{borrow::Cow, ops::Deref};
+
 use indexmap::Equivalent;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
@@ -6,34 +8,59 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Ident(pub(crate) String);
 
+impl Ident {
+    // Constructs a valid why3 identifier representing a given string
+    pub fn build(name: &str) -> Self {
+        if RESERVED.contains(&name) {
+            return Ident(format!("{}'", name));
+        }
+        // TODO: ensure that all characters are valid
+        Ident(name.into())
+    }
+}
+
 // TODO: Make this try_from and test for validity
 impl From<&str> for Ident {
     fn from(nm: &str) -> Self {
-        Ident(nm.to_owned())
+        Ident::build(nm)
     }
 }
 
 impl From<String> for Ident {
     fn from(nm: String) -> Self {
-        Ident(nm)
+        Ident::build(&nm)
+    }
+}
+
+impl<'a> Into<Cow<'a, str>> for &'a Ident {
+    fn into(self) -> Cow<'a, str> {
+        (&self.0).into()
+    }
+}
+
+impl Deref for Ident {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
 impl Equivalent<QName> for Ident {
     fn equivalent(&self, key: &QName) -> bool {
-        self.0 == key.name
+        self == &key.name
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct QName {
-    pub module: Vec<String>,
-    pub name: String,
+    pub module: Vec<Ident>,
+    pub name: Ident,
 }
 
 impl QName {
-    pub fn name(&self) -> String {
+    pub fn name(&self) -> Ident {
         self.name.clone()
     }
 
@@ -55,13 +82,89 @@ impl QName {
 
 impl From<&str> for QName {
     fn from(nm: &str) -> Self {
-        QName { module: vec![], name: nm.to_string() }
+        QName { module: vec![], name: nm.into() }
     }
 }
 
 // TODO: deprecate this
 impl From<String> for QName {
     fn from(nm: String) -> Self {
+        QName { module: vec![], name: nm.into() }
+    }
+}
+
+// TODO: deprecate this
+impl From<Ident> for QName {
+    fn from(nm: Ident) -> Self {
         QName { module: vec![], name: nm }
+    }
+}
+
+const RESERVED: &[&'static str] = &[
+    "abstract",
+    "alias",
+    "any",
+    "assert",
+    "assume",
+    "at",
+    "axiom",
+    "break",
+    "by",
+    "check",
+    "clone",
+    "coinductive",
+    "constant",
+    "continue",
+    "diverges",
+    "do",
+    "else",
+    "end",
+    "ensures",
+    "epsilon",
+    "exception",
+    "export",
+    "false",
+    "for",
+    "fun",
+    "function",
+    "ghost",
+    "goal",
+    "if",
+    "import",
+    "inductive",
+    "invariant",
+    "label",
+    "lemma",
+    "let",
+    "match",
+    "module",
+    "mutable",
+    "not",
+    "old",
+    "predicate",
+    "private",
+    "raise",
+    "reads",
+    "rec",
+    "requires",
+    "returns",
+    "scope",
+    "true",
+    "try",
+    "type",
+    "use",
+    "val",
+    "variant",
+    "while",
+    "with",
+    "writes",
+];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn reserved_idents_made_valid() {
+        assert_eq!(Ident::build("clone").0, "clone'")
     }
 }

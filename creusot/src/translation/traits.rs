@@ -24,7 +24,7 @@ use crate::ctx;
 
 use crate::ctx::*;
 use crate::translation::ty;
-use crate::util::is_contract;
+use crate::util::{ident_of, is_contract};
 
 use rustc_resolve::Namespace;
 
@@ -108,9 +108,9 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                 AssocKind::Type => {
                     let assoc_ty = self.tcx.type_of(assoc.def_id);
                     // TODO: Clean up translation of names to handle this automatically
-                    let name = assoc.ident.to_string().to_lowercase();
+                    let name = ident_of(assoc.ident.name);
                     assoc_types.push(Decl::TyDecl(TyDecl {
-                        ty_name: name.clone().into(),
+                        ty_name: name.clone(),
                         ty_params: Vec::new(),
                         kind: TyDeclKind::Alias(ty::translate_ty(
                             self,

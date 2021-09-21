@@ -1,4 +1,7 @@
-use why3::declaration::{Decl, Module, ValKind};
+use why3::{
+    declaration::{Decl, Module, ValKind},
+    Ident,
+};
 
 use crate::{clone_map::CloneMap, ctx::*, translation::function::all_generic_decls_for, util};
 
@@ -35,8 +38,8 @@ pub fn interface_for(
     (Interface { module: Module { name, decls } }, names)
 }
 
-pub fn interface_name(tcx: TyCtxt, def_id: DefId) -> String {
+pub fn interface_name(tcx: TyCtxt, def_id: DefId) -> Ident {
     let name = translate_value_id(tcx, def_id);
 
-    format!("{}_Interface", name.module_name().name)
+    format!("{}_Interface", &*name.module_name().name).into()
 }
