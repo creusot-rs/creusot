@@ -5,6 +5,7 @@ use rustc_middle::ty::{
     subst::SubstsRef,
     AssocKind,
     Binder,
+    GenericPredicates,
     Instance,
     ParamEnv,
     PredicateKind,
@@ -23,7 +24,7 @@ use why3::{
 use crate::ctx;
 
 use crate::ctx::*;
-use crate::translation::ty;
+use crate::translation::ty::{self, translate_ty};
 use crate::util::{ident_of, is_contract};
 
 use rustc_resolve::Namespace;
@@ -153,6 +154,42 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
     }
 }
 
+pub fn translate_predicates(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    preds: GenericPredicates<'tcx>,
+) {
+    for (pred, _) in preds.predicates.iter() {
+        use rustc_middle::ty::PredicateKind::*;
+        match pred.kind().no_bound_vars().unwrap() {
+            Trait(tp, _) => translate_constraint(ctx, names, tp),
+            Projection(pp) => {
+                let ty = translate_ty(ctx, names, rustc_span::DUMMY_SP, pp.ty);
+                names
+                    .insert(pp.projection_ty.trait_def_id(ctx.tcx), pp.projection_ty.substs)
+                    .add_projection((pp.projection_ty.item_def_id, pp.ty));
+            }
+            _ => continue,
+        }
+    }
+}
+
+pub fn traits_used_by<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+) -> impl Iterator<Item = TraitPredicate<'tcx>> {
+    let predicates = tcx.predicates_of(def_id);
+
+    predicates.predicates.iter().filter_map(|(pred, _)| {
+        let inner = pred.kind().no_bound_vars().unwrap();
+        use rustc_middle::ty::PredicateKind::*;
+        match inner {
+            Trait(tp, _) => Some(tp),
+            _ => None,
+        }
+    })
+}
+
 pub fn translate_constraint<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
@@ -170,7 +207,7 @@ use rustc_middle::ty::AssocItem;
 
 fn translate_assoc_function(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &'a mut CloneMap<'tcx>,
     assoc: &AssocItem,
 ) -> impl Iterator<Item = CloneSubst> + 'tcx {
     let impl_id = ctx.tcx.impl_of_method(assoc.def_id).unwrap();
@@ -224,22 +261,6 @@ fn translate_assoc_function(
 
 fn translate_trait_name(tcx: TyCtxt<'_>, def_id: DefId) -> QName {
     translate_value_id(tcx, def_id)
-}
-
-pub fn traits_used_by<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-) -> impl Iterator<Item = TraitPredicate<'tcx>> {
-    let predicates = tcx.predicates_of(def_id);
-
-    predicates.predicates.iter().filter_map(|(pred, _)| {
-        let inner = pred.kind().no_bound_vars().unwrap();
-        use rustc_middle::ty::PredicateKind::*;
-        match inner {
-            Trait(tp, _) => Some(tp),
-            _ => None,
-        }
-    })
 }
 
 use crate::rustc_extensions::*;

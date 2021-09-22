@@ -1,0 +1,78 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module Core_Marker_Sized
+  type self   
+end
+module C09_Tr
+  type self   
+  type x   
+end
+module C09_Test_Interface
+  type t   
+  use mach.int.Int
+  use mach.int.UInt32
+  val test (t : uint32) : uint32
+end
+module C09_Test
+  type t   
+  use mach.int.Int
+  use mach.int.UInt32
+  clone C09_Tr as Tr1 with type self = t, type x = uint32
+  clone Core_Marker_Sized as Sized0 with type self = t
+  let rec cfg test (t : uint32) : uint32 = 
+  var _0 : uint32;
+  var t_1 : uint32;
+  var _2 : uint32;
+  {
+    t_1 <- t;
+    goto BB0
+  }
+  BB0 {
+    assume { (fun x -> true) _2 };
+    _2 <- t_1;
+    assume { (fun x -> true) t_1 };
+    _0 <- _2 + (0 : uint32);
+    return _0
+  }
+  
+end
+module C09_Test2_Interface
+  type t   
+  type u   
+  clone C09_Tr as Tr0 with type self = t
+  val test2 (t : Tr0.x) : Tr0.x
+end
+module C09_Test2
+  type t   
+  type u   
+  clone Core_Marker_Sized as Sized2 with type self = u
+  clone Core_Marker_Sized as Sized1 with type self = t
+  clone C09_Tr as Tr0 with type self = t
+  clone C09_Tr as Tr3 with type self = u, type x = Tr0.x
+  let rec cfg test2 (t : Tr0.x) : Tr0.x = 
+  var _0 : Tr0.x;
+  var t_1 : Tr0.x;
+  {
+    t_1 <- t;
+    goto BB0
+  }
+  BB0 {
+    assume { (fun x -> true) _0 };
+    _0 <- t_1;
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end

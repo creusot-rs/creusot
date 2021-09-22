@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::ops::ControlFlow;
 
 use indexmap::{IndexMap, IndexSet};
@@ -18,6 +19,7 @@ use heck::CamelCase;
 
 use crate::ctx::{self, *};
 use crate::translation::interface;
+use crate::translation::ty::translate_ty;
 use crate::util::{self, method_name};
 
 // Prelude modules
@@ -54,28 +56,35 @@ impl PreludeModule {
     }
 }
 
+type CloneNode<'tcx> = (DefId, SubstsRef<'tcx>);
+
 #[derive(Clone)]
 pub struct CloneMap<'tcx> {
     tcx: TyCtxt<'tcx>,
     prelude: IndexSet<PreludeModule>,
-    names: IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo>,
+    names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
     count: usize,
     item_type: ItemType,
 }
 
 #[derive(Clone)]
-pub struct CloneInfo {
+pub struct CloneInfo<'tcx> {
     name: Ident,
     hidden: bool,
+    projections: Vec<(DefId, Ty<'tcx>)>,
 }
 
-impl CloneInfo {
+impl CloneInfo<'tcx> {
     fn from_name(name: String) -> Self {
-        CloneInfo { name: name.into(), hidden: false }
+        CloneInfo { name: name.into(), hidden: false, projections: Vec::new() }
     }
 
     fn hidden(name: Ident) -> Self {
-        CloneInfo { name: name, hidden: true }
+        CloneInfo { name, hidden: true, projections: Vec::new() }
+    }
+
+    pub fn add_projection(&mut self, proj: (DefId, Ty<'tcx>)) {
+        self.projections.push(proj);
     }
 
     // TODO: When traits stop holding all functions we can remove the last two arguments
@@ -94,7 +103,7 @@ impl<'tcx> CloneMap<'tcx> {
         CloneMap { tcx, names, count: 0, prelude: IndexSet::new(), item_type }
     }
 
-    pub fn insert(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> &CloneInfo {
+    pub fn insert(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(_) = it.container {
                 def_id = it.container.id()
@@ -122,7 +131,7 @@ impl<'tcx> CloneMap<'tcx> {
         self.prelude.insert(module);
     }
 
-    pub fn keys(&self) -> impl Iterator<Item = &(DefId, SubstsRef<'tcx>)> {
+    pub fn keys(&self) -> impl Iterator<Item = &CloneNode<'tcx>> {
         self.names.keys()
     }
 
@@ -132,7 +141,7 @@ impl<'tcx> CloneMap<'tcx> {
 
         use petgraph::graphmap::DiGraphMap;
         use petgraph::visit::{Topo, Walker};
-        let mut dep_graph = DiGraphMap::<(DefId, SubstsRef<'tcx>), _>::new();
+        let mut dep_graph = DiGraphMap::<CloneNode<'tcx>, _>::new();
         let empty = Self::new(self.tcx, self.item_type);
 
         // Construct a maximal sharing graph for all dependencies.
@@ -161,6 +170,11 @@ impl<'tcx> CloneMap<'tcx> {
                     }),
                 };
                 key.1.visit_with(&mut visitor);
+
+                // If we have an additional projections, check if their type contains a further associated type.
+                for (_, t) in &clone_info.projections {
+                    t.visit_with(&mut visitor);
+                }
             }
 
             // We don't need to construct the sharing graph if the base node is a logic function.
@@ -188,9 +202,20 @@ impl<'tcx> CloneMap<'tcx> {
         // Traverse the dependency graph in topological order to create the minimal amount of
         // clones that are needed. This allows us to share all the nodes that are higher up in
         // the dependency graph.
+        // TODO: Ensure that if there is a cycle we emit a nice error.
         for node @ (def_id, subst) in Topo::new(&dep_graph).iter(&dep_graph) {
             debug!("processing node={:?}", node);
             let mut clone_subst = base_subst(ctx, &mut self, def_id, subst);
+
+            // Add all associated type projections to the substitution.
+            // We must be ordered topologically *after* whatever occurs on the RHS of the projection
+            for proj in &std::mem::take(&mut self.names[&node].projections) {
+                let ty = translate_ty(ctx, &mut self, rustc_span::DUMMY_SP, proj.1);
+                clone_subst.push(CloneSubst::Type(
+                    crate::translation::ty::ty_name(ctx.tcx, proj.0).into(),
+                    ty,
+                ));
+            }
 
             let node_clones = ctx.dependencies(def_id).unwrap_or_else(|| &empty);
             for (dep, t, &orig_subst) in dep_graph.edges_directed(node, Incoming) {
@@ -199,6 +224,7 @@ impl<'tcx> CloneMap<'tcx> {
                     Some(subst) => &node_clones.names[&(dep.0, subst)],
                     None => continue,
                 };
+                // Grab the symbols from all dependencies
                 let user_info = &self.names[&dep];
                 for sym in exported_symbols(ctx.tcx, dep.0) {
                     let elem = match sym {
