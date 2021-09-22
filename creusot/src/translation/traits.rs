@@ -59,11 +59,16 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                         item.def_id,
                     ));
 
-                    if crate::util::is_predicate(self.tcx, item.def_id) {
-                        sig.retty = None;
-                        trait_decls.push(Decl::ValDecl(Predicate { sig }));
-                    } else {
-                        trait_decls.push(Decl::ValDecl(Val { sig }));
+                    match crate::util::item_type(self.tcx, item.def_id) {
+                        ItemType::Logic => trait_decls.push(Decl::ValDecl(Function { sig })),
+                        ItemType::Predicate => {
+                            sig.retty = None;
+                            trait_decls.push(Decl::ValDecl(Predicate { sig }));
+                        }
+                        ItemType::Program => {
+                            trait_decls.push(Decl::ValDecl(Val { sig }));
+                        }
+                        _ => unreachable!(),
                     }
                 }
                 AssocKind::Type => {
