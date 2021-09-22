@@ -170,9 +170,11 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         let mut decls: Vec<_> = Vec::new();
         decls.extend(all_generic_decls_for(self.tcx, self.def_id));
 
-        for tp in traits::traits_used_by(self.tcx, self.def_id) {
-            traits::translate_constraint(self.ctx, &mut self.clone_names, tp);
-        }
+        traits::translate_predicates(
+            self.ctx,
+            &mut self.clone_names,
+            self.tcx.predicates_of(self.def_id),
+        );
 
         let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
         decls.extend(self.clone_names.to_clones(self.ctx));
