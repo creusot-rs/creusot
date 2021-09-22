@@ -29,6 +29,13 @@ impl<T> Seq<T> {
         absurd
     }
 
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "seq.Seq.singleton"]
+    pub fn singleton(_: T) -> Self {
+        absurd
+    }
+
     #[logic]
     pub fn tail(self) -> Self {
         self.subsequence(1, self.len())
@@ -49,9 +56,23 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
+    #[predicate]
+    #[creusot::builtins = "seq.Seq.(==)"]
+    pub fn ext_eq(self, rhs: Self) -> bool {
+        absurd
+    }
+
+    #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.snoc"]
     pub fn push(self, _: T) -> Self {
+        absurd
+    }
+
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "seq.Seq.(++)"]
+    pub fn concat(self, _: Self) -> Self {
         absurd
     }
 

@@ -39,7 +39,7 @@ fn main() {
     });
 }
 
-fn run_creusot(file: &Path, contracts: &str) -> std::process::Command {
+fn run_creusot(file: &Path, contracts: &str) -> Option<std::process::Command> {
     let mut cmd = Command::cargo_bin("creusot-rustc").unwrap();
     cmd.current_dir(file.parent().unwrap());
     let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -64,32 +64,36 @@ fn run_creusot(file: &Path, contracts: &str) -> std::process::Command {
         cmd.env("CREUSOT_UNBOUNDED", "1");
     }
 
+    if header_line.contains("UISKIP") {
+        return None;
+    }
+
     let mut dep_path = base_path;
     dep_path.push("deps");
 
     cmd.arg(format!("-Ldependency={}/", dep_path.display()));
     cmd.arg(file.file_name().unwrap());
     cmd.arg("--crate-type=lib");
-    cmd
+    Some(cmd)
 }
 
 fn should_succeed<B>(s: &str, b: B)
 where
-    B: Fn(&Path) -> std::process::Command,
+    B: Fn(&Path) -> Option<std::process::Command>,
 {
     glob_runner(s, b, should_succeed_case);
 }
 
 fn should_fail<B>(s: &str, b: B)
 where
-    B: Fn(&Path) -> std::process::Command,
+    B: Fn(&Path) -> Option<std::process::Command>,
 {
     glob_runner(s, b, should_fail_case);
 }
 
-fn glob_runner<B, C>(s: &str, b: B, c: C)
+fn glob_runner<B, C>(s: &str, command_builder: B, differ: C)
 where
-    B: Fn(&Path) -> std::process::Command,
+    B: Fn(&Path) -> Option<std::process::Command>,
     C: Fn(std::process::Output, &Path, &Path) -> Result<(bool, Buffer), Box<dyn Error>>,
 {
     let mut out = StandardStream::stdout(ColorChoice::Always);
@@ -108,7 +112,10 @@ where
                 continue;
             }
         }
-        let output = b(&entry).output().unwrap();
+        let output = match command_builder(&entry) {
+            None => continue,
+            Some(mut c) => c.output().unwrap(),
+        };
 
         let stderr = entry.with_extension("stderr");
         let stdout = entry.with_extension("mlcfg");
@@ -126,7 +133,7 @@ where
                 std::fs::write(stdout, &output.stdout).unwrap();
             }
         } else {
-            let (success, mut buf) = c(output, &stdout, &stderr).unwrap();
+            let (success, mut buf) = differ(output, &stdout, &stderr).unwrap();
 
             if success {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
