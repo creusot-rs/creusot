@@ -137,7 +137,7 @@ pub fn check_not_mutally_recursive<'tcx>(
         // TODO: Look up a more efficient way of getting this info
         for variant in &def.variants {
             for field in &variant.fields {
-                for ty in field.ty(ctx.tcx, substs).walk() {
+                for ty in field.ty(ctx.tcx, substs).walk(ctx.tcx) {
                     let k = match ty.unpack() {
                         rustc_middle::ty::subst::GenericArgKind::Type(ty) => ty,
                         _ => continue,
