@@ -290,6 +290,8 @@ impl<'tcx> CloneMap<'tcx> {
                 }
             }
 
+            ctx.translate(def_id);
+
             decls.push(Decl::Clone(DeclClone {
                 name: cloneable_name(ctx.tcx, def_id, self.item_type.clone_interfaces()),
                 subst: clone_subst,

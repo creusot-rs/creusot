@@ -1,0 +1,62 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module C11_Id_Interface
+  type t   
+  function id (x : t) : t
+end
+module C11_Id
+  type t   
+  function id (x : t) : t = 
+    x
+end
+module Core_Marker_Sized
+  type self   
+end
+module C11_A
+  type self   
+  type t   
+  clone C11_Id as Id0 with type t = t
+  val f (x : t) : ()
+    ensures { Id0.id x = x }
+    
+end
+module CreusotContracts_Builtins_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module C11_Test_Interface
+  type t   
+  val test (_1 : t) : ()
+end
+module C11_Test
+  type t   
+  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = t
+  clone C11_A as A1 with type self = t
+  clone Core_Marker_Sized as Sized0 with type self = t
+  let rec cfg test (_1 : t) : () = 
+  var _0 : ();
+  var _1 : t;
+  {
+    _1 <- _1;
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    goto BB1
+  }
+  BB1 {
+    assume { Resolve2.resolve _1 };
+    return _0
+  }
+  
+end

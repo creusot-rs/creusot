@@ -37,22 +37,14 @@ pub fn lower_term_to_why3<'tcx>(
                 args = vec![Exp::Tuple(vec![])];
             }
 
-            let params = ctx.tcx.param_env(id);
-
-            let target = match rustc_extensions::resolve_instance(ctx.tcx, params.and((id, subst)))
-            {
-                Ok(Some(inst)) => inst.def_id(),
-                Ok(_) => id,
-                Err(mut err) => {
-                    err.cancel();
-                    id
-                }
-            };
+            let param_env = ctx.tcx.param_env(term_id);
+            let (target, subst) = impl_or_trait(ctx.tcx, param_env, id, subst);
 
             if is_identity_from(ctx.tcx, id, subst) {
                 return args.remove(0);
             }
 
+            ctx.translate_function(target);
             builtins::lookup_builtin(ctx, target, &mut args).unwrap_or_else(|| {
                 let clone = names.insert(target, subst);
                 Exp::Call(box Exp::QVar(clone.qname(ctx.tcx, target)), args)
@@ -111,6 +103,65 @@ pub fn lower_term_to_why3<'tcx>(
     }
 }
 
+use rustc_middle::ty::AssocItemContainer::*;
+
+use rustc_middle::ty::ToPolyTraitRef;
+use rustc_middle::ty::{ParamEnv, TraitRef};
+use rustc_trait_selection::traits::ImplSource;
+pub fn impl_or_trait(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    def_id: DefId,
+    subst: SubstsRef<'tcx>,
+) -> (DefId, SubstsRef<'tcx>) {
+    if let Some(assoc) = tcx.opt_associated_item(def_id) {
+        let target = match assoc.container {
+            ImplContainer(_) => return (def_id, subst),
+            TraitContainer(def_id) => def_id,
+        };
+        let trait_ref = TraitRef { def_id: target, substs: subst }.to_poly_trait_ref();
+        let source =
+            rustc_extensions::codegen::codegen_fulfill_obligation(tcx, (param_env, trait_ref))
+                .unwrap();
+
+        match source {
+            ImplSource::UserDefined(impl_data) => {
+                let trait_def_id = tcx.trait_id_of_impl(impl_data.impl_def_id).unwrap();
+                let trait_def = tcx.trait_def(trait_def_id);
+                // Find the id of the actual associated method we will be running
+                let leaf_def = trait_def
+                    .ancestors(tcx, impl_data.impl_def_id)
+                    .unwrap()
+                    .leaf_def(tcx, assoc.ident, assoc.kind)
+                    .unwrap_or_else(|| {
+                        panic!("{:?} not found in {:?}", assoc, impl_data.impl_def_id);
+                    });
+                use rustc_trait_selection::infer::TyCtxtInferExt;
+
+                // Translate the original substitution into one on the selected impl method
+                let leaf_substs = tcx.infer_ctxt().enter(|infcx| {
+                    let param_env = param_env.with_reveal_all_normalized(tcx);
+                    let substs = subst.rebase_onto(tcx, trait_def_id, impl_data.substs);
+                    let substs = rustc_trait_selection::traits::translate_substs(
+                        &infcx,
+                        param_env,
+                        impl_data.impl_def_id,
+                        substs,
+                        leaf_def.defining_node,
+                    );
+                    infcx.tcx.erase_regions(substs)
+                });
+
+                return (leaf_def.item.def_id, leaf_substs);
+            }
+            ImplSource::Param(_, _) => return (def_id, subst),
+            _ => unimplemented!(),
+        }
+    } else {
+        return (def_id, subst);
+    }
+}
+
 pub fn lower_pat_to_why3<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
@@ -140,8 +191,15 @@ pub fn lower_pat_to_why3<'tcx>(
 }
 
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
+use rustc_middle::ty::{
+    subst::{Subst, SubstsRef},
+    TyCtxt,
+};
 
 fn is_identity_from<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, subst: SubstsRef<'tcx>) -> bool {
-    tcx.def_path_str(id) == "std::convert::From::from" && subst[0] == subst[1]
+    if tcx.def_path_str(id) == "std::convert::From::from" && subst.len() == 1 {
+        let out_ty = tcx.fn_sig(id).no_bound_vars().unwrap().output();
+        return subst[0].expect_ty() == out_ty.subst(tcx, subst);
+    }
+    false
 }

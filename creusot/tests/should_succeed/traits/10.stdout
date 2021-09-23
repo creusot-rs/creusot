@@ -1,0 +1,38 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module CreusotContracts_Builtins_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module C10_Impl0_Resolve_Interface
+  type t1   
+  type t2   
+  predicate resolve (self : (t1, t2))
+end
+module C10_Impl0_Resolve
+  type t1   
+  type t2   
+  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = t2
+  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = t1
+  predicate resolve (self : (t1, t2)) = 
+    Resolve0.resolve (let (a, _) = self in a) && Resolve1.resolve (let (_, a) = self in a)
+end
+module C10_Impl0
+  type t1   
+  type t2   
+  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = t2
+  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = t1
+  clone C10_Impl0_Resolve as Resolve0 with type t1 = t1, type t2 = t2, predicate Resolve0.resolve = Resolve1.resolve,
+  predicate Resolve1.resolve = Resolve2.resolve
+  clone CreusotContracts_Builtins_Resolve with type self = (t1, t2), predicate resolve = Resolve0.resolve
+end

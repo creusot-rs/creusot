@@ -136,8 +136,6 @@ pub unsafe trait Resolve {
 unsafe impl<T1: Resolve, T2: Resolve> Resolve for (T1, T2) {
     predicate! { fn resolve(self) -> bool { {
         Resolve::resolve(self.0) && Resolve::resolve(self.1)
-        // TODO: Figure out why `resolve` isn't... resolving in the type checker
-        // p1.resolve() && p2.resolve()
     } }}
 }
 
