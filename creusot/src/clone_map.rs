@@ -1,8 +1,8 @@
-use std::marker::PhantomData;
 use std::ops::ControlFlow;
 
-use indexmap::{IndexMap, IndexSet};
+use indexmap::IndexMap;
 
+use petgraph::graphmap::DiGraphMap;
 use petgraph::EdgeDirection::Incoming;
 use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
 use why3::{Ident, QName};
@@ -61,10 +61,15 @@ type CloneNode<'tcx> = (DefId, SubstsRef<'tcx>);
 #[derive(Clone)]
 pub struct CloneMap<'tcx> {
     tcx: TyCtxt<'tcx>,
-    prelude: IndexSet<PreludeModule>,
+    prelude: IndexMap<PreludeModule, bool>,
     names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
     count: usize,
     item_type: ItemType,
+
+    // Graph which is used to calculate the full clone set
+    clone_graph: DiGraphMap<CloneNode<'tcx>, Option<SubstsRef<'tcx>>>,
+    // Index of the last cloned entry
+    last_cloned: usize,
 }
 
 #[derive(Clone)]
@@ -72,15 +77,16 @@ pub struct CloneInfo<'tcx> {
     name: Ident,
     hidden: bool,
     projections: Vec<(DefId, Ty<'tcx>)>,
+    cloned: bool,
 }
 
 impl CloneInfo<'tcx> {
     fn from_name(name: String) -> Self {
-        CloneInfo { name: name.into(), hidden: false, projections: Vec::new() }
+        CloneInfo { name: name.into(), hidden: false, projections: Vec::new(), cloned: false }
     }
 
     fn hidden(name: Ident) -> Self {
-        CloneInfo { name, hidden: true, projections: Vec::new() }
+        CloneInfo { name, hidden: true, projections: Vec::new(), cloned: false }
     }
 
     pub fn add_projection(&mut self, proj: (DefId, Ty<'tcx>)) {
@@ -100,7 +106,15 @@ impl CloneInfo<'tcx> {
 impl<'tcx> CloneMap<'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, item_type: ItemType) -> Self {
         let names = IndexMap::new();
-        CloneMap { tcx, names, count: 0, prelude: IndexSet::new(), item_type }
+        CloneMap {
+            tcx,
+            names,
+            count: 0,
+            prelude: IndexMap::new(),
+            item_type,
+            clone_graph: DiGraphMap::new(),
+            last_cloned: 0,
+        }
     }
 
     pub fn insert(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
@@ -128,22 +142,15 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     pub fn import_prelude_module(&mut self, module: PreludeModule) {
-        self.prelude.insert(module);
+        self.prelude.entry(module).or_insert(false);
     }
 
     pub fn keys(&self) -> impl Iterator<Item = &CloneNode<'tcx>> {
         self.names.keys()
     }
 
-    pub fn to_clones(mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) -> Vec<Decl> {
-        let mut i = 0;
-        let mut decls = Vec::new();
-
-        use petgraph::graphmap::DiGraphMap;
-        use petgraph::visit::{Topo, Walker};
-        let mut dep_graph = DiGraphMap::<CloneNode<'tcx>, _>::new();
-        let empty = Self::new(self.tcx, self.item_type);
-
+    // Update the clone graph with new entries
+    fn update_graph(&mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) {
         // Construct a maximal sharing graph for all dependencies.
         // We build edges between each (function, subst) pair, following the call graph
         // Additionally, when the substitution refers to an associated type, we construct
@@ -151,6 +158,9 @@ impl<'tcx> CloneMap<'tcx> {
         //
         // Along the edge, we include the 'original' substitution, which we can use
         // to build the correct substitution.
+        //
+        let mut i = self.last_cloned;
+        let empty = Self::new(self.tcx, self.item_type);
 
         while i < self.names.len() {
             let (&key, clone_info) = self.names.get_index(i).unwrap();
@@ -160,13 +170,13 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            dep_graph.add_node(key);
+            self.clone_graph.add_node(key);
             {
                 // Gather all the associated types used in a substitution so we can force an edge
                 let mut visitor = ProjectionTyVisitor {
                     f: Box::new(|pty: ProjectionTy<'tcx>| {
                         let trait_id = pty.trait_def_id(self.tcx);
-                        dep_graph.add_edge((trait_id, pty.substs), key, None);
+                        self.clone_graph.add_edge((trait_id, pty.substs), key, None);
                     }),
                 };
                 key.1.visit_with(&mut visitor);
@@ -182,7 +192,7 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            for dep in ctx.dependencies(key.0).unwrap_or_else(|| &empty).keys() {
+            for dep in ctx.dependencies(key.0).unwrap_or(&empty).keys() {
                 let orig = dep.1;
                 let dep = (dep.0, dep.1.subst(self.tcx, key.1));
                 self.insert(dep.0, dep.1);
@@ -193,24 +203,52 @@ impl<'tcx> CloneMap<'tcx> {
                 }
 
                 debug!("edge {:?} -> {:?}", dep, key);
-                dep_graph.add_edge(dep, key, Some(orig));
+                self.clone_graph.add_edge(dep, key, Some(orig));
             }
         }
+    }
 
-        debug!("dep_graph nodes={} edges={}", dep_graph.node_count(), dep_graph.edge_count());
+    pub fn to_clones(&mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) -> Vec<Decl> {
+        let mut decls = Vec::new();
+
+        use petgraph::visit::{Topo, Walker};
+        let empty = Self::new(self.tcx, self.item_type);
+
+        // Update the clone graph with any new entries.
+        self.update_graph(ctx);
+
+        self.last_cloned = self.count;
+
+        debug!(
+            "dep_graph nodes={} edges={}",
+            self.clone_graph.node_count(),
+            self.clone_graph.edge_count()
+        );
 
         // Traverse the dependency graph in topological order to create the minimal amount of
         // clones that are needed. This allows us to share all the nodes that are higher up in
         // the dependency graph.
         // TODO: Ensure that if there is a cycle we emit a nice error.
-        for node @ (def_id, subst) in Topo::new(&dep_graph).iter(&dep_graph) {
+
+        let mut topo = Topo::new(&self.clone_graph);
+        while let Some(node @ (def_id, subst)) = topo.walk_next(&self.clone_graph) {
             debug!("processing node={:?}", node);
-            let mut clone_subst = base_subst(ctx, &mut self, def_id, subst);
+            // Though we pass in a &mut ref, it shouldn't actually be possible to add any new entries..
+            let mut clone_subst = base_subst(ctx, self, def_id, subst);
+
+            if self.names[&node].cloned {
+                continue;
+            }
+            self.names[&node].cloned = true;
+
+            if self.names[&node].hidden {
+                continue;
+            }
 
             // Add all associated type projections to the substitution.
             // We must be ordered topologically *after* whatever occurs on the RHS of the projection
             for proj in &std::mem::take(&mut self.names[&node].projections) {
-                let ty = translate_ty(ctx, &mut self, rustc_span::DUMMY_SP, proj.1);
+                let ty = translate_ty(ctx, self, rustc_span::DUMMY_SP, proj.1);
                 clone_subst.push(CloneSubst::Type(
                     crate::translation::ty::ty_name(ctx.tcx, proj.0).into(),
                     ty,
@@ -218,7 +256,7 @@ impl<'tcx> CloneMap<'tcx> {
             }
 
             let node_clones = ctx.dependencies(def_id).unwrap_or_else(|| &empty);
-            for (dep, t, &orig_subst) in dep_graph.edges_directed(node, Incoming) {
+            for (dep, t, &orig_subst) in self.clone_graph.edges_directed(node, Incoming) {
                 debug!("s={:?} t={:?} e={:?}", dep, t, orig_subst);
                 let prov_info = match orig_subst {
                     Some(subst) => &node_clones.names[&(dep.0, subst)],
@@ -260,7 +298,12 @@ impl<'tcx> CloneMap<'tcx> {
         }
 
         self.prelude
-            .into_iter()
+            .iter_mut()
+            .filter(|(_, v)| **v == false)
+            .map(|(p, v)| {
+                *v = true;
+                p
+            })
             .map(|q| Decl::UseDecl(Use { name: q.qname() }))
             .chain(decls.into_iter())
             .collect()
