@@ -1,10 +1,11 @@
-use rustc_hir::{def_id::DefId, Constness};
+use rustc_hir::def_id::DefId;
 use rustc_middle::traits::Reveal;
 use rustc_middle::ty::{
     // fold::BoundVarsCollector,
     subst::SubstsRef,
     AssocKind,
     Binder,
+    BoundConstness,
     GenericPredicates,
     Instance,
     ParamEnv,
@@ -162,7 +163,7 @@ pub fn translate_predicates(
     for (pred, _) in preds.predicates.iter() {
         use rustc_middle::ty::PredicateKind::*;
         match pred.kind().no_bound_vars().unwrap() {
-            Trait(tp, _) => translate_constraint(ctx, names, tp),
+            Trait(tp) => translate_constraint(ctx, names, tp),
             Projection(pp) => {
                 let ty = translate_ty(ctx, names, rustc_span::DUMMY_SP, pp.ty);
                 names
@@ -184,7 +185,7 @@ pub fn traits_used_by<'tcx>(
         let inner = pred.kind().no_bound_vars().unwrap();
         use rustc_middle::ty::PredicateKind::*;
         match inner {
-            Trait(tp, _) => Some(tp),
+            Trait(tp) => Some(tp),
             _ => None,
         }
     })
@@ -286,8 +287,9 @@ pub fn resolve_instance_opt<'tcx>(
 
         let subst = tcx.mk_substs([tcx.mk_param_from_def(param_def)].iter());
         let trait_ref = TraitRef::new(trait_id, subst);
-        let trait_pred = PredicateKind::Trait(TraitPredicate { trait_ref }, Constness::NotConst);
-        let mut bound_vars_collector = BoundVarsCollector::new();
+        let trait_pred =
+            PredicateKind::Trait(TraitPredicate { trait_ref, constness: BoundConstness::NotConst });
+        let mut bound_vars_collector = BoundVarsCollector::new(tcx);
         trait_pred.visit_with(&mut bound_vars_collector);
         let trait_binder = Binder::bind_with_vars(trait_pred, bound_vars_collector.into_vars(tcx));
         Some(tcx.mk_predicate(trait_binder))

@@ -31,6 +31,8 @@ use rustc_trait_selection::infer::TyCtxtInferExt;
 // `ty::Binder::*` methods but we use this stopgap until we figure out
 // the "real" fix.
 pub struct BoundVarsCollector<'tcx> {
+    tcx: TyCtxt<'tcx>,
+
     binder_index: ty::DebruijnIndex,
     vars: BTreeMap<u32, ty::BoundVariableKind>,
     // We may encounter the same variable at different levels of binding, so
@@ -39,8 +41,9 @@ pub struct BoundVarsCollector<'tcx> {
 }
 
 impl<'tcx> BoundVarsCollector<'tcx> {
-    pub fn new() -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>) -> Self {
         BoundVarsCollector {
+            tcx,
             binder_index: ty::INNERMOST,
             vars: BTreeMap::new(),
             visited: SsoHashSet::default(),
@@ -61,6 +64,10 @@ impl<'tcx> BoundVarsCollector<'tcx> {
 
 impl<'tcx> TypeVisitor<'tcx> for BoundVarsCollector<'tcx> {
     type BreakTy = ();
+
+    fn tcx_for_anon_const_substs(&self) -> Option<TyCtxt<'tcx>> {
+        Some(self.tcx)
+    }
 
     fn visit_binder<T: TypeFoldable<'tcx>>(
         &mut self,
@@ -225,7 +232,7 @@ fn resolve_associated_item<'tcx>(
     let trait_ref = ty::TraitRef::from_method(tcx, trait_id, rcvr_substs);
 
     // See FIXME on `BoundVarsCollector`.
-    let mut bound_vars_collector = BoundVarsCollector::new();
+    let mut bound_vars_collector = BoundVarsCollector::new(tcx);
     trait_ref.visit_with(&mut bound_vars_collector);
     let trait_binder = ty::Binder::bind_with_vars(trait_ref, bound_vars_collector.into_vars(tcx));
     let vtbl = codegen::codegen_fulfill_obligation(tcx, (param_env, trait_binder))?;
@@ -388,6 +395,7 @@ fn resolve_associated_item<'tcx>(
         | traits::ImplSource::Param(..)
         | traits::ImplSource::TraitAlias(..)
         | traits::ImplSource::DiscriminantKind(..)
-        | traits::ImplSource::Pointee(..) => None,
+        | traits::ImplSource::Pointee(..)
+        | traits::ImplSource::TraitUpcasting(..) => None,
     })
 }

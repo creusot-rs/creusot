@@ -214,6 +214,7 @@ fn lower_expr<'tcx>(
                 fields.iter().map(|f| lower_expr(tcx, thir, *f)).collect::<Result<_, _>>()?;
             Ok(Term::Tuple { fields })
         }
+        ExprKind::Use { source } => lower_expr(tcx, thir, source),
         ref ek => todo!("lower_expr: {:?}", ek),
     }
 }
