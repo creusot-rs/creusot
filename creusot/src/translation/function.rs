@@ -116,6 +116,17 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     }
 
     fn translate(mut self) -> Module {
+        let mut decls: Vec<_> = Vec::new();
+        decls.extend(all_generic_decls_for(self.tcx, self.def_id));
+
+        traits::translate_predicates(
+            self.ctx,
+            &mut self.clone_names,
+            self.tcx.predicates_of(self.def_id),
+        );
+
+        let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
+
         self.translate_body();
         move_invariants_into_loop(&mut self.past_blocks);
 
@@ -166,17 +177,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 .collect(),
             terminator: Terminator::Goto(BlockId(0)),
         };
-
-        let mut decls: Vec<_> = Vec::new();
-        decls.extend(all_generic_decls_for(self.tcx, self.def_id));
-
-        traits::translate_predicates(
-            self.ctx,
-            &mut self.clone_names,
-            self.tcx.predicates_of(self.def_id),
-        );
-
-        let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
         decls.extend(self.clone_names.to_clones(self.ctx));
 
         let name = translate_value_id(self.tcx, self.def_id);

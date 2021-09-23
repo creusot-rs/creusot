@@ -46,7 +46,10 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             translate_constraint(self, &mut names, super_trait);
         }
 
-        let mut trait_decls = Vec::new();
+        let mut decls: Vec<_> = Vec::new();
+        decls.extend(own_generic_decls_for(self.tcx, def_id));
+        decls.extend(names.to_clones(self));
+
         for item in self.tcx.associated_items(def_id).in_definition_order() {
             match item.kind {
                 AssocKind::Fn => {
@@ -56,27 +59,28 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
                     let mut sig = crate::util::signature_of(self, &mut names, item.def_id);
 
-                    trait_decls.extend(crate::translation::function::own_generic_decls_for(
+                    decls.extend(crate::translation::function::own_generic_decls_for(
                         self.tcx,
                         item.def_id,
                     ));
 
+                    decls.extend(names.to_clones(self));
                     match crate::util::item_type(self.tcx, item.def_id) {
-                        ItemType::Logic => trait_decls.push(Decl::ValDecl(Function { sig })),
+                        ItemType::Logic => decls.push(Decl::ValDecl(Function { sig })),
                         ItemType::Predicate => {
                             sig.retty = None;
-                            trait_decls.push(Decl::ValDecl(Predicate { sig }));
+                            decls.push(Decl::ValDecl(Predicate { sig }));
                         }
                         ItemType::Program => {
-                            trait_decls.push(Decl::ValDecl(Val { sig }));
+                            decls.push(Decl::ValDecl(Val { sig }));
                         }
                         _ => unreachable!(),
                     }
                 }
                 AssocKind::Type => {
                     let ty_name: why3::Ident = ty::ty_name(self.tcx, item.def_id).into();
-
-                    trait_decls.push(Decl::TyDecl(TyDecl {
+                    decls.extend(names.to_clones(self));
+                    decls.push(Decl::TyDecl(TyDecl {
                         ty_name,
                         ty_params: Vec::new(),
                         kind: TyDeclKind::Opaque,
@@ -85,11 +89,6 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                 knd => unimplemented!("{:?} - {:?}", def_id, knd),
             }
         }
-
-        let mut decls: Vec<_> = Vec::new();
-        decls.extend(own_generic_decls_for(self.tcx, def_id));
-        decls.extend(names.to_clones(self));
-        decls.extend(trait_decls);
 
         let trait_name = translate_trait_name(self.tcx, def_id);
 
@@ -165,7 +164,7 @@ pub fn translate_predicates(
         match pred.kind().no_bound_vars().unwrap() {
             Trait(tp) => translate_constraint(ctx, names, tp),
             Projection(pp) => {
-                let ty = translate_ty(ctx, names, rustc_span::DUMMY_SP, pp.ty);
+                let _ty = translate_ty(ctx, names, rustc_span::DUMMY_SP, pp.ty);
                 names
                     .insert(pp.projection_ty.trait_def_id(ctx.tcx), pp.projection_ty.substs)
                     .add_projection((pp.projection_ty.item_def_id, pp.ty));

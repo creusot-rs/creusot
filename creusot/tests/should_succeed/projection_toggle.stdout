@@ -10,6 +10,16 @@ module Type
   use floating_point.Double
   use prelude.Prelude
 end
+module Core_Marker_Sized
+  type self   
+end
+module Core_Cmp_PartialEq
+  type self   
+  type rhs   
+  use prelude.Prelude
+  val eq (self : self) (other : rhs) : bool
+  val ne (self : self) (other : rhs) : bool
+end
 module CreusotContracts_Builtins_Resolve
   type self   
   predicate resolve (self : self)
@@ -31,16 +41,6 @@ module CreusotContracts_Builtins_Impl11
   clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.resolve
 end
-module Core_Marker_Sized
-  type self   
-end
-module Core_Cmp_PartialEq
-  type self   
-  type rhs   
-  use prelude.Prelude
-  val eq (self : self) (other : rhs) : bool
-  val ne (self : self) (other : rhs) : bool
-end
 module ProjectionToggle_ProjToggle_Interface
   type t   
   use prelude.Prelude
@@ -52,10 +52,10 @@ end
 module ProjectionToggle_ProjToggle
   type t   
   use prelude.Prelude
-  clone Core_Cmp_PartialEq as PartialEq3 with type self = t, type rhs = t
-  clone Core_Marker_Sized as Sized2 with type self = t
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve1 with type t = t
-  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = bool
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve3 with type t = t
+  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = bool
+  clone Core_Cmp_PartialEq as PartialEq1 with type self = t, type rhs = t
+  clone Core_Marker_Sized as Sized0 with type self = t
   let rec cfg proj_toggle (toggle : bool) (a : borrowed t) (b : borrowed t) : borrowed t
     ensures { toggle = false -> result = b &&  ^ a =  * a }
     ensures { toggle = true -> result = a &&  ^ b =  * b }
@@ -77,9 +77,9 @@ module ProjectionToggle_ProjToggle
     goto BB0
   }
   BB0 {
-    assume { Resolve0.resolve _6 };
+    assume { Resolve2.resolve _6 };
     _6 <- toggle_1;
-    assume { Resolve0.resolve toggle_1 };
+    assume { Resolve2.resolve toggle_1 };
     switch (_6)
       | False -> goto BB2
       | True -> goto BB1
@@ -87,34 +87,34 @@ module ProjectionToggle_ProjToggle
       end
   }
   BB1 {
-    assume { Resolve1.resolve b_3 };
-    assume { Resolve0.resolve _6 };
+    assume { Resolve3.resolve b_3 };
+    assume { Resolve2.resolve _6 };
     _7 <- borrow_mut ( * a_2);
     a_2 <- { a_2 with current = ( ^ _7) };
-    assume { Resolve1.resolve a_2 };
+    assume { Resolve3.resolve a_2 };
     _5 <- borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ _5) };
-    assume { Resolve1.resolve _7 };
+    assume { Resolve3.resolve _7 };
     goto BB3
   }
   BB2 {
-    assume { Resolve1.resolve a_2 };
-    assume { Resolve0.resolve _6 };
+    assume { Resolve3.resolve a_2 };
+    assume { Resolve2.resolve _6 };
     _8 <- borrow_mut ( * b_3);
     b_3 <- { b_3 with current = ( ^ _8) };
-    assume { Resolve1.resolve b_3 };
+    assume { Resolve3.resolve b_3 };
     _5 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _5) };
-    assume { Resolve1.resolve _8 };
+    assume { Resolve3.resolve _8 };
     goto BB3
   }
   BB3 {
     _4 <- borrow_mut ( * _5);
     _5 <- { _5 with current = ( ^ _4) };
-    assume { Resolve1.resolve _5 };
+    assume { Resolve3.resolve _5 };
     _0 <- borrow_mut ( * _4);
     _4 <- { _4 with current = ( ^ _0) };
-    assume { Resolve1.resolve _4 };
+    assume { Resolve3.resolve _4 };
     return _0
   }
   
