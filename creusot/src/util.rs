@@ -160,3 +160,19 @@ pub fn signature_of<'tcx>(
         contract,
     }
 }
+
+use rustc_ast::{
+    token::TokenKind::Literal,
+    tokenstream::{TokenStream, TokenTree::*},
+};
+
+pub fn ts_to_symbol(ts: TokenStream) -> Option<Symbol> {
+    assert_eq!(ts.len(), 1);
+
+    if let Token(tok) = ts.trees().next().unwrap() {
+        if let Literal(lit) = tok.kind {
+            return Some(lit.symbol);
+        }
+    }
+    None
+}
