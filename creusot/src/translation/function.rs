@@ -255,19 +255,15 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             self.tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
         let subst = self.tcx.mk_substs([GenericArg::from(ty)].iter());
 
-        let instance = traits::resolve_instance_opt(self.tcx, self.def_id, trait_meth_id, subst);
+        let param_env = self.tcx.param_env(self.def_id);
+        let resolve_impl = traits::impl_or_trait(self.tcx, param_env, trait_meth_id, subst);
 
-        match instance {
-            Some(Some(inst)) => {
-                self.ctx.translate_impl(self.tcx.impl_of_method(inst.def_id()).unwrap());
-
-                QVar(
-                    self.clone_names
-                        .insert(inst.def_id(), inst.substs)
-                        .qname(self.tcx, inst.def_id()),
-                )
+        match resolve_impl {
+            Some((id, subst)) => {
+                self.ctx.translate(id);
+                QVar(self.clone_names.insert(id, subst).qname(self.tcx, id))
             }
-            _ => {
+            None => {
                 self.ctx.translate_trait(trait_id);
                 QVar(self.clone_names.insert(trait_meth_id, subst).qname(self.tcx, trait_meth_id))
             }

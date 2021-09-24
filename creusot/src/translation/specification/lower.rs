@@ -1,6 +1,6 @@
 use super::typing::{LogicalOp, Pattern, Term};
 use crate::ctx::*;
-use crate::rustc_extensions;
+use crate::translation::traits::impl_or_trait;
 use crate::translation::{binop_to_binop, builtins, constant, ty::translate_ty, unop_to_unop};
 use why3::mlcfg::{BinOp, Exp, Pattern as Pat};
 
@@ -38,7 +38,7 @@ pub fn lower_term_to_why3<'tcx>(
             }
 
             let param_env = ctx.tcx.param_env(term_id);
-            let (target, subst) = impl_or_trait(ctx.tcx, param_env, id, subst);
+            let (target, subst) = impl_or_trait(ctx.tcx, param_env, id, subst).unwrap();
 
             if is_identity_from(ctx.tcx, id, subst) {
                 return args.remove(0);
@@ -100,65 +100,6 @@ pub fn lower_term_to_why3<'tcx>(
         _ => {
             todo!()
         }
-    }
-}
-
-use rustc_middle::ty::AssocItemContainer::*;
-
-use rustc_middle::ty::ToPolyTraitRef;
-use rustc_middle::ty::{ParamEnv, TraitRef};
-use rustc_trait_selection::traits::ImplSource;
-pub fn impl_or_trait(
-    tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    def_id: DefId,
-    subst: SubstsRef<'tcx>,
-) -> (DefId, SubstsRef<'tcx>) {
-    if let Some(assoc) = tcx.opt_associated_item(def_id) {
-        let target = match assoc.container {
-            ImplContainer(_) => return (def_id, subst),
-            TraitContainer(def_id) => def_id,
-        };
-        let trait_ref = TraitRef { def_id: target, substs: subst }.to_poly_trait_ref();
-        let source =
-            rustc_extensions::codegen::codegen_fulfill_obligation(tcx, (param_env, trait_ref))
-                .unwrap();
-
-        match source {
-            ImplSource::UserDefined(impl_data) => {
-                let trait_def_id = tcx.trait_id_of_impl(impl_data.impl_def_id).unwrap();
-                let trait_def = tcx.trait_def(trait_def_id);
-                // Find the id of the actual associated method we will be running
-                let leaf_def = trait_def
-                    .ancestors(tcx, impl_data.impl_def_id)
-                    .unwrap()
-                    .leaf_def(tcx, assoc.ident, assoc.kind)
-                    .unwrap_or_else(|| {
-                        panic!("{:?} not found in {:?}", assoc, impl_data.impl_def_id);
-                    });
-                use rustc_trait_selection::infer::TyCtxtInferExt;
-
-                // Translate the original substitution into one on the selected impl method
-                let leaf_substs = tcx.infer_ctxt().enter(|infcx| {
-                    let param_env = param_env.with_reveal_all_normalized(tcx);
-                    let substs = subst.rebase_onto(tcx, trait_def_id, impl_data.substs);
-                    let substs = rustc_trait_selection::traits::translate_substs(
-                        &infcx,
-                        param_env,
-                        impl_data.impl_def_id,
-                        substs,
-                        leaf_def.defining_node,
-                    );
-                    infcx.tcx.erase_regions(substs)
-                });
-
-                return (leaf_def.item.def_id, leaf_substs);
-            }
-            ImplSource::Param(_, _) => return (def_id, subst),
-            _ => unimplemented!(),
-        }
-    } else {
-        return (def_id, subst);
     }
 }
 
