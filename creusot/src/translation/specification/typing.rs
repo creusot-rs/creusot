@@ -49,7 +49,7 @@ pub enum Pattern<'tcx> {
     Boolean(bool),
 }
 
-pub fn typecheck<'tcx>(tcx: TyCtxt<'tcx>, id: LocalDefId) -> Term<'tcx> {
+pub fn typecheck(tcx: TyCtxt, id: LocalDefId) -> Term {
     // debug!("{:?}", id);
     let (thir, expr) = tcx.thir_body(WithOptConstParam::unknown(id));
     let thir = thir.borrow();
@@ -174,9 +174,7 @@ fn lower_expr<'tcx>(
         // TODO: If we deref a shared borrow this should be erased?
         // Can it happen?
         ExprKind::Deref { arg } => {
-            if thir[arg].ty.is_box() {
-                lower_expr(tcx, thir, arg)
-            } else if thir[arg].ty.ref_mutability() == Some(Not) {
+            if thir[arg].ty.is_box() || thir[arg].ty.ref_mutability() == Some(Not) {
                 lower_expr(tcx, thir, arg)
             } else {
                 Ok(Term::Cur { term: box lower_expr(tcx, thir, arg)? })
@@ -363,7 +361,7 @@ fn lower_quantifier<'tcx>(
     }
 }
 
-fn field_pattern<'tcx>(ty: Ty<'tcx>, field: Field) -> Option<Pattern<'tcx>> {
+fn field_pattern(ty: Ty, field: Field) -> Option<Pattern> {
     match ty.kind() {
         TyKind::Tuple(fields) => {
             let mut fields: Vec<_> = (0..fields.len()).map(|_| Pattern::Wildcard).collect();

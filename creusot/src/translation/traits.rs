@@ -164,10 +164,10 @@ pub fn translate_predicates(
     }
 }
 
-pub fn traits_used_by<'tcx>(
-    tcx: TyCtxt<'tcx>,
+pub fn traits_used_by(
+    tcx: TyCtxt,
     def_id: DefId,
-) -> impl Iterator<Item = TraitPredicate<'tcx>> {
+) -> impl Iterator<Item = TraitPredicate> {
     let predicates = tcx.predicates_of(def_id);
 
     predicates.predicates.iter().filter_map(|(pred, _)| {
@@ -268,10 +268,8 @@ pub fn impl_or_trait(
         let source =
             rustc_extensions::codegen::codegen_fulfill_obligation(tcx, (param_env, trait_ref));
 
-        if source.is_err() {
-            let mut source = source.unwrap_err();
-            source.cancel();
-
+        if let Err(mut err) = source {
+            err.cancel();
             return None;
         }
         match source.unwrap() {
@@ -302,12 +300,12 @@ pub fn impl_or_trait(
                     infcx.tcx.erase_regions(substs)
                 });
 
-                return Some((leaf_def.item.def_id, leaf_substs));
+                Some((leaf_def.item.def_id, leaf_substs))
             }
-            ImplSource::Param(_, _) => return Some((def_id, subst)),
+            ImplSource::Param(_, _) => Some((def_id, subst)),
             _ => unimplemented!(),
         }
     } else {
-        return Some((def_id, subst));
+        Some((def_id, subst))
     }
 }

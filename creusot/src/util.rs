@@ -141,7 +141,7 @@ pub fn signature_of<'tcx>(
 
     Signature {
         // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure
-        name: name.name.into(),
+        name: name.name,
         // TODO: use real span
         retty: Some(ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, sig.output())),
         args: arg_names

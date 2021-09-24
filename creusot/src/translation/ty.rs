@@ -78,7 +78,7 @@ fn translate_ty_inner<'tcx>(
                 MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
             }
         }
-        Projection(pty) => translate_projection_ty(ctx, names, &pty),
+        Projection(pty) => translate_projection_ty(ctx, names, pty),
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
             names.import_prelude_module(PreludeModule::Prelude);
@@ -204,7 +204,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     let gens = ctx.tcx.generics_of(did);
 
     // HACK(xavier): Clean up
-    let ty_name = translate_ty_name(ctx, did).name.into();
+    let ty_name = translate_ty_name(ctx, did).name;
 
     // Collect type variables of declaration
     let ty_args: Vec<_> = gens

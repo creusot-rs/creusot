@@ -95,12 +95,9 @@ impl thir::visit::Visitor<'a, 'tcx> for InvariantClosures<'a, 'tcx> {
     }
 
     fn visit_expr(&mut self, expr: &Expr<'tcx>) {
-        match expr.kind {
-            ExprKind::Closure { closure_id, .. } => {
-                self.closures.insert(closure_id);
-            }
-            _ => {}
-        };
+        if let ExprKind::Closure { closure_id, .. } = expr.kind {
+            self.closures.insert(closure_id);
+        }
         thir::visit::walk_expr(self, expr);
     }
 }
@@ -112,13 +109,10 @@ struct InvariantLocations<'tcx> {
 
 impl<'tcx> Visitor<'tcx> for InvariantLocations<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
-        match rvalue {
-            Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) => {
-                if util::is_invariant(self.tcx, *id) {
-                    self.invariants.entry(loc.block).or_insert_with(Vec::new).push(*id);
-                }
+        if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
+            if util::is_invariant(self.tcx, *id) {
+                self.invariants.entry(loc.block).or_insert_with(Vec::new).push(*id);
             }
-            _ => {}
         }
         self.super_rvalue(rvalue, loc);
     }
@@ -128,7 +122,7 @@ impl<'tcx> Visitor<'tcx> for InvariantLocations<'tcx> {
 fn invariant_locations(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<BasicBlock, Vec<DefId>> {
     let mut results = IndexMap::new();
 
-    let mut invs_gather = InvariantLocations { tcx: tcx, invariants: IndexMap::new() };
+    let mut invs_gather = InvariantLocations { tcx, invariants: IndexMap::new() };
     invs_gather.visit_body(body);
 
     for (bb, invs) in invs_gather.invariants.into_iter() {

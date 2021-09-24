@@ -91,7 +91,7 @@ pub fn inv_subst(body: &Body) -> HashMap<why3::Ident, Exp> {
                 _ => panic!(),
             };
             let source_name = vdi.name.to_string();
-            (source_name.clone().into(), Exp::Var(LocalIdent::dbg(loc, vdi).ident()))
+            (source_name.into(), Exp::Var(LocalIdent::dbg(loc, vdi).ident()))
         })
         .collect()
 }
@@ -153,14 +153,14 @@ pub fn get_attr<'a>(attrs: Attributes<'a>, path: &[&str]) -> Option<&'a AttrItem
             .path
             .segments
             .iter()
-            .zip(path.into_iter())
+            .zip(path.iter())
             .fold(true, |acc, (seg, s)| acc && &*seg.ident.as_str() == *s);
 
         if matches {
             return Some(attr);
         }
     }
-    return None;
+    None
 }
 
 use rustc_ast::AttrItem;

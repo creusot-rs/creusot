@@ -24,7 +24,7 @@ impl Options {
 
         // If we're compiling an upstream dependency or we're compiling `creusot_contracts_proc` lets be silent.
         let export_metadata = export_metadata();
-        let dependency = arg_value::arg_value(&args, "--cap-lints", |val| val == "allow").is_some();
+        let dependency = arg_value::arg_value(args, "--cap-lints", |val| val == "allow").is_some();
 
         let output_file = args.iter().position(|a| a == "-o").map(|ix| args[ix + 1].clone());
 

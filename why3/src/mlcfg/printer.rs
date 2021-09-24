@@ -35,7 +35,7 @@ pub trait Pretty {
     where
         A::Doc: Clone;
 
-    fn display<'a>(&'a self) -> PrettyDisplay<'a, Self>
+    fn display(&self) -> PrettyDisplay<'_, Self>
     where
         Self: Sized,
     {
@@ -197,7 +197,7 @@ impl Pretty for Predicate {
 fn arg_list<'b: 'a, 'a, A: DocAllocator<'a>>(
     alloc: &'a A,
     env: &mut PrintEnv,
-    args: &'a Vec<(Ident, Type)>,
+    args: &'a [(Ident, Type)],
 ) -> DocBuilder<'a, A>
 where
     A::Doc: Clone,

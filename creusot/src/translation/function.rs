@@ -49,8 +49,8 @@ pub fn translate_function<'tcx, 'sess>(
     let invariants = gather.with_corrected_locations_and_names(tcx, &body);
     let func_translator =
         FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, def_id);
-    let module = func_translator.translate();
-    module
+
+    func_translator.translate()
 }
 use crate::resolve::EagerResolver;
 
@@ -413,20 +413,14 @@ fn resolve_trait_loaded(tcx: TyCtxt) -> bool {
     tcx.get_diagnostic_item(Symbol::intern("creusot_resolve")).is_some()
 }
 
-pub fn all_generic_decls_for<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-) -> impl Iterator<Item = Decl> + 'tcx {
+pub fn all_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
     let generics = tcx.generics_of(def_id);
 
     generic_decls((0..generics.count()).map(move |i| generics.param_at(i, tcx)))
 }
 
 #[allow(dead_code)]
-pub fn own_generic_decls_for<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-) -> impl Iterator<Item = Decl> + 'tcx {
+pub fn own_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
     let generics = tcx.generics_of(def_id);
     generic_decls(generics.params.iter())
 }
