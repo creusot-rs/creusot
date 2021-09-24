@@ -32,9 +32,9 @@ impl From<String> for Ident {
     }
 }
 
-impl<'a> Into<Cow<'a, str>> for &'a Ident {
-    fn into(self) -> Cow<'a, str> {
-        (&self.0).into()
+impl<'a> From<&'a Ident> for Cow<'a, str> {
+    fn from(id: &'a Ident) -> Cow<'a, str> {
+        (&id.0).into()
     }
 }
 
@@ -100,7 +100,7 @@ impl From<Ident> for QName {
     }
 }
 
-const RESERVED: &[&'static str] = &[
+const RESERVED: &[&str] = &[
     "abstract",
     "alias",
     "any",

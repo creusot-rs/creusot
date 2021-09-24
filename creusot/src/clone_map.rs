@@ -255,7 +255,7 @@ impl<'tcx> CloneMap<'tcx> {
                 ));
             }
 
-            let node_clones = ctx.dependencies(def_id).unwrap_or_else(|| &empty);
+            let node_clones = ctx.dependencies(def_id).unwrap_or(&empty);
             for (dep, t, &orig_subst) in self.clone_graph.edges_directed(node, Incoming) {
                 debug!("s={:?} t={:?} e={:?}", dep, t, orig_subst);
                 let prov_info = match orig_subst {
@@ -301,7 +301,7 @@ impl<'tcx> CloneMap<'tcx> {
 
         self.prelude
             .iter_mut()
-            .filter(|(_, v)| **v == false)
+            .filter(|(_, v)| !(**v))
             .map(|(p, v)| {
                 *v = true;
                 p
@@ -415,9 +415,8 @@ impl TypeVisitor<'tcx> for ProjectionTyVisitor<'a, 'tcx> {
     }
 
     fn visit_ty(&mut self, t: Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
-        match t.kind() {
-            TyKind::Projection(t) => (*self.f)(*t),
-            _ => {}
+        if let TyKind::Projection(t) = t.kind() {
+             (*self.f)(*t)
         }
         ControlFlow::CONTINUE
     }

@@ -29,7 +29,7 @@ pub struct PolyModule<'tcx> {
 }
 
 impl PolyModule<'tcx> {
-    fn modules(&'a self) -> impl Iterator<Item = &'a Module> {
+    fn modules(&self) -> impl Iterator<Item = &Module> {
         self.interface.as_ref().map(|i| &i.module).into_iter().chain(std::iter::once(&self.body))
     }
 
@@ -203,7 +203,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         !self.opts.dependency
     }
 
-    pub fn modules(&'a self) -> impl Iterator<Item = &Module> + 'a + Captures<'tcx> {
+    pub fn modules(&self) -> impl Iterator<Item = &Module> + Captures<'tcx> {
         self.functions.values().flat_map(|m| m.modules())
     }
 }
@@ -224,7 +224,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
     let mut segments = Vec::new();
 
     let mut crate_name = tcx.crate_name(def_id.krate).to_string().to_camel_case();
-    if crate_name.chars().nth(0).unwrap().is_numeric() {
+    if crate_name.chars().next().unwrap().is_numeric() {
         crate_name = format!("C{}", crate_name);
     }
 

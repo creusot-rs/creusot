@@ -50,7 +50,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 Move(pl) | Copy(pl) => {
                     // TODO: should this be done for *any* form of assignment?
                     let ty = place.ty(self.body, self.tcx).ty;
-                    let pl_exp = self.translate_rplace(&place);
+                    let pl_exp = self.translate_rplace(place);
                     let assumption: Exp = self.resolve_predicate_of(ty).app_to(pl_exp);
                     self.emit_statement(Assume(assumption));
                     self.translate_rplace(pl)
@@ -60,12 +60,12 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
-                Shared | Shallow | Unique => self.translate_rplace(&pl),
+                Shared | Shallow | Unique => self.translate_rplace(pl),
                 Mut { .. } => {
-                    let borrow = BorrowMut(box self.translate_rplace(&pl));
-                    self.emit_assignment(&place, borrow);
-                    let reassign = Final(box self.translate_rplace(&place));
-                    self.emit_assignment(&pl, reassign);
+                    let borrow = BorrowMut(box self.translate_rplace(pl));
+                    self.emit_assignment(place, borrow);
+                    let reassign = Final(box self.translate_rplace(place));
+                    self.emit_assignment(pl, reassign);
                     return;
                 }
             },
@@ -102,7 +102,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 }
             }
             Rvalue::Len(pl) => {
-                RecField { record: box self.translate_rplace(&pl), label: "length".into() }
+                RecField { record: box self.translate_rplace(pl), label: "length".into() }
             }
             Rvalue::Cast(_, _, _)
             | Rvalue::NullaryOp(_, _)

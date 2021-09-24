@@ -44,7 +44,7 @@ fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) {
     }
 }
 
-pub fn make_loop<'tcx>(_: TyCtxt<'tcx>) -> IndexVec<BasicBlock, BasicBlockData<'tcx>> {
+pub fn make_loop(_: TyCtxt) -> IndexVec<BasicBlock, BasicBlockData> {
     let mut body = IndexVec::new();
     body.push(BasicBlockData::new(Some(Terminator {
         source_info: SourceInfo::outermost(rustc_span::DUMMY_SP),
@@ -78,7 +78,7 @@ impl MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
                 )
                 .is_some()
                 {
-                    substs.into_iter().for_each(|p| {
+                    substs.iter_mut().for_each(|p| {
                         if p.is_move() {
                             self.unused.insert(p.place().unwrap().as_local().unwrap());
                         }
