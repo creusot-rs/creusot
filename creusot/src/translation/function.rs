@@ -19,7 +19,6 @@ use rustc_middle::mir::Place;
 use rustc_middle::ty::subst::GenericArg;
 use rustc_middle::ty::Ty;
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
-use rustc_resolve::Namespace;
 use rustc_span::Symbol;
 
 use indexmap::IndexMap;
@@ -142,14 +141,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         self.translate_body();
 
-        let pre_contract = specification::contract_of(self.tcx, self.def_id).unwrap();
-        let mut contract =
-            pre_contract.check_and_lower(&mut self.ctx, &mut self.clone_names, self.def_id);
-        let subst = specification::subst_for_arguments(self.body);
-
-        contract.subst(&subst);
-        contract.extend(self.trait_contract().unwrap_or_else(Contract::new));
-
         let arg_count = self.body.arg_count;
         let vars: Vec<_> = self
             .body
@@ -173,10 +164,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             })
             .collect();
 
-        if self.body.local_decls[0u32.into()].ty.is_never() {
-            contract.ensures.push(Exp::Const(Constant::const_false()));
-        }
-
         let entry = Block {
             statements: vars
                 .iter()
@@ -191,7 +178,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         };
         decls.extend(self.clone_names.to_clones(self.ctx));
 
-        // let sig = Signature { name: name.name.clone().into(), retty: Some(retty), args, contract };
         decls.push(Decl::FunDecl(CfgFunction {
             sig,
             vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(),
@@ -251,30 +237,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: mlcfg::Exp) {
         let assign = self.create_assign(lhs, rhs);
         self.emit_statement(assign);
-    }
-
-    fn trait_contract(&mut self) -> Option<Contract> {
-        let trait_method_item = self
-            .tcx
-            .impl_of_method(self.def_id)
-            .and_then(|impl_id| self.tcx.trait_id_of_impl(impl_id))
-            .and_then(|trait_id| {
-                let assoc = self.tcx.associated_item(self.def_id);
-                self.tcx.associated_items(trait_id).find_by_name_and_namespace(
-                    self.tcx,
-                    assoc.ident,
-                    Namespace::ValueNS,
-                    trait_id,
-                )
-            })?;
-
-        let pre_contract =
-            crate::specification::contract_of(self.ctx.tcx, trait_method_item.def_id).unwrap();
-        Some(pre_contract.check_and_lower(
-            self.ctx,
-            &mut self.clone_names,
-            trait_method_item.def_id,
-        ))
     }
 
     fn resolve_predicate_of(&mut self, ty: Ty<'tcx>) -> Exp {

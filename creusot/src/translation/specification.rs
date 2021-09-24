@@ -46,24 +46,6 @@ pub fn ensures_to_why<'tcx>(
     lower_term_to_why3(ctx, names, ens_id, term)
 }
 
-// Turn a typing context into a substition.
-pub fn subst_for_arguments(body: &Body) -> HashMap<why3::Ident, Exp> {
-    use rustc_middle::mir::VarDebugInfoContents::Place;
-
-    body.var_debug_info
-        .iter()
-        .take(body.arg_count)
-        .map(|vdi| {
-            let loc = match vdi.value {
-                Place(p) => p.as_local().unwrap(),
-                _ => panic!(),
-            };
-            let source_name = vdi.name.to_string();
-            (source_name.into(), Exp::Var(LocalIdent::dbg(loc, vdi).arg_name()))
-        })
-        .collect()
-}
-
 use rustc_ast::{
     token::TokenKind::Literal,
     tokenstream::{TokenStream, TokenTree::*},
