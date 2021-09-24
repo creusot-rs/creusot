@@ -58,6 +58,10 @@ pub fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
     crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "logic"]).is_some()
 }
 
+pub fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
+    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "trusted"]).is_some()
+}
+
 pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     loop {
         if is_no_translate(tcx, def_id) {
