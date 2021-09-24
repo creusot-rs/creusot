@@ -142,27 +142,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         self.translate_body();
 
         let arg_count = self.body.arg_count;
-        let vars: Vec<_> = self
-            .body
-            .local_decls
-            .iter_enumerated()
-            .filter_map(|(loc, decl)| {
-                if self.erased_locals.contains(loc) {
-                    None
-                } else {
-                    let ident = self.translate_local(loc);
-                    Some((
-                        ident,
-                        ty::translate_ty(
-                            &mut self.ctx,
-                            &mut self.clone_names,
-                            decl.source_info.span,
-                            decl.ty,
-                        ),
-                    ))
-                }
-            })
-            .collect();
+        let vars = self.translate_vars();
 
         let entry = Block {
             statements: vars
@@ -222,6 +202,28 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 },
             );
         }
+    }
+
+    fn translate_vars(&mut self) -> Vec<(LocalIdent, Type)> {
+        let mut vars = Vec::with_capacity(self.body.local_decls.len());
+
+        for (loc, decl) in self.body.local_decls.iter_enumerated() {
+            if self.erased_locals.contains(loc) {
+                continue;
+            }
+            let ident = self.translate_local(loc);
+            vars.push((
+                ident,
+                ty::translate_ty(
+                    &mut self.ctx,
+                    &mut self.clone_names,
+                    decl.source_info.span,
+                    decl.ty,
+                ),
+            ))
+        }
+
+        vars
     }
 
     fn emit_statement(&mut self, s: mlcfg::Statement) {
