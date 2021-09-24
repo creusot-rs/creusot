@@ -16,3 +16,10 @@ fn omg2() -> u32 {
   5 // im evil
 }
 
+predicate! {
+  #[trusted]
+  fn trusted_pred(x : u32) {
+    true
+  }
+}
+
