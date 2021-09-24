@@ -38,10 +38,8 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
 
         // This is called MaybeLiveLocals because pointers don't keep their referees alive.
         // TODO: Defensive check.
-        let local_live = MaybeLiveLocals
-            .into_engine(tcx, body)
-            .iterate_to_fixpoint()
-            .into_results_cursor(body);
+        let local_live =
+            MaybeLiveLocals.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
         let never_live = crate::analysis::NeverLive::for_body(body);
         EagerResolver { local_live, local_init, local_uninit, never_live }
     }

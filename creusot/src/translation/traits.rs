@@ -164,10 +164,7 @@ pub fn translate_predicates(
     }
 }
 
-pub fn traits_used_by(
-    tcx: TyCtxt,
-    def_id: DefId,
-) -> impl Iterator<Item = TraitPredicate> {
+pub fn traits_used_by(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = TraitPredicate> {
     let predicates = tcx.predicates_of(def_id);
 
     predicates.predicates.iter().filter_map(|(pred, _)| {
