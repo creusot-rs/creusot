@@ -1,10 +1,7 @@
 use super::typing::{LogicalOp, Pattern, Term};
 use crate::ctx::*;
 use crate::rustc_extensions;
-use crate::translation::binop_to_binop;
-use crate::translation::builtins;
-use crate::translation::constant;
-use crate::translation::ty::translate_ty;
+use crate::translation::{binop_to_binop, builtins, constant, ty::translate_ty, unop_to_unop};
 use why3::mlcfg::{BinOp, Exp, Pattern as Pat};
 
 pub fn lower_term_to_why3<'tcx>(
@@ -21,6 +18,17 @@ pub fn lower_term_to_why3<'tcx>(
             box lower_term_to_why3(ctx, names, term_id, lhs),
             box lower_term_to_why3(ctx, names, term_id, rhs),
         ),
+        Term::Logical { op, box lhs, box rhs } => Exp::BinaryOp(
+            match op {
+                LogicalOp::And => BinOp::And,
+                LogicalOp::Or => BinOp::Or,
+            },
+            box lower_term_to_why3(ctx, names, term_id, lhs),
+            box lower_term_to_why3(ctx, names, term_id, rhs),
+        ),
+        Term::Unary { op, box arg } => {
+            Exp::UnaryOp(unop_to_unop(op), box lower_term_to_why3(ctx, names, term_id, arg))
+        }
         Term::Call { id, subst, fun: box Term::Const(_), args } => {
             let mut args: Vec<_> =
                 args.into_iter().map(|arg| lower_term_to_why3(ctx, names, term_id, arg)).collect();
@@ -46,8 +54,8 @@ pub fn lower_term_to_why3<'tcx>(
             }
 
             builtins::lookup_builtin(ctx, target, &mut args).unwrap_or_else(|| {
-                let clone = names.qname_for_mut(target, subst);
-                Exp::Call(box Exp::QVar(clone), args)
+                let clone = names.insert(target, subst);
+                Exp::Call(box Exp::QVar(clone.qname(ctx.tcx, target)), args)
             })
         }
         Term::Forall { binder, box body } => {
@@ -55,18 +63,6 @@ pub fn lower_term_to_why3<'tcx>(
             Exp::Forall(
                 vec![(binder.0.into(), ty)],
                 box lower_term_to_why3(ctx, names, term_id, body),
-            )
-        }
-        Term::Logical { op, box lhs, box rhs } => {
-            let op = match op {
-                LogicalOp::And => BinOp::And,
-                LogicalOp::Or => BinOp::Or,
-            };
-
-            Exp::BinaryOp(
-                op,
-                box lower_term_to_why3(ctx, names, term_id, lhs),
-                box lower_term_to_why3(ctx, names, term_id, rhs),
             )
         }
         Term::Constructor { adt, variant, fields } => {
@@ -106,11 +102,9 @@ pub fn lower_term_to_why3<'tcx>(
             arg: box lower_term_to_why3(ctx, names, term_id, arg),
             body: box lower_term_to_why3(ctx, names, term_id, body),
         },
-        Term::Tuple { fields } => {
-            Exp::Tuple(
-                fields.into_iter().map(|f| lower_term_to_why3(ctx, names, term_id, f)).collect()
-            )
-        }
+        Term::Tuple { fields } => Exp::Tuple(
+            fields.into_iter().map(|f| lower_term_to_why3(ctx, names, term_id, f)).collect(),
+        ),
         _ => {
             todo!()
         }

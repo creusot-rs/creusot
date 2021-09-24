@@ -1,24 +1,24 @@
 mod builtins;
 pub mod constant;
+pub mod external;
 pub mod function;
+pub mod interface;
+mod logic;
 pub mod specification;
 pub mod traits;
 pub mod ty;
 
-pub mod external;
-mod logic;
-
 pub use external::translate_extern;
 pub use function::translate_function;
-pub use logic::*;
 pub use function::LocalIdent;
+pub use logic::*;
 
 use heck::CamelCase;
 
 use rustc_hir::def_id::LOCAL_CRATE;
-use why3::{Pretty,
+use why3::{
     declaration::{Decl, Module, TyDecl, Use},
-    QName,
+    Pretty, QName,
 };
 
 use std::io::Result;
@@ -61,8 +61,8 @@ pub fn translate(mut ctx: TranslationCtx<'_, '_>) -> Result<()> {
         print_crate(
             &mut out,
             ctx.tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case(),
-            ctx.types,
-            ctx.functions.values(),
+            &ctx.types,
+            ctx.modules(),
         )?;
     }
 
@@ -84,6 +84,13 @@ pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::mlcfg::BinOp {
         mir::BinOp::Ge => BinOp::Ge,
         mir::BinOp::Ne => BinOp::Ne,
         _ => unimplemented!("unsupported binary operation: {:?}", op),
+    }
+}
+
+fn unop_to_unop(op: rustc_middle::mir::UnOp) -> why3::mlcfg::UnOp {
+    match op {
+        rustc_middle::mir::UnOp::Not => why3::mlcfg::UnOp::Not,
+        rustc_middle::mir::UnOp::Neg => why3::mlcfg::UnOp::Neg,
     }
 }
 
@@ -114,7 +121,7 @@ use self::external::load_exports;
 fn print_crate<'a, W, I: Iterator<Item = &'a Module>>(
     out: &mut W,
     _name: String,
-    types: Vec<TyDecl>,
+    types: &[TyDecl],
     functions: I,
 ) -> std::io::Result<()>
 where
@@ -126,7 +133,7 @@ where
         name: "Type".into(),
         decls: prelude_imports(false)
             .into_iter()
-            .chain(types.into_iter().flat_map(|ty| [Decl::TyDecl(ty)]))
+            .chain(types.into_iter().flat_map(|ty| [Decl::TyDecl(ty.clone())]))
             .collect(),
     };
 

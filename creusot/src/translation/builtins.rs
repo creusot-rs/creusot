@@ -1,6 +1,9 @@
 use rustc_hir::def_id::DefId;
 use rustc_span::Symbol;
-use why3::{mlcfg::{BinOp, Exp}, QName};
+use why3::{
+    mlcfg::{BinOp, Exp, UnOp},
+    QName,
+};
 
 use crate::ctx::TranslationCtx;
 
@@ -27,6 +30,17 @@ pub fn lookup_builtin(
         let r = args.remove(0);
 
         return Some(Exp::BinaryOp(BinOp::Sub, box l, box r));
+    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("mul_int")) {
+        let l = args.remove(0);
+        let r = args.remove(0);
+
+        return Some(Exp::BinaryOp(BinOp::Mul, box l, box r));
+    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("div_int")) {
+        todo!("lookup_builtin: div_int")
+    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("neg_int")) {
+        let a = args.remove(0);
+
+        return Some(Exp::UnaryOp(UnOp::Neg, box a));
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("le_int")) {
         let l = args.remove(0);
         let r = args.remove(0);

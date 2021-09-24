@@ -10,14 +10,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Module {
-    pub name: String,
+    pub name: Ident,
     pub decls: Vec<Decl>,
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Scope {
-    pub name: String,
+    pub name: Ident,
     pub decls: Vec<Decl>,
 }
 
@@ -129,14 +129,14 @@ pub struct Predicate {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct TyDecl {
     pub ty_name: Ident,
-    pub ty_params: Vec<String>,
+    pub ty_params: Vec<Ident>,
     pub kind: TyDeclKind,
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum TyDeclKind {
-    Adt(Vec<(String, Vec<Type>)>),
+    Adt(Vec<(Ident, Vec<Type>)>),
     Alias(Type),
     Opaque,
 }
@@ -166,23 +166,24 @@ impl TyDecl {
 pub struct DeclClone {
     pub name: QName,
     pub subst: Vec<CloneSubst>,
-    pub kind : CloneKind,
+    pub kind: CloneKind,
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum CloneKind {
     Bare,
-    Named(String),
+    Named(Ident),
     Export,
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum CloneSubst {
-    Type(Ident, Type),
-    Val(Ident, QName),
-    Predicate(Ident, QName),
+    Type(QName, Type),
+    Val(QName, QName),
+    Predicate(QName, QName),
+    Function(QName, QName),
 }
 
 impl CloneSubst {
@@ -196,6 +197,7 @@ impl CloneSubst {
 pub enum ValKind {
     Val { sig: Signature },
     Predicate { sig: Signature },
+    Function { sig: Signature },
 }
 
 #[derive(Debug, Clone)]

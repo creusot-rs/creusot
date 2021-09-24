@@ -26,9 +26,9 @@ extern crate smallvec;
 extern crate log;
 
 mod analysis;
+pub mod clone_map;
 mod closure_gatherer;
 pub mod ctx;
-pub mod clone_map;
 mod extended_location;
 mod resolve;
 mod translation;

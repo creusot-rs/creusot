@@ -134,6 +134,6 @@ impl<'tcx> MutVisitor<'tcx> for LocalUpdater<'tcx> {
 
 fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
     crate::util::is_no_translate(tcx, def_id)
-        || crate::is_logic(tcx, def_id)
-        || crate::is_predicate(tcx, def_id)
+        || crate::util::is_logic(tcx, def_id)
+        || crate::util::is_predicate(tcx, def_id)
 }

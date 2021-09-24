@@ -10,6 +10,9 @@ module Type
   use floating_point.Double
   use prelude.Prelude
 end
+module Unnest_Main_Interface
+  val main () : ()
+end
 module Unnest_Main
   let rec cfg main () : () = 
   var _0 : ();
@@ -26,24 +29,39 @@ module CreusotContracts_Builtins_Resolve
   type self   
   predicate resolve (self : self)
 end
-module CreusotContracts_Builtins_Impl8_Resolve
+module CreusotContracts_Builtins_Impl11_Resolve_Interface
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Builtins_Impl11_Resolve
   type t   
   use prelude.Prelude
   predicate resolve (self : borrowed t) = 
      ^ self =  * self
 end
-module CreusotContracts_Builtins_Impl8
+module CreusotContracts_Builtins_Impl11
   type t   
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.resolve
+end
+module Unnest_Unnest_Interface
+  use prelude.Prelude
+  use mach.int.Int
+  use mach.int.UInt32
+  val unnest (x : borrowed (borrowed uint32)) : borrowed uint32
+    ensures {  ^  * x =  ^  ^ x }
+    ensures {  ^ result =  *  ^ x }
+    ensures {  * result =  *  * x }
+    
 end
 module Unnest_Unnest
   use prelude.Prelude
   use mach.int.Int
   use mach.int.UInt32
-  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve0 with type t = borrowed uint32
-  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve1 with type t = uint32
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve1 with type t = uint32
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t = borrowed uint32
   let rec cfg unnest (x : borrowed (borrowed uint32)) : borrowed uint32
     ensures {  ^  * x =  ^  ^ x }
     ensures {  ^ result =  *  ^ x }

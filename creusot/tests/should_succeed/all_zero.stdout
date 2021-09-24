@@ -18,6 +18,11 @@ module Type
     | AllZero_List_Nil
     
 end
+module AllZero_Len_Interface
+  use mach.int.Int
+  use Type
+  function len (l : Type.allzero_list) : int
+end
 module AllZero_Len
   use mach.int.Int
   use mach.int.Int32
@@ -27,6 +32,12 @@ module AllZero_Len
       | Type.AllZero_List_Cons(_, ls) -> Int32.to_int (1 : int32) + len ls
       | Type.AllZero_List_Nil -> Int32.to_int (0 : int32)
       end
+end
+module AllZero_Get_Interface
+  use Type
+  use mach.int.Int
+  use mach.int.UInt32
+  function get (l : Type.allzero_list) (ix : int) : Type.core_option_option uint32
 end
 module AllZero_Get
   use Type
@@ -46,17 +57,35 @@ module CreusotContracts_Builtins_Resolve
   type self   
   predicate resolve (self : self)
 end
-module CreusotContracts_Builtins_Impl8_Resolve
+module CreusotContracts_Builtins_Impl11_Resolve_Interface
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Builtins_Impl11_Resolve
   type t   
   use prelude.Prelude
   predicate resolve (self : borrowed t) = 
      ^ self =  * self
 end
-module CreusotContracts_Builtins_Impl8
+module CreusotContracts_Builtins_Impl11
   type t   
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.resolve
+end
+module AllZero_AllZero_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  use Type
+  use mach.int.UInt32
+  use prelude.Prelude
+  clone AllZero_Get_Interface as Get1
+  clone AllZero_Len_Interface as Len0
+  val all_zero (l : borrowed (Type.allzero_list)) : ()
+    ensures { Len0.len ( * l) = Len0.len ( ^ l) }
+    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * l) -> Get1.get ( ^ l) i = Type.Core_Option_Option_Some((0 : uint32)) }
+    
 end
 module AllZero_AllZero
   use mach.int.Int
@@ -64,13 +93,13 @@ module AllZero_AllZero
   use Type
   use mach.int.UInt32
   use prelude.Prelude
-  clone AllZero_Len as Len0
-  clone AllZero_Get as Get1
-  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve2 with type t = Type.allzero_list
-  clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = isize
-  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve4 with type t = uint32
-  clone CreusotContracts_Builtins_Impl8_Resolve as Resolve5 with type t = Type.allzero_list
   clone CreusotContracts_Builtins_Resolve as Resolve6 with type self = ()
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve5 with type t = Type.allzero_list
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve4 with type t = uint32
+  clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = isize
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve2 with type t = Type.allzero_list
+  clone AllZero_Get as Get1
+  clone AllZero_Len as Len0
   let rec cfg all_zero (l : borrowed (Type.allzero_list)) : ()
     ensures { Len0.len ( * l) = Len0.len ( ^ l) }
     ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * l) -> Get1.get ( ^ l) i = Type.Core_Option_Option_Some((0 : uint32)) }
@@ -85,6 +114,8 @@ module AllZero_AllZero
   var next_8 : borrowed (Type.allzero_list);
   var _9 : borrowed (Type.allzero_list);
   var _10 : ();
+  var _11 : ();
+  var _12 : ();
   {
     l_1 <- l;
     goto BB0
@@ -133,6 +164,9 @@ module AllZero_AllZero
     goto BB1
   }
   
+end
+module AllZero_Main_Interface
+  val main () : ()
 end
 module AllZero_Main
   let rec cfg main () : () = 

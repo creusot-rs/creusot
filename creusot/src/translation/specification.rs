@@ -8,9 +8,9 @@ use rustc_span::Symbol;
 use why3::declaration::Contract;
 use why3::mlcfg::Exp;
 
+use super::LocalIdent;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{mir::Body, ty::TyCtxt};
-use super::LocalIdent;
 
 mod lower;
 pub mod typing;
@@ -84,10 +84,7 @@ pub fn subst_for_arguments(body: &Body) -> HashMap<why3::Ident, Exp> {
                 _ => panic!(),
             };
             let source_name = vdi.name.to_string();
-            (
-                source_name.into(),
-                Exp::Var(LocalIdent::dbg(loc, vdi).arg_name()),
-            )
+            (source_name.into(), Exp::Var(LocalIdent::dbg(loc, vdi).arg_name()))
         })
         .collect()
 }
@@ -154,10 +151,7 @@ pub fn inv_subst(body: &Body) -> HashMap<why3::Ident, Exp> {
                 _ => panic!(),
             };
             let source_name = vdi.name.to_string();
-            (
-                source_name.clone().into(),
-                Exp::Var(LocalIdent::dbg(loc, vdi).ident()),
-            )
+            (source_name.clone().into(), Exp::Var(LocalIdent::dbg(loc, vdi).ident()))
         })
         .collect()
 }

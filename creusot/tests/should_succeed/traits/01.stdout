@@ -10,21 +10,27 @@ module Type
   use floating_point.Double
   use prelude.Prelude
 end
+module Core_Marker_Sized
+  type self   
+end
 module C01_A
   type self   
   type b   
   val from_b (x : self) : b
 end
-module Core_Marker_Sized
-  type self   
+module C01_UsesGeneric_Interface
+  type t   
+  use mach.int.Int
+  use mach.int.UInt32
+  val uses_generic (b : t) : uint32
 end
 module C01_UsesGeneric
   type t   
   use mach.int.Int
   use mach.int.UInt32
-  clone C01_A as A0 with type self = t
-  clone Core_Marker_Sized as Sized1 with type self = t
   clone C01_A as A2 with type self = t
+  clone C01_A as A1 with type self = t
+  clone Core_Marker_Sized as Sized0 with type self = t
   let rec cfg uses_generic (b : t) : uint32 = 
   var _0 : uint32;
   var b_1 : t;
@@ -36,7 +42,7 @@ module C01_UsesGeneric
   BB0 {
     assume { (fun x -> true) _2 };
     _2 <- b_1;
-    _0 <- A0.from_b _2;
+    _0 <- A2.from_b _2;
     goto BB1
   }
   BB1 {
@@ -46,6 +52,9 @@ module C01_UsesGeneric
     return _0
   }
   
+end
+module C01_Main_Interface
+  val main () : ()
 end
 module C01_Main
   let rec cfg main () : () = 

@@ -8,8 +8,8 @@ use why3::mlcfg::{
 };
 use why3::mlcfg::{Pattern::*, Statement::*};
 
-use crate::ctx::translate_value_id;
 use super::FunctionTranslator;
+use crate::ctx::translate_value_id;
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     pub fn translate_rplace(&mut self, rhs: &Place<'tcx>) -> Exp {
@@ -119,10 +119,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                         let variant = &def.variants[variant_id];
                         let var_size = variant.fields.len();
 
-                        let field_pats = ('a'..)
-                            .map(|c| VarP(c.to_string().into()))
-                            .take(var_size)
-                            .collect();
+                        let field_pats =
+                            ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
                         let mut varexps: Vec<Exp> =
                             ('a'..).map(|c| Var(c.to_string().into())).take(var_size).collect();
 
@@ -139,10 +137,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                     TyKind::Tuple(fields) => {
                         let var_size = fields.len();
 
-                        let field_pats = ('a'..)
-                            .map(|c| VarP(c.to_string().into()))
-                            .take(var_size)
-                            .collect();
+                        let field_pats =
+                            ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
                         let mut varexps: Vec<Exp> =
                             ('a'..).map(|c| Var(c.to_string().into())).take(var_size).collect();
 

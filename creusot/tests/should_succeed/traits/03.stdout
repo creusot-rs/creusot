@@ -14,6 +14,12 @@ module CreusotContracts_Builtins_Resolve
   type self   
   predicate resolve (self : self)
 end
+module C03_Impl0_F_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Prelude
+  val f (self : int32) : int32
+end
 module C03_Impl0_F
   use mach.int.Int
   use mach.int.Int32
@@ -32,6 +38,12 @@ module C03_Impl0_F
     return _0
   }
   
+end
+module C03_Impl1_G_Interface
+  use mach.int.Int
+  use mach.int.UInt32
+  use prelude.Prelude
+  val g (self : uint32) : uint32
 end
 module C03_Impl1_G
   use mach.int.Int
@@ -55,11 +67,16 @@ end
 module Core_Marker_Sized
   type self   
 end
+module C03_Impl2_H_Interface
+  type g   
+  use prelude.Prelude
+  val h (y : g) : g
+end
 module C03_Impl2_H
   type g   
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = g
-  clone Core_Marker_Sized as Sized1 with type self = g
+  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = g
+  clone Core_Marker_Sized as Sized0 with type self = g
   let rec cfg h (y : g) : g = 
   var _0 : g;
   var y_1 : g;
@@ -68,9 +85,9 @@ module C03_Impl2_H
     goto BB0
   }
   BB0 {
-    assume { Resolve0.resolve _0 };
+    assume { Resolve1.resolve _0 };
     _0 <- y_1;
-    assume { Resolve0.resolve y_1 };
+    assume { Resolve1.resolve y_1 };
     return _0
   }
   
@@ -83,13 +100,13 @@ end
 module C03_Impl0
   use mach.int.Int
   use mach.int.Int32
-  clone C03_Impl0_F as F0
+  clone C03_Impl0_F_Interface as F0
   clone C03_A with type self = int32, val f = F0.f
 end
 module C03_B
   type self   
-  use prelude.Prelude
   clone Core_Marker_Sized as Sized0 with type self = self
+  use prelude.Prelude
   val g (self : self) : self
     ensures { result = result }
     
@@ -97,18 +114,18 @@ end
 module C03_Impl1
   use mach.int.Int
   use mach.int.UInt32
-  clone C03_Impl1_G as G0
+  clone C03_Impl1_G_Interface as G0
   clone C03_B with type self = uint32, val g = G0.g
 end
 module C03_C
   type self   
-  use prelude.Prelude
   type t   
+  use prelude.Prelude
   val h (x : t) : t
 end
 module C03_Impl2
   use mach.int.Int
   use mach.int.UInt32
-  clone C03_Impl2_H as H0
+  clone C03_Impl2_H_Interface as H0
   clone C03_C with type self = uint32, type t = H0.g, val h = H0.h
 end

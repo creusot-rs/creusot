@@ -2,9 +2,11 @@ use crate::ctx::*;
 use crate::translation::ty;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{DefIdTree, TyCtxt};
+use rustc_span::Symbol;
 use why3::{
     declaration::Signature,
     mlcfg::{Constant, Exp},
+    Ident,
 };
 
 pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {
@@ -47,6 +49,15 @@ pub fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
         .is_some()
 }
 
+pub fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
+    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "predicate"])
+        .is_some()
+}
+
+pub fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
+    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "logic"]).is_some()
+}
+
 pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     loop {
         if is_no_translate(tcx, def_id) {
@@ -61,15 +72,57 @@ pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     }
 }
 
+pub(crate) fn method_name(tcx: TyCtxt, def_id: DefId) -> Ident {
+    ident_of(tcx.item_name(def_id))
+}
+
+pub fn ident_of(id: Symbol) -> Ident {
+    Ident::build(&id.as_str().to_lowercase())
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ItemType {
+    Logic,
+    Predicate,
+    Program,
+    Trait,
+    Impl,
+    Type,
+    Interface,
+}
+
+impl ItemType {
+    pub fn clone_interfaces(&self) -> bool {
+        use ItemType::*;
+        matches!(self, Logic | Predicate | Type | Interface)
+    }
+}
+
+pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
+    match tcx.def_kind(def_id) {
+        DefKind::Trait => ItemType::Trait,
+        DefKind::Impl => ItemType::Impl,
+        DefKind::Fn | DefKind::AssocFn => {
+            if is_predicate(tcx, def_id) {
+                ItemType::Predicate
+            } else if is_logic(tcx, def_id) {
+                ItemType::Logic
+            } else {
+                ItemType::Program
+            }
+        }
+        _ => todo!(),
+    }
+}
+
 pub fn signature_of<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Signature {
-    let sig = ctx.tcx.normalize_erasing_late_bound_regions(
-        ctx.tcx.param_env(def_id),
-        ctx.tcx.fn_sig(def_id),
-    );
+    let sig = ctx
+        .tcx
+        .normalize_erasing_late_bound_regions(ctx.tcx.param_env(def_id), ctx.tcx.fn_sig(def_id));
 
     let pre_contract = crate::specification::contract_of(ctx.tcx, def_id).unwrap();
 

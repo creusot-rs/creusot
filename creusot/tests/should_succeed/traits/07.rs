@@ -1,4 +1,3 @@
-// WHY3SKIP
 trait Ix {
 	type Tgt;
 	fn ix(&self) -> Self::Tgt;

@@ -33,7 +33,7 @@ pub fn translate_function<'tcx, 'sess>(
     ctx: &mut TranslationCtx<'sess, 'tcx>,
     def_id: DefId,
 ) -> Module {
-    let mut names = CloneMap::new(tcx);
+    let mut names = CloneMap::new(tcx, ItemType::Program);
     names.clone_self(def_id);
 
     let invariants = specification::gather_invariants(ctx, &mut names, def_id);
@@ -116,6 +116,17 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     }
 
     fn translate(mut self) -> Module {
+        let mut decls: Vec<_> = Vec::new();
+        decls.extend(all_generic_decls_for(self.tcx, self.def_id));
+
+        traits::translate_predicates(
+            self.ctx,
+            &mut self.clone_names,
+            self.tcx.predicates_of(self.def_id),
+        );
+
+        let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
+
         self.translate_body();
         move_invariants_into_loop(&mut self.past_blocks);
 
@@ -137,7 +148,15 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                     None
                 } else {
                     let ident = self.translate_local(loc);
-                    Some((ident, ty::translate_ty(&mut self.ctx, &mut self.clone_names, decl.source_info.span, decl.ty)))
+                    Some((
+                        ident,
+                        ty::translate_ty(
+                            &mut self.ctx,
+                            &mut self.clone_names,
+                            decl.source_info.span,
+                            decl.ty,
+                        ),
+                    ))
                 }
             })
             .collect();
@@ -158,21 +177,17 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 .collect(),
             terminator: Terminator::Goto(BlockId(0)),
         };
-
-        let mut decls: Vec<_> = Vec::new();
-        decls.extend(all_generic_decls_for(self.tcx, self.def_id));
-
-        for tp in traits::traits_used_by(self.tcx, self.def_id) {
-            traits::translate_constraint(self.ctx, &mut self.clone_names, tp);
-        }
-
-        let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
         decls.extend(self.clone_names.to_clones(self.ctx));
 
         let name = translate_value_id(self.tcx, self.def_id);
 
         // let sig = Signature { name: name.name.clone().into(), retty: Some(retty), args, contract };
-        decls.push(Decl::FunDecl(CfgFunction { sig, vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(), entry, blocks: self.past_blocks }));
+        decls.push(Decl::FunDecl(CfgFunction {
+            sig,
+            vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(),
+            entry,
+            blocks: self.past_blocks,
+        }));
         Module { name: name.module_name().name, decls }
     }
 
@@ -262,11 +277,15 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             Some(Some(inst)) => {
                 self.ctx.translate_impl(self.tcx.impl_of_method(inst.def_id()).unwrap());
 
-                QVar(self.clone_names.qname_for_mut(inst.def_id(), inst.substs))
+                QVar(
+                    self.clone_names
+                        .insert(inst.def_id(), inst.substs)
+                        .qname(self.tcx, inst.def_id()),
+                )
             }
             _ => {
                 self.ctx.translate_trait(trait_id);
-                QVar(self.clone_names.qname_for_mut(trait_meth_id, subst))
+                QVar(self.clone_names.insert(trait_meth_id, subst).qname(self.tcx, trait_meth_id))
             }
         }
     }
@@ -355,7 +374,9 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     pub fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Exp {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(pl),
-            Operand::Constant(c) => Const(crate::constant::from_mir_constant(self.tcx, &mut self.clone_names, c)),
+            Operand::Constant(c) => {
+                Const(crate::constant::from_mir_constant(self.tcx, &mut self.clone_names, c))
+            }
         }
     }
 

@@ -1,9 +1,10 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, subst::InternalSubsts, ProjectionTy, Ty, TyKind::*};
+use rustc_middle::ty::{self, subst::InternalSubsts, ProjectionTy, Ty, TyCtxt, TyKind::*};
 use rustc_span::Span;
 use rustc_span::Symbol;
 use std::collections::VecDeque;
 use why3::declaration::TyDeclKind;
+use why3::Ident;
 
 use why3::declaration::TyDecl;
 use why3::{mlcfg::Type as MlT, QName};
@@ -110,9 +111,8 @@ pub fn translate_projection_ty(
     pty: &ProjectionTy<'tcx>,
 ) -> MlT {
     ctx.translate_trait(pty.trait_def_id(ctx.tcx));
-    let base = names.name_for_mut(pty.trait_def_id(ctx.tcx), pty.substs);
-    let name = ctx.tcx.item_name(pty.item_def_id).to_string().to_lowercase();
-    MlT::TConstructor(QName { module: vec![base], name })
+    let name = names.insert(pty.item_def_id, pty.substs).qname(ctx.tcx, pty.item_def_id);
+    MlT::TConstructor(name)
 }
 
 use petgraph::algo::tarjan_scc;
@@ -137,7 +137,7 @@ pub fn check_not_mutally_recursive<'tcx>(
         // TODO: Look up a more efficient way of getting this info
         for variant in &def.variants {
             for field in &variant.fields {
-                for ty in field.ty(ctx.tcx, substs).walk() {
+                for ty in field.ty(ctx.tcx, substs).walk(ctx.tcx) {
                     let k = match ty.unpack() {
                         rustc_middle::ty::subst::GenericArgKind::Type(ty) => ty,
                         _ => continue,
@@ -175,6 +175,10 @@ fn translate_ty_param(p: Symbol) -> String {
     p.to_string().to_lowercase()
 }
 
+pub fn ty_name(tcx: TyCtxt, def_id: DefId) -> String {
+    tcx.item_name(def_id).to_string().to_lowercase()
+}
+
 // Translate a Rust type declation to an ML one
 // Rust tuple-like types are translated as one would expect, to product types in WhyML
 // However, Rust struct types are *not* translated to WhyML records, instead we 'forget' the field names
@@ -194,7 +198,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     // TODO: allow mutually recursive types
     check_not_mutally_recursive(ctx, did, span);
 
-    let mut names = CloneMap::new(ctx.tcx);
+    let mut names = CloneMap::new(ctx.tcx, ItemType::Type);
 
     let adt = ctx.tcx.adt_def(did);
     let gens = ctx.tcx.generics_of(did);
@@ -210,6 +214,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
             ty::GenericParamDefKind::Type { .. } => Some(translate_ty_param(param.name)),
             _ => None,
         })
+        .map(Ident::from)
         .collect();
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
@@ -283,7 +288,7 @@ fn uintty_to_ty(names: &mut CloneMap<'tcx>, ity: &rustc_middle::ty::UintTy) -> M
     }
 }
 
-fn floatty_to_ty(names: &mut CloneMap<'_>, fty: &rustc_middle::ty::FloatTy) -> MlT {
+fn floatty_to_ty(_: &mut CloneMap<'_>, fty: &rustc_middle::ty::FloatTy) -> MlT {
     use rustc_middle::ty::FloatTy::*;
 
     match fty {

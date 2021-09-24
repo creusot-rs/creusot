@@ -9,7 +9,7 @@ use why3::mlcfg::{
 };
 
 use super::FunctionTranslator;
-use crate::translation::specification;
+use crate::translation::{binop_to_binop, specification, unop_to_unop};
 
 impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>) {
@@ -52,7 +52,9 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     self.emit_statement(Assume(assumption));
                     self.translate_rplace(pl)
                 }
-                Constant(box c) => Const(crate::constant::from_mir_constant(self.tcx, &mut self.clone_names, c)),
+                Constant(box c) => {
+                    Const(crate::constant::from_mir_constant(self.tcx, &mut self.clone_names, c))
+                }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
                 Shared | Shallow | Unique => self.translate_rplace(&pl),
@@ -66,10 +68,11 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             },
             Rvalue::Discriminant(_) => return,
             Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => BinaryOp(
-                crate::translation::binop_to_binop(*op),
+                binop_to_binop(*op),
                 box self.translate_operand(l),
                 box self.translate_operand(r),
             ),
+            Rvalue::UnaryOp(op, v) => UnaryOp(unop_to_unop(*op), box self.translate_operand(v)),
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
@@ -109,7 +112,6 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     ),
                 }
             }
-            Rvalue::UnaryOp(op, v) => UnaryOp(unop_to_unop(*op), box self.translate_operand(v)),
             Rvalue::Len(pl) => {
                 RecField { record: box self.translate_rplace(&pl), label: "length".into() }
             }
@@ -124,12 +126,5 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         };
 
         self.emit_assignment(place, rval);
-    }
-}
-
-fn unop_to_unop(op: rustc_middle::mir::UnOp) -> why3::mlcfg::UnOp {
-    match op {
-        rustc_middle::mir::UnOp::Not => why3::mlcfg::UnOp::Not,
-        rustc_middle::mir::UnOp::Neg => why3::mlcfg::UnOp::Neg,
     }
 }

@@ -1,10 +1,12 @@
-use rustc_hir::{def_id::DefId, Constness};
+use rustc_hir::def_id::DefId;
 use rustc_middle::traits::Reveal;
 use rustc_middle::ty::{
     // fold::BoundVarsCollector,
     subst::SubstsRef,
     AssocKind,
     Binder,
+    BoundConstness,
+    GenericPredicates,
     Instance,
     ParamEnv,
     PredicateKind,
@@ -23,8 +25,8 @@ use why3::{
 use crate::ctx;
 
 use crate::ctx::*;
-use crate::translation::ty;
-use crate::util::is_contract;
+use crate::translation::ty::{self, translate_ty};
+use crate::util::{ident_of, is_contract};
 
 use rustc_resolve::Namespace;
 
@@ -35,7 +37,8 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             return;
         }
 
-        let mut names = CloneMap::new(self.tcx);
+        let mut names = CloneMap::new(self.tcx, ItemType::Trait);
+        names.clone_self(def_id);
 
         // The first predicate is a trait reference so we skip it
         for super_trait in traits_used_by(self.tcx, def_id).filter(|t| t.def_id() != def_id) {
@@ -43,7 +46,10 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             translate_constraint(self, &mut names, super_trait);
         }
 
-        let mut trait_decls = Vec::new();
+        let mut decls: Vec<_> = Vec::new();
+        decls.extend(own_generic_decls_for(self.tcx, def_id));
+        decls.extend(names.to_clones(self));
+
         for item in self.tcx.associated_items(def_id).in_definition_order() {
             match item.kind {
                 AssocKind::Fn => {
@@ -53,23 +59,28 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
                     let mut sig = crate::util::signature_of(self, &mut names, item.def_id);
 
-                    trait_decls.extend(crate::translation::function::own_generic_decls_for(
+                    decls.extend(crate::translation::function::own_generic_decls_for(
                         self.tcx,
                         item.def_id,
                     ));
 
-                    if crate::is_predicate(self.tcx, item.def_id) {
-                        sig.retty = None;
-                        trait_decls.push(Decl::ValDecl(Predicate { sig }));
-                    } else {
-                        trait_decls.push(Decl::ValDecl(Val { sig }));
+                    decls.extend(names.to_clones(self));
+                    match crate::util::item_type(self.tcx, item.def_id) {
+                        ItemType::Logic => decls.push(Decl::ValDecl(Function { sig })),
+                        ItemType::Predicate => {
+                            sig.retty = None;
+                            decls.push(Decl::ValDecl(Predicate { sig }));
+                        }
+                        ItemType::Program => {
+                            decls.push(Decl::ValDecl(Val { sig }));
+                        }
+                        _ => unreachable!(),
                     }
                 }
                 AssocKind::Type => {
-                    let ty_name: why3::Ident =
-                        self.tcx.item_name(item.def_id).to_string().to_lowercase().into();
-
-                    trait_decls.push(Decl::TyDecl(TyDecl {
+                    let ty_name: why3::Ident = ty::ty_name(self.tcx, item.def_id).into();
+                    decls.extend(names.to_clones(self));
+                    decls.push(Decl::TyDecl(TyDecl {
                         ty_name,
                         ty_params: Vec::new(),
                         kind: TyDeclKind::Opaque,
@@ -79,14 +90,9 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             }
         }
 
-        let mut decls: Vec<_> = Vec::new();
-        decls.extend(own_generic_decls_for(self.tcx, def_id));
-        decls.extend(names.to_clones(self));
-        decls.extend(trait_decls);
-
         let trait_name = translate_trait_name(self.tcx, def_id);
 
-        self.functions.insert(def_id, Module { name: trait_name.name(), decls });
+        self.add_trait(def_id, Module { name: trait_name.name(), decls });
     }
 
     pub fn translate_impl(&mut self, impl_id: DefId) {
@@ -95,11 +101,11 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         }
 
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
-        let mut names = CloneMap::new(self.tcx);
+        let mut names = CloneMap::new(self.tcx, ItemType::Impl);
 
         self.translate_trait(trait_ref.def_id);
 
-        let mut subst = ctx::type_param_subst(self, &mut names, trait_ref.def_id, trait_ref.substs);
+        let mut subst = ctx::base_subst(self, &mut names, trait_ref.def_id, trait_ref.substs);
 
         let mut assoc_types = Vec::new();
         for assoc in self.tcx.associated_items(impl_id).in_definition_order() {
@@ -108,9 +114,9 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                 AssocKind::Type => {
                     let assoc_ty = self.tcx.type_of(assoc.def_id);
                     // TODO: Clean up translation of names to handle this automatically
-                    let name = assoc.ident.to_string().to_lowercase();
+                    let name = ident_of(assoc.ident.name);
                     assoc_types.push(Decl::TyDecl(TyDecl {
-                        ty_name: name.clone().into(),
+                        ty_name: name.clone(),
                         ty_params: Vec::new(),
                         kind: TyDeclKind::Alias(ty::translate_ty(
                             self,
@@ -144,8 +150,44 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         }));
 
         let name = translate_value_id(self.tcx, impl_id);
-        self.functions.insert(impl_id, Module { name: name.name(), decls });
+        self.add_impl(impl_id, Module { name: name.name(), decls });
     }
+}
+
+pub fn translate_predicates(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    preds: GenericPredicates<'tcx>,
+) {
+    for (pred, _) in preds.predicates.iter() {
+        use rustc_middle::ty::PredicateKind::*;
+        match pred.kind().no_bound_vars().unwrap() {
+            Trait(tp) => translate_constraint(ctx, names, tp),
+            Projection(pp) => {
+                let _ty = translate_ty(ctx, names, rustc_span::DUMMY_SP, pp.ty);
+                names
+                    .insert(pp.projection_ty.trait_def_id(ctx.tcx), pp.projection_ty.substs)
+                    .add_projection((pp.projection_ty.item_def_id, pp.ty));
+            }
+            _ => continue,
+        }
+    }
+}
+
+pub fn traits_used_by<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+) -> impl Iterator<Item = TraitPredicate<'tcx>> {
+    let predicates = tcx.predicates_of(def_id);
+
+    predicates.predicates.iter().filter_map(|(pred, _)| {
+        let inner = pred.kind().no_bound_vars().unwrap();
+        use rustc_middle::ty::PredicateKind::*;
+        match inner {
+            Trait(tp) => Some(tp),
+            _ => None,
+        }
+    })
 }
 
 pub fn translate_constraint<'tcx>(
@@ -153,7 +195,7 @@ pub fn translate_constraint<'tcx>(
     names: &mut CloneMap<'tcx>,
     tp: TraitPredicate<'tcx>,
 ) {
-    names.name_for_mut(tp.def_id(), tp.trait_ref.substs);
+    names.insert(tp.def_id(), tp.trait_ref.substs);
 
     // If we haven't seen this trait, first translate it
     ctx.translate_trait(tp.def_id());
@@ -165,14 +207,14 @@ use rustc_middle::ty::AssocItem;
 
 fn translate_assoc_function(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &'a mut CloneMap<'tcx>,
     assoc: &AssocItem,
 ) -> impl Iterator<Item = CloneSubst> + 'tcx {
     let impl_id = ctx.tcx.impl_of_method(assoc.def_id).unwrap();
     let trait_id = ctx.tcx.trait_id_of_impl(impl_id).unwrap();
 
     let assoc_subst = InternalSubsts::identity_for_item(ctx.tcx, impl_id);
-    let name = names.name_for_mut(assoc.def_id, assoc_subst);
+    let name = names.insert(assoc.def_id, assoc_subst).clone();
 
     ctx.translate_function(assoc.def_id);
 
@@ -198,20 +240,20 @@ fn translate_assoc_function(
         .map(move |(tr_param, inst_param)| {
             CloneSubst::Type(
                 (&*tr_param.name.as_str().to_lowercase()).into(),
-                Type::TConstructor(QName {
-                    module: vec![name.clone()],
-                    name: inst_param.name.as_str().to_lowercase(),
-                }),
+                Type::TConstructor(name.qname(tcx, inst_param.def_id)),
             )
         });
 
-    let assoc_method = if crate::is_predicate(ctx.tcx, assoc.def_id) {
+    let assoc_method = if crate::util::is_predicate(ctx.tcx, assoc.def_id) {
         CloneSubst::Predicate(
             assoc.ident.to_string().into(),
-            names.qname_for_mut(assoc.def_id, assoc_subst),
+            names.insert(assoc.def_id, assoc_subst).qname(ctx.tcx, assoc.def_id),
         )
     } else {
-        CloneSubst::Val(assoc.ident.to_string().into(), names.qname_for_mut(assoc.def_id, assoc_subst))
+        CloneSubst::Val(
+            assoc.ident.to_string().into(),
+            names.insert(assoc.def_id, assoc_subst).qname(ctx.tcx, assoc.def_id),
+        )
     };
 
     method_subst.chain(std::iter::once(assoc_method))
@@ -219,22 +261,6 @@ fn translate_assoc_function(
 
 fn translate_trait_name(tcx: TyCtxt<'_>, def_id: DefId) -> QName {
     translate_value_id(tcx, def_id)
-}
-
-pub fn traits_used_by<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-) -> impl Iterator<Item = TraitPredicate<'tcx>> {
-    let predicates = tcx.predicates_of(def_id);
-
-    predicates.predicates.iter().filter_map(|(pred, _)| {
-        let inner = pred.kind().no_bound_vars().unwrap();
-        use rustc_middle::ty::PredicateKind::*;
-        match inner {
-            Trait(tp, _) => Some(tp),
-            _ => None,
-        }
-    })
 }
 
 use crate::rustc_extensions::*;
@@ -260,8 +286,9 @@ pub fn resolve_instance_opt<'tcx>(
 
         let subst = tcx.mk_substs([tcx.mk_param_from_def(param_def)].iter());
         let trait_ref = TraitRef::new(trait_id, subst);
-        let trait_pred = PredicateKind::Trait(TraitPredicate { trait_ref }, Constness::NotConst);
-        let mut bound_vars_collector = BoundVarsCollector::new();
+        let trait_pred =
+            PredicateKind::Trait(TraitPredicate { trait_ref, constness: BoundConstness::NotConst });
+        let mut bound_vars_collector = BoundVarsCollector::new(tcx);
         trait_pred.visit_with(&mut bound_vars_collector);
         let trait_binder = Binder::bind_with_vars(trait_pred, bound_vars_collector.into_vars(tcx));
         Some(tcx.mk_predicate(trait_binder))
