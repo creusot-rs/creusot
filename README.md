@@ -28,6 +28,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
     - [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
 2. Build **Creusot**
     - Run `$ REPO/build`
+      * The current directory should be somewhere in `REPO` to have `cargo` read `REPO/rust-toolchain`.
 3. Set up **Why3**
     - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
     - Specify the [`stackify` branch](https://gitlab.inria.fr/why3/why3/-/tree/stackify) for `why3`: `$ opam pin add why3 https://gitlab.inria.fr/why3/why3.git#stackify`
@@ -49,7 +50,8 @@ By running the following, you can have Creusot turn a Rust program to a MLCFG.
 REPO/mlcfg PATH/TO/PROGRAM.rs -o PATH/TO/OUTPUT.mlcfg
 ```
 If you omit the `-o ...` part, it outputs MLCFG to stdout.
-(The file extension of MLCFG is not relevant to Why3.)
+(Note that the file extension of MLCFG is not relevant to Why3.)
+When you use `mlcfg`, the current directory should be somewhere in `REPO` to have `cargo` read `REPO/rust-toolchain`.
 
 You can play with examples in [creusot/tests/should_succeed](creusot/tests/should_succeed).
 (There we have `*.stdout` files for the MLCFG outputs.)
