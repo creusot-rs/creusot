@@ -16,6 +16,7 @@ enum List {
 }
 use List::*;
 
+// want to have the lemma sum(l) >= 0
 logic! {
     fn sum(l: List) -> Int {
         match l {

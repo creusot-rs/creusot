@@ -14,6 +14,9 @@ module Type
     | IncSomeList_List_Nil
     
 end
+module IncSomeList_Random_Interface
+  val random () : bool
+end
 module IncSomeList_Random
   let rec cfg random () : bool = 
   var _0 : bool;
@@ -25,6 +28,11 @@ module IncSomeList_Random
     return _0
   }
   
+end
+module IncSomeList_Sum_Interface
+  use mach.int.Int
+  use Type
+  function sum (l : Type.incsomelist_list) : int
 end
 module IncSomeList_Sum
   use mach.int.Int
@@ -40,21 +48,33 @@ module CreusotContracts_Builtins_Resolve
   type self   
   predicate resolve (self : self)
 end
-module IncSomeList_Sumx
+module IncSomeList_Sumx_Interface
   use mach.int.Int
-  use mach.int.UInt32
   use mach.int.Int32
+  use mach.int.UInt32
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = Type.incsomelist_list
-  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = isize
-  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = uint32
+  clone IncSomeList_Sum_Interface as Sum0
+  val sumx (l : Type.incsomelist_list) : uint32
+    requires {Sum0.sum l <= Int32.to_int (2000000 : int32)}
+    ensures { UInt32.to_int result = Sum0.sum l }
+    
+end
+module IncSomeList_Sumx
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.UInt32
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = Type.incsomelist_list
+  clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = uint32
   clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = uint32
-  clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = Type.incsomelist_list
-  clone IncSomeList_Sum as Sum5
+  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = isize
+  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = Type.incsomelist_list
+  clone IncSomeList_Sum as Sum0
   let rec cfg sumx (l : Type.incsomelist_list) : uint32
-    requires {Sum5.sum l <= Int32.to_int (2000000 : int32)}
-    ensures { UInt32.to_int result = Sum5.sum l }
+    requires {Sum0.sum l <= Int32.to_int (2000000 : int32)}
+    ensures { UInt32.to_int result = Sum0.sum l }
     
    = 
   var _0 : uint32;
@@ -77,29 +97,29 @@ module IncSomeList_Sumx
       end
   }
   BB1 {
-    assume { Resolve1.resolve _2 };
+    assume { Resolve2.resolve _2 };
     goto BB4
   }
   BB2 {
-    assume { Resolve0.resolve l_1 };
-    assume { Resolve1.resolve _2 };
+    assume { Resolve1.resolve l_1 };
+    assume { Resolve2.resolve _2 };
     _0 <- (0 : uint32);
     goto BB6
   }
   BB3 {
-    assume { Resolve0.resolve l_1 };
-    assume { Resolve1.resolve _2 };
+    assume { Resolve1.resolve l_1 };
+    assume { Resolve2.resolve _2 };
     absurd
   }
   BB4 {
     a_3 <- (let Type.IncSomeList_List_Cons(a, _) = l_1 in a);
     l2_4 <- (let Type.IncSomeList_List_Cons(_, a) = l_1 in a);
-    assume { Resolve0.resolve l_1 };
-    assume { Resolve2.resolve _5 };
+    assume { Resolve1.resolve l_1 };
+    assume { Resolve3.resolve _5 };
     _5 <- a_3;
-    assume { Resolve3.resolve a_3 };
+    assume { Resolve4.resolve a_3 };
     _7 <- l2_4;
-    assume { Resolve4.resolve l2_4 };
+    assume { Resolve5.resolve l2_4 };
     _6 <- sumx _7;
     goto BB5
   }
@@ -111,6 +131,11 @@ module IncSomeList_Sumx
     return _0
   }
   
+end
+module CreusotContracts_Builtins_Impl11_Resolve_Interface
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Builtins_Impl11_Resolve
   type t   
@@ -124,22 +149,33 @@ module CreusotContracts_Builtins_Impl11
   clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.resolve
 end
+module IncSomeList_TakeSomeList_Interface
+  use prelude.Prelude
+  use mach.int.Int
+  use mach.int.UInt32
+  use Type
+  clone IncSomeList_Sum_Interface as Sum0
+  val take_some_list (ml : borrowed (Type.incsomelist_list)) : borrowed uint32
+    ensures { UInt32.to_int ( * result) <= Sum0.sum ( * ml) }
+    ensures { Sum0.sum ( * ml) - Sum0.sum ( ^ ml) = UInt32.to_int ( * result) - UInt32.to_int ( ^ result) }
+    
+end
 module IncSomeList_TakeSomeList
   use prelude.Prelude
   use mach.int.Int
   use mach.int.UInt32
   use Type
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t = Type.incsomelist_list
-  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = isize
-  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = ()
-  clone IncSomeList_Random as Random3
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve4 with type t = Type.incsomelist_list
-  clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = bool
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve6 with type t = uint32
-  clone IncSomeList_Sum as Sum7
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve7 with type t = uint32
+  clone CreusotContracts_Builtins_Resolve as Resolve6 with type self = bool
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve5 with type t = Type.incsomelist_list
+  clone IncSomeList_Random_Interface as Random4
+  clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = ()
+  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = isize
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve1 with type t = Type.incsomelist_list
+  clone IncSomeList_Sum as Sum0
   let rec cfg take_some_list (ml : borrowed (Type.incsomelist_list)) : borrowed uint32
-    ensures { UInt32.to_int ( * result) <= Sum7.sum ( * ml) }
-    ensures { Sum7.sum ( * ml) - Sum7.sum ( ^ ml) = UInt32.to_int ( * result) - UInt32.to_int ( ^ result) }
+    ensures { UInt32.to_int ( * result) <= Sum0.sum ( * ml) }
+    ensures { Sum0.sum ( * ml) - Sum0.sum ( ^ ml) = UInt32.to_int ( * result) - UInt32.to_int ( ^ result) }
     
    = 
   var _0 : borrowed uint32;
@@ -170,17 +206,17 @@ module IncSomeList_TakeSomeList
       end
   }
   BB1 {
-    assume { Resolve1.resolve _4 };
+    assume { Resolve2.resolve _4 };
     goto BB4
   }
   BB2 {
-    assume { Resolve0.resolve ml_1 };
-    assume { Resolve1.resolve _4 };
+    assume { Resolve1.resolve ml_1 };
+    assume { Resolve2.resolve _4 };
     goto BB10
   }
   BB3 {
-    assume { Resolve0.resolve ml_1 };
-    assume { Resolve1.resolve _4 };
+    assume { Resolve1.resolve ml_1 };
+    assume { Resolve2.resolve _4 };
     absurd
   }
   BB4 {
@@ -188,8 +224,8 @@ module IncSomeList_TakeSomeList
     ml_1 <- { ml_1 with current = (let Type.IncSomeList_List_Cons(a, b) =  * ml_1 in Type.IncSomeList_List_Cons( ^ ma_5, b)) };
     ml2_6 <- borrow_mut (let Type.IncSomeList_List_Cons(_, a) =  * ml_1 in a);
     ml_1 <- { ml_1 with current = (let Type.IncSomeList_List_Cons(a, b) =  * ml_1 in Type.IncSomeList_List_Cons(a,  ^ ml2_6)) };
-    assume { Resolve0.resolve ml_1 };
-    _9 <- Random3.random ();
+    assume { Resolve1.resolve ml_1 };
+    _9 <- Random4.random ();
     goto BB5
   }
   BB5 {
@@ -200,47 +236,47 @@ module IncSomeList_TakeSomeList
       end
   }
   BB6 {
-    assume { Resolve4.resolve ml2_6 };
-    assume { Resolve5.resolve _9 };
+    assume { Resolve5.resolve ml2_6 };
+    assume { Resolve6.resolve _9 };
     _10 <- borrow_mut ( * ma_5);
     ma_5 <- { ma_5 with current = ( ^ _10) };
-    assume { Resolve6.resolve ma_5 };
+    assume { Resolve7.resolve ma_5 };
     _8 <- borrow_mut ( * _10);
     _10 <- { _10 with current = ( ^ _8) };
-    assume { Resolve6.resolve _10 };
+    assume { Resolve7.resolve _10 };
     goto BB9
   }
   BB7 {
-    assume { Resolve6.resolve ma_5 };
-    assume { Resolve5.resolve _9 };
+    assume { Resolve7.resolve ma_5 };
+    assume { Resolve6.resolve _9 };
     _13 <- borrow_mut ( * ml2_6);
     ml2_6 <- { ml2_6 with current = ( ^ _13) };
-    assume { Resolve4.resolve ml2_6 };
+    assume { Resolve5.resolve ml2_6 };
     _12 <- take_some_list _13;
     goto BB8
   }
   BB8 {
     _11 <- borrow_mut ( * _12);
     _12 <- { _12 with current = ( ^ _11) };
-    assume { Resolve6.resolve _12 };
+    assume { Resolve7.resolve _12 };
     _8 <- borrow_mut ( * _11);
     _11 <- { _11 with current = ( ^ _8) };
-    assume { Resolve6.resolve _11 };
+    assume { Resolve7.resolve _11 };
     goto BB9
   }
   BB9 {
     _7 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _7) };
-    assume { Resolve6.resolve _8 };
+    assume { Resolve7.resolve _8 };
     _3 <- borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ _3) };
-    assume { Resolve6.resolve _7 };
+    assume { Resolve7.resolve _7 };
     _2 <- borrow_mut ( * _3);
     _3 <- { _3 with current = ( ^ _2) };
-    assume { Resolve6.resolve _3 };
+    assume { Resolve7.resolve _3 };
     _0 <- borrow_mut ( * _2);
     _2 <- { _2 with current = ( ^ _0) };
-    assume { Resolve6.resolve _2 };
+    assume { Resolve7.resolve _2 };
     return _0
   }
   BB10 {
@@ -248,15 +284,31 @@ module IncSomeList_TakeSomeList
   }
   BB11 {
     _15 <- ();
-    assume { Resolve2.resolve _15 };
+    assume { Resolve3.resolve _15 };
     goto BB10
   }
   
+end
+module Core_Panicking_Panic_Interface
+  use prelude.Prelude
+  val panic (expr : string) : ()
+    ensures { false }
+    
 end
 module Core_Panicking_Panic
   use prelude.Prelude
   val panic (expr : string) : ()
     ensures { false }
+    
+end
+module IncSomeList_IncSomeList_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.UInt32
+  use Type
+  clone IncSomeList_Sum_Interface as Sum0
+  val inc_some_list (l : Type.incsomelist_list) (k : uint32) : ()
+    requires {Sum0.sum l <= Int32.to_int (1000000 : int32) && k <= (1000000 : uint32)}
     
 end
 module IncSomeList_IncSomeList
@@ -265,19 +317,19 @@ module IncSomeList_IncSomeList
   use mach.int.UInt32
   use Type
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = Type.incsomelist_list
-  clone IncSomeList_Sumx as Sumx1
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve2 with type t = Type.incsomelist_list
-  clone IncSomeList_TakeSomeList as TakeSomeList3
-  clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = uint32
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve5 with type t = uint32
-  clone CreusotContracts_Builtins_Resolve as Resolve6 with type self = bool
-  clone Core_Panicking_Panic as Panic7
-  clone CreusotContracts_Builtins_Resolve as Resolve8 with type self = ()
-  clone CreusotContracts_Builtins_Resolve as Resolve9 with type self = Type.incsomelist_list
-  clone IncSomeList_Sum as Sum10
+  clone CreusotContracts_Builtins_Resolve as Resolve10 with type self = Type.incsomelist_list
+  clone CreusotContracts_Builtins_Resolve as Resolve9 with type self = ()
+  clone Core_Panicking_Panic_Interface as Panic8
+  clone CreusotContracts_Builtins_Resolve as Resolve7 with type self = bool
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve6 with type t = uint32
+  clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = uint32
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve3 with type t = Type.incsomelist_list
+  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = Type.incsomelist_list
+  clone IncSomeList_Sum as Sum0
+  clone IncSomeList_TakeSomeList_Interface as TakeSomeList4 with function Sum0.sum = Sum0.sum
+  clone IncSomeList_Sumx_Interface as Sumx2 with function Sum0.sum = Sum0.sum
   let rec cfg inc_some_list (l : Type.incsomelist_list) (k : uint32) : ()
-    requires {Sum10.sum l <= Int32.to_int (1000000 : int32) && k <= (1000000 : uint32)}
+    requires {Sum0.sum l <= Int32.to_int (1000000 : int32) && k <= (1000000 : uint32)}
     
    = 
   var _0 : ();
@@ -308,8 +360,8 @@ module IncSomeList_IncSomeList
   BB0 {
     _5 <- l_1;
     _4 <- _5;
-    assume { Resolve0.resolve _5 };
-    sum0_3 <- Sumx1.sumx _4;
+    assume { Resolve1.resolve _5 };
+    sum0_3 <- Sumx2.sumx _4;
     goto BB1
   }
   BB1 {
@@ -317,29 +369,29 @@ module IncSomeList_IncSomeList
     l_1 <-  ^ _8;
     _7 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _7) };
-    assume { Resolve2.resolve _8 };
-    ma_6 <- TakeSomeList3.take_some_list _7;
+    assume { Resolve3.resolve _8 };
+    ma_6 <- TakeSomeList4.take_some_list _7;
     goto BB2
   }
   BB2 {
-    assume { Resolve4.resolve _9 };
+    assume { Resolve5.resolve _9 };
     _9 <- k_2;
     ma_6 <- { ma_6 with current = ( * ma_6 + _9) };
-    assume { Resolve5.resolve ma_6 };
-    assume { Resolve4.resolve _9 };
+    assume { Resolve6.resolve ma_6 };
+    assume { Resolve5.resolve _9 };
     _15 <- l_1;
     _14 <- _15;
-    assume { Resolve0.resolve _15 };
-    _13 <- Sumx1.sumx _14;
+    assume { Resolve1.resolve _15 };
+    _13 <- Sumx2.sumx _14;
     goto BB3
   }
   BB3 {
-    assume { Resolve4.resolve _17 };
+    assume { Resolve5.resolve _17 };
     _17 <- sum0_3;
-    assume { Resolve4.resolve sum0_3 };
-    assume { Resolve4.resolve _18 };
+    assume { Resolve5.resolve sum0_3 };
+    assume { Resolve5.resolve _18 };
     _18 <- k_2;
-    assume { Resolve4.resolve k_2 };
+    assume { Resolve5.resolve k_2 };
     _16 <- _17 + _18;
     _12 <- _13 = _16;
     _11 <- not _12;
@@ -350,18 +402,18 @@ module IncSomeList_IncSomeList
       end
   }
   BB4 {
-    assume { Resolve6.resolve _11 };
+    assume { Resolve7.resolve _11 };
     absurd
   }
   BB5 {
-    assume { Resolve6.resolve _11 };
+    assume { Resolve7.resolve _11 };
     _10 <- ();
-    assume { Resolve8.resolve _10 };
+    assume { Resolve9.resolve _10 };
     _0 <- ();
     goto BB6
   }
   BB6 {
-    assume { Resolve9.resolve l_1 };
+    assume { Resolve10.resolve l_1 };
     return _0
   }
   
