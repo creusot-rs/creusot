@@ -1,5 +1,6 @@
 use crate::{
     extended_location::*,
+    gather_invariants::GatherInvariants,
     util::{self, signature_of},
 };
 use rustc_hir::def_id::DefId;
@@ -39,13 +40,14 @@ pub fn translate_function<'tcx, 'sess>(
     let mut names = CloneMap::new(tcx, ItemType::Program);
     names.clone_self(def_id);
 
-    let invariants = specification::gather_invariants(ctx, &mut names, def_id);
+    let gather = GatherInvariants::gather(ctx, &mut names, def_id);
     let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
     RemoveFalseEdge { tcx }.visit_body(&mut body);
 
+    let invariants = gather.with_corrected_locations_and_names(tcx, &body);
     let func_translator =
         FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, def_id);
     let module = func_translator.translate();
@@ -79,7 +81,7 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     // Gives a fresh name to every mono-morphization of a function or trait
     clone_names: CloneMap<'tcx>,
 
-    invariants: IndexMap<DefId, Exp>,
+    invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
 }
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
@@ -88,7 +90,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         ctx: &'body mut TranslationCtx<'sess, 'tcx>,
         body: &'body Body<'tcx>,
         clone_names: CloneMap<'tcx>,
-        invariants: IndexMap<DefId, Exp>,
+        invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
         def_id: DefId,
     ) -> Self {
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
@@ -139,7 +141,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         }
 
         self.translate_body();
-        move_invariants_into_loop(&mut self.past_blocks);
 
         let pre_contract = specification::contract_of(self.tcx, self.def_id).unwrap();
         let mut contract =
@@ -206,9 +207,19 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             if bbd.is_cleanup {
                 continue;
             }
+
+            if let Some(invs) = self.invariants.remove(&bb) {
+                let inv_subst = specification::inv_subst(self.body);
+                for (name, mut exp) in invs.into_iter() {
+                    exp.subst(&inv_subst);
+                    self.emit_statement(Invariant(name.to_string(), exp));
+                }
+            }
+
             self.freeze_locals_between_blocks(bb);
 
             let mut loc = bb.start_location();
+
             for statement in &bbd.statements {
                 self.translate_statement(statement);
                 self.freeze_borrows_dying_at(loc);
@@ -440,32 +451,6 @@ impl LocalIdent {
 
 fn resolve_trait_loaded(tcx: TyCtxt) -> bool {
     tcx.get_diagnostic_item(Symbol::intern("creusot_resolve")).is_some()
-}
-
-fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {
-    // CORRECTNESS: We assume that invariants are placed at the end of the block entering into the loop.
-    // This is enforced syntactically at source level using macros, however it could get broken during
-    // compilation.
-    let mut changes = std::collections::HashMap::new();
-    for (_, block) in body.iter_mut() {
-        let (invariants, rest) =
-            block.statements.clone().into_iter().partition(|stmt| matches!(stmt, Invariant(_, _)));
-
-        let _ = std::mem::replace(&mut block.statements, rest);
-        if !invariants.is_empty() {
-            if let mlcfg::Terminator::Goto(tgt) = &block.terminator {
-                changes.insert(*tgt, invariants);
-            } else {
-                panic!("BAD INVARIANT BAD!")
-            }
-        }
-    }
-
-    for (tgt, mut invs) in changes.drain() {
-        let tgt = body.get_mut(&tgt).unwrap();
-        invs.append(&mut tgt.statements);
-        let _ = std::mem::replace(&mut tgt.statements, invs);
-    }
 }
 
 pub fn all_generic_decls_for<'tcx>(

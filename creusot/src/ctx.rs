@@ -109,7 +109,9 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                 match assoc.container {
                     AssocItemContainer::TraitContainer(id) => self.translate(id),
                     AssocItemContainer::ImplContainer(id) => {
-                        self.translate(self.tcx.trait_id_of_impl(id).unwrap())
+                        if let Some(trait_id) = self.tcx.trait_id_of_impl(id) {
+                            self.translate(trait_id)
+                        }
                     }
                 }
             }

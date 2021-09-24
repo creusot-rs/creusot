@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use crate::ctx::*;
 use crate::translation::specification;
-use indexmap::IndexMap;
 use rustc_middle::ty::Attributes;
 use rustc_span::Symbol;
 use why3::declaration::Contract;
@@ -45,30 +44,6 @@ pub fn ensures_to_why<'tcx>(
     log::debug!("ensures clause {:?}", ens_id);
     let term = specification::typing::typecheck(ctx.tcx, ens_id.expect_local());
     lower_term_to_why3(ctx, names, ens_id, term)
-}
-
-use rustc_middle::ty::WithOptConstParam;
-use rustc_mir_build::thir::visit::Visitor;
-
-pub fn gather_invariants<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
-    base_id: DefId,
-) -> IndexMap<DefId, Exp> {
-    let (thir, expr) = ctx.tcx.thir_body(WithOptConstParam::unknown(base_id.expect_local()));
-    let thir = &thir.borrow();
-
-    let mut visitor = crate::closure_gatherer::ClosureGatherer::new(thir);
-    visitor.visit_expr(&thir[expr]);
-    visitor
-        .closures
-        .into_iter()
-        .map(|clos| {
-            let term = specification::typing::typecheck(ctx.tcx, clos.expect_local());
-            let exp = lower_term_to_why3(ctx, names, clos, term);
-            (clos, exp)
-        })
-        .collect()
 }
 
 // Turn a typing context into a substition.

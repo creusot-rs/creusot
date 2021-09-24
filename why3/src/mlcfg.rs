@@ -57,6 +57,10 @@ impl Terminator {
             _ => {}
         }
     }
+
+    pub fn is_goto(&self) -> bool {
+        matches!(self, Self::Goto(..))
+    }
 }
 
 #[derive(Debug, Clone)]

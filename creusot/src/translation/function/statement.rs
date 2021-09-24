@@ -9,7 +9,10 @@ use why3::mlcfg::{
 };
 
 use super::FunctionTranslator;
-use crate::translation::{binop_to_binop, specification, unop_to_unop};
+use crate::{
+    translation::{binop_to_binop, unop_to_unop},
+    util,
+};
 
 impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>) {
@@ -86,21 +89,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                         Constructor { ctor: qname, args: fields }
                     }
                     Closure(def_id, _) => {
-                        if let Some(mut inv) = self.invariants.remove(def_id) {
-                            let invariant = specification::get_attr(
-                                self.tcx.get_attrs(*def_id),
-                                &["creusot", "spec", "invariant"],
-                            )
-                            .unwrap();
-
-                            let subst = specification::inv_subst(self.body);
-                            inv.subst(&subst);
-
-                            let name =
-                                specification::ts_to_symbol(invariant.args.inner_tokens()).unwrap();
-
-                            self.emit_statement(Invariant(name.to_string(), inv));
-
+                        if util::is_invariant(self.tcx, *def_id) {
                             return;
                         } else {
                             self.ctx.crash_and_error(si.span, "closures are not yet supported")
