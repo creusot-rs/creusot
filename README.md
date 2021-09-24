@@ -44,11 +44,11 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 
 Creusot can translate the Rust programs into a language supported by Why3, called MLCFG (a call flow graph for ML, more specifically WhyML).
 
-By running the following, you can have Creusot turn a Rust program to a MLCFG.
+By running the following, you can have Creusot turn a Rust program to an MLCFG.
 ```
-REPO/mlcfg PATH/TO/PROGRAM.rs -o PATH/TO/OUTPUT.mlcfg
+REPO/mlcfg PATH/TO/PROGRAM.rs > PATH/TO/OUTPUT.mlcfg
 ```
-If you omit the `-o ...` part, it outputs MLCFG to stdout.
+The `REPO/mlcfg` command outputs an MLCFG to stdout.
 (The file extension of MLCFG is not relevant to Why3.)
 
 You can play with examples in [creusot/tests/should_succeed](creusot/tests/should_succeed).
