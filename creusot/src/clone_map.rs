@@ -416,7 +416,7 @@ impl TypeVisitor<'tcx> for ProjectionTyVisitor<'a, 'tcx> {
 
     fn visit_ty(&mut self, t: Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
         if let TyKind::Projection(t) = t.kind() {
-             (*self.f)(*t)
+            (*self.f)(*t)
         }
         ControlFlow::CONTINUE
     }
