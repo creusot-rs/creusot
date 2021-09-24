@@ -1,4 +1,7 @@
-use crate::{extended_location::*, util::signature_of};
+use crate::{
+    extended_location::*,
+    util::{self, signature_of},
+};
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
@@ -126,6 +129,14 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         );
 
         let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
+        let name = translate_value_id(self.tcx, self.def_id);
+
+        decls.extend(self.clone_names.to_clones(self.ctx));
+
+        if util::is_trusted(self.tcx, self.def_id) {
+            decls.push(Decl::ValDecl(ValKind::Val { sig }));
+            return Module { name: name.module_name().name, decls };
+        }
 
         self.translate_body();
         move_invariants_into_loop(&mut self.past_blocks);
@@ -178,8 +189,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             terminator: Terminator::Goto(BlockId(0)),
         };
         decls.extend(self.clone_names.to_clones(self.ctx));
-
-        let name = translate_value_id(self.tcx, self.def_id);
 
         // let sig = Signature { name: name.name.clone().into(), retty: Some(retty), args, contract };
         decls.push(Decl::FunDecl(CfgFunction {
