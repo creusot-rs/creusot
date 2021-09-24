@@ -42,7 +42,7 @@ impl GatherInvariants {
                     &["creusot", "spec", "invariant"],
                 )
                 .unwrap();
-                let name = specification::ts_to_symbol(invariant.args.inner_tokens()).unwrap();
+                let name = util::ts_to_symbol(invariant.args.inner_tokens()).unwrap();
 
                 (clos, (name, exp))
             })
