@@ -1,6 +1,6 @@
 use super::typing::{LogicalOp, Pattern, Term};
 use crate::ctx::*;
-use crate::translation::traits::impl_or_trait;
+use crate::translation::traits::{resolve_assoc_item_opt, resolve_opt};
 use crate::translation::{binop_to_binop, builtins, constant, ty::translate_ty, unop_to_unop};
 use why3::mlcfg::{BinOp, Exp, Pattern as Pat};
 
@@ -38,7 +38,7 @@ pub fn lower_term_to_why3<'tcx>(
             }
 
             let param_env = ctx.tcx.param_env(term_id);
-            let (target, subst) = impl_or_trait(ctx.tcx, param_env, id, subst).unwrap();
+            let (target, subst) = resolve_opt(ctx.tcx, param_env, id, subst).unwrap_or((id, subst));
 
             if is_identity_from(ctx.tcx, id, subst) {
                 return args.remove(0);

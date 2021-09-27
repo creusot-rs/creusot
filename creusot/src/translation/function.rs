@@ -256,7 +256,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         let subst = self.tcx.mk_substs([GenericArg::from(ty)].iter());
 
         let param_env = self.tcx.param_env(self.def_id);
-        let resolve_impl = traits::impl_or_trait(self.tcx, param_env, trait_meth_id, subst);
+        let resolve_impl =
+            traits::resolve_assoc_item_opt(self.tcx, param_env, trait_meth_id, subst);
 
         match resolve_impl {
             Some((id, subst)) => {
