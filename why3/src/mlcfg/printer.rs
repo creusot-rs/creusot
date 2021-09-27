@@ -520,6 +520,11 @@ impl Pretty for Exp {
                 .append(parens!(alloc, env, self, l))
                 .append(" ")
                 .append(parens!(alloc, env, self, r)),
+            Exp::BinaryOp(BinOp::Mod, box l, box r) if env.in_logic => alloc
+                .text("mod ")
+                .append(parens!(alloc, env, self, l))
+                .append(" ")
+                .append(parens!(alloc, env, self, r)),
             Exp::BinaryOp(op, box l, box r) => l
                 .pretty(alloc, env)
                 .append(alloc.space())
@@ -771,6 +776,7 @@ fn bin_op_to_string(op: &BinOp) -> &str {
         Sub => "-",
         Mul => "*",
         Div => "/",
+        Mod => "%",
         Eq => "=",
         Ne => "<>",
         Gt => ">",
