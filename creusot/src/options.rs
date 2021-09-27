@@ -11,6 +11,7 @@ pub struct Options {
     pub export_metadata: bool,
     pub dependency: bool,
     pub output_file: Option<String>,
+    pub bounds_check: bool,
 }
 
 impl Options {
@@ -33,6 +34,8 @@ impl Options {
             None => HashMap::new(),
         };
 
+        let bounds_check = !creusot_unbounded();
+
         Options {
             has_contracts,
             be_rustc,
@@ -42,6 +45,7 @@ impl Options {
             continue_compilation: continue_compiler(),
             metadata_path: creusot_metadata_path(),
             extern_paths,
+            bounds_check,
         }
     }
 }
@@ -59,4 +63,8 @@ fn creusot_metadata_path() -> Option<String> {
 
 fn export_metadata() -> bool {
     std::env::var_os("CREUSOT_EXPORT_METADATA").map(|f| f != "false").unwrap_or(true)
+}
+
+fn creusot_unbounded() -> bool {
+    std::env::var_os("CREUSOT_UNBOUNDED").is_some()
 }

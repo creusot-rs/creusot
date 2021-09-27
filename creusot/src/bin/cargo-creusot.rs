@@ -17,6 +17,7 @@ fn main() {
         (@setting TrailingVarArg)
         (@setting AllowLeadingHyphen)
         (@arg PACKAGE: -p --package [PKG] "package to verify")
+        (@arg unbounded: --unbounded "disable arithmetic bounds checking")
         (@arg flags: ... "cargo flags")
     )
     .get_matches_from(std::env::args().skip(2));
@@ -28,6 +29,10 @@ fn main() {
         .arg("-q")
         .args(std::env::args().skip(2))
         .env("RUSTC_WRAPPER", creusot_rustc_path);
+
+    if matches.is_present("unbounded") {
+        cmd.env("CREUSOT_UNBOUNDED", "1");
+    };
 
     if let Some(tgt) = matches.value_of("pkg") {
         cmd.env("CREUSOT_TARGET", tgt);

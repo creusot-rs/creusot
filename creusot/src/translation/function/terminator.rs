@@ -106,7 +106,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 let rhs = match value {
                     Operand::Move(pl) | Operand::Copy(pl) => self.translate_rplace(pl),
                     Operand::Constant(box c) => Exp::Const(crate::constant::from_mir_constant(
-                        self.tcx,
+                        &mut self.ctx,
                         &mut self.clone_names,
                         c,
                     )),

@@ -11,7 +11,7 @@ pub fn lower_term_to_why3<'tcx>(
     term: Term<'tcx>,
 ) -> Exp {
     match term {
-        Term::Const(c) => Exp::Const(constant::from_mir_constant_kind(ctx.tcx, names, c.into())),
+        Term::Const(c) => Exp::Const(constant::from_mir_constant_kind(ctx, names, c.into())),
         Term::Var(v) => Exp::Var(v.into()),
         Term::Binary { op, box lhs, box rhs } => Exp::BinaryOp(
             binop_to_binop(op),
