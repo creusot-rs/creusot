@@ -136,7 +136,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         if util::is_trusted(self.tcx, self.def_id) {
             decls.push(Decl::ValDecl(ValKind::Val { sig }));
-            return Module { name: name.module_name().name, decls };
+            return Module { name: name.module_name().unwrap().clone(), decls };
         }
 
         self.translate_body();
@@ -164,7 +164,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             entry,
             blocks: self.past_blocks,
         }));
-        Module { name: name.module_name().name, decls }
+        Module { name: name.module_name().unwrap().clone(), decls }
     }
 
     fn translate_body(&mut self) {
@@ -256,7 +256,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         let subst = self.tcx.mk_substs([GenericArg::from(ty)].iter());
 
         let param_env = self.tcx.param_env(self.def_id);
-        let resolve_impl = traits::impl_or_trait(self.tcx, param_env, trait_meth_id, subst);
+        let resolve_impl =
+            traits::resolve_assoc_item_opt(self.tcx, param_env, trait_meth_id, subst);
 
         match resolve_impl {
             Some((id, subst)) => {
