@@ -1,0 +1,45 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module CreusotContracts_Builtins_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module C03Unbounded_NoBoundsCheck_Interface
+  use mach.int.Int
+  val no_bounds_check (x : int) (y : int) : int
+    ensures { result = (4294967294 : int) }
+    
+end
+module C03Unbounded_NoBoundsCheck
+  use mach.int.Int
+  clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = int
+  let rec cfg no_bounds_check (x : int) (y : int) : int
+    ensures { result = (4294967294 : int) }
+    
+   = 
+  var _0 : int;
+  var x_1 : int;
+  var y_2 : int;
+  {
+    x_1 <- x;
+    y_2 <- y;
+    goto BB0
+  }
+  BB0 {
+    _0 <- (2147483647 : int) + (2147483647 : int);
+    assume { Resolve0.resolve x_1 };
+    assume { Resolve0.resolve y_2 };
+    return _0
+  }
+  
+end

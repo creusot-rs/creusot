@@ -1,13 +1,13 @@
 use assert_cmd::prelude::*;
 use std::env;
-use std::path::Path;
-use std::path::PathBuf;
+use std::error::Error;
+use std::fs::File;
+use std::io::{BufRead, BufReader, Write};
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use similar::{ChangeTag, TextDiff};
 
-use std::error::Error;
-use std::io::Write;
 use termcolor::*;
 
 fn main() {
@@ -53,6 +53,12 @@ fn run_creusot(file: &Path, contracts: &str) -> std::process::Command {
     cmd.env("CREUSOT_EXPORT_METADATA", "false");
     cmd.env("CREUSOT_EXTERNS", format!("{{ \"creusot_contracts\": \"{}\" }}", contracts));
     cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path.display())]);
+
+    let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
+
+    if header_line.contains("UNBOUNDED") {
+        cmd.env("CREUSOT_UNBOUNDED", "1");
+    }
 
     let mut dep_path = base_path;
     dep_path.push("deps");

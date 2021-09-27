@@ -356,7 +356,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(pl),
             Operand::Constant(c) => {
-                Const(crate::constant::from_mir_constant(self.tcx, &mut self.clone_names, c))
+                Const(crate::constant::from_mir_constant(&mut self.ctx, &mut self.clone_names, c))
             }
         }
     }
