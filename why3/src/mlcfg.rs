@@ -7,28 +7,6 @@ use serde::{Deserialize, Serialize};
 
 pub mod printer;
 
-pub fn drop_fix() -> QName {
-    QName { module: vec![], name: "drop_fix".into() }
-}
-pub fn drop_uint() -> QName {
-    QName { module: vec![], name: "drop_uint".into() }
-}
-pub fn drop_int() -> QName {
-    QName { module: vec![], name: "drop_int".into() }
-}
-pub fn drop_float() -> QName {
-    QName { module: vec![], name: "drop_float".into() }
-}
-pub fn drop_bool() -> QName {
-    QName { module: vec![], name: "drop_bool".into() }
-}
-pub fn drop_mut_ref() -> QName {
-    QName { module: vec![], name: "drop_mut_ref".into() }
-}
-pub fn drop_ref() -> QName {
-    QName { module: vec![], name: "drop_ref".into() }
-}
-
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Block {
