@@ -14,6 +14,16 @@ impl PrintEnv {
     pub fn new() -> (BoxAllocator, Self) {
         (BoxAllocator, PrintEnv::default())
     }
+
+    pub fn in_logic<F, T>(&mut self, mut f: F) -> T
+    where
+        F: FnMut(&mut Self) -> T,
+    {
+        let in_logic = std::mem::replace(&mut self.in_logic, true);
+        let res = (f)(self);
+        self.in_logic = in_logic;
+        res
+    }
 }
 
 pub struct PrettyDisplay<'a, A: Pretty>(&'a A);
@@ -185,12 +195,14 @@ impl Pretty for Predicate {
     where
         A::Doc: Clone,
     {
-        alloc
-            .text("predicate ")
-            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
-            .group()
-            .append(alloc.line())
-            .append(self.body.pretty(alloc, env).indent(2))
+        env.in_logic(|env| {
+            alloc
+                .text("predicate ")
+                .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
+                .group()
+                .append(alloc.line())
+                .append(self.body.pretty(alloc, env).indent(2))
+        })
     }
 }
 
@@ -223,13 +235,14 @@ impl Pretty for Logic {
     where
         A::Doc: Clone,
     {
-        alloc
-            // TODO: this should be function...
-            .text("function ")
-            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
-            .group()
-            .append(alloc.line())
-            .append(self.body.pretty(alloc, env).indent(2))
+        env.in_logic(|env| {
+            alloc
+                .text("function ")
+                .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
+                .group()
+                .append(alloc.line())
+                .append(self.body.pretty(alloc, env).indent(2))
+        })
     }
 }
 
@@ -339,7 +352,7 @@ impl Pretty for Contract {
         A::Doc: Clone,
     {
         let mut doc = alloc.nil();
-        env.in_logic = true;
+        let in_logic = std::mem::replace(&mut env.in_logic, true);
 
         for req in &self.requires {
             doc = doc.append(
@@ -370,7 +383,7 @@ impl Pretty for Contract {
             )
         }
 
-        env.in_logic = false;
+        env.in_logic = in_logic;
         doc
     }
 }
@@ -531,7 +544,6 @@ impl Pretty for Exp {
                 .append(bin_op_to_string(op))
                 .append(alloc.space())
                 .append(r.pretty(alloc, env)),
-
             Exp::Call(box fun, args) => {
                 parens!(alloc, env, self, fun).append(alloc.space()).append(
                     alloc.intersperse(
@@ -613,28 +625,28 @@ impl Pretty for Statement {
                 .append(" <- ")
                 .append(parens!(alloc, env, Precedence::Assign, rhs)),
             Statement::Invariant(nm, e) => {
-                env.in_logic = true;
+                let in_logic = std::mem::replace(&mut env.in_logic, true);
                 let doc =
                     alloc.text("invariant ").append(alloc.text(nm)).append(alloc.space()).append(
                         alloc.space().append(e.pretty(alloc, env)).append(alloc.space()).braces(),
                     );
-                env.in_logic = false;
+                env.in_logic = in_logic;
                 doc
             }
             Statement::Assume(assump) => {
-                env.in_logic = true;
+                let in_logic = std::mem::replace(&mut env.in_logic, true);
                 let doc = alloc.text("assume ").append(
                     alloc.space().append(assump.pretty(alloc, env)).append(alloc.space()).braces(),
                 );
-                env.in_logic = false;
+                env.in_logic = in_logic;
                 doc
             }
             Statement::Assert(assert) => {
-                env.in_logic = true;
+                let in_logic = std::mem::replace(&mut env.in_logic, true);
                 let doc = alloc.text("assert ").append(
                     alloc.space().append(assert.pretty(alloc, env)).append(alloc.space()).braces(),
                 );
-                env.in_logic = false;
+                env.in_logic = in_logic;
                 doc
             }
         }

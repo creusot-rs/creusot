@@ -250,6 +250,7 @@ fn intty_to_ty(names: &mut CloneMap<'_>, ity: &rustc_middle::ty::IntTy) -> MlT {
     match ity {
         Isize => {
             names.import_prelude_module(PreludeModule::Prelude);
+            names.import_prelude_module(PreludeModule::Int64);
             isize_ty()
         }
         I8 => unimplemented!(),
@@ -272,6 +273,7 @@ fn uintty_to_ty(names: &mut CloneMap<'tcx>, ity: &rustc_middle::ty::UintTy) -> M
     match ity {
         Usize => {
             names.import_prelude_module(PreludeModule::Prelude);
+            names.import_prelude_module(PreludeModule::UInt64);
             usize_ty()
         }
         U8 => unimplemented!(),
