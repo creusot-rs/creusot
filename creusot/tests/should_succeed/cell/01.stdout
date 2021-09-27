@@ -1,0 +1,183 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type c01_even  = 
+    | C01_Even
+    
+  type core_marker_phantomdata 't = 
+    | Core_Marker_PhantomData
+    
+  type core_cell_unsafecell 't = 
+    | Core_Cell_UnsafeCell('t)
+    
+  type core_cell_cell 't = 
+    | Core_Cell_Cell(core_cell_unsafecell 't)
+    
+  type c01_cell 't 'i = 
+    | C01_Cell(core_cell_cell 't, core_marker_phantomdata 'i)
+    
+end
+module Core_Marker_Sized
+  type self   
+end
+module C01_Inv
+  type self   
+  type t   
+  clone Core_Marker_Sized as Sized0 with type self = t
+  predicate inv (x : t)
+end
+module C01_Impl0_Get_Interface
+  type t   
+  type i   
+  use prelude.Prelude
+  use Type
+  clone C01_Inv as Inv0 with type self = i, type t = t
+  val get (self : Type.c01_cell t i) : t
+    ensures { Inv0.inv result }
+    
+end
+module C01_Impl0_Get
+  type t   
+  type i   
+  use prelude.Prelude
+  use Type
+  clone C01_Inv as Inv0 with type self = i, type t = t
+  val get (self : Type.c01_cell t i) : t
+    ensures { Inv0.inv result }
+    
+end
+module C01_Impl0_Set_Interface
+  type t   
+  type i   
+  use prelude.Prelude
+  use Type
+  clone C01_Inv as Inv0 with type self = i, type t = t
+  val set (self : Type.c01_cell t i) (v : t) : ()
+    requires {Inv0.inv v}
+    
+end
+module C01_Impl0_Set
+  type t   
+  type i   
+  use prelude.Prelude
+  use Type
+  clone C01_Inv as Inv0 with type self = i, type t = t
+  val set (self : Type.c01_cell t i) (v : t) : ()
+    requires {Inv0.inv v}
+    
+end
+module C01_Impl1_Inv_Interface
+  use mach.int.Int
+  use mach.int.UInt32
+  predicate inv (x : uint32)
+end
+module C01_Impl1_Inv
+  use mach.int.Int
+  use mach.int.UInt32
+  predicate inv (x : uint32) = 
+    mod x (2 : uint32) = (0 : uint32)
+end
+module CreusotContracts_Builtins_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module C01_Impl1
+  use Type
+  use mach.int.Int
+  use mach.int.UInt32
+  clone export C01_Impl1_Inv
+  clone C01_Inv with type self = Type.c01_even, type t = uint32, predicate inv = inv
+end
+module C01_AddsTwo_Interface
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  use mach.int.UInt32
+  val adds_two (c : Type.c01_cell uint32 (Type.c01_even)) : ()
+end
+module C01_AddsTwo
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  use mach.int.UInt32
+  clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = Type.c01_cell uint32 (Type.c01_even)
+  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = bool
+  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = uint32
+  clone C01_Impl1 as Inv5
+  clone C01_Impl0_Set_Interface as Set4 with type t = uint32, type i = Type.c01_even, predicate Inv0.inv = Inv5.inv
+  clone C01_Impl0_Get_Interface as Get0 with type t = uint32, type i = Type.c01_even, predicate Inv0.inv = Inv5.inv
+  let rec cfg adds_two (c : Type.c01_cell uint32 (Type.c01_even)) : () = 
+  var _0 : ();
+  var c_1 : Type.c01_cell uint32 (Type.c01_even);
+  var v_2 : uint32;
+  var _3 : Type.c01_cell uint32 (Type.c01_even);
+  var _4 : bool;
+  var _5 : uint32;
+  var _6 : ();
+  var _7 : Type.c01_cell uint32 (Type.c01_even);
+  var _8 : uint32;
+  var _9 : uint32;
+  var _10 : ();
+  var _11 : Type.c01_cell uint32 (Type.c01_even);
+  {
+    c_1 <- c;
+    goto BB0
+  }
+  BB0 {
+    _3 <- c_1;
+    v_2 <- Get0.get _3;
+    goto BB1
+  }
+  BB1 {
+    assume { Resolve1.resolve _5 };
+    _5 <- v_2;
+    _4 <- _5 < (100000 : uint32);
+    switch (_4)
+      | False -> goto BB3
+      | True -> goto BB2
+      | _ -> goto BB2
+      end
+  }
+  BB2 {
+    assume { Resolve2.resolve _4 };
+    _7 <- c_1;
+    assume { Resolve3.resolve c_1 };
+    assume { Resolve1.resolve _9 };
+    _9 <- v_2;
+    assume { Resolve1.resolve v_2 };
+    _8 <- _9 + (2 : uint32);
+    _6 <- Set4.set _7 _8;
+    goto BB4
+  }
+  BB3 {
+    assume { Resolve1.resolve v_2 };
+    assume { Resolve2.resolve _4 };
+    _11 <- c_1;
+    assume { Resolve3.resolve c_1 };
+    _10 <- Set4.set _11 (0 : uint32);
+    goto BB5
+  }
+  BB4 {
+    assume { Resolve3.resolve _7 };
+    assume { Resolve1.resolve _8 };
+    _0 <- ();
+    goto BB6
+  }
+  BB5 {
+    assume { Resolve3.resolve _11 };
+    _0 <- ();
+    goto BB6
+  }
+  BB6 {
+    return _0
+  }
+  
+end
