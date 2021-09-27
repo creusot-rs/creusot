@@ -116,6 +116,15 @@ impl Div<Int> for Int {
     }
 }
 
+impl Rem<Int> for Int {
+    type Output = Int;
+    #[creusot::spec::no_translate]
+    #[rustc_diagnostic_item = "rem_int"]
+    fn rem(self, _: Int) -> Self {
+        panic!()
+    }
+}
+
 impl Neg for Int {
     type Output = Int;
     #[creusot::spec::no_translate]

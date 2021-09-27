@@ -83,6 +83,7 @@ pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::mlcfg::BinOp {
         mir::BinOp::Gt => BinOp::Gt,
         mir::BinOp::Ge => BinOp::Ge,
         mir::BinOp::Ne => BinOp::Ne,
+        mir::BinOp::Rem => BinOp::Mod,
         _ => unimplemented!("unsupported binary operation: {:?}", op),
     }
 }
