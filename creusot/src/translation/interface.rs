@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use why3::{
     declaration::{Decl, Module, ValKind},
     Ident,
@@ -41,5 +43,5 @@ pub fn interface_for(
 pub fn interface_name(tcx: TyCtxt, def_id: DefId) -> Ident {
     let name = translate_value_id(tcx, def_id);
 
-    format!("{}_Interface", &*name.module_name().name).into()
+    format!("{}_Interface", Cow::from(name.module_name().unwrap())).into()
 }

@@ -24,7 +24,7 @@ fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
-    let name = translate_value_id(ctx.tcx, def_id).module_name().name();
+    let name = translate_value_id(ctx.tcx, def_id).module_name().unwrap().clone();
 
     decls.extend(names.to_clones(ctx));
     decls.push(Decl::ValDecl(Val { sig }));

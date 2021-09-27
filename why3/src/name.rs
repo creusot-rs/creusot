@@ -64,10 +64,8 @@ impl QName {
         self.name.clone()
     }
 
-    pub fn module_name(mut self) -> QName {
-        let name = self.module.pop().unwrap();
-
-        QName { module: self.module, name }
+    pub fn module_name(&self) -> Option<&Ident> {
+        self.module.last()
     }
 
     pub fn from_string(s: &str) -> Option<QName> {
