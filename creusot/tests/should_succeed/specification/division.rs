@@ -8,5 +8,5 @@ use creusot_contracts::*;
 
 #[requires(x != 0u32)]
 fn divide(y: u32, x: u32) -> u32 {
-	y / x
+    y / x
 }
