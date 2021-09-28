@@ -5,11 +5,6 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-/* TODO: use a real random function */
-fn random() -> bool {
-  true
-}
-
 enum Tree {
   Node(Box<Tree>, u32, Box<Tree>),
   Leaf,
@@ -50,9 +45,9 @@ fn take_some_tree(mt: &mut Tree) -> &mut u32 {
     Node(mtl, ma, mtr) => {
       lemma_sum_tree_nonneg(mtl);
       lemma_sum_tree_nonneg(mtr);
-      if random() {
+      if rand::random() {
         ma
-      } else if random() {
+      } else if rand::random() {
         take_some_tree(mtl)
       } else {
         take_some_tree(mtr)

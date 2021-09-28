@@ -5,11 +5,6 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-/* TODO: use a real random function */
-fn random() -> bool {
-  true
-}
-
 enum List {
   Cons(u32, Box<List>),
   Nil,
@@ -45,7 +40,7 @@ fn take_some_list(ml: &mut List) -> &mut u32 {
   match ml {
     Cons(ma, ml2) => {
       lemma_sum_list_nonneg(ml2);
-      if random() {
+      if rand::random() {
         ma
       } else {
         take_some_list(ml2)

@@ -11,3 +11,6 @@ pub mod builtins;
 
 #[cfg(feature = "contracts")]
 pub use builtins::*;
+
+/* re-export the rand crate */
+pub use rand;
