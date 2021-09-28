@@ -117,7 +117,7 @@ while ... { ... }
 ```
 Invariants must have names (for now).
 
-Finally, there is a `variant` expression, which may be useful when defining *logical functions*, whose termination must be proved. You can give it an expression as argument, whose value must strictly decrease (in a known well-founded order) at each recursive call.
+Finally, there is a `variant` clause (sorry, not yet supported), which may be useful when defining *logical functions*, whose termination must be proved. You can give it an expression as argument, whose value must strictly decrease (in a known well-founded order) at each recursive call.
 
 ## Controlling verification
 
@@ -133,13 +133,13 @@ fn the_answer() -> u32 {
 }
 ```
 
-Also, we have the `UNBOUNDED` option.
+Also, we have the *unbounded* mode.
 This lets Creusot model integer types in Rust as unbounded integers in Why3, suppressing integer overflow checks in Why3.
-This option is enabled by adding a comment
-```rust
-// UNBOUNDED
+Currently, this option works only globally, and is enabled by setting the environment variable `CREUSOT_UNBOUNDED` to `1`.
+For example, run `REPO/mlcfg` like the following to use the unbounded mode.
 ```
-at the top of the Rust file you verify.
+CREUSOT_UNBOUNDED=1 REPO/mlcfg PATH/TO/PROGRAM.rs > PATH/TO/OUTPUT.mlcfg
+```
 
 ## Pearlite
 
