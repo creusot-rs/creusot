@@ -34,7 +34,7 @@ fn sum_list_x(l: &List) -> u32 {
   }
 }
 
-#[ensures(sum_list(*ml) - sum_list(^ml) == Int::from(*result) - Int::from(^result))]
+#[ensures(sum_list(^ml) - sum_list(*ml) == Int::from(^result) - Int::from(*result))]
 #[ensures(Int::from(*result) <= sum_list(*ml))]
 fn take_some_list(ml: &mut List) -> &mut u32 {
   match ml {

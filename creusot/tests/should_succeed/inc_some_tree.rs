@@ -38,7 +38,7 @@ fn sum_tree_x(t: &Tree) -> u32 {
   }
 }
 
-#[ensures(sum_tree(*mt) - sum_tree(^mt) == Int::from(*result) - Int::from(^result))]
+#[ensures(sum_tree(^mt) - sum_tree(*mt) == Int::from(^result) - Int::from(*result))]
 #[ensures(Int::from(*result) <= sum_tree(*mt))]
 fn take_some_tree(mt: &mut Tree) -> &mut u32 {
   match mt {
