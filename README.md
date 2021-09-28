@@ -79,20 +79,19 @@ We plan to improve this part of the user experience, but that will have to wait 
 
 # Writing specs in Rust programs
 
-## Using Creusot
+## Using Creusot for your Rust code
 
-First, you will need to depend on the `creusot-contracts` crate. However, since this crate is not published currently. To use it for your own Rust project, you need to either load it as an `extern crate` or include a local copy in your `Cargo.toml`.
-
-To include `creusot-contracts` as an extern crate, add a declaration to your Rust project like the following:
+First, you will need to depend on the `creusot-contracts` crate. However, since this crate is not published currently.
+To use `creusot-contracts` for your own Rust code, the basic way is to load the crate as an `extern crate`.
+You can do that by adding the following declaration to your Rust code:
 ```
 extern crate creusot_contracts;
 use creusot_contracts::*;
 ```
-When you build your Rust code, you should add `creusot-contracts` to the loadpath using the `-L` flag like: `cargo build -L REPO/creusot-contracts`.
 
 :warning: Currently `creusot-contracts` is very unfinished. Using the macros included in this crate may prevent your Rust code from compiling normally. (TODO: implement a pass-through mode for normal compilation) :warning:
 
-For each Rust file you verify with Creusot, you usually need the following settings (attributes) at the head.
+Also, you usually need to specify the following attributes in the Rust file you verify with Creusot.
 ```
 #![feature(register_tool, rustc_attrs)]
 #![register_tool(creusot)]
