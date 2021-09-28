@@ -91,7 +91,7 @@ use creusot_contracts::*;
 
 :warning: Currently `creusot-contracts` is very unfinished. Using the macros included in this crate may prevent your Rust code from compiling normally. (TODO: implement a pass-through mode for normal compilation) :warning:
 
-Also, you usually need to specify the following attributes in the Rust file you verify with Creusot.
+Also, you usually need to add the following settings in each of the Rust files you verify with Creusot.
 ```
 #![feature(register_tool, rustc_attrs)]
 #![register_tool(creusot)]
