@@ -95,7 +95,7 @@ Then compile your code and add `creusot-contracts` to the loadpath using the `-L
 
 ## Kinds of contract expressions
 
-Currently Creusot uses 4 different kinds of contract expressions.
+Currently Creusot uses 4 different kinds of contract expressions: `requires`, `ensures`, `invariant` and `variant`.
 
 The most basic are `requires` and `ensures`, which can be attached to a Rust function declaration like so:
 ```rust
@@ -112,7 +112,29 @@ while ... { ... }
 ```
 Invariants must have names (for now).
 
-Finally, there is a `variant` expression, which may be useful when defining *logical functions*, whose termination must be proved. You can give it an expression as argument, whose values must strictly decrease (in a known well-founded order) at each recursive call.
+Finally, there is a `variant` expression, which may be useful when defining *logical functions*, whose termination must be proved. You can give it an expression as argument, whose value must strictly decrease (in a known well-founded order) at each recursive call.
+
+## Verification controls
+
+We also have features for controlling verification.
+
+First, the `trusted` marker lets Creusot trust the implementation and specs.
+More specifically, you can put `#[trusted]` on a function like the following:
+```rust
+#[trusted]
+#[ensures(result == 42u32)]
+fn the_answer() -> u32 {
+  trusted_super_oracle("the answer to life, the universe and everything")
+}
+```
+
+Also, we have the `UNBOUNDED` option.
+This lets Creusot model integer types in Rust as unbounded integers in Why3, suppressing integer overflow checks in Why3.
+This option is enabled by adding a comment
+```rust
+// UNBOUNDED
+```
+at the top of the Rust file you verify.
 
 ## Pearlite
 
