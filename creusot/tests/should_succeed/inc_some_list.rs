@@ -44,8 +44,8 @@ fn sum_list_x(l: &List) -> u32 {
 fn take_some_list(ml: &mut List) -> &mut u32 {
   match ml {
     Cons(ma, ml2) => {
+      lemma_sum_list_nonneg(ml2);
       if random() {
-        lemma_sum_list_nonneg(ml2);
         ma
       } else {
         take_some_list(ml2)
