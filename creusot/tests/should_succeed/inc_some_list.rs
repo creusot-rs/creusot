@@ -7,22 +7,22 @@ use creusot_contracts::*;
 
 /* TODO: use a real random function */
 fn random() -> bool {
-    true
+  true
 }
 
 enum List {
-    Cons(u32, Box<List>),
-    Nil,
+  Cons(u32, Box<List>),
+  Nil,
 }
 use List::*;
 
 logic! {
-    fn sum_list(l: List) -> Int {
-        match l {
-            Cons(a, l2) => Int::from(a) + sum_list(*l2),
-            Nil => 0,
-        }
+  fn sum_list(l: List) -> Int {
+    match l {
+      Cons(a, l2) => Int::from(a) + sum_list(*l2),
+      Nil => 0,
     }
+  }
 }
 
 /* TODO: prove this lemma */
@@ -33,32 +33,32 @@ fn lemma_sum_list_nonneg(l: &List) {}
 #[requires(sum_list(*l) <= 2_000_000)]
 #[ensures(Int::from(result) == sum_list(*l))]
 fn sum_list_x(l: &List) -> u32 {
-    match l {
-        Cons(a, l2) => *a + sum_list_x(l2),
-        Nil => 0,
-    }
+  match l {
+    Cons(a, l2) => *a + sum_list_x(l2),
+    Nil => 0,
+  }
 }
 
 #[ensures(sum_list(*ml) - sum_list(^ml) == Int::from(*result) - Int::from(^result))]
 #[ensures(Int::from(*result) <= sum_list(*ml))]
 fn take_some_list(ml: &mut List) -> &mut u32 {
-    match ml {
-        Cons(ma, ml2) => {
-            if random() {
-                lemma_sum_list_nonneg(ml2);
-                ma
-            } else {
-                take_some_list(ml2)
-            }
-        }
-        Nil => loop {},
+  match ml {
+    Cons(ma, ml2) => {
+      if random() {
+        lemma_sum_list_nonneg(ml2);
+        ma
+      } else {
+        take_some_list(ml2)
+      }
     }
+    Nil => loop {},
+  }
 }
 
 #[requires(sum_list(l) <= 1_000_000 && k <=1_000_000u32)]
 fn inc_some_list(mut l: List, k: u32) {
-    let sum0 = sum_list_x(&l);
-    let ma = take_some_list(&mut l);
-    *ma += k;
-    assert!(sum_list_x(&l) == sum0 + k);
+  let sum0 = sum_list_x(&l);
+  let ma = take_some_list(&mut l);
+  *ma += k;
+  assert!(sum_list_x(&l) == sum0 + k);
 }
