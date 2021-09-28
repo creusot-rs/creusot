@@ -11,6 +11,7 @@ pub struct Options {
     pub export_metadata: bool,
     pub dependency: bool,
     pub output_file: Option<String>,
+    pub bounds_check: bool,
 }
 
 impl Options {
@@ -24,7 +25,7 @@ impl Options {
 
         // If we're compiling an upstream dependency or we're compiling `creusot_contracts_proc` lets be silent.
         let export_metadata = export_metadata();
-        let dependency = arg_value::arg_value(&args, "--cap-lints", |val| val == "allow").is_some();
+        let dependency = arg_value::arg_value(args, "--cap-lints", |val| val == "allow").is_some();
 
         let output_file = args.iter().position(|a| a == "-o").map(|ix| args[ix + 1].clone());
 
@@ -32,6 +33,8 @@ impl Options {
             Some(val) => from_str(&val).expect("could not parse CREUSOT_EXTERNS"),
             None => HashMap::new(),
         };
+
+        let bounds_check = !creusot_unbounded();
 
         Options {
             has_contracts,
@@ -42,6 +45,7 @@ impl Options {
             continue_compilation: continue_compiler(),
             metadata_path: creusot_metadata_path(),
             extern_paths,
+            bounds_check,
         }
     }
 }
@@ -59,4 +63,8 @@ fn creusot_metadata_path() -> Option<String> {
 
 fn export_metadata() -> bool {
     std::env::var_os("CREUSOT_EXPORT_METADATA").map(|f| f != "false").unwrap_or(true)
+}
+
+fn creusot_unbounded() -> bool {
+    std::env::var_os("CREUSOT_UNBOUNDED").is_some()
 }

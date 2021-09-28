@@ -58,6 +58,10 @@ pub fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
     crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "logic"]).is_some()
 }
 
+pub fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
+    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "trusted"]).is_some()
+}
+
 pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     loop {
         if is_no_translate(tcx, def_id) {
@@ -137,7 +141,7 @@ pub fn signature_of<'tcx>(
 
     Signature {
         // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure
-        name: name.name.into(),
+        name: name.name,
         // TODO: use real span
         retty: Some(ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, sig.output())),
         args: arg_names
@@ -155,4 +159,20 @@ pub fn signature_of<'tcx>(
             .collect(),
         contract,
     }
+}
+
+use rustc_ast::{
+    token::TokenKind::Literal,
+    tokenstream::{TokenStream, TokenTree::*},
+};
+
+pub fn ts_to_symbol(ts: TokenStream) -> Option<Symbol> {
+    assert_eq!(ts.len(), 1);
+
+    if let Token(tok) = ts.trees().next().unwrap() {
+        if let Literal(lit) = tok.kind {
+            return Some(lit.symbol);
+        }
+    }
+    None
 }

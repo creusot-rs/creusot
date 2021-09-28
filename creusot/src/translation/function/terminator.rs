@@ -98,21 +98,21 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             DropAndReplace { target, place, value, .. } => {
                 // Drop
                 let ty = place.ty(self.body, self.tcx).ty;
-                let pl_exp = self.translate_rplace(&place);
+                let pl_exp = self.translate_rplace(place);
                 let assumption: Exp = self.resolve_predicate_of(ty).app_to(pl_exp);
                 self.emit_statement(Statement::Assume(assumption));
 
                 // Assign
                 let rhs = match value {
-                    Operand::Move(pl) | Operand::Copy(pl) => self.translate_rplace(&pl),
+                    Operand::Move(pl) | Operand::Copy(pl) => self.translate_rplace(pl),
                     Operand::Constant(box c) => Exp::Const(crate::constant::from_mir_constant(
-                        self.tcx,
+                        &mut self.ctx,
                         &mut self.clone_names,
                         c,
                     )),
                 };
 
-                self.emit_assignment(&place, rhs);
+                self.emit_assignment(place, rhs);
 
                 self.emit_terminator(mk_goto(*target))
             }

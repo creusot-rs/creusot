@@ -36,7 +36,15 @@ pub fn lookup_builtin(
 
         return Some(Exp::BinaryOp(BinOp::Mul, box l, box r));
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("div_int")) {
-        todo!("lookup_builtin: div_int")
+        let l = args.remove(0);
+        let r = args.remove(0);
+
+        return Some(Exp::BinaryOp(BinOp::Div, box l, box r));
+    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("rem_int")) {
+        let l = args.remove(0);
+        let r = args.remove(0);
+
+        return Some(Exp::BinaryOp(BinOp::Mod, box l, box r));
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("neg_int")) {
         let a = args.remove(0);
 

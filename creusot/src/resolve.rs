@@ -27,21 +27,19 @@ pub struct EagerResolver<'body, 'tcx> {
 impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, body: &'body Body<'tcx>) -> Self {
         let local_init = MaybeInitializedLocals
-            .into_engine(tcx, &body)
+            .into_engine(tcx, body)
             .iterate_to_fixpoint()
-            .into_results_cursor(&body);
+            .into_results_cursor(body);
 
         let local_uninit = MaybeUninitializedLocals
-            .into_engine(tcx, &body)
+            .into_engine(tcx, body)
             .iterate_to_fixpoint()
-            .into_results_cursor(&body);
+            .into_results_cursor(body);
 
         // This is called MaybeLiveLocals because pointers don't keep their referees alive.
         // TODO: Defensive check.
-        let local_live = MaybeLiveLocals
-            .into_engine(tcx, &body)
-            .iterate_to_fixpoint()
-            .into_results_cursor(&body);
+        let local_live =
+            MaybeLiveLocals.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
         let never_live = crate::analysis::NeverLive::for_body(body);
         EagerResolver { local_live, local_init, local_uninit, never_live }
     }

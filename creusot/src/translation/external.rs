@@ -24,7 +24,7 @@ fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
-    let name = translate_value_id(ctx.tcx, def_id).module_name().name();
+    let name = translate_value_id(ctx.tcx, def_id).module_name().unwrap().clone();
 
     decls.extend(names.to_clones(ctx));
     decls.push(Decl::ValDecl(Val { sig }));
@@ -70,7 +70,7 @@ pub fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
 
 pub fn load_exports(ctx: &mut TranslationCtx) {
     let cstore = CStore::from_tcx(ctx.tcx);
-    for cr in external_crates(&ctx) {
+    for cr in external_crates(ctx) {
         ctx.externs.extend(load_crate_creusot_metadata(cstore, &ctx.opts.extern_paths, cr))
     }
 }
@@ -118,7 +118,7 @@ use std::path::PathBuf;
 /// Constructs a path to creusot metadata (if present) using the crate source
 /// We store the metadata in a `.creusot` json file alongside the rest of the build artifacts
 fn crate_creusot_data_path(src: &CrateSource) -> PathBuf {
-    let mut path = src.paths().nth(0).unwrap().clone();
+    let mut path = src.paths().next().unwrap().clone();
     path.set_extension("creusot");
     path
 }

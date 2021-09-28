@@ -18,8 +18,8 @@ use rustc_middle::ty::{
 use heck::CamelCase;
 
 use crate::ctx::{self, *};
-use crate::translation::interface;
 use crate::translation::ty::translate_ty;
+use crate::translation::{interface, traits};
 use crate::util::{self, method_name};
 
 // Prelude modules
@@ -67,26 +67,47 @@ pub struct CloneMap<'tcx> {
     item_type: ItemType,
 
     // Graph which is used to calculate the full clone set
-    clone_graph: DiGraphMap<CloneNode<'tcx>, Option<SubstsRef<'tcx>>>,
+    clone_graph: DiGraphMap<CloneNode<'tcx>, Option<(DefId, SubstsRef<'tcx>)>>,
     // Index of the last cloned entry
     last_cloned: usize,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum Kind {
+    Named(Ident),
+    Hidden,
+    Export,
+    // Use,
+}
+
+#[derive(Clone, Debug)]
 pub struct CloneInfo<'tcx> {
-    name: Ident,
-    hidden: bool,
+    kind: Kind,
     projections: Vec<(DefId, Ty<'tcx>)>,
     cloned: bool,
 }
 
+impl Into<CloneKind> for Kind {
+    fn into(self) -> CloneKind {
+        match self {
+            Kind::Named(i) => CloneKind::Named(i),
+            Kind::Hidden => CloneKind::Bare,
+            Kind::Export => CloneKind::Export,
+        }
+    }
+}
+
 impl CloneInfo<'tcx> {
-    fn from_name(name: String) -> Self {
-        CloneInfo { name: name.into(), hidden: false, projections: Vec::new(), cloned: false }
+    fn from_name(name: Ident) -> Self {
+        CloneInfo { kind: Kind::Named(name), projections: Vec::new(), cloned: false }
     }
 
-    fn hidden(name: Ident) -> Self {
-        CloneInfo { name, hidden: true, projections: Vec::new(), cloned: false }
+    fn hidden() -> Self {
+        CloneInfo { kind: Kind::Hidden, projections: Vec::new(), cloned: false }
+    }
+
+    pub fn mk_export(&mut self) {
+        self.kind = Kind::Export;
     }
 
     pub fn add_projection(&mut self, proj: (DefId, Ty<'tcx>)) {
@@ -99,7 +120,11 @@ impl CloneInfo<'tcx> {
     }
 
     fn qname_raw(&self, method: Ident) -> QName {
-        QName { module: vec![self.name.clone()], name: method }
+        let module = match &self.kind {
+            Kind::Named(name) => vec![name.clone()],
+            _ => Vec::new(),
+        };
+        QName { module, name: method }
     }
 }
 
@@ -124,21 +149,23 @@ impl<'tcx> CloneMap<'tcx> {
             }
         };
 
-        let tcx = self.tcx;
-        let count = &mut self.count;
+        debug!("inserting {:?} {:?}", def_id, subst);
         self.names.entry((def_id, subst)).or_insert_with(|| {
-            let name_base = tcx.item_name(def_id).as_str().to_camel_case();
-            let info = CloneInfo::from_name(format!("{}{}", name_base, count));
-            *count += 1;
+            let base_sym = match util::item_type(self.tcx, def_id) {
+                ItemType::Impl => self.tcx.item_name(self.tcx.trait_id_of_impl(def_id).unwrap()),
+                _ => self.tcx.item_name(def_id),
+            };
+
+            let base: Ident = base_sym.as_str().to_camel_case().into();
+            let info = CloneInfo::from_name(format!("{}{}", &*base, self.count).into());
+            self.count += 1;
             info
         })
     }
 
     pub fn clone_self(&mut self, self_id: DefId) {
-        let mut modl = ctx::translate_value_id(self.tcx, self_id);
-        let clone_name = if modl.module.is_empty() { modl.name } else { modl.module.remove(0) };
         let subst = InternalSubsts::identity_for_item(self.tcx, self_id);
-        self.names.insert((self_id, subst), CloneInfo::hidden(clone_name));
+        self.names.insert((self_id, subst), CloneInfo::hidden());
     }
 
     pub fn import_prelude_module(&mut self, module: PreludeModule) {
@@ -166,7 +193,7 @@ impl<'tcx> CloneMap<'tcx> {
             let (&key, clone_info) = self.names.get_index(i).unwrap();
             i += 1;
 
-            if clone_info.hidden {
+            if clone_info.kind == Kind::Hidden {
                 continue;
             }
 
@@ -193,8 +220,15 @@ impl<'tcx> CloneMap<'tcx> {
             }
 
             for dep in ctx.dependencies(key.0).unwrap_or(&empty).keys() {
-                let orig = dep.1;
+                let orig = dep;
                 let dep = (dep.0, dep.1.subst(self.tcx, key.1));
+
+                let dep = match traits::resolve_opt(ctx.tcx, ctx.tcx.param_env(key.0), dep.0, dep.1)
+                {
+                    Some(dep) => (dep),
+                    None => (dep),
+                };
+
                 self.insert(dep.0, dep.1);
 
                 // Skip reflexive edges
@@ -203,7 +237,7 @@ impl<'tcx> CloneMap<'tcx> {
                 }
 
                 debug!("edge {:?} -> {:?}", dep, key);
-                self.clone_graph.add_edge(dep, key, Some(orig));
+                self.clone_graph.add_edge(dep, key, Some(*orig));
             }
         }
     }
@@ -241,7 +275,7 @@ impl<'tcx> CloneMap<'tcx> {
             }
             self.names[&node].cloned = true;
 
-            if self.names[&node].hidden {
+            if self.names[&node].kind == Kind::Hidden {
                 continue;
             }
 
@@ -255,31 +289,32 @@ impl<'tcx> CloneMap<'tcx> {
                 ));
             }
 
-            let node_clones = ctx.dependencies(def_id).unwrap_or_else(|| &empty);
+            let node_clones = ctx.dependencies(def_id).unwrap_or(&empty);
             for (dep, t, &orig_subst) in self.clone_graph.edges_directed(node, Incoming) {
                 debug!("s={:?} t={:?} e={:?}", dep, t, orig_subst);
-                let prov_info = match orig_subst {
-                    Some(subst) => &node_clones.names[&(dep.0, subst)],
+                let recv_info = match orig_subst {
+                    Some(recv_id) => &node_clones.names[&recv_id],
                     None => continue,
                 };
                 // Grab the symbols from all dependencies
-                let user_info = &self.names[&dep];
+                let caller_info = &self.names[&dep];
                 for sym in exported_symbols(ctx.tcx, dep.0) {
                     let elem = match sym {
-                        SymbolKind::Val(n) => {
-                            CloneSubst::Val(prov_info.qname_raw(n.clone()), user_info.qname_raw(n))
-                        }
+                        SymbolKind::Val(n) => CloneSubst::Val(
+                            recv_info.qname_raw(n.clone()),
+                            caller_info.qname_raw(n),
+                        ),
                         SymbolKind::Type(t) => CloneSubst::Type(
-                            prov_info.qname_raw(t.clone()),
-                            why3::mlcfg::Type::TConstructor(user_info.qname_raw(t)),
+                            recv_info.qname_raw(t.clone()),
+                            why3::mlcfg::Type::TConstructor(caller_info.qname_raw(t)),
                         ),
                         SymbolKind::Function(f) => CloneSubst::Function(
-                            prov_info.qname_raw(f.clone()),
-                            user_info.qname_raw(f),
+                            recv_info.qname_raw(f.clone()),
+                            caller_info.qname_raw(f),
                         ),
                         SymbolKind::Predicate(p) => CloneSubst::Predicate(
-                            prov_info.qname_raw(p.clone()),
-                            user_info.qname_raw(p),
+                            recv_info.qname_raw(p.clone()),
+                            caller_info.qname_raw(p),
                         ),
                     };
                     // If we are in an interface, then we should not attempt to share
@@ -290,16 +325,18 @@ impl<'tcx> CloneMap<'tcx> {
                 }
             }
 
+            ctx.translate(def_id);
+
             decls.push(Decl::Clone(DeclClone {
                 name: cloneable_name(ctx.tcx, def_id, self.item_type.clone_interfaces()),
                 subst: clone_subst,
-                kind: CloneKind::Named(self.names[&node].name.clone()),
+                kind: self.names[&node].kind.clone().into(),
             }));
         }
 
         self.prelude
             .iter_mut()
-            .filter(|(_, v)| **v == false)
+            .filter(|(_, v)| !(**v))
             .map(|(p, v)| {
                 *v = true;
                 p
@@ -350,7 +387,7 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
                 // TODO: this should directly be a function...
                 QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
             } else {
-                qname.module_name()
+                qname.module_name().unwrap().clone().into()
             }
         }
         Interface | Program => {
@@ -413,9 +450,8 @@ impl TypeVisitor<'tcx> for ProjectionTyVisitor<'a, 'tcx> {
     }
 
     fn visit_ty(&mut self, t: Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
-        match t.kind() {
-            TyKind::Projection(t) => (*self.f)(*t),
-            _ => {}
+        if let TyKind::Projection(t) = t.kind() {
+            (*self.f)(*t)
         }
         ControlFlow::CONTINUE
     }

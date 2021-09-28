@@ -91,7 +91,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         // Each level of the translation needs access to the _previous_ value at this nesting level
         // So we track the path from the root as we traverse, which we call the stump.
-        let mut stump: &[_] = lhs.projection.clone();
+        let mut stump: &[_] = lhs.projection;
 
         use rustc_middle::mir::ProjectionElem::*;
 

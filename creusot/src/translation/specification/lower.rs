@@ -1,6 +1,6 @@
 use super::typing::{LogicalOp, Pattern, Term};
 use crate::ctx::*;
-use crate::rustc_extensions;
+use crate::translation::traits::{resolve_assoc_item_opt, resolve_opt};
 use crate::translation::{binop_to_binop, builtins, constant, ty::translate_ty, unop_to_unop};
 use why3::mlcfg::{BinOp, Exp, Pattern as Pat};
 
@@ -11,7 +11,7 @@ pub fn lower_term_to_why3<'tcx>(
     term: Term<'tcx>,
 ) -> Exp {
     match term {
-        Term::Const(c) => Exp::Const(constant::from_mir_constant_kind(ctx.tcx, names, c.into())),
+        Term::Const(c) => Exp::Const(constant::from_mir_constant_kind(ctx, names, c.into())),
         Term::Var(v) => Exp::Var(v.into()),
         Term::Binary { op, box lhs, box rhs } => Exp::BinaryOp(
             binop_to_binop(op),
@@ -37,22 +37,14 @@ pub fn lower_term_to_why3<'tcx>(
                 args = vec![Exp::Tuple(vec![])];
             }
 
-            let params = ctx.tcx.param_env(id);
-
-            let target = match rustc_extensions::resolve_instance(ctx.tcx, params.and((id, subst)))
-            {
-                Ok(Some(inst)) => inst.def_id(),
-                Ok(_) => id,
-                Err(mut err) => {
-                    err.cancel();
-                    id
-                }
-            };
+            let param_env = ctx.tcx.param_env(term_id);
+            let (target, subst) = resolve_opt(ctx.tcx, param_env, id, subst).unwrap_or((id, subst));
 
             if is_identity_from(ctx.tcx, id, subst) {
                 return args.remove(0);
             }
 
+            ctx.translate_function(target);
             builtins::lookup_builtin(ctx, target, &mut args).unwrap_or_else(|| {
                 let clone = names.insert(target, subst);
                 Exp::Call(box Exp::QVar(clone.qname(ctx.tcx, target)), args)
@@ -140,8 +132,15 @@ pub fn lower_pat_to_why3<'tcx>(
 }
 
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
+use rustc_middle::ty::{
+    subst::{Subst, SubstsRef},
+    TyCtxt,
+};
 
 fn is_identity_from<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, subst: SubstsRef<'tcx>) -> bool {
-    tcx.def_path_str(id) == "std::convert::From::from" && subst[0] == subst[1]
+    if tcx.def_path_str(id) == "std::convert::From::from" && subst.len() == 1 {
+        let out_ty = tcx.fn_sig(id).no_bound_vars().unwrap().output();
+        return subst[0].expect_ty() == out_ty.subst(tcx, subst);
+    }
+    false
 }

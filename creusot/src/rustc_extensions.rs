@@ -1,4 +1,1 @@
-mod codegen;
-mod instance;
-
-pub use instance::*;
+pub mod codegen;

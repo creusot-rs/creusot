@@ -1,20 +1,10 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::traits::Reveal;
 use rustc_middle::ty::{
-    // fold::BoundVarsCollector,
-    subst::SubstsRef,
-    AssocKind,
-    Binder,
-    BoundConstness,
-    GenericPredicates,
-    Instance,
-    ParamEnv,
-    PredicateKind,
-    TraitPredicate,
-    TraitRef,
-    TyCtxt,
-    TypeFoldable,
+    subst::SubstsRef, AssocItemContainer::*, AssocKind, GenericPredicates, ParamEnv,
+    ToPolyTraitRef, TraitPredicate, TraitRef, TyCtxt,
 };
+use rustc_trait_selection::traits::ImplSource;
+
 use why3::declaration::{CloneKind, TyDecl, TyDeclKind};
 use why3::{
     declaration::{CloneSubst, Decl, DeclClone, Module, ValKind::*},
@@ -22,7 +12,7 @@ use why3::{
     QName,
 };
 
-use crate::ctx;
+use crate::{ctx, resolve, rustc_extensions};
 
 use crate::ctx::*;
 use crate::translation::ty::{self, translate_ty};
@@ -159,6 +149,7 @@ pub fn translate_predicates(
     names: &mut CloneMap<'tcx>,
     preds: GenericPredicates<'tcx>,
 ) {
+    eprintln!("translate_predicates={:?}", preds);
     for (pred, _) in preds.predicates.iter() {
         use rustc_middle::ty::PredicateKind::*;
         match pred.kind().no_bound_vars().unwrap() {
@@ -174,10 +165,7 @@ pub fn translate_predicates(
     }
 }
 
-pub fn traits_used_by<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-) -> impl Iterator<Item = TraitPredicate<'tcx>> {
+pub fn traits_used_by(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = TraitPredicate> {
     let predicates = tcx.predicates_of(def_id);
 
     predicates.predicates.iter().filter_map(|(pred, _)| {
@@ -214,7 +202,9 @@ fn translate_assoc_function(
     let trait_id = ctx.tcx.trait_id_of_impl(impl_id).unwrap();
 
     let assoc_subst = InternalSubsts::identity_for_item(ctx.tcx, impl_id);
-    let name = names.insert(assoc.def_id, assoc_subst).clone();
+    let name = names.insert(assoc.def_id, assoc_subst);
+    name.mk_export();
+    let name = name.clone();
 
     ctx.translate_function(assoc.def_id);
 
@@ -263,47 +253,107 @@ fn translate_trait_name(tcx: TyCtxt<'_>, def_id: DefId) -> QName {
     translate_value_id(tcx, def_id)
 }
 
-use crate::rustc_extensions::*;
-use rustc_middle::ty::GenericParamDefKind;
-
-// Find the instance that will be used for `trait_meth_id` given the substitution `subst`.
-// If no instance is found (either because it does not exist or is ambiguous) then it returns `Option`.
-pub fn resolve_instance_opt<'tcx>(
+fn resolve_impl_source_opt(
     tcx: TyCtxt<'tcx>,
-    inside_of: DefId,
-    trait_meth_id: DefId,
-    subst: SubstsRef<'tcx>,
-) -> Option<Option<Instance<'tcx>>> {
-    let generics = tcx.generics_of(inside_of);
-    let trait_id =
-        tcx.trait_of_item(trait_meth_id).expect("resolve_instance_opt: expected associated item");
-    let predicates = (0..generics.count()).filter_map(|i| {
-        let param_def = generics.param_at(i, tcx);
-        match param_def.kind {
-            GenericParamDefKind::Lifetime | GenericParamDefKind::Const { .. } => return None,
-            _ => {}
-        };
-
-        let subst = tcx.mk_substs([tcx.mk_param_from_def(param_def)].iter());
-        let trait_ref = TraitRef::new(trait_id, subst);
-        let trait_pred =
-            PredicateKind::Trait(TraitPredicate { trait_ref, constness: BoundConstness::NotConst });
-        let mut bound_vars_collector = BoundVarsCollector::new(tcx);
-        trait_pred.visit_with(&mut bound_vars_collector);
-        let trait_binder = Binder::bind_with_vars(trait_pred, bound_vars_collector.into_vars(tcx));
-        Some(tcx.mk_predicate(trait_binder))
-    });
-
-    let base_predicates = tcx.predicates_of(inside_of).instantiate_identity(tcx).predicates;
-    let predicates = tcx.mk_predicates(base_predicates.into_iter().chain(predicates));
-    let param_env = ParamEnv::new(predicates, Reveal::UserFacing);
-    let inst = resolve_instance(tcx, param_env.and((trait_meth_id, subst)));
-
-    match inst {
-        Err(mut e) => {
-            e.cancel();
-            None
+    param_env: ParamEnv<'tcx>,
+    def_id: DefId,
+    substs: SubstsRef<'tcx>,
+) -> Option<ImplSource<'tcx, ()>> {
+    let trait_ref = if let Some(assoc) = tcx.opt_associated_item(def_id) {
+        match assoc.container {
+            ImplContainer(def_id) => tcx.impl_trait_ref(def_id)?,
+            TraitContainer(def_id) => TraitRef { def_id, substs },
         }
-        Ok(i) => Some(i),
+    } else {
+        if tcx.is_trait(def_id) {
+            TraitRef { def_id, substs }
+        } else {
+            return None;
+        }
+    };
+
+    let trait_ref = trait_ref.to_poly_trait_ref();
+    let source = rustc_extensions::codegen::codegen_fulfill_obligation(tcx, (param_env, trait_ref));
+
+    match source {
+        Ok(src) => Some(src),
+        Err(mut err) => {
+            err.cancel();
+            return None;
+        }
+    }
+}
+
+pub fn resolve_opt(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    def_id: DefId,
+    substs: SubstsRef<'tcx>,
+) -> Option<(DefId, SubstsRef<'tcx>)> {
+    if tcx.is_trait(def_id) {
+        resolve_trait_opt(tcx, param_env, def_id, substs)
+    } else {
+        resolve_assoc_item_opt(tcx, param_env, def_id, substs)
+    }
+}
+
+pub fn resolve_trait_opt(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    def_id: DefId,
+    substs: SubstsRef<'tcx>,
+) -> Option<(DefId, SubstsRef<'tcx>)> {
+    if tcx.is_trait(def_id) {
+        match resolve_impl_source_opt(tcx, param_env, def_id, substs)? {
+            ImplSource::UserDefined(impl_data) => Some((impl_data.impl_def_id, impl_data.substs)),
+            ImplSource::Param(_, _) => Some((def_id, substs)),
+            _ => None,
+        }
+    } else {
+        None
+    }
+}
+
+pub fn resolve_assoc_item_opt(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    def_id: DefId,
+    subst: SubstsRef<'tcx>,
+) -> Option<(DefId, SubstsRef<'tcx>)> {
+    let assoc = tcx.opt_associated_item(def_id)?;
+    let source = resolve_impl_source_opt(tcx, param_env, def_id, subst)?;
+
+    match source {
+        ImplSource::UserDefined(impl_data) => {
+            let trait_def_id = tcx.trait_id_of_impl(impl_data.impl_def_id).unwrap();
+            let trait_def = tcx.trait_def(trait_def_id);
+            // Find the id of the actual associated method we will be running
+            let leaf_def = trait_def
+                .ancestors(tcx, impl_data.impl_def_id)
+                .unwrap()
+                .leaf_def(tcx, assoc.ident, assoc.kind)
+                .unwrap_or_else(|| {
+                    panic!("{:?} not found in {:?}", assoc, impl_data.impl_def_id);
+                });
+            use rustc_trait_selection::infer::TyCtxtInferExt;
+
+            // Translate the original substitution into one on the selected impl method
+            let leaf_substs = tcx.infer_ctxt().enter(|infcx| {
+                let param_env = param_env.with_reveal_all_normalized(tcx);
+                let substs = subst.rebase_onto(tcx, trait_def_id, impl_data.substs);
+                let substs = rustc_trait_selection::traits::translate_substs(
+                    &infcx,
+                    param_env,
+                    impl_data.impl_def_id,
+                    substs,
+                    leaf_def.defining_node,
+                );
+                infcx.tcx.erase_regions(substs)
+            });
+
+            Some((leaf_def.item.def_id, leaf_substs))
+        }
+        ImplSource::Param(_, _) => Some((def_id, subst)),
+        _ => unimplemented!(),
     }
 }

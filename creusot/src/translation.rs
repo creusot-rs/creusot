@@ -40,7 +40,7 @@ pub fn translate(mut ctx: TranslationCtx<'_, '_>) -> Result<()> {
         ctx.translate_function(def_id);
     }
 
-    for (_, impls) in ctx.tcx.all_local_trait_impls(()) {
+    for impls in ctx.tcx.all_local_trait_impls(()).values() {
         for impl_id in impls {
             ctx.translate_impl(impl_id.to_def_id());
         }
@@ -83,6 +83,7 @@ pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::mlcfg::BinOp {
         mir::BinOp::Gt => BinOp::Gt,
         mir::BinOp::Ge => BinOp::Ge,
         mir::BinOp::Ne => BinOp::Ne,
+        mir::BinOp::Rem => BinOp::Mod,
         _ => unimplemented!("unsupported binary operation: {:?}", op),
     }
 }
@@ -133,7 +134,7 @@ where
         name: "Type".into(),
         decls: prelude_imports(false)
             .into_iter()
-            .chain(types.into_iter().flat_map(|ty| [Decl::TyDecl(ty.clone())]))
+            .chain(types.iter().flat_map(|ty| [Decl::TyDecl(ty.clone())]))
             .collect(),
     };
 

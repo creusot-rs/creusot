@@ -9,7 +9,10 @@ use why3::mlcfg::{
 };
 
 use super::FunctionTranslator;
-use crate::translation::{binop_to_binop, specification, unop_to_unop};
+use crate::{
+    translation::{binop_to_binop, unop_to_unop},
+    util,
+};
 
 impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>) {
@@ -47,22 +50,24 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 Move(pl) | Copy(pl) => {
                     // TODO: should this be done for *any* form of assignment?
                     let ty = place.ty(self.body, self.tcx).ty;
-                    let pl_exp = self.translate_rplace(&place);
+                    let pl_exp = self.translate_rplace(place);
                     let assumption: Exp = self.resolve_predicate_of(ty).app_to(pl_exp);
                     self.emit_statement(Assume(assumption));
                     self.translate_rplace(pl)
                 }
-                Constant(box c) => {
-                    Const(crate::constant::from_mir_constant(self.tcx, &mut self.clone_names, c))
-                }
+                Constant(box c) => Const(crate::constant::from_mir_constant(
+                    &mut self.ctx,
+                    &mut self.clone_names,
+                    c,
+                )),
             },
             Rvalue::Ref(_, ss, pl) => match ss {
-                Shared | Shallow | Unique => self.translate_rplace(&pl),
+                Shared | Shallow | Unique => self.translate_rplace(pl),
                 Mut { .. } => {
-                    let borrow = BorrowMut(box self.translate_rplace(&pl));
-                    self.emit_assignment(&place, borrow);
-                    let reassign = Final(box self.translate_rplace(&place));
-                    self.emit_assignment(&pl, reassign);
+                    let borrow = BorrowMut(box self.translate_rplace(pl));
+                    self.emit_assignment(place, borrow);
+                    let reassign = Final(box self.translate_rplace(place));
+                    self.emit_assignment(pl, reassign);
                     return;
                 }
             },
@@ -86,21 +91,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                         Constructor { ctor: qname, args: fields }
                     }
                     Closure(def_id, _) => {
-                        if let Some(mut inv) = self.invariants.remove(def_id) {
-                            let invariant = specification::get_attr(
-                                self.tcx.get_attrs(*def_id),
-                                &["creusot", "spec", "invariant"],
-                            )
-                            .unwrap();
-
-                            let subst = specification::inv_subst(self.body);
-                            inv.subst(&subst);
-
-                            let name =
-                                specification::ts_to_symbol(invariant.args.inner_tokens()).unwrap();
-
-                            self.emit_statement(Invariant(name.to_string(), inv));
-
+                        if util::is_invariant(self.tcx, *def_id) {
                             return;
                         } else {
                             self.ctx.crash_and_error(si.span, "closures are not yet supported")
@@ -113,7 +104,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 }
             }
             Rvalue::Len(pl) => {
-                RecField { record: box self.translate_rplace(&pl), label: "length".into() }
+                RecField { record: box self.translate_rplace(pl), label: "length".into() }
             }
             Rvalue::Cast(_, _, _)
             | Rvalue::NullaryOp(_, _)

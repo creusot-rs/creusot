@@ -1,4 +1,8 @@
-use crate::{extended_location::*, util::signature_of};
+use crate::{
+    extended_location::*,
+    gather_invariants::GatherInvariants,
+    util::{self, signature_of},
+};
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
@@ -15,7 +19,6 @@ use rustc_middle::mir::Place;
 use rustc_middle::ty::subst::GenericArg;
 use rustc_middle::ty::Ty;
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
-use rustc_resolve::Namespace;
 use rustc_span::Symbol;
 
 use indexmap::IndexMap;
@@ -36,17 +39,18 @@ pub fn translate_function<'tcx, 'sess>(
     let mut names = CloneMap::new(tcx, ItemType::Program);
     names.clone_self(def_id);
 
-    let invariants = specification::gather_invariants(ctx, &mut names, def_id);
+    let gather = GatherInvariants::gather(ctx, &mut names, def_id);
     let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
     RemoveFalseEdge { tcx }.visit_body(&mut body);
 
+    let invariants = gather.with_corrected_locations_and_names(tcx, &body);
     let func_translator =
         FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, def_id);
-    let module = func_translator.translate();
-    module
+
+    func_translator.translate()
 }
 use crate::resolve::EagerResolver;
 
@@ -76,7 +80,7 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     // Gives a fresh name to every mono-morphization of a function or trait
     clone_names: CloneMap<'tcx>,
 
-    invariants: IndexMap<DefId, Exp>,
+    invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
 }
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
@@ -85,7 +89,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         ctx: &'body mut TranslationCtx<'sess, 'tcx>,
         body: &'body Body<'tcx>,
         clone_names: CloneMap<'tcx>,
-        invariants: IndexMap<DefId, Exp>,
+        invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
         def_id: DefId,
     ) -> Self {
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
@@ -126,44 +130,19 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         );
 
         let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
+        let name = translate_value_id(self.tcx, self.def_id);
+
+        decls.extend(self.clone_names.to_clones(self.ctx));
+
+        if util::is_trusted(self.tcx, self.def_id) {
+            decls.push(Decl::ValDecl(ValKind::Val { sig }));
+            return Module { name: name.module_name().unwrap().clone(), decls };
+        }
 
         self.translate_body();
-        move_invariants_into_loop(&mut self.past_blocks);
-
-        let pre_contract = specification::contract_of(self.tcx, self.def_id).unwrap();
-        let mut contract =
-            pre_contract.check_and_lower(&mut self.ctx, &mut self.clone_names, self.def_id);
-        let subst = specification::subst_for_arguments(self.body);
-
-        contract.subst(&subst);
-        contract.extend(self.trait_contract().unwrap_or_else(Contract::new));
 
         let arg_count = self.body.arg_count;
-        let vars: Vec<_> = self
-            .body
-            .local_decls
-            .iter_enumerated()
-            .filter_map(|(loc, decl)| {
-                if self.erased_locals.contains(loc) {
-                    None
-                } else {
-                    let ident = self.translate_local(loc);
-                    Some((
-                        ident,
-                        ty::translate_ty(
-                            &mut self.ctx,
-                            &mut self.clone_names,
-                            decl.source_info.span,
-                            decl.ty,
-                        ),
-                    ))
-                }
-            })
-            .collect();
-
-        if self.body.local_decls[0u32.into()].ty.is_never() {
-            contract.ensures.push(Exp::Const(Constant::const_false()));
-        }
+        let vars = self.translate_vars();
 
         let entry = Block {
             statements: vars
@@ -179,16 +158,13 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         };
         decls.extend(self.clone_names.to_clones(self.ctx));
 
-        let name = translate_value_id(self.tcx, self.def_id);
-
-        // let sig = Signature { name: name.name.clone().into(), retty: Some(retty), args, contract };
         decls.push(Decl::FunDecl(CfgFunction {
             sig,
             vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(),
             entry,
             blocks: self.past_blocks,
         }));
-        Module { name: name.module_name().name, decls }
+        Module { name: name.module_name().unwrap().clone(), decls }
     }
 
     fn translate_body(&mut self) {
@@ -197,9 +173,19 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             if bbd.is_cleanup {
                 continue;
             }
+
+            if let Some(invs) = self.invariants.remove(&bb) {
+                let inv_subst = specification::inv_subst(self.body);
+                for (name, mut exp) in invs.into_iter() {
+                    exp.subst(&inv_subst);
+                    self.emit_statement(Invariant(name.to_string(), exp));
+                }
+            }
+
             self.freeze_locals_between_blocks(bb);
 
             let mut loc = bb.start_location();
+
             for statement in &bbd.statements {
                 self.translate_statement(statement);
                 self.freeze_borrows_dying_at(loc);
@@ -218,6 +204,28 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         }
     }
 
+    fn translate_vars(&mut self) -> Vec<(LocalIdent, Type)> {
+        let mut vars = Vec::with_capacity(self.body.local_decls.len());
+
+        for (loc, decl) in self.body.local_decls.iter_enumerated() {
+            if self.erased_locals.contains(loc) {
+                continue;
+            }
+            let ident = self.translate_local(loc);
+            vars.push((
+                ident,
+                ty::translate_ty(
+                    &mut self.ctx,
+                    &mut self.clone_names,
+                    decl.source_info.span,
+                    decl.ty,
+                ),
+            ))
+        }
+
+        vars
+    }
+
     fn emit_statement(&mut self, s: mlcfg::Statement) {
         self.current_block.0.push(s);
     }
@@ -231,30 +239,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: mlcfg::Exp) {
         let assign = self.create_assign(lhs, rhs);
         self.emit_statement(assign);
-    }
-
-    fn trait_contract(&mut self) -> Option<Contract> {
-        let trait_method_item = self
-            .tcx
-            .impl_of_method(self.def_id)
-            .and_then(|impl_id| self.tcx.trait_id_of_impl(impl_id))
-            .and_then(|trait_id| {
-                let assoc = self.tcx.associated_item(self.def_id);
-                self.tcx.associated_items(trait_id).find_by_name_and_namespace(
-                    self.tcx,
-                    assoc.ident,
-                    Namespace::ValueNS,
-                    trait_id,
-                )
-            })?;
-
-        let pre_contract =
-            crate::specification::contract_of(self.ctx.tcx, trait_method_item.def_id).unwrap();
-        Some(pre_contract.check_and_lower(
-            self.ctx,
-            &mut self.clone_names,
-            trait_method_item.def_id,
-        ))
     }
 
     fn resolve_predicate_of(&mut self, ty: Ty<'tcx>) -> Exp {
@@ -271,19 +255,16 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             self.tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
         let subst = self.tcx.mk_substs([GenericArg::from(ty)].iter());
 
-        let instance = traits::resolve_instance_opt(self.tcx, self.def_id, trait_meth_id, subst);
+        let param_env = self.tcx.param_env(self.def_id);
+        let resolve_impl =
+            traits::resolve_assoc_item_opt(self.tcx, param_env, trait_meth_id, subst);
 
-        match instance {
-            Some(Some(inst)) => {
-                self.ctx.translate_impl(self.tcx.impl_of_method(inst.def_id()).unwrap());
-
-                QVar(
-                    self.clone_names
-                        .insert(inst.def_id(), inst.substs)
-                        .qname(self.tcx, inst.def_id()),
-                )
+        match resolve_impl {
+            Some((id, subst)) => {
+                self.ctx.translate(id);
+                QVar(self.clone_names.insert(id, subst).qname(self.tcx, id))
             }
-            _ => {
+            None => {
                 self.ctx.translate_trait(trait_id);
                 QVar(self.clone_names.insert(trait_meth_id, subst).qname(self.tcx, trait_meth_id))
             }
@@ -375,7 +356,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(pl),
             Operand::Constant(c) => {
-                Const(crate::constant::from_mir_constant(self.tcx, &mut self.clone_names, c))
+                Const(crate::constant::from_mir_constant(&mut self.ctx, &mut self.clone_names, c))
             }
         }
     }
@@ -433,46 +414,14 @@ fn resolve_trait_loaded(tcx: TyCtxt) -> bool {
     tcx.get_diagnostic_item(Symbol::intern("creusot_resolve")).is_some()
 }
 
-fn move_invariants_into_loop(body: &mut BTreeMap<BlockId, Block>) {
-    // CORRECTNESS: We assume that invariants are placed at the end of the block entering into the loop.
-    // This is enforced syntactically at source level using macros, however it could get broken during
-    // compilation.
-    let mut changes = std::collections::HashMap::new();
-    for (_, block) in body.iter_mut() {
-        let (invariants, rest) =
-            block.statements.clone().into_iter().partition(|stmt| matches!(stmt, Invariant(_, _)));
-
-        let _ = std::mem::replace(&mut block.statements, rest);
-        if !invariants.is_empty() {
-            if let mlcfg::Terminator::Goto(tgt) = &block.terminator {
-                changes.insert(*tgt, invariants);
-            } else {
-                panic!("BAD INVARIANT BAD!")
-            }
-        }
-    }
-
-    for (tgt, mut invs) in changes.drain() {
-        let tgt = body.get_mut(&tgt).unwrap();
-        invs.append(&mut tgt.statements);
-        let _ = std::mem::replace(&mut tgt.statements, invs);
-    }
-}
-
-pub fn all_generic_decls_for<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-) -> impl Iterator<Item = Decl> + 'tcx {
+pub fn all_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
     let generics = tcx.generics_of(def_id);
 
     generic_decls((0..generics.count()).map(move |i| generics.param_at(i, tcx)))
 }
 
 #[allow(dead_code)]
-pub fn own_generic_decls_for<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-) -> impl Iterator<Item = Decl> + 'tcx {
+pub fn own_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
     let generics = tcx.generics_of(def_id);
     generic_decls(generics.params.iter())
 }

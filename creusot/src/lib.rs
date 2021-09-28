@@ -27,9 +27,9 @@ extern crate log;
 
 mod analysis;
 pub mod clone_map;
-mod closure_gatherer;
 pub mod ctx;
 mod extended_location;
+mod gather_invariants;
 mod resolve;
 mod translation;
 pub mod util;

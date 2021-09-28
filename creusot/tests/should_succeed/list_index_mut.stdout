@@ -33,8 +33,8 @@ module ListIndexMut_Len_Interface
 end
 module ListIndexMut_Len
   use mach.int.Int
-  use mach.int.Int32
   use Type
+  use mach.int.Int32
   function len (l : Type.listindexmut_list) : int = 
     let Type.ListIndexMut_List(_, ls) = l in Int32.to_int (1 : int32) + match (ls) with
       | Type.ListIndexMut_Option_Some(ls) -> len ls
@@ -50,8 +50,8 @@ end
 module ListIndexMut_Get
   use Type
   use mach.int.Int
-  use mach.int.Int32
   use mach.int.UInt32
+  use mach.int.Int32
   function get (l : Type.listindexmut_list) (ix : int) : Type.listindexmut_option uint32 = 
     let Type.ListIndexMut_List(i, ls) = l in match (ix > Int32.to_int (0 : int32)) with
       | False -> Type.ListIndexMut_Option_Some(i)
@@ -65,22 +65,16 @@ module CreusotContracts_Builtins_Resolve
   type self   
   predicate resolve (self : self)
 end
-module CreusotContracts_Builtins_Impl11_Resolve_Interface
+module CreusotContracts_Builtins_Impl12_Resolve_Interface
   type t   
   use prelude.Prelude
   predicate resolve (self : borrowed t)
 end
-module CreusotContracts_Builtins_Impl11_Resolve
+module CreusotContracts_Builtins_Impl12_Resolve
   type t   
   use prelude.Prelude
   predicate resolve (self : borrowed t) = 
      ^ self =  * self
-end
-module CreusotContracts_Builtins_Impl11
-  type t   
-  use prelude.Prelude
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t = t
-  clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = Resolve0.resolve
 end
 module Std_Process_Abort_Interface
   val abort () : ()
@@ -98,6 +92,7 @@ module ListIndexMut_IndexMut_Interface
   use Type
   use prelude.Prelude
   use mach.int.UInt32
+  use mach.int.UInt64
   clone ListIndexMut_Get_Interface as Get1
   clone ListIndexMut_Len_Interface as Len0
   val index_mut (param_l : borrowed (Type.listindexmut_list)) (param_ix : usize) : borrowed uint32
@@ -110,21 +105,22 @@ module ListIndexMut_IndexMut_Interface
 end
 module ListIndexMut_IndexMut
   use mach.int.Int
-  use mach.int.UInt64
   use prelude.Prelude
+  use mach.int.UInt64
   use mach.int.Int32
   use Type
   use mach.int.UInt32
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve9 with type t = uint32
+  clone ListIndexMut_Get as Get1
+  clone ListIndexMut_Len as Len0
+  use mach.int.Int64
+  clone CreusotContracts_Builtins_Impl12_Resolve as Resolve9 with type t = uint32
   clone Std_Process_Abort_Interface as Abort8
   clone CreusotContracts_Builtins_Resolve as Resolve7 with type self = ()
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve6 with type t = Type.listindexmut_list
+  clone CreusotContracts_Builtins_Impl12_Resolve as Resolve6 with type t = Type.listindexmut_list
   clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = isize
   clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = bool
   clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = usize
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve2 with type t = Type.listindexmut_list
-  clone ListIndexMut_Get as Get1
-  clone ListIndexMut_Len as Len0
+  clone CreusotContracts_Builtins_Impl12_Resolve as Resolve2 with type t = Type.listindexmut_list
   let rec cfg index_mut (param_l : borrowed (Type.listindexmut_list)) (param_ix : usize) : borrowed uint32
     requires {UInt64.to_int param_ix < Len0.len ( * param_l)}
     ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * param_l) && i <> UInt64.to_int param_ix -> Get1.get ( * param_l) i = Get1.get ( ^ param_l) i }
@@ -246,6 +242,7 @@ module ListIndexMut_Write_Interface
   use mach.int.Int32
   use Type
   use prelude.Prelude
+  use mach.int.UInt64
   use mach.int.UInt32
   clone ListIndexMut_Get_Interface as Get1
   clone ListIndexMut_Len_Interface as Len0
@@ -261,13 +258,14 @@ module ListIndexMut_Write
   use mach.int.Int32
   use Type
   use prelude.Prelude
+  use mach.int.UInt64
   use mach.int.UInt32
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve6 with type t = uint32
-  clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = usize
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve3 with type t = Type.listindexmut_list
-  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = uint32
   clone ListIndexMut_Get as Get1
   clone ListIndexMut_Len as Len0
+  clone CreusotContracts_Builtins_Impl12_Resolve as Resolve6 with type t = uint32
+  clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = usize
+  clone CreusotContracts_Builtins_Impl12_Resolve as Resolve3 with type t = Type.listindexmut_list
+  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = uint32
   clone ListIndexMut_IndexMut_Interface as IndexMut5 with function Len0.len = Len0.len, function Get1.get = Get1.get
   let rec cfg write (l : borrowed (Type.listindexmut_list)) (ix : usize) (v : uint32) : ()
     requires {UInt64.to_int ix < Len0.len ( * l)}
@@ -313,25 +311,20 @@ module ListIndexMut_Write
   }
   
 end
-module ListIndexMut_Impl0
-  use Type
-  clone ListIndexMut_Impl0_Resolve as Resolve0
-  clone CreusotContracts_Builtins_Resolve with type self = Type.listindexmut_list, predicate resolve = Resolve0.resolve
-end
 module ListIndexMut_Main_Interface
   val main () : ()
 end
 module ListIndexMut_Main
   use mach.int.Int
   use mach.int.UInt32
-  use mach.int.UInt64
   use prelude.Prelude
+  use mach.int.UInt64
   use Type
   clone ListIndexMut_Impl0_Resolve as Resolve2
   clone ListIndexMut_Get as Get4
   clone ListIndexMut_Len as Len3
   clone ListIndexMut_Write_Interface as Write1 with function Len0.len = Len3.len, function Get1.get = Get4.get
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t = Type.listindexmut_list
+  clone CreusotContracts_Builtins_Impl12_Resolve as Resolve0 with type t = Type.listindexmut_list
   let rec cfg main () : () = 
   var _0 : ();
   var l_1 : Type.listindexmut_list;
@@ -381,4 +374,9 @@ module ListIndexMut_Main
     return _0
   }
   
+end
+module ListIndexMut_Impl0
+  use Type
+  clone export ListIndexMut_Impl0_Resolve
+  clone CreusotContracts_Builtins_Resolve with type self = Type.listindexmut_list, predicate resolve = resolve
 end

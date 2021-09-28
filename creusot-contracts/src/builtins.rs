@@ -116,6 +116,15 @@ impl Div<Int> for Int {
     }
 }
 
+impl Rem<Int> for Int {
+    type Output = Int;
+    #[creusot::spec::no_translate]
+    #[rustc_diagnostic_item = "rem_int"]
+    fn rem(self, _: Int) -> Self {
+        panic!()
+    }
+}
+
 impl Neg for Int {
     type Output = Int;
     #[creusot::spec::no_translate]
@@ -136,8 +145,6 @@ pub unsafe trait Resolve {
 unsafe impl<T1: Resolve, T2: Resolve> Resolve for (T1, T2) {
     predicate! { fn resolve(self) -> bool { {
         Resolve::resolve(self.0) && Resolve::resolve(self.1)
-        // TODO: Figure out why `resolve` isn't... resolving in the type checker
-        // p1.resolve() && p2.resolve()
     } }}
 }
 

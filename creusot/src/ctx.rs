@@ -8,11 +8,12 @@ use rustc_errors::DiagnosticId;
 use rustc_hir::def::DefKind;
 use rustc_hir::def_id::DefId;
 use rustc_hir::definitions::DefPathData;
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{AssocItemContainer, TyCtxt};
 use rustc_resolve::Namespace;
 use rustc_session::Session;
 use rustc_span::Span;
 
+use crate::util::item_type;
 use crate::{options::Options, util};
 
 pub use crate::clone_map::*;
@@ -28,7 +29,7 @@ pub struct PolyModule<'tcx> {
 }
 
 impl PolyModule<'tcx> {
-    fn modules(&'a self) -> impl Iterator<Item = &'a Module> {
+    fn modules(&self) -> impl Iterator<Item = &Module> {
         self.interface.as_ref().map(|i| &i.module).into_iter().chain(std::iter::once(&self.body))
     }
 
@@ -70,6 +71,18 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         }
     }
 
+    pub fn translate(&mut self, def_id: DefId) {
+        match item_type(self.tcx, def_id) {
+            ItemType::Trait => self.translate_trait(def_id),
+            ItemType::Impl => self.translate_impl(def_id),
+            ItemType::Logic | ItemType::Predicate | ItemType::Program => {
+                self.translate_function(def_id)
+            }
+            ItemType::Type => unreachable!(),
+            ItemType::Interface => unreachable!(),
+        }
+    }
+
     // Generic entry point for function translation
     pub fn translate_function(&mut self, def_id: DefId) {
         if !self.translated_items.insert(def_id) {
@@ -90,6 +103,19 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
         let (module, deps) = if !def_id.is_local() {
             debug!("translating {:?} as extern", def_id);
+            // HACK to allow using trait methods (ie: resolve) coming from external crates until extern
+            // dependencies are properly fixed in `clone_map`
+            if let Some(assoc) = self.tcx.opt_associated_item(def_id) {
+                match assoc.container {
+                    AssocItemContainer::TraitContainer(id) => self.translate(id),
+                    AssocItemContainer::ImplContainer(id) => {
+                        if let Some(trait_id) = self.tcx.trait_id_of_impl(id) {
+                            self.translate(trait_id)
+                        }
+                    }
+                }
+            }
+
             (crate::translation::translate_extern(self, def_id, span), deps)
         } else if util::is_logic(self.tcx, def_id) {
             debug!("translating {:?} as logic", def_id);
@@ -177,7 +203,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         !self.opts.dependency
     }
 
-    pub fn modules(&'a self) -> impl Iterator<Item = &Module> + 'a + Captures<'tcx> {
+    pub fn modules(&self) -> impl Iterator<Item = &Module> + Captures<'tcx> {
         self.functions.values().flat_map(|m| m.modules())
     }
 }
@@ -198,7 +224,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
     let mut segments = Vec::new();
 
     let mut crate_name = tcx.crate_name(def_id.krate).to_string().to_camel_case();
-    if crate_name.chars().nth(0).unwrap().is_numeric() {
+    if crate_name.chars().next().unwrap().is_numeric() {
         crate_name = format!("C{}", crate_name);
     }
 

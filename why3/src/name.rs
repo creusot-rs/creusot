@@ -32,9 +32,9 @@ impl From<String> for Ident {
     }
 }
 
-impl<'a> Into<Cow<'a, str>> for &'a Ident {
-    fn into(self) -> Cow<'a, str> {
-        (&self.0).into()
+impl<'a> From<&'a Ident> for Cow<'a, str> {
+    fn from(id: &'a Ident) -> Cow<'a, str> {
+        (&id.0).into()
     }
 }
 
@@ -64,10 +64,8 @@ impl QName {
         self.name.clone()
     }
 
-    pub fn module_name(mut self) -> QName {
-        let name = self.module.pop().unwrap();
-
-        QName { module: self.module, name }
+    pub fn module_name(&self) -> Option<&Ident> {
+        self.module.last()
     }
 
     pub fn from_string(s: &str) -> Option<QName> {
@@ -100,7 +98,7 @@ impl From<Ident> for QName {
     }
 }
 
-const RESERVED: &[&'static str] = &[
+const RESERVED: &[&str] = &[
     "abstract",
     "alias",
     "any",
