@@ -8,7 +8,7 @@ use creusot_contracts::*;
 use std::marker::PhantomData;
 
 trait Inv<T> {
-     predicate! { fn inv(x : T) -> bool; }
+    predicate! { fn inv(x : T) -> bool; }
 }
 
 struct Cell<T, I> {
