@@ -8,7 +8,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 #[trusted]
-fn external() {
+fn call_external() {
   println!("Hello world!");
 }
 
