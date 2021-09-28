@@ -25,7 +25,7 @@ logic! {
 #[ensures(sum_list(*l) >= 0)]
 fn lemma_sum_list_nonneg(l: &List) {}
 
-#[requires(sum_list(*l) <= 2_000_000)]
+#[requires(sum_list(*l) <= 1_000_000)]
 #[ensures(Int::from(result) == sum_list(*l))]
 fn sum_list_x(l: &List) -> u32 {
   match l {
@@ -50,7 +50,7 @@ fn take_some_list(ml: &mut List) -> &mut u32 {
   }
 }
 
-#[requires(sum_list(l) <= 1_000_000 && k <=1_000_000u32)]
+#[requires(sum_list(l) + Int::from(k) <= 1_000_000)]
 fn inc_some_list(mut l: List, k: u32) {
   let sum0 = sum_list_x(&l);
   let ma = take_some_list(&mut l);

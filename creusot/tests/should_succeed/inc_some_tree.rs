@@ -25,7 +25,7 @@ logic! {
 #[ensures(sum_tree(*t) >= 0)]
 fn lemma_sum_tree_nonneg(t: &Tree) {}
 
-#[requires(sum_tree(*t) <= 2_000_000)]
+#[requires(sum_tree(*t) <= 1_000_000)]
 #[ensures(Int::from(result) == sum_tree(*t))]
 fn sum_tree_x(t: &Tree) -> u32 {
   match t {
@@ -57,7 +57,7 @@ fn take_some_tree(mt: &mut Tree) -> &mut u32 {
   }
 }
 
-#[requires(sum_tree(t) <= 1_000_000 && k <=1_000_000u32)]
+#[requires(sum_tree(t) + Int::from(k) <= 1_000_000)]
 fn inc_some_tree(mut t: Tree, k: u32) {
   let sum0 = sum_tree_x(&t);
   let ma = take_some_tree(&mut t);
