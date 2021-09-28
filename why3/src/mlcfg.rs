@@ -168,21 +168,46 @@ impl From<Ident> for Exp {
     }
 }
 
+// Precedence ordered from lowest to highest priority
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum Precedence {
-    Closed,
-    Any,
-    Let,
-    Assign,
-    Impl,
-    Or,
-    And,
-    Compare,
-    AddSub,
-    Mul,
-    PrefixOp,
-    Term,
-    Call,
+    IfLet, // if then else / let in
+    // Attr,
+    // Cast,
+    Impl,   // -> / <-> / by / so
+    Disj,   // \/ / ||
+    Conj,   // /\ / &&
+    Not,    // not
+    Infix1, // infix-op level 1 (right-assoc)
+    // AtOld,
+    Infix2, // infix-op level 2 (left-assoc)
+    Infix3, // infix-op level 3 (left-assoc)
+    // Infix4, // infix-op level 4 (left-assoc)
+    Prefix,   // prefix-op
+    Abs,      // Function abstraction
+    App,      // Function application
+    Brackets, // Brackets ([_])
+    Atom,     // Syntactically closed or atomic expressions
+    BangOp,   // !
+}
+
+#[derive(PartialEq, Debug)]
+enum AssocDir {
+    Left,
+    Right,
+}
+
+impl Precedence {
+    pub fn associativity(&self) -> Option<AssocDir> {
+        use Precedence::*;
+        match self {
+            Infix1 => Some(AssocDir::Right),
+            Infix2 | Infix3 => Some(AssocDir::Left),
+            App => Some(AssocDir::Left),
+            Abs => Some(AssocDir::Right),
+            _ => None,
+        }
+    }
 }
 
 impl Exp {
@@ -190,43 +215,44 @@ impl Exp {
         use Precedence::*;
 
         match self {
-            Exp::Current(_) => PrefixOp,
-            Exp::Final(_) => PrefixOp,
-            Exp::Let { .. } => Let,
-            Exp::Abs(_, _) => Let,
-            Exp::Var(_) => Closed,
-            Exp::QVar(_) => Closed,
-            Exp::RecUp { .. } => Term,
-            Exp::RecField { .. } => Any,
-            Exp::Tuple(_) => Closed,
-            Exp::Constructor { .. } => Term,
+            Exp::Current(_) => Prefix,
+            Exp::Final(_) => Prefix,
+            Exp::Let { .. } => IfLet,
+            Exp::Abs(_, _) => Abs,
+            Exp::Var(_) => Atom,
+            Exp::QVar(_) => Atom,
+            Exp::RecUp { .. } => App,
+            // Exp::RecField { .. } => Any,
+            Exp::Tuple(_) => Atom,
+            Exp::Constructor { .. } => App,
             // Exp::Seq(_, _) => { Term }
-            Exp::Match(_, _) => Term,
-            Exp::BorrowMut(_) => Term,
-            Exp::Const(_) => Closed,
-            Exp::UnaryOp(UnOp::Neg, _) => PrefixOp,
-            Exp::UnaryOp(UnOp::Not, _) => Call,
+            Exp::Match(_, _) => Atom,
+            Exp::BorrowMut(_) => App,
+            Exp::Const(_) => Atom,
+            Exp::UnaryOp(UnOp::Neg, _) => Prefix,
+            Exp::UnaryOp(UnOp::Not, _) => BangOp,
             Exp::BinaryOp(op, _, _) => match op {
-                BinOp::And => And,
-                BinOp::Or => Or,
-                BinOp::Add => AddSub,
-                BinOp::Sub => AddSub,
-                BinOp::Mul => Mul,
-                BinOp::Div => Term,
-                BinOp::Mod => Term,
-                BinOp::Eq => Compare,
-                BinOp::Lt => Compare,
-                BinOp::Le => Compare,
-                BinOp::Ne => Compare,
-                BinOp::Ge => Compare,
-                BinOp::Gt => Compare,
+                BinOp::And => Conj,
+                BinOp::Or => Disj,
+                BinOp::Add => Infix2,
+                BinOp::Sub => Infix2,
+                BinOp::Mul => Infix3,
+                BinOp::Div => Infix3,
+                BinOp::Mod => Infix3,
+                BinOp::Eq => Infix1,
+                BinOp::Lt => Infix1,
+                BinOp::Le => Infix1,
+                BinOp::Ne => Infix1,
+                BinOp::Ge => Infix1,
+                BinOp::Gt => Infix1,
             },
-            Exp::Call(_, _) => Call,
-            Exp::Verbatim(_) => Any,
+            Exp::Call(_, _) => App,
+            // Exp::Verbatim(_) => Any,
             Exp::Impl(_, _) => Impl,
-            Exp::Forall(_, _) => Any,
-            Exp::Exists(_, _) => Any,
-            Exp::Absurd => Closed,
+            Exp::Forall(_, _) => IfLet,
+            Exp::Exists(_, _) => IfLet,
+            Exp::Absurd => Atom,
+            _ => unimplemented!("{:?}", self),
         }
     }
 
