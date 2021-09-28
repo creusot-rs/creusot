@@ -4,7 +4,7 @@
 
 # About
 
-Creusot is a tool for *deductive verification* of Rust code. It allows you to annotate your code with specifications, invariants and assertions and then *verify* them formally and automatically, returning a *proof* that your code satisfies the specs.
+**Creusot** is a tool for *deductive verification* of Rust code. It allows you to annotate your code with specifications, invariants and assertions and then *verify* them formally and automatically, returning a *proof* that your code satisfies the specs.
 
 Creusot works by translating Rust code to WhyML, the verification and specification language of [Why3](https://why3.lri.fr). Users can then leverage the full power of Why3 to (semi)-automatically discharge the verification conditions!
 
@@ -79,7 +79,9 @@ We plan to improve this part of the user experience, but that will have to wait 
 
 # Writing specs in Rust programs
 
-## Using the `creusot-contracts` crate
+## Using Creusot for your crate
+
+NOTE: The instructions in this subsection do not apply when you try out Creusot on a standalone file.
 
 First, you will need to depend on the `creusot-contracts` crate. However, since this crate is not published currently. To use it for your own Rust project, you need to either load it as an `extern crate` or include a local copy in your `Cargo.toml`.
 
