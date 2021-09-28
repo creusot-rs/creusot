@@ -4,7 +4,7 @@
 
 # About
 
-Creusot is a tool for *deductive verification* of Rust code. It allows you to annotate your code with specifications, invariants and assertions and then *verify* them formally and automatically, returning a *proof* that your code satisfies the specs.
+**Creusot** is a tool for *deductive verification* of Rust code. It allows you to annotate your code with specifications, invariants and assertions and then *verify* them formally and automatically, returning a *proof* that your code satisfies the specs.
 
 Creusot works by translating Rust code to WhyML, the verification and specification language of [Why3](https://why3.lri.fr). Users can then leverage the full power of Why3 to (semi)-automatically discharge the verification conditions!
 
@@ -79,23 +79,28 @@ We plan to improve this part of the user experience, but that will have to wait 
 
 # Writing specs in Rust programs
 
-## Using the `creusot-contracts` crate
+## Using Creusot for your Rust code
 
-First, you will need to depend on the `creusot-contracts` crate. However, since this crate is not published currently. To use it for your own Rust project, you need to either load it as an `extern crate` or include a local copy in your `Cargo.toml`.
-
-To include `creusot-contracts` as an extern crate, add a declaration to your Rust project like the following:
+First, you will need to depend on the `creusot-contracts` crate. However, since this crate is not published currently.
+To use `creusot-contracts` for your own Rust code, the basic way is to load the crate as an `extern crate`.
+You can do that by adding the following declaration to your Rust code:
 ```
 extern crate creusot_contracts;
 use creusot_contracts::*;
 ```
 
-Then compile your code and add `creusot-contracts` to the loadpath using the `-L` flag like so: `cargo build -L PATH/TO/creusot-contracts`.
-
 :warning: Currently `creusot-contracts` is very unfinished. Using the macros included in this crate may prevent your Rust code from compiling normally. (TODO: implement a pass-through mode for normal compilation) :warning:
+
+Also, you usually need to add the following settings in each of the Rust files you verify with Creusot.
+```
+#![feature(register_tool, rustc_attrs)]
+#![register_tool(creusot)]
+#![feature(proc_macro_hygiene, stmt_expr_attributes)]
+```
 
 ## Kinds of contract expressions
 
-Currently Creusot uses 4 different kinds of contract expressions.
+Currently Creusot uses 4 different kinds of contract expressions: `requires`, `ensures`, `invariant` and `variant`.
 
 The most basic are `requires` and `ensures`, which can be attached to a Rust function declaration like so:
 ```rust
@@ -112,7 +117,29 @@ while ... { ... }
 ```
 Invariants must have names (for now).
 
-Finally, there is a `variant` expression, which may be useful when defining *logical functions*, whose termination must be proved. You can give it an expression as argument, whose values must strictly decrease (in a known well-founded order) at each recursive call.
+Finally, there is a `variant` clause (sorry, not yet supported), which may be useful when defining *logical functions*, whose termination must be proved. You can give it an expression as argument, whose value must strictly decrease (in a known well-founded order) at each recursive call.
+
+## Controlling verification
+
+We also have features for controlling verification.
+
+First, the `trusted` marker lets Creusot trust the implementation and specs.
+More specifically, you can put `#[trusted]` on a function like the following:
+```rust
+#[trusted]
+#[ensures(result == 42u32)]
+fn the_answer() -> u32 {
+  trusted_super_oracle("the answer to life, the universe and everything")
+}
+```
+
+Also, we have the *unbounded* mode.
+This lets Creusot model integer types in Rust as unbounded integers in Why3, suppressing integer overflow checks in Why3.
+Currently, this option works only globally, and is enabled by setting the environment variable `CREUSOT_UNBOUNDED` to `1`.
+For example, run `REPO/mlcfg` like the following to use the unbounded mode.
+```
+CREUSOT_UNBOUNDED=1 REPO/mlcfg PATH/TO/PROGRAM.rs > PATH/TO/OUTPUT.mlcfg
+```
 
 ## Pearlite
 
