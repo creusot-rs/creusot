@@ -91,7 +91,7 @@ pub fn codegen_fulfill_obligation<'tcx>(
             // debug!("fulfill_obligation: register_predicate_obligation {:?}", predicate);
             fulfill_cx.register_predicate_obligation(&infcx, predicate);
         });
-        let impl_source = drain_fulfillment_cx_or_panic(&infcx, &mut fulfill_cx, impl_source);
+        let impl_source = drain_fulfillment_cx_or_panic(&infcx, &mut fulfill_cx, impl_source)?;
 
         // debug!("Cache miss: {:?} => {:?}", trait_ref, impl_source);
         Ok(impl_source)
@@ -113,7 +113,7 @@ fn drain_fulfillment_cx_or_panic<T>(
     infcx: &InferCtxt<'_, 'tcx>,
     fulfill_cx: &mut FulfillmentContext<'tcx>,
     result: T,
-) -> T
+) -> Result<T, DiagnosticBuilder<'tcx>>
 where
     T: TypeFoldable<'tcx>,
 {
@@ -123,12 +123,12 @@ where
     // contains unbound type parameters. It could be a slight
     // optimization to stop iterating early.
     if let Err(errors) = fulfill_cx.select_all_or_error(infcx) {
-        infcx.tcx.sess.delay_span_bug(
+        return Err(infcx.tcx.sess.struct_span_err(
             rustc_span::DUMMY_SP,
             &format!("Encountered errors `{:?}` resolving bounds after type-checking", errors),
-        );
+        ));
     }
 
     let result = infcx.resolve_vars_if_possible(result);
-    infcx.tcx.erase_regions(result)
+    Ok(infcx.tcx.erase_regions(result))
 }
