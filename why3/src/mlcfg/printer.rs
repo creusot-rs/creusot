@@ -55,26 +55,43 @@ pub trait Pretty {
 
 use itertools::*;
 
-// FIXME: Doesn't take into account associativity when deciding when to put parens
+// TODO: replace with functions
 macro_rules! parens {
     ($alloc:ident, $env:ident, $parent:ident, $child:ident) => {
-        if $parent.precedence() > $child.precedence() && $child.precedence() != Precedence::Closed {
-            $child.pretty($alloc, $env).parens()
-        } else if $parent.precedence() == $child.precedence()
-            && $child.precedence() == Precedence::Call
-        {
-            $child.pretty($alloc, $env).parens()
-        } else {
-            $child.pretty($alloc, $env)
-        }
+        parens($alloc, $env, $parent.precedence(), $child)
     };
     ($alloc:ident, $env:ident, $par_prec:expr, $child:ident) => {
-        if $par_prec > $child.precedence() && $child.precedence() != Precedence::Closed {
-            $child.pretty($alloc, $env).parens()
-        } else {
-            $child.pretty($alloc, $env)
-        }
+        parens($alloc, $env, $par_prec, $child)
     };
+}
+
+fn parens<'b, 'a: 'b, A: DocAllocator<'a>>(
+    alloc: &'a A,
+    env: &mut PrintEnv,
+    prec: Precedence,
+    child: &'a Exp,
+) -> DocBuilder<'a, A>
+where
+    A::Doc: Clone,
+{
+    let child_prec = if env.in_logic {
+        match child {
+            Exp::BinaryOp(BinOp::Div, _, _) => Precedence::App,
+            Exp::BinaryOp(BinOp::Mod, _, _) => Precedence::App,
+            _ => child.precedence(),
+        }
+    } else {
+        child.precedence()
+    };
+    if child_prec == Precedence::Atom {
+        child.pretty(alloc, env)
+    } else if child_prec < prec {
+        child.pretty(alloc, env).parens()
+    } else if child_prec == prec && child_prec.associativity() != prec.associativity() {
+        child.pretty(alloc, env).parens()
+    } else {
+        child.pretty(alloc, env)
+    }
 }
 
 impl Pretty for Decl {
@@ -483,8 +500,8 @@ impl Pretty for Exp {
         A::Doc: Clone,
     {
         match self {
-            Exp::Current(box e) => alloc.text(" * ").append(e.pretty(alloc, env)),
-            Exp::Final(box e) => alloc.text(" ^ ").append(e.pretty(alloc, env)),
+            Exp::Current(box e) => alloc.text(" * ").append(parens!(alloc, env, self, e)),
+            Exp::Final(box e) => alloc.text(" ^ ").append(parens!(alloc, env, self, e)),
             // TODO parenthesization
             Exp::Let { pattern, box arg, box body } => alloc
                 .text("let ")
@@ -524,33 +541,32 @@ impl Pretty for Exp {
 
             Exp::Const(c) => c.pretty(alloc, env),
 
-            Exp::UnaryOp(UnOp::Not, box op) => alloc.text("not ").append(op.pretty(alloc, env)),
+            Exp::UnaryOp(UnOp::Not, box op) => {
+                alloc.text("not ").append(parens!(alloc, env, self, op))
+            }
 
             Exp::UnaryOp(UnOp::Neg, box op) => alloc.text("- ").append(op.pretty(alloc, env)),
 
             Exp::BinaryOp(BinOp::Div, box l, box r) if env.in_logic => alloc
                 .text("div ")
-                .append(parens!(alloc, env, self, l))
+                .append(parens!(alloc, env, Precedence::Brackets, l))
                 .append(" ")
-                .append(parens!(alloc, env, self, r)),
+                .append(parens!(alloc, env, Precedence::Brackets, r)),
             Exp::BinaryOp(BinOp::Mod, box l, box r) if env.in_logic => alloc
                 .text("mod ")
-                .append(parens!(alloc, env, self, l))
+                .append(parens!(alloc, env, Precedence::Brackets, l))
                 .append(" ")
-                .append(parens!(alloc, env, self, r)),
-            Exp::BinaryOp(op, box l, box r) => l
-                .pretty(alloc, env)
+                .append(parens!(alloc, env, Precedence::Brackets, r)),
+            Exp::BinaryOp(op, box l, box r) => parens!(alloc, env, self, l)
                 .append(alloc.space())
                 .append(bin_op_to_string(op))
                 .append(alloc.space())
-                .append(r.pretty(alloc, env)),
+                .append(parens!(alloc, env, self, r)),
             Exp::Call(box fun, args) => {
-                parens!(alloc, env, self, fun).append(alloc.space()).append(
-                    alloc.intersperse(
-                        args.iter().map(|a| parens!(alloc, env, self, a)),
-                        alloc.space(),
-                    ),
-                )
+                parens!(alloc, env, self, fun).append(alloc.space()).append(alloc.intersperse(
+                    args.iter().map(|a| parens!(alloc, env, Precedence::Brackets, a)),
+                    alloc.space(),
+                ))
             }
 
             Exp::Verbatim(verb) => alloc.text(verb),
@@ -623,7 +639,7 @@ impl Pretty for Statement {
             Statement::Assign { lhs, rhs } => lhs
                 .pretty(alloc, env)
                 .append(" <- ")
-                .append(parens!(alloc, env, Precedence::Assign, rhs)),
+                .append(parens!(alloc, env, Precedence::Infix1, rhs)),
             Statement::Invariant(nm, e) => {
                 let in_logic = std::mem::replace(&mut env.in_logic, true);
                 let doc =
