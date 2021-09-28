@@ -114,7 +114,7 @@ Invariants must have names (for now).
 
 Finally, there is a `variant` expression, which may be useful when defining *logical functions*, whose termination must be proved. You can give it an expression as argument, whose value must strictly decrease (in a known well-founded order) at each recursive call.
 
-## Verification controls
+## Controlling verification
 
 We also have features for controlling verification.
 
