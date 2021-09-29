@@ -8,7 +8,7 @@ use creusot_contracts::*;
 
 logic! {
     fn reflexive<T : PartialEq>(x : T) -> bool {
-        true == true
+        equal(x, x)
     }
 }
 
