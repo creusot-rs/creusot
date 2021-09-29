@@ -6,5 +6,9 @@ use creusot_contracts::*;
 
 #[ensures(result >= 0u32)]
 fn try_rand() -> u32 {
-    rand::random()
+    if rand::random() {
+        7u32
+    } else {
+        rand::random()
+    }
 }
