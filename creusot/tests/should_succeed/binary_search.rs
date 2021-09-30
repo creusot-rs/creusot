@@ -103,11 +103,11 @@ logic! {
 
 #[requires(len_logic(*arr) <= Int::from(1_000_000))]
 #[requires(is_sorted(*arr))]
-#[ensures(forall<x:usize> equal(result, Ok(x)) -> equal(get(*arr, Int::from(x)), Some(elem)))]
-#[ensures(forall<x:usize> equal(result, Err(x)) ->
-    forall<i:Int> 0 <= i && i < Int::from(x) -> get_default(*arr, i, 0u32) < elem)]
-#[ensures(forall<x:usize> equal(result, Err(x)) ->
-    forall<i:Int> Int::from(x) < i && i < len_logic(*arr) -> elem < get_default(*arr, i, 0u32))]
+#[ensures(forall<x:usize> equal(result, Ok(x)) ==> equal(get(*arr, Int::from(x)), Some(elem)))]
+#[ensures(forall<x:usize> equal(result, Err(x)) ==>
+    forall<i:Int> 0 <= i && i < Int::from(x) ==> get_default(*arr, i, 0u32) < elem)]
+#[ensures(forall<x:usize> equal(result, Err(x)) ==>
+    forall<i:Int> Int::from(x) < i && i < len_logic(*arr) ==> elem < get_default(*arr, i, 0u32))]
 fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
     if arr.len() == 0 {
         return Err(0);

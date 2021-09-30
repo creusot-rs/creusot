@@ -4,7 +4,6 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[ensures(false ==> true)]
 #[ensures(equal(toggle, true) ==> (equal(result, a) && equal(^b, *b)))]
 #[ensures(equal(toggle, false) ==> (equal(result, b) && equal(^a, *a)))]
 fn proj_toggle<'a, T: PartialEq>(toggle: bool, a: &'a mut T, b: &'a mut T) -> &'a mut T {
