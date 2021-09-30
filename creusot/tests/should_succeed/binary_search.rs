@@ -82,7 +82,7 @@ impl<T> List<T> {
 
 logic! {
     fn is_sorted(l : List<u32>) -> bool { {
-        forall<x1 : Int, x2 : Int> x1 <= x2 ->
+        forall<x1 : Int, x2 : Int> x1 <= x2 ==>
             match (get(l, x1), get(l, x2)) {
                 (Some(v1), Some(v2)) => v1 <= v2,
                 (None, None) => true,
@@ -103,11 +103,11 @@ logic! {
 
 #[requires(len_logic(*arr) <= Int::from(1_000_000))]
 #[requires(is_sorted(*arr))]
-#[ensures(forall<x:usize> equal(result, Ok(x)) -> equal(get(*arr, Int::from(x)), Some(elem)))]
-#[ensures(forall<x:usize> equal(result, Err(x)) ->
-    forall<i:Int> 0 <= i && i < Int::from(x) -> get_default(*arr, i, 0u32) < elem)]
-#[ensures(forall<x:usize> equal(result, Err(x)) ->
-    forall<i:Int> Int::from(x) < i && i < len_logic(*arr) -> elem < get_default(*arr, i, 0u32))]
+#[ensures(forall<x:usize> equal(result, Ok(x)) ==> equal(get(*arr, Int::from(x)), Some(elem)))]
+#[ensures(forall<x:usize> equal(result, Err(x)) ==>
+    forall<i:Int> 0 <= i && i < Int::from(x) ==> get_default(*arr, i, 0u32) < elem)]
+#[ensures(forall<x:usize> equal(result, Err(x)) ==>
+    forall<i:Int> Int::from(x) < i && i < len_logic(*arr) ==> elem < get_default(*arr, i, 0u32))]
 fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
     if arr.len() == 0 {
         return Err(0);
