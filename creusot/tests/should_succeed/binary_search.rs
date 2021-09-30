@@ -82,7 +82,7 @@ impl<T> List<T> {
 
 logic! {
     fn is_sorted(l : List<u32>) -> bool { {
-        forall<x1 : Int, x2 : Int> x1 <= x2 ->
+        forall<x1 : Int, x2 : Int> x1 <= x2 ==>
             match (get(l, x1), get(l, x2)) {
                 (Some(v1), Some(v2)) => v1 <= v2,
                 (None, None) => true,

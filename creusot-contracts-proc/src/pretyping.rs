@@ -244,7 +244,7 @@ mod tests {
 
     #[test]
     fn encode_impl() {
-        let term: Term = syn::parse_str("false -> true").unwrap();
+        let term: Term = syn::parse_str("false ==> true").unwrap();
         assert_eq!(
             format!("{}", encode_term(term).unwrap()),
             "creusot_contracts :: stubs :: implication (false , true)"
