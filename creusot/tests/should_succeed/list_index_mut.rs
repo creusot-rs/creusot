@@ -79,10 +79,10 @@ pub fn index_mut(param_l: &mut List, param_ix: usize) -> &mut u32 {
 
 // Ensure that this performs a set on the list
 #[requires(Int::from(ix) < len(*l))]
-#[ensures(equal(Some(v), get(^l, Int::from(ix))))]
-#[ensures(equal(len(^l), len(*l)))]
+#[ensures(Some(v) === get(^l, Int::from(ix)))]
+#[ensures(len(^l) === len(*l))]
 #[ensures(forall<i:Int> 0 <= i && i < len(*l) && i != Int::from(ix) ==>
-    equal(get(*l, i), get(^l, i)))]
+    get(*l, i) === get(^l, i))]
 pub fn write(l: &mut List, ix: usize, v: u32) {
     *index_mut(l, ix) = v;
 }

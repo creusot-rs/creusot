@@ -17,8 +17,8 @@ enum List<A> {
     Nil,
 }
 use List::*;
-#[ensures(equal(T::A, T::B))]
-#[ensures(equal(S(0u32, true), S(1u32, false)))]
+#[ensures(T::A === T::B)]
+#[ensures(S(0u32, true) === S(1u32, false))]
 fn test_specs() {}
 
 fn main() {}
