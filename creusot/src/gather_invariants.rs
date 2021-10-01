@@ -36,11 +36,9 @@ impl GatherInvariants {
             .map(|clos| {
                 let term = specification::typing::typecheck(ctx.tcx, clos.expect_local());
                 let exp = lower_term_to_why3(ctx, names, clos, term);
-                let invariant = specification::get_attr(
-                    ctx.tcx.get_attrs(clos),
-                    &["creusot", "spec", "invariant"],
-                )
-                .unwrap();
+                let invariant =
+                    util::get_attr(ctx.tcx.get_attrs(clos), &["creusot", "spec", "invariant"])
+                        .unwrap();
                 let name = util::ts_to_symbol(invariant.args.inner_tokens()).unwrap();
 
                 (clos, (name, exp))
