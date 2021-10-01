@@ -42,6 +42,23 @@ module CreusotContracts_Builtins_Impl11_Resolve
   predicate resolve (self : (t1, t2)) = 
     Resolve0.resolve (let (a, _) = self in a) && Resolve1.resolve (let (_, a) = self in a)
 end
+module CreusotContracts_Builtins_Impl12_Resolve_Interface
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Builtins_Impl12_Resolve
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t) = 
+     ^ self =  * self
+end
+module CreusotContracts_Builtins_Impl12
+  type t   
+  use prelude.Prelude
+  clone export CreusotContracts_Builtins_Impl12_Resolve with type t = t
+  clone CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = resolve
+end
 module DropPair_DropPair2_Interface
   use prelude.Prelude
   use mach.int.Int
@@ -52,7 +69,9 @@ module DropPair_DropPair2
   use prelude.Prelude
   use mach.int.Int
   use mach.int.UInt32
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t1 = borrowed uint32, type t2 = borrowed uint32
+  clone CreusotContracts_Builtins_Impl12 as Resolve1 with type t = uint32
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t1 = borrowed uint32, type t2 = borrowed uint32,
+  predicate Resolve1.resolve = Resolve1.resolve
   let rec cfg drop_pair2 (x : (borrowed uint32, borrowed uint32)) : () = 
   var _0 : ();
   var x_1 : (borrowed uint32, borrowed uint32);
@@ -69,17 +88,6 @@ module DropPair_DropPair2
     return _0
   }
   
-end
-module CreusotContracts_Builtins_Impl12_Resolve_Interface
-  type t   
-  use prelude.Prelude
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Builtins_Impl12_Resolve
-  type t   
-  use prelude.Prelude
-  predicate resolve (self : borrowed t) = 
-     ^ self =  * self
 end
 module DropPair_Drop_Interface
   use prelude.Prelude
@@ -130,7 +138,9 @@ module DropPair_DropPair
   use prelude.Prelude
   use mach.int.Int
   use mach.int.UInt32
-  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t1 = borrowed uint32, type t2 = borrowed uint32
+  clone CreusotContracts_Builtins_Impl12 as Resolve1 with type t = uint32
+  clone CreusotContracts_Builtins_Impl11_Resolve as Resolve0 with type t1 = borrowed uint32, type t2 = borrowed uint32,
+  predicate Resolve1.resolve = Resolve1.resolve
   let rec cfg drop_pair (x : (borrowed uint32, borrowed uint32)) : ()
     ensures {  ^ (let (a, _) = x in a) =  * (let (a, _) = x in a) }
     ensures { Resolve0.resolve x }
