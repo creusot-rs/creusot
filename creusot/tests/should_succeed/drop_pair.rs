@@ -11,6 +11,7 @@ fn main() {}
 // #[ensures(^ x.0 == * x.0)]
 // #[ensures(^ x.1 == * x.1)]
 #[ensures(x.resolve())]
+#[ensures(^x.0 == *x.0)]
 fn drop_pair(x: (&mut u32, &mut u32)) {}
 
 fn drop_pair2(x: (&mut u32, &mut u32)) {

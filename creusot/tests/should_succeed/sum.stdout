@@ -10,6 +10,21 @@ module Type
   use floating_point.Double
   use prelude.Prelude
 end
+module Sum_Main_Interface
+  val main () : ()
+end
+module Sum_Main
+  let rec cfg main () : () = 
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end
 module CreusotContracts_Builtins_Resolve
   type self   
   predicate resolve (self : self)
@@ -18,7 +33,7 @@ module Sum_SumFirstN_Interface
   use mach.int.Int
   use mach.int.UInt32
   val sum_first_n (n : uint32) : uint32
-    ensures { result = div (n * n + (1 : uint32)) (2 : uint32) }
+    ensures { result = div (n * (n + (1 : uint32))) (2 : uint32) }
     
 end
 module Sum_SumFirstN
@@ -28,7 +43,7 @@ module Sum_SumFirstN
   clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = bool
   clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = uint32
   let rec cfg sum_first_n (n : uint32) : uint32
-    ensures { result = div (n * n + (1 : uint32)) (2 : uint32) }
+    ensures { result = div (n * (n + (1 : uint32))) (2 : uint32) }
     
    = 
   var _0 : uint32;
@@ -55,7 +70,7 @@ module Sum_SumFirstN
   }
   BB1 {
     invariant loop_bound { i_3 < n_1 + (1 : uint32) };
-    invariant sum_value { sum_2 = div (i_3 * i_3 + (1 : uint32)) (2 : uint32) };
+    invariant sum_value { sum_2 = div (i_3 * (i_3 + (1 : uint32))) (2 : uint32) };
     goto BB2
   }
   BB2 {
@@ -90,21 +105,6 @@ module Sum_SumFirstN
     assume { Resolve0.resolve _0 };
     _0 <- sum_2;
     assume { Resolve0.resolve sum_2 };
-    return _0
-  }
-  
-end
-module Sum_Main_Interface
-  val main () : ()
-end
-module Sum_Main
-  let rec cfg main () : () = 
-  var _0 : ();
-  {
-    goto BB0
-  }
-  BB0 {
-    _0 <- ();
     return _0
   }
   

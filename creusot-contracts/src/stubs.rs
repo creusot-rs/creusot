@@ -11,6 +11,12 @@ pub fn cur<T>(_: &mut T) -> T {
 }
 
 #[creusot::spec::no_translate]
+#[rustc_diagnostic_item = "equal"]
+pub fn equal<T>(_: T, _: T) -> bool {
+    panic!();
+}
+
+#[creusot::spec::no_translate]
 #[rustc_diagnostic_item = "exists"]
 pub fn exists<T, F: Fn(T) -> bool>(_: F) -> bool {
     panic!()

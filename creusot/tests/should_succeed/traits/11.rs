@@ -7,15 +7,14 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 logic! {
-  fn id<T>(x : T) -> T { x }
+    fn id<T>(x : T) -> T { x }
 }
 
 trait A {
-  type T;
+    type T;
 
-  #[ensures(equal(id(x), x))]
-  fn f(x: Self::T);
+    #[ensures(id(x) === x)]
+    fn f(x: Self::T);
 }
 
-fn test<T : A>(_ : T) {}
-
+fn test<T: A>(_: T) {}

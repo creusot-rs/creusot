@@ -48,7 +48,7 @@ pub fn make_loop(_: TyCtxt) -> IndexVec<BasicBlock, BasicBlockData> {
     let mut body = IndexVec::new();
     body.push(BasicBlockData::new(Some(Terminator {
         source_info: SourceInfo::outermost(rustc_span::DUMMY_SP),
-        kind: TerminatorKind::Goto { target: 0u32.into() },
+        kind: TerminatorKind::Return,
     })));
     body
 }

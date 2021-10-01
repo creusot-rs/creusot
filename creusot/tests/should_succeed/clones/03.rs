@@ -18,10 +18,8 @@ fn prog<T>(x: T) {}
 
 #[ensures(omg(0))]
 fn prog2() {
-  prog(0);
+    prog(0);
 }
 
 #[ensures(omg((0, 0)))]
-fn prog3() {
-
-}
+fn prog3() {}

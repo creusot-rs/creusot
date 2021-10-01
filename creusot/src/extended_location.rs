@@ -1,6 +1,6 @@
 use rustc_middle::mir::Location;
-use rustc_mir::dataflow::Analysis;
-use rustc_mir::dataflow::{Results, ResultsCursor};
+use rustc_mir_dataflow::Analysis;
+use rustc_mir_dataflow::{Results, ResultsCursor};
 use std::borrow::Borrow;
 
 // Dataflow locations
@@ -15,13 +15,13 @@ pub trait Dir {
     fn is_forward() -> bool;
 }
 
-impl Dir for rustc_mir::dataflow::Forward {
+impl Dir for rustc_mir_dataflow::Forward {
     fn is_forward() -> bool {
         true
     }
 }
 
-impl Dir for rustc_mir::dataflow::Backward {
+impl Dir for rustc_mir_dataflow::Backward {
     fn is_forward() -> bool {
         false
     }

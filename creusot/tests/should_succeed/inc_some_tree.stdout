@@ -29,6 +29,10 @@ module IncSomeTree_SumTree
       | Type.IncSomeTree_Tree_Leaf -> Int32.to_int (0 : int32)
       end
 end
+module CreusotContracts_Builtins_Resolve
+  type self   
+  predicate resolve (self : self)
+end
 module IncSomeTree_LemmaSumTreeNonneg_Interface
   use mach.int.Int
   use mach.int.Int32
@@ -45,13 +49,74 @@ module IncSomeTree_LemmaSumTreeNonneg
   use prelude.Prelude
   use Type
   clone IncSomeTree_SumTree as SumTree0
-  val lemma_sum_tree_nonneg (t : Type.incsometree_tree) : ()
+  use mach.int.Int64
+  clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = Type.incsometree_tree
+  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = isize
+  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = Type.incsometree_tree
+  let rec cfg lemma_sum_tree_nonneg (t : Type.incsometree_tree) : ()
     ensures { SumTree0.sum_tree t >= Int32.to_int (0 : int32) }
     
-end
-module CreusotContracts_Builtins_Resolve
-  type self   
-  predicate resolve (self : self)
+   = 
+  var _0 : ();
+  var t_1 : Type.incsometree_tree;
+  var _2 : isize;
+  var tl_3 : Type.incsometree_tree;
+  var tr_4 : Type.incsometree_tree;
+  var _5 : ();
+  var _6 : Type.incsometree_tree;
+  var _7 : ();
+  var _8 : Type.incsometree_tree;
+  {
+    t_1 <- t;
+    goto BB0
+  }
+  BB0 {
+    switch (t_1)
+      | Type.IncSomeTree_Tree_Node(_, _, _) -> goto BB1
+      | Type.IncSomeTree_Tree_Leaf -> goto BB2
+      | _ -> goto BB3
+      end
+  }
+  BB1 {
+    assume { Resolve2.resolve _2 };
+    goto BB4
+  }
+  BB2 {
+    assume { Resolve1.resolve t_1 };
+    assume { Resolve2.resolve _2 };
+    _0 <- ();
+    goto BB7
+  }
+  BB3 {
+    assume { Resolve1.resolve t_1 };
+    assume { Resolve2.resolve _2 };
+    absurd
+  }
+  BB4 {
+    tl_3 <- (let Type.IncSomeTree_Tree_Node(a, _, _) = t_1 in a);
+    tr_4 <- (let Type.IncSomeTree_Tree_Node(_, _, a) = t_1 in a);
+    assume { Resolve1.resolve t_1 };
+    _6 <- tl_3;
+    assume { Resolve3.resolve tl_3 };
+    _5 <- lemma_sum_tree_nonneg _6;
+    goto BB5
+  }
+  BB5 {
+    assume { Resolve1.resolve _6 };
+    _8 <- tr_4;
+    assume { Resolve3.resolve tr_4 };
+    _7 <- lemma_sum_tree_nonneg _8;
+    goto BB6
+  }
+  BB6 {
+    assume { Resolve1.resolve _8 };
+    _0 <- ();
+    goto BB7
+  }
+  BB7 {
+    return _0
+  }
+  
 end
 module IncSomeTree_SumTreeX_Interface
   use mach.int.Int
@@ -234,16 +299,14 @@ module IncSomeTree_TakeSomeTree
   var _13 : borrowed uint32;
   var _14 : bool;
   var _15 : borrowed uint32;
-  var _16 : borrowed uint32;
-  var _17 : bool;
+  var _16 : bool;
+  var _17 : borrowed uint32;
   var _18 : borrowed uint32;
-  var _19 : borrowed uint32;
-  var _20 : borrowed (Type.incsometree_tree);
-  var _21 : borrowed uint32;
-  var _22 : borrowed uint32;
-  var _23 : borrowed (Type.incsometree_tree);
-  var _24 : ();
-  var _25 : ();
+  var _19 : borrowed (Type.incsometree_tree);
+  var _20 : borrowed uint32;
+  var _21 : borrowed (Type.incsometree_tree);
+  var _22 : ();
+  var _23 : ();
   {
     mt_1 <- mt;
     goto BB0
@@ -314,56 +377,50 @@ module IncSomeTree_TakeSomeTree
   BB9 {
     assume { Resolve9.resolve ma_6 };
     assume { Resolve8.resolve _14 };
-    _17 <- Random6.random ();
+    _16 <- Random6.random ();
     goto BB10
   }
   BB10 {
-    switch (_17)
-      | False -> goto BB12
+    switch (_16)
+      | False -> goto BB13
       | True -> goto BB11
       | _ -> goto BB11
       end
   }
   BB11 {
     assume { Resolve7.resolve mtr_7 };
-    assume { Resolve8.resolve _17 };
-    _20 <- borrow_mut ( * mtl_5);
-    mtl_5 <- { mtl_5 with current = ( ^ _20) };
+    assume { Resolve8.resolve _16 };
+    _19 <- borrow_mut ( * mtl_5);
+    mtl_5 <- { mtl_5 with current = ( ^ _19) };
     assume { Resolve7.resolve mtl_5 };
-    _19 <- take_some_tree _20;
-    goto BB13
+    _18 <- take_some_tree _19;
+    goto BB12
   }
   BB12 {
-    assume { Resolve7.resolve mtl_5 };
-    assume { Resolve8.resolve _17 };
-    _23 <- borrow_mut ( * mtr_7);
-    mtr_7 <- { mtr_7 with current = ( ^ _23) };
-    assume { Resolve7.resolve mtr_7 };
-    _22 <- take_some_tree _23;
-    goto BB14
-  }
-  BB13 {
-    _18 <- borrow_mut ( * _19);
-    _19 <- { _19 with current = ( ^ _18) };
-    assume { Resolve9.resolve _19 };
-    _16 <- borrow_mut ( * _18);
-    _18 <- { _18 with current = ( ^ _16) };
+    _17 <- borrow_mut ( * _18);
+    _18 <- { _18 with current = ( ^ _17) };
     assume { Resolve9.resolve _18 };
+    _13 <- borrow_mut ( * _17);
+    _17 <- { _17 with current = ( ^ _13) };
+    assume { Resolve9.resolve _17 };
     goto BB15
   }
+  BB13 {
+    assume { Resolve7.resolve mtl_5 };
+    assume { Resolve8.resolve _16 };
+    _21 <- borrow_mut ( * mtr_7);
+    mtr_7 <- { mtr_7 with current = ( ^ _21) };
+    assume { Resolve7.resolve mtr_7 };
+    _20 <- take_some_tree _21;
+    goto BB14
+  }
   BB14 {
-    _21 <- borrow_mut ( * _22);
-    _22 <- { _22 with current = ( ^ _21) };
-    assume { Resolve9.resolve _22 };
-    _16 <- borrow_mut ( * _21);
-    _21 <- { _21 with current = ( ^ _16) };
-    assume { Resolve9.resolve _21 };
+    _13 <- borrow_mut ( * _20);
+    _20 <- { _20 with current = ( ^ _13) };
+    assume { Resolve9.resolve _20 };
     goto BB15
   }
   BB15 {
-    _13 <- borrow_mut ( * _16);
-    _16 <- { _16 with current = ( ^ _13) };
-    assume { Resolve9.resolve _16 };
     goto BB16
   }
   BB16 {
@@ -385,8 +442,8 @@ module IncSomeTree_TakeSomeTree
     goto BB18
   }
   BB18 {
-    _25 <- ();
-    assume { Resolve3.resolve _25 };
+    _23 <- ();
+    assume { Resolve3.resolve _23 };
     goto BB17
   }
   
