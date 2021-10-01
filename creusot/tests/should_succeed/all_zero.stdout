@@ -11,10 +11,10 @@ module Type
   use prelude.Prelude
   type core_option_option 't = 
     | Core_Option_Option_None
-    | Core_Option_Option_Some('t)
+    | Core_Option_Option_Some 't
     
   type allzero_list  = 
-    | AllZero_List_Cons(uint32, allzero_list)
+    | AllZero_List_Cons uint32 (allzero_list)
     | AllZero_List_Nil
     
 end
@@ -44,7 +44,7 @@ module AllZero_Len
   use mach.int.Int32
   function len (l : Type.allzero_list) : int = 
     match (l) with
-      | Type.AllZero_List_Cons(_, ls) -> Int32.to_int (1 : int32) + len ls
+      | Type.AllZero_List_Cons _ ls -> Int32.to_int (1 : int32) + len ls
       | Type.AllZero_List_Nil -> Int32.to_int (0 : int32)
       end
 end
@@ -61,8 +61,8 @@ module AllZero_Get
   use mach.int.Int32
   function get (l : Type.allzero_list) (ix : int) : Type.core_option_option uint32 = 
     match (l) with
-      | Type.AllZero_List_Cons(x, ls) -> match (ix = Int32.to_int (0 : int32)) with
-        | True -> Type.Core_Option_Option_Some(x)
+      | Type.AllZero_List_Cons x ls -> match (ix = Int32.to_int (0 : int32)) with
+        | True -> Type.Core_Option_Option_Some x
         | False -> get ls (ix - Int32.to_int (1 : int32))
         end
       | Type.AllZero_List_Nil -> Type.Core_Option_Option_None
@@ -93,7 +93,7 @@ module AllZero_AllZero_Interface
   clone AllZero_Len_Interface as Len0
   val all_zero (l : borrowed (Type.allzero_list)) : ()
     ensures { Len0.len ( * l) = Len0.len ( ^ l) }
-    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * l) -> Get1.get ( ^ l) i = Type.Core_Option_Option_Some((0 : uint32)) }
+    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * l) -> Get1.get ( ^ l) i = Type.Core_Option_Option_Some (0 : uint32) }
     
 end
 module AllZero_AllZero
@@ -112,7 +112,7 @@ module AllZero_AllZero
   clone CreusotContracts_Builtins_Impl12_Resolve as Resolve2 with type t = Type.allzero_list
   let rec cfg all_zero (l : borrowed (Type.allzero_list)) : ()
     ensures { Len0.len ( * l) = Len0.len ( ^ l) }
-    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * l) -> Get1.get ( ^ l) i = Type.Core_Option_Option_Some((0 : uint32)) }
+    ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * l) -> Get1.get ( ^ l) i = Type.Core_Option_Option_Some (0 : uint32) }
     
    = 
   var _0 : ();
@@ -136,13 +136,13 @@ module AllZero_AllZero
     goto BB1
   }
   BB1 {
-    invariant zeroed { (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * loop_l_2) -> Get1.get ( ^ loop_l_2) i = Type.Core_Option_Option_Some((0 : uint32))) -> (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * l_1) -> Get1.get ( ^ l_1) i = Type.Core_Option_Option_Some((0 : uint32))) };
+    invariant zeroed { (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * loop_l_2) -> Get1.get ( ^ loop_l_2) i = Type.Core_Option_Option_Some (0 : uint32)) -> (forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * l_1) -> Get1.get ( ^ l_1) i = Type.Core_Option_Option_Some (0 : uint32)) };
     invariant in_len { Len0.len ( ^ loop_l_2) = Len0.len ( * loop_l_2) -> Len0.len ( ^ l_1) = Len0.len ( * l_1) };
     goto BB2
   }
   BB2 {
     switch ( * loop_l_2)
-      | Type.AllZero_List_Cons(_, _) -> goto BB3
+      | Type.AllZero_List_Cons _ _ -> goto BB3
       | _ -> goto BB5
       end
   }
@@ -151,10 +151,10 @@ module AllZero_AllZero
     goto BB4
   }
   BB4 {
-    value_7 <- borrow_mut (let Type.AllZero_List_Cons(a, _) =  * loop_l_2 in a);
-    loop_l_2 <- { loop_l_2 with current = (let Type.AllZero_List_Cons(a, b) =  * loop_l_2 in Type.AllZero_List_Cons( ^ value_7, b)) };
-    next_8 <- borrow_mut (let Type.AllZero_List_Cons(_, a) =  * loop_l_2 in a);
-    loop_l_2 <- { loop_l_2 with current = (let Type.AllZero_List_Cons(a, b) =  * loop_l_2 in Type.AllZero_List_Cons(a,  ^ next_8)) };
+    value_7 <- borrow_mut (let Type.AllZero_List_Cons a _ =  * loop_l_2 in a);
+    loop_l_2 <- { loop_l_2 with current = (let Type.AllZero_List_Cons a b =  * loop_l_2 in Type.AllZero_List_Cons ( ^ value_7) b) };
+    next_8 <- borrow_mut (let Type.AllZero_List_Cons _ a =  * loop_l_2 in a);
+    loop_l_2 <- { loop_l_2 with current = (let Type.AllZero_List_Cons a b =  * loop_l_2 in Type.AllZero_List_Cons a ( ^ next_8)) };
     assume { Resolve2.resolve loop_l_2 };
     value_7 <- { value_7 with current = (0 : uint32) };
     assume { Resolve4.resolve value_7 };

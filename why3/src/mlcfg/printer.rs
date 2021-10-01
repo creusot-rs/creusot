@@ -532,7 +532,9 @@ impl Pretty for Exp {
             Exp::Constructor { ctor, args } => ctor.pretty(alloc, env).append(if args.is_empty() {
                 alloc.nil()
             } else {
-                alloc.intersperse(args.iter().map(|a| a.pretty(alloc, env)), ", ").parens()
+                alloc.space().append(
+                    alloc.intersperse(args.iter().map(|a| parens!(alloc, env, self, a)), " "),
+                )
             }),
 
             Exp::BorrowMut(box exp) => {
@@ -723,15 +725,18 @@ impl Pretty for Pattern {
                 .parens(),
             Pattern::ConsP(c, pats) => {
                 let mut doc = c.pretty(alloc, env);
+
                 if !pats.is_empty() {
-                    doc = doc.append(
-                        alloc
-                            .intersperse(
-                                pats.iter().map(|p| p.pretty(alloc, env)),
-                                alloc.text(", "),
-                            )
-                            .parens(),
-                    )
+                    doc = doc.append(alloc.space()).append(alloc.intersperse(
+                        pats.iter().map(|p| {
+                            if matches!(p, Pattern::ConsP(_, _)) {
+                                p.pretty(alloc, env).parens()
+                            } else {
+                                p.pretty(alloc, env)
+                            }
+                        }),
+                        alloc.text(" "),
+                    ))
                 }
                 doc
             }
@@ -878,14 +883,16 @@ impl Pretty for TyDeclKind {
                     let mut ty_cons = alloc.text("| ").append(alloc.text(cons));
 
                     if !args.is_empty() {
-                        ty_cons = ty_cons.append(
-                            alloc
-                                .intersperse(
-                                    args.iter().map(|ty_arg| ty_arg.pretty(alloc, env)),
-                                    alloc.text(", "),
-                                )
-                                .parens(),
-                        )
+                        ty_cons = ty_cons.append(alloc.space()).append(alloc.intersperse(
+                            args.iter().map(|ty_arg| {
+                                if !ty_arg.complex() {
+                                    ty_arg.pretty(alloc, env)
+                                } else {
+                                    ty_arg.pretty(alloc, env).parens()
+                                }
+                            }),
+                            alloc.text(" "),
+                        ))
                     }
 
                     inner_doc = inner_doc.append(ty_cons.append(alloc.hardline()))

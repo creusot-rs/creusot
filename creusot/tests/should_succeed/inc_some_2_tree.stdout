@@ -10,7 +10,7 @@ module Type
   use floating_point.Double
   use prelude.Prelude
   type incsome2tree_tree  = 
-    | IncSome2Tree_Tree_Node(incsome2tree_tree, uint32, incsome2tree_tree)
+    | IncSome2Tree_Tree_Node (incsome2tree_tree) uint32 (incsome2tree_tree)
     | IncSome2Tree_Tree_Leaf
     
 end
@@ -25,7 +25,7 @@ module IncSome2Tree_SumTree
   use mach.int.Int32
   function sum_tree (t : Type.incsome2tree_tree) : int = 
     match (t) with
-      | Type.IncSome2Tree_Tree_Node(tl, a, tr) -> sum_tree tl + UInt32.to_int a + sum_tree tr
+      | Type.IncSome2Tree_Tree_Node tl a tr -> sum_tree tl + UInt32.to_int a + sum_tree tr
       | Type.IncSome2Tree_Tree_Leaf -> Int32.to_int (0 : int32)
       end
 end
@@ -72,7 +72,7 @@ module IncSome2Tree_LemmaSumTreeNonneg
   }
   BB0 {
     switch (t_1)
-      | Type.IncSome2Tree_Tree_Node(_, _, _) -> goto BB1
+      | Type.IncSome2Tree_Tree_Node _ _ _ -> goto BB1
       | Type.IncSome2Tree_Tree_Leaf -> goto BB2
       | _ -> goto BB3
       end
@@ -93,8 +93,8 @@ module IncSome2Tree_LemmaSumTreeNonneg
     absurd
   }
   BB4 {
-    tl_3 <- (let Type.IncSome2Tree_Tree_Node(a, _, _) = t_1 in a);
-    tr_4 <- (let Type.IncSome2Tree_Tree_Node(_, _, a) = t_1 in a);
+    tl_3 <- (let Type.IncSome2Tree_Tree_Node a _ _ = t_1 in a);
+    tr_4 <- (let Type.IncSome2Tree_Tree_Node _ _ a = t_1 in a);
     assume { Resolve1.resolve t_1 };
     _6 <- tl_3;
     assume { Resolve3.resolve tl_3 };
@@ -171,7 +171,7 @@ module IncSome2Tree_SumTreeX
   }
   BB0 {
     switch (t_1)
-      | Type.IncSome2Tree_Tree_Node(_, _, _) -> goto BB1
+      | Type.IncSome2Tree_Tree_Node _ _ _ -> goto BB1
       | Type.IncSome2Tree_Tree_Leaf -> goto BB2
       | _ -> goto BB3
       end
@@ -192,9 +192,9 @@ module IncSome2Tree_SumTreeX
     absurd
   }
   BB4 {
-    tl_3 <- (let Type.IncSome2Tree_Tree_Node(a, _, _) = t_1 in a);
-    a_4 <- (let Type.IncSome2Tree_Tree_Node(_, a, _) = t_1 in a);
-    tr_5 <- (let Type.IncSome2Tree_Tree_Node(_, _, a) = t_1 in a);
+    tl_3 <- (let Type.IncSome2Tree_Tree_Node a _ _ = t_1 in a);
+    a_4 <- (let Type.IncSome2Tree_Tree_Node _ a _ = t_1 in a);
+    tr_5 <- (let Type.IncSome2Tree_Tree_Node _ _ a = t_1 in a);
     assume { Resolve1.resolve t_1 };
     _7 <- tl_3;
     _6 <- LemmaSumTreeNonneg3.lemma_sum_tree_nonneg _7;
@@ -312,7 +312,7 @@ module IncSome2Tree_TakeSomeRestTree
   }
   BB0 {
     switch ( * mt_1)
-      | Type.IncSome2Tree_Tree_Node(_, _, _) -> goto BB1
+      | Type.IncSome2Tree_Tree_Node _ _ _ -> goto BB1
       | Type.IncSome2Tree_Tree_Leaf -> goto BB2
       | _ -> goto BB3
       end
@@ -332,12 +332,12 @@ module IncSome2Tree_TakeSomeRestTree
     absurd
   }
   BB4 {
-    mtl_3 <- borrow_mut (let Type.IncSome2Tree_Tree_Node(a, _, _) =  * mt_1 in a);
-    mt_1 <- { mt_1 with current = (let Type.IncSome2Tree_Tree_Node(a, b, c) =  * mt_1 in Type.IncSome2Tree_Tree_Node( ^ mtl_3, b, c)) };
-    ma_4 <- borrow_mut (let Type.IncSome2Tree_Tree_Node(_, a, _) =  * mt_1 in a);
-    mt_1 <- { mt_1 with current = (let Type.IncSome2Tree_Tree_Node(a, b, c) =  * mt_1 in Type.IncSome2Tree_Tree_Node(a,  ^ ma_4, c)) };
-    mtr_5 <- borrow_mut (let Type.IncSome2Tree_Tree_Node(_, _, a) =  * mt_1 in a);
-    mt_1 <- { mt_1 with current = (let Type.IncSome2Tree_Tree_Node(a, b, c) =  * mt_1 in Type.IncSome2Tree_Tree_Node(a, b,  ^ mtr_5)) };
+    mtl_3 <- borrow_mut (let Type.IncSome2Tree_Tree_Node a _ _ =  * mt_1 in a);
+    mt_1 <- { mt_1 with current = (let Type.IncSome2Tree_Tree_Node a b c =  * mt_1 in Type.IncSome2Tree_Tree_Node ( ^ mtl_3) b c) };
+    ma_4 <- borrow_mut (let Type.IncSome2Tree_Tree_Node _ a _ =  * mt_1 in a);
+    mt_1 <- { mt_1 with current = (let Type.IncSome2Tree_Tree_Node a b c =  * mt_1 in Type.IncSome2Tree_Tree_Node a ( ^ ma_4) c) };
+    mtr_5 <- borrow_mut (let Type.IncSome2Tree_Tree_Node _ _ a =  * mt_1 in a);
+    mt_1 <- { mt_1 with current = (let Type.IncSome2Tree_Tree_Node a b c =  * mt_1 in Type.IncSome2Tree_Tree_Node a b ( ^ mtr_5)) };
     assume { Resolve1.resolve mt_1 };
     _7 <-  * mtl_3;
     _6 <- LemmaSumTreeNonneg4.lemma_sum_tree_nonneg _7;
