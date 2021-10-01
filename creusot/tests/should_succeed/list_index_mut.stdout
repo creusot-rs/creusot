@@ -11,10 +11,10 @@ module Type
   use prelude.Prelude
   type listindexmut_option 't = 
     | ListIndexMut_Option_None
-    | ListIndexMut_Option_Some('t)
+    | ListIndexMut_Option_Some 't
     
   type listindexmut_list  = 
-    | ListIndexMut_List(uint32, listindexmut_option (listindexmut_list))
+    | ListIndexMut_List uint32 (listindexmut_option (listindexmut_list))
     
 end
 module CreusotContracts_Builtins_Resolve
@@ -42,8 +42,8 @@ module ListIndexMut_Len
   use Type
   use mach.int.Int32
   function len (l : Type.listindexmut_list) : int = 
-    let Type.ListIndexMut_List(_, ls) = l in Int32.to_int (1 : int32) + match (ls) with
-      | Type.ListIndexMut_Option_Some(ls) -> len ls
+    let Type.ListIndexMut_List _ ls = l in Int32.to_int (1 : int32) + match (ls) with
+      | Type.ListIndexMut_Option_Some ls -> len ls
       | Type.ListIndexMut_Option_None -> Int32.to_int (0 : int32)
       end
 end
@@ -59,10 +59,10 @@ module ListIndexMut_Get
   use mach.int.UInt32
   use mach.int.Int32
   function get (l : Type.listindexmut_list) (ix : int) : Type.listindexmut_option uint32 = 
-    let Type.ListIndexMut_List(i, ls) = l in match (ix > Int32.to_int (0 : int32)) with
-      | False -> Type.ListIndexMut_Option_Some(i)
+    let Type.ListIndexMut_List i ls = l in match (ix > Int32.to_int (0 : int32)) with
+      | False -> Type.ListIndexMut_Option_Some i
       | True -> match (ls) with
-        | Type.ListIndexMut_Option_Some(ls) -> get ls (ix - Int32.to_int (1 : int32))
+        | Type.ListIndexMut_Option_Some ls -> get ls (ix - Int32.to_int (1 : int32))
         | Type.ListIndexMut_Option_None -> Type.ListIndexMut_Option_None
         end
       end
@@ -90,8 +90,8 @@ module ListIndexMut_IndexMut_Interface
     requires {UInt64.to_int param_ix < Len0.len ( * param_l)}
     ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * param_l) && i <> UInt64.to_int param_ix -> Get1.get ( * param_l) i = Get1.get ( ^ param_l) i }
     ensures { Len0.len ( ^ param_l) = Len0.len ( * param_l) }
-    ensures { Type.ListIndexMut_Option_Some( ^ result) = Get1.get ( ^ param_l) (UInt64.to_int param_ix) }
-    ensures { Type.ListIndexMut_Option_Some( * result) = Get1.get ( * param_l) (UInt64.to_int param_ix) }
+    ensures { Type.ListIndexMut_Option_Some ( ^ result) = Get1.get ( ^ param_l) (UInt64.to_int param_ix) }
+    ensures { Type.ListIndexMut_Option_Some ( * result) = Get1.get ( * param_l) (UInt64.to_int param_ix) }
     
 end
 module ListIndexMut_IndexMut
@@ -116,8 +116,8 @@ module ListIndexMut_IndexMut
     requires {UInt64.to_int param_ix < Len0.len ( * param_l)}
     ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * param_l) && i <> UInt64.to_int param_ix -> Get1.get ( * param_l) i = Get1.get ( ^ param_l) i }
     ensures { Len0.len ( ^ param_l) = Len0.len ( * param_l) }
-    ensures { Type.ListIndexMut_Option_Some( ^ result) = Get1.get ( ^ param_l) (UInt64.to_int param_ix) }
-    ensures { Type.ListIndexMut_Option_Some( * result) = Get1.get ( * param_l) (UInt64.to_int param_ix) }
+    ensures { Type.ListIndexMut_Option_Some ( ^ result) = Get1.get ( ^ param_l) (UInt64.to_int param_ix) }
+    ensures { Type.ListIndexMut_Option_Some ( * result) = Get1.get ( * param_l) (UInt64.to_int param_ix) }
     
    = 
   var _0 : borrowed uint32;
@@ -172,9 +172,9 @@ module ListIndexMut_IndexMut
   }
   BB3 {
     assume { Resolve4.resolve _13 };
-    switch (let Type.ListIndexMut_List(_, a) =  * l_4 in a)
+    switch (let Type.ListIndexMut_List _ a =  * l_4 in a)
       | Type.ListIndexMut_Option_None -> goto BB4
-      | Type.ListIndexMut_Option_Some(_) -> goto BB5
+      | Type.ListIndexMut_Option_Some _ -> goto BB5
       | _ -> goto BB6
       end
   }
@@ -195,8 +195,8 @@ module ListIndexMut_IndexMut
     absurd
   }
   BB7 {
-    n_17 <- borrow_mut (let Type.ListIndexMut_Option_Some(a) = let Type.ListIndexMut_List(_, a) =  * l_4 in a in a);
-    l_4 <- { l_4 with current = (let Type.ListIndexMut_List(a, b) =  * l_4 in Type.ListIndexMut_List(a, let Type.ListIndexMut_Option_Some(a) = let Type.ListIndexMut_List(_, a) =  * l_4 in a in Type.ListIndexMut_Option_Some( ^ n_17))) };
+    n_17 <- borrow_mut (let Type.ListIndexMut_Option_Some a = let Type.ListIndexMut_List _ a =  * l_4 in a in a);
+    l_4 <- { l_4 with current = (let Type.ListIndexMut_List a b =  * l_4 in Type.ListIndexMut_List a (let Type.ListIndexMut_Option_Some a = let Type.ListIndexMut_List _ a =  * l_4 in a in Type.ListIndexMut_Option_Some ( ^ n_17))) };
     assume { Resolve2.resolve l_4 };
     _18 <- borrow_mut ( * n_17);
     n_17 <- { n_17 with current = ( ^ _18) };
@@ -215,8 +215,8 @@ module ListIndexMut_IndexMut
     assume { Resolve4.resolve _13 };
     _6 <- ();
     assume { Resolve7.resolve _6 };
-    _23 <- borrow_mut (let Type.ListIndexMut_List(a, _) =  * l_4 in a);
-    l_4 <- { l_4 with current = (let Type.ListIndexMut_List(a, b) =  * l_4 in Type.ListIndexMut_List( ^ _23, b)) };
+    _23 <- borrow_mut (let Type.ListIndexMut_List a _ =  * l_4 in a);
+    l_4 <- { l_4 with current = (let Type.ListIndexMut_List a b =  * l_4 in Type.ListIndexMut_List ( ^ _23) b) };
     assume { Resolve2.resolve l_4 };
     _3 <- borrow_mut ( * _23);
     _23 <- { _23 with current = ( ^ _3) };
@@ -241,7 +241,7 @@ module ListIndexMut_Write_Interface
     requires {UInt64.to_int ix < Len0.len ( * l)}
     ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * l) && i <> UInt64.to_int ix -> Get1.get ( * l) i = Get1.get ( ^ l) i }
     ensures { Len0.len ( ^ l) = Len0.len ( * l) }
-    ensures { Type.ListIndexMut_Option_Some(v) = Get1.get ( ^ l) (UInt64.to_int ix) }
+    ensures { Type.ListIndexMut_Option_Some v = Get1.get ( ^ l) (UInt64.to_int ix) }
     
 end
 module ListIndexMut_Write
@@ -262,7 +262,7 @@ module ListIndexMut_Write
     requires {UInt64.to_int ix < Len0.len ( * l)}
     ensures { forall i : (int) . Int32.to_int (0 : int32) <= i && i < Len0.len ( * l) && i <> UInt64.to_int ix -> Get1.get ( * l) i = Get1.get ( ^ l) i }
     ensures { Len0.len ( ^ l) = Len0.len ( * l) }
-    ensures { Type.ListIndexMut_Option_Some(v) = Get1.get ( ^ l) (UInt64.to_int ix) }
+    ensures { Type.ListIndexMut_Option_Some v = Get1.get ( ^ l) (UInt64.to_int ix) }
     
    = 
   var _0 : ();
@@ -340,7 +340,7 @@ module ListIndexMut_Main
   }
   BB0 {
     _5 <- Type.ListIndexMut_Option_None;
-    _4 <- Type.ListIndexMut_List((10 : uint32), _5);
+    _4 <- Type.ListIndexMut_List (10 : uint32) _5;
     goto BB1
   }
   BB1 {
@@ -348,11 +348,11 @@ module ListIndexMut_Main
     goto BB2
   }
   BB2 {
-    _2 <- Type.ListIndexMut_Option_Some(_3);
+    _2 <- Type.ListIndexMut_Option_Some _3;
     goto BB3
   }
   BB3 {
-    l_1 <- Type.ListIndexMut_List((1 : uint32), _2);
+    l_1 <- Type.ListIndexMut_List (1 : uint32) _2;
     goto BB4
   }
   BB4 {

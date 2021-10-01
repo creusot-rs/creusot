@@ -10,7 +10,7 @@ module Type
   use floating_point.Double
   use prelude.Prelude
   type incsome2list_list  = 
-    | IncSome2List_List_Cons(uint32, incsome2list_list)
+    | IncSome2List_List_Cons uint32 (incsome2list_list)
     | IncSome2List_List_Nil
     
 end
@@ -25,7 +25,7 @@ module IncSome2List_SumList
   use mach.int.Int32
   function sum_list (l : Type.incsome2list_list) : int = 
     match (l) with
-      | Type.IncSome2List_List_Cons(a, l2) -> UInt32.to_int a + sum_list l2
+      | Type.IncSome2List_List_Cons a l2 -> UInt32.to_int a + sum_list l2
       | Type.IncSome2List_List_Nil -> Int32.to_int (0 : int32)
       end
 end
@@ -68,7 +68,7 @@ module IncSome2List_LemmaSumListNonneg
   }
   BB0 {
     switch (l_1)
-      | Type.IncSome2List_List_Cons(_, _) -> goto BB1
+      | Type.IncSome2List_List_Cons _ _ -> goto BB1
       | Type.IncSome2List_List_Nil -> goto BB2
       | _ -> goto BB3
       end
@@ -89,7 +89,7 @@ module IncSome2List_LemmaSumListNonneg
     absurd
   }
   BB4 {
-    l_3 <- (let Type.IncSome2List_List_Cons(_, a) = l_1 in a);
+    l_3 <- (let Type.IncSome2List_List_Cons _ a = l_1 in a);
     assume { Resolve1.resolve l_1 };
     _4 <- l_3;
     assume { Resolve3.resolve l_3 };
@@ -148,7 +148,7 @@ module IncSome2List_SumListX
   }
   BB0 {
     switch (l_1)
-      | Type.IncSome2List_List_Cons(_, _) -> goto BB1
+      | Type.IncSome2List_List_Cons _ _ -> goto BB1
       | Type.IncSome2List_List_Nil -> goto BB2
       | _ -> goto BB3
       end
@@ -169,8 +169,8 @@ module IncSome2List_SumListX
     absurd
   }
   BB4 {
-    a_3 <- (let Type.IncSome2List_List_Cons(a, _) = l_1 in a);
-    l2_4 <- (let Type.IncSome2List_List_Cons(_, a) = l_1 in a);
+    a_3 <- (let Type.IncSome2List_List_Cons a _ = l_1 in a);
+    l2_4 <- (let Type.IncSome2List_List_Cons _ a = l_1 in a);
     assume { Resolve1.resolve l_1 };
     assume { Resolve3.resolve _5 };
     _5 <- a_3;
@@ -261,7 +261,7 @@ module IncSome2List_TakeSomeRestList
   }
   BB0 {
     switch ( * ml_1)
-      | Type.IncSome2List_List_Cons(_, _) -> goto BB1
+      | Type.IncSome2List_List_Cons _ _ -> goto BB1
       | Type.IncSome2List_List_Nil -> goto BB2
       | _ -> goto BB3
       end
@@ -281,10 +281,10 @@ module IncSome2List_TakeSomeRestList
     absurd
   }
   BB4 {
-    ma_3 <- borrow_mut (let Type.IncSome2List_List_Cons(a, _) =  * ml_1 in a);
-    ml_1 <- { ml_1 with current = (let Type.IncSome2List_List_Cons(a, b) =  * ml_1 in Type.IncSome2List_List_Cons( ^ ma_3, b)) };
-    ml2_4 <- borrow_mut (let Type.IncSome2List_List_Cons(_, a) =  * ml_1 in a);
-    ml_1 <- { ml_1 with current = (let Type.IncSome2List_List_Cons(a, b) =  * ml_1 in Type.IncSome2List_List_Cons(a,  ^ ml2_4)) };
+    ma_3 <- borrow_mut (let Type.IncSome2List_List_Cons a _ =  * ml_1 in a);
+    ml_1 <- { ml_1 with current = (let Type.IncSome2List_List_Cons a b =  * ml_1 in Type.IncSome2List_List_Cons ( ^ ma_3) b) };
+    ml2_4 <- borrow_mut (let Type.IncSome2List_List_Cons _ a =  * ml_1 in a);
+    ml_1 <- { ml_1 with current = (let Type.IncSome2List_List_Cons a b =  * ml_1 in Type.IncSome2List_List_Cons a ( ^ ml2_4)) };
     assume { Resolve1.resolve ml_1 };
     _6 <-  * ml2_4;
     _5 <- LemmaSumListNonneg4.lemma_sum_list_nonneg _6;
