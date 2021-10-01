@@ -4,27 +4,17 @@ use creusot_metadata::decoder::{Decodable, MetadataBlob, MetadataDecoder};
 use creusot_metadata::encoder::{Encodable, MetadataEncoder};
 use indexmap::IndexMap;
 use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
-use rustc_index::vec::Idx;
 use rustc_metadata::creader::CStore;
 use rustc_middle::middle::cstore::CrateStore;
 use rustc_middle::ty::subst::SubstsRef;
-use rustc_middle::ty::{TyCtxt, Visibility};
+use rustc_middle::ty::TyCtxt;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use why3::declaration::{Decl, Module, ValKind::Val};
 
-// Translate functions that are external to the crate as opaque values
-pub fn translate_extern(ctx: &mut TranslationCtx, def_id: DefId, span: rustc_span::Span) -> Module {
-    debug!("using external info for def_id={:?}", def_id);
-    match ctx.externs.body(def_id) {
-        Some(modl) => modl.clone(),
-        None => default_decl(ctx, def_id, span),
-    }
-}
-
-fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) -> Module {
+pub fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) -> Module {
     debug!("generating default declaration for def_id={:?}", def_id);
     let mut names = CloneMap::new(ctx.tcx, util::item_type(ctx.tcx, def_id));
 
@@ -91,8 +81,8 @@ impl CrateMetadata<'tcx> {
     }
 }
 
-type LogicMetadata<'a> = IndexMap<usize, &'a Module>;
-type CloneMetaSerialize<'tcx> = HashMap<DefId, Vec<((DefId, SubstsRef<'tcx>), String)>>;
+pub type LogicMetadata<'a> = IndexMap<usize, &'a Module>;
+pub type CloneMetaSerialize<'tcx> = HashMap<DefId, Vec<((DefId, SubstsRef<'tcx>), String)>>;
 
 fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
     out.as_ref().map(|s| s.clone().into()).unwrap_or_else(|| {
@@ -124,26 +114,6 @@ pub fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
     let clone_metadata = clone_metadata(ctx);
 
     dump_binary_metadata(ctx.tcx, &out_filename, clone_metadata).unwrap();
-}
-
-fn logic_declaration_metadata<'a>(ctx: &'a TranslationCtx<'_, '_>) -> LogicMetadata<'a> {
-    ctx.functions
-        .iter()
-        .filter(|(def_id, _)| {
-            ctx.tcx.visibility(**def_id) == Visibility::Public && def_id.is_local()
-        })
-        .map(|(def_id, func)| (def_id.expect_local().index(), func.body()))
-        .collect()
-}
-
-fn clone_metadata(ctx: &TranslationCtx<'_, 'tcx>) -> CloneMetaSerialize<'tcx> {
-    ctx.functions
-        .iter()
-        .filter(|(def_id, _)| {
-            ctx.tcx.visibility(**def_id) == Visibility::Public && def_id.is_local()
-        })
-        .map(|(def_id, v)| (*def_id, v.dependencies().clone().into_iter().collect()))
-        .collect()
 }
 
 fn dump_binary_metadata(

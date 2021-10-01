@@ -65,7 +65,7 @@ pub struct CloneMap<'tcx> {
     prelude: IndexMap<PreludeModule, bool>,
     pub names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
     count: usize,
-    item_type: ItemType,
+    pub item_type: ItemType,
 
     // Graph which is used to calculate the full clone set
     clone_graph: DiGraphMap<CloneNode<'tcx>, Option<(DefId, SubstsRef<'tcx>)>>,
@@ -152,6 +152,7 @@ impl<'tcx> CloneMap<'tcx> {
             })
             .collect()
     }
+
     pub fn insert(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(_) = it.container {
@@ -184,6 +185,13 @@ impl<'tcx> CloneMap<'tcx> {
 
     pub fn keys(&self) -> impl Iterator<Item = &CloneNode<'tcx>> {
         self.names.keys()
+    }
+
+    pub fn clear_graph(&mut self) {
+        for (_, b) in self.prelude.iter_mut() {
+            *b = false;
+        }
+        self.clone_graph = DiGraphMap::new();
     }
 
     // Update the clone graph with new entries
@@ -306,6 +314,7 @@ impl<'tcx> CloneMap<'tcx> {
                     Some(recv_id) => CloneInfo::from_name(node_clones[&recv_id].clone().into()),
                     None => continue,
                 };
+
                 // Grab the symbols from all dependencies
                 let caller_info = &self.names[&dep];
                 for sym in exported_symbols(ctx.tcx, dep.0) {
@@ -332,6 +341,13 @@ impl<'tcx> CloneMap<'tcx> {
                     if self.item_type != ItemType::Interface {
                         clone_subst.push(elem);
                     }
+                }
+            }
+
+            if !self.item_type.clone_interfaces() {
+                if let ItemType::Pure = util::item_type(ctx.tcx, def_id) {
+                    clone_subst.push(CloneSubst::Axiom("spec".into()));
+                    clone_subst.push(CloneSubst::Axiom("def".into()))
                 }
             }
 
@@ -392,7 +408,7 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
 
     // TODO: Refactor.
     match util::item_type(tcx, def_id) {
-        Logic | Predicate => {
+        Logic | Predicate | Pure => {
             if interface {
                 // TODO: this should directly be a function...
                 QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
@@ -423,11 +439,16 @@ fn exported_symbols(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
 ) -> Box<dyn Iterator<Item = SymbolKind> + 'tcx> {
+    use std::iter;
     use util::ItemType::*;
     match util::item_type(tcx, def_id) {
-        Logic => Box::new(std::iter::once(SymbolKind::Function(method_name(tcx, def_id)))),
-        Predicate => Box::new(std::iter::once(SymbolKind::Predicate(method_name(tcx, def_id)))),
-        Interface | Program => Box::new(std::iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
+        Logic => Box::new(iter::once(SymbolKind::Function(method_name(tcx, def_id)))),
+        Predicate => Box::new(iter::once(SymbolKind::Predicate(method_name(tcx, def_id)))),
+        Interface | Program => Box::new(iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
+        Pure => Box::new(
+            iter::once(SymbolKind::Function(method_name(tcx, def_id)))
+                .chain(iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
+        ),
         Trait | Impl => {
             Box::new(tcx.associated_items(def_id).in_definition_order().filter_map(move |a| {
                 match a.kind {

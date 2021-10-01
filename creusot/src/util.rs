@@ -94,6 +94,7 @@ pub enum ItemType {
     Impl,
     Type,
     Interface,
+    Pure,
 }
 
 impl ItemType {
@@ -112,6 +113,8 @@ pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
                 ItemType::Predicate
             } else if is_logic(tcx, def_id) {
                 ItemType::Logic
+            } else if is_pure(tcx, def_id) {
+                ItemType::Pure
             } else {
                 ItemType::Program
             }
