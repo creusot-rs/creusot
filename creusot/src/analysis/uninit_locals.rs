@@ -2,11 +2,11 @@
 use rustc_index::bit_set::BitSet;
 use rustc_middle::mir::visit::{PlaceContext, Visitor};
 use rustc_middle::mir::{self, BasicBlock, Local, Location};
-use rustc_mir::dataflow::{self, GenKill};
+use rustc_mir_dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis};
 
 pub struct MaybeUninitializedLocals;
 
-impl dataflow::AnalysisDomain<'tcx> for MaybeUninitializedLocals {
+impl AnalysisDomain<'tcx> for MaybeUninitializedLocals {
     type Domain = BitSet<Local>;
 
     const NAME: &'static str = "maybe_uninit_locals";
@@ -25,7 +25,7 @@ impl dataflow::AnalysisDomain<'tcx> for MaybeUninitializedLocals {
     }
 }
 
-impl dataflow::GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
+impl GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
     type Idx = Local;
 
     fn statement_effect(

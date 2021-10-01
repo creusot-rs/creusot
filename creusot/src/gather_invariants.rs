@@ -3,9 +3,8 @@ use indexmap::{IndexMap, IndexSet};
 use rustc_data_structures::graph::WithSuccessors;
 use rustc_hir::def_id::DefId;
 use rustc_middle::mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Rvalue};
-use rustc_middle::thir::{Expr, ExprKind, Thir};
+use rustc_middle::thir::{self, Expr, ExprKind, Thir};
 use rustc_middle::ty::{TyCtxt, WithOptConstParam};
-use rustc_mir_build::thir;
 use rustc_span::Symbol;
 
 use why3::mlcfg::Exp;
@@ -29,7 +28,7 @@ impl GatherInvariants {
         let thir = &thir.borrow();
 
         let mut visitor = InvariantClosures::new(thir);
-        use rustc_mir_build::thir::visit::Visitor;
+        use rustc_middle::thir::visit::Visitor;
         visitor.visit_expr(&thir[expr]);
         let invariants: IndexMap<_, (_, _)> = visitor
             .closures
