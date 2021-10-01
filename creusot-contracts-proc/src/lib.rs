@@ -2,6 +2,7 @@ extern crate proc_macro;
 
 mod pretyping;
 
+use pearlite_syn::*;
 use proc_macro2::Span;
 use syn::*;
 
@@ -23,7 +24,7 @@ fn parse_def_or_decl(tokens: TS1) -> Result<Signature> {
 
 #[proc_macro_attribute]
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
-    let p: syn::Term = parse_macro_input!(attr);
+    let p: pearlite_syn::Term = parse_macro_input!(attr);
 
     let parse_res = parse_def_or_decl(tokens.clone());
     let tokens = proc_macro2::TokenStream::from(tokens);
@@ -56,7 +57,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
-    let p: syn::Term = parse_macro_input!(attr);
+    let p: pearlite_syn::Term = parse_macro_input!(attr);
 
     let parse_res = parse_def_or_decl(tokens.clone());
     let tokens = proc_macro2::TokenStream::from(tokens);
@@ -94,7 +95,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
-    let p: syn::Term = parse_macro_input!(attr);
+    let p: pearlite_syn::Term = parse_macro_input!(attr);
 
     let f: ItemFn = parse_macro_input!(tokens);
 
@@ -121,7 +122,7 @@ pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
 
 struct Invariant {
     name: syn::Ident,
-    invariant: syn::Term,
+    invariant: pearlite_syn::Term,
 }
 
 impl syn::parse::Parse for Invariant {
