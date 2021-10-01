@@ -46,7 +46,7 @@ fn sum_tree_x(t: &Tree) -> u32 {
 }
 
 #[ensures(sum_tree(^mt) - sum_tree(*mt) ==
-  Int::from(^result.0) + sum_tree(^result.1) - Int::from(*result.0) - sum_tree(*result.1))]
+    Int::from(^result.0) + sum_tree(^result.1) - Int::from(*result.0) - sum_tree(*result.1))]
 #[ensures(Int::from(*result.0) <= sum_tree(*mt))]
 #[ensures(sum_tree(*result.1) <= sum_tree(*mt))]
 fn take_some_rest_tree(mt: &mut Tree) -> (&mut u32, &mut Tree) {
