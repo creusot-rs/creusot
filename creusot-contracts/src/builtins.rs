@@ -1,12 +1,6 @@
 use crate as creusot_contracts;
 use creusot_contracts_proc::*;
 
-#[creusot::spec::no_translate]
-#[rustc_diagnostic_item = "equal"]
-pub fn equal<T>(_: T, _: T) -> bool {
-    panic!();
-}
-
 pub struct Int;
 
 impl PartialEq for Int {

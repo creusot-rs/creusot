@@ -117,7 +117,7 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
             let lhs = encode_term(*lhs)?;
             let rhs = encode_term(*rhs)?;
             Ok(quote! {
-                creusot_contracts::builtins::equal(#lhs, #rhs)
+                creusot_contracts::stubs::equal(#lhs, #rhs)
             })
         }
         RT::Impl(TermImpl { hyp, cons, .. }) => {
