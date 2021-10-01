@@ -9,14 +9,14 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type c01_even  = 
-    | C01_Even
-    
   type core_marker_phantomdata 't = 
     | Core_Marker_PhantomData
     
   type core_cell_unsafecell 't = 
     | Core_Cell_UnsafeCell('t)
+    
+  type c01_even  = 
+    | C01_Even
     
   type core_cell_cell 't = 
     | Core_Cell_Cell(core_cell_unsafecell 't)
@@ -54,6 +54,10 @@ module C01_Impl0_Get
     ensures { Inv0.inv result }
     
 end
+module CreusotContracts_Builtins_Resolve
+  type self   
+  predicate resolve (self : self)
+end
 module C01_Impl0_Set_Interface
   type t   
   type i   
@@ -84,10 +88,6 @@ module C01_Impl1_Inv
   use mach.int.UInt32
   predicate inv (x : uint32) = 
     mod x (2 : uint32) = (0 : uint32)
-end
-module CreusotContracts_Builtins_Resolve
-  type self   
-  predicate resolve (self : self)
 end
 module C01_Impl1
   use Type
@@ -141,7 +141,7 @@ module C01_AddsTwo
     _5 <- v_2;
     _4 <- _5 < (100000 : uint32);
     switch (_4)
-      | False -> goto BB3
+      | False -> goto BB4
       | True -> goto BB2
       | _ -> goto BB2
       end
@@ -155,21 +155,21 @@ module C01_AddsTwo
     assume { Resolve1.resolve v_2 };
     _8 <- _9 + (2 : uint32);
     _6 <- Set4.set _7 _8;
-    goto BB4
+    goto BB3
   }
   BB3 {
+    assume { Resolve3.resolve _7 };
+    assume { Resolve1.resolve _8 };
+    _0 <- ();
+    goto BB6
+  }
+  BB4 {
     assume { Resolve1.resolve v_2 };
     assume { Resolve2.resolve _4 };
     _11 <- c_1;
     assume { Resolve3.resolve c_1 };
     _10 <- Set4.set _11 (0 : uint32);
     goto BB5
-  }
-  BB4 {
-    assume { Resolve3.resolve _7 };
-    assume { Resolve1.resolve _8 };
-    _0 <- ();
-    goto BB6
   }
   BB5 {
     assume { Resolve3.resolve _11 };

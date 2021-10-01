@@ -187,7 +187,7 @@ fn lower_expr<'tcx>(
 
             Ok(Term::Match { scrutinee: box scrutinee, arms })
         }
-        ExprKind::If { cond, then, else_opt } => {
+        ExprKind::If { cond, then, else_opt, .. } => {
             let cond = lower_expr(tcx, thir, cond)?;
             let then = lower_expr(tcx, thir, then)?;
             if let Some(els) = else_opt {

@@ -4,21 +4,21 @@ use rustc_middle::{
     mir::{Body, Local},
     ty::TyCtxt,
 };
-use rustc_mir::dataflow::{
+use rustc_mir_dataflow::{
     self,
     impls::{MaybeInitializedLocals, MaybeLiveLocals},
-    Analysis,
+    Analysis, ResultsCursor,
 };
 
 use crate::extended_location::ExtendedLocation;
 
 pub struct EagerResolver<'body, 'tcx> {
-    local_live: dataflow::ResultsCursor<'body, 'tcx, MaybeLiveLocals>,
+    local_live: ResultsCursor<'body, 'tcx, MaybeLiveLocals>,
 
     // Whether a local is initialized or not at a location
-    local_init: dataflow::ResultsCursor<'body, 'tcx, MaybeInitializedLocals>,
+    local_init: ResultsCursor<'body, 'tcx, MaybeInitializedLocals>,
 
-    local_uninit: dataflow::ResultsCursor<'body, 'tcx, MaybeUninitializedLocals>,
+    local_uninit: ResultsCursor<'body, 'tcx, MaybeUninitializedLocals>,
 
     // Locals that are never read
     never_live: BitSet<Local>,

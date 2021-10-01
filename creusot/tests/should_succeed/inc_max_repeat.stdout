@@ -59,7 +59,6 @@ module IncMaxRepeat_TakeMax
   var _6 : uint32;
   var _7 : uint32;
   var _8 : borrowed uint32;
-  var _9 : borrowed uint32;
   {
     ma_1 <- ma;
     mb_2 <- mb;
@@ -91,12 +90,9 @@ module IncMaxRepeat_TakeMax
   BB2 {
     assume { Resolve1.resolve ma_1 };
     assume { Resolve2.resolve _5 };
-    _9 <- borrow_mut ( * mb_2);
-    mb_2 <- { mb_2 with current = ( ^ _9) };
+    _4 <- borrow_mut ( * mb_2);
+    mb_2 <- { mb_2 with current = ( ^ _4) };
     assume { Resolve1.resolve mb_2 };
-    _4 <- borrow_mut ( * _9);
-    _9 <- { _9 with current = ( ^ _4) };
-    assume { Resolve1.resolve _9 };
     goto BB3
   }
   BB3 {
@@ -198,7 +194,7 @@ module IncMaxRepeat_IncMaxRepeat
     _12 <- n_3;
     _10 <- _11 < _12;
     switch (_10)
-      | False -> goto BB4
+      | False -> goto BB5
       | True -> goto BB3
       | _ -> goto BB3
       end
@@ -216,9 +212,17 @@ module IncMaxRepeat_IncMaxRepeat
     _17 <- { _17 with current = ( ^ _16) };
     assume { Resolve2.resolve _17 };
     mc_13 <- TakeMax3.take_max _14 _16;
-    goto BB5
+    goto BB4
   }
   BB4 {
+    mc_13 <- { mc_13 with current = ( * mc_13 + (1 : uint32)) };
+    assume { Resolve2.resolve mc_13 };
+    i_4 <- i_4 + (1 : uint32);
+    _9 <- ();
+    assume { Resolve4.resolve _9 };
+    goto BB1
+  }
+  BB5 {
     assume { Resolve0.resolve n_3 };
     assume { Resolve1.resolve _10 };
     _5 <- ();
@@ -236,14 +240,6 @@ module IncMaxRepeat_IncMaxRepeat
       | True -> goto BB6
       | _ -> goto BB6
       end
-  }
-  BB5 {
-    mc_13 <- { mc_13 with current = ( * mc_13 + (1 : uint32)) };
-    assume { Resolve2.resolve mc_13 };
-    i_4 <- i_4 + (1 : uint32);
-    _9 <- ();
-    assume { Resolve4.resolve _9 };
-    goto BB1
   }
   BB6 {
     assume { Resolve0.resolve a_1 };
