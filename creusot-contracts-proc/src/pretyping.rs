@@ -1,9 +1,9 @@
+use pearlite_syn::Term as RT;
 use proc_macro2::TokenStream;
 use syn::Pat;
-use syn::Term as RT;
 
+use pearlite_syn::term::*;
 use quote::quote;
-use syn::term::*;
 use syn::Lit;
 
 #[derive(Debug)]
