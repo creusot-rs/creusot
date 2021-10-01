@@ -13,7 +13,7 @@ logic! {
 trait A {
     type T;
 
-    #[ensures(equal(id(x), x))]
+    #[ensures(id(x) === x)]
     fn f(x: Self::T);
 }
 

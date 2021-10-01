@@ -113,10 +113,16 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
             })
         }
         RT::Verbatim(_) => todo!(),
+        RT::LogEq(TermLogEq { lhs, rhs, .. }) => {
+            let lhs = encode_term(*lhs)?;
+            let rhs = encode_term(*rhs)?;
+            Ok(quote! {
+                creusot_contracts::stubs::equal(#lhs, #rhs)
+            })
+        }
         RT::Impl(TermImpl { hyp, cons, .. }) => {
             let hyp = encode_term(*hyp)?;
             let cons = encode_term(*cons)?;
-
             Ok(quote! {
                 creusot_contracts::stubs::implication(#hyp, #cons)
             })

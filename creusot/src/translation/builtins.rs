@@ -14,13 +14,7 @@ pub fn lookup_builtin(
 ) -> Option<Exp> {
     let def_id = Some(def_id);
 
-    if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("equal")) {
-        let l = args.remove(0);
-        let r = args.remove(0);
-        return Some(Exp::BinaryOp(BinOp::Eq, box l, box r));
-    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("absurd")) {
-        return Some(Exp::Absurd);
-    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("add_int")) {
+    if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("add_int")) {
         let l = args.remove(0);
         let r = args.remove(0);
 

@@ -4,7 +4,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[ensures(equal(^mma, *mmb) && equal(^mmb, *mma))]
+#[ensures(^mma === *mmb && ^mmb === *mma)]
 fn swap<'a>(mma: &'a mut &'a mut u32, mmb: &'a mut &'a mut u32) {
     let tmp = *mma;
     *mma = *mmb;
