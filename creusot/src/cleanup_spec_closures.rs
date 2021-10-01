@@ -9,7 +9,7 @@ use rustc_middle::mir::{
 
 use rustc_middle::ty::TyCtxt;
 
-use crate::specification;
+use crate::util;
 
 pub fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut Body<'tcx>) {
     trace!("cleanup_spec_closures: {:?}", def_id);
@@ -72,11 +72,8 @@ impl MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &mut Rvalue<'tcx>, l: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), substs) => {
-                if specification::get_attr(
-                    self.tcx.get_attrs(*def_id),
-                    &["creusot", "spec", "no_translate"],
-                )
-                .is_some()
+                if util::get_attr(self.tcx.get_attrs(*def_id), &["creusot", "spec", "no_translate"])
+                    .is_some()
                 {
                     substs.iter_mut().for_each(|p| {
                         if p.is_move() {

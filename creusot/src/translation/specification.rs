@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use crate::translation::specification;
 use crate::{ctx::*, util};
-use rustc_middle::ty::Attributes;
 use why3::declaration::Contract;
 use why3::mlcfg::Exp;
 
@@ -114,7 +113,7 @@ pub fn contract_of(tcx: TyCtxt, def_id: DefId) -> Result<PreContract, SpecAttrEr
 
         let attr = attr.get_normal_item();
 
-        if !is_attr(attr, "spec") {
+        if !util::is_attr(attr, "spec") {
             continue;
         }
 
@@ -139,35 +138,4 @@ pub fn contract_of(tcx: TyCtxt, def_id: DefId) -> Result<PreContract, SpecAttrEr
     }
 
     Ok(contract)
-}
-
-pub fn get_attr<'a>(attrs: Attributes<'a>, path: &[&str]) -> Option<&'a AttrItem> {
-    for attr in attrs.iter() {
-        if attr.is_doc_comment() {
-            continue;
-        }
-
-        let attr = attr.get_normal_item();
-
-        let matches = attr
-            .path
-            .segments
-            .iter()
-            .zip(path.iter())
-            .fold(true, |acc, (seg, s)| acc && &*seg.ident.as_str() == *s);
-
-        if matches {
-            return Some(attr);
-        }
-    }
-    None
-}
-
-use rustc_ast::AttrItem;
-
-fn is_attr(attr: &AttrItem, str: &str) -> bool {
-    let segments = &attr.path.segments;
-    segments.len() >= 2
-        && segments[0].ident.as_str() == "creusot"
-        && segments[1].ident.as_str() == str
 }

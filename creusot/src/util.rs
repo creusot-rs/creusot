@@ -1,6 +1,8 @@
 use crate::ctx::*;
 use crate::translation::ty;
+use rustc_ast::AttrItem;
 use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_middle::ty::Attributes;
 use rustc_middle::ty::{DefIdTree, TyCtxt};
 use rustc_span::Symbol;
 use why3::{
@@ -22,44 +24,43 @@ pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {
 }
 
 pub fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
-    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "no_translate"])
-        .is_some()
+    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "no_translate"]).is_some()
 }
 
 pub fn is_contract(tcx: TyCtxt, def_id: DefId) -> bool {
-    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "contract"])
-        .is_some()
+    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "contract"]).is_some()
 }
 
 pub fn is_ensures(tcx: TyCtxt, def_id: DefId) -> bool {
-    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "ensures"]).is_some()
+    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "ensures"]).is_some()
 }
 
 pub fn is_requires(tcx: TyCtxt, def_id: DefId) -> bool {
-    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "requires"])
-        .is_some()
+    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "requires"]).is_some()
 }
 
 pub fn is_variant(tcx: TyCtxt, def_id: DefId) -> bool {
-    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "variant"]).is_some()
+    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "variant"]).is_some()
 }
 
 pub fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
-    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "invariant"])
-        .is_some()
+    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "invariant"]).is_some()
 }
 
 pub fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
-    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "predicate"])
-        .is_some()
+    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "predicate"]).is_some()
 }
 
 pub fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
-    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "logic"]).is_some()
+    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "logic"]).is_some()
 }
 
 pub fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
-    crate::specification::get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "trusted"]).is_some()
+    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "trusted"]).is_some()
+}
+
+pub fn is_pure(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "pure"]).is_some()
 }
 
 pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
@@ -175,4 +176,33 @@ pub fn ts_to_symbol(ts: TokenStream) -> Option<Symbol> {
         }
     }
     None
+}
+
+pub fn get_attr<'a>(attrs: Attributes<'a>, path: &[&str]) -> Option<&'a AttrItem> {
+    for attr in attrs.iter() {
+        if attr.is_doc_comment() {
+            continue;
+        }
+
+        let attr = attr.get_normal_item();
+
+        let matches = attr
+            .path
+            .segments
+            .iter()
+            .zip(path.iter())
+            .fold(true, |acc, (seg, s)| acc && &*seg.ident.as_str() == *s);
+
+        if matches {
+            return Some(attr);
+        }
+    }
+    None
+}
+
+pub fn is_attr(attr: &AttrItem, str: &str) -> bool {
+    let segments = &attr.path.segments;
+    segments.len() >= 2
+        && segments[0].ident.as_str() == "creusot"
+        && segments[1].ident.as_str() == str
 }
