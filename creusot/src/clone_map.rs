@@ -57,12 +57,13 @@ impl PreludeModule {
 }
 
 type CloneNode<'tcx> = (DefId, SubstsRef<'tcx>);
+pub type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), String>;
 
 #[derive(Clone)]
 pub struct CloneMap<'tcx> {
     tcx: TyCtxt<'tcx>,
     prelude: IndexMap<PreludeModule, bool>,
-    names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
+    pub names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
     count: usize,
     item_type: ItemType,
 
@@ -142,6 +143,15 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
+    pub fn summary(&self) -> CloneSummary<'tcx> {
+        self.names
+            .iter()
+            .filter_map(|(k, ci)| match &ci.kind {
+                Kind::Named(nm) => Some((*k, nm.clone().to_string())),
+                _ => None,
+            })
+            .collect()
+    }
     pub fn insert(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(_) = it.container {
@@ -187,7 +197,7 @@ impl<'tcx> CloneMap<'tcx> {
         // to build the correct substitution.
         //
         let mut i = self.last_cloned;
-        let empty = Self::new(self.tcx, self.item_type);
+        let empty = CloneSummary::new();
 
         while i < self.names.len() {
             let (&key, clone_info) = self.names.get_index(i).unwrap();
@@ -246,7 +256,7 @@ impl<'tcx> CloneMap<'tcx> {
         let mut decls = Vec::new();
 
         use petgraph::visit::{Topo, Walker};
-        let empty = Self::new(self.tcx, self.item_type);
+        let empty = CloneSummary::new();
 
         // Update the clone graph with any new entries.
         self.update_graph(ctx);
@@ -293,7 +303,7 @@ impl<'tcx> CloneMap<'tcx> {
             for (dep, t, &orig_subst) in self.clone_graph.edges_directed(node, Incoming) {
                 debug!("s={:?} t={:?} e={:?}", dep, t, orig_subst);
                 let recv_info = match orig_subst {
-                    Some(recv_id) => &node_clones.names[&recv_id],
+                    Some(recv_id) => CloneInfo::from_name(node_clones[&recv_id].clone().into()),
                     None => continue,
                 };
                 // Grab the symbols from all dependencies

@@ -1,18 +1,18 @@
+use rustc_data_structures::owning_ref::OwningRef;
+use rustc_data_structures::rustc_erase_owner;
 use rustc_data_structures::sync::{Lrc, MetadataRef};
 use rustc_hir::def_id::{CrateNum, DefId, DefIndex, DefPathHash, StableCrateId};
 use rustc_metadata::creader::CStore;
 use rustc_middle::implement_ty_decoder;
 use rustc_middle::middle::cstore::CrateStore;
+use rustc_middle::ty;
 use rustc_middle::ty::codec::TyDecoder;
+use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_serialize::opaque;
 pub use rustc_serialize::{Decodable, Decoder};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use rustc_data_structures::owning_ref::OwningRef;
-use rustc_data_structures::rustc_erase_owner;
-use rustc_middle::ty;
-use rustc_middle::ty::{Ty, TyCtxt};
 
 // copied from rustc
 #[derive(Clone)]

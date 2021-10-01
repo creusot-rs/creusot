@@ -24,10 +24,11 @@ use why3::{
 use std::io::Result;
 
 use crate::ctx::TranslationCtx;
+use std::io::Write;
 use why3::mlcfg;
 
 pub fn translate(mut ctx: TranslationCtx<'_, '_>) -> Result<()> {
-    load_exports(&mut ctx);
+    ctx.load_metadata();
 
     for def_id in ctx.tcx.body_owners() {
         let def_id = def_id.to_def_id();
@@ -114,10 +115,6 @@ pub fn prelude_imports(type_import: bool) -> Vec<Decl> {
     }
     imports
 }
-
-use std::io::Write;
-
-use self::external::load_exports;
 
 fn print_crate<'a, W, I: Iterator<Item = &'a Module>>(
     out: &mut W,

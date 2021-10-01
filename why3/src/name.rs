@@ -17,6 +17,10 @@ impl Ident {
         // TODO: ensure that all characters are valid
         Ident(name.into())
     }
+
+    pub fn to_string(self) -> String {
+        self.0
+    }
 }
 
 // TODO: Make this try_from and test for validity

@@ -13,6 +13,7 @@ use rustc_resolve::Namespace;
 use rustc_session::Session;
 use rustc_span::Span;
 
+use crate::translation::external::CrateMetadata;
 use crate::util::item_type;
 use crate::{options::Options, util};
 
@@ -25,7 +26,7 @@ pub struct PolyModule<'tcx> {
     // For the moment traits don't have an interface module
     interface: Option<Interface>,
     body: Module,
-    public_dependencies: CloneMap<'tcx>,
+    public_dependencies: CloneSummary<'tcx>,
 }
 
 impl PolyModule<'tcx> {
@@ -37,7 +38,7 @@ impl PolyModule<'tcx> {
         &self.body
     }
 
-    fn dependencies(&self) -> &CloneMap<'tcx> {
+    pub fn dependencies(&self) -> &CloneSummary<'tcx> {
         &self.public_dependencies
     }
 
@@ -54,7 +55,7 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub translated_items: IndexSet<DefId>,
     pub types: Vec<TyDecl>,
     pub functions: IndexMap<DefId, PolyModule<'tcx>>,
-    pub externs: IndexMap<DefId, Module>,
+    pub externs: CrateMetadata<'tcx>,
     pub opts: &'sess Options,
 }
 
@@ -66,9 +67,13 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             translated_items: IndexSet::new(),
             types: Vec::new(),
             functions: IndexMap::new(),
-            externs: IndexMap::new(),
+            externs: CrateMetadata::new(tcx),
             opts,
         }
+    }
+
+    pub fn load_metadata(&mut self) {
+        self.externs.load(&self.opts.extern_paths);
     }
 
     pub fn translate(&mut self, def_id: DefId) {
@@ -137,7 +142,11 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             }
         };
 
-        let module = PolyModule { interface: Some(iface), body: module, public_dependencies: deps };
+        let module = PolyModule {
+            interface: Some(iface),
+            body: module,
+            public_dependencies: deps.summary(),
+        };
         self.functions.insert(def_id, module);
     }
 
@@ -174,7 +183,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             PolyModule {
                 interface: None,
                 body: trait_decl,
-                public_dependencies: CloneMap::new(self.tcx, ItemType::Trait),
+                public_dependencies: CloneSummary::new(),
             },
         );
     }
@@ -185,14 +194,18 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             PolyModule {
                 interface: None,
                 body: trait_impl,
-                public_dependencies: CloneMap::new(self.tcx, ItemType::Impl),
+                public_dependencies: CloneSummary::new(),
             },
         );
     }
 
     // TODO: Support external functions
-    pub fn dependencies(&self, def_id: DefId) -> Option<&CloneMap<'tcx>> {
-        self.functions.get(&def_id).map(|f| f.dependencies())
+    pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
+        if def_id.is_local() {
+            self.functions.get(&def_id).map(|f| f.dependencies())
+        } else {
+            self.externs.dependencies(def_id)
+        }
     }
 
     pub fn should_export(&self) -> bool {
