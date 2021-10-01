@@ -150,6 +150,6 @@ unsafe impl<T1: Resolve, T2: Resolve> Resolve for (T1, T2) {
 
 unsafe impl<T> Resolve for &mut T {
     predicate! { fn resolve(self) -> bool {
-        equal(^ self, * self)
+        ^self === *self
     } }
 }

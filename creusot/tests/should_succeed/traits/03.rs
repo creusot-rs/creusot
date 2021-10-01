@@ -16,7 +16,7 @@ impl A for i32 {
 }
 
 trait B: Sized {
-    #[ensures(equal(result, result))]
+    #[ensures(result === result)]
     fn g(&self) -> Self;
 }
 
