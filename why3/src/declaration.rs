@@ -33,6 +33,7 @@ pub enum Decl {
     PredDecl(Predicate),
     Clone(DeclClone),
     UseDecl(Use),
+    Axiom(Axiom),
 }
 
 impl Decl {
@@ -184,6 +185,7 @@ pub enum CloneSubst {
     Val(QName, QName),
     Predicate(QName, QName),
     Function(QName, QName),
+    Axiom(QName),
 }
 
 impl CloneSubst {
@@ -204,4 +206,11 @@ pub enum ValKind {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Use {
     pub name: QName,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Axiom {
+    pub name: Ident,
+    pub axiom: Exp,
 }

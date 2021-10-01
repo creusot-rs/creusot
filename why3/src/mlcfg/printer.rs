@@ -113,6 +113,7 @@ impl Pretty for Decl {
             Decl::Clone(c) => c.pretty(alloc, env),
             Decl::ValDecl(v) => v.pretty(alloc, env),
             Decl::UseDecl(u) => u.pretty(alloc, env),
+            Decl::Axiom(a) => a.pretty(alloc, env),
         }
     }
 }
@@ -173,6 +174,23 @@ impl Pretty for Scope {
             .append("end");
         env.scopes.pop();
         doc
+    }
+}
+
+impl Pretty for Axiom {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc
+            .text("axiom ")
+            .append(self.name.pretty(alloc, env))
+            .append(" : ")
+            .append(self.axiom.pretty(alloc, env))
     }
 }
 
@@ -325,6 +343,7 @@ impl Pretty for CloneSubst {
                 .append(id.pretty(alloc, env))
                 .append(" = ")
                 .append(o.pretty(alloc, env)),
+            CloneSubst::Axiom(id) => alloc.text("axiom ").append(id.pretty(alloc, env)),
         }
     }
 }
