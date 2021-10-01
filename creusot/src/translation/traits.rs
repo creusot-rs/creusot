@@ -12,7 +12,7 @@ use why3::{
     QName,
 };
 
-use crate::{ctx, resolve, rustc_extensions};
+use crate::{ctx, rustc_extensions};
 
 use crate::ctx::*;
 use crate::translation::ty::{self, translate_ty};

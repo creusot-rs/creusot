@@ -1,6 +1,6 @@
 use super::typing::{LogicalOp, Pattern, Term};
 use crate::ctx::*;
-use crate::translation::traits::{resolve_assoc_item_opt, resolve_opt};
+use crate::translation::traits::resolve_opt;
 use crate::translation::{binop_to_binop, builtins, constant, ty::translate_ty, unop_to_unop};
 use why3::mlcfg::{BinOp, Exp, Pattern as Pat};
 
