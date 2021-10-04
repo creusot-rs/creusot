@@ -1,8 +1,5 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{
-    subst::{InternalSubsts, Subst, SubstsRef},
-    TyCtxt,
-};
+use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 use rustc_span::{symbol::sym, Symbol};
 use why3::{
     mlcfg::{BinOp, Exp, UnOp},
@@ -95,22 +92,34 @@ pub fn lookup_builtin(
         return Some(Exp::BinaryOp(BinOp::Ne, box l, box r));
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("u32_to_int")) {
         let i = args.remove(0);
-        return Some(Exp::Call(
-            box Exp::QVar(QName::from_string("UInt32.to_int").unwrap()),
-            vec![i],
-        ));
+        if !ctx.opts.bounds_check {
+            return Some(i);
+        } else {
+            return Some(Exp::Call(
+                box Exp::QVar(QName::from_string("UInt32.to_int").unwrap()),
+                vec![i],
+            ));
+        }
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("i32_to_int")) {
         let i = args.remove(0);
-        return Some(Exp::Call(
-            box Exp::QVar(QName::from_string("Int32.to_int").unwrap()),
-            vec![i],
-        ));
+        if !ctx.opts.bounds_check {
+            return Some(i);
+        } else {
+            return Some(Exp::Call(
+                box Exp::QVar(QName::from_string("Int32.to_int").unwrap()),
+                vec![i],
+            ));
+        }
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("usize_to_int")) {
         let i = args.remove(0);
-        return Some(Exp::Call(
-            box Exp::QVar(QName::from_string("UInt64.to_int").unwrap()),
-            vec![i],
-        ));
+        if !ctx.opts.bounds_check {
+            return Some(i);
+        } else {
+            return Some(Exp::Call(
+                box Exp::QVar(QName::from_string("UInt64.to_int").unwrap()),
+                vec![i],
+            ));
+        }
     }
     None
 }
