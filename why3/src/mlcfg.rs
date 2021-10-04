@@ -160,6 +160,10 @@ impl Exp {
     pub fn mk_true() -> Self {
         Exp::Const(Constant::const_true())
     }
+
+    pub fn mk_false() -> Self {
+        Exp::Const(Constant::const_false())
+    }
 }
 
 impl From<Ident> for Exp {
