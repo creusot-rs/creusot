@@ -1,5 +1,9 @@
 use rustc_hir::def_id::DefId;
-use rustc_span::Symbol;
+use rustc_middle::ty::{
+    subst::{InternalSubsts, Subst, SubstsRef},
+    TyCtxt,
+};
+use rustc_span::{symbol::sym, Symbol};
 use why3::{
     mlcfg::{BinOp, Exp, UnOp},
     QName,
@@ -7,11 +11,27 @@ use why3::{
 
 use crate::ctx::TranslationCtx;
 
+use super::traits::resolve_opt;
+
 pub fn lookup_builtin(
-    ctx: &mut TranslationCtx<'_, '_>,
-    def_id: DefId,
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    mut def_id: DefId,
+    substs: SubstsRef<'tcx>,
     args: &mut Vec<Exp>,
 ) -> Option<Exp> {
+    if let Some(trait_id) = trait_id_of_method(ctx.tcx, def_id) {
+        // We typically implement `From` but call `into`, using the blanket impl of `Into`
+        // for any `From` type. So when we see an instance of `into` we check that isn't just
+        // a wrapper for a builtin `From` impl.
+        if ctx.tcx.is_diagnostic_item(sym::into_trait, trait_id) {
+            let from_fn = ctx.tcx.lang_items().from_fn().unwrap();
+            let from_subst = ctx.tcx.intern_substs(&[substs[1], substs[0]]);
+            let from_impl =
+                resolve_opt(ctx.tcx, ctx.tcx.param_env(def_id), from_fn, from_subst).unwrap();
+            def_id = from_impl.0;
+        }
+    }
+
     let def_id = Some(def_id);
 
     if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("add_int")) {
@@ -93,4 +113,8 @@ pub fn lookup_builtin(
         ));
     }
     None
+}
+
+fn trait_id_of_method(tcx: TyCtxt, def_id: DefId) -> Option<DefId> {
+    tcx.impl_of_method(def_id).and_then(|id| tcx.trait_id_of_impl(id))
 }
