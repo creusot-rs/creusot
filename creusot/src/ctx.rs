@@ -1,50 +1,94 @@
 use indexmap::{IndexMap, IndexSet};
-
-use why3::declaration::{Module, TyDecl};
-use why3::QName;
-
 use rustc_data_structures::captures::Captures;
 use rustc_errors::DiagnosticId;
 use rustc_hir::def::DefKind;
 use rustc_hir::def_id::DefId;
 use rustc_hir::definitions::DefPathData;
+use rustc_index::vec::Idx;
+use rustc_middle::ty::Visibility;
 use rustc_middle::ty::{AssocItemContainer, TyCtxt};
 use rustc_resolve::Namespace;
 use rustc_session::Session;
 use rustc_span::Span;
+pub use util::ItemType;
+use why3::declaration::{Module, TyDecl};
+use why3::QName;
 
-use crate::translation::external::CrateMetadata;
+pub use crate::clone_map::*;
+use crate::translation::external::{self, CrateMetadata};
+use crate::translation::interface::interface_for;
 use crate::util::item_type;
 use crate::{options::Options, util};
 
-pub use crate::clone_map::*;
-pub use util::ItemType;
-
-use crate::translation::interface::{interface_for, Interface};
-
-pub struct PolyModule<'tcx> {
-    // For the moment traits don't have an interface module
-    interface: Option<Interface>,
-    body: Module,
-    public_dependencies: CloneSummary<'tcx>,
+enum TranslatedItem<'tcx> {
+    Hybrid { interface: Module, modl: Module, proof_modl: Module, dependencies: CloneSummary<'tcx> },
+    Logic { interface: Module, modl: Module, dependencies: CloneSummary<'tcx> },
+    Program { interface: Module, modl: Module, dependencies: CloneSummary<'tcx> },
+    Trait { modl: Module, dependencies: CloneSummary<'tcx> },
+    Impl { modl: Module, dependencies: CloneSummary<'tcx> },
+    Extern { interface: Module, body: DefaultOrExtern<'tcx> },
 }
 
-impl PolyModule<'tcx> {
-    fn modules(&self) -> impl Iterator<Item = &Module> {
-        self.interface.as_ref().map(|i| &i.module).into_iter().chain(std::iter::once(&self.body))
+enum DefaultOrExtern<'tcx> {
+    // dependencies is always empty.
+    Default { modl: Module, dependencies: CloneSummary<'tcx> },
+    Extern(DefId),
+}
+
+impl TranslatedItem<'tcx> {
+    pub fn dependencies(&'a self, metadata: &'a CrateMetadata<'tcx>) -> &'a CloneSummary<'tcx> {
+        use TranslatedItem::*;
+        match self {
+            Hybrid { dependencies, .. } => dependencies,
+            Logic { dependencies, .. } => dependencies,
+            Program { dependencies, .. } => dependencies,
+            Trait { dependencies, .. } => dependencies,
+            Impl { dependencies, .. } => dependencies,
+            Extern { body, .. } => match body {
+                DefaultOrExtern::Default { dependencies, .. } => dependencies,
+                DefaultOrExtern::Extern(def_id) => metadata.dependencies(*def_id).unwrap(),
+            },
+        }
     }
 
-    pub fn body(&self) -> &Module {
-        &self.body
+    pub fn body(&'a self, metadata: &'a CrateMetadata<'tcx>) -> &'a Module {
+        use TranslatedItem::*;
+        match self {
+            Hybrid { modl, .. } => modl,
+            Logic { modl, .. } => modl,
+            Program { modl, .. } => modl,
+            Trait { modl, .. } => modl,
+            Impl { modl, .. } => modl,
+            Extern { body, .. } => match body {
+                DefaultOrExtern::Default { modl, .. } => modl,
+                DefaultOrExtern::Extern(def_id) => metadata.body(*def_id).unwrap(),
+            },
+        }
     }
 
-    pub fn dependencies(&self) -> &CloneSummary<'tcx> {
-        &self.public_dependencies
-    }
-
-    /// Get a reference to the poly module's interface.
-    pub fn interface(&self) -> Option<&Interface> {
-        self.interface.as_ref()
+    pub fn modules(
+        &'a self,
+        metadata: &'a CrateMetadata<'tcx>,
+    ) -> Box<dyn Iterator<Item = &Module> + 'a> {
+        use std::iter;
+        use TranslatedItem::*;
+        match self {
+            Hybrid { interface, proof_modl, modl, .. } => {
+                box iter::once(interface).chain(iter::once(modl)).chain(iter::once(proof_modl))
+            }
+            Logic { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
+            Program { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
+            Trait { modl, .. } => box iter::once(modl),
+            Impl { modl, .. } => box iter::once(modl),
+            Extern { interface, body, .. } => match body {
+                DefaultOrExtern::Default { modl, .. } => {
+                    box iter::once(interface).chain(iter::once(modl))
+                }
+                DefaultOrExtern::Extern(def_id) => {
+                    box iter::once(interface).chain(iter::once(metadata.body(*def_id).unwrap()))
+                }
+            },
+        }
     }
 }
 
@@ -54,7 +98,7 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     pub translated_items: IndexSet<DefId>,
     pub types: Vec<TyDecl>,
-    pub functions: IndexMap<DefId, PolyModule<'tcx>>,
+    functions: IndexMap<DefId, TranslatedItem<'tcx>>,
     pub externs: CrateMetadata<'tcx>,
     pub opts: &'sess Options,
 }
@@ -80,7 +124,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         match item_type(self.tcx, def_id) {
             ItemType::Trait => self.translate_trait(def_id),
             ItemType::Impl => self.translate_impl(def_id),
-            ItemType::Logic | ItemType::Predicate | ItemType::Program => {
+            ItemType::Logic | ItemType::Predicate | ItemType::Program | ItemType::Pure => {
                 self.translate_function(def_id)
             }
             ItemType::Type => unreachable!(),
@@ -104,9 +148,9 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         }
 
         let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
-        let (iface, deps) = interface_for(self, def_id);
+        let (interface, deps) = interface_for(self, def_id);
 
-        let (module, deps) = if !def_id.is_local() {
+        let translated = if !def_id.is_local() {
             debug!("translating {:?} as extern", def_id);
             // HACK to allow using trait methods (ie: resolve) coming from external crates until extern
             // dependencies are properly fixed in `clone_map`
@@ -121,13 +165,39 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                 }
             }
 
-            (crate::translation::translate_extern(self, def_id, span), deps)
+            match self.externs.body(def_id) {
+                Some(_) => {
+                    TranslatedItem::Extern { interface, body: DefaultOrExtern::Extern(def_id) }
+                }
+                None => {
+                    let default = external::default_decl(self, def_id, span);
+
+                    TranslatedItem::Extern {
+                        interface,
+                        body: DefaultOrExtern::Default {
+                            modl: default,
+                            dependencies: CloneSummary::new(),
+                        },
+                    }
+                }
+            }
         } else if util::is_logic(self.tcx, def_id) {
             debug!("translating {:?} as logic", def_id);
-            crate::translation::translate_logic(self, def_id, span)
+            let (modl, deps) = crate::translation::translate_logic(self, def_id, span);
+            TranslatedItem::Logic { interface, modl, dependencies: deps.summary() }
         } else if util::is_predicate(self.tcx, def_id) {
             debug!("translating {:?} as predicate", def_id);
-            crate::translation::translate_predicate(self, def_id, span)
+            let (modl, deps) = crate::translation::translate_predicate(self, def_id, span);
+            TranslatedItem::Logic { interface, modl, dependencies: deps.summary() }
+        } else if util::is_pure(self.tcx, def_id) {
+            debug!("translating {:?} as pure", def_id);
+            let (modl, proof_modl, deps) = crate::translation::translate_pure(self, def_id, span);
+            TranslatedItem::Hybrid {
+                interface,
+                modl: modl,
+                proof_modl: proof_modl,
+                dependencies: deps.summary(),
+            }
         } else {
             let kind = self.tcx.def_kind(def_id);
             if kind == DefKind::Fn || kind == DefKind::Closure || kind == DefKind::AssocFn {
@@ -136,18 +206,14 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                     return;
                 }
 
-                (crate::translation::translate_function(self.tcx, self, def_id), deps)
+                let modl = crate::translation::translate_function(self.tcx, self, def_id);
+                TranslatedItem::Program { interface, modl, dependencies: deps.summary() }
             } else {
                 unimplemented!("{:?} {:?}", def_id, self.tcx.def_kind(def_id))
             }
         };
 
-        let module = PolyModule {
-            interface: Some(iface),
-            body: module,
-            public_dependencies: deps.summary(),
-        };
-        self.functions.insert(def_id, module);
+        self.functions.insert(def_id, translated);
     }
 
     pub fn crash_and_error(&self, span: Span, msg: &str) -> ! {
@@ -180,32 +246,19 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     pub fn add_trait(&mut self, def_id: DefId, trait_decl: Module) {
         self.functions.insert(
             def_id,
-            PolyModule {
-                interface: None,
-                body: trait_decl,
-                public_dependencies: CloneSummary::new(),
-            },
+            TranslatedItem::Trait { modl: trait_decl, dependencies: CloneSummary::new() },
         );
     }
 
     pub fn add_impl(&mut self, def_id: DefId, trait_impl: Module) {
         self.functions.insert(
             def_id,
-            PolyModule {
-                interface: None,
-                body: trait_impl,
-                public_dependencies: CloneSummary::new(),
-            },
+            TranslatedItem::Impl { modl: trait_impl, dependencies: CloneSummary::new() },
         );
     }
 
-    // TODO: Support external functions
     pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
-        if def_id.is_local() {
-            self.functions.get(&def_id).map(|f| f.dependencies())
-        } else {
-            self.externs.dependencies(def_id)
-        }
+        self.functions.get(&def_id).map(|f| f.dependencies(&self.externs))
     }
 
     pub fn should_export(&self) -> bool {
@@ -217,8 +270,30 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn modules(&self) -> impl Iterator<Item = &Module> + Captures<'tcx> {
-        self.functions.values().flat_map(|m| m.modules())
+        self.functions.values().flat_map(|m| m.modules(&self.externs))
     }
+}
+
+pub fn logic_declaration_metadata<'a>(
+    ctx: &'a TranslationCtx<'_, '_>,
+) -> external::LogicMetadata<'a> {
+    ctx.functions
+        .iter()
+        .filter(|(def_id, _)| {
+            ctx.tcx.visibility(**def_id) == Visibility::Public && def_id.is_local()
+        })
+        .map(|(def_id, func)| (def_id.expect_local().index(), func.body(&ctx.externs)))
+        .collect()
+}
+
+pub fn clone_metadata(ctx: &TranslationCtx<'_, 'tcx>) -> external::CloneMetaSerialize<'tcx> {
+    ctx.functions
+        .iter()
+        .filter(|(def_id, _)| {
+            ctx.tcx.visibility(**def_id) == Visibility::Public && def_id.is_local()
+        })
+        .map(|(def_id, v)| (*def_id, v.dependencies(&ctx.externs).clone().into_iter().collect()))
+        .collect()
 }
 
 use heck::CamelCase;

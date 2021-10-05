@@ -149,6 +149,7 @@ const RESERVED: &[&str] = &[
     "reads",
     "rec",
     "requires",
+    "return",
     "returns",
     "scope",
     "true",

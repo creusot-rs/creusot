@@ -113,6 +113,8 @@ impl Pretty for Decl {
             Decl::Clone(c) => c.pretty(alloc, env),
             Decl::ValDecl(v) => v.pretty(alloc, env),
             Decl::UseDecl(u) => u.pretty(alloc, env),
+            Decl::Axiom(a) => a.pretty(alloc, env),
+            Decl::Let(l) => l.pretty(alloc, env),
         }
     }
 }
@@ -172,6 +174,48 @@ impl Pretty for Scope {
             .append(alloc.hardline())
             .append("end");
         env.scopes.pop();
+        doc
+    }
+}
+
+impl Pretty for Axiom {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc
+            .text("axiom ")
+            .append(self.name.pretty(alloc, env))
+            .append(" : ")
+            .append(self.axiom.pretty(alloc, env))
+    }
+}
+
+impl Pretty for LetDecl {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        let mut doc = alloc.text("let ");
+
+        if self.rec {
+            doc = doc.append("rec ");
+        }
+
+        doc = doc
+            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
+            .group()
+            .append(alloc.line())
+            .append(self.body.pretty(alloc, env).indent(2));
+
         doc
     }
 }
@@ -325,6 +369,7 @@ impl Pretty for CloneSubst {
                 .append(id.pretty(alloc, env))
                 .append(" = ")
                 .append(o.pretty(alloc, env)),
+            CloneSubst::Axiom(id) => alloc.text("axiom ").append(id.pretty(alloc, env)),
         }
     }
 }
