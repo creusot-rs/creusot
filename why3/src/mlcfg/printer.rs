@@ -580,9 +580,10 @@ impl Pretty for Exp {
             Exp::Constructor { ctor, args } => ctor.pretty(alloc, env).append(if args.is_empty() {
                 alloc.nil()
             } else {
-                alloc.space().append(
-                    alloc.intersperse(args.iter().map(|a| parens!(alloc, env, self, a)), " "),
-                )
+                alloc.space().append(alloc.intersperse(
+                    args.iter().map(|a| parens!(alloc, env, Precedence::Brackets, a)),
+                    " ",
+                ))
             }),
 
             Exp::BorrowMut(box exp) => {
