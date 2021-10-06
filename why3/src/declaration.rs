@@ -186,7 +186,7 @@ pub enum CloneSubst {
     Val(QName, QName),
     Predicate(QName, QName),
     Function(QName, QName),
-    Axiom(QName),
+    Axiom(Option<QName>),
 }
 
 impl CloneSubst {

@@ -38,6 +38,7 @@ pub enum Term<'tcx> {
     Equals { lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Match { scrutinee: Box<Term<'tcx>>, arms: Vec<(Pattern<'tcx>, Term<'tcx>)> },
     Let { pattern: Pattern<'tcx>, arg: Box<Term<'tcx>>, body: Box<Term<'tcx>> },
+    Absurd,
 }
 
 #[derive(Debug)]
@@ -213,6 +214,7 @@ fn lower_expr<'tcx>(
             Ok(Term::Tuple { fields })
         }
         ExprKind::Use { source } => lower_expr(tcx, thir, source),
+        ExprKind::NeverToAny { .. } => Ok(Term::Absurd),
         ref ek => todo!("lower_expr: {:?}", ek),
     }
 }

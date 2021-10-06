@@ -120,6 +120,12 @@ pub fn lookup_builtin(
                 vec![i],
             ));
         }
+    // Semi-questionable: we allow abort() & unreachable() in pearlite but
+    // interpret them as `absurd` (aka prove false).
+    } else if def_id == ctx.tcx.get_diagnostic_item(sym::abort) {
+        return Some(Exp::Absurd);
+    } else if def_id == ctx.tcx.get_diagnostic_item(sym::unreachable) {
+        return Some(Exp::Absurd);
     }
     None
 }

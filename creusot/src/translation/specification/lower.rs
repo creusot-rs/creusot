@@ -57,6 +57,13 @@ pub fn lower_term_to_why3<'tcx>(
                 box lower_term_to_why3(ctx, names, term_id, body),
             )
         }
+        Term::Exists { binder, box body } => {
+            let ty = translate_ty(ctx, names, rustc_span::DUMMY_SP, binder.1);
+            Exp::Exists(
+                vec![(binder.0.into(), ty)],
+                box lower_term_to_why3(ctx, names, term_id, body),
+            )
+        }
         Term::Constructor { adt, variant, fields } => {
             names.import_prelude_module(PreludeModule::Type);
             let args =
@@ -97,8 +104,9 @@ pub fn lower_term_to_why3<'tcx>(
         Term::Tuple { fields } => Exp::Tuple(
             fields.into_iter().map(|f| lower_term_to_why3(ctx, names, term_id, f)).collect(),
         ),
-        _ => {
-            todo!()
+        Term::Absurd => Exp::Absurd,
+        t => {
+            todo!("{:?}", t)
         }
     }
 }

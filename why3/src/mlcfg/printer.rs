@@ -369,7 +369,10 @@ impl Pretty for CloneSubst {
                 .append(id.pretty(alloc, env))
                 .append(" = ")
                 .append(o.pretty(alloc, env)),
-            CloneSubst::Axiom(id) => alloc.text("axiom ").append(id.pretty(alloc, env)),
+            CloneSubst::Axiom(id) => match id {
+                Some(id) => alloc.text("axiom ").append(id.pretty(alloc, env)),
+                None => alloc.text("axiom ."),
+            },
         }
     }
 }
@@ -577,9 +580,10 @@ impl Pretty for Exp {
             Exp::Constructor { ctor, args } => ctor.pretty(alloc, env).append(if args.is_empty() {
                 alloc.nil()
             } else {
-                alloc.space().append(
-                    alloc.intersperse(args.iter().map(|a| parens!(alloc, env, self, a)), " "),
-                )
+                alloc.space().append(alloc.intersperse(
+                    args.iter().map(|a| parens!(alloc, env, Precedence::Brackets, a)),
+                    " ",
+                ))
             }),
 
             Exp::BorrowMut(box exp) => {
