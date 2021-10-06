@@ -369,7 +369,10 @@ impl Pretty for CloneSubst {
                 .append(id.pretty(alloc, env))
                 .append(" = ")
                 .append(o.pretty(alloc, env)),
-            CloneSubst::Axiom(id) => alloc.text("axiom ").append(id.pretty(alloc, env)),
+            CloneSubst::Axiom(id) => match id {
+                Some(id) => alloc.text("axiom ").append(id.pretty(alloc, env)),
+                None => alloc.text("axiom ."),
+            },
         }
     }
 }
