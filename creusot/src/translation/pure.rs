@@ -41,7 +41,9 @@ pub fn translate_pure(
     decls.push(Decl::ValDecl(function_symbol(func_sig.clone())));
     decls.push(Decl::ValDecl(program_symbol(func_sig.clone())));
     decls.push(Decl::Axiom(spec_axiom(&sig)));
-    decls.push(Decl::Axiom(definition_axiom(&sig, body.clone())));
+    if body.is_pure() {
+        decls.push(Decl::Axiom(definition_axiom(&sig, body.clone())));
+    }
 
     (Module { name, decls }, implementation_module(ctx, def_id, &names, sig, body), names)
 }
@@ -107,6 +109,7 @@ fn implementation_module(
 ) -> Module {
     let mut names = names.clone();
     names.clear_graph();
+    names.item_type = ItemType::Program;
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));

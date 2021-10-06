@@ -191,6 +191,11 @@ impl<'tcx> CloneMap<'tcx> {
         for (_, b) in self.prelude.iter_mut() {
             *b = false;
         }
+
+        for ci in self.names.values_mut() {
+            ci.cloned = false;
+        }
+
         self.clone_graph = DiGraphMap::new();
     }
 
@@ -346,8 +351,7 @@ impl<'tcx> CloneMap<'tcx> {
 
             if !self.item_type.clone_interfaces() {
                 if let ItemType::Pure = util::item_type(ctx.tcx, def_id) {
-                    clone_subst.push(CloneSubst::Axiom("spec".into()));
-                    clone_subst.push(CloneSubst::Axiom("def".into()))
+                    clone_subst.push(CloneSubst::Axiom(None));
                 }
             }
 
