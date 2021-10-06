@@ -164,6 +164,32 @@ impl Exp {
     pub fn mk_false() -> Self {
         Exp::Const(Constant::const_false())
     }
+
+    pub fn is_pure(&self) -> bool {
+        match self {
+            Exp::Current(e) => e.is_pure(),
+            Exp::Final(e) => e.is_pure(),
+            Exp::Let { arg, body, .. } => arg.is_pure() && body.is_pure(),
+            Exp::Var(_) => true,
+            Exp::QVar(_) => true,
+            Exp::RecUp { record, val, .. } => record.is_pure() && val.is_pure(),
+            Exp::RecField { record, .. } => record.is_pure(),
+            Exp::Tuple(args) => args.iter().all(Exp::is_pure),
+            Exp::Constructor { args, .. } => args.iter().all(Exp::is_pure),
+            Exp::BorrowMut(e) => e.is_pure(),
+            Exp::Const(_) => true,
+            Exp::BinaryOp(_, l, r) => l.is_pure() && r.is_pure(),
+            Exp::UnaryOp(_, e) => e.is_pure(),
+            Exp::Call(f, args) => f.is_pure() && args.iter().all(Exp::is_pure),
+            Exp::Verbatim(_) => false,
+            Exp::Abs(_, e) => e.is_pure(),
+            Exp::Match(e, brs) => e.is_pure() && brs.iter().all(|(_, e)| e.is_pure()),
+            Exp::Absurd => false,
+            Exp::Impl(l, r) => l.is_pure() && r.is_pure(),
+            Exp::Forall(_, e) => e.is_pure(),
+            Exp::Exists(_, e) => e.is_pure(),
+        }
+    }
 }
 
 impl From<Ident> for Exp {
