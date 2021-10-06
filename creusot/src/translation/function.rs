@@ -40,6 +40,7 @@ pub fn translate_function<'tcx, 'sess>(
     names.clone_self(def_id);
 
     let gather = GatherInvariants::gather(ctx, &mut names, def_id);
+    tcx.ensure().mir_borrowck(def_id.expect_local());
     let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
