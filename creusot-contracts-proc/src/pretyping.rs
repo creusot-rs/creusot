@@ -99,7 +99,7 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
                 (#(#elems),*)
             })
         }
-        RT::Type(_) => todo!("Type"),
+        RT::Type(ty) => Ok(quote! { #ty }),
         RT::Unary(TermUnary { op, expr }) => {
             let term = encode_term(*expr)?;
             Ok(quote! {

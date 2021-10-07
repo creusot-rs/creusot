@@ -215,6 +215,7 @@ fn lower_expr<'tcx>(
         }
         ExprKind::Use { source } => lower_expr(tcx, thir, source),
         ExprKind::NeverToAny { .. } => Ok(Term::Absurd),
+        ExprKind::ValueTypeAscription { source, .. } => lower_expr(tcx, thir, source),
         ref ek => todo!("lower_expr: {:?}", ek),
     }
 }
