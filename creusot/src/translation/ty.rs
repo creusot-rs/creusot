@@ -198,7 +198,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     // TODO: allow mutually recursive types
     check_not_mutally_recursive(ctx, did, span);
 
-    let mut names = CloneMap::new(ctx.tcx, ItemType::Type);
+    let mut names = CloneMap::new(ctx.tcx, true);
 
     let adt = ctx.tcx.adt_def(did);
     let gens = ctx.tcx.generics_of(did);
