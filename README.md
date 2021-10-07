@@ -161,7 +161,7 @@ You give a trusted spec that defines the model (which can be accessed by `@`) on
 For example, the following gives a spooky data type `MyPair<T, U>` a nice pair model.
 ```rust
 impl<T, U> Model for MyPair<T, U> {
-    type Model = (T, U);
+    type Target = (T, U);
 }
 #[trusted]
 #[ensures(@result === (a, b))]
