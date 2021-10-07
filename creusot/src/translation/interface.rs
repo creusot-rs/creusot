@@ -14,14 +14,14 @@ pub fn interface_for(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
 ) -> (Module, CloneMap<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, ItemType::Interface);
+    let mut names = CloneMap::new(ctx.tcx, true);
 
     let mut sig = util::signature_of(ctx, &mut names, def_id);
     sig.contract.variant = Vec::new();
 
     let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
 
-    decls.extend(names.clone().to_clones(ctx));
+    decls.extend(names.to_clones(ctx));
 
     match util::item_type(ctx.tcx, def_id) {
         ItemType::Predicate => {
@@ -35,7 +35,6 @@ pub fn interface_for(
             let mut func_sig = sig.clone();
             func_sig.contract = Contract::new();
             decls.push(Decl::ValDecl(ValKind::Function { sig: func_sig }));
-            decls.push(Decl::ValDecl(ValKind::Val { sig }));
         }
         _ => {
             decls.push(Decl::ValDecl(ValKind::Val { sig }));

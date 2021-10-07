@@ -11,7 +11,7 @@ pub fn translate_logic(
     def_id: DefId,
     _span: rustc_span::Span,
 ) -> (Module, CloneMap<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, ItemType::Logic);
+    let mut names = CloneMap::new(ctx.tcx, true);
     names.clone_self(def_id);
 
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
@@ -40,7 +40,7 @@ pub fn translate_predicate(
     def_id: DefId,
     _span: rustc_span::Span,
 ) -> (Module, CloneMap<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, ItemType::Predicate);
+    let mut names = CloneMap::new(ctx.tcx, true);
     names.clone_self(def_id);
 
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);

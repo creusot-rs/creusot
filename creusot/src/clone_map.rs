@@ -65,7 +65,7 @@ pub struct CloneMap<'tcx> {
     prelude: IndexMap<PreludeModule, bool>,
     pub names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
     count: usize,
-    pub item_type: ItemType,
+    pub transparent: bool,
 
     // Graph which is used to calculate the full clone set
     clone_graph: DiGraphMap<CloneNode<'tcx>, Option<(DefId, SubstsRef<'tcx>)>>,
@@ -130,14 +130,14 @@ impl CloneInfo<'tcx> {
 }
 
 impl<'tcx> CloneMap<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, item_type: ItemType) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, transparent: bool) -> Self {
         let names = IndexMap::new();
         CloneMap {
             tcx,
             names,
             count: 0,
             prelude: IndexMap::new(),
-            item_type,
+            transparent,
             clone_graph: DiGraphMap::new(),
             last_cloned: 0,
         }
@@ -195,7 +195,7 @@ impl<'tcx> CloneMap<'tcx> {
         for ci in self.names.values_mut() {
             ci.cloned = false;
         }
-
+        self.last_cloned = 0;
         self.clone_graph = DiGraphMap::new();
     }
 
@@ -238,7 +238,7 @@ impl<'tcx> CloneMap<'tcx> {
             }
 
             // We don't need to construct the sharing graph if the base node is a logic function.
-            if self.item_type.clone_interfaces() {
+            if self.transparent {
                 continue;
             }
 
@@ -343,13 +343,11 @@ impl<'tcx> CloneMap<'tcx> {
                     };
                     // If we are in an interface, then we should not attempt to share
                     // dependencies at all.
-                    if self.item_type != ItemType::Interface {
-                        clone_subst.push(elem);
-                    }
+                    clone_subst.push(elem);
                 }
             }
 
-            if !self.item_type.clone_interfaces() {
+            if !self.transparent {
                 if let ItemType::Pure = util::item_type(ctx.tcx, def_id) {
                     clone_subst.push(CloneSubst::Axiom(None));
                 }
@@ -358,7 +356,7 @@ impl<'tcx> CloneMap<'tcx> {
             ctx.translate(def_id);
 
             decls.push(Decl::Clone(DeclClone {
-                name: cloneable_name(ctx.tcx, def_id, self.item_type.clone_interfaces()),
+                name: cloneable_name(ctx.tcx, def_id, self.transparent),
                 subst: clone_subst,
                 kind: self.names[&node].kind.clone().into(),
             }));
@@ -450,8 +448,7 @@ fn exported_symbols(
         Predicate => Box::new(iter::once(SymbolKind::Predicate(method_name(tcx, def_id)))),
         Interface | Program => Box::new(iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
         Pure => Box::new(
-            iter::once(SymbolKind::Function(method_name(tcx, def_id)))
-                .chain(iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
+            iter::once(SymbolKind::Function(method_name(tcx, def_id))), // .chain(iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
         ),
         Trait | Impl => {
             Box::new(tcx.associated_items(def_id).in_definition_order().filter_map(move |a| {

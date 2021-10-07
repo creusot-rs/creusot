@@ -2,7 +2,7 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 use rustc_span::{symbol::sym, Symbol};
 use why3::{
-    mlcfg::{BinOp, Exp, UnOp},
+    mlcfg::{BinOp, Constant, Exp, UnOp},
     QName,
 };
 
@@ -91,41 +91,38 @@ pub fn lookup_builtin(
 
         return Some(Exp::BinaryOp(BinOp::Ne, box l, box r));
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("u32_to_int")) {
-        let i = args.remove(0);
-        if !ctx.opts.bounds_check {
-            return Some(i);
+        let a = args.remove(0);
+        let i = if let Exp::Const(Constant::Uint(v, _)) = a {
+            Exp::Const(Constant::Uint(v, None))
         } else {
-            return Some(Exp::Call(
-                box Exp::QVar(QName::from_string("UInt32.to_int").unwrap()),
-                vec![i],
-            ));
-        }
+            a
+        };
+
+        return Some(i);
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("i32_to_int")) {
-        let i = args.remove(0);
-        if !ctx.opts.bounds_check {
-            return Some(i);
+        let a = args.remove(0);
+        let i = if let Exp::Const(Constant::Int(v, _)) = a {
+            Exp::Const(Constant::Int(v, None))
         } else {
-            return Some(Exp::Call(
-                box Exp::QVar(QName::from_string("Int32.to_int").unwrap()),
-                vec![i],
-            ));
-        }
+            a
+        };
+        return Some(i);
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("usize_to_int")) {
-        let i = args.remove(0);
-        if !ctx.opts.bounds_check {
-            return Some(i);
+        let a = args.remove(0);
+        let i = if let Exp::Const(Constant::Uint(v, _)) = a {
+            Exp::Const(Constant::Uint(v, None))
         } else {
-            return Some(Exp::Call(
-                box Exp::QVar(QName::from_string("UInt64.to_int").unwrap()),
-                vec![i],
-            ));
-        }
+            a
+        };
+        return Some(i);
     // Semi-questionable: we allow abort() & unreachable() in pearlite but
     // interpret them as `absurd` (aka prove false).
     } else if def_id == ctx.tcx.get_diagnostic_item(sym::abort) {
         return Some(Exp::Absurd);
     } else if def_id == ctx.tcx.get_diagnostic_item(sym::unreachable) {
         return Some(Exp::Absurd);
+    } else if ctx.tcx.def_path_str(def_id.unwrap()) == "std::boxed::Box::<T>::new" {
+        return Some(args.remove(0));
     }
     None
 }

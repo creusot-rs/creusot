@@ -1,6 +1,6 @@
 use crate::{
     clone_map::CloneMap,
-    ctx::{translate_value_id, ItemType, TranslationCtx},
+    ctx::{translate_value_id, TranslationCtx},
     translation::function::all_generic_decls_for,
 };
 use rustc_hir::def_id::DefId;
@@ -12,14 +12,14 @@ use why3::{
     name::Ident,
 };
 
-use super::{function, specification};
+use super::specification;
 
 pub fn translate_pure(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
     _span: rustc_span::Span,
 ) -> (Module, Module, CloneMap<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, ItemType::Logic);
+    let mut names = CloneMap::new(ctx.tcx, true);
     names.clone_self(def_id);
 
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
@@ -109,7 +109,7 @@ fn implementation_module(
 ) -> Module {
     let mut names = names.clone();
     names.clear_graph();
-    names.item_type = ItemType::Program;
+    names.transparent = false;
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));

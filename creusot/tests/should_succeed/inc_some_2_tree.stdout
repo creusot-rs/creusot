@@ -25,8 +25,8 @@ module IncSome2Tree_SumTree
   use mach.int.Int32
   function sum_tree (t : Type.incsome2tree_tree) : int = 
     match (t) with
-      | Type.IncSome2Tree_Tree_Node tl a tr -> sum_tree tl + UInt32.to_int a + sum_tree tr
-      | Type.IncSome2Tree_Tree_Leaf -> Int32.to_int (0 : int32)
+      | Type.IncSome2Tree_Tree_Node tl a tr -> sum_tree tl + a + sum_tree tr
+      | Type.IncSome2Tree_Tree_Leaf -> 0
       end
 end
 module CreusotContracts_Builtins_Resolve
@@ -40,7 +40,7 @@ module IncSome2Tree_LemmaSumTreeNonneg_Interface
   use Type
   clone IncSome2Tree_SumTree_Interface as SumTree0
   val lemma_sum_tree_nonneg (t : Type.incsome2tree_tree) : ()
-    ensures { SumTree0.sum_tree t >= Int32.to_int (0 : int32) }
+    ensures { SumTree0.sum_tree t >= 0 }
     
 end
 module IncSome2Tree_LemmaSumTreeNonneg
@@ -54,7 +54,7 @@ module IncSome2Tree_LemmaSumTreeNonneg
   clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = isize
   clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = Type.incsome2tree_tree
   let rec cfg lemma_sum_tree_nonneg (t : Type.incsome2tree_tree) : ()
-    ensures { SumTree0.sum_tree t >= Int32.to_int (0 : int32) }
+    ensures { SumTree0.sum_tree t >= 0 }
     
    = 
   var _0 : ();
@@ -126,8 +126,8 @@ module IncSome2Tree_SumTreeX_Interface
   use Type
   clone IncSome2Tree_SumTree_Interface as SumTree0
   val sum_tree_x (t : Type.incsome2tree_tree) : uint32
-    requires {SumTree0.sum_tree t <= Int32.to_int (1000000 : int32)}
-    ensures { UInt32.to_int result = SumTree0.sum_tree t }
+    requires {SumTree0.sum_tree t <= 1000000}
+    ensures { result = SumTree0.sum_tree t }
     
 end
 module IncSome2Tree_SumTreeX
@@ -145,8 +145,8 @@ module IncSome2Tree_SumTreeX
   clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = Type.incsome2tree_tree
   clone IncSome2Tree_LemmaSumTreeNonneg_Interface as LemmaSumTreeNonneg3 with function SumTree0.sum_tree = SumTree0.sum_tree
   let rec cfg sum_tree_x (t : Type.incsome2tree_tree) : uint32
-    requires {SumTree0.sum_tree t <= Int32.to_int (1000000 : int32)}
-    ensures { UInt32.to_int result = SumTree0.sum_tree t }
+    requires {SumTree0.sum_tree t <= 1000000}
+    ensures { result = SumTree0.sum_tree t }
     
    = 
   var _0 : uint32;
@@ -259,8 +259,8 @@ module IncSome2Tree_TakeSomeRestTree_Interface
   clone IncSome2Tree_SumTree_Interface as SumTree0
   val take_some_rest_tree (mt : borrowed (Type.incsome2tree_tree)) : (borrowed uint32, borrowed (Type.incsome2tree_tree))
     ensures { SumTree0.sum_tree ( * (let (_, a) = result in a)) <= SumTree0.sum_tree ( * mt) }
-    ensures { UInt32.to_int ( * (let (a, _) = result in a)) <= SumTree0.sum_tree ( * mt) }
-    ensures { SumTree0.sum_tree ( ^ mt) - SumTree0.sum_tree ( * mt) = UInt32.to_int ( ^ (let (a, _) = result in a)) + SumTree0.sum_tree ( ^ (let (_, a) = result in a)) - UInt32.to_int ( * (let (a, _) = result in a)) - SumTree0.sum_tree ( * (let (_, a) = result in a)) }
+    ensures {  * (let (a, _) = result in a) <= SumTree0.sum_tree ( * mt) }
+    ensures { SumTree0.sum_tree ( ^ mt) - SumTree0.sum_tree ( * mt) =  ^ (let (a, _) = result in a) + SumTree0.sum_tree ( ^ (let (_, a) = result in a)) -  * (let (a, _) = result in a) - SumTree0.sum_tree ( * (let (_, a) = result in a)) }
     
 end
 module IncSome2Tree_TakeSomeRestTree
@@ -281,8 +281,8 @@ module IncSome2Tree_TakeSomeRestTree
   clone IncSome2Tree_LemmaSumTreeNonneg_Interface as LemmaSumTreeNonneg4 with function SumTree0.sum_tree = SumTree0.sum_tree
   let rec cfg take_some_rest_tree (mt : borrowed (Type.incsome2tree_tree)) : (borrowed uint32, borrowed (Type.incsome2tree_tree))
     ensures { SumTree0.sum_tree ( * (let (_, a) = result in a)) <= SumTree0.sum_tree ( * mt) }
-    ensures { UInt32.to_int ( * (let (a, _) = result in a)) <= SumTree0.sum_tree ( * mt) }
-    ensures { SumTree0.sum_tree ( ^ mt) - SumTree0.sum_tree ( * mt) = UInt32.to_int ( ^ (let (a, _) = result in a)) + SumTree0.sum_tree ( ^ (let (_, a) = result in a)) - UInt32.to_int ( * (let (a, _) = result in a)) - SumTree0.sum_tree ( * (let (_, a) = result in a)) }
+    ensures {  * (let (a, _) = result in a) <= SumTree0.sum_tree ( * mt) }
+    ensures { SumTree0.sum_tree ( ^ mt) - SumTree0.sum_tree ( * mt) =  ^ (let (a, _) = result in a) + SumTree0.sum_tree ( ^ (let (_, a) = result in a)) -  * (let (a, _) = result in a) - SumTree0.sum_tree ( * (let (_, a) = result in a)) }
     
    = 
   var _0 : (borrowed uint32, borrowed (Type.incsome2tree_tree));
@@ -493,7 +493,7 @@ module IncSome2Tree_IncSome2Tree_Interface
   use mach.int.UInt32
   clone IncSome2Tree_SumTree_Interface as SumTree0
   val inc_some_2_tree (t : Type.incsome2tree_tree) (j : uint32) (k : uint32) : ()
-    requires {SumTree0.sum_tree t + UInt32.to_int j + UInt32.to_int k <= Int32.to_int (1000000 : int32)}
+    requires {SumTree0.sum_tree t + j + k <= 1000000}
     
 end
 module IncSome2Tree_IncSome2Tree
@@ -519,7 +519,7 @@ module IncSome2Tree_IncSome2Tree
   clone IncSome2Tree_TakeSomeRestTree_Interface as TakeSomeRestTree4 with function SumTree0.sum_tree = SumTree0.sum_tree
   clone IncSome2Tree_SumTreeX_Interface as SumTreeX2 with function SumTree0.sum_tree = SumTree0.sum_tree
   let rec cfg inc_some_2_tree (t : Type.incsome2tree_tree) (j : uint32) (k : uint32) : ()
-    requires {SumTree0.sum_tree t + UInt32.to_int j + UInt32.to_int k <= Int32.to_int (1000000 : int32)}
+    requires {SumTree0.sum_tree t + j + k <= 1000000}
     
    = 
   var _0 : ();
