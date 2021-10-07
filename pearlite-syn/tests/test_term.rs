@@ -5,7 +5,7 @@ use pearlite_syn::Term;
 use quote::quote;
 
 #[test]
-fn test_term() {
+fn test_impl() {
     snapshot!(quote!(false ==> true) as Term, @r###"
     TermImpl {
         hyp: TermLit {
@@ -26,7 +26,10 @@ fn test_term() {
         },
     }
     "###);
+}
 
+#[test]
+fn test_logeq() {
     snapshot!(quote!(a === b) as Term, @r###"
     TermLogEq {
         lhs: TermPath {

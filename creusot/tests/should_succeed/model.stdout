@@ -1,0 +1,80 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type model_pair 't 'u = 
+    | Model_Pair 't 'u
+    
+  type model_seven  = 
+    | Model_Seven
+    
+end
+module Core_Marker_Sized
+  type self   
+end
+module CreusotContracts_Builtins_Model
+  type self   
+  clone Core_Marker_Sized as Sized0 with type self = self
+  type model   
+  val model (self : self) : model
+end
+module Model_Seven_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  use Type
+  clone CreusotContracts_Builtins_Model as Model0 with type self = Type.model_seven
+  val seven () : Type.model_seven
+    ensures { Model0.model result = Int32.to_int (7 : int32) }
+    
+end
+module Model_Seven
+  use mach.int.Int
+  use mach.int.Int32
+  use Type
+  clone CreusotContracts_Builtins_Model as Model0 with type self = Type.model_seven
+  val seven () : Type.model_seven
+    ensures { Model0.model result = Int32.to_int (7 : int32) }
+    
+end
+module Model_Pair_Interface
+  type t   
+  type u   
+  use Type
+  clone CreusotContracts_Builtins_Model as Model0 with type self = Type.model_pair t u
+  val pair (a : t) (b : u) : Type.model_pair t u
+    ensures { Model0.model result = (a, b) }
+    
+end
+module Model_Pair
+  type t   
+  type u   
+  use Type
+  clone CreusotContracts_Builtins_Model as Model2 with type self = Type.model_pair t u
+  clone Core_Marker_Sized as Sized1 with type self = u
+  clone Core_Marker_Sized as Sized0 with type self = t
+  val pair (a : t) (b : u) : Type.model_pair t u
+    ensures { Model2.model result = (a, b) }
+    
+end
+module Model_Impl0
+  use Type
+  use mach.int.Int
+  type model  = 
+    int
+  clone CreusotContracts_Builtins_Model with type self = Type.model_seven, type model = model
+end
+module Model_Impl1
+  type t   
+  type u   
+  use Type
+  type model  = 
+    (t, u)
+  clone CreusotContracts_Builtins_Model with type self = Type.model_pair t u, type model = model
+end

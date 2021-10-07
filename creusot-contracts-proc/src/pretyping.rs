@@ -103,13 +103,19 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
         RT::Unary(TermUnary { op, expr }) => {
             let term = encode_term(*expr)?;
             Ok(quote! {
-              #op #term
+                #op #term
             })
         }
         RT::Final(TermFinal { term, .. }) => {
             let term = encode_term(*term)?;
             Ok(quote! {
-              creusot_contracts::stubs::fin(#term)
+                creusot_contracts::stubs::fin(#term)
+            })
+        }
+        RT::Model(TermModel { term, .. }) => {
+            let term = encode_term(*term)?;
+            Ok(quote! {
+                creusot_contracts::builtins::Model::model(#term)
             })
         }
         RT::Verbatim(_) => todo!(),

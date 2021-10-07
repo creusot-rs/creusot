@@ -1,6 +1,16 @@
 use crate as creusot_contracts;
 use creusot_contracts_proc::*;
 
+pub trait Model
+where
+    Self: Sized,
+{
+    type Model;
+    fn model(self) -> Self::Model {
+        panic!()
+    }
+}
+
 pub struct Int;
 
 impl PartialEq for Int {

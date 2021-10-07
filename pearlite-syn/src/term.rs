@@ -106,6 +106,9 @@ ast_enum_of_structs! {
         /// The final value of a borrow: `^x`
         Final(TermFinal),
 
+        /// The model of a borrow: `@x`
+        Model(TermModel),
+
         /// Tokens in term position not interpreted by Syn.
         Verbatim(TokenStream),
 
@@ -115,10 +118,13 @@ ast_enum_of_structs! {
         /// Logical implication
         Impl(TermImpl),
 
+        /// Logical universal quantification
         Forall(TermForall),
 
+        /// Logical existential quantification
         Exists(TermExists),
 
+        /// Logical absurdity
         Absurd(TermAbsurd),
 
         #[doc(hidden)]
@@ -386,6 +392,13 @@ ast_struct! {
 ast_struct! {
     pub struct TermFinal {
         pub final_token: Token![^],
+        pub term: Box<Term>
+    }
+}
+
+ast_struct! {
+    pub struct TermModel {
+        pub at_token: Token![@],
         pub term: Box<Term>
     }
 }
@@ -947,6 +960,11 @@ pub(crate) mod parsing {
         } else if input.peek(Token![^]) {
             Ok(Term::Final(TermFinal {
                 final_token: input.parse()?,
+                term: Box::new(unary_term(input, allow_struct)?),
+            }))
+        } else if input.peek(Token![@]) {
+            Ok(Term::Model(TermModel {
+                at_token: input.parse()?,
                 term: Box::new(unary_term(input, allow_struct)?),
             }))
         } else {
@@ -1686,6 +1704,13 @@ pub(crate) mod printing {
     impl ToTokens for TermFinal {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.final_token.to_tokens(tokens);
+            self.term.to_tokens(tokens);
+        }
+    }
+
+    impl ToTokens for TermModel {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            self.at_token.to_tokens(tokens);
             self.term.to_tokens(tokens);
         }
     }
