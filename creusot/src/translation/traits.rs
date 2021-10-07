@@ -27,7 +27,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             return;
         }
 
-        let mut names = CloneMap::new(self.tcx, ItemType::Trait);
+        let mut names = CloneMap::new(self.tcx, false);
         names.clone_self(def_id);
 
         // The first predicate is a trait reference so we skip it
@@ -91,7 +91,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         }
 
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
-        let mut names = CloneMap::new(self.tcx, ItemType::Impl);
+        let mut names = CloneMap::new(self.tcx, false);
 
         self.translate_trait(trait_ref.def_id);
 

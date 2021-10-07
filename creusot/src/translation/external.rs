@@ -16,7 +16,7 @@ use why3::declaration::{Decl, Module, ValKind::Val};
 
 pub fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) -> Module {
     debug!("generating default declaration for def_id={:?}", def_id);
-    let mut names = CloneMap::new(ctx.tcx, util::item_type(ctx.tcx, def_id));
+    let mut names = CloneMap::new(ctx.tcx, util::item_type(ctx.tcx, def_id).clone_interfaces());
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
