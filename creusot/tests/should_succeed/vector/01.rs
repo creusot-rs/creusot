@@ -45,7 +45,6 @@ impl<T> List<T> {
     logic! {
         fn push(self, v: T) -> Self {
             match self {
-                // Box::new should be escaped
                 Cons(h, tl) => Cons(h, Box::new(tl.push(v))),
                 Nil => Cons(v, Box::new(Nil)),
             }
@@ -80,14 +79,6 @@ logic! {
 }
 
 struct MyVec<T>(Vec<T>);
-
-// unsafe impl<T : Resolve> Resolve for Vec<T> {
-//   predicate! {
-//     fn resolve(self) -> bool {
-//       forall<i : Int>
-//     }
-//   }
-// }
 
 pub struct GhostRecord<T>
 where
@@ -154,18 +145,16 @@ impl<T> MyVec<T> {
 #[ensures((@*v).len() === (@^v).len())]
 fn all_zero(v: &mut MyVec<u32>) {
     let mut i = 0;
-    // let old_v = v;
     let old_v: GhostRecord<&mut MyVec<u32>> = GhostRecord::record(&v);
-    // let x = old_v.model();
+    // This invariant is because why3 can't determine that the prophecy isn't modified by the loop
+    // Either Why3 or Creusot should be improved to do this automaticallly (probably why3)
     #[invariant(proph_const, ^v === ^@old_v)]
-    // this shouldn't need to be an invariant at all.. it's a *fact* for all prophecies but why3 struggles
-    #[invariant(in_bounds, (@*v).len() ===  (@*@old_v).len())]
+    #[invariant(in_bounds, v.model().len() === (@*@old_v).len())]
     #[invariant(all_zero, forall<j : Int> 0 <= j && j < i.into() ==> (@*v).index(j) === 0u32)]
     while i < v.len() {
         *v.index_mut(i) = 0;
         i += 1;
     }
-    // old_v.len();
 }
 
 fn main() {}
