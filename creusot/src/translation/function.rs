@@ -261,9 +261,9 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             traits::resolve_assoc_item_opt(self.tcx, param_env, trait_meth_id, subst);
 
         match resolve_impl {
-            Some((id, subst)) => {
-                self.ctx.translate(id);
-                QVar(self.clone_names.insert(id, subst).qname(self.tcx, id))
+            Some(method) => {
+                self.ctx.translate(method.def_id);
+                QVar(self.clone_names.insert(method.def_id, method.substs).qname_sym(method.ident))
             }
             None => {
                 self.ctx.translate_trait(trait_id);
