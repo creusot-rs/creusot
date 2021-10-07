@@ -120,6 +120,10 @@ impl CloneInfo<'tcx> {
         self.qname_raw(method_name(tcx, def_id))
     }
 
+    pub fn qname_sym(&self, sym: rustc_span::symbol::Symbol) -> QName {
+        self.qname_raw(sym.to_string().into())
+    }
+
     fn qname_raw(&self, method: Ident) -> QName {
         let module = match &self.kind {
             Kind::Named(name) => vec![name.clone()],

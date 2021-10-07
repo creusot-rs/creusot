@@ -1,21 +1,19 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
+use rustc_middle::ty::TyCtxt;
 use rustc_span::{symbol::sym, Symbol};
-use why3::{
-    mlcfg::{BinOp, Constant, Exp, UnOp},
-    QName,
-};
+use why3::mlcfg::{BinOp, Constant, Exp, UnOp};
 
 use crate::ctx::TranslationCtx;
 
-use super::traits::resolve_opt;
+use super::traits::{resolve_opt, MethodInstance};
 
 pub fn lookup_builtin(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    mut def_id: DefId,
-    substs: SubstsRef<'tcx>,
+    method: &MethodInstance<'tcx>,
     args: &mut Vec<Exp>,
 ) -> Option<Exp> {
+    let mut def_id = method.def_id;
+    let substs = method.substs;
     if let Some(trait_id) = trait_id_of_method(ctx.tcx, def_id) {
         // We typically implement `From` but call `into`, using the blanket impl of `Into`
         // for any `From` type. So when we see an instance of `into` we check that isn't just
