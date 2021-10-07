@@ -1,15 +1,11 @@
 use crate as creusot_contracts;
 use creusot_contracts_proc::*;
 
-pub trait Model {
+pub trait Model
+where
+    Self: Sized,
+{
     type Model;
-}
-
-pub trait ModelBody: Model {
-    logic! { fn model(self) -> Self::Model; }
-}
-
-impl<T: Model> ModelBody for T {
     logic! {
         #[trusted]
         fn model(self) -> Self::Model {
