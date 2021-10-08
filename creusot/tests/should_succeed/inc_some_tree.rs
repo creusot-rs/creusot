@@ -10,64 +10,69 @@ enum Tree {
     Leaf,
 }
 use Tree::*;
+impl WellFounded for Tree {}
 
-logic! {
-    fn sum_tree(t: Tree) -> Int {
-        match t {
-            Node(tl, a, tr) => sum_tree(*tl) + Int::from(a) + sum_tree(*tr),
+impl Tree {
+    logic! {
+        fn sum(self) -> Int {
+            match self {
+                Node(tl, a, tr) => tl.sum() + Int::from(a) + tr.sum(),
+                Leaf => 0,
+            }
+        }
+    }
+
+    // TODO: Make this ghost
+    #[pure]
+    #[variant(*self)]
+    #[ensures(self.sum() >= 0)]
+    fn lemma_sum_nonneg(&self) {
+        match self {
+            Node(tl, _, tr) => {
+                tl.lemma_sum_nonneg();
+                tr.lemma_sum_nonneg();
+            }
+            Leaf => (),
+        }
+    }
+
+    #[requires(self.sum() <= 1_000_000)]
+    #[ensures(Int::from(result) == self.sum())]
+    fn sum_x(&self) -> u32 {
+        match self {
+            Node(tl, a, tr) => {
+                tl.lemma_sum_nonneg();
+                tr.lemma_sum_nonneg();
+                tl.sum_x() + *a + tr.sum_x()
+            }
             Leaf => 0,
         }
     }
-}
 
-// TODO: Make this ghost
-#[ensures(sum_tree(*t) >= 0)]
-fn lemma_sum_tree_nonneg(t: &Tree) {
-    match t {
-        Node(tl, _, tr) => {
-            lemma_sum_tree_nonneg(tl);
-            lemma_sum_tree_nonneg(tr);
-        }
-        Leaf => (),
-    }
-}
-
-#[requires(sum_tree(*t) <= 1_000_000)]
-#[ensures(Int::from(result) == sum_tree(*t))]
-fn sum_tree_x(t: &Tree) -> u32 {
-    match t {
-        Node(tl, a, tr) => {
-            lemma_sum_tree_nonneg(tl);
-            lemma_sum_tree_nonneg(tr);
-            sum_tree_x(tl) + *a + sum_tree_x(tr)
-        }
-        Leaf => 0,
-    }
-}
-
-#[ensures(sum_tree(^mt) - sum_tree(*mt) == Int::from(^result) - Int::from(*result))]
-#[ensures(Int::from(*result) <= sum_tree(*mt))]
-fn take_some_tree(mt: &mut Tree) -> &mut u32 {
-    match mt {
-        Node(mtl, ma, mtr) => {
-            lemma_sum_tree_nonneg(mtl);
-            lemma_sum_tree_nonneg(mtr);
-            if rand::random() {
-                ma
-            } else if rand::random() {
-                take_some_tree(mtl)
-            } else {
-                take_some_tree(mtr)
+    #[ensures((^self).sum() - self.sum() == Int::from(^result) - Int::from(*result))]
+    #[ensures(Int::from(*result) <= self.sum())]
+    fn take_some(&mut self) -> &mut u32 {
+        match self {
+            Node(mtl, ma, mtr) => {
+                mtl.lemma_sum_nonneg();
+                mtr.lemma_sum_nonneg();
+                if rand::random() {
+                    ma
+                } else if rand::random() {
+                    mtl.take_some()
+                } else {
+                    mtr.take_some()
+                }
             }
+            Leaf => loop {},
         }
-        Leaf => loop {},
     }
 }
 
-#[requires(sum_tree(t) + Int::from(k) <= 1_000_000)]
+#[requires(t.sum() + Int::from(k) <= 1_000_000)]
 fn inc_some_tree(mut t: Tree, k: u32) {
-    let sum0 = sum_tree_x(&t);
-    let ma = take_some_tree(&mut t);
+    let sum0 = t.sum_x();
+    let ma = t.take_some();
     *ma += k;
-    assert!(sum_tree_x(&t) == sum0 + k);
+    assert!(t.sum_x() == sum0 + k);
 }
