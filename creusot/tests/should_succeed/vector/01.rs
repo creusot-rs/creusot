@@ -27,7 +27,7 @@ impl<T> List<T> {
         }
     }
 
-    #[logic]
+    #[logic_rust]
     fn get(self, ix: Int) -> Option<T> {
         match self {
             Cons(hd, tl) => {
@@ -41,7 +41,7 @@ impl<T> List<T> {
         }
     }
 
-    #[logic]
+    #[logic_rust]
     fn push(self, v: T) -> Self {
         match self {
             Cons(h, tl) => Cons(h, Box::new(tl.push(v))),
@@ -67,7 +67,7 @@ impl<T> List<T> {
     }
 }
 
-#[logic]
+#[logic_rust]
 fn as_ref<'a, T>(opt: Option<&T>) -> &'a Option<T> {
     match opt {
         Some(r) => &Some(*r),
@@ -83,7 +83,7 @@ where
 
 impl<T> Model for GhostRecord<T> {
     type ModelTy = T;
-    #[logic]
+    #[logic_rust]
     #[trusted]
     fn model(self) -> Self::ModelTy {
         panic!()
@@ -100,7 +100,7 @@ impl<T> GhostRecord<T> {
 
 impl<T> Model for MyVec<T> {
     type ModelTy = List<T>;
-    #[logic]
+    #[logic_rust]
     #[trusted]
     fn model(self) -> Self::ModelTy {
         panic!()

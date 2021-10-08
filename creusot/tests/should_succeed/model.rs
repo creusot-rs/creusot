@@ -7,7 +7,7 @@ struct Seven();
 
 impl Model for Seven {
     type ModelTy = Int;
-    #[logic]
+    #[logic_rust]
     #[trusted]
     fn model(self) -> Self::ModelTy {
         panic!()
@@ -24,7 +24,7 @@ struct Pair<T, U>(T, U);
 
 impl<T, U> Model for Pair<T, U> {
     type ModelTy = (T, U);
-    #[logic]
+    #[logic_rust]
     #[trusted]
     fn model(self) -> Self::ModelTy {
         panic!()

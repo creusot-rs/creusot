@@ -10,7 +10,7 @@ pub mod nested {
     }
 
     unsafe impl Resolve for Nested {
-        #[predicate]
+        #[predicate_rust]
         fn resolve(self) -> bool {
             true
         }

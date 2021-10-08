@@ -179,7 +179,7 @@ impl syn::parse::Parse for LogicItem {
 }
 
 #[proc_macro]
-pub fn logic_fn(tokens: TS1) -> TS1 {
+pub fn logic(tokens: TS1) -> TS1 {
     match syn::parse::<LogicItem>(tokens.clone()) {
         Ok(log) => logic_item(log),
         Err(_) => match syn::parse(tokens) {
@@ -234,7 +234,7 @@ impl syn::parse::Parse for PredicateItem {
 }
 
 #[proc_macro]
-pub fn predicate_fn(tokens: TS1) -> TS1 {
+pub fn predicate(tokens: TS1) -> TS1 {
     match syn::parse::<PredicateItem>(tokens.clone()) {
         Ok(log) => predicate_item(log),
         Err(_) => match syn::parse(tokens) {
@@ -280,13 +280,13 @@ pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
 }
 
 #[proc_macro_attribute]
-pub fn logic(_: TS1, tokens: TS1) -> TS1 {
-    logic_fn(tokens)
+pub fn logic_rust(_: TS1, tokens: TS1) -> TS1 {
+    logic(tokens)
 }
 
 #[proc_macro_attribute]
-pub fn predicate(_: TS1, tokens: TS1) -> TS1 {
-    predicate_fn(tokens)
+pub fn predicate_rust(_: TS1, tokens: TS1) -> TS1 {
+    predicate(tokens)
 }
 
 #[proc_macro_attribute]

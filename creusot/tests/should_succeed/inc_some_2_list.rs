@@ -13,7 +13,7 @@ use List::*;
 impl WellFounded for List {}
 
 impl List {
-    #[logic]
+    #[logic_rust]
     fn sum(self) -> Int {
         match self {
             Cons(a, l) => Int::from(a) + l.sum(),

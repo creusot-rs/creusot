@@ -13,7 +13,7 @@ enum List {
 }
 use List::*;
 
-#[logic]
+#[logic_rust]
 fn len(l: List) -> Int {
     match l {
         Cons(_, ls) => 1 + len(*ls),
@@ -21,7 +21,7 @@ fn len(l: List) -> Int {
     }
 }
 
-logic_fn! {
+logic! {
     fn get(l: List, ix: Int) -> Option<u32> {
         match l {
             Cons(x, ls) => match (ix === 0) {

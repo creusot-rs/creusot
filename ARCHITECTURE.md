@@ -151,7 +151,7 @@ Instead, we replace the `discriminant` / `switchInt` pair with a match directly 
 
 ## Logical functions
 
-Logical functions are created by `#[logic]`/`logic_fn!`, `#[pure]`, or `#[predicate]`/`predicate_fn!`.
+Logical functions are created by `#[logic_rust]`/`logic!`, `#[pure]`, or `#[predicate_rust]`/`predicate!`.
 
 ## Specifications
 

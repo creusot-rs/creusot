@@ -20,7 +20,7 @@ enum List<T> {
 }
 use List::*;
 
-#[logic]
+#[logic_rust]
 fn len_logic<T>(l: List<T>) -> Int {
     match l {
         Cons(_, ls) => 1 + len_logic(*ls),
@@ -28,7 +28,7 @@ fn len_logic<T>(l: List<T>) -> Int {
     }
 }
 
-#[logic]
+#[logic_rust]
 fn get<T>(l: List<T>, ix: Int) -> Option<T> {
     match l {
         Cons(t, ls) => {
@@ -78,7 +78,7 @@ impl<T> List<T> {
     }
 }
 
-logic_fn! {
+logic! {
     fn is_sorted(l : List<u32>) -> bool {
         {
             forall<x1 : Int, x2 : Int> x1 <= x2 ==>
@@ -91,7 +91,7 @@ logic_fn! {
     }
 }
 
-#[logic]
+#[logic_rust]
 fn get_default<T>(l: List<T>, ix: Int, def: T) -> T {
     match get(l, ix) {
         Some(v) => v,

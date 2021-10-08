@@ -12,7 +12,7 @@ fn no_bounds_check(x: u32, y: u32) -> u32 {
     2_147_483_647 + 2_147_483_647
 }
 
-#[logic]
+#[logic_rust]
 fn no_conversion(x: u32) -> Int {
     x.into()
 }

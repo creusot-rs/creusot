@@ -10,12 +10,12 @@ use creusot_contracts::*;
 // Here we want to ensure that `program` properly shares
 // the implementation of simple between itself and `uses_simple`.
 
-#[logic]
+#[logic_rust]
 fn simple() -> bool {
     true
 }
 
-#[logic]
+#[logic_rust]
 fn uses_simple() -> bool {
     simple()
 }
