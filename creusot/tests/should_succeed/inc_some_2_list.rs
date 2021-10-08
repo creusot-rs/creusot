@@ -10,58 +10,63 @@ enum List {
     Nil,
 }
 use List::*;
+impl WellFounded for List {}
 
-logic! {
-    fn sum_list(l: List) -> Int {
-        match l {
-            Cons(a, l2) => Int::from(a) + sum_list(*l2),
+impl List {
+    logic! {
+        fn sum(self) -> Int {
+            match self {
+                Cons(a, l) => Int::from(a) + l.sum(),
+                Nil => 0,
+            }
+        }
+    }
+
+    // TODO: Make this ghost
+    #[pure]
+    #[variant(*self)]
+    #[ensures(self.sum() >= 0)]
+    fn lemma_sum_nonneg(&self) {
+        match self {
+            Cons(_, l) => l.lemma_sum_nonneg(),
+            Nil => (),
+        }
+    }
+
+    #[requires(self.sum() <= 1_000_000)]
+    #[ensures(Int::from(result) == self.sum())]
+    fn sum_x(&self) -> u32 {
+        match self {
+            Cons(a, l) => *a + l.sum_x(),
             Nil => 0,
         }
     }
-}
 
-// TODO: Make this ghost
-#[ensures(sum_list(*l) >= 0)]
-fn lemma_sum_list_nonneg(l: &List) {
-    match l {
-        Cons(_, l) => lemma_sum_list_nonneg(l),
-        Nil => (),
-    }
-}
-
-#[requires(sum_list(*l) <= 1_000_000)]
-#[ensures(Int::from(result) == sum_list(*l))]
-fn sum_list_x(l: &List) -> u32 {
-    match l {
-        Cons(a, l2) => *a + sum_list_x(l2),
-        Nil => 0,
-    }
-}
-
-#[ensures(sum_list(^ml) - sum_list(*ml) ==
-    Int::from(^result.0) + sum_list(^result.1) - Int::from(*result.0) - sum_list(*result.1))]
-#[ensures(Int::from(*result.0) <= sum_list(*ml))]
-#[ensures(sum_list(*result.1) <= sum_list(*ml))]
-fn take_some_rest_list(ml: &mut List) -> (&mut u32, &mut List) {
-    match ml {
-        Cons(ma, ml2) => {
-            lemma_sum_list_nonneg(ml2);
-            if rand::random() {
-                (ma, ml2)
-            } else {
-                take_some_rest_list(ml2)
+    #[ensures((^self).sum() - self.sum() ==
+        Int::from(^result.0) + (^result.1).sum() - Int::from(*result.0) - (*result.1).sum())]
+    #[ensures(Int::from(*result.0) <= self.sum())]
+    #[ensures(result.1.sum() <= self.sum())]
+    fn take_some_rest(&mut self) -> (&mut u32, &mut List) {
+        match self {
+            Cons(ma, ml) => {
+                ml.lemma_sum_nonneg();
+                if rand::random() {
+                    (ma, ml)
+                } else {
+                    ml.take_some_rest()
+                }
             }
+            Nil => loop {},
         }
-        Nil => loop {},
     }
 }
 
-#[requires(sum_list(l) + Int::from(j) + Int::from(k) <= 1_000_000)]
+#[requires(l.sum() + Int::from(j) + Int::from(k) <= 1_000_000)]
 fn inc_some_2_list(mut l: List, j: u32, k: u32) {
-    let sum0 = sum_list_x(&l);
-    let (ma, ml) = take_some_rest_list(&mut l);
-    let (mb, _) = take_some_rest_list(ml);
+    let sum0 = l.sum_x();
+    let (ma, ml) = l.take_some_rest();
+    let (mb, _) = ml.take_some_rest();
     *ma += j;
     *mb += k;
-    assert!(sum_list_x(&l) == sum0 + j + k);
+    assert!(l.sum_x() == sum0 + j + k);
 }
