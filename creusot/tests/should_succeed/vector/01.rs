@@ -85,10 +85,10 @@ where
     T: ?Sized;
 
 impl<T> Model for GhostRecord<T> {
-    type Model = T;
+    type ModelTy = T;
     logic! {
         #[trusted]
-        fn model(self) -> Self::Model  {
+        fn model(self) -> Self::ModelTy  {
             panic!()
         }
     }
@@ -103,10 +103,10 @@ impl<T> GhostRecord<T> {
 }
 
 impl<T> Model for MyVec<T> {
-    type Model = List<T>;
+    type ModelTy = List<T>;
     logic! {
         #[trusted]
-        fn model(self) -> Self::Model  {
+        fn model(self) -> Self::ModelTy  {
             panic!()
         }
     }

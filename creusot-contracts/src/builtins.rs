@@ -1,12 +1,9 @@
 use crate as creusot_contracts;
 use creusot_contracts_proc::*;
 
-pub trait Model
-where
-    Self: Sized,
-{
-    type Model;
-    fn model(self) -> Self::Model;
+pub trait Model {
+    type ModelTy;
+    fn model(self) -> Self::ModelTy;
 }
 
 pub struct Int;
