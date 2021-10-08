@@ -17,6 +17,8 @@ use rustc_target::abi::VariantIdx;
 use why3::mlcfg::{BinOp, BlockId, Constant, Exp, Pattern, Statement, Terminator as MlT};
 use why3::QName;
 
+use crate::translation::traits;
+
 use super::FunctionTranslator;
 
 // Translate the terminator of a basic block.
@@ -135,27 +137,15 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(_) = it.container {
                 let params = self.ctx.tcx.param_env(self.def_id);
-                let inst = self
-                    .ctx
-                    .tcx
-                    .resolve_instance(params.and((def_id, subst)))
+                let method = traits::resolve_assoc_item_opt(self.tcx, params, def_id, subst)
                     .expect("could not find instance");
 
-                match inst {
-                    Some(i) => {
-                        let impl_id = self.ctx.tcx.impl_of_method(i.def_id()).unwrap();
-                        self.ctx.translate_impl(impl_id);
-                        return self
-                            .clone_names
-                            .insert(i.def_id(), i.substs)
-                            .qname(self.tcx, i.def_id());
-                    }
-                    None => {
-                        // We are working on generics
-                        self.ctx.translate_trait(it.container.id());
-                        return self.clone_names.insert(def_id, subst).qname(self.tcx, def_id);
-                    }
-                }
+                self.ctx.translate(method.def_id);
+
+                return self
+                    .clone_names
+                    .insert(method.def_id, method.substs)
+                    .qname_sym(method.ident);
             }
         }
 

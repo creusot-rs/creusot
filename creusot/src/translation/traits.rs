@@ -136,7 +136,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         decls.push(Decl::Clone(DeclClone {
             name: translate_trait_name(self.tcx, trait_ref.def_id),
             subst,
-            kind: CloneKind::Bare,
+            kind: CloneKind::Export,
         }));
 
         let name = translate_value_id(self.tcx, impl_id);
@@ -284,6 +284,25 @@ fn resolve_impl_source_opt(
     }
 }
 
+use rustc_span::symbol::Symbol;
+// Represents a function applied to a specific, possibly generic substitution, but allows
+// us to gracefully smooth over default methods not existing.
+// TODO: make the fields private and expose a better api
+#[derive(Debug)]
+pub struct MethodInstance<'tcx> {
+    /// This is the finalizer of the method in rustc parlance, it is not necessarily the method id.
+    /// If the method is provided by a default, this would be the instance that is defaulting.
+    pub def_id: DefId,
+    pub substs: SubstsRef<'tcx>,
+    pub ident: Symbol,
+}
+
+impl<'tcx> MethodInstance<'tcx> {
+    pub fn new(tcx: TyCtxt<'tcx>, def_id: DefId, substs: SubstsRef<'tcx>) -> Self {
+        Self { def_id, substs, ident: tcx.item_name(def_id) }
+    }
+}
+
 pub fn resolve_opt(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
@@ -293,7 +312,8 @@ pub fn resolve_opt(
     if tcx.is_trait(def_id) {
         resolve_trait_opt(tcx, param_env, def_id, substs)
     } else {
-        resolve_assoc_item_opt(tcx, param_env, def_id, substs)
+        let method = resolve_assoc_item_opt(tcx, param_env, def_id, substs)?;
+        Some((method.def_id, method.substs))
     }
 }
 
@@ -318,10 +338,10 @@ pub fn resolve_assoc_item_opt(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
-    subst: SubstsRef<'tcx>,
-) -> Option<(DefId, SubstsRef<'tcx>)> {
+    substs: SubstsRef<'tcx>,
+) -> Option<MethodInstance<'tcx>> {
     let assoc = tcx.opt_associated_item(def_id)?;
-    let source = resolve_impl_source_opt(tcx, param_env, def_id, subst)?;
+    let source = resolve_impl_source_opt(tcx, param_env, def_id, substs)?;
 
     match source {
         ImplSource::UserDefined(impl_data) => {
@@ -340,7 +360,7 @@ pub fn resolve_assoc_item_opt(
             // Translate the original substitution into one on the selected impl method
             let leaf_substs = tcx.infer_ctxt().enter(|infcx| {
                 let param_env = param_env.with_reveal_all_normalized(tcx);
-                let substs = subst.rebase_onto(tcx, trait_def_id, impl_data.substs);
+                let substs = substs.rebase_onto(tcx, trait_def_id, impl_data.substs);
                 let substs = rustc_trait_selection::traits::translate_substs(
                     &infcx,
                     param_env,
@@ -351,9 +371,22 @@ pub fn resolve_assoc_item_opt(
                 infcx.tcx.erase_regions(substs)
             });
 
-            Some((leaf_def.item.def_id, leaf_substs))
+            if leaf_def.finalizing_node.map(|n| n.def_id()) == Some(leaf_def.defining_node.def_id())
+            {
+                Some(MethodInstance {
+                    def_id: leaf_def.item.def_id,
+                    substs: leaf_substs,
+                    ident: leaf_def.item.ident.name,
+                })
+            } else {
+                Some(MethodInstance {
+                    def_id: impl_data.impl_def_id,
+                    substs: impl_data.substs,
+                    ident: assoc.ident.name,
+                })
+            }
         }
-        ImplSource::Param(_, _) => Some((def_id, subst)),
+        ImplSource::Param(_, _) => Some(MethodInstance { def_id, substs, ident: assoc.ident.name }),
         _ => unimplemented!(),
     }
 }

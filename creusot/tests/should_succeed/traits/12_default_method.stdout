@@ -1,0 +1,69 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module C12DefaultMethod_T
+  type self   
+  use mach.int.Int
+  use mach.int.UInt32
+  use prelude.Prelude
+  val default (self : self) : uint32
+  function logic_default (self : self) : bool
+end
+module C12DefaultMethod_Impl0
+  use mach.int.Int
+  use mach.int.UInt32
+  clone export C12DefaultMethod_T with type self = uint32
+end
+module CreusotContracts_Builtins_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module C12DefaultMethod_ShouldUseImpl_Interface
+  use mach.int.Int
+  use mach.int.UInt32
+  clone C12DefaultMethod_Impl0 as T0
+  val should_use_impl (x : uint32) : ()
+    ensures { T0.logic_default x }
+    
+end
+module C12DefaultMethod_ShouldUseImpl
+  use mach.int.Int
+  use mach.int.UInt32
+  clone C12DefaultMethod_Impl0 as T0
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = uint32
+  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = uint32
+  let rec cfg should_use_impl (x : uint32) : ()
+    ensures { T0.logic_default x }
+    
+   = 
+  var _0 : ();
+  var x_1 : uint32;
+  var _2 : uint32;
+  var _3 : uint32;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _3 <- x_1;
+    assume { Resolve1.resolve x_1 };
+    _2 <- T0.default _3;
+    goto BB1
+  }
+  BB1 {
+    assume { Resolve2.resolve _3 };
+    _0 <- ();
+    return _0
+  }
+  
+end
