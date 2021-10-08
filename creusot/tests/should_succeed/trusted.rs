@@ -23,9 +23,8 @@ fn victim_of_lie() -> u32 {
     lie()
 }
 
-predicate! {
-    #[trusted]
-    fn trusted_pred(x: u32) {
-        true
-    }
+#[predicate]
+#[trusted]
+fn trusted_pred(x: u32) {
+    true
 }

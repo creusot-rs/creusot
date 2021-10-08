@@ -11,7 +11,8 @@ use creusot_contracts::*;
 trait Tr {
     #[logic]
     fn logical(&self) -> Int;
-    predicate! { fn predicate(&self) -> bool; }
+    #[predicate]
+    fn predicate(&self) -> bool;
     fn program(&self) {}
 }
 

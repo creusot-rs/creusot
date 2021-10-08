@@ -17,10 +17,9 @@ use Option::*;
 pub struct List(u32, Option<Box<List>>);
 
 unsafe impl Resolve for List {
-    predicate! {
-        fn resolve(self) -> bool {
-            true
-        }
+    #[predicate]
+    fn resolve(self) -> bool {
+        true
     }
 }
 
