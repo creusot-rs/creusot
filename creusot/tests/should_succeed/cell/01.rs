@@ -8,7 +8,8 @@ use creusot_contracts::*;
 use std::marker::PhantomData;
 
 trait Inv<T> {
-    predicate! { fn inv(x : T) -> bool; }
+    #[predicate_rust]
+    fn inv(x: T) -> bool;
 }
 
 struct Cell<T, I> {
@@ -33,10 +34,9 @@ impl<T: Copy, I: Inv<T>> Cell<T, I> {
 struct Even;
 
 impl Inv<u32> for Even {
-    predicate! {
-        fn inv(x : u32) -> bool {
-            x % 2u32 == 0u32
-        }
+    #[predicate_rust]
+    fn inv(x: u32) -> bool {
+        x % 2u32 == 0u32
     }
 }
 

@@ -20,17 +20,16 @@ enum List<T> {
 }
 use List::*;
 
-logic! {
-fn len_logic<T>(l : List<T>) -> Int {
+#[logic_rust]
+fn len_logic<T>(l: List<T>) -> Int {
     match l {
         Cons(_, ls) => 1 + len_logic(*ls),
         Nil => 0,
     }
 }
-}
 
-logic! {
-fn get<T>(l : List<T>, ix : Int) -> Option<T> {
+#[logic_rust]
+fn get<T>(l: List<T>, ix: Int) -> Option<T> {
     match l {
         Cons(t, ls) => {
             if ix == 0 {
@@ -41,7 +40,6 @@ fn get<T>(l : List<T>, ix : Int) -> Option<T> {
         }
         Nil => None,
     }
-}
 }
 
 impl<T> List<T> {
@@ -81,8 +79,9 @@ impl<T> List<T> {
 }
 
 logic! {
-    fn is_sorted(l : List<u32>) -> bool { {
-        forall<x1 : Int, x2 : Int> x1 <= x2 ==>
+    fn is_sorted(l : List<u32>) -> bool {
+        {
+            forall<x1 : Int, x2 : Int> x1 <= x2 ==>
             match (get(l, x1), get(l, x2)) {
                 (Some(v1), Some(v2)) => v1 <= v2,
                 (None, None) => true,
@@ -92,12 +91,11 @@ logic! {
     }
 }
 
-logic! {
-    fn get_default<T>(l : List<T>, ix: Int, def: T) -> T {
-        match get(l, ix) {
-            Some(v) => v,
-            None => def,
-        }
+#[logic_rust]
+fn get_default<T>(l: List<T>, ix: Int, def: T) -> T {
+    match get(l, ix) {
+        Some(v) => v,
+        None => def,
     }
 }
 

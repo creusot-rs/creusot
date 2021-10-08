@@ -17,34 +17,35 @@ use Option::*;
 pub struct List(u32, Option<Box<List>>);
 
 unsafe impl Resolve for List {
-    predicate! {
-        fn resolve(self) -> bool {
-            true
+    #[predicate_rust]
+    fn resolve(self) -> bool {
+        true
+    }
+}
+
+#[logic_rust]
+fn len(l: List) -> Int {
+    {
+        let List(_, ls) = l;
+        1 + match ls {
+            Some(ls) => len(*ls),
+            None => 0,
         }
     }
 }
 
-logic! {
-fn len(l: List) -> Int {{
-    let List(_, ls) = l;
-    1 + match ls {
-        Some(ls) => len(*ls),
-        None => 0
-    }
-}}
-}
-
-logic! {
-fn get(l : List, ix : Int) -> Option<u32> {{
-    let List(i, ls) = l;
-    match (ix > 0) {
-        false => Some(i),
-        true => match ls {
-            Some(ls) => get(*ls, ix - 1),
-            None => None
+#[logic_rust]
+fn get(l: List, ix: Int) -> Option<u32> {
+    {
+        let List(i, ls) = l;
+        match ix > 0 {
+            false => Some(i),
+            true => match ls {
+                Some(ls) => get(*ls, ix - 1),
+                None => None,
+            },
         }
     }
-}}
 }
 
 #[requires(Int::from(param_ix) < len(*param_l))]

@@ -11,9 +11,10 @@ trait T {
         0
     }
 
-    logic! { fn logic_default(self) -> bool {
-      true
-    }}
+    #[logic_rust]
+    fn logic_default(self) -> bool {
+        true
+    }
 }
 
 impl T for u32 {}
