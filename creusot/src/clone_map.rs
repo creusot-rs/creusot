@@ -246,18 +246,15 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            debug!("adding dependencies of {:?}", key);
             for dep in ctx.dependencies(key.0).unwrap_or(&empty).keys() {
                 let orig = dep;
                 let dep = (dep.0, dep.1.subst(self.tcx, key.1));
-                debug!("dep_subst={:?}", dep);
                 let dep = match traits::resolve_opt(ctx.tcx, ctx.tcx.param_env(key.0), dep.0, dep.1)
                 {
                     Some(dep) => (dep),
                     None => (dep),
                 };
 
-                debug!("inserting dependency: {:?}", dep);
                 self.insert(dep.0, dep.1);
 
                 // Skip reflexive edges
