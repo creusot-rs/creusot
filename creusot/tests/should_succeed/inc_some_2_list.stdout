@@ -9,26 +9,26 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type incsome2list_list  =
+  type incsome2list_list  = 
     | IncSome2List_List_Cons uint32 (incsome2list_list)
     | IncSome2List_List_Nil
-
+    
 end
 module CreusotContracts_Builtins_Model
-  type self
-  type modelty
+  type self   
+  type modelty   
   function model (self : self) : modelty
 end
-module CreusotContracts_Builtins_Impl6_Model_Interface
+module CreusotContracts_Builtins_Impl7_Model_Interface
   use mach.int.Int
   use mach.int.UInt32
   function model (self : uint32) : int
 end
-module CreusotContracts_Builtins_Impl6_Model
+module CreusotContracts_Builtins_Impl7_Model
   use Type
   use mach.int.Int
   use mach.int.UInt32
-  function model (self : uint32) : int =
+  function model (self : uint32) : Type.creusotcontracts_builtins_int = 
     self
 end
 module IncSome2List_Impl1_Sum_Interface
@@ -40,8 +40,8 @@ module IncSome2List_Impl1_Sum
   use mach.int.Int
   use Type
   use mach.int.Int32
-  clone CreusotContracts_Builtins_Impl6_Model_Interface as Model0
-  function sum (self : Type.incsome2list_list) : int =
+  clone CreusotContracts_Builtins_Impl7_Model_Interface as Model0
+  function sum (self : Type.incsome2list_list) : int = 
     match (self) with
       | Type.IncSome2List_List_Cons a l -> Model0.model a + sum l
       | Type.IncSome2List_List_Nil -> 0
@@ -65,7 +65,7 @@ module IncSome2List_Impl1_LemmaSumNonneg
   val lemma_sum_nonneg (self : Type.incsome2list_list) : ()
     ensures { Sum0.sum self >= 0 }
     ensures { result = lemma_sum_nonneg self }
-
+    
   axiom spec : forall self : Type.incsome2list_list . Sum0.sum self >= 0
   axiom def : forall self : Type.incsome2list_list . lemma_sum_nonneg self = match (self) with
     | Type.IncSome2List_List_Cons _ l -> lemma_sum_nonneg l
@@ -77,20 +77,20 @@ module IncSome2List_Impl1_LemmaSumNonneg_Impl
   use mach.int.Int32
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Builtins_Impl6_Model as Model1
+  clone CreusotContracts_Builtins_Impl7_Model as Model1
   clone IncSome2List_Impl1_Sum as Sum0 with function Model0.model = Model1.model
   let rec lemma_sum_nonneg (self : Type.incsome2list_list) : ()
     ensures { Sum0.sum self >= 0 }
     variant {self}
-
-   =
+    
+   = 
     match (self) with
       | Type.IncSome2List_List_Cons _ l -> lemma_sum_nonneg l
       | Type.IncSome2List_List_Nil -> ()
       end
 end
 module CreusotContracts_Builtins_Resolve
-  type self
+  type self   
   predicate resolve (self : self)
 end
 module IncSome2List_Impl1_SumX_Interface
@@ -99,12 +99,12 @@ module IncSome2List_Impl1_SumX_Interface
   use mach.int.UInt32
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Builtins_Impl6_Model_Interface as Model1
+  clone CreusotContracts_Builtins_Impl7_Model_Interface as Model1
   clone IncSome2List_Impl1_Sum_Interface as Sum0
   val sum_x (self : Type.incsome2list_list) : uint32
     requires {Sum0.sum self <= 1000000}
     ensures { Model1.model result = Sum0.sum self }
-
+    
 end
 module IncSome2List_Impl1_SumX
   use mach.int.Int
@@ -112,7 +112,7 @@ module IncSome2List_Impl1_SumX
   use mach.int.UInt32
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Builtins_Impl6_Model as Model1
+  clone CreusotContracts_Builtins_Impl7_Model as Model1
   clone IncSome2List_Impl1_Sum as Sum0 with function Model0.model = Model1.model
   use mach.int.Int64
   clone CreusotContracts_Builtins_Resolve as Resolve6 with type self = Type.incsome2list_list
@@ -123,8 +123,8 @@ module IncSome2List_Impl1_SumX
   let rec cfg sum_x (self : Type.incsome2list_list) : uint32
     requires {Sum0.sum self <= 1000000}
     ensures { Model1.model result = Sum0.sum self }
-
-   =
+    
+   = 
   var _0 : uint32;
   var self_1 : Type.incsome2list_list;
   var _2 : isize;
@@ -178,25 +178,47 @@ module IncSome2List_Impl1_SumX
   BB6 {
     return _0
   }
-
+  
 end
-module CreusotContracts_Builtins_Impl16_Resolve_Interface
-  type t
+module CreusotContracts_Builtins_Impl1_Model_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model as Model0 with type self = t
+  function model (self : borrowed t) : Model0.modelty
+end
+module CreusotContracts_Builtins_Impl1_Model
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model as Model0 with type self = t
+  clone CreusotContracts_Builtins_Impl1_Model_Interface as Model1 with type t = t
+  function model (self : borrowed t) : Model0.modelty = 
+    Model1.model self
+end
+module CreusotContracts_Builtins_Impl7
+  use mach.int.Int
+  use mach.int.UInt32
+  clone export CreusotContracts_Builtins_Impl7_Model
+  type modelty  = 
+    int
+  clone export CreusotContracts_Builtins_Model with type self = uint32, type modelty = modelty, function model = model
+end
+module CreusotContracts_Builtins_Impl19_Resolve_Interface
+  type t   
   use prelude.Prelude
   predicate resolve (self : borrowed t)
 end
-module CreusotContracts_Builtins_Impl16_Resolve
-  type t
+module CreusotContracts_Builtins_Impl19_Resolve
+  type t   
   use prelude.Prelude
-  predicate resolve (self : borrowed t) =
+  predicate resolve (self : borrowed t) = 
      ^ self =  * self
 end
 module Rand_Random_Interface
-  type t
+  type t   
   val random () : t
 end
 module Rand_Random
-  type t
+  type t   
   val random () : t
 end
 module IncSome2List_Impl1_TakeSomeRest_Interface
@@ -204,37 +226,41 @@ module IncSome2List_Impl1_TakeSomeRest_Interface
   use mach.int.Int
   use mach.int.UInt32
   use Type
-  clone CreusotContracts_Builtins_Impl6_Model_Interface as Model1
+  clone CreusotContracts_Builtins_Impl7_Model_Interface as Model2
+  clone CreusotContracts_Builtins_Impl1_Model_Interface as Model1 with type t = uint32
   clone IncSome2List_Impl1_Sum_Interface as Sum0
   val take_some_rest (self : borrowed (Type.incsome2list_list)) : (borrowed uint32, borrowed (Type.incsome2list_list))
     ensures { Sum0.sum ( * (let (_, a) = result in a)) <= Sum0.sum ( * self) }
-    ensures { Model1.model ( * (let (a, _) = result in a)) <= Sum0.sum ( * self) }
-    ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) = Model1.model ( ^ (let (a, _) = result in a)) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model1.model ( * (let (a, _) = result in a)) - Sum0.sum ( * (let (_, a) = result in a)) }
-
+    ensures { Model1.model (let (a, _) = result in a) <= Sum0.sum ( * self) }
+    ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) = Model2.model ( ^ (let (a, _) = result in a)) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model1.model (let (a, _) = result in a) - Sum0.sum ( * (let (_, a) = result in a)) }
+    
 end
 module IncSome2List_Impl1_TakeSomeRest
   use prelude.Prelude
   use mach.int.Int
   use mach.int.UInt32
   use Type
-  clone CreusotContracts_Builtins_Impl6_Model as Model1
-  clone IncSome2List_Impl1_Sum as Sum0 with function Model0.model = Model1.model
+  clone CreusotContracts_Builtins_Impl7 as Model3
+  clone CreusotContracts_Builtins_Impl1_Model as Model1 with type t = uint32, type Model0.modelty = Model3.modelty,
+  function Model0.model = Model3.model
+  clone CreusotContracts_Builtins_Impl7_Model as Model2
+  clone IncSome2List_Impl1_Sum as Sum0 with function Model0.model = Model2.model
   use mach.int.Int64
-  clone CreusotContracts_Builtins_Impl16_Resolve as Resolve10 with type t = Type.incsome2list_list
-  clone CreusotContracts_Builtins_Impl16_Resolve as Resolve9 with type t = uint32
-  clone CreusotContracts_Builtins_Resolve as Resolve8 with type self = bool
-  clone Rand_Random_Interface as Random7 with type t = bool
-  clone CreusotContracts_Builtins_Resolve as Resolve6 with type self = Type.incsome2list_list
-  clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = ()
-  clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = isize
-  clone CreusotContracts_Builtins_Impl16_Resolve as Resolve2 with type t = Type.incsome2list_list
-  clone IncSome2List_Impl1_LemmaSumNonneg as LemmaSumNonneg5 with function Sum0.sum = Sum0.sum, axiom .
+  clone CreusotContracts_Builtins_Impl19_Resolve as Resolve12 with type t = Type.incsome2list_list
+  clone CreusotContracts_Builtins_Impl19_Resolve as Resolve11 with type t = uint32
+  clone CreusotContracts_Builtins_Resolve as Resolve10 with type self = bool
+  clone Rand_Random_Interface as Random9 with type t = bool
+  clone CreusotContracts_Builtins_Resolve as Resolve8 with type self = Type.incsome2list_list
+  clone CreusotContracts_Builtins_Resolve as Resolve6 with type self = ()
+  clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = isize
+  clone CreusotContracts_Builtins_Impl19_Resolve as Resolve4 with type t = Type.incsome2list_list
+  clone IncSome2List_Impl1_LemmaSumNonneg as LemmaSumNonneg7 with function Sum0.sum = Sum0.sum, axiom .
   let rec cfg take_some_rest (self : borrowed (Type.incsome2list_list)) : (borrowed uint32, borrowed (Type.incsome2list_list))
     ensures { Sum0.sum ( * (let (_, a) = result in a)) <= Sum0.sum ( * self) }
-    ensures { Model1.model ( * (let (a, _) = result in a)) <= Sum0.sum ( * self) }
-    ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) = Model1.model ( ^ (let (a, _) = result in a)) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model1.model ( * (let (a, _) = result in a)) - Sum0.sum ( * (let (_, a) = result in a)) }
-
-   =
+    ensures { Model1.model (let (a, _) = result in a) <= Sum0.sum ( * self) }
+    ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) = Model2.model ( ^ (let (a, _) = result in a)) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model1.model (let (a, _) = result in a) - Sum0.sum ( * (let (_, a) = result in a)) }
+    
+   = 
   var _0 : (borrowed uint32, borrowed (Type.incsome2list_list));
   var self_1 : borrowed (Type.incsome2list_list);
   var _2 : isize;
@@ -260,17 +286,17 @@ module IncSome2List_Impl1_TakeSomeRest
       end
   }
   BB1 {
-    assume { Resolve3.resolve _2 };
+    assume { Resolve5.resolve _2 };
     goto BB4
   }
   BB2 {
-    assume { Resolve2.resolve self_1 };
-    assume { Resolve3.resolve _2 };
+    assume { Resolve4.resolve self_1 };
+    assume { Resolve5.resolve _2 };
     goto BB11
   }
   BB3 {
-    assume { Resolve2.resolve self_1 };
-    assume { Resolve3.resolve _2 };
+    assume { Resolve4.resolve self_1 };
+    assume { Resolve5.resolve _2 };
     absurd
   }
   BB4 {
@@ -278,14 +304,14 @@ module IncSome2List_Impl1_TakeSomeRest
     self_1 <- { self_1 with current = (let Type.IncSome2List_List_Cons a b =  * self_1 in Type.IncSome2List_List_Cons ( ^ ma_3) b) };
     ml_4 <- borrow_mut (let Type.IncSome2List_List_Cons _ a =  * self_1 in a);
     self_1 <- { self_1 with current = (let Type.IncSome2List_List_Cons a b =  * self_1 in Type.IncSome2List_List_Cons a ( ^ ml_4)) };
-    assume { Resolve2.resolve self_1 };
+    assume { Resolve4.resolve self_1 };
     _6 <-  * ml_4;
-    _5 <- LemmaSumNonneg5.lemma_sum_nonneg _6;
+    _5 <- LemmaSumNonneg7.lemma_sum_nonneg _6;
     goto BB5
   }
   BB5 {
-    assume { Resolve6.resolve _6 };
-    _7 <- Random7.random ();
+    assume { Resolve8.resolve _6 };
+    _7 <- Random9.random ();
     goto BB6
   }
   BB6 {
@@ -296,22 +322,22 @@ module IncSome2List_Impl1_TakeSomeRest
       end
   }
   BB7 {
-    assume { Resolve8.resolve _7 };
+    assume { Resolve10.resolve _7 };
     _8 <- borrow_mut ( * ma_3);
     ma_3 <- { ma_3 with current = ( ^ _8) };
-    assume { Resolve9.resolve ma_3 };
+    assume { Resolve11.resolve ma_3 };
     _9 <- borrow_mut ( * ml_4);
     ml_4 <- { ml_4 with current = ( ^ _9) };
-    assume { Resolve10.resolve ml_4 };
+    assume { Resolve12.resolve ml_4 };
     _0 <- (_8, _9);
     goto BB10
   }
   BB8 {
-    assume { Resolve9.resolve ma_3 };
-    assume { Resolve8.resolve _7 };
+    assume { Resolve11.resolve ma_3 };
+    assume { Resolve10.resolve _7 };
     _10 <- borrow_mut ( * ml_4);
     ml_4 <- { ml_4 with current = ( ^ _10) };
-    assume { Resolve10.resolve ml_4 };
+    assume { Resolve12.resolve ml_4 };
     _0 <- take_some_rest _10;
     goto BB9
   }
@@ -326,40 +352,40 @@ module IncSome2List_Impl1_TakeSomeRest
   }
   BB12 {
     _12 <- ();
-    assume { Resolve4.resolve _12 };
+    assume { Resolve6.resolve _12 };
     goto BB11
   }
-
+  
 end
-module CreusotContracts_Builtins_Impl15_Resolve_Interface
-  type t1
-  type t2
+module CreusotContracts_Builtins_Impl18_Resolve_Interface
+  type t1   
+  type t2   
   predicate resolve (self : (t1, t2))
 end
-module CreusotContracts_Builtins_Impl15_Resolve
-  type t1
-  type t2
+module CreusotContracts_Builtins_Impl18_Resolve
+  type t1   
+  type t2   
   clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = t2
   clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = t1
-  predicate resolve (self : (t1, t2)) =
+  predicate resolve (self : (t1, t2)) = 
     Resolve0.resolve (let (a, _) = self in a) && Resolve1.resolve (let (_, a) = self in a)
 end
 module Core_Panicking_Panic_Interface
   use prelude.Prelude
   val panic (expr : string) : ()
     ensures { false }
-
+    
 end
 module Core_Panicking_Panic
   use prelude.Prelude
   val panic (expr : string) : ()
     ensures { false }
-
+    
 end
-module CreusotContracts_Builtins_Impl16
-  type t
+module CreusotContracts_Builtins_Impl19
+  type t   
   use prelude.Prelude
-  clone export CreusotContracts_Builtins_Impl16_Resolve with type t = t
+  clone export CreusotContracts_Builtins_Impl19_Resolve with type t = t
   clone export CreusotContracts_Builtins_Resolve with type self = borrowed t, predicate resolve = resolve
 end
 module IncSome2List_IncSome2List_Interface
@@ -367,40 +393,43 @@ module IncSome2List_IncSome2List_Interface
   use mach.int.Int32
   use Type
   use mach.int.UInt32
-  clone CreusotContracts_Builtins_Impl6_Model_Interface as Model1
+  clone CreusotContracts_Builtins_Impl7_Model_Interface as Model1
   clone IncSome2List_Impl1_Sum_Interface as Sum0
   val inc_some_2_list (l : Type.incsome2list_list) (j : uint32) (k : uint32) : ()
     requires {Sum0.sum l + Model1.model j + Model1.model k <= 1000000}
-
+    
 end
 module IncSome2List_IncSome2List
   use mach.int.Int
   use mach.int.Int32
   use Type
   use mach.int.UInt32
-  clone CreusotContracts_Builtins_Impl6_Model as Model1
+  clone CreusotContracts_Builtins_Impl7_Model as Model1
   clone IncSome2List_Impl1_Sum as Sum0 with function Model0.model = Model1.model
   use prelude.Prelude
+  clone CreusotContracts_Builtins_Impl7 as Model15
+  clone CreusotContracts_Builtins_Impl1_Model as Model12 with type t = uint32, type Model0.modelty = Model15.modelty,
+  function Model0.model = Model15.model
   clone CreusotContracts_Builtins_Resolve as Resolve11 with type self = Type.incsome2list_list
   clone CreusotContracts_Builtins_Resolve as Resolve10 with type self = ()
   clone Core_Panicking_Panic_Interface as Panic9
   clone CreusotContracts_Builtins_Resolve as Resolve8 with type self = bool
   clone CreusotContracts_Builtins_Resolve as Resolve7 with type self = uint32
-  clone CreusotContracts_Builtins_Impl16 as Resolve13 with type t = Type.incsome2list_list
-  clone CreusotContracts_Builtins_Impl16 as Resolve12 with type t = uint32
-  clone CreusotContracts_Builtins_Impl15_Resolve as Resolve6 with type t1 = borrowed uint32,
-  type t2 = borrowed (Type.incsome2list_list), predicate Resolve0.resolve = Resolve12.resolve,
-  predicate Resolve1.resolve = Resolve13.resolve
-  clone CreusotContracts_Builtins_Impl16_Resolve as Resolve5 with type t = Type.incsome2list_list
-  clone CreusotContracts_Builtins_Impl16_Resolve as Resolve4 with type t = uint32
+  clone CreusotContracts_Builtins_Impl19 as Resolve14 with type t = Type.incsome2list_list
+  clone CreusotContracts_Builtins_Impl19 as Resolve13 with type t = uint32
+  clone CreusotContracts_Builtins_Impl18_Resolve as Resolve6 with type t1 = borrowed uint32,
+  type t2 = borrowed (Type.incsome2list_list), predicate Resolve0.resolve = Resolve13.resolve,
+  predicate Resolve1.resolve = Resolve14.resolve
+  clone CreusotContracts_Builtins_Impl19_Resolve as Resolve5 with type t = Type.incsome2list_list
+  clone CreusotContracts_Builtins_Impl19_Resolve as Resolve4 with type t = uint32
   clone IncSome2List_Impl1_TakeSomeRest_Interface as TakeSomeRest3 with function Sum0.sum = Sum0.sum,
-  function Model1.model = Model1.model
+  function Model1.model = Model12.model, function Model2.model = Model1.model
   clone IncSome2List_Impl1_SumX_Interface as SumX2 with function Sum0.sum = Sum0.sum,
   function Model1.model = Model1.model
   let rec cfg inc_some_2_list (l : Type.incsome2list_list) (j : uint32) (k : uint32) : ()
     requires {Sum0.sum l + Model1.model j + Model1.model k <= 1000000}
-
-   =
+    
+   = 
   var _0 : ();
   var l_1 : Type.incsome2list_list;
   var j_2 : uint32;
@@ -509,10 +538,10 @@ module IncSome2List_IncSome2List
     assume { Resolve11.resolve l_1 };
     return _0
   }
-
+  
 end
 module CreusotContracts_WellFounded
-  type self
+  type self   
 end
 module IncSome2List_Impl0
   use Type

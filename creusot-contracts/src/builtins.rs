@@ -15,6 +15,14 @@ impl<T: Model> Model for &T {
     }
 }
 
+impl<T: Model> Model for &mut T {
+    type ModelTy = T::ModelTy;
+    #[logic_rust]
+    fn model(self) -> Self::ModelTy {
+        self.model()
+    }
+}
+
 pub struct Int;
 
 impl PartialEq for Int {
@@ -100,6 +108,21 @@ impl From<usize> for Int {
     }
 }
 impl Model for usize {
+    type ModelTy = Int;
+    #[logic_rust]
+    fn model(self) -> Self::ModelTy {
+        Int::from(self)
+    }
+}
+
+impl From<isize> for Int {
+    #[creusot::spec::no_translate]
+    #[rustc_diagnostic_item = "isize_to_int"]
+    fn from(_: isize) -> Self {
+        panic!()
+    }
+}
+impl Model for isize {
     type ModelTy = Int;
     #[logic_rust]
     fn model(self) -> Self::ModelTy {

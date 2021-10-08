@@ -48,8 +48,8 @@ impl Tree {
         }
     }
 
-    #[ensures((^self).sum() - self.sum() == @^result - @*result)]
-    #[ensures(@*result <= self.sum())]
+    #[ensures((^self).sum() - self.sum() == @^result - @result)]
+    #[ensures(@result <= self.sum())]
     fn take_some(&mut self) -> &mut u32 {
         match self {
             Node(mtl, ma, mtr) => {

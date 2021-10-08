@@ -22,8 +22,8 @@ impl<T> List<T> {
     #[variant(*self)]
     fn len(&self) -> Int {
         match self {
-            Cons(_, ls) => 1.model() + ls.len(),
-            Nil => 0.model(),
+            Cons(_, ls) => Int::from(1) + ls.len(),
+            Nil => 0.into(),
         }
     }
 
@@ -56,10 +56,10 @@ impl<T> List<T> {
     fn index(self, ix: Int) -> T {
         match self {
             Cons(x, ls) => {
-                if ix == 0.model() {
+                if ix == 0.into() {
                     x
                 } else {
-                    ls.index(ix - 1.model())
+                    ls.index(ix - 1.into())
                 }
             }
             Nil => unreachable!("invalid index"),
@@ -121,7 +121,7 @@ impl<T> MyVec<T> {
     }
 
     #[trusted]
-    #[ensures(@^self === (@*self).push(v))]
+    #[ensures(@^self === (@self).push(v))]
     fn push(&mut self, v: T) {
         self.0.push(v)
     }
@@ -135,13 +135,13 @@ impl<T> MyVec<T> {
     }
 
     #[trusted]
-    #[requires(@ix < (@*self).len())]
-    #[ensures(*result === (@*self).index(@ix))]
+    #[requires(@ix < (@self).len())]
+    #[ensures(*result === (@self).index(@ix))]
     #[ensures(^result === (@^self).index(@ix))]
     #[ensures(forall<j: Int> 0 <= j && j <= (@^self).len() ==>
         !(j === @ix) ==>
-        (@^self).index(j) === (@*self).index(j))]
-    #[ensures((@*self).len() === (@^self).len())]
+        (@^self).index(j) === (@self).index(j))]
+    #[ensures((@self).len() === (@^self).len())]
     fn index_mut(&mut self, ix: usize) -> &mut T {
         use std::ops::IndexMut;
         self.0.index_mut(ix)
@@ -149,15 +149,15 @@ impl<T> MyVec<T> {
 }
 
 #[ensures(forall<i: Int> 0 <= i && i < (@^v).len() ==> (@^v).index(i) === 0u32)]
-#[ensures((@*v).len() === (@^v).len())]
+#[ensures((@v).len() === (@^v).len())]
 fn all_zero(v: &mut MyVec<u32>) {
     let mut i = 0;
     let old_v: GhostRecord<&mut MyVec<u32>> = GhostRecord::record(&v);
     // This invariant is because why3 can't determine that the prophecy isn't modified by the loop
     // Either Why3 or Creusot should be improved to do this automaticallly (probably why3)
     #[invariant(proph_const, ^v === ^@old_v)]
-    #[invariant(in_bounds, (@*v).len() === (@*@old_v).len())]
-    #[invariant(all_zero, forall<j: Int> 0 <= j && j < @i ==> (@*v).index(j) === 0u32)]
+    #[invariant(in_bounds, (@v).len() === (@@old_v).len())]
+    #[invariant(all_zero, forall<j: Int> 0 <= j && j < @i ==> (@v).index(j) === 0u32)]
     while i < v.len() {
         *v.index_mut(i) = 0;
         i += 1;
