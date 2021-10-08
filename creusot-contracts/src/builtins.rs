@@ -1,16 +1,17 @@
 use crate as creusot_contracts;
 use creusot_contracts_proc::*;
 
-pub trait Model
-where
-    Self: Sized,
-{
+pub trait Model {
     type Model;
-    logic! {
-        #[trusted]
-        fn model(self) -> Self::Model {
-            panic!()
-        }
+}
+
+// We get "error[E0603]: function `model` is private" at call sites
+// because the function is not `pub`
+logic! {
+    #[trusted]
+    // writing `pub` here is currently not supported
+    fn model<T: Model>(x: T) -> T::Model {
+        panic!()
     }
 }
 
