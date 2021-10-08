@@ -3,17 +3,15 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-logic! {
-    #[trusted]
-    fn model<T: Model>(x: T) -> T::Model {
-        panic!()
-    }
-}
-
 struct Seven();
 
-impl Model for Seven {
-    type Model = Int;
+impl Seven {
+    logic! {
+        #[trusted]
+        fn model(self) -> Int {
+            panic!()
+        }
+    }
 }
 
 #[trusted]
@@ -24,8 +22,13 @@ fn seven() -> Seven {
 
 struct Pair<T, U>(T, U);
 
-impl<T, U> Model for Pair<T, U> {
-    type Model = (T, U);
+impl<T, U> Pair<T, U> {
+    logic! {
+        #[trusted]
+        fn model(self) -> (T, U) {
+            panic!()
+        }
+    }
 }
 
 #[trusted]

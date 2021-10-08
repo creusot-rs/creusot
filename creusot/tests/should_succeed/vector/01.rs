@@ -7,14 +7,6 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-logic! {
-    #[trusted]
-    // writing `pub` here is currently not supported
-    fn model<T: Model>(x: T) -> T::Model {
-        panic!()
-    }
-}
-
 enum List<T> {
     Cons(T, Box<List<T>>),
     Nil,
@@ -92,8 +84,13 @@ pub struct GhostRecord<T>
 where
     T: ?Sized;
 
-impl<T> Model for GhostRecord<T> {
-    type Model = T;
+impl<T> GhostRecord<T> {
+    logic! {
+        #[trusted]
+        fn model(self) -> T {
+            panic!()
+        }
+    }
 }
 
 impl<T> GhostRecord<T> {
@@ -104,8 +101,13 @@ impl<T> GhostRecord<T> {
     }
 }
 
-impl<T> Model for MyVec<T> {
-    type Model = List<T>;
+impl<T> MyVec<T> {
+    logic! {
+        #[trusted]
+        fn model(self) -> List<T> {
+            panic!()
+        }
+    }
 }
 
 impl<T> MyVec<T> {
@@ -157,7 +159,7 @@ fn all_zero(v: &mut MyVec<u32>) {
     // This invariant is because why3 can't determine that the prophecy isn't modified by the loop
     // Either Why3 or Creusot should be improved to do this automaticallly (probably why3)
     #[invariant(proph_const, ^v === ^@old_v)]
-    #[invariant(in_bounds, (@*v).len() === (@*@old_v).len())]
+    #[invariant(in_bounds, (@*v).len() === (@*(old_v.model(): &mut MyVec<u32>)).len())]
     #[invariant(all_zero, forall<j : Int> 0 <= j && j < i.into() ==> (@*v).index(j) === 0u32)]
     while i < v.len() {
         *v.index_mut(i) = 0;
