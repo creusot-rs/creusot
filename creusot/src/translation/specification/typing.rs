@@ -71,13 +71,14 @@ fn lower_expr<'tcx>(
     };
     match thir[expr].kind {
         ExprKind::Scope { value, .. } => lower_expr(tcx, thir, value),
-        ExprKind::Block { body: Block { ref stmts, expr: Some(e), .. } } => {
-            let mut inner = lower_expr(tcx, thir, e)?;
-
+        ExprKind::Block { body: Block { ref stmts, expr, .. } } => {
+            let mut inner = match expr {
+                Some(e) => lower_expr(tcx, thir, e)?,
+                None => Term::Tuple { fields: vec![] },
+            };
             for stmt in stmts.iter().rev() {
                 inner = lower_stmt(tcx, thir, *stmt, inner)?;
             }
-
             Ok(inner)
         }
         ExprKind::Binary { op, lhs, rhs } => {
@@ -291,12 +292,15 @@ fn lower_stmt<'tcx>(
     inner: Term<'tcx>,
 ) -> Result<Term<'tcx>, Error> {
     match &thir[stmt].kind {
-        StmtKind::Expr { .. } => todo!("expr"),
+        StmtKind::Expr { expr, .. } => Ok(Term::Let {
+            pattern: Pattern::Wildcard,
+            arg: box lower_expr(tcx, thir, *expr)?,
+            body: box inner,
+        }),
         StmtKind::Let { pattern, initializer, .. } => {
             let pattern = lower_pattern(tcx, thir, pattern)?;
             if let Some(initializer) = initializer {
                 let initializer = lower_expr(tcx, thir, *initializer)?;
-
                 Ok(Term::Let { pattern, arg: box initializer, body: box inner })
             } else {
                 Err(Error {})

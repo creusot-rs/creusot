@@ -14,143 +14,99 @@ module Type
     | IncSomeTree_Tree_Leaf
     
 end
-module IncSomeTree_SumTree_Interface
+module IncSomeTree_Impl1_Sum_Interface
   use mach.int.Int
   use Type
-  function sum_tree (t : Type.incsometree_tree) : int
+  function sum (self : Type.incsometree_tree) : int
 end
-module IncSomeTree_SumTree
+module IncSomeTree_Impl1_Sum
   use mach.int.Int
   use Type
   use mach.int.Int32
-  function sum_tree (t : Type.incsometree_tree) : int = 
-    match (t) with
-      | Type.IncSomeTree_Tree_Node tl a tr -> sum_tree tl + a + sum_tree tr
+  function sum (self : Type.incsometree_tree) : int = 
+    match (self) with
+      | Type.IncSomeTree_Tree_Node tl a tr -> sum tl + a + sum tr
       | Type.IncSomeTree_Tree_Leaf -> 0
+      end
+end
+module IncSomeTree_Impl1_LemmaSumNonneg_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Prelude
+  use Type
+  clone IncSomeTree_Impl1_Sum_Interface as Sum0
+  function lemma_sum_nonneg (self : Type.incsometree_tree) : ()
+end
+module IncSomeTree_Impl1_LemmaSumNonneg
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Prelude
+  use Type
+  clone IncSomeTree_Impl1_Sum_Interface as Sum0
+  function lemma_sum_nonneg (self : Type.incsometree_tree) : ()
+  val lemma_sum_nonneg (self : Type.incsometree_tree) : ()
+    ensures { Sum0.sum self >= 0 }
+    ensures { result = lemma_sum_nonneg self }
+    
+  axiom spec : forall self : Type.incsometree_tree . Sum0.sum self >= 0
+  axiom def : forall self : Type.incsometree_tree . lemma_sum_nonneg self = match (self) with
+    | Type.IncSomeTree_Tree_Node tl _ tr -> let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in ()
+    | Type.IncSomeTree_Tree_Leaf -> ()
+    end
+end
+module IncSomeTree_Impl1_LemmaSumNonneg_Impl
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Prelude
+  use Type
+  clone IncSomeTree_Impl1_Sum as Sum0
+  let rec lemma_sum_nonneg (self : Type.incsometree_tree) : ()
+    ensures { Sum0.sum self >= 0 }
+    variant {self}
+    
+   = 
+    match (self) with
+      | Type.IncSomeTree_Tree_Node tl _ tr -> let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in ()
+      | Type.IncSomeTree_Tree_Leaf -> ()
       end
 end
 module CreusotContracts_Builtins_Resolve
   type self   
   predicate resolve (self : self)
 end
-module IncSomeTree_LemmaSumTreeNonneg_Interface
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Prelude
-  use Type
-  clone IncSomeTree_SumTree_Interface as SumTree0
-  val lemma_sum_tree_nonneg (t : Type.incsometree_tree) : ()
-    ensures { SumTree0.sum_tree t >= 0 }
-    
-end
-module IncSomeTree_LemmaSumTreeNonneg
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Prelude
-  use Type
-  clone IncSomeTree_SumTree as SumTree0
-  use mach.int.Int64
-  clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = Type.incsometree_tree
-  clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = isize
-  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = Type.incsometree_tree
-  let rec cfg lemma_sum_tree_nonneg (t : Type.incsometree_tree) : ()
-    ensures { SumTree0.sum_tree t >= 0 }
-    
-   = 
-  var _0 : ();
-  var t_1 : Type.incsometree_tree;
-  var _2 : isize;
-  var tl_3 : Type.incsometree_tree;
-  var tr_4 : Type.incsometree_tree;
-  var _5 : ();
-  var _6 : Type.incsometree_tree;
-  var _7 : ();
-  var _8 : Type.incsometree_tree;
-  {
-    t_1 <- t;
-    goto BB0
-  }
-  BB0 {
-    switch (t_1)
-      | Type.IncSomeTree_Tree_Node _ _ _ -> goto BB1
-      | Type.IncSomeTree_Tree_Leaf -> goto BB2
-      | _ -> goto BB3
-      end
-  }
-  BB1 {
-    assume { Resolve2.resolve _2 };
-    goto BB4
-  }
-  BB2 {
-    assume { Resolve1.resolve t_1 };
-    assume { Resolve2.resolve _2 };
-    _0 <- ();
-    goto BB7
-  }
-  BB3 {
-    assume { Resolve1.resolve t_1 };
-    assume { Resolve2.resolve _2 };
-    absurd
-  }
-  BB4 {
-    tl_3 <- (let Type.IncSomeTree_Tree_Node a _ _ = t_1 in a);
-    tr_4 <- (let Type.IncSomeTree_Tree_Node _ _ a = t_1 in a);
-    assume { Resolve1.resolve t_1 };
-    _6 <- tl_3;
-    assume { Resolve3.resolve tl_3 };
-    _5 <- lemma_sum_tree_nonneg _6;
-    goto BB5
-  }
-  BB5 {
-    assume { Resolve1.resolve _6 };
-    _8 <- tr_4;
-    assume { Resolve3.resolve tr_4 };
-    _7 <- lemma_sum_tree_nonneg _8;
-    goto BB6
-  }
-  BB6 {
-    assume { Resolve1.resolve _8 };
-    _0 <- ();
-    goto BB7
-  }
-  BB7 {
-    return _0
-  }
-  
-end
-module IncSomeTree_SumTreeX_Interface
+module IncSomeTree_Impl1_SumX_Interface
   use mach.int.Int
   use mach.int.Int32
   use mach.int.UInt32
   use prelude.Prelude
   use Type
-  clone IncSomeTree_SumTree_Interface as SumTree0
-  val sum_tree_x (t : Type.incsometree_tree) : uint32
-    requires {SumTree0.sum_tree t <= 1000000}
-    ensures { result = SumTree0.sum_tree t }
+  clone IncSomeTree_Impl1_Sum_Interface as Sum0
+  val sum_x (self : Type.incsometree_tree) : uint32
+    requires {Sum0.sum self <= 1000000}
+    ensures { result = Sum0.sum self }
     
 end
-module IncSomeTree_SumTreeX
+module IncSomeTree_Impl1_SumX
   use mach.int.Int
   use mach.int.Int32
   use mach.int.UInt32
   use prelude.Prelude
   use Type
-  clone IncSomeTree_SumTree as SumTree0
+  clone IncSomeTree_Impl1_Sum as Sum0
   use mach.int.Int64
   clone CreusotContracts_Builtins_Resolve as Resolve6 with type self = uint32
   clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = uint32
   clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = Type.incsometree_tree
   clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = isize
   clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = Type.incsometree_tree
-  clone IncSomeTree_LemmaSumTreeNonneg_Interface as LemmaSumTreeNonneg3 with function SumTree0.sum_tree = SumTree0.sum_tree
-  let rec cfg sum_tree_x (t : Type.incsometree_tree) : uint32
-    requires {SumTree0.sum_tree t <= 1000000}
-    ensures { result = SumTree0.sum_tree t }
+  clone IncSomeTree_Impl1_LemmaSumNonneg as LemmaSumNonneg3 with function Sum0.sum = Sum0.sum, axiom .
+  let rec cfg sum_x (self : Type.incsometree_tree) : uint32
+    requires {Sum0.sum self <= 1000000}
+    ensures { result = Sum0.sum self }
     
    = 
   var _0 : uint32;
-  var t_1 : Type.incsometree_tree;
+  var self_1 : Type.incsometree_tree;
   var _2 : isize;
   var tl_3 : Type.incsometree_tree;
   var a_4 : uint32;
@@ -166,11 +122,11 @@ module IncSomeTree_SumTreeX
   var _14 : uint32;
   var _15 : Type.incsometree_tree;
   {
-    t_1 <- t;
+    self_1 <- self;
     goto BB0
   }
   BB0 {
-    switch (t_1)
+    switch (self_1)
       | Type.IncSomeTree_Tree_Node _ _ _ -> goto BB1
       | Type.IncSomeTree_Tree_Leaf -> goto BB2
       | _ -> goto BB3
@@ -181,36 +137,36 @@ module IncSomeTree_SumTreeX
     goto BB4
   }
   BB2 {
-    assume { Resolve1.resolve t_1 };
+    assume { Resolve1.resolve self_1 };
     assume { Resolve2.resolve _2 };
     _0 <- (0 : uint32);
     goto BB9
   }
   BB3 {
-    assume { Resolve1.resolve t_1 };
+    assume { Resolve1.resolve self_1 };
     assume { Resolve2.resolve _2 };
     absurd
   }
   BB4 {
-    tl_3 <- (let Type.IncSomeTree_Tree_Node a _ _ = t_1 in a);
-    a_4 <- (let Type.IncSomeTree_Tree_Node _ a _ = t_1 in a);
-    tr_5 <- (let Type.IncSomeTree_Tree_Node _ _ a = t_1 in a);
-    assume { Resolve1.resolve t_1 };
+    tl_3 <- (let Type.IncSomeTree_Tree_Node a _ _ = self_1 in a);
+    a_4 <- (let Type.IncSomeTree_Tree_Node _ a _ = self_1 in a);
+    tr_5 <- (let Type.IncSomeTree_Tree_Node _ _ a = self_1 in a);
+    assume { Resolve1.resolve self_1 };
     _7 <- tl_3;
-    _6 <- LemmaSumTreeNonneg3.lemma_sum_tree_nonneg _7;
+    _6 <- LemmaSumNonneg3.lemma_sum_nonneg _7;
     goto BB5
   }
   BB5 {
     assume { Resolve1.resolve _7 };
     _9 <- tr_5;
-    _8 <- LemmaSumTreeNonneg3.lemma_sum_tree_nonneg _9;
+    _8 <- LemmaSumNonneg3.lemma_sum_nonneg _9;
     goto BB6
   }
   BB6 {
     assume { Resolve1.resolve _9 };
     _12 <- tl_3;
     assume { Resolve4.resolve tl_3 };
-    _11 <- sum_tree_x _12;
+    _11 <- sum_x _12;
     goto BB7
   }
   BB7 {
@@ -220,7 +176,7 @@ module IncSomeTree_SumTreeX
     _10 <- _11 + _13;
     _15 <- tr_5;
     assume { Resolve4.resolve tr_5 };
-    _14 <- sum_tree_x _15;
+    _14 <- sum_x _15;
     goto BB8
   }
   BB8 {
@@ -251,23 +207,23 @@ module Rand_Random
   type t   
   val random () : t
 end
-module IncSomeTree_TakeSomeTree_Interface
+module IncSomeTree_Impl1_TakeSome_Interface
   use prelude.Prelude
   use mach.int.Int
   use mach.int.UInt32
   use Type
-  clone IncSomeTree_SumTree_Interface as SumTree0
-  val take_some_tree (mt : borrowed (Type.incsometree_tree)) : borrowed uint32
-    ensures {  * result <= SumTree0.sum_tree ( * mt) }
-    ensures { SumTree0.sum_tree ( ^ mt) - SumTree0.sum_tree ( * mt) =  ^ result -  * result }
+  clone IncSomeTree_Impl1_Sum_Interface as Sum0
+  val take_some (self : borrowed (Type.incsometree_tree)) : borrowed uint32
+    ensures {  * result <= Sum0.sum ( * self) }
+    ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) =  ^ result -  * result }
     
 end
-module IncSomeTree_TakeSomeTree
+module IncSomeTree_Impl1_TakeSome
   use prelude.Prelude
   use mach.int.Int
   use mach.int.UInt32
   use Type
-  clone IncSomeTree_SumTree as SumTree0
+  clone IncSomeTree_Impl1_Sum as Sum0
   use mach.int.Int64
   clone CreusotContracts_Builtins_Impl12_Resolve as Resolve9 with type t = uint32
   clone CreusotContracts_Builtins_Resolve as Resolve8 with type self = bool
@@ -277,14 +233,14 @@ module IncSomeTree_TakeSomeTree
   clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = ()
   clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = isize
   clone CreusotContracts_Builtins_Impl12_Resolve as Resolve1 with type t = Type.incsometree_tree
-  clone IncSomeTree_LemmaSumTreeNonneg_Interface as LemmaSumTreeNonneg4 with function SumTree0.sum_tree = SumTree0.sum_tree
-  let rec cfg take_some_tree (mt : borrowed (Type.incsometree_tree)) : borrowed uint32
-    ensures {  * result <= SumTree0.sum_tree ( * mt) }
-    ensures { SumTree0.sum_tree ( ^ mt) - SumTree0.sum_tree ( * mt) =  ^ result -  * result }
+  clone IncSomeTree_Impl1_LemmaSumNonneg as LemmaSumNonneg4 with function Sum0.sum = Sum0.sum, axiom .
+  let rec cfg take_some (self : borrowed (Type.incsometree_tree)) : borrowed uint32
+    ensures {  * result <= Sum0.sum ( * self) }
+    ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) =  ^ result -  * result }
     
    = 
   var _0 : borrowed uint32;
-  var mt_1 : borrowed (Type.incsometree_tree);
+  var self_1 : borrowed (Type.incsometree_tree);
   var _2 : borrowed uint32;
   var _3 : borrowed uint32;
   var _4 : isize;
@@ -308,11 +264,11 @@ module IncSomeTree_TakeSomeTree
   var _22 : ();
   var _23 : ();
   {
-    mt_1 <- mt;
+    self_1 <- self;
     goto BB0
   }
   BB0 {
-    switch ( * mt_1)
+    switch ( * self_1)
       | Type.IncSomeTree_Tree_Node _ _ _ -> goto BB1
       | Type.IncSomeTree_Tree_Leaf -> goto BB2
       | _ -> goto BB3
@@ -323,31 +279,31 @@ module IncSomeTree_TakeSomeTree
     goto BB4
   }
   BB2 {
-    assume { Resolve1.resolve mt_1 };
+    assume { Resolve1.resolve self_1 };
     assume { Resolve2.resolve _4 };
     goto BB17
   }
   BB3 {
-    assume { Resolve1.resolve mt_1 };
+    assume { Resolve1.resolve self_1 };
     assume { Resolve2.resolve _4 };
     absurd
   }
   BB4 {
-    mtl_5 <- borrow_mut (let Type.IncSomeTree_Tree_Node a _ _ =  * mt_1 in a);
-    mt_1 <- { mt_1 with current = (let Type.IncSomeTree_Tree_Node a b c =  * mt_1 in Type.IncSomeTree_Tree_Node ( ^ mtl_5) b c) };
-    ma_6 <- borrow_mut (let Type.IncSomeTree_Tree_Node _ a _ =  * mt_1 in a);
-    mt_1 <- { mt_1 with current = (let Type.IncSomeTree_Tree_Node a b c =  * mt_1 in Type.IncSomeTree_Tree_Node a ( ^ ma_6) c) };
-    mtr_7 <- borrow_mut (let Type.IncSomeTree_Tree_Node _ _ a =  * mt_1 in a);
-    mt_1 <- { mt_1 with current = (let Type.IncSomeTree_Tree_Node a b c =  * mt_1 in Type.IncSomeTree_Tree_Node a b ( ^ mtr_7)) };
-    assume { Resolve1.resolve mt_1 };
+    mtl_5 <- borrow_mut (let Type.IncSomeTree_Tree_Node a _ _ =  * self_1 in a);
+    self_1 <- { self_1 with current = (let Type.IncSomeTree_Tree_Node a b c =  * self_1 in Type.IncSomeTree_Tree_Node ( ^ mtl_5) b c) };
+    ma_6 <- borrow_mut (let Type.IncSomeTree_Tree_Node _ a _ =  * self_1 in a);
+    self_1 <- { self_1 with current = (let Type.IncSomeTree_Tree_Node a b c =  * self_1 in Type.IncSomeTree_Tree_Node a ( ^ ma_6) c) };
+    mtr_7 <- borrow_mut (let Type.IncSomeTree_Tree_Node _ _ a =  * self_1 in a);
+    self_1 <- { self_1 with current = (let Type.IncSomeTree_Tree_Node a b c =  * self_1 in Type.IncSomeTree_Tree_Node a b ( ^ mtr_7)) };
+    assume { Resolve1.resolve self_1 };
     _10 <-  * mtl_5;
-    _9 <- LemmaSumTreeNonneg4.lemma_sum_tree_nonneg _10;
+    _9 <- LemmaSumNonneg4.lemma_sum_nonneg _10;
     goto BB5
   }
   BB5 {
     assume { Resolve5.resolve _10 };
     _12 <-  * mtr_7;
-    _11 <- LemmaSumTreeNonneg4.lemma_sum_tree_nonneg _12;
+    _11 <- LemmaSumNonneg4.lemma_sum_nonneg _12;
     goto BB6
   }
   BB6 {
@@ -393,7 +349,7 @@ module IncSomeTree_TakeSomeTree
     _19 <- borrow_mut ( * mtl_5);
     mtl_5 <- { mtl_5 with current = ( ^ _19) };
     assume { Resolve7.resolve mtl_5 };
-    _18 <- take_some_tree _19;
+    _18 <- take_some _19;
     goto BB12
   }
   BB12 {
@@ -411,7 +367,7 @@ module IncSomeTree_TakeSomeTree
     _21 <- borrow_mut ( * mtr_7);
     mtr_7 <- { mtr_7 with current = ( ^ _21) };
     assume { Resolve7.resolve mtr_7 };
-    _20 <- take_some_tree _21;
+    _20 <- take_some _21;
     goto BB14
   }
   BB14 {
@@ -465,9 +421,9 @@ module IncSomeTree_IncSomeTree_Interface
   use mach.int.Int32
   use Type
   use mach.int.UInt32
-  clone IncSomeTree_SumTree_Interface as SumTree0
+  clone IncSomeTree_Impl1_Sum_Interface as Sum0
   val inc_some_tree (t : Type.incsometree_tree) (k : uint32) : ()
-    requires {SumTree0.sum_tree t + k <= 1000000}
+    requires {Sum0.sum t + k <= 1000000}
     
 end
 module IncSomeTree_IncSomeTree
@@ -475,20 +431,18 @@ module IncSomeTree_IncSomeTree
   use mach.int.Int32
   use Type
   use mach.int.UInt32
-  clone IncSomeTree_SumTree as SumTree0
+  clone IncSomeTree_Impl1_Sum as Sum0
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Resolve as Resolve10 with type self = Type.incsometree_tree
-  clone CreusotContracts_Builtins_Resolve as Resolve9 with type self = ()
-  clone Core_Panicking_Panic_Interface as Panic8
-  clone CreusotContracts_Builtins_Resolve as Resolve7 with type self = bool
-  clone CreusotContracts_Builtins_Impl12_Resolve as Resolve6 with type t = uint32
-  clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = uint32
-  clone CreusotContracts_Builtins_Impl12_Resolve as Resolve3 with type t = Type.incsometree_tree
-  clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = Type.incsometree_tree
-  clone IncSomeTree_TakeSomeTree_Interface as TakeSomeTree4 with function SumTree0.sum_tree = SumTree0.sum_tree
-  clone IncSomeTree_SumTreeX_Interface as SumTreeX2 with function SumTree0.sum_tree = SumTree0.sum_tree
+  clone CreusotContracts_Builtins_Resolve as Resolve8 with type self = Type.incsometree_tree
+  clone CreusotContracts_Builtins_Resolve as Resolve7 with type self = ()
+  clone Core_Panicking_Panic_Interface as Panic6
+  clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = bool
+  clone CreusotContracts_Builtins_Impl12_Resolve as Resolve4 with type t = uint32
+  clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = uint32
+  clone IncSomeTree_Impl1_TakeSome_Interface as TakeSome2 with function Sum0.sum = Sum0.sum
+  clone IncSomeTree_Impl1_SumX_Interface as SumX1 with function Sum0.sum = Sum0.sum
   let rec cfg inc_some_tree (t : Type.incsometree_tree) (k : uint32) : ()
-    requires {SumTree0.sum_tree t + k <= 1000000}
+    requires {Sum0.sum t + k <= 1000000}
     
    = 
   var _0 : ();
@@ -496,84 +450,81 @@ module IncSomeTree_IncSomeTree
   var k_2 : uint32;
   var sum0_3 : uint32;
   var _4 : Type.incsometree_tree;
-  var _5 : Type.incsometree_tree;
-  var ma_6 : borrowed uint32;
-  var _7 : borrowed (Type.incsometree_tree);
-  var _8 : borrowed (Type.incsometree_tree);
-  var _9 : uint32;
-  var _10 : ();
-  var _11 : bool;
-  var _12 : bool;
+  var ma_5 : borrowed uint32;
+  var _6 : borrowed (Type.incsometree_tree);
+  var _7 : uint32;
+  var _8 : ();
+  var _9 : bool;
+  var _10 : bool;
+  var _11 : uint32;
+  var _12 : Type.incsometree_tree;
   var _13 : uint32;
-  var _14 : Type.incsometree_tree;
-  var _15 : Type.incsometree_tree;
-  var _16 : uint32;
-  var _17 : uint32;
-  var _18 : uint32;
-  var _19 : ();
+  var _14 : uint32;
+  var _15 : uint32;
+  var _16 : ();
   {
     t_1 <- t;
     k_2 <- k;
     goto BB0
   }
   BB0 {
-    _5 <- t_1;
-    _4 <- _5;
-    assume { Resolve1.resolve _5 };
-    sum0_3 <- SumTreeX2.sum_tree_x _4;
+    _4 <- t_1;
+    sum0_3 <- SumX1.sum_x _4;
     goto BB1
   }
   BB1 {
-    _8 <- borrow_mut t_1;
-    t_1 <-  ^ _8;
-    _7 <- borrow_mut ( * _8);
-    _8 <- { _8 with current = ( ^ _7) };
-    assume { Resolve3.resolve _8 };
-    ma_6 <- TakeSomeTree4.take_some_tree _7;
+    _6 <- borrow_mut t_1;
+    t_1 <-  ^ _6;
+    ma_5 <- TakeSome2.take_some _6;
     goto BB2
   }
   BB2 {
-    assume { Resolve5.resolve _9 };
-    _9 <- k_2;
-    ma_6 <- { ma_6 with current = ( * ma_6 + _9) };
-    assume { Resolve6.resolve ma_6 };
-    assume { Resolve5.resolve _9 };
-    _15 <- t_1;
-    _14 <- _15;
-    assume { Resolve1.resolve _15 };
-    _13 <- SumTreeX2.sum_tree_x _14;
+    assume { Resolve3.resolve _7 };
+    _7 <- k_2;
+    ma_5 <- { ma_5 with current = ( * ma_5 + _7) };
+    assume { Resolve4.resolve ma_5 };
+    assume { Resolve3.resolve _7 };
+    _12 <- t_1;
+    _11 <- SumX1.sum_x _12;
     goto BB3
   }
   BB3 {
-    assume { Resolve5.resolve _17 };
-    _17 <- sum0_3;
-    assume { Resolve5.resolve sum0_3 };
-    assume { Resolve5.resolve _18 };
-    _18 <- k_2;
-    assume { Resolve5.resolve k_2 };
-    _16 <- _17 + _18;
-    _12 <- _13 = _16;
-    _11 <- not _12;
-    switch (_11)
+    assume { Resolve3.resolve _14 };
+    _14 <- sum0_3;
+    assume { Resolve3.resolve sum0_3 };
+    assume { Resolve3.resolve _15 };
+    _15 <- k_2;
+    assume { Resolve3.resolve k_2 };
+    _13 <- _14 + _15;
+    _10 <- _11 = _13;
+    _9 <- not _10;
+    switch (_9)
       | False -> goto BB5
       | True -> goto BB4
       | _ -> goto BB4
       end
   }
   BB4 {
-    assume { Resolve7.resolve _11 };
+    assume { Resolve5.resolve _9 };
     absurd
   }
   BB5 {
-    assume { Resolve7.resolve _11 };
-    _10 <- ();
-    assume { Resolve9.resolve _10 };
+    assume { Resolve5.resolve _9 };
+    _8 <- ();
+    assume { Resolve7.resolve _8 };
     _0 <- ();
     goto BB6
   }
   BB6 {
-    assume { Resolve10.resolve t_1 };
+    assume { Resolve8.resolve t_1 };
     return _0
   }
   
+end
+module CreusotContracts_WellFounded
+  type self   
+end
+module IncSomeTree_Impl0
+  use Type
+  clone export CreusotContracts_WellFounded with type self = Type.incsometree_tree
 end
