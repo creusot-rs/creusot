@@ -73,6 +73,57 @@ fn test_logeq() {
 }
 
 #[test]
+fn test_final() {
+    snapshot!(quote!(^a) as Term, @r###"
+    TermFinal {
+        final_token: Caret,
+        term: TermPath {
+            inner: ExprPath {
+                attrs: [],
+                qself: None,
+                path: Path {
+                    leading_colon: None,
+                    segments: [
+                        PathSegment {
+                            ident: Ident(
+                                a,
+                            ),
+                            arguments: None,
+                        },
+                    ],
+                },
+            },
+        },
+    }
+    "###);
+}
+
+#[test]
+fn test_model() {
+    snapshot!(quote!(@a) as Term, @r###"
+    TermModel {
+        at_token: At,
+        term: TermPath {
+            inner: ExprPath {
+                attrs: [],
+                qself: None,
+                path: Path {
+                    leading_colon: None,
+                    segments: [
+                        PathSegment {
+                            ident: Ident(
+                                a,
+                            ),
+                            arguments: None,
+                        },
+                    ],
+                },
+            },
+        },
+    }"###);
+}
+
+#[test]
 fn test_forall() {
     snapshot!(quote!(forall<x : u32> true) as Term, @r###"
     TermForall {
