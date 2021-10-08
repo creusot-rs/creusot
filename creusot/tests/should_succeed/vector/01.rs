@@ -22,8 +22,8 @@ impl<T> List<T> {
     #[variant(*self)]
     fn len(&self) -> Int {
         match self {
-            Cons(_, ls) => Int::from(1) + ls.len(),
-            Nil => 0.into(),
+            Cons(_, ls) => 1.model() + ls.len(),
+            Nil => 0.model(),
         }
     }
 
@@ -56,10 +56,10 @@ impl<T> List<T> {
     fn index(self, ix: Int) -> T {
         match self {
             Cons(x, ls) => {
-                if ix == Int::from(0) {
+                if ix == 0.model() {
                     x
                 } else {
-                    ls.index(ix - Int::from(1))
+                    ls.index(ix - 1.model())
                 }
             }
             Nil => unreachable!("invalid index"),
@@ -109,13 +109,13 @@ impl<T> Model for MyVec<T> {
 
 impl<T> MyVec<T> {
     #[trusted]
-    #[ensures(result.into() === (@*self).len())]
+    #[ensures(@result === (@self).len())]
     fn len(&self) -> usize {
         self.0.len()
     }
 
     #[trusted]
-    #[ensures(*as_ref(result) === (@*self).get(ix.into()))]
+    #[ensures(*as_ref(result) === (@self).get(@ix))]
     fn get(&self, ix: usize) -> Option<&T> {
         self.0.get(ix)
     }
@@ -127,19 +127,19 @@ impl<T> MyVec<T> {
     }
 
     #[trusted]
-    #[requires(Int::from(ix) < (@*self).len())]
-    #[ensures(*result === (@*self).index(ix.into()))]
+    #[requires(@ix < (@self).len())]
+    #[ensures(*result === (@self).index(@ix))]
     fn index(&self, ix: usize) -> &T {
         use std::ops::Index;
         self.0.index(ix)
     }
 
     #[trusted]
-    #[requires(Int::from(ix) < (@*self).len())]
-    #[ensures(*result === (@*self).index(ix.into()))]
-    #[ensures(^result === (@^self).index(ix.into()))]
-    #[ensures(forall<j : Int> 0 <= j && j <= (@^self).len() ==>
-        !(j === ix.into()) ==>
+    #[requires(@ix < (@*self).len())]
+    #[ensures(*result === (@*self).index(@ix))]
+    #[ensures(^result === (@^self).index(@ix))]
+    #[ensures(forall<j: Int> 0 <= j && j <= (@^self).len() ==>
+        !(j === @ix) ==>
         (@^self).index(j) === (@*self).index(j))]
     #[ensures((@*self).len() === (@^self).len())]
     fn index_mut(&mut self, ix: usize) -> &mut T {
@@ -148,7 +148,7 @@ impl<T> MyVec<T> {
     }
 }
 
-#[ensures(forall<i : Int> 0 <= i && i < (@^v).len() ==> (@^v).index(i) === 0u32)]
+#[ensures(forall<i: Int> 0 <= i && i < (@^v).len() ==> (@^v).index(i) === 0u32)]
 #[ensures((@*v).len() === (@^v).len())]
 fn all_zero(v: &mut MyVec<u32>) {
     let mut i = 0;
@@ -157,7 +157,7 @@ fn all_zero(v: &mut MyVec<u32>) {
     // Either Why3 or Creusot should be improved to do this automaticallly (probably why3)
     #[invariant(proph_const, ^v === ^@old_v)]
     #[invariant(in_bounds, (@*v).len() === (@*@old_v).len())]
-    #[invariant(all_zero, forall<j : Int> 0 <= j && j < i.into() ==> (@*v).index(j) === 0u32)]
+    #[invariant(all_zero, forall<j: Int> 0 <= j && j < @i ==> (@*v).index(j) === 0u32)]
     while i < v.len() {
         *v.index_mut(i) = 0;
         i += 1;

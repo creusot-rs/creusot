@@ -16,7 +16,7 @@ impl List {
     #[logic_rust]
     fn sum(self) -> Int {
         match self {
-            Cons(a, l) => Int::from(a) + l.sum(),
+            Cons(a, l) => a.model() + l.sum(),
             Nil => 0,
         }
     }
@@ -33,7 +33,7 @@ impl List {
     }
 
     #[requires(self.sum() <= 1_000_000)]
-    #[ensures(Int::from(result) == self.sum())]
+    #[ensures(@result == self.sum())]
     fn sum_x(&self) -> u32 {
         match self {
             Cons(a, l) => *a + l.sum_x(),
@@ -42,8 +42,8 @@ impl List {
     }
 
     #[ensures((^self).sum() - self.sum() ==
-        Int::from(^result.0) + (^result.1).sum() - Int::from(*result.0) - (*result.1).sum())]
-    #[ensures(Int::from(*result.0) <= self.sum())]
+        @^result.0 + (^result.1).sum() - @*result.0 - (*result.1).sum())]
+    #[ensures(@*result.0 <= self.sum())]
     #[ensures(result.1.sum() <= self.sum())]
     fn take_some_rest(&mut self) -> (&mut u32, &mut List) {
         match self {
@@ -60,7 +60,7 @@ impl List {
     }
 }
 
-#[requires(l.sum() + Int::from(j) + Int::from(k) <= 1_000_000)]
+#[requires(l.sum() + @j + @k <= 1_000_000)]
 fn inc_some_2_list(mut l: List, j: u32, k: u32) {
     let sum0 = l.sum_x();
     let (ma, ml) = l.take_some_rest();

@@ -133,6 +133,23 @@ module PureFunction_Test
   }
   
 end
+module CreusotContracts_Builtins_Model
+  type self   
+  type modelty   
+  function model (self : self) : modelty
+end
+module CreusotContracts_Builtins_Impl8_Model_Interface
+  use mach.int.Int
+  function model (self : int) : int
+end
+module CreusotContracts_Builtins_Impl8_Model
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  function model (self : usize) : Type.creusotcontracts_builtins_int = 
+    self
+end
 module PureFunction_UsesLen_Interface
   type t   
   use mach.int.Int
@@ -143,30 +160,34 @@ module PureFunction_UsesLen
   type t   
   use mach.int.Int
   use Type
+  clone CreusotContracts_Builtins_Impl8_Model_Interface as Model1
   clone PureFunction_Impl1_Len_Interface as Len0 with type t = t
   function uses_len (l : Type.purefunction_list t) : int = 
-    Len0.len l
+    Model1.model (Len0.len l)
 end
 module PureFunction_UsesBothLogicAndProg_Interface
   type t   
   use mach.int.Int
   use Type
-  clone PureFunction_UsesLen_Interface as UsesLen0 with type t = t
+  clone PureFunction_UsesLen_Interface as UsesLen1 with type t = t
+  clone CreusotContracts_Builtins_Impl8_Model_Interface as Model0
   val uses_both_logic_and_prog (l : Type.purefunction_list t) : int
-    ensures { result = UsesLen0.uses_len l }
+    ensures { Model0.model result = UsesLen1.uses_len l }
     
 end
 module PureFunction_UsesBothLogicAndProg
   type t   
   use mach.int.Int
   use Type
-  clone PureFunction_Impl1_Len as Len2 with type t = t, axiom .
-  clone PureFunction_UsesLen as UsesLen1 with type t = t, function Len0.len = Len2.len
+  clone PureFunction_Impl1_Len as Len3 with type t = t, axiom .
+  clone CreusotContracts_Builtins_Impl8_Model as Model1
+  clone PureFunction_UsesLen as UsesLen2 with type t = t, function Len0.len = Len3.len,
+  function Model1.model = Model1.model
   clone Core_Marker_Sized as Sized0 with type self = t
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = Type.purefunction_list t
+  clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = Type.purefunction_list t
   let rec cfg uses_both_logic_and_prog (l : Type.purefunction_list t) : int
-    ensures { result = UsesLen1.uses_len l }
+    ensures { Model1.model result = UsesLen2.uses_len l }
     
    = 
   var _0 : int;
@@ -178,14 +199,14 @@ module PureFunction_UsesBothLogicAndProg
   }
   BB0 {
     _2 <- l_1;
-    _0 <- Len2.len _2;
+    _0 <- Len3.len _2;
     goto BB1
   }
   BB1 {
     goto BB2
   }
   BB2 {
-    assume { Resolve3.resolve l_1 };
+    assume { Resolve4.resolve l_1 };
     return _0
   }
   

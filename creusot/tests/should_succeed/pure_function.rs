@@ -48,10 +48,10 @@ fn test<T>(l: &List<T>) -> usize {
 
 #[logic_rust]
 fn uses_len<T>(l: List<T>) -> Int {
-    l.len().into()
+    l.len().model()
 }
 
-#[ensures(result.into() === uses_len(l))]
+#[ensures(@result === uses_len(l))]
 fn uses_both_logic_and_prog<T>(l: List<T>) -> usize {
     l.len()
 }

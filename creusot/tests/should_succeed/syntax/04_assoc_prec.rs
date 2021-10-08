@@ -13,5 +13,5 @@ use creusot_contracts::*;
 #[ensures((x.0) == (x.1))] // TODO: Fix syn parser.
 fn respect_prec(x: (u32, u32)) {}
 
-#[ensures(Int::from(0u32) + Int::from(1u32) == 0)]
+#[ensures(@0u32 + @1u32 == 0)]
 fn respect_assoc() {}

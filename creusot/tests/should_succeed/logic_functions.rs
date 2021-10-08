@@ -47,6 +47,6 @@ fn arith(n: Int, b: bool) -> Int {
 fn deref_pat<'a>(o: &'a Option<Int>) -> Int {
     match o {
         Some(a) => *a,
-        None => Int::from(0),
+        None => 0,
     }
 }
