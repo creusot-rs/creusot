@@ -5,16 +5,6 @@ pub trait Model {
     type Model;
 }
 
-// We get "error[E0603]: function `model` is private" at call sites
-// because the function is not `pub`
-logic! {
-    #[trusted]
-    // writing `pub` here is currently not supported
-    fn model<T: Model>(x: T) -> T::Model {
-        panic!()
-    }
-}
-
 pub struct Int;
 
 impl PartialEq for Int {

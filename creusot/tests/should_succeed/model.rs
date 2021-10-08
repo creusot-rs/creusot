@@ -3,6 +3,13 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
+logic! {
+    #[trusted]
+    fn model<T: Model>(x: T) -> T::Model {
+        panic!()
+    }
+}
+
 struct Seven();
 
 impl Model for Seven {
