@@ -27,7 +27,7 @@ impl<T, U> Model for Pair<T, U> {
     type ModelTy = (T, U);
     logic! {
         #[trusted]
-        fn model(self) ->Self::ModelTy  {
+        fn model(self) -> Self::ModelTy  {
             panic!()
         }
     }
