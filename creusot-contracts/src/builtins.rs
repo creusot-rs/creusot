@@ -3,7 +3,7 @@ use creusot_contracts_proc::*;
 
 pub trait Model {
     type ModelTy;
-    fn model(self) -> Self::ModelTy;
+    logic! { fn model(self) -> Self::ModelTy; }
 }
 
 pub struct Int;
