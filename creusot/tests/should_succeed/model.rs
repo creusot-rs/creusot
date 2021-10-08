@@ -5,10 +5,11 @@ use creusot_contracts::*;
 
 struct Seven();
 
-impl Seven {
+impl Model for Seven {
+    type Model = Int;
     logic! {
         #[trusted]
-        fn model(self) -> Int {
+        fn model(self) -> Self::Model {
             panic!()
         }
     }
@@ -22,10 +23,11 @@ fn seven() -> Seven {
 
 struct Pair<T, U>(T, U);
 
-impl<T, U> Pair<T, U> {
+impl<T, U> Model for Pair<T, U> {
+    type Model = (T, U);
     logic! {
         #[trusted]
-        fn model(self) -> (T, U) {
+        fn model(self) ->Self::Model  {
             panic!()
         }
     }

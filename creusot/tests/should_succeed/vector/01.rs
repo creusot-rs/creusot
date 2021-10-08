@@ -84,10 +84,11 @@ pub struct GhostRecord<T>
 where
     T: ?Sized;
 
-impl<T> GhostRecord<T> {
+impl<T> Model for GhostRecord<T> {
+    type Model = T;
     logic! {
         #[trusted]
-        fn model(self) -> T {
+        fn model(self) -> Self::Model  {
             panic!()
         }
     }
@@ -101,10 +102,11 @@ impl<T> GhostRecord<T> {
     }
 }
 
-impl<T> MyVec<T> {
+impl<T> Model for MyVec<T> {
+    type Model = List<T>;
     logic! {
         #[trusted]
-        fn model(self) -> List<T> {
+        fn model(self) -> Self::Model  {
             panic!()
         }
     }
@@ -159,7 +161,7 @@ fn all_zero(v: &mut MyVec<u32>) {
     // This invariant is because why3 can't determine that the prophecy isn't modified by the loop
     // Either Why3 or Creusot should be improved to do this automaticallly (probably why3)
     #[invariant(proph_const, ^v === ^@old_v)]
-    #[invariant(in_bounds, (@*v).len() === (@*(old_v.model(): &mut MyVec<u32>)).len())]
+    #[invariant(in_bounds, (@*v).len() === (@*@old_v).len())]
     #[invariant(all_zero, forall<j : Int> 0 <= j && j < i.into() ==> (@*v).index(j) === 0u32)]
     while i < v.len() {
         *v.index_mut(i) = 0;
