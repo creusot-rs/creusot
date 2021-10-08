@@ -14,6 +14,7 @@ use rustc_middle::ty::{
     subst::{InternalSubsts, Subst, SubstsRef},
     AssocKind, ProjectionTy, Ty, TyCtxt, TyKind,
 };
+use rustc_span::Symbol;
 
 use heck::CamelCase;
 
@@ -64,7 +65,10 @@ pub struct CloneMap<'tcx> {
     tcx: TyCtxt<'tcx>,
     prelude: IndexMap<PreludeModule, bool>,
     pub names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
-    count: usize,
+
+    // Track how many instances of a name already exist
+    name_counts: IndexMap<Ident, usize>,
+
     pub transparent: bool,
 
     // Graph which is used to calculate the full clone set
@@ -139,7 +143,7 @@ impl<'tcx> CloneMap<'tcx> {
         CloneMap {
             tcx,
             names,
-            count: 0,
+            name_counts: Default::default(),
             prelude: IndexMap::new(),
             transparent,
             clone_graph: DiGraphMap::new(),
@@ -172,8 +176,8 @@ impl<'tcx> CloneMap<'tcx> {
             };
 
             let base: Ident = base_sym.as_str().to_camel_case().into();
-            let info = CloneInfo::from_name(format!("{}{}", &*base, self.count).into());
-            self.count += 1;
+            let count : usize = *self.name_counts.entry(base.clone()).and_modify(|c| *c += 1).or_insert(0);
+            let info = CloneInfo::from_name(format!("{}{}", &*base, count).into());
             info
         })
     }
@@ -277,7 +281,7 @@ impl<'tcx> CloneMap<'tcx> {
         // Update the clone graph with any new entries.
         self.update_graph(ctx);
 
-        self.last_cloned = self.count;
+        self.last_cloned = self.names.len();
 
         debug!(
             "dep_graph nodes={} edges={}",
