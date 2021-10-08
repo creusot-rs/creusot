@@ -9,41 +9,41 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type core_marker_phantomdata 't = 
+  type core_marker_phantomdata 't =
     | Core_Marker_PhantomData
-    
-  type alloc_alloc_global  = 
+
+  type alloc_alloc_global  =
     | Alloc_Alloc_Global
-    
-  type c01_ghostrecord 't = 
+
+  type c01_ghostrecord 't =
     | C01_GhostRecord
-    
-  type core_option_option 't = 
+
+  type core_option_option 't =
     | Core_Option_Option_None
     | Core_Option_Option_Some 't
-    
-  type c01_list 't = 
+
+  type c01_list 't =
     | C01_List_Cons 't (c01_list 't)
     | C01_List_Nil
-    
-  type core_ptr_unique_unique 't = 
+
+  type core_ptr_unique_unique 't =
     | Core_Ptr_Unique_Unique opaque_ptr (core_marker_phantomdata 't)
-    
-  type alloc_rawvec_rawvec 't 'a = 
+
+  type alloc_rawvec_rawvec 't 'a =
     | Alloc_RawVec_RawVec (core_ptr_unique_unique 't) usize 'a
-    
-  type alloc_vec_vec 't 'a = 
+
+  type alloc_vec_vec 't 'a =
     | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) usize
-    
-  type c01_myvec 't = 
+
+  type c01_myvec 't =
     | C01_MyVec (alloc_vec_vec 't (alloc_alloc_global))
-    
+
 end
 module C01_Main_Interface
   val main () : ()
 end
 module C01_Main
-  let rec cfg main () : () = 
+  let rec cfg main () : () =
   var _0 : ();
   {
     goto BB0
@@ -52,11 +52,11 @@ module C01_Main
     _0 <- ();
     return _0
   }
-  
+
 end
 module CreusotContracts_Builtins_Model
-  type self   
-  type modelty   
+  type self
+  type modelty
   function model (self : self) : modelty
 end
 module CreusotContracts_Builtins_Impl4_Model_Interface
@@ -68,11 +68,11 @@ module CreusotContracts_Builtins_Impl4_Model
   use Type
   use mach.int.Int
   use mach.int.Int32
-  function model (self : int32) : Type.creusotcontracts_builtins_int = 
+  function model (self : int32) : int =
     self
 end
 module C01_Impl1_Len_Interface
-  type t   
+  type t
   use mach.int.Int
   use mach.int.Int32
   use prelude.Prelude
@@ -80,7 +80,7 @@ module C01_Impl1_Len_Interface
   function len (self : Type.c01_list t) : int
 end
 module C01_Impl1_Len
-  type t   
+  type t
   use mach.int.Int
   use mach.int.Int32
   use prelude.Prelude
@@ -90,7 +90,7 @@ module C01_Impl1_Len
   val len (self : Type.c01_list t) : int
     ensures { result >= 0 }
     ensures { result = len self }
-    
+
   axiom spec : forall self : Type.c01_list t . len self >= 0
   axiom def : forall self : Type.c01_list t . len self = match (self) with
     | Type.C01_List_Cons _ ls -> Model0.model (1 : int32) + len ls
@@ -98,7 +98,7 @@ module C01_Impl1_Len
     end
 end
 module C01_Impl1_Len_Impl
-  type t   
+  type t
   use mach.int.Int
   use mach.int.Int32
   use prelude.Prelude
@@ -107,25 +107,25 @@ module C01_Impl1_Len_Impl
   let rec len (self : Type.c01_list t) : int
     ensures { result >= 0 }
     variant {self}
-    
-   = 
+
+   =
     match (self) with
       | Type.C01_List_Cons _ ls -> Model0.model (1 : int32) + len ls
       | Type.C01_List_Nil -> Model0.model (0 : int32)
       end
 end
 module C01_Impl1_Get_Interface
-  type t   
+  type t
   use Type
   use mach.int.Int
   function get (self : Type.c01_list t) (ix : int) : Type.core_option_option t
 end
 module C01_Impl1_Get
-  type t   
+  type t
   use Type
   use mach.int.Int
   use mach.int.Int32
-  function get (self : Type.c01_list t) (ix : int) : Type.core_option_option t = 
+  function get (self : Type.c01_list t) (ix : int) : Type.core_option_option t =
     match (self) with
       | Type.C01_List_Cons hd tl -> match (ix = 0) with
         | True -> Type.Core_Option_Option_Some hd
@@ -135,21 +135,21 @@ module C01_Impl1_Get
       end
 end
 module C01_Impl1_Push_Interface
-  type t   
+  type t
   use Type
   function push (self : Type.c01_list t) (v : t) : Type.c01_list t
 end
 module C01_Impl1_Push
-  type t   
+  type t
   use Type
-  function push (self : Type.c01_list t) (v : t) : Type.c01_list t = 
+  function push (self : Type.c01_list t) (v : t) : Type.c01_list t =
     match (self) with
       | Type.C01_List_Cons h tl -> Type.C01_List_Cons h (push tl v)
       | Type.C01_List_Nil -> Type.C01_List_Cons v (Type.C01_List_Nil)
       end
 end
 module C01_Impl1_Index_Interface
-  type t   
+  type t
   use mach.int.Int
   use mach.int.Int32
   use Type
@@ -158,7 +158,7 @@ module C01_Impl1_Index_Interface
   function index (self : Type.c01_list t) (ix : int) : t
 end
 module C01_Impl1_Index
-  type t   
+  type t
   use mach.int.Int
   use mach.int.Int32
   use Type
@@ -170,11 +170,11 @@ module C01_Impl1_Index
     requires {0 <= ix && ix < Len0.len self}
     ensures { Type.Core_Option_Option_Some result = Get1.get self ix }
     ensures { result = index self ix }
-    
+
   axiom spec : forall self : Type.c01_list t, ix : int . 0 <= ix && ix < Len0.len self -> Type.Core_Option_Option_Some (index self ix) = Get1.get self ix
 end
 module C01_Impl1_Index_Impl
-  type t   
+  type t
   use mach.int.Int
   use mach.int.Int32
   use Type
@@ -185,8 +185,8 @@ module C01_Impl1_Index_Impl
     requires {0 <= ix && ix < Len0.len self}
     ensures { Type.Core_Option_Option_Some result = Get1.get self ix }
     variant {self}
-    
-   = 
+
+   =
     match (self) with
       | Type.C01_List_Cons x ls -> match (ix = Model2.model (0 : int32)) with
         | True -> x
@@ -196,56 +196,56 @@ module C01_Impl1_Index_Impl
       end
 end
 module C01_AsRef_Interface
-  type t   
+  type t
   use prelude.Prelude
   use Type
   function as_ref (opt : Type.core_option_option t) : Type.core_option_option t
 end
 module C01_AsRef
-  type t   
+  type t
   use prelude.Prelude
   use Type
-  function as_ref (opt : Type.core_option_option t) : Type.core_option_option t = 
+  function as_ref (opt : Type.core_option_option t) : Type.core_option_option t =
     match (opt) with
       | Type.Core_Option_Option_Some r -> Type.Core_Option_Option_Some r
       | Type.Core_Option_Option_None -> Type.Core_Option_Option_None
       end
 end
 module C01_Impl2_Model_Interface
-  type t   
+  type t
   use Type
   function model (self : Type.c01_ghostrecord t) : t
 end
 module C01_Impl2_Model
-  type t   
+  type t
   use Type
   function model (self : Type.c01_ghostrecord t) : t
 end
 module C01_Impl3_Record_Interface
-  type t   
+  type t
   use Type
   use prelude.Prelude
   clone C01_Impl2_Model_Interface as Model0 with type t = t
   val record (a : t) : Type.c01_ghostrecord t
     ensures { Model0.model result = a }
-    
+
 end
 module C01_Impl3_Record
-  type t   
+  type t
   use Type
   use prelude.Prelude
   clone C01_Impl2_Model as Model0 with type t = t
   val record (a : t) : Type.c01_ghostrecord t
     ensures { Model0.model result = a }
-    
+
 end
 module C01_Impl4_Model_Interface
-  type t   
+  type t
   use Type
   function model (self : Type.c01_myvec t) : Type.c01_list t
 end
 module C01_Impl4_Model
-  type t   
+  type t
   use Type
   function model (self : Type.c01_myvec t) : Type.c01_list t
 end
@@ -260,25 +260,25 @@ module CreusotContracts_Builtins_Impl8_Model
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
-  function model (self : usize) : Type.creusotcontracts_builtins_int = 
+  function model (self : usize) : int =
     self
 end
 module CreusotContracts_Builtins_Impl0_Model_Interface
-  type t   
+  type t
   use prelude.Prelude
   clone CreusotContracts_Builtins_Model as Model0 with type self = t
   function model (self : t) : Model0.modelty
 end
 module CreusotContracts_Builtins_Impl0_Model
-  type t   
+  type t
   use prelude.Prelude
   clone CreusotContracts_Builtins_Model as Model0 with type self = t
   clone CreusotContracts_Builtins_Impl0_Model_Interface as Model1 with type t = t
-  function model (self : t) : Model0.modelty = 
+  function model (self : t) : Model0.modelty =
     Model1.model self
 end
 module C01_Impl5_Len_Interface
-  type t   
+  type t
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
@@ -288,10 +288,10 @@ module C01_Impl5_Len_Interface
   clone CreusotContracts_Builtins_Impl8_Model_Interface as Model0
   val len (self : Type.c01_myvec t) : usize
     ensures { Model0.model result = Len2.len (Model1.model self) }
-    
+
 end
 module C01_Impl5_Len
-  type t   
+  type t
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
@@ -304,10 +304,10 @@ module C01_Impl5_Len
   clone CreusotContracts_Builtins_Impl8_Model as Model0
   val len (self : Type.c01_myvec t) : usize
     ensures { Model0.model result = Len2.len (Model1.model self) }
-    
+
 end
 module C01_Impl5_Get_Interface
-  type t   
+  type t
   use Type
   use prelude.Prelude
   use mach.int.Int
@@ -318,10 +318,10 @@ module C01_Impl5_Get_Interface
   clone C01_AsRef_Interface as AsRef0 with type t = t
   val get (self : Type.c01_myvec t) (ix : usize) : Type.core_option_option t
     ensures { AsRef0.as_ref result = Get3.get (Model1.model self) (Model2.model ix) }
-    
+
 end
 module C01_Impl5_Get
-  type t   
+  type t
   use Type
   use prelude.Prelude
   use mach.int.Int
@@ -334,30 +334,30 @@ module C01_Impl5_Get
   clone C01_AsRef as AsRef0 with type t = t
   val get (self : Type.c01_myvec t) (ix : usize) : Type.core_option_option t
     ensures { AsRef0.as_ref result = Get3.get (Model1.model self) (Model2.model ix) }
-    
+
 end
 module C01_Impl5_Push_Interface
-  type t   
+  type t
   use prelude.Prelude
   use Type
   clone C01_Impl1_Push_Interface as Push1 with type t = t
   clone C01_Impl4_Model_Interface as Model0 with type t = t
   val push (self : borrowed (Type.c01_myvec t)) (v : t) : ()
     ensures { Model0.model ( ^ self) = Push1.push (Model0.model ( * self)) v }
-    
+
 end
 module C01_Impl5_Push
-  type t   
+  type t
   use prelude.Prelude
   use Type
   clone C01_Impl1_Push as Push1 with type t = t
   clone C01_Impl4_Model as Model0 with type t = t
   val push (self : borrowed (Type.c01_myvec t)) (v : t) : ()
     ensures { Model0.model ( ^ self) = Push1.push (Model0.model ( * self)) v }
-    
+
 end
 module C01_Impl5_Index_Interface
-  type t   
+  type t
   use prelude.Prelude
   use Type
   use mach.int.Int
@@ -369,10 +369,10 @@ module C01_Impl5_Index_Interface
   val index (self : Type.c01_myvec t) (ix : usize) : t
     requires {Model0.model ix < Len2.len (Model1.model self)}
     ensures { result = Index3.index (Model1.model self) (Model0.model ix) }
-    
+
 end
 module C01_Impl5_Index
-  type t   
+  type t
   use prelude.Prelude
   use Type
   use mach.int.Int
@@ -389,10 +389,10 @@ module C01_Impl5_Index
   val index (self : Type.c01_myvec t) (ix : usize) : t
     requires {Model0.model ix < Len2.len (Model1.model self)}
     ensures { result = Index3.index (Model1.model self) (Model0.model ix) }
-    
+
 end
 module C01_Impl5_IndexMut_Interface
-  type t   
+  type t
   use mach.int.Int
   use mach.int.Int32
   use prelude.Prelude
@@ -408,10 +408,10 @@ module C01_Impl5_IndexMut_Interface
     ensures { forall j : (int) . 0 <= j && j <= Len2.len (Model1.model ( ^ self)) -> not (j = Model0.model ix) -> Index3.index (Model1.model ( ^ self)) j = Index3.index (Model1.model ( * self)) j }
     ensures {  ^ result = Index3.index (Model1.model ( ^ self)) (Model0.model ix) }
     ensures {  * result = Index3.index (Model1.model ( * self)) (Model0.model ix) }
-    
+
 end
 module C01_Impl5_IndexMut
-  type t   
+  type t
   use mach.int.Int
   use mach.int.Int32
   use prelude.Prelude
@@ -430,28 +430,28 @@ module C01_Impl5_IndexMut
     ensures { forall j : (int) . 0 <= j && j <= Len2.len (Model1.model ( ^ self)) -> not (j = Model0.model ix) -> Index3.index (Model1.model ( ^ self)) j = Index3.index (Model1.model ( * self)) j }
     ensures {  ^ result = Index3.index (Model1.model ( ^ self)) (Model0.model ix) }
     ensures {  * result = Index3.index (Model1.model ( * self)) (Model0.model ix) }
-    
+
 end
 module CreusotContracts_Builtins_Resolve
-  type self   
+  type self
   predicate resolve (self : self)
 end
 module CreusotContracts_Builtins_Impl16_Resolve_Interface
-  type t   
+  type t
   use prelude.Prelude
   predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Builtins_Impl16_Resolve
-  type t   
+  type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t) = 
+  predicate resolve (self : borrowed t) =
      ^ self =  * self
 end
 module C01_Impl4
-  type t   
+  type t
   use Type
   clone export C01_Impl4_Model with type t = t
-  type modelty  = 
+  type modelty  =
     Type.c01_list t
   clone export CreusotContracts_Builtins_Model with type self = Type.c01_myvec t, type modelty = modelty,
   function model = model
@@ -468,7 +468,7 @@ module C01_AllZero_Interface
   val all_zero (v : borrowed (Type.c01_myvec uint32)) : ()
     ensures { Len1.len (Model0.model ( * v)) = Len1.len (Model0.model ( ^ v)) }
     ensures { forall i : (int) . 0 <= i && i < Len1.len (Model0.model ( ^ v)) -> Index2.index (Model0.model ( ^ v)) i = (0 : uint32) }
-    
+
 end
 module C01_AllZero
   use mach.int.Int
@@ -504,8 +504,8 @@ module C01_AllZero
   let rec cfg all_zero (v : borrowed (Type.c01_myvec uint32)) : ()
     ensures { Len2.len (Model1.model ( * v)) = Len2.len (Model1.model ( ^ v)) }
     ensures { forall i : (int) . 0 <= i && i < Len2.len (Model1.model ( ^ v)) -> Index4.index (Model1.model ( ^ v)) i = (0 : uint32) }
-    
-   = 
+
+   =
   var _0 : ();
   var v_1 : borrowed (Type.c01_myvec uint32);
   var i_2 : usize;
@@ -584,22 +584,22 @@ module C01_AllZero
     _0 <- ();
     return _0
   }
-  
+
 end
 module C01_Impl2
-  type t   
+  type t
   use Type
   clone export C01_Impl2_Model with type t = t
-  type modelty  = 
+  type modelty  =
     t
   clone export CreusotContracts_Builtins_Model with type self = Type.c01_ghostrecord t, type modelty = modelty,
   function model = model
 end
 module CreusotContracts_WellFounded
-  type self   
+  type self
 end
 module C01_Impl0
-  type t   
+  type t
   use Type
   clone export CreusotContracts_WellFounded with type self = Type.c01_list t
 end

@@ -9,10 +9,10 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type purefunction_list 't = 
+  type purefunction_list 't =
     | PureFunction_List_Cons 't (purefunction_list 't)
     | PureFunction_List_Nil
-    
+
 end
 module PureFunction_PureDeclaration_Interface
   use mach.int.Int
@@ -29,7 +29,7 @@ module PureFunction_PureDeclaration
     ensures { true }
     ensures { true }
     ensures { result = pure_declaration x y }
-    
+
   axiom spec : forall x : int, y : int . false -> false -> false -> true && true && true
   axiom def : forall x : int, y : int . false -> false -> false -> pure_declaration x y = ()
 end
@@ -42,19 +42,19 @@ module PureFunction_PureDeclaration_Impl
     ensures { true }
     ensures { true }
     ensures { true }
-    
-   = 
+
+   =
     ()
 end
 module PureFunction_Impl1_Len_Interface
-  type t   
+  type t
   use mach.int.Int
   use prelude.Prelude
   use Type
   function len (self : Type.purefunction_list t) : int
 end
 module PureFunction_Impl1_Len
-  type t   
+  type t
   use mach.int.Int
   use prelude.Prelude
   use Type
@@ -62,7 +62,7 @@ module PureFunction_Impl1_Len
   val len (self : Type.purefunction_list t) : int
     ensures { result >= (0 : int) }
     ensures { result = len self }
-    
+
   axiom spec : forall self : Type.purefunction_list t . len self >= (0 : int)
   axiom def : forall self : Type.purefunction_list t . len self = match (self) with
     | Type.PureFunction_List_Cons _ ls -> (1 : int) + len ls
@@ -70,29 +70,29 @@ module PureFunction_Impl1_Len
     end
 end
 module PureFunction_Impl1_Len_Impl
-  type t   
+  type t
   use mach.int.Int
   use prelude.Prelude
   use Type
   let rec len (self : Type.purefunction_list t) : int
     ensures { result >= (0 : int) }
     variant {self}
-    
-   = 
+
+   =
     match (self) with
       | Type.PureFunction_List_Cons _ ls -> (1 : int) + len ls
       | Type.PureFunction_List_Nil -> (0 : int)
       end
 end
 module Core_Marker_Sized
-  type self   
+  type self
 end
 module CreusotContracts_Builtins_Resolve
-  type self   
+  type self
   predicate resolve (self : self)
 end
 module PureFunction_Test_Interface
-  type t   
+  type t
   use mach.int.Int
   use prelude.Prelude
   use Type
@@ -100,10 +100,10 @@ module PureFunction_Test_Interface
   val test (l : Type.purefunction_list t) : int
     requires {Len0.len l <= (10 : int)}
     ensures { result <= (10 : int) }
-    
+
 end
 module PureFunction_Test
-  type t   
+  type t
   use mach.int.Int
   use prelude.Prelude
   use Type
@@ -113,8 +113,8 @@ module PureFunction_Test
   let rec cfg test (l : Type.purefunction_list t) : int
     requires {Len1.len l <= (10 : int)}
     ensures { result <= (10 : int) }
-    
-   = 
+
+   =
   var _0 : int;
   var l_1 : Type.purefunction_list t;
   var _2 : Type.purefunction_list t;
@@ -131,11 +131,11 @@ module PureFunction_Test
   BB1 {
     return _0
   }
-  
+
 end
 module CreusotContracts_Builtins_Model
-  type self   
-  type modelty   
+  type self
+  type modelty
   function model (self : self) : modelty
 end
 module CreusotContracts_Builtins_Impl8_Model_Interface
@@ -147,36 +147,36 @@ module CreusotContracts_Builtins_Impl8_Model
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
-  function model (self : usize) : Type.creusotcontracts_builtins_int = 
+  function model (self : usize) : int =
     self
 end
 module PureFunction_UsesLen_Interface
-  type t   
+  type t
   use mach.int.Int
   use Type
   function uses_len (l : Type.purefunction_list t) : int
 end
 module PureFunction_UsesLen
-  type t   
+  type t
   use mach.int.Int
   use Type
   clone CreusotContracts_Builtins_Impl8_Model_Interface as Model1
   clone PureFunction_Impl1_Len_Interface as Len0 with type t = t
-  function uses_len (l : Type.purefunction_list t) : int = 
+  function uses_len (l : Type.purefunction_list t) : int =
     Model1.model (Len0.len l)
 end
 module PureFunction_UsesBothLogicAndProg_Interface
-  type t   
+  type t
   use mach.int.Int
   use Type
   clone PureFunction_UsesLen_Interface as UsesLen1 with type t = t
   clone CreusotContracts_Builtins_Impl8_Model_Interface as Model0
   val uses_both_logic_and_prog (l : Type.purefunction_list t) : int
     ensures { Model0.model result = UsesLen1.uses_len l }
-    
+
 end
 module PureFunction_UsesBothLogicAndProg
-  type t   
+  type t
   use mach.int.Int
   use Type
   clone PureFunction_Impl1_Len as Len3 with type t = t, axiom .
@@ -188,8 +188,8 @@ module PureFunction_UsesBothLogicAndProg
   clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = Type.purefunction_list t
   let rec cfg uses_both_logic_and_prog (l : Type.purefunction_list t) : int
     ensures { Model1.model result = UsesLen2.uses_len l }
-    
-   = 
+
+   =
   var _0 : int;
   var l_1 : Type.purefunction_list t;
   var _2 : Type.purefunction_list t;
@@ -209,13 +209,13 @@ module PureFunction_UsesBothLogicAndProg
     assume { Resolve4.resolve l_1 };
     return _0
   }
-  
+
 end
 module CreusotContracts_WellFounded
-  type self   
+  type self
 end
 module PureFunction_Impl0
-  type t   
+  type t
   use Type
   clone export CreusotContracts_WellFounded with type self = Type.purefunction_list t
 end
