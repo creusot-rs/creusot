@@ -84,7 +84,7 @@ We plan to improve this part of the user experience, but that will have to wait 
 First, you will need to depend on the `creusot-contracts` crate. However, since this crate is not published currently.
 To use `creusot-contracts` for your own Rust code, the basic way is to load the crate as an `extern crate`.
 You can do that by adding the following declaration to your Rust code:
-```
+```rust
 extern crate creusot_contracts;
 use creusot_contracts::*;
 ```
@@ -92,7 +92,7 @@ use creusot_contracts::*;
 :warning: Currently `creusot-contracts` is very unfinished. Using the macros included in this crate may prevent your Rust code from compiling normally. (TODO: implement a pass-through mode for normal compilation) :warning:
 
 Also, you usually need to add the following settings in each of the Rust files you verify with Creusot.
-```
+```rust
 #![feature(register_tool, rustc_attrs)]
 #![register_tool(creusot)]
 #![feature(proc_macro_hygiene, stmt_expr_attributes)]
@@ -116,8 +116,6 @@ Inside a function, you can attach `invariant` clauses to loops, these are attach
 while ... { ... }
 ```
 Invariants must have names (for now).
-
-Finally, there is a `variant` clause (sorry, not yet supported), which may be useful when defining *logical functions*, whose termination must be proved. You can give it an expression as argument, whose value must strictly decrease (in a known well-founded order) at each recursive call.
 
 ## Controlling verification
 
@@ -144,16 +142,20 @@ CREUSOT_UNBOUNDED=1 REPO/mlcfg PATH/TO/PROGRAM.rs > PATH/TO/OUTPUT.mlcfg
 ## Pearlite
 
 Contracts and logic functions are written in Pearlite, a specification language for Rust we are developing. Pearlite can be seen as a pure, immutable fragment of Rust which has access to a few additional logical operations and connectives. In practice you have:
-
-- Base Rust expressions: matching, function calls, let bindings, binary and unary operators, tuples, structs and enums, projections, primitive casts, and dereferencing.
+- Base Rust expressions: matching, function calls, let bindings, binary and unary operators, tuples, structs and enums, projections, primitive casts, and dereferencing
 - Logical Expressions: quantifiers (`forall` and `exists`), logical implication `==>`, *logical* equality `a === b`, labels
 - Rust specific logical expressions: access to the **final** value of a mutable reference `^`, access to the *model* of an object `@`
 
-You also have two new kinds of declarations: `logic` and `hybrid`.
+We also provide two new attributes on Rust functions: `logic` and `pure`.
+Marked either `logic` or `pure`, a function can be used in specs and other logical conditions (`requires`/`ensures` and `invariant`).
+The two attributes have the following difference.
+- A `logic` function can freely have logical, non-executable operations, such as quantifiers, logic equalities, etc. Instead, this function can't be called in normal Rust code (the function body of a `logic` function is replaced with a panic).
+  To write logic functions, there are two ways: add `#[logic]` attribute or put the function in `logic_fn! { ... }` macro. The former gets better IDE support but the latter allows you to use pearlite syntax like `===` and `forall<x: T>`.
+- A `pure` function can be used in both normal Rust code and logical conditions.
 
-When a function is annotated with `logic`, its body will be treated as a pearlite expression. This means that you can use quantifiers, have access to final values of borrows, and all the goodies. However, you cannot call this function in normal Rust code (currently this is enforced by replacing the body with a `panic!`).
-
-The second kind of declaration is `hybrid` (sorry, not yet implemented) (TODO: implement it). It allows you to mark a Rust function as both a logic function and a program function. This means your code must lie in the intersection of these languages. In particular this means no mutation of any kind (even recursively) and no quantifiers or logic specific constructs.
+When you write *recursive* `logic` or `pure` functions, you have to show that the function terminates.
+For that, you can add `#[variant(EXPR)]` attribute, which says that the value of the expression `EXPR` strictly decreases (in a known well-founded order) at each recursive call.
+The type of `EXPR` should implement the `WellFounded` trait.
 
 You can also give a custom *model* to your type.
 To do that, you just implement the `Model` trait (provided in `creusot_contracts`) specifying the associated type `Model`.

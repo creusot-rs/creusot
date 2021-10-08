@@ -6,7 +6,7 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-logic! {
+logic_fn! {
     fn reflexive<T : PartialEq>(x : T) -> bool {
         x === x
     }

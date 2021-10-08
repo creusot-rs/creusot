@@ -13,25 +13,24 @@ enum List {
 }
 use List::*;
 
-logic! {
+#[logic]
 fn len(l: List) -> Int {
     match l {
         Cons(_, ls) => 1 + len(*ls),
         Nil => 0,
     }
 }
-}
 
-logic! {
-fn get(l: List, ix: Int) -> Option<u32> {
-    match l {
-        Cons(x, ls) => match (ix === 0) {
-            true => Some(x),
-            false => get(*ls, ix - 1),
-        },
-        Nil => None
+logic_fn! {
+    fn get(l: List, ix: Int) -> Option<u32> {
+        match l {
+            Cons(x, ls) => match (ix === 0) {
+                true => Some(x),
+                false => get(*ls, ix - 1),
+            },
+            Nil => None
+        }
     }
-}
 }
 
 #[ensures(forall<i:Int> 0 <= i && i < len(*l) ==> get(^l, i) === Some(0u32))]

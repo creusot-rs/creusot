@@ -7,11 +7,10 @@ struct Seven();
 
 impl Model for Seven {
     type ModelTy = Int;
-    logic! {
-        #[trusted]
-        fn model(self) -> Self::ModelTy {
-            panic!()
-        }
+    #[logic]
+    #[trusted]
+    fn model(self) -> Self::ModelTy {
+        panic!()
     }
 }
 
@@ -25,11 +24,10 @@ struct Pair<T, U>(T, U);
 
 impl<T, U> Model for Pair<T, U> {
     type ModelTy = (T, U);
-    logic! {
-        #[trusted]
-        fn model(self) -> Self::ModelTy  {
-            panic!()
-        }
+    #[logic]
+    #[trusted]
+    fn model(self) -> Self::ModelTy {
+        panic!()
     }
 }
 

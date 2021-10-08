@@ -7,10 +7,9 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-logic! {
-  fn omg<T>(x: T) -> bool {
+#[logic]
+fn omg<T>(x: T) -> bool {
     true
-  }
 }
 
 #[ensures(omg(x))]

@@ -27,27 +27,25 @@ impl<T> List<T> {
         }
     }
 
-    logic! {
-        fn get(self, ix: Int) -> Option<T> {
-            match self {
-                Cons(hd, tl) => {
-                    if ix == 0 {
-                        Some(hd)
-                    } else {
-                        tl.get(ix - 1)
-                    }
-                },
-                Nil => None
+    #[logic]
+    fn get(self, ix: Int) -> Option<T> {
+        match self {
+            Cons(hd, tl) => {
+                if ix == 0 {
+                    Some(hd)
+                } else {
+                    tl.get(ix - 1)
+                }
             }
+            Nil => None,
         }
     }
 
-    logic! {
-        fn push(self, v: T) -> Self {
-            match self {
-                Cons(h, tl) => Cons(h, Box::new(tl.push(v))),
-                Nil => Cons(v, Box::new(Nil)),
-            }
+    #[logic]
+    fn push(self, v: T) -> Self {
+        match self {
+            Cons(h, tl) => Cons(h, Box::new(tl.push(v))),
+            Nil => Cons(v, Box::new(Nil)),
         }
     }
 
@@ -69,12 +67,11 @@ impl<T> List<T> {
     }
 }
 
-logic! {
-    fn as_ref<'a, T>(opt: Option<&T>) -> &'a Option<T> {
-        match opt {
-            Some(r) => &Some(*r),
-            None => &None,
-        }
+#[logic]
+fn as_ref<'a, T>(opt: Option<&T>) -> &'a Option<T> {
+    match opt {
+        Some(r) => &Some(*r),
+        None => &None,
     }
 }
 
@@ -86,11 +83,10 @@ where
 
 impl<T> Model for GhostRecord<T> {
     type ModelTy = T;
-    logic! {
-        #[trusted]
-        fn model(self) -> Self::ModelTy  {
-            panic!()
-        }
+    #[logic]
+    #[trusted]
+    fn model(self) -> Self::ModelTy {
+        panic!()
     }
 }
 
@@ -104,11 +100,10 @@ impl<T> GhostRecord<T> {
 
 impl<T> Model for MyVec<T> {
     type ModelTy = List<T>;
-    logic! {
-        #[trusted]
-        fn model(self) -> Self::ModelTy  {
-            panic!()
-        }
+    #[logic]
+    #[trusted]
+    fn model(self) -> Self::ModelTy {
+        panic!()
     }
 }
 

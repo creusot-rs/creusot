@@ -151,7 +151,7 @@ Instead, we replace the `discriminant` / `switchInt` pair with a match directly 
 
 ## Logical functions
 
-Logical functions are created using either the `logic!` or `predicate!` proc macros.
+Logical functions are created using either the `logic_fn!` or `predicate!` proc macros.
 
 ## Specifications
 

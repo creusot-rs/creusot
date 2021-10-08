@@ -179,7 +179,7 @@ impl syn::parse::Parse for LogicItem {
 }
 
 #[proc_macro]
-pub fn logic(tokens: TS1) -> TS1 {
+pub fn logic_fn(tokens: TS1) -> TS1 {
     match syn::parse::<LogicItem>(tokens.clone()) {
         Ok(log) => logic_item(log),
         Err(_) => match syn::parse(tokens) {
@@ -277,6 +277,11 @@ pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
         #[creusot::spec::trusted]
         #p
     })
+}
+
+#[proc_macro_attribute]
+pub fn logic(_: TS1, tokens: TS1) -> TS1 {
+    logic_fn(tokens)
 }
 
 #[proc_macro_attribute]

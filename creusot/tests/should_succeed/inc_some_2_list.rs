@@ -13,12 +13,11 @@ use List::*;
 impl WellFounded for List {}
 
 impl List {
-    logic! {
-        fn sum(self) -> Int {
-            match self {
-                Cons(a, l) => Int::from(a) + l.sum(),
-                Nil => 0,
-            }
+    #[logic]
+    fn sum(self) -> Int {
+        match self {
+            Cons(a, l) => Int::from(a) + l.sum(),
+            Nil => 0,
         }
     }
 

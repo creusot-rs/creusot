@@ -46,10 +46,9 @@ fn test<T>(l: &List<T>) -> usize {
     l.len()
 }
 
-logic! {
-    fn uses_len<T>(l : List<T>) -> Int {
-        l.len().into()
-    }
+#[logic]
+fn uses_len<T>(l: List<T>) -> Int {
+    l.len().into()
 }
 
 #[ensures(result.into() === uses_len(l))]
