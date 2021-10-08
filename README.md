@@ -147,10 +147,25 @@ Contracts and logic functions are written in Pearlite, a specification language 
 
 - Base Rust expressions: matching, function calls, let bindings, binary and unary operators, tuples, structs and enums, projections, primitive casts, and dereferencing.
 - Logical Expressions: quantifiers (`forall` and `exists`), logical implication `==>`, *logical* equality `a === b`, labels
-- Rust specific logical expressions: access to the **final** value of a mutable borrow! `^` /`@fin`
+- Rust specific logical expressions: access to the **final** value of a mutable reference `^`, access to the *model* of an object `@`
 
 You also have two new kinds of declarations: `logic` and `hybrid`.
 
 When a function is annotated with `logic`, its body will be treated as a pearlite expression. This means that you can use quantifiers, have access to final values of borrows, and all the goodies. However, you cannot call this function in normal Rust code (currently this is enforced by replacing the body with a `panic!`).
 
 The second kind of declaration is `hybrid` (sorry, not yet implemented) (TODO: implement it). It allows you to mark a Rust function as both a logic function and a program function. This means your code must lie in the intersection of these languages. In particular this means no mutation of any kind (even recursively) and no quantifiers or logic specific constructs.
+
+You can also give a custom *model* to your type.
+To do that, you just implement the `Model` trait (provided in `creusot_contracts`) specifying the associated type `Model`.
+You give a trusted spec that defines the model (which can be accessed by `@`) on primitive functions.
+For example, the following gives a spooky data type `MyPair<T, U>` a nice pair model.
+```rust
+impl<T, U> Model for MyPair<T, U> {
+    type Target = (T, U);
+}
+#[trusted]
+#[ensures(@result === (a, b))]
+fn my_pair<T, U>(a: T, b: U) -> MyPair<T, U> {
+  ...
+}
+```

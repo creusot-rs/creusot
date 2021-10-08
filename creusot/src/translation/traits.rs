@@ -234,16 +234,21 @@ fn translate_assoc_function(
             )
         });
 
-    let assoc_method = if crate::util::is_predicate(ctx.tcx, assoc.def_id) {
-        CloneSubst::Predicate(
+    let assoc_method = match crate::util::item_type(ctx.tcx, assoc.def_id) {
+        ItemType::Logic => CloneSubst::Function(
             assoc.ident.to_string().into(),
             names.insert(assoc.def_id, assoc_subst).qname(ctx.tcx, assoc.def_id),
-        )
-    } else {
-        CloneSubst::Val(
+        ),
+        ItemType::Predicate => CloneSubst::Predicate(
             assoc.ident.to_string().into(),
             names.insert(assoc.def_id, assoc_subst).qname(ctx.tcx, assoc.def_id),
-        )
+        ),
+        ItemType::Program => CloneSubst::Val(
+            assoc.ident.to_string().into(),
+            names.insert(assoc.def_id, assoc_subst).qname(ctx.tcx, assoc.def_id),
+        ),
+        ItemType::Pure => todo!("pure functions in traits are unimplemented"),
+        _ => unreachable!(),
     };
 
     method_subst.chain(std::iter::once(assoc_method))
@@ -334,6 +339,7 @@ pub fn resolve_trait_opt(
     }
 }
 
+use rustc_middle::ty::AssocItemContainer;
 pub fn resolve_assoc_item_opt(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
@@ -341,6 +347,13 @@ pub fn resolve_assoc_item_opt(
     substs: SubstsRef<'tcx>,
 ) -> Option<MethodInstance<'tcx>> {
     let assoc = tcx.opt_associated_item(def_id)?;
+
+    // If we're given an associated item that is already on an instance,
+    // we don't need to resolve at all!
+    if let AssocItemContainer::ImplContainer(_) = assoc.container {
+        return None;
+    }
+
     let source = resolve_impl_source_opt(tcx, param_env, def_id, substs)?;
 
     match source {

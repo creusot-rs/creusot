@@ -1,0 +1,105 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type model_pair 't 'u = 
+    | Model_Pair 't 'u
+    
+  type model_seven  = 
+    | Model_Seven
+    
+end
+module Model_Impl0_Model_Interface
+  use mach.int.Int
+  use Type
+  function model (self : Type.model_seven) : int
+end
+module Model_Impl0_Model
+  use mach.int.Int
+  use Type
+  function model (self : Type.model_seven) : int
+end
+module Model_Seven_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  use Type
+  clone Model_Impl0_Model_Interface as Model0
+  val seven () : Type.model_seven
+    ensures { Model0.model result = 7 }
+    
+end
+module Model_Seven
+  use mach.int.Int
+  use mach.int.Int32
+  use Type
+  clone Model_Impl0_Model as Model0
+  val seven () : Type.model_seven
+    ensures { Model0.model result = 7 }
+    
+end
+module Model_Impl1_Model_Interface
+  type t   
+  type u   
+  use Type
+  function model (self : Type.model_pair t u) : (t, u)
+end
+module Model_Impl1_Model
+  type t   
+  type u   
+  use Type
+  function model (self : Type.model_pair t u) : (t, u)
+end
+module Core_Marker_Sized
+  type self   
+end
+module Model_Pair_Interface
+  type t   
+  type u   
+  use Type
+  clone Model_Impl1_Model_Interface as Model0 with type t = t, type u = u
+  val pair (a : t) (b : u) : Type.model_pair t u
+    ensures { Model0.model result = (a, b) }
+    
+end
+module Model_Pair
+  type t   
+  type u   
+  use Type
+  clone Model_Impl1_Model as Model2 with type t = t, type u = u
+  clone Core_Marker_Sized as Sized1 with type self = u
+  clone Core_Marker_Sized as Sized0 with type self = t
+  val pair (a : t) (b : u) : Type.model_pair t u
+    ensures { Model2.model result = (a, b) }
+    
+end
+module CreusotContracts_Builtins_Model
+  type self   
+  type modelty   
+  function model (self : self) : modelty
+end
+module Model_Impl0
+  use Type
+  use mach.int.Int
+  clone export Model_Impl0_Model
+  type modelty  = 
+    int
+  clone export CreusotContracts_Builtins_Model with type self = Type.model_seven, type modelty = modelty,
+  function model = model
+end
+module Model_Impl1
+  type t   
+  type u   
+  use Type
+  clone export Model_Impl1_Model with type t = t, type u = u
+  type modelty  = 
+    (t, u)
+  clone export CreusotContracts_Builtins_Model with type self = Type.model_pair t u, type modelty = modelty,
+  function model = model
+end

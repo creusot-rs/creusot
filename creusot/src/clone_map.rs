@@ -249,7 +249,6 @@ impl<'tcx> CloneMap<'tcx> {
             for dep in ctx.dependencies(key.0).unwrap_or(&empty).keys() {
                 let orig = dep;
                 let dep = (dep.0, dep.1.subst(self.tcx, key.1));
-
                 let dep = match traits::resolve_opt(ctx.tcx, ctx.tcx.param_env(key.0), dep.0, dep.1)
                 {
                     Some(dep) => (dep),
