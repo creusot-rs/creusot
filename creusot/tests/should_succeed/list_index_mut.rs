@@ -38,7 +38,7 @@ fn len(l: List) -> Int {
 fn get(l: List, ix: Int) -> Option<u32> {
     {
         let List(i, ls) = l;
-        match (ix > 0) {
+        match ix > 0 {
             false => Some(i),
             true => match ls {
                 Some(ls) => get(*ls, ix - 1),
