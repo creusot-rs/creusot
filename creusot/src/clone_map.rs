@@ -167,16 +167,18 @@ impl<'tcx> CloneMap<'tcx> {
                 def_id = it.container.id()
             }
         };
+        let subst = self.tcx.erase_regions(subst);
 
-        debug!("inserting {:?} {:?}", def_id, subst);
         self.names.entry((def_id, subst)).or_insert_with(|| {
+            debug!("inserting {:?} {:?}", def_id, subst);
             let base_sym = match util::item_type(self.tcx, def_id) {
                 ItemType::Impl => self.tcx.item_name(self.tcx.trait_id_of_impl(def_id).unwrap()),
                 _ => self.tcx.item_name(def_id),
             };
 
             let base: Ident = base_sym.as_str().to_camel_case().into();
-            let count : usize = *self.name_counts.entry(base.clone()).and_modify(|c| *c += 1).or_insert(0);
+            let count: usize =
+                *self.name_counts.entry(base.clone()).and_modify(|c| *c += 1).or_insert(0);
             let info = CloneInfo::from_name(format!("{}{}", &*base, count).into());
             info
         })
@@ -184,6 +186,9 @@ impl<'tcx> CloneMap<'tcx> {
 
     pub fn clone_self(&mut self, self_id: DefId) {
         let subst = InternalSubsts::identity_for_item(self.tcx, self_id);
+        let subst = self.tcx.erase_regions(subst);
+
+        debug!("cloning self: {:?}", (self_id, subst));
         self.names.insert((self_id, subst), CloneInfo::hidden());
     }
 
@@ -234,6 +239,7 @@ impl<'tcx> CloneMap<'tcx> {
                 let mut visitor = ProjectionTyVisitor {
                     f: Box::new(|pty: ProjectionTy<'tcx>| {
                         let trait_id = pty.trait_def_id(self.tcx);
+                        debug!("adding projection edge=({:?}, {:?})", trait_id, pty.substs);
                         self.clone_graph.add_edge((trait_id, pty.substs), key, None);
                     }),
                 };
