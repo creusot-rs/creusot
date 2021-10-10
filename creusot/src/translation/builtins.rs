@@ -88,7 +88,9 @@ pub fn lookup_builtin(
         let r = args.remove(0);
 
         return Some(Exp::BinaryOp(BinOp::Ne, box l, box r));
-    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("u32_to_int")) {
+    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("u32_to_int"))
+        || def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("u32_model"))
+    {
         let a = args.remove(0);
         let i = if let Exp::Const(Constant::Uint(v, _)) = a {
             Exp::Const(Constant::Uint(v, None))
@@ -97,7 +99,9 @@ pub fn lookup_builtin(
         };
 
         return Some(i);
-    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("i32_to_int")) {
+    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("i32_to_int"))
+        || def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("i32_model"))
+    {
         let a = args.remove(0);
         let i = if let Exp::Const(Constant::Int(v, _)) = a {
             Exp::Const(Constant::Int(v, None))
@@ -105,7 +109,9 @@ pub fn lookup_builtin(
             a
         };
         return Some(i);
-    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("usize_to_int")) {
+    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("usize_to_int"))
+        || def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("usize_model"))
+    {
         let a = args.remove(0);
         let i = if let Exp::Const(Constant::Uint(v, _)) = a {
             Exp::Const(Constant::Uint(v, None))
@@ -113,9 +119,19 @@ pub fn lookup_builtin(
             a
         };
         return Some(i);
-    // Semi-questionable: we allow abort() & unreachable() in pearlite but
-    // interpret them as `absurd` (aka prove false).
+    } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("isize_to_int"))
+        || def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("isize_model"))
+    {
+        let a = args.remove(0);
+        let i = if let Exp::Const(Constant::Int(v, _)) = a {
+            Exp::Const(Constant::Int(v, None))
+        } else {
+            a
+        };
+        return Some(i);
     } else if def_id == ctx.tcx.get_diagnostic_item(sym::abort) {
+        // Semi-questionable: we allow abort() & unreachable() in pearlite but
+        // interpret them as `absurd` (aka prove false).
         return Some(Exp::Absurd);
     } else if def_id == ctx.tcx.get_diagnostic_item(sym::unreachable) {
         return Some(Exp::Absurd);

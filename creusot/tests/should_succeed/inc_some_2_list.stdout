@@ -14,22 +14,6 @@ module Type
     | IncSome2List_List_Nil
     
 end
-module CreusotContracts_Builtins_Model
-  type self   
-  type modelty   
-  function model (self : self) : modelty
-end
-module CreusotContracts_Builtins_Impl7_Model_Interface
-  use mach.int.Int
-  use mach.int.UInt32
-  function model (self : uint32) : int
-end
-module CreusotContracts_Builtins_Impl7_Model
-  use mach.int.Int
-  use mach.int.UInt32
-  function model (self : uint32) : int = 
-    self
-end
 module IncSome2List_Impl1_Sum_Interface
   use mach.int.Int
   use Type
@@ -39,10 +23,9 @@ module IncSome2List_Impl1_Sum
   use mach.int.Int
   use Type
   use mach.int.Int32
-  clone CreusotContracts_Builtins_Impl7_Model_Interface as Model0
   function sum (self : Type.incsome2list_list) : int = 
     match (self) with
-      | Type.IncSome2List_List_Cons a l -> Model0.model a + sum l
+      | Type.IncSome2List_List_Cons a l -> a + sum l
       | Type.IncSome2List_List_Nil -> 0
       end
 end
@@ -76,8 +59,7 @@ module IncSome2List_Impl1_LemmaSumNonneg_Impl
   use mach.int.Int32
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Builtins_Impl7_Model as Model0
-  clone IncSome2List_Impl1_Sum as Sum0 with function Model0.model = Model0.model
+  clone IncSome2List_Impl1_Sum as Sum0
   let rec lemma_sum_nonneg (self : Type.incsome2list_list) : ()
     ensures { Sum0.sum self >= 0 }
     variant {self}
@@ -98,11 +80,10 @@ module IncSome2List_Impl1_SumX_Interface
   use mach.int.UInt32
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Builtins_Impl7_Model_Interface as Model0
   clone IncSome2List_Impl1_Sum_Interface as Sum0
   val sum_x (self : Type.incsome2list_list) : uint32
     requires {Sum0.sum self <= 1000000}
-    ensures { Model0.model result = Sum0.sum self }
+    ensures { result = Sum0.sum self }
     
 end
 module IncSome2List_Impl1_SumX
@@ -111,8 +92,7 @@ module IncSome2List_Impl1_SumX
   use mach.int.UInt32
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Builtins_Impl7_Model as Model0
-  clone IncSome2List_Impl1_Sum as Sum0 with function Model0.model = Model0.model
+  clone IncSome2List_Impl1_Sum as Sum0
   use mach.int.Int64
   clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = Type.incsome2list_list
   clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = uint32
@@ -121,7 +101,7 @@ module IncSome2List_Impl1_SumX
   clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = Type.incsome2list_list
   let rec cfg sum_x (self : Type.incsome2list_list) : uint32
     requires {Sum0.sum self <= 1000000}
-    ensures { Model0.model result = Sum0.sum self }
+    ensures { result = Sum0.sum self }
     
    = 
   var _0 : uint32;
@@ -179,6 +159,11 @@ module IncSome2List_Impl1_SumX
   }
   
 end
+module CreusotContracts_Builtins_Model
+  type self   
+  type modelty   
+  function model (self : self) : modelty
+end
 module CreusotContracts_Builtins_Impl1_Model_Interface
   type t   
   use prelude.Prelude
@@ -192,10 +177,21 @@ module CreusotContracts_Builtins_Impl1_Model
   function model (self : borrowed t) : Model0.modelty = 
     Model0.model ( * self)
 end
-module CreusotContracts_Builtins_Impl7
+module CreusotContracts_Builtins_Impl5_Model_Interface
   use mach.int.Int
   use mach.int.UInt32
-  clone export CreusotContracts_Builtins_Impl7_Model
+  function model (self : uint32) : int
+end
+module CreusotContracts_Builtins_Impl5_Model
+  use mach.int.Int
+  use mach.int.UInt32
+  function model (self : uint32) : int = 
+    self
+end
+module CreusotContracts_Builtins_Impl5
+  use mach.int.Int
+  use mach.int.UInt32
+  clone export CreusotContracts_Builtins_Impl5_Model
   type modelty  = 
     int
   clone export CreusotContracts_Builtins_Model with type self = uint32, type modelty = modelty, function model = model
@@ -224,13 +220,12 @@ module IncSome2List_Impl1_TakeSomeRest_Interface
   use mach.int.Int
   use mach.int.UInt32
   use Type
-  clone CreusotContracts_Builtins_Impl7_Model_Interface as Model1
   clone CreusotContracts_Builtins_Impl1_Model_Interface as Model0 with type t = uint32
   clone IncSome2List_Impl1_Sum_Interface as Sum0
   val take_some_rest (self : borrowed (Type.incsome2list_list)) : (borrowed uint32, borrowed (Type.incsome2list_list))
     ensures { Sum0.sum ( * (let (_, a) = result in a)) <= Sum0.sum ( * self) }
     ensures { Model0.model (let (a, _) = result in a) <= Sum0.sum ( * self) }
-    ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) = Model1.model ( ^ (let (a, _) = result in a)) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model0.model (let (a, _) = result in a) - Sum0.sum ( * (let (_, a) = result in a)) }
+    ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) =  ^ (let (a, _) = result in a) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model0.model (let (a, _) = result in a) - Sum0.sum ( * (let (_, a) = result in a)) }
     
 end
 module IncSome2List_Impl1_TakeSomeRest
@@ -238,11 +233,10 @@ module IncSome2List_Impl1_TakeSomeRest
   use mach.int.Int
   use mach.int.UInt32
   use Type
-  clone CreusotContracts_Builtins_Impl7 as Model2
-  clone CreusotContracts_Builtins_Impl1_Model as Model0 with type t = uint32, type Model0.modelty = Model2.modelty,
-  function Model0.model = Model2.model
-  clone CreusotContracts_Builtins_Impl7_Model as Model1
-  clone IncSome2List_Impl1_Sum as Sum0 with function Model0.model = Model1.model
+  clone CreusotContracts_Builtins_Impl5 as Model1
+  clone CreusotContracts_Builtins_Impl1_Model as Model0 with type t = uint32, type Model0.modelty = Model1.modelty,
+  function Model0.model = Model1.model
+  clone IncSome2List_Impl1_Sum as Sum0
   use mach.int.Int64
   clone CreusotContracts_Builtins_Impl19_Resolve as Resolve6 with type t = Type.incsome2list_list
   clone CreusotContracts_Builtins_Impl19_Resolve as Resolve5 with type t = uint32
@@ -256,7 +250,7 @@ module IncSome2List_Impl1_TakeSomeRest
   let rec cfg take_some_rest (self : borrowed (Type.incsome2list_list)) : (borrowed uint32, borrowed (Type.incsome2list_list))
     ensures { Sum0.sum ( * (let (_, a) = result in a)) <= Sum0.sum ( * self) }
     ensures { Model0.model (let (a, _) = result in a) <= Sum0.sum ( * self) }
-    ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) = Model1.model ( ^ (let (a, _) = result in a)) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model0.model (let (a, _) = result in a) - Sum0.sum ( * (let (_, a) = result in a)) }
+    ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) =  ^ (let (a, _) = result in a) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model0.model (let (a, _) = result in a) - Sum0.sum ( * (let (_, a) = result in a)) }
     
    = 
   var _0 : (borrowed uint32, borrowed (Type.incsome2list_list));
@@ -391,10 +385,9 @@ module IncSome2List_IncSome2List_Interface
   use mach.int.Int32
   use Type
   use mach.int.UInt32
-  clone CreusotContracts_Builtins_Impl7_Model_Interface as Model0
   clone IncSome2List_Impl1_Sum_Interface as Sum0
   val inc_some_2_list (l : Type.incsome2list_list) (j : uint32) (k : uint32) : ()
-    requires {Sum0.sum l + Model0.model j + Model0.model k <= 1000000}
+    requires {Sum0.sum l + j + k <= 1000000}
     
 end
 module IncSome2List_IncSome2List
@@ -402,12 +395,11 @@ module IncSome2List_IncSome2List
   use mach.int.Int32
   use Type
   use mach.int.UInt32
-  clone CreusotContracts_Builtins_Impl7_Model as Model0
-  clone IncSome2List_Impl1_Sum as Sum0 with function Model0.model = Model0.model
+  clone IncSome2List_Impl1_Sum as Sum0
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Impl7 as Model2
-  clone CreusotContracts_Builtins_Impl1_Model as Model1 with type t = uint32, type Model0.modelty = Model2.modelty,
-  function Model0.model = Model2.model
+  clone CreusotContracts_Builtins_Impl5 as Model1
+  clone CreusotContracts_Builtins_Impl1_Model as Model0 with type t = uint32, type Model0.modelty = Model1.modelty,
+  function Model0.model = Model1.model
   clone CreusotContracts_Builtins_Resolve as Resolve6 with type self = Type.incsome2list_list
   clone CreusotContracts_Builtins_Resolve as Resolve5 with type self = ()
   clone Core_Panicking_Panic_Interface as Panic0
@@ -421,11 +413,10 @@ module IncSome2List_IncSome2List
   clone CreusotContracts_Builtins_Impl19_Resolve as Resolve1 with type t = Type.incsome2list_list
   clone CreusotContracts_Builtins_Impl19_Resolve as Resolve0 with type t = uint32
   clone IncSome2List_Impl1_TakeSomeRest_Interface as TakeSomeRest0 with function Sum0.sum = Sum0.sum,
-  function Model0.model = Model1.model, function Model1.model = Model0.model
-  clone IncSome2List_Impl1_SumX_Interface as SumX0 with function Sum0.sum = Sum0.sum,
   function Model0.model = Model0.model
+  clone IncSome2List_Impl1_SumX_Interface as SumX0 with function Sum0.sum = Sum0.sum
   let rec cfg inc_some_2_list (l : Type.incsome2list_list) (j : uint32) (k : uint32) : ()
-    requires {Sum0.sum l + Model0.model j + Model0.model k <= 1000000}
+    requires {Sum0.sum l + j + k <= 1000000}
     
    = 
   var _0 : ();

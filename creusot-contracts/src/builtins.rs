@@ -71,21 +71,6 @@ impl PartialOrd for Int {
     }
 }
 
-impl From<i32> for Int {
-    #[creusot::spec::no_translate]
-    #[rustc_diagnostic_item = "i32_to_int"]
-    fn from(_: i32) -> Self {
-        panic!()
-    }
-}
-impl Model for i32 {
-    type ModelTy = Int;
-    #[logic_rust]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
-
 impl From<u32> for Int {
     #[creusot::spec::no_translate]
     #[rustc_diagnostic_item = "u32_to_int"]
@@ -96,6 +81,23 @@ impl From<u32> for Int {
 impl Model for u32 {
     type ModelTy = Int;
     #[logic_rust]
+    #[rustc_diagnostic_item = "u32_model"]
+    fn model(self) -> Self::ModelTy {
+        Int::from(self)
+    }
+}
+
+impl From<i32> for Int {
+    #[creusot::spec::no_translate]
+    #[rustc_diagnostic_item = "i32_to_int"]
+    fn from(_: i32) -> Self {
+        panic!()
+    }
+}
+impl Model for i32 {
+    type ModelTy = Int;
+    #[logic_rust]
+    #[rustc_diagnostic_item = "i32_model"]
     fn model(self) -> Self::ModelTy {
         Int::from(self)
     }
@@ -111,6 +113,7 @@ impl From<usize> for Int {
 impl Model for usize {
     type ModelTy = Int;
     #[logic_rust]
+    #[rustc_diagnostic_item = "usize_model"]
     fn model(self) -> Self::ModelTy {
         Int::from(self)
     }
@@ -126,6 +129,7 @@ impl From<isize> for Int {
 impl Model for isize {
     type ModelTy = Int;
     #[logic_rust]
+    #[rustc_diagnostic_item = "isize_model"]
     fn model(self) -> Self::ModelTy {
         Int::from(self)
     }

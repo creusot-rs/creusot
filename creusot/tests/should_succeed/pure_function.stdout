@@ -133,22 +133,6 @@ module PureFunction_Test
   }
   
 end
-module CreusotContracts_Builtins_Model
-  type self   
-  type modelty   
-  function model (self : self) : modelty
-end
-module CreusotContracts_Builtins_Impl9_Model_Interface
-  use mach.int.Int
-  function model (self : int) : int
-end
-module CreusotContracts_Builtins_Impl9_Model
-  use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
-  function model (self : usize) : int = 
-    self
-end
 module PureFunction_UsesLen_Interface
   type t   
   use mach.int.Int
@@ -159,19 +143,17 @@ module PureFunction_UsesLen
   type t   
   use mach.int.Int
   use Type
-  clone CreusotContracts_Builtins_Impl9_Model_Interface as Model0
   clone PureFunction_Impl1_Len_Interface as Len0 with type t = t
   function uses_len (l : Type.purefunction_list t) : int = 
-    Model0.model (Len0.len l)
+    Len0.len l
 end
 module PureFunction_UsesBothLogicAndProg_Interface
   type t   
   use mach.int.Int
   use Type
   clone PureFunction_UsesLen_Interface as UsesLen0 with type t = t
-  clone CreusotContracts_Builtins_Impl9_Model_Interface as Model0
   val uses_both_logic_and_prog (l : Type.purefunction_list t) : int
-    ensures { Model0.model result = UsesLen0.uses_len l }
+    ensures { result = UsesLen0.uses_len l }
     
 end
 module PureFunction_UsesBothLogicAndProg
@@ -179,14 +161,12 @@ module PureFunction_UsesBothLogicAndProg
   use mach.int.Int
   use Type
   clone PureFunction_Impl1_Len as Len0 with type t = t, axiom .
-  clone CreusotContracts_Builtins_Impl9_Model as Model0
-  clone PureFunction_UsesLen as UsesLen0 with type t = t, function Len0.len = Len0.len,
-  function Model0.model = Model0.model
+  clone PureFunction_UsesLen as UsesLen0 with type t = t, function Len0.len = Len0.len
   clone Core_Marker_Sized as Sized0 with type self = t
   use prelude.Prelude
   clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = Type.purefunction_list t
   let rec cfg uses_both_logic_and_prog (l : Type.purefunction_list t) : int
-    ensures { Model0.model result = UsesLen0.uses_len l }
+    ensures { result = UsesLen0.uses_len l }
     
    = 
   var _0 : int;
