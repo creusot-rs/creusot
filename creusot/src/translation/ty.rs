@@ -57,10 +57,11 @@ fn translate_ty_inner<'tcx>(
                 return translate_ty_inner(trans, ctx, names, span, s[0].expect_ty());
             }
 
-            if format!("{:?}", def).contains("creusot_contracts::Int") {
+            if Some(def.did) == ctx.tcx.get_diagnostic_item(Symbol::intern("creusot_int")) {
                 names.import_prelude_module(PreludeModule::Int);
                 return MlT::Integer;
             }
+
             names.import_prelude_module(PreludeModule::Type);
             let args = s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
 

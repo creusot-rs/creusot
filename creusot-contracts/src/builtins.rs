@@ -7,6 +7,7 @@ pub trait Model {
     fn model(self) -> Self::ModelTy;
 }
 
+#[rustc_diagnostic_item = "creusot_int"]
 pub struct Int;
 
 impl PartialEq for Int {
