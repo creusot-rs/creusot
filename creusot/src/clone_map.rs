@@ -58,7 +58,7 @@ impl PreludeModule {
 }
 
 type CloneNode<'tcx> = (DefId, SubstsRef<'tcx>);
-pub type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), String>;
+pub type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo<'tcx>>;
 
 #[derive(Clone)]
 pub struct CloneMap<'tcx> {
@@ -67,7 +67,7 @@ pub struct CloneMap<'tcx> {
     pub names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
 
     // Track how many instances of a name already exist
-    name_counts: IndexMap<Ident, usize>,
+    name_counts: IndexMap<Symbol, usize>,
 
     pub transparent: bool,
 
@@ -77,15 +77,17 @@ pub struct CloneMap<'tcx> {
     last_cloned: usize,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
 enum Kind {
-    Named(Ident),
+    Named(Symbol),
     Hidden,
     Export,
     // Use,
 }
 
-#[derive(Clone, Debug)]
+use rustc_macros::{TyEncodable, TyDecodable};
+
+#[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct CloneInfo<'tcx> {
     kind: Kind,
     projections: Vec<(DefId, Ty<'tcx>)>,
@@ -95,7 +97,7 @@ pub struct CloneInfo<'tcx> {
 impl Into<CloneKind> for Kind {
     fn into(self) -> CloneKind {
         match self {
-            Kind::Named(i) => CloneKind::Named(i),
+            Kind::Named(i) => CloneKind::Named(i.to_string().into()),
             Kind::Hidden => CloneKind::Bare,
             Kind::Export => CloneKind::Export,
         }
@@ -103,7 +105,7 @@ impl Into<CloneKind> for Kind {
 }
 
 impl CloneInfo<'tcx> {
-    fn from_name(name: Ident) -> Self {
+    fn from_name(name: Symbol) -> Self {
         CloneInfo { kind: Kind::Named(name), projections: Vec::new(), cloned: false }
     }
 
@@ -130,7 +132,7 @@ impl CloneInfo<'tcx> {
 
     fn qname_raw(&self, method: Ident) -> QName {
         let module = match &self.kind {
-            Kind::Named(name) => vec![name.clone()],
+            Kind::Named(name) => vec![name.to_string().into()],
             _ => Vec::new(),
         };
         QName { module, name: method }
@@ -155,7 +157,7 @@ impl<'tcx> CloneMap<'tcx> {
         self.names
             .iter()
             .filter_map(|(k, ci)| match &ci.kind {
-                Kind::Named(nm) => Some((*k, nm.clone().to_string())),
+                Kind::Named(_) => Some((*k, ci.clone())),
                 _ => None,
             })
             .collect()
@@ -176,10 +178,11 @@ impl<'tcx> CloneMap<'tcx> {
                 _ => self.tcx.item_name(def_id),
             };
 
-            let base: Ident = base_sym.as_str().to_camel_case().into();
+            let base  = Symbol::intern(&base_sym.as_str().to_camel_case());
             let count: usize =
-                *self.name_counts.entry(base.clone()).and_modify(|c| *c += 1).or_insert(0);
-            let info = CloneInfo::from_name(format!("{}{}", &*base, count).into());
+                *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
+
+            let info = CloneInfo::from_name(Symbol::intern(&format!("{}{}", base, count)).into());
             info
         })
     }
@@ -329,7 +332,7 @@ impl<'tcx> CloneMap<'tcx> {
             for (dep, t, &orig_subst) in self.clone_graph.edges_directed(node, Incoming) {
                 debug!("s={:?} t={:?} e={:?}", dep, t, orig_subst);
                 let recv_info = match orig_subst {
-                    Some(recv_id) => CloneInfo::from_name(node_clones[&recv_id].clone().into()),
+                    Some(recv_id) =>&node_clones[&recv_id],
                     None => continue,
                 };
 

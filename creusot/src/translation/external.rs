@@ -82,7 +82,7 @@ impl CrateMetadata<'tcx> {
 }
 
 pub type LogicMetadata<'a> = IndexMap<usize, &'a Module>;
-pub type CloneMetaSerialize<'tcx> = HashMap<DefId, Vec<((DefId, SubstsRef<'tcx>), String)>>;
+pub type CloneMetaSerialize<'tcx> = HashMap<DefId, Vec<((DefId, SubstsRef<'tcx>), CloneInfo<'tcx>)>>;
 
 fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
     out.as_ref().map(|s| s.clone().into()).unwrap_or_else(|| {
