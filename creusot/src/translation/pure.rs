@@ -19,7 +19,7 @@ pub fn translate_pure(
     def_id: DefId,
     _span: rustc_span::Span,
 ) -> (Module, Module, CloneMap<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, true);
+    let mut names = CloneMap::new(ctx.tcx, false);
     names.clone_self(def_id);
 
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
@@ -109,7 +109,7 @@ fn implementation_module(
 ) -> Module {
     let mut names = names.clone();
     names.clear_graph();
-    names.transparent = false;
+    names.use_full_clones = true;
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));

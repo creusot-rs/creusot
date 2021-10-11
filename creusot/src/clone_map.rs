@@ -58,7 +58,7 @@ impl PreludeModule {
 }
 
 type CloneNode<'tcx> = (DefId, SubstsRef<'tcx>);
-pub type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), String>;
+pub type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo<'tcx>>;
 
 #[derive(Clone)]
 pub struct CloneMap<'tcx> {
@@ -67,35 +67,45 @@ pub struct CloneMap<'tcx> {
     pub names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
 
     // Track how many instances of a name already exist
-    name_counts: IndexMap<Ident, usize>,
+    name_counts: IndexMap<Symbol, usize>,
 
-    pub transparent: bool,
+    // Whether we want to be using the 'full' version of a definition.
+    // When this is true we will clone the body of a logic function, however
+    // we *always* clone the interface of a program definition.
+    // This matches the notion of 'public' clones
+    pub use_full_clones: bool,
 
     // Graph which is used to calculate the full clone set
     clone_graph: DiGraphMap<CloneNode<'tcx>, Option<(DefId, SubstsRef<'tcx>)>>,
     // Index of the last cloned entry
     last_cloned: usize,
+
+    // Internal state to determine whether clones should be public or not
+    public: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
 enum Kind {
-    Named(Ident),
+    Named(Symbol),
     Hidden,
     Export,
     // Use,
 }
 
-#[derive(Clone, Debug)]
+use rustc_macros::{TyDecodable, TyEncodable};
+
+#[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct CloneInfo<'tcx> {
     kind: Kind,
     projections: Vec<(DefId, Ty<'tcx>)>,
     cloned: bool,
+    public: bool,
 }
 
 impl Into<CloneKind> for Kind {
     fn into(self) -> CloneKind {
         match self {
-            Kind::Named(i) => CloneKind::Named(i),
+            Kind::Named(i) => CloneKind::Named(i.to_string().into()),
             Kind::Hidden => CloneKind::Bare,
             Kind::Export => CloneKind::Export,
         }
@@ -103,12 +113,12 @@ impl Into<CloneKind> for Kind {
 }
 
 impl CloneInfo<'tcx> {
-    fn from_name(name: Ident) -> Self {
-        CloneInfo { kind: Kind::Named(name), projections: Vec::new(), cloned: false }
+    fn from_name(name: Symbol, public: bool) -> Self {
+        CloneInfo { kind: Kind::Named(name), projections: Vec::new(), cloned: false, public }
     }
 
     fn hidden() -> Self {
-        CloneInfo { kind: Kind::Hidden, projections: Vec::new(), cloned: false }
+        CloneInfo { kind: Kind::Hidden, projections: Vec::new(), cloned: false, public: false }
     }
 
     pub fn mk_export(&mut self) {
@@ -130,7 +140,7 @@ impl CloneInfo<'tcx> {
 
     fn qname_raw(&self, method: Ident) -> QName {
         let module = match &self.kind {
-            Kind::Named(name) => vec![name.clone()],
+            Kind::Named(name) => vec![name.to_string().into()],
             _ => Vec::new(),
         };
         QName { module, name: method }
@@ -138,16 +148,17 @@ impl CloneInfo<'tcx> {
 }
 
 impl<'tcx> CloneMap<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, transparent: bool) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, use_full_clones: bool) -> Self {
         let names = IndexMap::new();
         CloneMap {
             tcx,
             names,
             name_counts: Default::default(),
             prelude: IndexMap::new(),
-            transparent,
+            use_full_clones,
             clone_graph: DiGraphMap::new(),
             last_cloned: 0,
+            public: false,
         }
     }
 
@@ -155,10 +166,20 @@ impl<'tcx> CloneMap<'tcx> {
         self.names
             .iter()
             .filter_map(|(k, ci)| match &ci.kind {
-                Kind::Named(nm) => Some((*k, nm.clone().to_string())),
+                Kind::Named(_) => Some((*k, ci.clone())),
                 _ => None,
             })
             .collect()
+    }
+
+    pub fn with_public_clones<F, A>(&mut self, mut f: F) -> A
+    where
+        F: FnMut(&mut Self) -> A,
+    {
+        let public = std::mem::replace(&mut self.public, true);
+        let ret = f(self);
+        self.public = public;
+        ret
     }
 
     pub fn insert(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
@@ -176,10 +197,11 @@ impl<'tcx> CloneMap<'tcx> {
                 _ => self.tcx.item_name(def_id),
             };
 
-            let base: Ident = base_sym.as_str().to_camel_case().into();
-            let count: usize =
-                *self.name_counts.entry(base.clone()).and_modify(|c| *c += 1).or_insert(0);
-            let info = CloneInfo::from_name(format!("{}{}", &*base, count).into());
+            let base = Symbol::intern(&base_sym.as_str().to_camel_case());
+            let count: usize = *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
+
+            let info =
+                CloneInfo::from_name(Symbol::intern(&format!("{}{}", base, count)), self.public);
             info
         })
     }
@@ -250,13 +272,11 @@ impl<'tcx> CloneMap<'tcx> {
                     t.visit_with(&mut visitor);
                 }
             }
+            for (dep, info) in ctx.dependencies(key.0).unwrap_or(&empty) {
+                if !self.use_full_clones && !info.public {
+                    continue;
+                }
 
-            // We don't need to construct the sharing graph if the base node is a logic function.
-            if self.transparent {
-                continue;
-            }
-
-            for dep in ctx.dependencies(key.0).unwrap_or(&empty).keys() {
                 let orig = dep;
                 let dep = (dep.0, dep.1.subst(self.tcx, key.1));
                 let dep = match traits::resolve_opt(ctx.tcx, ctx.tcx.param_env(key.0), dep.0, dep.1)
@@ -329,7 +349,7 @@ impl<'tcx> CloneMap<'tcx> {
             for (dep, t, &orig_subst) in self.clone_graph.edges_directed(node, Incoming) {
                 debug!("s={:?} t={:?} e={:?}", dep, t, orig_subst);
                 let recv_info = match orig_subst {
-                    Some(recv_id) => CloneInfo::from_name(node_clones[&recv_id].clone().into()),
+                    Some(recv_id) => &node_clones[&recv_id],
                     None => continue,
                 };
 
@@ -360,7 +380,7 @@ impl<'tcx> CloneMap<'tcx> {
                 }
             }
 
-            if !self.transparent {
+            if self.use_full_clones {
                 if let ItemType::Pure = util::item_type(ctx.tcx, def_id) {
                     clone_subst.push(CloneSubst::Axiom(None));
                 }
@@ -369,7 +389,7 @@ impl<'tcx> CloneMap<'tcx> {
             ctx.translate(def_id);
 
             decls.push(Decl::Clone(DeclClone {
-                name: cloneable_name(ctx.tcx, def_id, self.transparent),
+                name: cloneable_name(ctx.tcx, def_id, !self.use_full_clones),
                 subst: clone_subst,
                 kind: self.names[&node].kind.clone().into(),
             }));
