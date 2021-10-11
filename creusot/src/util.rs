@@ -98,7 +98,12 @@ pub enum ItemType {
 }
 
 impl ItemType {
-    pub fn clone_interfaces(&self) -> bool {
+    // Whether this definition should be 'transparent' which affects
+    // how we clone it. Transparent definitions will clone the *interface*
+    // of their dependencies, even in their body module. In particular
+    // this is used to get around the generativity of why3 clones for logic
+    // functions.
+    pub fn is_transparent(&self) -> bool {
         use ItemType::*;
         matches!(self, Logic | Predicate | Type | Interface)
     }
@@ -132,35 +137,42 @@ pub fn signature_of<'tcx>(
         .tcx
         .normalize_erasing_late_bound_regions(ctx.tcx.param_env(def_id), ctx.tcx.fn_sig(def_id));
 
-    let pre_contract = crate::specification::contract_of(ctx.tcx, def_id).unwrap();
-
-    let mut contract = pre_contract.check_and_lower(ctx, names, def_id);
+    let mut contract = names.with_public_clones(|names| {
+        let pre_contract = crate::specification::contract_of(ctx.tcx, def_id).unwrap();
+        pre_contract.check_and_lower(ctx, names, def_id)
+    });
 
     if sig.output().is_never() {
         contract.ensures.push(Exp::Const(Constant::const_false()));
     }
 
-    let arg_names = ctx.tcx.fn_arg_names(def_id);
     let name = translate_value_id(ctx.tcx, def_id);
+
+    let span = ctx.tcx.def_span(def_id);
+    let args = names.with_public_clones(|names| {
+        let arg_names = ctx.tcx.fn_arg_names(def_id);
+        arg_names
+            .iter()
+            .enumerate()
+            .map(|(ix, id)| {
+                if id.name.is_empty() {
+                    format!("_{}", ix + 1).into()
+                } else {
+                    id.name.to_string().into()
+                }
+            })
+            .zip(sig.inputs().iter().map(|ty| ty::translate_ty(ctx, names, span, ty)))
+            .collect()
+    });
 
     Signature {
         // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure
         name: name.name,
         // TODO: use real span
-        retty: Some(ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, sig.output())),
-        args: arg_names
-            .iter()
-            .enumerate()
-            .zip(sig.inputs())
-            .map(|((ix, id), ty)| {
-                let name = if id.name.is_empty() {
-                    format!("_{}", ix + 1).into()
-                } else {
-                    id.name.to_string().into()
-                };
-                (name, ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, ty))
-            })
-            .collect(),
+        retty: Some(
+            names.with_public_clones(|names| ty::translate_ty(ctx, names, span, sig.output())),
+        ),
+        args,
         contract,
     }
 }

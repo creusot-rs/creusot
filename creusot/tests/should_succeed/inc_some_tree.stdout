@@ -15,13 +15,13 @@ module Type
     
 end
 module IncSomeTree_Impl1_Sum_Interface
-  use mach.int.Int
   use Type
+  use mach.int.Int
   function sum (self : Type.incsometree_tree) : int
 end
 module IncSomeTree_Impl1_Sum
-  use mach.int.Int
   use Type
+  use mach.int.Int
   use mach.int.Int32
   function sum (self : Type.incsometree_tree) : int = 
     match (self) with
@@ -77,9 +77,9 @@ end
 module IncSomeTree_Impl1_SumX_Interface
   use mach.int.Int
   use mach.int.Int32
-  use mach.int.UInt32
   use prelude.Prelude
   use Type
+  use mach.int.UInt32
   clone IncSomeTree_Impl1_Sum_Interface as Sum0
   val sum_x (self : Type.incsometree_tree) : uint32
     requires {Sum0.sum self <= 1000000}
@@ -89,9 +89,9 @@ end
 module IncSomeTree_Impl1_SumX
   use mach.int.Int
   use mach.int.Int32
-  use mach.int.UInt32
   use prelude.Prelude
   use Type
+  use mach.int.UInt32
   clone IncSomeTree_Impl1_Sum as Sum0
   use mach.int.Int64
   clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = uint32
@@ -246,11 +246,13 @@ module Rand_Random
 end
 module IncSomeTree_Impl1_TakeSome_Interface
   use prelude.Prelude
+  use Type
   use mach.int.Int
   use mach.int.UInt32
-  use Type
   clone IncSomeTree_Impl1_Sum_Interface as Sum0
-  clone CreusotContracts_Builtins_Impl1_Model_Interface as Model0 with type t = uint32
+  clone CreusotContracts_Builtins_Impl5 as Model1
+  clone CreusotContracts_Builtins_Impl1_Model_Interface as Model0 with type t = uint32,
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
   val take_some (self : borrowed (Type.incsometree_tree)) : borrowed uint32
     ensures { Model0.model result <= Sum0.sum ( * self) }
     ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) =  ^ result - Model0.model result }
@@ -258,9 +260,9 @@ module IncSomeTree_Impl1_TakeSome_Interface
 end
 module IncSomeTree_Impl1_TakeSome
   use prelude.Prelude
+  use Type
   use mach.int.Int
   use mach.int.UInt32
-  use Type
   clone IncSomeTree_Impl1_Sum as Sum0
   clone CreusotContracts_Builtins_Impl5 as Model1
   clone CreusotContracts_Builtins_Impl1_Model as Model0 with type t = uint32, type Model0.modelty = Model1.modelty,
@@ -474,17 +476,17 @@ module IncSomeTree_IncSomeTree
   use mach.int.UInt32
   clone IncSomeTree_Impl1_Sum as Sum0
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Impl5 as Model1
-  clone CreusotContracts_Builtins_Impl1_Model as Model0 with type t = uint32, type Model0.modelty = Model1.modelty,
-  function Model0.model = Model1.model
   clone CreusotContracts_Builtins_Resolve as Resolve4 with type self = Type.incsometree_tree
   clone CreusotContracts_Builtins_Resolve as Resolve3 with type self = ()
   clone Core_Panicking_Panic_Interface as Panic0
   clone CreusotContracts_Builtins_Resolve as Resolve2 with type self = bool
   clone CreusotContracts_Builtins_Impl19_Resolve as Resolve1 with type t = uint32
   clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = uint32
+  clone CreusotContracts_Builtins_Impl5 as Model1
+  clone CreusotContracts_Builtins_Impl1_Model as Model0 with type t = uint32, type Model0.modelty = Model1.modelty,
+  function Model0.model = Model1.model
   clone IncSomeTree_Impl1_TakeSome_Interface as TakeSome0 with function Model0.model = Model0.model,
-  function Sum0.sum = Sum0.sum
+  function Sum0.sum = Sum0.sum, type Model1.modelty = Model1.modelty, function Model1.model = Model1.model
   clone IncSomeTree_Impl1_SumX_Interface as SumX0 with function Sum0.sum = Sum0.sum
   let rec cfg inc_some_tree (t : Type.incsometree_tree) (k : uint32) : ()
     requires {Sum0.sum t + k <= 1000000}
