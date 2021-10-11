@@ -176,14 +176,14 @@ module C01_Impl1_Index_Impl
 end
 module C01_AsRef_Interface
   type t   
-  use prelude.Prelude
   use Type
+  use prelude.Prelude
   function as_ref (opt : Type.core_option_option t) : Type.core_option_option t
 end
 module C01_AsRef
   type t   
-  use prelude.Prelude
   use Type
+  use prelude.Prelude
   function as_ref (opt : Type.core_option_option t) : Type.core_option_option t = 
     match (opt) with
       | Type.Core_Option_Option_Some r -> Type.Core_Option_Option_Some r
@@ -202,8 +202,8 @@ module C01_Impl2_Model
 end
 module C01_Impl3_Record_Interface
   type t   
-  use Type
   use prelude.Prelude
+  use Type
   clone C01_Impl2_Model_Interface as Model0 with type t = t
   val record (a : t) : Type.c01_ghostrecord t
     ensures { Model0.model result = a }
@@ -211,8 +211,8 @@ module C01_Impl3_Record_Interface
 end
 module C01_Impl3_Record
   type t   
-  use Type
   use prelude.Prelude
+  use Type
   clone C01_Impl2_Model as Model0 with type t = t
   val record (a : t) : Type.c01_ghostrecord t
     ensures { Model0.model result = a }
@@ -230,10 +230,10 @@ module C01_Impl4_Model
 end
 module C01_Impl5_Len_Interface
   type t   
-  use mach.int.Int
   use prelude.Prelude
-  use mach.int.UInt64
   use Type
+  use mach.int.Int
+  use mach.int.UInt64
   clone C01_Impl1_Len_Interface as Len0 with type t = t
   clone C01_Impl4_Model_Interface as Model0 with type t = t
   val len (self : Type.c01_myvec t) : usize
@@ -242,10 +242,10 @@ module C01_Impl5_Len_Interface
 end
 module C01_Impl5_Len
   type t   
-  use mach.int.Int
   use prelude.Prelude
-  use mach.int.UInt64
   use Type
+  use mach.int.Int
+  use mach.int.UInt64
   clone C01_Impl1_Len as Len0 with type t = t, axiom .
   clone C01_Impl4_Model as Model0 with type t = t
   val len (self : Type.c01_myvec t) : usize
@@ -254,8 +254,8 @@ module C01_Impl5_Len
 end
 module C01_Impl5_Get_Interface
   type t   
-  use Type
   use prelude.Prelude
+  use Type
   use mach.int.Int
   use mach.int.UInt64
   clone C01_Impl1_Get_Interface as Get0 with type t = t
@@ -267,8 +267,8 @@ module C01_Impl5_Get_Interface
 end
 module C01_Impl5_Get
   type t   
-  use Type
   use prelude.Prelude
+  use Type
   use mach.int.Int
   use mach.int.UInt64
   clone C01_Impl1_Get as Get0 with type t = t
@@ -304,8 +304,9 @@ module C01_Impl5_Index_Interface
   use Type
   use mach.int.Int
   use mach.int.UInt64
-  clone C01_Impl1_Index_Interface as Index0 with type t = t
+  clone C01_Impl1_Get_Interface as Get0 with type t = t
   clone C01_Impl1_Len_Interface as Len0 with type t = t
+  clone C01_Impl1_Index_Interface as Index0 with type t = t, function Len0.len = Len0.len, function Get0.get = Get0.get
   clone C01_Impl4_Model_Interface as Model0 with type t = t
   val index (self : Type.c01_myvec t) (ix : usize) : t
     requires {ix < Len0.len (Model0.model self)}
@@ -334,8 +335,9 @@ module C01_Impl5_IndexMut_Interface
   use prelude.Prelude
   use Type
   use mach.int.UInt64
-  clone C01_Impl1_Index_Interface as Index0 with type t = t
+  clone C01_Impl1_Get_Interface as Get0 with type t = t
   clone C01_Impl1_Len_Interface as Len0 with type t = t
+  clone C01_Impl1_Index_Interface as Index0 with type t = t, function Len0.len = Len0.len, function Get0.get = Get0.get
   clone C01_Impl4_Model_Interface as Model0 with type t = t
   val index_mut (self : borrowed (Type.c01_myvec t)) (ix : usize) : borrowed t
     requires {ix < Len0.len (Model0.model ( * self))}
@@ -385,8 +387,10 @@ module C01_AllZero_Interface
   use mach.int.UInt32
   use prelude.Prelude
   use Type
-  clone C01_Impl1_Index_Interface as Index0 with type t = uint32
+  clone C01_Impl1_Get_Interface as Get0 with type t = uint32
   clone C01_Impl1_Len_Interface as Len0 with type t = uint32
+  clone C01_Impl1_Index_Interface as Index0 with type t = uint32, function Len0.len = Len0.len,
+  function Get0.get = Get0.get
   clone C01_Impl4_Model_Interface as Model0 with type t = uint32
   val all_zero (v : borrowed (Type.c01_myvec uint32)) : ()
     ensures { Len0.len (Model0.model ( * v)) = Len0.len (Model0.model ( ^ v)) }
@@ -414,7 +418,7 @@ module C01_AllZero
   clone CreusotContracts_Builtins_Resolve as Resolve1 with type self = Type.c01_ghostrecord (borrowed (Type.c01_myvec uint32))
   clone CreusotContracts_Builtins_Resolve as Resolve0 with type self = borrowed (Type.c01_myvec uint32)
   clone C01_Impl5_IndexMut_Interface as IndexMut0 with type t = uint32, function Model0.model = Model1.model,
-  function Len0.len = Len0.len, function Index0.index = Index0.index
+  function Len0.len = Len0.len, function Index0.index = Index0.index, function Get0.get = Get0.get
   clone C01_Impl5_Len_Interface as Len1 with type t = uint32, function Model0.model = Model1.model,
   function Len0.len = Len0.len
   clone C01_Impl3_Record_Interface as Record0 with type t = borrowed (Type.c01_myvec uint32),

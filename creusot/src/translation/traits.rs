@@ -149,7 +149,6 @@ pub fn translate_predicates(
     names: &mut CloneMap<'tcx>,
     preds: GenericPredicates<'tcx>,
 ) {
-    eprintln!("translate_predicates={:?}", preds);
     for (pred, _) in preds.predicates.iter() {
         use rustc_middle::ty::PredicateKind::*;
         match pred.kind().no_bound_vars().unwrap() {

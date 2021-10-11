@@ -75,6 +75,9 @@ pub struct CloneMap<'tcx> {
     clone_graph: DiGraphMap<CloneNode<'tcx>, Option<(DefId, SubstsRef<'tcx>)>>,
     // Index of the last cloned entry
     last_cloned: usize,
+
+    // Internal state to determine whether clones should be public or not
+    public: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
@@ -85,13 +88,14 @@ enum Kind {
     // Use,
 }
 
-use rustc_macros::{TyEncodable, TyDecodable};
+use rustc_macros::{TyDecodable, TyEncodable};
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct CloneInfo<'tcx> {
     kind: Kind,
     projections: Vec<(DefId, Ty<'tcx>)>,
     cloned: bool,
+    public: bool,
 }
 
 impl Into<CloneKind> for Kind {
@@ -105,12 +109,12 @@ impl Into<CloneKind> for Kind {
 }
 
 impl CloneInfo<'tcx> {
-    fn from_name(name: Symbol) -> Self {
-        CloneInfo { kind: Kind::Named(name), projections: Vec::new(), cloned: false }
+    fn from_name(name: Symbol, public: bool) -> Self {
+        CloneInfo { kind: Kind::Named(name), projections: Vec::new(), cloned: false, public }
     }
 
     fn hidden() -> Self {
-        CloneInfo { kind: Kind::Hidden, projections: Vec::new(), cloned: false }
+        CloneInfo { kind: Kind::Hidden, projections: Vec::new(), cloned: false, public: false }
     }
 
     pub fn mk_export(&mut self) {
@@ -150,6 +154,7 @@ impl<'tcx> CloneMap<'tcx> {
             transparent,
             clone_graph: DiGraphMap::new(),
             last_cloned: 0,
+            public: false,
         }
     }
 
@@ -161,6 +166,16 @@ impl<'tcx> CloneMap<'tcx> {
                 _ => None,
             })
             .collect()
+    }
+
+    pub fn with_public_clones<F, A>(&mut self, mut f: F) -> A
+    where
+        F: FnMut(&mut Self) -> A,
+    {
+        let public = std::mem::replace(&mut self.public, true);
+        let ret = f(self);
+        self.public = public;
+        ret
     }
 
     pub fn insert(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
@@ -178,11 +193,11 @@ impl<'tcx> CloneMap<'tcx> {
                 _ => self.tcx.item_name(def_id),
             };
 
-            let base  = Symbol::intern(&base_sym.as_str().to_camel_case());
-            let count: usize =
-                *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
+            let base = Symbol::intern(&base_sym.as_str().to_camel_case());
+            let count: usize = *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
 
-            let info = CloneInfo::from_name(Symbol::intern(&format!("{}{}", base, count)).into());
+            let info =
+                CloneInfo::from_name(Symbol::intern(&format!("{}{}", base, count)), self.public);
             info
         })
     }
@@ -253,13 +268,15 @@ impl<'tcx> CloneMap<'tcx> {
                     t.visit_with(&mut visitor);
                 }
             }
+            //self.transparent && key.public = true
+            // !self.transparent = true
 
-            // We don't need to construct the sharing graph if the base node is a logic function.
-            if self.transparent {
-                continue;
-            }
+            for (dep, info) in ctx.dependencies(key.0).unwrap_or(&empty) {
+                debug!("dep & info = {:?} {:?}", dep, info);
+                if self.transparent && !info.public {
+                    continue;
+                }
 
-            for dep in ctx.dependencies(key.0).unwrap_or(&empty).keys() {
                 let orig = dep;
                 let dep = (dep.0, dep.1.subst(self.tcx, key.1));
                 let dep = match traits::resolve_opt(ctx.tcx, ctx.tcx.param_env(key.0), dep.0, dep.1)
@@ -332,7 +349,7 @@ impl<'tcx> CloneMap<'tcx> {
             for (dep, t, &orig_subst) in self.clone_graph.edges_directed(node, Incoming) {
                 debug!("s={:?} t={:?} e={:?}", dep, t, orig_subst);
                 let recv_info = match orig_subst {
-                    Some(recv_id) =>&node_clones[&recv_id],
+                    Some(recv_id) => &node_clones[&recv_id],
                     None => continue,
                 };
 
