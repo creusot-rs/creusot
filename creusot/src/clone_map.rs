@@ -69,7 +69,11 @@ pub struct CloneMap<'tcx> {
     // Track how many instances of a name already exist
     name_counts: IndexMap<Symbol, usize>,
 
-    pub transparent: bool,
+    // Whether we want to be using the 'full' version of a definition.
+    // When this is true we will clone the body of a logic function, however
+    // we *always* clone the interface of a program definition.
+    // This matches the notion of 'public' clones
+    pub use_full_clones: bool,
 
     // Graph which is used to calculate the full clone set
     clone_graph: DiGraphMap<CloneNode<'tcx>, Option<(DefId, SubstsRef<'tcx>)>>,
@@ -144,14 +148,14 @@ impl CloneInfo<'tcx> {
 }
 
 impl<'tcx> CloneMap<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, transparent: bool) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, use_full_clones: bool) -> Self {
         let names = IndexMap::new();
         CloneMap {
             tcx,
             names,
             name_counts: Default::default(),
             prelude: IndexMap::new(),
-            transparent,
+            use_full_clones,
             clone_graph: DiGraphMap::new(),
             last_cloned: 0,
             public: false,
@@ -268,12 +272,8 @@ impl<'tcx> CloneMap<'tcx> {
                     t.visit_with(&mut visitor);
                 }
             }
-            //self.transparent && key.public = true
-            // !self.transparent = true
-
             for (dep, info) in ctx.dependencies(key.0).unwrap_or(&empty) {
-                debug!("dep & info = {:?} {:?}", dep, info);
-                if self.transparent && !info.public {
+                if !self.use_full_clones && !info.public {
                     continue;
                 }
 
@@ -380,7 +380,7 @@ impl<'tcx> CloneMap<'tcx> {
                 }
             }
 
-            if !self.transparent {
+            if self.use_full_clones {
                 if let ItemType::Pure = util::item_type(ctx.tcx, def_id) {
                     clone_subst.push(CloneSubst::Axiom(None));
                 }
@@ -389,7 +389,7 @@ impl<'tcx> CloneMap<'tcx> {
             ctx.translate(def_id);
 
             decls.push(Decl::Clone(DeclClone {
-                name: cloneable_name(ctx.tcx, def_id, self.transparent),
+                name: cloneable_name(ctx.tcx, def_id, !self.use_full_clones),
                 subst: clone_subst,
                 kind: self.names[&node].kind.clone().into(),
             }));

@@ -98,7 +98,12 @@ pub enum ItemType {
 }
 
 impl ItemType {
-    pub fn clone_interfaces(&self) -> bool {
+    // Whether this definition should be 'transparent' which affects
+    // how we clone it. Transparent definitions will clone the *interface*
+    // of their dependencies, even in their body module. In particular
+    // this is used to get around the generativity of why3 clones for logic
+    // functions.
+    pub fn is_transparent(&self) -> bool {
         use ItemType::*;
         matches!(self, Logic | Predicate | Type | Interface)
     }

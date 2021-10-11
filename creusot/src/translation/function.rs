@@ -36,7 +36,7 @@ pub fn translate_function<'tcx, 'sess>(
     ctx: &mut TranslationCtx<'sess, 'tcx>,
     def_id: DefId,
 ) -> Module {
-    let mut names = CloneMap::new(tcx, false);
+    let mut names = CloneMap::new(tcx, true);
     names.clone_self(def_id);
 
     let gather = GatherInvariants::gather(ctx, &mut names, def_id);
