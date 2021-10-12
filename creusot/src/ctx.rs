@@ -25,7 +25,7 @@ enum TranslatedItem<'tcx> {
     Logic { interface: Module, modl: Module, dependencies: CloneSummary<'tcx> },
     Program { interface: Module, modl: Module, dependencies: CloneSummary<'tcx> },
     Trait { modl: Module, dependencies: CloneSummary<'tcx> },
-    Impl { modl: Module, dependencies: CloneSummary<'tcx> },
+    Impl { interface: Module, modl: Module, dependencies: CloneSummary<'tcx> },
     Extern { interface: Module, body: DefaultOrExtern<'tcx> },
 }
 
@@ -79,7 +79,7 @@ impl TranslatedItem<'tcx> {
             Logic { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
             Program { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
             Trait { modl, .. } => box iter::once(modl),
-            Impl { modl, .. } => box iter::once(modl),
+            Impl { modl, interface, .. } => box iter::once(interface).chain(iter::once(modl)),
             Extern { interface, body, .. } => match body {
                 DefaultOrExtern::Default { modl, .. } => {
                     box iter::once(interface).chain(iter::once(modl))
@@ -250,10 +250,10 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         );
     }
 
-    pub fn add_impl(&mut self, def_id: DefId, trait_impl: Module) {
+    pub fn add_impl(&mut self, def_id: DefId, modl: Module, interface: Module) {
         self.functions.insert(
             def_id,
-            TranslatedItem::Impl { modl: trait_impl, dependencies: CloneSummary::new() },
+            TranslatedItem::Impl { interface, modl, dependencies: CloneSummary::new() },
         );
     }
 

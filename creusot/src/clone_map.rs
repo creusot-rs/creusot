@@ -261,7 +261,7 @@ impl<'tcx> CloneMap<'tcx> {
                 let mut visitor = ProjectionTyVisitor {
                     f: Box::new(|pty: ProjectionTy<'tcx>| {
                         let trait_id = pty.trait_def_id(self.tcx);
-                        debug!("adding projection edge=({:?}, {:?})", trait_id, pty.substs);
+                        trace!("adding projection edge=({:?}, {:?})", trait_id, pty.substs);
                         self.clone_graph.add_edge((trait_id, pty.substs), key, None);
                     }),
                 };
@@ -276,9 +276,11 @@ impl<'tcx> CloneMap<'tcx> {
                 if !self.use_full_clones && !info.public {
                     continue;
                 }
+                trace!("adding dependency {:?}", dep);
 
                 let orig = dep;
                 let dep = (dep.0, dep.1.subst(self.tcx, key.1));
+                trace!("substituted: {:?}", dep);
                 let dep = match traits::resolve_opt(ctx.tcx, ctx.tcx.param_env(key.0), dep.0, dep.1)
                 {
                     Some(dep) => (dep),
@@ -292,7 +294,7 @@ impl<'tcx> CloneMap<'tcx> {
                     continue;
                 }
 
-                debug!("edge {:?} -> {:?}", dep, key);
+                trace!("edge {:?} -> {:?}", dep, key);
                 self.clone_graph.add_edge(dep, key, Some(*orig));
             }
         }
@@ -347,7 +349,7 @@ impl<'tcx> CloneMap<'tcx> {
 
             let node_clones = ctx.dependencies(def_id).unwrap_or(&empty);
             for (dep, t, &orig_subst) in self.clone_graph.edges_directed(node, Incoming) {
-                debug!("s={:?} t={:?} e={:?}", dep, t, orig_subst);
+                trace!("s={:?} t={:?} e={:?}", dep, t, orig_subst);
                 let recv_info = match orig_subst {
                     Some(recv_id) => &node_clones[&recv_id],
                     None => continue,
@@ -355,7 +357,7 @@ impl<'tcx> CloneMap<'tcx> {
 
                 // Grab the symbols from all dependencies
                 let caller_info = &self.names[&dep];
-                for sym in exported_symbols(ctx.tcx, dep.0) {
+                for sym in refinable_symbols(ctx.tcx, orig_subst.unwrap_or(dep).0) {
                     let elem = match sym {
                         SymbolKind::Val(n) => CloneSubst::Val(
                             recv_info.qname_raw(n.clone()),
@@ -443,18 +445,18 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
 
     // TODO: Refactor.
     match util::item_type(tcx, def_id) {
-        Logic | Predicate | Pure => {
+        Logic | Predicate | Pure | Impl => {
             if interface {
                 // TODO: this should directly be a function...
                 QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
             } else {
-                qname.module_name().unwrap().clone().into()
+                qname.module_name().unwrap_or(&qname.name()).clone().into()
             }
         }
         Interface | Program => {
             QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
         }
-        Trait | Impl => qname,
+        Trait => qname,
         Type => unreachable!(),
     }
 }
@@ -470,7 +472,7 @@ enum SymbolKind {
 // In short:
 // - All kinds of functions: function name
 // - Traits & Impls: All functions in the trait/impl + all associated types
-fn exported_symbols(
+fn refinable_symbols(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
 ) -> Box<dyn Iterator<Item = SymbolKind> + 'tcx> {
@@ -483,7 +485,7 @@ fn exported_symbols(
         Pure => Box::new(
             iter::once(SymbolKind::Function(method_name(tcx, def_id))), // .chain(iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
         ),
-        Trait | Impl => {
+        Trait => {
             Box::new(tcx.associated_items(def_id).in_definition_order().filter_map(move |a| {
                 match a.kind {
                     AssocKind::Fn => match util::item_type(tcx, a.def_id) {
@@ -499,6 +501,18 @@ fn exported_symbols(
                 }
             }))
         }
+        Impl => Box::new(tcx.associated_items(def_id).in_definition_order().filter_map(move |a| {
+            match a.kind {
+                AssocKind::Fn => match util::item_type(tcx, a.def_id) {
+                    Logic => Some(SymbolKind::Function(method_name(tcx, a.def_id))),
+                    Predicate => Some(SymbolKind::Predicate(method_name(tcx, a.def_id))),
+                    Program => Some(SymbolKind::Val(method_name(tcx, a.def_id))),
+                    _ => unreachable!(),
+                },
+                AssocKind::Type => None,
+                AssocKind::Const => None,
+            }
+        })),
         Type => unreachable!(),
     }
 }
