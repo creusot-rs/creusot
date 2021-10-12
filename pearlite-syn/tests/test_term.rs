@@ -217,6 +217,34 @@ fn test_absurd() {
 }
 
 #[test]
+fn test_pearlite() {
+    snapshot!(quote!(pearlite!{ x }) as Term, @r###"
+    TermPearlite {
+        pearlite_token: Keyword [pearlite],
+        bang_token: Bang,
+        brace_token: Brace,
+        term: TermPath {
+            inner: ExprPath {
+                attrs: [],
+                qself: None,
+                path: Path {
+                    leading_colon: None,
+                    segments: [
+                        PathSegment {
+                            ident: Ident(
+                                x,
+                            ),
+                            arguments: None,
+                        },
+                    ],
+                },
+            },
+        },
+    }
+    "###);
+}
+
+#[test]
 fn test_match() {
     snapshot!(quote!(match x {
         Some(x) => true,

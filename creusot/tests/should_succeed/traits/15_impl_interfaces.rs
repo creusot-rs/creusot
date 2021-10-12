@@ -18,7 +18,7 @@ impl Tr for () {
 }
 
 #[trusted]
-#[logic_rust]
+#[logic]
 fn x<T: Tr>(x: T) -> T::A {
     panic!()
 }

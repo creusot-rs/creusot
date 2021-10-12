@@ -17,13 +17,13 @@ use Option::*;
 pub struct List(u32, Option<Box<List>>);
 
 unsafe impl Resolve for List {
-    #[predicate_rust]
+    #[predicate]
     fn resolve(self) -> bool {
         true
     }
 }
 
-#[logic_rust]
+#[logic]
 fn len(l: List) -> Int {
     {
         let List(_, ls) = l;
@@ -34,7 +34,7 @@ fn len(l: List) -> Int {
     }
 }
 
-#[logic_rust]
+#[logic]
 fn get(l: List, ix: Int) -> Option<u32> {
     {
         let List(i, ls) = l;

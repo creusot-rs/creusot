@@ -6,7 +6,7 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-#[logic_rust]
+#[logic]
 fn id<T>(x: T) -> T {
     x
 }

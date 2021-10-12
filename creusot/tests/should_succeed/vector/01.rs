@@ -15,7 +15,7 @@ where
 
 impl<T> Model for GhostRecord<T> {
     type ModelTy = T;
-    #[logic_rust]
+    #[logic]
     #[trusted]
     fn model(self) -> Self::ModelTy {
         panic!()
@@ -32,7 +32,7 @@ impl<T> GhostRecord<T> {
 
 impl<T: ?Sized> Model for MyVec<T> {
     type ModelTy = Seq<T>;
-    #[logic_rust]
+    #[logic]
     #[trusted]
     fn model(self) -> Self::ModelTy {
         panic!()
