@@ -49,5 +49,5 @@ pub fn interface_for(
 pub fn interface_name(tcx: TyCtxt, def_id: DefId) -> Ident {
     let name = translate_value_id(tcx, def_id);
 
-    format!("{}_Interface", Cow::from(name.module_name().unwrap_or(&name.name()))).into()
+    format!("{}_Interface", Cow::from(name.module_ident().unwrap_or(&name.name()))).into()
 }

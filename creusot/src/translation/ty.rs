@@ -10,6 +10,7 @@ use why3::declaration::TyDecl;
 use why3::{mlcfg::Type as MlT, QName};
 
 use crate::ctx::*;
+use crate::util::get_builtin;
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:
 ///
@@ -62,10 +63,17 @@ fn translate_ty_inner<'tcx>(
                 return MlT::Integer;
             }
 
-            names.import_prelude_module(PreludeModule::Type);
+            let cons = if let Some(builtin) = get_builtin(ctx.tcx, def.did) {
+                names.import_builtin_module(builtin.clone().module_qname());
+                MlT::TConstructor(builtin.without_search_path())
+            } else {
+                names.import_prelude_module(PreludeModule::Type);
+                MlT::TConstructor(translate_ty_name(ctx, def.did))
+            };
+
             let args = s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
 
-            MlT::TApp(box MlT::TConstructor(translate_ty_name(ctx, def.did)), args)
+            MlT::TApp(box cons, args)
         }
         Tuple(args) => {
             let tys =

@@ -63,7 +63,7 @@ pub type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo<'tcx>
 #[derive(Clone)]
 pub struct CloneMap<'tcx> {
     tcx: TyCtxt<'tcx>,
-    prelude: IndexMap<PreludeModule, bool>,
+    prelude: IndexMap<QName, bool>,
     pub names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
 
     // Track how many instances of a name already exist
@@ -215,6 +215,10 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     pub fn import_prelude_module(&mut self, module: PreludeModule) {
+        self.prelude.entry(module.qname()).or_insert(false);
+    }
+
+    pub fn import_builtin_module(&mut self, module: QName) {
         self.prelude.entry(module).or_insert(false);
     }
 
@@ -404,7 +408,7 @@ impl<'tcx> CloneMap<'tcx> {
                 *v = true;
                 p
             })
-            .map(|q| Decl::UseDecl(Use { name: q.qname() }))
+            .map(|q| Decl::UseDecl(Use { name: q.clone() }))
             .chain(decls.into_iter())
             .collect()
     }
@@ -450,7 +454,7 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
                 // TODO: this should directly be a function...
                 QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
             } else {
-                qname.module_name().unwrap_or(&qname.name()).clone().into()
+                qname.module_ident().unwrap_or(&qname.name()).clone().into()
             }
         }
         Interface | Program => {
