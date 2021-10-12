@@ -50,6 +50,11 @@ module C01_Main
   }
   
 end
+module CreusotContracts_Builtins_Model_Model
+  type self   
+  type modelty   
+  function model (self : self) : modelty
+end
 module C01_Impl0_Model_Interface
   type t   
   use Type
@@ -60,11 +65,29 @@ module C01_Impl0_Model
   use Type
   function model (self : Type.c01_ghostrecord t) : t
 end
+module C01_Impl0_Interface
+  type t   
+  use Type
+  clone export C01_Impl0_Model_Interface with type t = t
+  type modelty  = 
+    t
+  clone export CreusotContracts_Builtins_Model_Model with type self = Type.c01_ghostrecord t, type modelty = modelty,
+  function model = model
+end
+module C01_Impl0
+  type t   
+  use Type
+  clone export C01_Impl0_Model with type t = t
+  type modelty  = 
+    t
+  clone export CreusotContracts_Builtins_Model_Model with type self = Type.c01_ghostrecord t, type modelty = modelty,
+  function model = model
+end
 module C01_Impl1_Record_Interface
   type t   
   use prelude.Prelude
   use Type
-  clone C01_Impl0_Model_Interface as Model0 with type t = t
+  clone C01_Impl0_Interface as Model0 with type t = t
   val record (a : t) : Type.c01_ghostrecord t
     ensures { Model0.model result = a }
     
@@ -73,7 +96,7 @@ module C01_Impl1_Record
   type t   
   use prelude.Prelude
   use Type
-  clone C01_Impl0_Model as Model0 with type t = t
+  clone C01_Impl0 as Model0 with type t = t
   val record (a : t) : Type.c01_ghostrecord t
     ensures { Model0.model result = a }
     
@@ -89,24 +112,6 @@ module C01_Impl2_Model
   use Type
   use seq.Seq
   function model (self : Type.c01_myvec t) : Seq.seq t
-end
-module CreusotContracts_Builtins_Model_Model
-  type self   
-  type modelty   
-  function model (self : self) : modelty
-end
-module CreusotContracts_Builtins_Model_Impl0_Model_Interface
-  type t   
-  use prelude.Prelude
-  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
-  function model (self : t) : Model0.modelty
-end
-module CreusotContracts_Builtins_Model_Impl0_Model
-  type t   
-  use prelude.Prelude
-  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
-  function model (self : t) : Model0.modelty = 
-    Model0.model self
 end
 module C01_Impl2_Interface
   type t   
@@ -128,6 +133,39 @@ module C01_Impl2
   clone export CreusotContracts_Builtins_Model_Model with type self = Type.c01_myvec t, type modelty = modelty,
   function model = model
 end
+module CreusotContracts_Builtins_Model_Impl0_Model_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  function model (self : t) : Model0.modelty
+end
+module CreusotContracts_Builtins_Model_Impl0_Model
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  function model (self : t) : Model0.modelty = 
+    Model0.model self
+end
+module CreusotContracts_Builtins_Model_Impl0_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  clone export CreusotContracts_Builtins_Model_Impl0_Model_Interface with type t = t,
+  type Model0.modelty = Model0.modelty, function Model0.model = Model0.model
+  type modelty  = 
+    Model0.modelty
+  clone export CreusotContracts_Builtins_Model_Model with type self = t, type modelty = modelty, function model = model
+end
+module CreusotContracts_Builtins_Model_Impl0
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  clone export CreusotContracts_Builtins_Model_Impl0_Model with type t = t, type Model0.modelty = Model0.modelty,
+  function Model0.model = Model0.model
+  type modelty  = 
+    Model0.modelty
+  clone export CreusotContracts_Builtins_Model_Model with type self = t, type modelty = modelty, function model = model
+end
 module C01_Impl3_Len_Interface
   type t   
   use seq.Seq
@@ -136,7 +174,7 @@ module C01_Impl3_Len_Interface
   use mach.int.Int
   use mach.int.UInt64
   clone C01_Impl2_Interface as Model1 with type t = t
-  clone CreusotContracts_Builtins_Model_Impl0_Model_Interface as Model0 with type t = Type.c01_myvec t,
+  clone CreusotContracts_Builtins_Model_Impl0_Interface as Model0 with type t = Type.c01_myvec t,
   type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
   val len (self : Type.c01_myvec t) : usize
     ensures { result = Seq.length (Model0.model self) }
@@ -150,7 +188,7 @@ module C01_Impl3_Len
   use mach.int.Int
   use mach.int.UInt64
   clone C01_Impl2 as Model1 with type t = t
-  clone CreusotContracts_Builtins_Model_Impl0_Model as Model0 with type t = Type.c01_myvec t,
+  clone CreusotContracts_Builtins_Model_Impl0 as Model0 with type t = Type.c01_myvec t,
   type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
   val len (self : Type.c01_myvec t) : usize
     ensures { result = Seq.length (Model0.model self) }
@@ -163,7 +201,7 @@ module C01_Impl3_Get_Interface
   use Type
   use mach.int.Int
   use mach.int.UInt64
-  clone C01_Impl2_Model_Interface as Model0 with type t = t
+  clone C01_Impl2_Interface as Model0 with type t = t
   val get (self : Type.c01_myvec t) (ix : usize) : Type.core_option_option t
     ensures { match (result) with
       | Type.Core_Option_Option_Some t -> t = Seq.get (Model0.model self) ix
@@ -178,7 +216,7 @@ module C01_Impl3_Get
   use Type
   use mach.int.Int
   use mach.int.UInt64
-  clone C01_Impl2_Model as Model0 with type t = t
+  clone C01_Impl2 as Model0 with type t = t
   val get (self : Type.c01_myvec t) (ix : usize) : Type.core_option_option t
     ensures { match (result) with
       | Type.Core_Option_Option_Some t -> t = Seq.get (Model0.model self) ix
@@ -199,15 +237,36 @@ module CreusotContracts_Builtins_Model_Impl1_Model
   function model (self : borrowed t) : Model0.modelty = 
     Model0.model ( * self)
 end
+module CreusotContracts_Builtins_Model_Impl1_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  clone export CreusotContracts_Builtins_Model_Impl1_Model_Interface with type t = t,
+  type Model0.modelty = Model0.modelty, function Model0.model = Model0.model
+  type modelty  = 
+    Model0.modelty
+  clone export CreusotContracts_Builtins_Model_Model with type self = borrowed t, type modelty = modelty,
+  function model = model
+end
+module CreusotContracts_Builtins_Model_Impl1
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  clone export CreusotContracts_Builtins_Model_Impl1_Model with type t = t, type Model0.modelty = Model0.modelty,
+  function Model0.model = Model0.model
+  type modelty  = 
+    Model0.modelty
+  clone export CreusotContracts_Builtins_Model_Model with type self = borrowed t, type modelty = modelty,
+  function model = model
+end
 module C01_Impl3_Push_Interface
   type t   
   use seq.Seq
   use prelude.Prelude
   use Type
-  clone C01_Impl2_Interface as Model2 with type t = t
-  clone CreusotContracts_Builtins_Model_Impl1_Model_Interface as Model1 with type t = Type.c01_myvec t,
-  type Model0.modelty = Model2.modelty, function Model0.model = Model2.model
-  clone C01_Impl2_Model_Interface as Model0 with type t = t
+  clone C01_Impl2_Interface as Model0 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl1_Interface as Model1 with type t = Type.c01_myvec t,
+  type Model0.modelty = Model0.modelty, function Model0.model = Model0.model
   val push (self : borrowed (Type.c01_myvec t)) (v : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model1.model self) v }
     
@@ -217,10 +276,9 @@ module C01_Impl3_Push
   use seq.Seq
   use prelude.Prelude
   use Type
-  clone C01_Impl2 as Model2 with type t = t
-  clone CreusotContracts_Builtins_Model_Impl1_Model as Model1 with type t = Type.c01_myvec t,
-  type Model0.modelty = Model2.modelty, function Model0.model = Model2.model
-  clone C01_Impl2_Model as Model0 with type t = t
+  clone C01_Impl2 as Model0 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl1 as Model1 with type t = Type.c01_myvec t,
+  type Model0.modelty = Model0.modelty, function Model0.model = Model0.model
   val push (self : borrowed (Type.c01_myvec t)) (v : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model1.model self) v }
     
@@ -233,7 +291,7 @@ module C01_Impl3_Index_Interface
   use mach.int.Int
   use mach.int.UInt64
   clone C01_Impl2_Interface as Model1 with type t = t
-  clone CreusotContracts_Builtins_Model_Impl0_Model_Interface as Model0 with type t = Type.c01_myvec t,
+  clone CreusotContracts_Builtins_Model_Impl0_Interface as Model0 with type t = Type.c01_myvec t,
   type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
   val index (self : Type.c01_myvec t) (ix : usize) : t
     requires {ix < Seq.length (Model0.model self)}
@@ -248,7 +306,7 @@ module C01_Impl3_Index
   use mach.int.Int
   use mach.int.UInt64
   clone C01_Impl2 as Model1 with type t = t
-  clone CreusotContracts_Builtins_Model_Impl0_Model as Model0 with type t = Type.c01_myvec t,
+  clone CreusotContracts_Builtins_Model_Impl0 as Model0 with type t = Type.c01_myvec t,
   type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
   val index (self : Type.c01_myvec t) (ix : usize) : t
     requires {ix < Seq.length (Model0.model self)}
@@ -263,16 +321,15 @@ module C01_Impl3_IndexMut_Interface
   use prelude.Prelude
   use Type
   use mach.int.UInt64
-  clone C01_Impl2_Model_Interface as Model1 with type t = t
-  clone C01_Impl2_Interface as Model2 with type t = t
-  clone CreusotContracts_Builtins_Model_Impl1_Model_Interface as Model0 with type t = Type.c01_myvec t,
-  type Model0.modelty = Model2.modelty, function Model0.model = Model2.model
+  clone C01_Impl2_Interface as Model0 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl1_Interface as Model1 with type t = Type.c01_myvec t,
+  type Model0.modelty = Model0.modelty, function Model0.model = Model0.model
   val index_mut (self : borrowed (Type.c01_myvec t)) (ix : usize) : borrowed t
-    requires {ix < Seq.length (Model0.model self)}
-    ensures { Seq.length (Model0.model self) = Seq.length (Model1.model ( ^ self)) }
-    ensures { forall j : (int) . 0 <= j && j <= Seq.length (Model1.model ( ^ self)) -> not (j = ix) -> Seq.get (Model1.model ( ^ self)) j = Seq.get (Model0.model self) j }
-    ensures {  ^ result = Seq.get (Model1.model ( ^ self)) ix }
-    ensures {  * result = Seq.get (Model0.model self) ix }
+    requires {ix < Seq.length (Model0.model ( * self))}
+    ensures { Seq.length (Model0.model ( * self)) = Seq.length (Model0.model ( ^ self)) }
+    ensures { forall j : (int) . 0 <= j && j <= Seq.length (Model0.model ( ^ self)) -> not (j = ix) -> Seq.get (Model0.model ( ^ self)) j = Seq.get (Model0.model ( * self)) j }
+    ensures {  ^ result = Seq.get (Model0.model ( ^ self)) ix }
+    ensures {  * result = Seq.get (Model1.model self) ix }
     
 end
 module C01_Impl3_IndexMut
@@ -283,16 +340,15 @@ module C01_Impl3_IndexMut
   use prelude.Prelude
   use Type
   use mach.int.UInt64
-  clone C01_Impl2_Model as Model1 with type t = t
-  clone C01_Impl2 as Model2 with type t = t
-  clone CreusotContracts_Builtins_Model_Impl1_Model as Model0 with type t = Type.c01_myvec t,
-  type Model0.modelty = Model2.modelty, function Model0.model = Model2.model
+  clone C01_Impl2 as Model0 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl1 as Model1 with type t = Type.c01_myvec t,
+  type Model0.modelty = Model0.modelty, function Model0.model = Model0.model
   val index_mut (self : borrowed (Type.c01_myvec t)) (ix : usize) : borrowed t
-    requires {ix < Seq.length (Model0.model self)}
-    ensures { Seq.length (Model0.model self) = Seq.length (Model1.model ( ^ self)) }
-    ensures { forall j : (int) . 0 <= j && j <= Seq.length (Model1.model ( ^ self)) -> not (j = ix) -> Seq.get (Model1.model ( ^ self)) j = Seq.get (Model0.model self) j }
-    ensures {  ^ result = Seq.get (Model1.model ( ^ self)) ix }
-    ensures {  * result = Seq.get (Model0.model self) ix }
+    requires {ix < Seq.length (Model0.model ( * self))}
+    ensures { Seq.length (Model0.model ( * self)) = Seq.length (Model0.model ( ^ self)) }
+    ensures { forall j : (int) . 0 <= j && j <= Seq.length (Model0.model ( ^ self)) -> not (j = ix) -> Seq.get (Model0.model ( ^ self)) j = Seq.get (Model0.model ( * self)) j }
+    ensures {  ^ result = Seq.get (Model0.model ( ^ self)) ix }
+    ensures {  * result = Seq.get (Model1.model self) ix }
     
 end
 module CreusotContracts_Builtins_Resolve_Resolve
@@ -310,6 +366,18 @@ module CreusotContracts_Builtins_Resolve_Impl1_Resolve
   predicate resolve (self : borrowed t) = 
      ^ self =  * self
 end
+module CreusotContracts_Builtins_Resolve_Impl1_Interface
+  type t   
+  use prelude.Prelude
+  clone export CreusotContracts_Builtins_Resolve_Impl1_Resolve_Interface with type t = t
+  clone export CreusotContracts_Builtins_Resolve_Resolve with type self = borrowed t, predicate resolve = resolve
+end
+module CreusotContracts_Builtins_Resolve_Impl1
+  type t   
+  use prelude.Prelude
+  clone export CreusotContracts_Builtins_Resolve_Impl1_Resolve with type t = t
+  clone export CreusotContracts_Builtins_Resolve_Resolve with type self = borrowed t, predicate resolve = resolve
+end
 module C01_AllZero_Interface
   use seq.Seq
   use mach.int.Int
@@ -317,13 +385,10 @@ module C01_AllZero_Interface
   use mach.int.UInt32
   use prelude.Prelude
   use Type
-  clone C01_Impl2_Model_Interface as Model1 with type t = uint32
-  clone C01_Impl2_Interface as Model2 with type t = uint32
-  clone CreusotContracts_Builtins_Model_Impl1_Model_Interface as Model0 with type t = Type.c01_myvec uint32,
-  type Model0.modelty = Model2.modelty, function Model0.model = Model2.model
+  clone C01_Impl2_Interface as Model0 with type t = uint32
   val all_zero (v : borrowed (Type.c01_myvec uint32)) : ()
-    ensures { Seq.length (Model0.model v) = Seq.length (Model1.model ( ^ v)) }
-    ensures { forall i : (int) . 0 <= i && i < Seq.length (Model1.model ( ^ v)) -> Seq.get (Model1.model ( ^ v)) i = (0 : uint32) }
+    ensures { Seq.length (Model0.model ( * v)) = Seq.length (Model0.model ( ^ v)) }
+    ensures { forall i : (int) . 0 <= i && i < Seq.length (Model0.model ( ^ v)) -> Seq.get (Model0.model ( ^ v)) i = (0 : uint32) }
     
 end
 module C01_AllZero
@@ -333,30 +398,29 @@ module C01_AllZero
   use mach.int.UInt32
   use prelude.Prelude
   use Type
-  clone C01_Impl2_Model as Model2 with type t = uint32
-  clone C01_Impl2 as Model3 with type t = uint32
-  clone CreusotContracts_Builtins_Model_Impl1_Model as Model1 with type t = Type.c01_myvec uint32,
-  type Model0.modelty = Model3.modelty, function Model0.model = Model3.model
-  clone C01_Impl0_Model as Model0 with type t = borrowed (Type.c01_myvec uint32)
+  clone C01_Impl2 as Model1 with type t = uint32
+  clone C01_Impl0 as Model0 with type t = borrowed (Type.c01_myvec uint32)
   use mach.int.UInt64
-  clone CreusotContracts_Builtins_Resolve_Impl1_Resolve as Resolve6 with type t = Type.c01_myvec uint32
+  clone CreusotContracts_Builtins_Resolve_Impl1 as Resolve6 with type t = Type.c01_myvec uint32
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve5 with type self = ()
-  clone CreusotContracts_Builtins_Resolve_Impl1_Resolve as Resolve4 with type t = uint32
+  clone CreusotContracts_Builtins_Resolve_Impl1 as Resolve4 with type t = uint32
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve3 with type self = bool
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve2 with type self = usize
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve1 with type self = Type.c01_ghostrecord (borrowed (Type.c01_myvec uint32))
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve0 with type self = borrowed (Type.c01_myvec uint32)
-  clone CreusotContracts_Builtins_Model_Impl0_Model as Model4 with type t = Type.c01_myvec uint32,
-  type Model0.modelty = Model3.modelty, function Model0.model = Model3.model
-  clone C01_Impl3_Len_Interface as Len0 with type t = uint32, function Model0.model = Model4.model,
-  function Model1.model = Model3.model
+  clone CreusotContracts_Builtins_Model_Impl1 as Model3 with type t = Type.c01_myvec uint32,
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
   clone C01_Impl3_IndexMut_Interface as IndexMut0 with type t = uint32, function Model0.model = Model1.model,
-  function Model1.model = Model2.model, function Model2.model = Model3.model
+  function Model1.model = Model3.model
+  clone CreusotContracts_Builtins_Model_Impl0 as Model2 with type t = Type.c01_myvec uint32,
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
+  clone C01_Impl3_Len_Interface as Len0 with type t = uint32, function Model0.model = Model2.model,
+  function Model1.model = Model1.model
   clone C01_Impl1_Record_Interface as Record0 with type t = borrowed (Type.c01_myvec uint32),
   function Model0.model = Model0.model
   let rec cfg all_zero (v : borrowed (Type.c01_myvec uint32)) : ()
-    ensures { Seq.length (Model1.model v) = Seq.length (Model2.model ( ^ v)) }
-    ensures { forall i : (int) . 0 <= i && i < Seq.length (Model2.model ( ^ v)) -> Seq.get (Model2.model ( ^ v)) i = (0 : uint32) }
+    ensures { Seq.length (Model1.model ( * v)) = Seq.length (Model1.model ( ^ v)) }
+    ensures { forall i : (int) . 0 <= i && i < Seq.length (Model1.model ( ^ v)) -> Seq.get (Model1.model ( ^ v)) i = (0 : uint32) }
     
    = 
   var _0 : ();
@@ -394,8 +458,8 @@ module C01_AllZero
   }
   BB2 {
     invariant proph_const {  ^ v_1 =  ^ Model0.model old_v_3 };
-    invariant in_bounds { Seq.length (Model1.model v_1) = Seq.length (Model1.model (Model0.model old_v_3)) };
-    invariant all_zero { forall j : (int) . 0 <= j && j < i_2 -> Seq.get (Model1.model v_1) j = (0 : uint32) };
+    invariant in_bounds { Seq.length (Model1.model ( * v_1)) = Seq.length (Model1.model ( * Model0.model old_v_3)) };
+    invariant all_zero { forall j : (int) . 0 <= j && j < i_2 -> Seq.get (Model1.model ( * v_1)) j = (0 : uint32) };
     goto BB3
   }
   BB3 {
@@ -438,22 +502,4 @@ module C01_AllZero
     return _0
   }
   
-end
-module C01_Impl0_Interface
-  type t   
-  use Type
-  clone export C01_Impl0_Model_Interface with type t = t
-  type modelty  = 
-    t
-  clone export CreusotContracts_Builtins_Model_Model with type self = Type.c01_ghostrecord t, type modelty = modelty,
-  function model = model
-end
-module C01_Impl0
-  type t   
-  use Type
-  clone export C01_Impl0_Model with type t = t
-  type modelty  = 
-    t
-  clone export CreusotContracts_Builtins_Model_Model with type self = Type.c01_ghostrecord t, type modelty = modelty,
-  function model = model
 end
