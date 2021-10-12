@@ -41,6 +41,7 @@ pub fn lower_term_to_why3<'tcx>(
 
             let method = resolve_assoc_item_opt(ctx.tcx, param_env, id, subst)
                 .unwrap_or(MethodInstance::new(ctx.tcx, id, subst));
+            debug!("resolved_method={:?}", (method.def_id, method.substs));
 
             if is_identity_from(ctx.tcx, id, method.substs) {
                 return args.remove(0);

@@ -89,18 +89,35 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         if !self.translated_items.insert(impl_id) {
             return;
         }
-
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
-        let mut names = CloneMap::new(self.tcx, true);
-
         self.translate_trait(trait_ref.def_id);
 
-        let mut subst = ctx::base_subst(self, &mut names, trait_ref.def_id, trait_ref.substs);
+        let mut names = CloneMap::new(self.tcx, true);
+
+        let decls = self.build_impl_module(&mut names, trait_ref, impl_id);
+        let name = translate_value_id(self.tcx, impl_id);
+        let modl = Module { name: name.name(), decls };
+
+        let mut names = CloneMap::new(self.tcx, false);
+
+        let interface_decls = self.build_impl_module(&mut names, trait_ref, impl_id);
+        let interface_name = interface_name(self.tcx, impl_id);
+        let iface = Module { name: interface_name, decls: interface_decls };
+        self.add_impl(impl_id, modl, iface);
+    }
+
+    fn build_impl_module(
+        &mut self,
+        names: &mut CloneMap<'tcx>,
+        trait_ref: TraitRef<'tcx>,
+        impl_id: DefId,
+    ) -> Vec<Decl> {
+        let mut subst = ctx::base_subst(self, names, trait_ref.def_id, trait_ref.substs);
 
         let mut assoc_types = Vec::new();
         for assoc in self.tcx.associated_items(impl_id).in_definition_order() {
             match assoc.kind {
-                AssocKind::Fn => subst.extend(translate_assoc_function(self, &mut names, assoc)),
+                AssocKind::Fn => subst.extend(translate_assoc_function(self, names, assoc)),
                 AssocKind::Type => {
                     let assoc_ty = self.tcx.type_of(assoc.def_id);
                     // TODO: Clean up translation of names to handle this automatically
@@ -110,7 +127,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                         ty_params: Vec::new(),
                         kind: TyDeclKind::Alias(ty::translate_ty(
                             self,
-                            &mut names,
+                            names,
                             rustc_span::DUMMY_SP,
                             assoc_ty,
                         )),
@@ -139,8 +156,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             kind: CloneKind::Export,
         }));
 
-        let name = translate_value_id(self.tcx, impl_id);
-        self.add_impl(impl_id, Module { name: name.name(), decls });
+        decls
     }
 }
 
@@ -328,6 +344,9 @@ pub fn resolve_trait_opt(
     substs: SubstsRef<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
     if tcx.is_trait(def_id) {
+        debug!("wtf: {:?}, {:?}, {:?}", param_env, def_id, substs);
+        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs);
+        debug!("impl_source={:?}", impl_source);
         match resolve_impl_source_opt(tcx, param_env, def_id, substs)? {
             ImplSource::UserDefined(impl_data) => Some((impl_data.impl_def_id, impl_data.substs)),
             ImplSource::Param(_, _) => Some((def_id, substs)),
@@ -339,6 +358,8 @@ pub fn resolve_trait_opt(
 }
 
 use rustc_middle::ty::AssocItemContainer;
+
+use super::interface::interface_name;
 pub fn resolve_assoc_item_opt(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
