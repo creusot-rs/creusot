@@ -30,7 +30,7 @@ impl<T> GhostRecord<T> {
     }
 }
 
-impl<T> Model for MyVec<T> {
+impl<T: ?Sized> Model for MyVec<T> {
     type ModelTy = Seq<T>;
     #[logic_rust]
     #[trusted]
