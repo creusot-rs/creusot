@@ -24,7 +24,7 @@ pub fn translate_pure(
 
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
 
-    let name = translate_value_id(ctx.tcx, def_id).module_name().unwrap().clone();
+    let name = translate_value_id(ctx.tcx, def_id).module_ident().unwrap().clone();
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
@@ -123,5 +123,5 @@ fn implementation_module(
 pub fn impl_name(tcx: TyCtxt, def_id: DefId) -> Ident {
     let name = translate_value_id(tcx, def_id);
 
-    format!("{}_Impl", Cow::from(name.module_name().unwrap())).into()
+    format!("{}_Impl", Cow::from(name.module_ident().unwrap())).into()
 }

@@ -5,6 +5,7 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::Attributes;
 use rustc_middle::ty::{DefIdTree, TyCtxt};
 use rustc_span::Symbol;
+use why3::QName;
 use why3::{
     declaration::Signature,
     mlcfg::{Constant, Exp},
@@ -75,6 +76,12 @@ pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
             return true;
         }
     }
+}
+
+pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<QName> {
+    get_attr(tcx.get_attrs(def_id), &["creusot", "builtins"])
+        .and_then(|a| ts_to_symbol(a.args.inner_tokens()))
+        .and_then(|a| QName::from_string(&a.as_str()))
 }
 
 pub(crate) fn method_name(tcx: TyCtxt, def_id: DefId) -> Ident {

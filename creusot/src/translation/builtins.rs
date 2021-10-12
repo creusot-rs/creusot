@@ -3,12 +3,13 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::{symbol::sym, Symbol};
 use why3::mlcfg::{BinOp, Constant, Exp, UnOp};
 
-use crate::ctx::TranslationCtx;
+use crate::{clone_map::CloneMap, ctx::TranslationCtx, util::get_builtin};
 
 use super::traits::{resolve_opt, MethodInstance};
 
 pub fn lookup_builtin(
     ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
     method: &MethodInstance<'tcx>,
     args: &mut Vec<Exp>,
 ) -> Option<Exp> {
@@ -137,6 +138,9 @@ pub fn lookup_builtin(
         return Some(Exp::Absurd);
     } else if ctx.tcx.def_path_str(def_id.unwrap()) == "std::boxed::Box::<T>::new" {
         return Some(args.remove(0));
+    } else if let Some(builtin) = get_builtin(ctx.tcx, def_id.unwrap()) {
+        names.import_builtin_module(builtin.clone().module_qname());
+        return Some(Exp::Call(box Exp::QVar(builtin.without_search_path()), args.clone()));
     }
     None
 }

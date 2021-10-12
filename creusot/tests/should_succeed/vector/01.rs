@@ -7,74 +7,6 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-enum List<T> {
-    Cons(T, Box<List<T>>),
-    Nil,
-}
-impl<T> WellFounded for List<T> {}
-
-use List::*;
-
-impl<T> List<T> {
-    // This is sucky because why3 won't automatically attempt to rewrite using the `def` axiom
-    #[pure]
-    #[ensures(result >= 0)]
-    #[variant(*self)]
-    fn len(&self) -> Int {
-        match self {
-            Cons(_, ls) => Int::from(1) + ls.len(),
-            Nil => 0.into(),
-        }
-    }
-
-    #[logic_rust]
-    fn get(self, ix: Int) -> Option<T> {
-        match self {
-            Cons(hd, tl) => {
-                if ix == 0 {
-                    Some(hd)
-                } else {
-                    tl.get(ix - 1)
-                }
-            }
-            Nil => None,
-        }
-    }
-
-    #[logic_rust]
-    fn push(self, v: T) -> Self {
-        match self {
-            Cons(h, tl) => Cons(h, Box::new(tl.push(v))),
-            Nil => Cons(v, Box::new(Nil)),
-        }
-    }
-
-    #[pure]
-    #[requires(0 <= ix && ix < self.len())]
-    #[ensures(Some(result) === self.get(ix))]
-    #[variant(self)]
-    fn index(self, ix: Int) -> T {
-        match self {
-            Cons(x, ls) => {
-                if ix == 0.into() {
-                    x
-                } else {
-                    ls.index(ix - 1.into())
-                }
-            }
-            Nil => unreachable!("invalid index"),
-        }
-    }
-}
-
-#[logic_rust]
-fn as_ref<'a, T>(opt: Option<&T>) -> &'a Option<T> {
-    match opt {
-        Some(r) => &Some(*r),
-        None => &None,
-    }
-}
-
 struct MyVec<T>(Vec<T>);
 
 pub struct GhostRecord<T>
@@ -98,8 +30,8 @@ impl<T> GhostRecord<T> {
     }
 }
 
-impl<T: ?Sized> Model for MyVec<T> {
-    type ModelTy = List<T>;
+impl<T> Model for MyVec<T> {
+    type ModelTy = Seq<T>;
     #[logic_rust]
     #[trusted]
     fn model(self) -> Self::ModelTy {
@@ -115,7 +47,10 @@ impl<T> MyVec<T> {
     }
 
     #[trusted]
-    #[ensures(*as_ref(result) === (@self).get(@ix))]
+    #[ensures(match result {
+        Some(t) => *t === (@*self).index(ix.into()),
+        None => (@*self).len() <= ix.into(),
+    })]
     fn get(&self, ix: usize) -> Option<&T> {
         self.0.get(ix)
     }

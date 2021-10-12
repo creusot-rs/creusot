@@ -137,7 +137,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         if util::is_trusted(self.tcx, self.def_id) {
             decls.push(Decl::ValDecl(ValKind::Val { sig }));
-            return Module { name: name.module_name().unwrap().clone(), decls };
+            return Module { name: name.module_ident().unwrap().clone(), decls };
         }
 
         self.translate_body();
@@ -165,7 +165,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             entry,
             blocks: self.past_blocks,
         }));
-        Module { name: name.module_name().unwrap().clone(), decls }
+        Module { name: name.module_ident().unwrap().clone(), decls }
     }
 
     fn translate_body(&mut self) {
