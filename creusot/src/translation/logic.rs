@@ -15,7 +15,7 @@ pub fn translate_logic(
     names.clone_self(def_id);
 
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
-    let name = translate_value_id(ctx.tcx, def_id).module_name().unwrap().clone();
+    let name = translate_value_id(ctx.tcx, def_id).module_ident().unwrap().clone();
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
@@ -45,7 +45,7 @@ pub fn translate_predicate(
 
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
     sig.retty = None;
-    let name = translate_value_id(ctx.tcx, def_id).module_name().unwrap().clone();
+    let name = translate_value_id(ctx.tcx, def_id).module_ident().unwrap().clone();
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));

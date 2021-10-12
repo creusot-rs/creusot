@@ -47,7 +47,7 @@ pub fn lower_term_to_why3<'tcx>(
                 return args.remove(0);
             }
 
-            builtins::lookup_builtin(ctx, &method, &mut args).unwrap_or_else(|| {
+            builtins::lookup_builtin(ctx, names, &method, &mut args).unwrap_or_else(|| {
                 ctx.translate(method.def_id);
                 let clone = names.insert(method.def_id, method.substs);
                 Exp::Call(box Exp::QVar(clone.qname_sym(method.ident)), args)

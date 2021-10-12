@@ -68,8 +68,28 @@ impl QName {
         self.name.clone()
     }
 
-    pub fn module_name(&self) -> Option<&Ident> {
+    // ooof this is a bad function
+    pub fn module_ident(&self) -> Option<&Ident> {
         self.module.last()
+    }
+
+    pub fn module_qname(mut self) -> QName {
+        assert!(self.module.len() > 0, "ident has no module");
+        let id = self.module.pop().unwrap();
+        self.name = id;
+        self
+    }
+
+    pub fn without_search_path(mut self) -> QName {
+        let mut i = 0;
+        while i < self.module.len() {
+            if self.module[i].starts_with(char::is_lowercase) {
+                self.module.remove(i);
+            } else {
+                i += 1
+            }
+        }
+        self
     }
 
     pub fn from_string(s: &str) -> Option<QName> {
