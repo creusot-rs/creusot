@@ -13,6 +13,27 @@ impl<T> Seq<T> {
         std::process::abort()
     }
 
+    #[logic]
+    pub fn get(self, ix: Int) -> Option<T> {
+        if ix < self.len() {
+            Some(self.index(ix))
+        } else {
+            None
+        }
+    }
+
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "seq_ext.SeqExt.subsequence"]
+    pub fn subsequence(self, i: Int, j: Int) -> Self {
+        std::process::abort()
+    }
+
+    #[logic]
+    pub fn tail(self) -> Self {
+        self.subsequence(1, self.len())
+    }
+
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.length"]
