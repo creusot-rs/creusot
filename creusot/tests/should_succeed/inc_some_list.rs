@@ -16,7 +16,7 @@ impl List {
     #[logic_rust]
     fn sum(self) -> Int {
         match self {
-            Cons(a, l) => Int::from(a) + l.sum(),
+            Cons(a, l) => a.model() + l.sum(),
             Nil => 0,
         }
     }
@@ -33,7 +33,7 @@ impl List {
     }
 
     #[requires(self.sum() <= 1_000_000)]
-    #[ensures(Int::from(result) == self.sum())]
+    #[ensures(@result == self.sum())]
     fn sum_x(&self) -> u32 {
         match self {
             Cons(a, l) => *a + l.sum_x(),
@@ -41,8 +41,8 @@ impl List {
         }
     }
 
-    #[ensures((^self).sum() - self.sum() == Int::from(^result) - Int::from(*result))]
-    #[ensures(Int::from(*result) <= self.sum())]
+    #[ensures((^self).sum() - self.sum() == @^result - @result)]
+    #[ensures(@result <= self.sum())]
     fn take_some(&mut self) -> &mut u32 {
         match self {
             Cons(ma, ml) => {
@@ -58,7 +58,7 @@ impl List {
     }
 }
 
-#[requires(l.sum() + Int::from(k) <= 1_000_000)]
+#[requires(l.sum() + @k <= 1_000_000)]
 fn inc_some_list(mut l: List, k: u32) {
     let sum0 = l.sum_x();
     let ma = l.take_some();

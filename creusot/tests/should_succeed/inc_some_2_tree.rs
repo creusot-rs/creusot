@@ -16,7 +16,7 @@ impl Tree {
     #[logic_rust]
     fn sum(self) -> Int {
         match self {
-            Node(tl, a, tr) => tl.sum() + Int::from(a) + tr.sum(),
+            Node(tl, a, tr) => tl.sum() + a.model() + tr.sum(),
             Leaf => 0,
         }
     }
@@ -36,7 +36,7 @@ impl Tree {
     }
 
     #[requires(self.sum() <= 1_000_000)]
-    #[ensures(Int::from(result) == self.sum())]
+    #[ensures(@result == self.sum())]
     fn sum_x(&self) -> u32 {
         match self {
             Node(tl, a, tr) => {
@@ -49,8 +49,8 @@ impl Tree {
     }
 
     #[ensures((^self).sum() - self.sum() ==
-        Int::from(^result.0) + (^result.1).sum() - Int::from(*result.0) - (*result.1).sum())]
-    #[ensures(Int::from(*result.0) <= self.sum())]
+        @^result.0 + (^result.1).sum() - @result.0 - (*result.1).sum())]
+    #[ensures(@result.0 <= self.sum())]
     #[ensures(result.1.sum() <= self.sum())]
     fn take_some_rest(&mut self) -> (&mut u32, &mut Tree) {
         match self {
@@ -70,7 +70,7 @@ impl Tree {
     }
 }
 
-#[requires(t.sum() + Int::from(j) + Int::from(k) <= 1_000_000)]
+#[requires(t.sum() + @j + @k <= 1_000_000)]
 fn inc_some_2_tree(mut t: Tree, j: u32, k: u32) {
     let sum0 = t.sum_x();
     let (ma, mt) = t.take_some_rest();

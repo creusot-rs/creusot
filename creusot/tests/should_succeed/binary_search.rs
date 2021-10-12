@@ -43,14 +43,14 @@ fn get<T>(l: List<T>, ix: Int) -> Option<T> {
 }
 
 impl<T> List<T> {
-    #[requires(Int::from(ix) < len_logic(*self))]
-    #[ensures(Some(*result) === get(*self, Int::from(ix)))]
+    #[requires(@ix < len_logic(*self))]
+    #[ensures(Some(*result) === get(*self, @ix))]
     fn index(&self, mut ix: usize) -> &T {
         let orig_ix = ix;
         let mut l = self;
 
-        #[invariant(ix_valid, Int::from(ix) < len_logic(*l))]
-        #[invariant(res_get, get(*self, Int::from(orig_ix)) === get(*l, Int::from(ix)))]
+        #[invariant(ix_valid, @ix < len_logic(*l))]
+        #[invariant(res_get, get(*self, @orig_ix) === get(*l, @ix))]
         while let Cons(t, ls) = l {
             if ix > 0 {
                 l = &*ls;
@@ -63,13 +63,13 @@ impl<T> List<T> {
     }
 
     // Temporary until support for usize::MAX is added
-    #[requires(len_logic(*self) <= Int::from(1_000_000))]
+    #[requires(len_logic(*self) <= 1_000_000)]
     #[ensures(result >= 0usize)]
-    #[ensures(Int::from(result) == len_logic(*self))]
+    #[ensures(@result == len_logic(*self))]
     fn len(&self) -> usize {
         let mut len = 0;
         let mut l = self;
-        #[invariant(len_valid, Int::from(len) + len_logic(*l) == len_logic(*self))]
+        #[invariant(len_valid, @len + len_logic(*l) == len_logic(*self))]
         while let Cons(_, ls) = l {
             len += 1;
             l = ls;
@@ -99,13 +99,13 @@ fn get_default<T>(l: List<T>, ix: Int, def: T) -> T {
     }
 }
 
-#[requires(len_logic(*arr) <= Int::from(1_000_000))]
+#[requires(len_logic(*arr) <= 1_000_000)]
 #[requires(is_sorted(*arr))]
-#[ensures(forall<x:usize> result === Ok(x) ==> get(*arr, Int::from(x)) === Some(elem))]
+#[ensures(forall<x:usize> result === Ok(x) ==> get(*arr, @x) === Some(elem))]
 #[ensures(forall<x:usize> result === Err(x) ==>
-    forall<i:Int> 0 <= i && i < Int::from(x) ==> get_default(*arr, i, 0u32) < elem)]
+    forall<i:Int> 0 <= i && i < @x ==> get_default(*arr, i, 0u32) < elem)]
 #[ensures(forall<x:usize> result === Err(x) ==>
-    forall<i:Int> Int::from(x) < i && i < len_logic(*arr) ==> elem < get_default(*arr, i, 0u32))]
+    forall<i:Int> @x < i && i < len_logic(*arr) ==> elem < get_default(*arr, i, 0u32))]
 fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
     if arr.len() == 0 {
         return Err(0);
@@ -113,9 +113,9 @@ fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
     let mut size = arr.len();
     let mut base = 0;
 
-    #[invariant(size_valid, Int::from(size) + Int::from(base) <= len_logic(*arr))]
-    #[invariant(in_interval, get_default(*arr, Int::from(base), 0u32) <= elem &&
-        elem <= get_default(*arr, Int::from(base) + Int::from(size), 0u32))]
+    #[invariant(size_valid, @size + @base <= len_logic(*arr))]
+    #[invariant(in_interval, get_default(*arr, @base, 0u32) <= elem &&
+        elem <= get_default(*arr, @base + @size, 0u32))]
     #[invariant(size_pos, size > 0usize)]
     while size > 1 {
         let half = size / 2;

@@ -1,4 +1,3 @@
-// UNBOUNDED
 #![feature(register_tool, rustc_attrs)]
 #![register_tool(creusot)]
 
@@ -11,6 +10,7 @@ fn swap<'a, 'b>(mma: &'a mut &'b mut u32, mmb: &'a mut &'b mut u32) {
     std::mem::swap(mma, mmb);
 }
 
+#[requires(*ma <= 1_000_000u32 && *mb <= 1_000_000u32 && *mc <= 1_000_000u32)]
 #[ensures(^ma != ^mb && ^mb != ^mc && ^mc != ^ma)]
 fn inc_max_3<'a>(mut ma: &'a mut u32, mut mb: &'a mut u32, mut mc: &'a mut u32) {
     if *ma < *mb {
@@ -26,6 +26,7 @@ fn inc_max_3<'a>(mut ma: &'a mut u32, mut mb: &'a mut u32, mut mc: &'a mut u32) 
     *mb += 1;
 }
 
+#[requires(a <= 1_000_000u32 && b <= 1_000_000u32 && c <= 1_000_000u32)]
 fn test_inc_max_3(mut a: u32, mut b: u32, mut c: u32) {
     inc_max_3(&mut a, &mut b, &mut c);
     assert!(a != b && b != c && c != a);

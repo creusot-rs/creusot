@@ -9,7 +9,7 @@ impl<T> Seq<T> {
     #[trusted]
     #[logic_rust]
     #[creusot::builtins = "seq.Seq.get"]
-    pub fn index(self, ix: Int) -> T {
+    pub fn index(self, _: Int) -> T {
         std::process::abort()
     }
 
@@ -23,14 +23,14 @@ impl<T> Seq<T> {
     #[trusted]
     #[logic_rust]
     #[creusot::builtins = "seq.Seq.set"]
-    pub fn set(self, ix: Int, v: T) -> Self {
+    pub fn set(self, _: Int, _: T) -> Self {
         std::process::abort()
     }
 
     #[trusted]
     #[logic_rust]
     #[creusot::builtins = "seq.Seq.snoc"]
-    pub fn push(self, v: T) -> Self {
+    pub fn push(self, _: T) -> Self {
         std::process::abort()
     }
 }
