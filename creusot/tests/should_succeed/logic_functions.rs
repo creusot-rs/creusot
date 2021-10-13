@@ -6,7 +6,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-#[logic_rust]
+#[logic]
 fn logic() -> bool {
     true
 }
@@ -14,27 +14,25 @@ fn logic() -> bool {
 #[ensures(logic())]
 fn use_logic() {}
 
-// To use pearlite syntax like `===`,
-// we need to use `logic!` instead of `#[logic_rust]`
-logic! {
-    fn logical() -> bool {
-        0 === 0
-    }
+// When we want to use pearlite syntax, we use pearlite! macro
+#[logic]
+fn logic_pearlite() -> bool {
+    pearlite! { 0 === 0 }
 }
 
-#[ensures(logical())]
-fn use_logical() {}
+#[ensures(logic_pearlite())]
+fn use_logic_pearlite() {}
 
 mod nested {
     use creusot_contracts::*;
 
-    #[logic_rust]
+    #[logic]
     fn nested() -> bool {
         true
     }
 }
 
-#[logic_rust]
+#[logic]
 fn arith(n: Int, b: bool) -> Int {
     if !b {
         -n + n - n * n
@@ -43,7 +41,7 @@ fn arith(n: Int, b: bool) -> Int {
     }
 }
 
-#[logic_rust]
+#[logic]
 fn deref_pat<'a>(o: &'a Option<Int>) -> Int {
     match o {
         Some(a) => *a,

@@ -147,10 +147,10 @@ Contracts and logic functions are written in Pearlite, a specification language 
 - Rust specific logical expressions: access to the **final** value of a mutable reference `^`, access to the *model* of an object `@`
 
 We also provide two new attributes on Rust functions: `logic` and `pure`.
-Marked either `logic` or `pure`, a function can be used in specs and other logical conditions (`requires`/`ensures` and `invariant`).
+Marked either `#[logic]` or `#[pure]`, a function can be used in specs and other logical conditions (`requires`/`ensures` and `invariant`).
 The two attributes have the following difference.
 - A `logic` function can freely have logical, non-executable operations, such as quantifiers, logic equalities, etc. Instead, this function can't be called in normal Rust code (the function body of a `logic` function is replaced with a panic).
-  To write logic functions, there are two ways: add `#[logic_rust]` attribute or put the function in `logic! { ... }` macro. The former gets better IDE support but the latter allows you to use pearlite syntax like `===` and `forall<x: T>`.
+  You can use pearlite syntax for any part in the logic function by marking that part with the `pearlite! { ... }` macro.
 - A `pure` function can be used in both normal Rust code and logical conditions.
 
 When you write *recursive* `logic` or `pure` functions, you have to show that the function terminates.

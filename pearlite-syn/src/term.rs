@@ -15,9 +15,10 @@ use std::hash::{Hash, Hasher};
 use std::mem;
 
 mod kw {
-    syn::custom_keyword!(absurd);
     syn::custom_keyword!(forall);
     syn::custom_keyword!(exists);
+    syn::custom_keyword!(absurd);
+    syn::custom_keyword!(pearlite);
 }
 
 ast_enum_of_structs! {
@@ -126,6 +127,9 @@ ast_enum_of_structs! {
 
         /// Logical absurdity
         Absurd(TermAbsurd),
+
+        /// Pearlite macro `pearlite!{ ... }`.
+        Pearlite(TermPearlite),
 
         #[doc(hidden)]
         __Nonexhaustive,
@@ -404,12 +408,6 @@ ast_struct! {
 }
 
 ast_struct! {
-    pub struct TermAbsurd {
-        pub absurd_token: kw::absurd
-    }
-}
-
-ast_struct! {
     pub struct TermForall {
         pub forall_token: kw::forall,
         pub lt_token: Token![<],
@@ -436,6 +434,21 @@ ast_struct! {
         pub ident: Ident,
         pub colon_token: Token![:],
         pub ty: Box<Type>,
+    }
+}
+
+ast_struct! {
+    pub struct TermAbsurd {
+        pub absurd_token: kw::absurd
+    }
+}
+
+ast_struct! {
+    pub struct TermPearlite {
+        pub pearlite_token: kw::pearlite,
+        pub bang_token: Token![!],
+        pub brace_token: token::Brace,
+        pub term: Box<Term>
     }
 }
 
@@ -851,6 +864,7 @@ pub(crate) mod parsing {
     ) -> Result<Term> {
         loop {
             if Precedence::Compare >= base && input.peek(Token![==]) && input.peek3(Token![=]) {
+                // a === b
                 let eqeq_token: Token![==] = input.parse()?;
                 let eq_token: Token![=] = input.parse()?;
                 let precedence = Precedence::Compare;
@@ -870,6 +884,7 @@ pub(crate) mod parsing {
                     rhs: Box::new(rhs),
                 });
             } else if Precedence::Impl >= base && input.peek(Token![==]) && input.peek3(Token![>]) {
+                // a ==> b
                 let eqeq_token: Token![==] = input.parse()?;
                 let gt_token: Token![>] = input.parse()?;
                 let precedence = Precedence::Impl;
@@ -947,22 +962,21 @@ pub(crate) mod parsing {
         parse_term(input, lhs, allow_struct, Precedence::Any)
     }
 
-    // <UnOp> <trailer>
-    // & <trailer>
-    // &mut <trailer>
-    // box <trailer>
     fn unary_term(input: ParseStream, allow_struct: AllowStruct) -> Result<Term> {
         if input.peek(Token![*]) || input.peek(Token![!]) || input.peek(Token![-]) {
+            // <UnOp> <trailer>
             Ok(Term::Unary(TermUnary {
                 op: input.parse()?,
                 expr: Box::new(unary_term(input, allow_struct)?),
             }))
         } else if input.peek(Token![^]) {
+            // ^ <trailer>
             Ok(Term::Final(TermFinal {
                 final_token: input.parse()?,
                 term: Box::new(unary_term(input, allow_struct)?),
             }))
         } else if input.peek(Token![@]) {
+            // @ <trailer>
             Ok(Term::Model(TermModel {
                 at_token: input.parse()?,
                 term: Box::new(unary_term(input, allow_struct)?),
@@ -1072,9 +1086,10 @@ pub(crate) mod parsing {
         } else if input.peek(Lit) {
             input.parse().map(Term::Lit)
         } else if (input.peek(Ident)
-            && !input.peek(kw::forall)
-            && !input.peek(kw::exists)
-            && !input.peek(kw::absurd))
+            && !(input.peek(kw::forall)
+                || input.peek(kw::exists)
+                || input.peek(kw::absurd)
+                || input.peek(kw::pearlite)))
             || input.peek(Token![::])
             || input.peek(Token![<])
             || input.peek(Token![self])
@@ -1097,6 +1112,8 @@ pub(crate) mod parsing {
             input.parse().map(Term::Exists)
         } else if input.peek(kw::absurd) {
             input.parse().map(Term::Absurd)
+        } else if input.peek(kw::pearlite) {
+            input.parse().map(Term::Pearlite)
         } else if input.peek(Token![match]) {
             input.parse().map(Term::Match)
         } else if input.peek(token::Brace) {
@@ -1331,12 +1348,6 @@ pub(crate) mod parsing {
         }
     }
 
-    impl Parse for TermAbsurd {
-        fn parse(input: ParseStream) -> Result<Self> {
-            Ok(TermAbsurd { absurd_token: input.parse()? })
-        }
-    }
-
     impl Parse for TermExists {
         fn parse(input: ParseStream) -> Result<Self> {
             let exists_token = input.parse()?;
@@ -1368,6 +1379,24 @@ pub(crate) mod parsing {
             let colon_token = input.parse()?;
             let ty = input.parse()?;
             Ok(QuantArg { ident, colon_token, ty })
+        }
+    }
+
+    impl Parse for TermAbsurd {
+        fn parse(input: ParseStream) -> Result<Self> {
+            Ok(TermAbsurd { absurd_token: input.parse()? })
+        }
+    }
+
+    impl Parse for TermPearlite {
+        fn parse(input: ParseStream) -> Result<Self> {
+            let content;
+            Ok(TermPearlite {
+                pearlite_token: input.parse()?,
+                bang_token: input.parse()?,
+                brace_token: braced!(content in input),
+                term: Box::new(content.parse()?),
+            })
         }
     }
 
@@ -1779,16 +1808,25 @@ pub(crate) mod printing {
         }
     }
 
-    impl ToTokens for TermAbsurd {
-        fn to_tokens(&self, tokens: &mut TokenStream) {
-            self.absurd_token.to_tokens(tokens);
-        }
-    }
     impl ToTokens for QuantArg {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.ident.to_tokens(tokens);
             self.colon_token.to_tokens(tokens);
             self.ty.to_tokens(tokens);
+        }
+    }
+
+    impl ToTokens for TermAbsurd {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            self.absurd_token.to_tokens(tokens);
+        }
+    }
+
+    impl ToTokens for TermPearlite {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            self.pearlite_token.to_tokens(tokens);
+            self.bang_token.to_tokens(tokens);
+            self.brace_token.surround(tokens, |tokens| self.term.to_tokens(tokens));
         }
     }
 

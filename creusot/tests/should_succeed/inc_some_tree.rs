@@ -13,7 +13,7 @@ use Tree::*;
 impl WellFounded for Tree {}
 
 impl Tree {
-    #[logic_rust]
+    #[logic]
     fn sum(self) -> Int {
         match self {
             Node(tl, a, tr) => tl.sum() + a.model() + tr.sum(),

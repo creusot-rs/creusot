@@ -10,13 +10,13 @@ trait Assoc {
     type Ty;
 }
 
-#[logic_rust]
+#[logic]
 #[trusted]
 fn from_ty<T: Assoc>(x: T::Ty) -> T {
     panic!()
 }
 
-#[logic_rust]
+#[logic]
 #[trusted]
 fn to_ty<T: Assoc>(x: T) -> T::Ty {
     panic!()

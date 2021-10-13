@@ -7,17 +7,17 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-#[logic_rust]
+#[logic]
 fn a(x: u32) -> bool {
     x > 0u32
 }
 
-#[logic_rust]
+#[logic]
 fn b(x: u32) -> bool {
     x > 10u32 && a(x)
 }
 
-#[logic_rust]
+#[logic]
 fn c(x: u32) -> bool {
     x < 50u32 && b(x)
 }

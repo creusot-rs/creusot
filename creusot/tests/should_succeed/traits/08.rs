@@ -9,9 +9,9 @@ use creusot_contracts::*;
 // Ensure that different kinds of functions are translated to the
 // correct abstract symbol in Rust
 trait Tr {
-    #[logic_rust]
+    #[logic]
     fn logical(&self) -> Int;
-    #[predicate_rust]
+    #[predicate]
     fn predicate(&self) -> bool;
     fn program(&self) {}
 }

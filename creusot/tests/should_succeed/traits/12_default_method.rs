@@ -11,7 +11,7 @@ trait T {
         0
     }
 
-    #[logic_rust]
+    #[logic]
     fn logic_default(self) -> bool {
         true
     }
