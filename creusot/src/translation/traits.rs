@@ -29,7 +29,6 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         let mut names = CloneMap::new(self.tcx, true);
         names.clone_self(def_id);
-
         // The first predicate is a trait reference so we skip it
         for super_trait in traits_used_by(self.tcx, def_id).filter(|t| t.def_id() != def_id) {
             // Ensure trait depends on all super traits
@@ -44,6 +43,13 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             match item.kind {
                 AssocKind::Fn => {
                     if is_contract(self.tcx, item.def_id) {
+                        continue;
+                    }
+
+                    if item.defaultness.has_value() {
+                        let subst = InternalSubsts::identity_for_item(self.tcx, item.def_id);
+                        names.insert_raw(item.def_id, subst).mk_export();
+                        decls.extend(names.to_clones(self));
                         continue;
                     }
 
@@ -93,17 +99,22 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         self.translate_trait(trait_ref.def_id);
 
         let mut names = CloneMap::new(self.tcx, true);
-
-        let decls = self.build_impl_module(&mut names, trait_ref, impl_id);
+        names.clone_self(impl_id);
+        let decls =
+            names.with_public_clones(|names| self.build_impl_module(names, trait_ref, impl_id));
         let name = translate_value_id(self.tcx, impl_id);
+
         let modl = Module { name: name.name(), decls };
 
         let mut names = CloneMap::new(self.tcx, false);
+        names.clone_self(impl_id);
 
-        let interface_decls = self.build_impl_module(&mut names, trait_ref, impl_id);
+        let interface_decls =
+            names.with_public_clones(|names| self.build_impl_module(names, trait_ref, impl_id));
+
         let interface_name = interface_name(self.tcx, impl_id);
         let iface = Module { name: interface_name, decls: interface_decls };
-        self.add_impl(impl_id, modl, iface);
+        self.add_impl(impl_id, modl, iface, names.summary());
     }
 
     fn build_impl_module(
@@ -217,7 +228,7 @@ fn translate_assoc_function(
     let trait_id = ctx.tcx.trait_id_of_impl(impl_id).unwrap();
 
     let assoc_subst = InternalSubsts::identity_for_item(ctx.tcx, impl_id);
-    let name = names.insert(assoc.def_id, assoc_subst);
+    let name = names.insert_raw(assoc.def_id, assoc_subst);
     name.mk_export();
     let name = name.clone();
 
@@ -249,19 +260,17 @@ fn translate_assoc_function(
             )
         });
 
+    let name = names.insert_raw(assoc.def_id, assoc_subst);
     let assoc_method = match crate::util::item_type(ctx.tcx, assoc.def_id) {
-        ItemType::Logic => CloneSubst::Function(
-            assoc.ident.to_string().into(),
-            names.insert(assoc.def_id, assoc_subst).qname(ctx.tcx, assoc.def_id),
-        ),
-        ItemType::Predicate => CloneSubst::Predicate(
-            assoc.ident.to_string().into(),
-            names.insert(assoc.def_id, assoc_subst).qname(ctx.tcx, assoc.def_id),
-        ),
-        ItemType::Program => CloneSubst::Val(
-            assoc.ident.to_string().into(),
-            names.insert(assoc.def_id, assoc_subst).qname(ctx.tcx, assoc.def_id),
-        ),
+        ItemType::Logic => {
+            CloneSubst::Function(assoc.ident.to_string().into(), name.qname(ctx.tcx, assoc.def_id))
+        }
+        ItemType::Predicate => {
+            CloneSubst::Predicate(assoc.ident.to_string().into(), name.qname(ctx.tcx, assoc.def_id))
+        }
+        ItemType::Program => {
+            CloneSubst::Val(assoc.ident.to_string().into(), name.qname(ctx.tcx, assoc.def_id))
+        }
         ItemType::Pure => todo!("pure functions in traits are unimplemented"),
         _ => unreachable!(),
     };

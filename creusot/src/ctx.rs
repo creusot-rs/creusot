@@ -121,6 +121,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn translate(&mut self, def_id: DefId) {
+        debug!("translating {:?}", def_id);
         match item_type(self.tcx, def_id) {
             ItemType::Trait => self.translate_trait(def_id),
             ItemType::Impl => self.translate_impl(def_id),
@@ -134,12 +135,26 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
     // Generic entry point for function translation
     pub fn translate_function(&mut self, def_id: DefId) {
+        if let Some(assoc) = self.tcx.opt_associated_item(def_id) {
+            match assoc.container {
+                AssocItemContainer::TraitContainer(id) => self.translate(id),
+                AssocItemContainer::ImplContainer(id) => {
+                    if let Some(_) = self.tcx.trait_id_of_impl(id) {
+                        self.translate(id)
+                    }
+                }
+            }
+        }
+
         if !self.translated_items.insert(def_id) {
             return;
         }
 
-        if self.tcx.trait_of_item(def_id).is_some() {
-            return;
+        if let Some(local_id) = def_id.as_local() {
+            let hir_id = self.tcx.hir().local_def_id_to_hir_id(local_id);
+            if !self.tcx.hir().maybe_body_owned_by(hir_id).is_some() {
+                return;
+            }
         }
 
         if !crate::util::should_translate(self.tcx, def_id) {
@@ -152,19 +167,6 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
         let translated = if !def_id.is_local() {
             debug!("translating {:?} as extern", def_id);
-            // HACK to allow using trait methods (ie: resolve) coming from external crates until extern
-            // dependencies are properly fixed in `clone_map`
-            if let Some(assoc) = self.tcx.opt_associated_item(def_id) {
-                match assoc.container {
-                    AssocItemContainer::TraitContainer(id) => self.translate(id),
-                    AssocItemContainer::ImplContainer(id) => {
-                        if let Some(trait_id) = self.tcx.trait_id_of_impl(id) {
-                            self.translate(trait_id)
-                        }
-                    }
-                }
-            }
-
             match self.externs.body(def_id) {
                 Some(_) => {
                     TranslatedItem::Extern { interface, body: DefaultOrExtern::Extern(def_id) }
@@ -250,11 +252,15 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         );
     }
 
-    pub fn add_impl(&mut self, def_id: DefId, modl: Module, interface: Module) {
-        self.functions.insert(
-            def_id,
-            TranslatedItem::Impl { interface, modl, dependencies: CloneSummary::new() },
-        );
+    pub fn add_impl(
+        &mut self,
+        def_id: DefId,
+        modl: Module,
+        interface: Module,
+        summary: CloneSummary<'tcx>,
+    ) {
+        self.functions
+            .insert(def_id, TranslatedItem::Impl { interface, modl, dependencies: summary });
     }
 
     pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
@@ -346,12 +352,6 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
             segments = Vec::new();
         }
         (_, Some(Namespace::ValueNS)) | (Closure, _) => {
-            let is_trait_assoc = tcx.trait_of_item(def_id).is_some();
-
-            if is_trait_assoc {
-                segments.pop().unwrap();
-            }
-
             name = vec![(&*util::method_name(tcx, def_id)).into()];
         }
         (a, b) => unreachable!("{:?} {:?} {:?}", a, b, segments),

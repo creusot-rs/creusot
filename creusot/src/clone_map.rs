@@ -184,10 +184,27 @@ impl<'tcx> CloneMap<'tcx> {
 
     pub fn insert(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
-            if let ty::TraitContainer(_) = it.container {
-                def_id = it.container.id()
-            }
+            def_id = match it.container {
+                ty::TraitContainer(id) => id,
+                ty::ImplContainer(id) => {
+                    if self.tcx.trait_id_of_impl(id).is_some() {
+                        id
+                    } else {
+                        def_id
+                    }
+                }
+            };
         };
+
+        self.insert_raw(def_id, subst)
+    }
+
+    // Bad.
+    pub(crate) fn insert_raw(
+        &mut self,
+        def_id: DefId,
+        subst: SubstsRef<'tcx>,
+    ) -> &mut CloneInfo<'tcx> {
         let subst = self.tcx.erase_regions(subst);
 
         self.names.entry((def_id, subst)).or_insert_with(|| {
@@ -206,11 +223,24 @@ impl<'tcx> CloneMap<'tcx> {
         })
     }
 
-    pub fn clone_self(&mut self, self_id: DefId) {
+    pub fn clone_self(&mut self, mut self_id: DefId) {
         let subst = InternalSubsts::identity_for_item(self.tcx, self_id);
         let subst = self.tcx.erase_regions(subst);
 
         debug!("cloning self: {:?}", (self_id, subst));
+
+        if let Some(it) = self.tcx.opt_associated_item(self_id) {
+            self_id = match it.container {
+                ty::TraitContainer(id) => id,
+                ty::ImplContainer(id) => {
+                    if self.tcx.trait_id_of_impl(id).is_some() {
+                        id
+                    } else {
+                        self_id
+                    }
+                }
+            };
+        };
         self.names.insert((self_id, subst), CloneInfo::hidden());
     }
 
@@ -254,6 +284,7 @@ impl<'tcx> CloneMap<'tcx> {
         while i < self.names.len() {
             let (&key, clone_info) = self.names.get_index(i).unwrap();
             i += 1;
+            trace!("{:?} is public={:?}", key, clone_info.public);
 
             if clone_info.kind == Kind::Hidden {
                 continue;
@@ -276,6 +307,11 @@ impl<'tcx> CloneMap<'tcx> {
                     t.visit_with(&mut visitor);
                 }
             }
+            debug!(
+                "{:?} has {:?} dependencies",
+                key,
+                ctx.dependencies(key.0).map(|d| d.len()).unwrap_or(5)
+            );
             for (dep, info) in ctx.dependencies(key.0).unwrap_or(&empty) {
                 if !self.use_full_clones && !info.public {
                     continue;
@@ -291,7 +327,10 @@ impl<'tcx> CloneMap<'tcx> {
                     None => (dep),
                 };
 
-                self.insert(dep.0, dep.1);
+                // Inherit the visibility of the parent, becoming public if at least one
+                // dependency is public.
+                let dep_info = self.insert(dep.0, dep.1);
+                dep_info.public |= info.public;
 
                 // Skip reflexive edges
                 if dep == key {

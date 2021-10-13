@@ -1,0 +1,169 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type alloc_alloc_global  = 
+    | Alloc_Alloc_Global
+    
+  type core_marker_phantomdata 't = 
+    | Core_Marker_PhantomData
+    
+  type core_ptr_unique_unique 't = 
+    | Core_Ptr_Unique_Unique opaque_ptr (core_marker_phantomdata 't)
+    
+  type alloc_rawvec_rawvec 't 'a = 
+    | Alloc_RawVec_RawVec (core_ptr_unique_unique 't) usize 'a
+    
+  type alloc_vec_vec 't 'a = 
+    | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) usize
+    
+  type c16implcloning_vec 't = 
+    | C16ImplCloning_Vec (alloc_vec_vec 't (alloc_alloc_global))
+    
+end
+module CreusotContracts_Builtins_Model_Model
+  type self   
+  type modelty   
+  function model (self : self) : modelty
+end
+module C16ImplCloning_Impl0_Model_Interface
+  type t   
+  use Type
+  use seq.Seq
+  function model (self : Type.c16implcloning_vec t) : Seq.seq t
+end
+module C16ImplCloning_Impl0_Model
+  type t   
+  use Type
+  use seq.Seq
+  function model (self : Type.c16implcloning_vec t) : Seq.seq t
+end
+module C16ImplCloning_Impl0_Interface
+  type t   
+  use Type
+  use seq.Seq
+  clone export C16ImplCloning_Impl0_Model_Interface with type t = t
+  type modelty  = 
+    Seq.seq t
+  clone export CreusotContracts_Builtins_Model_Model with type self = Type.c16implcloning_vec t, type modelty = modelty,
+  function model = model
+end
+module C16ImplCloning_Impl0
+  type t   
+  use Type
+  use seq.Seq
+  clone export C16ImplCloning_Impl0_Model with type t = t
+  type modelty  = 
+    Seq.seq t
+  clone export CreusotContracts_Builtins_Model_Model with type self = Type.c16implcloning_vec t, type modelty = modelty,
+  function model = model
+end
+module CreusotContracts_Builtins_Model_Impl1_Model_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  function model (self : borrowed t) : Model0.modelty
+end
+module CreusotContracts_Builtins_Model_Impl1_Model
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  function model (self : borrowed t) : Model0.modelty = 
+    Model0.model ( * self)
+end
+module CreusotContracts_Builtins_Model_Impl1_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  clone export CreusotContracts_Builtins_Model_Impl1_Model_Interface with type t = t,
+  type Model0.modelty = Model0.modelty, function Model0.model = Model0.model
+  type modelty  = 
+    Model0.modelty
+  clone export CreusotContracts_Builtins_Model_Model with type self = borrowed t, type modelty = modelty,
+  function model = model
+end
+module CreusotContracts_Builtins_Model_Impl1
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  clone export CreusotContracts_Builtins_Model_Impl1_Model with type t = t, type Model0.modelty = Model0.modelty,
+  function Model0.model = Model0.model
+  type modelty  = 
+    Model0.modelty
+  clone export CreusotContracts_Builtins_Model_Model with type self = borrowed t, type modelty = modelty,
+  function model = model
+end
+module Core_Marker_Sized
+  type self   
+end
+module CreusotContracts_Builtins_Resolve_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Builtins_Resolve_Impl1_Resolve_Interface
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Builtins_Resolve_Impl1_Resolve
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t) = 
+     ^ self =  * self
+end
+module CreusotContracts_Builtins_Resolve_Impl1_Interface
+  type t   
+  use prelude.Prelude
+  clone export CreusotContracts_Builtins_Resolve_Impl1_Resolve_Interface with type t = t
+  clone export CreusotContracts_Builtins_Resolve_Resolve with type self = borrowed t, predicate resolve = resolve
+end
+module CreusotContracts_Builtins_Resolve_Impl1
+  type t   
+  use prelude.Prelude
+  clone export CreusotContracts_Builtins_Resolve_Impl1_Resolve with type t = t
+  clone export CreusotContracts_Builtins_Resolve_Resolve with type self = borrowed t, predicate resolve = resolve
+end
+module C16ImplCloning_Test_Interface
+  type t   
+  use prelude.Prelude
+  use Type
+  clone C16ImplCloning_Impl0_Interface as Model1 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl1_Interface as Model0 with type t = Type.c16implcloning_vec t,
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
+  val test (x : borrowed (Type.c16implcloning_vec t)) : ()
+    ensures { Model0.model x = Model1.model ( * x) }
+    
+end
+module C16ImplCloning_Test
+  type t   
+  use prelude.Prelude
+  use Type
+  clone C16ImplCloning_Impl0 as Model1 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl1 as Model0 with type t = Type.c16implcloning_vec t,
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
+  clone Core_Marker_Sized as Sized0 with type self = t
+  clone CreusotContracts_Builtins_Resolve_Impl1 as Resolve0 with type t = Type.c16implcloning_vec t
+  let rec cfg test (x : borrowed (Type.c16implcloning_vec t)) : ()
+    ensures { Model0.model x = Model1.model ( * x) }
+    
+   = 
+  var _0 : ();
+  var x_1 : borrowed (Type.c16implcloning_vec t);
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    assume { Resolve0.resolve x_1 };
+    return _0
+  }
+  
+end
