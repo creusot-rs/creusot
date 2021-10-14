@@ -8,9 +8,17 @@ fn main() {
     let why3_path = std::env::var("WHY3_PATH").unwrap_or_else(|_| "why3".into());
     let mut out = StandardStream::stdout(ColorChoice::Always);
 
+    let filter = std::env::args().nth(1);
+
     let mut success = true;
     for file in glob::glob("../creusot/tests/should_succeed/**/*.rs").unwrap() {
         let mut file = file.unwrap();
+
+        if let Some(ref filter) = filter {
+            if !file.to_str().map(|file| file.contains(filter)).unwrap_or(false) {
+                continue;
+            }
+        }
 
         let header_line =
             BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
@@ -31,10 +39,19 @@ fn main() {
         command.args(&["-L", "../prelude"]);
         command.arg(file);
 
+        let do_proof = header_line.contains("WHY3PROVE");
+        if do_proof {
+            command.args(&["-Pz3", "-a", "split_vc"]);
+        }
+
         let output = command.ok();
         if output.is_ok() {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
-            writeln!(&mut out, "ok").unwrap();
+            if do_proof {
+                writeln!(&mut out, "proved").unwrap();
+            } else {
+                writeln!(&mut out, "ok").unwrap();
+            }
         } else {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
             writeln!(&mut out, "failure").unwrap();

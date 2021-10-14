@@ -1,3 +1,4 @@
+// WHY3PROVE
 #![feature(register_tool, rustc_attrs)]
 #![register_tool(creusot)]
 #![feature(proc_macro_hygiene, stmt_expr_attributes)]
