@@ -20,16 +20,16 @@ use crate::translation::interface::interface_for;
 use crate::util::item_type;
 use crate::{options::Options, util};
 
-enum TranslatedItem<'tcx> {
+pub enum TranslatedItem<'tcx> {
     Hybrid { interface: Module, modl: Module, proof_modl: Module, dependencies: CloneSummary<'tcx> },
     Logic { interface: Module, modl: Module, dependencies: CloneSummary<'tcx> },
     Program { interface: Module, modl: Module, dependencies: CloneSummary<'tcx> },
-    Trait { modl: Module, dependencies: CloneSummary<'tcx> },
+    Trait { modl: Module, dependencies: CloneSummary<'tcx>, has_axioms: bool },
     Impl { interface: Module, modl: Module, dependencies: CloneSummary<'tcx> },
     Extern { interface: Module, body: DefaultOrExtern<'tcx> },
 }
 
-enum DefaultOrExtern<'tcx> {
+pub enum DefaultOrExtern<'tcx> {
     // dependencies is always empty.
     Default { modl: Module, dependencies: CloneSummary<'tcx> },
     Extern(DefId),
@@ -48,6 +48,14 @@ impl TranslatedItem<'tcx> {
                 DefaultOrExtern::Default { dependencies, .. } => dependencies,
                 DefaultOrExtern::Extern(def_id) => metadata.dependencies(*def_id).unwrap(),
             },
+        }
+    }
+
+    pub fn has_axioms(&self) -> bool {
+        match self {
+            TranslatedItem::Trait { has_axioms, .. } => *has_axioms,
+            TranslatedItem::Hybrid { .. } => true,
+            _ => false,
         }
     }
 
@@ -194,12 +202,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         } else if util::is_pure(self.tcx, def_id) {
             debug!("translating {:?} as pure", def_id);
             let (modl, proof_modl, deps) = crate::translation::translate_pure(self, def_id, span);
-            TranslatedItem::Hybrid {
-                interface,
-                modl: modl,
-                proof_modl: proof_modl,
-                dependencies: deps.summary(),
-            }
+            TranslatedItem::Hybrid { interface, modl, proof_modl, dependencies: deps.summary() }
         } else {
             let kind = self.tcx.def_kind(def_id);
             if kind == DefKind::Fn || kind == DefKind::Closure || kind == DefKind::AssocFn {
@@ -245,10 +248,14 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.types.insert(pos, decl);
     }
 
-    pub fn add_trait(&mut self, def_id: DefId, trait_decl: Module) {
+    pub fn add_trait(&mut self, def_id: DefId, trait_decl: Module, has_axioms: bool) {
         self.functions.insert(
             def_id,
-            TranslatedItem::Trait { modl: trait_decl, dependencies: CloneSummary::new() },
+            TranslatedItem::Trait {
+                modl: trait_decl,
+                dependencies: CloneSummary::new(),
+                has_axioms,
+            },
         );
     }
 
@@ -264,7 +271,11 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
-        self.functions.get(&def_id).map(|f| f.dependencies(&self.externs))
+        self.item(def_id).map(|f| f.dependencies(&self.externs))
+    }
+
+    pub fn item(&self, def_id: DefId) -> Option<&TranslatedItem<'tcx>> {
+        self.functions.get(&def_id)
     }
 
     pub fn should_export(&self) -> bool {

@@ -12,6 +12,7 @@ use why3::{
     QName,
 };
 
+use crate::translation::pure;
 use crate::{ctx, rustc_extensions};
 
 use crate::ctx::*;
@@ -38,14 +39,11 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         let mut decls: Vec<_> = Vec::new();
         decls.extend(own_generic_decls_for(self.tcx, def_id));
         decls.extend(names.to_clones(self));
+        let mut has_axioms = false;
 
-        for item in self.tcx.associated_items(def_id).in_definition_order() {
+        for item in associated_items(self.tcx, def_id) {
             match item.kind {
                 AssocKind::Fn => {
-                    if is_contract(self.tcx, item.def_id) {
-                        continue;
-                    }
-
                     if item.defaultness.has_value() {
                         let subst = InternalSubsts::identity_for_item(self.tcx, item.def_id);
                         names.insert_raw(item.def_id, subst).mk_export();
@@ -54,7 +52,6 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                     }
 
                     let mut sig = crate::util::signature_of(self, &mut names, item.def_id);
-
                     decls.extend(crate::translation::function::own_generic_decls_for(
                         self.tcx,
                         item.def_id,
@@ -69,6 +66,10 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                         }
                         ItemType::Program => {
                             decls.push(Decl::ValDecl(Val { sig }));
+                        }
+                        ItemType::Pure => {
+                            has_axioms = true;
+                            decls.extend(pure::declaration(sig));
                         }
                         _ => unreachable!(),
                     }
@@ -88,7 +89,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         let trait_name = translate_trait_name(self.tcx, def_id);
 
-        self.add_trait(def_id, Module { name: trait_name.name(), decls });
+        self.add_trait(def_id, Module { name: trait_name.name(), decls }, has_axioms);
     }
 
     pub fn translate_impl(&mut self, impl_id: DefId) {
@@ -169,6 +170,12 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         decls
     }
+}
+
+pub fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &AssocItem> {
+    tcx.associated_items(def_id)
+        .in_definition_order()
+        .filter(move |item| !is_contract(tcx, item.def_id))
 }
 
 pub fn translate_predicates(
