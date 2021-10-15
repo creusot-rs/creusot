@@ -33,4 +33,15 @@ impl<T> Seq<T> {
     pub fn push(self, _: T) -> Self {
         std::process::abort()
     }
+    #[predicate]
+    pub fn permutation_of(self, o: Self) -> bool {
+        self.permut(o, 0, self.len())
+    }
+
+    #[trusted]
+    #[predicate]
+    #[creusot::builtins = "seq.Permut.permut"]
+    pub fn permut(self, _: Self, _: Int, _: Int) -> bool {
+        std::process::abort()
+    }
 }

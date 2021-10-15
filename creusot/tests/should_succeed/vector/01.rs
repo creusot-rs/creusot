@@ -8,13 +8,13 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-struct MyVec<T>(Vec<T>);
+struct Vec<T>(std::vec::Vec<T>);
 
-pub struct GhostRecord<T>
+pub struct Ghost<T>
 where
     T: ?Sized;
 
-impl<T> Model for GhostRecord<T> {
+impl<T> Model for Ghost<T> {
     type ModelTy = T;
     #[logic]
     #[trusted]
@@ -23,15 +23,15 @@ impl<T> Model for GhostRecord<T> {
     }
 }
 
-impl<T> GhostRecord<T> {
+impl<T> Ghost<T> {
     #[trusted]
     #[ensures(@result === *a)]
-    fn record(a: &T) -> GhostRecord<T> {
-        GhostRecord::<T>
+    fn record(a: &T) -> Ghost<T> {
+        Ghost::<T>
     }
 }
 
-impl<T: ?Sized> Model for MyVec<T> {
+impl<T: ?Sized> Model for Vec<T> {
     type ModelTy = Seq<T>;
     #[logic]
     #[trusted]
@@ -40,7 +40,7 @@ impl<T: ?Sized> Model for MyVec<T> {
     }
 }
 
-impl<T> MyVec<T> {
+impl<T> Vec<T> {
     #[trusted]
     #[ensures(result.into() === (@self).len())]
     fn len(&self) -> usize {
@@ -86,9 +86,9 @@ impl<T> MyVec<T> {
 
 #[ensures(forall<i : Int> 0 <= i && i < (@^v).len() ==> (@^v).index(i) === 0u32)]
 #[ensures((@*v).len() === (@^v).len())]
-fn all_zero(v: &mut MyVec<u32>) {
+fn all_zero(v: &mut Vec<u32>) {
     let mut i = 0;
-    let old_v: GhostRecord<&mut MyVec<u32>> = GhostRecord::record(&v);
+    let old_v = Ghost::record(&v);
     // This invariant is because why3 can't determine that the prophecy isn't modified by the loop
     // Either Why3 or Creusot should be improved to do this automaticallly (probably why3)
     #[invariant(proph_const, ^v === ^@old_v)]
