@@ -209,9 +209,9 @@ fn print_diff<'a, W: WriteColor>(mut buf: W, diff: TextDiff<'a, 'a, 'a, str>) {
                 };
 
                 if change.tag() != ChangeTag::Equal {
-                    if multiple_diffs {
-                        write!(&mut buf, "...").unwrap();
-                    }
+                    // if multiple_diffs {
+                    //     write!(&mut buf, "...").unwrap();
+                    // }
                     let color = chunk_color(change.tag());
                     buf.set_color(&color).unwrap();
                     let index = change.old_index().or(change.new_index()).unwrap();
