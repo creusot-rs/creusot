@@ -23,13 +23,15 @@ trait Ord: MyEq {
     #[logic]
     fn cmp_log(self, _ : Self) -> std::cmp::Ordering;
 
+    // #[logic]
+    // fn le_log(self, o: Self) -> bool {
+    //     use std::cmp::Ordering;
+    //     pearlite! {
+    //         self.cmp_log(o) === Ordering::Equal || self.cmp_log(o) === Ordering::Less
+    //     }
+    // }
     #[logic]
-    fn le_log(self, o: Self) -> bool {
-        use std::cmp::Ordering;
-        pearlite! {
-            self.cmp_log(o) === Ordering::Equal || self.cmp_log(o) === Ordering::Less
-        }
-    }
+    fn le_log(self, o: Self) -> bool;
 
     fn le(&self, _: &Self) -> bool;
     fn lt(&self, _: &Self) -> bool;
@@ -97,6 +99,7 @@ fn binary_search<T: Ord>(arr: &Vec<T>, elem: &T) -> Result<usize, usize> {
     let mut base = 0;
 
     #[invariant(size_valid, @size + @base <= (@arr).len())]
+    #[invariant(in_interval, (@arr).index(@base).le_log(*elem) && elem.le_log((@arr).index(@base + @size)))]
     // #[invariant(in_interval, arr.get_default(@base, 0u32) <= elem &&
     //     elem <= arr.get_default(@base + @size, 0u32))]
     #[invariant(size_pos, size > 0usize)]

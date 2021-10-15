@@ -13,16 +13,16 @@ module Type
     | Core_Result_Result_Ok 't
     | Core_Result_Result_Err 'e
     
+  type core_cmp_ordering  = 
+    | Core_Cmp_Ordering_Less
+    | Core_Cmp_Ordering_Equal
+    | Core_Cmp_Ordering_Greater
+    
   type alloc_alloc_global  = 
     | Alloc_Alloc_Global
     
   type core_marker_phantomdata 't = 
     | Core_Marker_PhantomData
-    
-  type core_cmp_ordering  = 
-    | Core_Cmp_Ordering_Less
-    | Core_Cmp_Ordering_Equal
-    | Core_Cmp_Ordering_Greater
     
   type core_ptr_unique_unique 't = 
     | Core_Ptr_Unique_Unique opaque_ptr (core_marker_phantomdata 't)
@@ -51,33 +51,6 @@ module BinarySearch_Main
     return _0
   }
   
-end
-module BinarySearch_MyEq
-  type self   
-  use prelude.Prelude
-  val eq (self : self) (_2 : self) : bool
-end
-module BinarySearch_Ord
-  type self   
-  clone BinarySearch_MyEq as MyEq0 with type self = self
-  use Type
-  function cmp_log (self : self) (_2 : self) : Type.core_cmp_ordering
-  function le_log (self : self) (o : self) : bool
-  use prelude.Prelude
-  val le (self : self) (_2 : self) : bool
-  val lt (self : self) (_2 : self) : bool
-  val gt (self : self) (_2 : self) : bool
-end
-module BinarySearch_Ord_LeLog_Interface
-  type self   
-  function le_log (self : self) (o : self) : bool
-end
-module BinarySearch_Ord_LeLog
-  type self   
-  use Type
-  clone BinarySearch_Ord as Ord0 with type self = self
-  function le_log (self : self) (o : self) : bool = 
-    Ord0.cmp_log self o = Type.Core_Cmp_Ordering_Equal || Ord0.cmp_log self o = Type.Core_Cmp_Ordering_Less
 end
 module CreusotContracts_Builtins_Model_Model
   type self   
@@ -166,6 +139,29 @@ module BinarySearch_Impl1_Index
     ensures { result = Seq.get (Model0.model self) ix }
     
 end
+module BinarySearch_MyEq
+  type self   
+  use prelude.Prelude
+  val eq (self : self) (_2 : self) : bool
+end
+module BinarySearch_Ord
+  type self   
+  clone BinarySearch_MyEq as MyEq0 with type self = self
+  use Type
+  function cmp_log (self : self) (_2 : self) : Type.core_cmp_ordering
+  function le_log (self : self) (o : self) : bool
+  use prelude.Prelude
+  val le (self : self) (_2 : self) : bool
+  val lt (self : self) (_2 : self) : bool
+  val gt (self : self) (_2 : self) : bool
+  function le_cmp_coh (a : self) (b : self) : ()
+  val le_cmp_coh (a : self) (b : self) : ()
+    ensures { le_log a b -> cmp_log a b = Type.Core_Cmp_Ordering_Equal || cmp_log a b = Type.Core_Cmp_Ordering_Less }
+    ensures { cmp_log a b = Type.Core_Cmp_Ordering_Equal || cmp_log a b = Type.Core_Cmp_Ordering_Less -> le_log a b }
+    ensures { result = le_cmp_coh a b }
+    
+  axiom le_cmp_coh_spec : forall a : self, b : self . (cmp_log a b = Type.Core_Cmp_Ordering_Equal || cmp_log a b = Type.Core_Cmp_Ordering_Less -> le_log a b) && (le_log a b -> cmp_log a b = Type.Core_Cmp_Ordering_Equal || cmp_log a b = Type.Core_Cmp_Ordering_Less)
+end
 module BinarySearch_SortedRange_Interface
   type t   
   use seq.Seq
@@ -176,7 +172,7 @@ module BinarySearch_SortedRange
   type t   
   use seq.Seq
   use mach.int.Int
-  clone BinarySearch_Ord as Ord0 with type self = t
+  clone BinarySearch_Ord as Ord0 with type self = t, axiom .
   predicate sorted_range (s : Seq.seq t) (l : int) (u : int) = 
     forall j : (int) . forall i : (int) . l <= i && i < j && j < u -> Ord0.le_log (Seq.get s i) (Seq.get s j)
 end
@@ -242,10 +238,12 @@ module BinarySearch_BinarySearch_Interface
   use prelude.Prelude
   use Type
   use mach.int.UInt64
+  clone BinarySearch_Sorted_Interface as Sorted0 with type t = t
   clone BinarySearch_Impl0_Interface as Model1 with type t = t
   clone CreusotContracts_Builtins_Model_Impl0_Interface as Model0 with type t = Type.binarysearch_vec t,
   type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
   val binary_search (arr : Type.binarysearch_vec t) (elem : t) : Type.core_result_result usize usize
+    requires {Sorted0.sorted (Model0.model arr)}
     requires {Seq.length (Model0.model arr) <= 1000000}
     
 end
@@ -257,8 +255,12 @@ module BinarySearch_BinarySearch
   use mach.int.UInt64
   use mach.int.Int32
   use Type
-  clone BinarySearch_Ord as Ord0 with type self = t
   clone Core_Marker_Sized as Sized0 with type self = t
+  clone BinarySearch_Ord as Ord0 with type self = t, axiom .
+  clone BinarySearch_SortedRange as SortedRange0 with type t = t, function Ord0.cmp_log = Ord0.cmp_log,
+  function Ord0.le_log = Ord0.le_log, val Ord0.le = Ord0.le, val Ord0.lt = Ord0.lt, val Ord0.gt = Ord0.gt,
+  function Ord0.le_cmp_coh = Ord0.le_cmp_coh, val Ord0.le_cmp_coh = Ord0.le_cmp_coh
+  clone BinarySearch_Sorted as Sorted0 with type t = t, predicate SortedRange0.sorted_range = SortedRange0.sorted_range
   clone BinarySearch_Impl0 as Model1 with type t = t
   clone CreusotContracts_Builtins_Model_Impl0 as Model0 with type t = Type.binarysearch_vec t,
   type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
@@ -271,6 +273,7 @@ module BinarySearch_BinarySearch
   clone BinarySearch_Impl1_Index_Interface as Index0 with type t = t, function Model0.model = Model1.model
   clone BinarySearch_Impl1_Len_Interface as Len0 with type t = t, function Model0.model = Model1.model
   let rec cfg binary_search (arr : Type.binarysearch_vec t) (elem : t) : Type.core_result_result usize usize
+    requires {Sorted0.sorted (Model0.model arr)}
     requires {Seq.length (Model0.model arr) <= 1000000}
     
    = 
@@ -286,39 +289,39 @@ module BinarySearch_BinarySearch
   var _9 : Type.binarysearch_vec t;
   var base_10 : usize;
   var _11 : ();
-  var _14 : ();
-  var _15 : bool;
-  var _16 : usize;
-  var half_17 : usize;
-  var _18 : usize;
-  var _19 : bool;
-  var mid_20 : usize;
-  var _21 : usize;
+  var _15 : ();
+  var _16 : bool;
+  var _17 : usize;
+  var half_18 : usize;
+  var _19 : usize;
+  var _20 : bool;
+  var mid_21 : usize;
   var _22 : usize;
   var _23 : usize;
-  var _24 : bool;
-  var _25 : t;
+  var _24 : usize;
+  var _25 : bool;
   var _26 : t;
-  var _27 : Type.binarysearch_vec t;
-  var _28 : usize;
-  var _29 : t;
-  var _30 : usize;
-  var _31 : ();
+  var _27 : t;
+  var _28 : Type.binarysearch_vec t;
+  var _29 : usize;
+  var _30 : t;
+  var _31 : usize;
   var _32 : ();
   var _33 : ();
-  var cmp_34 : t;
-  var _35 : Type.binarysearch_vec t;
-  var _36 : usize;
-  var _37 : bool;
-  var _38 : t;
+  var _34 : ();
+  var cmp_35 : t;
+  var _36 : Type.binarysearch_vec t;
+  var _37 : usize;
+  var _38 : bool;
   var _39 : t;
-  var _40 : usize;
-  var _41 : bool;
-  var _42 : t;
+  var _40 : t;
+  var _41 : usize;
+  var _42 : bool;
   var _43 : t;
-  var _44 : usize;
+  var _44 : t;
   var _45 : usize;
   var _46 : usize;
+  var _47 : usize;
   {
     arr_1 <- arr;
     elem_2 <- elem;
@@ -358,103 +361,104 @@ module BinarySearch_BinarySearch
   }
   BB5 {
     invariant size_valid { size_8 + base_10 <= Seq.length (Model0.model arr_1) };
+    invariant in_interval { Ord0.le_log (Seq.get (Model0.model arr_1) base_10) elem_2 && Ord0.le_log elem_2 (Seq.get (Model0.model arr_1) (base_10 + size_8)) };
     invariant size_pos { size_8 > (0 : usize) };
     goto BB6
   }
   BB6 {
-    assume { Resolve4.resolve _16 };
-    _16 <- size_8;
-    _15 <- _16 > (1 : usize);
-    switch (_15)
+    assume { Resolve4.resolve _17 };
+    _17 <- size_8;
+    _16 <- _17 > (1 : usize);
+    switch (_16)
       | False -> goto BB14
       | True -> goto BB7
       | _ -> goto BB7
       end
   }
   BB7 {
-    assume { Resolve2.resolve _15 };
-    assume { Resolve4.resolve _18 };
-    _18 <- size_8;
-    _19 <- (2 : usize) = (0 : usize);
-    assert { not _19 };
+    assume { Resolve2.resolve _16 };
+    assume { Resolve4.resolve _19 };
+    _19 <- size_8;
+    _20 <- (2 : usize) = (0 : usize);
+    assert { not _20 };
     goto BB8
   }
   BB8 {
-    assume { Resolve2.resolve _19 };
-    half_17 <- _18 / (2 : usize);
-    assume { Resolve4.resolve _21 };
-    _21 <- base_10;
+    assume { Resolve2.resolve _20 };
+    half_18 <- _19 / (2 : usize);
     assume { Resolve4.resolve _22 };
-    _22 <- half_17;
-    mid_20 <- _21 + _22;
-    _27 <- arr_1;
-    assume { Resolve4.resolve _28 };
-    _28 <- mid_20;
-    _26 <- Index0.index _27 _28;
+    _22 <- base_10;
+    assume { Resolve4.resolve _23 };
+    _23 <- half_18;
+    mid_21 <- _22 + _23;
+    _28 <- arr_1;
+    assume { Resolve4.resolve _29 };
+    _29 <- mid_21;
+    _27 <- Index0.index _28 _29;
     goto BB9
   }
   BB9 {
-    _25 <- _26;
-    assume { Resolve1.resolve _26 };
-    _29 <- elem_2;
-    _24 <- Ord0.gt _25 _29;
+    _26 <- _27;
+    assume { Resolve1.resolve _27 };
+    _30 <- elem_2;
+    _25 <- Ord0.gt _26 _30;
     goto BB10
   }
   BB10 {
-    switch (_24)
+    switch (_25)
       | False -> goto BB12
       | True -> goto BB11
       | _ -> goto BB11
       end
   }
   BB11 {
-    assume { Resolve4.resolve mid_20 };
-    assume { Resolve2.resolve _24 };
-    assume { Resolve4.resolve _23 };
-    _23 <- base_10;
+    assume { Resolve4.resolve mid_21 };
+    assume { Resolve2.resolve _25 };
+    assume { Resolve4.resolve _24 };
+    _24 <- base_10;
     assume { Resolve4.resolve base_10 };
     goto BB13
   }
   BB12 {
     assume { Resolve4.resolve base_10 };
-    assume { Resolve2.resolve _24 };
-    assume { Resolve4.resolve _23 };
-    _23 <- mid_20;
-    assume { Resolve4.resolve mid_20 };
+    assume { Resolve2.resolve _25 };
+    assume { Resolve4.resolve _24 };
+    _24 <- mid_21;
+    assume { Resolve4.resolve mid_21 };
     goto BB13
   }
   BB13 {
     assume { Resolve4.resolve base_10 };
-    base_10 <- _23;
-    assume { Resolve4.resolve _30 };
-    _30 <- half_17;
-    assume { Resolve4.resolve half_17 };
-    size_8 <- size_8 - _30;
-    assume { Resolve4.resolve _30 };
-    _14 <- ();
-    assume { Resolve3.resolve _14 };
+    base_10 <- _24;
+    assume { Resolve4.resolve _31 };
+    _31 <- half_18;
+    assume { Resolve4.resolve half_18 };
+    size_8 <- size_8 - _31;
+    assume { Resolve4.resolve _31 };
+    _15 <- ();
+    assume { Resolve3.resolve _15 };
     goto BB5
   }
   BB14 {
     assume { Resolve4.resolve size_8 };
-    assume { Resolve2.resolve _15 };
+    assume { Resolve2.resolve _16 };
     _11 <- ();
     assume { Resolve3.resolve _11 };
-    _35 <- arr_1;
+    _36 <- arr_1;
     assume { Resolve0.resolve arr_1 };
-    assume { Resolve4.resolve _36 };
-    _36 <- base_10;
-    cmp_34 <- Index0.index _35 _36;
+    assume { Resolve4.resolve _37 };
+    _37 <- base_10;
+    cmp_35 <- Index0.index _36 _37;
     goto BB15
   }
   BB15 {
-    _38 <- cmp_34;
-    _39 <- elem_2;
-    _37 <- MyEq0.eq _38 _39;
+    _39 <- cmp_35;
+    _40 <- elem_2;
+    _38 <- MyEq0.eq _39 _40;
     goto BB16
   }
   BB16 {
-    switch (_37)
+    switch (_38)
       | False -> goto BB18
       | True -> goto BB17
       | _ -> goto BB17
@@ -462,45 +466,45 @@ module BinarySearch_BinarySearch
   }
   BB17 {
     assume { Resolve1.resolve elem_2 };
-    assume { Resolve1.resolve cmp_34 };
-    assume { Resolve2.resolve _37 };
-    assume { Resolve4.resolve _40 };
-    _40 <- base_10;
+    assume { Resolve1.resolve cmp_35 };
+    assume { Resolve2.resolve _38 };
+    assume { Resolve4.resolve _41 };
+    _41 <- base_10;
     assume { Resolve4.resolve base_10 };
-    _0 <- Type.Core_Result_Result_Ok _40;
+    _0 <- Type.Core_Result_Result_Ok _41;
     goto BB23
   }
   BB18 {
-    assume { Resolve2.resolve _37 };
-    _42 <- cmp_34;
-    assume { Resolve1.resolve cmp_34 };
-    _43 <- elem_2;
+    assume { Resolve2.resolve _38 };
+    _43 <- cmp_35;
+    assume { Resolve1.resolve cmp_35 };
+    _44 <- elem_2;
     assume { Resolve1.resolve elem_2 };
-    _41 <- Ord0.lt _42 _43;
+    _42 <- Ord0.lt _43 _44;
     goto BB19
   }
   BB19 {
-    switch (_41)
+    switch (_42)
       | False -> goto BB21
       | True -> goto BB20
       | _ -> goto BB20
       end
   }
   BB20 {
-    assume { Resolve2.resolve _41 };
-    assume { Resolve4.resolve _45 };
-    _45 <- base_10;
-    assume { Resolve4.resolve base_10 };
-    _44 <- _45 + (1 : usize);
-    _0 <- Type.Core_Result_Result_Err _44;
-    goto BB22
-  }
-  BB21 {
-    assume { Resolve2.resolve _41 };
+    assume { Resolve2.resolve _42 };
     assume { Resolve4.resolve _46 };
     _46 <- base_10;
     assume { Resolve4.resolve base_10 };
-    _0 <- Type.Core_Result_Result_Err _46;
+    _45 <- _46 + (1 : usize);
+    _0 <- Type.Core_Result_Result_Err _45;
+    goto BB22
+  }
+  BB21 {
+    assume { Resolve2.resolve _42 };
+    assume { Resolve4.resolve _47 };
+    _47 <- base_10;
+    assume { Resolve4.resolve base_10 };
+    _0 <- Type.Core_Result_Result_Err _47;
     goto BB22
   }
   BB22 {
