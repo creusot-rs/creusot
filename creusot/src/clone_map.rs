@@ -368,6 +368,8 @@ impl<'tcx> CloneMap<'tcx> {
         let mut topo = Topo::new(&self.clone_graph);
         while let Some(node @ (def_id, subst)) = topo.walk_next(&self.clone_graph) {
             debug!("processing node={:?}", node);
+            ctx.translate(def_id);
+
             // Though we pass in a &mut ref, it shouldn't actually be possible to add any new entries..
             let mut clone_subst = base_subst(ctx, self, def_id, subst);
 
@@ -393,6 +395,7 @@ impl<'tcx> CloneMap<'tcx> {
             let node_clones = ctx.dependencies(def_id).unwrap_or(&empty);
             for (dep, t, &orig_subst) in self.clone_graph.edges_directed(node, Incoming) {
                 trace!("s={:?} t={:?} e={:?}", dep, t, orig_subst);
+
                 let recv_info = match orig_subst {
                     Some(recv_id) => &node_clones[&recv_id],
                     None => continue,
@@ -425,13 +428,9 @@ impl<'tcx> CloneMap<'tcx> {
                 }
             }
 
-            if self.use_full_clones {
-                if let ItemType::Pure = util::item_type(ctx.tcx, def_id) {
-                    clone_subst.push(CloneSubst::Axiom(None));
-                }
+            if ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false) {
+                clone_subst.push(CloneSubst::Axiom(None))
             }
-
-            ctx.translate(def_id);
 
             decls.push(Decl::Clone(DeclClone {
                 name: cloneable_name(ctx.tcx, def_id, !self.use_full_clones),
@@ -519,7 +518,7 @@ fn refinable_symbols(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
 ) -> Box<dyn Iterator<Item = SymbolKind> + 'tcx> {
-    use std::iter;
+    use std::iter::{self, *};
     use util::ItemType::*;
     match util::item_type(tcx, def_id) {
         Logic => Box::new(iter::once(SymbolKind::Function(method_name(tcx, def_id)))),
@@ -529,19 +528,25 @@ fn refinable_symbols(
             iter::once(SymbolKind::Function(method_name(tcx, def_id))), // .chain(iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
         ),
         Trait => {
-            Box::new(tcx.associated_items(def_id).in_definition_order().filter_map(move |a| {
-                match a.kind {
+            Box::new(traits::associated_items(tcx, def_id).flat_map(move |a| {
+                let it: Box<dyn Iterator<Item = _> + 'tcx> = match a.kind {
                     AssocKind::Fn => match util::item_type(tcx, a.def_id) {
-                        Logic => Some(SymbolKind::Function(method_name(tcx, a.def_id))),
-                        Predicate => Some(SymbolKind::Predicate(method_name(tcx, a.def_id))),
-                        Program => Some(SymbolKind::Val(method_name(tcx, a.def_id))),
+                        Logic => box once(SymbolKind::Function(method_name(tcx, a.def_id))),
+                        Predicate => box once(SymbolKind::Predicate(method_name(tcx, a.def_id))),
+                        Program => box once(SymbolKind::Val(method_name(tcx, a.def_id))),
+                        Pure => box [
+                            SymbolKind::Function(method_name(tcx, a.def_id)),
+                            SymbolKind::Val(method_name(tcx, a.def_id)),
+                        ]
+                        .into_iter(), // wrong,
                         _ => unreachable!(),
                     },
-                    AssocKind::Type => Some(SymbolKind::Type(
+                    AssocKind::Type => box once(SymbolKind::Type(
                         crate::translation::ty::ty_name(tcx, a.def_id).into(),
                     )),
-                    AssocKind::Const => None,
-                }
+                    AssocKind::Const => unimplemented!("Tried to clone associated constant"),
+                };
+                it
             }))
         }
         Impl => Box::new(tcx.associated_items(def_id).in_definition_order().filter_map(move |a| {

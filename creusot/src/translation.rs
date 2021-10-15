@@ -4,7 +4,7 @@ pub mod external;
 pub mod function;
 pub mod interface;
 mod logic;
-mod pure;
+pub mod pure;
 pub mod specification;
 pub mod traits;
 pub mod ty;

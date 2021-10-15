@@ -35,17 +35,24 @@ pub fn translate_pure(
 
     decls.extend(names.to_clones(ctx));
 
-    let mut func_sig = sig.clone();
-    func_sig.contract.variant = Vec::new();
+    decls.extend(declaration(sig.clone()));
 
-    decls.push(Decl::ValDecl(function_symbol(func_sig.clone())));
-    decls.push(Decl::ValDecl(program_symbol(func_sig.clone())));
-    decls.push(Decl::Axiom(spec_axiom(&sig)));
     if body.is_pure() {
         decls.push(Decl::Axiom(definition_axiom(&sig, body.clone())));
     }
 
     (Module { name, decls }, implementation_module(ctx, def_id, &names, sig, body), names)
+}
+
+pub(crate) fn declaration(mut sig: Signature) -> impl Iterator<Item = Decl> {
+    sig.contract.variant = Vec::new();
+
+    [
+        Decl::ValDecl(function_symbol(sig.clone())),
+        Decl::ValDecl(program_symbol(sig.clone())),
+        Decl::Axiom(spec_axiom(&sig)),
+    ]
+    .into_iter()
 }
 
 fn function_symbol(mut sig: Signature) -> ValKind {
@@ -81,7 +88,7 @@ fn spec_axiom(sig: &Signature) -> Axiom {
 
     let axiom = if args.is_empty() { condition } else { Exp::Forall(args, box condition) };
 
-    Axiom { name: "spec".into(), axiom }
+    Axiom { name: format!("{}_spec", &*sig.name).into(), axiom }
 }
 
 fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {

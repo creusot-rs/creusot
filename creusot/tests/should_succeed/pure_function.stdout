@@ -30,7 +30,7 @@ module PureFunction_PureDeclaration
     ensures { true }
     ensures { result = pure_declaration x y }
     
-  axiom spec : forall x : int, y : int . false -> false -> false -> true && true && true
+  axiom pure_declaration_spec : forall x : int, y : int . false -> false -> false -> true && true && true
   axiom def : forall x : int, y : int . false -> false -> false -> pure_declaration x y = ()
 end
 module PureFunction_PureDeclaration_Impl
@@ -63,7 +63,7 @@ module PureFunction_Impl1_Len
     ensures { result >= (0 : int) }
     ensures { result = len self }
     
-  axiom spec : forall self : Type.purefunction_list t . len self >= (0 : int)
+  axiom len_spec : forall self : Type.purefunction_list t . len self >= (0 : int)
   axiom def : forall self : Type.purefunction_list t . len self = match (self) with
     | Type.PureFunction_List_Cons _ ls -> (1 : int) + len ls
     | Type.PureFunction_List_Nil -> (0 : int)
@@ -96,7 +96,7 @@ module PureFunction_Test_Interface
   use mach.int.Int
   use prelude.Prelude
   use Type
-  clone PureFunction_Impl1_Len_Interface as Len0 with type t = t
+  clone PureFunction_Impl1_Len_Interface as Len0 with type t = t, axiom .
   val test (l : Type.purefunction_list t) : int
     requires {Len0.len l <= (10 : int)}
     ensures { result <= (10 : int) }
@@ -143,7 +143,7 @@ module PureFunction_UsesLen
   type t   
   use Type
   use mach.int.Int
-  clone PureFunction_Impl1_Len_Interface as Len0 with type t = t
+  clone PureFunction_Impl1_Len_Interface as Len0 with type t = t, axiom .
   function uses_len (l : Type.purefunction_list t) : int = 
     Len0.len l
 end
