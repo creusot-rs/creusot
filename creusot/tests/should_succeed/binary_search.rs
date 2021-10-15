@@ -14,14 +14,6 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-enum List<T> {
-    Cons(T, Box<List<T>>),
-    Nil,
-}
-
-impl<T> WellFounded for List<T> {}
-use List::*;
-
 trait MyEq {
     fn eq(&self, _: &Self) -> bool;
 }
@@ -34,123 +26,50 @@ trait MyOrd: MyEq {
     fn gt(&self, _: &Self) -> bool;
 }
 
-impl<T> List<T> {
-    #[pure]
-    #[ensures(result >= 0)]
-    #[variant(self)]
-    fn len_logic(self) -> Int {
-        match self {
-            Cons(_, ls) => Int::from(1) + ls.len_logic(),
-            Nil => 0.into(),
-        }
-    }
+struct Vec<T>(std::vec::Vec<T>);
 
+impl<T: ?Sized> Model for Vec<T> {
+    type ModelTy = Seq<T>;
     #[logic]
-    fn get(self, ix: Int) -> Option<T> {
-        match self {
-            Cons(t, ls) => {
-                if ix == 0 {
-                    Some(t)
-                } else {
-                    ls.get(ix - 1)
-                }
-            }
-            Nil => None,
-        }
-    }
-
-    #[pure]
-    #[requires(self.len_logic() > ix.into())]
-    #[variant(*self)]
-    fn index_pure(&self, ix: usize) -> &T {
-        match self {
-            Cons(t, ls) => {
-                if ix == 0 {
-                    t
-                } else {
-                    ls.index_pure(ix - 1)
-                }
-            }
-            Nil => unreachable!("OMG"),
-        }
+    #[trusted]
+    fn model(self) -> Self::ModelTy {
+        panic!()
     }
 }
 
-impl<T> List<T> {
-    #[logic]
-    fn get_default(self, ix: Int, def: T) -> T {
-        match self.get(ix) {
-            Some(v) => v,
-            None => def,
-        }
-    }
-
-    #[logic]
-    fn is_sorted(self) -> bool
-    where
-        T: MyOrd,
-    {
-        pearlite! {
-        forall<x1 : Int, x2 : Int> x1 <= x2 ==>
-            match (self.get(x1), self.get(x2)) {
-                // curious: if we put a & next to v2, parsing breaks?!
-                (Some(v1), Some(v2)) => v1.le_logic(v2),
-                (None, None) => true,
-                _ => false
-            }
-        }
-    }
-
-    #[requires(@ix < self.len_logic())]
-    #[ensures(Some(*result) === self.get(@ix))]
-    fn index(&self, mut ix: usize) -> &T {
-        let orig_ix = ix;
-        let mut l = self;
-
-        #[invariant(ix_valid, @ix < l.len_logic())]
-        #[invariant(res_get, self.get(@orig_ix) === l.get(@ix))]
-        while let Cons(t, ls) = l {
-            if ix > 0 {
-                l = &*ls;
-                ix -= 1;
-            } else {
-                return t;
-            }
-        }
-        std::process::abort()
-    }
-
-    // Temporary until support for usize::MAX is added
-    #[requires(self.len_logic() <= 1_000_000)]
-    #[ensures(result >= 0usize)]
-    #[ensures(@result == self.len_logic())]
+impl<T> Vec<T> {
+    #[trusted]
+    #[ensures(@result === (@*self).len())]
     fn len(&self) -> usize {
-        let mut len = 0;
-        let mut l = self;
-        #[invariant(len_valid, @len + l.len_logic() == self.len_logic())]
-        while let Cons(_, ls) = l {
-            len += 1;
-            l = ls;
-        }
-        len
+        self.0.len()
+    }
+
+    #[trusted]
+    #[requires(@ix < (@*self).len())]
+    #[ensures(*result === (@*self).index(@ix))]
+    fn index(&self, ix: usize) -> &T {
+        use std::ops::Index;
+        self.0.index(ix)
     }
 }
 
-#[requires(arr.len_logic() <= 1_000_000)]
-#[requires(arr.is_sorted())]
+
+
+#[requires((@arr).len() <= 1_000_000)]
+// #[requires(arr.is_sorted())]
 // #[ensures(forall<x:usize> result === Ok(x) ==> arr.get(@x) === Some(elem))]
 // #[ensures(forall<x:usize> result === Err(x) ==>
 //     forall<i:Int> 0 <= i && i < @x ==> arr.get_default(i, 0u32) < elem)]
 // #[ensures(forall<x:usize> result === Err(x) ==>
 //     forall<i:Int> @x < i && i < arr.len_logic() ==> elem < arr.get_default(i, 0u32))]
-fn binary_search<T: MyOrd>(arr: &List<T>, elem: &T) -> Result<usize, usize> {
+fn binary_search<T: MyOrd>(arr: &Vec<T>, elem: &T) -> Result<usize, usize> {
     if arr.len() == 0 {
         return Err(0);
     }
     let mut size = arr.len();
     let mut base = 0;
 
-    #[invariant(size_valid, @size + @base <= arr.len_logic())]
+    #[invariant(size_valid, @size + @base <= (@arr).len())]
     // #[invariant(in_interval, arr.get_default(@base, 0u32) <= elem &&
     //     elem <= arr.get_default(@base + @size, 0u32))]
     #[invariant(size_pos, size > 0usize)]

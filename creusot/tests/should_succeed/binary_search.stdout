@@ -13,13 +13,23 @@ module Type
     | Core_Result_Result_Ok 't
     | Core_Result_Result_Err 'e
     
-  type core_option_option 't = 
-    | Core_Option_Option_None
-    | Core_Option_Option_Some 't
+  type alloc_alloc_global  = 
+    | Alloc_Alloc_Global
     
-  type binarysearch_list 't = 
-    | BinarySearch_List_Cons 't (binarysearch_list 't)
-    | BinarySearch_List_Nil
+  type core_marker_phantomdata 't = 
+    | Core_Marker_PhantomData
+    
+  type core_ptr_unique_unique 't = 
+    | Core_Ptr_Unique_Unique opaque_ptr (core_marker_phantomdata 't)
+    
+  type alloc_rawvec_rawvec 't 'a = 
+    | Alloc_RawVec_RawVec (core_ptr_unique_unique 't) usize 'a
+    
+  type alloc_vec_vec 't 'a = 
+    | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) usize
+    
+  type binarysearch_vec 't = 
+    | BinarySearch_Vec (alloc_vec_vec 't (alloc_alloc_global))
     
 end
 module BinarySearch_Main_Interface
@@ -37,123 +47,128 @@ module BinarySearch_Main
   }
   
 end
-module BinarySearch_Impl1_LenLogic_Interface
-  type t   
-  use mach.int.Int
-  use mach.int.Int32
-  use Type
-  function len_logic (self : Type.binarysearch_list t) : int
+module CreusotContracts_Builtins_Model_Model
+  type self   
+  type modelty   
+  function model (self : self) : modelty
 end
-module BinarySearch_Impl1_LenLogic
-  type t   
-  use mach.int.Int
-  use mach.int.Int32
-  use Type
-  function len_logic (self : Type.binarysearch_list t) : int
-  val len_logic (self : Type.binarysearch_list t) : int
-    ensures { result >= 0 }
-    ensures { result = len_logic self }
-    
-  axiom spec : forall self : Type.binarysearch_list t . len_logic self >= 0
-  axiom def : forall self : Type.binarysearch_list t . len_logic self = match (self) with
-    | Type.BinarySearch_List_Cons _ ls -> 1 + len_logic ls
-    | Type.BinarySearch_List_Nil -> 0
-    end
-end
-module BinarySearch_Impl1_LenLogic_Impl
-  type t   
-  use mach.int.Int
-  use mach.int.Int32
-  use Type
-  let rec len_logic (self : Type.binarysearch_list t) : int
-    ensures { result >= 0 }
-    variant {self}
-    
-   = 
-    match (self) with
-      | Type.BinarySearch_List_Cons _ ls -> 1 + len_logic ls
-      | Type.BinarySearch_List_Nil -> 0
-      end
-end
-module BinarySearch_Impl1_Get_Interface
+module BinarySearch_Impl0_Model_Interface
   type t   
   use Type
-  use mach.int.Int
-  function get (self : Type.binarysearch_list t) (ix : int) : Type.core_option_option t
+  use seq.Seq
+  function model (self : Type.binarysearch_vec t) : Seq.seq t
 end
-module BinarySearch_Impl1_Get
+module BinarySearch_Impl0_Model
   type t   
   use Type
-  use mach.int.Int
-  use mach.int.Int32
-  function get (self : Type.binarysearch_list t) (ix : int) : Type.core_option_option t = 
-    match (self) with
-      | Type.BinarySearch_List_Cons t ls -> match (ix = 0) with
-        | True -> Type.Core_Option_Option_Some t
-        | False -> get ls (ix - 1)
-        end
-      | Type.BinarySearch_List_Nil -> Type.Core_Option_Option_None
-      end
+  use seq.Seq
+  function model (self : Type.binarysearch_vec t) : Seq.seq t
 end
-module BinarySearch_Impl1_IndexPure_Interface
+module BinarySearch_Impl0_Interface
   type t   
+  use Type
+  use seq.Seq
+  clone export BinarySearch_Impl0_Model_Interface with type t = t
+  type modelty  = 
+    Seq.seq t
+  clone export CreusotContracts_Builtins_Model_Model with type self = Type.binarysearch_vec t, type modelty = modelty,
+  function model = model
+end
+module BinarySearch_Impl0
+  type t   
+  use Type
+  use seq.Seq
+  clone export BinarySearch_Impl0_Model with type t = t
+  type modelty  = 
+    Seq.seq t
+  clone export CreusotContracts_Builtins_Model_Model with type self = Type.binarysearch_vec t, type modelty = modelty,
+  function model = model
+end
+module BinarySearch_Impl1_Len_Interface
+  type t   
+  use seq.Seq
   use prelude.Prelude
   use Type
   use mach.int.Int
   use mach.int.UInt64
-  clone BinarySearch_Impl1_LenLogic_Interface as LenLogic0 with type t = t
-  function index_pure (self : Type.binarysearch_list t) (ix : usize) : t
+  clone BinarySearch_Impl0_Interface as Model0 with type t = t
+  val len (self : Type.binarysearch_vec t) : usize
+    ensures { result = Seq.length (Model0.model self) }
+    
 end
-module BinarySearch_Impl1_IndexPure
+module BinarySearch_Impl1_Len
   type t   
+  use seq.Seq
   use prelude.Prelude
   use Type
   use mach.int.Int
   use mach.int.UInt64
-  clone BinarySearch_Impl1_LenLogic_Interface as LenLogic0 with type t = t
-  function index_pure (self : Type.binarysearch_list t) (ix : usize) : t
-  val index_pure (self : Type.binarysearch_list t) (ix : usize) : t
-    requires {LenLogic0.len_logic self > ix}
-    ensures { result = index_pure self ix }
+  clone BinarySearch_Impl0 as Model0 with type t = t
+  val len (self : Type.binarysearch_vec t) : usize
+    ensures { result = Seq.length (Model0.model self) }
     
-  axiom spec : forall self : Type.binarysearch_list t, ix : usize . LenLogic0.len_logic self > ix -> true
 end
-module BinarySearch_Impl1_IndexPure_Impl
+module BinarySearch_Impl1_Index_Interface
   type t   
+  use seq.Seq
   use prelude.Prelude
   use Type
   use mach.int.Int
   use mach.int.UInt64
-  clone BinarySearch_Impl1_LenLogic as LenLogic0 with type t = t, axiom .
-  let rec index_pure (self : Type.binarysearch_list t) (ix : usize) : t
-    requires {LenLogic0.len_logic self > ix}
-    variant {self}
+  clone BinarySearch_Impl0_Interface as Model0 with type t = t
+  val index (self : Type.binarysearch_vec t) (ix : usize) : t
+    requires {ix < Seq.length (Model0.model self)}
+    ensures { result = Seq.get (Model0.model self) ix }
     
-   = 
-    match (self) with
-      | Type.BinarySearch_List_Cons t ls -> match (ix = (0 : usize)) with
-        | True -> t
-        | False -> index_pure ls (ix - (1 : usize))
-        end
-      | Type.BinarySearch_List_Nil -> absurd
-      end
 end
-module BinarySearch_Impl2_GetDefault_Interface
+module BinarySearch_Impl1_Index
   type t   
+  use seq.Seq
+  use prelude.Prelude
   use Type
   use mach.int.Int
-  function get_default (self : Type.binarysearch_list t) (ix : int) (def : t) : t
+  use mach.int.UInt64
+  clone BinarySearch_Impl0 as Model0 with type t = t
+  val index (self : Type.binarysearch_vec t) (ix : usize) : t
+    requires {ix < Seq.length (Model0.model self)}
+    ensures { result = Seq.get (Model0.model self) ix }
+    
 end
-module BinarySearch_Impl2_GetDefault
+module CreusotContracts_Builtins_Model_Impl0_Model_Interface
   type t   
-  use Type
-  use mach.int.Int
-  clone BinarySearch_Impl1_Get_Interface as Get0 with type t = t
-  function get_default (self : Type.binarysearch_list t) (ix : int) (def : t) : t = 
-    match (Get0.get self ix) with
-      | Type.Core_Option_Option_Some v -> v
-      | Type.Core_Option_Option_None -> def
-      end
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  function model (self : t) : Model0.modelty
+end
+module CreusotContracts_Builtins_Model_Impl0_Model
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  function model (self : t) : Model0.modelty = 
+    Model0.model self
+end
+module CreusotContracts_Builtins_Model_Impl0_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  clone export CreusotContracts_Builtins_Model_Impl0_Model_Interface with type t = t,
+  type Model0.modelty = Model0.modelty, function Model0.model = Model0.model
+  type modelty  = 
+    Model0.modelty
+  clone export CreusotContracts_Builtins_Model_Model with type self = t, type modelty = modelty, function model = model
+end
+module CreusotContracts_Builtins_Model_Impl0
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  clone export CreusotContracts_Builtins_Model_Impl0_Model with type t = t, type Model0.modelty = Model0.modelty,
+  function Model0.model = Model0.model
+  type modelty  = 
+    Model0.modelty
+  clone export CreusotContracts_Builtins_Model_Model with type self = t, type modelty = modelty, function model = model
+end
+module Core_Marker_Sized
+  type self   
 end
 module BinarySearch_MyEq
   type self   
@@ -169,315 +184,60 @@ module BinarySearch_MyOrd
   val lt (self : self) (_2 : self) : bool
   val gt (self : self) (_2 : self) : bool
 end
-module BinarySearch_Impl2_IsSorted_Interface
-  type t   
-  use Type
-  function is_sorted (self : Type.binarysearch_list t) : bool
-end
-module BinarySearch_Impl2_IsSorted
-  type t   
-  use Type
-  use mach.int.Int
-  clone BinarySearch_Impl1_Get_Interface as Get0 with type t = t
-  clone BinarySearch_MyOrd as MyOrd0 with type self = t
-  function is_sorted (self : Type.binarysearch_list t) : bool = 
-    forall x2 : (int) . forall x1 : (int) . x1 <= x2 -> match ((Get0.get self x1, Get0.get self x2)) with
-      | (Type.Core_Option_Option_Some v1, Type.Core_Option_Option_Some v2) -> MyOrd0.le_logic v1 v2
-      | (Type.Core_Option_Option_None, Type.Core_Option_Option_None) -> true
-      | _ -> false
-      end
-end
 module CreusotContracts_Builtins_Resolve_Resolve
   type self   
   predicate resolve (self : self)
 end
-module Std_Process_Abort_Interface
-  val abort () : ()
-    ensures { false }
-    
-end
-module Std_Process_Abort
-  val abort () : ()
-    ensures { false }
-    
-end
-module BinarySearch_Impl2_Index_Interface
-  type t   
-  use Type
-  use prelude.Prelude
-  use mach.int.Int
-  use mach.int.UInt64
-  clone BinarySearch_Impl1_Get_Interface as Get0 with type t = t
-  clone BinarySearch_Impl1_LenLogic_Interface as LenLogic0 with type t = t
-  val index (self : Type.binarysearch_list t) (ix : usize) : t
-    requires {ix < LenLogic0.len_logic self}
-    ensures { Type.Core_Option_Option_Some result = Get0.get self ix }
-    
-end
-module BinarySearch_Impl2_Index
-  type t   
-  use Type
-  use prelude.Prelude
-  use mach.int.Int
-  use mach.int.UInt64
-  clone BinarySearch_Impl1_Get as Get0 with type t = t
-  clone BinarySearch_Impl1_LenLogic as LenLogic0 with type t = t, axiom .
-  use mach.int.Int64
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve6 with type self = Type.binarysearch_list t
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve5 with type self = bool
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve4 with type self = t
-  clone Std_Process_Abort_Interface as Abort0
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve3 with type self = ()
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve2 with type self = isize
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve1 with type self = Type.binarysearch_list t
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve0 with type self = usize
-  let rec cfg index (self : Type.binarysearch_list t) (ix : usize) : t
-    requires {ix < LenLogic0.len_logic self}
-    ensures { Type.Core_Option_Option_Some result = Get0.get self ix }
-    
-   = 
-  var _0 : t;
-  var self_1 : Type.binarysearch_list t;
-  var ix_2 : usize;
-  var orig_ix_3 : usize;
-  var l_4 : Type.binarysearch_list t;
-  var _5 : ();
-  var _8 : ();
-  var _9 : isize;
-  var t_10 : t;
-  var ls_11 : Type.binarysearch_list t;
-  var _12 : bool;
-  var _13 : usize;
-  var _14 : Type.binarysearch_list t;
-  var _15 : Type.binarysearch_list t;
-  var _16 : ();
-  var _17 : ();
-  var _18 : ();
-  var _19 : ();
-  var _20 : ();
-  {
-    self_1 <- self;
-    ix_2 <- ix;
-    goto BB0
-  }
-  BB0 {
-    assume { Resolve0.resolve orig_ix_3 };
-    orig_ix_3 <- ix_2;
-    assume { Resolve0.resolve orig_ix_3 };
-    assume { Resolve1.resolve l_4 };
-    l_4 <- self_1;
-    assume { Resolve1.resolve self_1 };
-    goto BB1
-  }
-  BB1 {
-    invariant ix_valid { ix_2 < LenLogic0.len_logic l_4 };
-    invariant res_get { Get0.get self_1 orig_ix_3 = Get0.get l_4 ix_2 };
-    goto BB2
-  }
-  BB2 {
-    switch (l_4)
-      | Type.BinarySearch_List_Cons _ _ -> goto BB3
-      | _ -> goto BB7
-      end
-  }
-  BB3 {
-    assume { Resolve2.resolve _9 };
-    goto BB4
-  }
-  BB4 {
-    t_10 <- (let Type.BinarySearch_List_Cons a _ = l_4 in a);
-    ls_11 <- (let Type.BinarySearch_List_Cons _ a = l_4 in a);
-    assume { Resolve1.resolve l_4 };
-    assume { Resolve0.resolve _13 };
-    _13 <- ix_2;
-    _12 <- _13 > (0 : usize);
-    switch (_12)
-      | False -> goto BB6
-      | True -> goto BB5
-      | _ -> goto BB5
-      end
-  }
-  BB5 {
-    assume { Resolve4.resolve t_10 };
-    assume { Resolve5.resolve _12 };
-    _15 <- ls_11;
-    assume { Resolve6.resolve ls_11 };
-    _14 <- _15;
-    assume { Resolve6.resolve _15 };
-    assume { Resolve1.resolve l_4 };
-    l_4 <- _14;
-    ix_2 <- ix_2 - (1 : usize);
-    _8 <- ();
-    assume { Resolve3.resolve _8 };
-    goto BB1
-  }
-  BB6 {
-    assume { Resolve0.resolve ix_2 };
-    assume { Resolve6.resolve ls_11 };
-    assume { Resolve5.resolve _12 };
-    _0 <- t_10;
-    assume { Resolve4.resolve t_10 };
-    return _0
-  }
-  BB7 {
-    assume { Resolve0.resolve ix_2 };
-    assume { Resolve1.resolve l_4 };
-    assume { Resolve2.resolve _9 };
-    _5 <- ();
-    assume { Resolve3.resolve _5 };
-    absurd
-  }
-  
-end
-module BinarySearch_Impl2_Len_Interface
-  type t   
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Prelude
-  use mach.int.UInt64
-  use Type
-  clone BinarySearch_Impl1_LenLogic_Interface as LenLogic0 with type t = t
-  val len (self : Type.binarysearch_list t) : usize
-    requires {LenLogic0.len_logic self <= 1000000}
-    ensures { result = LenLogic0.len_logic self }
-    ensures { result >= (0 : usize) }
-    
-end
-module BinarySearch_Impl2_Len
-  type t   
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Prelude
-  use mach.int.UInt64
-  use Type
-  clone BinarySearch_Impl1_LenLogic as LenLogic0 with type t = t, axiom .
-  use mach.int.Int64
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve4 with type self = Type.binarysearch_list t
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve3 with type self = usize
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve2 with type self = ()
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve1 with type self = isize
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve0 with type self = Type.binarysearch_list t
-  let rec cfg len (self : Type.binarysearch_list t) : usize
-    requires {LenLogic0.len_logic self <= 1000000}
-    ensures { result = LenLogic0.len_logic self }
-    ensures { result >= (0 : usize) }
-    
-   = 
-  var _0 : usize;
-  var self_1 : Type.binarysearch_list t;
-  var len_2 : usize;
-  var l_3 : Type.binarysearch_list t;
-  var _4 : ();
-  var _6 : ();
-  var _7 : isize;
-  var ls_8 : Type.binarysearch_list t;
-  var _9 : Type.binarysearch_list t;
-  var _10 : ();
-  var _11 : ();
-  var _12 : ();
-  {
-    self_1 <- self;
-    goto BB0
-  }
-  BB0 {
-    len_2 <- (0 : usize);
-    assume { Resolve0.resolve l_3 };
-    l_3 <- self_1;
-    assume { Resolve0.resolve self_1 };
-    goto BB1
-  }
-  BB1 {
-    invariant len_valid { len_2 + LenLogic0.len_logic l_3 = LenLogic0.len_logic self_1 };
-    goto BB2
-  }
-  BB2 {
-    switch (l_3)
-      | Type.BinarySearch_List_Cons _ _ -> goto BB3
-      | _ -> goto BB5
-      end
-  }
-  BB3 {
-    assume { Resolve1.resolve _7 };
-    goto BB4
-  }
-  BB4 {
-    ls_8 <- (let Type.BinarySearch_List_Cons _ a = l_3 in a);
-    assume { Resolve0.resolve l_3 };
-    len_2 <- len_2 + (1 : usize);
-    _9 <- ls_8;
-    assume { Resolve4.resolve ls_8 };
-    assume { Resolve0.resolve l_3 };
-    l_3 <- _9;
-    _6 <- ();
-    assume { Resolve2.resolve _6 };
-    goto BB1
-  }
-  BB5 {
-    assume { Resolve0.resolve l_3 };
-    assume { Resolve1.resolve _7 };
-    _4 <- ();
-    assume { Resolve2.resolve _4 };
-    assume { Resolve3.resolve _0 };
-    _0 <- len_2;
-    assume { Resolve3.resolve len_2 };
-    return _0
-  }
-  
-end
-module Core_Marker_Sized
-  type self   
-end
 module BinarySearch_BinarySearch_Interface
   type t   
+  use seq.Seq
   use mach.int.Int
   use mach.int.Int32
   use prelude.Prelude
   use Type
   use mach.int.UInt64
-  clone BinarySearch_Impl1_LenLogic_Interface as LenLogic0 with type t = t
-  clone BinarySearch_Impl2_IsSorted_Interface as IsSorted0 with type t = t
-  val binary_search (arr : Type.binarysearch_list t) (elem : t) : Type.core_result_result usize usize
-    requires {IsSorted0.is_sorted arr}
-    requires {LenLogic0.len_logic arr <= 1000000}
+  clone BinarySearch_Impl0_Interface as Model1 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl0_Interface as Model0 with type t = Type.binarysearch_vec t,
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
+  val binary_search (arr : Type.binarysearch_vec t) (elem : t) : Type.core_result_result usize usize
+    requires {Seq.length (Model0.model arr) <= 1000000}
     
 end
 module BinarySearch_BinarySearch
   type t   
+  use seq.Seq
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
   use mach.int.Int32
   use Type
-  clone BinarySearch_Impl1_Get as Get0 with type t = t
   clone BinarySearch_MyOrd as MyOrd0 with type self = t
-  clone BinarySearch_Impl2_IsSorted as IsSorted0 with type t = t, function MyOrd0.le_logic = MyOrd0.le_logic,
-  val MyOrd0.le = MyOrd0.le, val MyOrd0.lt = MyOrd0.lt, val MyOrd0.gt = MyOrd0.gt, function Get0.get = Get0.get
   clone Core_Marker_Sized as Sized0 with type self = t
-  clone BinarySearch_Impl1_LenLogic as LenLogic0 with type t = t, axiom .
+  clone BinarySearch_Impl0 as Model1 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl0 as Model0 with type t = Type.binarysearch_vec t,
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
   clone BinarySearch_MyEq as MyEq0 with type self = t
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve4 with type self = usize
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve3 with type self = ()
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve2 with type self = bool
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve1 with type self = t
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve0 with type self = Type.binarysearch_list t
-  clone BinarySearch_Impl2_Index_Interface as Index0 with type t = t,
-  function LenLogic0.len_logic = LenLogic0.len_logic, function Get0.get = Get0.get
-  clone BinarySearch_Impl2_Len_Interface as Len0 with type t = t, function LenLogic0.len_logic = LenLogic0.len_logic
-  let rec cfg binary_search (arr : Type.binarysearch_list t) (elem : t) : Type.core_result_result usize usize
-    requires {IsSorted0.is_sorted arr}
-    requires {LenLogic0.len_logic arr <= 1000000}
+  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve0 with type self = Type.binarysearch_vec t
+  clone BinarySearch_Impl1_Index_Interface as Index0 with type t = t, function Model0.model = Model1.model
+  clone BinarySearch_Impl1_Len_Interface as Len0 with type t = t, function Model0.model = Model1.model
+  let rec cfg binary_search (arr : Type.binarysearch_vec t) (elem : t) : Type.core_result_result usize usize
+    requires {Seq.length (Model0.model arr) <= 1000000}
     
    = 
   var _0 : Type.core_result_result usize usize;
-  var arr_1 : Type.binarysearch_list t;
+  var arr_1 : Type.binarysearch_vec t;
   var elem_2 : t;
   var _3 : ();
   var _4 : bool;
   var _5 : usize;
-  var _6 : Type.binarysearch_list t;
+  var _6 : Type.binarysearch_vec t;
   var _7 : ();
   var size_8 : usize;
-  var _9 : Type.binarysearch_list t;
+  var _9 : Type.binarysearch_vec t;
   var base_10 : usize;
   var _11 : ();
   var _14 : ();
@@ -493,7 +253,7 @@ module BinarySearch_BinarySearch
   var _24 : bool;
   var _25 : t;
   var _26 : t;
-  var _27 : Type.binarysearch_list t;
+  var _27 : Type.binarysearch_vec t;
   var _28 : usize;
   var _29 : t;
   var _30 : usize;
@@ -501,7 +261,7 @@ module BinarySearch_BinarySearch
   var _32 : ();
   var _33 : ();
   var cmp_34 : t;
-  var _35 : Type.binarysearch_list t;
+  var _35 : Type.binarysearch_vec t;
   var _36 : usize;
   var _37 : bool;
   var _38 : t;
@@ -551,7 +311,7 @@ module BinarySearch_BinarySearch
     goto BB5
   }
   BB5 {
-    invariant size_valid { size_8 + base_10 <= LenLogic0.len_logic arr_1 };
+    invariant size_valid { size_8 + base_10 <= Seq.length (Model0.model arr_1) };
     invariant size_pos { size_8 > (0 : usize) };
     goto BB6
   }
@@ -707,17 +467,4 @@ module BinarySearch_BinarySearch
     return _0
   }
   
-end
-module CreusotContracts_WellFounded
-  type self   
-end
-module BinarySearch_Impl0_Interface
-  type t   
-  use Type
-  clone export CreusotContracts_WellFounded with type self = Type.binarysearch_list t
-end
-module BinarySearch_Impl0
-  type t   
-  use Type
-  clone export CreusotContracts_WellFounded with type self = Type.binarysearch_list t
 end
