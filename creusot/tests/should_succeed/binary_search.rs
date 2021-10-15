@@ -1,7 +1,7 @@
 // SHOULD_SUCCEED: parse-print
 #![feature(register_tool, rustc_attrs)]
 #![register_tool(creusot)]
-#![feature(proc_macro_hygiene, stmt_expr_attributes)]
+#![feature(proc_macro_hygiene, stmt_expr_attributes, unsized_fn_params)]
 
 // Here we prove the Rust stdlib implementation of binary search with a few changes
 // 1. We use a List rather than a slice, this restriction is because Creusot cannot yet
@@ -18,12 +18,28 @@ trait MyEq {
     fn eq(&self, _: &Self) -> bool;
 }
 
-trait MyOrd: MyEq {
+use std::cmp::Ordering;
+trait Ord: MyEq {
     #[logic]
-    fn le_logic(self, _: Self) -> bool;
+    fn cmp_log(self, _ : Self) -> std::cmp::Ordering;
+
+    #[logic]
+    fn le_log(self, o: Self) -> bool {
+        use std::cmp::Ordering;
+        pearlite! {
+            self.cmp_log(o) === Ordering::Equal || self.cmp_log(o) === Ordering::Less
+        }
+    }
+
     fn le(&self, _: &Self) -> bool;
     fn lt(&self, _: &Self) -> bool;
     fn gt(&self, _: &Self) -> bool;
+
+    // Coherence of the relations
+    #[creusot::spec::pure]
+    #[ensures(a.cmp_log(b) === Ordering::Equal || a.cmp_log(b) === Ordering::Less ==> a.le_log(b))]
+    #[ensures(a.le_log(b) ==> a.cmp_log(b) === Ordering::Equal || a.cmp_log(b) === Ordering::Less)]
+    fn le_cmp_coh(a: Self, b: Self);
 }
 
 struct Vec<T>(std::vec::Vec<T>);
@@ -53,16 +69,27 @@ impl<T> Vec<T> {
     }
 }
 
+#[predicate]
+fn sorted_range<T: Ord>(s: Seq<T>, l: Int, u: Int) -> bool {
+    pearlite! {
+        forall<i : Int, j : Int> l <= i && i < j && j < u ==>
+            s.index(i).le_log(s.index(j))
+    }
+}
 
+#[predicate]
+fn sorted<T: Ord>(s: Seq<T>) -> bool {
+    sorted_range(s, 0, s.len())
+}
 
 #[requires((@arr).len() <= 1_000_000)]
-// #[requires(arr.is_sorted())]
+#[requires(sorted(@arr))]
 // #[ensures(forall<x:usize> result === Ok(x) ==> arr.get(@x) === Some(elem))]
 // #[ensures(forall<x:usize> result === Err(x) ==>
 //     forall<i:Int> 0 <= i && i < @x ==> arr.get_default(i, 0u32) < elem)]
 // #[ensures(forall<x:usize> result === Err(x) ==>
 //     forall<i:Int> @x < i && i < arr.len_logic() ==> elem < arr.get_default(i, 0u32))]
-fn binary_search<T: MyOrd>(arr: &Vec<T>, elem: &T) -> Result<usize, usize> {
+fn binary_search<T: Ord>(arr: &Vec<T>, elem: &T) -> Result<usize, usize> {
     if arr.len() == 0 {
         return Err(0);
     }

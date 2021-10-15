@@ -44,12 +44,12 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         for item in associated_items(self.tcx, def_id) {
             match item.kind {
                 AssocKind::Fn => {
-                    if item.defaultness.has_value() {
-                        let subst = InternalSubsts::identity_for_item(self.tcx, item.def_id);
-                        names.insert_raw(item.def_id, subst).mk_export();
-                        decls.extend(names.to_clones(self));
-                        continue;
-                    }
+                    // if item.defaultness.has_value() {
+                    //     let subst = InternalSubsts::identity_for_item(self.tcx, item.def_id);
+                    //     names.insert_raw(item.def_id, subst).mk_export();
+                    //     decls.extend(names.to_clones(self));
+                    //     continue;
+                    // }
 
                     let mut sig = crate::util::signature_of(self, &mut names, item.def_id);
                     decls.extend(crate::translation::function::own_generic_decls_for(

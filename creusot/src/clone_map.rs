@@ -230,16 +230,19 @@ impl<'tcx> CloneMap<'tcx> {
         debug!("cloning self: {:?}", (self_id, subst));
 
         if let Some(it) = self.tcx.opt_associated_item(self_id) {
-            self_id = match it.container {
-                ty::TraitContainer(id) => id,
-                ty::ImplContainer(id) => {
-                    if self.tcx.trait_id_of_impl(id).is_some() {
-                        id
-                    } else {
-                        self_id
-                    }
-                }
-            };
+            self_id = self_id
+
+            // match it.container {
+            //     ty::TraitContainer(id) => id,
+            //     _ => self_id,
+            //     // ty::ImplContainer(id) => {
+                //     if self.tcx.trait_id_of_impl(id).is_some() {
+                //         id
+                //     } else {
+                //         self_id
+                //     }
+                // }
+            // };
         };
         self.names.insert((self_id, subst), CloneInfo::hidden());
     }

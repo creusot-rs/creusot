@@ -19,6 +19,11 @@ module Type
   type core_marker_phantomdata 't = 
     | Core_Marker_PhantomData
     
+  type core_cmp_ordering  = 
+    | Core_Cmp_Ordering_Less
+    | Core_Cmp_Ordering_Equal
+    | Core_Cmp_Ordering_Greater
+    
   type core_ptr_unique_unique 't = 
     | Core_Ptr_Unique_Unique opaque_ptr (core_marker_phantomdata 't)
     
@@ -46,6 +51,33 @@ module BinarySearch_Main
     return _0
   }
   
+end
+module BinarySearch_MyEq
+  type self   
+  use prelude.Prelude
+  val eq (self : self) (_2 : self) : bool
+end
+module BinarySearch_Ord
+  type self   
+  clone BinarySearch_MyEq as MyEq0 with type self = self
+  use Type
+  function cmp_log (self : self) (_2 : self) : Type.core_cmp_ordering
+  function le_log (self : self) (o : self) : bool
+  use prelude.Prelude
+  val le (self : self) (_2 : self) : bool
+  val lt (self : self) (_2 : self) : bool
+  val gt (self : self) (_2 : self) : bool
+end
+module BinarySearch_Ord_LeLog_Interface
+  type self   
+  function le_log (self : self) (o : self) : bool
+end
+module BinarySearch_Ord_LeLog
+  type self   
+  use Type
+  clone BinarySearch_Ord as Ord0 with type self = self
+  function le_log (self : self) (o : self) : bool = 
+    Ord0.cmp_log self o = Type.Core_Cmp_Ordering_Equal || Ord0.cmp_log self o = Type.Core_Cmp_Ordering_Less
 end
 module CreusotContracts_Builtins_Model_Model
   type self   
@@ -134,6 +166,34 @@ module BinarySearch_Impl1_Index
     ensures { result = Seq.get (Model0.model self) ix }
     
 end
+module BinarySearch_SortedRange_Interface
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  predicate sorted_range (s : Seq.seq t) (l : int) (u : int)
+end
+module BinarySearch_SortedRange
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  clone BinarySearch_Ord as Ord0 with type self = t
+  predicate sorted_range (s : Seq.seq t) (l : int) (u : int) = 
+    forall j : (int) . forall i : (int) . l <= i && i < j && j < u -> Ord0.le_log (Seq.get s i) (Seq.get s j)
+end
+module BinarySearch_Sorted_Interface
+  type t   
+  use seq.Seq
+  predicate sorted (s : Seq.seq t)
+end
+module BinarySearch_Sorted
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  clone BinarySearch_SortedRange_Interface as SortedRange0 with type t = t
+  predicate sorted (s : Seq.seq t) = 
+    SortedRange0.sorted_range s 0 (Seq.length s)
+end
 module CreusotContracts_Builtins_Model_Impl0_Model_Interface
   type t   
   use prelude.Prelude
@@ -170,20 +230,6 @@ end
 module Core_Marker_Sized
   type self   
 end
-module BinarySearch_MyEq
-  type self   
-  use prelude.Prelude
-  val eq (self : self) (_2 : self) : bool
-end
-module BinarySearch_MyOrd
-  type self   
-  clone BinarySearch_MyEq as MyEq0 with type self = self
-  function le_logic (self : self) (_2 : self) : bool
-  use prelude.Prelude
-  val le (self : self) (_2 : self) : bool
-  val lt (self : self) (_2 : self) : bool
-  val gt (self : self) (_2 : self) : bool
-end
 module CreusotContracts_Builtins_Resolve_Resolve
   type self   
   predicate resolve (self : self)
@@ -211,7 +257,7 @@ module BinarySearch_BinarySearch
   use mach.int.UInt64
   use mach.int.Int32
   use Type
-  clone BinarySearch_MyOrd as MyOrd0 with type self = t
+  clone BinarySearch_Ord as Ord0 with type self = t
   clone Core_Marker_Sized as Sized0 with type self = t
   clone BinarySearch_Impl0 as Model1 with type t = t
   clone CreusotContracts_Builtins_Model_Impl0 as Model0 with type t = Type.binarysearch_vec t,
@@ -351,7 +397,7 @@ module BinarySearch_BinarySearch
     _25 <- _26;
     assume { Resolve1.resolve _26 };
     _29 <- elem_2;
-    _24 <- MyOrd0.gt _25 _29;
+    _24 <- Ord0.gt _25 _29;
     goto BB10
   }
   BB10 {
@@ -430,7 +476,7 @@ module BinarySearch_BinarySearch
     assume { Resolve1.resolve cmp_34 };
     _43 <- elem_2;
     assume { Resolve1.resolve elem_2 };
-    _41 <- MyOrd0.lt _42 _43;
+    _41 <- Ord0.lt _42 _43;
     goto BB19
   }
   BB19 {
