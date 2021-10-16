@@ -16,9 +16,8 @@ use rustc_middle::{
 use rustc_span::Symbol;
 use rustc_target::abi::VariantIdx;
 
-pub use rustc_middle::thir::LogicalOp;
-
 pub use rustc_middle::mir::Field;
+pub use rustc_middle::thir::LogicalOp;
 
 #[derive(Debug)]
 pub enum Term<'tcx> {
@@ -51,7 +50,6 @@ pub enum Pattern<'tcx> {
 }
 
 pub fn typecheck(tcx: TyCtxt, id: LocalDefId) -> Term {
-    // debug!("{:?}", id);
     let (thir, expr) = tcx.thir_body(WithOptConstParam::unknown(id));
     let thir = thir.borrow();
     lower_expr(tcx, &thir, expr).unwrap()
@@ -377,7 +375,16 @@ fn field_pattern(ty: Ty, field: Field) -> Option<Pattern> {
 
             Some(Pattern::Tuple(fields))
         }
-        TyKind::Adt(_, _) => todo!(),
+        TyKind::Adt(adt, _) => {
+            assert!(adt.is_struct(), "can only access fields of struct types");
+            assert_eq!(adt.variants.len(), 1, "expected a single variant");
+            let variant = &adt.variants[0u32.into()];
+
+            let mut fields: Vec<_> = (0..variant.fields.len()).map(|_| Pattern::Wildcard).collect();
+            fields[field.as_usize()] = Pattern::Binder("a".into());
+
+            Some(Pattern::Constructor { adt, variant: 0usize.into(), fields })
+        }
         _ => unreachable!("field_pattern: {:?}", ty),
     }
 }
