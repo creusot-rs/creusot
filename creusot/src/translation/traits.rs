@@ -314,9 +314,7 @@ fn resolve_impl_source_opt(
     match source {
         Ok(src) => Some(src),
         Err(mut err) => {
-            if !tcx.def_path_str(def_id).contains("Model") {
-                err.cancel();
-            }
+            err.cancel();
 
             return None;
         }

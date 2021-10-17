@@ -30,7 +30,7 @@ pub fn translate_pure(
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx));
 
-    let term = specification::typing::typecheck(ctx.tcx, def_id.expect_local());
+    let term = ctx.term(def_id).unwrap().clone();
     let body = specification::lower_term_to_why3(ctx, &mut names, def_id, term);
 
     decls.extend(names.to_clones(ctx));

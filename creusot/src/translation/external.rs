@@ -5,6 +5,7 @@ use creusot_metadata::decoder::{Decodable, MetadataBlob, MetadataDecoder};
 use creusot_metadata::encoder::{Encodable, MetadataEncoder};
 use indexmap::IndexMap;
 use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
+use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_metadata::creader::CStore;
 use rustc_middle::middle::cstore::CrateStore;
 use rustc_middle::ty::subst::SubstsRef;
@@ -80,8 +81,10 @@ pub struct CrateMetadata<'tcx> {
     dependencies: CloneMetadata<'tcx>,
 }
 
-use rustc_macros::{TyDecodable, TyEncodable};
-
+// We use this type to perform (de)serialization of metadata because for annoying
+// `extern crate` related reasons we cannot use the instance of `TyEncodable` / `TyDecodable`
+// for `IndexMap`. Instead, we flatten it to a association list and then convert that into
+// a proper index map after parsing.
 #[derive(TyDecodable, TyEncodable)]
 pub struct BinaryMetadata<'tcx> {
     // Flatten the index map into a vector
@@ -172,13 +175,12 @@ fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
         let crate_name = ctx.tcx.crate_name(LOCAL_CRATE).as_str();
         let libname = format!("{}{}", crate_name, ctx.sess.opts.cg.extra_filename);
 
-        outputs.out_directory.join(&format!("lib{}.creusot", libname))
+        outputs.out_directory.join(&format!("lib{}.cmeta", libname))
     })
 }
 
 pub fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
-    let mut out_filename = export_file(ctx, out);
-    out_filename.set_extension("cmeta");
+    let out_filename = export_file(ctx, out);
     debug!("dump_exports={:?}", out_filename);
 
     dump_binary_metadata(ctx.tcx, &out_filename, ctx.metadata()).unwrap();
@@ -205,26 +207,21 @@ fn load_binary_metadata(
     cnum: CrateNum,
     path: &Path,
 ) -> Option<BinaryMetadata<'tcx>> {
-    let blob = match MetadataBlob::from_file(&path) {
-        Ok(b) => b,
-        Err(_) => {
-            warn!("could not read dependency metadata for crate `{:?}`", cstore.crate_name(cnum));
+    let metadata = MetadataBlob::from_file(&path).and_then(|blob| {
+        let mut decoder = MetadataDecoder::new(tcx, cnum, &blob);
+        match BinaryMetadata::decode(&mut decoder) {
+            Ok(m) => Ok(m),
+            Err(e) => Err(std::io::Error::new(std::io::ErrorKind::Other, e)),
+        }
+    });
+
+    match metadata {
+        Ok(b) => Some(b),
+        Err(e) => {
+            warn!("could not read metadata for crate `{:?}`: {:?}", cstore.crate_name(cnum), e);
             return None;
         }
-    };
-
-    let mut decoder = MetadataDecoder::new(tcx, cnum, &blob);
-    let map = match BinaryMetadata::decode(&mut decoder) {
-        Ok(b) => b,
-        Err(_) => {
-            warn!("could not read dependency metadata for crate `{:?}`", cstore.crate_name(cnum));
-            return None;
-        }
-    };
-
-    Some(map)
-    // Some(map.into_iter().map(|(id, vec)| (id, vec.into_iter().collect())).collect())
-    // Some(map)
+    }
 }
 
 fn creusot_metadata_base_path(

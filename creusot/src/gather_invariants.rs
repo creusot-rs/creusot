@@ -34,6 +34,8 @@ impl GatherInvariants {
             .closures
             .into_iter()
             .map(|clos| {
+                // We don't need to use `ctx.term` here as `invariants` should never be exported
+                // TODO: Fix exporting of `terms` to only be for public functions
                 let term = specification::typing::typecheck(ctx.tcx, clos.expect_local());
                 let exp = lower_term_to_why3(ctx, names, clos, term);
                 let invariant =
