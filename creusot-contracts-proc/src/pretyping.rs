@@ -48,7 +48,14 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
             };
             Ok(quote! { if #cond { #(#then_branch)* } #else_branch })
         }
-        RT::Index(_) => todo!("Index"),
+        RT::Index(TermIndex { expr, index, .. }) => {
+            let expr = encode_term(*expr)?;
+            let index = encode_term(*index)?;
+
+            Ok(quote! {
+                #expr [#index]
+            })
+        }
         RT::Let(_) => todo!("Let"),
         RT::Lit(TermLit { ref lit }) => match lit {
             Lit::Int(int) if int.suffix() == "" => Ok(quote! { Int::from(#lit) }),
