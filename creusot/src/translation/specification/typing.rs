@@ -17,9 +17,17 @@ use rustc_span::Symbol;
 use rustc_target::abi::VariantIdx;
 
 pub use rustc_middle::mir::Field;
-pub use rustc_middle::thir::LogicalOp;
+pub use rustc_middle::thir;
 
-#[derive(Debug)]
+use rustc_macros::{TyDecodable, TyEncodable};
+
+#[derive(Clone, Debug, TyDecodable, TyEncodable)]
+pub enum LogicalOp {
+    And,
+    Or,
+}
+
+#[derive(Clone, Debug, TyDecodable, TyEncodable)]
 pub enum Term<'tcx> {
     Var(String),
     Const(&'tcx Const<'tcx>),
@@ -40,7 +48,7 @@ pub enum Term<'tcx> {
     Absurd,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, TyDecodable, TyEncodable)]
 pub enum Pattern<'tcx> {
     Constructor { adt: &'tcx AdtDef, variant: VariantIdx, fields: Vec<Pattern<'tcx>> },
     Tuple(Vec<Pattern<'tcx>>),
@@ -87,6 +95,10 @@ fn lower_expr<'tcx>(
         ExprKind::LogicalOp { op, lhs, rhs } => {
             let lhs = lower_expr(tcx, thir, lhs)?;
             let rhs = lower_expr(tcx, thir, rhs)?;
+            let op = match op {
+                thir::LogicalOp::And => LogicalOp::And,
+                thir::LogicalOp::Or => LogicalOp::Or,
+            };
             Ok(Term::Logical { op, lhs: box lhs, rhs: box rhs })
         }
         ExprKind::Unary { op, arg } => {

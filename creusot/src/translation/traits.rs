@@ -28,7 +28,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             return;
         }
 
-        let mut names = CloneMap::new(self.tcx, true);
+        let mut names = CloneMap::new(self.tcx, def_id, true);
         names.clone_self(def_id);
         // The first predicate is a trait reference so we skip it
         for super_trait in traits_used_by(self.tcx, def_id).filter(|t| t.def_id() != def_id) {
@@ -99,7 +99,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
         self.translate_trait(trait_ref.def_id);
 
-        let mut names = CloneMap::new(self.tcx, true);
+        let mut names = CloneMap::new(self.tcx, impl_id, true);
         names.clone_self(impl_id);
         let decls =
             names.with_public_clones(|names| self.build_impl_module(names, trait_ref, impl_id));
@@ -107,7 +107,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         let modl = Module { name: name.name(), decls };
 
-        let mut names = CloneMap::new(self.tcx, false);
+        let mut names = CloneMap::new(self.tcx, impl_id, false);
         names.clone_self(impl_id);
 
         let interface_decls =
@@ -314,7 +314,10 @@ fn resolve_impl_source_opt(
     match source {
         Ok(src) => Some(src),
         Err(mut err) => {
-            err.cancel();
+            if !tcx.def_path_str(def_id).contains("Model") {
+                err.cancel();
+            }
+
             return None;
         }
     }
