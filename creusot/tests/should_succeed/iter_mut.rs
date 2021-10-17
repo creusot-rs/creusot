@@ -23,8 +23,8 @@ impl<T> Vec<T> {
     // Needs ensure that the result of self is the results of itermut
     #[trusted]
     #[ensures((@*self).len() === (@result).len() && (@*self).len() === (@^self).len())]
-    #[ensures(forall<i : Int> 0 <= i && i <= (@*self).len() ==> (@*self).index(i) === *(@result).index(i))]
-    #[ensures(forall<i : Int> 0 <= i && i <= (@^self).len() ==> (@^self).index(i) === ^(@result).index(i))]
+    #[ensures(forall<i : Int> 0 <= i && i <= (@*self).len() ==> (@*self)[i] === *(@result)[i])]
+    #[ensures(forall<i : Int> 0 <= i && i <= (@^self).len() ==> (@^self)[i] === ^(@result)[i])]
     fn iter_mut(&mut self) -> IterMut<'_, T> {
         IterMut(self.0.iter_mut())
     }
@@ -79,7 +79,7 @@ impl<T> Ghost<T> {
 }
 
 #[ensures((@^v).len() === (@v).len())]
-#[ensures(forall<i : Int> 0 <= i && i < (@^v).len() ==> @(@^v).index(i) === @(@v).index(i) + 5)]
+#[ensures(forall<i : Int> 0 <= i && i < (@^v).len() ==> @(@^v)[i] === @(@v)[i] + 5)]
 fn inc_vec(v: &mut Vec<u32>) {
     let old_v = Ghost::record(&v);
 
@@ -89,13 +89,13 @@ fn inc_vec(v: &mut Vec<u32>) {
     // i = (@^@old_v).len() - (@it).len() in the failing case.
     #[invariant(incremented, forall<i : Int>
         0 <= i && i < (@^@old_v).len() - (@it).len() ==>
-        @(@^@old_v).index(i) === @(@@old_v).index(i) + 5
+        @(@^@old_v)[i] === @(@@old_v)[i] + 5
     )]
     #[invariant(to_come,
         forall<i : Int>
         0 <= i && i < (@it).len() ==>
-        *(@it).index(i) === (@@old_v).index(i + (@^@old_v).len() - (@it).len())
-        && ^(@it).index(i) === (@^@old_v).index(i + (@^@old_v).len() - (@it).len())
+        *(@it)[i] === (@@old_v)[i + (@^@old_v).len() - (@it).len()]
+        && ^(@it)[i] === (@^@old_v)[i + (@^@old_v).len() - (@it).len()]
     )]
     while let Some(r) = it.next() {
         *r += 5;

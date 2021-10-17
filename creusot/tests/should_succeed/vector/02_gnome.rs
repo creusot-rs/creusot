@@ -48,17 +48,17 @@ impl<T> Vec<T> {
 
     #[trusted]
     #[requires(@ix < (@*self).len())]
-    #[ensures(*result === (@*self).index(@ix))]
+    #[ensures(*result === (@*self)[@ix])]
     fn index(&self, ix: usize) -> &T {
         use std::ops::Index;
         self.0.index(ix)
     }
 
     #[trusted]
-    #[ensures((@^self).index(@i) === (@*self).index(@j))]
-    #[ensures((@^self).index(@j) === (@*self).index(@i))]
+    #[ensures((@^self)[@i] === (@*self)[@j])]
+    #[ensures((@^self)[@j] === (@*self)[@i])]
     #[ensures(forall<k : Int> 0 <= k && k <= (@^self).len() && @i != k && @j != k ==>
-        (@^self).index(k) === (@*self).index(k)
+        (@^self)[k] === (@*self)[k]
     )]
     #[ensures((@^self).len() === (@*self).len())]
     fn swap(&mut self, i: usize, j: usize) {
@@ -82,7 +82,7 @@ trait Ord {
 #[predicate]
 fn sorted_range<T: Ord>(s: Seq<T>, l: Int, u: Int) -> bool {
     pearlite! {
-        forall<i : Int, j : Int> l <= i && i < j && j < u ==> s.index(i).le_log(s.index(j))
+        forall<i : Int, j : Int> l <= i && i < j && j < u ==> s[i].le_log(s[j])
     }
 }
 

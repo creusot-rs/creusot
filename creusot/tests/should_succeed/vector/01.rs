@@ -49,7 +49,7 @@ impl<T> Vec<T> {
 
     #[trusted]
     #[ensures(match result {
-        Some(t) => *t === (@*self).index(ix.into()),
+        Some(t) => *t === (@*self)[ix.into()],
         None => (@*self).len() <= ix.into(),
     })]
     fn get(&self, ix: usize) -> Option<&T> {
@@ -64,7 +64,7 @@ impl<T> Vec<T> {
 
     #[trusted]
     #[requires(@ix < (@self).len())]
-    #[ensures(*result === (@self).index(@ix))]
+    #[ensures(*result === (@self)[@ix])]
     fn index(&self, ix: usize) -> &T {
         use std::ops::Index;
         self.0.index(ix)
@@ -72,11 +72,11 @@ impl<T> Vec<T> {
 
     #[trusted]
     #[requires(@ix < (@*self).len())]
-    #[ensures(*result === (@self).index(ix.into()))]
-    #[ensures(^result === (@^self).index(ix.into()))]
+    #[ensures(*result === (@self)[@ix])]
+    #[ensures(^result === (@^self)[@ix])]
     #[ensures(forall<j : Int> 0 <= j && j <= (@^self).len() ==>
         !(j === @ix) ==>
-        (@^self).index(j) === (@*self).index(j))]
+        (@^self)[j] === (@*self)[j])]
     #[ensures((@*self).len() === (@^self).len())]
     fn index_mut(&mut self, ix: usize) -> &mut T {
         use std::ops::IndexMut;
@@ -84,7 +84,7 @@ impl<T> Vec<T> {
     }
 }
 
-#[ensures(forall<i : Int> 0 <= i && i < (@^v).len() ==> (@^v).index(i) === 0u32)]
+#[ensures(forall<i : Int> 0 <= i && i < (@^v).len() ==> (@^v)[i] === 0u32)]
 #[ensures((@*v).len() === (@^v).len())]
 fn all_zero(v: &mut Vec<u32>) {
     let mut i = 0;
@@ -93,7 +93,7 @@ fn all_zero(v: &mut Vec<u32>) {
     // Either Why3 or Creusot should be improved to do this automaticallly (probably why3)
     #[invariant(proph_const, ^v === ^@old_v)]
     #[invariant(in_bounds, (@*v).len() === (@*@old_v).len())]
-    #[invariant(all_zero, forall<j : Int> 0 <= j && j < i.into() ==> (@*v).index(j) === 0u32)]
+    #[invariant(all_zero, forall<j : Int> 0 <= j && j < i.into() ==> (@*v)[j] === 0u32)]
     while i < v.len() {
         *v.index_mut(i) = 0;
         i += 1;
