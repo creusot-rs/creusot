@@ -62,12 +62,25 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 )),
             },
             Rvalue::Ref(_, ss, pl) => match ss {
-                Shared | Shallow | Unique => self.translate_rplace(pl),
-                Mut { .. } => {
+                Shared | Shallow | Unique => match self.two_phase_borrows.lookup_right(pl) {
+                    Some(local) => Current(box self.translate_local(*local).ident().into()),
+                    None => self.translate_rplace(pl),
+                },
+                Mut { allow_two_phase_borrow } => {
                     let borrow = BorrowMut(box self.translate_rplace(pl));
                     self.emit_assignment(place, borrow);
                     let reassign = Final(box self.translate_rplace(place));
                     self.emit_assignment(pl, reassign);
+
+                    // https://rustc-dev-guide.rust-lang.org/borrow_check/two_phase_borrows.html
+                    // "Each two-phase borrow is assigned to a temporary that is only used once."
+                    // Thus we only consider borrows which were assigned to new temproraries.
+                    if *allow_two_phase_borrow {
+                        if let Some(loc) = place.as_local() {
+                            // Remove a previous tracker of a two phase borrow.
+                            self.two_phase_borrows.insert(loc, pl.clone());
+                        }
+                    }
                     return;
                 }
             },

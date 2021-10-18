@@ -68,4 +68,8 @@ impl<T> Vec<T> {
     pub fn swap(&mut self, i: usize, j: usize) {
         self.0.swap(i, j)
     }
+
+    pub fn last(&mut self) -> Option<&T> {
+        self.0.last()
+    }
 }

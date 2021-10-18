@@ -1,4 +1,5 @@
 use crate::{
+    bimap::BiMap,
     extended_location::*,
     gather_invariants::GatherInvariants,
     util::{self, signature_of},
@@ -43,6 +44,7 @@ pub fn translate_function<'tcx, 'sess>(
     tcx.ensure().mir_borrowck(def_id.expect_local());
     let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
+
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
     RemoveFalseEdge { tcx }.visit_body(&mut body);
@@ -82,6 +84,8 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     clone_names: CloneMap<'tcx>,
 
     invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
+
+    two_phase_borrows: BiMap<Local, Place<'tcx>>,
 }
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
@@ -117,6 +121,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             fresh_id: body.basic_blocks().len(),
             clone_names,
             invariants,
+            two_phase_borrows: BiMap::new(),
         }
     }
 

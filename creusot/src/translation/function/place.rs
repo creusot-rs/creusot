@@ -25,6 +25,9 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         proj: &[rustc_middle::mir::PlaceElem<'tcx>],
     ) -> Exp {
         let mut inner = self.translate_local(loc).ident().into();
+
+        self.two_phase_borrows.remove_left(&loc);
+
         use rustc_middle::mir::ProjectionElem::*;
         let mut place_ty = Place::ty_from(loc, &[], self.body, self.tcx);
 

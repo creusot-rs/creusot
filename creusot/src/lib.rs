@@ -50,3 +50,5 @@ pub mod callbacks;
 pub mod options;
 
 use translation::*;
+
+pub(crate) mod bimap;
