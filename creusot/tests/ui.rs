@@ -17,7 +17,7 @@ fn main() {
     let mut temp_file = base_path.clone();
     temp_file.push("target");
     temp_file.push("debug");
-    temp_file.push("libcreusot_contracts.creusot");
+    temp_file.push("libcreusot_contracts.cmeta");
 
     let mut metadata_file = Command::cargo_bin("cargo-creusot").unwrap();
     metadata_file.current_dir(base_path);

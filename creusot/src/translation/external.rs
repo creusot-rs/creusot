@@ -1,9 +1,11 @@
 use crate::function::all_generic_decls_for;
+use crate::util::item_type;
 use crate::{ctx::*, util};
 use creusot_metadata::decoder::{Decodable, MetadataBlob, MetadataDecoder};
 use creusot_metadata::encoder::{Encodable, MetadataEncoder};
 use indexmap::IndexMap;
 use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
+use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_metadata::creader::CStore;
 use rustc_middle::middle::cstore::CrateStore;
 use rustc_middle::ty::subst::SubstsRef;
@@ -12,11 +14,16 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use why3::declaration::ValKind;
 use why3::declaration::{Decl, Module, ValKind::Val};
 
-pub fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::Span) -> Module {
-    debug!("generating default declaration for def_id={:?}", def_id);
-    let mut names = CloneMap::new(ctx.tcx, util::item_type(ctx.tcx, def_id).is_transparent());
+use super::specification::typing::Term;
+use super::{translate_logic, translate_predicate};
+
+pub fn default_decl(ctx: &mut TranslationCtx, def_id: DefId) -> Module {
+    info!("generating default declaration for def_id={:?}", def_id);
+    let mut names =
+        CloneMap::new(ctx.tcx, def_id, util::item_type(ctx.tcx, def_id).is_transparent());
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
@@ -25,9 +32,42 @@ pub fn default_decl(ctx: &mut TranslationCtx, def_id: DefId, _span: rustc_span::
     let name = translate_value_id(ctx.tcx, def_id).module_ident().unwrap().clone();
 
     decls.extend(names.to_clones(ctx));
-    decls.push(Decl::ValDecl(Val { sig }));
+    let decl = match item_type(ctx.tcx, def_id) {
+        ItemType::Logic => ValKind::Function { sig },
+        ItemType::Predicate => ValKind::Predicate { sig },
+        ItemType::Program => Val { sig },
+        _ => unreachable!("default_decl: Expected function"),
+    };
+    decls.push(Decl::ValDecl(decl));
 
     Module { name, decls }
+}
+
+pub fn extern_module(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    def_id: DefId,
+) -> (Module, Result<CloneSummary<'tcx>, DefId>) {
+    match ctx.externs.terms.get(&def_id) {
+        Some(_) => {
+            let span = ctx.tcx.def_span(def_id);
+            match item_type(ctx.tcx, def_id) {
+                // the dependencies should be what was already stored in the metadata...
+                ItemType::Logic => (translate_logic(ctx, def_id, span).0, Err(def_id)),
+                ItemType::Predicate => (translate_predicate(ctx, def_id, span).0, Err(def_id)),
+
+                _ => unreachable!("extern_module: unexpected term for {:?}", def_id),
+            }
+        }
+        None => {
+            let modl = default_decl(ctx, def_id);
+            let deps = if ctx.externs.dependencies(def_id).is_some() {
+                Err(def_id)
+            } else {
+                Ok(CloneSummary::new())
+            };
+            (modl, deps)
+        }
+    }
 }
 
 type CloneMetadata<'tcx> = HashMap<DefId, CloneSummary<'tcx>>;
@@ -37,17 +77,66 @@ pub struct CrateMetadata<'tcx> {
     tcx: TyCtxt<'tcx>,
 
     modules: IndexMap<DefId, Module>,
+    terms: IndexMap<DefId, Term<'tcx>>,
     dependencies: CloneMetadata<'tcx>,
+}
+
+// We use this type to perform (de)serialization of metadata because for annoying
+// `extern crate` related reasons we cannot use the instance of `TyEncodable` / `TyDecodable`
+// for `IndexMap`. Instead, we flatten it to a association list and then convert that into
+// a proper index map after parsing.
+#[derive(TyDecodable, TyEncodable)]
+pub struct BinaryMetadata<'tcx> {
+    // Flatten the index map into a vector
+    dependencies: HashMap<DefId, Vec<((DefId, SubstsRef<'tcx>), CloneInfo<'tcx>)>>,
+
+    terms: Vec<(DefId, Term<'tcx>)>,
+}
+
+use rustc_middle::ty::Visibility;
+
+impl BinaryMetadata<'tcx> {
+    pub fn from_parts(
+        tcx: TyCtxt<'tcx>,
+        functions: &IndexMap<DefId, TranslatedItem<'tcx>>,
+        terms: &IndexMap<DefId, Term<'tcx>>,
+    ) -> Self {
+        let dependencies = functions
+            .iter()
+            .filter(|(def_id, _)| {
+                tcx.visibility(**def_id) == Visibility::Public && def_id.is_local()
+            })
+            .map(|(def_id, v)| (*def_id, v.local_dependencies().clone().into_iter().collect()))
+            .collect();
+
+        let terms = terms
+            .iter()
+            .filter(|(def_id, _)| def_id.is_local())
+            .map(|(id, t)| (*id, t.clone()))
+            .collect();
+
+        BinaryMetadata { dependencies, terms }
+    }
 }
 
 impl CrateMetadata<'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>) -> Self {
-        Self { tcx, modules: Default::default(), dependencies: Default::default() }
+        Self {
+            tcx,
+            modules: Default::default(),
+            dependencies: Default::default(),
+            terms: Default::default(),
+        }
     }
 
     pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
         assert!(!def_id.is_local());
         self.dependencies.get(&def_id)
+    }
+
+    pub fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
+        assert!(!def_id.is_local());
+        self.terms.get(&def_id)
     }
 
     pub fn body(&self, def_id: DefId) -> Option<&Module> {
@@ -67,23 +156,17 @@ impl CrateMetadata<'tcx> {
 
         let binary_path = creusot_metadata_binary_path(base_path.clone());
 
-        if let Some(dep_info) = load_binary_metadata(self.tcx, cstore, cnum, &binary_path) {
-            for (def_id, summary) in dep_info.into_iter() {
+        if let Some(metadata) = load_binary_metadata(self.tcx, cstore, cnum, &binary_path) {
+            for (def_id, summary) in metadata.dependencies.into_iter() {
                 self.dependencies.insert(def_id, summary.into_iter().collect());
             }
-        }
 
-        let binary_path = creusot_metadata_logic_path(base_path);
-
-        if let Some(functions) = load_logic_metadata(cstore, cnum, &binary_path) {
-            self.modules.extend(functions)
+            for (def_id, summary) in metadata.terms.into_iter() {
+                self.terms.insert(def_id, summary);
+            }
         }
     }
 }
-
-pub type LogicMetadata<'a> = IndexMap<usize, &'a Module>;
-pub type CloneMetaSerialize<'tcx> =
-    HashMap<DefId, Vec<((DefId, SubstsRef<'tcx>), CloneInfo<'tcx>)>>;
 
 fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
     out.as_ref().map(|s| s.clone().into()).unwrap_or_else(|| {
@@ -92,39 +175,24 @@ fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
         let crate_name = ctx.tcx.crate_name(LOCAL_CRATE).as_str();
         let libname = format!("{}{}", crate_name, ctx.sess.opts.cg.extra_filename);
 
-        outputs.out_directory.join(&format!("lib{}.creusot", libname))
+        outputs.out_directory.join(&format!("lib{}.cmeta", libname))
     })
 }
 
-#[deprecated = "use MetadataDecoder instead"]
 pub fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
-    let mut out_filename = export_file(ctx, out);
-
+    let out_filename = export_file(ctx, out);
     debug!("dump_exports={:?}", out_filename);
 
-    let exports = logic_declaration_metadata(ctx);
-    let res = std::fs::File::create(out_filename.clone())
-        .and_then(|mut file| serde_json::to_writer(&mut file, &exports).map_err(|e| e.into()));
-
-    if let Err(err) = res {
-        warn!("failed to dump creusot metadata err={:?}", err);
-    };
-
-    out_filename.set_extension("cmeta");
-
-    let clone_metadata = clone_metadata(ctx);
-
-    dump_binary_metadata(ctx.tcx, &out_filename, clone_metadata).unwrap();
+    dump_binary_metadata(ctx.tcx, &out_filename, ctx.metadata()).unwrap();
 }
 
 fn dump_binary_metadata(
     tcx: TyCtxt<'tcx>,
     path: &Path,
-    dep_info: CloneMetaSerialize<'tcx>,
+    dep_info: BinaryMetadata<'tcx>,
 ) -> Result<(), std::io::Error> {
     let mut encoder = MetadataEncoder::new(tcx);
     dep_info.encode(&mut encoder).unwrap();
-    // encode_index_map(&dep_info, &mut encoder).unwrap();
 
     File::create(path).and_then(|mut file| file.write(&encoder.into_inner())).map_err(|err| {
         warn!("could not encode metadata for crate `{:?}`, error: {:?}", "LOCAL_CRATE", err);
@@ -138,52 +206,22 @@ fn load_binary_metadata(
     cstore: &CStore,
     cnum: CrateNum,
     path: &Path,
-) -> Option<CloneMetadata<'tcx>> {
-    let blob = match MetadataBlob::from_file(&path) {
-        Ok(b) => b,
-        Err(_) => {
-            warn!("could not read dependency metadata for crate `{:?}`", cstore.crate_name(cnum));
+) -> Option<BinaryMetadata<'tcx>> {
+    let metadata = MetadataBlob::from_file(&path).and_then(|blob| {
+        let mut decoder = MetadataDecoder::new(tcx, cnum, &blob);
+        match BinaryMetadata::decode(&mut decoder) {
+            Ok(m) => Ok(m),
+            Err(e) => Err(std::io::Error::new(std::io::ErrorKind::Other, e)),
+        }
+    });
+
+    match metadata {
+        Ok(b) => Some(b),
+        Err(e) => {
+            warn!("could not read metadata for crate `{:?}`: {:?}", cstore.crate_name(cnum), e);
             return None;
         }
-    };
-
-    let mut decoder = MetadataDecoder::new(tcx, cnum, &blob);
-    let map = match CloneMetaSerialize::decode(&mut decoder) {
-        Ok(b) => b,
-        Err(_) => {
-            warn!("could not read dependency metadata for crate `{:?}`", cstore.crate_name(cnum));
-            return None;
-        }
-    };
-
-    Some(map.into_iter().map(|(id, vec)| (id, vec.into_iter().collect())).collect())
-    // Some(map)
-}
-
-fn load_logic_metadata(
-    cstore: &CStore,
-    cr: CrateNum,
-    path: &Path,
-) -> Option<impl Iterator<Item = (DefId, Module)>> {
-    let rdr = File::open(path);
-
-    if let Err(err) = rdr {
-        warn!("could not load metadata for crate={:?} err={:?}", cstore.crate_name(cr), err);
-        return None;
     }
-    let map_res: Result<IndexMap<u32, _>, _> = serde_json::from_reader(rdr.unwrap());
-
-    if let Err(err) = map_res {
-        warn!("error reading metadata for crate={:?} err={:?}", cr, err);
-        return None;
-    }
-
-    Some(
-        map_res
-            .unwrap()
-            .into_iter()
-            .map(move |(ix, val)| (DefId { krate: cr, index: ix.into() }, val)),
-    )
 }
 
 fn creusot_metadata_base_path(
@@ -203,11 +241,6 @@ fn creusot_metadata_base_path(
 
 fn creusot_metadata_binary_path(mut path: PathBuf) -> PathBuf {
     path.set_extension("cmeta");
-    path
-}
-
-fn creusot_metadata_logic_path(mut path: PathBuf) -> PathBuf {
-    path.set_extension("creusot");
     path
 }
 

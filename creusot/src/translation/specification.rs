@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use crate::translation::specification;
 use crate::{ctx::*, util};
 use why3::declaration::Contract;
 use why3::mlcfg::Exp;
@@ -20,8 +19,8 @@ pub fn requires_to_why<'tcx>(
     req_id: DefId,
 ) -> Exp {
     log::debug!("require clause {:?}", req_id);
-    let term = specification::typing::typecheck(ctx.tcx, req_id.expect_local());
-    lower_term_to_why3(ctx, names, req_id, term)
+    let term = ctx.term(req_id).unwrap().clone();
+    lower_term_to_why3(ctx, names, req_id, term) // TODO: remove clone
 }
 
 pub fn variant_to_why<'tcx>(
@@ -30,7 +29,7 @@ pub fn variant_to_why<'tcx>(
     var_id: DefId,
 ) -> Exp {
     log::debug!("variant clause {:?}", var_id);
-    let term = specification::typing::typecheck(ctx.tcx, var_id.expect_local());
+    let term = ctx.term(var_id).unwrap().clone();
     lower_term_to_why3(ctx, names, var_id, term)
 }
 
@@ -40,7 +39,7 @@ pub fn ensures_to_why<'tcx>(
     ens_id: DefId,
 ) -> Exp {
     log::debug!("ensures clause {:?}", ens_id);
-    let term = specification::typing::typecheck(ctx.tcx, ens_id.expect_local());
+    let term = ctx.term(ens_id).unwrap().clone();
     lower_term_to_why3(ctx, names, ens_id, term)
 }
 

@@ -75,6 +75,8 @@ pub struct CloneMap<'tcx> {
     // This matches the notion of 'public' clones
     pub use_full_clones: bool,
 
+    // DefId of the item which is cloning. Used for trait resolution
+    self_id: DefId,
     // Graph which is used to calculate the full clone set
     clone_graph: DiGraphMap<CloneNode<'tcx>, Option<(DefId, SubstsRef<'tcx>)>>,
     // Index of the last cloned entry
@@ -148,10 +150,11 @@ impl CloneInfo<'tcx> {
 }
 
 impl<'tcx> CloneMap<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, use_full_clones: bool) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, self_id: DefId, use_full_clones: bool) -> Self {
         let names = IndexMap::new();
         CloneMap {
             tcx,
+            self_id,
             names,
             name_counts: Default::default(),
             prelude: IndexMap::new(),
@@ -321,8 +324,9 @@ impl<'tcx> CloneMap<'tcx> {
                 let orig = dep;
                 let dep = (dep.0, dep.1.subst(self.tcx, key.1));
                 trace!("substituted: {:?}", dep);
-                let dep = match traits::resolve_opt(ctx.tcx, ctx.tcx.param_env(key.0), dep.0, dep.1)
-                {
+
+                let param_env = ctx.tcx.param_env(self.self_id);
+                let dep = match traits::resolve_opt(ctx.tcx, param_env, dep.0, dep.1) {
                     Some(dep) => (dep),
                     None => (dep),
                 };

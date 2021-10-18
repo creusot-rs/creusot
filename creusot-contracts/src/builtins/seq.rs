@@ -4,7 +4,7 @@ use crate::Int;
 use std::ops::Index;
 
 #[creusot::builtins = "seq.Seq.seq"]
-pub struct Seq<T>(std::marker::PhantomData<T>);
+pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T> Seq<T> {
     #[logic]

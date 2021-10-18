@@ -8,6 +8,7 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
+// We don't yet use the standard vec because we provide the non-standard `iter_mut` method.
 struct Vec<T>(std::vec::Vec<T>);
 
 impl<T: ?Sized> Model for Vec<T> {

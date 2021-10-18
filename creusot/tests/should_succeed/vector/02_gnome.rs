@@ -5,9 +5,8 @@
 
 extern crate creusot_contracts;
 
+use creusot_contracts::std::*;
 use creusot_contracts::*;
-
-struct Vec<T>(std::vec::Vec<T>);
 
 pub struct Ghost<T>(*mut T)
 where
@@ -27,42 +26,6 @@ impl<T> Ghost<T> {
     #[ensures(@result === *a)]
     fn record(a: &T) -> Ghost<T> {
         panic!()
-    }
-}
-
-impl<T: ?Sized> Model for Vec<T> {
-    type ModelTy = Seq<T>;
-    #[logic]
-    #[trusted]
-    fn model(self) -> Self::ModelTy {
-        panic!()
-    }
-}
-
-impl<T> Vec<T> {
-    #[trusted]
-    #[ensures(@result === (@*self).len())]
-    fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    #[trusted]
-    #[requires(@ix < (@*self).len())]
-    #[ensures(*result === (@*self)[@ix])]
-    fn index(&self, ix: usize) -> &T {
-        use std::ops::Index;
-        self.0.index(ix)
-    }
-
-    #[trusted]
-    #[ensures((@^self)[@i] === (@*self)[@j])]
-    #[ensures((@^self)[@j] === (@*self)[@i])]
-    #[ensures(forall<k : Int> 0 <= k && k <= (@^self).len() && @i != k && @j != k ==>
-        (@^self)[k] === (@*self)[k]
-    )]
-    #[ensures((@^self).len() === (@*self).len())]
-    fn swap(&mut self, i: usize, j: usize) {
-        self.0.swap(i, j)
     }
 }
 
