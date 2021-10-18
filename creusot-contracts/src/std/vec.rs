@@ -57,6 +57,8 @@ impl<T> Vec<T> {
     }
 
     #[trusted]
+    #[requires(@i < (@self).len())]
+    #[requires(@j < (@self).len())]
     #[ensures((@^self)[@i] === (@*self)[@j])]
     #[ensures((@^self)[@j] === (@*self)[@i])]
     #[ensures(forall<k : Int> 0 <= k && k <= (@^self).len() && @i != k && @j != k ==>
