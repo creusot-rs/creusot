@@ -76,3 +76,8 @@ fn expression(x: usize, y: usize, z: usize) -> bool {
 fn expression_logic(x: usize, y: usize, z: usize) -> bool {
     x / y * z == (x / y) * z
 }
+
+struct X { a: usize }
+
+#[ensures((x.a) <= (x.a))]
+fn test(x : X) {}

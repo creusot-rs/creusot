@@ -13,11 +13,14 @@ pub fn lower_term_to_why3<'tcx>(
     match term {
         Term::Const(c) => Exp::Const(constant::from_mir_constant_kind(ctx, names, c.into())),
         Term::Var(v) => Exp::Var(v.into()),
-        Term::Binary { op, box lhs, box rhs } => Exp::BinaryOp(
-            binop_to_binop(op),
-            box lower_term_to_why3(ctx, names, term_id, lhs),
-            box lower_term_to_why3(ctx, names, term_id, rhs),
-        ),
+        Term::Binary { op, operand_ty, box lhs, box rhs } => {
+            translate_ty(ctx, names, rustc_span::DUMMY_SP, operand_ty);
+            Exp::BinaryOp(
+                binop_to_binop(op),
+                box lower_term_to_why3(ctx, names, term_id, lhs),
+                box lower_term_to_why3(ctx, names, term_id, rhs),
+            )
+        }
         Term::Logical { op, box lhs, box rhs } => Exp::BinaryOp(
             match op {
                 LogicalOp::And => BinOp::And,
