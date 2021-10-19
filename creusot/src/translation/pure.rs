@@ -31,7 +31,7 @@ pub fn translate_pure(
     decls.extend(names.to_clones(ctx));
 
     let term = ctx.term(def_id).unwrap().clone();
-    let body = specification::lower_term_to_why3(ctx, &mut names, def_id, term);
+    let body = specification::lower(ctx, &mut names, def_id, term);
 
     decls.extend(names.to_clones(ctx));
 
@@ -77,7 +77,8 @@ fn spec_axiom(sig: &Signature) -> Axiom {
     let mut ensures = sig.contract.ensures.clone();
     let postcondition: Exp = ensures.pop().unwrap_or(Exp::mk_true());
 
-    let postcondition = ensures.into_iter().rfold(postcondition, Exp::conj);
+    let mut postcondition = ensures.into_iter().rfold(postcondition, Exp::conj);
+    postcondition.reassociate();
 
     let preconditions = sig.contract.requires.iter().cloned();
     let mut condition = preconditions.rfold(postcondition, |acc, arg| Exp::Impl(box arg, box acc));

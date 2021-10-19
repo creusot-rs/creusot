@@ -4,7 +4,18 @@ use crate::translation::traits::{resolve_assoc_item_opt, MethodInstance};
 use crate::translation::{binop_to_binop, builtins, constant, ty::translate_ty, unop_to_unop};
 use why3::mlcfg::{BinOp, Exp, Pattern as Pat};
 
-pub fn lower_term_to_why3<'tcx>(
+pub fn lower(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    term_id: DefId,
+    term: Term<'tcx>,
+) -> Exp {
+    let mut term = lower_term_to_why3(ctx, names, term_id, term);
+    term.reassociate();
+    term
+}
+
+fn lower_term_to_why3<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     term_id: DefId,
@@ -15,11 +26,18 @@ pub fn lower_term_to_why3<'tcx>(
         Term::Var(v) => Exp::Var(v.into()),
         Term::Binary { op, operand_ty, box lhs, box rhs } => {
             translate_ty(ctx, names, rustc_span::DUMMY_SP, operand_ty);
-            Exp::BinaryOp(
-                binop_to_binop(op),
-                box lower_term_to_why3(ctx, names, term_id, lhs),
-                box lower_term_to_why3(ctx, names, term_id, rhs),
-            )
+
+            let lhs = lower_term_to_why3(ctx, names, term_id, lhs);
+            let rhs = lower_term_to_why3(ctx, names, term_id, rhs);
+            match op {
+                rustc_middle::mir::BinOp::Div => {
+                    Exp::Call(box Exp::Var("div".into()), vec![lhs, rhs])
+                }
+                rustc_middle::mir::BinOp::Rem => {
+                    Exp::Call(box Exp::Var("mod".into()), vec![lhs, rhs])
+                }
+                _ => Exp::BinaryOp(binop_to_binop(op), box lhs, box rhs),
+            }
         }
         Term::Logical { op, box lhs, box rhs } => Exp::BinaryOp(
             match op {

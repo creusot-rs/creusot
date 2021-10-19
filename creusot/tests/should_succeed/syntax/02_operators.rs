@@ -77,7 +77,14 @@ fn expression_logic(x: usize, y: usize, z: usize) -> bool {
     x / y * z == (x / y) * z
 }
 
-struct X { a: usize }
+struct X {
+    a: usize,
+}
 
 #[ensures((x.a) <= (x.a))]
-fn test(x : X) {}
+fn primitive_comparison(x: X) {}
+
+#[ensures(result === (a === b))]
+fn bool_eq(a: bool, b: bool) -> bool {
+    a == b
+}

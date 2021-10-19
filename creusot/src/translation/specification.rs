@@ -20,7 +20,7 @@ pub fn requires_to_why<'tcx>(
 ) -> Exp {
     log::debug!("require clause {:?}", req_id);
     let term = ctx.term(req_id).unwrap().clone();
-    lower_term_to_why3(ctx, names, req_id, term) // TODO: remove clone
+    lower(ctx, names, req_id, term)
 }
 
 pub fn variant_to_why<'tcx>(
@@ -30,7 +30,7 @@ pub fn variant_to_why<'tcx>(
 ) -> Exp {
     log::debug!("variant clause {:?}", var_id);
     let term = ctx.term(var_id).unwrap().clone();
-    lower_term_to_why3(ctx, names, var_id, term)
+    lower(ctx, names, var_id, term)
 }
 
 pub fn ensures_to_why<'tcx>(
@@ -40,7 +40,7 @@ pub fn ensures_to_why<'tcx>(
 ) -> Exp {
     log::debug!("ensures clause {:?}", ens_id);
     let term = ctx.term(ens_id).unwrap().clone();
-    lower_term_to_why3(ctx, names, ens_id, term)
+    lower(ctx, names, ens_id, term)
 }
 
 pub struct PreContract {

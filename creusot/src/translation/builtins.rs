@@ -49,12 +49,12 @@ pub fn lookup_builtin(
         let l = args.remove(0);
         let r = args.remove(0);
 
-        return Some(Exp::BinaryOp(BinOp::Div, box l, box r));
+        return Some(Exp::Call(box Exp::Var("div".into()), vec![l, r]));
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("rem_int")) {
         let l = args.remove(0);
         let r = args.remove(0);
 
-        return Some(Exp::BinaryOp(BinOp::Mod, box l, box r));
+        return Some(Exp::Call(box Exp::Var("mod".into()), vec![l, r]));
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("neg_int")) {
         let a = args.remove(0);
 

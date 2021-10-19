@@ -98,7 +98,7 @@ impl Type {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum BinOp {
     And,
@@ -114,6 +114,27 @@ pub enum BinOp {
     Gt,
     Ge,
     Ne,
+}
+
+impl BinOp {
+    fn precedence(&self) -> Precedence {
+        use Precedence::*;
+        match self {
+            BinOp::And => Conj,
+            BinOp::Or => Disj,
+            BinOp::Add => Infix2,
+            BinOp::Sub => Infix2,
+            BinOp::Mul => Infix3,
+            BinOp::Div => Infix3,
+            BinOp::Mod => Infix3,
+            BinOp::Eq => Infix1,
+            BinOp::Lt => Infix1,
+            BinOp::Le => Infix1,
+            BinOp::Ne => Infix1,
+            BinOp::Ge => Infix1,
+            BinOp::Gt => Infix1,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -190,6 +211,89 @@ impl Exp {
             Exp::Exists(_, e) => e.is_pure(),
         }
     }
+
+    pub fn reassociate(&mut self) {
+        match self {
+            Exp::Current(e) => e.reassociate(),
+            Exp::Final(e) => e.reassociate(),
+            Exp::Let { arg, body, .. } => {
+                arg.reassociate();
+                body.reassociate()
+            }
+            Exp::Var(_) => (),
+            Exp::QVar(_) => (),
+            Exp::RecUp { val, record, .. } => {
+                record.reassociate();
+                val.reassociate()
+            }
+            Exp::RecField { record, .. } => record.reassociate(),
+            Exp::Tuple(fields) => fields.iter_mut().for_each(|f| f.reassociate()),
+            Exp::Constructor { args, .. } => args.iter_mut().for_each(|f| f.reassociate()),
+            Exp::BorrowMut(e) => e.reassociate(),
+            Exp::Const(_) => (),
+            Exp::BinaryOp(op, l, r) => {
+                let mut reordered = false;
+                match op.precedence().associativity() {
+                    Some(AssocDir::Left) => {
+                        //     self                self
+                        //   /       \            /    \
+                        //   l        r    =>    r     rr
+                        //           / \        / \
+                        //          rl rr      l  rl
+                        //
+                        // First swap rl and rr
+                        // Then swap the left child of with the left child of self moving `l` into
+                        // the left chid of `r` and moving `rr` to the left of self
+                        // Finally swap the two children of self which are now `r` and `rr`
+                        if let box Exp::BinaryOp(iop, rl, rr) = r {
+                            if *iop == *op {
+                                std::mem::swap(rl, rr);
+                                std::mem::swap(rl, l);
+                                std::mem::swap(l, r);
+                                reordered = true;
+                            }
+                        }
+                    }
+                    Some(AssocDir::Right) => {
+                        // ll -> l, r -> lr, lr -> ll, l -> r;
+                        if let box Exp::BinaryOp(iop, ll, lr) = l {
+                            if *iop == *op {
+                                std::mem::swap(ll, lr);
+                                std::mem::swap(lr, r);
+                                std::mem::swap(l, r);
+                                reordered = true;
+                            }
+                        }
+                    }
+                    None => {}
+                }
+                if reordered {
+                    self.reassociate();
+                } else {
+                    l.reassociate();
+                    r.reassociate();
+                }
+            }
+            Exp::UnaryOp(_, e) => e.reassociate(),
+            Exp::Call(f, args) => {
+                f.reassociate();
+                args.iter_mut().for_each(|a| a.reassociate())
+            }
+            Exp::Verbatim(_) => (),
+            Exp::Abs(_, e) => e.reassociate(),
+            Exp::Match(e, brs) => {
+                e.reassociate();
+                brs.iter_mut().for_each(|(_, e)| e.reassociate())
+            }
+            Exp::Absurd => (),
+            Exp::Impl(l, r) => {
+                l.reassociate();
+                r.reassociate()
+            }
+            Exp::Forall(_, e) => e.reassociate(),
+            Exp::Exists(_, e) => e.reassociate(),
+        }
+    }
 }
 
 impl From<Ident> for Exp {
@@ -222,17 +326,38 @@ enum Precedence {
 }
 
 #[derive(PartialEq, Debug)]
-enum AssocDir {
+pub enum AssocDir {
     Left,
     Right,
 }
 
 impl Precedence {
+    pub fn next(&self) -> Self {
+        match self {
+            Precedence::IfLet => Precedence::Impl,
+            Precedence::Impl => Precedence::Disj,
+            Precedence::Disj => Precedence::Conj,
+            Precedence::Conj => Precedence::Not,
+            Precedence::Not => Precedence::Infix1,
+            Precedence::Infix1 => Precedence::Infix2,
+            Precedence::Infix2 => Precedence::Infix3,
+            Precedence::Infix3 => Precedence::Prefix,
+            Precedence::Prefix => Precedence::Abs,
+            Precedence::Abs => Precedence::App,
+            Precedence::App => Precedence::Brackets,
+            Precedence::Brackets => Precedence::Atom,
+            Precedence::Atom => Precedence::BangOp,
+            Precedence::BangOp => Precedence::BangOp,
+        }
+    }
+
     pub fn associativity(&self) -> Option<AssocDir> {
         use Precedence::*;
         match self {
-            Infix1 => Some(AssocDir::Right),
+            Infix1 => None,
             Infix2 | Infix3 => Some(AssocDir::Left),
+            Conj => Some(AssocDir::Right),
+            Disj => Some(AssocDir::Right),
             App => Some(AssocDir::Left),
             Abs => Some(AssocDir::Right),
             _ => None,
@@ -241,6 +366,9 @@ impl Precedence {
 }
 
 impl Exp {
+    pub fn associativity(&self) -> Option<AssocDir> {
+        self.precedence().associativity()
+    }
     fn precedence(&self) -> Precedence {
         use Precedence::*;
 
@@ -261,21 +389,7 @@ impl Exp {
             Exp::Const(_) => Atom,
             Exp::UnaryOp(UnOp::Neg, _) => Prefix,
             Exp::UnaryOp(UnOp::Not, _) => BangOp,
-            Exp::BinaryOp(op, _, _) => match op {
-                BinOp::And => Conj,
-                BinOp::Or => Disj,
-                BinOp::Add => Infix2,
-                BinOp::Sub => Infix2,
-                BinOp::Mul => Infix3,
-                BinOp::Div => Infix3,
-                BinOp::Mod => Infix3,
-                BinOp::Eq => Infix1,
-                BinOp::Lt => Infix1,
-                BinOp::Le => Infix1,
-                BinOp::Ne => Infix1,
-                BinOp::Ge => Infix1,
-                BinOp::Gt => Infix1,
-            },
+            Exp::BinaryOp(op, _, _) => op.precedence(),
             Exp::Call(_, _) => App,
             // Exp::Verbatim(_) => Any,
             Exp::Impl(_, _) => Impl,

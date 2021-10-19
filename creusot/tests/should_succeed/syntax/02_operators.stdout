@@ -9,6 +9,9 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
+  type c02operators_x  = 
+    | C02Operators_X usize
+    
 end
 module CreusotContracts_Builtins_Resolve_Resolve
   type self   
@@ -329,4 +332,70 @@ module C02Operators_ExpressionLogic
   use mach.int.UInt64
   function expression_logic (x : usize) (y : usize) (z : usize) : bool = 
     div x y * z = div x y * z
+end
+module C02Operators_PrimitiveComparison_Interface
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use Type
+  val primitive_comparison (x : Type.c02operators_x) : ()
+    ensures { (let Type.C02Operators_X a = x in a) <= (let Type.C02Operators_X a = x in a) }
+    
+end
+module C02Operators_PrimitiveComparison
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use Type
+  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve0 with type self = Type.c02operators_x
+  let rec cfg primitive_comparison (x : Type.c02operators_x) : ()
+    ensures { (let Type.C02Operators_X a = x in a) <= (let Type.C02Operators_X a = x in a) }
+    
+   = 
+  var _0 : ();
+  var x_1 : Type.c02operators_x;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    assume { Resolve0.resolve x_1 };
+    return _0
+  }
+  
+end
+module C02Operators_BoolEq_Interface
+  val bool_eq (a : bool) (b : bool) : bool
+    ensures { result = (a = b) }
+    
+end
+module C02Operators_BoolEq
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve0 with type self = bool
+  let rec cfg bool_eq (a : bool) (b : bool) : bool
+    ensures { result = (a = b) }
+    
+   = 
+  var _0 : bool;
+  var a_1 : bool;
+  var b_2 : bool;
+  var _3 : bool;
+  var _4 : bool;
+  {
+    a_1 <- a;
+    b_2 <- b;
+    goto BB0
+  }
+  BB0 {
+    assume { Resolve0.resolve _3 };
+    _3 <- a_1;
+    assume { Resolve0.resolve a_1 };
+    assume { Resolve0.resolve _4 };
+    _4 <- b_2;
+    assume { Resolve0.resolve b_2 };
+    _0 <- Prelude.eqb _3 _4;
+    return _0
+  }
+  
 end
