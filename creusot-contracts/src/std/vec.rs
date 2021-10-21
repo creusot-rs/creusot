@@ -47,7 +47,7 @@ impl<T> Vec<T> {
     #[requires(@ix < (@*self).len())]
     #[ensures(*result === (@self)[@ix])]
     #[ensures(^result === (@^self)[@ix])]
-    #[ensures(forall<j : Int> 0 <= j && j <= (@^self).len() ==>
+    #[ensures(forall<j : Int> 0 <= j && j < (@^self).len() ==>
         !(j === @ix) ==>
         (@^self)[j] === (@*self)[j])]
     #[ensures((@*self).len() === (@^self).len())]
@@ -61,7 +61,7 @@ impl<T> Vec<T> {
     #[requires(@j < (@self).len())]
     #[ensures((@^self)[@i] === (@*self)[@j])]
     #[ensures((@^self)[@j] === (@*self)[@i])]
-    #[ensures(forall<k : Int> 0 <= k && k <= (@^self).len() && @i != k && @j != k ==>
+    #[ensures(forall<k : Int> 0 <= k && k < (@^self).len() && @i != k && @j != k ==>
         (@^self)[k] === (@*self)[k]
     )]
     #[ensures((@^self).len() === (@*self).len())]
