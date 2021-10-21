@@ -260,10 +260,10 @@ end
 module CreusotContracts_Std1_Vec_Impl1_Swap_Interface
   type t   
   use seq.Seq
-  use mach.int.Int
-  use mach.int.Int32
+  use seq.Permut
   use prelude.Prelude
   use Type
+  use mach.int.Int
   use mach.int.UInt64
   clone CreusotContracts_Std1_Vec_Impl0_Interface as Model1 with type t = t
   clone CreusotContracts_Builtins_Model_Impl1_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
@@ -271,19 +271,16 @@ module CreusotContracts_Std1_Vec_Impl1_Swap_Interface
   val swap (self : borrowed (Type.creusotcontracts_std1_vec_vec t)) (i : usize) (j : usize) : ()
     requires {j < Seq.length (Model0.model self)}
     requires {i < Seq.length (Model0.model self)}
-    ensures { Seq.length (Model1.model ( ^ self)) = Seq.length (Model1.model ( * self)) }
-    ensures { forall k : (int) . 0 <= k && k < Seq.length (Model1.model ( ^ self)) && i <> k && j <> k -> Seq.get (Model1.model ( ^ self)) k = Seq.get (Model1.model ( * self)) k }
-    ensures { Seq.get (Model1.model ( ^ self)) j = Seq.get (Model1.model ( * self)) i }
-    ensures { Seq.get (Model1.model ( ^ self)) i = Seq.get (Model1.model ( * self)) j }
+    ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) i j }
     
 end
 module CreusotContracts_Std1_Vec_Impl1_Swap
   type t   
   use seq.Seq
-  use mach.int.Int
-  use mach.int.Int32
+  use seq.Permut
   use prelude.Prelude
   use Type
+  use mach.int.Int
   use mach.int.UInt64
   clone CreusotContracts_Std1_Vec_Impl0_Interface as Model1 with type t = t
   clone CreusotContracts_Builtins_Model_Impl1_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
@@ -291,10 +288,7 @@ module CreusotContracts_Std1_Vec_Impl1_Swap
   val swap (self : borrowed (Type.creusotcontracts_std1_vec_vec t)) (i : usize) (j : usize) : ()
     requires {j < Seq.length (Model0.model self)}
     requires {i < Seq.length (Model0.model self)}
-    ensures { Seq.length (Model1.model ( ^ self)) = Seq.length (Model1.model ( * self)) }
-    ensures { forall k : (int) . 0 <= k && k < Seq.length (Model1.model ( ^ self)) && i <> k && j <> k -> Seq.get (Model1.model ( ^ self)) k = Seq.get (Model1.model ( * self)) k }
-    ensures { Seq.get (Model1.model ( ^ self)) j = Seq.get (Model1.model ( * self)) i }
-    ensures { Seq.get (Model1.model ( ^ self)) i = Seq.get (Model1.model ( * self)) j }
+    ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) i j }
     
 end
 module CreusotContracts_Builtins_Resolve_Impl1_Resolve_Interface
@@ -344,10 +338,9 @@ module C03KnuthShuffle_KnuthShuffle
   type Model0.modelty = Model2.modelty, function Model0.model = Model2.model
   use mach.int.Int
   use mach.int.UInt64
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve5 with type self = ()
   clone CreusotContracts_Builtins_Resolve_Impl1 as Resolve4 with type t = Type.creusotcontracts_std1_vec_vec t
+  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve3 with type self = ()
   clone C03KnuthShuffle_RandInRange_Interface as RandInRange0
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve3 with type self = bool
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve2 with type self = usize
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve1 with type self = Type.c03knuthshuffle_ghost (borrowed (Type.creusotcontracts_std1_vec_vec t))
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve0 with type self = borrowed (Type.creusotcontracts_std1_vec_vec t)
@@ -427,7 +420,6 @@ module C03KnuthShuffle_KnuthShuffle
       end
   }
   BB5 {
-    assume { Resolve3.resolve _9 };
     _14 <-  * v_1;
     l_13 <- Len0.len _14;
     goto BB6
@@ -458,18 +450,14 @@ module C03KnuthShuffle_KnuthShuffle
     goto BB8
   }
   BB8 {
-    assume { Resolve4.resolve _20 };
-    assume { Resolve2.resolve _21 };
-    assume { Resolve2.resolve _22 };
     n_5 <- n_5 + (1 : usize);
     _8 <- ();
-    assume { Resolve5.resolve _8 };
+    assume { Resolve3.resolve _8 };
     goto BB2
   }
   BB9 {
     assume { Resolve4.resolve v_1 };
     assume { Resolve2.resolve n_5 };
-    assume { Resolve3.resolve _9 };
     _0 <- ();
     return _0
   }
