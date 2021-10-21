@@ -15,6 +15,12 @@ impl<T> Model for Vec<T> {
 
 impl<T> Vec<T> {
     #[trusted]
+    #[ensures((@result).len() === 0)]
+    pub fn new() -> Self {
+        Vec(std::vec::Vec::new())
+    }
+
+    #[trusted]
     #[ensures(result.into() === (@self).len())]
     pub fn len(&self) -> usize {
         self.0.len()
@@ -59,12 +65,7 @@ impl<T> Vec<T> {
     #[trusted]
     #[requires(@i < (@self).len())]
     #[requires(@j < (@self).len())]
-    #[ensures((@^self)[@i] === (@*self)[@j])]
-    #[ensures((@^self)[@j] === (@*self)[@i])]
-    #[ensures(forall<k : Int> 0 <= k && k < (@^self).len() && @i != k && @j != k ==>
-        (@^self)[k] === (@*self)[k]
-    )]
-    #[ensures((@^self).len() === (@*self).len())]
+    #[ensures((@^self).exchange(@*self, @i, @j))]
     pub fn swap(&mut self, i: usize, j: usize) {
         self.0.swap(i, j)
     }

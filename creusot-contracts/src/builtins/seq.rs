@@ -59,6 +59,13 @@ impl<T> Seq<T> {
     pub fn permut(self, _: Self, _: Int, _: Int) -> bool {
         std::process::abort()
     }
+
+    #[trusted]
+    #[predicate]
+    #[creusot::builtins = "seq.Permut.exchange"]
+    pub fn exchange(self, o: Self, i: Int, j: Int) -> bool {
+        std::process::abort()
+    }
 }
 
 // A hack which allows us to use [..] notation for sequences.

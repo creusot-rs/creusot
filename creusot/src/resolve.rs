@@ -81,7 +81,11 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
 
         let mut def_init_at_start = init_at_start;
         def_init_at_start.subtract(&uninit_at_start);
+        trace!("def_init_at_start: {:?}", def_init_at_start);
 
+        let mut def_init_at_end = init_at_end.clone();
+        def_init_at_end.subtract(&uninit_at_end);
+        trace!("def_init_at_end: {:?}", def_init_at_end);
         // Locals that were just now initialized
         let mut just_init = init_at_end.clone();
         just_init.subtract(&uninit_at_end);
@@ -104,7 +108,9 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         // Variables that died in the span
         dying.subtract(live_at_end);
         // And were initialized
-        dying.intersect(&def_init_at_start);
+        let mut init = def_init_at_start;
+        init.intersect(&def_init_at_end);
+        dying.intersect(&init);
 
         let same_point = start.same_block(end);
         trace!("same_block: {:?}", same_point);
