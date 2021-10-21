@@ -41,7 +41,7 @@ fn main() {
 
         let do_proof = header_line.contains("WHY3PROVE");
         if do_proof {
-            command.args(&["-Pz3", "-a", "split_vc"]);
+            command.args(&["-a", "split_vc", "-Pz3", "-Pcvc4"]);
         }
 
         let output = command.ok();
