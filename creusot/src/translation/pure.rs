@@ -2,6 +2,7 @@ use crate::{
     clone_map::CloneMap,
     ctx::{translate_value_id, TranslationCtx},
     translation::function::all_generic_decls_for,
+    util,
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::TyCtxt;
@@ -18,7 +19,7 @@ pub fn translate_pure(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
     _span: rustc_span::Span,
-) -> (Module, Module, CloneMap<'tcx>) {
+) -> (Module, Option<Module>, CloneMap<'tcx>) {
     let mut names = CloneMap::new(ctx.tcx, def_id, false);
     names.clone_self(def_id);
 
@@ -67,10 +68,12 @@ fn program_symbol(mut sig: Signature) -> ValKind {
 }
 
 fn function_call(sig: &Signature) -> Exp {
-    Exp::Call(
-        box Exp::Var(sig.name.clone()),
-        sig.args.iter().map(|(i, _)| Exp::Var(i.clone())).collect(),
-    )
+    let mut args: Vec<_> = sig.args.iter().cloned().map(|arg| Exp::Var(arg.0)).collect();
+    if args.is_empty() {
+        args = vec![Exp::Tuple(vec![])];
+    }
+
+    Exp::Call(box Exp::Var(sig.name.clone()), args)
 }
 
 fn spec_axiom(sig: &Signature) -> Axiom {
@@ -93,8 +96,7 @@ fn spec_axiom(sig: &Signature) -> Axiom {
 }
 
 fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
-    let args: Vec<_> = sig.args.iter().cloned().map(|arg| Exp::Var(arg.0)).collect();
-    let call = Exp::Call(box Exp::Var(sig.name.clone()), args);
+    let call = function_call(sig);
 
     let equation = Exp::BinaryOp(BinOp::Eq, box call, box body);
 
@@ -114,7 +116,11 @@ fn implementation_module(
     names: &CloneMap<'tcx>,
     sig: Signature,
     body: Exp,
-) -> Module {
+) -> Option<Module> {
+    if util::is_trusted(ctx.tcx, def_id) {
+        return None;
+    }
+
     let mut names = names.clone();
     names.clear_graph();
     names.use_full_clones = true;
@@ -125,7 +131,7 @@ fn implementation_module(
     decls.push(Decl::Let(LetDecl { sig, rec: true, body }));
 
     let name = impl_name(ctx.tcx, def_id);
-    Module { name, decls }
+    Some(Module { name, decls })
 }
 
 pub fn impl_name(tcx: TyCtxt, def_id: DefId) -> Ident {
