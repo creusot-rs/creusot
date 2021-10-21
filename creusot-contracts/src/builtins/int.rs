@@ -5,6 +5,15 @@ use std::ops::*;
 #[rustc_diagnostic_item = "creusot_int"]
 pub struct Int;
 
+impl Int {
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "int.Power.power"]
+    pub fn pow(self, exp: Int) -> Int {
+        std::process::abort()
+    }
+}
+
 impl PartialEq for Int {
     #[creusot::spec::no_translate]
     #[rustc_diagnostic_item = "eq_int"]
