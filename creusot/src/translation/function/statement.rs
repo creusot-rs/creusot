@@ -1,15 +1,19 @@
 use rustc_middle::mir::{
-    BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind,
+    BinOp, BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind,
 };
 
-use why3::mlcfg::{
-    // Constant,
-    Exp::{self, *},
-    Statement::*,
+use why3::{
+    mlcfg::{
+        // Constant,
+        Exp::{self, *},
+        Statement::*,
+    },
+    QName,
 };
 
 use super::FunctionTranslator;
 use crate::{
+    clone_map::PreludeModule,
     translation::{binop_to_binop, unop_to_unop},
     util,
 };
@@ -72,6 +76,13 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 }
             },
             Rvalue::Discriminant(_) => return,
+            Rvalue::BinaryOp(BinOp::Eq, box (l, r)) if l.ty(self.body, self.tcx).is_bool() => {
+                self.clone_names.import_prelude_module(PreludeModule::Prelude);
+                Call(
+                    box Exp::QVar(QName::from_string("Prelude.eqb").unwrap()),
+                    vec![self.translate_operand(l), self.translate_operand(r)],
+                )
+            }
             Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => BinaryOp(
                 binop_to_binop(*op),
                 box self.translate_operand(l),

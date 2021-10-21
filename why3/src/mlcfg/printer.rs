@@ -74,20 +74,12 @@ fn parens<'b, 'a: 'b, A: DocAllocator<'a>>(
 where
     A::Doc: Clone,
 {
-    let child_prec = if env.in_logic {
-        match child {
-            Exp::BinaryOp(BinOp::Div, _, _) => Precedence::App,
-            Exp::BinaryOp(BinOp::Mod, _, _) => Precedence::App,
-            _ => child.precedence(),
-        }
-    } else {
-        child.precedence()
-    };
+    let child_prec = child.precedence();
     if child_prec == Precedence::Atom {
         child.pretty(alloc, env)
     } else if child_prec < prec {
         child.pretty(alloc, env).parens()
-    } else if child_prec == prec && child_prec.associativity() != prec.associativity() {
+    } else if child_prec == prec && child.associativity() != child.associativity() {
         child.pretty(alloc, env).parens()
     } else {
         child.pretty(alloc, env)
@@ -597,25 +589,20 @@ impl Pretty for Exp {
             }
 
             Exp::UnaryOp(UnOp::Neg, box op) => alloc.text("- ").append(op.pretty(alloc, env)),
-
-            Exp::BinaryOp(BinOp::Div, box l, box r) if env.in_logic => alloc
-                .text("div ")
-                .append(parens!(alloc, env, Precedence::Brackets, l))
-                .append(" ")
-                .append(parens!(alloc, env, Precedence::Brackets, r)),
-            Exp::BinaryOp(BinOp::Mod, box l, box r) if env.in_logic => alloc
-                .text("mod ")
-                .append(parens!(alloc, env, Precedence::Brackets, l))
-                .append(" ")
-                .append(parens!(alloc, env, Precedence::Brackets, r)),
-            Exp::BinaryOp(op, box l, box r) => parens!(alloc, env, self, l)
-                .append(alloc.space())
-                .append(bin_op_to_string(op))
-                .append(alloc.space())
-                .append(parens!(alloc, env, self, r)),
+            Exp::BinaryOp(op, box l, box r) => match self.associativity() {
+                Some(AssocDir::Left) => parens!(alloc, env, self, l),
+                Some(AssocDir::Right) | None => parens!(alloc, env, self.precedence().next(), l),
+            }
+            .append(alloc.space())
+            .append(bin_op_to_string(op))
+            .append(alloc.space())
+            .append(match self.associativity() {
+                Some(AssocDir::Right) => parens!(alloc, env, self, r),
+                Some(AssocDir::Left) | None => parens!(alloc, env, self.precedence().next(), r),
+            }),
             Exp::Call(box fun, args) => {
                 parens!(alloc, env, self, fun).append(alloc.space()).append(alloc.intersperse(
-                    args.iter().map(|a| parens!(alloc, env, Precedence::Brackets, a)),
+                    args.iter().map(|a| parens!(alloc, env, Precedence::App.next(), a)),
                     alloc.space(),
                 ))
             }

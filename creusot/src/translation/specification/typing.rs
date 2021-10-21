@@ -31,7 +31,7 @@ pub enum LogicalOp {
 pub enum Term<'tcx> {
     Var(String),
     Const(&'tcx Const<'tcx>),
-    Binary { op: BinOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
+    Binary { op: BinOp, operand_ty: Ty<'tcx>, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Logical { op: LogicalOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Unary { op: UnOp, arg: Box<Term<'tcx>> },
     Forall { binder: (String, Ty<'tcx>), body: Box<Term<'tcx>> },
@@ -88,9 +88,11 @@ fn lower_expr<'tcx>(
             Ok(inner)
         }
         ExprKind::Binary { op, lhs, rhs } => {
+            let operand_ty = thir[lhs].ty;
             let lhs = lower_expr(tcx, thir, lhs)?;
             let rhs = lower_expr(tcx, thir, rhs)?;
-            Ok(Term::Binary { op, lhs: box lhs, rhs: box rhs })
+
+            Ok(Term::Binary { op, operand_ty, lhs: box lhs, rhs: box rhs })
         }
         ExprKind::LogicalOp { op, lhs, rhs } => {
             let lhs = lower_expr(tcx, thir, lhs)?;

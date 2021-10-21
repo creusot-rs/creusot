@@ -11,7 +11,7 @@ use why3::mlcfg::Exp;
 
 use crate::clone_map::CloneMap;
 use crate::ctx::TranslationCtx;
-use crate::translation::specification::{self, inv_subst, lower_term_to_why3};
+use crate::translation::specification::{self, inv_subst, lower};
 use crate::util;
 
 pub struct GatherInvariants {
@@ -37,7 +37,7 @@ impl GatherInvariants {
                 // We don't need to use `ctx.term` here as `invariants` should never be exported
                 // TODO: Fix exporting of `terms` to only be for public functions
                 let term = specification::typing::typecheck(ctx.tcx, clos.expect_local());
-                let exp = lower_term_to_why3(ctx, names, clos, term);
+                let exp = lower(ctx, names, clos, term);
                 let invariant =
                     util::get_attr(ctx.tcx.get_attrs(clos), &["creusot", "spec", "invariant"])
                         .unwrap();
