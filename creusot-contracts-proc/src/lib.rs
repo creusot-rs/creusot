@@ -158,6 +158,24 @@ pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
     })
 }
 
+#[proc_macro]
+pub fn proof_assert(assertion: TS1) -> TS1 {
+    let assert: pearlite_syn::Term = parse_macro_input!(assertion);
+
+    let assert_body = pretyping::encode_term(assert).unwrap();
+
+    TS1::from(quote! {
+        {
+            #[allow(unused_must_use)]
+            let _ = {
+                #[creusot::spec::no_translate]
+                #[creusot::spec::assert]
+                ||{ #assert_body }
+            };
+        }
+    })
+}
+
 struct LogicItem {
     vis: Visibility,
     attrs: Vec<Attribute>,

@@ -44,8 +44,17 @@ pub fn is_variant(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "variant"]).is_some()
 }
 
+pub fn invariant_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
+    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "invariant"])
+        .and_then(|a| ts_to_symbol(a.args.inner_tokens()))
+}
+
 pub fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "invariant"]).is_some()
+    invariant_name(tcx, def_id).is_some()
+}
+
+pub fn is_assertion(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "assert"]).is_some()
 }
 
 pub fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {

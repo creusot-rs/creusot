@@ -1,6 +1,6 @@
 use crate::{
     extended_location::*,
-    gather_invariants::GatherInvariants,
+    gather_spec_closures::GatherSpecClosures,
     util::{self, signature_of},
 };
 use rustc_hir::def_id::DefId;
@@ -28,7 +28,6 @@ mod statement;
 mod terminator;
 
 use crate::ctx::*;
-use crate::translation::specification;
 use crate::translation::{traits, ty};
 
 pub fn translate_function<'tcx, 'sess>(
@@ -39,7 +38,7 @@ pub fn translate_function<'tcx, 'sess>(
     let mut names = CloneMap::new(tcx, def_id, true);
     names.clone_self(def_id);
 
-    let gather = GatherInvariants::gather(ctx, &mut names, def_id);
+    let gather = GatherSpecClosures::gather(ctx, &mut names, def_id);
     tcx.ensure().mir_borrowck(def_id.expect_local());
     let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
@@ -47,9 +46,9 @@ pub fn translate_function<'tcx, 'sess>(
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
     RemoveFalseEdge { tcx }.visit_body(&mut body);
 
-    let invariants = gather.with_corrected_locations_and_names(tcx, &body);
+    let (invariants, assertions) = gather.with_corrected_locations_and_names(tcx, &body);
     let func_translator =
-        FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, def_id);
+        FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, assertions, def_id);
 
     func_translator.translate()
 }
@@ -82,6 +81,8 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     clone_names: CloneMap<'tcx>,
 
     invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
+
+    assertions: IndexMap<DefId, Exp>,
 }
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
@@ -91,13 +92,16 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         body: &'body Body<'tcx>,
         clone_names: CloneMap<'tcx>,
         invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
+        assertions: IndexMap<DefId, Exp>,
         def_id: DefId,
     ) -> Self {
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_invariant(tcx, *def_id) {
+                if crate::util::is_invariant(tcx, *def_id)
+                    || crate::util::is_assertion(tcx, *def_id)
+                {
                     erased_locals.insert(local);
                 }
             }
@@ -117,6 +121,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             fresh_id: body.basic_blocks().len(),
             clone_names,
             invariants,
+            assertions,
         }
     }
 
@@ -144,6 +149,9 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         let arg_count = self.body.arg_count;
         let vars = self.translate_vars();
+
+        assert!(self.assertions.is_empty(), "unused assertions");
+        assert!(self.invariants.is_empty(), "unused invariants");
 
         let entry = Block {
             statements: vars
@@ -175,12 +183,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 continue;
             }
 
-            if let Some(invs) = self.invariants.remove(&bb) {
-                let inv_subst = specification::inv_subst(self.body);
-                for (name, mut exp) in invs.into_iter() {
-                    exp.subst(&inv_subst);
-                    self.emit_statement(Invariant(name.to_string(), exp));
-                }
+            for (name, body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
+                self.emit_statement(Invariant(name.to_string(), body));
             }
 
             self.freeze_locals_between_blocks(bb);

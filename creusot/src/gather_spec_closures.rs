@@ -14,40 +14,41 @@ use crate::ctx::TranslationCtx;
 use crate::translation::specification::{self, inv_subst, lower};
 use crate::util;
 
-pub struct GatherInvariants {
+pub struct GatherSpecClosures {
     invariants: IndexMap<DefId, (Symbol, Exp)>,
+    assertions: IndexMap<DefId, Exp>,
 }
 
-impl GatherInvariants {
+impl GatherSpecClosures {
     pub fn gather<'tcx>(
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut CloneMap<'tcx>,
         base_id: DefId,
-    ) -> GatherInvariants {
+    ) -> GatherSpecClosures {
         let (thir, expr) = ctx.tcx.thir_body(WithOptConstParam::unknown(base_id.expect_local()));
         let thir = &thir.borrow();
 
         let mut visitor = InvariantClosures::new(thir);
         use rustc_middle::thir::visit::Visitor;
         visitor.visit_expr(&thir[expr]);
-        let invariants: IndexMap<_, (_, _)> = visitor
-            .closures
-            .into_iter()
-            .map(|clos| {
-                // We don't need to use `ctx.term` here as `invariants` should never be exported
-                // TODO: Fix exporting of `terms` to only be for public functions
+
+        let mut assertions: IndexMap<_, _> = Default::default();
+        let mut invariants: IndexMap<_, _> = Default::default();
+        for clos in visitor.closures.into_iter() {
+            if let Some(name) = util::invariant_name(ctx.tcx, clos) {
                 let term = specification::typing::typecheck(ctx.tcx, clos.expect_local());
                 let exp = lower(ctx, names, clos, term);
-                let invariant =
-                    util::get_attr(ctx.tcx.get_attrs(clos), &["creusot", "spec", "invariant"])
-                        .unwrap();
-                let name = util::ts_to_symbol(invariant.args.inner_tokens()).unwrap();
 
-                (clos, (name, exp))
-            })
-            .collect();
+                invariants.insert(clos, (name, exp));
+            } else if util::is_assertion(ctx.tcx, clos) {
+                let term = specification::typing::typecheck(ctx.tcx, clos.expect_local());
+                let exp = lower(ctx, names, clos, term);
 
-        Self { invariants }
+                assertions.insert(clos, exp);
+            }
+        }
+
+        Self { assertions, invariants }
     }
 
     // Shift the locations of every invariant to be inside their corresponding loop header block
@@ -55,23 +56,35 @@ impl GatherInvariants {
         mut self,
         tcx: TyCtxt<'tcx>,
         body: &Body<'tcx>,
-    ) -> IndexMap<BasicBlock, Vec<(Symbol, Exp)>> {
+    ) -> (IndexMap<BasicBlock, Vec<(Symbol, Exp)>>, IndexMap<DefId, Exp>) {
         let locations = invariant_locations(tcx, body);
         let inv_subst = inv_subst(body);
-        locations
+
+        let invariants = locations
             .into_iter()
-            .map(|(bb, invs)| {
-                let mut inv_exps = Vec::with_capacity(invs.len());
+            .map(|(loc, invs)| {
+                let inv_exps: Vec<_> = invs
+                    .into_iter()
+                    .map(|id| {
+                        let mut inv = self.invariants.remove(&id).unwrap();
+                        inv.1.subst(&inv_subst);
+                        inv
+                    })
+                    .collect();
 
-                for inv_id in invs {
-                    let mut inv_exp = self.invariants.remove(&inv_id).unwrap();
-                    inv_exp.1.subst(&inv_subst);
-
-                    inv_exps.push(inv_exp);
-                }
-                (bb, inv_exps)
+                (loc, inv_exps)
             })
-            .collect()
+            .collect();
+        let assertions = self
+            .assertions
+            .into_iter()
+            .map(|mut ass| {
+                ass.1.subst(&inv_subst);
+                ass
+            })
+            .collect();
+        assert!(self.invariants.is_empty());
+        (invariants, assertions)
     }
 }
 
@@ -103,14 +116,14 @@ impl thir::visit::Visitor<'a, 'tcx> for InvariantClosures<'a, 'tcx> {
 
 struct InvariantLocations<'tcx> {
     tcx: TyCtxt<'tcx>,
-    invariants: IndexMap<BasicBlock, Vec<DefId>>,
+    invariants: IndexMap<Location, DefId>,
 }
 
 impl<'tcx> Visitor<'tcx> for InvariantLocations<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
             if util::is_invariant(self.tcx, *id) {
-                self.invariants.entry(loc.block).or_insert_with(Vec::new).push(*id);
+                self.invariants.insert(loc, *id);
             }
         }
         self.super_rvalue(rvalue, loc);
@@ -124,19 +137,19 @@ fn invariant_locations(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<BasicBl
     let mut invs_gather = InvariantLocations { tcx, invariants: IndexMap::new() };
     invs_gather.visit_body(body);
 
-    for (bb, invs) in invs_gather.invariants.into_iter() {
-        let mut target_block = bb;
+    for (loc, clos) in invs_gather.invariants.into_iter() {
+        let mut target: BasicBlock = loc.block;
 
         loop {
-            let mut succs = body.successors(target_block);
+            let mut succs = body.successors(target);
 
-            target_block = succs.next().unwrap();
+            target = succs.next().unwrap();
 
             // Check if `taget_block` is a loop header by testing if it dominates
             // one of its predecessors.
-            if let Some(preds) = body.predecessors().get(target_block) {
+            if let Some(preds) = body.predecessors().get(target) {
                 let is_loop_header =
-                    preds.iter().any(|pred| body.dominators().is_dominated_by(*pred, target_block));
+                    preds.iter().any(|pred| body.dominators().is_dominated_by(*pred, target));
 
                 if is_loop_header {
                     break;
@@ -144,12 +157,12 @@ fn invariant_locations(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<BasicBl
             };
 
             // If we've hit a switch then stop trying to push the invariants down.
-            if body[target_block].terminator().kind.as_switch().is_some() {
+            if body[target].terminator().kind.as_switch().is_some() {
                 panic!("Could not find loop header")
             }
         }
 
-        results.insert(target_block, invs);
+        results.entry(target).or_insert_with(Vec::new).push(clos);
     }
 
     results
