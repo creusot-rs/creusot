@@ -104,6 +104,13 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     Closure(def_id, _) => {
                         if util::is_invariant(self.tcx, *def_id) {
                             return;
+                        } else if util::is_assertion(self.tcx, *def_id) {
+                            let assertion = self
+                                .assertions
+                                .remove(def_id)
+                                .expect("Could not find body of assertion");
+                            self.emit_statement(Assert(assertion));
+                            return;
                         } else {
                             self.ctx.crash_and_error(si.span, "closures are not yet supported")
                         }

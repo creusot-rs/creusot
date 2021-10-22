@@ -159,7 +159,7 @@ pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
 }
 
 #[proc_macro]
-pub fn assert(assertion: TS1) -> TS1 {
+pub fn proof_assert(assertion: TS1) -> TS1 {
     let assert: pearlite_syn::Term = parse_macro_input!(assertion);
 
     let assert_body = pretyping::encode_term(assert).unwrap();

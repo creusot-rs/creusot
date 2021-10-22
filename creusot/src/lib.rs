@@ -1,5 +1,5 @@
 #![feature(rustc_private, register_tool)]
-#![feature(box_syntax, box_patterns, control_flow_enum)]
+#![feature(box_syntax, box_patterns, control_flow_enum, drain_filter)]
 #![feature(in_band_lifetimes)]
 #![register_tool(creusot)]
 #![feature(const_panic)]
@@ -32,7 +32,7 @@ mod analysis;
 pub mod clone_map;
 pub mod ctx;
 mod extended_location;
-mod gather_invariants;
+mod gather_spec_closures;
 mod resolve;
 mod translation;
 pub mod util;
