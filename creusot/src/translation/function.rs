@@ -28,7 +28,6 @@ mod statement;
 mod terminator;
 
 use crate::ctx::*;
-use crate::translation::specification;
 use crate::translation::{traits, ty};
 
 pub fn translate_function<'tcx, 'sess>(

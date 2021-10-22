@@ -58,7 +58,7 @@ pub fn translate_predicate(
     }
 
     let term = ctx.term(def_id).unwrap().clone();
-    let mut body = specification::lower(ctx, &mut names, def_id, term);
+    let body = specification::lower(ctx, &mut names, def_id, term);
 
     decls.extend(names.to_clones(ctx));
     decls.push(Decl::PredDecl(Predicate { sig, body }));
