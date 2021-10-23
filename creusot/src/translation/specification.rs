@@ -78,7 +78,7 @@ impl PreContract {
 }
 
 // Turn a typing context into a substition.
-pub fn inv_subst(body: &Body) -> HashMap<why3::Ident, Exp> {
+pub fn inv_subst(body: &Body<'tcx>) -> HashMap<why3::Ident, Exp> {
     use rustc_middle::mir::VarDebugInfoContents::Place;
 
     body.var_debug_info

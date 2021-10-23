@@ -11,7 +11,7 @@ use rustc_middle::{
     ty::TyCtxt,
     ty::{TyKind, WithOptConstParam},
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use why3::declaration::*;
 use why3::mlcfg::{self, Exp::*, Statement::*, *};
 
@@ -46,6 +46,7 @@ pub fn translate_function<'tcx, 'sess>(
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
     RemoveFalseEdge { tcx }.visit_body(&mut body);
 
+    // simplify_locals(&mut body, tcx);
     let (invariants, assertions) = gather.with_corrected_locations_and_names(tcx, &body);
     let func_translator =
         FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, assertions, def_id);
@@ -65,6 +66,8 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
 
     // Spec / Ghost variables
     erased_locals: BitSet<Local>,
+
+    local_map: HashMap<Local, Local>,
 
     // Current block being generated
     current_block: (Vec<mlcfg::Statement>, Option<mlcfg::Terminator>),
@@ -99,14 +102,13 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_invariant(tcx, *def_id)
-                    || crate::util::is_assertion(tcx, *def_id)
-                {
+                if crate::util::is_invariant(tcx, *def_id) || crate::util::is_assertion(tcx, *def_id) {
                     erased_locals.insert(local);
                 }
             }
         });
 
+        let local_map = real_locals(tcx, body);
         let resolver = EagerResolver::new(tcx, body);
 
         FunctionTranslator {
@@ -122,6 +124,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             clone_names,
             invariants,
             assertions,
+            local_map,
         }
     }
 
@@ -380,6 +383,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         assert!(debug_info.len() <= 1, "expected at most one debug entry for local {:?}", loc);
 
+        let loc = self.local_map[&loc];
         match debug_info.get(0) {
             Some(info) => LocalIdent::dbg(loc, *info),
             None => LocalIdent::anon(loc),
@@ -465,4 +469,20 @@ impl<'tcx> MutVisitor<'tcx> for RemoveFalseEdge<'tcx> {
             terminator.kind = rustc_middle::mir::TerminatorKind::Goto { target: real_target }
         }
     }
+}
+
+pub fn real_locals(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> HashMap<Local, Local> {
+    let mut spec_local = 0;
+    body.local_decls
+        .iter_enumerated()
+        .filter_map(|(local, decl)| {
+            if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
+                if crate::util::is_invariant(tcx, *def_id) || crate::util::is_assertion(tcx, *def_id) {
+                    spec_local += 1;
+                    return None;
+                }
+            }
+            Some((local, (local.index() - spec_local).into()))
+        })
+        .collect()
 }
