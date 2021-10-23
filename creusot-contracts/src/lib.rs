@@ -1,8 +1,4 @@
-#![cfg_attr(
-    feature = "contracts",
-    feature(rustc_attrs, register_tool, stmt_expr_attributes, unsized_fn_params),
-    register_tool(creusot)
-)]
+#![cfg_attr(feature = "contracts", feature(unsized_fn_params))]
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns, box_syntax))]
 
 pub use creusot_contracts_proc::*;

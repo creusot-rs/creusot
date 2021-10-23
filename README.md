@@ -91,13 +91,6 @@ use creusot_contracts::*;
 
 :warning: Currently `creusot-contracts` is very unfinished. Using the macros included in this crate may prevent your Rust code from compiling normally. (TODO: implement a pass-through mode for normal compilation) :warning:
 
-Also, you usually need to add the following settings in each of the Rust files you verify with Creusot.
-```rust
-#![feature(register_tool, rustc_attrs)]
-#![register_tool(creusot)]
-#![feature(proc_macro_hygiene, stmt_expr_attributes)]
-```
-
 ## Kinds of contract expressions
 
 Currently Creusot uses 4 different kinds of contract expressions: `requires`, `ensures`, `invariant` and `variant`.
