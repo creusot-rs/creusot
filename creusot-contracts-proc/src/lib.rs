@@ -4,9 +4,10 @@ mod pretyping;
 
 use pearlite_syn::*;
 use proc_macro2::Span;
-use syn::*;
+use syn::{parse::Result, *};
 
 use proc_macro::TokenStream as TS1;
+use proc_macro2::TokenStream;
 use quote::quote;
 
 fn generate_unique_ident(prefix: &str) -> Ident {
@@ -16,88 +17,154 @@ fn generate_unique_ident(prefix: &str) -> Ident {
     Ident::new(&ident, Span::call_site())
 }
 
-fn parse_def_or_decl(tokens: TS1) -> Result<Signature> {
+// TODO: Add custom parse instance
+enum FnOrTraitSig {
+    Fn(ItemFn),
+    TraitSig(TraitItemMethod),
+}
+
+impl FnOrTraitSig {
+    pub fn sig(&self) -> Signature {
+        match self {
+            FnOrTraitSig::Fn(i) => i.sig.clone(),
+            FnOrTraitSig::TraitSig(s) => s.sig.clone(),
+        }
+    }
+}
+
+fn parse_def_or_decl(tokens: TS1) -> Result<FnOrTraitSig> {
     syn::parse::<ItemFn>(tokens.clone())
-        .map(|r| r.sig)
-        .or_else(|_| syn::parse::<TraitItemMethod>(tokens.clone()).map(|r| r.sig))
+        .map(FnOrTraitSig::Fn)
+        .or_else(|_| syn::parse::<TraitItemMethod>(tokens.clone()).map(FnOrTraitSig::TraitSig))
+}
+
+// Generate a token stream for the item representing a specific
+// `requires` or `ensures`
+fn fn_spec_item(tag: Ident, result: Option<FnArg>, tokens: TS1) -> Result<TokenStream> {
+    let p: pearlite_syn::Term = parse(tokens)?;
+    let req_body = pretyping::encode_term(p).unwrap();
+    let name_tag = format!("{}", quote! { #tag });
+
+    Ok(quote! {
+        #[allow(unused_must_use)]
+        let _ =
+            #[creusot::no_translate]
+            #[creusot::item=#name_tag]
+            #[creusot::decl::spec]
+            |#result|{ #req_body }
+        ;
+    })
+}
+
+fn sig_spec_item(tag: Ident, mut sig: Signature, tokens: TS1) -> Result<TokenStream> {
+    let p: pearlite_syn::Term = parse(tokens)?;
+    let req_body = pretyping::encode_term(p).unwrap();
+    let name_tag = format!("{}", quote! { #tag });
+    sig.ident = tag;
+    sig.output = parse_quote! { -> bool };
+
+    Ok(quote! {
+        #[creusot::no_translate]
+        #[creusot::item=#name_tag]
+        #[creusot::decl::spec]
+        #sig { #req_body }
+    })
 }
 
 #[proc_macro_attribute]
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
-    let p: pearlite_syn::Term = parse_macro_input!(attr);
-
-    let parse_res = parse_def_or_decl(tokens.clone());
-    let tokens = proc_macro2::TokenStream::from(tokens);
-
-    let sig = match parse_res {
-        Ok(o) => o,
+    match requires_inner(attr, tokens) {
+        Ok(r) => r,
         Err(err) => return TS1::from(err.to_compile_error()),
-    };
+    }
+}
 
-    let req_name = generate_unique_ident(&sig.ident.to_string());
-    let mut req_sig = sig;
-    req_sig.ident = req_name.clone();
-    req_sig.output = parse_quote! { -> bool };
-    let req_body = pretyping::encode_term(p).unwrap();
+fn requires_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
+    let parse_res = parse_def_or_decl(tokens);
+
+    let item = parse_res?;
+
+    let req_name = generate_unique_ident(&item.sig().ident.to_string());
+
     let name_tag = format!("{}", quote! { #req_name });
 
-    // TODO: Parse and pass down all the function's arguments.
-    TS1::from(quote! {
-      #[rustc_diagnostic_item=#name_tag]
-      #[creusot::spec::no_translate]
-      #[creusot::spec::contract]
-      #req_sig {
-        #req_body
-      }
+    match item {
+        FnOrTraitSig::Fn(mut f) => {
+            let requires_tokens = fn_spec_item(req_name, None, attr)?;
 
-      #[creusot::spec::requires=#name_tag]
-      #tokens
-    })
+            f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)));
+            Ok(TS1::from(quote! {
+              #[creusot::spec::requires=#name_tag]
+              #f
+            }))
+        }
+        FnOrTraitSig::TraitSig(s) => {
+            let requires_tokens = sig_spec_item(req_name, s.sig.clone(), attr)?;
+            Ok(TS1::from(quote! {
+
+              #requires_tokens
+
+              #[creusot::spec::requires=#name_tag]
+              #s
+            }))
+        }
+    }
 }
 
 #[proc_macro_attribute]
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
-    let p: pearlite_syn::Term = parse_macro_input!(attr);
-
-    let parse_res = parse_def_or_decl(tokens.clone());
-    let tokens = proc_macro2::TokenStream::from(tokens);
-
-    let sig = match parse_res {
-        Ok(o) => o,
+    match ensures_inner(attr, tokens) {
+        Ok(r) => r,
         Err(err) => return TS1::from(err.to_compile_error()),
-    };
+    }
+}
 
-    let ens_name = generate_unique_ident(&sig.ident.to_string());
-    let mut ens_sig = sig;
-    ens_sig.ident = ens_name.clone();
-    let result = match ens_sig.output {
+fn ensures_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
+    let item = parse_def_or_decl(tokens)?;
+
+    let result = match item.sig().output {
         ReturnType::Default => parse_quote! { result : () },
-        ReturnType::Type(_, ty) => parse_quote! { result : #ty },
+        ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
     };
-    ens_sig.inputs.push(result);
 
-    ens_sig.output = parse_quote! { -> bool };
-    let ens_body = pretyping::encode_term(p).unwrap();
+    let ens_name = generate_unique_ident(&item.sig().ident.to_string());
     let name_tag = format!("{}", quote! { #ens_name });
 
-    TS1::from(quote! {
-      #[rustc_diagnostic_item=#name_tag]
-      #[creusot::spec::no_translate]
-      #[creusot::spec::contract]
-      #ens_sig {
-        #ens_body
-      }
+    match item {
+        FnOrTraitSig::Fn(mut f) => {
+            let ensures_tokens = fn_spec_item(ens_name, Some(result), attr)?;
 
-      #[creusot::spec::ensures=#name_tag]
-      #tokens
-    })
+            f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)));
+            Ok(TS1::from(quote! {
+                #[creusot::spec::ensures=#name_tag]
+                #f
+            }))
+        }
+        FnOrTraitSig::TraitSig(s) => {
+            let mut sig = s.sig.clone();
+            sig.inputs.push(result);
+            let ensures_tokens = sig_spec_item(ens_name, sig, attr)?;
+            Ok(TS1::from(quote! {
+              #ensures_tokens
+              #[creusot::spec::ensures=#name_tag]
+              #s
+            }))
+        }
+    }
 }
 
 #[proc_macro_attribute]
 pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
-    let p: pearlite_syn::Term = parse_macro_input!(attr);
+    match variant_inner(attr, tokens) {
+        Ok(r) => r,
+        Err(err) => return TS1::from(err.to_compile_error()),
+    }
+}
 
-    let f: ItemFn = parse_macro_input!(tokens);
+fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
+    let p: pearlite_syn::Term = parse(attr)?;
+
+    let f: ItemFn = parse(tokens)?;
 
     let var_name = generate_unique_ident(&f.sig.ident.to_string());
     let mut var_sig = f.sig.clone();
@@ -107,17 +174,17 @@ pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
     let name_tag = format!("{}", quote! { #var_name });
 
     // TODO: Parse and pass down all the function's arguments.
-    TS1::from(quote! {
-      #[rustc_diagnostic_item=#name_tag]
-      #[creusot::spec::no_translate]
-      #[creusot::spec::contract]
+    Ok(TS1::from(quote! {
+      #[creusot::item=#name_tag]
+      #[creusot::no_translate]
+      #[creusot::decl::spec]
       #var_sig {
         #var_body
       }
 
       #[creusot::spec::variant=#name_tag]
       #f
-    })
+    }))
 }
 
 struct Invariant {
@@ -149,7 +216,8 @@ pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
         {
             #[allow(unused_must_use)]
             let _ = {
-                #[creusot::spec::no_translate]
+                #[creusot::no_translate]
+                #[creusot::decl::spec]
                 #[creusot::spec::invariant=#invariant_name]
                 ||{ #inv_body }
             };
@@ -168,7 +236,8 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
         {
             #[allow(unused_must_use)]
             let _ = {
-                #[creusot::spec::no_translate]
+                #[creusot::no_translate]
+                #[creusot::decl::spec]
                 #[creusot::spec::assert]
                 ||{ #assert_body }
             };
@@ -209,7 +278,7 @@ pub fn logic(_: TS1, tokens: TS1) -> TS1 {
 
 fn logic_sig(sig: TraitItemMethod) -> TS1 {
     TS1::from(quote! {
-        #[creusot::spec::logic]
+        #[creusot::decl::logic]
         #sig
     })
 }
@@ -223,7 +292,7 @@ fn logic_item(log: LogicItem) -> TS1 {
     let req_body = pretyping::encode_term(term).unwrap();
 
     TS1::from(quote! {
-        #[creusot::spec::logic]
+        #[creusot::decl::logic]
         #(#attrs)*
         #vis #sig {
             #req_body
@@ -264,8 +333,8 @@ pub fn predicate(_: TS1, tokens: TS1) -> TS1 {
 
 fn predicate_sig(sig: TraitItemMethod) -> TS1 {
     TS1::from(quote! {
-        #[creusot::spec::no_translate]
-        #[creusot::spec::predicate]
+        #[creusot::no_translate]
+        #[creusot::decl::predicate]
         #sig
     })
 }
@@ -279,7 +348,7 @@ fn predicate_item(log: PredicateItem) -> TS1 {
     let req_body = pretyping::encode_term(term).unwrap();
 
     TS1::from(quote! {
-        #[creusot::spec::predicate]
+        #[creusot::decl::predicate]
         #(#attrs)*
         #vis #sig {
             #req_body
@@ -292,7 +361,7 @@ pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
     let p: ItemFn = parse_macro_input!(tokens);
 
     TS1::from(quote! {
-        #[creusot::spec::trusted]
+        #[creusot::decl::trusted]
         #p
     })
 }
@@ -302,7 +371,7 @@ pub fn pure(_: TS1, tokens: TS1) -> TS1 {
     let p: ItemFn = parse_macro_input!(tokens);
 
     TS1::from(quote! {
-        #[creusot::spec::pure]
+        #[creusot::decl::pure]
         #p
     })
 }

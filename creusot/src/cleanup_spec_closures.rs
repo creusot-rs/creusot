@@ -72,9 +72,7 @@ impl MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &mut Rvalue<'tcx>, l: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), substs) => {
-                if util::get_attr(self.tcx.get_attrs(*def_id), &["creusot", "spec", "no_translate"])
-                    .is_some()
-                {
+                if util::is_no_translate(self.tcx, *def_id) {
                     substs.iter_mut().for_each(|p| {
                         if p.is_move() {
                             self.unused.insert(p.place().unwrap().as_local().unwrap());

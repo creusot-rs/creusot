@@ -27,7 +27,8 @@ impl Options {
         let export_metadata = export_metadata();
         let dependency = arg_value::arg_value(args, "--cap-lints", |val| val == "allow").is_some();
 
-        let output_file = args.iter().position(|a| a == "-o").map(|ix| args[ix + 1].clone());
+        let output_file =
+            args.iter().position(|a| a == "-o").map(|ix| args[ix + 1].clone()).or_else(output_file);
 
         let extern_paths = match creusot_externs() {
             Some(val) => from_str(&val).expect("could not parse CREUSOT_EXTERNS"),
@@ -48,6 +49,10 @@ impl Options {
             bounds_check,
         }
     }
+}
+
+fn output_file() -> Option<String> {
+    std::env::var_os("CREUSOT_OUTPUT_FILE").map(|m| m.to_string_lossy().to_string())
 }
 
 fn creusot_externs() -> Option<String> {

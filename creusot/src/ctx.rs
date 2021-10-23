@@ -8,15 +8,17 @@ use rustc_middle::ty::{AssocItemContainer, TyCtxt};
 use rustc_resolve::Namespace;
 use rustc_session::Session;
 use rustc_span::Span;
+use rustc_span::Symbol;
 pub use util::ItemType;
 use why3::declaration::{Module, TyDecl};
 use why3::QName;
 
 pub use crate::clone_map::*;
-use crate::translation::external::{self, BinaryMetadata, CrateMetadata};
+use crate::creusot_items::{self, CreusotItems};
+use crate::metadata::{BinaryMetadata, Metadata};
 use crate::translation::interface::interface_for;
-use crate::translation::specification;
 use crate::translation::specification::typing::Term;
+use crate::translation::{external, specification};
 use crate::util::item_type;
 use crate::{options::Options, util};
 
@@ -36,7 +38,7 @@ pub enum DefaultOrExtern<'tcx> {
 }
 
 impl TranslatedItem<'tcx> {
-    pub fn dependencies(&'a self, metadata: &'a CrateMetadata<'tcx>) -> &'a CloneSummary<'tcx> {
+    pub fn dependencies(&'a self, metadata: &'a Metadata<'tcx>) -> &'a CloneSummary<'tcx> {
         use TranslatedItem::*;
         match self {
             Extern { dependencies, .. } => match dependencies {
@@ -106,20 +108,23 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub types: Vec<TyDecl>,
     functions: IndexMap<DefId, TranslatedItem<'tcx>>,
     terms: IndexMap<DefId, Term<'tcx>>,
-    pub externs: CrateMetadata<'tcx>,
+    pub externs: Metadata<'tcx>,
     pub opts: &'sess Options,
+    creusot_items: CreusotItems,
 }
 
 impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, sess: &'sess Session, opts: &'sess Options) -> Self {
+        let creusot_items = creusot_items::local_creusot_items(tcx);
         Self {
             sess,
             tcx,
             translated_items: IndexSet::new(),
             types: Vec::new(),
             functions: IndexMap::new(),
-            externs: CrateMetadata::new(tcx),
+            externs: Metadata::new(tcx),
             terms: Default::default(),
+            creusot_items,
             opts,
         }
     }
@@ -194,7 +199,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         } else {
             let kind = self.tcx.def_kind(def_id);
             if kind == DefKind::Fn || kind == DefKind::Closure || kind == DefKind::AssocFn {
-                let is_spec = util::is_invariant(self.tcx, def_id);
+                let is_spec = util::is_spec(self.tcx, def_id);
                 if is_spec {
                     return;
                 }
@@ -290,7 +295,15 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn metadata(&self) -> BinaryMetadata<'tcx> {
-        BinaryMetadata::from_parts(self.tcx, &self.functions, &self.terms)
+        BinaryMetadata::from_parts(self.tcx, &self.functions, &self.terms, &self.creusot_items)
+    }
+
+    pub fn creusot_item(&self, name: Symbol) -> Option<DefId> {
+        self.creusot_items
+            .symbol_to_id
+            .get(&name)
+            .cloned()
+            .or_else(|| self.externs.creusot_item(name))
     }
 }
 

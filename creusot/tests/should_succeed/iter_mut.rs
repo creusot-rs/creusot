@@ -1,7 +1,4 @@
 // UNBOUNDED
-#![feature(register_tool, rustc_attrs)]
-#![register_tool(creusot)]
-#![feature(proc_macro_hygiene, stmt_expr_attributes)]
 #![feature(type_ascription, box_syntax)]
 
 extern crate creusot_contracts;

@@ -1,6 +1,4 @@
-#![feature(register_tool, rustc_attrs)]
-#![register_tool(creusot)]
-#![feature(proc_macro_hygiene, stmt_expr_attributes, unsized_fn_params)]
+#![feature(unsized_fn_params)]
 
 extern crate creusot_contracts;
 

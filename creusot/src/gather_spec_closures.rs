@@ -58,7 +58,7 @@ impl GatherSpecClosures {
         body: &Body<'tcx>,
     ) -> (IndexMap<BasicBlock, Vec<(Symbol, Exp)>>, IndexMap<DefId, Exp>) {
         let locations = invariant_locations(tcx, body);
-        let inv_subst = inv_subst(body);
+        let inv_subst = inv_subst(tcx, body);
 
         let invariants = locations
             .into_iter()

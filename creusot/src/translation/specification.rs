@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
+use crate::translation::function::real_locals;
 use crate::{ctx::*, util};
 use why3::declaration::Contract;
 use why3::mlcfg::Exp;
 
 use super::LocalIdent;
 use rustc_hir::def_id::DefId;
-use rustc_middle::{mir::Body, ty::TyCtxt};
+use rustc_middle::mir::Body;
+use rustc_middle::ty::TyCtxt;
 
 mod lower;
 pub mod typing;
@@ -78,9 +80,9 @@ impl PreContract {
 }
 
 // Turn a typing context into a substition.
-pub fn inv_subst(body: &Body) -> HashMap<why3::Ident, Exp> {
+pub fn inv_subst(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> HashMap<why3::Ident, Exp> {
     use rustc_middle::mir::VarDebugInfoContents::Place;
-
+    let local_map = real_locals(tcx, body);
     body.var_debug_info
         .iter()
         .map(|vdi| {
@@ -88,6 +90,7 @@ pub fn inv_subst(body: &Body) -> HashMap<why3::Ident, Exp> {
                 Place(p) => p.as_local().unwrap(),
                 _ => panic!(),
             };
+            let loc = local_map[&loc];
             let source_name = vdi.name.to_string();
             (source_name.into(), Exp::Var(LocalIdent::dbg(loc, vdi).ident()))
         })
@@ -99,37 +102,38 @@ pub enum SpecAttrError {
     InvalidTokens,
 }
 
-pub fn contract_of(tcx: TyCtxt, def_id: DefId) -> Result<PreContract, SpecAttrError> {
-    let attrs = tcx.get_attrs(def_id);
+pub fn contract_of(ctx: &TranslationCtx, def_id: DefId) -> Result<PreContract, SpecAttrError> {
+    let attrs = ctx.tcx.get_attrs(def_id);
 
     use SpecAttrError::*;
     let mut contract = PreContract::new();
 
     for attr in attrs {
-        if attr.is_doc_comment() {
+        if !util::is_attr(attr, "spec") {
             continue;
         }
 
         let attr = attr.get_normal_item();
 
-        if !util::is_attr(attr, "spec") {
-            continue;
-        }
-
+        // Stop using diagnostic item.
+        // Use a custom HIR visitor which walks the attributes
         match attr.path.segments[2].ident.to_string().as_str() {
             "requires" => {
                 let req_name = util::ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?;
-                let req_id = tcx.get_diagnostic_item(req_name).ok_or(InvalidTokens)?;
+                let req_id = ctx.creusot_item(req_name).unwrap();
                 contract.requires.push(req_id);
             }
             "ensures" => {
                 let ens_name = util::ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?;
-                let ens_id = tcx.get_diagnostic_item(ens_name).ok_or(InvalidTokens)?;
+                let ens_id = ctx.creusot_item(ens_name).unwrap_or_else(|| {
+                    ctx.externs.debug_creusot_items();
+                    panic!("WHTF?")
+                });
                 contract.ensures.push(ens_id);
             }
             "variant" => {
                 let var_name = util::ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?;
-                let var_id = tcx.get_diagnostic_item(var_name).ok_or(InvalidTokens)?;
+                let var_id = ctx.creusot_item(var_name).ok_or(InvalidTokens)?;
                 contract.variant = Some(var_id);
             }
             _ => {}

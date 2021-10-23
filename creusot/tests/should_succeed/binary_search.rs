@@ -1,8 +1,4 @@
 // SHOULD_SUCCEED: parse-print
-#![feature(register_tool, rustc_attrs)]
-#![register_tool(creusot)]
-#![feature(proc_macro_hygiene, stmt_expr_attributes)]
-
 // Here we prove the Rust stdlib implementation of binary search with a few changes
 // 1. We use a List rather than a slice, this restriction is because Creusot cannot yet
 //    axiomatize types, and should be lifted soon.

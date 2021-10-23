@@ -25,6 +25,7 @@ use why3::{
 use std::io::Result;
 
 use crate::ctx::TranslationCtx;
+use crate::metadata;
 use std::io::Write;
 use why3::mlcfg;
 
@@ -49,7 +50,7 @@ pub fn translate(mut ctx: TranslationCtx<'_, '_>) -> Result<()> {
     }
 
     if ctx.should_export() {
-        external::dump_exports(&ctx, &ctx.opts.metadata_path);
+        metadata::dump_exports(&ctx, &ctx.opts.metadata_path);
     }
 
     if ctx.should_compile() {

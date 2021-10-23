@@ -17,7 +17,7 @@ use crate::{ctx, rustc_extensions};
 
 use crate::ctx::*;
 use crate::translation::ty::{self, translate_ty};
-use crate::util::{ident_of, is_contract};
+use crate::util::{ident_of, is_spec};
 
 use rustc_resolve::Namespace;
 
@@ -175,7 +175,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 pub fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &AssocItem> {
     tcx.associated_items(def_id)
         .in_definition_order()
-        .filter(move |item| !is_contract(tcx, item.def_id))
+        .filter(move |item| !is_spec(tcx, item.def_id))
 }
 
 pub fn translate_predicates(
