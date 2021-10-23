@@ -15,6 +15,7 @@ extern crate rustc_macros;
 extern crate rustc_metadata;
 extern crate rustc_middle;
 extern crate rustc_mir_dataflow;
+extern crate rustc_mir_transform;
 // extern   crate rustc_mir;
 extern crate rustc_mir_build;
 extern crate rustc_resolve;
@@ -29,24 +30,21 @@ extern crate smallvec;
 extern crate log;
 
 mod analysis;
-pub mod clone_map;
-pub mod ctx;
-mod extended_location;
-mod gather_spec_closures;
-mod resolve;
-mod translation;
-pub mod util;
-
-#[allow(dead_code)]
-mod debug;
-
-#[allow(dead_code)]
-mod rustc_extensions;
-
-mod cleanup_spec_closures;
-
 pub mod arg_value;
 pub mod callbacks;
+mod cleanup_spec_closures;
+pub mod clone_map;
+pub(crate) mod creusot_items;
+pub mod ctx;
+#[allow(dead_code)]
+mod debug;
+mod extended_location;
+mod gather_spec_closures;
 pub mod options;
-
+mod resolve;
+#[allow(dead_code)]
+mod rustc_extensions;
+mod translation;
+pub mod util;
 use translation::*;
+pub mod metadata;

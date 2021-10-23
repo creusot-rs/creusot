@@ -21,6 +21,8 @@ pub use rustc_middle::thir;
 
 use rustc_macros::{TyDecodable, TyEncodable};
 
+use crate::util;
+
 #[derive(Clone, Debug, TyDecodable, TyEncodable)]
 pub enum LogicalOp {
     And,
@@ -71,7 +73,7 @@ fn lower_expr<'tcx>(
     thir: &Thir<'tcx>,
     expr: ExprId,
 ) -> Result<Term<'tcx>, Error> {
-    trace!("{:?}", &thir[expr].kind);
+    // eprintln!("{:?}", &thir[expr].kind);
     if thir.exprs.is_empty() {
         return Err(Error {});
     };
@@ -82,7 +84,8 @@ fn lower_expr<'tcx>(
                 Some(e) => lower_expr(tcx, thir, e)?,
                 None => Term::Tuple { fields: vec![] },
             };
-            for stmt in stmts.iter().rev() {
+
+            for stmt in stmts.iter().rev().filter(|id| not_spec(tcx, thir, **id)) {
                 inner = lower_stmt(tcx, thir, *stmt, inner)?;
             }
             Ok(inner)
@@ -400,5 +403,30 @@ fn field_pattern(ty: Ty, field: Field) -> Option<Pattern> {
             Some(Pattern::Constructor { adt, variant: 0usize.into(), fields })
         }
         _ => unreachable!("field_pattern: {:?}", ty),
+    }
+}
+
+fn not_spec(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, id: StmtId) -> bool {
+    match thir[id].kind {
+        StmtKind::Expr { expr, .. } => not_spec_expr(tcx, thir, expr),
+        StmtKind::Let { initializer, .. } => {
+            if let Some(initializer) = initializer {
+                not_spec_expr(tcx, thir, initializer)
+            } else {
+                true
+            }
+        }
+    }
+}
+
+fn not_spec_expr(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, id: ExprId) -> bool {
+    eprintln!("NOTSPEC: {:?}", thir[id].kind);
+    match thir[id].kind {
+        ExprKind::Scope { value, .. } => not_spec_expr(tcx, thir, value),
+        ExprKind::Closure { closure_id, .. } => {
+            eprintln!("OMGOMGOMG");
+            !util::is_spec(tcx, closure_id)
+        }
+        _ => true,
     }
 }

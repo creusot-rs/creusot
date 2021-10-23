@@ -1,6 +1,6 @@
 use crate::ctx::*;
 use crate::translation::ty;
-use rustc_ast::AttrItem;
+use rustc_ast::{AttrItem, AttrKind, Attribute};
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::Attributes;
 use rustc_middle::ty::{DefIdTree, TyCtxt};
@@ -24,56 +24,44 @@ pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {
     module_id
 }
 
-pub fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "no_translate"]).is_some()
+pub(crate) fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs(def_id), &["creusot", "no_translate"]).is_some()
 }
 
-pub fn is_contract(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "contract"]).is_some()
+pub(crate) fn is_spec(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "spec"]).is_some()
 }
 
-pub fn is_ensures(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "ensures"]).is_some()
-}
-
-pub fn is_requires(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "requires"]).is_some()
-}
-
-pub fn is_variant(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "variant"]).is_some()
-}
-
-pub fn invariant_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
+pub(crate) fn invariant_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "invariant"])
         .and_then(|a| ts_to_symbol(a.args.inner_tokens()))
 }
 
-pub fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
+pub(crate) fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
     invariant_name(tcx, def_id).is_some()
 }
 
-pub fn is_assertion(tcx: TyCtxt, def_id: DefId) -> bool {
+pub(crate) fn is_assertion(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "assert"]).is_some()
 }
 
-pub fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "predicate"]).is_some()
+pub(crate) fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "predicate"]).is_some()
 }
 
-pub fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "logic"]).is_some()
+pub(crate) fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "logic"]).is_some()
 }
 
-pub fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "trusted"]).is_some()
+pub(crate) fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "trusted"]).is_some()
 }
 
-pub fn is_pure(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "pure"]).is_some()
+pub(crate) fn is_pure(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "pure"]).is_some()
 }
 
-pub fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
+pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     loop {
         if is_no_translate(tcx, def_id) {
             return false;
@@ -154,7 +142,7 @@ pub fn signature_of<'tcx>(
         .normalize_erasing_late_bound_regions(ctx.tcx.param_env(def_id), ctx.tcx.fn_sig(def_id));
 
     let mut contract = names.with_public_clones(|names| {
-        let pre_contract = crate::specification::contract_of(ctx.tcx, def_id).unwrap();
+        let pre_contract = crate::specification::contract_of(ctx, def_id).unwrap();
         pre_contract.check_and_lower(ctx, names, def_id)
     });
 
@@ -231,9 +219,14 @@ pub fn get_attr<'a>(attrs: Attributes<'a>, path: &[&str]) -> Option<&'a AttrItem
     None
 }
 
-pub fn is_attr(attr: &AttrItem, str: &str) -> bool {
-    let segments = &attr.path.segments;
-    segments.len() >= 2
-        && segments[0].ident.as_str() == "creusot"
-        && segments[1].ident.as_str() == str
+pub fn is_attr(attr: &Attribute, str: &str) -> bool {
+    match attr.kind {
+        AttrKind::DocComment(..) => false,
+        AttrKind::Normal(ref i, _) => {
+            let segments = &i.path.segments;
+            segments.len() >= 2
+                && segments[0].ident.as_str() == "creusot"
+                && segments[1].ident.as_str() == str
+        }
+    }
 }

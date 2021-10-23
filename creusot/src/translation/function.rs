@@ -102,7 +102,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_invariant(tcx, *def_id) || crate::util::is_assertion(tcx, *def_id) {
+                if crate::util::is_spec(tcx, *def_id) {
                     erased_locals.insert(local);
                 }
             }
@@ -477,7 +477,7 @@ pub fn real_locals(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> HashMap<Local, Local
         .iter_enumerated()
         .filter_map(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_invariant(tcx, *def_id) || crate::util::is_assertion(tcx, *def_id) {
+                if crate::util::is_spec(tcx, *def_id) {
                     spec_local += 1;
                     return None;
                 }

@@ -89,13 +89,10 @@ module C02Gnome_Ord
   val le (self : self) (o : self) : bool
     ensures { result = le_log self o }
     
-  function trans (a : self) (b : self) (c : self) : ()
   val trans (a : self) (b : self) (c : self) : ()
     requires {le_log a b && le_log b c}
     ensures { le_log a c }
-    ensures { result = trans a b c }
     
-  axiom trans_spec : forall a : self, b : self, c : self . le_log a b && le_log b c -> le_log a c
 end
 module C02Gnome_SortedRange_Interface
   type t   
@@ -107,7 +104,7 @@ module C02Gnome_SortedRange
   type t   
   use seq.Seq
   use mach.int.Int
-  clone C02Gnome_Ord as Ord0 with type self = t, axiom .
+  clone C02Gnome_Ord as Ord0 with type self = t
   predicate sorted_range (s : Seq.seq t) (l : int) (u : int) = 
     forall j : (int) . forall i : (int) . l <= i && i < j && j < u -> Ord0.le_log (Seq.get s i) (Seq.get s j)
 end
@@ -393,9 +390,9 @@ module C02Gnome_GnomeSort
   clone Core_Marker_Sized as Sized0 with type self = t
   clone CreusotContracts_Builtins_Seq_Impl0_PermutationOf as PermutationOf0 with type t = t
   clone C02Gnome_Impl0 as Model1 with type t = borrowed (Type.creusotcontracts_std1_vec_vec t)
-  clone C02Gnome_Ord as Ord0 with type self = t, axiom .
+  clone C02Gnome_Ord as Ord0 with type self = t
   clone C02Gnome_SortedRange as SortedRange0 with type t = t, function Ord0.le_log = Ord0.le_log, val Ord0.le = Ord0.le,
-  function Ord0.trans = Ord0.trans, val Ord0.trans = Ord0.trans
+  val Ord0.trans = Ord0.trans
   clone C02Gnome_Sorted as Sorted0 with type t = t, predicate SortedRange0.sorted_range = SortedRange0.sorted_range
   clone CreusotContracts_Std1_Vec_Impl0 as Model2 with type t = t
   clone CreusotContracts_Builtins_Model_Impl1 as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,

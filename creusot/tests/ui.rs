@@ -24,10 +24,12 @@ fn main() {
     metadata_file
         .args(&["creusot", "--package", "creusot-contracts", "--features=contracts"])
         .env("CREUSOT_METADATA_PATH", &temp_file)
+        .env("CREUSOT_OUTPUT_FILE", "/dev/null")
+        .env("RUST_BACKTRACE", "1")
         .env("CREUSOT_CONTINUE", "true");
 
     if !metadata_file.status().expect("could not dump metadata for `creusot_contracts`").success() {
-        eprintln!("{}", String::from_utf8_lossy(&metadata_file.output().unwrap().stderr));
+        // eprintln!("{}", String::from_utf8_lossy(&metadata_file.output().unwrap().stderr));
         std::process::exit(1);
     }
 
