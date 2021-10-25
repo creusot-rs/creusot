@@ -42,13 +42,15 @@ impl<T> Vec<T> {
     }
 
     #[trusted]
-    #[requires(@ix < (@self).len())]
-    #[ensures(*result === (@self)[@ix])]
-    pub fn index(&self, ix: usize) -> &T {
-        use std::ops::Index;
-        self.0.index(ix)
+    #[requires(@i < (@self).len())]
+    #[requires(@j < (@self).len())]
+    #[ensures((@^self).exchange(@*self, @i, @j))]
+    pub fn swap(&mut self, i: usize, j: usize) {
+        self.0.swap(i, j)
     }
+}
 
+impl<T> std::ops::IndexMut<usize> for Vec<T> {
     #[trusted]
     #[requires(@ix < (@*self).len())]
     #[ensures(*result === (@self)[@ix])]
@@ -57,16 +59,18 @@ impl<T> Vec<T> {
         !(j === @ix) ==>
         (@^self)[j] === (@*self)[j])]
     #[ensures((@*self).len() === (@^self).len())]
-    pub fn index_mut(&mut self, ix: usize) -> &mut T {
-        use std::ops::IndexMut;
+    fn index_mut(&mut self, ix: usize) -> &mut T {
         self.0.index_mut(ix)
     }
+}
+
+impl<T> std::ops::Index<usize> for Vec<T> {
+    type Output = T;
 
     #[trusted]
-    #[requires(@i < (@self).len())]
-    #[requires(@j < (@self).len())]
-    #[ensures((@^self).exchange(@*self, @i, @j))]
-    pub fn swap(&mut self, i: usize, j: usize) {
-        self.0.swap(i, j)
+    #[requires(@ix < (@self).len())]
+    #[ensures(*result === (@self)[@ix])]
+    fn index(&self, ix: usize) -> &T {
+        self.0.index(ix)
     }
 }

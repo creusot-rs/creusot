@@ -15,6 +15,8 @@ module Type
 end
 module Modules_Nested_Further_Another_Interface
   val another () : bool
+    requires {false}
+    
 end
 module Modules_Nested_Further_Another
   let rec cfg another () : bool = 
@@ -28,7 +30,11 @@ module Modules_Nested_Further_Another
   }
   
 end
-module CreusotContracts_Builtins_Resolve_Resolve
+module CreusotContracts_Builtins_Resolve_Resolve_Resolve_Interface
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Builtins_Resolve_Resolve_Resolve
   type self   
   predicate resolve (self : self)
 end
@@ -41,26 +47,21 @@ module Modules_Nested_Impl0_Resolve
   predicate resolve (self : Type.modules_nested_nested) = 
     true
 end
-module Modules_Nested_Impl0_Interface
-  use Type
-  clone export Modules_Nested_Impl0_Resolve_Interface
-  clone export CreusotContracts_Builtins_Resolve_Resolve with type self = Type.modules_nested_nested,
-  predicate resolve = resolve
-end
 module Modules_Nested_Impl0
   use Type
-  clone export Modules_Nested_Impl0_Resolve
-  clone export CreusotContracts_Builtins_Resolve_Resolve with type self = Type.modules_nested_nested,
-  predicate resolve = resolve
+  clone Modules_Nested_Impl0_Resolve as Resolve0
+  clone CreusotContracts_Builtins_Resolve_Resolve_Resolve as Resolve1 with type self = Type.modules_nested_nested,
+  predicate resolve = Resolve0.resolve
 end
 module Modules_Nested_InnerFunc_Interface
   val inner_func () : bool
+    requires {false}
     ensures { result = true }
     
 end
 module Modules_Nested_InnerFunc
   use Type
-  clone Modules_Nested_Impl0 as Resolve0
+  clone Modules_Nested_Impl0_Resolve as Resolve0
   let rec cfg inner_func () : bool
     ensures { result = true }
     
@@ -80,6 +81,8 @@ module Modules_Nested_InnerFunc
 end
 module Modules_Main_Interface
   val main () : ()
+    requires {false}
+    
 end
 module Modules_Main
   clone Modules_Nested_Further_Another_Interface as Another0

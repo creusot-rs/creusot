@@ -1,6 +1,6 @@
 use super::typing::{LogicalOp, Pattern, Term};
 use crate::ctx::*;
-use crate::translation::traits::{resolve_assoc_item_opt, MethodInstance};
+use crate::translation::traits::resolve_assoc_item_opt;
 use crate::translation::{binop_to_binop, builtins, constant, ty::translate_ty, unop_to_unop};
 use why3::mlcfg::{BinOp, Exp, Pattern as Pat};
 
@@ -60,18 +60,18 @@ fn lower_term_to_why3<'tcx>(
 
             let param_env = ctx.tcx.param_env(term_id);
 
-            let method = resolve_assoc_item_opt(ctx.tcx, param_env, id, subst)
-                .unwrap_or(MethodInstance::new(ctx.tcx, id, subst));
-            debug!("resolved_method={:?}", (method.def_id, method.substs));
+            let method =
+                resolve_assoc_item_opt(ctx.tcx, param_env, id, subst).unwrap_or((id, subst));
+            debug!("resolved_method={:?}", method);
 
-            if is_identity_from(ctx.tcx, id, method.substs) {
+            if is_identity_from(ctx.tcx, id, method.1) {
                 return args.remove(0);
             }
 
-            builtins::lookup_builtin(ctx, names, &method, &mut args).unwrap_or_else(|| {
-                ctx.translate(method.def_id);
-                let clone = names.insert(method.def_id, method.substs);
-                Exp::Call(box Exp::QVar(clone.qname_sym(method.ident)), args)
+            builtins::lookup_builtin(ctx, names, method, &mut args).unwrap_or_else(|| {
+                ctx.translate(method.0);
+                let clone = names.insert(method.0, method.1);
+                Exp::Call(box Exp::QVar(clone.qname(ctx.tcx, method.0)), args)
             })
         }
         Term::Forall { binder, box body } => {

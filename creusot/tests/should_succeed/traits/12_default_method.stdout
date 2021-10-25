@@ -10,7 +10,11 @@ module Type
   use floating_point.Double
   use prelude.Prelude
 end
-module CreusotContracts_Builtins_Resolve_Resolve
+module CreusotContracts_Builtins_Resolve_Resolve_Resolve_Interface
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Builtins_Resolve_Resolve_Resolve
   type self   
   predicate resolve (self : self)
 end
@@ -20,13 +24,15 @@ module C12DefaultMethod_T_Default_Interface
   use mach.int.Int
   use mach.int.UInt32
   val default (self : self) : uint32
+    requires {false}
+    
 end
 module C12DefaultMethod_T_Default
   type self   
   use prelude.Prelude
   use mach.int.Int
   use mach.int.UInt32
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve0 with type self = self
+  clone CreusotContracts_Builtins_Resolve_Resolve_Resolve as Resolve0 with type self = self
   let rec cfg default (self : self) : uint32 = 
   var _0 : uint32;
   var self_1 : self;
@@ -50,37 +56,24 @@ module C12DefaultMethod_T_LogicDefault
   function logic_default (self : self) : bool = 
     true
 end
-module C12DefaultMethod_T
-  type self   
-  clone export C12DefaultMethod_T_Default_Interface with type self = self
-  clone export C12DefaultMethod_T_LogicDefault with type self = self
-end
-module C12DefaultMethod_Impl0_Interface
-  use mach.int.Int
-  use mach.int.UInt32
-  clone export C12DefaultMethod_T with type self = uint32
-end
-module C12DefaultMethod_Impl0
-  use mach.int.Int
-  use mach.int.UInt32
-  clone export C12DefaultMethod_T with type self = uint32
-end
 module C12DefaultMethod_ShouldUseImpl_Interface
   use mach.int.Int
   use mach.int.UInt32
-  clone C12DefaultMethod_Impl0_Interface as T0
+  clone C12DefaultMethod_T_LogicDefault_Interface as LogicDefault0 with type self = uint32
   val should_use_impl (x : uint32) : ()
-    ensures { T0.logic_default x }
+    requires {false}
+    ensures { LogicDefault0.logic_default x }
     
 end
 module C12DefaultMethod_ShouldUseImpl
   use mach.int.Int
   use mach.int.UInt32
-  clone C12DefaultMethod_Impl0 as T0
+  clone C12DefaultMethod_T_LogicDefault as LogicDefault0 with type self = uint32
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve0 with type self = uint32
+  clone C12DefaultMethod_T_Default_Interface as Default0 with type self = uint32
+  clone CreusotContracts_Builtins_Resolve_Resolve_Resolve as Resolve0 with type self = uint32
   let rec cfg should_use_impl (x : uint32) : ()
-    ensures { T0.logic_default x }
+    ensures { LogicDefault0.logic_default x }
     
    = 
   var _0 : ();
@@ -94,12 +87,15 @@ module C12DefaultMethod_ShouldUseImpl
   BB0 {
     _3 <- x_1;
     assume { Resolve0.resolve x_1 };
-    _2 <- T0.default _3;
+    _2 <- Default0.default _3;
     goto BB1
   }
   BB1 {
     _0 <- ();
     return _0
   }
+  
+end
+module C12DefaultMethod_Impl0
   
 end

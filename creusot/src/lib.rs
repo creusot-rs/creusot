@@ -25,7 +25,6 @@ extern crate rustc_span;
 extern crate rustc_target;
 extern crate rustc_trait_selection;
 extern crate smallvec;
-
 #[macro_use]
 extern crate log;
 

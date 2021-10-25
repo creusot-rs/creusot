@@ -40,12 +40,14 @@ pub enum TranslatedItem<'tcx> {
         dependencies: CloneSummary<'tcx>,
     },
     Trait {
-        modl: Module,
-        dependencies: CloneSummary<'tcx>,
         has_axioms: bool,
+        dependencies: CloneSummary<'tcx>, // always empty
     },
     Impl {
-        interface: Module,
+        modl: Module, // Refinement of traits,
+        dependencies: CloneSummary<'tcx>,
+    },
+    AssocTy {
         modl: Module,
         dependencies: CloneSummary<'tcx>,
     },
@@ -85,6 +87,7 @@ impl TranslatedItem<'tcx> {
             Program { dependencies, .. } => dependencies,
             Trait { dependencies, .. } => dependencies,
             Impl { dependencies, .. } => dependencies,
+            AssocTy { dependencies, .. } => dependencies,
             Extern { .. } => unreachable!("local_dependencies: called on a non-local item"),
         }
     }
@@ -97,18 +100,6 @@ impl TranslatedItem<'tcx> {
         }
     }
 
-    pub fn body(&'a self) -> &'a Module {
-        use TranslatedItem::*;
-        match self {
-            Hybrid { modl, .. } => modl,
-            Logic { modl, .. } => modl,
-            Program { modl, .. } => modl,
-            Trait { modl, .. } => modl,
-            Impl { modl, .. } => modl,
-            Extern { body, .. } => body,
-        }
-    }
-
     pub fn modules(&'a self) -> Box<dyn Iterator<Item = &Module> + 'a> {
         use std::iter;
         use TranslatedItem::*;
@@ -118,8 +109,9 @@ impl TranslatedItem<'tcx> {
             }
             Logic { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
             Program { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
-            Trait { modl, .. } => box iter::once(modl),
-            Impl { modl, interface, .. } => box iter::once(interface).chain(iter::once(modl)),
+            Trait { .. } => box iter::empty(),
+            Impl { modl, .. } => box iter::once(modl),
+            AssocTy { modl, .. } => box iter::once(modl),
             Extern { interface, body, .. } => box iter::once(interface).chain(iter::once(body)),
         }
     }
@@ -160,19 +152,32 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
     pub fn translate(&mut self, def_id: DefId) {
         debug!("translating {:?}", def_id);
+        if self.translated_items.contains(&def_id) {
+            return;
+        }
         match item_type(self.tcx, def_id) {
             ItemType::Trait => self.translate_trait(def_id),
             ItemType::Impl => self.translate_impl(def_id),
             ItemType::Logic | ItemType::Predicate | ItemType::Program | ItemType::Pure => {
                 self.translate_function(def_id)
             }
-            ItemType::Type => unreachable!(),
+            ItemType::AssocTy => {
+                let (modl, dependencies) = self.translate_assoc_ty(def_id);
+                self.translated_items.insert(def_id);
+                self.functions.insert(def_id, TranslatedItem::AssocTy { modl, dependencies });
+            }
+            ItemType::Type => unreachable!("ty"),
             ItemType::Interface => unreachable!(),
         }
     }
 
     // Generic entry point for function translation
     pub fn translate_function(&mut self, def_id: DefId) {
+        assert!(matches!(
+            self.tcx.def_kind(def_id),
+            DefKind::Fn | DefKind::Closure | DefKind::AssocFn
+        ));
+
         if let Some(assoc) = self.tcx.opt_associated_item(def_id) {
             match assoc.container {
                 AssocItemContainer::TraitContainer(id) => self.translate(id),
@@ -186,13 +191,6 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
         if !self.translated_items.insert(def_id) {
             return;
-        }
-
-        if let Some(local_id) = def_id.as_local() {
-            let hir_id = self.tcx.hir().local_def_id_to_hir_id(local_id);
-            if !self.tcx.hir().maybe_body_owned_by(hir_id).is_some() {
-                return;
-            }
         }
 
         if !crate::util::should_translate(self.tcx, def_id) {
@@ -222,18 +220,12 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             let (modl, proof_modl, deps) = crate::translation::translate_pure(self, def_id, span);
             TranslatedItem::Hybrid { interface, modl, proof_modl, dependencies: deps.summary() }
         } else {
-            let kind = self.tcx.def_kind(def_id);
-            if kind == DefKind::Fn || kind == DefKind::Closure || kind == DefKind::AssocFn {
-                let is_spec = util::is_spec(self.tcx, def_id);
-                if is_spec {
-                    return;
-                }
-
-                let modl = crate::translation::translate_function(self.tcx, self, def_id);
-                TranslatedItem::Program { interface, modl, dependencies: deps.summary() }
-            } else {
-                unimplemented!("{:?} {:?}", def_id, self.tcx.def_kind(def_id))
+            if util::is_spec(self.tcx, def_id) {
+                return;
             }
+
+            let modl = crate::translation::translate_function(self, def_id);
+            TranslatedItem::Program { interface, modl, dependencies: deps.summary() }
         };
 
         self.functions.insert(def_id, translated);
@@ -277,26 +269,16 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.types.insert(pos, decl);
     }
 
-    pub fn add_trait(&mut self, def_id: DefId, trait_decl: Module, has_axioms: bool) {
+    pub fn add_trait(&mut self, def_id: DefId, has_axioms: bool) {
         self.functions.insert(
             def_id,
-            TranslatedItem::Trait {
-                modl: trait_decl,
-                dependencies: CloneSummary::new(),
-                has_axioms,
-            },
+            TranslatedItem::Trait { has_axioms, dependencies: CloneSummary::new() },
         );
     }
 
-    pub fn add_impl(
-        &mut self,
-        def_id: DefId,
-        modl: Module,
-        interface: Module,
-        summary: CloneSummary<'tcx>,
-    ) {
+    pub fn add_impl(&mut self, def_id: DefId, modl: Module) {
         self.functions
-            .insert(def_id, TranslatedItem::Impl { interface, modl, dependencies: summary });
+            .insert(def_id, TranslatedItem::Impl { modl, dependencies: CloneSummary::new() });
     }
 
     pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
@@ -368,6 +350,10 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
 
     let name;
     match (kind, kind.ns()) {
+        (AssocTy, _) => {
+            name = segments;
+            segments = Vec::new();
+        }
         (_, _) if ty => {
             name = segments.into_iter().map(|seg| seg.to_lowercase()).collect();
             segments = vec!["Type".to_owned()];

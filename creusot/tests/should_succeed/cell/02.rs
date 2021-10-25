@@ -98,7 +98,7 @@ fn lemma_max_int() {}
 #[ensures(@result === fib(@i))]
 #[requires(@i <= 63)]
 fn fib_memo(mem: &FibCache, i: usize) -> usize {
-    match mem.index(i).get() {
+    match mem[i].get() {
         Some(v) => v,
         None => {
             let fib_i = if i == 0 {
@@ -111,7 +111,7 @@ fn fib_memo(mem: &FibCache, i: usize) -> usize {
                 fib_memo(mem, i - 1) + fib_memo(mem, i - 2)
             };
             proof_assert! { @fib_i === fib(@i)};
-            mem.index(i).set(Some(fib_i));
+            mem[i].set(Some(fib_i));
             fib_i
         }
     }

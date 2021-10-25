@@ -37,6 +37,10 @@ pub fn interface_for(
             decls.push(Decl::ValDecl(ValKind::Function { sig: func_sig }));
         }
         _ => {
+            if !util::is_trusted(ctx.tcx, def_id) {
+                sig.contract.requires.push(why3::mlcfg::Exp::mk_false());
+            }
+
             decls.push(Decl::ValDecl(ValKind::Val { sig }));
         }
     }

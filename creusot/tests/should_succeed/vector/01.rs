@@ -38,7 +38,7 @@ fn all_zero(v: &mut Vec<u32>) {
     #[invariant(in_bounds, (@*v).len() === (@*@old_v).len())]
     #[invariant(all_zero, forall<j : Int> 0 <= j && j < i.into() ==> (@*v)[j] === 0u32)]
     while i < v.len() {
-        *v.index_mut(i) = 0;
+        v[i] = 0;
         i += 1;
     }
 }
