@@ -23,12 +23,37 @@ use crate::util::item_type;
 use crate::{options::Options, util};
 
 pub enum TranslatedItem<'tcx> {
-    Hybrid { interface: Module, modl: Module, proof_modl: Module, dependencies: CloneSummary<'tcx> },
-    Logic { interface: Module, modl: Module, dependencies: CloneSummary<'tcx> },
-    Program { interface: Module, modl: Module, dependencies: CloneSummary<'tcx> },
-    Trait { modl: Module, dependencies: CloneSummary<'tcx>, has_axioms: bool },
-    Impl { interface: Module, modl: Module, dependencies: CloneSummary<'tcx> },
-    Extern { interface: Module, body: Module, dependencies: Result<CloneSummary<'tcx>, DefId> },
+    Hybrid {
+        interface: Module,
+        modl: Module,
+        proof_modl: Option<Module>,
+        dependencies: CloneSummary<'tcx>,
+    },
+    Logic {
+        interface: Module,
+        modl: Module,
+        dependencies: CloneSummary<'tcx>,
+    },
+    Program {
+        interface: Module,
+        modl: Module,
+        dependencies: CloneSummary<'tcx>,
+    },
+    Trait {
+        modl: Module,
+        dependencies: CloneSummary<'tcx>,
+        has_axioms: bool,
+    },
+    Impl {
+        interface: Module,
+        modl: Module,
+        dependencies: CloneSummary<'tcx>,
+    },
+    Extern {
+        interface: Module,
+        body: Module,
+        dependencies: Result<CloneSummary<'tcx>, DefId>,
+    },
 }
 
 pub enum DefaultOrExtern<'tcx> {
@@ -89,7 +114,7 @@ impl TranslatedItem<'tcx> {
         use TranslatedItem::*;
         match self {
             Hybrid { interface, proof_modl, modl, .. } => {
-                box iter::once(interface).chain(iter::once(modl)).chain(iter::once(proof_modl))
+                box iter::once(interface).chain(iter::once(modl)).chain(proof_modl.iter())
             }
             Logic { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
             Program { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),

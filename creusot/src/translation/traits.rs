@@ -99,14 +99,6 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
         self.translate_trait(trait_ref.def_id);
 
-        let mut names = CloneMap::new(self.tcx, impl_id, true);
-        names.clone_self(impl_id);
-        let decls =
-            names.with_public_clones(|names| self.build_impl_module(names, trait_ref, impl_id));
-        let name = translate_value_id(self.tcx, impl_id);
-
-        let modl = Module { name: name.name(), decls };
-
         let mut names = CloneMap::new(self.tcx, impl_id, false);
         names.clone_self(impl_id);
 
@@ -115,6 +107,13 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         let interface_name = interface_name(self.tcx, impl_id);
         let iface = Module { name: interface_name, decls: interface_decls };
+
+        let mut names = CloneMap::new(self.tcx, impl_id, true);
+        names.clone_self(impl_id);
+        let decls = self.build_impl_module(&mut names, trait_ref, impl_id);
+        let name = translate_value_id(self.tcx, impl_id);
+
+        let modl = Module { name: name.name(), decls };
         self.add_impl(impl_id, modl, iface, names.summary());
     }
 
