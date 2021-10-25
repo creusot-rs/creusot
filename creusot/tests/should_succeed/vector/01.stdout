@@ -204,6 +204,20 @@ module CreusotContracts_Std1_Vec_Impl1_Len
     ensures { result = Seq.length (Model0.model self) }
     
 end
+module Core_Ops_Index_Index
+  type self   
+  type idx   
+  type output   
+  use prelude.Prelude
+  val index (self : self) (index : idx) : output
+end
+module Core_Ops_Index_IndexMut
+  type self   
+  type idx   
+  clone Core_Ops_Index_Index as Index0 with type self = self, type idx = idx
+  use prelude.Prelude
+  val index_mut (self : borrowed self) (index : idx) : borrowed Index0.output
+end
 module CreusotContracts_Builtins_Model_Impl1_Model_Interface
   type t   
   use prelude.Prelude
@@ -239,7 +253,7 @@ module CreusotContracts_Builtins_Model_Impl1
   clone export CreusotContracts_Builtins_Model_Model with type self = borrowed t, type modelty = modelty,
   function model = model
 end
-module CreusotContracts_Std1_Vec_Impl1_IndexMut_Interface
+module CreusotContracts_Std1_Vec_Impl3_IndexMut_Interface
   type t   
   use seq.Seq
   use mach.int.Int
@@ -258,7 +272,7 @@ module CreusotContracts_Std1_Vec_Impl1_IndexMut_Interface
     ensures {  * result = Seq.get (Model1.model self) ix }
     
 end
-module CreusotContracts_Std1_Vec_Impl1_IndexMut
+module CreusotContracts_Std1_Vec_Impl3_IndexMut
   type t   
   use seq.Seq
   use mach.int.Int
@@ -276,6 +290,34 @@ module CreusotContracts_Std1_Vec_Impl1_IndexMut
     ensures {  ^ result = Seq.get (Model0.model ( ^ self)) ix }
     ensures {  * result = Seq.get (Model1.model self) ix }
     
+end
+module CreusotContracts_Std1_Vec_Impl3_Interface
+  type t   
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  clone CreusotContracts_Std1_Vec_Impl0_Interface as Model0 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl1_Interface as Model1 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type Model0.modelty = Model0.modelty, function Model0.model = Model0.model
+  clone export CreusotContracts_Std1_Vec_Impl3_IndexMut_Interface with type t = t, function Model0.model = Model0.model,
+  function Model1.model = Model1.model
+  clone export Core_Ops_Index_IndexMut with type self = Type.creusotcontracts_std1_vec_vec t, type idx = usize,
+  val index_mut = index_mut
+end
+module CreusotContracts_Std1_Vec_Impl3
+  type t   
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  clone CreusotContracts_Std1_Vec_Impl0 as Model0 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl1 as Model1 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type Model0.modelty = Model0.modelty, function Model0.model = Model0.model
+  clone export CreusotContracts_Std1_Vec_Impl3_IndexMut_Interface with type t = t, function Model0.model = Model0.model,
+  function Model1.model = Model1.model
+  clone export Core_Ops_Index_IndexMut with type self = Type.creusotcontracts_std1_vec_vec t, type idx = usize,
+  val index_mut = index_mut
 end
 module CreusotContracts_Builtins_Resolve_Impl1_Resolve_Interface
   type t   
@@ -331,8 +373,8 @@ module C01_AllZero
   clone CreusotContracts_Builtins_Resolve_Resolve as Resolve0 with type self = borrowed (Type.creusotcontracts_std1_vec_vec uint32)
   clone CreusotContracts_Builtins_Model_Impl1 as Model3 with type t = Type.creusotcontracts_std1_vec_vec uint32,
   type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
-  clone CreusotContracts_Std1_Vec_Impl1_IndexMut_Interface as IndexMut0 with type t = uint32,
-  function Model0.model = Model1.model, function Model1.model = Model3.model
+  clone CreusotContracts_Std1_Vec_Impl3 as IndexMut0 with type t = uint32, function Model0.model = Model1.model,
+  function Model1.model = Model3.model
   clone CreusotContracts_Builtins_Model_Impl0 as Model2 with type t = Type.creusotcontracts_std1_vec_vec uint32,
   type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
   clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = uint32,

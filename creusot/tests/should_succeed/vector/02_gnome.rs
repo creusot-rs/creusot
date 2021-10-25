@@ -62,7 +62,7 @@ fn gnome_sort<T: Ord>(v: &mut Vec<T>) {
     #[invariant(in_len, @i <= (@*v).len())]
     #[invariant(permutation, (@*v).permutation_of(@*@old_v))]
     while i < v.len() {
-        if i == 0 || v.index(i - 1).le(v.index(i)) {
+        if i == 0 || v[i-1].le(&v[i]) {
             i += 1;
         } else {
             v.swap(i - 1, i);

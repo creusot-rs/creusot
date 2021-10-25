@@ -315,7 +315,14 @@ module CreusotContracts_Std1_Vec_Impl1_Swap
     ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) i j }
     
 end
-module CreusotContracts_Std1_Vec_Impl1_Index_Interface
+module Core_Ops_Index_Index
+  type self   
+  type idx   
+  type output   
+  use prelude.Prelude
+  val index (self : self) (index : idx) : output
+end
+module CreusotContracts_Std1_Vec_Impl2_Index_Interface
   type t   
   use seq.Seq
   use prelude.Prelude
@@ -330,7 +337,7 @@ module CreusotContracts_Std1_Vec_Impl1_Index_Interface
     ensures { result = Seq.get (Model0.model self) ix }
     
 end
-module CreusotContracts_Std1_Vec_Impl1_Index
+module CreusotContracts_Std1_Vec_Impl2_Index
   type t   
   use seq.Seq
   use prelude.Prelude
@@ -344,6 +351,38 @@ module CreusotContracts_Std1_Vec_Impl1_Index
     requires {ix < Seq.length (Model0.model self)}
     ensures { result = Seq.get (Model0.model self) ix }
     
+end
+module CreusotContracts_Std1_Vec_Impl2_Interface
+  type t   
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  clone CreusotContracts_Std1_Vec_Impl0_Interface as Model1 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl0_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
+  clone export CreusotContracts_Std1_Vec_Impl2_Index_Interface with type t = t, function Model0.model = Model0.model,
+  function Model1.model = Model1.model
+  type output  = 
+    t
+  clone export Core_Ops_Index_Index with type self = Type.creusotcontracts_std1_vec_vec t, type idx = usize,
+  type output = output, val index = index
+end
+module CreusotContracts_Std1_Vec_Impl2
+  type t   
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  clone CreusotContracts_Std1_Vec_Impl0 as Model1 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl0 as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
+  clone export CreusotContracts_Std1_Vec_Impl2_Index_Interface with type t = t, function Model0.model = Model0.model,
+  function Model1.model = Model1.model
+  type output  = 
+    t
+  clone export Core_Ops_Index_Index with type self = Type.creusotcontracts_std1_vec_vec t, type idx = usize,
+  type output = output, val index = index
 end
 module CreusotContracts_Builtins_Resolve_Impl1_Resolve_Interface
   type t   
@@ -409,7 +448,7 @@ module C02Gnome_GnomeSort
   function Model0.model = Model1.model
   clone CreusotContracts_Builtins_Model_Impl0 as Model3 with type t = Type.creusotcontracts_std1_vec_vec t,
   type Model0.modelty = Model2.modelty, function Model0.model = Model2.model
-  clone CreusotContracts_Std1_Vec_Impl1_Index_Interface as Index0 with type t = t, function Model0.model = Model3.model,
+  clone CreusotContracts_Std1_Vec_Impl2 as Index0 with type t = t, function Model0.model = Model3.model,
   function Model1.model = Model2.model
   clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = t, function Model0.model = Model3.model,
   function Model1.model = Model2.model
@@ -442,16 +481,17 @@ module C02Gnome_GnomeSort
   var _19 : usize;
   var _20 : t;
   var _21 : t;
-  var _22 : Type.creusotcontracts_std1_vec_vec t;
-  var _23 : usize;
-  var _24 : ();
-  var _25 : borrowed (Type.creusotcontracts_std1_vec_vec t);
-  var _26 : usize;
+  var _22 : t;
+  var _23 : Type.creusotcontracts_std1_vec_vec t;
+  var _24 : usize;
+  var _25 : ();
+  var _26 : borrowed (Type.creusotcontracts_std1_vec_vec t);
   var _27 : usize;
   var _28 : usize;
-  var _29 : ();
+  var _29 : usize;
   var _30 : ();
   var _31 : ();
+  var _32 : ();
   {
     v_1 <- v;
     goto BB0
@@ -522,13 +562,15 @@ module C02Gnome_GnomeSort
   BB9 {
     _15 <- _16;
     assume { Resolve4.resolve _16 };
-    _22 <-  * v_1;
-    assume { Resolve2.resolve _23 };
-    _23 <- i_5;
-    _21 <- Index0.index _22 _23;
+    _23 <-  * v_1;
+    assume { Resolve2.resolve _24 };
+    _24 <- i_5;
+    _22 <- Index0.index _23 _24;
     goto BB10
   }
   BB10 {
+    _21 <- _22;
+    assume { Resolve4.resolve _22 };
     _20 <- _21;
     assume { Resolve4.resolve _21 };
     _14 <- Ord0.le _15 _20;
@@ -546,14 +588,14 @@ module C02Gnome_GnomeSort
     goto BB15
   }
   BB13 {
-    _25 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _25) };
-    assume { Resolve2.resolve _27 };
-    _27 <- i_5;
-    _26 <- _27 - (1 : usize);
+    _26 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _26) };
     assume { Resolve2.resolve _28 };
     _28 <- i_5;
-    _24 <- Swap0.swap _25 _26 _28;
+    _27 <- _28 - (1 : usize);
+    assume { Resolve2.resolve _29 };
+    _29 <- i_5;
+    _25 <- Swap0.swap _26 _27 _29;
     goto BB14
   }
   BB14 {
