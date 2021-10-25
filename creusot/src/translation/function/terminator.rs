@@ -205,20 +205,29 @@ pub fn make_switch<'tcx>(
             let d_to_var: HashMap<_, _> =
                 def.discriminants(tcx).map(|(idx, d)| (d.val, idx)).collect();
 
-            let mut branches: Vec<_> = targets
+            let branches: Vec<_> = targets
                 .iter()
                 .map(|(disc, tgt)| (variant_pattern(tcx, def, d_to_var[&disc]), mk_goto(tgt)))
+                .chain(std::iter::once((Wildcard, mk_goto(targets.otherwise()))))
+                .take(def.variants.len())
                 .collect();
-            branches.push((Wildcard, mk_goto(targets.otherwise())));
 
             MlT::Switch(discr, branches)
         }
         Bool => {
-            let mut branches: Vec<(Pattern, _)> = vec![Pattern::mk_false(), Pattern::mk_true()]
-                .into_iter()
-                .zip(targets.all_targets().iter().map(|tgt| mk_goto(*tgt)))
+            let branches: Vec<_> = targets
+                .iter()
+                .map(|tgt| {
+                    if tgt.0 == 0 {
+                        (Pattern::mk_false(), mk_goto(tgt.1))
+                    } else {
+                        (Pattern::mk_true(), mk_goto(tgt.1))
+                    }
+                })
+                .chain(std::iter::once((Wildcard, mk_goto(targets.otherwise()))))
+                .take(2)
                 .collect();
-            branches.push((Wildcard, mk_goto(targets.otherwise())));
+
             MlT::Switch(discr, branches)
         }
         Uint(_) => {
