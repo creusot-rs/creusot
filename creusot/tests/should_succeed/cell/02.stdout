@@ -1,0 +1,598 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type alloc_alloc_global  = 
+    | Alloc_Alloc_Global
+    
+  type core_marker_phantomdata 't = 
+    | Core_Marker_PhantomData
+    
+  type core_option_option 't = 
+    | Core_Option_Option_None
+    | Core_Option_Option_Some 't
+    
+  type core_cell_unsafecell 't = 
+    | Core_Cell_UnsafeCell 't
+    
+  type core_cell_cell 't = 
+    | Core_Cell_Cell (core_cell_unsafecell 't)
+    
+  type c02_cell 't 'i = 
+    | C02_Cell (core_cell_cell 't) 'i
+    
+  type c02_fib  = 
+    | C02_Fib usize
+    
+  type core_ptr_unique_unique 't = 
+    | Core_Ptr_Unique_Unique opaque_ptr (core_marker_phantomdata 't)
+    
+  type alloc_rawvec_rawvec 't 'a = 
+    | Alloc_RawVec_RawVec (core_ptr_unique_unique 't) usize 'a
+    
+  type alloc_vec_vec 't 'a = 
+    | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) usize
+    
+  type creusotcontracts_std1_vec_vec 't = 
+    | CreusotContracts_Std1_Vec_Vec (alloc_vec_vec 't (alloc_alloc_global))
+    
+end
+module Core_Marker_Sized
+  type self   
+end
+module C02_Inv
+  type self   
+  type t   
+  clone Core_Marker_Sized as Sized0 with type self = t
+  use prelude.Prelude
+  predicate inv (self : self) (x : t)
+end
+module C02_Impl0_Get_Interface
+  type t   
+  type i   
+  use prelude.Prelude
+  use Type
+  clone C02_Inv as Inv0 with type self = i, type t = t
+  val get (self : Type.c02_cell t i) : t
+    ensures { Inv0.inv (let Type.C02_Cell _ a = self in a) result }
+    
+end
+module C02_Impl0_Get
+  type t   
+  type i   
+  use prelude.Prelude
+  use Type
+  clone C02_Inv as Inv0 with type self = i, type t = t
+  val get (self : Type.c02_cell t i) : t
+    ensures { Inv0.inv (let Type.C02_Cell _ a = self in a) result }
+    
+end
+module C02_Impl0_Set_Interface
+  type t   
+  type i   
+  use prelude.Prelude
+  use Type
+  clone C02_Inv as Inv0 with type self = i, type t = t
+  val set (self : Type.c02_cell t i) (v : t) : ()
+    requires {Inv0.inv (let Type.C02_Cell _ a = self in a) v}
+    
+end
+module C02_Impl0_Set
+  type t   
+  type i   
+  use prelude.Prelude
+  use Type
+  clone C02_Inv as Inv0 with type self = i, type t = t
+  val set (self : Type.c02_cell t i) (v : t) : ()
+    requires {Inv0.inv (let Type.C02_Cell _ a = self in a) v}
+    
+end
+module C02_Fib_Interface
+  use mach.int.Int
+  function fib (i : int) : int
+end
+module C02_Fib
+  use mach.int.Int
+  use mach.int.Int32
+  function fib (i : int) : int
+  val fib (i : int) : int
+    ensures { result = fib i }
+    
+  axiom fib_spec : forall i : int . true
+  axiom def : forall i : int . fib i = match (i <= 0) with
+    | True -> 0
+    | False -> match (i = 1) with
+      | True -> 1
+      | False -> fib (i - 1) + fib (i - 2)
+      end
+    end
+end
+module C02_Fib_Impl
+  use mach.int.Int
+  use mach.int.Int32
+  let rec fib (i : int) : int
+    variant {i}
+    
+   = 
+    match (i <= 0) with
+      | True -> 0
+      | False -> match (i = 1) with
+        | True -> 1
+        | False -> fib (i - 1) + fib (i - 2)
+        end
+      end
+end
+module C02_LemmaFibBound_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  use int.Power
+  clone C02_Fib_Interface as Fib0 with axiom .
+  function lemma_fib_bound (i : int) : ()
+end
+module C02_LemmaFibBound
+  use mach.int.Int
+  use mach.int.Int32
+  use int.Power
+  clone C02_Fib_Interface as Fib0 with axiom .
+  function lemma_fib_bound (i : int) : ()
+  val lemma_fib_bound (i : int) : ()
+    requires {0 <= i}
+    ensures { Fib0.fib i <= Power.power 2 i }
+    ensures { result = lemma_fib_bound i }
+    
+  axiom lemma_fib_bound_spec : forall i : int . 0 <= i -> Fib0.fib i <= Power.power 2 i
+  axiom def : forall i : int . 0 <= i -> lemma_fib_bound i = match (i = 0) with
+    | True -> ()
+    | False -> match (i = 1) with
+      | True -> ()
+      | False -> let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
+      end
+    end
+end
+module C02_LemmaFibBound_Impl
+  use mach.int.Int
+  use mach.int.Int32
+  use int.Power
+  clone C02_Fib as Fib0 with axiom .
+  let rec lemma_fib_bound (i : int) : ()
+    requires {0 <= i}
+    ensures { Fib0.fib i <= Power.power 2 i }
+    variant {i}
+    
+   = 
+    match (i = 0) with
+      | True -> ()
+      | False -> match (i = 1) with
+        | True -> ()
+        | False -> let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
+        end
+      end
+end
+module C02_Impl2_Inv_Interface
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  use mach.int.UInt64
+  predicate inv (self : Type.c02_fib) (v : Type.core_option_option usize)
+end
+module C02_Impl2_Inv
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  use mach.int.UInt64
+  clone C02_Fib_Interface as Fib0 with axiom .
+  predicate inv (self : Type.c02_fib) (v : Type.core_option_option usize) = 
+    match (v) with
+      | Type.Core_Option_Option_None -> true
+      | Type.Core_Option_Option_Some i -> i = Fib0.fib (let Type.C02_Fib a = self in a)
+      end
+end
+module C02_Impl2_Interface
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  clone export C02_Impl2_Inv_Interface
+  clone export C02_Inv with type self = Type.c02_fib, type t = Type.core_option_option usize, predicate inv = inv
+end
+module C02_Impl2
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  clone C02_Fib as Fib0 with axiom .
+  clone export C02_Impl2_Inv with function Fib0.fib = Fib0.fib
+  clone export C02_Inv with type self = Type.c02_fib, type t = Type.core_option_option usize, predicate inv = inv
+end
+module CreusotContracts_Builtins_Model_Model
+  type self   
+  type modelty   
+  function model (self : self) : modelty
+end
+module CreusotContracts_Std1_Vec_Impl0_Model_Interface
+  type t   
+  use Type
+  use seq.Seq
+  function model (self : Type.creusotcontracts_std1_vec_vec t) : Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0_Model
+  type t   
+  use Type
+  use seq.Seq
+  function model (self : Type.creusotcontracts_std1_vec_vec t) : Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0_Interface
+  type t   
+  use Type
+  use seq.Seq
+  clone export CreusotContracts_Std1_Vec_Impl0_Model_Interface with type t = t
+  type modelty  = 
+    Seq.seq t
+  clone export CreusotContracts_Builtins_Model_Model with type self = Type.creusotcontracts_std1_vec_vec t,
+  type modelty = modelty, function model = model
+end
+module CreusotContracts_Std1_Vec_Impl0
+  type t   
+  use Type
+  use seq.Seq
+  clone export CreusotContracts_Std1_Vec_Impl0_Model with type t = t
+  type modelty  = 
+    Seq.seq t
+  clone export CreusotContracts_Builtins_Model_Model with type self = Type.creusotcontracts_std1_vec_vec t,
+  type modelty = modelty, function model = model
+end
+module C02_FibCell_Interface
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  predicate fib_cell (v : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)))
+    
+end
+module C02_FibCell
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  clone CreusotContracts_Std1_Vec_Impl0_Interface as Model0 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)
+  predicate fib_cell (v : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)))
+    
+   = 
+    forall i : (int) . (let Type.C02_Fib a = let Type.C02_Cell _ a = Seq.get (Model0.model v) i in a in a) = i
+end
+module C02_LemmaMaxInt_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  use int.Power
+  use prelude.Prelude
+  use mach.int.UInt64
+  function lemma_max_int () : ()
+end
+module C02_LemmaMaxInt
+  use mach.int.Int
+  use mach.int.Int32
+  use int.Power
+  use prelude.Prelude
+  use mach.int.UInt64
+  function lemma_max_int () : ()
+  val lemma_max_int () : ()
+    ensures { Power.power 2 63 < 18446744073709551615 }
+    ensures { result = lemma_max_int () }
+    
+  axiom lemma_max_int_spec : Power.power 2 63 < 18446744073709551615
+  axiom def : lemma_max_int () = ()
+end
+module CreusotContracts_Builtins_Model_Model_Model_Interface
+  type self   
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = self
+  function model (self : self) : Model0.modelty
+end
+module CreusotContracts_Builtins_Model_Model_Model
+  type self   
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = self
+  function model (self : self) : Model0.modelty
+end
+module CreusotContracts_Builtins_Model_Impl0_Model_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  function model (self : t) : Model0.modelty
+end
+module CreusotContracts_Builtins_Model_Impl0_Model
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  function model (self : t) : Model0.modelty = 
+    Model0.model self
+end
+module CreusotContracts_Builtins_Model_Impl0_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  clone export CreusotContracts_Builtins_Model_Impl0_Model_Interface with type t = t,
+  type Model0.modelty = Model0.modelty, function Model0.model = Model0.model
+  type modelty  = 
+    Model0.modelty
+  clone export CreusotContracts_Builtins_Model_Model with type self = t, type modelty = modelty, function model = model
+end
+module CreusotContracts_Builtins_Model_Impl0
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Builtins_Model_Model as Model0 with type self = t
+  clone export CreusotContracts_Builtins_Model_Impl0_Model with type t = t, type Model0.modelty = Model0.modelty,
+  function Model0.model = Model0.model
+  type modelty  = 
+    Model0.modelty
+  clone export CreusotContracts_Builtins_Model_Model with type self = t, type modelty = modelty, function model = model
+end
+module CreusotContracts_Builtins_Resolve_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Std1_Vec_Impl1_Index_Interface
+  type t   
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  use mach.int.UInt64
+  clone CreusotContracts_Std1_Vec_Impl0_Interface as Model1 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl0_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
+  val index (self : Type.creusotcontracts_std1_vec_vec t) (ix : usize) : t
+    requires {ix < Seq.length (Model0.model self)}
+    ensures { result = Seq.get (Model0.model self) ix }
+    
+end
+module CreusotContracts_Std1_Vec_Impl1_Index
+  type t   
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  use mach.int.UInt64
+  clone CreusotContracts_Std1_Vec_Impl0_Interface as Model1 with type t = t
+  clone CreusotContracts_Builtins_Model_Impl0_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
+  val index (self : Type.creusotcontracts_std1_vec_vec t) (ix : usize) : t
+    requires {ix < Seq.length (Model0.model self)}
+    ensures { result = Seq.get (Model0.model self) ix }
+    
+end
+module C02_FibMemo_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  use mach.int.UInt64
+  clone C02_Fib_Interface as Fib0 with axiom .
+  clone C02_FibCell_Interface as FibCell0
+  clone CreusotContracts_Std1_Vec_Impl0_Interface as Model1 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)
+  clone CreusotContracts_Builtins_Model_Impl0_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)),
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
+  val fib_memo (mem : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib))) (i : usize) : usize
+    requires {i <= 63}
+    requires {i < Seq.length (Model0.model mem)}
+    requires {FibCell0.fib_cell mem}
+    ensures { result = Fib0.fib i }
+    
+end
+module C02_FibMemo
+  use mach.int.Int
+  use mach.int.Int32
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  use mach.int.UInt64
+  clone CreusotContracts_Std1_Vec_Impl0 as Model1 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)
+  clone C02_FibCell as FibCell0 with function Model0.model = Model1.model
+  clone CreusotContracts_Builtins_Model_Impl0 as Model0 with type t = Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)),
+  type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
+  clone C02_Fib as Fib0 with axiom .
+  clone C02_LemmaFibBound as LemmaFibBound0 with function Fib0.fib = Fib0.fib, axiom .
+  clone C02_LemmaMaxInt as LemmaMaxInt0 with axiom .
+  use mach.int.Int64
+  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve4 with type self = ()
+  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve3 with type self = Type.core_option_option usize
+  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve2 with type self = Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib))
+  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve1 with type self = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)
+  clone CreusotContracts_Builtins_Resolve_Resolve as Resolve0 with type self = usize
+  clone CreusotContracts_Std1_Vec_Impl1_Index_Interface as Index0 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib),
+  function Model0.model = Model0.model, function Model1.model = Model1.model
+  clone C02_Impl2 as Inv0 with function Fib0.fib = Fib0.fib
+  clone C02_Impl0_Set_Interface as Set0 with type t = Type.core_option_option usize, type i = Type.c02_fib,
+  predicate Inv0.inv = Inv0.inv
+  clone C02_Impl0_Get_Interface as Get0 with type t = Type.core_option_option usize, type i = Type.c02_fib,
+  predicate Inv0.inv = Inv0.inv
+  let rec cfg fib_memo (mem : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib))) (i : usize) : usize
+    requires {i <= 63}
+    requires {i < Seq.length (Model0.model mem)}
+    requires {FibCell0.fib_cell mem}
+    ensures { result = Fib0.fib i }
+    
+   = 
+  var _0 : usize;
+  var mem_1 : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib));
+  var i_2 : usize;
+  var _3 : Type.core_option_option usize;
+  var _4 : Type.c02_cell (Type.core_option_option usize) (Type.c02_fib);
+  var _5 : Type.c02_cell (Type.core_option_option usize) (Type.c02_fib);
+  var _6 : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib));
+  var _7 : usize;
+  var _8 : isize;
+  var v_9 : usize;
+  var fib_i_10 : usize;
+  var _11 : bool;
+  var _12 : usize;
+  var _13 : bool;
+  var _14 : usize;
+  var _15 : ();
+  var _16 : ();
+  var _17 : usize;
+  var _18 : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib));
+  var _19 : usize;
+  var _20 : usize;
+  var _21 : usize;
+  var _22 : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib));
+  var _23 : usize;
+  var _24 : usize;
+  var _25 : ();
+  var _26 : ();
+  var _27 : Type.c02_cell (Type.core_option_option usize) (Type.c02_fib);
+  var _28 : Type.c02_cell (Type.core_option_option usize) (Type.c02_fib);
+  var _29 : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib));
+  var _30 : usize;
+  var _31 : Type.core_option_option usize;
+  var _32 : usize;
+  {
+    mem_1 <- mem;
+    i_2 <- i;
+    goto BB0
+  }
+  BB0 {
+    _6 <- mem_1;
+    assume { Resolve0.resolve _7 };
+    _7 <- i_2;
+    _5 <- Index0.index _6 _7;
+    goto BB1
+  }
+  BB1 {
+    _4 <- _5;
+    assume { Resolve1.resolve _5 };
+    _3 <- Get0.get _4;
+    goto BB2
+  }
+  BB2 {
+    switch (_3)
+      | Type.Core_Option_Option_None -> goto BB3
+      | Type.Core_Option_Option_Some _ -> goto BB4
+      end
+  }
+  BB3 {
+    assume { Resolve3.resolve _3 };
+    assume { Resolve0.resolve _12 };
+    _12 <- i_2;
+    _11 <- _12 = (0 : usize);
+    switch (_11)
+      | False -> goto BB8
+      | _ -> goto BB7
+      end
+  }
+  BB4 {
+    assume { Resolve2.resolve mem_1 };
+    assume { Resolve0.resolve i_2 };
+    goto BB6
+  }
+  BB5 {
+    assume { Resolve2.resolve mem_1 };
+    assume { Resolve0.resolve i_2 };
+    assume { Resolve3.resolve _3 };
+    absurd
+  }
+  BB6 {
+    assume { Resolve0.resolve v_9 };
+    v_9 <- (let Type.Core_Option_Option_Some a = _3 in a);
+    assume { Resolve3.resolve _3 };
+    assume { Resolve0.resolve _0 };
+    _0 <- v_9;
+    assume { Resolve0.resolve v_9 };
+    goto BB17
+  }
+  BB7 {
+    fib_i_10 <- (0 : usize);
+    goto BB14
+  }
+  BB8 {
+    assume { Resolve0.resolve _14 };
+    _14 <- i_2;
+    _13 <- _14 = (1 : usize);
+    switch (_13)
+      | False -> goto BB10
+      | _ -> goto BB9
+      end
+  }
+  BB9 {
+    fib_i_10 <- (1 : usize);
+    goto BB13
+  }
+  BB10 {
+    assert { let _ = LemmaMaxInt0.lemma_max_int () in true };
+    _15 <- ();
+    assume { Resolve4.resolve _15 };
+    assert { let _ = LemmaFibBound0.lemma_fib_bound 0 in true };
+    _16 <- ();
+    assume { Resolve4.resolve _16 };
+    _18 <- mem_1;
+    assume { Resolve0.resolve _20 };
+    _20 <- i_2;
+    _19 <- _20 - (1 : usize);
+    _17 <- fib_memo _18 _19;
+    goto BB11
+  }
+  BB11 {
+    _22 <- mem_1;
+    assume { Resolve0.resolve _24 };
+    _24 <- i_2;
+    _23 <- _24 - (2 : usize);
+    _21 <- fib_memo _22 _23;
+    goto BB12
+  }
+  BB12 {
+    fib_i_10 <- _17 + _21;
+    goto BB13
+  }
+  BB13 {
+    goto BB14
+  }
+  BB14 {
+    assert { fib_i_10 = Fib0.fib i_2 };
+    _25 <- ();
+    assume { Resolve4.resolve _25 };
+    _29 <- mem_1;
+    assume { Resolve2.resolve mem_1 };
+    assume { Resolve0.resolve _30 };
+    _30 <- i_2;
+    assume { Resolve0.resolve i_2 };
+    _28 <- Index0.index _29 _30;
+    goto BB15
+  }
+  BB15 {
+    _27 <- _28;
+    assume { Resolve1.resolve _28 };
+    assume { Resolve0.resolve _32 };
+    _32 <- fib_i_10;
+    _31 <- Type.Core_Option_Option_Some _32;
+    _26 <- Set0.set _27 _31;
+    goto BB16
+  }
+  BB16 {
+    assume { Resolve0.resolve _0 };
+    _0 <- fib_i_10;
+    assume { Resolve0.resolve fib_i_10 };
+    goto BB17
+  }
+  BB17 {
+    return _0
+  }
+  
+end
+module CreusotContracts_WellFounded
+  type self   
+end
+module C02_Impl1_Interface
+  use mach.int.Int
+  clone export CreusotContracts_WellFounded with type self = int
+end
+module C02_Impl1
+  use mach.int.Int
+  clone export CreusotContracts_WellFounded with type self = int
+end
