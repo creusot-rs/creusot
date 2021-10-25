@@ -420,11 +420,9 @@ fn not_spec(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, id: StmtId) -> bool {
 }
 
 fn not_spec_expr(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, id: ExprId) -> bool {
-    eprintln!("NOTSPEC: {:?}", thir[id].kind);
     match thir[id].kind {
         ExprKind::Scope { value, .. } => not_spec_expr(tcx, thir, value),
         ExprKind::Closure { closure_id, .. } => {
-            eprintln!("OMGOMGOMG");
             !util::is_spec(tcx, closure_id)
         }
         _ => true,
