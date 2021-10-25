@@ -191,7 +191,7 @@ module C02_Impl2_Inv
   predicate inv (self : Type.c02_fib) (v : Type.core_option_option usize) = 
     match (v) with
       | Type.Core_Option_Option_None -> true
-      | Type.Core_Option_Option_Some i -> i = Fib0.fib (let Type.C02_Fib a = self in a)
+      | Type.Core_Option_Option_Some i -> UInt64.to_int i = Fib0.fib (UInt64.to_int (let Type.C02_Fib a = self in a))
       end
 end
 module C02_Impl2_Interface
@@ -266,7 +266,7 @@ module C02_FibCell
   predicate fib_cell (v : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)))
     
    = 
-    forall i : (int) . (let Type.C02_Fib a = let Type.C02_Cell _ a = Seq.get (Model0.model v) i in a in a) = i
+    forall i : (int) . UInt64.to_int (let Type.C02_Fib a = let Type.C02_Cell _ a = Seq.get (Model0.model v) i in a in a) = i
 end
 module C02_LemmaMaxInt_Interface
   use mach.int.Int
@@ -339,60 +339,60 @@ module CreusotContracts_Builtins_Resolve_Resolve
 end
 module CreusotContracts_Std1_Vec_Impl1_Index_Interface
   type t   
+  use mach.int.UInt64
   use seq.Seq
   use prelude.Prelude
   use Type
   use mach.int.Int
-  use mach.int.UInt64
   clone CreusotContracts_Std1_Vec_Impl0_Interface as Model1 with type t = t
   clone CreusotContracts_Builtins_Model_Impl0_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
   type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
   val index (self : Type.creusotcontracts_std1_vec_vec t) (ix : usize) : t
-    requires {ix < Seq.length (Model0.model self)}
-    ensures { result = Seq.get (Model0.model self) ix }
+    requires {UInt64.to_int ix < Seq.length (Model0.model self)}
+    ensures { result = Seq.get (Model0.model self) (UInt64.to_int ix) }
     
 end
 module CreusotContracts_Std1_Vec_Impl1_Index
   type t   
+  use mach.int.UInt64
   use seq.Seq
   use prelude.Prelude
   use Type
   use mach.int.Int
-  use mach.int.UInt64
   clone CreusotContracts_Std1_Vec_Impl0_Interface as Model1 with type t = t
   clone CreusotContracts_Builtins_Model_Impl0_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
   type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
   val index (self : Type.creusotcontracts_std1_vec_vec t) (ix : usize) : t
-    requires {ix < Seq.length (Model0.model self)}
-    ensures { result = Seq.get (Model0.model self) ix }
+    requires {UInt64.to_int ix < Seq.length (Model0.model self)}
+    ensures { result = Seq.get (Model0.model self) (UInt64.to_int ix) }
     
 end
 module C02_FibMemo_Interface
+  use mach.int.UInt64
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
   use prelude.Prelude
   use Type
-  use mach.int.UInt64
   clone C02_Fib_Interface as Fib0 with axiom .
   clone C02_FibCell_Interface as FibCell0
   clone CreusotContracts_Std1_Vec_Impl0_Interface as Model1 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)
   clone CreusotContracts_Builtins_Model_Impl0_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)),
   type Model0.modelty = Model1.modelty, function Model0.model = Model1.model
   val fib_memo (mem : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib))) (i : usize) : usize
-    requires {i <= 63}
-    requires {i < Seq.length (Model0.model mem)}
+    requires {UInt64.to_int i <= 63}
+    requires {UInt64.to_int i < Seq.length (Model0.model mem)}
     requires {FibCell0.fib_cell mem}
-    ensures { result = Fib0.fib i }
+    ensures { UInt64.to_int result = Fib0.fib (UInt64.to_int i) }
     
 end
 module C02_FibMemo
   use mach.int.Int
   use mach.int.Int32
+  use mach.int.UInt64
   use seq.Seq
   use prelude.Prelude
   use Type
-  use mach.int.UInt64
   clone CreusotContracts_Std1_Vec_Impl0 as Model1 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)
   clone C02_FibCell as FibCell0 with function Model0.model = Model1.model
   clone CreusotContracts_Builtins_Model_Impl0 as Model0 with type t = Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)),
@@ -414,10 +414,10 @@ module C02_FibMemo
   clone C02_Impl0_Get_Interface as Get0 with type t = Type.core_option_option usize, type i = Type.c02_fib,
   predicate Inv0.inv = Inv0.inv
   let rec cfg fib_memo (mem : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib))) (i : usize) : usize
-    requires {i <= 63}
-    requires {i < Seq.length (Model0.model mem)}
+    requires {UInt64.to_int i <= 63}
+    requires {UInt64.to_int i < Seq.length (Model0.model mem)}
     requires {FibCell0.fib_cell mem}
-    ensures { result = Fib0.fib i }
+    ensures { UInt64.to_int result = Fib0.fib (UInt64.to_int i) }
     
    = 
   var _0 : usize;
@@ -554,7 +554,7 @@ module C02_FibMemo
     goto BB14
   }
   BB14 {
-    assert { fib_i_10 = Fib0.fib i_2 };
+    assert { UInt64.to_int fib_i_10 = Fib0.fib (UInt64.to_int i_2) };
     _25 <- ();
     assume { Resolve4.resolve _25 };
     _29 <- mem_1;
