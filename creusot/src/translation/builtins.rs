@@ -92,44 +92,35 @@ pub fn lookup_builtin(
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("u32_to_int"))
         || def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("u32_model"))
     {
-        let a = args.remove(0);
-        let i = if let Exp::Const(Constant::Uint(v, _)) = a {
-            Exp::Const(Constant::Uint(v, None))
-        } else {
-            a
-        };
-
-        return Some(i);
+        if let Exp::Const(Constant::Uint(v, _)) = args[0] {
+            return Some(Exp::Const(Constant::Uint(v, None)));
+        } else if !ctx.opts.bounds_check {
+            return Some(args.remove(0));
+        }
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("i32_to_int"))
         || def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("i32_model"))
     {
-        let a = args.remove(0);
-        let i = if let Exp::Const(Constant::Int(v, _)) = a {
-            Exp::Const(Constant::Int(v, None))
-        } else {
-            a
-        };
-        return Some(i);
+        if let Exp::Const(Constant::Int(v, _)) = args[0] {
+            return Some(Exp::Const(Constant::Int(v, None)));
+        } else if !ctx.opts.bounds_check {
+            return Some(args.remove(0));
+        }
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("usize_to_int"))
         || def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("usize_model"))
     {
-        let a = args.remove(0);
-        let i = if let Exp::Const(Constant::Uint(v, _)) = a {
-            Exp::Const(Constant::Uint(v, None))
-        } else {
-            a
-        };
-        return Some(i);
+        if let Exp::Const(Constant::Uint(v, _)) = args[0] {
+            return Some(Exp::Const(Constant::Uint(v, None)));
+        } else if !ctx.opts.bounds_check {
+            return Some(args.remove(0));
+        }
     } else if def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("isize_to_int"))
         || def_id == ctx.tcx.get_diagnostic_item(Symbol::intern("isize_model"))
     {
-        let a = args.remove(0);
-        let i = if let Exp::Const(Constant::Int(v, _)) = a {
-            Exp::Const(Constant::Int(v, None))
-        } else {
-            a
-        };
-        return Some(i);
+        if let Exp::Const(Constant::Int(v, _)) = args[0] {
+            return Some(Exp::Const(Constant::Int(v, None)));
+        } else if !ctx.opts.bounds_check {
+            return Some(args.remove(0));
+        }
     } else if def_id == ctx.tcx.get_diagnostic_item(sym::abort) {
         // Semi-questionable: we allow abort() & unreachable() in pearlite but
         // interpret them as `absurd` (aka prove false).
@@ -138,7 +129,9 @@ pub fn lookup_builtin(
         return Some(Exp::Absurd);
     } else if ctx.tcx.def_path_str(def_id.unwrap()) == "std::boxed::Box::<T>::new" {
         return Some(args.remove(0));
-    } else if let Some(builtin) = get_builtin(ctx.tcx, def_id.unwrap()) {
+    }
+
+    if let Some(builtin) = get_builtin(ctx.tcx, def_id.unwrap()) {
         names.import_builtin_module(builtin.clone().module_qname());
         return Some(Exp::Call(box Exp::QVar(builtin.without_search_path()), args.clone()));
     }
