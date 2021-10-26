@@ -31,7 +31,6 @@ impl<T: Copy, I: Inv<T>> Cell<T, I> {
 
 use creusot_contracts::std::*;
 
-impl WellFounded for Int {}
 // TODO: this function shouldn't actually be pure, the program version will abort.
 #[logic]
 #[variant(i)]

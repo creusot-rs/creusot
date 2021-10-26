@@ -169,7 +169,7 @@ fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
     let var_name = generate_unique_ident(&f.sig.ident.to_string());
     let mut var_sig = f.sig.clone();
     var_sig.ident = var_name.clone();
-    var_sig.output = parse_quote! { -> impl creusot_contracts::WellFounded };
+    var_sig.output = parse_quote! { -> impl creusot_contracts::std::WellFounded };
     let var_body = pretyping::encode_term(p).unwrap();
     let name_tag = format!("{}", quote! { #var_name });
 

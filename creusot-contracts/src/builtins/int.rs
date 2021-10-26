@@ -1,9 +1,12 @@
 use super::model::*;
+use crate::std::well_founded::*;
 use creusot_contracts_proc::*;
 use std::ops::*;
 
 #[rustc_diagnostic_item = "creusot_int"]
 pub struct Int;
+
+impl WellFounded for Int {}
 
 impl Int {
     #[trusted]
