@@ -39,16 +39,30 @@ fn main() {
         command.args(&["-L", "../prelude"]);
         command.arg(file);
 
+        let mut has_prover = false;
         let do_proof = header_line.contains("WHY3PROVE");
         if do_proof {
-            command.args(&["-a", "split_vc", "-Pz3", "-Pcvc4"]);
+            command.args(&["-a", "split_vc"]);
+            if header_line.contains("Z3") {
+                has_prover = true;
+                command.arg("-Pz3");
+            }
+            if header_line.contains("CVC4") {
+                has_prover = true;
+                command.arg("-Pcvc4");
+            }
         }
 
         let output = command.ok();
         if output.is_ok() {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
             if do_proof {
-                writeln!(&mut out, "proved").unwrap();
+                if has_prover {
+                    writeln!(&mut out, "proved").unwrap();
+                } else {
+                    out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+                    writeln!(&mut out, "no prover").unwrap();
+                }
             } else {
                 writeln!(&mut out, "ok").unwrap();
             }

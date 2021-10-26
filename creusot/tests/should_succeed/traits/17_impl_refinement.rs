@@ -1,4 +1,4 @@
-// WHY3PROVE
+// WHY3PROVE Z3
 
 extern crate creusot_contracts;
 use creusot_contracts::*;

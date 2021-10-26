@@ -1,4 +1,4 @@
-// WHY3PROVE
+// WHY3PROVE Z3
 #![feature(type_ascription)]
 
 extern crate creusot_contracts;
