@@ -26,6 +26,7 @@ pub struct Scope {
 pub enum Decl {
     FunDecl(CfgFunction),
     Let(LetDecl),
+    LetFun(LetFun),
     ValDecl(ValKind),
     LogicDecl(Logic),
     Scope(Scope),
@@ -225,5 +226,14 @@ pub struct Axiom {
 pub struct LetDecl {
     pub sig: Signature,
     pub rec: bool,
+    pub body: Exp,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct LetFun {
+    pub sig: Signature,
+    pub rec: bool,
+    pub ghost: bool,
     pub body: Exp,
 }

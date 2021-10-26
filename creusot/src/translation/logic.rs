@@ -143,7 +143,7 @@ fn implementation_module(
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx));
-    decls.push(Decl::Let(LetDecl { sig, rec: true, body }));
+    decls.push(Decl::LetFun(LetFun { sig, rec: true, ghost: true, body }));
 
     let name = impl_name(ctx.tcx, def_id);
     Module { name, decls }
