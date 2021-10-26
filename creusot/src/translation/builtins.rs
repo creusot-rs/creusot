@@ -1,20 +1,20 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 use rustc_span::{symbol::sym, Symbol};
 use why3::mlcfg::{BinOp, Constant, Exp, UnOp};
 
 use crate::{clone_map::CloneMap, ctx::TranslationCtx, util::get_builtin};
 
-use super::traits::{resolve_opt, MethodInstance};
+use super::traits::resolve_opt;
 
 pub fn lookup_builtin(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
-    method: &MethodInstance<'tcx>,
+    method: (DefId, SubstsRef<'tcx>),
     args: &mut Vec<Exp>,
 ) -> Option<Exp> {
-    let mut def_id = method.def_id;
-    let substs = method.substs;
+    let mut def_id = method.0;
+    let substs = method.1;
     if let Some(trait_id) = trait_id_of_method(ctx.tcx, def_id) {
         // We typically implement `From` but call `into`, using the blanket impl of `Into`
         // for any `From` type. So when we see an instance of `into` we check that isn't just
@@ -133,6 +133,7 @@ pub fn lookup_builtin(
 
     if let Some(builtin) = get_builtin(ctx.tcx, def_id.unwrap()) {
         names.import_builtin_module(builtin.clone().module_qname());
+
         return Some(Exp::Call(box Exp::QVar(builtin.without_search_path()), args.clone()));
     }
     None

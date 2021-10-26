@@ -21,7 +21,7 @@ pub fn translate_logic(
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx));
 
-    if util::is_trusted(ctx.tcx, def_id) {
+    if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         decls.push(Decl::ValDecl(ValKind::Function { sig }));
         return (Module { name, decls }, names);
     }
@@ -52,7 +52,7 @@ pub fn translate_predicate(
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx));
 
-    if util::is_trusted(ctx.tcx, def_id) {
+    if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         decls.push(Decl::ValDecl(ValKind::Predicate { sig }));
         return (Module { name, decls }, names);
     }

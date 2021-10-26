@@ -1,4 +1,3 @@
-// WHY3SKIP
 // Broken because of trait generics
 trait A {
     fn from_b<B>(x: Self) -> B;

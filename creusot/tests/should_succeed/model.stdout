@@ -16,10 +16,24 @@ module Type
     | Model_Seven
     
 end
-module CreusotContracts_Builtins_Model_Model
+module CreusotContracts_Builtins_Model_Model_ModelTy
   type self   
   type modelty   
-  function model (self : self) : modelty
+end
+module CreusotContracts_Builtins_Model_Model_Model_Interface
+  type self   
+  clone CreusotContracts_Builtins_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelty
+end
+module CreusotContracts_Builtins_Model_Model_Model
+  type self   
+  clone CreusotContracts_Builtins_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelty
+end
+module Model_Impl0_ModelTy
+  use mach.int.Int
+  type modelty  = 
+    int
 end
 module Model_Impl0_Model_Interface
   use Type
@@ -31,29 +45,20 @@ module Model_Impl0_Model
   use mach.int.Int
   function model (self : Type.model_seven) : int
 end
-module Model_Impl0_Interface
-  use Type
-  use mach.int.Int
-  clone export Model_Impl0_Model_Interface
-  type modelty  = 
-    int
-  clone export CreusotContracts_Builtins_Model_Model with type self = Type.model_seven, type modelty = modelty,
-  function model = model
-end
 module Model_Impl0
   use Type
-  use mach.int.Int
-  clone export Model_Impl0_Model
-  type modelty  = 
-    int
-  clone export CreusotContracts_Builtins_Model_Model with type self = Type.model_seven, type modelty = modelty,
-  function model = model
+  clone Model_Impl0_Model as Model0
+  clone Model_Impl0_ModelTy as ModelTy0
+  clone CreusotContracts_Builtins_Model_Model_Model as Model1 with type self = Type.model_seven,
+  type ModelTy0.modelty = ModelTy0.modelty, function model = Model0.model
+  clone CreusotContracts_Builtins_Model_Model_ModelTy as ModelTy1 with type self = Type.model_seven,
+  type modelty = ModelTy0.modelty
 end
 module Model_Seven_Interface
   use mach.int.Int
   use mach.int.Int32
   use Type
-  clone Model_Impl0_Interface as Model0
+  clone Model_Impl0_Model_Interface as Model0
   val seven () : Type.model_seven
     ensures { Model0.model result = 7 }
     
@@ -62,10 +67,16 @@ module Model_Seven
   use mach.int.Int
   use mach.int.Int32
   use Type
-  clone Model_Impl0 as Model0
+  clone Model_Impl0_Model as Model0
   val seven () : Type.model_seven
     ensures { Model0.model result = 7 }
     
+end
+module Model_Impl1_ModelTy
+  type t   
+  type u   
+  type modelty  = 
+    (t, u)
 end
 module Model_Impl1_Model_Interface
   type t   
@@ -79,34 +90,22 @@ module Model_Impl1_Model
   use Type
   function model (self : Type.model_pair t u) : (t, u)
 end
-module Model_Impl1_Interface
-  type t   
-  type u   
-  use Type
-  clone export Model_Impl1_Model_Interface with type t = t, type u = u
-  type modelty  = 
-    (t, u)
-  clone export CreusotContracts_Builtins_Model_Model with type self = Type.model_pair t u, type modelty = modelty,
-  function model = model
-end
 module Model_Impl1
   type t   
   type u   
   use Type
-  clone export Model_Impl1_Model with type t = t, type u = u
-  type modelty  = 
-    (t, u)
-  clone export CreusotContracts_Builtins_Model_Model with type self = Type.model_pair t u, type modelty = modelty,
-  function model = model
-end
-module Core_Marker_Sized
-  type self   
+  clone Model_Impl1_Model as Model0 with type t = t, type u = u
+  clone Model_Impl1_ModelTy as ModelTy0 with type t = t, type u = u
+  clone CreusotContracts_Builtins_Model_Model_Model as Model1 with type self = Type.model_pair t u,
+  type ModelTy0.modelty = ModelTy0.modelty, function model = Model0.model
+  clone CreusotContracts_Builtins_Model_Model_ModelTy as ModelTy1 with type self = Type.model_pair t u,
+  type modelty = ModelTy0.modelty
 end
 module Model_Pair_Interface
   type t   
   type u   
   use Type
-  clone Model_Impl1_Interface as Model0 with type t = t, type u = u
+  clone Model_Impl1_Model_Interface as Model0 with type t = t, type u = u
   val pair (a : t) (b : u) : Type.model_pair t u
     ensures { Model0.model result = (a, b) }
     
@@ -115,9 +114,7 @@ module Model_Pair
   type t   
   type u   
   use Type
-  clone Model_Impl1 as Model0 with type t = t, type u = u
-  clone Core_Marker_Sized as Sized1 with type self = u
-  clone Core_Marker_Sized as Sized0 with type self = t
+  clone Model_Impl1_Model as Model0 with type t = t, type u = u
   val pair (a : t) (b : u) : Type.model_pair t u
     ensures { Model0.model result = (a, b) }
     

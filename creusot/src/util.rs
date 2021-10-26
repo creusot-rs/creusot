@@ -75,6 +75,18 @@ pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     }
 }
 
+pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
+    if let Some(local_id) = def_id.as_local() {
+        let hir_id = ctx.tcx.hir().local_def_id_to_hir_id(local_id);
+        ctx.tcx.hir().maybe_body_owned_by(hir_id).is_some()
+    } else {
+        match item_type(ctx.tcx, def_id) {
+            ItemType::Logic | ItemType::Predicate | ItemType::Pure => ctx.term(def_id).is_some(),
+            _ => false,
+        }
+    }
+}
+
 pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<QName> {
     get_attr(tcx.get_attrs(def_id), &["creusot", "builtins"])
         .and_then(|a| ts_to_symbol(a.args.inner_tokens()))
@@ -89,7 +101,7 @@ pub fn ident_of(id: Symbol) -> Ident {
     Ident::build(&id.as_str().to_lowercase())
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ItemType {
     Logic,
     Predicate,
@@ -97,6 +109,7 @@ pub enum ItemType {
     Trait,
     Impl,
     Type,
+    AssocTy,
     Interface,
     Pure,
 }
@@ -128,7 +141,9 @@ pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
                 ItemType::Program
             }
         }
-        _ => todo!(),
+        DefKind::Struct | DefKind::Enum => ItemType::Type,
+        DefKind::AssocTy => ItemType::AssocTy,
+        dk => todo!("{:?}", dk),
     }
 }
 

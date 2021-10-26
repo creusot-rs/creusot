@@ -333,7 +333,6 @@ pub fn predicate(_: TS1, tokens: TS1) -> TS1 {
 
 fn predicate_sig(sig: TraitItemMethod) -> TS1 {
     TS1::from(quote! {
-        #[creusot::no_translate]
         #[creusot::decl::predicate]
         #sig
     })

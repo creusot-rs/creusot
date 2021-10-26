@@ -31,18 +31,24 @@ pub fn translate_pure(
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx));
 
-    let term = ctx.term(def_id).unwrap().clone();
-    let body = specification::lower(ctx, &mut names, def_id, term);
-
     decls.extend(names.to_clones(ctx));
-
     decls.extend(declaration(sig.clone()));
 
-    if body.is_pure() {
-        decls.push(Decl::Axiom(definition_axiom(&sig, body.clone())));
-    }
+    let impl_mod = if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
+        None
+    } else {
+        let term = ctx.term(def_id).unwrap().clone();
+        let body = specification::lower(ctx, &mut names, def_id, term);
 
-    (Module { name, decls }, implementation_module(ctx, def_id, &names, sig, body), names)
+        decls.extend(names.to_clones(ctx));
+
+        if body.is_pure() {
+            decls.push(Decl::Axiom(definition_axiom(&sig, body.clone())));
+        }
+        implementation_module(ctx, def_id, &names, sig, body)
+    };
+
+    (Module { name, decls }, impl_mod, names)
 }
 
 pub(crate) fn declaration(mut sig: Signature) -> impl Iterator<Item = Decl> {
@@ -117,7 +123,18 @@ fn implementation_module(
     sig: Signature,
     body: Exp,
 ) -> Option<Module> {
-    if util::is_trusted(ctx.tcx, def_id) {
+    let has_body = if let Some(local_id) = def_id.as_local() {
+        let hir_id = ctx.tcx.hir().local_def_id_to_hir_id(local_id);
+        if !ctx.tcx.hir().maybe_body_owned_by(hir_id).is_some() {
+            false
+        } else {
+            true
+        }
+    } else {
+        true
+        // unreachable!()
+    };
+    if util::is_trusted(ctx.tcx, def_id) || !has_body {
         return None;
     }
 

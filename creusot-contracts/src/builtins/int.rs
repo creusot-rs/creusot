@@ -9,7 +9,7 @@ impl Int {
     #[trusted]
     #[logic]
     #[creusot::builtins = "int.Power.power"]
-    pub fn pow(self, exp: Int) -> Int {
+    pub fn pow(self, _: Int) -> Int {
         std::process::abort()
     }
 }

@@ -10,17 +10,35 @@ module Type
   use floating_point.Double
   use prelude.Prelude
 end
-module C07_Ix
+module C07_Ix_Tgt
   type self   
   type tgt   
+end
+module C07_Ix_Ix_Interface
+  type self   
   use prelude.Prelude
-  val ix (self : self) : tgt
+  clone C07_Ix_Tgt as Tgt0 with type self = self
+  val ix (self : self) : Tgt0.tgt
+    requires {false}
+    
+end
+module C07_Ix_Ix
+  type self   
+  use prelude.Prelude
+  clone C07_Ix_Tgt as Tgt0 with type self = self
+  val ix (self : self) : Tgt0.tgt
+end
+module C07_Impl0_Tgt
+  type tgt  = 
+    ()
 end
 module C07_Impl0_Ix_Interface
   use prelude.Prelude
   use mach.int.Int
   use mach.int.Int32
   val ix (self : int32) : ()
+    requires {false}
+    
 end
 module C07_Impl0_Ix
   use prelude.Prelude
@@ -40,24 +58,13 @@ module C07_Impl0_Ix
   }
   
 end
-module C07_Impl0_Interface
-  use mach.int.Int
-  use mach.int.Int32
-  clone export C07_Impl0_Ix_Interface
-  type tgt  = 
-    ()
-  clone export C07_Ix with type self = int32, type tgt = tgt, val ix = ix
-end
 module C07_Impl0
   use mach.int.Int
   use mach.int.Int32
-  clone export C07_Impl0_Ix_Interface
-  type tgt  = 
-    ()
-  clone export C07_Ix with type self = int32, type tgt = tgt, val ix = ix
-end
-module Core_Marker_Sized
-  type self   
+  clone C07_Impl0_Ix_Interface as Ix0
+  clone C07_Impl0_Tgt as Tgt0
+  clone C07_Ix_Ix_Interface as Ix1 with type self = int32, type Tgt0.tgt = Tgt0.tgt, val ix = Ix0.ix
+  clone C07_Ix_Tgt as Tgt1 with type self = int32, type tgt = Tgt0.tgt
 end
 module C07_Test_Interface
   type g   
@@ -67,18 +74,16 @@ module C07_Test_Interface
   use mach.int.UInt32
   use mach.int.UInt64
   val test (a : uint32) (b : uint64) : bool
+    requires {false}
+    
 end
 module C07_Test
   type g   
   type t   
-  use mach.int.Int
-  use mach.int.UInt64
-  use mach.int.UInt32
   use prelude.Prelude
-  clone C07_Ix as Ix1 with type self = t, type tgt = uint32
-  clone Core_Marker_Sized as Sized1 with type self = t
-  clone C07_Ix as Ix0 with type self = g, type tgt = uint64
-  clone Core_Marker_Sized as Sized0 with type self = g
+  use mach.int.Int
+  use mach.int.UInt32
+  use mach.int.UInt64
   let rec cfg test (a : uint32) (b : uint64) : bool = 
   var _0 : bool;
   var a_1 : uint32;
@@ -101,12 +106,14 @@ module C07_Test2_Interface
   use mach.int.Int
   use mach.int.Int32
   val test2 (a : int32) : ()
+    requires {false}
+    
 end
 module C07_Test2
   use prelude.Prelude
   use mach.int.Int
   use mach.int.Int32
-  clone C07_Impl0 as Ix0
+  clone C07_Impl0_Ix_Interface as Ix0
   let rec cfg test2 (a : int32) : () = 
   var _0 : ();
   var a_1 : int32;

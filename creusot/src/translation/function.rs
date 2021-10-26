@@ -31,12 +31,18 @@ use crate::ctx::*;
 use crate::translation::{traits, ty};
 
 pub fn translate_function<'tcx, 'sess>(
-    tcx: TyCtxt<'tcx>,
     ctx: &mut TranslationCtx<'sess, 'tcx>,
     def_id: DefId,
 ) -> Module {
+    let tcx = ctx.tcx;
     let mut names = CloneMap::new(tcx, def_id, true);
     names.clone_self(def_id);
+
+    assert!(def_id.is_local(), "translate_function: expected local DefId");
+
+    if util::is_trusted(tcx, def_id) || !util::has_body(ctx, def_id) {
+        return translate_trusted(tcx, ctx, def_id);
+    }
 
     let gather = GatherSpecClosures::gather(ctx, &mut names, def_id);
     tcx.ensure().mir_borrowck(def_id.expect_local());
@@ -53,6 +59,26 @@ pub fn translate_function<'tcx, 'sess>(
 
     func_translator.translate()
 }
+
+pub fn translate_trusted(
+    tcx: TyCtxt<'tcx>,
+    ctx: &mut TranslationCtx<'sess, 'tcx>,
+    def_id: DefId,
+) -> Module {
+    let mut names = CloneMap::new(tcx, def_id, true);
+    names.clone_self(def_id);
+    let mut decls = Vec::new();
+    decls.extend(all_generic_decls_for(tcx, def_id));
+
+    let sig = signature_of(ctx, &mut names, def_id);
+    let name = translate_value_id(tcx, def_id);
+
+    decls.extend(names.to_clones(ctx));
+
+    decls.push(Decl::ValDecl(ValKind::Val { sig }));
+    return Module { name: name.module_ident().unwrap().clone(), decls };
+}
+
 use crate::resolve::EagerResolver;
 
 // Split this into several sub-contexts: Core, Analysis, Results?
@@ -131,12 +157,6 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     fn translate(mut self) -> Module {
         let mut decls: Vec<_> = Vec::new();
         decls.extend(all_generic_decls_for(self.tcx, self.def_id));
-
-        traits::translate_predicates(
-            self.ctx,
-            &mut self.clone_names,
-            self.tcx.predicates_of(self.def_id),
-        );
 
         let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
         let name = translate_value_id(self.tcx, self.def_id);
@@ -269,8 +289,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
         match resolve_impl {
             Some(method) => {
-                self.ctx.translate(method.def_id);
-                QVar(self.clone_names.insert(method.def_id, method.substs).qname_sym(method.ident))
+                self.ctx.translate(method.0);
+                QVar(self.clone_names.insert(method.0, method.1).qname(self.tcx, method.0))
             }
             None => {
                 self.ctx.translate_trait(trait_id);

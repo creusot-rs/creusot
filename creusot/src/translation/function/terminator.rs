@@ -135,17 +135,15 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         _sp: rustc_span::Span,
     ) -> QName {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
-            if let ty::TraitContainer(_) = it.container {
+            if let ty::TraitContainer(id) = it.container {
                 let params = self.ctx.tcx.param_env(self.def_id);
                 let method = traits::resolve_assoc_item_opt(self.tcx, params, def_id, subst)
                     .expect("could not find instance");
 
-                self.ctx.translate(method.def_id);
+                self.ctx.translate(id);
+                self.ctx.translate(method.0);
 
-                return self
-                    .clone_names
-                    .insert(method.def_id, method.substs)
-                    .qname_sym(method.ident);
+                return self.clone_names.insert(method.0, method.1).qname(self.tcx, method.0);
             }
         }
 

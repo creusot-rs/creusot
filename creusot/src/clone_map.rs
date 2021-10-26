@@ -7,21 +7,19 @@ use petgraph::EdgeDirection::Incoming;
 use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
 use why3::{Ident, QName};
 
+use heck::CamelCase;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{
     self,
-    fold::{TypeFoldable, TypeVisitor},
+    fold::TypeVisitor,
     subst::{InternalSubsts, Subst, SubstsRef},
-    AssocKind, ProjectionTy, Ty, TyCtxt, TyKind,
+    ProjectionTy, Ty, TyCtxt, TyKind,
 };
 use rustc_span::Symbol;
 
-use heck::CamelCase;
-
 use crate::ctx::{self, *};
-use crate::translation::ty::translate_ty;
 use crate::translation::{interface, traits};
-use crate::util::{self, method_name};
+use crate::util::{self, ident_of, method_name};
 
 // Prelude modules
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -99,7 +97,7 @@ use rustc_macros::{TyDecodable, TyEncodable};
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct CloneInfo<'tcx> {
     kind: Kind,
-    projections: Vec<(DefId, Ty<'tcx>)>,
+    additional_deps: Vec<(Symbol, (DefId, SubstsRef<'tcx>))>,
     cloned: bool,
     public: bool,
 }
@@ -116,19 +114,20 @@ impl Into<CloneKind> for Kind {
 
 impl CloneInfo<'tcx> {
     fn from_name(name: Symbol, public: bool) -> Self {
-        CloneInfo { kind: Kind::Named(name), projections: Vec::new(), cloned: false, public }
+        CloneInfo { kind: Kind::Named(name), additional_deps: Vec::new(), cloned: false, public }
     }
 
     fn hidden() -> Self {
-        CloneInfo { kind: Kind::Hidden, projections: Vec::new(), cloned: false, public: false }
+        CloneInfo { kind: Kind::Hidden, additional_deps: Vec::new(), cloned: false, public: false }
     }
 
     pub fn mk_export(&mut self) {
         self.kind = Kind::Export;
     }
 
-    pub fn add_projection(&mut self, proj: (DefId, Ty<'tcx>)) {
-        self.projections.push(proj);
+    pub fn add_dep(&mut self, tcx: TyCtxt<'tcx>, name: Symbol, mut dep: (DefId, SubstsRef<'tcx>)) {
+        dep.1 = tcx.erase_regions(dep.1);
+        self.additional_deps.push((name, dep));
     }
 
     // TODO: When traits stop holding all functions we can remove the last two arguments
@@ -185,20 +184,7 @@ impl<'tcx> CloneMap<'tcx> {
         ret
     }
 
-    pub fn insert(&mut self, mut def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
-        if let Some(it) = self.tcx.opt_associated_item(def_id) {
-            def_id = match it.container {
-                ty::TraitContainer(id) => id,
-                ty::ImplContainer(id) => {
-                    if self.tcx.trait_id_of_impl(id).is_some() {
-                        id
-                    } else {
-                        def_id
-                    }
-                }
-            };
-        };
-
+    pub fn insert(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
         self.insert_raw(def_id, subst)
     }
 
@@ -226,24 +212,11 @@ impl<'tcx> CloneMap<'tcx> {
         })
     }
 
-    pub fn clone_self(&mut self, mut self_id: DefId) {
+    pub fn clone_self(&mut self, self_id: DefId) {
         let subst = InternalSubsts::identity_for_item(self.tcx, self_id);
         let subst = self.tcx.erase_regions(subst);
 
         debug!("cloning self: {:?}", (self_id, subst));
-
-        if let Some(it) = self.tcx.opt_associated_item(self_id) {
-            self_id = match it.container {
-                ty::TraitContainer(id) => id,
-                ty::ImplContainer(id) => {
-                    if self.tcx.trait_id_of_impl(id).is_some() {
-                        id
-                    } else {
-                        self_id
-                    }
-                }
-            };
-        };
         self.names.insert((self_id, subst), CloneInfo::hidden());
     }
 
@@ -294,28 +267,34 @@ impl<'tcx> CloneMap<'tcx> {
             }
 
             self.clone_graph.add_node(key);
-            {
-                // Gather all the associated types used in a substitution so we can force an edge
-                let mut visitor = ProjectionTyVisitor {
-                    f: Box::new(|pty: ProjectionTy<'tcx>| {
-                        let trait_id = pty.trait_def_id(self.tcx);
-                        trace!("adding projection edge=({:?}, {:?})", trait_id, pty.substs);
-                        self.clone_graph.add_edge((trait_id, pty.substs), key, None);
-                    }),
-                };
-                key.1.visit_with(&mut visitor);
 
-                // If we have an additional projections, check if their type contains a further associated type.
-                for (_, t) in &clone_info.projections {
-                    t.visit_with(&mut visitor);
-                }
-            }
             debug!(
                 "{:?} has {:?} dependencies",
                 key,
                 ctx.dependencies(key.0).map(|d| d.len()).unwrap_or(5)
             );
-            for (dep, info) in ctx.dependencies(key.0).unwrap_or(&empty) {
+
+            let key_public = clone_info.public;
+            let additional_deps = clone_info.additional_deps.clone();
+            for (_, dep) in &additional_deps {
+                // Inherit the visibility of the parent, becoming public if at least one
+                // dependency is public.
+                let dep_info = self.insert(dep.0, dep.1);
+                dep_info.public |= key_public;
+
+                // Skip reflexive edges
+                if *dep == key {
+                    continue;
+                }
+
+                trace!("additional edge {:?} -> {:?}", dep, key);
+                self.clone_graph.add_edge(*dep, key, None);
+            }
+
+            for (dep, info) in ctx.dependencies(key.0).unwrap_or_else(|| {
+                trace!("no deps for {:?}", key);
+                &empty
+            }) {
                 if !self.use_full_clones && !info.public {
                     continue;
                 }
@@ -377,23 +356,13 @@ impl<'tcx> CloneMap<'tcx> {
             // Though we pass in a &mut ref, it shouldn't actually be possible to add any new entries..
             let mut clone_subst = base_subst(ctx, self, def_id, subst);
 
-            if self.names[&node].cloned {
+            if self.names.get(&node).unwrap_or_else(|| panic!("{:?}", node)).cloned {
                 continue;
             }
             self.names[&node].cloned = true;
 
             if self.names[&node].kind == Kind::Hidden {
                 continue;
-            }
-
-            // Add all associated type projections to the substitution.
-            // We must be ordered topologically *after* whatever occurs on the RHS of the projection
-            for proj in &std::mem::take(&mut self.names[&node].projections) {
-                let ty = translate_ty(ctx, self, rustc_span::DUMMY_SP, proj.1);
-                clone_subst.push(CloneSubst::Type(
-                    crate::translation::ty::ty_name(ctx.tcx, proj.0).into(),
-                    ty,
-                ));
             }
 
             let node_clones = ctx.dependencies(def_id).unwrap_or(&empty);
@@ -408,28 +377,24 @@ impl<'tcx> CloneMap<'tcx> {
                 // Grab the symbols from all dependencies
                 let caller_info = &self.names[&dep];
                 for sym in refinable_symbols(ctx.tcx, orig_subst.unwrap_or(dep).0) {
-                    let elem = match sym {
-                        SymbolKind::Val(n) => CloneSubst::Val(
-                            recv_info.qname_raw(n.clone()),
-                            caller_info.qname_raw(n),
-                        ),
-                        SymbolKind::Type(t) => CloneSubst::Type(
-                            recv_info.qname_raw(t.clone()),
-                            why3::mlcfg::Type::TConstructor(caller_info.qname_raw(t)),
-                        ),
-                        SymbolKind::Function(f) => CloneSubst::Function(
-                            recv_info.qname_raw(f.clone()),
-                            caller_info.qname_raw(f),
-                        ),
-                        SymbolKind::Predicate(p) => CloneSubst::Predicate(
-                            recv_info.qname_raw(p.clone()),
-                            caller_info.qname_raw(p),
-                        ),
-                    };
+                    let elem = sym.to_subst(recv_info, caller_info);
                     // If we are in an interface, then we should not attempt to share
                     // dependencies at all.
                     clone_subst.push(elem);
                 }
+            }
+
+            // Add any 'additional dependencies'
+            for (sym, dep) in &self.names[&node].additional_deps {
+                let target_sym = ident_of(*sym);
+                let mut syms =
+                    refinable_symbols(ctx.tcx, def_id).filter(|sk| sk.ident() == &target_sym);
+                let sym = syms.next().unwrap();
+                assert!(syms.next().is_none());
+
+                let caller_info = &self.names[dep];
+                let src = CloneInfo::hidden();
+                clone_subst.push(sym.to_subst(&src, caller_info));
             }
 
             if ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false) {
@@ -502,8 +467,7 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
         Interface | Program => {
             QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
         }
-        Trait => qname,
-        Type => unreachable!(),
+        Trait | Type | AssocTy => qname,
     }
 }
 
@@ -512,6 +476,33 @@ enum SymbolKind {
     Type(Ident),
     Function(Ident),
     Predicate(Ident),
+}
+
+impl SymbolKind {
+    fn ident(&self) -> &Ident {
+        match self {
+            SymbolKind::Val(i) => i,
+            SymbolKind::Type(i) => i,
+            SymbolKind::Function(i) => i,
+            SymbolKind::Predicate(i) => i,
+        }
+    }
+
+    fn to_subst(self, src: &CloneInfo, tgt: &CloneInfo) -> CloneSubst {
+        match self {
+            SymbolKind::Val(n) => CloneSubst::Val(src.qname_raw(n.clone()), tgt.qname_raw(n)),
+            SymbolKind::Type(t) => CloneSubst::Type(
+                src.qname_raw(t.clone()),
+                why3::mlcfg::Type::TConstructor(tgt.qname_raw(t)),
+            ),
+            SymbolKind::Function(f) => {
+                CloneSubst::Function(src.qname_raw(f.clone()), tgt.qname_raw(f))
+            }
+            SymbolKind::Predicate(p) => {
+                CloneSubst::Predicate(src.qname_raw(p.clone()), tgt.qname_raw(p))
+            }
+        }
+    }
 }
 
 // Gather the list of symbols that are exported from a DefId in the eyes of Creusot.
@@ -531,40 +522,13 @@ fn refinable_symbols(
         Pure => Box::new(
             iter::once(SymbolKind::Function(method_name(tcx, def_id))), // .chain(iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
         ),
-        Trait => {
-            Box::new(traits::associated_items(tcx, def_id).flat_map(move |a| {
-                let it: Box<dyn Iterator<Item = _> + 'tcx> = match a.kind {
-                    AssocKind::Fn => match util::item_type(tcx, a.def_id) {
-                        Logic => box once(SymbolKind::Function(method_name(tcx, a.def_id))),
-                        Predicate => box once(SymbolKind::Predicate(method_name(tcx, a.def_id))),
-                        Program => box once(SymbolKind::Val(method_name(tcx, a.def_id))),
-                        Pure => box [
-                            SymbolKind::Function(method_name(tcx, a.def_id)),
-                            SymbolKind::Val(method_name(tcx, a.def_id)),
-                        ]
-                        .into_iter(), // wrong,
-                        _ => unreachable!(),
-                    },
-                    AssocKind::Type => box once(SymbolKind::Type(
-                        crate::translation::ty::ty_name(tcx, a.def_id).into(),
-                    )),
-                    AssocKind::Const => unimplemented!("Tried to clone associated constant"),
-                };
-                it
-            }))
-        }
-        Impl => Box::new(tcx.associated_items(def_id).in_definition_order().filter_map(move |a| {
-            match a.kind {
-                AssocKind::Fn => match util::item_type(tcx, a.def_id) {
-                    Logic => Some(SymbolKind::Function(method_name(tcx, a.def_id))),
-                    Predicate => Some(SymbolKind::Predicate(method_name(tcx, a.def_id))),
-                    Program => Some(SymbolKind::Val(method_name(tcx, a.def_id))),
-                    _ => unreachable!(),
-                },
-                AssocKind::Type => None,
-                AssocKind::Const => None,
+        AssocTy => match tcx.associated_item(def_id).container {
+            ty::TraitContainer(_) => {
+                box once(SymbolKind::Type(crate::translation::ty::ty_name(tcx, def_id).into()))
             }
-        })),
+            ty::ImplContainer(_) => box empty(),
+        },
+        Trait | Impl => unreachable!(),
         Type => unreachable!(),
     }
 }

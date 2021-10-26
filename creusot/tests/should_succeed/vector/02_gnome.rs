@@ -1,4 +1,4 @@
-#![feature(type_ascription)]
+#![feature(type_ascription, unsized_fn_params)]
 
 extern crate creusot_contracts;
 
@@ -33,10 +33,10 @@ trait Ord {
     #[ensures(result === self.le_log(*o))]
     fn le(&self, o: &Self) -> bool;
 
-    #[creusot::spec::pure]
-    #[requires(a.le_log(*b) && b.le_log(*c))]
-    #[ensures(a.le_log(*c))]
-    fn trans(a: &Self, b: &Self, c: &Self);
+    #[creusot::decl::pure]
+    #[requires(a.le_log(b) && b.le_log(c))]
+    #[ensures(a.le_log(c))]
+    fn trans(a: Self, b: Self, c: Self);
 }
 
 #[predicate]
@@ -55,14 +55,14 @@ fn sorted<T: Ord>(s: Seq<T>) -> bool {
 #[ensures((@^v).permutation_of(@*v))]
 fn gnome_sort<T: Ord>(v: &mut Vec<T>) {
     let old_v = Ghost::record(&v);
-
+    proof_assert! { {T::trans((@v)[0], (@v)[0], (@v)[0]) ; true} };
     let mut i = 0;
     #[invariant(sorted, sorted_range(@v, 0, @i))]
     #[invariant(proph_const, ^v === ^@old_v)]
     #[invariant(in_len, @i <= (@*v).len())]
     #[invariant(permutation, (@*v).permutation_of(@*@old_v))]
     while i < v.len() {
-        if i == 0 || v.index(i - 1).le(v.index(i)) {
+        if i == 0 || v[i - 1].le(&v[i]) {
             i += 1;
         } else {
             v.swap(i - 1, i);

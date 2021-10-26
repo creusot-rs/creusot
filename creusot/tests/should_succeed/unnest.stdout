@@ -12,6 +12,8 @@ module Type
 end
 module Unnest_Main_Interface
   val main () : ()
+    requires {false}
+    
 end
 module Unnest_Main
   let rec cfg main () : () = 
@@ -25,7 +27,11 @@ module Unnest_Main
   }
   
 end
-module CreusotContracts_Builtins_Resolve_Resolve
+module CreusotContracts_Builtins_Resolve_Resolve_Resolve_Interface
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Builtins_Resolve_Resolve_Resolve
   type self   
   predicate resolve (self : self)
 end
@@ -40,23 +46,19 @@ module CreusotContracts_Builtins_Resolve_Impl1_Resolve
   predicate resolve (self : borrowed t) = 
      ^ self =  * self
 end
-module CreusotContracts_Builtins_Resolve_Impl1_Interface
-  type t   
-  use prelude.Prelude
-  clone export CreusotContracts_Builtins_Resolve_Impl1_Resolve_Interface with type t = t
-  clone export CreusotContracts_Builtins_Resolve_Resolve with type self = borrowed t, predicate resolve = resolve
-end
 module CreusotContracts_Builtins_Resolve_Impl1
   type t   
   use prelude.Prelude
-  clone export CreusotContracts_Builtins_Resolve_Impl1_Resolve with type t = t
-  clone export CreusotContracts_Builtins_Resolve_Resolve with type self = borrowed t, predicate resolve = resolve
+  clone CreusotContracts_Builtins_Resolve_Impl1_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Builtins_Resolve_Resolve_Resolve as Resolve1 with type self = borrowed t,
+  predicate resolve = Resolve0.resolve
 end
 module Unnest_Unnest_Interface
   use mach.int.Int
   use mach.int.UInt32
   use prelude.Prelude
   val unnest (x : borrowed (borrowed uint32)) : borrowed uint32
+    requires {false}
     ensures {  ^  * x =  ^  ^ x }
     ensures {  ^ result =  *  ^ x }
     ensures {  * result =  *  * x }
@@ -66,8 +68,8 @@ module Unnest_Unnest
   use mach.int.Int
   use mach.int.UInt32
   use prelude.Prelude
-  clone CreusotContracts_Builtins_Resolve_Impl1 as Resolve1 with type t = uint32
-  clone CreusotContracts_Builtins_Resolve_Impl1 as Resolve0 with type t = borrowed uint32
+  clone CreusotContracts_Builtins_Resolve_Impl1_Resolve as Resolve1 with type t = uint32
+  clone CreusotContracts_Builtins_Resolve_Impl1_Resolve as Resolve0 with type t = borrowed uint32
   let rec cfg unnest (x : borrowed (borrowed uint32)) : borrowed uint32
     ensures {  ^  * x =  ^  ^ x }
     ensures {  ^ result =  *  ^ x }
