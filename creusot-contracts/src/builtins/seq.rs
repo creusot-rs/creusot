@@ -19,7 +19,7 @@ impl<T> Seq<T> {
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq_ext.SeqExt.subsequence"]
-    pub fn subsequence(self, i: Int, j: Int) -> Self {
+    pub fn subsequence(self, _: Int, _: Int) -> Self {
         std::process::abort()
     }
 
@@ -63,7 +63,7 @@ impl<T> Seq<T> {
     #[trusted]
     #[predicate]
     #[creusot::builtins = "seq.Permut.exchange"]
-    pub fn exchange(self, o: Self, i: Int, j: Int) -> bool {
+    pub fn exchange(self, _: Self, _: Int, _: Int) -> bool {
         std::process::abort()
     }
 }
