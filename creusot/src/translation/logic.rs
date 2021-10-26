@@ -1,20 +1,20 @@
 use std::borrow::Cow;
 
-use why3::Ident;
-use rustc_middle::ty::TyCtxt;
-use why3::mlcfg::BinOp;
-use rustc_hir::def_id::DefId;
-use why3::declaration::*;
-use why3::mlcfg::Exp;
 use crate::function::all_generic_decls_for;
 use crate::translation::specification;
 use crate::{ctx::*, util};
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::TyCtxt;
+use why3::declaration::*;
+use why3::mlcfg::BinOp;
+use why3::mlcfg::Exp;
+use why3::Ident;
 
 pub fn translate_logic_or_predicate(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
     _span: rustc_span::Span,
-) -> (Module, Option<Module>, CloneMap<'tcx>) {
+) -> (Module, Option<Module>, bool, CloneMap<'tcx>) {
     let mut names = CloneMap::new(ctx.tcx, def_id, false);
     names.clone_self(def_id);
 
@@ -44,7 +44,11 @@ pub fn translate_logic_or_predicate(
         let body = specification::lower(ctx, &mut names, def_id, term);
         decls.extend(names.to_clones(ctx));
 
-        let proof_modl = implementation_module(ctx, def_id, &names, sig.clone(), body.clone());
+        let proof_modl = if !sig_contract.contract.is_empty() && def_id.is_local() {
+            Some(implementation_module(ctx, def_id, &names, sig_contract.clone(), body.clone()))
+        } else {
+            None
+        };
 
         if sig_contract.contract.variant.is_empty() {
             let decl = match util::item_type(ctx.tcx, def_id) {
@@ -54,6 +58,7 @@ pub fn translate_logic_or_predicate(
             };
             decls.push(decl);
         } else if body.is_pure() {
+            decls.push(Decl::ValDecl(function_symbol(sig.clone())));
             decls.push(Decl::Axiom(definition_axiom(&sig, body.clone())));
         } else {
             let val = match util::item_type(ctx.tcx, def_id) {
@@ -64,15 +69,21 @@ pub fn translate_logic_or_predicate(
 
             decls.push(Decl::ValDecl(val));
         }
-        Some(proof_modl)
+        proof_modl
     };
 
+    let has_axioms = !sig_contract.contract.is_empty();
     if !sig_contract.contract.is_empty() {
         decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
     }
 
     let name = translate_value_id(ctx.tcx, def_id).module_ident().unwrap().clone();
-    (Module { name, decls }, proof_modl, names)
+    (Module { name, decls }, proof_modl, has_axioms, names)
+}
+
+fn function_symbol(mut sig: Signature) -> ValKind {
+    sig.contract = Contract::new();
+    ValKind::Function { sig }
 }
 
 fn spec_axiom(sig: &Signature) -> Axiom {

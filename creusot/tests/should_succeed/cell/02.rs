@@ -33,7 +33,7 @@ use creusot_contracts::std::*;
 
 impl WellFounded for Int {}
 // TODO: this function shouldn't actually be pure, the program version will abort.
-#[pure]
+#[logic]
 #[variant(i)]
 fn fib(i: Int) -> Int {
     pearlite! {
@@ -47,7 +47,7 @@ fn fib(i: Int) -> Int {
     }
 }
 
-#[pure]
+#[logic]
 #[requires(0 <= i)]
 #[ensures(fib(i) <= 2.pow(i))]
 #[variant(i)]
@@ -89,7 +89,7 @@ fn fib_cell(v: FibCache) -> bool {
 }
 
 #[trusted]
-#[pure]
+#[logic]
 #[ensures(2.pow(63) < @0xffff_ffff_ffff_ffffusize)]
 fn lemma_max_int() {}
 

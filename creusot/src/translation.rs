@@ -4,7 +4,6 @@ pub mod external;
 pub mod function;
 pub mod interface;
 mod logic;
-pub mod pure;
 pub mod specification;
 pub mod traits;
 pub mod ty;
@@ -12,7 +11,6 @@ pub mod ty;
 pub use function::translate_function;
 pub use function::LocalIdent;
 pub use logic::*;
-pub use pure::*;
 
 use heck::CamelCase;
 

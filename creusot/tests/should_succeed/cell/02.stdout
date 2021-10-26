@@ -102,12 +102,8 @@ module C02_Fib_Interface
 end
 module C02_Fib
   use mach.int.Int
-  function fib (i : int) : int
-  val fib (i : int) : int
-    ensures { result = fib i }
-    
-  axiom fib_spec : forall i : int . true
   use mach.int.Int32
+  function fib (i : int) : int
   axiom def : forall i : int . fib i = match (i <= 0) with
     | True -> 0
     | False -> match (i = 1) with
@@ -115,6 +111,7 @@ module C02_Fib
       | False -> fib (i - 1) + fib (i - 2)
       end
     end
+  axiom fib_spec : forall i : int . true
 end
 module C02_Fib_Impl
   use mach.int.Int
@@ -144,19 +141,14 @@ module C02_LemmaFibBound
   use int.Power
   clone C02_Fib_Interface as Fib0 with axiom .
   function lemma_fib_bound (i : int) : ()
-  val lemma_fib_bound (i : int) : ()
-    requires {0 <= i}
-    ensures { Fib0.fib i <= Power.power 2 i }
-    ensures { result = lemma_fib_bound i }
-    
-  axiom lemma_fib_bound_spec : forall i : int . 0 <= i -> Fib0.fib i <= Power.power 2 i
-  axiom def : forall i : int . 0 <= i -> lemma_fib_bound i = match (i = 0) with
+  axiom def : forall i : int . lemma_fib_bound i = match (i = 0) with
     | True -> ()
     | False -> match (i = 1) with
       | True -> ()
       | False -> let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
       end
     end
+  axiom lemma_fib_bound_spec : forall i : int . 0 <= i -> Fib0.fib i <= Power.power 2 i
 end
 module C02_LemmaFibBound_Impl
   use mach.int.Int
@@ -283,10 +275,6 @@ module C02_LemmaMaxInt
   use prelude.Prelude
   use mach.int.UInt64
   function lemma_max_int () : ()
-  val lemma_max_int () : ()
-    ensures { Power.power 2 63 < 18446744073709551615 }
-    ensures { result = lemma_max_int () }
-    
   axiom lemma_max_int_spec : Power.power 2 63 < 18446744073709551615
 end
 module CreusotContracts_Builtins_Model_Impl0_ModelTy
