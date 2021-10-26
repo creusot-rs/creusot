@@ -1,11 +1,10 @@
 use crate::function::all_generic_decls_for;
+use crate::translation::translate_logic_or_predicate;
 use crate::util::item_type;
 use crate::{ctx::*, util};
 use rustc_hir::def_id::DefId;
 use why3::declaration::ValKind;
 use why3::declaration::{Decl, Module, ValKind::Val};
-
-use super::{translate_logic, translate_predicate};
 
 pub fn default_decl(
     ctx: &mut TranslationCtx<'_, 'tcx>,
@@ -53,7 +52,6 @@ pub fn extern_module(
                 ItemType::Logic | ItemType::Predicate => {
                     (translate_logic_or_predicate(ctx, def_id, span).0, Err(def_id))
                 }
-
                 _ => unreachable!("extern_module: unexpected term for {:?}", def_id),
             }
         }

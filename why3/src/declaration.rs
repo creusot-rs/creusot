@@ -56,6 +56,10 @@ impl Contract {
         Self::default()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_empty()
+    }
+
     pub fn extend(&mut self, other: Contract) {
         self.requires.extend(other.requires);
         self.ensures.extend(other.ensures);

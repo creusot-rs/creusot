@@ -32,6 +32,7 @@ pub enum TranslatedItem<'tcx> {
     Logic {
         interface: Module,
         modl: Module,
+        proof_modl: Option<Module>,
         dependencies: CloneSummary<'tcx>,
     },
     Program {
@@ -107,7 +108,7 @@ impl TranslatedItem<'tcx> {
             Hybrid { interface, proof_modl, modl, .. } => {
                 box iter::once(interface).chain(iter::once(modl)).chain(proof_modl.iter())
             }
-            Logic { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
+            Logic { interface, modl, proof_modl, .. } => box iter::once(interface).chain(iter::once(modl)).chain(proof_modl.iter()),
             Program { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
             Trait { .. } => box iter::empty(),
             Impl { modl, .. } => box iter::once(modl),
@@ -209,12 +210,14 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             TranslatedItem::Extern { interface, body: ext_modl.0, dependencies: ext_modl.1 }
         } else if util::is_logic(self.tcx, def_id) {
             debug!("translating {:?} as logic", def_id);
-            let (modl, deps) = crate::translation::translate_logic_or_predicate(self, def_id, span);
-            TranslatedItem::Logic { interface, modl, dependencies: deps.summary() }
+            let (modl, proof_modl, deps) =
+                crate::translation::translate_logic_or_predicate(self, def_id, span);
+            TranslatedItem::Logic { interface, modl, proof_modl, dependencies: deps.summary() }
         } else if util::is_predicate(self.tcx, def_id) {
             debug!("translating {:?} as predicate", def_id);
-            let (modl, deps) = crate::translation::translate_logic_or_predicate(self, def_id, span);
-            TranslatedItem::Logic { interface, modl, dependencies: deps.summary() }
+            let (modl, proof_modl, deps) =
+                crate::translation::translate_logic_or_predicate(self, def_id, span);
+            TranslatedItem::Logic { interface, modl, proof_modl, dependencies: deps.summary() }
         } else if util::is_pure(self.tcx, def_id) {
             debug!("translating {:?} as pure", def_id);
             let (modl, proof_modl, deps) = crate::translation::translate_pure(self, def_id, span);

@@ -123,18 +123,7 @@ fn implementation_module(
     sig: Signature,
     body: Exp,
 ) -> Option<Module> {
-    let has_body = if let Some(local_id) = def_id.as_local() {
-        let hir_id = ctx.tcx.hir().local_def_id_to_hir_id(local_id);
-        if !ctx.tcx.hir().maybe_body_owned_by(hir_id).is_some() {
-            false
-        } else {
-            true
-        }
-    } else {
-        true
-        // unreachable!()
-    };
-    if util::is_trusted(ctx.tcx, def_id) || !has_body {
+    if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         return None;
     }
 
