@@ -209,11 +209,11 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             TranslatedItem::Extern { interface, body: ext_modl.0, dependencies: ext_modl.1 }
         } else if util::is_logic(self.tcx, def_id) {
             debug!("translating {:?} as logic", def_id);
-            let (modl, deps) = crate::translation::translate_logic(self, def_id, span);
+            let (modl, deps) = crate::translation::translate_logic_or_predicate(self, def_id, span);
             TranslatedItem::Logic { interface, modl, dependencies: deps.summary() }
         } else if util::is_predicate(self.tcx, def_id) {
             debug!("translating {:?} as predicate", def_id);
-            let (modl, deps) = crate::translation::translate_predicate(self, def_id, span);
+            let (modl, deps) = crate::translation::translate_logic_or_predicate(self, def_id, span);
             TranslatedItem::Logic { interface, modl, dependencies: deps.summary() }
         } else if util::is_pure(self.tcx, def_id) {
             debug!("translating {:?} as pure", def_id);
