@@ -26,6 +26,7 @@ pub struct Scope {
 pub enum Decl {
     FunDecl(CfgFunction),
     Let(LetDecl),
+    LetFun(LetFun),
     ValDecl(ValKind),
     LogicDecl(Logic),
     Scope(Scope),
@@ -54,6 +55,10 @@ pub struct Contract {
 impl Contract {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_empty()
     }
 
     pub fn extend(&mut self, other: Contract) {
@@ -221,5 +226,14 @@ pub struct Axiom {
 pub struct LetDecl {
     pub sig: Signature,
     pub rec: bool,
+    pub body: Exp,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct LetFun {
+    pub sig: Signature,
+    pub rec: bool,
+    pub ghost: bool,
     pub body: Exp,
 }

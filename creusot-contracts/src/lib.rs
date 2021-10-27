@@ -15,13 +15,8 @@ pub use builtins::*;
 #[cfg(feature = "contracts")]
 pub mod std;
 
+#[cfg(feature = "contracts")]
+pub use crate::std::WellFounded;
+
 // Re-export the rand crate
 pub use rand;
-
-pub trait WellFounded {}
-
-impl WellFounded for u32 {}
-impl WellFounded for u64 {}
-impl WellFounded for i32 {}
-impl WellFounded for i64 {}
-impl<T: WellFounded> WellFounded for &T {}

@@ -96,6 +96,7 @@ impl Pretty for Decl {
             Decl::UseDecl(u) => u.pretty(alloc, env),
             Decl::Axiom(a) => a.pretty(alloc, env),
             Decl::Let(l) => l.pretty(alloc, env),
+            Decl::LetFun(l) => l.pretty(alloc, env),
         }
     }
 }
@@ -192,6 +193,36 @@ impl Pretty for LetDecl {
         }
 
         doc = doc
+            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
+            .group()
+            .append(alloc.line())
+            .append(self.body.pretty(alloc, env).indent(2));
+
+        doc
+    }
+}
+
+impl Pretty for LetFun {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        let mut doc = alloc.text("let ");
+
+        if self.rec {
+            doc = doc.append("rec ");
+        }
+
+        if self.ghost {
+            doc = doc.append("ghost ");
+        }
+
+        doc = doc
+            .append("function ")
             .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
             .group()
             .append(alloc.line())

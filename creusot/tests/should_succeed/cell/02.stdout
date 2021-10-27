@@ -102,12 +102,8 @@ module C02_Fib_Interface
 end
 module C02_Fib
   use mach.int.Int
-  function fib (i : int) : int
-  val fib (i : int) : int
-    ensures { result = fib i }
-    
-  axiom fib_spec : forall i : int . true
   use mach.int.Int32
+  function fib (i : int) : int
   axiom def : forall i : int . fib i = match (i <= 0) with
     | True -> 0
     | False -> match (i = 1) with
@@ -115,11 +111,12 @@ module C02_Fib
       | False -> fib (i - 1) + fib (i - 2)
       end
     end
+  axiom fib_spec : forall i : int . true
 end
 module C02_Fib_Impl
   use mach.int.Int
   use mach.int.Int32
-  let rec fib (i : int) : int
+  let rec ghost function fib (i : int) : int
     variant {i}
     
    = 
@@ -144,26 +141,21 @@ module C02_LemmaFibBound
   use int.Power
   clone C02_Fib_Interface as Fib0 with axiom .
   function lemma_fib_bound (i : int) : ()
-  val lemma_fib_bound (i : int) : ()
-    requires {0 <= i}
-    ensures { Fib0.fib i <= Power.power 2 i }
-    ensures { result = lemma_fib_bound i }
-    
-  axiom lemma_fib_bound_spec : forall i : int . 0 <= i -> Fib0.fib i <= Power.power 2 i
-  axiom def : forall i : int . 0 <= i -> lemma_fib_bound i = match (i = 0) with
+  axiom def : forall i : int . lemma_fib_bound i = match (i = 0) with
     | True -> ()
     | False -> match (i = 1) with
       | True -> ()
       | False -> let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
       end
     end
+  axiom lemma_fib_bound_spec : forall i : int . 0 <= i -> Fib0.fib i <= Power.power 2 i
 end
 module C02_LemmaFibBound_Impl
   use mach.int.Int
   use mach.int.Int32
   use int.Power
   clone C02_Fib as Fib0 with axiom .
-  let rec lemma_fib_bound (i : int) : ()
+  let rec ghost function lemma_fib_bound (i : int) : ()
     requires {0 <= i}
     ensures { Fib0.fib i <= Power.power 2 i }
     variant {i}
@@ -177,14 +169,14 @@ module C02_LemmaFibBound_Impl
         end
       end
 end
-module C02_Impl2_Inv_Interface
+module C02_Impl1_Inv_Interface
   use prelude.Prelude
   use Type
   use mach.int.Int
   use mach.int.UInt64
   predicate inv (self : Type.c02_fib) (v : Type.core_option_option usize)
 end
-module C02_Impl2_Inv
+module C02_Impl1_Inv
   use prelude.Prelude
   use Type
   use mach.int.Int
@@ -196,13 +188,13 @@ module C02_Impl2_Inv
       | Type.Core_Option_Option_Some i -> UInt64.to_int i = Fib0.fib (UInt64.to_int (let Type.C02_Fib a = self in a))
       end
 end
-module C02_Impl2
+module C02_Impl1
   use Type
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
   clone C02_Fib as Fib0 with axiom .
-  clone C02_Impl2_Inv as Inv0 with function Fib0.fib = Fib0.fib
+  clone C02_Impl1_Inv as Inv0 with function Fib0.fib = Fib0.fib
   clone C02_Inv_Inv as Inv1 with type self = Type.c02_fib, type t = Type.core_option_option usize,
   predicate inv = Inv0.inv
 end
@@ -283,10 +275,6 @@ module C02_LemmaMaxInt
   use prelude.Prelude
   use mach.int.UInt64
   function lemma_max_int () : ()
-  val lemma_max_int () : ()
-    ensures { Power.power 2 63 < 18446744073709551615 }
-    ensures { result = lemma_max_int () }
-    
   axiom lemma_max_int_spec : Power.power 2 63 < 18446744073709551615
 end
 module CreusotContracts_Builtins_Model_Impl0_ModelTy
@@ -450,7 +438,7 @@ module C02_FibMemo
   clone CreusotContracts_Builtins_Resolve_Resolve_Resolve as Resolve0 with type self = usize
   clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib),
   function Model0.model = Model0.model
-  clone C02_Impl2_Inv as Inv0 with function Fib0.fib = Fib0.fib
+  clone C02_Impl1_Inv as Inv0 with function Fib0.fib = Fib0.fib
   clone C02_Impl0_Set_Interface as Set0 with type t = Type.core_option_option usize, type i = Type.c02_fib,
   predicate Inv0.inv = Inv0.inv
   clone C02_Impl0_Get_Interface as Get0 with type t = Type.core_option_option usize, type i = Type.c02_fib,
@@ -625,8 +613,5 @@ module C02_FibMemo
   BB17 {
     return _0
   }
-  
-end
-module C02_Impl1
   
 end

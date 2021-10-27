@@ -18,7 +18,7 @@ impl Tree {
     }
 
     // TODO: Make this ghost
-    #[pure]
+    #[logic]
     #[variant(*self)]
     #[ensures(self.sum() >= 0)]
     fn lemma_sum_nonneg(&self) {
@@ -36,8 +36,11 @@ impl Tree {
     fn sum_x(&self) -> u32 {
         match self {
             Node(tl, a, tr) => {
-                tl.lemma_sum_nonneg();
-                tr.lemma_sum_nonneg();
+                proof_assert! {{
+                    tl.lemma_sum_nonneg();
+                    tr.lemma_sum_nonneg();
+                    true
+                }};
                 tl.sum_x() + *a + tr.sum_x()
             }
             Leaf => 0,
@@ -49,8 +52,11 @@ impl Tree {
     fn take_some(&mut self) -> &mut u32 {
         match self {
             Node(mtl, ma, mtr) => {
-                mtl.lemma_sum_nonneg();
-                mtr.lemma_sum_nonneg();
+                proof_assert! {{
+                    mtl.lemma_sum_nonneg();
+                    mtr.lemma_sum_nonneg();
+                    true
+                }};
                 if rand::random() {
                     ma
                 } else if rand::random() {

@@ -26,15 +26,12 @@ pub fn interface_for(
     match util::item_type(ctx.tcx, def_id) {
         ItemType::Predicate => {
             sig.retty = None;
+            sig.contract = Contract::new();
             decls.push(Decl::ValDecl(ValKind::Predicate { sig }));
         }
         ItemType::Logic => {
+            sig.contract = Contract::new();
             decls.push(Decl::ValDecl(ValKind::Function { sig }));
-        }
-        ItemType::Pure => {
-            let mut func_sig = sig.clone();
-            func_sig.contract = Contract::new();
-            decls.push(Decl::ValDecl(ValKind::Function { sig: func_sig }));
         }
         _ => {
             if !util::is_trusted(ctx.tcx, def_id) {

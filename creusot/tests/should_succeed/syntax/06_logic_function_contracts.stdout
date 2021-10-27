@@ -1,0 +1,43 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module C06LogicFunctionContracts_Sum_Interface
+  use seq.Seq
+  use mach.int.Int
+  function sum (seq : Seq.seq int) : int
+end
+module C06LogicFunctionContracts_Sum
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  use seq_ext.SeqExt
+  function sum (seq : Seq.seq int) : int
+  axiom def : forall seq : Seq.seq int . sum seq = match (Seq.length seq = 0) with
+    | True -> 0
+    | False -> Seq.get seq (Seq.length seq - 1) + sum (SeqExt.subsequence seq 0 (Seq.length seq - 1))
+    end
+  axiom sum_spec : forall seq : Seq.seq int . true
+end
+module C06LogicFunctionContracts_Sum_Impl
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  use seq_ext.SeqExt
+  let rec ghost function sum (seq : Seq.seq int) : int
+    variant {Seq.length seq}
+    
+   = 
+    match (Seq.length seq = 0) with
+      | True -> 0
+      | False -> Seq.get seq (Seq.length seq - 1) + sum (SeqExt.subsequence seq 0 (Seq.length seq - 1))
+      end
+end

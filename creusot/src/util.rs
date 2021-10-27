@@ -57,10 +57,6 @@ pub(crate) fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "trusted"]).is_some()
 }
 
-pub(crate) fn is_pure(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "pure"]).is_some()
-}
-
 pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     loop {
         if is_no_translate(tcx, def_id) {
@@ -81,7 +77,7 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
         ctx.tcx.hir().maybe_body_owned_by(hir_id).is_some()
     } else {
         match item_type(ctx.tcx, def_id) {
-            ItemType::Logic | ItemType::Predicate | ItemType::Pure => ctx.term(def_id).is_some(),
+            ItemType::Logic | ItemType::Predicate => ctx.term(def_id).is_some(),
             _ => false,
         }
     }
@@ -111,7 +107,6 @@ pub enum ItemType {
     Type,
     AssocTy,
     Interface,
-    Pure,
 }
 
 impl ItemType {
@@ -135,8 +130,6 @@ pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
                 ItemType::Predicate
             } else if is_logic(tcx, def_id) {
                 ItemType::Logic
-            } else if is_pure(tcx, def_id) {
-                ItemType::Pure
             } else {
                 ItemType::Program
             }

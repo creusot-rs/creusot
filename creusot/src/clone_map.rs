@@ -456,7 +456,7 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
 
     // TODO: Refactor.
     match util::item_type(tcx, def_id) {
-        Logic | Predicate | Pure | Impl => {
+        Logic | Predicate | Impl => {
             if interface {
                 // TODO: this should directly be a function...
                 QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
@@ -519,9 +519,6 @@ fn refinable_symbols(
         Logic => Box::new(iter::once(SymbolKind::Function(method_name(tcx, def_id)))),
         Predicate => Box::new(iter::once(SymbolKind::Predicate(method_name(tcx, def_id)))),
         Interface | Program => Box::new(iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
-        Pure => Box::new(
-            iter::once(SymbolKind::Function(method_name(tcx, def_id))), // .chain(iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
-        ),
         AssocTy => match tcx.associated_item(def_id).container {
             ty::TraitContainer(_) => {
                 box once(SymbolKind::Type(crate::translation::ty::ty_name(tcx, def_id).into()))

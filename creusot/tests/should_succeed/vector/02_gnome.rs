@@ -33,7 +33,7 @@ trait Ord {
     #[ensures(result === self.le_log(*o))]
     fn le(&self, o: &Self) -> bool;
 
-    #[creusot::decl::pure]
+    #[logic]
     #[requires(a.le_log(b) && b.le_log(c))]
     #[ensures(a.le_log(c))]
     fn trans(a: Self, b: Self, c: Self);

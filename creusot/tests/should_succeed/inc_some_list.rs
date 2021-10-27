@@ -17,8 +17,7 @@ impl List {
         }
     }
 
-    // TODO: Make this ghost
-    #[pure]
+    #[logic]
     #[variant(*self)]
     #[ensures(self.sum() >= 0)]
     fn lemma_sum_nonneg(&self) {
@@ -42,7 +41,7 @@ impl List {
     fn take_some(&mut self) -> &mut u32 {
         match self {
             Cons(ma, ml) => {
-                ml.lemma_sum_nonneg();
+                proof_assert! {{ ml.lemma_sum_nonneg(); true }};
                 if rand::random() {
                     ma
                 } else {

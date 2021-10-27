@@ -23,16 +23,12 @@ use crate::util::item_type;
 use crate::{options::Options, util};
 
 pub enum TranslatedItem<'tcx> {
-    Hybrid {
+    Logic {
         interface: Module,
         modl: Module,
         proof_modl: Option<Module>,
         dependencies: CloneSummary<'tcx>,
-    },
-    Logic {
-        interface: Module,
-        modl: Module,
-        dependencies: CloneSummary<'tcx>,
+        has_axioms: bool,
     },
     Program {
         interface: Module,
@@ -82,7 +78,6 @@ impl TranslatedItem<'tcx> {
         use TranslatedItem::*;
 
         match self {
-            Hybrid { dependencies, .. } => dependencies,
             Logic { dependencies, .. } => dependencies,
             Program { dependencies, .. } => dependencies,
             Trait { dependencies, .. } => dependencies,
@@ -95,7 +90,7 @@ impl TranslatedItem<'tcx> {
     pub fn has_axioms(&self) -> bool {
         match self {
             TranslatedItem::Trait { has_axioms, .. } => *has_axioms,
-            TranslatedItem::Hybrid { .. } => true,
+            TranslatedItem::Logic { has_axioms, .. } => *has_axioms,
             _ => false,
         }
     }
@@ -104,10 +99,9 @@ impl TranslatedItem<'tcx> {
         use std::iter;
         use TranslatedItem::*;
         match self {
-            Hybrid { interface, proof_modl, modl, .. } => {
+            Logic { interface, modl, proof_modl, .. } => {
                 box iter::once(interface).chain(iter::once(modl)).chain(proof_modl.iter())
             }
-            Logic { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
             Program { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
             Trait { .. } => box iter::empty(),
             Impl { modl, .. } => box iter::once(modl),
@@ -158,7 +152,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         match item_type(self.tcx, def_id) {
             ItemType::Trait => self.translate_trait(def_id),
             ItemType::Impl => self.translate_impl(def_id),
-            ItemType::Logic | ItemType::Predicate | ItemType::Program | ItemType::Pure => {
+            ItemType::Logic | ItemType::Predicate | ItemType::Program => {
                 self.translate_function(def_id)
             }
             ItemType::AssocTy => {
@@ -209,16 +203,26 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             TranslatedItem::Extern { interface, body: ext_modl.0, dependencies: ext_modl.1 }
         } else if util::is_logic(self.tcx, def_id) {
             debug!("translating {:?} as logic", def_id);
-            let (modl, deps) = crate::translation::translate_logic(self, def_id, span);
-            TranslatedItem::Logic { interface, modl, dependencies: deps.summary() }
+            let (modl, proof_modl, has_axioms, deps) =
+                crate::translation::translate_logic_or_predicate(self, def_id, span);
+            TranslatedItem::Logic {
+                interface,
+                modl,
+                proof_modl,
+                has_axioms,
+                dependencies: deps.summary(),
+            }
         } else if util::is_predicate(self.tcx, def_id) {
             debug!("translating {:?} as predicate", def_id);
-            let (modl, deps) = crate::translation::translate_predicate(self, def_id, span);
-            TranslatedItem::Logic { interface, modl, dependencies: deps.summary() }
-        } else if util::is_pure(self.tcx, def_id) {
-            debug!("translating {:?} as pure", def_id);
-            let (modl, proof_modl, deps) = crate::translation::translate_pure(self, def_id, span);
-            TranslatedItem::Hybrid { interface, modl, proof_modl, dependencies: deps.summary() }
+            let (modl, proof_modl, has_axioms, deps) =
+                crate::translation::translate_logic_or_predicate(self, def_id, span);
+            TranslatedItem::Logic {
+                interface,
+                modl,
+                proof_modl,
+                has_axioms,
+                dependencies: deps.summary(),
+            }
         } else {
             if util::is_spec(self.tcx, def_id) {
                 return;
