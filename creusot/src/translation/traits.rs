@@ -60,7 +60,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             decls.extend(own_generic_decls_for(self.tcx, item.def_id));
 
             let trait_item = trait_assocs
-                .find_by_name_and_kind(self.tcx, item.ident, item.kind, impl_id)
+                .find_by_name_and_kind(self.tcx, item.ident, item.kind, trait_ref.def_id)
                 .unwrap();
             let s = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
 
