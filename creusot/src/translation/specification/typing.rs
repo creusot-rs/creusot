@@ -31,7 +31,7 @@ pub enum LogicalOp {
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable)]
 pub enum Term<'tcx> {
-    Var(String),
+    Var(Symbol),
     Const(&'tcx Const<'tcx>),
     Binary { op: BinOp, operand_ty: Ty<'tcx>, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Logical { op: LogicalOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
@@ -113,14 +113,14 @@ fn lower_expr<'tcx>(
         ExprKind::VarRef { id } => {
             let map = tcx.hir();
             let name = map.name(id);
-            Ok(Term::Var(name.to_string()))
+            Ok(Term::Var(name))
         }
         // TODO: confirm this works
         ExprKind::UpvarRef { var_hir_id: id, .. } => {
             let map = tcx.hir();
             let name = map.name(id);
 
-            Ok(Term::Var(name.to_string()))
+            Ok(Term::Var(name))
         }
         ExprKind::Literal { literal, .. } => Ok(Term::Const(literal)),
         ExprKind::Call { ty, fun, ref args, .. } => {
@@ -222,7 +222,7 @@ fn lower_expr<'tcx>(
                 .expect("lower_expr: could not make pattern for field");
             let lhs = lower_expr(tcx, thir, lhs)?;
 
-            Ok(Term::Let { pattern: pat, arg: box lhs, body: box Term::Var("a".into()) })
+            Ok(Term::Let { pattern: pat, arg: box lhs, body: box Term::Var(Symbol::intern("a")) })
         }
         ExprKind::Tuple { ref fields } => {
             let fields: Vec<_> =

@@ -1,7 +1,7 @@
 use super::typing::{LogicalOp, Pattern, Term};
-use crate::ctx::*;
 use crate::translation::traits::resolve_assoc_item_opt;
 use crate::translation::{binop_to_binop, builtins, constant, ty::translate_ty, unop_to_unop};
+use crate::{ctx::*, util};
 use why3::mlcfg::{BinOp, Exp, Pattern as Pat};
 
 pub fn lower(
@@ -23,7 +23,7 @@ fn lower_term_to_why3<'tcx>(
 ) -> Exp {
     match term {
         Term::Const(c) => Exp::Const(constant::from_mir_constant_kind(ctx, names, c.into())),
-        Term::Var(v) => Exp::Var(v.into()),
+        Term::Var(v) => Exp::Var(util::ident_of(v)),
         Term::Binary { op, operand_ty, box lhs, box rhs } => {
             translate_ty(ctx, names, rustc_span::DUMMY_SP, operand_ty);
 
