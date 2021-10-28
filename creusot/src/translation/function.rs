@@ -383,9 +383,12 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     pub fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Exp {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(pl),
-            Operand::Constant(c) => {
-                Const(crate::constant::from_mir_constant(&mut self.ctx, &mut self.clone_names, c))
-            }
+            Operand::Constant(c) => crate::constant::from_mir_constant(
+                &mut self.ctx,
+                &mut self.clone_names,
+                self.def_id,
+                c,
+            ),
         }
     }
 

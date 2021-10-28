@@ -22,7 +22,9 @@ fn lower_term_to_why3<'tcx>(
     term: Term<'tcx>,
 ) -> Exp {
     match term.kind {
-        TermKind::Const(c) => Exp::Const(constant::from_mir_constant_kind(ctx, names, c.into())),
+        TermKind::Const(c) => {
+            constant::from_mir_constant_kind(ctx, names, c.into(), term_id, rustc_span::DUMMY_SP)
+        }
         TermKind::Var(v) => Exp::Var(util::ident_of(v)),
         TermKind::Binary { op, operand_ty, box lhs, box rhs } => {
             translate_ty(ctx, names, rustc_span::DUMMY_SP, operand_ty);
