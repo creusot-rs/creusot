@@ -97,7 +97,9 @@ fn lower_term_to_why3<'tcx>(
             crate::ty::translate_tydecl(ctx, rustc_span::DUMMY_SP, adt.did);
             Exp::Constructor { ctor, args }
         }
-        TermKind::Cur { box term } => Exp::Current(box lower_term_to_why3(ctx, names, term_id, term)),
+        TermKind::Cur { box term } => {
+            Exp::Current(box lower_term_to_why3(ctx, names, term_id, term))
+        }
         TermKind::Fin { box term } => Exp::Final(box lower_term_to_why3(ctx, names, term_id, term)),
         TermKind::Impl { box lhs, box rhs } => Exp::Impl(
             box lower_term_to_why3(ctx, names, term_id, lhs),
@@ -108,17 +110,31 @@ fn lower_term_to_why3<'tcx>(
             box lower_term_to_why3(ctx, names, term_id, lhs),
             box lower_term_to_why3(ctx, names, term_id, rhs),
         ),
-        TermKind::Match { box scrutinee, arms } => {
-            let arms = arms
-                .into_iter()
-                .map(|(pat, body)| {
-                    (
-                        lower_pat_to_why3(ctx, names, pat),
-                        lower_term_to_why3(ctx, names, term_id, body),
-                    )
-                })
-                .collect();
-            Exp::Match(box lower_term_to_why3(ctx, names, term_id, scrutinee), arms)
+        TermKind::Match { box scrutinee, mut arms } => {
+            if scrutinee.ty.peel_refs().is_bool() {
+                let true_br = if let Pattern::Boolean(true) = arms[0].0 {
+                    arms.remove(0).1
+                } else {
+                    arms.remove(1).1
+                };
+                let false_br = arms.remove(0).1;
+                Exp::IfThenElse(
+                    box lower_term_to_why3(ctx, names, term_id, scrutinee),
+                    box lower_term_to_why3(ctx, names, term_id, true_br),
+                    box lower_term_to_why3(ctx, names, term_id, false_br),
+                )
+            } else {
+                let arms = arms
+                    .into_iter()
+                    .map(|(pat, body)| {
+                        (
+                            lower_pat_to_why3(ctx, names, pat),
+                            lower_term_to_why3(ctx, names, term_id, body),
+                        )
+                    })
+                    .collect();
+                Exp::Match(box lower_term_to_why3(ctx, names, term_id, scrutinee), arms)
+            }
         }
         TermKind::Let { pattern, box arg, box body } => Exp::Let {
             pattern: lower_pat_to_why3(ctx, names, pattern),
