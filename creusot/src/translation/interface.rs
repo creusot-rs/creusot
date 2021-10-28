@@ -34,7 +34,7 @@ pub fn interface_for(
             decls.push(Decl::ValDecl(ValKind::Function { sig }));
         }
         _ => {
-            if !util::is_trusted(ctx.tcx, def_id) {
+            if !def_id.is_local() && !ctx.externs.verified(def_id) {
                 sig.contract.requires.push(why3::mlcfg::Exp::mk_false());
             }
 

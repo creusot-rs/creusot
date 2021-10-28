@@ -28,7 +28,7 @@ pub fn default_decl(
             ValKind::Predicate { sig }
         }
         ItemType::Program => {
-            if !util::is_trusted(ctx.tcx, def_id) {
+            if !ctx.externs.verified(def_id) {
                 sig.contract.requires.push(why3::mlcfg::Exp::mk_false());
             }
             Val { sig }
