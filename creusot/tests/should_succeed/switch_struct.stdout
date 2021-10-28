@@ -13,6 +13,16 @@ module Type
     | SwitchStruct_M_F uint32
     | SwitchStruct_M_G 't
     
+  function switchstruct_m_G_field2 (self : switchstruct_m 't) : 't
+  val switchstruct_m_G_field2 (self : switchstruct_m 't) : 't
+    ensures { result = switchstruct_m_G_field2 self }
+    
+  axiom switchstruct_m_G_field2_acc : forall a : 't . switchstruct_m_G_field2 (SwitchStruct_M_G a : switchstruct_m 't) = a
+  function switchstruct_m_F_field1 (self : switchstruct_m 't) : uint32
+  val switchstruct_m_F_field1 (self : switchstruct_m 't) : uint32
+    ensures { result = switchstruct_m_F_field1 self }
+    
+  axiom switchstruct_m_F_field1_acc : forall a : uint32 . switchstruct_m_F_field1 (SwitchStruct_M_F a : switchstruct_m 't) = a
 end
 module SwitchStruct_Test_Interface
   use Type
@@ -49,7 +59,7 @@ module SwitchStruct_Test
   }
   BB2 {
     assume { (fun x -> true) field2_5 };
-    field2_5 <- (let Type.SwitchStruct_M_G a = o_1 in a);
+    field2_5 <- Type.switchstruct_m_G_field2 o_1;
     assume { (fun x -> true) o_1 };
     assume { (fun x -> true) _6 };
     _6 <- field2_5;
@@ -63,7 +73,7 @@ module SwitchStruct_Test
   }
   BB4 {
     assume { (fun x -> true) field1_3 };
-    field1_3 <- (let Type.SwitchStruct_M_F a = o_1 in a);
+    field1_3 <- Type.switchstruct_m_F_field1 o_1;
     assume { (fun x -> true) o_1 };
     assume { (fun x -> true) _4 };
     _4 <- field1_3;

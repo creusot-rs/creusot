@@ -521,7 +521,7 @@ impl Pretty for Type {
             Char => alloc.text("char"),
             Integer => alloc.text("int"),
             MutableBorrow(box t) => alloc.text("borrowed ").append(ty_parens!(alloc, env, t)),
-            TVar(v) => alloc.text(format!("'{}", v)),
+            TVar(v) => alloc.text(format!("'{}", v.0)),
             TConstructor(ty) => ty.pretty(alloc, env),
 
             TFun(box a, box b) => {
@@ -593,7 +593,7 @@ impl Pretty for Exp {
             }),
 
             Exp::BorrowMut(box exp) => {
-                alloc.text("borrow_mut ").append(parens!(alloc, env, self, exp))
+                alloc.text("borrow_mut ").append(parens!(alloc, env, self.precedence().next(), exp))
             }
 
             Exp::Const(c) => c.pretty(alloc, env),
@@ -679,6 +679,9 @@ impl Pretty for Exp {
                 .append(exp.pretty(alloc, env)),
             Exp::Impl(box hyp, box exp) => {
                 parens!(alloc, env, self, hyp).append(" -> ").append(parens!(alloc, env, self, exp))
+            }
+            Exp::Ascribe(e, t) => {
+                e.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env)).group()
             }
             Exp::Absurd => alloc.text("absurd"),
         }

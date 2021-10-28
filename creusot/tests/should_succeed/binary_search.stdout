@@ -9,17 +9,27 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type core_result_result 't 'e = 
-    | Core_Result_Result_Ok 't
-    | Core_Result_Result_Err 'e
+  type binarysearch_list 't = 
+    | BinarySearch_List_Cons 't (binarysearch_list 't)
+    | BinarySearch_List_Nil
     
+  function binarysearch_list_Cons_0 (self : binarysearch_list 't) : 't
+  val binarysearch_list_Cons_0 (self : binarysearch_list 't) : 't
+    ensures { result = binarysearch_list_Cons_0 self }
+    
+  axiom binarysearch_list_Cons_0_acc : forall a : 't, b : binarysearch_list 't . binarysearch_list_Cons_0 (BinarySearch_List_Cons a b : binarysearch_list 't) = a
+  function binarysearch_list_Cons_1 (self : binarysearch_list 't) : binarysearch_list 't
+  val binarysearch_list_Cons_1 (self : binarysearch_list 't) : binarysearch_list 't
+    ensures { result = binarysearch_list_Cons_1 self }
+    
+  axiom binarysearch_list_Cons_1_acc : forall a : 't, b : binarysearch_list 't . binarysearch_list_Cons_1 (BinarySearch_List_Cons a b : binarysearch_list 't) = b
   type core_option_option 't = 
     | Core_Option_Option_None
     | Core_Option_Option_Some 't
     
-  type binarysearch_list 't = 
-    | BinarySearch_List_Cons 't (binarysearch_list 't)
-    | BinarySearch_List_Nil
+  type core_result_result 't 'e = 
+    | Core_Result_Result_Ok 't
+    | Core_Result_Result_Err 'e
     
 end
 module BinarySearch_Main_Interface
@@ -159,8 +169,8 @@ module BinarySearch_Impl0_Index
     goto BB4
   }
   BB4 {
-    t_8 <- (let Type.BinarySearch_List_Cons a _ = l_4 in a);
-    ls_9 <- (let Type.BinarySearch_List_Cons _ a = l_4 in a);
+    t_8 <- Type.binarysearch_list_Cons_0 l_4;
+    ls_9 <- Type.binarysearch_list_Cons_1 l_4;
     assume { Resolve1.resolve l_4 };
     assume { Resolve0.resolve _11 };
     _11 <- ix_2;
@@ -269,7 +279,7 @@ module BinarySearch_Impl0_Len
     goto BB4
   }
   BB4 {
-    ls_7 <- (let Type.BinarySearch_List_Cons _ a = l_3 in a);
+    ls_7 <- Type.binarysearch_list_Cons_1 l_3;
     assume { Resolve0.resolve l_3 };
     len_2 <- len_2 + (1 : usize);
     _8 <- ls_7;

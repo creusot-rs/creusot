@@ -10,7 +10,7 @@ use rustc_session::Session;
 use rustc_span::Span;
 use rustc_span::Symbol;
 pub use util::ItemType;
-use why3::declaration::{Module, TyDecl};
+use why3::declaration::{Decl, Module, TyDecl};
 use why3::QName;
 
 pub use crate::clone_map::*;
@@ -18,6 +18,7 @@ use crate::creusot_items::{self, CreusotItems};
 use crate::metadata::{BinaryMetadata, Metadata};
 use crate::translation::interface::interface_for;
 use crate::translation::specification::typing::Term;
+use crate::translation::ty;
 use crate::translation::{external, specification};
 use crate::util::item_type;
 use crate::{options::Options, util};
@@ -52,6 +53,17 @@ pub enum TranslatedItem<'tcx> {
         body: Module,
         dependencies: Result<CloneSummary<'tcx>, DefId>,
     },
+}
+
+pub struct TypeDeclaration {
+    pub ty_decl: TyDecl,
+    pub accessors: IndexMap<DefId, IndexMap<DefId, Vec<Decl>>>,
+}
+
+impl TypeDeclaration {
+    pub fn accessors(&self) -> impl Iterator<Item = &Decl> {
+        self.accessors.values().flat_map(|v| v.values().flat_map(|f| f.iter()))
+    }
 }
 
 pub enum DefaultOrExtern<'tcx> {
@@ -116,7 +128,7 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub sess: &'sess Session,
     pub tcx: TyCtxt<'tcx>,
     pub translated_items: IndexSet<DefId>,
-    pub types: Vec<TyDecl>,
+    pub types: IndexMap<DefId, TypeDeclaration>,
     functions: IndexMap<DefId, TranslatedItem<'tcx>>,
     terms: IndexMap<DefId, Term<'tcx>>,
     pub externs: Metadata<'tcx>,
@@ -131,7 +143,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             sess,
             tcx,
             translated_items: IndexSet::new(),
-            types: Vec::new(),
+            types: Default::default(),
             functions: IndexMap::new(),
             externs: Metadata::new(tcx),
             terms: Default::default(),
@@ -235,6 +247,27 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.functions.insert(def_id, translated);
     }
 
+    pub fn translate_accessor(&mut self, field_id: DefId) {
+        use rustc_middle::ty::DefIdTree;
+
+        if !self.translated_items.insert(field_id) {
+            return;
+        }
+
+        let parent = self.tcx.parent(field_id).unwrap();
+        let (adt_did, variant_did) = match self.tcx.def_kind(parent) {
+            DefKind::Variant => (self.tcx.parent(parent).unwrap(), parent),
+            DefKind::Struct | DefKind::Enum | DefKind::Union => {
+                (parent, self.tcx.adt_def(parent).variants[0u32.into()].def_id)
+            }
+            _ => unreachable!(),
+        };
+
+        let accessor = ty::translate_accessor(self, adt_did, variant_did, field_id);
+
+        self.types[&adt_did].accessors.entry(variant_did).or_default().insert(field_id, accessor);
+    }
+
     pub fn term(&mut self, def_id: DefId) -> Option<&Term<'tcx>> {
         if def_id.is_local() {
             let t = self.terms.entry(def_id).or_insert_with(|| {
@@ -262,15 +295,9 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         )
     }
 
-    pub fn add_type(&mut self, decl: TyDecl) {
-        let mut dependencies = decl.used_types();
-        let mut pos = 0;
-        while !dependencies.is_empty() && pos < self.types.len() {
-            dependencies.remove(&self.types[pos].ty_name);
-            pos += 1;
-        }
-
-        self.types.insert(pos, decl);
+    pub fn add_type(&mut self, def_id: DefId, decl: TyDecl) {
+        self.types.insert(def_id, TypeDeclaration { ty_decl: decl, accessors: Default::default() });
+        // self.types.insert(pos, decl);
     }
 
     pub fn add_trait(&mut self, def_id: DefId, has_axioms: bool) {

@@ -1,8 +1,10 @@
 use super::typing::{LogicalOp, Pattern, Term, TermKind};
 use crate::translation::traits::resolve_assoc_item_opt;
+use crate::translation::ty::variant_accessor_name;
 use crate::translation::{binop_to_binop, builtins, constant, ty::translate_ty, unop_to_unop};
 use crate::{ctx::*, util};
 use why3::mlcfg::{BinOp, Exp, Pattern as Pat};
+use why3::QName;
 
 pub fn lower(
     ctx: &mut TranslationCtx<'_, 'tcx>,
@@ -146,6 +148,17 @@ fn lower_term_to_why3<'tcx>(
         TermKind::Tuple { fields } => Exp::Tuple(
             fields.into_iter().map(|f| lower_term_to_why3(ctx, names, term_id, f)).collect(),
         ),
+        TermKind::Projection { box lhs, name, def: did } => {
+            let def = ctx.tcx.adt_def(did);
+            let lhs = lower_term_to_why3(ctx, names, term_id, lhs);
+            ctx.translate_accessor(def.variants[0u32.into()].fields[name.as_usize()].did);
+            let accessor =
+                variant_accessor_name(ctx.tcx, did, &def.variants[0u32.into()], name.as_usize());
+            Exp::Call(
+                box Exp::QVar(QName { module: vec!["Type".into()], name: accessor }),
+                vec![lhs],
+            )
+        }
         TermKind::Absurd => Exp::Absurd,
         t => {
             todo!("{:?}", t)

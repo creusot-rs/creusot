@@ -9,14 +9,29 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type core_option_option 't = 
-    | Core_Option_Option_None
-    | Core_Option_Option_Some 't
-    
   type core_result_result 't 'e = 
     | Core_Result_Result_Ok 't
     | Core_Result_Result_Err 'e
     
+  function core_result_result_Err_0 (self : core_result_result 't 'e) : 'e
+  val core_result_result_Err_0 (self : core_result_result 't 'e) : 'e
+    ensures { result = core_result_result_Err_0 self }
+    
+  axiom core_result_result_Err_0_acc : forall a : 'e . core_result_result_Err_0 (Core_Result_Result_Err a : core_result_result 't 'e) = a
+  function core_result_result_Ok_0 (self : core_result_result 't 'e) : 't
+  val core_result_result_Ok_0 (self : core_result_result 't 'e) : 't
+    ensures { result = core_result_result_Ok_0 self }
+    
+  axiom core_result_result_Ok_0_acc : forall a : 't . core_result_result_Ok_0 (Core_Result_Result_Ok a : core_result_result 't 'e) = a
+  type core_option_option 't = 
+    | Core_Option_Option_None
+    | Core_Option_Option_Some 't
+    
+  function core_option_option_Some_0 (self : core_option_option 't) : 't
+  val core_option_option_Some_0 (self : core_option_option 't) : 't
+    ensures { result = core_option_option_Some_0 self }
+    
+  axiom core_option_option_Some_0_acc : forall a : 't . core_option_option_Some_0 (Core_Option_Option_Some a : core_option_option 't) = a
 end
 module Projections_CopyOutOfRef_Interface
   use prelude.Prelude
@@ -77,7 +92,7 @@ module Projections_CopyOutOfSum
   }
   BB2 {
     assume { (fun x -> true) y_4 };
-    y_4 <- (let Type.Core_Result_Result_Err a = x_1 in a);
+    y_4 <- Type.core_result_result_Err_0 x_1;
     assume { (fun x -> true) x_1 };
     assume { (fun x -> true) _0 };
     _0 <-  * y_4;
@@ -90,7 +105,7 @@ module Projections_CopyOutOfSum
   }
   BB4 {
     assume { (fun x -> true) x_3 };
-    x_3 <- (let Type.Core_Result_Result_Ok a = x_1 in a);
+    x_3 <- Type.core_result_result_Ok_0 x_1;
     assume { (fun x -> true) x_1 };
     assume { (fun x -> true) _0 };
     _0 <-  * x_3;
@@ -143,7 +158,7 @@ module Projections_WriteIntoSum
     absurd
   }
   BB4 {
-    y_3 <- borrow_mut (let Type.Core_Option_Option_Some a =  * x_1 in a);
+    y_3 <- borrow_mut (Type.core_option_option_Some_0 ( * x_1));
     x_1 <- { x_1 with current = (let Type.Core_Option_Option_Some a =  * x_1 in Type.Core_Option_Option_Some ( ^ y_3)) };
     assume { (fun x -> true) x_1 };
     y_3 <- { y_3 with current = (10 : uint32) };
@@ -197,7 +212,7 @@ module Projections_Main
   }
   BB4 {
     assume { (fun x -> true) x_4 };
-    x_4 <- (let Type.Core_Option_Option_Some a = _2 in a);
+    x_4 <- Type.core_option_option_Some_0 _2;
     assume { (fun x -> true) _2 };
     assume { (fun x -> true) _5 };
     _5 <- x_4;

@@ -53,6 +53,7 @@ pub enum TermKind<'tcx> {
     Equals { lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Match { scrutinee: Box<Term<'tcx>>, arms: Vec<(Pattern<'tcx>, Term<'tcx>)> },
     Let { pattern: Pattern<'tcx>, arg: Box<Term<'tcx>>, body: Box<Term<'tcx>> },
+    Projection { lhs: Box<Term<'tcx>>, name: Field, def: DefId },
     Absurd,
 }
 
@@ -233,16 +234,26 @@ fn lower_expr<'tcx>(
         ExprKind::Field { lhs, name } => {
             let pat = field_pattern(thir[lhs].ty, name)
                 .expect("lower_expr: could not make pattern for field");
-            let lhs = lower_expr(tcx, thir, lhs)?;
 
-            Ok(Term {
-                ty,
-                kind: TermKind::Let {
-                    pattern: pat,
-                    body: box Term { ty: lhs.ty, kind: TermKind::Var(Symbol::intern("a")) },
-                    arg: box lhs,
-                },
-            })
+            match &thir[lhs].ty.kind() {
+                TyKind::Adt(def, _) => {
+                    let lhs = lower_expr(tcx, thir, lhs)?;
+                    Ok(Term { ty, kind: TermKind::Projection { lhs: box lhs, name, def: def.did } })
+                }
+                TyKind::Tuple(_) => {
+                    let lhs = lower_expr(tcx, thir, lhs)?;
+                    Ok(Term {
+                        ty,
+                        kind: TermKind::Let {
+                            pattern: pat,
+                            // this is the wrong type
+                            body: box Term { ty: lhs.ty, kind: TermKind::Var(Symbol::intern("a")) },
+                            arg: box lhs,
+                        },
+                    })
+                }
+                _ => unreachable!(),
+            }
         }
         ExprKind::Tuple { ref fields } => {
             let fields: Vec<_> =
