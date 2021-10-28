@@ -1,4 +1,4 @@
-use super::typing::{LogicalOp, Pattern, Term};
+use super::typing::{LogicalOp, Pattern, Term, TermKind};
 use crate::translation::traits::resolve_assoc_item_opt;
 use crate::translation::{binop_to_binop, builtins, constant, ty::translate_ty, unop_to_unop};
 use crate::{ctx::*, util};
@@ -21,10 +21,10 @@ fn lower_term_to_why3<'tcx>(
     term_id: DefId,
     term: Term<'tcx>,
 ) -> Exp {
-    match term {
-        Term::Const(c) => Exp::Const(constant::from_mir_constant_kind(ctx, names, c.into())),
-        Term::Var(v) => Exp::Var(util::ident_of(v)),
-        Term::Binary { op, operand_ty, box lhs, box rhs } => {
+    match term.kind {
+        TermKind::Const(c) => Exp::Const(constant::from_mir_constant_kind(ctx, names, c.into())),
+        TermKind::Var(v) => Exp::Var(util::ident_of(v)),
+        TermKind::Binary { op, operand_ty, box lhs, box rhs } => {
             translate_ty(ctx, names, rustc_span::DUMMY_SP, operand_ty);
 
             let lhs = lower_term_to_why3(ctx, names, term_id, lhs);
@@ -39,7 +39,7 @@ fn lower_term_to_why3<'tcx>(
                 _ => Exp::BinaryOp(binop_to_binop(op), box lhs, box rhs),
             }
         }
-        Term::Logical { op, box lhs, box rhs } => Exp::BinaryOp(
+        TermKind::Logical { op, box lhs, box rhs } => Exp::BinaryOp(
             match op {
                 LogicalOp::And => BinOp::And,
                 LogicalOp::Or => BinOp::Or,
@@ -47,10 +47,10 @@ fn lower_term_to_why3<'tcx>(
             box lower_term_to_why3(ctx, names, term_id, lhs),
             box lower_term_to_why3(ctx, names, term_id, rhs),
         ),
-        Term::Unary { op, box arg } => {
+        TermKind::Unary { op, box arg } => {
             Exp::UnaryOp(unop_to_unop(op), box lower_term_to_why3(ctx, names, term_id, arg))
         }
-        Term::Call { id, subst, fun: box Term::Const(_), args } => {
+        TermKind::Call { id, subst, fun: box Term { kind: TermKind::Const(_), .. }, args } => {
             let mut args: Vec<_> =
                 args.into_iter().map(|arg| lower_term_to_why3(ctx, names, term_id, arg)).collect();
 
@@ -74,21 +74,21 @@ fn lower_term_to_why3<'tcx>(
                 Exp::Call(box Exp::QVar(clone.qname(ctx.tcx, method.0)), args)
             })
         }
-        Term::Forall { binder, box body } => {
+        TermKind::Forall { binder, box body } => {
             let ty = translate_ty(ctx, names, rustc_span::DUMMY_SP, binder.1);
             Exp::Forall(
                 vec![(binder.0.into(), ty)],
                 box lower_term_to_why3(ctx, names, term_id, body),
             )
         }
-        Term::Exists { binder, box body } => {
+        TermKind::Exists { binder, box body } => {
             let ty = translate_ty(ctx, names, rustc_span::DUMMY_SP, binder.1);
             Exp::Exists(
                 vec![(binder.0.into(), ty)],
                 box lower_term_to_why3(ctx, names, term_id, body),
             )
         }
-        Term::Constructor { adt, variant, fields } => {
+        TermKind::Constructor { adt, variant, fields } => {
             names.import_prelude_module(PreludeModule::Type);
             let args =
                 fields.into_iter().map(|f| lower_term_to_why3(ctx, names, term_id, f)).collect();
@@ -97,38 +97,54 @@ fn lower_term_to_why3<'tcx>(
             crate::ty::translate_tydecl(ctx, rustc_span::DUMMY_SP, adt.did);
             Exp::Constructor { ctor, args }
         }
-        Term::Cur { box term } => Exp::Current(box lower_term_to_why3(ctx, names, term_id, term)),
-        Term::Fin { box term } => Exp::Final(box lower_term_to_why3(ctx, names, term_id, term)),
-        Term::Impl { box lhs, box rhs } => Exp::Impl(
+        TermKind::Cur { box term } => {
+            Exp::Current(box lower_term_to_why3(ctx, names, term_id, term))
+        }
+        TermKind::Fin { box term } => Exp::Final(box lower_term_to_why3(ctx, names, term_id, term)),
+        TermKind::Impl { box lhs, box rhs } => Exp::Impl(
             box lower_term_to_why3(ctx, names, term_id, lhs),
             box lower_term_to_why3(ctx, names, term_id, rhs),
         ),
-        Term::Equals { box lhs, box rhs } => Exp::BinaryOp(
+        TermKind::Equals { box lhs, box rhs } => Exp::BinaryOp(
             BinOp::Eq,
             box lower_term_to_why3(ctx, names, term_id, lhs),
             box lower_term_to_why3(ctx, names, term_id, rhs),
         ),
-        Term::Match { box scrutinee, arms } => {
-            let arms = arms
-                .into_iter()
-                .map(|(pat, body)| {
-                    (
-                        lower_pat_to_why3(ctx, names, pat),
-                        lower_term_to_why3(ctx, names, term_id, body),
-                    )
-                })
-                .collect();
-            Exp::Match(box lower_term_to_why3(ctx, names, term_id, scrutinee), arms)
+        TermKind::Match { box scrutinee, mut arms } => {
+            if scrutinee.ty.peel_refs().is_bool() {
+                let true_br = if let Pattern::Boolean(true) = arms[0].0 {
+                    arms.remove(0).1
+                } else {
+                    arms.remove(1).1
+                };
+                let false_br = arms.remove(0).1;
+                Exp::IfThenElse(
+                    box lower_term_to_why3(ctx, names, term_id, scrutinee),
+                    box lower_term_to_why3(ctx, names, term_id, true_br),
+                    box lower_term_to_why3(ctx, names, term_id, false_br),
+                )
+            } else {
+                let arms = arms
+                    .into_iter()
+                    .map(|(pat, body)| {
+                        (
+                            lower_pat_to_why3(ctx, names, pat),
+                            lower_term_to_why3(ctx, names, term_id, body),
+                        )
+                    })
+                    .collect();
+                Exp::Match(box lower_term_to_why3(ctx, names, term_id, scrutinee), arms)
+            }
         }
-        Term::Let { pattern, box arg, box body } => Exp::Let {
+        TermKind::Let { pattern, box arg, box body } => Exp::Let {
             pattern: lower_pat_to_why3(ctx, names, pattern),
             arg: box lower_term_to_why3(ctx, names, term_id, arg),
             body: box lower_term_to_why3(ctx, names, term_id, body),
         },
-        Term::Tuple { fields } => Exp::Tuple(
+        TermKind::Tuple { fields } => Exp::Tuple(
             fields.into_iter().map(|f| lower_term_to_why3(ctx, names, term_id, f)).collect(),
         ),
-        Term::Absurd => Exp::Absurd,
+        TermKind::Absurd => Exp::Absurd,
         t => {
             todo!("{:?}", t)
         }

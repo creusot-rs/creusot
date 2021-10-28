@@ -104,13 +104,7 @@ module C02_Fib
   use mach.int.Int
   use mach.int.Int32
   function fib (i : int) : int
-  axiom def : forall i : int . fib i = match (i <= 0) with
-    | True -> 0
-    | False -> match (i = 1) with
-      | True -> 1
-      | False -> fib (i - 1) + fib (i - 2)
-      end
-    end
+  axiom def : forall i : int . fib i = (if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2))
   axiom fib_spec : forall i : int . true
 end
 module C02_Fib_Impl
@@ -120,13 +114,7 @@ module C02_Fib_Impl
     variant {i}
     
    = 
-    match (i <= 0) with
-      | True -> 0
-      | False -> match (i = 1) with
-        | True -> 1
-        | False -> fib (i - 1) + fib (i - 2)
-        end
-      end
+    if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2)
 end
 module C02_LemmaFibBound_Interface
   use mach.int.Int
@@ -141,13 +129,11 @@ module C02_LemmaFibBound
   use int.Power
   clone C02_Fib_Interface as Fib0 with axiom .
   function lemma_fib_bound (i : int) : ()
-  axiom def : forall i : int . lemma_fib_bound i = match (i = 0) with
-    | True -> ()
-    | False -> match (i = 1) with
-      | True -> ()
-      | False -> let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
-      end
-    end
+  axiom def : forall i : int . lemma_fib_bound i = (if i = 0 then
+    ()
+  else
+    if i = 1 then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
+  )
   axiom lemma_fib_bound_spec : forall i : int . 0 <= i -> Fib0.fib i <= Power.power 2 i
 end
 module C02_LemmaFibBound_Impl
@@ -161,13 +147,7 @@ module C02_LemmaFibBound_Impl
     variant {i}
     
    = 
-    match (i = 0) with
-      | True -> ()
-      | False -> match (i = 1) with
-        | True -> ()
-        | False -> let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
-        end
-      end
+    if i = 0 then () else if i = 1 then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
 end
 module C02_Impl1_Inv_Interface
   use prelude.Prelude

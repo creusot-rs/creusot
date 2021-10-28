@@ -165,6 +165,7 @@ pub enum Exp {
     // Seq(Box<Exp>, Box<Exp>),
     Abs(Ident, Box<Exp>),
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
+    IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
 
     // Predicates
     Absurd,
@@ -205,6 +206,7 @@ impl Exp {
             Exp::Verbatim(_) => false,
             Exp::Abs(_, e) => e.is_pure(),
             Exp::Match(e, brs) => e.is_pure() && brs.iter().all(|(_, e)| e.is_pure()),
+            Exp::IfThenElse(s, i, e) => s.is_pure() && i.is_pure() && e.is_pure(),
             Exp::Absurd => false,
             Exp::Impl(l, r) => l.is_pure() && r.is_pure(),
             Exp::Forall(_, e) => e.is_pure(),
@@ -284,6 +286,11 @@ impl Exp {
             Exp::Match(e, brs) => {
                 e.reassociate();
                 brs.iter_mut().for_each(|(_, e)| e.reassociate())
+            }
+            Exp::IfThenElse(s, i, e) => {
+                s.reassociate();
+                i.reassociate();
+                e.reassociate();
             }
             Exp::Absurd => (),
             Exp::Impl(l, r) => {
@@ -385,6 +392,7 @@ impl Exp {
             Exp::Constructor { .. } => App,
             // Exp::Seq(_, _) => { Term }
             Exp::Match(_, _) => Atom,
+            Exp::IfThenElse(_, _, _) => IfLet,
             Exp::BorrowMut(_) => App,
             Exp::Const(_) => Atom,
             Exp::UnaryOp(UnOp::Neg, _) => Prefix,
@@ -460,6 +468,7 @@ impl Exp {
             Exp::Match(scrut, brs) => {
                 brs.iter().fold(scrut.qfvs(), |acc, (_, br)| &acc | &br.qfvs())
             }
+            Exp::IfThenElse(s, i, e) => &(&s.qfvs() | &i.qfvs()) | &e.qfvs(),
             Exp::Absurd => IndexSet::new(),
             _ => unimplemented!("qvfs: {:?}", self),
         }
@@ -516,6 +525,11 @@ impl Exp {
                     });
                     br.subst(&s);
                 }
+            }
+            Exp::IfThenElse(s, i, e) => {
+                s.subst(subst);
+                i.subst(subst);
+                e.subst(subst);
             }
             Exp::BorrowMut(e) => e.subst(subst),
             Exp::UnaryOp(_, o) => {

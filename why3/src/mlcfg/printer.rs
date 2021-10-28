@@ -649,7 +649,14 @@ impl Pretty for Exp {
                     .indent(2),
                 )
                 .append("end"),
-
+            Exp::IfThenElse(s, i, e) => alloc
+                .text("if ")
+                .append(s.pretty(alloc, env))
+                .append(" then")
+                .append(alloc.line().append(i.pretty(alloc, env)).nest(2).append(alloc.line()))
+                .append("else")
+                .append(alloc.line().append(e.pretty(alloc, env)).nest(2).append(alloc.line_()))
+                .group(),
             Exp::Forall(binders, box exp) => alloc
                 .text("forall ")
                 .append(alloc.intersperse(

@@ -30,7 +30,13 @@ pub enum LogicalOp {
 }
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable)]
-pub enum Term<'tcx> {
+pub struct Term<'tcx> {
+    pub ty: Ty<'tcx>,
+    pub kind: TermKind<'tcx>,
+}
+
+#[derive(Clone, Debug, TyDecodable, TyEncodable)]
+pub enum TermKind<'tcx> {
     Var(Symbol),
     Const(&'tcx Const<'tcx>),
     Binary { op: BinOp, operand_ty: Ty<'tcx>, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
@@ -62,6 +68,9 @@ pub enum Pattern<'tcx> {
 pub fn typecheck(tcx: TyCtxt, id: LocalDefId) -> Term {
     let (thir, expr) = tcx.thir_body(WithOptConstParam::unknown(id));
     let thir = thir.borrow();
+    if thir.exprs.is_empty() {
+        panic!("type checking failed. Xavier should return a better error here");
+    };
     lower_expr(tcx, &thir, expr).unwrap()
 }
 
@@ -73,16 +82,14 @@ fn lower_expr<'tcx>(
     thir: &Thir<'tcx>,
     expr: ExprId,
 ) -> Result<Term<'tcx>, Error> {
+    let ty = thir[expr].ty;
     // eprintln!("{:?}", &thir[expr].kind);
-    if thir.exprs.is_empty() {
-        return Err(Error {});
-    };
     match thir[expr].kind {
         ExprKind::Scope { value, .. } => lower_expr(tcx, thir, value),
         ExprKind::Block { body: Block { ref stmts, expr, .. } } => {
             let mut inner = match expr {
                 Some(e) => lower_expr(tcx, thir, e)?,
-                None => Term::Tuple { fields: vec![] },
+                None => Term { ty, kind: TermKind::Tuple { fields: vec![] } },
             };
 
             for stmt in stmts.iter().rev().filter(|id| not_spec(tcx, thir, **id)) {
@@ -95,7 +102,7 @@ fn lower_expr<'tcx>(
             let lhs = lower_expr(tcx, thir, lhs)?;
             let rhs = lower_expr(tcx, thir, rhs)?;
 
-            Ok(Term::Binary { op, operand_ty, lhs: box lhs, rhs: box rhs })
+            Ok(Term { ty, kind: TermKind::Binary { op, operand_ty, lhs: box lhs, rhs: box rhs } })
         }
         ExprKind::LogicalOp { op, lhs, rhs } => {
             let lhs = lower_expr(tcx, thir, lhs)?;
@@ -104,57 +111,57 @@ fn lower_expr<'tcx>(
                 thir::LogicalOp::And => LogicalOp::And,
                 thir::LogicalOp::Or => LogicalOp::Or,
             };
-            Ok(Term::Logical { op, lhs: box lhs, rhs: box rhs })
+            Ok(Term { ty, kind: TermKind::Logical { op, lhs: box lhs, rhs: box rhs } })
         }
         ExprKind::Unary { op, arg } => {
             let arg = lower_expr(tcx, thir, arg)?;
-            Ok(Term::Unary { op, arg: box arg })
+            Ok(Term { ty, kind: TermKind::Unary { op, arg: box arg } })
         }
         ExprKind::VarRef { id } => {
             let map = tcx.hir();
             let name = map.name(id);
-            Ok(Term::Var(name))
+            Ok(Term { ty, kind: TermKind::Var(name) })
         }
         // TODO: confirm this works
         ExprKind::UpvarRef { var_hir_id: id, .. } => {
             let map = tcx.hir();
             let name = map.name(id);
 
-            Ok(Term::Var(name))
+            Ok(Term { ty, kind: TermKind::Var(name) })
         }
-        ExprKind::Literal { literal, .. } => Ok(Term::Const(literal)),
-        ExprKind::Call { ty, fun, ref args, .. } => {
+        ExprKind::Literal { literal, .. } => Ok(Term { ty, kind: TermKind::Const(literal) }),
+        ExprKind::Call { ty: f_ty, fun, ref args, .. } => {
             use Stub::*;
-            match pearlite_stub(tcx, ty) {
+            match pearlite_stub(tcx, f_ty) {
                 Some(Forall) => {
                     let (binder, body) = lower_quantifier(tcx, thir, args[0])?;
-                    Ok(Term::Forall { binder, body: box body })
+                    Ok(Term { ty, kind: TermKind::Forall { binder, body: box body } })
                 }
                 Some(Exists) => {
                     let (binder, body) = lower_quantifier(tcx, thir, args[0])?;
-                    Ok(Term::Exists { binder, body: box body })
+                    Ok(Term { ty, kind: TermKind::Exists { binder, body: box body } })
                 }
                 Some(Fin) => {
                     let term = lower_expr(tcx, thir, args[0])?;
 
-                    Ok(Term::Fin { term: box term })
+                    Ok(Term { ty, kind: TermKind::Fin { term: box term } })
                 }
                 Some(Cur) => {
                     let term = lower_expr(tcx, thir, args[0])?;
 
-                    Ok(Term::Cur { term: box term })
+                    Ok(Term { ty, kind: TermKind::Cur { term: box term } })
                 }
                 Some(Impl) => {
                     let lhs = lower_expr(tcx, thir, args[0])?;
                     let rhs = lower_expr(tcx, thir, args[1])?;
 
-                    Ok(Term::Impl { lhs: box lhs, rhs: box rhs })
+                    Ok(Term { ty, kind: TermKind::Impl { lhs: box lhs, rhs: box rhs } })
                 }
                 Some(Equals) => {
                     let lhs = lower_expr(tcx, thir, args[0])?;
                     let rhs = lower_expr(tcx, thir, args[1])?;
 
-                    Ok(Term::Equals { lhs: box lhs, rhs: box rhs })
+                    Ok(Term { ty, kind: TermKind::Equals { lhs: box lhs, rhs: box rhs } })
                 }
                 None => {
                     let fun = lower_expr(tcx, thir, fun)?;
@@ -162,13 +169,13 @@ fn lower_expr<'tcx>(
                         .iter()
                         .map(|arg| lower_expr(tcx, thir, *arg))
                         .collect::<Result<Vec<_>, _>>()?;
-                    let (id, subst) = if let TyKind::FnDef(id, subst) = ty.kind() {
+                    let (id, subst) = if let TyKind::FnDef(id, subst) = f_ty.kind() {
                         (*id, subst)
                     } else {
                         return Err(Error {});
                     };
 
-                    Ok(Term::Call { id, subst, fun: box fun, args })
+                    Ok(Term { ty, kind: TermKind::Call { id, subst, fun: box fun, args } })
                 }
             }
         }
@@ -186,7 +193,10 @@ fn lower_expr<'tcx>(
         ExprKind::Adt(box Adt { adt_def, variant_index, ref fields, .. }) => {
             let fields =
                 fields.iter().map(|f| lower_expr(tcx, thir, f.expr)).collect::<Result<_, _>>()?;
-            Ok(Term::Constructor { adt: adt_def, variant: variant_index, fields })
+            Ok(Term {
+                ty,
+                kind: TermKind::Constructor { adt: adt_def, variant: variant_index, fields },
+            })
         }
         // TODO: If we deref a shared borrow this should be erased?
         // Can it happen?
@@ -194,7 +204,7 @@ fn lower_expr<'tcx>(
             if thir[arg].ty.is_box() || thir[arg].ty.ref_mutability() == Some(Not) {
                 lower_expr(tcx, thir, arg)
             } else {
-                Ok(Term::Cur { term: box lower_expr(tcx, thir, arg)? })
+                Ok(Term { ty, kind: TermKind::Cur { term: box lower_expr(tcx, thir, arg)? } })
             }
         }
         ExprKind::Match { scrutinee, ref arms } => {
@@ -202,16 +212,19 @@ fn lower_expr<'tcx>(
             let arms =
                 arms.iter().map(|arm| lower_arm(tcx, thir, *arm)).collect::<Result<_, _>>()?;
 
-            Ok(Term::Match { scrutinee: box scrutinee, arms })
+            Ok(Term { ty, kind: TermKind::Match { scrutinee: box scrutinee, arms } })
         }
         ExprKind::If { cond, then, else_opt, .. } => {
             let cond = lower_expr(tcx, thir, cond)?;
             let then = lower_expr(tcx, thir, then)?;
             if let Some(els) = else_opt {
                 let els = lower_expr(tcx, thir, els)?;
-                Ok(Term::Match {
-                    scrutinee: box cond,
-                    arms: vec![(Pattern::Boolean(true), then), (Pattern::Boolean(false), els)],
+                Ok(Term {
+                    ty,
+                    kind: TermKind::Match {
+                        scrutinee: box cond,
+                        arms: vec![(Pattern::Boolean(true), then), (Pattern::Boolean(false), els)],
+                    },
                 })
             } else {
                 Err(Error {})
@@ -222,15 +235,22 @@ fn lower_expr<'tcx>(
                 .expect("lower_expr: could not make pattern for field");
             let lhs = lower_expr(tcx, thir, lhs)?;
 
-            Ok(Term::Let { pattern: pat, arg: box lhs, body: box Term::Var(Symbol::intern("a")) })
+            Ok(Term {
+                ty,
+                kind: TermKind::Let {
+                    pattern: pat,
+                    body: box Term { ty: lhs.ty, kind: TermKind::Var(Symbol::intern("a")) },
+                    arg: box lhs,
+                },
+            })
         }
         ExprKind::Tuple { ref fields } => {
             let fields: Vec<_> =
                 fields.iter().map(|f| lower_expr(tcx, thir, *f)).collect::<Result<_, _>>()?;
-            Ok(Term::Tuple { fields })
+            Ok(Term { ty, kind: TermKind::Tuple { fields } })
         }
         ExprKind::Use { source } => lower_expr(tcx, thir, source),
-        ExprKind::NeverToAny { .. } => Ok(Term::Absurd),
+        ExprKind::NeverToAny { .. } => Ok(Term { ty, kind: TermKind::Absurd }),
         ExprKind::ValueTypeAscription { source, .. } => lower_expr(tcx, thir, source),
         ExprKind::Box { value } => lower_expr(tcx, thir, value),
         ref ek => todo!("lower_expr: {:?}", ek),
@@ -308,16 +328,22 @@ fn lower_stmt<'tcx>(
     inner: Term<'tcx>,
 ) -> Result<Term<'tcx>, Error> {
     match &thir[stmt].kind {
-        StmtKind::Expr { expr, .. } => Ok(Term::Let {
-            pattern: Pattern::Wildcard,
-            arg: box lower_expr(tcx, thir, *expr)?,
-            body: box inner,
+        StmtKind::Expr { expr, .. } => Ok(Term {
+            ty: inner.ty,
+            kind: TermKind::Let {
+                pattern: Pattern::Wildcard,
+                arg: box lower_expr(tcx, thir, *expr)?,
+                body: box inner,
+            },
         }),
         StmtKind::Let { pattern, initializer, .. } => {
             let pattern = lower_pattern(tcx, thir, pattern)?;
             if let Some(initializer) = initializer {
                 let initializer = lower_expr(tcx, thir, *initializer)?;
-                Ok(Term::Let { pattern, arg: box initializer, body: box inner })
+                Ok(Term {
+                    ty: inner.ty,
+                    kind: TermKind::Let { pattern, arg: box initializer, body: box inner },
+                })
             } else {
                 Err(Error {})
             }
