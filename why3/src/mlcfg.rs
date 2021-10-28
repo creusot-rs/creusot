@@ -166,6 +166,7 @@ pub enum Exp {
     Abs(Ident, Box<Exp>),
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
     IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
+    Ascribe(Box<Exp>, Type),
 
     // Predicates
     Absurd,
@@ -207,6 +208,7 @@ impl Exp {
             Exp::Abs(_, e) => e.is_pure(),
             Exp::Match(e, brs) => e.is_pure() && brs.iter().all(|(_, e)| e.is_pure()),
             Exp::IfThenElse(s, i, e) => s.is_pure() && i.is_pure() && e.is_pure(),
+            Exp::Ascribe(e, _) => e.is_pure(),
             Exp::Absurd => false,
             Exp::Impl(l, r) => l.is_pure() && r.is_pure(),
             Exp::Forall(_, e) => e.is_pure(),
@@ -292,6 +294,7 @@ impl Exp {
                 i.reassociate();
                 e.reassociate();
             }
+            Exp::Ascribe(e, _) => e.reassociate(),
             Exp::Absurd => (),
             Exp::Impl(l, r) => {
                 l.reassociate();
@@ -314,7 +317,7 @@ impl From<Ident> for Exp {
 enum Precedence {
     IfLet, // if then else / let in
     // Attr,
-    // Cast,
+    Cast,
     Impl,   // -> / <-> / by / so
     Disj,   // \/ / ||
     Conj,   // /\ / &&
@@ -341,7 +344,8 @@ pub enum AssocDir {
 impl Precedence {
     pub fn next(&self) -> Self {
         match self {
-            Precedence::IfLet => Precedence::Impl,
+            Precedence::IfLet => Precedence::Cast,
+            Precedence::Cast => Precedence::Impl,
             Precedence::Impl => Precedence::Disj,
             Precedence::Disj => Precedence::Conj,
             Precedence::Conj => Precedence::Not,
@@ -403,6 +407,7 @@ impl Exp {
             Exp::Impl(_, _) => Impl,
             Exp::Forall(_, _) => IfLet,
             Exp::Exists(_, _) => IfLet,
+            Exp::Ascribe(_, _) => Cast,
             Exp::Absurd => Atom,
             _ => unimplemented!("{:?}", self),
         }
@@ -562,6 +567,7 @@ impl Exp {
                     arg.subst(subst);
                 }
             }
+            Exp::Ascribe(e, _) => e.subst(subst),
             Exp::QVar(_) => {}
             Exp::Const(_) => {}
             Exp::Verbatim(_) => {}
