@@ -57,7 +57,7 @@ pub enum Type {
     Char,
     Integer,
     MutableBorrow(Box<Type>),
-    TVar(String),
+    TVar(Ident),
     TConstructor(QName),
     TApp(Box<Type>, Vec<Type>),
     Tuple(Vec<Type>),

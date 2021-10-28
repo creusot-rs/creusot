@@ -521,7 +521,7 @@ impl Pretty for Type {
             Char => alloc.text("char"),
             Integer => alloc.text("int"),
             MutableBorrow(box t) => alloc.text("borrowed ").append(ty_parens!(alloc, env, t)),
-            TVar(v) => alloc.text(format!("'{}", v)),
+            TVar(v) => alloc.text(format!("'{}", v.0)),
             TConstructor(ty) => ty.pretty(alloc, env),
 
             TFun(box a, box b) => {

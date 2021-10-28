@@ -180,8 +180,8 @@ pub fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName 
     translate_type_id(ctx.tcx, did)
 }
 
-fn translate_ty_param(p: Symbol) -> String {
-    p.to_string().to_lowercase()
+fn translate_ty_param(p: Symbol) -> Ident {
+    Ident::build(&p.to_string().to_lowercase())
 }
 
 pub fn ty_name(tcx: TyCtxt, def_id: DefId) -> String {
