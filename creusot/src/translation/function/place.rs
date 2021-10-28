@@ -7,9 +7,10 @@ use why3::mlcfg::{
     Exp::{self, *},
 };
 use why3::mlcfg::{Pattern::*, Statement::*};
+use why3::QName;
 
 use super::FunctionTranslator;
-use crate::ctx::translate_value_id;
+use crate::{ctx::translate_value_id, translation::ty::variant_accessor_name};
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     pub fn translate_rplace(&mut self, rhs: &Place<'tcx>) -> Exp {
@@ -42,16 +43,14 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                         let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                         let variant = &def.variants[variant_id];
 
-                        let mut pat = vec![Wildcard; variant.fields.len()];
-                        pat[ix.as_usize()] = VarP("a".into());
-
-                        let tyname = translate_value_id(self.tcx, variant.def_id);
-
-                        inner = Let {
-                            pattern: ConsP(tyname, pat),
-                            arg: box inner,
-                            body: box Var("a".into()),
-                        }
+                        self.ctx
+                            .translate_accessor(def.variants[variant_id].fields[ix.as_usize()].did);
+                        let accessor_name =
+                            variant_accessor_name(self.tcx, def.did, variant, ix.as_usize());
+                        inner = Call(
+                            box QVar(QName { module: vec!["Type".into()], name: accessor_name }),
+                            vec![inner],
+                        );
                     }
                     TyKind::Tuple(fields) => {
                         let mut pat = vec![Wildcard; fields.len()];

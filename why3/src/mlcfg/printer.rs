@@ -680,7 +680,9 @@ impl Pretty for Exp {
             Exp::Impl(box hyp, box exp) => {
                 parens!(alloc, env, self, hyp).append(" -> ").append(parens!(alloc, env, self, exp))
             }
-            Exp::Ascribe(e, t) => e.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env)).group(),
+            Exp::Ascribe(e, t) => {
+                e.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env)).group()
+            }
             Exp::Absurd => alloc.text("absurd"),
         }
     }

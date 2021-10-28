@@ -1,9 +1,13 @@
 use rustc_hir::def_id::DefId;
+use rustc_middle::ty::subst::SubstsRef;
 use rustc_middle::ty::{self, subst::InternalSubsts, ProjectionTy, Ty, TyCtxt, TyKind::*};
+use rustc_middle::ty::{FieldDef, VariantDef};
 use rustc_span::Span;
 use rustc_span::Symbol;
 use std::collections::VecDeque;
 use why3::declaration::TyDeclKind;
+use why3::declaration::{Axiom, Contract, Decl, Signature, ValKind};
+use why3::mlcfg::{BinOp, Exp};
 use why3::Ident;
 
 use why3::declaration::TyDecl;
@@ -210,21 +214,12 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     let mut names = CloneMap::new(ctx.tcx, did, false);
 
     let adt = ctx.tcx.adt_def(did);
-    let gens = ctx.tcx.generics_of(did);
 
     // HACK(xavier): Clean up
     let ty_name = translate_ty_name(ctx, did).name;
 
     // Collect type variables of declaration
-    let ty_args: Vec<_> = gens
-        .params
-        .iter()
-        .filter_map(|param| match param.kind {
-            ty::GenericParamDefKind::Type { .. } => Some(translate_ty_param(param.name)),
-            _ => None,
-        })
-        .map(Ident::from)
-        .collect();
+    let ty_args: Vec<_> = ty_param_names(ctx.tcx, did).collect();
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
 
@@ -234,23 +229,120 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
         let field_tys: Vec<_> = var_def
             .fields
             .iter()
-            .map(|f| {
-                translate_ty_inner(
-                    TyTranslation::Declaration,
-                    ctx,
-                    &mut names,
-                    span,
-                    f.ty(ctx.tcx, substs),
-                )
-            })
+            .map(|f| field_ty(ctx, &mut names, f, substs, rustc_span::DUMMY_SP))
             .collect();
-
         let var_name = translate_value_id(ctx.tcx, var_def.def_id);
+
         ml_ty_def.push((var_name.name(), field_tys));
     }
 
     let ty_decl = TyDecl { ty_name, ty_params: ty_args, kind: TyDeclKind::Adt(ml_ty_def) };
-    ctx.add_type(ty_decl);
+    ctx.add_type(did, ty_decl);
+}
+
+fn ty_param_names(tcx: TyCtxt<'tcx>, def_id: DefId) -> impl Iterator<Item = Ident> + 'tcx {
+    let gens = tcx.generics_of(def_id);
+    gens.params
+        .iter()
+        .filter_map(|param| match param.kind {
+            ty::GenericParamDefKind::Type { .. } => Some(translate_ty_param(param.name)),
+            _ => None,
+        })
+        .map(Ident::from)
+}
+
+fn field_ty(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    field: &FieldDef,
+    substs: SubstsRef<'tcx>,
+    span: Span,
+) -> MlT {
+    translate_ty_inner(TyTranslation::Declaration, ctx, names, span, field.ty(ctx.tcx, substs))
+}
+
+pub fn translate_accessor(
+    ctx: &mut TranslationCtx<'_, '_>,
+    adt_did: DefId,
+    variant_did: DefId,
+    field_id: DefId,
+) -> Vec<Decl> {
+    let adt_def = ctx.tcx.adt_def(adt_did);
+    let variant = adt_def.variant_with_id(variant_did);
+    let ix = variant.fields.iter().position(|f| f.did == field_id).unwrap();
+    let field = &variant.fields[ix];
+
+    let ty_name = translate_ty_name(ctx, adt_did).name();
+    let acc_name = format!("{}_{}_{}", &*ty_name, variant.ident.name, field.ident.name);
+
+    let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
+    let mut names = CloneMap::new(ctx.tcx, adt_did, false);
+    let field_tys: Vec<_> = variant
+        .fields
+        .iter()
+        .map(|f| field_ty(ctx, &mut names, f, substs, rustc_span::DUMMY_SP))
+        .collect();
+    let field_ty = field_tys[ix].clone();
+    let var_name = translate_value_id(ctx.tcx, variant.def_id);
+
+    let this = MlT::TApp(
+        box MlT::TConstructor(ty_name.clone().into()),
+        ty_param_names(ctx.tcx, adt_did).map(MlT::TVar).collect(),
+    );
+
+    let mut sig = Signature {
+        name: Ident::build(&acc_name),
+        args: vec![("self".into(), this.clone())],
+        retty: Some(field_ty),
+        contract: Contract::new(),
+    };
+
+    let mut decls = Vec::new();
+
+    // The function symbol
+    decls.push(Decl::ValDecl(ValKind::Function { sig: sig.clone() }));
+
+    // Ensure the program and function symbols line up
+    sig.contract.ensures.push(Exp::BinaryOp(
+        BinOp::Eq,
+        box Exp::Var("result".into()),
+        box Exp::Var(Ident::build(&acc_name)).app_to(Exp::Var("self".into())),
+    ));
+    decls.push(Decl::ValDecl(ValKind::Val { sig: sig.clone() }));
+
+    let bound_vars: Vec<(Ident, _)> =
+        ('a'..).zip(field_tys.iter()).map(|(c, t)| (c.to_string().into(), t.clone())).collect();
+
+    // Build the generic contructor application
+    let cons_app = Exp::Call(
+        box Exp::Var(var_name.name().clone()),
+        bound_vars.iter().map(|(n, _)| Exp::Var(n.clone())).collect(),
+    );
+
+    // The projection equality
+    let projection = Exp::BinaryOp(
+        BinOp::Eq,
+        box Exp::Call(
+            box Exp::Var(Ident::build(&acc_name)),
+            vec![Exp::Ascribe(box cons_app, this)],
+        ),
+        box Exp::Var(bound_vars[ix].0.clone()),
+    );
+
+    // The record projection axiom
+    let axiom_name = format!("{}_acc", acc_name);
+    decls.push(Decl::Axiom(Axiom {
+        name: Ident::build(&axiom_name),
+        axiom: Exp::Forall(bound_vars, box projection),
+    }));
+
+    decls
+}
+
+pub fn variant_accessor_name(tcx: TyCtxt, def: DefId, variant: &VariantDef, field: usize) -> Ident {
+    let ty_name = translate_type_id(tcx, def).name();
+
+    format!("{}_{}_{}", &*ty_name, variant.ident.name, variant.fields[field].ident.name).into()
 }
 
 fn intty_to_ty(
