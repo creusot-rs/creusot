@@ -51,12 +51,8 @@ impl<T> Vec<T> {
 
     #[trusted]
     #[ensures(match result {
-        Some(t) => t === (@*self)[(@*self).len()-1],
-        None => (@*self).len() === 0,
-    })]
-    #[ensures(match result {
-        Some(_) => (@*self).len() === (@^self).len() + 1,
-        None => (@*self).len() === (@^self).len(),
+        Some(t) => (@self) === (@^self).push(t),
+        None => (@self).len() === (@^self).len() && (@self).len() === 0
     })]
     pub fn pop(&mut self) -> Option<T> {
         self.0.pop()
