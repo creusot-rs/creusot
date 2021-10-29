@@ -25,7 +25,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         loc: Local,
         proj: &[rustc_middle::mir::PlaceElem<'tcx>],
     ) -> Exp {
-        let mut inner = self.translate_local(loc).ident().into();
+        let mut inner = Exp::impure_var(self.translate_local(loc).ident());
         use rustc_middle::mir::ProjectionElem::*;
         let mut place_ty = Place::ty_from(loc, &[], self.body, self.tcx);
 
@@ -48,7 +48,10 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                         let accessor_name =
                             variant_accessor_name(self.tcx, def.did, variant, ix.as_usize());
                         inner = Call(
-                            box QVar(QName { module: vec!["Type".into()], name: accessor_name }),
+                            box Exp::impure_qvar(QName {
+                                module: vec!["Type".into()],
+                                name: accessor_name,
+                            }),
                             vec![inner],
                         );
                     }
@@ -56,8 +59,11 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                         let mut pat = vec![Wildcard; fields.len()];
                         pat[ix.as_usize()] = VarP("a".into());
 
-                        inner =
-                            Let { pattern: TupleP(pat), arg: box inner, body: box Var("a".into()) }
+                        inner = Let {
+                            pattern: TupleP(pat),
+                            arg: box inner,
+                            body: box Exp::impure_var("a".into()),
+                        }
                     }
                     _ => unreachable!(),
                 },
@@ -120,8 +126,10 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
                         let field_pats =
                             ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
-                        let mut varexps: Vec<Exp> =
-                            ('a'..).map(|c| Var(c.to_string().into())).take(var_size).collect();
+                        let mut varexps: Vec<Exp> = ('a'..)
+                            .map(|c| Exp::impure_var(c.to_string().into()))
+                            .take(var_size)
+                            .collect();
 
                         varexps[ix.as_usize()] = inner;
 
@@ -138,8 +146,10 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
                         let field_pats =
                             ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
-                        let mut varexps: Vec<Exp> =
-                            ('a'..).map(|c| Var(c.to_string().into())).take(var_size).collect();
+                        let mut varexps: Vec<Exp> = ('a'..)
+                            .map(|c| Exp::impure_var(c.to_string().into()))
+                            .take(var_size)
+                            .collect();
 
                         varexps[ix.as_usize()] = inner;
 

@@ -144,14 +144,21 @@ pub enum UnOp {
     Neg,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub enum Purity {
+    Logic,
+    Program,
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
     Current(Box<Exp>),
     Final(Box<Exp>),
     Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
-    Var(Ident),
-    QVar(QName),
+    Var(Ident, Purity),
+    QVar(QName, Purity),
     RecUp { record: Box<Exp>, label: String, val: Box<Exp> },
     RecField { record: Box<Exp>, label: String },
     Tuple(Vec<Exp>),
@@ -176,6 +183,22 @@ pub enum Exp {
 }
 
 impl Exp {
+    pub fn impure_qvar(q: QName) -> Self {
+        Exp::QVar(q, Purity::Program)
+    }
+
+    pub fn impure_var(v: Ident) -> Self {
+        Exp::Var(v, Purity::Program)
+    }
+
+    pub fn pure_qvar(q: QName) -> Self {
+        Exp::QVar(q, Purity::Logic)
+    }
+
+    pub fn pure_var(v: Ident) -> Self {
+        Exp::Var(v, Purity::Logic)
+    }
+
     pub fn conj(l: Exp, r: Exp) -> Self {
         Exp::BinaryOp(BinOp::And, box l, box r)
     }
@@ -193,8 +216,10 @@ impl Exp {
             Exp::Current(e) => e.is_pure(),
             Exp::Final(e) => e.is_pure(),
             Exp::Let { arg, body, .. } => arg.is_pure() && body.is_pure(),
-            Exp::Var(_) => true,
-            Exp::QVar(_) => true,
+            Exp::Var(_, Purity::Logic) => true,
+            Exp::Var(_, Purity::Program) => false,
+            Exp::QVar(_, Purity::Logic) => true,
+            Exp::QVar(_, Purity::Program) => false,
             Exp::RecUp { record, val, .. } => record.is_pure() && val.is_pure(),
             Exp::RecField { record, .. } => record.is_pure(),
             Exp::Tuple(args) => args.iter().all(Exp::is_pure),
@@ -225,8 +250,8 @@ impl Exp {
                 arg.reassociate();
                 body.reassociate()
             }
-            Exp::Var(_) => (),
-            Exp::QVar(_) => (),
+            Exp::Var(_, _) => (),
+            Exp::QVar(_, _) => (),
             Exp::RecUp { val, record, .. } => {
                 record.reassociate();
                 val.reassociate()
@@ -308,12 +333,6 @@ impl Exp {
     }
 }
 
-impl From<Ident> for Exp {
-    fn from(li: Ident) -> Self {
-        Exp::Var(li)
-    }
-}
-
 // Precedence ordered from lowest to highest priority
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum Precedence {
@@ -390,8 +409,8 @@ impl Exp {
             Exp::Final(_) => Prefix,
             Exp::Let { .. } => IfLet,
             Exp::Abs(_, _) => Abs,
-            Exp::Var(_) => Atom,
-            Exp::QVar(_) => Atom,
+            Exp::Var(_, _) => Atom,
+            Exp::QVar(_, _) => Atom,
             Exp::RecUp { .. } => App,
             // Exp::RecField { .. } => Any,
             Exp::Tuple(_) => Atom,
@@ -425,12 +444,12 @@ impl Exp {
 
                 &(&body.fvs() - &bound) | &arg.fvs()
             }
-            Exp::Var(v) => {
+            Exp::Var(v, _) => {
                 let mut fvs = IndexSet::new();
                 fvs.insert(v.clone());
                 fvs
             }
-            Exp::QVar(_) => IndexSet::new(),
+            Exp::QVar(_, _) => IndexSet::new(),
             // Exp::RecUp { record, label, val } => {}
             // Exp::Tuple(_) => {}
             Exp::Constructor { ctor: _, args } => {
@@ -456,8 +475,8 @@ impl Exp {
             Exp::Current(e) => e.qfvs(),
             Exp::Final(e) => e.qfvs(),
             Exp::Let { arg, body, .. } => &body.qfvs() | &arg.qfvs(),
-            Exp::Var(_) => IndexSet::new(),
-            Exp::QVar(v) => {
+            Exp::Var(_, _) => IndexSet::new(),
+            Exp::QVar(v, _) => {
                 let mut fvs = IndexSet::new();
                 fvs.insert(v.clone());
                 fvs
@@ -498,7 +517,7 @@ impl Exp {
 
                 body.subst(&subst);
             }
-            Exp::Var(v) => {
+            Exp::Var(v, _) => {
                 if let Some(e) = subst.get(v) {
                     *self = e.clone()
                 }
@@ -574,7 +593,7 @@ impl Exp {
             }
             Exp::Ascribe(e, _) => e.subst(subst),
             Exp::Pure(e) => e.subst(subst),
-            Exp::QVar(_) => {}
+            Exp::QVar(_, _) => {}
             Exp::Const(_) => {}
             Exp::Verbatim(_) => {}
             Exp::Absurd => {}

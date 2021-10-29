@@ -6,6 +6,7 @@ use why3::{
     mlcfg::{
         // Constant,
         Exp::{self, *},
+        Purity,
         Statement::*,
     },
     QName,
@@ -80,7 +81,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             Rvalue::BinaryOp(BinOp::Eq, box (l, r)) if l.ty(self.body, self.tcx).is_bool() => {
                 self.clone_names.import_prelude_module(PreludeModule::Prelude);
                 Call(
-                    box Exp::QVar(QName::from_string("Prelude.eqb").unwrap()),
+                    box Exp::impure_qvar(QName::from_string("Prelude.eqb").unwrap()),
                     vec![self.translate_operand(l), self.translate_operand(r)],
                 )
             }

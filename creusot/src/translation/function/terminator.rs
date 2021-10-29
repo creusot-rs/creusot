@@ -75,7 +75,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     func_args.remove(0)
                 } else {
                     let fname = self.get_func_name(fun_def_id, subst, terminator.source_info.span);
-                    Exp::Call(box Exp::QVar(fname), func_args)
+                    Exp::Call(box Exp::impure_qvar(fname), func_args)
                 };
 
                 let (loc, bb) = destination.unwrap();

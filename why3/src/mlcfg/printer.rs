@@ -564,8 +564,8 @@ impl Pretty for Exp {
                 .append(parens!(alloc, env, self, arg))
                 .append(" in ")
                 .append(body.pretty(alloc, env)),
-            Exp::Var(v) => v.pretty(alloc, env),
-            Exp::QVar(v) => v.pretty(alloc, env),
+            Exp::Var(v, _) => v.pretty(alloc, env),
+            Exp::QVar(v, _) => v.pretty(alloc, env),
             Exp::RecUp { box record, label, box val } => alloc
                 .space()
                 .append(parens!(alloc, env, self, record))

@@ -13,7 +13,7 @@ use rustc_middle::{
 };
 use std::collections::{BTreeMap, HashMap};
 use why3::declaration::*;
-use why3::mlcfg::{self, Exp::*, Statement::*, *};
+use why3::mlcfg::{self, Statement::*, *};
 
 use rustc_middle::mir::Place;
 use rustc_middle::ty::subst::GenericArg;
@@ -183,7 +183,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 .take(arg_count)
                 .map(|(id, _)| {
                     let rhs = id.arg_name();
-                    Assign { lhs: id.ident(), rhs: rhs.into() }
+                    Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
                 })
                 .collect(),
             terminator: Terminator::Goto(BlockId(0)),
@@ -290,11 +290,15 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         match resolve_impl {
             Some(method) => {
                 self.ctx.translate(method.0);
-                QVar(self.clone_names.insert(method.0, method.1).qname(self.tcx, method.0))
+                Exp::impure_qvar(
+                    self.clone_names.insert(method.0, method.1).qname(self.tcx, method.0),
+                )
             }
             None => {
                 self.ctx.translate_trait(trait_id);
-                QVar(self.clone_names.insert(trait_meth_id, subst).qname(self.tcx, trait_meth_id))
+                Exp::impure_qvar(
+                    self.clone_names.insert(trait_meth_id, subst).qname(self.tcx, trait_meth_id),
+                )
             }
         }
     }
@@ -374,7 +378,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         for local in dying.iter() {
             let local_ty = self.body.local_decls[local].ty;
             let ident = self.translate_local(local).ident();
-            let assumption: Exp = self.resolve_predicate_of(local_ty).app_to(ident.into());
+            let assumption: Exp =
+                self.resolve_predicate_of(local_ty).app_to(Exp::impure_var(ident));
             self.emit_statement(mlcfg::Statement::Assume(assumption));
         }
     }

@@ -37,7 +37,7 @@ module C06LogicFunctionContracts_Sum_Impl
     variant {Seq.length seq}
     
    = 
-    if Seq.length seq = 0 then
+    if pure {Seq.length seq = 0} then
       0
     else
       Seq.get seq (Seq.length seq - 1) + sum (SeqExt.subsequence seq 0 (Seq.length seq - 1))
@@ -70,9 +70,35 @@ module C06LogicFunctionContracts_AllZero_Impl
     variant {Seq.length seq}
     
    = 
-    if Seq.length seq = 0 then
+    if pure {Seq.length seq = 0} then
       true
     else
-      Seq.get seq (Seq.length seq - 1) = 0 && all_zero (SeqExt.subsequence seq 0 (Seq.length seq - 1))
+      pure {Seq.get seq (Seq.length seq - 1) = 0} && all_zero (SeqExt.subsequence seq 0 (Seq.length seq - 1))
     
+end
+module C06LogicFunctionContracts_Stupid_Interface
+  type t   
+  use mach.int.Int
+  predicate stupid (x : t) (i : int)
+end
+module C06LogicFunctionContracts_Stupid
+  type t   
+  use mach.int.Int
+  use mach.int.Int32
+  predicate stupid (x : t) (i : int)
+  axiom def : forall x : t, i : int . stupid x i = (if i <= 0 then true else if x = x then stupid x 0 else false)
+  axiom stupid_spec : forall x : t, i : int . true
+end
+module C06LogicFunctionContracts_Stupid_Impl
+  type t   
+  use mach.int.Int
+  use mach.int.Int32
+  let rec ghost function stupid (x : t) (i : int)
+    variant {i}
+    
+   = 
+    if i <= 0 then true else if pure {x = x} then stupid x 0 else false
+end
+module C06LogicFunctionContracts_Impl0
+  
 end

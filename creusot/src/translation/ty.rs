@@ -305,8 +305,8 @@ pub fn translate_accessor(
     // Ensure the program and function symbols line up
     sig.contract.ensures.push(Exp::BinaryOp(
         BinOp::Eq,
-        box Exp::Var("result".into()),
-        box Exp::Var(Ident::build(&acc_name)).app_to(Exp::Var("self".into())),
+        box Exp::pure_var("result".into()),
+        box Exp::pure_var(Ident::build(&acc_name)).app_to(Exp::pure_var("self".into())),
     ));
     decls.push(Decl::ValDecl(ValKind::Val { sig: sig.clone() }));
 
@@ -315,18 +315,18 @@ pub fn translate_accessor(
 
     // Build the generic contructor application
     let cons_app = Exp::Call(
-        box Exp::Var(var_name.name().clone()),
-        bound_vars.iter().map(|(n, _)| Exp::Var(n.clone())).collect(),
+        box Exp::pure_var(var_name.name().clone()),
+        bound_vars.iter().map(|(n, _)| Exp::pure_var(n.clone())).collect(),
     );
 
     // The projection equality
     let projection = Exp::BinaryOp(
         BinOp::Eq,
         box Exp::Call(
-            box Exp::Var(Ident::build(&acc_name)),
+            box Exp::pure_var(Ident::build(&acc_name)),
             vec![Exp::Ascribe(box cons_app, this)],
         ),
-        box Exp::Var(bound_vars[ix].0.clone()),
+        box Exp::pure_var(bound_vars[ix].0.clone()),
     );
 
     // The record projection axiom
