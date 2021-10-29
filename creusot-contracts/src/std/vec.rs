@@ -48,6 +48,15 @@ impl<T> Vec<T> {
     pub fn swap(&mut self, i: usize, j: usize) {
         self.0.swap(i, j)
     }
+
+    #[trusted]
+    #[ensures(match result {
+        Some(t) => (@self) === (@^self).push(t),
+        None => (@self).len() === (@^self).len() && (@self).len() === 0
+    })]
+    pub fn pop(&mut self) -> Option<T> {
+        self.0.pop()
+    }
 }
 
 impl<T> std::ops::IndexMut<usize> for Vec<T> {
