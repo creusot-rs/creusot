@@ -25,3 +25,18 @@ fn all_zero(seq: Seq<Int>) -> bool {
         }
     }
 }
+
+impl WellFounded for bool {}
+#[predicate]
+#[variant(i)]
+fn stupid<T>(x: T, i: Int) -> bool {
+    pearlite! {
+        if i <= 0 {
+            true
+        } else if x === x {
+            stupid(x, 0)
+        } else {
+            false
+        }
+    }
+}

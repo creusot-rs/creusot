@@ -10,6 +10,7 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::mir::Body;
 use rustc_middle::ty::TyCtxt;
 
+mod builtins;
 mod lower;
 pub mod typing;
 
@@ -22,7 +23,7 @@ pub fn requires_to_why<'tcx>(
 ) -> Exp {
     log::debug!("require clause {:?}", req_id);
     let term = ctx.term(req_id).unwrap().clone();
-    lower(ctx, names, req_id, term)
+    lower_pure(ctx, names, req_id, term)
 }
 
 pub fn variant_to_why<'tcx>(
@@ -32,7 +33,7 @@ pub fn variant_to_why<'tcx>(
 ) -> Exp {
     log::debug!("variant clause {:?}", var_id);
     let term = ctx.term(var_id).unwrap().clone();
-    lower(ctx, names, var_id, term)
+    lower_pure(ctx, names, var_id, term)
 }
 
 pub fn ensures_to_why<'tcx>(
@@ -42,7 +43,7 @@ pub fn ensures_to_why<'tcx>(
 ) -> Exp {
     log::debug!("ensures clause {:?}", ens_id);
     let term = ctx.term(ens_id).unwrap().clone();
-    lower(ctx, names, ens_id, term)
+    lower_pure(ctx, names, ens_id, term)
 }
 
 pub struct PreContract {
@@ -92,7 +93,7 @@ pub fn inv_subst(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> HashMap<why3::Ident, E
             };
             let loc = local_map[&loc];
             let source_name = vdi.name.to_string();
-            (source_name.into(), Exp::Var(LocalIdent::dbg(loc, vdi).ident()))
+            (source_name.into(), Exp::pure_var(LocalIdent::dbg(loc, vdi).ident()))
         })
         .collect()
 }
