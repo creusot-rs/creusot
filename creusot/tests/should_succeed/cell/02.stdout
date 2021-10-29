@@ -9,16 +9,6 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type alloc_alloc_global  = 
-    | Alloc_Alloc_Global
-    
-  type core_marker_phantomdata 't = 
-    | Core_Marker_PhantomData
-    
-  type core_option_option 't = 
-    | Core_Option_Option_None
-    | Core_Option_Option_Some 't
-    
   type core_cell_unsafecell 't = 
     | Core_Cell_UnsafeCell 't
     
@@ -28,8 +18,30 @@ module Type
   type c02_cell 't 'i = 
     | C02_Cell (core_cell_cell 't) 'i
     
+  function c02_cell_Cell_ghost_inv (self : c02_cell 't 'i) : 'i
+  val c02_cell_Cell_ghost_inv (self : c02_cell 't 'i) : 'i
+    ensures { result = c02_cell_Cell_ghost_inv self }
+    
+  axiom c02_cell_Cell_ghost_inv_acc : forall a : core_cell_cell 't, b : 'i . c02_cell_Cell_ghost_inv (C02_Cell a b : c02_cell 't 'i) = b
   type c02_fib  = 
     | C02_Fib usize
+    
+  function c02_fib_Fib_ix (self : c02_fib) : usize
+  val c02_fib_Fib_ix (self : c02_fib) : usize
+    ensures { result = c02_fib_Fib_ix self }
+    
+  axiom c02_fib_Fib_ix_acc : forall a : usize . c02_fib_Fib_ix (C02_Fib a : c02_fib) = a
+  type core_option_option 't = 
+    | Core_Option_Option_None
+    | Core_Option_Option_Some 't
+    
+  function core_option_option_Some_0 (self : core_option_option 't) : 't
+  val core_option_option_Some_0 (self : core_option_option 't) : 't
+    ensures { result = core_option_option_Some_0 self }
+    
+  axiom core_option_option_Some_0_acc : forall a : 't . core_option_option_Some_0 (Core_Option_Option_Some a : core_option_option 't) = a
+  type core_marker_phantomdata 't = 
+    | Core_Marker_PhantomData
     
   type core_ptr_unique_unique 't = 
     | Core_Ptr_Unique_Unique opaque_ptr (core_marker_phantomdata 't)
@@ -39,6 +51,9 @@ module Type
     
   type alloc_vec_vec 't 'a = 
     | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) usize
+    
+  type alloc_alloc_global  = 
+    | Alloc_Alloc_Global
     
   type creusotcontracts_std1_vec_vec 't = 
     | CreusotContracts_Std1_Vec_Vec (alloc_vec_vec 't (alloc_alloc_global))
@@ -63,7 +78,7 @@ module C02_Impl0_Get_Interface
   use Type
   clone C02_Inv_Inv_Interface as Inv0 with type self = i, type t = t
   val get (self : Type.c02_cell t i) : t
-    ensures { Inv0.inv (let Type.C02_Cell _ a = self in a) result }
+    ensures { Inv0.inv (Type.c02_cell_Cell_ghost_inv self) result }
     
 end
 module C02_Impl0_Get
@@ -73,7 +88,7 @@ module C02_Impl0_Get
   use Type
   clone C02_Inv_Inv as Inv0 with type self = i, type t = t
   val get (self : Type.c02_cell t i) : t
-    ensures { Inv0.inv (let Type.C02_Cell _ a = self in a) result }
+    ensures { Inv0.inv (Type.c02_cell_Cell_ghost_inv self) result }
     
 end
 module C02_Impl0_Set_Interface
@@ -83,7 +98,7 @@ module C02_Impl0_Set_Interface
   use Type
   clone C02_Inv_Inv_Interface as Inv0 with type self = i, type t = t
   val set (self : Type.c02_cell t i) (v : t) : ()
-    requires {Inv0.inv (let Type.C02_Cell _ a = self in a) v}
+    requires {Inv0.inv (Type.c02_cell_Cell_ghost_inv self) v}
     
 end
 module C02_Impl0_Set
@@ -93,7 +108,7 @@ module C02_Impl0_Set
   use Type
   clone C02_Inv_Inv as Inv0 with type self = i, type t = t
   val set (self : Type.c02_cell t i) (v : t) : ()
-    requires {Inv0.inv (let Type.C02_Cell _ a = self in a) v}
+    requires {Inv0.inv (Type.c02_cell_Cell_ghost_inv self) v}
     
 end
 module C02_Fib_Interface
@@ -104,13 +119,7 @@ module C02_Fib
   use mach.int.Int
   use mach.int.Int32
   function fib (i : int) : int
-  axiom def : forall i : int . fib i = match (i <= 0) with
-    | True -> 0
-    | False -> match (i = 1) with
-      | True -> 1
-      | False -> fib (i - 1) + fib (i - 2)
-      end
-    end
+  axiom def : forall i : int . fib i = (if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2))
   axiom fib_spec : forall i : int . true
 end
 module C02_Fib_Impl
@@ -120,13 +129,7 @@ module C02_Fib_Impl
     variant {i}
     
    = 
-    match (i <= 0) with
-      | True -> 0
-      | False -> match (i = 1) with
-        | True -> 1
-        | False -> fib (i - 1) + fib (i - 2)
-        end
-      end
+    if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2)
 end
 module C02_LemmaFibBound_Interface
   use mach.int.Int
@@ -141,13 +144,11 @@ module C02_LemmaFibBound
   use int.Power
   clone C02_Fib_Interface as Fib0 with axiom .
   function lemma_fib_bound (i : int) : ()
-  axiom def : forall i : int . lemma_fib_bound i = match (i = 0) with
-    | True -> ()
-    | False -> match (i = 1) with
-      | True -> ()
-      | False -> let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
-      end
-    end
+  axiom def : forall i : int . lemma_fib_bound i = (if i = 0 then
+    ()
+  else
+    if i = 1 then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
+  )
   axiom lemma_fib_bound_spec : forall i : int . 0 <= i -> Fib0.fib i <= Power.power 2 i
 end
 module C02_LemmaFibBound_Impl
@@ -161,13 +162,7 @@ module C02_LemmaFibBound_Impl
     variant {i}
     
    = 
-    match (i = 0) with
-      | True -> ()
-      | False -> match (i = 1) with
-        | True -> ()
-        | False -> let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
-        end
-      end
+    if i = 0 then () else if pure {i = 1} then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
 end
 module C02_Impl1_Inv_Interface
   use prelude.Prelude
@@ -185,7 +180,7 @@ module C02_Impl1_Inv
   predicate inv (self : Type.c02_fib) (v : Type.core_option_option usize) = 
     match (v) with
       | Type.Core_Option_Option_None -> true
-      | Type.Core_Option_Option_Some i -> UInt64.to_int i = Fib0.fib (UInt64.to_int (let Type.C02_Fib a = self in a))
+      | Type.Core_Option_Option_Some i -> UInt64.to_int i = Fib0.fib (UInt64.to_int (Type.c02_fib_Fib_ix self))
       end
 end
 module C02_Impl1
@@ -258,7 +253,7 @@ module C02_FibCell
   predicate fib_cell (v : Type.creusotcontracts_std1_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)))
     
    = 
-    forall i : (int) . UInt64.to_int (let Type.C02_Fib a = let Type.C02_Cell _ a = Seq.get (Model0.model v) i in a in a) = i
+    forall i : (int) . UInt64.to_int (Type.c02_fib_Fib_ix (Type.c02_cell_Cell_ghost_inv (Seq.get (Model0.model v) i))) = i
 end
 module C02_LemmaMaxInt_Interface
   use mach.int.Int
@@ -529,7 +524,7 @@ module C02_FibMemo
   }
   BB6 {
     assume { Resolve0.resolve v_9 };
-    v_9 <- (let Type.Core_Option_Option_Some a = _3 in a);
+    v_9 <- Type.core_option_option_Some_0 _3;
     assume { Resolve3.resolve _3 };
     assume { Resolve0.resolve _0 };
     _0 <- v_9;

@@ -521,7 +521,7 @@ impl Pretty for Type {
             Char => alloc.text("char"),
             Integer => alloc.text("int"),
             MutableBorrow(box t) => alloc.text("borrowed ").append(ty_parens!(alloc, env, t)),
-            TVar(v) => alloc.text(format!("'{}", v)),
+            TVar(v) => alloc.text(format!("'{}", v.0)),
             TConstructor(ty) => ty.pretty(alloc, env),
 
             TFun(box a, box b) => {
@@ -564,8 +564,8 @@ impl Pretty for Exp {
                 .append(parens!(alloc, env, self, arg))
                 .append(" in ")
                 .append(body.pretty(alloc, env)),
-            Exp::Var(v) => v.pretty(alloc, env),
-            Exp::QVar(v) => v.pretty(alloc, env),
+            Exp::Var(v, _) => v.pretty(alloc, env),
+            Exp::QVar(v, _) => v.pretty(alloc, env),
             Exp::RecUp { box record, label, box val } => alloc
                 .space()
                 .append(parens!(alloc, env, self, record))
@@ -593,7 +593,7 @@ impl Pretty for Exp {
             }),
 
             Exp::BorrowMut(box exp) => {
-                alloc.text("borrow_mut ").append(parens!(alloc, env, self, exp))
+                alloc.text("borrow_mut ").append(parens!(alloc, env, self.precedence().next(), exp))
             }
 
             Exp::Const(c) => c.pretty(alloc, env),
@@ -649,7 +649,14 @@ impl Pretty for Exp {
                     .indent(2),
                 )
                 .append("end"),
-
+            Exp::IfThenElse(s, i, e) => alloc
+                .text("if ")
+                .append(s.pretty(alloc, env))
+                .append(" then")
+                .append(alloc.line().append(i.pretty(alloc, env)).nest(2).append(alloc.line()))
+                .append("else")
+                .append(alloc.line().append(e.pretty(alloc, env)).nest(2).append(alloc.line_()))
+                .group(),
             Exp::Forall(binders, box exp) => alloc
                 .text("forall ")
                 .append(alloc.intersperse(
@@ -673,6 +680,10 @@ impl Pretty for Exp {
             Exp::Impl(box hyp, box exp) => {
                 parens!(alloc, env, self, hyp).append(" -> ").append(parens!(alloc, env, self, exp))
             }
+            Exp::Ascribe(e, t) => {
+                e.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env)).group()
+            }
+            Exp::Pure(e) => alloc.text("pure ").append(e.pretty(alloc, env).braces()),
             Exp::Absurd => alloc.text("absurd"),
         }
     }

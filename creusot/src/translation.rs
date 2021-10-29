@@ -1,4 +1,3 @@
-mod builtins;
 pub mod constant;
 pub mod external;
 pub mod function;
@@ -16,13 +15,14 @@ use heck::CamelCase;
 
 use rustc_hir::def_id::LOCAL_CRATE;
 use why3::{
-    declaration::{Decl, Module, TyDecl, Use},
+    declaration::{Decl, Module, Use},
     Pretty, QName,
 };
 
 use std::io::Result;
 
 use crate::ctx::TranslationCtx;
+use crate::ctx::TypeDeclaration;
 use crate::metadata;
 use std::io::Write;
 use why3::mlcfg;
@@ -62,7 +62,7 @@ pub fn translate(mut ctx: TranslationCtx<'_, '_>) -> Result<()> {
         print_crate(
             &mut out,
             ctx.tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case(),
-            &ctx.types,
+            ctx.types.values(),
             ctx.modules(),
         )?;
     }
@@ -119,7 +119,7 @@ pub fn prelude_imports(type_import: bool) -> Vec<Decl> {
 fn print_crate<'a, W, I: Iterator<Item = &'a Module>>(
     out: &mut W,
     _name: String,
-    types: &[TyDecl],
+    types: impl Iterator<Item = &'a TypeDeclaration>,
     functions: I,
 ) -> std::io::Result<()>
 where
@@ -131,7 +131,9 @@ where
         name: "Type".into(),
         decls: prelude_imports(false)
             .into_iter()
-            .chain(types.iter().flat_map(|ty| [Decl::TyDecl(ty.clone())]))
+            .chain(types.flat_map(|ty| {
+                std::iter::once(Decl::TyDecl(ty.ty_decl.clone())).chain(ty.accessors().cloned())
+            }))
             .collect(),
     };
 

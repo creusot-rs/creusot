@@ -21,10 +21,11 @@ module C06LogicFunctionContracts_Sum
   use mach.int.Int32
   use seq_ext.SeqExt
   function sum (seq : Seq.seq int) : int
-  axiom def : forall seq : Seq.seq int . sum seq = match (Seq.length seq = 0) with
-    | True -> 0
-    | False -> Seq.get seq (Seq.length seq - 1) + sum (SeqExt.subsequence seq 0 (Seq.length seq - 1))
-    end
+  axiom def : forall seq : Seq.seq int . sum seq = (if Seq.length seq = 0 then
+    0
+  else
+    Seq.get seq (Seq.length seq - 1) + sum (SeqExt.subsequence seq 0 (Seq.length seq - 1))
+  )
   axiom sum_spec : forall seq : Seq.seq int . true
 end
 module C06LogicFunctionContracts_Sum_Impl
@@ -36,8 +37,68 @@ module C06LogicFunctionContracts_Sum_Impl
     variant {Seq.length seq}
     
    = 
-    match (Seq.length seq = 0) with
-      | True -> 0
-      | False -> Seq.get seq (Seq.length seq - 1) + sum (SeqExt.subsequence seq 0 (Seq.length seq - 1))
-      end
+    if pure {Seq.length seq = 0} then
+      0
+    else
+      Seq.get seq (Seq.length seq - 1) + sum (SeqExt.subsequence seq 0 (Seq.length seq - 1))
+    
+end
+module C06LogicFunctionContracts_AllZero_Interface
+  use seq.Seq
+  use mach.int.Int
+  predicate all_zero (seq : Seq.seq int)
+end
+module C06LogicFunctionContracts_AllZero
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  use seq_ext.SeqExt
+  predicate all_zero (seq : Seq.seq int)
+  axiom def : forall seq : Seq.seq int . all_zero seq = (if Seq.length seq = 0 then
+    true
+  else
+    Seq.get seq (Seq.length seq - 1) = 0 && all_zero (SeqExt.subsequence seq 0 (Seq.length seq - 1))
+  )
+  axiom all_zero_spec : forall seq : Seq.seq int . true
+end
+module C06LogicFunctionContracts_AllZero_Impl
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  use seq_ext.SeqExt
+  let rec ghost function all_zero (seq : Seq.seq int)
+    variant {Seq.length seq}
+    
+   = 
+    if pure {Seq.length seq = 0} then
+      true
+    else
+      pure {Seq.get seq (Seq.length seq - 1) = 0} && all_zero (SeqExt.subsequence seq 0 (Seq.length seq - 1))
+    
+end
+module C06LogicFunctionContracts_Stupid_Interface
+  type t   
+  use mach.int.Int
+  predicate stupid (x : t) (i : int)
+end
+module C06LogicFunctionContracts_Stupid
+  type t   
+  use mach.int.Int
+  use mach.int.Int32
+  predicate stupid (x : t) (i : int)
+  axiom def : forall x : t, i : int . stupid x i = (if i <= 0 then true else if x = x then stupid x 0 else false)
+  axiom stupid_spec : forall x : t, i : int . true
+end
+module C06LogicFunctionContracts_Stupid_Impl
+  type t   
+  use mach.int.Int
+  use mach.int.Int32
+  let rec ghost function stupid (x : t) (i : int)
+    variant {i}
+    
+   = 
+    if i <= 0 then true else if pure {x = x} then stupid x 0 else false
+end
+module C06LogicFunctionContracts_Impl0
+  
 end

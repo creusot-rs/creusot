@@ -9,13 +9,6 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type core_option_option 't = 
-    | Core_Option_Option_None
-    | Core_Option_Option_Some 't
-    
-  type alloc_alloc_global  = 
-    | Alloc_Alloc_Global
-    
   type core_marker_phantomdata 't = 
     | Core_Marker_PhantomData
     
@@ -27,6 +20,9 @@ module Type
     
   type alloc_vec_vec 't 'a = 
     | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) int
+    
+  type alloc_alloc_global  = 
+    | Alloc_Alloc_Global
     
   type itermut_vec 't = 
     | IterMut_Vec (alloc_vec_vec 't (alloc_alloc_global))
@@ -40,6 +36,15 @@ module Type
   type itermut_itermut 't = 
     | IterMut_IterMut (core_slice_iter_itermut 't)
     
+  type core_option_option 't = 
+    | Core_Option_Option_None
+    | Core_Option_Option_Some 't
+    
+  function core_option_option_Some_0 (self : core_option_option 't) : 't
+  val core_option_option_Some_0 (self : core_option_option 't) : 't
+    ensures { result = core_option_option_Some_0 self }
+    
+  axiom core_option_option_Some_0_acc : forall a : 't . core_option_option_Some_0 (Core_Option_Option_Some a : core_option_option 't) = a
   type itermut_ghost 't = 
     | IterMut_Ghost opaque_ptr
     
@@ -193,10 +198,7 @@ module CreusotContracts_Builtins_Seq_Impl0_Get
   use mach.int.Int
   use Type
   function get (self : Seq.seq t) (ix : int) : Type.core_option_option t = 
-    match (ix < Seq.length self) with
-      | True -> Type.Core_Option_Option_Some (Seq.get self ix)
-      | False -> Type.Core_Option_Option_None
-      end
+    if ix < Seq.length self then Type.Core_Option_Option_Some (Seq.get self ix) else Type.Core_Option_Option_None
 end
 module IterMut_Impl3_Next_Interface
   type t   
@@ -433,7 +435,7 @@ module IterMut_IncVec
   }
   BB7 {
     assume { Resolve5.resolve r_11 };
-    r_11 <- (let Type.Core_Option_Option_Some a = _8 in a);
+    r_11 <- Type.core_option_option_Some_0 _8;
     assume { Resolve4.resolve _8 };
     r_11 <- { r_11 with current = ( * r_11 + (5 : int)) };
     assume { Resolve5.resolve r_11 };

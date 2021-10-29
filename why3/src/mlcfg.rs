@@ -57,7 +57,7 @@ pub enum Type {
     Char,
     Integer,
     MutableBorrow(Box<Type>),
-    TVar(String),
+    TVar(Ident),
     TConstructor(QName),
     TApp(Box<Type>, Vec<Type>),
     Tuple(Vec<Type>),
@@ -144,14 +144,21 @@ pub enum UnOp {
     Neg,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub enum Purity {
+    Logic,
+    Program,
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
     Current(Box<Exp>),
     Final(Box<Exp>),
     Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
-    Var(Ident),
-    QVar(QName),
+    Var(Ident, Purity),
+    QVar(QName, Purity),
     RecUp { record: Box<Exp>, label: String, val: Box<Exp> },
     RecField { record: Box<Exp>, label: String },
     Tuple(Vec<Exp>),
@@ -165,7 +172,9 @@ pub enum Exp {
     // Seq(Box<Exp>, Box<Exp>),
     Abs(Ident, Box<Exp>),
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
-
+    IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
+    Ascribe(Box<Exp>, Type),
+    Pure(Box<Exp>),
     // Predicates
     Absurd,
     Impl(Box<Exp>, Box<Exp>),
@@ -174,6 +183,22 @@ pub enum Exp {
 }
 
 impl Exp {
+    pub fn impure_qvar(q: QName) -> Self {
+        Exp::QVar(q, Purity::Program)
+    }
+
+    pub fn impure_var(v: Ident) -> Self {
+        Exp::Var(v, Purity::Program)
+    }
+
+    pub fn pure_qvar(q: QName) -> Self {
+        Exp::QVar(q, Purity::Logic)
+    }
+
+    pub fn pure_var(v: Ident) -> Self {
+        Exp::Var(v, Purity::Logic)
+    }
+
     pub fn conj(l: Exp, r: Exp) -> Self {
         Exp::BinaryOp(BinOp::And, box l, box r)
     }
@@ -191,8 +216,10 @@ impl Exp {
             Exp::Current(e) => e.is_pure(),
             Exp::Final(e) => e.is_pure(),
             Exp::Let { arg, body, .. } => arg.is_pure() && body.is_pure(),
-            Exp::Var(_) => true,
-            Exp::QVar(_) => true,
+            Exp::Var(_, Purity::Logic) => true,
+            Exp::Var(_, Purity::Program) => false,
+            Exp::QVar(_, Purity::Logic) => true,
+            Exp::QVar(_, Purity::Program) => false,
             Exp::RecUp { record, val, .. } => record.is_pure() && val.is_pure(),
             Exp::RecField { record, .. } => record.is_pure(),
             Exp::Tuple(args) => args.iter().all(Exp::is_pure),
@@ -205,10 +232,13 @@ impl Exp {
             Exp::Verbatim(_) => false,
             Exp::Abs(_, e) => e.is_pure(),
             Exp::Match(e, brs) => e.is_pure() && brs.iter().all(|(_, e)| e.is_pure()),
+            Exp::IfThenElse(s, i, e) => s.is_pure() && i.is_pure() && e.is_pure(),
+            Exp::Ascribe(e, _) => e.is_pure(),
             Exp::Absurd => false,
             Exp::Impl(l, r) => l.is_pure() && r.is_pure(),
             Exp::Forall(_, e) => e.is_pure(),
             Exp::Exists(_, e) => e.is_pure(),
+            Exp::Pure(_) => true,
         }
     }
 
@@ -220,8 +250,8 @@ impl Exp {
                 arg.reassociate();
                 body.reassociate()
             }
-            Exp::Var(_) => (),
-            Exp::QVar(_) => (),
+            Exp::Var(_, _) => (),
+            Exp::QVar(_, _) => (),
             Exp::RecUp { val, record, .. } => {
                 record.reassociate();
                 val.reassociate()
@@ -285,6 +315,12 @@ impl Exp {
                 e.reassociate();
                 brs.iter_mut().for_each(|(_, e)| e.reassociate())
             }
+            Exp::IfThenElse(s, i, e) => {
+                s.reassociate();
+                i.reassociate();
+                e.reassociate();
+            }
+            Exp::Ascribe(e, _) => e.reassociate(),
             Exp::Absurd => (),
             Exp::Impl(l, r) => {
                 l.reassociate();
@@ -292,13 +328,8 @@ impl Exp {
             }
             Exp::Forall(_, e) => e.reassociate(),
             Exp::Exists(_, e) => e.reassociate(),
+            Exp::Pure(e) => e.reassociate(),
         }
-    }
-}
-
-impl From<Ident> for Exp {
-    fn from(li: Ident) -> Self {
-        Exp::Var(li)
     }
 }
 
@@ -307,7 +338,7 @@ impl From<Ident> for Exp {
 enum Precedence {
     IfLet, // if then else / let in
     // Attr,
-    // Cast,
+    Cast,
     Impl,   // -> / <-> / by / so
     Disj,   // \/ / ||
     Conj,   // /\ / &&
@@ -334,7 +365,8 @@ pub enum AssocDir {
 impl Precedence {
     pub fn next(&self) -> Self {
         match self {
-            Precedence::IfLet => Precedence::Impl,
+            Precedence::IfLet => Precedence::Cast,
+            Precedence::Cast => Precedence::Impl,
             Precedence::Impl => Precedence::Disj,
             Precedence::Disj => Precedence::Conj,
             Precedence::Conj => Precedence::Not,
@@ -377,14 +409,15 @@ impl Exp {
             Exp::Final(_) => Prefix,
             Exp::Let { .. } => IfLet,
             Exp::Abs(_, _) => Abs,
-            Exp::Var(_) => Atom,
-            Exp::QVar(_) => Atom,
+            Exp::Var(_, _) => Atom,
+            Exp::QVar(_, _) => Atom,
             Exp::RecUp { .. } => App,
             // Exp::RecField { .. } => Any,
             Exp::Tuple(_) => Atom,
             Exp::Constructor { .. } => App,
             // Exp::Seq(_, _) => { Term }
             Exp::Match(_, _) => Atom,
+            Exp::IfThenElse(_, _, _) => IfLet,
             Exp::BorrowMut(_) => App,
             Exp::Const(_) => Atom,
             Exp::UnaryOp(UnOp::Neg, _) => Prefix,
@@ -395,7 +428,9 @@ impl Exp {
             Exp::Impl(_, _) => Impl,
             Exp::Forall(_, _) => IfLet,
             Exp::Exists(_, _) => IfLet,
+            Exp::Ascribe(_, _) => Cast,
             Exp::Absurd => Atom,
+            Exp::Pure(_) => Atom,
             _ => unimplemented!("{:?}", self),
         }
     }
@@ -409,12 +444,12 @@ impl Exp {
 
                 &(&body.fvs() - &bound) | &arg.fvs()
             }
-            Exp::Var(v) => {
+            Exp::Var(v, _) => {
                 let mut fvs = IndexSet::new();
                 fvs.insert(v.clone());
                 fvs
             }
-            Exp::QVar(_) => IndexSet::new(),
+            Exp::QVar(_, _) => IndexSet::new(),
             // Exp::RecUp { record, label, val } => {}
             // Exp::Tuple(_) => {}
             Exp::Constructor { ctor: _, args } => {
@@ -430,6 +465,7 @@ impl Exp {
             }),
             Exp::BorrowMut(e) => e.fvs(),
             Exp::Verbatim(_) => IndexSet::new(),
+            Exp::Pure(e) => e.fvs(),
             _ => unimplemented!(),
         }
     }
@@ -439,8 +475,8 @@ impl Exp {
             Exp::Current(e) => e.qfvs(),
             Exp::Final(e) => e.qfvs(),
             Exp::Let { arg, body, .. } => &body.qfvs() | &arg.qfvs(),
-            Exp::Var(_) => IndexSet::new(),
-            Exp::QVar(v) => {
+            Exp::Var(_, _) => IndexSet::new(),
+            Exp::QVar(v, _) => {
                 let mut fvs = IndexSet::new();
                 fvs.insert(v.clone());
                 fvs
@@ -460,7 +496,9 @@ impl Exp {
             Exp::Match(scrut, brs) => {
                 brs.iter().fold(scrut.qfvs(), |acc, (_, br)| &acc | &br.qfvs())
             }
+            Exp::IfThenElse(s, i, e) => &(&s.qfvs() | &i.qfvs()) | &e.qfvs(),
             Exp::Absurd => IndexSet::new(),
+            Exp::Pure(e) => e.qfvs(),
             _ => unimplemented!("qvfs: {:?}", self),
         }
     }
@@ -479,7 +517,7 @@ impl Exp {
 
                 body.subst(&subst);
             }
-            Exp::Var(v) => {
+            Exp::Var(v, _) => {
                 if let Some(e) = subst.get(v) {
                     *self = e.clone()
                 }
@@ -517,6 +555,11 @@ impl Exp {
                     br.subst(&s);
                 }
             }
+            Exp::IfThenElse(s, i, e) => {
+                s.subst(subst);
+                i.subst(subst);
+                e.subst(subst);
+            }
             Exp::BorrowMut(e) => e.subst(subst),
             Exp::UnaryOp(_, o) => {
                 o.subst(subst);
@@ -548,7 +591,9 @@ impl Exp {
                     arg.subst(subst);
                 }
             }
-            Exp::QVar(_) => {}
+            Exp::Ascribe(e, _) => e.subst(subst),
+            Exp::Pure(e) => e.subst(subst),
+            Exp::QVar(_, _) => {}
             Exp::Const(_) => {}
             Exp::Verbatim(_) => {}
             Exp::Absurd => {}

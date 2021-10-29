@@ -11,7 +11,7 @@ use why3::mlcfg::Exp;
 
 use crate::clone_map::CloneMap;
 use crate::ctx::TranslationCtx;
-use crate::translation::specification::{self, inv_subst, lower};
+use crate::translation::specification::{self, inv_subst, lower_pure};
 use crate::util;
 
 pub struct GatherSpecClosures {
@@ -37,12 +37,12 @@ impl GatherSpecClosures {
         for clos in visitor.closures.into_iter() {
             if let Some(name) = util::invariant_name(ctx.tcx, clos) {
                 let term = specification::typing::typecheck(ctx.tcx, clos.expect_local());
-                let exp = lower(ctx, names, clos, term);
+                let exp = lower_pure(ctx, names, clos, term);
 
                 invariants.insert(clos, (name, exp));
             } else if util::is_assertion(ctx.tcx, clos) {
                 let term = specification::typing::typecheck(ctx.tcx, clos.expect_local());
-                let exp = lower(ctx, names, clos, term);
+                let exp = lower_pure(ctx, names, clos, term);
 
                 assertions.insert(clos, exp);
             }

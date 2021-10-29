@@ -7,9 +7,10 @@ use why3::mlcfg::{
     Exp::{self, *},
 };
 use why3::mlcfg::{Pattern::*, Statement::*};
+use why3::QName;
 
 use super::FunctionTranslator;
-use crate::ctx::translate_value_id;
+use crate::{ctx::translate_value_id, translation::ty::variant_accessor_name};
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     pub fn translate_rplace(&mut self, rhs: &Place<'tcx>) -> Exp {
@@ -24,7 +25,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         loc: Local,
         proj: &[rustc_middle::mir::PlaceElem<'tcx>],
     ) -> Exp {
-        let mut inner = self.translate_local(loc).ident().into();
+        let mut inner = Exp::impure_var(self.translate_local(loc).ident());
         use rustc_middle::mir::ProjectionElem::*;
         let mut place_ty = Place::ty_from(loc, &[], self.body, self.tcx);
 
@@ -42,23 +43,27 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                         let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                         let variant = &def.variants[variant_id];
 
-                        let mut pat = vec![Wildcard; variant.fields.len()];
-                        pat[ix.as_usize()] = VarP("a".into());
-
-                        let tyname = translate_value_id(self.tcx, variant.def_id);
-
-                        inner = Let {
-                            pattern: ConsP(tyname, pat),
-                            arg: box inner,
-                            body: box Var("a".into()),
-                        }
+                        self.ctx
+                            .translate_accessor(def.variants[variant_id].fields[ix.as_usize()].did);
+                        let accessor_name =
+                            variant_accessor_name(self.tcx, def.did, variant, ix.as_usize());
+                        inner = Call(
+                            box Exp::impure_qvar(QName {
+                                module: vec!["Type".into()],
+                                name: accessor_name,
+                            }),
+                            vec![inner],
+                        );
                     }
                     TyKind::Tuple(fields) => {
                         let mut pat = vec![Wildcard; fields.len()];
                         pat[ix.as_usize()] = VarP("a".into());
 
-                        inner =
-                            Let { pattern: TupleP(pat), arg: box inner, body: box Var("a".into()) }
+                        inner = Let {
+                            pattern: TupleP(pat),
+                            arg: box inner,
+                            body: box Exp::impure_var("a".into()),
+                        }
                     }
                     _ => unreachable!(),
                 },
@@ -121,8 +126,10 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
                         let field_pats =
                             ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
-                        let mut varexps: Vec<Exp> =
-                            ('a'..).map(|c| Var(c.to_string().into())).take(var_size).collect();
+                        let mut varexps: Vec<Exp> = ('a'..)
+                            .map(|c| Exp::impure_var(c.to_string().into()))
+                            .take(var_size)
+                            .collect();
 
                         varexps[ix.as_usize()] = inner;
 
@@ -139,8 +146,10 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
                         let field_pats =
                             ('a'..).map(|c| VarP(c.to_string().into())).take(var_size).collect();
-                        let mut varexps: Vec<Exp> =
-                            ('a'..).map(|c| Var(c.to_string().into())).take(var_size).collect();
+                        let mut varexps: Vec<Exp> = ('a'..)
+                            .map(|c| Exp::impure_var(c.to_string().into()))
+                            .take(var_size)
+                            .collect();
 
                         varexps[ix.as_usize()] = inner;
 

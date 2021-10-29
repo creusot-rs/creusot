@@ -14,3 +14,29 @@ fn sum(seq: Seq<Int>) -> Int {
         }
     }
 }
+
+#[predicate]
+#[variant(seq.len())]
+fn all_zero(seq: Seq<Int>) -> bool {
+    pearlite! {
+        if seq.len() === 0 { true }
+        else {
+            seq[seq.len() - 1] === 0 && all_zero(seq.subsequence(0, seq.len() - 1))
+        }
+    }
+}
+
+impl WellFounded for bool {}
+#[predicate]
+#[variant(i)]
+fn stupid<T>(x: T, i: Int) -> bool {
+    pearlite! {
+        if i <= 0 {
+            true
+        } else if x === x {
+            stupid(x, 0)
+        } else {
+            false
+        }
+    }
+}

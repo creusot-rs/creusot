@@ -119,6 +119,11 @@ impl ItemType {
         use ItemType::*;
         matches!(self, Logic | Predicate | Type | Interface)
     }
+
+    pub fn logical(&self) -> bool {
+        use ItemType::*;
+        matches!(self, Logic | Predicate)
+    }
 }
 
 pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {

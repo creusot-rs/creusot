@@ -6,8 +6,7 @@ use crate::{ctx::*, util};
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::TyCtxt;
 use why3::declaration::*;
-use why3::mlcfg::BinOp;
-use why3::mlcfg::Exp;
+use why3::mlcfg::{BinOp, Exp};
 use why3::Ident;
 
 pub fn translate_logic_or_predicate(
@@ -41,15 +40,17 @@ pub fn translate_logic_or_predicate(
         None
     } else {
         let term = ctx.term(def_id).unwrap().clone();
-        let body = specification::lower(ctx, &mut names, def_id, term);
         decls.extend(names.to_clones(ctx));
 
         let proof_modl = if !sig_contract.contract.is_empty() && def_id.is_local() {
-            Some(implementation_module(ctx, def_id, &names, sig_contract.clone(), body.clone()))
+            let body = specification::lower_impure(ctx, &mut names, def_id, term.clone());
+            Some(implementation_module(ctx, def_id, &names, sig_contract.clone(), body))
         } else {
             None
         };
 
+        let body = specification::lower_pure(ctx, &mut names, def_id, term);
+        decls.extend(names.to_clones(ctx));
         if sig_contract.contract.variant.is_empty() {
             let decl = match util::item_type(ctx.tcx, def_id) {
                 ItemType::Logic => Decl::LogicDecl(Logic { sig, body }),
@@ -58,8 +59,15 @@ pub fn translate_logic_or_predicate(
             };
             decls.push(decl);
         } else if body.is_pure() {
-            decls.push(Decl::ValDecl(function_symbol(sig.clone())));
-            decls.push(Decl::Axiom(definition_axiom(&sig, body.clone())));
+            let mut fsig = sig.clone();
+            fsig.contract = Contract::new();
+            let func_sym = match util::item_type(ctx.tcx, def_id) {
+                ItemType::Logic => ValKind::Function { sig: fsig },
+                ItemType::Predicate => ValKind::Predicate { sig: fsig },
+                _ => unreachable!(),
+            };
+            decls.push(Decl::ValDecl(func_sym));
+            decls.push(Decl::Axiom(definition_axiom(&sig, body)));
         } else {
             let val = match util::item_type(ctx.tcx, def_id) {
                 ItemType::Logic => ValKind::Function { sig },
@@ -79,11 +87,6 @@ pub fn translate_logic_or_predicate(
 
     let name = translate_value_id(ctx.tcx, def_id).module_ident().unwrap().clone();
     (Module { name, decls }, proof_modl, has_axioms, names)
-}
-
-fn function_symbol(mut sig: Signature) -> ValKind {
-    sig.contract = Contract::new();
-    ValKind::Function { sig }
 }
 
 fn spec_axiom(sig: &Signature) -> Axiom {
@@ -106,12 +109,12 @@ fn spec_axiom(sig: &Signature) -> Axiom {
 }
 
 fn function_call(sig: &Signature) -> Exp {
-    let mut args: Vec<_> = sig.args.iter().cloned().map(|arg| Exp::Var(arg.0)).collect();
+    let mut args: Vec<_> = sig.args.iter().cloned().map(|arg| Exp::pure_var(arg.0)).collect();
     if args.is_empty() {
         args = vec![Exp::Tuple(vec![])];
     }
 
-    Exp::Call(box Exp::Var(sig.name.clone()), args)
+    Exp::Call(box Exp::pure_var(sig.name.clone()), args)
 }
 
 fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {

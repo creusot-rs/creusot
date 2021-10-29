@@ -6,6 +6,7 @@ use why3::{
     mlcfg::{
         // Constant,
         Exp::{self, *},
+        Purity,
         Statement::*,
     },
     QName,
@@ -59,11 +60,12 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     self.emit_statement(Assume(assumption));
                     self.translate_rplace(pl)
                 }
-                Constant(box c) => Const(crate::constant::from_mir_constant(
+                Constant(box c) => crate::constant::from_mir_constant(
                     &mut self.ctx,
                     &mut self.clone_names,
+                    self.def_id,
                     c,
-                )),
+                ),
             },
             Rvalue::Ref(_, ss, pl) => match ss {
                 Shared | Shallow | Unique => self.translate_rplace(pl),
@@ -79,7 +81,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             Rvalue::BinaryOp(BinOp::Eq, box (l, r)) if l.ty(self.body, self.tcx).is_bool() => {
                 self.clone_names.import_prelude_module(PreludeModule::Prelude);
                 Call(
-                    box Exp::QVar(QName::from_string("Prelude.eqb").unwrap()),
+                    box Exp::impure_qvar(QName::from_string("Prelude.eqb").unwrap()),
                     vec![self.translate_operand(l), self.translate_operand(r)],
                 )
             }

@@ -53,6 +53,12 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             Return => self.emit_terminator(MlT::Return),
             Unreachable => self.emit_terminator(MlT::Absurd),
             Call { func, args, destination, .. } => {
+                if destination.is_none() {
+                    // If we have no target block after the call, then we cannot move past it.
+                    self.emit_terminator(MlT::Absurd);
+                    return;
+                }
+
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
 
                 let mut func_args: Vec<_> =
@@ -69,17 +75,12 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     func_args.remove(0)
                 } else {
                     let fname = self.get_func_name(fun_def_id, subst, terminator.source_info.span);
-                    Exp::Call(box Exp::QVar(fname), func_args)
+                    Exp::Call(box Exp::impure_qvar(fname), func_args)
                 };
 
-                if destination.is_none() {
-                    // If we have no target block after the call, then we cannot move past it.
-                    self.emit_terminator(MlT::Absurd);
-                } else {
-                    let (loc, bb) = destination.unwrap();
-                    self.emit_assignment(&loc, call_exp);
-                    self.emit_terminator(MlT::Goto(BlockId(bb.into())));
-                }
+                let (loc, bb) = destination.unwrap();
+                self.emit_assignment(&loc, call_exp);
+                self.emit_terminator(MlT::Goto(BlockId(bb.into())));
             }
             Assert { cond, expected, msg: _, target, cleanup: _ } => {
                 let mut ass = self.translate_operand(cond);
@@ -107,11 +108,12 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 // Assign
                 let rhs = match value {
                     Operand::Move(pl) | Operand::Copy(pl) => self.translate_rplace(pl),
-                    Operand::Constant(box c) => Exp::Const(crate::constant::from_mir_constant(
+                    Operand::Constant(box c) => crate::constant::from_mir_constant(
                         &mut self.ctx,
                         &mut self.clone_names,
+                        self.def_id,
                         c,
-                    )),
+                    ),
                 };
 
                 self.emit_assignment(place, rhs);
