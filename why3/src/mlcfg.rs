@@ -167,7 +167,7 @@ pub enum Exp {
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
     IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
     Ascribe(Box<Exp>, Type),
-
+    Pure(Box<Exp>),
     // Predicates
     Absurd,
     Impl(Box<Exp>, Box<Exp>),
@@ -213,6 +213,7 @@ impl Exp {
             Exp::Impl(l, r) => l.is_pure() && r.is_pure(),
             Exp::Forall(_, e) => e.is_pure(),
             Exp::Exists(_, e) => e.is_pure(),
+            Exp::Pure(_) => true,
         }
     }
 
@@ -302,6 +303,7 @@ impl Exp {
             }
             Exp::Forall(_, e) => e.reassociate(),
             Exp::Exists(_, e) => e.reassociate(),
+            Exp::Pure(e) => e.reassociate(),
         }
     }
 }
@@ -409,6 +411,7 @@ impl Exp {
             Exp::Exists(_, _) => IfLet,
             Exp::Ascribe(_, _) => Cast,
             Exp::Absurd => Atom,
+            Exp::Pure(_) => Atom,
             _ => unimplemented!("{:?}", self),
         }
     }
@@ -443,6 +446,7 @@ impl Exp {
             }),
             Exp::BorrowMut(e) => e.fvs(),
             Exp::Verbatim(_) => IndexSet::new(),
+            Exp::Pure(e) => e.fvs(),
             _ => unimplemented!(),
         }
     }
@@ -475,6 +479,7 @@ impl Exp {
             }
             Exp::IfThenElse(s, i, e) => &(&s.qfvs() | &i.qfvs()) | &e.qfvs(),
             Exp::Absurd => IndexSet::new(),
+            Exp::Pure(e) => e.qfvs(),
             _ => unimplemented!("qvfs: {:?}", self),
         }
     }
@@ -568,6 +573,7 @@ impl Exp {
                 }
             }
             Exp::Ascribe(e, _) => e.subst(subst),
+            Exp::Pure(e) => e.subst(subst),
             Exp::QVar(_) => {}
             Exp::Const(_) => {}
             Exp::Verbatim(_) => {}

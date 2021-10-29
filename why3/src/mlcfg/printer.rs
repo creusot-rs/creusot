@@ -683,6 +683,7 @@ impl Pretty for Exp {
             Exp::Ascribe(e, t) => {
                 e.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env)).group()
             }
+            Exp::Pure(e) => alloc.text("pure ").append(e.pretty(alloc, env).braces()),
             Exp::Absurd => alloc.text("absurd"),
         }
     }
