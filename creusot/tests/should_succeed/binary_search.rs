@@ -80,7 +80,6 @@ impl<T> List<T> {
             None => def,
         }
     }
-
 }
 
 impl List<u32> {
