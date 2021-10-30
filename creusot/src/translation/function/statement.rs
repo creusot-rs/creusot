@@ -6,7 +6,6 @@ use why3::{
     mlcfg::{
         // Constant,
         Exp::{self, *},
-        Purity,
         Statement::*,
     },
     QName,
@@ -129,6 +128,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 RecField { record: box self.translate_rplace(pl), label: "length".into() }
             }
             Rvalue::Cast(_, _, _)
+            | Rvalue::ShallowInitBox(_, _)
             | Rvalue::NullaryOp(_, _)
             | Rvalue::Repeat(_, _)
             | Rvalue::ThreadLocalRef(_)

@@ -30,7 +30,7 @@ use why3::mlcfg;
 pub fn translate(mut ctx: TranslationCtx<'_, '_>) -> Result<()> {
     ctx.load_metadata();
 
-    for def_id in ctx.tcx.body_owners() {
+    for def_id in ctx.tcx.hir().body_owners() {
         let def_id = def_id.to_def_id();
         if !crate::util::should_translate(ctx.tcx, def_id) {
             info!("Skipping {:?}", def_id);

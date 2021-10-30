@@ -21,7 +21,7 @@ impl Lower<'_, '_, 'tcx> {
             // We typically implement `From` but call `into`, using the blanket impl of `Into`
             // for any `From` type. So when we see an instance of `into` we check that isn't just
             // a wrapper for a builtin `From` impl.
-            if self.ctx.tcx.is_diagnostic_item(sym::into_trait, trait_id) {
+            if self.ctx.tcx.is_diagnostic_item(sym::Into, trait_id) {
                 let from_fn = self.ctx.tcx.lang_items().from_fn().unwrap();
                 let from_subst = self.ctx.tcx.intern_substs(&[substs[1], substs[0]]);
                 let from_impl =
