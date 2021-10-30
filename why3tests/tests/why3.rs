@@ -42,7 +42,9 @@ fn main() {
         let mut has_prover = false;
         let do_proof = header_line.contains("WHY3PROVE");
         if do_proof {
-            command.args(&["-a", "split_vc"]);
+            if !header_line.contains("NO_SPLIT") {
+                command.args(&["-a", "split_vc"]);
+            }
             if header_line.contains("Z3") {
                 has_prover = true;
                 command.arg("-Pz3");
