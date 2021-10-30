@@ -16,7 +16,9 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
 
 - [Mutably indexing a linked list](creusot/tests/should_succeed/list_index_mut.rs)
 - [Zeroing out a list](creusot/tests/should_succeed/all_zero.rs)
-- [Binary search](creusot/tests/should_succeed/binary_search.rs)
+- [Binary search on Vectors](creusot/tests/should_succeed/vector/04_binary_search.rs)
+- [Sorting a vector](creusot/tests/should_succeed/vector/02_gnome.rs)
+- [IterMut](creusot/tests/should_succeed/iter_mut.rs)
 
 More examples are found in [creusot/tests/should_succeed](creusot/tests/should_succeed).
 
