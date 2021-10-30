@@ -1,7 +1,6 @@
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{
-    subst::SubstsRef, AssocItemContainer::*, ParamEnv, ToPolyTraitRef, TraitPredicate, TraitRef,
-    TyCtxt,
+    subst::SubstsRef, AssocItemContainer::*, ParamEnv, TraitPredicate, TraitRef, TyCtxt,
 };
 use rustc_trait_selection::traits::ImplSource;
 
@@ -127,7 +126,7 @@ pub fn traits_used_by(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = TraitP
 
 use crate::function::{all_generic_decls_for, own_generic_decls_for};
 use rustc_middle::ty::subst::InternalSubsts;
-use rustc_middle::ty::AssocItem;
+use rustc_middle::ty::{AssocItem, Binder};
 
 fn resolve_impl_source_opt(
     tcx: TyCtxt<'tcx>,
@@ -148,7 +147,7 @@ fn resolve_impl_source_opt(
         }
     };
 
-    let trait_ref = trait_ref.to_poly_trait_ref();
+    let trait_ref = Binder::dummy(trait_ref);
     let source = rustc_extensions::codegen::codegen_fulfill_obligation(tcx, (param_env, trait_ref));
 
     match source {

@@ -2,7 +2,6 @@
 #![feature(box_syntax, box_patterns, control_flow_enum, drain_filter)]
 #![feature(in_band_lifetimes)]
 #![register_tool(creusot)]
-#![feature(const_panic)]
 
 extern crate rustc_ast;
 extern crate rustc_data_structures;
