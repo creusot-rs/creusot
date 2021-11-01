@@ -54,8 +54,8 @@ fn lemma_fib_bound(i: Int) {
     } else if i == 1 {
         ()
     } else {
-        lemma_fib_bound (i - 2);
-        lemma_fib_bound (i - 1)
+        lemma_fib_bound(i - 2);
+        lemma_fib_bound(i - 1)
     }
 }
 
