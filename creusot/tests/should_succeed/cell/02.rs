@@ -35,14 +35,12 @@ use creusot_contracts::std::*;
 #[logic]
 #[variant(i)]
 fn fib(i: Int) -> Int {
-    pearlite! {
-        if i <= 0 {
-            0
-        } else if i == 1 {
-            1
-        } else {
-            fib(i - 1) + fib(i - 2)
-        }
+    if i <= 0 {
+        0
+    } else if i == 1 {
+        1
+    } else {
+        fib(i - 1) + fib(i - 2)
     }
 }
 
@@ -51,17 +49,20 @@ fn fib(i: Int) -> Int {
 #[ensures(fib(i) <= 2.pow(i))]
 #[variant(i)]
 fn lemma_fib_bound(i: Int) {
-    pearlite! {
-        if i == 0 {
-            ()
-        } else if i === 1 {
-            ()
-        } else {
-            lemma_fib_bound (i - 2);
-            lemma_fib_bound (i - 1)
-        }
+    if i == 0 {
+        ()
+    } else if i == 1 {
+        ()
+    } else {
+        lemma_fib_bound(i - 2);
+        lemma_fib_bound(i - 1)
     }
 }
+
+#[trusted]
+#[logic]
+#[ensures(2.pow(63) < @0xffff_ffff_ffff_ffffusize)]
+fn lemma_max_int() {}
 
 struct Fib {
     ix: usize,
@@ -86,11 +87,6 @@ fn fib_cell(v: FibCache) -> bool {
         forall<i : Int> @(@v)[i].ghost_inv.ix === i
     }
 }
-
-#[trusted]
-#[logic]
-#[ensures(2.pow(63) < @0xffff_ffff_ffff_ffffusize)]
-fn lemma_max_int() {}
 
 #[requires(fib_cell(*mem))]
 #[requires(@i < (@mem).len())]
