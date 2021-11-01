@@ -89,9 +89,7 @@ fn inc_vec(v: &mut Vec<u32>) {
         0 <= i && i < (@^@old_v).len() - (@it).len() ==>
         @(@^@old_v)[i] === @(@@old_v)[i] + 5
     )]
-    #[invariant(to_come,
-        forall<i : Int>
-        0 <= i && i < (@it).len() ==>
+    #[invariant(to_come, forall<i : Int> 0 <= i && i < (@it).len() ==>
         *(@it)[i] === (@@old_v)[i + (@^@old_v).len() - (@it).len()]
         && ^(@it)[i] === (@^@old_v)[i + (@^@old_v).len() - (@it).len()]
     )]
