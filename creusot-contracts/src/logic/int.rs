@@ -1,5 +1,5 @@
 use super::model::*;
-use crate::std::well_founded::*;
+use crate::logic::well_founded::*;
 use creusot_contracts_proc::*;
 use std::ops::*;
 

@@ -7,16 +7,13 @@ pub use creusot_contracts_proc::*;
 pub mod stubs;
 
 #[cfg(feature = "contracts")]
-pub mod builtins;
+pub mod logic;
 
 #[cfg(feature = "contracts")]
-pub use builtins::*;
+pub use logic::*;
 
 #[cfg(feature = "contracts")]
 pub mod std;
-
-#[cfg(feature = "contracts")]
-pub use crate::std::WellFounded;
 
 // Re-export the rand crate
 pub use rand;
