@@ -1,7 +1,7 @@
 use crate as creusot_contracts;
+use crate::{std::clone::Clone, Int, Model, Seq};
 use creusot_contracts_proc::*;
 
-use crate::{Int, Model, Seq};
 pub struct Vec<T>(std::vec::Vec<T>);
 
 impl<T> Model for Vec<T> {
@@ -18,6 +18,12 @@ impl<T> Vec<T> {
     #[ensures((@result).len() === 0)]
     pub fn new() -> Self {
         Vec(std::vec::Vec::new())
+    }
+
+    #[trusted]
+    #[ensures((@result).len() === 0)]
+    pub fn with_capacity(capacity: usize) -> Vec<T> {
+        Vec(std::vec::Vec::with_capacity(capacity))
     }
 
     #[trusted]
@@ -82,4 +88,26 @@ impl<T> std::ops::Index<usize> for Vec<T> {
     fn index(&self, ix: usize) -> &T {
         self.0.index(ix)
     }
+}
+
+impl<T: Clone> Clone for Vec<T> {
+    #[trusted]
+    fn clone(&self) -> Self {
+        panic!()
+        // Vec(self.0.iter().map(|r : &T| r.clone()).collect())
+    }
+}
+
+#[trusted]
+#[ensures((@result).len() === @n)]
+#[ensures(forall<i : Int> 0 <= i && i < @n ==> (@result)[i] === elem)]
+pub fn from_elem<T: Clone>(elem: T, n: usize) -> Vec<T> {
+    panic!()
+    // if n = 0 { return Vec::new() }
+    // else {
+    //     let mut v = std::vec::Vec::with_capacity(n);
+    //     v.extend(std::iter::repeat_with(|| elem.clone()).take(n-1));
+    //     v.push(elem);
+    //     return Vec(v)
+    // }
 }
