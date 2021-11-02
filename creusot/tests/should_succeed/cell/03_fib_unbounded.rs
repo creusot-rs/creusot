@@ -71,7 +71,7 @@ fn fib_cell(v: FibCache) -> bool {
 #[requires(fib_cell(*mem))]
 #[requires(@i < (@mem).len())]
 #[ensures(@result === fib(@i))]
-#[requires(@i <= 63)]
+#[requires(0 <= @i)]
 fn fib_memo(mem: &FibCache, i: usize) -> usize {
     match mem[i].get() {
         Some(v) => v,
