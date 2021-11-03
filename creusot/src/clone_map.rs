@@ -274,13 +274,11 @@ impl<'tcx> CloneMap<'tcx> {
                 ctx.dependencies(key.0).map(|d| d.len()).unwrap_or(5)
             );
 
-            let key_public = clone_info.public;
             let additional_deps = clone_info.additional_deps.clone();
             for (_, dep) in &additional_deps {
                 // Inherit the visibility of the parent, becoming public if at least one
                 // dependency is public.
-                let dep_info = self.insert(dep.0, dep.1);
-                dep_info.public |= key_public;
+                self.insert(dep.0, dep.1);
 
                 // Skip reflexive edges
                 if *dep == key {
@@ -312,8 +310,7 @@ impl<'tcx> CloneMap<'tcx> {
 
                 // Inherit the visibility of the parent, becoming public if at least one
                 // dependency is public.
-                let dep_info = self.insert(dep.0, dep.1);
-                dep_info.public |= info.public;
+                self.insert(dep.0, dep.1);
 
                 // Skip reflexive edges
                 if dep == key {
