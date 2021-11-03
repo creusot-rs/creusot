@@ -29,28 +29,15 @@ pub fn translate_logic_or_predicate(
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx));
 
-    let proof_modl = if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
-        let val = match util::item_type(ctx.tcx, def_id) {
-            ItemType::Logic => ValKind::Function { sig },
-            ItemType::Predicate => ValKind::Predicate { sig },
-            _ => unreachable!(),
-        };
-
+    let proof_modl = proof_module(ctx, def_id);
+    if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
+        let val = util::item_type(ctx.tcx, def_id).val(sig);
         decls.push(Decl::ValDecl(val));
-        None
     } else {
         let term = ctx.term(def_id).unwrap().clone();
-        decls.extend(names.to_clones(ctx));
-
-        let proof_modl = if !sig_contract.contract.is_empty() && def_id.is_local() {
-            let body = specification::lower_impure(ctx, &mut names, def_id, term.clone());
-            Some(implementation_module(ctx, def_id, &names, sig_contract.clone(), body))
-        } else {
-            None
-        };
-
         let body = specification::lower_pure(ctx, &mut names, def_id, term);
         decls.extend(names.to_clones(ctx));
+
         if sig_contract.contract.variant.is_empty() {
             let decl = match util::item_type(ctx.tcx, def_id) {
                 ItemType::Logic => Decl::LogicDecl(Logic { sig, body }),
@@ -59,34 +46,42 @@ pub fn translate_logic_or_predicate(
             };
             decls.push(decl);
         } else if body.is_pure() {
-            let mut fsig = sig.clone();
-            fsig.contract = Contract::new();
-            let func_sym = match util::item_type(ctx.tcx, def_id) {
-                ItemType::Logic => ValKind::Function { sig: fsig },
-                ItemType::Predicate => ValKind::Predicate { sig: fsig },
-                _ => unreachable!(),
-            };
-            decls.push(Decl::ValDecl(func_sym));
-            decls.push(Decl::Axiom(definition_axiom(&sig, body)));
+            let def_sig = sig.clone();
+            let val = util::item_type(ctx.tcx, def_id).val(sig);
+            decls.push(Decl::ValDecl(val));
+            decls.push(Decl::Axiom(definition_axiom(&def_sig, body)));
         } else {
-            let val = match util::item_type(ctx.tcx, def_id) {
-                ItemType::Logic => ValKind::Function { sig },
-                ItemType::Predicate => ValKind::Predicate { sig },
-                _ => unreachable!(),
-            };
-
+            let val = util::item_type(ctx.tcx, def_id).val(sig);
             decls.push(Decl::ValDecl(val));
         }
-        proof_modl
-    };
+    }
 
     let has_axioms = !sig_contract.contract.is_empty();
-    if !sig_contract.contract.is_empty() {
+    if has_axioms {
         decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
     }
 
     let name = translate_value_id(ctx.tcx, def_id).module_ident().unwrap().clone();
     (Module { name, decls }, proof_modl, has_axioms, names)
+}
+
+fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
+    if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
+        return None;
+    }
+
+    let mut names = CloneMap::new(ctx.tcx, def_id, false);
+    names.clone_self(def_id);
+
+    let sig = crate::util::signature_of(ctx, &mut names, def_id);
+
+    if sig.contract.is_empty() {
+        return None;
+    }
+    let term = ctx.term(def_id).unwrap().clone();
+    let body = specification::lower_impure(ctx, &mut names, def_id, term);
+
+    Some(implementation_module(ctx, def_id, &names, sig, body))
 }
 
 fn spec_axiom(sig: &Signature) -> Axiom {

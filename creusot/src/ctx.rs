@@ -207,13 +207,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
         let (interface, deps) = interface_for(self, def_id);
 
-        let translated = if !def_id.is_local() {
-            debug!("translating {:?} as extern", def_id);
-
-            let ext_modl = external::extern_module(self, def_id);
-
-            TranslatedItem::Extern { interface, body: ext_modl.0, dependencies: ext_modl.1 }
-        } else if util::is_logic(self.tcx, def_id) {
+        let translated = if util::is_logic(self.tcx, def_id) {
             debug!("translating {:?} as logic", def_id);
             let (modl, proof_modl, has_axioms, deps) =
                 crate::translation::translate_logic_or_predicate(self, def_id, span);
@@ -235,6 +229,12 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                 has_axioms,
                 dependencies: deps.summary(),
             }
+        } else if !def_id.is_local() {
+            debug!("translating {:?} as extern", def_id);
+
+            let ext_modl = external::extern_module(self, def_id);
+
+            TranslatedItem::Extern { interface, body: ext_modl.0, dependencies: ext_modl.1 }
         } else {
             if util::is_spec(self.tcx, def_id) {
                 return;
@@ -269,13 +269,17 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn term(&mut self, def_id: DefId) -> Option<&Term<'tcx>> {
-        if def_id.is_local() {
+        if !def_id.is_local() {
+            return self.externs.term(def_id);
+        }
+
+        if util::has_body(self, def_id) {
             let t = self.terms.entry(def_id).or_insert_with(|| {
                 specification::typing::typecheck(self.tcx, def_id.expect_local())
             });
             Some(t)
         } else {
-            self.externs.term(def_id)
+            None
         }
     }
 

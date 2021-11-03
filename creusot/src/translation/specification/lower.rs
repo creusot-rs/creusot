@@ -179,6 +179,7 @@ impl Lower<'_, '_, 'tcx> {
                         box self.lower_term(false_br),
                     )
                 } else {
+                    let _ = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, scrutinee.ty);
                     let arms = arms
                         .into_iter()
                         .map(|(pat, body)| (self.lower_pat(pat), self.lower_term(body)))
