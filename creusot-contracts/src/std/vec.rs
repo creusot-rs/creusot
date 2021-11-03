@@ -1,4 +1,5 @@
 use crate as creusot_contracts;
+use crate::logic::*;
 use crate::{std::clone::Clone, Int, Model, Seq};
 use creusot_contracts_proc::*;
 

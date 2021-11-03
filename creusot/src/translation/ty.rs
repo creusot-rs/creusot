@@ -67,7 +67,9 @@ fn translate_ty_inner<'tcx>(
                 return MlT::Integer;
             }
 
-            let cons = if let Some(builtin) = get_builtin(ctx.tcx, def.did) {
+            let cons = if let Some(builtin) =
+                get_builtin(ctx.tcx, def.did).and_then(|a| QName::from_string(&a.as_str()))
+            {
                 names.import_builtin_module(builtin.clone().module_qname());
                 MlT::TConstructor(builtin.without_search_path())
             } else {
