@@ -363,7 +363,11 @@ fn intty_to_ty(
             names.import_prelude_module(PreludeModule::Int64);
             isize_ty()
         }
-        I8 => unimplemented!(),
+        I8 => {
+            names.import_prelude_module(PreludeModule::Prelude);
+            names.import_prelude_module(PreludeModule::Int8);
+            i8_ty()
+        }
         I16 => unimplemented!(),
         I32 => {
             names.import_prelude_module(PreludeModule::Int32);
@@ -436,6 +440,10 @@ pub fn u64_ty() -> MlT {
 
 pub fn usize_ty() -> MlT {
     MlT::TConstructor(QName::from_string("usize").unwrap())
+}
+
+pub fn i8_ty() -> MlT {
+    MlT::TConstructor(QName::from_string("int8").unwrap())
 }
 
 pub fn i32_ty() -> MlT {

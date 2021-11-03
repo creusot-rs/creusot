@@ -25,6 +25,7 @@ use crate::util::{self, ident_of, method_name};
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PreludeModule {
     Int,
+    Int8,
     Int32,
     Int64,
     UInt32,
@@ -41,6 +42,7 @@ impl PreludeModule {
     fn qname(&self) -> QName {
         match self {
             PreludeModule::Int => QName::from_string("mach.int.Int").unwrap(),
+            PreludeModule::Int8 => QName::from_string("prelude.Int8").unwrap(),
             PreludeModule::Int32 => QName::from_string("mach.int.Int32").unwrap(),
             PreludeModule::Int64 => QName::from_string("mach.int.Int64").unwrap(),
             PreludeModule::UInt32 => QName::from_string("mach.int.UInt32").unwrap(),
