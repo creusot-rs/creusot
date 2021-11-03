@@ -7,7 +7,7 @@ use rustc_middle::ty::{DefIdTree, TyCtxt};
 use rustc_span::Symbol;
 use why3::QName;
 use why3::{
-    declaration::Signature,
+    declaration::{Signature, ValKind},
     mlcfg::{Constant, Exp},
     Ident,
 };
@@ -123,6 +123,15 @@ impl ItemType {
     pub fn logical(&self) -> bool {
         use ItemType::*;
         matches!(self, Logic | Predicate)
+    }
+
+    pub fn val(&self, sig: Signature) -> ValKind {
+        match self {
+            ItemType::Logic => ValKind::Function { sig },
+            ItemType::Predicate => ValKind::Predicate { sig },
+            ItemType::Program => ValKind::Val { sig },
+            _ => unreachable!(),
+        }
     }
 }
 
