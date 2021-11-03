@@ -12,7 +12,7 @@ pub fn cur<T>(_: &mut T) -> T {
 
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "equal"]
-pub fn equal<T>(_: T, _: T) -> bool {
+pub fn equal<T: ?Sized>(_: T, _: T) -> bool {
     panic!();
 }
 
