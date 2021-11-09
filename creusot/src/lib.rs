@@ -4,19 +4,20 @@
 #![register_tool(creusot)]
 
 extern crate rustc_ast;
+extern crate rustc_borrowck;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
 extern crate rustc_errors;
 extern crate rustc_hir;
 extern crate rustc_index;
+extern crate rustc_infer;
 extern crate rustc_interface;
 extern crate rustc_macros;
 extern crate rustc_metadata;
 extern crate rustc_middle;
+extern crate rustc_mir_build;
 extern crate rustc_mir_dataflow;
 extern crate rustc_mir_transform;
-// extern   crate rustc_mir;
-extern crate rustc_mir_build;
 extern crate rustc_resolve;
 extern crate rustc_serialize;
 extern crate rustc_session;
