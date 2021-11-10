@@ -1,3 +1,4 @@
+// WHY3PROVE Z3 NO_SPLIT
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
@@ -7,6 +8,11 @@ enum List {
 }
 use List::*;
 impl WellFounded for List {}
+
+#[trusted]
+fn random<T>() -> T {
+    rand::random()
+}
 
 impl List {
     #[logic]
@@ -42,7 +48,7 @@ impl List {
         match self {
             Cons(ma, ml) => {
                 proof_assert! {{ ml.lemma_sum_nonneg(); true }};
-                if rand::random() {
+                if random() {
                     ma
                 } else {
                     ml.take_some()
