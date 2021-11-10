@@ -44,9 +44,8 @@ fn knuth_shuffle<T>(v: &mut Vec<T>) {
     while n < v.len() {
         // We assign the length to a variable to work around a limitation with two-phase borrows
         // where we forget the value stored in the reference.
-        let l = v.len();
-        let i = rand_in_range(0, l - n);
-        v.swap(i, l - n - 1);
+        let i = rand_in_range(0, v.len() - n);
+        v.swap(i, v.len() - n - 1);
         n += 1;
     }
 }

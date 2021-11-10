@@ -1,5 +1,6 @@
+use rustc_borrowck::borrow_set::TwoPhaseActivation;
 use rustc_middle::mir::{
-    BinOp, BorrowKind::*, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind,
+    BinOp, BorrowKind::*, Location, Operand::*, Place, Rvalue, SourceInfo, Statement, StatementKind,
 };
 
 use why3::{
@@ -19,10 +20,12 @@ use crate::{
 };
 
 impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
-    pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>) {
+    pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>, loc: Location) {
         use StatementKind::*;
         match statement.kind {
-            Assign(box (ref pl, ref rv)) => self.translate_assign(statement.source_info, pl, rv),
+            Assign(box (ref pl, ref rv)) => {
+                self.translate_assign(statement.source_info, pl, rv, loc)
+            }
             SetDiscriminant { .. } => {
                 // TODO: implement support for set discriminant
                 self.ctx
@@ -48,6 +51,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         si: SourceInfo,
         place: &'_ Place<'tcx>,
         rvalue: &'_ Rvalue<'tcx>,
+        loc: Location,
     ) {
         let rval = match rvalue {
             Rvalue::Use(rval) => match rval {
@@ -67,7 +71,43 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 ),
             },
             Rvalue::Ref(_, ss, pl) => match ss {
-                Shared | Shallow | Unique => self.translate_rplace(pl),
+                Shared | Shallow | Unique => {
+                    let dom = self.body.dominators();
+                    let two_phase = self
+                        .borrows
+                        .local_map
+                        .get(&pl.local)
+                        .iter()
+                        .flat_map(|is| is.iter())
+                        .filter(|i| {
+                            let res_loc = self.borrows[**i].reserve_location;
+                            if res_loc.block == loc.block {
+                                res_loc.statement_index <= loc.statement_index
+                            } else {
+                                dom.is_dominated_by(loc.block, res_loc.block)
+                            }
+                        })
+                        .filter(|i| {
+                            if let TwoPhaseActivation::ActivatedAt(act_loc) =
+                                self.borrows[**i].activation_location
+                            {
+                                if act_loc.block == loc.block {
+                                    loc.statement_index < act_loc.statement_index
+                                } else {
+                                    dom.is_dominated_by(act_loc.block, loc.block)
+                                }
+                            } else {
+                                false
+                            }
+                        })
+                        .nth(0);
+                    if let Some(two_phase) = two_phase {
+                        let place = self.borrows[*two_phase].assigned_place.clone();
+                        Exp::Current(box self.translate_rplace(&place))
+                    } else {
+                        self.translate_rplace(pl)
+                    }
+                }
                 Mut { .. } => {
                     let borrow = BorrowMut(box self.translate_rplace(pl));
                     self.emit_assignment(place, borrow);
