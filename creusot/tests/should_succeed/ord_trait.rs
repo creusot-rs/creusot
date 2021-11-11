@@ -5,15 +5,11 @@ use creusot_contracts::*;
 
 #[ensures(result === true)]
 fn x<T: Ord>(x: &T) -> bool {
-    proof_assert! { {OrdLogic::refl(*x); true} };
     x.le(x)
 }
 
 #[ensures(result === *y <= *x)]
 fn gt_or_le<T: Ord>(x: &T, y: &T) -> bool {
-    proof_assert! { {OrdLogic::antisym1(*x, *y); true} };
-    proof_assert! { {OrdLogic::antisym2(*x, *y); true} };
-    proof_assert! { {EqLogic::symmetry(*x, *x); true} };
     x.ge(y)
 }
 
