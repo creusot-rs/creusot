@@ -19,7 +19,7 @@ use rustc_span::Symbol;
 
 use crate::ctx::{self, *};
 use crate::translation::{interface, traits};
-use crate::util::{self, ident_of, method_name};
+use crate::util::{self, ident_of, ident_of_ty, item_name};
 
 // Prelude modules
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -134,7 +134,7 @@ impl CloneInfo<'tcx> {
 
     // TODO: When traits stop holding all functions we can remove the last two arguments
     pub fn qname(&self, tcx: TyCtxt, def_id: DefId) -> QName {
-        self.qname_raw(method_name(tcx, def_id))
+        self.qname_raw(item_name(tcx, def_id))
     }
 
     pub fn qname_sym(&self, sym: rustc_span::symbol::Symbol) -> QName {
@@ -386,8 +386,7 @@ impl<'tcx> CloneMap<'tcx> {
             // Add any 'additional dependencies'
             for (sym, dep) in &self.names[&node].additional_deps {
                 let target_sym = ident_of(*sym);
-                let mut syms =
-                    refinable_symbols(ctx.tcx, def_id).filter(|sk| sk.ident() == &target_sym);
+                let mut syms = refinable_symbols(ctx.tcx, def_id).filter(|sk| sk.sym() == *sym);
                 let sym = syms.next().unwrap();
                 assert!(syms.next().is_none());
 
@@ -471,34 +470,42 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
 }
 
 enum SymbolKind {
-    Val(Ident),
-    Type(Ident),
-    Function(Ident),
-    Predicate(Ident),
+    Val(Symbol),
+    Type(Symbol),
+    Function(Symbol),
+    Predicate(Symbol),
 }
 
 impl SymbolKind {
-    fn ident(&self) -> &Ident {
+    fn sym(&self) -> Symbol {
         match self {
-            SymbolKind::Val(i) => i,
-            SymbolKind::Type(i) => i,
-            SymbolKind::Function(i) => i,
-            SymbolKind::Predicate(i) => i,
+            SymbolKind::Val(i) => *i,
+            SymbolKind::Type(i) => *i,
+            SymbolKind::Function(i) => *i,
+            SymbolKind::Predicate(i) => *i,
+        }
+    }
+
+    fn ident(&self) -> Ident {
+        match self {
+            SymbolKind::Type(_) => ident_of_ty(self.sym()),
+            _ => ident_of(self.sym()),
         }
     }
 
     fn to_subst(self, src: &CloneInfo, tgt: &CloneInfo) -> CloneSubst {
+        let id = self.ident();
         match self {
-            SymbolKind::Val(n) => CloneSubst::Val(src.qname_raw(n.clone()), tgt.qname_raw(n)),
-            SymbolKind::Type(t) => CloneSubst::Type(
-                src.qname_raw(t.clone()),
-                why3::mlcfg::Type::TConstructor(tgt.qname_raw(t)),
+            SymbolKind::Val(_) => CloneSubst::Val(src.qname_raw(id.clone()), tgt.qname_raw(id)),
+            SymbolKind::Type(_) => CloneSubst::Type(
+                src.qname_raw(id.clone()),
+                why3::mlcfg::Type::TConstructor(tgt.qname_raw(id)),
             ),
-            SymbolKind::Function(f) => {
-                CloneSubst::Function(src.qname_raw(f.clone()), tgt.qname_raw(f))
+            SymbolKind::Function(_) => {
+                CloneSubst::Function(src.qname_raw(id.clone()), tgt.qname_raw(id))
             }
-            SymbolKind::Predicate(p) => {
-                CloneSubst::Predicate(src.qname_raw(p.clone()), tgt.qname_raw(p))
+            SymbolKind::Predicate(_) => {
+                CloneSubst::Predicate(src.qname_raw(id.clone()), tgt.qname_raw(id))
             }
         }
     }
@@ -515,13 +522,11 @@ fn refinable_symbols(
     use std::iter::{self, *};
     use util::ItemType::*;
     match util::item_type(tcx, def_id) {
-        Logic => Box::new(iter::once(SymbolKind::Function(method_name(tcx, def_id)))),
-        Predicate => Box::new(iter::once(SymbolKind::Predicate(method_name(tcx, def_id)))),
-        Interface | Program => Box::new(iter::once(SymbolKind::Val(method_name(tcx, def_id)))),
+        Logic => Box::new(iter::once(SymbolKind::Function(tcx.item_name(def_id)))),
+        Predicate => Box::new(iter::once(SymbolKind::Predicate(tcx.item_name(def_id)))),
+        Interface | Program => Box::new(iter::once(SymbolKind::Val(tcx.item_name(def_id)))),
         AssocTy => match tcx.associated_item(def_id).container {
-            ty::TraitContainer(_) => {
-                box once(SymbolKind::Type(crate::translation::ty::ty_name(tcx, def_id).into()))
-            }
+            ty::TraitContainer(_) => box once(SymbolKind::Type(tcx.item_name(def_id))),
             ty::ImplContainer(_) => box empty(),
         },
         Trait | Impl => unreachable!(),

@@ -89,12 +89,31 @@ pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<QName> {
         .and_then(|a| QName::from_string(&a.as_str()))
 }
 
-pub(crate) fn method_name(tcx: TyCtxt, def_id: DefId) -> Ident {
-    ident_of(tcx.item_name(def_id))
+pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId) -> Ident {
+    match item_type(tcx, def_id) {
+        ItemType::Type | ItemType::AssocTy => ident_of_ty(tcx.item_name(def_id)),
+        _ => ident_of(tcx.item_name(def_id)),
+    }
 }
 
-pub fn ident_of(id: Symbol) -> Ident {
-    Ident::build(&id.as_str().to_lowercase())
+pub fn ident_of(sym: Symbol) -> Ident {
+    let mut id = sym.to_string();
+
+    id[..1].make_ascii_lowercase();
+
+    if sym.as_str() == id {
+        Ident::build(&id)
+    } else {
+        id += &"'";
+        Ident::build(&id)
+    }
+}
+
+pub fn ident_of_ty(sym: Symbol) -> Ident {
+    let mut id = sym.to_string();
+
+    id[..1].make_ascii_lowercase();
+    Ident::build(&id)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -175,21 +194,22 @@ pub fn signature_of<'tcx>(
     let name = translate_value_id(ctx.tcx, def_id);
 
     let span = ctx.tcx.def_span(def_id);
-    let args = names.with_public_clones(|names| {
-        let arg_names = ctx.tcx.fn_arg_names(def_id);
-        arg_names
-            .iter()
-            .enumerate()
-            .map(|(ix, id)| {
-                if id.name.is_empty() {
-                    format!("_{}", ix + 1).into()
-                } else {
-                    id.name.to_string().into()
-                }
-            })
-            .zip(sig.inputs().iter().map(|ty| ty::translate_ty(ctx, names, span, ty)))
-            .collect()
-    });
+    let args =
+        names.with_public_clones(|names| {
+            let arg_names = ctx.tcx.fn_arg_names(def_id);
+            arg_names
+                .iter()
+                .enumerate()
+                .map(|(ix, id)| {
+                    if id.name.is_empty() {
+                        format!("_{}", ix + 1).into()
+                    } else {
+                        ident_of(id.name)
+                    }
+                })
+                .zip(sig.inputs().iter().map(|ty| ty::translate_ty(ctx, names, span, ty)))
+                .collect()
+        });
 
     Signature {
         // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure

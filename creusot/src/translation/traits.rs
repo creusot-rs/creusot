@@ -11,7 +11,7 @@ use crate::{rustc_extensions, util};
 
 use crate::ctx::*;
 use crate::translation::ty;
-use crate::util::{ident_of, is_spec};
+use crate::util::{ident_of, ident_of_ty, is_spec};
 
 impl<'tcx> TranslationCtx<'_, 'tcx> {
     // Translate a trait declaration
@@ -94,7 +94,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         };
 
         // TODO: Clean up translation of names to handle this automatically
-        let name = ident_of(self.tcx.item_name(def_id));
+        let name = ident_of_ty(self.tcx.item_name(def_id));
         let ty_decl =
             Decl::TyDecl(TyDecl { ty_name: name.clone(), ty_params: Vec::new(), kind: ty_decl });
 
