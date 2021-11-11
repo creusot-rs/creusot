@@ -187,15 +187,6 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     pub fn insert(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
-        self.insert_raw(def_id, subst)
-    }
-
-    // Bad.
-    pub(crate) fn insert_raw(
-        &mut self,
-        def_id: DefId,
-        subst: SubstsRef<'tcx>,
-    ) -> &mut CloneInfo<'tcx> {
         let subst = self.tcx.erase_regions(subst);
 
         self.names.entry((def_id, subst)).or_insert_with(|| {
@@ -257,71 +248,92 @@ impl<'tcx> CloneMap<'tcx> {
         // to build the correct substitution.
         //
         let mut i = self.last_cloned;
-        let empty = CloneSummary::new();
 
         while i < self.names.len() {
-            let (&key, clone_info) = self.names.get_index(i).unwrap();
-            i += 1;
-            trace!("{:?} is public={:?}", key, clone_info.public);
+            let key = *self.names.get_index(i).unwrap().0;
 
-            if clone_info.kind == Kind::Hidden {
+            i += 1;
+            trace!("{:?} is public={:?}", key, self.names[&key].public);
+
+            if self.names[&key].kind == Kind::Hidden {
                 continue;
             }
 
             self.clone_graph.add_node(key);
 
-            debug!(
-                "{:?} has {:?} dependencies",
-                key,
-                ctx.dependencies(key.0).map(|d| d.len()).unwrap_or(5)
-            );
+            debug!("{:?} has {:?} dependencies", key, ctx.dependencies(key.0).map(|d| d.len()));
+            self.clone_laws(ctx, key);
+            self.clone_additional_deps(key);
+            self.clone_dependencies(ctx, key);
+        }
+    }
 
-            let additional_deps = clone_info.additional_deps.clone();
-            for (_, dep) in &additional_deps {
-                // Inherit the visibility of the parent, becoming public if at least one
-                // dependency is public.
-                self.insert(dep.0, dep.1);
+    fn clone_dependencies(
+        &mut self,
+        ctx: &mut TranslationCtx<'_, 'tcx>,
+        key: (DefId, SubstsRef<'tcx>),
+    ) {
+        for (dep, info) in ctx.dependencies(key.0).iter().flat_map(|i| i.iter()) {
+            // TODO: This only works because we use a completely separate set of clones for
+            // function interfaces and bodies. It should be refactored to be less error prone.
+            if !self.use_full_clones && !info.public {
+                continue;
+            }
+            trace!("adding dependency {:?} {:?}", dep, info.public);
 
-                // Skip reflexive edges
-                if *dep == key {
-                    continue;
-                }
+            let orig = dep;
+            let dep = (dep.0, dep.1.subst(self.tcx, key.1));
 
-                trace!("additional edge {:?} -> {:?}", dep, key);
-                self.clone_graph.add_edge(*dep, key, None);
+            let param_env = ctx.tcx.param_env(self.self_id);
+            let dep = traits::resolve_opt(ctx.tcx, param_env, dep.0, dep.1).unwrap_or(dep);
+
+            self.insert(dep.0, dep.1);
+
+            // Skip reflexive edges
+            if dep == key {
+                continue;
             }
 
-            for (dep, info) in ctx.dependencies(key.0).unwrap_or_else(|| {
-                trace!("no deps for {:?}", key);
-                &empty
-            }) {
-                if !self.use_full_clones && !info.public {
-                    continue;
-                }
-                trace!("adding dependency {:?}", dep);
+            trace!("{:?} -> {:?}", dep, key);
+            self.clone_graph.add_edge(dep, key, Some(*orig));
+        }
+    }
 
-                let orig = dep;
-                let dep = (dep.0, dep.1.subst(self.tcx, key.1));
-                trace!("substituted: {:?}", dep);
+    fn clone_additional_deps(&mut self, key: (DefId, SubstsRef<'tcx>)) {
+        let additional_deps = self.names[&key].additional_deps.clone();
+        for (_, dep) in &additional_deps {
+            self.insert(dep.0, dep.1);
 
-                let param_env = ctx.tcx.param_env(self.self_id);
-                let dep = match traits::resolve_opt(ctx.tcx, param_env, dep.0, dep.1) {
-                    Some(dep) => (dep),
-                    None => (dep),
-                };
+            trace!("{:?} -> {:?}", dep, key);
+            self.clone_graph.add_edge(*dep, key, None);
+        }
+    }
 
-                // Inherit the visibility of the parent, becoming public if at least one
-                // dependency is public.
-                self.insert(dep.0, dep.1);
+    fn clone_laws(&mut self, ctx: &mut TranslationCtx<'_, 'tcx>, key: (DefId, SubstsRef<'tcx>)) {
+        let Some(item) = ctx.tcx.opt_associated_item(key.0) else { return };
 
-                // Skip reflexive edges
-                if dep == key {
-                    continue;
-                }
-
-                trace!("edge {:?} -> {:?}", dep, key);
-                self.clone_graph.add_edge(dep, key, Some(*orig));
+        if let Some(self_trait) = ctx.tcx.opt_associated_item(self.self_id) {
+            if self_trait.container.id() == item.container.id() {
+                return;
             }
+        }
+
+        if util::is_trusted(ctx.tcx, self.self_id) || !util::has_body(ctx, self.self_id) {
+            return;
+        }
+
+        if !self.use_full_clones {
+            return;
+        }
+
+        let laws = ctx.item(item.container.id()).and_then(|i| i.laws()).unwrap_or(&[]);
+
+        for law in laws {
+            trace!("adding law {:?} in {:?}", *law, self.self_id);
+
+            // No way the substitution is correct...
+            let law = self.insert(*law, key.1);
+            law.public = false;
         }
     }
 

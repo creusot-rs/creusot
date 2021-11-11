@@ -1,0 +1,91 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module C18TraitLaws_Symmetric_Op_Interface
+  type self   
+  function op (self : self) (_2 : self) : self
+end
+module C18TraitLaws_Symmetric_Op
+  type self   
+  function op (self : self) (_2 : self) : self
+end
+module C18TraitLaws_Symmetric_Reflexive_Interface
+  type self   
+  clone C18TraitLaws_Symmetric_Op_Interface as Op0 with type self = self
+  function reflexive (a : self) (b : self) : ()
+end
+module C18TraitLaws_Symmetric_Reflexive
+  type self   
+  clone C18TraitLaws_Symmetric_Op_Interface as Op0 with type self = self
+  function reflexive (a : self) (b : self) : ()
+  axiom reflexive_spec : forall a : self, b : self . Op0.op a b = Op0.op b a
+end
+module C18TraitLaws_UsesOp_Interface
+  type t   
+  function uses_op (x : t) (y : t) : bool
+end
+module C18TraitLaws_UsesOp
+  type t   
+  clone C18TraitLaws_Symmetric_Op_Interface as Op0 with type self = t
+  function uses_op (x : t) (y : t) : bool = 
+    Op0.op x y = Op0.op y x
+  axiom uses_op_spec : forall x : t, y : t . uses_op x y = true
+end
+module C18TraitLaws_UsesOp_Impl
+  type t   
+  clone C18TraitLaws_Symmetric_Op as Op0 with type self = t
+  clone C18TraitLaws_Symmetric_Reflexive as Reflexive0 with type self = t, function Op0.op = Op0.op, axiom .
+  let rec ghost function uses_op (x : t) (y : t) : bool
+    ensures { result = true }
+    
+   = 
+    let b = Op0.op y x in let a = Op0.op x y in pure {a = b}
+end
+module C18TraitLaws_Impl0_Op_Interface
+  function op (self : ()) (_2 : ()) : ()
+end
+module C18TraitLaws_Impl0_Op
+  function op (self : ()) (_2 : ()) : () = 
+    ()
+end
+module C18TraitLaws_Impl0_Reflexive_Interface
+  function reflexive (_1 : ()) (_2 : ()) : ()
+end
+module C18TraitLaws_Impl0_Reflexive
+  function reflexive (_1 : ()) (_2 : ()) : () = 
+    ()
+end
+module C18TraitLaws_Impl0
+  clone C18TraitLaws_Impl0_Reflexive as Reflexive0
+  clone C18TraitLaws_Impl0_Op as Op0
+  clone C18TraitLaws_Symmetric_Reflexive as Reflexive1 with type self = (), function Op0.op = Op0.op,
+  function reflexive = Reflexive0.reflexive, axiom .
+  clone C18TraitLaws_Symmetric_Op as Op1 with type self = (), function op = Op0.op
+end
+module C18TraitLaws_ImplLaws_Interface
+  function impl_laws () : bool
+end
+module C18TraitLaws_ImplLaws
+  clone C18TraitLaws_Impl0_Op_Interface as Op0
+  function impl_laws () : bool = 
+    Op0.op () () = Op0.op () ()
+  axiom impl_laws_spec : impl_laws () = true
+end
+module C18TraitLaws_ImplLaws_Impl
+  clone C18TraitLaws_Impl0_Reflexive as Reflexive0
+  clone C18TraitLaws_Impl0_Op as Op0
+  let rec ghost function impl_laws () : bool
+    ensures { result = true }
+    
+   = 
+    let b = Op0.op () () in let a = Op0.op () () in pure {a = b}
+end

@@ -31,12 +31,6 @@ fn binary_search<T: Ord>(arr: &Vec<T>, elem: T) -> Result<usize, usize> {
     let mut size: usize = arr.len();
     let mut base: usize = 0;
 
-    proof_assert! { {T::trans(elem, elem, elem, Ordering::Equal); true} };
-    proof_assert! { {T::antisym1(elem, elem); true} };
-    proof_assert! { {T::antisym2(elem, elem); true} };
-    proof_assert! { {T::symmetry(elem, elem); true} };
-    proof_assert! { {T::eq_cmp(elem, elem); true} };
-
     #[invariant(size_valid, 0 < @size && @size + @base <= (@arr).len())]
     #[invariant(lower_b, forall<i : usize> i < base ==> (@arr)[@i] <= elem)]
     #[invariant(lower_b, forall<i : usize> @base + @size <= @i && @i < (@arr).len() ==> elem < (@arr)[@i])]

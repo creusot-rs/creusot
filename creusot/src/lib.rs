@@ -1,6 +1,6 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_syntax, box_patterns, control_flow_enum, drain_filter)]
-#![feature(in_band_lifetimes)]
+#![feature(in_band_lifetimes, let_else)]
 #![register_tool(creusot)]
 
 extern crate rustc_ast;
@@ -47,3 +47,4 @@ mod translation;
 pub mod util;
 use translation::*;
 pub mod metadata;
+mod validate;
