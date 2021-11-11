@@ -1,6 +1,8 @@
 use super::model::*;
-use crate::logic::well_founded::*;
+use crate::logic::*;
+
 use creusot_contracts_proc::*;
+
 use std::ops::*;
 
 #[rustc_diagnostic_item = "creusot_int"]
@@ -14,51 +16,6 @@ impl Int {
     #[creusot::builtins = "int.Power.power"]
     pub fn pow(self, _: Int) -> Int {
         std::process::abort()
-    }
-}
-
-impl PartialEq for Int {
-    #[creusot::no_translate]
-    #[rustc_diagnostic_item = "eq_int"]
-    fn eq(&self, _: &Int) -> bool {
-        panic!()
-    }
-
-    #[creusot::no_translate]
-    #[rustc_diagnostic_item = "ne_int"]
-    fn ne(&self, _: &Int) -> bool {
-        panic!()
-    }
-}
-
-impl PartialOrd for Int {
-    #[creusot::no_translate]
-    #[rustc_diagnostic_item = "le_int"]
-    fn le(&self, _: &Int) -> bool {
-        panic!()
-    }
-
-    #[creusot::no_translate]
-    #[rustc_diagnostic_item = "ge_int"]
-    fn ge(&self, _: &Int) -> bool {
-        panic!()
-    }
-
-    #[creusot::no_translate]
-    #[rustc_diagnostic_item = "lt_int"]
-    fn lt(&self, _: &Int) -> bool {
-        panic!()
-    }
-
-    #[creusot::no_translate]
-    #[rustc_diagnostic_item = "gt_int"]
-    fn gt(&self, _: &Int) -> bool {
-        panic!()
-    }
-
-    #[creusot::no_translate]
-    fn partial_cmp(&self, _: &Self) -> Option<std::cmp::Ordering> {
-        panic!()
     }
 }
 

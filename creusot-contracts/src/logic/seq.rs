@@ -1,5 +1,6 @@
 use creusot_contracts_proc::*;
 
+use crate::logic::*;
 use crate::Int;
 use std::ops::Index;
 

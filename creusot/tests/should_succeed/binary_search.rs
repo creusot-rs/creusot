@@ -63,7 +63,7 @@ impl<T> List<T> {
     #[ensures(result >= 0usize)]
     #[ensures(@result == self.len_logic())]
     fn len(&self) -> usize {
-        let mut len = 0;
+        let mut len: usize = 0;
         let mut l = self;
         #[invariant(len_valid, @len + l.len_logic() == self.len_logic())]
         while let Cons(_, ls) = l {

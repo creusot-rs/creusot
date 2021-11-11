@@ -83,10 +83,9 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
     }
 }
 
-pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<QName> {
+pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx.get_attrs(def_id), &["creusot", "builtins"])
         .and_then(|a| ts_to_symbol(a.args.inner_tokens()))
-        .and_then(|a| QName::from_string(&a.as_str()))
 }
 
 pub fn constructor_qname(tcx: TyCtxt, var: &VariantDef) -> QName {

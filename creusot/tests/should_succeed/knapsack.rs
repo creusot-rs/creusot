@@ -53,7 +53,8 @@ fn m<Name>(items: Seq<Item<Name>>, i: Int, w: Int) -> Int {
 #[requires(@max_weight < 10000000)]
 #[requires(forall<i: Int> 0 <= i && i < (@items).len() ==> @(@items)[i].value <= 10000000)]
 fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&Item<Name>> {
-    let mut best_value = vec::from_elem(vec::from_elem(0, max_weight + 1), items.len() + 1);
+    let mut best_value: Vec<Vec<usize>> =
+        vec::from_elem(vec::from_elem(0, max_weight + 1), items.len() + 1);
     let mut i = 0;
 
     #[invariant(items_len, (@items).len() + 1 === (@best_value).len())]
