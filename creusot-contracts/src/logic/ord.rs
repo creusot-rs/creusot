@@ -30,7 +30,7 @@ pub trait OrdLogic: EqLogic {
     }
 
     #[logic]
-    #[ensures(x.le_log(y) === (x.cmp_log(y) === Ordering::Less))]
+    #[ensures(x.lt_log(y) === (x.cmp_log(y) === Ordering::Less))]
     fn cmp_lt_log(x: Self, y: Self);
 
     #[logic]
@@ -42,7 +42,7 @@ pub trait OrdLogic: EqLogic {
     }
 
     #[logic]
-    #[ensures(x.le_log(y) === ! (x.cmp_log(y) === Ordering::Less))]
+    #[ensures(x.ge_log(y) === ! (x.cmp_log(y) === Ordering::Less))]
     fn cmp_ge_log(x: Self, y: Self);
 
     #[logic]
@@ -54,7 +54,7 @@ pub trait OrdLogic: EqLogic {
     }
 
     #[logic]
-    #[ensures(x.le_log(y) === (x.cmp_log(y) === Ordering::Greater))]
+    #[ensures(x.gt_log(y) === (x.cmp_log(y) === Ordering::Greater))]
     fn cmp_gt_log(x: Self, y: Self);
 
     #[logic]
