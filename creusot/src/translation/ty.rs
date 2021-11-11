@@ -14,7 +14,7 @@ use why3::declaration::TyDecl;
 use why3::{mlcfg::Type as MlT, QName};
 
 use crate::ctx::*;
-use crate::util::get_builtin;
+use crate::util::{get_builtin, item_name};
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:
 ///
@@ -176,12 +176,14 @@ pub fn check_not_mutally_recursive<'tcx>(
     }
 }
 
-pub fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
+fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
     // Check if we've already translated this type before.
     if !ctx.translated_items.contains(&did) {
         translate_tydecl(ctx, rustc_span::DUMMY_SP, did);
     };
-    translate_type_id(ctx.tcx, did)
+    let name = item_name(ctx.tcx, did).to_string().to_lowercase();
+
+    QName { module: vec![module_name(ctx.tcx, did)], name: name.into() }
 }
 
 fn translate_ty_param(p: Symbol) -> Ident {
@@ -227,9 +229,9 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
             .iter()
             .map(|f| field_ty(ctx, &mut names, f, substs, rustc_span::DUMMY_SP))
             .collect();
-        let var_name = translate_value_id(ctx.tcx, var_def.def_id);
+        let var_name = item_name(ctx.tcx, var_def.def_id);
 
-        ml_ty_def.push((var_name.name(), field_tys));
+        ml_ty_def.push((var_name, field_tys));
     }
 
     let ty_decl = TyDecl { ty_name, ty_params: ty_args, kind: TyDeclKind::Adt(ml_ty_def) };
@@ -279,7 +281,7 @@ pub fn translate_accessor(
         .map(|f| field_ty(ctx, &mut names, f, substs, rustc_span::DUMMY_SP))
         .collect();
     let field_ty = field_tys[ix].clone();
-    let var_name = translate_value_id(ctx.tcx, variant.def_id);
+    let var_name = item_name(ctx.tcx, variant.def_id);
 
     let this = MlT::TApp(
         box MlT::TConstructor(ty_name.clone().into()),
@@ -311,7 +313,7 @@ pub fn translate_accessor(
 
     // Build the generic contructor application
     let cons_app = Exp::Call(
-        box Exp::pure_var(var_name.name().clone()),
+        box Exp::pure_var(var_name),
         bound_vars.iter().map(|(n, _)| Exp::pure_var(n.clone())).collect(),
     );
 
@@ -336,7 +338,7 @@ pub fn translate_accessor(
 }
 
 pub fn variant_accessor_name(tcx: TyCtxt, def: DefId, variant: &VariantDef, field: usize) -> Ident {
-    let ty_name = translate_type_id(tcx, def).name();
+    let ty_name = item_name(tcx, def).to_string().to_lowercase();
 
     format!("{}_{}_{}", &*ty_name, variant.ident.name, variant.fields[field].ident.name).into()
 }

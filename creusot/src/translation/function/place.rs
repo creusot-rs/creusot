@@ -10,7 +10,7 @@ use why3::mlcfg::{Pattern::*, Statement::*};
 use why3::QName;
 
 use super::FunctionTranslator;
-use crate::{ctx::translate_value_id, translation::ty::variant_accessor_name};
+use crate::{translation::ty::variant_accessor_name, util::constructor_qname};
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     pub fn translate_rplace(&mut self, rhs: &Place<'tcx>) -> Exp {
@@ -133,7 +133,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
                         varexps[ix.as_usize()] = inner;
 
-                        let tyname = translate_value_id(self.tcx, variant.def_id);
+                        let tyname = constructor_qname(self.tcx, variant);
 
                         inner = Let {
                             pattern: ConsP(tyname.clone(), field_pats),

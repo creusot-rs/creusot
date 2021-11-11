@@ -61,7 +61,7 @@ pub fn translate_logic_or_predicate(
         decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
     }
 
-    let name = translate_value_id(ctx.tcx, def_id).module_ident().unwrap().clone();
+    let name = module_name(ctx.tcx, def_id);
     (Module { name, decls }, proof_modl, has_axioms, names)
 }
 
@@ -148,7 +148,5 @@ fn implementation_module(
 }
 
 pub fn impl_name(tcx: TyCtxt, def_id: DefId) -> Ident {
-    let name = translate_value_id(tcx, def_id);
-
-    format!("{}_Impl", Cow::from(name.module_ident().unwrap())).into()
+    format!("{}_Impl", Cow::from(&*module_name(tcx, def_id))).into()
 }

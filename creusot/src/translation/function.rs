@@ -74,12 +74,12 @@ pub fn translate_trusted(
     decls.extend(all_generic_decls_for(tcx, def_id));
 
     let sig = signature_of(ctx, &mut names, def_id);
-    let name = translate_value_id(tcx, def_id);
+    let name = module_name(tcx, def_id);
 
     decls.extend(names.to_clones(ctx));
 
     decls.push(Decl::ValDecl(ValKind::Val { sig }));
-    return Module { name: name.module_ident().unwrap().clone(), decls };
+    return Module { name, decls };
 }
 
 use crate::resolve::EagerResolver;
@@ -172,13 +172,13 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         decls.extend(all_generic_decls_for(self.tcx, self.def_id));
 
         let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
-        let name = translate_value_id(self.tcx, self.def_id);
+        let name = module_name(self.tcx, self.def_id);
 
         decls.extend(self.clone_names.to_clones(self.ctx));
 
         if util::is_trusted(self.tcx, self.def_id) {
             decls.push(Decl::ValDecl(ValKind::Val { sig }));
-            return Module { name: name.module_ident().unwrap().clone(), decls };
+            return Module { name, decls };
         }
 
         self.translate_body();
@@ -209,7 +209,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             entry,
             blocks: self.past_blocks,
         }));
-        Module { name: name.module_ident().unwrap().clone(), decls }
+        Module { name, decls }
     }
 
     fn translate_body(&mut self) {
