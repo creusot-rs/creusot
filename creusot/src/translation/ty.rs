@@ -188,10 +188,6 @@ fn translate_ty_param(p: Symbol) -> Ident {
     Ident::build(&p.to_string().to_lowercase())
 }
 
-pub fn ty_name(tcx: TyCtxt, def_id: DefId) -> String {
-    tcx.item_name(def_id).to_string().to_lowercase()
-}
-
 // Translate a Rust type declation to an ML one
 // Rust tuple-like types are translated as one would expect, to product types in WhyML
 // However, Rust struct types are *not* translated to WhyML records, instead we 'forget' the field names

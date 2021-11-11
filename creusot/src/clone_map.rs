@@ -385,7 +385,6 @@ impl<'tcx> CloneMap<'tcx> {
 
             // Add any 'additional dependencies'
             for (sym, dep) in &self.names[&node].additional_deps {
-                let target_sym = ident_of(*sym);
                 let mut syms = refinable_symbols(ctx.tcx, def_id).filter(|sk| sk.sym() == *sym);
                 let sym = syms.next().unwrap();
                 assert!(syms.next().is_none());

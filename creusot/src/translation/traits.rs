@@ -11,7 +11,7 @@ use crate::{rustc_extensions, util};
 
 use crate::ctx::*;
 use crate::translation::ty;
-use crate::util::{ident_of, ident_of_ty, is_spec};
+use crate::util::{ident_of_ty, is_spec};
 
 impl<'tcx> TranslationCtx<'_, 'tcx> {
     // Translate a trait declaration
