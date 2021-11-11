@@ -253,8 +253,8 @@ pub(super) fn mk_binders(func: Exp, args: Vec<Exp>) -> Exp {
         if arg.is_pure() {
             call_args.push(arg);
         } else {
-            call_args.push(Exp::impure_var(nm.to_string().into()));
-            impure_args.push((nm.to_string(), arg));
+            call_args.push(Exp::impure_var(format!("{}'", nm).into()));
+            impure_args.push((format!("{}'", nm), arg));
         }
     }
 
