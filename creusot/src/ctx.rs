@@ -403,7 +403,7 @@ fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
             segments = Vec::new();
         }
         (_, Some(Namespace::ValueNS)) | (Closure, _) => {
-            name = vec![(&*util::method_name(tcx, def_id)).into()];
+            name = vec![(&*util::item_name(tcx, def_id)).into()];
         }
         (a, b) => unreachable!("{:?} {:?} {:?}", a, b, segments),
     }
