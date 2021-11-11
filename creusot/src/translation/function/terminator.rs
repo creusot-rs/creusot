@@ -17,7 +17,7 @@ use rustc_target::abi::VariantIdx;
 use why3::mlcfg::{BinOp, BlockId, Constant, Exp, Pattern, Statement, Terminator as MlT};
 use why3::QName;
 
-use crate::translation::traits;
+use crate::{translation::traits, util::constructor_qname};
 
 use super::FunctionTranslator;
 
@@ -276,7 +276,7 @@ where
 pub fn variant_pattern(tcx: TyCtxt<'_>, def: &AdtDef, vid: VariantIdx) -> Pattern {
     let variant = &def.variants[vid];
     let wilds = variant.fields.iter().map(|_| Pattern::Wildcard).collect();
-    let cons_name = super::translate_value_id(tcx, variant.def_id);
+    let cons_name = constructor_qname(tcx, variant);
 
     Pattern::ConsP(cons_name, wilds)
 }

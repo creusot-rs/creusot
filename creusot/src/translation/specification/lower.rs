@@ -2,6 +2,7 @@ use super::typing::{LogicalOp, Pattern, Term, TermKind};
 use crate::translation::traits::resolve_assoc_item_opt;
 use crate::translation::ty::variant_accessor_name;
 use crate::translation::{binop_to_binop, constant, ty::translate_ty, unop_to_unop};
+use crate::util::constructor_qname;
 use crate::{ctx::*, util};
 use why3::mlcfg::{BinOp, Exp, Pattern as Pat, Purity};
 use why3::QName;
@@ -116,7 +117,7 @@ impl Lower<'_, '_, 'tcx> {
                 self.names.import_prelude_module(PreludeModule::Type);
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
-                let ctor = translate_value_id(self.ctx.tcx, adt.variants[variant].def_id);
+                let ctor = constructor_qname(self.ctx.tcx, &adt.variants[variant]);
                 crate::ty::translate_tydecl(self.ctx, rustc_span::DUMMY_SP, adt.did);
                 Exp::Constructor { ctor, args }
             }
@@ -222,7 +223,7 @@ impl Lower<'_, '_, 'tcx> {
             Pattern::Constructor { adt, variant, fields } => {
                 let variant = &adt.variants[variant];
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
-                Pat::ConsP(translate_value_id(self.ctx.tcx, variant.def_id), fields)
+                Pat::ConsP(constructor_qname(self.ctx.tcx, variant), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => Pat::VarP(name.into()),

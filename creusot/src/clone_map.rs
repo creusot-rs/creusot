@@ -448,7 +448,6 @@ pub fn base_subst<'tcx>(
 }
 
 fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
-    let qname = translate_value_id(tcx, def_id);
     use util::ItemType::*;
 
     // TODO: Refactor.
@@ -458,13 +457,13 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
                 // TODO: this should directly be a function...
                 QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
             } else {
-                qname.module_ident().unwrap_or(&qname.name()).clone().into()
+                module_name(tcx, def_id).into()
             }
         }
         Interface | Program => {
             QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
         }
-        Trait | Type | AssocTy => qname,
+        Trait | Type | AssocTy => module_name(tcx, def_id).into(),
     }
 }
 

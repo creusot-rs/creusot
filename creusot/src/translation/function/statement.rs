@@ -20,7 +20,7 @@ use super::FunctionTranslator;
 use crate::{
     clone_map::PreludeModule,
     translation::{binop_to_binop, unop_to_unop},
-    util,
+    util::{self, constructor_qname},
 };
 
 impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
@@ -142,7 +142,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     Tuple => Exp::Tuple(fields),
                     Adt(adt, varix, _, _, _) => {
                         let variant_def = &adt.variants[*varix];
-                        let qname = super::translate_value_id(self.tcx, variant_def.def_id);
+                        let qname = constructor_qname(self.tcx, variant_def);
 
                         Constructor { ctor: qname, args: fields }
                     }
