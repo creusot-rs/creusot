@@ -6,27 +6,6 @@ extern crate creusot_contracts;
 use creusot_contracts::std::*;
 use creusot_contracts::*;
 
-pub struct Ghost<T>(*mut T)
-where
-    T: ?Sized;
-
-impl<T> Model for Ghost<T> {
-    type ModelTy = T;
-    #[logic]
-    #[trusted]
-    fn model(self) -> Self::ModelTy {
-        panic!()
-    }
-}
-
-impl<T> Ghost<T> {
-    #[trusted]
-    #[ensures(@result === *a)]
-    fn record(a: &T) -> Ghost<T> {
-        panic!()
-    }
-}
-
 #[trusted]
 #[ensures(@l <= @result && @result  < @u)]
 fn rand_in_range(l: usize, u: usize) -> usize {

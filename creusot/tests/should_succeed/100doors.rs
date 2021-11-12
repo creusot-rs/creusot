@@ -1,3 +1,4 @@
+#![feature(stmt_expr_attributes, proc_macro_hygiene)]
 //! An adaptation of
 //!
 //! https://rosettacode.org/wiki/100_doors#Rust

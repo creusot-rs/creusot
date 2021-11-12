@@ -55,27 +55,6 @@ impl<'a, T> IterMut<'a, T> {
     }
 }
 
-pub struct Ghost<T>(*mut T)
-where
-    T: ?Sized;
-
-impl<T> Model for Ghost<T> {
-    type ModelTy = T;
-    #[logic]
-    #[trusted]
-    fn model(self) -> Self::ModelTy {
-        panic!()
-    }
-}
-
-impl<T> Ghost<T> {
-    #[trusted]
-    #[ensures(@result === *a)]
-    fn record(a: &T) -> Ghost<T> {
-        panic!()
-    }
-}
-
 #[ensures((@^v).len() === (@v).len())]
 #[ensures(forall<i : Int> 0 <= i && i < (@^v).len() ==> @(@^v)[i] === @(@v)[i] + 5)]
 fn inc_vec(v: &mut Vec<u32>) {
