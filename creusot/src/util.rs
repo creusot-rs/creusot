@@ -57,6 +57,10 @@ pub(crate) fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "trusted"]).is_some()
 }
 
+pub(crate) fn is_law(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "law"]).is_some()
+}
+
 pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     loop {
         if is_no_translate(tcx, def_id) {

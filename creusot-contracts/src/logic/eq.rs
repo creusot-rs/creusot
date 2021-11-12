@@ -10,20 +10,20 @@ pub trait EqLogic {
     #[predicate]
     fn log_ne(self, _: Self) -> bool;
 
-    #[logic]
+    #[law]
     #[ensures(!(a.log_eq(b) === a.log_ne(b)))]
     fn eq_ne(a: Self, b: Self);
 
-    #[logic]
+    #[law]
     #[ensures(x == x)]
     fn refl(x: Self);
 
-    #[logic]
+    #[law]
     #[requires(x == y)]
     #[ensures(y == x)]
     fn symmetry(x: Self, y: Self);
 
-    #[logic]
+    #[law]
     #[requires(x == y)]
     #[requires(y == z)]
     #[ensures(x == z)]

@@ -1,7 +1,5 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{
-    subst::SubstsRef, AssocItemContainer::*, ParamEnv, TraitPredicate, TraitRef, TyCtxt,
-};
+use rustc_middle::ty::{subst::SubstsRef, AssocItemContainer::*, ParamEnv, TraitRef, TyCtxt};
 use rustc_trait_selection::traits::ImplSource;
 
 use why3::declaration::{Decl, Module};
@@ -11,7 +9,7 @@ use crate::{rustc_extensions, util};
 
 use crate::ctx::*;
 use crate::translation::ty;
-use crate::util::is_spec;
+use crate::util::{is_law, is_spec};
 
 impl<'tcx> TranslationCtx<'_, 'tcx> {
     // Translate a trait declaration
@@ -20,21 +18,16 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             return;
         }
 
-        let mut names = CloneMap::new(self.tcx, def_id, true);
-        names.clone_self(def_id);
-        // The first predicate is a trait reference so we skip it
-        for _super_trait in traits_used_by(self.tcx, def_id).filter(|t| t.def_id() != def_id) {
-            // Ensure trait depends on all super traits
-            // translate_constraint(self, &mut names, super_trait);
-        }
-
-        let mut _has_axioms = false;
+        let mut laws = Vec::new();
 
         for item in associated_items(self.tcx, def_id) {
             self.translate(item.def_id);
+            if is_law(self.tcx, item.def_id) {
+                laws.push(item.def_id);
+            }
         }
 
-        self.add_trait(def_id, _has_axioms);
+        self.add_trait(def_id, laws);
     }
 
     pub fn translate_impl(&mut self, impl_id: DefId) {
@@ -44,15 +37,15 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
         self.translate_trait(trait_ref.def_id);
 
-        for item in associated_items(self.tcx, impl_id) {
-            self.translate(item.def_id);
-        }
-
         // Impl Refinement module
         let mut decls: Vec<_> = own_generic_decls_for(self.tcx, impl_id).collect();
         let trait_assocs = self.tcx.associated_items(trait_ref.def_id);
         let mut names = CloneMap::new(self.tcx, impl_id, true);
+
+        let mut laws = Vec::new();
         for item in associated_items(self.tcx, impl_id) {
+            self.translate(item.def_id);
+
             let subst = InternalSubsts::identity_for_item(self.tcx, item.def_id);
             names.insert(item.def_id, subst);
 
@@ -61,6 +54,11 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             let trait_item = trait_assocs
                 .find_by_name_and_kind(self.tcx, item.ident, item.kind, trait_ref.def_id)
                 .unwrap();
+
+            if is_law(self.tcx, trait_item.def_id) {
+                laws.push(item.def_id);
+            }
+
             let s = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
 
             names.insert(trait_item.def_id, s).add_dep(
@@ -71,7 +69,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         }
 
         decls.extend(names.to_clones(self));
-        self.add_impl(impl_id, Module { name: module_name(self.tcx, impl_id), decls });
+        self.add_impl(impl_id, laws, Module { name: module_name(self.tcx, impl_id), decls });
     }
 
     pub fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
@@ -106,19 +104,6 @@ pub fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &Ass
     tcx.associated_items(def_id)
         .in_definition_order()
         .filter(move |item| !is_spec(tcx, item.def_id))
-}
-
-pub fn traits_used_by(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = TraitPredicate> {
-    let predicates = tcx.predicates_of(def_id);
-
-    predicates.predicates.iter().filter_map(|(pred, _)| {
-        let inner = pred.kind().no_bound_vars().unwrap();
-        use rustc_middle::ty::PredicateKind::*;
-        match inner {
-            Trait(tp) => Some(tp),
-            _ => None,
-        }
-    })
 }
 
 use crate::function::{all_generic_decls_for, own_generic_decls_for};

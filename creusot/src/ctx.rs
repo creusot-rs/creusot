@@ -33,11 +33,12 @@ pub enum TranslatedItem<'tcx> {
         dependencies: CloneSummary<'tcx>,
     },
     Trait {
-        has_axioms: bool,
+        laws: Vec<DefId>,
         dependencies: CloneSummary<'tcx>, // always empty
     },
     Impl {
-        modl: Module, // Refinement of traits,
+        laws: Vec<DefId>, // Instantiations of trait laws
+        modl: Module,     // Refinement of traits,
         dependencies: CloneSummary<'tcx>,
     },
     AssocTy {
@@ -97,9 +98,16 @@ impl TranslatedItem<'tcx> {
 
     pub fn has_axioms(&self) -> bool {
         match self {
-            TranslatedItem::Trait { has_axioms, .. } => *has_axioms,
             TranslatedItem::Logic { has_axioms, .. } => *has_axioms,
             _ => false,
+        }
+    }
+
+    pub fn laws(&self) -> Option<&[DefId]> {
+        match self {
+            TranslatedItem::Trait { laws, .. } => Some(&laws[..]),
+            TranslatedItem::Impl { laws, .. } => Some(&laws[..]),
+            _ => None,
         }
     }
 
@@ -283,6 +291,10 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.sess.span_fatal_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
     }
 
+    pub fn error(&self, span: Span, msg: &str) {
+        self.sess.span_err_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
+    }
+
     pub fn warn(&self, span: Span, msg: &str) {
         self.sess.span_warn_with_code(
             span,
@@ -297,19 +309,16 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
     pub fn add_type(&mut self, def_id: DefId, decl: TyDecl) {
         self.types.insert(def_id, TypeDeclaration { ty_decl: decl, accessors: Default::default() });
-        // self.types.insert(pos, decl);
     }
 
-    pub fn add_trait(&mut self, def_id: DefId, has_axioms: bool) {
-        self.functions.insert(
-            def_id,
-            TranslatedItem::Trait { has_axioms, dependencies: CloneSummary::new() },
-        );
-    }
-
-    pub fn add_impl(&mut self, def_id: DefId, modl: Module) {
+    pub fn add_trait(&mut self, def_id: DefId, laws: Vec<DefId>) {
         self.functions
-            .insert(def_id, TranslatedItem::Impl { modl, dependencies: CloneSummary::new() });
+            .insert(def_id, TranslatedItem::Trait { laws, dependencies: CloneSummary::new() });
+    }
+
+    pub fn add_impl(&mut self, def_id: DefId, laws: Vec<DefId>, modl: Module) {
+        self.functions
+            .insert(def_id, TranslatedItem::Impl { modl, laws, dependencies: CloneSummary::new() });
     }
 
     pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {

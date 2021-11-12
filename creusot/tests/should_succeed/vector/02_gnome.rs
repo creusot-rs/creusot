@@ -42,7 +42,6 @@ fn sorted<T: Ord>(s: Seq<T>) -> bool {
 #[ensures((@^v).permutation_of(@*v))]
 fn gnome_sort<T: Ord>(v: &mut Vec<T>) {
     let old_v = Ghost::record(&v);
-    proof_assert! { {T::trans((@v)[0], (@v)[0], (@v)[0], Ordering::Equal) ; true} };
     let mut i = 0;
     #[invariant(sorted, sorted_range(@v, 0, @i))]
     #[invariant(proph_const, ^v === ^@old_v)]

@@ -24,10 +24,15 @@ use std::io::Result;
 use crate::ctx::TranslationCtx;
 use crate::ctx::TypeDeclaration;
 use crate::metadata;
+use crate::validate::validate_traits;
 use std::io::Write;
 use why3::mlcfg;
 
+// TODO: Move the main loop out of `translation.rs`
 pub fn translate(mut ctx: TranslationCtx<'_, '_>) -> Result<()> {
+    // Check that all trait laws are well-formed
+    validate_traits(&mut ctx);
+
     ctx.load_metadata();
 
     for def_id in ctx.tcx.hir().body_owners() {
