@@ -1,0 +1,227 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module SumOfOdds_Sqr_Interface
+  use mach.int.Int
+  function sqr (x : int) : int
+end
+module SumOfOdds_Sqr
+  use mach.int.Int
+  function sqr (x : int) : int = 
+    x * x
+end
+module SumOfOdds_IsSquare_Interface
+  use mach.int.Int
+  predicate is_square (y : int)
+end
+module SumOfOdds_IsSquare
+  use mach.int.Int
+  clone SumOfOdds_Sqr_Interface as Sqr0
+  predicate is_square (y : int) = 
+    exists z : (int) . y = Sqr0.sqr z
+end
+module SumOfOdds_SumOfOdd_Interface
+  use mach.int.Int
+  function sum_of_odd (x : int) : int
+end
+module SumOfOdds_SumOfOdd
+  use mach.int.Int
+  use mach.int.Int32
+  function sum_of_odd (x : int) : int
+  axiom def : forall x : int . sum_of_odd x = (if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1)
+  axiom sum_of_odd_spec : forall x : int . true
+end
+module SumOfOdds_SumOfOdd_Impl
+  use mach.int.Int
+  use mach.int.Int32
+  let rec ghost function sum_of_odd (x : int) : int
+    variant {x}
+    
+   = 
+    if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1
+end
+module SumOfOdds_SumOfOddIsSqr_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  clone SumOfOdds_Sqr_Interface as Sqr0
+  clone SumOfOdds_SumOfOdd_Interface as SumOfOdd0 with axiom .
+  function sum_of_odd_is_sqr (x : int) : ()
+end
+module SumOfOdds_SumOfOddIsSqr
+  use mach.int.Int
+  use mach.int.Int32
+  clone SumOfOdds_Sqr_Interface as Sqr0
+  clone SumOfOdds_SumOfOdd_Interface as SumOfOdd0 with axiom .
+  function sum_of_odd_is_sqr (x : int) : ()
+  axiom def : forall x : int . sum_of_odd_is_sqr x = (if x > 0 then sum_of_odd_is_sqr (x - 1) else ())
+  axiom sum_of_odd_is_sqr_spec : forall x : int . x >= 0 -> SumOfOdd0.sum_of_odd x = Sqr0.sqr x
+end
+module SumOfOdds_SumOfOddIsSqr_Impl
+  use mach.int.Int
+  use mach.int.Int32
+  clone SumOfOdds_Sqr as Sqr0
+  clone SumOfOdds_SumOfOdd as SumOfOdd0 with axiom .
+  let rec ghost function sum_of_odd_is_sqr (x : int) : ()
+    requires {x >= 0}
+    ensures { SumOfOdd0.sum_of_odd x = Sqr0.sqr x }
+    variant {x}
+    
+   = 
+    if x > 0 then sum_of_odd_is_sqr (x - 1) else ()
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module SumOfOdds_ComputeSumOfOdd_Interface
+  use mach.int.UInt32
+  use mach.int.Int
+  use mach.int.Int32
+  clone SumOfOdds_SumOfOdd_Interface as SumOfOdd0 with axiom .
+  val compute_sum_of_odd (x : uint32) : uint32
+    requires {UInt32.to_int x < 65536}
+    ensures { UInt32.to_int result = SumOfOdd0.sum_of_odd (UInt32.to_int x) }
+    
+end
+module SumOfOdds_ComputeSumOfOdd
+  use mach.int.UInt32
+  use mach.int.Int
+  use mach.int.Int32
+  clone SumOfOdds_Sqr as Sqr0
+  clone SumOfOdds_SumOfOdd as SumOfOdd0 with axiom .
+  clone SumOfOdds_SumOfOddIsSqr as SumOfOddIsSqr0 with function SumOfOdd0.sum_of_odd = SumOfOdd0.sum_of_odd,
+  function Sqr0.sqr = Sqr0.sqr, axiom .
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = ()
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = uint32
+  let rec cfg compute_sum_of_odd (x : uint32) : uint32
+    requires {UInt32.to_int x < 65536}
+    ensures { UInt32.to_int result = SumOfOdd0.sum_of_odd (UInt32.to_int x) }
+    
+   = 
+  var _0 : uint32;
+  var x_1 : uint32;
+  var _2 : ();
+  var s_3 : uint32;
+  var i_4 : uint32;
+  var _5 : ();
+  var _6 : ();
+  var _7 : bool;
+  var _8 : uint32;
+  var _9 : uint32;
+  var _10 : ();
+  var _11 : uint32;
+  var _12 : uint32;
+  var _13 : uint32;
+  var _14 : ();
+  var _15 : ();
+  var _16 : ();
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    s_3 <- (0 : uint32);
+    i_4 <- (0 : uint32);
+    goto BB1
+  }
+  BB1 {
+    invariant i_bound { UInt32.to_int i_4 <= UInt32.to_int x_1 };
+    invariant s_is_sum { UInt32.to_int s_3 = SumOfOdd0.sum_of_odd (UInt32.to_int i_4) };
+    goto BB2
+  }
+  BB2 {
+    assume { Resolve0.resolve _8 };
+    _8 <- i_4;
+    assume { Resolve0.resolve _9 };
+    _9 <- x_1;
+    _7 <- _8 < _9;
+    switch (_7)
+      | False -> goto BB4
+      | _ -> goto BB3
+      end
+  }
+  BB3 {
+    assert { let _ = SumOfOddIsSqr0.sum_of_odd_is_sqr (UInt32.to_int i_4) in true };
+    _10 <- ();
+    assume { Resolve1.resolve _10 };
+    assume { Resolve0.resolve _13 };
+    _13 <- i_4;
+    _12 <- (2 : uint32) * _13;
+    _11 <- _12 + (1 : uint32);
+    s_3 <- s_3 + _11;
+    i_4 <- i_4 + (1 : uint32);
+    _6 <- ();
+    assume { Resolve1.resolve _6 };
+    goto BB1
+  }
+  BB4 {
+    assume { Resolve0.resolve x_1 };
+    assume { Resolve0.resolve i_4 };
+    _5 <- ();
+    assume { Resolve1.resolve _5 };
+    assume { Resolve0.resolve _0 };
+    _0 <- s_3;
+    assume { Resolve0.resolve s_3 };
+    return _0
+  }
+  
+end
+module SumOfOdds_Test_Interface
+  use mach.int.UInt32
+  use mach.int.Int
+  use mach.int.Int32
+  val test (x : uint32) : ()
+    requires {UInt32.to_int x < 65536}
+    
+end
+module SumOfOdds_Test
+  use mach.int.UInt32
+  use mach.int.Int
+  use mach.int.Int32
+  clone SumOfOdds_Sqr as Sqr0
+  clone SumOfOdds_IsSquare as IsSquare0 with function Sqr0.sqr = Sqr0.sqr
+  clone SumOfOdds_SumOfOdd as SumOfOdd0 with axiom .
+  clone SumOfOdds_SumOfOddIsSqr as SumOfOddIsSqr0 with function SumOfOdd0.sum_of_odd = SumOfOdd0.sum_of_odd,
+  function Sqr0.sqr = Sqr0.sqr, axiom .
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = uint32
+  clone SumOfOdds_ComputeSumOfOdd_Interface as ComputeSumOfOdd0 with function SumOfOdd0.sum_of_odd = SumOfOdd0.sum_of_odd
+  let rec cfg test (x : uint32) : ()
+    requires {UInt32.to_int x < 65536}
+    
+   = 
+  var _0 : ();
+  var x_1 : uint32;
+  var y_2 : uint32;
+  var _3 : uint32;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    assume { Resolve0.resolve _3 };
+    _3 <- x_1;
+    assume { Resolve0.resolve x_1 };
+    y_2 <- ComputeSumOfOdd0.compute_sum_of_odd _3;
+    goto BB1
+  }
+  BB1 {
+    assume { Resolve0.resolve y_2 };
+    assert { let _ = SumOfOddIsSqr0.sum_of_odd_is_sqr (UInt32.to_int x_1) in IsSquare0.is_square (UInt32.to_int y_2) };
+    _0 <- ();
+    return _0
+  }
+  
+end
