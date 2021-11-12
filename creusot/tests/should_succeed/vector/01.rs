@@ -1,31 +1,8 @@
 // WHY3PROVE Z3
-#![feature(type_ascription)]
-
 extern crate creusot_contracts;
 
 use creusot_contracts::std::*;
 use creusot_contracts::*;
-
-pub struct Ghost<T>
-where
-    T: ?Sized;
-
-impl<T> Model for Ghost<T> {
-    type ModelTy = T;
-    #[logic]
-    #[trusted]
-    fn model(self) -> Self::ModelTy {
-        panic!()
-    }
-}
-
-impl<T> Ghost<T> {
-    #[trusted]
-    #[ensures(@result === *a)]
-    fn record(a: &T) -> Ghost<T> {
-        Ghost::<T>
-    }
-}
 
 #[ensures(forall<i : Int> 0 <= i && i < (@^v).len() ==> (@^v)[i] === 0u32)]
 #[ensures((@*v).len() === (@^v).len())]
