@@ -11,7 +11,7 @@ use crate::{rustc_extensions, util};
 
 use crate::ctx::*;
 use crate::translation::ty;
-use crate::util::{ident_of, is_spec};
+use crate::util::is_spec;
 
 impl<'tcx> TranslationCtx<'_, 'tcx> {
     // Translate a trait declaration
@@ -71,10 +71,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         }
 
         decls.extend(names.to_clones(self));
-        self.add_impl(
-            impl_id,
-            Module { name: translate_value_id(self.tcx, impl_id).name(), decls },
-        );
+        self.add_impl(impl_id, Module { name: module_name(self.tcx, impl_id), decls });
     }
 
     pub fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
@@ -94,14 +91,14 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         };
 
         // TODO: Clean up translation of names to handle this automatically
-        let name = ident_of(self.tcx.item_name(def_id));
+        let name = item_name(self.tcx, def_id);
         let ty_decl =
             Decl::TyDecl(TyDecl { ty_name: name.clone(), ty_params: Vec::new(), kind: ty_decl });
 
         decls.extend(names.to_clones(self));
         decls.push(ty_decl);
 
-        (Module { name: translate_type_id(self.tcx, def_id).name(), decls }, names.summary())
+        (Module { name: module_name(self.tcx, def_id), decls }, names.summary())
     }
 }
 

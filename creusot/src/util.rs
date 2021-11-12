@@ -2,7 +2,7 @@ use crate::ctx::*;
 use crate::translation::ty;
 use rustc_ast::{AttrItem, AttrKind, Attribute};
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::Attributes;
+use rustc_middle::ty::{Attributes, VariantDef};
 use rustc_middle::ty::{DefIdTree, TyCtxt};
 use rustc_span::Symbol;
 use why3::QName;
@@ -83,18 +83,80 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
     }
 }
 
-pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<QName> {
+pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx.get_attrs(def_id), &["creusot", "builtins"])
         .and_then(|a| ts_to_symbol(a.args.inner_tokens()))
-        .and_then(|a| QName::from_string(&a.as_str()))
 }
 
-pub(crate) fn method_name(tcx: TyCtxt, def_id: DefId) -> Ident {
-    ident_of(tcx.item_name(def_id))
+pub fn constructor_qname(tcx: TyCtxt, var: &VariantDef) -> QName {
+    QName { module: vec![module_name(tcx, var.def_id)], name: item_name(tcx, var.def_id) }
 }
 
-pub fn ident_of(id: Symbol) -> Ident {
-    Ident::build(&id.as_str().to_lowercase())
+// This function will produce an invalid identifier for types.
+// To create a valid type identifier you must used `ty::translate_ty_name`
+// The reason for this that we cannot distinguish a struct being used in a type
+// from a struct being used as a constructor! (very annoying).
+pub fn item_name(tcx: TyCtxt, def_id: DefId) -> Ident {
+    use rustc_hir::def::DefKind::*;
+
+    match tcx.def_kind(def_id) {
+        AssocTy => ident_of_ty(tcx.item_name(def_id)),
+        Ctor(_, _) | Variant | Struct | Enum => ident_path(tcx, def_id),
+        _ => ident_of(tcx.item_name(def_id)),
+    }
+}
+
+pub(crate) fn ident_of(sym: Symbol) -> Ident {
+    let mut id = sym.to_string();
+
+    id[..1].make_ascii_lowercase();
+
+    if sym.as_str() == id {
+        Ident::build(&id)
+    } else {
+        id += &"'";
+        Ident::build(&id)
+    }
+}
+
+pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
+    let mut id = sym.to_string();
+
+    id[..1].make_ascii_lowercase();
+    Ident::build(&id)
+}
+
+pub fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
+    let kind = tcx.def_kind(def_id);
+    use rustc_hir::def::DefKind::*;
+
+    match kind {
+        Ctor(_, _) | Variant | Struct | Enum => "Type".into(),
+        _ => ident_path(tcx, def_id),
+    }
+}
+
+fn ident_path(tcx: TyCtxt, def_id: DefId) -> Ident {
+    use heck::CamelCase;
+
+    let def_path = tcx.def_path(def_id);
+
+    let mut segments = Vec::new();
+
+    let mut crate_name = tcx.crate_name(def_id.krate).to_string().to_camel_case();
+    if crate_name.chars().next().unwrap().is_numeric() {
+        crate_name = format!("C{}", crate_name);
+    }
+
+    segments.push(crate_name);
+
+    for seg in def_path.data[..].iter() {
+        match seg.data {
+            _ => segments.push(format!("{}", seg).to_camel_case()),
+        }
+    }
+
+    segments.join("_").into()
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -172,28 +234,29 @@ pub fn signature_of<'tcx>(
         contract.ensures.push(Exp::Const(Constant::const_false()));
     }
 
-    let name = translate_value_id(ctx.tcx, def_id);
+    let name = item_name(ctx.tcx, def_id);
 
     let span = ctx.tcx.def_span(def_id);
-    let args = names.with_public_clones(|names| {
-        let arg_names = ctx.tcx.fn_arg_names(def_id);
-        arg_names
-            .iter()
-            .enumerate()
-            .map(|(ix, id)| {
-                if id.name.is_empty() {
-                    format!("_{}", ix + 1).into()
-                } else {
-                    id.name.to_string().into()
-                }
-            })
-            .zip(sig.inputs().iter().map(|ty| ty::translate_ty(ctx, names, span, ty)))
-            .collect()
-    });
+    let args =
+        names.with_public_clones(|names| {
+            let arg_names = ctx.tcx.fn_arg_names(def_id);
+            arg_names
+                .iter()
+                .enumerate()
+                .map(|(ix, id)| {
+                    if id.name.is_empty() {
+                        format!("_{}", ix + 1).into()
+                    } else {
+                        ident_of(id.name)
+                    }
+                })
+                .zip(sig.inputs().iter().map(|ty| ty::translate_ty(ctx, names, span, ty)))
+                .collect()
+        });
 
     Signature {
         // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure
-        name: name.name,
+        name,
         // TODO: use real span
         retty: Some(
             names.with_public_clones(|names| ty::translate_ty(ctx, names, span, sig.output())),

@@ -1,25 +1,28 @@
 use crate::{
-    extended_location::*,
     gather_spec_closures::GatherSpecClosures,
+    rustc_extensions::renumber,
     util::{self, signature_of},
 };
+use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
+use rustc_infer::infer::TyCtxtInferExt;
+use rustc_middle::mir::Place;
+use rustc_middle::ty::subst::GenericArg;
+use rustc_middle::ty::Ty;
+use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
 use rustc_middle::{
     mir::traversal::preorder,
     mir::{visit::MutVisitor, BasicBlock, Body, Local, Location, Operand, VarDebugInfo},
     ty::TyCtxt,
     ty::{TyKind, WithOptConstParam},
 };
+use rustc_mir_dataflow::move_paths::MoveData;
+use rustc_span::Symbol;
 use std::collections::{BTreeMap, HashMap};
+use std::rc::Rc;
 use why3::declaration::*;
 use why3::mlcfg::{self, Statement::*, *};
-
-use rustc_middle::mir::Place;
-use rustc_middle::ty::subst::GenericArg;
-use rustc_middle::ty::Ty;
-use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
-use rustc_span::Symbol;
 
 use indexmap::IndexMap;
 
@@ -71,12 +74,12 @@ pub fn translate_trusted(
     decls.extend(all_generic_decls_for(tcx, def_id));
 
     let sig = signature_of(ctx, &mut names, def_id);
-    let name = translate_value_id(tcx, def_id);
+    let name = module_name(tcx, def_id);
 
     decls.extend(names.to_clones(ctx));
 
     decls.push(Decl::ValDecl(ValKind::Val { sig }));
-    return Module { name: name.module_ident().unwrap().clone(), decls };
+    return Module { name, decls };
 }
 
 use crate::resolve::EagerResolver;
@@ -112,6 +115,7 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
 
     assertions: IndexMap<DefId, Exp>,
+    borrows: Rc<BorrowSet<'tcx>>,
 }
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
@@ -134,8 +138,16 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             }
         });
 
+        let mut clean_body = body.clone();
+
+        tcx.infer_ctxt().enter(|infcx| {
+            renumber::renumber_mir(&infcx, &mut clean_body, &mut Default::default());
+        });
+        let move_paths = MoveData::gather_moves(&clean_body, tcx, tcx.param_env(def_id)).unwrap();
+        let borrows = BorrowSet::build(tcx, &clean_body, true, &move_paths);
         let local_map = real_locals(tcx, body);
-        let resolver = EagerResolver::new(tcx, body);
+        let borrows = Rc::new(borrows);
+        let resolver = EagerResolver::new(tcx, body, borrows.clone());
 
         FunctionTranslator {
             tcx,
@@ -151,6 +163,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             invariants,
             assertions,
             local_map,
+            borrows,
         }
     }
 
@@ -159,13 +172,13 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         decls.extend(all_generic_decls_for(self.tcx, self.def_id));
 
         let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
-        let name = translate_value_id(self.tcx, self.def_id);
+        let name = module_name(self.tcx, self.def_id);
 
         decls.extend(self.clone_names.to_clones(self.ctx));
 
         if util::is_trusted(self.tcx, self.def_id) {
             decls.push(Decl::ValDecl(ValKind::Val { sig }));
-            return Module { name: name.module_ident().unwrap().clone(), decls };
+            return Module { name, decls };
         }
 
         self.translate_body();
@@ -196,7 +209,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             entry,
             blocks: self.past_blocks,
         }));
-        Module { name: name.module_ident().unwrap().clone(), decls }
+        Module { name, decls }
     }
 
     fn translate_body(&mut self) {
@@ -215,7 +228,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             let mut loc = bb.start_location();
 
             for statement in &bbd.statements {
-                self.translate_statement(statement);
+                self.translate_statement(statement, loc);
                 self.freeze_borrows_dying_at(loc);
                 loc = loc.successor_within_block();
             }
@@ -305,43 +318,36 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
     // Inserts drop statements for variables which died over the course of a goto or switch
     fn freeze_locals_between_blocks(&mut self, bb: BasicBlock) {
-        use ExtendedLocation::*;
-
         let pred_blocks = &self.body.predecessors()[bb];
 
         if pred_blocks.is_empty() {
             return;
         }
 
-        let term_loc = self.body.terminator_loc(pred_blocks[0]);
-        let dying_in_first =
-            self.resolver.locals_resolved_between(Start(term_loc), Start(bb.start_location()));
+        let dying_in_first = self.resolver.locals_resolved_between_blocks(pred_blocks[0], bb);
         let mut same_deaths = true;
 
         // If we have multiple predecessors (join point) but all of them agree on the deaths, then don't introduce a dedicated block.
         for pred in pred_blocks {
-            let term_loc = self.body.terminator_loc(*pred);
-            let dying =
-                self.resolver.locals_resolved_between(Start(term_loc), Start(bb.start_location()));
+            let dying = self.resolver.locals_resolved_between_blocks(*pred, bb);
             same_deaths = same_deaths && dying_in_first == dying
         }
 
         if same_deaths {
-            self.freeze_borrows_dying_between(Start(term_loc), Start(bb.start_location()));
+            let dying = self.resolver.locals_resolved_between_blocks(pred_blocks[0], bb);
+            self.freeze_locals(dying);
             return;
         }
 
         for pred in pred_blocks {
-            let term_loc = self.body.terminator_loc(*pred);
-            let dying =
-                self.resolver.locals_resolved_between(Start(term_loc), Start(bb.start_location()));
+            let dying = self.resolver.locals_resolved_between_blocks(*pred, bb);
 
             // If no deaths occured in block transition then skip entirely
             if dying.is_empty() {
                 continue;
             };
 
-            self.freeze_borrows_dying_between(Start(term_loc), Start(bb.start_location()));
+            self.freeze_locals(dying);
             let deaths = std::mem::take(&mut self.current_block.0);
 
             let drop_block = self.fresh_block_id();
@@ -367,12 +373,11 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     }
 
     fn freeze_borrows_dying_at(&mut self, loc: Location) {
-        use ExtendedLocation::*;
-        self.freeze_borrows_dying_between(Start(loc), Mid(loc));
+        let dying = self.resolver.locals_resolved_at_loc(loc);
+        self.freeze_locals(dying);
     }
 
-    fn freeze_borrows_dying_between(&mut self, start: ExtendedLocation, end: ExtendedLocation) {
-        let mut dying = self.resolver.locals_resolved_between(start, end);
+    fn freeze_locals(&mut self, mut dying: BitSet<Local>) {
         dying.subtract(&self.erased_locals);
 
         for local in dying.iter() {

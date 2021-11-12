@@ -18,7 +18,7 @@ pub fn default_decl(
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
-    let name = translate_value_id(ctx.tcx, def_id).module_ident().unwrap().clone();
+    let name = module_name(ctx.tcx, def_id);
 
     decls.extend(names.to_clones(ctx));
     let decl = match item_type(ctx.tcx, def_id) {

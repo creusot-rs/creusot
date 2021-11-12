@@ -1,4 +1,5 @@
 use crate as creusot_contracts;
+use crate::logic::*;
 use crate::{std::clone::Clone, Int, Model, Seq};
 use creusot_contracts_proc::*;
 
@@ -103,11 +104,4 @@ impl<T: Clone> Clone for Vec<T> {
 #[ensures(forall<i : Int> 0 <= i && i < @n ==> (@result)[i] === elem)]
 pub fn from_elem<T: Clone>(elem: T, n: usize) -> Vec<T> {
     panic!()
-    // if n = 0 { return Vec::new() }
-    // else {
-    //     let mut v = std::vec::Vec::with_capacity(n);
-    //     v.extend(std::iter::repeat_with(|| elem.clone()).take(n-1));
-    //     v.push(elem);
-    //     return Vec(v)
-    // }
 }

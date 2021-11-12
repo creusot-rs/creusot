@@ -1,18 +1,3 @@
-use indexmap::{IndexMap, IndexSet};
-use rustc_data_structures::captures::Captures;
-use rustc_errors::DiagnosticId;
-use rustc_hir::def::DefKind;
-use rustc_hir::def_id::DefId;
-use rustc_hir::definitions::DefPathData;
-use rustc_middle::ty::{AssocItemContainer, TyCtxt};
-use rustc_resolve::Namespace;
-use rustc_session::Session;
-use rustc_span::Span;
-use rustc_span::Symbol;
-pub use util::ItemType;
-use why3::declaration::{Decl, Module, TyDecl};
-use why3::QName;
-
 pub use crate::clone_map::*;
 use crate::creusot_items::{self, CreusotItems};
 use crate::metadata::{BinaryMetadata, Metadata};
@@ -22,6 +7,17 @@ use crate::translation::ty;
 use crate::translation::{external, specification};
 use crate::util::item_type;
 use crate::{options::Options, util};
+use indexmap::{IndexMap, IndexSet};
+use rustc_data_structures::captures::Captures;
+use rustc_errors::DiagnosticId;
+use rustc_hir::def::DefKind;
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::{AssocItemContainer, TyCtxt};
+use rustc_session::Session;
+use rustc_span::Span;
+use rustc_span::Symbol;
+pub use util::{item_name, module_name, ItemType};
+use why3::declaration::{Decl, Module, TyDecl};
 
 pub enum TranslatedItem<'tcx> {
     Logic {
@@ -347,67 +343,4 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             .cloned()
             .or_else(|| self.externs.creusot_item(name))
     }
-}
-
-use heck::CamelCase;
-
-pub fn translate_type_id(tcx: TyCtxt, def_id: DefId) -> QName {
-    translate_defid(tcx, def_id, true)
-}
-
-pub fn translate_value_id(tcx: TyCtxt, def_id: DefId) -> QName {
-    translate_defid(tcx, def_id, false)
-}
-
-fn translate_defid(tcx: TyCtxt, def_id: DefId, ty: bool) -> QName {
-    let def_path = tcx.def_path(def_id);
-
-    let mut segments = Vec::new();
-
-    let mut crate_name = tcx.crate_name(def_id.krate).to_string().to_camel_case();
-    if crate_name.chars().next().unwrap().is_numeric() {
-        crate_name = format!("C{}", crate_name);
-    }
-
-    segments.push(crate_name);
-
-    for seg in def_path.data[..].iter() {
-        match seg.data {
-            // DefPathData::CrateRoot => segments.push(tcx.crate_name(def_id.krate).to_string()),
-            // CORE ASSUMPTION: Once we stop seeing TypeNs we never see it again.
-            DefPathData::Ctor => {}
-            _ => segments.push(format!("{}", seg).to_camel_case()),
-        }
-    }
-
-    let kind = tcx.def_kind(def_id);
-    use rustc_hir::def::DefKind::*;
-
-    let name;
-    match (kind, kind.ns()) {
-        (AssocTy, _) => {
-            name = segments;
-            segments = Vec::new();
-        }
-        (_, _) if ty => {
-            name = segments.into_iter().map(|seg| seg.to_lowercase()).collect();
-            segments = vec!["Type".to_owned()];
-        }
-        (Ctor(_, _) | Variant | Struct | Enum, _) => {
-            segments[0] = segments[0].to_camel_case();
-            name = segments;
-            segments = vec!["Type".to_owned()];
-        }
-        (Trait | Mod | Impl, _) => {
-            name = segments;
-            segments = Vec::new();
-        }
-        (_, Some(Namespace::ValueNS)) | (Closure, _) => {
-            name = vec![(&*util::method_name(tcx, def_id)).into()];
-        }
-        (a, b) => unreachable!("{:?} {:?} {:?}", a, b, segments),
-    }
-    let module = if segments.is_empty() { Vec::new() } else { vec![segments.join("_").into()] };
-
-    QName { module, name: name.join("_").into() }
 }

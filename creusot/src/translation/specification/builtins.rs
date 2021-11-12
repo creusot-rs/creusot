@@ -1,13 +1,13 @@
+use super::lower::mk_binders;
+use super::lower::Lower;
+use crate::translation::traits::resolve_opt;
+use crate::translation::ty::translate_ty;
+use crate::util::get_builtin;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 use rustc_span::{symbol::sym, Symbol};
 use why3::mlcfg::{BinOp, Constant, Exp, Purity, UnOp};
-
-use crate::util::get_builtin;
-
-use super::lower::mk_binders;
-use super::lower::Lower;
-use crate::translation::traits::resolve_opt;
+use why3::QName;
 
 impl Lower<'_, '_, 'tcx> {
     pub fn lookup_builtin(
@@ -32,6 +32,7 @@ impl Lower<'_, '_, 'tcx> {
         }
 
         let def_id = Some(def_id);
+        let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
 
         if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("add_int")) {
             let l = args.remove(0);
@@ -62,32 +63,50 @@ impl Lower<'_, '_, 'tcx> {
             let a = args.remove(0);
 
             return Some(Exp::UnaryOp(UnOp::Neg, box a));
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("le_int")) {
+        } else if builtin_attr == Some(Symbol::intern("<=")) {
+            let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
+            translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty);
+
             let l = args.remove(0);
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Le, box l, box r));
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("lt_int")) {
+        } else if builtin_attr == Some(Symbol::intern("<")) {
+            let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
+            translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty);
+
             let l = args.remove(0);
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Lt, box l, box r));
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("ge_int")) {
+        } else if builtin_attr == Some(Symbol::intern(">=")) {
+            let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
+            translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty);
+
             let l = args.remove(0);
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Ge, box l, box r));
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("gt_int")) {
+        } else if builtin_attr == Some(Symbol::intern(">")) {
+            let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
+            translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty);
+
             let l = args.remove(0);
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Gt, box l, box r));
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("eq_int")) {
+        } else if builtin_attr == Some(Symbol::intern("==")) {
+            let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
+            translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty);
+
             let l = args.remove(0);
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Eq, box l, box r));
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("ne_int")) {
+        } else if builtin_attr == Some(Symbol::intern("!=")) {
+            let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
+            translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty);
+
             let l = args.remove(0);
             let r = args.remove(0);
 
@@ -134,7 +153,7 @@ impl Lower<'_, '_, 'tcx> {
             return Some(args.remove(0));
         }
 
-        if let Some(builtin) = get_builtin(self.ctx.tcx, def_id.unwrap()) {
+        if let Some(builtin) = builtin_attr.and_then(|a| QName::from_string(&a.as_str())) {
             self.names.import_builtin_module(builtin.clone().module_qname());
 
             if let Purity::Program = self.pure {
