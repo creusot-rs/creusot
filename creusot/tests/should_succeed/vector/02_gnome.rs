@@ -5,27 +5,6 @@ extern crate creusot_contracts;
 use creusot_contracts::std::*;
 use creusot_contracts::*;
 
-pub struct Ghost<T>(*mut T)
-where
-    T: ?Sized;
-
-impl<T> Model for Ghost<T> {
-    type ModelTy = T;
-    #[logic]
-    #[trusted]
-    fn model(self) -> Self::ModelTy {
-        panic!()
-    }
-}
-
-impl<T> Ghost<T> {
-    #[trusted]
-    #[ensures(@result === *a)]
-    fn record(a: &T) -> Ghost<T> {
-        panic!()
-    }
-}
-
 #[predicate]
 fn sorted_range<T: Ord>(s: Seq<T>, l: Int, u: Int) -> bool {
     pearlite! {
