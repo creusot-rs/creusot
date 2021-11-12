@@ -64,9 +64,6 @@ fn lemma_num_of_pos_increasing(i: Int, j: Int, k: Int, t: Seq<i32>) {
         if j < k {
             lemma_num_of_pos_increasing(i,j+1,k,t)
         }
-        else {  // Creusot panics if no else given...
-            ()
-        }
     }
 }
 
@@ -78,12 +75,12 @@ fn lemma_num_of_pos_increasing(i: Int, j: Int, k: Int, t: Seq<i32>) {
 #[ensures(num_of_pos(0,i,t) < num_of_pos(0,i+1,t))]
 fn lemma_num_of_pos_strictly_increasing(i: Int, t: Seq<i32>) {}
 
-// the main function to proof
+// the main function to prove
 fn m(t: Vec<i32>) -> Vec<i32> {
     let mut count: usize = 0;
     let mut i: usize = 0;
-    #[invariant(loop_bounds, 0 <= @i && @i <= (@t).len())]
-    #[invariant(count_bounds, 0 <= @count && @count <= @i)]
+    #[invariant(loop_bound, @i <= (@t).len())]
+    #[invariant(count_bound, @count <= @i)]
     #[invariant(num, @count === num_of_pos(0,@i,@t))]
     //#[variant((@t).len() - @i)]
     while i < t.len() {
@@ -97,8 +94,6 @@ fn m(t: Vec<i32>) -> Vec<i32> {
     count = 0;
 
     i = 0;
-    #[invariant(loop_bounds, 0 <= @i && @i <= (@t).len())]
-    #[invariant(count_bounds, 0 <= @count && @count <= @i)]
     #[invariant(num, @count === num_of_pos(0,@i,@t))]
     #[invariant(ulength, (@u).len() === num_of_pos(0,(@t).len(),@t))]
     //#[variant((@t).len() - @i)]
@@ -117,13 +112,18 @@ fn m(t: Vec<i32>) -> Vec<i32> {
     return u;
 }
 
-// main program, for testing purpose
-// commented out here, because Creusot complains
+#[trusted]
+#[requires(false)]
 fn main() {
-    // let v = vec![1,-2,3,-4,5];
-    // let w = m(v);
-    // println!("w.len = {}", w.len());
-    // for i in 0..w.len() {
-    //     println!("w[{}] = {}", i, w[i]);
-    // }
+    let v = Vec::new();
+    v.push(1);
+    v.push(-2);
+    v.push(3);
+    v.push(-4);
+    v.push(5);
+    let w = m(v);
+    println!("w.len = {}", w.len());
+    for i in 0..w.len() {
+        println!("w[{}] = {}", i, w[i]);
+    }
 }

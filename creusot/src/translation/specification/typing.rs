@@ -218,18 +218,18 @@ fn lower_expr<'tcx>(
         ExprKind::If { cond, then, else_opt, .. } => {
             let cond = lower_expr(tcx, thir, cond)?;
             let then = lower_expr(tcx, thir, then)?;
-            if let Some(els) = else_opt {
-                let els = lower_expr(tcx, thir, els)?;
-                Ok(Term {
-                    ty,
-                    kind: TermKind::Match {
-                        scrutinee: box cond,
-                        arms: vec![(Pattern::Boolean(true), then), (Pattern::Boolean(false), els)],
-                    },
-                })
+            let els = if let Some(els) = else_opt {
+                lower_expr(tcx, thir, els)?
             } else {
-                Err(Error {})
-            }
+                Term { ty: tcx.types.unit, kind: TermKind::Tuple { fields: vec![] } }
+            };
+            Ok(Term {
+                ty,
+                kind: TermKind::Match {
+                    scrutinee: box cond,
+                    arms: vec![(Pattern::Boolean(true), then), (Pattern::Boolean(false), els)],
+                },
+            })
         }
         ExprKind::Field { lhs, name } => {
             let pat = field_pattern(thir[lhs].ty, name)
