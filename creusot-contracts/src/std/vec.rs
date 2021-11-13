@@ -99,6 +99,13 @@ impl<T: Clone> Clone for Vec<T> {
     }
 }
 
+unsafe impl<T: Resolve> Resolve for Vec<T> {
+    #[predicate]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i : Int> 0 <= i && i < (@self).len() ==> (@self)[i].resolve() }
+    }
+}
+
 #[trusted]
 #[ensures((@result).len() === @n)]
 #[ensures(forall<i : Int> 0 <= i && i < @n ==> (@result)[i] === elem)]
