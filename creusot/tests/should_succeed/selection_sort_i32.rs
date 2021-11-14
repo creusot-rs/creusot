@@ -82,20 +82,6 @@ fn find_min(v: &Vec<i32>, i: usize) -> usize {
     return min;
 }
 
-#[requires(0 <= @i && @i < (@v).len())]
-#[requires(@i <= @min && @min < (@v).len())]
-#[requires(sorted_range(@v, 0, @i))]
-#[requires(selection_sort_invariant(@v, @i))]
-#[requires(forall<j: Int> @i <= j && j < (@v).len() ==> (@v)[@min] <= (@v)[j])] // min smaller
-#[ensures((@v)[@i] === (@^v)[@min] && (@v)[@min] === (@^v)[@i])] // i and min swapped
-#[ensures(forall<j: Int> 0 <= j && j < (@v).len() && j != @i && j != @min ==> (@v)[j] === (@^v)[j])] // rest are unchanged
-#[ensures((@^v).permutation_of(@v))]
-#[ensures(selection_sort_invariant(@^v, @i+1))]
-#[ensures(sorted_range(@^v, 0, @i+1))]
-fn swap(v: &mut Vec<i32>, i: usize, min: usize) {
-    v.swap(i, min);
-}
-
 #[ensures(sorted(@^v))]
 #[ensures((@^v).permutation_of(@v))]
 fn selection_sort(v: &mut Vec<i32>) {
@@ -108,7 +94,7 @@ fn selection_sort(v: &mut Vec<i32>) {
     #[invariant(sort_inv, selection_sort_invariant(@v, @i))]
     while i < v.len() {
         let min = find_min(v, i);
-        swap(v, i, min);
+        v.swap(i, min);
         i += 1;
     }
 }
