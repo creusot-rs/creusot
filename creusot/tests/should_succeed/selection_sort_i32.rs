@@ -121,7 +121,6 @@ fn swap(v: &mut Vec<i32>, i: usize, min: usize) {
 #[ensures((@^v).permutation_of(@v))]
 fn selection_sort(v: &mut Vec<i32>) {
     let mut i: usize = 0;
-    let mut min = i;
     let old_v = Ghost::record(&v);
     #[invariant(proph_const, ^v === ^@old_v)]
     #[invariant(permutation, (@*v).permutation_of(@*@old_v))]
@@ -129,7 +128,7 @@ fn selection_sort(v: &mut Vec<i32>) {
     #[invariant(sorted, sorted_range(@v, 0, @i))]
     #[invariant(sort_inv, selection_sort_invariant(@v, @i))]
     while i < v.len() {
-        min = find_min(v, i);
+        let min = find_min(v, i);
         swap(v, i, min);
         i += 1;
     }
