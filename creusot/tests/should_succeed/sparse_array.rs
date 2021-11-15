@@ -17,12 +17,6 @@ extern crate creusot_contracts;
 //use crate::{std::clone::Clone, Int, Model, Seq};
 use creusot_contracts::{std::vec, std::vec::Vec, *};
 
-#[predicate]
-fn interval(a:Int, x:Int, b:Int) -> bool {
-    a <= x && x < b
-}
-
-
 
 struct Sparse<T> {
     size: usize,        // allocated size
@@ -31,40 +25,6 @@ struct Sparse<T> {
     idx: Vec<usize>,    // corresponding indexes in back
     back: Vec<usize>,   // corresponding indexes in idx, makes sense between 0 and n-1
 }
-
-
-impl<T> Model for Sparse<T> {
-    type ModelTy = Seq<Option<T>>;
-    #[logic]
-    #[trusted]
-    fn model(self) -> Self::ModelTy {
-        panic!()
-    }
-}
-
-
-
-#[predicate]
-fn sparse_inv<T>(x: Sparse<T>) -> bool {
-    pearlite! {
-        interval(0,@(x.n),@(x.size))
-            && @(x.values).len() === @(x.size)
-            && @(x.idx).len() === @(x.size)
-            && @(x.back).len() === @(x.size)
-            && forall<i: Int> interval(0,i,@(x.n)) ==>
-            match Seq::get(@(x.back),i) {
-                None => false,
-                Some(j) => interval(0,@j,@(x.size))
-                    && match Seq::get(@(x.idx),@j) {
-                        None => false,
-                        Some(k) => @k === i,
-                    }
-            }
-    }
-}
-
-
-
 
 
 /* is_elt(a,i) tells whether index i points to a existing element. It
@@ -79,44 +39,73 @@ fn sparse_inv<T>(x: Sparse<T>) -> bool {
 //   and [select (!(!a.idx).cell, i)] < [!a.n]
 //   and [select (!(!a.back).cell, select (!(!a.idx).cell, i))] = [i]
 
+impl <T> Sparse<T> {
 
+    #[predicate]
+    fn is_elt(&self, i:Int) -> bool {
+        pearlite! { 0 <= i && i < @(self.size)
+                    && @((@(self.idx))[i]) < @(self.n)
+                    && @((@(self.back))[@((@(self.idx))[i])]) === i
+       }
+    }
+}
 
-// logic function model (Sparse (alpha) [R], int): alpha
+impl<T> Model for Sparse<T> {
 
-// axiom model_in:
-//   forall a: Sparse (alpha) [R].
-//   forall i: int.
-//   is_elt([a], [i]) ==> [model(a, i)] = [select(!(!a.value).cell, i)]
+    type ModelTy = Seq<Option<T>>;
 
-// axiom model_out:
-//   forall a: Sparse (alpha) [R].
-//   forall i: int.
-//   not is_elt([a], [i]) ==> [model(a, i)] = [!a.default]
-
-
-
-
-#[requires(0 <= @sz)]
-#[ensures( (@result).len() === @sz)]
-#[ensures(forall<i: Int> (@result)[i] === None)]
-fn create<T:Clone+Copy>(sz:usize, dummy: T) -> Sparse<T> {
-    Sparse {
-        size : sz,
-        n : 0,
-        // values : vec![dummy;sz],
-        values : vec::from_elem(dummy,sz),
-        // idx : vec![0;sz],
-        idx : vec::from_elem(0,sz),
-        // back : vec![0;sz],
-        back : vec::from_elem(0,sz),
+    #[logic]
+    #[trusted]
+    #[ensures(result.len() === @(self.size))]
+    #[ensures(
+        forall<i:Int>
+            result[i] ===
+            (if self.is_elt(i) { Some((@(self.values))[i]) } else { None})
+    )]
+    fn model(self) -> Self::ModelTy {
+        panic!()
     }
 }
 
 
+
+#[predicate]
+fn sparse_inv<T>(x: Sparse<T>) -> bool {
+    pearlite! {
+        @(x.n) <= @(x.size)
+            && (@x).len() === @(x.size)
+            && (@(x.values)).len() === @(x.size)
+            && (@(x.idx)).len() === @(x.size)
+            && (@(x.back)).len() === @(x.size)
+//             && forall<i: Int> i < @(x.n) ==>
+//             match Seq::get(@(x.back),i) {
+//                 None => false,
+//                 Some(j) => @j < @(x.size)
+//                     && match Seq::get(@(x.idx),@j) {
+//                         None => false,
+//                         Some(k) => @k === i,
+//                     }
+//             }
+    }
+}
+
+
+
+
+
+
+
+
+
+
 impl <T> Sparse<T> {
 
-    #[requires(interval(0,@i,(@self).len()))]
-    // #[ensures(result === (@self)[@i])]
+    #[requires(sparse_inv(*self))]
+    #[requires(@i < (@self).len())]
+    #[ensures(match result {
+        None => (@self)[@i] === None,
+        Some(x) => (@self)[@i] === Some(*x)
+    })]
     fn get(&self, i: usize) -> Option<&T> {
         let index = self.idx[i];
         if index < self.n && self.back[index] == i {
@@ -139,8 +128,9 @@ impl <T> Sparse<T> {
    //      so exists j. 0 <= j < a.card /\ a.back[j] = i
 
 
-    #[requires(interval(0,@i,(@*self).len()))]
-    #[ensures( (@^self).len() === (@*self).len())]
+    #[requires(sparse_inv(*self))]
+    #[requires(@i < (@*self).len())]
+    #[ensures(sparse_inv(^self))]
     #[ensures(forall<j: Int> !(j === @i) ==> (@^self)[j] === (@*self)[j])]
     #[ensures((@^self)[@i] === Some(v))]
     fn set(&mut self, i: usize, v: T) {
@@ -156,6 +146,25 @@ impl <T> Sparse<T> {
     }
 
 }
+
+
+#[requires(0 <= @sz)]
+#[ensures(sparse_inv(result))]
+#[ensures(result.size === sz)]
+#[ensures(forall<i: Int> (@result)[i] === None)]
+fn create<T:Clone+Copy>(sz:usize, dummy: T) -> Sparse<T> {
+    Sparse {
+        size : sz,
+        n : 0,
+        // values : vec![dummy;sz],
+        values : vec::from_elem(dummy,sz),
+        // idx : vec![0;sz],
+        idx : vec::from_elem(0,sz),
+        // back : vec![0;sz],
+        back : vec::from_elem(0,sz),
+    }
+}
+
 
 
 fn main () {
