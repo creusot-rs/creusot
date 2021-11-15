@@ -12,34 +12,35 @@
 // requires to reason about permutation,
 
 extern crate creusot_contracts;
-//use crate::{std::clone::Clone, Int, Model, Seq};
 use creusot_contracts::{std::vec, std::vec::Vec, *};
 
+/* The sparse array data structure
+ */
 struct Sparse<T> {
     size: usize,      // allocated size
     n: usize,         // number of elements stored so far
     values: Vec<T>,   // actual values at their actual indexes
-    idx: Vec<usize>,  // corresponding indexes in back
-    back: Vec<usize>, // corresponding indexes in idx, makes sense between 0 and n-1
+    idx: Vec<usize>,  // corresponding indexes in `back`
+    back: Vec<usize>, // corresponding indexes in `idx`, makes sense between 0 and `n`-1
 }
 
-/* s.is_elt(i) tells whether index i points to a existing element. It
-  can be checked as follows:
-
-  (1) check that array idx maps i to a index j between 0 and n (excluded)
-  (2) check that back(j) is i
-*/
-
+/* The function `s.is_elt(i)` tells whether index `i` points to a
+ * existing element. It can be checked as follows:
+ *   (1) check that array `idx` maps `i` to a index `j` between 0 and `n` (excluded)
+ *   (2) check that `back[j]` is `i`
+ */
 impl<T> Sparse<T> {
     #[predicate]
     fn is_elt(&self, i: Int) -> bool {
         pearlite! { 0 <= i && i < @(self.size)
-                     && @((@(self.idx))[i]) < @(self.n)
-                     && @((@(self.back))[@((@(self.idx))[i])]) === i
+                    && @((@(self.idx))[i]) < @(self.n)
+                    && @((@(self.back))[@((@(self.idx))[i])]) === i
         }
     }
 }
 
+/* The model of the structure is a sequence of optional values
+ */
 impl<T> Model for Sparse<T> {
     type ModelTy = Seq<Option<T>>;
 
@@ -56,6 +57,8 @@ impl<T> Model for Sparse<T> {
     }
 }
 
+/* The data invariant of the Sparse Array structure
+ */
 #[predicate]
 fn sparse_inv<T>(x: Sparse<T>) -> bool {
     pearlite! {
@@ -72,6 +75,8 @@ fn sparse_inv<T>(x: Sparse<T>) -> bool {
     }
 }
 
+/* The methods for accessing and modifying
+ */
 impl<T> Sparse<T> {
     #[requires(sparse_inv(*self))]
     #[requires(@i < (@self).len())]
@@ -88,8 +93,11 @@ impl<T> Sparse<T> {
         }
     }
 
+    // A key lemma to prove for safety of access in `set()`
+    // The corresponding proof in Why3 is done as follows.
+    //
     // use map.MapInjection as MI
-
+    //
     // lemma permutation :
     //   forall a: sparse_array 'a.
     //    sparse_inv(a) ->
@@ -131,6 +139,11 @@ impl<T> Sparse<T> {
     }
 }
 
+/* The constructor of sparse arrays `sz` is the allocated size,
+ * i.e. the valid indexes are 0 to sz-1 `dummy` is a dummy
+ * element of type `T`, required because Rust would not accept
+ * to create non-initialized arrays.
+ */
 #[requires(0 <= @sz)]
 #[ensures(sparse_inv(result))]
 #[ensures(result.size === sz)]
@@ -148,6 +161,8 @@ fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
     }
 }
 
+/* A test program
+ */
 fn main() {
     let default = 0;
     let mut a = create(10, default);
