@@ -7,7 +7,7 @@ use creusot_contracts::*;
 #[predicate]
 fn sorted_range(s: Seq<i32>, l: Int, u: Int) -> bool {
     pearlite! {
-        forall<i: Int, j : Int> l <= i && i < j && j < u ==> s[i] <= (s[j])
+        forall<i: Int, j :Int> l <= i && i < j && j < u ==> s[i] <= s[j]
     }
 }
 
@@ -56,30 +56,12 @@ fn selection_sort_invariant(s: Seq<i32>, i: Int) -> bool {
 
 #[predicate]
 fn min_larger(s: Seq<i32>, u: Int, idx: Int) -> bool {
-    pearlite! {forall<j: Int> 0 <= j && j < u ==> s[j] <= s[idx] }
+    pearlite! { forall<j: Int> 0 <= j && j < u ==> s[j] <= s[idx] }
 }
 
-#[requires(min_larger(@*v, @i, @i))]
-#[requires(sorted_range(@v, 0, @i))]
-#[requires(selection_sort_invariant(@v, @i))]
-#[requires((@v).len() <= @0xffff_ffff_ffff_ffffusize)]
-#[requires(0 <= @i && @i < (@v).len())]
-#[ensures(min_larger(@v, @i, @result))]
-#[ensures(forall<j: Int> @i <= j && j < (@v).len() ==> (@v)[@result] <= (@v)[j])] // min smaller
-#[ensures(@i <= @result && @result < (@v).len())]
-fn find_min(v: &Vec<i32>, i: usize) -> usize {
-    let mut min = i;
-    let mut j = i + 1;
-    #[invariant(min_is_min, forall<k: Int> @i <= k && k < @j ==> (@v)[@min] <= (@v)[k])]
-    #[invariant(j_bound, @i <= @j && @j <= (@v).len())]
-    #[invariant(min_bound, @i <= @min && @min < (@v).len() && @min <= @j)]
-    while j < v.len() {
-        if v[j] < v[min] {
-            min = j;
-        }
-        j += 1;
-    }
-    return min;
+#[predicate]
+fn min_smaller(v: Seq<i32>, i: Int, min: Int) -> bool {
+    pearlite! { forall<j: Int> i <= j && j < v.len() ==> v[min] <= v[j] }
 }
 
 #[ensures(sorted(@^v))]
@@ -88,13 +70,27 @@ fn selection_sort(v: &mut Vec<i32>) {
     let mut i: usize = 0;
     let old_v = Ghost::record(&v);
     #[invariant(proph_const, ^v === ^@old_v)]
-    #[invariant(permutation, (@*v).permutation_of(@*@old_v))]
+    #[invariant(permutation, (@v).permutation_of(@*@old_v))]
     #[invariant(i_bound, 0 <= @i && @i <= (@v).len())]
     #[invariant(sorted, sorted_range(@v, 0, @i))]
     #[invariant(sort_inv, selection_sort_invariant(@v, @i))]
     while i < v.len() {
-        let min = find_min(v, i);
+        let mut min = i;
+        let mut j = i + 1;
+        #[invariant(min_is_min, forall<k: Int> @i <= k && k < @j ==> (@v)[@min] <= (@v)[k])]
+        #[invariant(j_bound, @i <= @j && @j <= (@v).len())]
+        #[invariant(min_bound, @i <= @min && @min < (@v).len() && @min <= @j)]
+        while j < v.len() {
+            if v[j] < v[min] {
+                min = j;
+            }
+            j += 1;
+        }
+        proof_assert! { min_larger(@v, @i, @min) }
+        proof_assert! { min_smaller(@v, @i, @min) }
         v.swap(i, min);
         i += 1;
+        proof_assert! { sorted_range(@v, 0, @i) }
+        proof_assert! { selection_sort_invariant(@v, @i) }
     }
 }
