@@ -1,4 +1,4 @@
-#![feature(type_ascription, unsized_fn_params)]
+#![feature(type_ascription)]
 extern crate creusot_contracts;
 
 use creusot_contracts::std::*;
