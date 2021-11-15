@@ -1,4 +1,3 @@
-
 // The following code is the Sparse Arrays Verification Challenge from
 // the VACID0 benchmark
 //
@@ -12,20 +11,17 @@
 // show that the array is not accessed outside its bound: the proof
 // requires to reason about permutation,
 
-
 extern crate creusot_contracts;
 //use crate::{std::clone::Clone, Int, Model, Seq};
 use creusot_contracts::{std::vec, std::vec::Vec, *};
 
-
 struct Sparse<T> {
-    size: usize,        // allocated size
-    n: usize,           // number of elements stored so far
-    values: Vec<T>,     // actual values at their actual indexes
-    idx: Vec<usize>,    // corresponding indexes in back
-    back: Vec<usize>,   // corresponding indexes in idx, makes sense between 0 and n-1
+    size: usize,      // allocated size
+    n: usize,         // number of elements stored so far
+    values: Vec<T>,   // actual values at their actual indexes
+    idx: Vec<usize>,  // corresponding indexes in back
+    back: Vec<usize>, // corresponding indexes in idx, makes sense between 0 and n-1
 }
-
 
 /* s.is_elt(i) tells whether index i points to a existing element. It
   can be checked as follows:
@@ -34,19 +30,17 @@ struct Sparse<T> {
   (2) check that back(j) is i
 */
 
-impl <T> Sparse<T> {
-
+impl<T> Sparse<T> {
     #[predicate]
-    fn is_elt(&self, i:Int) -> bool {
+    fn is_elt(&self, i: Int) -> bool {
         pearlite! { 0 <= i && i < @(self.size)
-                    && @((@(self.idx))[i]) < @(self.n)
-                    && @((@(self.back))[@((@(self.idx))[i])]) === i
-       }
+                     && @((@(self.idx))[i]) < @(self.n)
+                     && @((@(self.back))[@((@(self.idx))[i])]) === i
+        }
     }
 }
 
 impl<T> Model for Sparse<T> {
-
     type ModelTy = Seq<Option<T>>;
 
     #[logic]
@@ -61,8 +55,6 @@ impl<T> Model for Sparse<T> {
         panic!()
     }
 }
-
-
 
 #[predicate]
 fn sparse_inv<T>(x: Sparse<T>) -> bool {
@@ -80,17 +72,7 @@ fn sparse_inv<T>(x: Sparse<T>) -> bool {
     }
 }
 
-
-
-
-
-
-
-
-
-
-impl <T> Sparse<T> {
-
+impl<T> Sparse<T> {
     #[requires(sparse_inv(*self))]
     #[requires(@i < (@self).len())]
     #[ensures(match result {
@@ -101,23 +83,27 @@ impl <T> Sparse<T> {
         let index = self.idx[i];
         if index < self.n && self.back[index] == i {
             Some(&self.values[i])
-        }
-        else {
+        } else {
             None
         }
     }
 
+    // use map.MapInjection as MI
 
-   // use map.MapInjection as MI
+    // lemma permutation :
+    //   forall a: sparse_array 'a.
+    //    sparse_inv(a) ->
+    //    a.card = a.length ->
+    //    forall i: int. 0 <= i < a.length -> is_elt a i
+    //      by MI.surjective a.back.elts a.card
+    //      so exists j. 0 <= j < a.card /\ a.back[j] = i
 
-   // lemma permutation :
-   //   forall a: sparse_array 'a.
-   //    sparse_inv(a) ->
-   //    a.card = a.length ->
-   //    forall i: int. 0 <= i < a.length -> is_elt a i
-   //      by MI.surjective a.back.elts a.card
-   //      so exists j. 0 <= j < a.card /\ a.back[j] = i
-
+    #[logic]
+    #[requires(sparse_inv(self))]
+    #[requires(self.n === self.size)]
+    #[requires(0 <= i && i < @(self.size))]
+    #[ensures(self.is_elt(i))]
+    fn lemma_permutation(self, i: Int) {}
 
     #[requires(sparse_inv(*self))]
     #[requires(@i < (@*self).len())]
@@ -130,6 +116,12 @@ impl <T> Sparse<T> {
         let index = self.idx[i];
         if !(index < self.n && self.back[index] == i) {
             // the hard assertion!
+            proof_assert!(pearlite! {
+                {
+                    self.lemma_permutation(@i);
+                    true
+                }
+            });
             proof_assert!(@(self.n) < @(self.size));
             assert!(self.n < self.size);
             self.idx[i] = self.n;
@@ -137,33 +129,29 @@ impl <T> Sparse<T> {
             self.n += 1;
         }
     }
-
 }
-
 
 #[requires(0 <= @sz)]
 #[ensures(sparse_inv(result))]
 #[ensures(result.size === sz)]
 #[ensures(forall<i: Int> (@result)[i] === None)]
-fn create<T:Clone+Copy>(sz:usize, dummy: T) -> Sparse<T> {
+fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
     Sparse {
-        size : sz,
-        n : 0,
+        size: sz,
+        n: 0,
         // values : vec![dummy;sz],
-        values : vec::from_elem(dummy,sz),
+        values: vec::from_elem(dummy, sz),
         // idx : vec![0;sz],
-        idx : vec::from_elem(0,sz),
+        idx: vec::from_elem(0, sz),
         // back : vec![0;sz],
-        back : vec::from_elem(0,sz),
+        back: vec::from_elem(0, sz),
     }
 }
 
-
-
-fn main () {
+fn main() {
     let default = 0;
-    let mut a = create(10,default);
-    let mut b = create(20,default);
+    let mut a = create(10, default);
+    let mut b = create(20, default);
     let mut x = a.get(5);
     let mut y = b.get(7);
     proof_assert!(x === None && y === None);
