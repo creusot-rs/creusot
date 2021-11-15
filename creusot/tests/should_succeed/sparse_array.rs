@@ -130,6 +130,7 @@ impl <T> Sparse<T> {
         let index = self.idx[i];
         if !(index < self.n && self.back[index] == i) {
             // the hard assertion!
+            proof_assert!(@(self.n) < @(self.size));
             assert!(self.n < self.size);
             self.idx[i] = self.n;
             self.back[self.n] = i;
@@ -163,33 +164,33 @@ fn main () {
     let default = 0;
     let mut a = create(10,default);
     let mut b = create(20,default);
-    let x1 = a.get(5);
-    let y1 = b.get(7);
-    proof_assert!(x1 === None && y1 === None);
-    // assert!(x1 == None && y1 == None);
+    let mut x = a.get(5);
+    let mut y = b.get(7);
+    proof_assert!(x === None && y === None);
+    // assert!(x == None && y == None);
     a.set(5, 1);
     b.set(7, 2);
-    let x2 = a.get(5);
-    let y2 = b.get(7);
-    proof_assert!(match x2 {
+    x = a.get(5);
+    y = b.get(7);
+    proof_assert!(match x {
         None => false,
         Some(z) => @z === 1
     });
-    proof_assert!(match y2 {
+    proof_assert!(match y {
         None => false,
         Some(z) => @z === 2
     });
-    // assert!(x2 == Some(1) && y2 == Some(2));
-    let x3 = a.get(7);
-    let y3 = b.get(5);
-    proof_assert!(x3 === None && y3 === None);
-    // assert!(x3 == None && y3 == None);
-    let x4 = a.get(0);
-    let y4 = b.get(0);
-    proof_assert!(x4 === None && y4 === None);
-    // assert!(x4 == None && y4 == None);
-    let x5 = a.get(9);
-    let y5 = b.get(9);
-    proof_assert!(x5 === None && y5 === None)
-    // assert!(x5 == None && y5 == None);
+    // assert!(x == Some(1) && y == Some(2));
+    x = a.get(7);
+    y = b.get(5);
+    proof_assert!(x === None && y === None);
+    // assert!(x == None && y == None);
+    x = a.get(0);
+    y = b.get(0);
+    proof_assert!(x === None && y === None);
+    // assert!(x == None && y == None);
+    x = a.get(9);
+    y = b.get(9);
+    proof_assert!(x === None && y === None)
+    // assert!(x == None && y == None);
 }
