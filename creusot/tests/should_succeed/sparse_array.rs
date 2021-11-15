@@ -27,17 +27,12 @@ struct Sparse<T> {
 }
 
 
-/* is_elt(a,i) tells whether index i points to a existing element. It
+/* s.is_elt(i) tells whether index i points to a existing element. It
   can be checked as follows:
 
   (1) check that array idx maps i to a index j between 0 and n (excluded)
   (2) check that back(j) is i
 */
-
-// predicate is_elt(a: Sparse (alpha) [R], i: int) =
-//   [0] <= [select (!(!a.idx).cell, i)]
-//   and [select (!(!a.idx).cell, i)] < [!a.n]
-//   and [select (!(!a.back).cell, select (!(!a.idx).cell, i))] = [i]
 
 impl <T> Sparse<T> {
 
@@ -77,15 +72,11 @@ fn sparse_inv<T>(x: Sparse<T>) -> bool {
             && (@(x.values)).len() === @(x.size)
             && (@(x.idx)).len() === @(x.size)
             && (@(x.back)).len() === @(x.size)
-//             && forall<i: Int> i < @(x.n) ==>
-//             match Seq::get(@(x.back),i) {
-//                 None => false,
-//                 Some(j) => @j < @(x.size)
-//                     && match Seq::get(@(x.idx),@j) {
-//                         None => false,
-//                         Some(k) => @k === i,
-//                     }
-//             }
+            && forall<i: Int> 0 <= i && i < @(x.n) ==>
+            match (@(x.back))[i] {
+                j => 0 <= @j && @j < @(x.size)
+                    && @((@(x.idx))[@j]) === i
+            }
     }
 }
 
@@ -179,14 +170,14 @@ fn main () {
     b.set(7, 2);
     let x = a.get(5);
     let y = b.get(7);
-    // proof_assert!(match x {
-    //     None => false,
-    //     Some(z) => z === 1
-    // });
-    // proof_assert!(match y {
-    //     None => false,
-    //     Some(z) => z === 2
-    // });
+    proof_assert!(match x {
+        None => false,
+        Some(z) => @z === 1
+    });
+    proof_assert!(match y {
+        None => false,
+        Some(z) => @z === 2
+    });
     // assert!(x == Some(1) && y == Some(2));
     let x = a.get(7);
     let y = b.get(5);
