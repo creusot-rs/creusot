@@ -367,11 +367,11 @@ fn predicate_item(log: PredicateItem) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
-    let p: ItemFn = parse_macro_input!(tokens);
-
+    // let p: ItemFn = parse_macro_input!(tokens);
+    let tokens = TokenStream::from(tokens);
     TS1::from(quote! {
         #[creusot::decl::trusted]
-        #p
+        #tokens
     })
 }
 
