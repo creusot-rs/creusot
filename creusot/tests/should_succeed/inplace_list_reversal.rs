@@ -7,10 +7,9 @@ pub use creusot_contracts::*;
 
 enum List<T> {
     Nil,
-    Cons(Box<(T, List<T>)>),
+    Cons(Node<T>),
 }
 use List::*;
-
 type Node<T> = Box<(T, List<T>)>;
 
 #[logic]
@@ -25,9 +24,7 @@ fn rev_append<T>(n: List<T>, o: List<T>) -> List<T> {
 fn rev<T>(l: &mut List<T>) {
     let old_l = Ghost::record(&*l);
     let mut prev = Nil;
-
     let mut head = replace(l, Nil);
-
     #[invariant(x, rev_append(head, prev) === rev_append(@old_l, Nil))]
     while let Cons(mut curr) = head {
         let next = curr.1;
@@ -35,6 +32,5 @@ fn rev<T>(l: &mut List<T>) {
         prev = Cons(curr);
         head = next;
     }
-
     *l = prev;
 }
