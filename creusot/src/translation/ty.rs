@@ -13,8 +13,8 @@ use why3::Ident;
 use why3::declaration::TyDecl;
 use why3::{mlcfg::Type as MlT, QName};
 
-use crate::ctx::*;
 use crate::util::{get_builtin, item_name};
+use crate::{ctx::*, util};
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:
 ///
@@ -109,6 +109,10 @@ fn translate_ty_inner<'tcx>(
                 vec![translate_ty_inner(trans, ctx, names, span, ty)],
             )
         }
+        Array(ty, _) => MlT::TApp(
+            box MlT::TConstructor("rust_array".into()),
+            vec![translate_ty_inner(trans, ctx, names, span, ty)],
+        ),
         Str => MlT::TConstructor("string".into()),
         // Slice()
         Never => MlT::Tuple(vec![]),
@@ -221,22 +225,27 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     // Collect type variables of declaration
     let ty_args: Vec<_> = ty_param_names(ctx.tcx, did).collect();
 
-    let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
+    let kind = if util::is_trusted(ctx.tcx, did) {
+        TyDeclKind::Opaque
+    } else {
+        let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
+        let mut ml_ty_def = Vec::new();
 
-    let mut ml_ty_def = Vec::new();
+        for var_def in adt.variants.iter() {
+            let field_tys: Vec<_> = var_def
+                .fields
+                .iter()
+                .map(|f| field_ty(ctx, &mut names, f, substs, rustc_span::DUMMY_SP))
+                .collect();
+            let var_name = item_name(ctx.tcx, var_def.def_id);
 
-    for var_def in adt.variants.iter() {
-        let field_tys: Vec<_> = var_def
-            .fields
-            .iter()
-            .map(|f| field_ty(ctx, &mut names, f, substs, rustc_span::DUMMY_SP))
-            .collect();
-        let var_name = item_name(ctx.tcx, var_def.def_id);
+            ml_ty_def.push((var_name, field_tys));
+        }
 
-        ml_ty_def.push((var_name, field_tys));
-    }
+        TyDeclKind::Adt(ml_ty_def)
+    };
 
-    let ty_decl = TyDecl { ty_name, ty_params: ty_args, kind: TyDeclKind::Adt(ml_ty_def) };
+    let ty_decl = TyDecl { ty_name, ty_params: ty_args, kind };
     ctx.add_type(did, ty_decl);
 }
 
@@ -368,7 +377,11 @@ fn intty_to_ty(
             names.import_prelude_module(PreludeModule::Int8);
             i8_ty()
         }
-        I16 => unimplemented!(),
+        I16 => {
+            names.import_prelude_module(PreludeModule::Prelude);
+            names.import_prelude_module(PreludeModule::Int16);
+            i16_ty()
+        }
         I32 => {
             names.import_prelude_module(PreludeModule::Int32);
             i32_ty()
@@ -399,8 +412,16 @@ fn uintty_to_ty(
             names.import_prelude_module(PreludeModule::UInt64);
             usize_ty()
         }
-        U8 => unimplemented!(),
-        U16 => unimplemented!(),
+        U8 => {
+            names.import_prelude_module(PreludeModule::Prelude);
+            names.import_prelude_module(PreludeModule::UInt8);
+            u8_ty()
+        }
+        U16 => {
+            names.import_prelude_module(PreludeModule::Prelude);
+            names.import_prelude_module(PreludeModule::UInt16);
+            u16_ty()
+        }
         U32 => {
             names.import_prelude_module(PreludeModule::UInt32);
             u32_ty()
@@ -430,6 +451,14 @@ pub fn single_ty() -> MlT {
     MlT::TConstructor(QName::from_string("single").unwrap())
 }
 
+pub fn u8_ty() -> MlT {
+    MlT::TConstructor(QName::from_string("uint8").unwrap())
+}
+
+pub fn u16_ty() -> MlT {
+    MlT::TConstructor(QName::from_string("uint16").unwrap())
+}
+
 pub fn u32_ty() -> MlT {
     MlT::TConstructor(QName::from_string("uint32").unwrap())
 }
@@ -444,6 +473,10 @@ pub fn usize_ty() -> MlT {
 
 pub fn i8_ty() -> MlT {
     MlT::TConstructor(QName::from_string("int8").unwrap())
+}
+
+pub fn i16_ty() -> MlT {
+    MlT::TConstructor(QName::from_string("int16").unwrap())
 }
 
 pub fn i32_ty() -> MlT {
