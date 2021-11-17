@@ -38,13 +38,13 @@ impl<T> Model for Sparse<T> {
             (if self.is_elt(i) { Some((@(self.values))[i]) } else { None})
     )]
     fn model(self) -> Self::ModelTy {
+        // we miss a way to define the sequence, we need
+        // a higher-order definition by comprehension
         panic!()
     }
 }
 
 impl<T> Sparse<T> {
-
-
     /* The function `s.is_elt(i)` tells whether index `i` points to a
      * existing element. It can be checked as follows:
      *   (1) check that array `idx` maps `i` to a index `j` between 0 and `n` (excluded)
@@ -57,8 +57,6 @@ impl<T> Sparse<T> {
                     && @((@(self.back))[@((@(self.idx))[i])]) === i
         }
     }
-
-
 
     /* The data invariant of the Sparse Array structure
      */
@@ -78,11 +76,8 @@ impl<T> Sparse<T> {
         }
     }
 
-
-
-    /* The methods for accessing and modifying
+    /* The method for accessing
      */
-
     #[requires(self.sparse_inv())]
     #[requires(@i < (@self).len())]
     #[ensures(match result {
@@ -102,19 +97,8 @@ impl<T> Sparse<T> {
         }
     }
 
-    // A key lemma to prove for safety of access in `set()`
-    // The corresponding proof in Why3 is done as follows.
-    //
-    // use map.MapInjection as MI
-    //
-    // lemma permutation :
-    //   forall a: sparse_array 'a.
-    //    sparse_inv(a) ->
-    //    a.card = a.length ->
-    //    forall i: int. 0 <= i < a.length -> is_elt a i
-    //      by MI.surjective a.back.elts a.card
-    //      so exists j. 0 <= j < a.card /\ a.back[j] = i
-
+    /* A key lemma to prove for safety of access in `set()`
+     */
     #[logic]
     #[requires(self.sparse_inv())]
     #[requires(self.n === self.size)]
@@ -122,6 +106,8 @@ impl<T> Sparse<T> {
     #[ensures(self.is_elt(i))]
     fn lemma_permutation(self, i: Int) {}
 
+    /* The method for modifying
+     */
     #[requires((*self).sparse_inv())]
     #[requires(@i < (@*self).len())]
     #[ensures((^self).sparse_inv())]
@@ -153,7 +139,6 @@ impl<T> Sparse<T> {
  * element of type `T`, required because Rust would not accept
  * to create non-initialized arrays.
  */
-// #[requires(0 <= @sz)]
 #[ensures(result.sparse_inv())]
 #[ensures(result.size === sz)]
 #[ensures(forall<i: Int> (@result)[i] === None)]
@@ -178,18 +163,12 @@ fn main() {
     let mut b = create(20, default);
     let mut x = a.get(5);
     let mut y = b.get(7);
-    // proof_assert!(match x {
-    //     None => true,
-    //     Some(z) => false
-    // });
     proof_assert!(x === None && y === None);
     // assert!(x == None && y == None);
     a.set(5, 1);
     b.set(7, 2);
     x = a.get(5);
     y = b.get(7);
-    // proof_assert!(x === Some(1i32));
-    // proof_assert!(y === Some(2i32));
     proof_assert!(match x {
         None => false,
         Some(z) => @z === 1
