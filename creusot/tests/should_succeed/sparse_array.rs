@@ -24,21 +24,6 @@ struct Sparse<T> {
     back: Vec<usize>, // corresponding indexes in `idx`, makes sense between 0 and `n`-1
 }
 
-/* The function `s.is_elt(i)` tells whether index `i` points to a
- * existing element. It can be checked as follows:
- *   (1) check that array `idx` maps `i` to a index `j` between 0 and `n` (excluded)
- *   (2) check that `back[j]` is `i`
- */
-impl<T> Sparse<T> {
-    #[predicate]
-    fn is_elt(&self, i: Int) -> bool {
-        pearlite! { 0 <= i && i < @(self.size)
-                    && @((@(self.idx))[i]) < @(self.n)
-                    && @((@(self.back))[@((@(self.idx))[i])]) === i
-        }
-    }
-}
-
 /* The model of the structure is a sequence of optional values
  */
 impl<T> Model for Sparse<T> {
@@ -57,28 +42,48 @@ impl<T> Model for Sparse<T> {
     }
 }
 
-/* The data invariant of the Sparse Array structure
- */
-#[predicate]
-fn sparse_inv<T>(x: Sparse<T>) -> bool {
-    pearlite! {
-        @(x.n) <= @(x.size)
-            && (@x).len() === @(x.size)
-            && (@(x.values)).len() === @(x.size)
-            && (@(x.idx)).len() === @(x.size)
-            && (@(x.back)).len() === @(x.size)
-            && forall<i: Int> 0 <= i && i < @(x.n) ==>
-            match (@(x.back))[i] {
-                j => 0 <= @j && @j < @(x.size)
-                    && @((@(x.idx))[@j]) === i
-            }
-    }
-}
-
-/* The methods for accessing and modifying
- */
 impl<T> Sparse<T> {
-    #[requires(sparse_inv(*self))]
+
+
+    /* The function `s.is_elt(i)` tells whether index `i` points to a
+     * existing element. It can be checked as follows:
+     *   (1) check that array `idx` maps `i` to a index `j` between 0 and `n` (excluded)
+     *   (2) check that `back[j]` is `i`
+     */
+    #[predicate]
+    fn is_elt(&self, i: Int) -> bool {
+        pearlite! { 0 <= i && i < @(self.size)
+                    && @((@(self.idx))[i]) < @(self.n)
+                    && @((@(self.back))[@((@(self.idx))[i])]) === i
+        }
+    }
+
+
+
+    /* The data invariant of the Sparse Array structure
+     */
+    #[predicate]
+    fn sparse_inv(&self) -> bool {
+        pearlite! {
+            @(self.n) <= @(self.size)
+                && (@self).len() === @(self.size)
+                && (@(self.values)).len() === @(self.size)
+                && (@(self.idx)).len() === @(self.size)
+                && (@(self.back)).len() === @(self.size)
+                && forall<i: Int> 0 <= i && i < @(self.n) ==>
+                match (@(self.back))[i] {
+                    j => 0 <= @j && @j < @(self.size)
+                        && @((@(self.idx))[@j]) === i
+                }
+        }
+    }
+
+
+
+    /* The methods for accessing and modifying
+     */
+
+    #[requires(self.sparse_inv())]
     #[requires(@i < (@self).len())]
     #[ensures(match result {
         None => (@self)[@i] === None,
@@ -111,15 +116,15 @@ impl<T> Sparse<T> {
     //      so exists j. 0 <= j < a.card /\ a.back[j] = i
 
     #[logic]
-    #[requires(sparse_inv(self))]
+    #[requires(self.sparse_inv())]
     #[requires(self.n === self.size)]
     #[requires(0 <= i && i < @(self.size))]
     #[ensures(self.is_elt(i))]
     fn lemma_permutation(self, i: Int) {}
 
-    #[requires(sparse_inv(*self))]
+    #[requires((*self).sparse_inv())]
     #[requires(@i < (@*self).len())]
-    #[ensures(sparse_inv(^self))]
+    #[ensures((^self).sparse_inv())]
     #[ensures((@^self).len() === (@*self).len())]
     #[ensures(forall<j: Int> !(j === @i) ==> (@^self)[j] === (@*self)[j])]
     #[ensures((@^self)[@i] === Some(v))]
@@ -149,7 +154,7 @@ impl<T> Sparse<T> {
  * to create non-initialized arrays.
  */
 // #[requires(0 <= @sz)]
-#[ensures(sparse_inv(result))]
+#[ensures(result.sparse_inv())]
 #[ensures(result.size === sz)]
 #[ensures(forall<i: Int> (@result)[i] === None)]
 fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
