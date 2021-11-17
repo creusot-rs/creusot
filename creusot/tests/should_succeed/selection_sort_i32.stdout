@@ -1,0 +1,726 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.Int64
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type creusotcontracts_std1_vec_vec 't  
+  type creusotcontracts_logic_ghost_ghost 't = 
+    | CreusotContracts_Logic_Ghost_Ghost opaque_ptr
+    
+end
+module SelectionSortI32_SortedRange_Interface
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate sorted_range (s : Seq.seq int32) (l : int) (u : int)
+end
+module SelectionSortI32_SortedRange
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate sorted_range (s : Seq.seq int32) (l : int) (u : int) = 
+    forall j : (int) . forall i : (int) . l <= i && i < j && j < u -> Seq.get s i <= Seq.get s j
+end
+module SelectionSortI32_Sorted_Interface
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate sorted (s : Seq.seq int32)
+end
+module SelectionSortI32_Sorted
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  clone SelectionSortI32_SortedRange_Interface as SortedRange0
+  predicate sorted (s : Seq.seq int32) = 
+    SortedRange0.sorted_range s 0 (Seq.length s)
+end
+module SelectionSortI32_SmallerThan_Interface
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate smaller_than (s : Seq.seq int32) (e : int32) (l : int)
+end
+module SelectionSortI32_SmallerThan
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate smaller_than (s : Seq.seq int32) (e : int32) (l : int) = 
+    forall j : (int) . l < j && j < Seq.length s -> e <= Seq.get s j
+end
+module SelectionSortI32_LargerThan_Interface
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate larger_than (s : Seq.seq int32) (e : int32) (u : int)
+end
+module SelectionSortI32_LargerThan
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate larger_than (s : Seq.seq int32) (e : int32) (u : int) = 
+    forall i : (int) . 0 <= i && i < u && i < Seq.length s -> e >= Seq.get s i
+end
+module SelectionSortI32_AllSmaller_Interface
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate all_smaller (s : Seq.seq int32) (u : int)
+end
+module SelectionSortI32_AllSmaller
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  clone SelectionSortI32_SmallerThan_Interface as SmallerThan0
+  predicate all_smaller (s : Seq.seq int32) (u : int) = 
+    forall i : (int) . 0 <= i && i < u && i < Seq.length s -> SmallerThan0.smaller_than s (Seq.get s i) u
+end
+module SelectionSortI32_AllLarger_Interface
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate all_larger (s : Seq.seq int32) (l : int)
+end
+module SelectionSortI32_AllLarger
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  clone SelectionSortI32_LargerThan_Interface as LargerThan0
+  predicate all_larger (s : Seq.seq int32) (l : int) = 
+    forall i : (int) . l <= i && i < Seq.length s -> LargerThan0.larger_than s (Seq.get s i) l
+end
+module SelectionSortI32_SelectionSortInvariant_Interface
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate selection_sort_invariant (s : Seq.seq int32) (i : int)
+end
+module SelectionSortI32_SelectionSortInvariant
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  clone SelectionSortI32_AllSmaller_Interface as AllSmaller0
+  clone SelectionSortI32_AllLarger_Interface as AllLarger0
+  predicate selection_sort_invariant (s : Seq.seq int32) (i : int) = 
+    AllLarger0.all_larger s i && AllSmaller0.all_smaller s i
+end
+module SelectionSortI32_MinLarger_Interface
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate min_larger (s : Seq.seq int32) (u : int) (idx : int)
+end
+module SelectionSortI32_MinLarger
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate min_larger (s : Seq.seq int32) (u : int) (idx : int) = 
+    forall j : (int) . 0 <= j && j < u -> Seq.get s j <= Seq.get s idx
+end
+module SelectionSortI32_MinSmaller_Interface
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate min_smaller (v : Seq.seq int32) (i : int) (min : int)
+end
+module SelectionSortI32_MinSmaller
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  predicate min_smaller (v : Seq.seq int32) (i : int) (min : int) = 
+    forall j : (int) . i <= j && j < Seq.length v -> Seq.get v min <= Seq.get v j
+end
+module CreusotContracts_Logic_Model_Model_ModelTy
+  type self   
+  type modelTy   
+end
+module CreusotContracts_Logic_Model_Model_Model_Interface
+  type self   
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model
+  type self   
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Std1_Vec_Impl0_ModelTy
+  type t   
+  use seq.Seq
+  type modelTy  = 
+    Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0_Model_Interface
+  type t   
+  use Type
+  use seq.Seq
+  function model (self : Type.creusotcontracts_std1_vec_vec t) : Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0_Model
+  type t   
+  use Type
+  use seq.Seq
+  function model (self : Type.creusotcontracts_std1_vec_vec t) : Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0
+  type t   
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function model = Model0.model
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.creusotcontracts_std1_vec_vec t,
+  type modelTy = ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl1_ModelTy
+  type t   
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  type modelTy  = 
+    ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl1_Model_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  function model (self : borrowed t) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl1_Model
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  function model (self : borrowed t) : ModelTy0.modelTy = 
+    Model0.model ( * self)
+end
+module CreusotContracts_Logic_Model_Impl1
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
+  function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Model_Impl1_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = borrowed t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function model = Model0.model
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = borrowed t,
+  type modelTy = ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Seq_Impl0_PermutationOf_Interface
+  type t   
+  use seq.Seq
+  predicate permutation_of (self : Seq.seq t) (o : Seq.seq t)
+end
+module CreusotContracts_Logic_Seq_Impl0_PermutationOf
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  use seq.Permut
+  predicate permutation_of (self : Seq.seq t) (o : Seq.seq t) = 
+    Permut.permut self o 0 (Seq.length self)
+end
+module CreusotContracts_Logic_Ghost_Impl0_ModelTy
+  type t   
+  type modelTy  = 
+    t
+end
+module CreusotContracts_Logic_Ghost_Impl0_Model_Interface
+  type t   
+  use Type
+  function model (self : Type.creusotcontracts_logic_ghost_ghost t) : t
+end
+module CreusotContracts_Logic_Ghost_Impl0_Model
+  type t   
+  use Type
+  function model (self : Type.creusotcontracts_logic_ghost_ghost t) : t
+end
+module CreusotContracts_Logic_Ghost_Impl0
+  type t   
+  use Type
+  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = t
+  clone CreusotContracts_Logic_Ghost_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function model = Model0.model
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
+  type modelTy = ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Ghost_Impl1_Record_Interface
+  type t   
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Logic_Ghost_Impl0_Model_Interface as Model0 with type t = t
+  val record (a : t) : Type.creusotcontracts_logic_ghost_ghost t
+    ensures { Model0.model result = a }
+    
+end
+module CreusotContracts_Logic_Ghost_Impl1_Record
+  type t   
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = t
+  val record (a : t) : Type.creusotcontracts_logic_ghost_ghost t
+    ensures { Model0.model result = a }
+    
+end
+module CreusotContracts_Logic_Model_Impl0_ModelTy
+  type t   
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  type modelTy  = 
+    ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl0_Model_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  function model (self : t) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl0_Model
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  function model (self : t) : ModelTy0.modelTy = 
+    Model0.model self
+end
+module CreusotContracts_Logic_Model_Impl0
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
+  function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Model_Impl0_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = t, type ModelTy0.modelTy = ModelTy0.modelTy,
+  function model = Model0.model
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = t, type modelTy = ModelTy0.modelTy
+end
+module CreusotContracts_Std1_Vec_Impl1_Len_Interface
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val len (self : Type.creusotcontracts_std1_vec_vec t) : usize
+    ensures { UInt64.to_int result = Seq.length (Model0.model self) }
+    
+end
+module CreusotContracts_Std1_Vec_Impl1_Len
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  val len (self : Type.creusotcontracts_std1_vec_vec t) : usize
+    ensures { UInt64.to_int result = Seq.length (Model0.model self) }
+    
+end
+module Core_Ops_Index_Index_Output
+  type self   
+  type idx   
+  type output   
+end
+module Core_Ops_Index_Index_Index_Interface
+  type self   
+  type idx   
+  use prelude.Prelude
+  clone Core_Ops_Index_Index_Output as Output0 with type self = self, type idx = idx
+  val index (self : self) (index : idx) : Output0.output
+    requires {false}
+    
+end
+module Core_Ops_Index_Index_Index
+  type self   
+  type idx   
+  use prelude.Prelude
+  clone Core_Ops_Index_Index_Output as Output0 with type self = self, type idx = idx
+  val index (self : self) (index : idx) : Output0.output
+    requires {false}
+    
+end
+module CreusotContracts_Std1_Vec_Impl3_Output
+  type t   
+  type output  = 
+    t
+end
+module CreusotContracts_Std1_Vec_Impl3_Index_Interface
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val index (self : Type.creusotcontracts_std1_vec_vec t) (ix : usize) : t
+    requires {UInt64.to_int ix < Seq.length (Model0.model self)}
+    ensures { result = Seq.get (Model0.model self) (UInt64.to_int ix) }
+    
+end
+module CreusotContracts_Std1_Vec_Impl3_Index
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  val index (self : Type.creusotcontracts_std1_vec_vec t) (ix : usize) : t
+    requires {UInt64.to_int ix < Seq.length (Model0.model self)}
+    ensures { result = Seq.get (Model0.model self) (UInt64.to_int ix) }
+    
+end
+module CreusotContracts_Std1_Vec_Impl3
+  type t   
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = t, function Model0.model = Model0.model
+  clone CreusotContracts_Std1_Vec_Impl3_Output as Output0 with type t = t
+  clone Core_Ops_Index_Index_Index_Interface as Index1 with type self = Type.creusotcontracts_std1_vec_vec t,
+  type idx = usize, type Output0.output = Output0.output, val index = Index0.index
+  clone Core_Ops_Index_Index_Output as Output1 with type self = Type.creusotcontracts_std1_vec_vec t, type idx = usize,
+  type output = Output0.output
+end
+module CreusotContracts_Std1_Vec_Impl1_Swap_Interface
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use seq.Permut
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val swap (self : borrowed (Type.creusotcontracts_std1_vec_vec t)) (i : usize) (j : usize) : ()
+    requires {UInt64.to_int j < Seq.length (Model0.model self)}
+    requires {UInt64.to_int i < Seq.length (Model0.model self)}
+    ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int i) (UInt64.to_int j) }
+    
+end
+module CreusotContracts_Std1_Vec_Impl1_Swap
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use seq.Permut
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  val swap (self : borrowed (Type.creusotcontracts_std1_vec_vec t)) (i : usize) (j : usize) : ()
+    requires {UInt64.to_int j < Seq.length (Model0.model self)}
+    requires {UInt64.to_int i < Seq.length (Model0.model self)}
+    ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int i) (UInt64.to_int j) }
+    
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t) = 
+     ^ self =  * self
+end
+module CreusotContracts_Logic_Resolve_Impl1
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = borrowed t,
+  predicate resolve = Resolve0.resolve
+end
+module SelectionSortI32_SelectionSort_Interface
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  use mach.int.Int32
+  clone SelectionSortI32_Sorted_Interface as Sorted0
+  clone CreusotContracts_Logic_Seq_Impl0_PermutationOf_Interface as PermutationOf0 with type t = int32
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = int32
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Type.creusotcontracts_std1_vec_vec int32,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = int32
+  val selection_sort (v : borrowed (Type.creusotcontracts_std1_vec_vec int32)) : ()
+    ensures { PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
+    ensures { Sorted0.sorted (Model0.model ( ^ v)) }
+    
+end
+module SelectionSortI32_SelectionSort
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.UInt64
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  clone SelectionSortI32_SmallerThan as SmallerThan0
+  clone SelectionSortI32_AllSmaller as AllSmaller0 with predicate SmallerThan0.smaller_than = SmallerThan0.smaller_than
+  clone SelectionSortI32_LargerThan as LargerThan0
+  clone SelectionSortI32_AllLarger as AllLarger0 with predicate LargerThan0.larger_than = LargerThan0.larger_than
+  clone SelectionSortI32_SelectionSortInvariant as SelectionSortInvariant0 with predicate AllLarger0.all_larger = AllLarger0.all_larger,
+  predicate AllSmaller0.all_smaller = AllSmaller0.all_smaller
+  clone SelectionSortI32_MinSmaller as MinSmaller0
+  clone SelectionSortI32_MinLarger as MinLarger0
+  clone SelectionSortI32_SortedRange as SortedRange0
+  clone SelectionSortI32_Sorted as Sorted0 with predicate SortedRange0.sorted_range = SortedRange0.sorted_range
+  clone CreusotContracts_Logic_Seq_Impl0_PermutationOf as PermutationOf0 with type t = int32
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = int32
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = int32
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Type.creusotcontracts_std1_vec_vec int32,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = borrowed (Type.creusotcontracts_std1_vec_vec int32)
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve6 with type t = Type.creusotcontracts_std1_vec_vec int32
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve5 with type self = ()
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve4 with type self = int32
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = int32
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = usize
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.creusotcontracts_std1_vec_vec int32))
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = borrowed (Type.creusotcontracts_std1_vec_vec int32)
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model3 with type t = Type.creusotcontracts_std1_vec_vec int32,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model2.model
+  clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = int32,
+  function Model0.model = Model3.model
+  clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = int32, function Model0.model = Model3.model
+  clone CreusotContracts_Std1_Vec_Impl1_Swap_Interface as Swap0 with type t = int32,
+  function Model0.model = Model1.model, function Model1.model = Model2.model
+  clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = borrowed (Type.creusotcontracts_std1_vec_vec int32),
+  function Model0.model = Model0.model
+  let rec cfg selection_sort (v : borrowed (Type.creusotcontracts_std1_vec_vec int32)) : ()
+    ensures { PermutationOf0.permutation_of (Model2.model ( ^ v)) (Model1.model v) }
+    ensures { Sorted0.sorted (Model2.model ( ^ v)) }
+    
+   = 
+  var _0 : ();
+  var v_1 : borrowed (Type.creusotcontracts_std1_vec_vec int32);
+  var i_2 : usize;
+  var old_v_3 : Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.creusotcontracts_std1_vec_vec int32));
+  var _4 : borrowed (Type.creusotcontracts_std1_vec_vec int32);
+  var _5 : borrowed (Type.creusotcontracts_std1_vec_vec int32);
+  var _6 : ();
+  var _7 : bool;
+  var _8 : usize;
+  var _9 : usize;
+  var _10 : Type.creusotcontracts_std1_vec_vec int32;
+  var min_11 : usize;
+  var j_12 : usize;
+  var _13 : usize;
+  var _14 : ();
+  var _15 : bool;
+  var _16 : usize;
+  var _17 : usize;
+  var _18 : Type.creusotcontracts_std1_vec_vec int32;
+  var _19 : ();
+  var _20 : bool;
+  var _21 : int32;
+  var _22 : int32;
+  var _23 : Type.creusotcontracts_std1_vec_vec int32;
+  var _24 : usize;
+  var _25 : int32;
+  var _26 : int32;
+  var _27 : Type.creusotcontracts_std1_vec_vec int32;
+  var _28 : usize;
+  var _29 : usize;
+  var _30 : ();
+  var _31 : ();
+  var _32 : ();
+  var _33 : ();
+  var _34 : ();
+  var _35 : ();
+  var _36 : borrowed (Type.creusotcontracts_std1_vec_vec int32);
+  var _37 : usize;
+  var _38 : usize;
+  var _39 : ();
+  var _40 : ();
+  var _41 : ();
+  var _42 : ();
+  {
+    v_1 <- v;
+    goto BB0
+  }
+  BB0 {
+    i_2 <- (0 : usize);
+    _5 <- v_1;
+    _4 <- _5;
+    assume { Resolve0.resolve _5 };
+    old_v_3 <- Record0.record _4;
+    goto BB1
+  }
+  BB1 {
+    assume { Resolve1.resolve old_v_3 };
+    goto BB2
+  }
+  BB2 {
+    invariant proph_const {  ^ v_1 =  ^ Model0.model old_v_3 };
+    invariant permutation { PermutationOf0.permutation_of (Model1.model v_1) (Model2.model ( * Model0.model old_v_3)) };
+    invariant i_bound { 0 <= UInt64.to_int i_2 && UInt64.to_int i_2 <= Seq.length (Model1.model v_1) };
+    invariant sorted { SortedRange0.sorted_range (Model1.model v_1) 0 (UInt64.to_int i_2) };
+    invariant sort_inv { SelectionSortInvariant0.selection_sort_invariant (Model1.model v_1) (UInt64.to_int i_2) };
+    goto BB3
+  }
+  BB3 {
+    assume { Resolve2.resolve _8 };
+    _8 <- i_2;
+    _10 <-  * v_1;
+    _9 <- Len0.len _10;
+    goto BB4
+  }
+  BB4 {
+    _7 <- _8 < _9;
+    switch (_7)
+      | False -> goto BB17
+      | _ -> goto BB5
+      end
+  }
+  BB5 {
+    assume { Resolve2.resolve min_11 };
+    min_11 <- i_2;
+    assume { Resolve2.resolve _13 };
+    _13 <- i_2;
+    j_12 <- _13 + (1 : usize);
+    goto BB6
+  }
+  BB6 {
+    invariant min_is_min { forall k : (int) . UInt64.to_int i_2 <= k && k < UInt64.to_int j_12 -> Seq.get (Model1.model v_1) (UInt64.to_int min_11) <= Seq.get (Model1.model v_1) k };
+    invariant j_bound { UInt64.to_int i_2 <= UInt64.to_int j_12 && UInt64.to_int j_12 <= Seq.length (Model1.model v_1) };
+    invariant min_bound { UInt64.to_int i_2 <= UInt64.to_int min_11 && UInt64.to_int min_11 < Seq.length (Model1.model v_1) && UInt64.to_int min_11 <= UInt64.to_int j_12 };
+    goto BB7
+  }
+  BB7 {
+    assume { Resolve2.resolve _16 };
+    _16 <- j_12;
+    _18 <-  * v_1;
+    _17 <- Len0.len _18;
+    goto BB8
+  }
+  BB8 {
+    _15 <- _16 < _17;
+    switch (_15)
+      | False -> goto BB15
+      | _ -> goto BB9
+      end
+  }
+  BB9 {
+    _23 <-  * v_1;
+    assume { Resolve2.resolve _24 };
+    _24 <- j_12;
+    _22 <- Index0.index _23 _24;
+    goto BB10
+  }
+  BB10 {
+    assume { Resolve3.resolve _21 };
+    _21 <- _22;
+    assume { Resolve4.resolve _22 };
+    _27 <-  * v_1;
+    assume { Resolve2.resolve _28 };
+    _28 <- min_11;
+    _26 <- Index0.index _27 _28;
+    goto BB11
+  }
+  BB11 {
+    assume { Resolve3.resolve _25 };
+    _25 <- _26;
+    assume { Resolve4.resolve _26 };
+    _20 <- _21 < _25;
+    switch (_20)
+      | False -> goto BB13
+      | _ -> goto BB12
+      end
+  }
+  BB12 {
+    assume { Resolve2.resolve min_11 };
+    assume { Resolve2.resolve _29 };
+    _29 <- j_12;
+    assume { Resolve2.resolve min_11 };
+    min_11 <- _29;
+    _19 <- ();
+    assume { Resolve5.resolve _19 };
+    goto BB14
+  }
+  BB13 {
+    _19 <- ();
+    assume { Resolve5.resolve _19 };
+    goto BB14
+  }
+  BB14 {
+    j_12 <- j_12 + (1 : usize);
+    _6 <- ();
+    assume { Resolve5.resolve _6 };
+    goto BB6
+  }
+  BB15 {
+    assume { Resolve2.resolve j_12 };
+    _14 <- ();
+    assume { Resolve5.resolve _14 };
+    assert { MinLarger0.min_larger (Model1.model v_1) (UInt64.to_int i_2) (UInt64.to_int min_11) };
+    _33 <- ();
+    assume { Resolve5.resolve _33 };
+    assert { MinSmaller0.min_smaller (Model1.model v_1) (UInt64.to_int i_2) (UInt64.to_int min_11) };
+    _34 <- ();
+    assume { Resolve5.resolve _34 };
+    _36 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _36) };
+    assume { Resolve2.resolve _37 };
+    _37 <- i_2;
+    assume { Resolve2.resolve _38 };
+    _38 <- min_11;
+    assume { Resolve2.resolve min_11 };
+    _35 <- Swap0.swap _36 _37 _38;
+    goto BB16
+  }
+  BB16 {
+    i_2 <- i_2 + (1 : usize);
+    assert { SortedRange0.sorted_range (Model1.model v_1) 0 (UInt64.to_int i_2) };
+    _39 <- ();
+    assume { Resolve5.resolve _39 };
+    assert { SelectionSortInvariant0.selection_sort_invariant (Model1.model v_1) (UInt64.to_int i_2) };
+    _6 <- ();
+    assume { Resolve5.resolve _6 };
+    goto BB2
+  }
+  BB17 {
+    assume { Resolve6.resolve v_1 };
+    assume { Resolve2.resolve i_2 };
+    _0 <- ();
+    return _0
+  }
+  
+end
