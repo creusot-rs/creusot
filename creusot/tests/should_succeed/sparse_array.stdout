@@ -290,18 +290,16 @@ end
 module SparseArray_Create_Interface
   type t   
   use mach.int.Int
-  use mach.int.Int32
-  use mach.int.UInt64
   use seq.Seq
   use Type
   use prelude.Prelude
+  use mach.int.UInt64
   clone SparseArray_SparseInv_Interface as SparseInv0 with type t = t
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t
   clone SparseArray_Impl0_IsElt_Interface as IsElt0 with type t = t
   clone SparseArray_Impl1_Model_Interface as Model0 with type t = t, predicate IsElt0.is_elt = IsElt0.is_elt,
   function Model0.model = Model1.model, axiom .
   val create (sz : usize) (dummy : t) : Type.sparsearray_sparse t
-    requires {0 <= UInt64.to_int sz}
     ensures { forall i : (int) . Seq.get (Model0.model result) i = Type.Core_Option_Option_None }
     ensures { Type.sparsearray_sparse_Sparse_size result = sz }
     ensures { SparseInv0.sparse_inv result }
@@ -310,11 +308,10 @@ end
 module SparseArray_Create
   type t   
   use mach.int.Int
-  use mach.int.Int32
-  use mach.int.UInt64
   use seq.Seq
   use Type
   use prelude.Prelude
+  use mach.int.UInt64
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = usize
   clone SparseArray_Impl0_IsElt as IsElt0 with type t = t, function Model0.model = Model2.model
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
@@ -328,7 +325,6 @@ module SparseArray_Create
   function Model0.model = Model2.model
   clone CreusotContracts_Std1_Vec_FromElem_Interface as FromElem0 with type t = t, function Model0.model = Model1.model
   let rec cfg create (sz : usize) (dummy : t) : Type.sparsearray_sparse t
-    requires {0 <= UInt64.to_int sz}
     ensures { forall i : (int) . Seq.get (Model0.model result) i = Type.Core_Option_Option_None }
     ensures { Type.sparsearray_sparse_Sparse_size result = sz }
     ensures { SparseInv0.sparse_inv result }
@@ -470,8 +466,8 @@ module SparseArray_Impl2_Get_Interface
   use mach.int.UInt64
   use seq.Seq
   use mach.int.Int
-  use Type
   use prelude.Prelude
+  use Type
   clone SparseArray_SparseInv_Interface as SparseInv0 with type t = t
   clone SparseArray_Impl1_ModelTy as ModelTy0 with type t = t
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.sparsearray_sparse t,
@@ -479,6 +475,10 @@ module SparseArray_Impl2_Get_Interface
   val get (self : Type.sparsearray_sparse t) (i : usize) : Type.core_option_option t
     requires {UInt64.to_int i < Seq.length (Model0.model self)}
     requires {SparseInv0.sparse_inv self}
+    ensures { match (Seq.get (Model0.model self) (UInt64.to_int i)) with
+      | Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None
+      | Type.Core_Option_Option_Some x -> true
+      end }
     ensures { match (result) with
       | Type.Core_Option_Option_None -> Seq.get (Model0.model self) (UInt64.to_int i) = Type.Core_Option_Option_None
       | Type.Core_Option_Option_Some x -> Seq.get (Model0.model self) (UInt64.to_int i) = Type.Core_Option_Option_Some x
@@ -490,8 +490,8 @@ module SparseArray_Impl2_Get
   use mach.int.UInt64
   use seq.Seq
   use mach.int.Int
-  use Type
   use prelude.Prelude
+  use Type
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = usize
   clone SparseArray_Impl0_IsElt as IsElt0 with type t = t, function Model0.model = Model3.model
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = t
@@ -519,6 +519,10 @@ module SparseArray_Impl2_Get
   let rec cfg get (self : Type.sparsearray_sparse t) (i : usize) : Type.core_option_option t
     requires {UInt64.to_int i < Seq.length (Model0.model self)}
     requires {SparseInv0.sparse_inv self}
+    ensures { match (Seq.get (Model0.model self) (UInt64.to_int i)) with
+      | Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None
+      | Type.Core_Option_Option_Some x -> true
+      end }
     ensures { match (result) with
       | Type.Core_Option_Option_None -> Seq.get (Model0.model self) (UInt64.to_int i) = Type.Core_Option_Option_None
       | Type.Core_Option_Option_Some x -> Seq.get (Model0.model self) (UInt64.to_int i) = Type.Core_Option_Option_Some x
@@ -839,8 +843,8 @@ module SparseArray_Impl2_Set
   function Model1.model = Model1.model, function Model2.model = Model2.model, predicate IsElt0.is_elt = IsElt0.is_elt
   clone SparseArray_Impl2_LemmaPermutation as LemmaPermutation0 with type t = t,
   predicate SparseInv0.sparse_inv = SparseInv0.sparse_inv, predicate IsElt0.is_elt = IsElt0.is_elt, axiom .
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve7 with type t = usize
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve6 with type t = Type.sparsearray_sparse t
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve7 with type t = Type.sparsearray_sparse t
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve6 with type t = usize
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve5 with type self = ()
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve4 with type self = bool
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = usize
@@ -895,20 +899,14 @@ module SparseArray_Impl2_Set
   var _22 : usize;
   var _23 : ();
   var _24 : ();
-  var _25 : ();
-  var _26 : bool;
-  var _27 : bool;
+  var _25 : usize;
+  var _26 : borrowed usize;
+  var _27 : borrowed (Type.creusotcontracts_std1_vec_vec usize);
   var _28 : usize;
   var _29 : usize;
-  var _30 : ();
-  var _31 : usize;
-  var _32 : borrowed usize;
-  var _33 : borrowed (Type.creusotcontracts_std1_vec_vec usize);
-  var _34 : usize;
-  var _35 : usize;
-  var _36 : borrowed usize;
-  var _37 : borrowed (Type.creusotcontracts_std1_vec_vec usize);
-  var _38 : usize;
+  var _30 : borrowed usize;
+  var _31 : borrowed (Type.creusotcontracts_std1_vec_vec usize);
+  var _32 : usize;
   {
     self_1 <- self;
     i_2 <- i;
@@ -974,7 +972,7 @@ module SparseArray_Impl2_Set
   BB8 {
     _12 <- not _13;
     switch (_12)
-      | False -> goto BB15
+      | False -> goto BB13
       | _ -> goto BB10
       end
   }
@@ -996,67 +994,48 @@ module SparseArray_Impl2_Set
     assert { UInt64.to_int (Type.sparsearray_sparse_Sparse_n ( * self_1)) < UInt64.to_int (Type.sparsearray_sparse_Sparse_size ( * self_1)) };
     _24 <- ();
     assume { Resolve5.resolve _24 };
+    assume { Resolve1.resolve _25 };
+    _25 <- Type.sparsearray_sparse_Sparse_n ( * self_1);
+    _27 <- borrow_mut (Type.sparsearray_sparse_Sparse_idx ( * self_1));
+    self_1 <- { self_1 with current = (let Type.SparseArray_Sparse a b c d e =  * self_1 in Type.SparseArray_Sparse a b c ( ^ _27) e) };
     assume { Resolve1.resolve _28 };
-    _28 <- Type.sparsearray_sparse_Sparse_n ( * self_1);
-    assume { Resolve1.resolve _29 };
-    _29 <- Type.sparsearray_sparse_Sparse_size ( * self_1);
-    _27 <- _28 < _29;
-    _26 <- not _27;
-    switch (_26)
-      | False -> goto BB12
-      | _ -> goto BB11
-      end
+    _28 <- i_2;
+    _26 <- IndexMut1.index_mut _27 _28;
+    goto BB11
   }
   BB11 {
-    assume { Resolve6.resolve self_1 };
+    assume { Resolve1.resolve ( * _26) };
+    _26 <- { _26 with current = _25 };
+    assume { Resolve6.resolve _26 };
+    assume { Resolve1.resolve _29 };
+    _29 <- i_2;
     assume { Resolve1.resolve i_2 };
-    absurd
+    _31 <- borrow_mut (Type.sparsearray_sparse_Sparse_back ( * self_1));
+    self_1 <- { self_1 with current = (let Type.SparseArray_Sparse a b c d e =  * self_1 in Type.SparseArray_Sparse a b c d ( ^ _31)) };
+    assume { Resolve1.resolve _32 };
+    _32 <- Type.sparsearray_sparse_Sparse_n ( * self_1);
+    _30 <- IndexMut1.index_mut _31 _32;
+    goto BB12
   }
   BB12 {
-    _25 <- ();
-    assume { Resolve5.resolve _25 };
-    assume { Resolve1.resolve _31 };
-    _31 <- Type.sparsearray_sparse_Sparse_n ( * self_1);
-    _33 <- borrow_mut (Type.sparsearray_sparse_Sparse_idx ( * self_1));
-    self_1 <- { self_1 with current = (let Type.SparseArray_Sparse a b c d e =  * self_1 in Type.SparseArray_Sparse a b c ( ^ _33) e) };
-    assume { Resolve1.resolve _34 };
-    _34 <- i_2;
-    _32 <- IndexMut1.index_mut _33 _34;
-    goto BB13
+    assume { Resolve1.resolve ( * _30) };
+    _30 <- { _30 with current = _29 };
+    assume { Resolve6.resolve _30 };
+    self_1 <- { self_1 with current = (let Type.SparseArray_Sparse a b c d e =  * self_1 in Type.SparseArray_Sparse a (Type.sparsearray_sparse_Sparse_n ( * self_1) + (1 : usize)) c d e) };
+    assume { Resolve7.resolve self_1 };
+    _0 <- ();
+    goto BB14
   }
   BB13 {
-    assume { Resolve1.resolve ( * _32) };
-    _32 <- { _32 with current = _31 };
-    assume { Resolve7.resolve _32 };
-    assume { Resolve1.resolve _35 };
-    _35 <- i_2;
+    assume { Resolve7.resolve self_1 };
     assume { Resolve1.resolve i_2 };
-    _37 <- borrow_mut (Type.sparsearray_sparse_Sparse_back ( * self_1));
-    self_1 <- { self_1 with current = (let Type.SparseArray_Sparse a b c d e =  * self_1 in Type.SparseArray_Sparse a b c d ( ^ _37)) };
-    assume { Resolve1.resolve _38 };
-    _38 <- Type.sparsearray_sparse_Sparse_n ( * self_1);
-    _36 <- IndexMut1.index_mut _37 _38;
+    _0 <- ();
     goto BB14
   }
   BB14 {
-    assume { Resolve1.resolve ( * _36) };
-    _36 <- { _36 with current = _35 };
-    assume { Resolve7.resolve _36 };
-    self_1 <- { self_1 with current = (let Type.SparseArray_Sparse a b c d e =  * self_1 in Type.SparseArray_Sparse a (Type.sparsearray_sparse_Sparse_n ( * self_1) + (1 : usize)) c d e) };
-    assume { Resolve6.resolve self_1 };
-    _0 <- ();
-    goto BB16
+    goto BB15
   }
   BB15 {
-    assume { Resolve6.resolve self_1 };
-    assume { Resolve1.resolve i_2 };
-    _0 <- ();
-    goto BB16
-  }
-  BB16 {
-    goto BB17
-  }
-  BB17 {
     return _0
   }
   

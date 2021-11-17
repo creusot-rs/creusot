@@ -84,6 +84,10 @@ impl<T> Sparse<T> {
         None => (@self)[@i] === None,
         Some(x) => (@self)[@i] === Some(*x)
     })]
+    #[ensures(match (@self)[@i] {
+        None => result === None,
+        Some(x) => true // result === Some(x) need 'asref'
+    })]
     fn get(&self, i: usize) -> Option<&T> {
         let index = self.idx[i];
         if index < self.n && self.back[index] == i {
@@ -131,7 +135,7 @@ impl<T> Sparse<T> {
                 }
             });
             proof_assert!(@(self.n) < @(self.size));
-            assert!(self.n < self.size);
+            // assert!(self.n < self.size);
             self.idx[i] = self.n;
             self.back[self.n] = i;
             self.n += 1;
@@ -144,7 +148,7 @@ impl<T> Sparse<T> {
  * element of type `T`, required because Rust would not accept
  * to create non-initialized arrays.
  */
-#[requires(0 <= @sz)]
+// #[requires(0 <= @sz)]
 #[ensures(sparse_inv(result))]
 #[ensures(result.size === sz)]
 #[ensures(forall<i: Int> (@result)[i] === None)]
@@ -169,12 +173,18 @@ fn main() {
     let mut b = create(20, default);
     let mut x = a.get(5);
     let mut y = b.get(7);
+    // proof_assert!(match x {
+    //     None => true,
+    //     Some(z) => false
+    // });
     proof_assert!(x === None && y === None);
     // assert!(x == None && y == None);
     a.set(5, 1);
     b.set(7, 2);
     x = a.get(5);
     y = b.get(7);
+    // proof_assert!(x === Some(1i32));
+    // proof_assert!(y === Some(2i32));
     proof_assert!(match x {
         None => false,
         Some(z) => @z === 1
