@@ -302,107 +302,20 @@ module SelectionSortGeneric_Sorted
   predicate sorted (s : Seq.seq t) = 
     SortedRange0.sorted_range s 0 (Seq.length s)
 end
-module SelectionSortGeneric_SmallerThan_Interface
+module SelectionSortGeneric_Partition_Interface
   type t   
   use seq.Seq
   use mach.int.Int
-  predicate smaller_than (s : Seq.seq t) (e : t) (l : int)
+  predicate partition (v : Seq.seq t) (i : int)
 end
-module SelectionSortGeneric_SmallerThan
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
-  predicate smaller_than (s : Seq.seq t) (e : t) (l : int) = 
-    forall j : (int) . l < j && j < Seq.length s -> LeLog0.le_log e (Seq.get s j)
-end
-module SelectionSortGeneric_LargerThan_Interface
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  predicate larger_than (s : Seq.seq t) (e : t) (u : int)
-end
-module SelectionSortGeneric_LargerThan
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  use mach.int.Int32
-  clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with type self = t
-  predicate larger_than (s : Seq.seq t) (e : t) (u : int) = 
-    forall i : (int) . 0 <= i && i < u && i < Seq.length s -> GeLog0.ge_log e (Seq.get s i)
-end
-module SelectionSortGeneric_AllSmaller_Interface
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  predicate all_smaller (s : Seq.seq t) (u : int)
-end
-module SelectionSortGeneric_AllSmaller
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  use mach.int.Int32
-  clone SelectionSortGeneric_SmallerThan_Interface as SmallerThan0 with type t = t
-  predicate all_smaller (s : Seq.seq t) (u : int) = 
-    forall i : (int) . 0 <= i && i < u && i < Seq.length s -> SmallerThan0.smaller_than s (Seq.get s i) u
-end
-module SelectionSortGeneric_AllLarger_Interface
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  predicate all_larger (s : Seq.seq t) (l : int)
-end
-module SelectionSortGeneric_AllLarger
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  clone SelectionSortGeneric_LargerThan_Interface as LargerThan0 with type t = t
-  predicate all_larger (s : Seq.seq t) (l : int) = 
-    forall i : (int) . l <= i && i < Seq.length s -> LargerThan0.larger_than s (Seq.get s i) l
-end
-module SelectionSortGeneric_SelectionSortInvariant_Interface
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  predicate selection_sort_invariant (s : Seq.seq t) (i : int)
-end
-module SelectionSortGeneric_SelectionSortInvariant
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  clone SelectionSortGeneric_AllSmaller_Interface as AllSmaller0 with type t = t
-  clone SelectionSortGeneric_AllLarger_Interface as AllLarger0 with type t = t
-  predicate selection_sort_invariant (s : Seq.seq t) (i : int) = 
-    AllLarger0.all_larger s i && AllSmaller0.all_smaller s i
-end
-module SelectionSortGeneric_MinLarger_Interface
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  predicate min_larger (s : Seq.seq t) (u : int) (idx : int)
-end
-module SelectionSortGeneric_MinLarger
+module SelectionSortGeneric_Partition
   type t   
   use seq.Seq
   use mach.int.Int
   use mach.int.Int32
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
-  predicate min_larger (s : Seq.seq t) (u : int) (idx : int) = 
-    forall j : (int) . 0 <= j && j < u -> LeLog0.le_log (Seq.get s j) (Seq.get s idx)
-end
-module SelectionSortGeneric_MinSmaller_Interface
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  predicate min_smaller (v : Seq.seq t) (i : int) (min : int)
-end
-module SelectionSortGeneric_MinSmaller
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
-  predicate min_smaller (v : Seq.seq t) (i : int) (min : int) = 
-    forall j : (int) . i <= j && j < Seq.length v -> LeLog0.le_log (Seq.get v min) (Seq.get v j)
+  predicate partition (v : Seq.seq t) (i : int) = 
+    forall k2 : (int) . forall k1 : (int) . 0 <= k1 && k1 < i && i <= k2 && k2 < Seq.length v -> LeLog0.le_log (Seq.get v k1) (Seq.get v k2)
 end
 module CreusotContracts_Logic_Model_Model_ModelTy
   type self   
@@ -844,10 +757,10 @@ module SelectionSortGeneric_SelectionSort_Interface
 end
 module SelectionSortGeneric_SelectionSort
   type t   
-  use mach.int.Int
-  use mach.int.Int32
   use mach.int.UInt64
   use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
   use prelude.Prelude
   use Type
   clone CreusotContracts_Logic_Eq_EqLogic_LogNe as LogNe0 with type self = t
@@ -867,9 +780,6 @@ module SelectionSortGeneric_SelectionSort
   function GtLog0.gt_log = GtLog0.gt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog as GeLog0 with type self = t,
   function CmpLog0.cmp_log = CmpLog0.cmp_log
-  clone SelectionSortGeneric_LargerThan as LargerThan0 with type t = t, function GeLog0.ge_log = GeLog0.ge_log
-  clone SelectionSortGeneric_AllLarger as AllLarger0 with type t = t,
-  predicate LargerThan0.larger_than = LargerThan0.larger_than
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog as CmpGeLog0 with type self = t,
   function GeLog0.ge_log = GeLog0.ge_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog as LtLog0 with type self = t,
@@ -888,15 +798,9 @@ module SelectionSortGeneric_SelectionSort
   function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog as LeLog0 with type self = t,
   function CmpLog0.cmp_log = CmpLog0.cmp_log
-  clone SelectionSortGeneric_SmallerThan as SmallerThan0 with type t = t, function LeLog0.le_log = LeLog0.le_log
-  clone SelectionSortGeneric_AllSmaller as AllSmaller0 with type t = t,
-  predicate SmallerThan0.smaller_than = SmallerThan0.smaller_than
-  clone SelectionSortGeneric_SelectionSortInvariant as SelectionSortInvariant0 with type t = t,
-  predicate AllLarger0.all_larger = AllLarger0.all_larger, predicate AllSmaller0.all_smaller = AllSmaller0.all_smaller
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t,
   function LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone SelectionSortGeneric_MinSmaller as MinSmaller0 with type t = t, function LeLog0.le_log = LeLog0.le_log
-  clone SelectionSortGeneric_MinLarger as MinLarger0 with type t = t, function LeLog0.le_log = LeLog0.le_log
+  clone SelectionSortGeneric_Partition as Partition0 with type t = t, function LeLog0.le_log = LeLog0.le_log
   clone SelectionSortGeneric_SortedRange as SortedRange0 with type t = t, function LeLog0.le_log = LeLog0.le_log
   clone SelectionSortGeneric_Sorted as Sorted0 with type t = t,
   predicate SortedRange0.sorted_range = SortedRange0.sorted_range
@@ -961,15 +865,12 @@ module SelectionSortGeneric_SelectionSort
   var _32 : ();
   var _33 : ();
   var _34 : ();
-  var _35 : ();
-  var _36 : ();
-  var _37 : borrowed (Type.creusotcontracts_std1_vec_vec t);
-  var _38 : usize;
-  var _39 : usize;
+  var _35 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var _36 : usize;
+  var _37 : usize;
+  var _38 : ();
+  var _39 : ();
   var _40 : ();
-  var _41 : ();
-  var _42 : ();
-  var _43 : ();
   {
     v_1 <- v;
     goto BB0
@@ -989,9 +890,9 @@ module SelectionSortGeneric_SelectionSort
   BB2 {
     invariant proph_const {  ^ v_1 =  ^ Model0.model old_v_3 };
     invariant permutation { PermutationOf0.permutation_of (Model1.model v_1) (Model2.model ( * Model0.model old_v_3)) };
-    invariant i_bound { 0 <= UInt64.to_int i_2 && UInt64.to_int i_2 <= Seq.length (Model1.model v_1) };
+    invariant i_bound { UInt64.to_int i_2 <= Seq.length (Model1.model v_1) };
     invariant sorted { SortedRange0.sorted_range (Model1.model v_1) 0 (UInt64.to_int i_2) };
-    invariant sort_inv { SelectionSortInvariant0.selection_sort_invariant (Model1.model v_1) (UInt64.to_int i_2) };
+    invariant partition { Partition0.partition (Model1.model v_1) (UInt64.to_int i_2) };
     goto BB3
   }
   BB3 {
@@ -1019,7 +920,7 @@ module SelectionSortGeneric_SelectionSort
   BB6 {
     invariant min_is_min { forall k : (int) . UInt64.to_int i_2 <= k && k < UInt64.to_int j_12 -> LeLog0.le_log (Seq.get (Model1.model v_1) (UInt64.to_int min_11)) (Seq.get (Model1.model v_1) k) };
     invariant j_bound { UInt64.to_int i_2 <= UInt64.to_int j_12 && UInt64.to_int j_12 <= Seq.length (Model1.model v_1) };
-    invariant min_bound { UInt64.to_int i_2 <= UInt64.to_int min_11 && UInt64.to_int min_11 < Seq.length (Model1.model v_1) && UInt64.to_int min_11 <= UInt64.to_int j_12 };
+    invariant min_bound { UInt64.to_int i_2 <= UInt64.to_int min_11 && UInt64.to_int min_11 < UInt64.to_int j_12 };
     goto BB7
   }
   BB7 {
@@ -1091,28 +992,18 @@ module SelectionSortGeneric_SelectionSort
     assume { Resolve2.resolve j_12 };
     _14 <- ();
     assume { Resolve4.resolve _14 };
-    assert { MinLarger0.min_larger (Model1.model v_1) (UInt64.to_int i_2) (UInt64.to_int min_11) };
-    _34 <- ();
-    assume { Resolve4.resolve _34 };
-    assert { MinSmaller0.min_smaller (Model1.model v_1) (UInt64.to_int i_2) (UInt64.to_int min_11) };
-    _35 <- ();
-    assume { Resolve4.resolve _35 };
-    _37 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _37) };
-    assume { Resolve2.resolve _38 };
-    _38 <- i_2;
-    assume { Resolve2.resolve _39 };
-    _39 <- min_11;
+    _35 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _35) };
+    assume { Resolve2.resolve _36 };
+    _36 <- i_2;
+    assume { Resolve2.resolve _37 };
+    _37 <- min_11;
     assume { Resolve2.resolve min_11 };
-    _36 <- Swap0.swap _37 _38 _39;
+    _34 <- Swap0.swap _35 _36 _37;
     goto BB17
   }
   BB17 {
     i_2 <- i_2 + (1 : usize);
-    assert { SortedRange0.sorted_range (Model1.model v_1) 0 (UInt64.to_int i_2) };
-    _40 <- ();
-    assume { Resolve4.resolve _40 };
-    assert { SelectionSortInvariant0.selection_sort_invariant (Model1.model v_1) (UInt64.to_int i_2) };
     _6 <- ();
     assume { Resolve4.resolve _6 };
     goto BB2
