@@ -3,6 +3,7 @@ use crate::logic::*;
 use crate::{std::clone::Clone, Int, Model, Seq};
 use creusot_contracts_proc::*;
 
+#[trusted]
 pub struct Vec<T>(std::vec::Vec<T>);
 
 impl<T> Model for Vec<T> {

@@ -26,8 +26,11 @@ use crate::util::{self, ident_of, ident_of_ty, item_name};
 pub enum PreludeModule {
     Int,
     Int8,
+    Int16,
     Int32,
     Int64,
+    UInt8,
+    UInt16,
     UInt32,
     UInt64,
     Char,
@@ -43,8 +46,11 @@ impl PreludeModule {
         match self {
             PreludeModule::Int => QName::from_string("mach.int.Int").unwrap(),
             PreludeModule::Int8 => QName::from_string("prelude.Int8").unwrap(),
+            PreludeModule::Int16 => QName::from_string("prelude.Int16").unwrap(),
             PreludeModule::Int32 => QName::from_string("mach.int.Int32").unwrap(),
             PreludeModule::Int64 => QName::from_string("mach.int.Int64").unwrap(),
+            PreludeModule::UInt8 => QName::from_string("mach.int.UInt8").unwrap(),
+            PreludeModule::UInt16 => QName::from_string("mach.int.UInt16").unwrap(),
             PreludeModule::UInt32 => QName::from_string("mach.int.UInt32").unwrap(),
             PreludeModule::UInt64 => QName::from_string("mach.int.UInt64").unwrap(),
             PreludeModule::Char => QName::from_string("string.Char").unwrap(),

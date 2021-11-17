@@ -19,6 +19,21 @@ module Type
     | CreusotContracts_Logic_Ghost_Ghost opaque_ptr
     
 end
+module HeapsortGeneric_Main_Interface
+  val main () : ()
+end
+module HeapsortGeneric_Main
+  let rec cfg main () : () = 
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface
   type self   
   use Type
@@ -274,13 +289,13 @@ module CreusotContracts_Logic_Ord_OrdLogic_EqCmp
   function eq_cmp (x : self) (y : self) : ()
   axiom eq_cmp_spec : forall x : self, y : self . (LogEq0.log_eq x y -> CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Equal) && (CmpLog0.cmp_log y x = Type.Core_Cmp_Ordering_Equal -> LogEq0.log_eq x y)
 end
-module C02Gnome_SortedRange_Interface
+module HeapsortGeneric_SortedRange_Interface
   type t   
   use seq.Seq
   use mach.int.Int
   predicate sorted_range (s : Seq.seq t) (l : int) (u : int)
 end
-module C02Gnome_SortedRange
+module HeapsortGeneric_SortedRange
   type t   
   use seq.Seq
   use mach.int.Int
@@ -288,17 +303,17 @@ module C02Gnome_SortedRange
   predicate sorted_range (s : Seq.seq t) (l : int) (u : int) = 
     forall j : (int) . forall i : (int) . l <= i && i < j && j < u -> LeLog0.le_log (Seq.get s i) (Seq.get s j)
 end
-module C02Gnome_Sorted_Interface
+module HeapsortGeneric_Sorted_Interface
   type t   
   use seq.Seq
   predicate sorted (s : Seq.seq t)
 end
-module C02Gnome_Sorted
+module HeapsortGeneric_Sorted
   type t   
   use seq.Seq
   use mach.int.Int
   use mach.int.Int32
-  clone C02Gnome_SortedRange_Interface as SortedRange0 with type t = t
+  clone HeapsortGeneric_SortedRange_Interface as SortedRange0 with type t = t
   predicate sorted (s : Seq.seq t) = 
     SortedRange0.sorted_range s 0 (Seq.length s)
 end
@@ -315,6 +330,40 @@ module CreusotContracts_Logic_Model_Model_Model
   type self   
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
   function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl1_ModelTy
+  type t   
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  type modelTy  = 
+    ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl1_Model_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  function model (self : borrowed t) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl1_Model
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  function model (self : borrowed t) : ModelTy0.modelTy = 
+    Model0.model ( * self)
+end
+module CreusotContracts_Logic_Model_Impl1
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
+  function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Model_Impl1_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = borrowed t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function model = Model0.model
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = borrowed t,
+  type modelTy = ModelTy0.modelTy
 end
 module CreusotContracts_Std1_Vec_Impl0_ModelTy
   type t   
@@ -357,40 +406,6 @@ module CreusotContracts_Logic_Seq_Impl0_PermutationOf
   use seq.Permut
   predicate permutation_of (self : Seq.seq t) (o : Seq.seq t) = 
     Permut.permut self o 0 (Seq.length self)
-end
-module CreusotContracts_Logic_Model_Impl1_ModelTy
-  type t   
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  type modelTy  = 
-    ModelTy0.modelTy
-end
-module CreusotContracts_Logic_Model_Impl1_Model_Interface
-  type t   
-  use prelude.Prelude
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  function model (self : borrowed t) : ModelTy0.modelTy
-end
-module CreusotContracts_Logic_Model_Impl1_Model
-  type t   
-  use prelude.Prelude
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
-  type ModelTy0.modelTy = ModelTy0.modelTy
-  function model (self : borrowed t) : ModelTy0.modelTy = 
-    Model0.model ( * self)
-end
-module CreusotContracts_Logic_Model_Impl1
-  type t   
-  use prelude.Prelude
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
-  function Model0.model = Model2.model
-  clone CreusotContracts_Logic_Model_Impl1_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = borrowed t,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function model = Model0.model
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = borrowed t,
-  type modelTy = ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Ghost_Impl0_ModelTy
   type t   
@@ -503,42 +518,6 @@ module CreusotContracts_Std1_Vec_Impl1_Len
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
   val len (self : Type.creusotcontracts_std1_vec_vec t) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
-    
-end
-module CreusotContracts_Std1_Vec_Impl1_Swap_Interface
-  type t   
-  use mach.int.UInt64
-  use seq.Seq
-  use mach.int.Int
-  use seq.Permut
-  use prelude.Prelude
-  use Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
-  type ModelTy0.modelTy = ModelTy0.modelTy
-  val swap (self : borrowed (Type.creusotcontracts_std1_vec_vec t)) (i : usize) (j : usize) : ()
-    requires {UInt64.to_int j < Seq.length (Model0.model self)}
-    requires {UInt64.to_int i < Seq.length (Model0.model self)}
-    ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int i) (UInt64.to_int j) }
-    
-end
-module CreusotContracts_Std1_Vec_Impl1_Swap
-  type t   
-  use mach.int.UInt64
-  use seq.Seq
-  use mach.int.Int
-  use seq.Permut
-  use prelude.Prelude
-  use Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
-  val swap (self : borrowed (Type.creusotcontracts_std1_vec_vec t)) (i : usize) (j : usize) : ()
-    requires {UInt64.to_int j < Seq.length (Model0.model self)}
-    requires {UInt64.to_int i < Seq.length (Model0.model self)}
-    ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int i) (UInt64.to_int j) }
     
 end
 module Core_Ops_Index_Index_Output
@@ -707,6 +686,42 @@ module CreusotContracts_Std1_Ord_Ord_Lt
     ensures { result = LtLog0.lt_log self o }
     
 end
+module CreusotContracts_Std1_Vec_Impl1_Swap_Interface
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use seq.Permut
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val swap (self : borrowed (Type.creusotcontracts_std1_vec_vec t)) (i : usize) (j : usize) : ()
+    requires {UInt64.to_int j < Seq.length (Model0.model self)}
+    requires {UInt64.to_int i < Seq.length (Model0.model self)}
+    ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int i) (UInt64.to_int j) }
+    
+end
+module CreusotContracts_Std1_Vec_Impl1_Swap
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use seq.Permut
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  val swap (self : borrowed (Type.creusotcontracts_std1_vec_vec t)) (i : usize) (j : usize) : ()
+    requires {UInt64.to_int j < Seq.length (Model0.model self)}
+    requires {UInt64.to_int i < Seq.length (Model0.model self)}
+    ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int i) (UInt64.to_int j) }
+    
+end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t   
   use prelude.Prelude
@@ -725,25 +740,40 @@ module CreusotContracts_Logic_Resolve_Impl1
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = borrowed t,
   predicate resolve = Resolve0.resolve
 end
-module C02Gnome_GnomeSort_Interface
-  type t   
-  use prelude.Prelude
-  use Type
-  clone C02Gnome_Sorted_Interface as Sorted0 with type t = t
-  clone CreusotContracts_Logic_Seq_Impl0_PermutationOf_Interface as PermutationOf0 with type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t
-  val gnome_sort (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) : ()
-    ensures { PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model0.model ( * v)) }
-    ensures { Sorted0.sorted (Model0.model ( ^ v)) }
-    
-end
-module C02Gnome_GnomeSort
+module HeapsortGeneric_ShiftDown_Interface
   type t   
   use mach.int.Int
   use mach.int.Int32
   use mach.int.UInt64
+  use seq.Seq
   use prelude.Prelude
   use Type
+  clone CreusotContracts_Logic_Seq_Impl0_PermutationOf_Interface as PermutationOf0 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val shift_down (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) (start : usize) (end' : usize) : ()
+    requires {0 <= UInt64.to_int end' && UInt64.to_int end' < Seq.length (Model0.model v)}
+    requires {0 <= UInt64.to_int start && UInt64.to_int start < div (Seq.length (Model0.model v)) 2}
+    requires {Seq.length (Model0.model v) < div 18446744073709551615 2}
+    ensures { PermutationOf0.permutation_of (Model1.model ( ^ v)) (Model0.model v) }
+    
+end
+module HeapsortGeneric_ShiftDown
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use mach.int.Int32
+  use Type
+  clone CreusotContracts_Logic_Seq_Impl0_PermutationOf as PermutationOf0 with type t = t
+  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model2 with type t = borrowed (Type.creusotcontracts_std1_vec_vec t)
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
   clone CreusotContracts_Logic_Eq_EqLogic_LogNe as LogNe0 with type self = t
   clone CreusotContracts_Logic_Eq_EqLogic_LogEq as LogEq0 with type self = t
   clone CreusotContracts_Logic_Eq_EqLogic_Transitivity as Transitivity0 with type self = t,
@@ -763,10 +793,10 @@ module C02Gnome_GnomeSort
   function CmpLog0.cmp_log = CmpLog0.cmp_log
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog as CmpGeLog0 with type self = t,
   function GeLog0.ge_log = GeLog0.ge_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog as LtLog0 with type self = t,
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog as LeLog0 with type self = t,
   function CmpLog0.cmp_log = CmpLog0.cmp_log
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog as CmpLtLog0 with type self = t,
-  function LtLog0.lt_log = LtLog0.lt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t,
+  function LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_EqCmp as EqCmp0 with type self = t,
   function CmpLog0.cmp_log = CmpLog0.cmp_log, predicate LogEq0.log_eq = LogEq0.log_eq, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym2 as Antisym20 with type self = t,
@@ -777,37 +807,331 @@ module C02Gnome_GnomeSort
   function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Refl as Refl0 with type self = t,
   function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog as LeLog0 with type self = t,
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog as LtLog0 with type self = t,
   function CmpLog0.cmp_log = CmpLog0.cmp_log
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t,
-  function LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone C02Gnome_SortedRange as SortedRange0 with type t = t, function LeLog0.le_log = LeLog0.le_log
-  clone C02Gnome_Sorted as Sorted0 with type t = t, predicate SortedRange0.sorted_range = SortedRange0.sorted_range
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog as CmpLtLog0 with type self = t,
+  function LtLog0.lt_log = LtLog0.lt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Std1_Ord_Ord_Lt_Interface as Lt0 with type self = t, function LtLog0.lt_log = LtLog0.lt_log
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve6 with type t = Type.creusotcontracts_std1_vec_vec t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve5 with type self = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve4 with type self = ()
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = bool
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = usize
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.creusotcontracts_std1_vec_vec t))
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = borrowed (Type.creusotcontracts_std1_vec_vec t)
+  clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = borrowed (Type.creusotcontracts_std1_vec_vec t),
+  function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model3 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = t, function Model0.model = Model3.model
+  clone CreusotContracts_Std1_Vec_Impl1_Swap_Interface as Swap0 with type t = t, function Model0.model = Model0.model,
+  function Model1.model = Model1.model
+  let rec cfg shift_down (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) (start : usize) (end' : usize) : ()
+    requires {0 <= UInt64.to_int end' && UInt64.to_int end' < Seq.length (Model0.model v)}
+    requires {0 <= UInt64.to_int start && UInt64.to_int start < div (Seq.length (Model0.model v)) 2}
+    requires {Seq.length (Model0.model v) < div 18446744073709551615 2}
+    ensures { PermutationOf0.permutation_of (Model1.model ( ^ v)) (Model0.model v) }
+    
+   = 
+  var _0 : ();
+  var v_1 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var start_2 : usize;
+  var end_3 : usize;
+  var old_v_4 : Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.creusotcontracts_std1_vec_vec t));
+  var _5 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var _6 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var root_7 : usize;
+  var continue_loop_8 : bool;
+  var _9 : ();
+  var _10 : bool;
+  var child_11 : usize;
+  var _12 : usize;
+  var _13 : usize;
+  var _14 : bool;
+  var _15 : usize;
+  var _16 : usize;
+  var _17 : ();
+  var _18 : bool;
+  var _19 : bool;
+  var _20 : usize;
+  var _21 : usize;
+  var _22 : usize;
+  var _23 : bool;
+  var _24 : t;
+  var _25 : t;
+  var _26 : Type.creusotcontracts_std1_vec_vec t;
+  var _27 : usize;
+  var _28 : t;
+  var _29 : t;
+  var _30 : t;
+  var _31 : Type.creusotcontracts_std1_vec_vec t;
+  var _32 : usize;
+  var _33 : usize;
+  var _34 : bool;
+  var _35 : t;
+  var _36 : t;
+  var _37 : Type.creusotcontracts_std1_vec_vec t;
+  var _38 : usize;
+  var _39 : t;
+  var _40 : t;
+  var _41 : t;
+  var _42 : Type.creusotcontracts_std1_vec_vec t;
+  var _43 : usize;
+  var _44 : ();
+  var _45 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var _46 : usize;
+  var _47 : usize;
+  var _48 : usize;
+  var _49 : ();
+  var _50 : ();
+  var _51 : ();
+  {
+    v_1 <- v;
+    start_2 <- start;
+    end_3 <- end';
+    goto BB0
+  }
+  BB0 {
+    _6 <- v_1;
+    _5 <- _6;
+    assume { Resolve0.resolve _6 };
+    old_v_4 <- Record0.record _5;
+    goto BB1
+  }
+  BB1 {
+    assume { Resolve1.resolve old_v_4 };
+    assume { Resolve2.resolve root_7 };
+    root_7 <- start_2;
+    assume { Resolve2.resolve start_2 };
+    continue_loop_8 <- true;
+    goto BB2
+  }
+  BB2 {
+    invariant v_len { Seq.length (Model0.model v_1) < div 18446744073709551615 2 };
+    invariant root_inv { 0 <= UInt64.to_int root_7 && UInt64.to_int root_7 <= Seq.length (Model0.model v_1) };
+    invariant end_inv { 0 <= UInt64.to_int end_3 && UInt64.to_int end_3 <= Seq.length (Model0.model v_1) };
+    invariant permutation { PermutationOf0.permutation_of (Model1.model ( * v_1)) (Model1.model ( * Model2.model old_v_4)) };
+    invariant proph_const {  ^ v_1 =  ^ Model2.model old_v_4 };
+    goto BB3
+  }
+  BB3 {
+    assume { Resolve3.resolve _10 };
+    _10 <- continue_loop_8;
+    switch (_10)
+      | False -> goto BB24
+      | _ -> goto BB4
+      end
+  }
+  BB4 {
+    assume { Resolve2.resolve _13 };
+    _13 <- root_7;
+    _12 <- _13 * (2 : usize);
+    child_11 <- _12 + (1 : usize);
+    assume { Resolve2.resolve _15 };
+    _15 <- child_11;
+    assume { Resolve2.resolve _16 };
+    _16 <- end_3;
+    _14 <- _15 > _16;
+    switch (_14)
+      | False -> goto BB6
+      | _ -> goto BB5
+      end
+  }
+  BB5 {
+    assume { Resolve3.resolve continue_loop_8 };
+    assume { Resolve2.resolve child_11 };
+    continue_loop_8 <- false;
+    _9 <- ();
+    assume { Resolve4.resolve _9 };
+    goto BB23
+  }
+  BB6 {
+    assume { Resolve2.resolve _21 };
+    _21 <- child_11;
+    _20 <- _21 + (1 : usize);
+    assume { Resolve2.resolve _22 };
+    _22 <- end_3;
+    _19 <- _20 <= _22;
+    switch (_19)
+      | False -> goto BB7
+      | _ -> goto BB8
+      end
+  }
+  BB7 {
+    _18 <- false;
+    goto BB9
+  }
+  BB8 {
+    _26 <-  * v_1;
+    assume { Resolve2.resolve _27 };
+    _27 <- child_11;
+    _25 <- Index0.index _26 _27;
+    goto BB10
+  }
+  BB9 {
+    switch (_18)
+      | False -> goto BB14
+      | _ -> goto BB13
+      end
+  }
+  BB10 {
+    _24 <- _25;
+    assume { Resolve5.resolve _25 };
+    _31 <-  * v_1;
+    assume { Resolve2.resolve _33 };
+    _33 <- child_11;
+    _32 <- _33 + (1 : usize);
+    _30 <- Index0.index _31 _32;
+    goto BB11
+  }
+  BB11 {
+    _29 <- _30;
+    assume { Resolve5.resolve _30 };
+    _28 <- _29;
+    assume { Resolve5.resolve _29 };
+    _23 <- Lt0.lt _24 _28;
+    goto BB12
+  }
+  BB12 {
+    assume { Resolve3.resolve _18 };
+    _18 <- _23;
+    goto BB9
+  }
+  BB13 {
+    child_11 <- child_11 + (1 : usize);
+    _17 <- ();
+    assume { Resolve4.resolve _17 };
+    goto BB15
+  }
+  BB14 {
+    _17 <- ();
+    assume { Resolve4.resolve _17 };
+    goto BB15
+  }
+  BB15 {
+    _37 <-  * v_1;
+    assume { Resolve2.resolve _38 };
+    _38 <- root_7;
+    _36 <- Index0.index _37 _38;
+    goto BB16
+  }
+  BB16 {
+    _35 <- _36;
+    assume { Resolve5.resolve _36 };
+    _42 <-  * v_1;
+    assume { Resolve2.resolve _43 };
+    _43 <- child_11;
+    _41 <- Index0.index _42 _43;
+    goto BB17
+  }
+  BB17 {
+    _40 <- _41;
+    assume { Resolve5.resolve _41 };
+    _39 <- _40;
+    assume { Resolve5.resolve _40 };
+    _34 <- Lt0.lt _35 _39;
+    goto BB18
+  }
+  BB18 {
+    switch (_34)
+      | False -> goto BB21
+      | _ -> goto BB19
+      end
+  }
+  BB19 {
+    _45 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _45) };
+    assume { Resolve2.resolve _46 };
+    _46 <- root_7;
+    assume { Resolve2.resolve root_7 };
+    assume { Resolve2.resolve _47 };
+    _47 <- child_11;
+    _44 <- Swap0.swap _45 _46 _47;
+    goto BB20
+  }
+  BB20 {
+    assume { Resolve2.resolve _48 };
+    _48 <- child_11;
+    assume { Resolve2.resolve child_11 };
+    assume { Resolve2.resolve root_7 };
+    root_7 <- _48;
+    _9 <- ();
+    assume { Resolve4.resolve _9 };
+    goto BB22
+  }
+  BB21 {
+    assume { Resolve3.resolve continue_loop_8 };
+    assume { Resolve2.resolve child_11 };
+    continue_loop_8 <- false;
+    _9 <- ();
+    assume { Resolve4.resolve _9 };
+    goto BB22
+  }
+  BB22 {
+    goto BB23
+  }
+  BB23 {
+    goto BB2
+  }
+  BB24 {
+    assume { Resolve6.resolve v_1 };
+    assume { Resolve2.resolve end_3 };
+    assume { Resolve2.resolve root_7 };
+    assume { Resolve3.resolve continue_loop_8 };
+    _0 <- ();
+    return _0
+  }
+  
+end
+module HeapsortGeneric_HeapSort_Interface
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use mach.int.Int32
+  use Type
+  clone CreusotContracts_Logic_Seq_Impl0_PermutationOf_Interface as PermutationOf0 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val heap_sort (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) : ()
+    requires {Seq.length (Model0.model v) < div 18446744073709551615 2}
+    ensures { PermutationOf0.permutation_of (Model1.model ( ^ v)) (Model0.model v) }
+    
+end
+module HeapsortGeneric_HeapSort
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use mach.int.Int32
+  use Type
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf as PermutationOf0 with type t = t
-  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model1 with type t = borrowed (Type.creusotcontracts_std1_vec_vec t)
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = t
+  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model2 with type t = borrowed (Type.creusotcontracts_std1_vec_vec t)
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
   clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model2.model
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve6 with type t = Type.creusotcontracts_std1_vec_vec t
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve5 with type self = bool
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve4 with type self = t
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve4 with type t = Type.creusotcontracts_std1_vec_vec t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = ()
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = usize
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.creusotcontracts_std1_vec_vec t))
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = borrowed (Type.creusotcontracts_std1_vec_vec t)
-  clone CreusotContracts_Std1_Ord_Ord_Le_Interface as Le0 with type self = t, function LeLog0.le_log = LeLog0.le_log
   clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = borrowed (Type.creusotcontracts_std1_vec_vec t),
-  function Model0.model = Model1.model
+  function Model0.model = Model2.model
   clone CreusotContracts_Logic_Model_Impl0_Model as Model3 with type t = Type.creusotcontracts_std1_vec_vec t,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model2.model
-  clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = t, function Model0.model = Model3.model
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
   clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = t, function Model0.model = Model3.model
   clone CreusotContracts_Std1_Vec_Impl1_Swap_Interface as Swap0 with type t = t, function Model0.model = Model0.model,
-  function Model1.model = Model2.model
-  let rec cfg gnome_sort (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) : ()
-    ensures { PermutationOf0.permutation_of (Model2.model ( ^ v)) (Model2.model ( * v)) }
-    ensures { Sorted0.sorted (Model2.model ( ^ v)) }
+  function Model1.model = Model1.model
+  clone HeapsortGeneric_ShiftDown_Interface as ShiftDown0 with type t = t, function Model0.model = Model0.model,
+  function Model1.model = Model1.model, predicate PermutationOf0.permutation_of = PermutationOf0.permutation_of
+  let rec cfg heap_sort (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) : ()
+    requires {Seq.length (Model0.model v) < div 18446744073709551615 2}
+    ensures { PermutationOf0.permutation_of (Model1.model ( ^ v)) (Model0.model v) }
     
    = 
   var _0 : ();
@@ -815,34 +1139,39 @@ module C02Gnome_GnomeSort
   var old_v_2 : Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.creusotcontracts_std1_vec_vec t));
   var _3 : borrowed (Type.creusotcontracts_std1_vec_vec t);
   var _4 : borrowed (Type.creusotcontracts_std1_vec_vec t);
-  var i_5 : usize;
-  var _6 : ();
-  var _7 : bool;
+  var len_5 : usize;
+  var _6 : Type.creusotcontracts_std1_vec_vec t;
+  var start_7 : usize;
   var _8 : usize;
-  var _9 : usize;
-  var _10 : Type.creusotcontracts_std1_vec_vec t;
-  var _11 : bool;
+  var _9 : bool;
+  var _10 : ();
+  var _11 : ();
   var _12 : bool;
   var _13 : usize;
-  var _14 : bool;
-  var _15 : t;
-  var _16 : t;
-  var _17 : Type.creusotcontracts_std1_vec_vec t;
+  var _14 : ();
+  var _15 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var _16 : usize;
+  var _17 : usize;
   var _18 : usize;
-  var _19 : usize;
-  var _20 : t;
-  var _21 : t;
-  var _22 : t;
-  var _23 : Type.creusotcontracts_std1_vec_vec t;
+  var _19 : ();
+  var _20 : ();
+  var _21 : ();
+  var end_22 : usize;
+  var _23 : bool;
   var _24 : usize;
-  var _25 : ();
-  var _26 : borrowed (Type.creusotcontracts_std1_vec_vec t);
-  var _27 : usize;
+  var zero_25 : usize;
+  var _26 : ();
+  var _27 : borrowed (Type.creusotcontracts_std1_vec_vec t);
   var _28 : usize;
   var _29 : usize;
   var _30 : ();
-  var _31 : ();
-  var _32 : ();
+  var _31 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var _32 : usize;
+  var _33 : usize;
+  var _34 : usize;
+  var _35 : ();
+  var _36 : ();
+  var _37 : ();
   {
     v_1 <- v;
     goto BB0
@@ -856,107 +1185,111 @@ module C02Gnome_GnomeSort
   }
   BB1 {
     assume { Resolve1.resolve old_v_2 };
-    i_5 <- (0 : usize);
+    _6 <-  * v_1;
+    len_5 <- Len0.len _6;
     goto BB2
   }
   BB2 {
-    invariant sorted { SortedRange0.sorted_range (Model0.model v_1) 0 (UInt64.to_int i_5) };
-    invariant proph_const {  ^ v_1 =  ^ Model1.model old_v_2 };
-    invariant permutation { PermutationOf0.permutation_of (Model2.model ( * v_1)) (Model2.model ( * Model1.model old_v_2)) };
+    assume { Resolve2.resolve _8 };
+    _8 <- len_5;
+    _9 <- (2 : usize) = (0 : usize);
+    assert { not _9 };
     goto BB3
   }
   BB3 {
-    assume { Resolve2.resolve _8 };
-    _8 <- i_5;
-    _10 <-  * v_1;
-    _9 <- Len0.len _10;
+    start_7 <- _8 / (2 : usize);
     goto BB4
   }
   BB4 {
-    _7 <- _8 < _9;
-    switch (_7)
-      | False -> goto BB16
-      | _ -> goto BB5
-      end
+    invariant v_len { Seq.length (Model0.model v_1) < div 18446744073709551615 2 };
+    invariant start_inv { 0 <= UInt64.to_int start_7 && UInt64.to_int start_7 <= div (UInt64.to_int len_5) 2 };
+    invariant permutation { PermutationOf0.permutation_of (Model1.model ( * v_1)) (Model1.model ( * Model2.model old_v_2)) };
+    invariant proph_const {  ^ v_1 =  ^ Model2.model old_v_2 };
+    goto BB5
   }
   BB5 {
     assume { Resolve2.resolve _13 };
-    _13 <- i_5;
-    _12 <- _13 = (0 : usize);
+    _13 <- start_7;
+    _12 <- _13 > (0 : usize);
     switch (_12)
-      | False -> goto BB7
+      | False -> goto BB8
       | _ -> goto BB6
       end
   }
   BB6 {
-    _11 <- true;
-    goto BB8
+    start_7 <- start_7 - (1 : usize);
+    _15 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _15) };
+    assume { Resolve2.resolve _16 };
+    _16 <- start_7;
+    assume { Resolve2.resolve _18 };
+    _18 <- len_5;
+    _17 <- _18 - (1 : usize);
+    _14 <- ShiftDown0.shift_down _15 _16 _17;
+    goto BB7
   }
   BB7 {
-    _17 <-  * v_1;
-    assume { Resolve2.resolve _19 };
-    _19 <- i_5;
-    _18 <- _19 - (1 : usize);
-    _16 <- Index0.index _17 _18;
-    goto BB9
+    _11 <- ();
+    assume { Resolve3.resolve _11 };
+    goto BB4
   }
   BB8 {
-    switch (_11)
-      | False -> goto BB13
-      | _ -> goto BB12
-      end
+    assume { Resolve2.resolve start_7 };
+    _10 <- ();
+    assume { Resolve3.resolve _10 };
+    assume { Resolve2.resolve end_22 };
+    end_22 <- len_5;
+    assume { Resolve2.resolve len_5 };
+    goto BB9
   }
   BB9 {
-    _15 <- _16;
-    assume { Resolve4.resolve _16 };
-    _23 <-  * v_1;
-    assume { Resolve2.resolve _24 };
-    _24 <- i_5;
-    _22 <- Index0.index _23 _24;
+    invariant v_len { Seq.length (Model0.model v_1) < div 18446744073709551615 2 };
+    invariant end_inv { 0 <= UInt64.to_int end_22 && UInt64.to_int end_22 <= UInt64.to_int len_5 };
+    invariant permutation { PermutationOf0.permutation_of (Model1.model ( * v_1)) (Model1.model ( * Model2.model old_v_2)) };
+    invariant proph_const {  ^ v_1 =  ^ Model2.model old_v_2 };
     goto BB10
   }
   BB10 {
-    _21 <- _22;
-    assume { Resolve4.resolve _22 };
-    _20 <- _21;
-    assume { Resolve4.resolve _21 };
-    _14 <- Le0.le _15 _20;
-    goto BB11
+    assume { Resolve2.resolve _24 };
+    _24 <- end_22;
+    _23 <- _24 > (1 : usize);
+    switch (_23)
+      | False -> goto BB14
+      | _ -> goto BB11
+      end
   }
   BB11 {
-    assume { Resolve5.resolve _11 };
-    _11 <- _14;
-    goto BB8
+    end_22 <- end_22 - (1 : usize);
+    zero_25 <- (0 : usize);
+    _27 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _27) };
+    assume { Resolve2.resolve _28 };
+    _28 <- zero_25;
+    assume { Resolve2.resolve _29 };
+    _29 <- end_22;
+    _26 <- Swap0.swap _27 _28 _29;
+    goto BB12
   }
   BB12 {
-    i_5 <- i_5 + (1 : usize);
-    _6 <- ();
-    assume { Resolve3.resolve _6 };
-    goto BB15
+    _31 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _31) };
+    assume { Resolve2.resolve _32 };
+    _32 <- zero_25;
+    assume { Resolve2.resolve zero_25 };
+    assume { Resolve2.resolve _34 };
+    _34 <- end_22;
+    _33 <- _34 - (1 : usize);
+    _30 <- ShiftDown0.shift_down _31 _32 _33;
+    goto BB13
   }
   BB13 {
-    _26 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _26) };
-    assume { Resolve2.resolve _28 };
-    _28 <- i_5;
-    _27 <- _28 - (1 : usize);
-    assume { Resolve2.resolve _29 };
-    _29 <- i_5;
-    _25 <- Swap0.swap _26 _27 _29;
-    goto BB14
+    _11 <- ();
+    assume { Resolve3.resolve _11 };
+    goto BB9
   }
   BB14 {
-    i_5 <- i_5 - (1 : usize);
-    _6 <- ();
-    assume { Resolve3.resolve _6 };
-    goto BB15
-  }
-  BB15 {
-    goto BB2
-  }
-  BB16 {
-    assume { Resolve6.resolve v_1 };
-    assume { Resolve2.resolve i_5 };
+    assume { Resolve4.resolve v_1 };
+    assume { Resolve2.resolve end_22 };
     _0 <- ();
     return _0
   }
