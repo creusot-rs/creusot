@@ -24,7 +24,7 @@ fn sorted<T: Ord>(s: Seq<T>) -> bool {
 fn heap_sort<T: Ord>(v: &mut Vec<T>) {
     let old_v = Ghost::record(&v);
     let len = v.len();
-    let mut start = len/2;
+    let mut start = len / 2;
     // Create heap
     #[invariant(v_len, (@v).len() < @std::usize::MAX/2)]
     #[invariant(start_inv, 0 <= @start && @start <= (@len)/2)]
@@ -66,10 +66,10 @@ fn shift_down<T: Ord>(v: &mut Vec<T>, start: usize, end: usize) {
         if child > end {
             continue_loop = false;
         } else {
-            if child + 1 <= end && v[child].lt(&v[child + 1]) { 
+            if child + 1 <= end && v[child].lt(&v[child + 1]) {
                 child += 1;
             }
-            if v[root].lt(&v[child]) { 
+            if v[root].lt(&v[child]) {
                 v.swap(root, child);
                 root = child
             } else {
