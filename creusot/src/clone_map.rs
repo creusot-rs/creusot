@@ -266,6 +266,7 @@ impl<'tcx> CloneMap<'tcx> {
             }
 
             self.clone_graph.add_node(key);
+            ctx.translate(key.0);
 
             debug!("{:?} has {:?} dependencies", key, ctx.dependencies(key.0).map(|d| d.len()));
             self.clone_laws(ctx, key);
@@ -368,7 +369,6 @@ impl<'tcx> CloneMap<'tcx> {
         let mut topo = Topo::new(&self.clone_graph);
         while let Some(node @ (def_id, subst)) = topo.walk_next(&self.clone_graph) {
             debug!("processing node={:?}", node);
-            ctx.translate(def_id);
 
             // Though we pass in a &mut ref, it shouldn't actually be possible to add any new entries..
             let mut clone_subst = base_subst(ctx, self, def_id, subst);
