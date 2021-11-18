@@ -115,7 +115,7 @@ fn m(t: Vec<i32>) -> Vec<i32> {
 #[trusted]
 #[requires(false)]
 fn main() {
-    let v = Vec::new();
+    let mut v = Vec::new();
     v.push(1);
     v.push(-2);
     v.push(3);

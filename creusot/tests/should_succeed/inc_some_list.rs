@@ -10,7 +10,7 @@ use List::*;
 impl WellFounded for List {}
 
 #[trusted]
-fn random<T>() -> T {
+fn random() -> bool {
     rand::random()
 }
 
