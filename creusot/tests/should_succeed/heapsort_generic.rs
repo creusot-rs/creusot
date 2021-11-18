@@ -5,20 +5,20 @@ use creusot_contracts::std::*;
 use creusot_contracts::*;
 
 #[logic]
-fn left(i : Int) -> Int {
+fn left(i: Int) -> Int {
     2 * i + 1
 }
 
 #[logic]
-fn right(i : Int) -> Int {
+fn right(i: Int) -> Int {
     2 * i + 2
 }
 
 #[predicate]
-fn heap_frag<T: OrdLogic>(s : Seq<T>, start : Int, end : Int) -> bool {
+fn heap_frag<T: OrdLogic>(s: Seq<T>, start: Int, end: Int) -> bool {
     pearlite! { forall<i: Int> start <= i ==>
-           ((left(i) < end) ==> s[left(i)] <= s[i])
-       &&  ((right(i) < end) ==> s[right(i)] <= s[i]) }
+        ((left(i) < end) ==> s[left(i)] <= s[i])
+    &&  ((right(i) < end) ==> s[right(i)] <= s[i]) }
 }
 
 #[logic]
@@ -26,8 +26,10 @@ fn heap_frag<T: OrdLogic>(s : Seq<T>, start : Int, end : Int) -> bool {
 #[requires(0 <= i && i < end)]
 #[ensures(s[i] <= s[0])]
 #[variant(i)]
-fn heap_frag_max<T: OrdLogic>(s : Seq<T>, i : Int, end : Int) {
-    if i > 0 { heap_frag_max(s, (i+1)/2-1, end) }
+fn heap_frag_max<T: OrdLogic>(s: Seq<T>, i: Int, end: Int) {
+    if i > 0 {
+        heap_frag_max(s, (i + 1) / 2 - 1, end)
+    }
 }
 
 #[requires(heap_frag(@v, @start + 1, @end))]
@@ -40,7 +42,7 @@ fn heap_frag_max<T: OrdLogic>(s : Seq<T>, i : Int, end : Int) {
 #[ensures(forall<m: T>
           (forall<j: Int> @start <= j && j < @end ==> (@v)[j] <= m) ==>
           forall<j: Int> @start <= j && j < @end ==> (@^v)[j] <= m)]
-fn shift_down<T: Ord>(v : &mut Vec<T>, start: usize, end: usize) {
+fn shift_down<T: Ord>(v: &mut Vec<T>, start: usize, end: usize) {
     let old_v = Ghost::record(&v);
     let mut i = start;
 
@@ -64,13 +66,13 @@ fn shift_down<T: Ord>(v : &mut Vec<T>, start: usize, end: usize) {
 
         let mut child = 2 * i + 1;
         if child >= end {
-            return
+            return;
         }
         if child + 1 < end && v[child].lt(&v[child + 1]) {
             child += 1
         }
         if v[child].le(&v[i]) {
-            return
+            return;
         }
         v.swap(i, child);
         i = child
@@ -97,7 +99,7 @@ fn sorted<T: Ord>(s: Seq<T>) -> bool {
 fn heap_sort<T: Ord>(v: &mut Vec<T>) {
     let old_v = Ghost::record(&v);
 
-    let mut start = v.len()/2;
+    let mut start = v.len() / 2;
     #[invariant(permutation, (@v).permutation_of(@@old_v))]
     #[invariant(proph_const, ^v === ^@old_v)]
     #[invariant(heap, heap_frag(@v, @start, (@v).len()))]
@@ -116,7 +118,7 @@ fn heap_sort<T: Ord>(v: &mut Vec<T>) {
     #[invariant(heap_le, forall<i : Int, j : Int> 0 <= i && i < @end && @end <= j && j < (@v).len() ==>
                             (@v)[i] <= (@v)[j])]
     while end > 1 {
-        proof_assert!{{heap_frag_max(@v, 0/*dummy*/, @end); true}}
+        proof_assert! {{heap_frag_max(@v, 0/*dummy*/, @end); true}}
         end -= 1;
         v.swap(0, end);
         shift_down(v, 0, end);
