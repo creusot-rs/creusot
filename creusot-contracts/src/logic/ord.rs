@@ -9,48 +9,36 @@ pub trait OrdLogic: EqLogic {
     #[logic]
     fn cmp_log(self, _: Self) -> Ordering;
 
-    #[logic]
+    #[predicate]
     fn le_log(self, o: Self) -> bool {
-        match self.cmp_log(o) {
-            Ordering::Greater => false,
-            _ => true,
-        }
+        pearlite! { !(self.cmp_log(o) === Ordering::Greater) }
     }
 
     #[law]
     #[ensures(x.le_log(y) === ! (x.cmp_log(y) === Ordering::Greater))]
     fn cmp_le_log(x: Self, y: Self);
 
-    #[logic]
+    #[predicate]
     fn lt_log(self, o: Self) -> bool {
-        match self.cmp_log(o) {
-            Ordering::Less => true,
-            _ => false,
-        }
+        pearlite! { self.cmp_log(o) === Ordering::Less }
     }
 
     #[law]
     #[ensures(x.lt_log(y) === (x.cmp_log(y) === Ordering::Less))]
     fn cmp_lt_log(x: Self, y: Self);
 
-    #[logic]
+    #[predicate]
     fn ge_log(self, o: Self) -> bool {
-        match self.cmp_log(o) {
-            Ordering::Less => false,
-            _ => true,
-        }
+        pearlite! { !(self.cmp_log(o) === Ordering::Less) }
     }
 
     #[law]
     #[ensures(x.ge_log(y) === ! (x.cmp_log(y) === Ordering::Less))]
     fn cmp_ge_log(x: Self, y: Self);
 
-    #[logic]
+    #[predicate]
     fn gt_log(self, o: Self) -> bool {
-        match self.cmp_log(o) {
-            Ordering::Greater => true,
-            _ => false,
-        }
+        pearlite! { self.cmp_log(o) === Ordering::Greater }
     }
 
     #[law]
@@ -98,28 +86,28 @@ macro_rules! ord_logic_impl {
             }
 
             #[trusted]
-            #[logic]
+            #[predicate]
             #[creusot::builtins = "<="]
             fn le_log(self, _: Self) -> bool {
                 true
             }
 
             #[trusted]
-            #[logic]
+            #[predicate]
             #[creusot::builtins = "<"]
             fn lt_log(self, _: Self) -> bool {
                 true
             }
 
             #[trusted]
-            #[logic]
+            #[predicate]
             #[creusot::builtins = ">="]
             fn ge_log(self, _: Self) -> bool {
                 true
             }
 
             #[trusted]
-            #[logic]
+            #[predicate]
             #[creusot::builtins = ">"]
             fn gt_log(self, _: Self) -> bool {
                 true
