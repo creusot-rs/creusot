@@ -44,6 +44,9 @@ pub fn translate_function<'tcx, 'sess>(
     assert!(def_id.is_local(), "translate_function: expected local DefId");
 
     if util::is_trusted(tcx, def_id) || !util::has_body(ctx, def_id) {
+        if util::has_body(ctx, def_id) {
+            tcx.ensure().mir_borrowck(def_id.expect_local());
+        }
         return translate_trusted(tcx, ctx, def_id);
     }
 
