@@ -1,3 +1,5 @@
+// WHY3PROVE CVC4
+
 #![feature(type_ascription)]
 extern crate creusot_contracts;
 
@@ -5,20 +7,14 @@ use creusot_contracts::std::*;
 use creusot_contracts::*;
 
 #[logic]
-fn left(i: Int) -> Int {
-    2 * i + 1
-}
-
-#[logic]
-fn right(i: Int) -> Int {
-    2 * i + 2
+fn parent(i: Int) -> Int {
+    (i + 1) / 2 - 1
 }
 
 #[predicate]
 fn heap_frag<T: OrdLogic>(s: Seq<T>, start: Int, end: Int) -> bool {
-    pearlite! { forall<i: Int> start <= i ==>
-        ((left(i) < end) ==> s[left(i)] <= s[i])
-    &&  ((right(i) < end) ==> s[right(i)] <= s[i]) }
+    pearlite! { forall<i: Int> start <= parent(i) && i < end ==>
+    s[i] <= s[parent(i)] }
 }
 
 #[logic]
@@ -28,7 +24,7 @@ fn heap_frag<T: OrdLogic>(s: Seq<T>, start: Int, end: Int) -> bool {
 #[variant(i)]
 fn heap_frag_max<T: OrdLogic>(s: Seq<T>, i: Int, end: Int) {
     if i > 0 {
-        heap_frag_max(s, (i + 1) / 2 - 1, end)
+        heap_frag_max(s, parent(i), end)
     }
 }
 
@@ -54,11 +50,10 @@ fn shift_down<T: Ord>(v: &mut Vec<T>, start: usize, end: usize) {
     #[invariant(keep_bound, forall<m: T>
           (forall<j: Int> @start <= j && j < @end ==> (@@old_v)[j] <= m) ==>
           forall<j: Int> @start <= j && j < @end ==> (@v)[j] <= m)]
-    #[invariant(heap, forall<j: Int> @start <= j && !(@i === j) ==>
-            ((left(j) < @end) ==> (@v)[left(j)] <= (@v)[j])
-        &&  ((right(j) < @end) ==> (@v)[right(j)] <= (@v)[j]))]
-    #[invariant(hole_left,  ((left(@i) < @end) && @start < (@i+1)/2 ==> (@v)[left(@i)] <= (@v)[(@i+1)/2-1]))]
-    #[invariant(hole_right, ((right(@i) < @end) && @start < (@i+1)/2 ==> (@v)[right(@i)] <= (@v)[(@i+1)/2-1]))]
+    #[invariant(heap, forall<j: Int> @start <= parent(j) && j < @end && !(@i === parent(j)) ==>
+            (@v)[j] <= (@v)[parent(j)])]
+    #[invariant(hole_left,  {let c = 2*@i+1; c < @end && @start <= parent(@i) ==> (@v)[c] <= (@v)[parent(parent(c))]})]
+    #[invariant(hole_right, {let c = 2*@i+2; c < @end && @start <= parent(@i) ==> (@v)[c] <= (@v)[parent(parent(c))]})]
     loop {
         if i >= usize::MAX / 2 {
             return;
@@ -118,9 +113,11 @@ fn heap_sort<T: Ord>(v: &mut Vec<T>) {
     #[invariant(heap_le, forall<i : Int, j : Int> 0 <= i && i < @end && @end <= j && j < (@v).len() ==>
                             (@v)[i] <= (@v)[j])]
     while end > 1 {
-        proof_assert! {{heap_frag_max(@v, 0/*dummy*/, @end); true}}
         end -= 1;
         v.swap(0, end);
+        proof_assert! {{heap_frag_max(@v, 0/*dummy*/, @end);
+        forall<i : Int, j : Int> 0 <= i && i < @end && @end <= j && j < (@v).len() ==>
+                        (@v)[i] <= (@v)[j] }}
         shift_down(v, 0, end);
     }
 }

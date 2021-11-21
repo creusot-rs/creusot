@@ -19,25 +19,15 @@ module Type
     | CreusotContracts_Logic_Ghost_Ghost opaque_ptr
     
 end
-module HeapsortGeneric_Left_Interface
+module HeapsortGeneric_Parent_Interface
   use mach.int.Int
-  function left (i : int) : int
+  function parent (i : int) : int
 end
-module HeapsortGeneric_Left
+module HeapsortGeneric_Parent
   use mach.int.Int
   use mach.int.Int32
-  function left (i : int) : int = 
-    2 * i + 1
-end
-module HeapsortGeneric_Right_Interface
-  use mach.int.Int
-  function right (i : int) : int
-end
-module HeapsortGeneric_Right
-  use mach.int.Int
-  use mach.int.Int32
-  function right (i : int) : int = 
-    2 * i + 2
+  function parent (i : int) : int = 
+    div (i + 1) 2 - 1
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface
   type self   
@@ -292,11 +282,10 @@ module HeapsortGeneric_HeapFrag
   type t   
   use seq.Seq
   use mach.int.Int
-  clone HeapsortGeneric_Right_Interface as Right0
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
-  clone HeapsortGeneric_Left_Interface as Left0
+  clone HeapsortGeneric_Parent_Interface as Parent0
   predicate heap_frag (s : Seq.seq t) (start : int) (end' : int) = 
-    forall i : (int) . start <= i -> (Left0.left i < end' -> LeLog0.le_log (Seq.get s (Left0.left i)) (Seq.get s i)) && (Right0.right i < end' -> LeLog0.le_log (Seq.get s (Right0.right i)) (Seq.get s i))
+    forall i : (int) . start <= Parent0.parent i && i < end' -> LeLog0.le_log (Seq.get s i) (Seq.get s (Parent0.parent i))
 end
 module HeapsortGeneric_HeapFragMax_Interface
   type t   
@@ -314,9 +303,10 @@ module HeapsortGeneric_HeapFragMax
   use seq.Seq
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
   clone HeapsortGeneric_HeapFrag_Interface as HeapFrag0 with type t = t
+  clone HeapsortGeneric_Parent_Interface as Parent0
   function heap_frag_max (s : Seq.seq t) (i : int) (end' : int) : ()
   axiom def : forall s : Seq.seq t, i : int, end' : int . heap_frag_max s i end' = (if i > 0 then
-    heap_frag_max s (div (i + 1) 2 - 1) end'
+    heap_frag_max s (Parent0.parent i) end'
   else
     ()
   )
@@ -364,10 +354,9 @@ module HeapsortGeneric_HeapFragMax_Impl
   function CmpLog0.cmp_log = CmpLog0.cmp_log
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t,
   predicate LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone HeapsortGeneric_Right as Right0
-  clone HeapsortGeneric_Left as Left0
-  clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, function Left0.left = Left0.left,
-  predicate LeLog0.le_log = LeLog0.le_log, function Right0.right = Right0.right
+  clone HeapsortGeneric_Parent as Parent0
+  clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, function Parent0.parent = Parent0.parent,
+  predicate LeLog0.le_log = LeLog0.le_log
   let rec ghost function heap_frag_max (s : Seq.seq t) (i : int) (end' : int) : ()
     requires {0 <= i && i < end'}
     requires {HeapFrag0.heap_frag s 0 end'}
@@ -375,7 +364,7 @@ module HeapsortGeneric_HeapFragMax_Impl
     variant {i}
     
    = 
-    if i > 0 then heap_frag_max s (div (i + 1) 2 - 1) end' else ()
+    if i > 0 then let b' = Parent0.parent i in heap_frag_max s b' end' else ()
 end
 module CreusotContracts_Logic_Model_Model_ModelTy
   type self   
@@ -814,8 +803,7 @@ module HeapsortGeneric_ShiftDown
   axiom .
   clone CreusotContracts_Logic_Eq_EqLogic_EqNe as EqNe0 with type self = t, predicate LogEq0.log_eq = LogEq0.log_eq,
   predicate LogNe0.log_ne = LogNe0.log_ne, axiom .
-  clone HeapsortGeneric_Right as Right0
-  clone HeapsortGeneric_Left as Left0
+  clone HeapsortGeneric_Parent as Parent0
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog as CmpLog0 with type self = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog as GtLog0 with type self = t,
   function CmpLog0.cmp_log = CmpLog0.cmp_log
@@ -843,8 +831,8 @@ module HeapsortGeneric_ShiftDown
   function CmpLog0.cmp_log = CmpLog0.cmp_log
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t,
   predicate LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, function Left0.left = Left0.left,
-  predicate LeLog0.le_log = LeLog0.le_log, function Right0.right = Right0.right
+  clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, function Parent0.parent = Parent0.parent,
+  predicate LeLog0.le_log = LeLog0.le_log
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf as PermutationOf0 with type t = t
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = t
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
@@ -961,9 +949,9 @@ module HeapsortGeneric_ShiftDown
     invariant i_bounds { UInt64.to_int start_2 <= UInt64.to_int i_7 && UInt64.to_int i_7 < UInt64.to_int end_3 };
     invariant unchanged { forall j : (int) . 0 <= j && j < UInt64.to_int start_2 || UInt64.to_int end_3 <= j && j < Seq.length (Model1.model v_1) -> Seq.get (Model1.model (Model0.model old_v_4)) j = Seq.get (Model1.model v_1) j };
     invariant keep_bound { forall m : (t) . (forall j : (int) . UInt64.to_int start_2 <= j && j < UInt64.to_int end_3 -> LeLog0.le_log (Seq.get (Model1.model (Model0.model old_v_4)) j) m) -> (forall j : (int) . UInt64.to_int start_2 <= j && j < UInt64.to_int end_3 -> LeLog0.le_log (Seq.get (Model1.model v_1) j) m) };
-    invariant heap { forall j : (int) . UInt64.to_int start_2 <= j && not (UInt64.to_int i_7 = j) -> (Left0.left j < UInt64.to_int end_3 -> LeLog0.le_log (Seq.get (Model1.model v_1) (Left0.left j)) (Seq.get (Model1.model v_1) j)) && (Right0.right j < UInt64.to_int end_3 -> LeLog0.le_log (Seq.get (Model1.model v_1) (Right0.right j)) (Seq.get (Model1.model v_1) j)) };
-    invariant hole_left { Left0.left (UInt64.to_int i_7) < UInt64.to_int end_3 && UInt64.to_int start_2 < div (UInt64.to_int i_7 + 1) 2 -> LeLog0.le_log (Seq.get (Model1.model v_1) (Left0.left (UInt64.to_int i_7))) (Seq.get (Model1.model v_1) (div (UInt64.to_int i_7 + 1) 2 - 1)) };
-    invariant hole_right { Right0.right (UInt64.to_int i_7) < UInt64.to_int end_3 && UInt64.to_int start_2 < div (UInt64.to_int i_7 + 1) 2 -> LeLog0.le_log (Seq.get (Model1.model v_1) (Right0.right (UInt64.to_int i_7))) (Seq.get (Model1.model v_1) (div (UInt64.to_int i_7 + 1) 2 - 1)) };
+    invariant heap { forall j : (int) . UInt64.to_int start_2 <= Parent0.parent j && j < UInt64.to_int end_3 && not (UInt64.to_int i_7 = Parent0.parent j) -> LeLog0.le_log (Seq.get (Model1.model v_1) j) (Seq.get (Model1.model v_1) (Parent0.parent j)) };
+    invariant hole_left { let c = 2 * UInt64.to_int i_7 + 1 in c < UInt64.to_int end_3 && UInt64.to_int start_2 <= Parent0.parent (UInt64.to_int i_7) -> LeLog0.le_log (Seq.get (Model1.model v_1) c) (Seq.get (Model1.model v_1) (Parent0.parent (Parent0.parent c))) };
+    invariant hole_right { let c = 2 * UInt64.to_int i_7 + 2 in c < UInt64.to_int end_3 && UInt64.to_int start_2 <= Parent0.parent (UInt64.to_int i_7) -> LeLog0.le_log (Seq.get (Model1.model v_1) c) (Seq.get (Model1.model v_1) (Parent0.parent (Parent0.parent c))) };
     goto BB3
   }
   BB3 {
@@ -1272,12 +1260,12 @@ module HeapsortGeneric_HeapSort
   clone HeapsortGeneric_SortedRange as SortedRange0 with type t = t, predicate LeLog0.le_log = LeLog0.le_log
   clone HeapsortGeneric_Sorted as Sorted0 with type t = t,
   predicate SortedRange0.sorted_range = SortedRange0.sorted_range
-  clone HeapsortGeneric_Right as Right0
-  clone HeapsortGeneric_Left as Left0
-  clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, function Left0.left = Left0.left,
-  predicate LeLog0.le_log = LeLog0.le_log, function Right0.right = Right0.right
+  clone HeapsortGeneric_Parent as Parent0
+  clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, function Parent0.parent = Parent0.parent,
+  predicate LeLog0.le_log = LeLog0.le_log
   clone HeapsortGeneric_HeapFragMax as HeapFragMax0 with type t = t,
-  predicate HeapFrag0.heap_frag = HeapFrag0.heap_frag, predicate LeLog0.le_log = LeLog0.le_log, axiom .
+  predicate HeapFrag0.heap_frag = HeapFrag0.heap_frag, predicate LeLog0.le_log = LeLog0.le_log,
+  function Parent0.parent = Parent0.parent, axiom .
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf as PermutationOf0 with type t = t
   clone CreusotContracts_Logic_Ghost_Impl0_Model as Model1 with type t = borrowed (Type.creusotcontracts_std1_vec_vec t)
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = t
@@ -1331,9 +1319,9 @@ module HeapsortGeneric_HeapSort
   var _23 : bool;
   var _24 : usize;
   var _25 : ();
-  var _26 : ();
-  var _27 : borrowed (Type.creusotcontracts_std1_vec_vec t);
-  var _28 : usize;
+  var _26 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var _27 : usize;
+  var _28 : ();
   var _29 : ();
   var _30 : borrowed (Type.creusotcontracts_std1_vec_vec t);
   var _31 : usize;
@@ -1431,18 +1419,18 @@ module HeapsortGeneric_HeapSort
       end
   }
   BB13 {
-    assert { let _ = HeapFragMax0.heap_frag_max (Model0.model v_1) 0 (UInt64.to_int end_21) in true };
-    _25 <- ();
-    assume { Resolve3.resolve _25 };
     end_21 <- end_21 - (1 : usize);
-    _27 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _27) };
-    assume { Resolve2.resolve _28 };
-    _28 <- end_21;
-    _26 <- Swap0.swap _27 (0 : usize) _28;
+    _26 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _26) };
+    assume { Resolve2.resolve _27 };
+    _27 <- end_21;
+    _25 <- Swap0.swap _26 (0 : usize) _27;
     goto BB14
   }
   BB14 {
+    assert { let _ = HeapFragMax0.heap_frag_max (Model0.model v_1) 0 (UInt64.to_int end_21) in forall j : (int) . forall i : (int) . 0 <= i && i < UInt64.to_int end_21 && UInt64.to_int end_21 <= j && j < Seq.length (Model0.model v_1) -> LeLog0.le_log (Seq.get (Model0.model v_1) i) (Seq.get (Model0.model v_1) j) };
+    _28 <- ();
+    assume { Resolve3.resolve _28 };
     _30 <- borrow_mut ( * v_1);
     v_1 <- { v_1 with current = ( ^ _30) };
     assume { Resolve2.resolve _31 };
