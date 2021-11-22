@@ -38,7 +38,7 @@ fn heap_frag_max<T: OrdLogic>(s: Seq<T>, i: Int, end: Int) {
 #[ensures(forall<m: T>
           (forall<j: Int> @start <= j && j < @end ==> (@v)[j] <= m) ==>
           forall<j: Int> @start <= j && j < @end ==> (@^v)[j] <= m)]
-fn shift_down<T: Ord>(v: &mut Vec<T>, start: usize, end: usize) {
+fn sift_down<T: Ord>(v: &mut Vec<T>, start: usize, end: usize) {
     let old_v = Ghost::record(&v);
     let mut i = start;
 
@@ -55,14 +55,11 @@ fn shift_down<T: Ord>(v: &mut Vec<T>, start: usize, end: usize) {
     #[invariant(hole_left,  {let c = 2*@i+1; c < @end && @start <= parent(@i) ==> (@v)[c] <= (@v)[parent(parent(c))]})]
     #[invariant(hole_right, {let c = 2*@i+2; c < @end && @start <= parent(@i) ==> (@v)[c] <= (@v)[parent(parent(c))]})]
     loop {
-        if i >= usize::MAX / 2 {
+        if i >= end / 2 {
             return;
         }
 
         let mut child = 2 * i + 1;
-        if child >= end {
-            return;
-        }
         if child + 1 < end && v[child].lt(&v[child + 1]) {
             child += 1
         }
@@ -101,7 +98,7 @@ fn heap_sort<T: Ord>(v: &mut Vec<T>) {
     #[invariant(start_bound, @start <= (@v).len()/2)]
     while start > 0 {
         start -= 1;
-        shift_down(v, start, v.len());
+        sift_down(v, start, v.len());
     }
 
     let mut end = v.len();
@@ -118,6 +115,6 @@ fn heap_sort<T: Ord>(v: &mut Vec<T>) {
         proof_assert! {{heap_frag_max(@v, 0/*dummy*/, @end);
         forall<i : Int, j : Int> 0 <= i && i < @end && @end <= j && j < (@v).len() ==>
                         (@v)[i] <= (@v)[j] }}
-        shift_down(v, 0, end);
+        sift_down(v, 0, end);
     }
 }

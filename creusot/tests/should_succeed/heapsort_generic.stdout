@@ -760,7 +760,7 @@ module CreusotContracts_Std1_Vec_Impl1_Swap
     ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int i) (UInt64.to_int j) }
     
 end
-module HeapsortGeneric_ShiftDown_Interface
+module HeapsortGeneric_SiftDown_Interface
   type t   
   use mach.int.UInt64
   use seq.Seq
@@ -775,7 +775,7 @@ module HeapsortGeneric_ShiftDown_Interface
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
   clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  val shift_down (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) (start : usize) (end' : usize) : ()
+  val sift_down (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) (start : usize) (end' : usize) : ()
     requires {UInt64.to_int end' <= Seq.length (Model0.model v)}
     requires {UInt64.to_int start < UInt64.to_int end'}
     requires {HeapFrag0.heap_frag (Model0.model v) (UInt64.to_int start + 1) (UInt64.to_int end')}
@@ -785,7 +785,7 @@ module HeapsortGeneric_ShiftDown_Interface
     ensures { HeapFrag0.heap_frag (Model1.model ( ^ v)) (UInt64.to_int start) (UInt64.to_int end') }
     
 end
-module HeapsortGeneric_ShiftDown
+module HeapsortGeneric_SiftDown
   type t   
   use mach.int.UInt64
   use mach.int.Int
@@ -855,7 +855,7 @@ module HeapsortGeneric_ShiftDown
   function Model1.model = Model2.model
   clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = borrowed (Type.creusotcontracts_std1_vec_vec t),
   function Model0.model = Model0.model
-  let rec cfg shift_down (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) (start : usize) (end' : usize) : ()
+  let rec cfg sift_down (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) (start : usize) (end' : usize) : ()
     requires {UInt64.to_int end' <= Seq.length (Model1.model v)}
     requires {UInt64.to_int start < UInt64.to_int end'}
     requires {HeapFrag0.heap_frag (Model1.model v) (UInt64.to_int start + 1) (UInt64.to_int end')}
@@ -879,50 +879,46 @@ module HeapsortGeneric_ShiftDown
   var _11 : bool;
   var _12 : usize;
   var _13 : usize;
-  var _14 : bool;
-  var _15 : ();
-  var child_16 : usize;
-  var _17 : usize;
+  var _14 : usize;
+  var _15 : bool;
+  var _16 : ();
+  var child_17 : usize;
   var _18 : usize;
-  var _19 : ();
-  var _20 : bool;
-  var _21 : usize;
-  var _22 : usize;
-  var _23 : ();
-  var _24 : ();
-  var _25 : bool;
+  var _19 : usize;
+  var _20 : ();
+  var _21 : bool;
+  var _22 : bool;
+  var _23 : usize;
+  var _24 : usize;
+  var _25 : usize;
   var _26 : bool;
-  var _27 : usize;
-  var _28 : usize;
-  var _29 : usize;
-  var _30 : bool;
+  var _27 : t;
+  var _28 : t;
+  var _29 : Type.creusotcontracts_std1_vec_vec t;
+  var _30 : usize;
   var _31 : t;
   var _32 : t;
-  var _33 : Type.creusotcontracts_std1_vec_vec t;
-  var _34 : usize;
-  var _35 : t;
-  var _36 : t;
-  var _37 : t;
-  var _38 : Type.creusotcontracts_std1_vec_vec t;
-  var _39 : usize;
-  var _40 : usize;
-  var _41 : ();
-  var _42 : bool;
+  var _33 : t;
+  var _34 : Type.creusotcontracts_std1_vec_vec t;
+  var _35 : usize;
+  var _36 : usize;
+  var _37 : ();
+  var _38 : bool;
+  var _39 : t;
+  var _40 : t;
+  var _41 : Type.creusotcontracts_std1_vec_vec t;
+  var _42 : usize;
   var _43 : t;
   var _44 : t;
-  var _45 : Type.creusotcontracts_std1_vec_vec t;
-  var _46 : usize;
-  var _47 : t;
-  var _48 : t;
-  var _49 : t;
-  var _50 : Type.creusotcontracts_std1_vec_vec t;
+  var _45 : t;
+  var _46 : Type.creusotcontracts_std1_vec_vec t;
+  var _47 : usize;
+  var _48 : ();
+  var _49 : ();
+  var _50 : borrowed (Type.creusotcontracts_std1_vec_vec t);
   var _51 : usize;
-  var _52 : ();
-  var _53 : ();
-  var _54 : borrowed (Type.creusotcontracts_std1_vec_vec t);
-  var _55 : usize;
-  var _56 : usize;
-  var _57 : usize;
+  var _52 : usize;
+  var _53 : usize;
   {
     v_1 <- v;
     start_2 <- start;
@@ -957,12 +953,14 @@ module HeapsortGeneric_ShiftDown
   BB3 {
     assume { Resolve2.resolve _12 };
     _12 <- i_7;
-    _14 <- (2 : usize) = (0 : usize);
-    assert { not _14 };
+    assume { Resolve2.resolve _14 };
+    _14 <- end_3;
+    _15 <- (2 : usize) = (0 : usize);
+    assert { not _15 };
     goto BB4
   }
   BB4 {
-    _13 <- (18446744073709551615 : usize) / (2 : usize);
+    _13 <- _14 / (2 : usize);
     _11 <- _12 >= _13;
     switch (_11)
       | False -> goto BB6
@@ -974,163 +972,139 @@ module HeapsortGeneric_ShiftDown
     assume { Resolve2.resolve end_3 };
     assume { Resolve2.resolve i_7 };
     _0 <- ();
-    goto BB25
+    goto BB22
   }
   BB6 {
     _10 <- ();
     assume { Resolve4.resolve _10 };
-    assume { Resolve2.resolve _18 };
-    _18 <- i_7;
-    _17 <- (2 : usize) * _18;
-    child_16 <- _17 + (1 : usize);
-    assume { Resolve2.resolve _21 };
-    _21 <- child_16;
-    assume { Resolve2.resolve _22 };
-    _22 <- end_3;
-    _20 <- _21 >= _22;
-    switch (_20)
-      | False -> goto BB8
-      | _ -> goto BB7
+    assume { Resolve2.resolve _19 };
+    _19 <- i_7;
+    _18 <- (2 : usize) * _19;
+    child_17 <- _18 + (1 : usize);
+    assume { Resolve2.resolve _24 };
+    _24 <- child_17;
+    _23 <- _24 + (1 : usize);
+    assume { Resolve2.resolve _25 };
+    _25 <- end_3;
+    _22 <- _23 < _25;
+    switch (_22)
+      | False -> goto BB7
+      | _ -> goto BB8
       end
   }
   BB7 {
-    assume { Resolve3.resolve v_1 };
-    assume { Resolve2.resolve end_3 };
-    assume { Resolve2.resolve i_7 };
-    assume { Resolve2.resolve child_16 };
-    _0 <- ();
-    goto BB24
+    _21 <- false;
+    goto BB9
   }
   BB8 {
-    _19 <- ();
-    assume { Resolve4.resolve _19 };
-    assume { Resolve2.resolve _28 };
-    _28 <- child_16;
-    _27 <- _28 + (1 : usize);
-    assume { Resolve2.resolve _29 };
-    _29 <- end_3;
-    _26 <- _27 < _29;
-    switch (_26)
-      | False -> goto BB9
-      | _ -> goto BB10
-      end
+    _29 <-  * v_1;
+    assume { Resolve2.resolve _30 };
+    _30 <- child_17;
+    _28 <- Index0.index _29 _30;
+    goto BB10
   }
   BB9 {
-    _25 <- false;
-    goto BB11
-  }
-  BB10 {
-    _33 <-  * v_1;
-    assume { Resolve2.resolve _34 };
-    _34 <- child_16;
-    _32 <- Index0.index _33 _34;
-    goto BB12
-  }
-  BB11 {
-    switch (_25)
-      | False -> goto BB16
-      | _ -> goto BB15
+    switch (_21)
+      | False -> goto BB14
+      | _ -> goto BB13
       end
   }
-  BB12 {
-    _31 <- _32;
-    assume { Resolve5.resolve _32 };
-    _38 <-  * v_1;
-    assume { Resolve2.resolve _40 };
-    _40 <- child_16;
-    _39 <- _40 + (1 : usize);
-    _37 <- Index0.index _38 _39;
-    goto BB13
-  }
-  BB13 {
-    _36 <- _37;
-    assume { Resolve5.resolve _37 };
-    _35 <- _36;
-    assume { Resolve5.resolve _36 };
-    _30 <- Lt0.lt _31 _35;
-    goto BB14
-  }
-  BB14 {
-    assume { Resolve6.resolve _25 };
-    _25 <- _30;
+  BB10 {
+    _27 <- _28;
+    assume { Resolve5.resolve _28 };
+    _34 <-  * v_1;
+    assume { Resolve2.resolve _36 };
+    _36 <- child_17;
+    _35 <- _36 + (1 : usize);
+    _33 <- Index0.index _34 _35;
     goto BB11
   }
+  BB11 {
+    _32 <- _33;
+    assume { Resolve5.resolve _33 };
+    _31 <- _32;
+    assume { Resolve5.resolve _32 };
+    _26 <- Lt0.lt _27 _31;
+    goto BB12
+  }
+  BB12 {
+    assume { Resolve6.resolve _21 };
+    _21 <- _26;
+    goto BB9
+  }
+  BB13 {
+    child_17 <- child_17 + (1 : usize);
+    _20 <- ();
+    assume { Resolve4.resolve _20 };
+    goto BB15
+  }
+  BB14 {
+    _20 <- ();
+    assume { Resolve4.resolve _20 };
+    goto BB15
+  }
   BB15 {
-    child_16 <- child_16 + (1 : usize);
-    _24 <- ();
-    assume { Resolve4.resolve _24 };
-    goto BB17
+    _41 <-  * v_1;
+    assume { Resolve2.resolve _42 };
+    _42 <- child_17;
+    _40 <- Index0.index _41 _42;
+    goto BB16
   }
   BB16 {
-    _24 <- ();
-    assume { Resolve4.resolve _24 };
+    _39 <- _40;
+    assume { Resolve5.resolve _40 };
+    _46 <-  * v_1;
+    assume { Resolve2.resolve _47 };
+    _47 <- i_7;
+    _45 <- Index0.index _46 _47;
     goto BB17
   }
   BB17 {
-    _45 <-  * v_1;
-    assume { Resolve2.resolve _46 };
-    _46 <- child_16;
-    _44 <- Index0.index _45 _46;
+    _44 <- _45;
+    assume { Resolve5.resolve _45 };
+    _43 <- _44;
+    assume { Resolve5.resolve _44 };
+    _38 <- Le0.le _39 _43;
     goto BB18
   }
   BB18 {
-    _43 <- _44;
-    assume { Resolve5.resolve _44 };
-    _50 <-  * v_1;
-    assume { Resolve2.resolve _51 };
-    _51 <- i_7;
-    _49 <- Index0.index _50 _51;
-    goto BB19
-  }
-  BB19 {
-    _48 <- _49;
-    assume { Resolve5.resolve _49 };
-    _47 <- _48;
-    assume { Resolve5.resolve _48 };
-    _42 <- Le0.le _43 _47;
-    goto BB20
-  }
-  BB20 {
-    switch (_42)
-      | False -> goto BB22
-      | _ -> goto BB21
+    switch (_38)
+      | False -> goto BB20
+      | _ -> goto BB19
       end
   }
-  BB21 {
+  BB19 {
     assume { Resolve3.resolve v_1 };
     assume { Resolve2.resolve end_3 };
     assume { Resolve2.resolve i_7 };
-    assume { Resolve2.resolve child_16 };
+    assume { Resolve2.resolve child_17 };
     _0 <- ();
-    goto BB24
+    goto BB22
   }
-  BB22 {
-    _41 <- ();
-    assume { Resolve4.resolve _41 };
-    _54 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _54) };
-    assume { Resolve2.resolve _55 };
-    _55 <- i_7;
+  BB20 {
+    _37 <- ();
+    assume { Resolve4.resolve _37 };
+    _50 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _50) };
+    assume { Resolve2.resolve _51 };
+    _51 <- i_7;
     assume { Resolve2.resolve i_7 };
-    assume { Resolve2.resolve _56 };
-    _56 <- child_16;
-    _53 <- Swap0.swap _54 _55 _56;
-    goto BB23
+    assume { Resolve2.resolve _52 };
+    _52 <- child_17;
+    _49 <- Swap0.swap _50 _51 _52;
+    goto BB21
   }
-  BB23 {
-    assume { Resolve2.resolve _57 };
-    _57 <- child_16;
-    assume { Resolve2.resolve child_16 };
+  BB21 {
+    assume { Resolve2.resolve _53 };
+    _53 <- child_17;
+    assume { Resolve2.resolve child_17 };
     assume { Resolve2.resolve i_7 };
-    i_7 <- _57;
+    i_7 <- _53;
     _9 <- ();
     assume { Resolve4.resolve _9 };
     goto BB2
   }
-  BB24 {
-    goto BB25
-  }
-  BB25 {
+  BB22 {
     return _0
   }
   
@@ -1284,7 +1258,7 @@ module HeapsortGeneric_HeapSort
   clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = t, function Model0.model = Model3.model
   clone CreusotContracts_Std1_Vec_Impl1_Swap_Interface as Swap0 with type t = t, function Model0.model = Model0.model,
   function Model1.model = Model2.model
-  clone HeapsortGeneric_ShiftDown_Interface as ShiftDown0 with type t = t, function Model0.model = Model0.model,
+  clone HeapsortGeneric_SiftDown_Interface as SiftDown0 with type t = t, function Model0.model = Model0.model,
   predicate HeapFrag0.heap_frag = HeapFrag0.heap_frag, predicate LeLog0.le_log = LeLog0.le_log,
   function Model1.model = Model2.model, predicate PermutationOf0.permutation_of = PermutationOf0.permutation_of
   let rec cfg heap_sort (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) : ()
@@ -1381,7 +1355,7 @@ module HeapsortGeneric_HeapSort
     goto BB7
   }
   BB7 {
-    _13 <- ShiftDown0.shift_down _14 _15 _16;
+    _13 <- SiftDown0.sift_down _14 _15 _16;
     goto BB8
   }
   BB8 {
@@ -1435,7 +1409,7 @@ module HeapsortGeneric_HeapSort
     v_1 <- { v_1 with current = ( ^ _30) };
     assume { Resolve2.resolve _31 };
     _31 <- end_21;
-    _29 <- ShiftDown0.shift_down _30 (0 : usize) _31;
+    _29 <- SiftDown0.sift_down _30 (0 : usize) _31;
     goto BB15
   }
   BB15 {
