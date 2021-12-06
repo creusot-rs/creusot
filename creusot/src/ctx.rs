@@ -184,7 +184,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
         if util::has_body(self, def_id) {
             let t = self.terms.entry(def_id).or_insert_with(|| {
-                specification::typing::typecheck(self.tcx, def_id.expect_local())
+                specification::typing::typecheck(self.tcx, def_id.expect_local()).unwrap_or_else(|e| e.emit(self.sess))
             });
             Some(t)
         } else {
