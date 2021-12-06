@@ -7,7 +7,7 @@ use why3::mlcfg::Exp;
 
 use super::LocalIdent;
 use rustc_hir::def_id::DefId;
-use rustc_middle::mir::Body;
+use rustc_middle::mir::{Body, Location};
 use rustc_middle::ty::TyCtxt;
 
 mod builtins;
@@ -81,21 +81,36 @@ impl PreContract {
 }
 
 // Turn a typing context into a substition.
-pub fn inv_subst(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> HashMap<why3::Ident, Exp> {
+pub fn inv_subst(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, loc: Location) -> HashMap<why3::Ident, Exp> {
     use rustc_middle::mir::VarDebugInfoContents::Place;
     let local_map = real_locals(tcx, body);
-    body.var_debug_info
-        .iter()
-        .map(|vdi| {
-            let loc = match vdi.value {
+    let mut scope = body.source_info(loc).scope;
+
+    let mut args = HashMap::new();
+    loop {
+        for var_info in &body.var_debug_info {
+            if var_info.source_info.scope != scope {
+                continue;
+            }
+
+            let loc = match var_info.value {
                 Place(p) => p.as_local().unwrap(),
                 _ => panic!(),
             };
             let loc = local_map[&loc];
-            let source_name = vdi.name.to_string();
-            (source_name.into(), Exp::pure_var(LocalIdent::dbg(loc, vdi).ident()))
-        })
-        .collect()
+            let source_name = var_info.name.to_string();
+            args.entry(source_name.into())
+                .or_insert_with(|| Exp::pure_var(LocalIdent::dbg(loc, var_info).ident()));
+        }
+
+        if let Some(parent) = body.source_scopes[scope].parent_scope {
+            scope = parent
+        } else {
+            break;
+        }
+    }
+
+    return args;
 }
 
 #[derive(Debug)]
