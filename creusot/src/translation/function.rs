@@ -223,7 +223,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             }
 
             for (name, body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
-                self.emit_statement(Invariant(name.to_string(), body));
+                self.emit_statement(Invariant(name.to_string().into(), body));
             }
 
             self.freeze_locals_between_blocks(bb);
