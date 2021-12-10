@@ -58,11 +58,11 @@ impl GatherSpecClosures {
         body: &Body<'tcx>,
     ) -> (IndexMap<BasicBlock, Vec<(Symbol, Exp)>>, IndexMap<DefId, Exp>) {
         let locations = invariant_locations(tcx, body);
-        let inv_subst = inv_subst(tcx, body);
 
         let invariants = locations
             .into_iter()
             .map(|(loc, invs)| {
+                let inv_subst = inv_subst(tcx, body, loc.start_location());
                 let inv_exps: Vec<_> = invs
                     .into_iter()
                     .map(|id| {
@@ -75,10 +75,17 @@ impl GatherSpecClosures {
                 (loc, inv_exps)
             })
             .collect();
+
+        let mut ass_loc = AssertionLocations { tcx, locations: IndexMap::new() };
+        ass_loc.visit_body(body);
+        let locations = ass_loc.locations;
+
         let assertions = self
             .assertions
             .into_iter()
             .map(|mut ass| {
+                let inv_subst = inv_subst(tcx, body, locations[&ass.0]);
+
                 ass.1.subst(&inv_subst);
                 ass
             })
@@ -111,6 +118,22 @@ impl thir::visit::Visitor<'a, 'tcx> for InvariantClosures<'a, 'tcx> {
             self.closures.insert(closure_id);
         }
         thir::visit::walk_expr(self, expr);
+    }
+}
+
+struct AssertionLocations<'tcx> {
+    tcx: TyCtxt<'tcx>,
+    locations: IndexMap<DefId, Location>,
+}
+
+impl<'tcx> Visitor<'tcx> for AssertionLocations<'tcx> {
+    fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
+        if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
+            if util::is_assertion(self.tcx, *id) {
+                self.locations.insert(*id, loc);
+            }
+        }
+        self.super_rvalue(rvalue, loc);
     }
 }
 
