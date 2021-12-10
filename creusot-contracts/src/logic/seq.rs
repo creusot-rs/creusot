@@ -7,7 +7,7 @@ use std::ops::Index;
 #[creusot::builtins = "seq.Seq.seq"]
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
 
-impl <T> EqLogic for Seq<T> {
+impl<T> EqLogic for Seq<T> {
     #[predicate]
     #[creusot::builtins = "seq.Seq.(==)"]
     fn log_eq(self, _: Self) -> bool {
