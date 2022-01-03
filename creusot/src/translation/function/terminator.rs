@@ -150,7 +150,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
         }
 
         // TODO: better spans during errors...
-        self.ctx.translate_function(def_id);
+        self.ctx.translate(def_id);
 
         self.clone_names.insert(def_id, subst).qname(self.tcx, def_id)
     }

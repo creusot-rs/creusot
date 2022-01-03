@@ -1,6 +1,6 @@
-use rustc_hir::HirId;
 use log::*;
 use rustc_hir::def_id::{DefId, LocalDefId};
+use rustc_hir::HirId;
 use rustc_middle::thir::{
     Adt, ArmId, Block, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
 };
@@ -15,8 +15,8 @@ use rustc_target::abi::VariantIdx;
 pub use rustc_middle::mir::Field;
 pub use rustc_middle::thir;
 
-use rustc_macros::{TyDecodable, TyEncodable};
 use crate::error::Error;
+use rustc_macros::{TyDecodable, TyEncodable};
 
 use crate::util;
 
@@ -175,7 +175,9 @@ fn lower_expr<'tcx>(
                 }
             }
         }
-        ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => lower_expr(tcx, item_id, thir, arg),
+        ExprKind::Borrow { borrow_kind: BorrowKind::Shared, arg } => {
+            lower_expr(tcx, item_id, thir, arg)
+        }
         ExprKind::Borrow { arg, .. } => {
             // Rust will introduce add unnecessary reborrows to code.
             // Since we've syntactically ruled out borrowing at a higher level, we should
@@ -187,8 +189,10 @@ fn lower_expr<'tcx>(
             }
         }
         ExprKind::Adt(box Adt { adt_def, variant_index, ref fields, .. }) => {
-            let fields =
-                fields.iter().map(|f| lower_expr(tcx, item_id, thir, f.expr)).collect::<Result<_, _>>()?;
+            let fields = fields
+                .iter()
+                .map(|f| lower_expr(tcx, item_id, thir, f.expr))
+                .collect::<Result<_, _>>()?;
             Ok(Term {
                 ty,
                 kind: TermKind::Constructor { adt: adt_def, variant: variant_index, fields },
@@ -200,13 +204,18 @@ fn lower_expr<'tcx>(
             if thir[arg].ty.is_box() || thir[arg].ty.ref_mutability() == Some(Not) {
                 lower_expr(tcx, item_id, thir, arg)
             } else {
-                Ok(Term { ty, kind: TermKind::Cur { term: box lower_expr(tcx, item_id, thir, arg)? } })
+                Ok(Term {
+                    ty,
+                    kind: TermKind::Cur { term: box lower_expr(tcx, item_id, thir, arg)? },
+                })
             }
         }
         ExprKind::Match { scrutinee, ref arms } => {
             let scrutinee = lower_expr(tcx, item_id, thir, scrutinee)?;
-            let arms =
-                arms.iter().map(|arm| lower_arm(tcx, item_id, thir, *arm)).collect::<Result<_, _>>()?;
+            let arms = arms
+                .iter()
+                .map(|arm| lower_arm(tcx, item_id, thir, *arm))
+                .collect::<Result<_, _>>()?;
 
             Ok(Term { ty, kind: TermKind::Match { scrutinee: box scrutinee, arms } })
         }
@@ -251,8 +260,10 @@ fn lower_expr<'tcx>(
             }
         }
         ExprKind::Tuple { ref fields } => {
-            let fields: Vec<_> =
-                fields.iter().map(|f| lower_expr(tcx, item_id, thir, *f)).collect::<Result<_, _>>()?;
+            let fields: Vec<_> = fields
+                .iter()
+                .map(|f| lower_expr(tcx, item_id, thir, *f))
+                .collect::<Result<_, _>>()?;
             Ok(Term { ty, kind: TermKind::Tuple { fields } })
         }
         ExprKind::Use { source } => lower_expr(tcx, item_id, thir, source),

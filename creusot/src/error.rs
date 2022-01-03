@@ -1,6 +1,6 @@
+use rustc_errors::DiagnosticId;
 use rustc_session::Session;
 use rustc_span::Span;
-use rustc_errors::DiagnosticId;
 
 // TODO: make this a vector of spans and strings
 #[derive(Debug)]
