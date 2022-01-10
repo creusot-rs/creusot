@@ -1,5 +1,6 @@
 use crate::creusot_items::CreusotItems;
 use crate::ctx::*;
+use crate::translation::specification::PreContract;
 use creusot_metadata::decoder::{Decodable, MetadataBlob, MetadataDecoder};
 use creusot_metadata::encoder::{Encodable, MetadataEncoder};
 use indexmap::IndexMap;
@@ -19,16 +20,18 @@ use why3::declaration::Module;
 use super::specification::typing::Term;
 
 type CloneMetadata<'tcx> = HashMap<DefId, CloneSummary<'tcx>>;
+type ExternSpecs = HashMap<DefId, PreContract>;
 
 // TODO: this should lazily load the metadata.
 pub struct Metadata<'tcx> {
     tcx: TyCtxt<'tcx>,
     crates: HashMap<CrateNum, CrateMetadata<'tcx>>,
+    extern_specs: ExternSpecs,
 }
 
 impl Metadata<'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>) -> Self {
-        Metadata { tcx, crates: Default::default() }
+        Metadata { tcx, crates: Default::default(), extern_specs: Default::default() }
     }
 
     pub fn get(&self, cnum: CrateNum) -> Option<&CrateMetadata<'tcx>> {
@@ -68,10 +71,21 @@ impl Metadata<'tcx> {
         return None;
     }
 
+    pub fn extern_spec(&self, id: DefId) -> Option<&PreContract> {
+        self.extern_specs.get(&id)
+    }
+
     pub fn load(&mut self, overrides: &HashMap<String, String>) {
         let cstore = CStore::from_tcx(self.tcx);
         for cnum in external_crates(self.tcx) {
-            self.crates.insert(cnum, CrateMetadata::load(self.tcx, cstore, overrides, cnum));
+            let (cmeta, mut ext_specs) = CrateMetadata::load(self.tcx, cstore, overrides, cnum);
+            self.crates.insert(cnum, cmeta);
+
+            for (id, spec) in ext_specs.drain() {
+                if let Some(_) = self.extern_specs.insert(id, spec) {
+                    panic!("duplicate external spec found for {:?} while loading {:?}", id, cnum);
+                }
+            }
         }
     }
 }
@@ -81,47 +95,7 @@ pub struct CrateMetadata<'tcx> {
     terms: IndexMap<DefId, Term<'tcx>>,
     dependencies: CloneMetadata<'tcx>,
     creusot_items: CreusotItems,
-}
-
-// We use this type to perform (de)serialization of metadata because for annoying
-// `extern crate` related reasons we cannot use the instance of `TyEncodable` / `TyDecodable`
-// for `IndexMap`. Instead, we flatten it to a association list and then convert that into
-// a proper index map after parsing.
-#[derive(TyDecodable, TyEncodable)]
-pub struct BinaryMetadata<'tcx> {
-    // Flatten the index map into a vector
-    dependencies: HashMap<DefId, Vec<((DefId, SubstsRef<'tcx>), CloneInfo<'tcx>)>>,
-
-    terms: Vec<(DefId, Term<'tcx>)>,
-
-    creusot_items: CreusotItems,
-}
-
-use rustc_middle::ty::Visibility;
-
-impl BinaryMetadata<'tcx> {
-    pub fn from_parts(
-        tcx: TyCtxt<'tcx>,
-        functions: &IndexMap<DefId, TranslatedItem<'tcx>>,
-        terms: &IndexMap<DefId, Term<'tcx>>,
-        items: &CreusotItems,
-    ) -> Self {
-        let dependencies = functions
-            .iter()
-            .filter(|(def_id, _)| {
-                tcx.visibility(**def_id) == Visibility::Public && def_id.is_local()
-            })
-            .map(|(def_id, v)| (*def_id, v.local_dependencies().clone().into_iter().collect()))
-            .collect();
-
-        let terms = terms
-            .iter()
-            .filter(|(def_id, _)| def_id.is_local())
-            .map(|(id, t)| (*id, t.clone()))
-            .collect();
-
-        BinaryMetadata { dependencies, terms, creusot_items: items.clone() }
-    }
+    // extern_specs: HashMap<DefId, PreContract>,
 }
 
 impl CrateMetadata<'tcx> {
@@ -131,6 +105,7 @@ impl CrateMetadata<'tcx> {
             dependencies: Default::default(),
             terms: Default::default(),
             creusot_items: Default::default(),
+            // extern_specs: Default::default(),
         }
     }
 
@@ -158,13 +133,14 @@ impl CrateMetadata<'tcx> {
         cstore: &CStore,
         overrides: &HashMap<String, String>,
         cnum: CrateNum,
-    ) -> Self {
+    ) -> (Self, ExternSpecs) {
         let mut meta = CrateMetadata::new();
 
         let base_path = creusot_metadata_base_path(cstore, overrides, cnum);
 
         let binary_path = creusot_metadata_binary_path(base_path.clone());
 
+        let mut externs = Default::default();
         if let Some(metadata) = load_binary_metadata(tcx, cstore, cnum, &binary_path) {
             for (def_id, summary) in metadata.dependencies.into_iter() {
                 meta.dependencies.insert(def_id, summary.into_iter().collect());
@@ -175,9 +151,60 @@ impl CrateMetadata<'tcx> {
             }
 
             meta.creusot_items = metadata.creusot_items;
+
+            externs = metadata.extern_specs;
         }
 
-        meta
+        (meta, externs)
+    }
+}
+
+// We use this type to perform (de)serialization of metadata because for annoying
+// `extern crate` related reasons we cannot use the instance of `TyEncodable` / `TyDecodable`
+// for `IndexMap`. Instead, we flatten it to a association list and then convert that into
+// a proper index map after parsing.
+#[derive(TyDecodable, TyEncodable)]
+pub struct BinaryMetadata<'tcx> {
+    // Flatten the index map into a vector
+    dependencies: HashMap<DefId, Vec<((DefId, SubstsRef<'tcx>), CloneInfo<'tcx>)>>,
+
+    terms: Vec<(DefId, Term<'tcx>)>,
+
+    creusot_items: CreusotItems,
+
+    extern_specs: HashMap<DefId, PreContract>,
+}
+
+use rustc_middle::ty::Visibility;
+
+impl BinaryMetadata<'tcx> {
+    pub fn from_parts(
+        tcx: TyCtxt<'tcx>,
+        functions: &IndexMap<DefId, TranslatedItem<'tcx>>,
+        terms: &IndexMap<DefId, Term<'tcx>>,
+        items: &CreusotItems,
+        extern_specs: &HashMap<DefId, PreContract>,
+    ) -> Self {
+        let dependencies = functions
+            .iter()
+            .filter(|(def_id, _)| {
+                tcx.visibility(**def_id) == Visibility::Public && def_id.is_local()
+            })
+            .map(|(def_id, v)| (*def_id, v.local_dependencies().clone().into_iter().collect()))
+            .collect();
+
+        let terms = terms
+            .iter()
+            .filter(|(def_id, _)| def_id.is_local())
+            .map(|(id, t)| (*id, t.clone()))
+            .collect();
+
+        BinaryMetadata {
+            dependencies,
+            terms,
+            creusot_items: items.clone(),
+            extern_specs: extern_specs.clone(),
+        }
     }
 }
 

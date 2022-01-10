@@ -1,8 +1,12 @@
+use std::collections::HashMap;
+
 pub use crate::clone_map::*;
 use crate::creusot_items::{self, CreusotItems};
 use crate::metadata::{BinaryMetadata, Metadata};
+use crate::translation::external::extract_extern_specs_from_item;
 use crate::translation::interface::interface_for;
 use crate::translation::specification::typing::Term;
+use crate::translation::specification::PreContract;
 use crate::translation::ty;
 use crate::translation::{external, specification};
 use crate::util::item_type;
@@ -138,22 +142,29 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub externs: Metadata<'tcx>,
     pub opts: &'sess Options,
     creusot_items: CreusotItems,
+    extern_specs: HashMap<DefId, PreContract>,
 }
 
 impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, sess: &'sess Session, opts: &'sess Options) -> Self {
         let creusot_items = creusot_items::local_creusot_items(tcx);
-        Self {
+
+        let mut ctx = Self {
             sess,
             tcx,
-            translated_items: IndexSet::new(),
+            translated_items: Default::default(),
             types: Default::default(),
-            functions: IndexMap::new(),
+            functions: Default::default(),
             externs: Metadata::new(tcx),
             terms: Default::default(),
             creusot_items,
             opts,
-        }
+            extern_specs: Default::default(),
+        };
+
+        load_extern_specs(&mut ctx);
+
+        ctx
     }
 
     pub fn load_metadata(&mut self) {
@@ -329,6 +340,10 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.functions.get(&def_id)
     }
 
+    pub fn extern_spec(&self, def_id: DefId) -> Option<&PreContract> {
+        self.extern_specs.get(&def_id).or_else(|| self.externs.extern_spec(def_id))
+    }
+
     pub fn should_export(&self) -> bool {
         self.opts.export_metadata
     }
@@ -342,7 +357,13 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn metadata(&self) -> BinaryMetadata<'tcx> {
-        BinaryMetadata::from_parts(self.tcx, &self.functions, &self.terms, &self.creusot_items)
+        BinaryMetadata::from_parts(
+            self.tcx,
+            &self.functions,
+            &self.terms,
+            &self.creusot_items,
+            &self.extern_specs,
+        )
     }
 
     pub fn creusot_item(&self, name: Symbol) -> Option<DefId> {
@@ -351,5 +372,14 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             .get(&name)
             .cloned()
             .or_else(|| self.externs.creusot_item(name))
+    }
+}
+
+fn load_extern_specs(ctx: &mut TranslationCtx) {
+    for def_id in ctx.tcx.hir().body_owners() {
+        if crate::util::is_extern_spec(ctx.tcx, def_id.to_def_id()) {
+            let (i, v) = extract_extern_specs_from_item(ctx, def_id);
+            ctx.extern_specs.insert(i, v);
+        }
     }
 }

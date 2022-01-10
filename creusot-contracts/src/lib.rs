@@ -43,6 +43,10 @@ mod macros {
 
     /// Enables Pearlite syntax, granting access to Pearlite specific operators and syntax
     pub use creusot_contracts_proc::pearlite;
+
+    /// Allows specifications to be attached to functions coming from external crates
+    /// TODO: Document syntax
+    pub use creusot_contracts_proc::extern_spec;
 }
 
 #[cfg(not(feature = "contracts"))]
@@ -87,6 +91,10 @@ mod macros {
 
     /// Enables Pearlite syntax, granting access to Pearlite specific operators and syntax
     pub use creusot_contracts_proc::pearlite;
+
+    /// Allows specifications to be attached to functions coming from external crates
+    /// TODO: Document syntax
+    pub use creusot_contracts_proc::extern_spec;
 }
 
 pub use macros::*;

@@ -2,7 +2,9 @@ use crate::function::all_generic_decls_for;
 use crate::translation::translate_logic_or_predicate;
 use crate::util::item_type;
 use crate::{ctx::*, util};
-use rustc_hir::def_id::DefId;
+use indexmap::IndexSet;
+use rustc_hir::def_id::{DefId, LocalDefId};
+use rustc_middle::ty::{TyKind, WithOptConstParam};
 use why3::declaration::ValKind;
 use why3::declaration::{Decl, Module, ValKind::Val};
 
@@ -28,7 +30,7 @@ pub fn default_decl(
             ValKind::Predicate { sig }
         }
         ItemType::Program => {
-            if !ctx.externs.verified(def_id) {
+            if !ctx.externs.verified(def_id) && ctx.extern_spec(def_id).is_none() {
                 sig.contract.requires.push(why3::mlcfg::Exp::mk_false());
             }
             Val { sig }
@@ -62,5 +64,82 @@ pub fn extern_module(
                 if ctx.externs.dependencies(def_id).is_some() { Err(def_id) } else { Ok(deps) };
             (modl, deps)
         }
+    }
+}
+
+type ExternSpec = (DefId, PreContract);
+// Must be run before MIR generation.
+pub fn extract_extern_specs_from_item(ctx: &mut TranslationCtx, def_id: LocalDefId) -> ExternSpec {
+    // let hir_id = tcx.hir().local_def_id_to_hir_id(def_id);
+    // let body = tcx.hir().body(tcx.hir().body_owned_by(hir_id));
+    // let mut visitor = ExtractExternItems { items : IndexSet::new() };
+
+    // visitor.visit_body(body);
+
+    let (thir, expr) = ctx.tcx.thir_body(WithOptConstParam::unknown(def_id));
+    let thir = thir.borrow();
+
+    let mut visit = ExtractExternItems::new(&thir);
+
+    visit.visit_expr(&thir[expr]);
+
+    let contract = crate::specification::contract_of(ctx, def_id.to_def_id()).unwrap();
+    (visit.items.pop().unwrap(), contract)
+    // panic!()
+}
+
+// use rustc_hir::intravisit::{Visitor, NestedVisitorMap, walk_qpath};
+// use rustc_middle::hir::map::Map;
+// struct ExtractExternItems {
+//     pub items: IndexSet<DefId>,
+// }
+
+// impl<'tcx> Visitor<'tcx> for ExtractExternItems {
+//     type Map = Map<'tcx>;
+
+//     fn nested_visit_map(&mut self) -> NestedVisitorMap<Self::Map> {
+//         NestedVisitorMap::None
+//     }
+
+//     fn visit_qpath(&mut self, qpath: &'v rustc_hir::QPath<'v>, id: rustc_hir::HirId, span: rustc_span::Span) {
+//         eprintln!("{:?}\n", qpath);
+//         walk_qpath(self, qpath, id, span);
+
+//     }
+
+//     // fn visit_path(&mut self, path: &'v rustc_hir::Path<'v>, _id: rustc_hir::HirId) {
+//     //     eprintln!("{:?}\n", path);
+//     // }
+// }
+
+use rustc_middle::thir::visit::Visitor;
+use rustc_middle::thir::{self, Expr, ExprKind, Thir};
+
+use super::specification::PreContract;
+
+// We shouldn't need a full visitor... or an index set, there should be a single item per extern spec method.
+struct ExtractExternItems<'a, 'tcx> {
+    thir: &'a Thir<'tcx>,
+    pub items: IndexSet<DefId>,
+}
+
+impl ExtractExternItems<'a, 'tcx> {
+    pub fn new(thir: &'a Thir<'tcx>) -> Self {
+        ExtractExternItems { thir, items: IndexSet::new() }
+    }
+}
+
+impl thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
+    fn thir(&self) -> &'a Thir<'tcx> {
+        self.thir
+    }
+
+    fn visit_expr(&mut self, expr: &Expr<'tcx>) {
+        if let ExprKind::Call { ty, .. } = expr.kind {
+            if let TyKind::FnDef(id, _) = ty.kind() {
+                self.items.insert(*id);
+            }
+        }
+        thir::visit::walk_expr(self, expr);
     }
 }
