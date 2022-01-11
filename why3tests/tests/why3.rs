@@ -36,7 +36,7 @@ fn main() {
 
         let mut command = Command::new(why3_path.clone());
         command.arg("prove");
-        command.args(&["-L", "../prelude"]);
+        command.args(&["-L", "../prelude", "-F", "mlcfg"]);
         command.arg(file);
 
         let mut has_prover = false;
