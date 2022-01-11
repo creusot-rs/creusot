@@ -14,19 +14,15 @@ module Type
   use floating_point.Double
   use prelude.Prelude
 end
-module C02_A_IsTrue_Interface
+module BadLaw_BadLaw_MyLaw_Interface
   type self   
-  use prelude.Prelude
-  val is_true (self : self) : bool
-    ensures { result = true }
-    
+  type t   
+  function my_law (x : t) : ()
 end
-module C02_A_IsTrue
+module BadLaw_BadLaw_MyLaw
   type self   
-  use prelude.Prelude
-  val is_true (self : self) : bool
-    ensures { result = true }
-    
+  type t   
+  function my_law (x : t) : ()
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self   
@@ -36,39 +32,32 @@ module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self   
   predicate resolve (self : self)
 end
-module C02_Omg_Interface
+module BadLaw_Impl0_MyLaw_Interface
   type t   
-  val omg (a : t) : bool
-    ensures { result = true }
-    
+  val my_law (x : t) : ()
 end
-module C02_Omg
+module BadLaw_Impl0_MyLaw
   type t   
-  use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = t
-  clone C02_A_IsTrue_Interface as IsTrue0 with type self = t
-  let rec cfg omg (a : t) : bool
-    ensures { result = true }
-    
-   = 
-  var _0 : bool;
-  var a_1 : t;
-  var _2 : t;
+  let rec cfg my_law (x : t) : () = 
+  var _0 : ();
+  var x_1 : t;
   {
-    a_1 <- a;
+    x_1 <- x;
     goto BB0
   }
   BB0 {
-    _2 <- a_1;
-    _0 <- IsTrue0.is_true _2;
+    _0 <- ();
     goto BB1
   }
   BB1 {
-    goto BB2
-  }
-  BB2 {
-    assume { Resolve0.resolve a_1 };
+    assume { Resolve0.resolve x_1 };
     return _0
   }
   
+end
+module BadLaw_Impl0
+  type t   
+  clone BadLaw_Impl0_MyLaw_Interface as MyLaw0 with type t = t
+  clone BadLaw_BadLaw_MyLaw as MyLaw1 with type self = (), type t = t, function my_law = MyLaw0.my_law
 end

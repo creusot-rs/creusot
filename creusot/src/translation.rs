@@ -105,8 +105,12 @@ pub fn prelude_imports(type_import: bool) -> Vec<Decl> {
     let mut imports = vec![
         Decl::UseDecl(Use { name: QName::from_string("Ref").unwrap() }),
         Decl::UseDecl(Use { name: QName::from_string("mach.int.Int").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("prelude.Int8").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("prelude.Int16").unwrap() }),
         Decl::UseDecl(Use { name: QName::from_string("mach.int.Int32").unwrap() }),
         Decl::UseDecl(Use { name: QName::from_string("mach.int.Int64").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("prelude.UInt8").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("prelude.UInt16").unwrap() }),
         Decl::UseDecl(Use { name: QName::from_string("mach.int.UInt32").unwrap() }),
         Decl::UseDecl(Use { name: QName::from_string("mach.int.UInt64").unwrap() }),
         Decl::UseDecl(Use { name: QName::from_string("string.Char").unwrap() }),
