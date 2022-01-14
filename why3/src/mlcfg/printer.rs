@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, iter::once};
 
 use super::*;
 use crate::declaration::*;
@@ -232,6 +232,19 @@ impl Pretty for LetFun {
     }
 }
 
+impl Pretty for Attribute {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        _: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc.text("@").append(&self.0).brackets()
+    }
+}
+
 impl Pretty for Signature {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
@@ -244,6 +257,10 @@ impl Pretty for Signature {
         self.name
             .pretty(alloc, env)
             .append(alloc.space())
+            .append(alloc.intersperse(
+                self.attrs.iter().map(|a| a.pretty(alloc, env)).chain(once(alloc.nil())),
+                alloc.space(),
+            ))
             .append(arg_list(alloc, env, &self.args))
             .append(
                 self.retty.as_ref().map_or_else(
