@@ -301,6 +301,7 @@ pub fn translate_accessor(
 
     let mut sig = Signature {
         name: Ident::build(&acc_name),
+        attrs: Vec::new(),
         args: vec![("self".into(), this.clone())],
         retty: Some(field_ty),
         contract: Contract::new(),

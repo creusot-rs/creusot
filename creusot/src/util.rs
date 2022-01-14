@@ -5,7 +5,7 @@ use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{Attributes, VariantDef};
 use rustc_middle::ty::{DefIdTree, TyCtxt};
 use rustc_span::Symbol;
-use why3::QName;
+use why3::{declaration, QName};
 use why3::{
     declaration::{Signature, ValKind},
     mlcfg::{Constant, Exp},
@@ -261,6 +261,11 @@ pub fn signature_of<'tcx>(
     Signature {
         // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure
         name,
+        attrs: if item_type(ctx.tcx, def_id) == ItemType::Program {
+            vec![declaration::Attribute("cfg:stackify".into())]
+        } else {
+            vec![]
+        },
         // TODO: use real span
         retty: Some(
             names.with_public_clones(|names| ty::translate_ty(ctx, names, span, sig.output())),

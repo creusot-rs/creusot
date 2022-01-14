@@ -102,8 +102,13 @@ impl Contract {
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Attribute(pub String);
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Signature {
     pub name: Ident,
+    pub attrs: Vec<Attribute>,
     pub retty: Option<Type>,
     pub args: Vec<(Ident, Type)>,
     pub contract: Contract,
