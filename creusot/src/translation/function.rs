@@ -1,7 +1,7 @@
 use crate::{
     gather_spec_closures::GatherSpecClosures,
     rustc_extensions::renumber,
-    util::{self, signature_of},
+    util::{self, ident_of, signature_of},
 };
 use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
@@ -429,7 +429,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
 /// A MIR local along with an optional human-readable name
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LocalIdent(Local, Option<String>);
+pub struct LocalIdent(Local, Option<Symbol>);
 
 impl LocalIdent {
     pub fn anon(loc: Local) -> Self {
@@ -437,19 +437,19 @@ impl LocalIdent {
     }
 
     pub fn dbg(loc: Local, dbg: &VarDebugInfo) -> Self {
-        LocalIdent(loc, Some(dbg.name.to_string()))
+        LocalIdent(loc, Some(dbg.name))
     }
 
     pub fn arg_name(&self) -> why3::Ident {
         match &self.1 {
             None => format!("{:?}", self.0).into(),
-            Some(h) => h.clone().into(),
+            Some(h) => ident_of(*h),
         }
     }
 
     pub fn ident(&self) -> why3::Ident {
         match &self.1 {
-            Some(id) => format!("{}_{}", id, self.0.index()).into(),
+            Some(id) => format!("{}_{}", &*ident_of(*id), self.0.index()).into(),
             None => format!("_{}", self.0.index()).into(),
         }
     }

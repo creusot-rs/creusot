@@ -172,6 +172,7 @@ const RESERVED: &[&str] = &[
     "return",
     "returns",
     "scope",
+    "to",
     "true",
     "try",
     "type",
