@@ -36,12 +36,14 @@ impl GatherSpecClosures {
         let mut invariants: IndexMap<_, _> = Default::default();
         for clos in visitor.closures.into_iter() {
             if let Some(name) = util::invariant_name(ctx.tcx, clos) {
-                let term = specification::typing::typecheck(ctx.tcx, clos.expect_local());
+                let term = specification::typing::typecheck(ctx.tcx, clos.expect_local())
+                    .unwrap_or_else(|e| e.emit(ctx.sess));
                 let exp = lower_pure(ctx, names, clos, term);
 
                 invariants.insert(clos, (name, exp));
             } else if util::is_assertion(ctx.tcx, clos) {
-                let term = specification::typing::typecheck(ctx.tcx, clos.expect_local());
+                let term = specification::typing::typecheck(ctx.tcx, clos.expect_local())
+                    .unwrap_or_else(|e| e.emit(ctx.sess));
                 let exp = lower_pure(ctx, names, clos, term);
 
                 assertions.insert(clos, exp);

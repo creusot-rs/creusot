@@ -21,7 +21,7 @@ use rustc_session::Session;
 use rustc_span::Span;
 use rustc_span::Symbol;
 pub use util::{item_name, module_name, ItemType};
-use why3::declaration::{Decl, Module, TyDecl};
+use why3::declaration::{Module, TyDecl};
 
 pub use crate::translated_item::*;
 
@@ -83,11 +83,15 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             }
             ItemType::Type => unreachable!("ty"),
             ItemType::Interface => unreachable!(),
+            ItemType::Unsupported(dk) => self.crash_and_error(
+                self.tcx.def_span(def_id),
+                &format!("unsupported definition kind {:?} {:?}", def_id, dk),
+            ),
         }
     }
 
     // Generic entry point for function translation
-    pub fn translate_function(&mut self, def_id: DefId) {
+    fn translate_function(&mut self, def_id: DefId) {
         assert!(matches!(
             self.tcx.def_kind(def_id),
             DefKind::Fn | DefKind::Closure | DefKind::AssocFn
@@ -108,27 +112,17 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             return;
         }
 
-        if !crate::util::should_translate(self.tcx, def_id) {
-            info!("Skipping {:?}", def_id);
+        if !crate::util::should_translate(self.tcx, def_id) || util::is_spec(self.tcx, def_id) {
+            debug!("Skipping {:?}", def_id);
             return;
         }
 
         let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
         let (interface, deps) = interface_for(self, def_id);
 
-        let translated = if util::is_logic(self.tcx, def_id) {
-            debug!("translating {:?} as logic", def_id);
-            let (modl, proof_modl, has_axioms, deps) =
-                crate::translation::translate_logic_or_predicate(self, def_id, span);
-            TranslatedItem::Logic {
-                interface,
-                modl,
-                proof_modl,
-                has_axioms,
-                dependencies: deps.summary(),
-            }
-        } else if util::is_predicate(self.tcx, def_id) {
-            debug!("translating {:?} as predicate", def_id);
+        let translated = if util::is_logic(self.tcx, def_id) || util::is_predicate(self.tcx, def_id)
+        {
+            debug!("translating {:?} as logical", def_id);
             let (modl, proof_modl, has_axioms, deps) =
                 crate::translation::translate_logic_or_predicate(self, def_id, span);
             TranslatedItem::Logic {
@@ -145,10 +139,6 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
             TranslatedItem::Extern { interface, body: ext_modl.0, dependencies: ext_modl.1 }
         } else {
-            if util::is_spec(self.tcx, def_id) {
-                return;
-            }
-
             let modl = crate::translation::translate_function(self, def_id);
             TranslatedItem::Program { interface, modl, dependencies: deps.summary() }
         };
@@ -185,6 +175,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         if util::has_body(self, def_id) {
             let t = self.terms.entry(def_id).or_insert_with(|| {
                 specification::typing::typecheck(self.tcx, def_id.expect_local())
+                    .unwrap_or_else(|e| e.emit(self.sess))
             });
             Some(t)
         } else {

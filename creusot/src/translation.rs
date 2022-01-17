@@ -52,7 +52,7 @@ pub fn translate(tcx: TyCtxt, sess: &Session, opts: &Options) -> Result<()> {
         }
 
         info!("Translating body {:?}", def_id);
-        ctx.translate_function(def_id);
+        ctx.translate(def_id);
     }
 
     for impls in ctx.tcx.all_local_trait_impls(()).values() {

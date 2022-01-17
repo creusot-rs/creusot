@@ -482,6 +482,7 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
             QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
         }
         Trait | Type | AssocTy => module_name(tcx, def_id).into(),
+        _ => unreachable!(),
     }
 }
 
@@ -545,8 +546,9 @@ fn refinable_symbols(
             ty::TraitContainer(_) => box once(SymbolKind::Type(tcx.item_name(def_id))),
             ty::ImplContainer(_) => box empty(),
         },
-        Trait | Impl => unreachable!(),
-        Type => unreachable!(),
+        Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
+        Type => unreachable!("types have no refinable symbols"),
+        _ => unreachable!(),
     }
 }
 
