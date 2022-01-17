@@ -1,33 +1,99 @@
+#![feature(rustc_private, box_syntax)]
+
+extern crate lazy_static;
+extern crate rustc_driver;
+extern crate rustc_errors;
+extern crate rustc_interface;
+
+#[macro_use]
+extern crate log;
+
+use creusot::callbacks::*;
+use creusot::options::Options;
+use rustc_driver::RunCompiler;
+use rustc_interface::interface::try_print_query_stack;
+use std::env::args as get_args;
+use std::panic::PanicInfo;
 use std::{
-    env,
+    env,panic,
     path::Path,
     process::{exit, Command},
 };
 
-fn main() {
-    let mut args = env::args().skip(1).collect::<Vec<_>>();
+const BUG_REPORT_URL: &'static str = &"https://github.com/xldenis/creusot/issues/new";
 
-    // Setting RUSTC_WRAPPER causes Cargo to pass 'rustc' as the first argument.
-    // We're invoking the compiler programmatically, so we ignore this
-    if !args.is_empty() && Path::new(&args[0]).file_stem() == Some("rustc".as_ref()) {
-        args.remove(0);
+lazy_static::lazy_static! {
+    static ref ICE_HOOK: Box<dyn Fn(&panic::PanicInfo<'_>) + Sync + Send + 'static> = {
+        let hook = panic::take_hook();
+        panic::set_hook(Box::new(|info| report_panic(info)));
+        hook
+    };
+}
+
+fn report_panic(info: &PanicInfo) {
+    (*ICE_HOOK)(info);
+
+    // Separate the output with an empty line
+    eprintln!();
+
+    let emitter = box rustc_errors::emitter::EmitterWriter::stderr(
+        rustc_errors::ColorConfig::Auto,
+        None,
+        false,
+        false,
+        None,
+        false,
+    );
+    let handler = rustc_errors::Handler::with_emitter(true, None, emitter);
+
+    let mut diagnostic = handler.struct_note_without_error("Creusot has panic-ed!");
+    diagnostic.note("Oops, that shouldn't have happened, sorry about that.");
+    diagnostic.note(&format!("Please report this bug over here: {}", BUG_REPORT_URL));
+
+    diagnostic.emit();
+
+    // If backtraces are enabled, also print the query stack
+    let backtrace = env::var_os("RUST_BACKTRACE").map_or(false, |x| &x != "0");
+
+    if backtrace {
+        try_print_query_stack(&handler, None);
     }
+}
 
-    let creusot_driver_path = std::env::current_exe()
-        .expect("current executable path invalid")
-        .with_file_name("creusot-driver");
+struct DefaultCallbacks;
+impl rustc_driver::Callbacks for DefaultCallbacks {}
+
+fn main() {
+    rustc_driver::init_rustc_env_logger();
+    env_logger::init();
+
+    let mut args = env::args().skip(1).collect::<Vec<_>>();
 
     let sysroot = sysroot_path();
 
-    let exit_code = Command::new(creusot_driver_path)
-        .args(args)
-        .args(vec!["--sysroot".into(), sysroot])
-        .status()
-        .expect("creusot-driver failed to execute");
+    let opts = Options::from_args_and_env(&args);
 
-    if !exit_code.success() {
-        exit(exit_code.code().unwrap_or(-1));
+    args.push(format!("--sysroot={}", sysroot));
+
+    if !opts.has_contracts || opts.be_rustc {
+        return RunCompiler::new(&args, &mut DefaultCallbacks{}).run().unwrap();
     }
+
+    lazy_static::initialize(&ICE_HOOK);
+
+    args.push("-Cpanic=abort".to_owned());
+    args.push("-Coverflow-checks=off".to_owned());
+    args.push("-Zcrate-attr=feature(register_tool)".to_owned());
+    args.push("-Zcrate-attr=register_tool(creusot)".to_owned());
+    args.push("-Zcrate-attr=feature(stmt_expr_attributes)".to_owned());
+    args.push("-Zcrate-attr=feature(proc_macro_hygiene)".to_owned());
+    args.push("-Zcrate-attr=feature(rustc_attrs)".to_owned());
+
+    debug!("creusot args={:?}", args);
+
+    let mut callbacks = ToWhy::new(opts);
+
+    RunCompiler::new(&args, &mut callbacks).run().unwrap();
 }
 
 fn sysroot_path() -> String {
@@ -47,3 +113,4 @@ fn sysroot_path() -> String {
 
     String::from_utf8(output.stdout).unwrap().trim().to_owned()
 }
+
