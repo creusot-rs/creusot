@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::translation::function::real_locals;
 use crate::{ctx::*, util};
+use rustc_macros::{TyDecodable, TyEncodable};
 use why3::declaration::Contract;
 use why3::mlcfg::Exp;
 
@@ -46,6 +47,7 @@ pub fn ensures_to_why<'tcx>(
     lower_pure(ctx, names, ens_id, term)
 }
 
+#[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct PreContract {
     pub variant: Option<DefId>,
     pub requires: Vec<DefId>,
@@ -124,6 +126,10 @@ pub fn contract_of(ctx: &TranslationCtx, def_id: DefId) -> Result<PreContract, S
     use SpecAttrError::*;
     let mut contract = PreContract::new();
 
+    if let Some(extern_spec) = ctx.extern_spec(def_id) {
+        return Ok(extern_spec.clone());
+    }
+
     for attr in attrs {
         if !util::is_attr(attr, "spec") {
             continue;
@@ -136,15 +142,12 @@ pub fn contract_of(ctx: &TranslationCtx, def_id: DefId) -> Result<PreContract, S
         match attr.path.segments[2].ident.to_string().as_str() {
             "requires" => {
                 let req_name = util::ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?;
-                let req_id = ctx.creusot_item(req_name).unwrap();
+                let req_id = ctx.creusot_item(req_name).ok_or(InvalidTokens)?;
                 contract.requires.push(req_id);
             }
             "ensures" => {
                 let ens_name = util::ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?;
-                let ens_id = ctx.creusot_item(ens_name).unwrap_or_else(|| {
-                    ctx.externs.debug_creusot_items();
-                    panic!("WHTF?")
-                });
+                let ens_id = ctx.creusot_item(ens_name).ok_or(InvalidTokens)?;
                 contract.ensures.push(ens_id);
             }
             "variant" => {

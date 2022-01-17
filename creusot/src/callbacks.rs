@@ -2,7 +2,7 @@ use rustc_driver::{Callbacks, Compilation};
 use rustc_interface::{interface::Compiler, Config, Queries};
 
 use crate::cleanup_spec_closures::*;
-use crate::ctx;
+
 use crate::options::Options;
 
 pub struct ToWhy {
@@ -37,9 +37,7 @@ impl Callbacks for ToWhy {
             .enter(|tcx| {
                 let session = c.session();
 
-                let ctx = ctx::TranslationCtx::new(tcx, session, &self.opts);
-
-                crate::translation::translate(ctx)
+                crate::translation::translate(tcx, session, &self.opts)
             })
             .unwrap();
 
