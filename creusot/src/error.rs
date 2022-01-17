@@ -2,6 +2,8 @@ use rustc_errors::DiagnosticId;
 use rustc_session::Session;
 use rustc_span::Span;
 
+pub type CreusotResult<T> = Result<T, Error>;
+
 // TODO: make this a vector of spans and strings
 #[derive(Debug)]
 pub struct Error {

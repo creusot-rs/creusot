@@ -177,6 +177,7 @@ pub enum ItemType {
     Type,
     AssocTy,
     Interface,
+    Unsupported(DefKind),
 }
 
 impl ItemType {
@@ -220,7 +221,7 @@ pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
         }
         DefKind::Struct | DefKind::Enum => ItemType::Type,
         DefKind::AssocTy => ItemType::AssocTy,
-        dk => todo!("{:?}", dk),
+        dk => ItemType::Unsupported(dk),
     }
 }
 

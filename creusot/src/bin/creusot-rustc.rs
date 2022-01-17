@@ -12,13 +12,8 @@ use creusot::callbacks::*;
 use creusot::options::Options;
 use rustc_driver::RunCompiler;
 use rustc_interface::interface::try_print_query_stack;
-use std::env::args as get_args;
 use std::panic::PanicInfo;
-use std::{
-    env,panic,
-    path::Path,
-    process::{exit, Command},
-};
+use std::{env, panic, process::Command};
 
 const BUG_REPORT_URL: &'static str = &"https://github.com/xldenis/creusot/issues/new";
 
@@ -76,7 +71,7 @@ fn main() {
     args.push(format!("--sysroot={}", sysroot));
 
     if !opts.has_contracts || opts.be_rustc {
-        return RunCompiler::new(&args, &mut DefaultCallbacks{}).run().unwrap();
+        return RunCompiler::new(&args, &mut DefaultCallbacks {}).run().unwrap();
     }
 
     lazy_static::initialize(&ICE_HOOK);
@@ -113,4 +108,3 @@ fn sysroot_path() -> String {
 
     String::from_utf8(output.stdout).unwrap().trim().to_owned()
 }
-

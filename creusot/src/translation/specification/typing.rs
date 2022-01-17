@@ -1,6 +1,11 @@
+use crate::error::{CreusotResult, Error};
+use crate::util;
 use log::*;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_hir::HirId;
+use rustc_macros::{TyDecodable, TyEncodable};
+pub use rustc_middle::mir::Field;
+pub use rustc_middle::thir;
 use rustc_middle::thir::{
     Adt, ArmId, Block, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
 };
@@ -11,14 +16,6 @@ use rustc_middle::{
 };
 use rustc_span::Symbol;
 use rustc_target::abi::VariantIdx;
-
-pub use rustc_middle::mir::Field;
-pub use rustc_middle::thir;
-
-use crate::error::Error;
-use rustc_macros::{TyDecodable, TyEncodable};
-
-use crate::util;
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable)]
 pub enum LogicalOp {
@@ -63,7 +60,7 @@ pub enum Pattern<'tcx> {
     Boolean(bool),
 }
 
-pub fn typecheck(tcx: TyCtxt, id: LocalDefId) -> Result<Term, Error> {
+pub fn typecheck(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
     let (thir, expr) = tcx.thir_body(WithOptConstParam::unknown(id));
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
@@ -77,7 +74,7 @@ fn lower_expr<'tcx>(
     item_id: LocalDefId,
     thir: &Thir<'tcx>,
     expr: ExprId,
-) -> Result<Term<'tcx>, Error> {
+) -> CreusotResult<Term<'tcx>> {
     let ty = thir[expr].ty;
     // eprintln!("{:?}", &thir[expr].kind);
     match thir[expr].kind {
@@ -279,7 +276,7 @@ fn lower_arm<'tcx>(
     item_id: LocalDefId,
     thir: &Thir<'tcx>,
     arm: ArmId,
-) -> Result<(Pattern<'tcx>, Term<'tcx>), Error> {
+) -> CreusotResult<(Pattern<'tcx>, Term<'tcx>)> {
     let arm = &thir[arm];
 
     if arm.guard.is_some() {
@@ -296,7 +293,7 @@ fn lower_pattern<'tcx>(
     tcx: TyCtxt<'tcx>,
     thir: &Thir<'tcx>,
     pat: &Pat<'tcx>,
-) -> Result<Pattern<'tcx>, Error> {
+) -> CreusotResult<Pattern<'tcx>> {
     trace!("{:?}", pat);
     match &*pat.kind {
         PatKind::Wild => Ok(Pattern::Wildcard),
@@ -345,7 +342,7 @@ fn lower_stmt<'tcx>(
     thir: &Thir<'tcx>,
     stmt: StmtId,
     inner: Term<'tcx>,
-) -> Result<Term<'tcx>, Error> {
+) -> CreusotResult<Term<'tcx>> {
     match &thir[stmt].kind {
         StmtKind::Expr { expr, .. } => Ok(Term {
             ty: inner.ty,
