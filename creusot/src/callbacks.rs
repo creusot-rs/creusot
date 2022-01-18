@@ -34,11 +34,7 @@ impl Callbacks for ToWhy {
             .global_ctxt()
             .unwrap()
             .peek_mut()
-            .enter(|tcx| {
-                let session = c.session();
-
-                crate::translation::translate(tcx, session, &self.opts)
-            })
+            .enter(|tcx| crate::translation::translate(tcx, &self.opts))
             .unwrap();
 
         c.session().abort_if_errors();

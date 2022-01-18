@@ -4,9 +4,15 @@ use crate::util::item_type;
 use crate::{ctx::*, util};
 use indexmap::IndexSet;
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_middle::ty::{TyKind, WithOptConstParam};
+use rustc_macros::{TyDecodable, TyEncodable};
+use rustc_middle::thir::visit::Visitor;
+use rustc_middle::thir::{self, Expr, ExprKind, Thir};
+use rustc_middle::ty::subst::{InternalSubsts, Subst, SubstsRef};
+use rustc_middle::ty::{Predicate, TyCtxt, TyKind, WithOptConstParam};
 use why3::declaration::ValKind;
 use why3::declaration::{Decl, Module, ValKind::Val};
+
+use super::specification::PreContract;
 
 pub fn default_decl(
     ctx: &mut TranslationCtx<'_, 'tcx>,
@@ -67,15 +73,29 @@ pub fn extern_module(
     }
 }
 
-type ExternSpec = (DefId, PreContract);
+#[derive(Clone, Debug, TyEncodable, TyDecodable)]
+pub(crate) struct ExternSpec<'tcx> {
+    // The contract we are attaching
+    pub contract: PreContract,
+    // Additional predicates we must verify to call this function
+    additional_predicates: Vec<Predicate<'tcx>>,
+}
+
+impl ExternSpec<'tcx> {
+    pub(crate) fn predicates_for(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        sub: SubstsRef<'tcx>,
+    ) -> Vec<Predicate<'tcx>> {
+        self.additional_predicates.iter().map(|p| p.subst(tcx, sub)).collect()
+    }
+}
+
 // Must be run before MIR generation.
-pub fn extract_extern_specs_from_item(ctx: &mut TranslationCtx, def_id: LocalDefId) -> ExternSpec {
-    // let hir_id = tcx.hir().local_def_id_to_hir_id(def_id);
-    // let body = tcx.hir().body(tcx.hir().body_owned_by(hir_id));
-    // let mut visitor = ExtractExternItems { items : IndexSet::new() };
-
-    // visitor.visit_body(body);
-
+pub(crate) fn extract_extern_specs_from_item(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    def_id: LocalDefId,
+) -> (DefId, ExternSpec<'tcx>) {
     let (thir, expr) = ctx.tcx.thir_body(WithOptConstParam::unknown(def_id));
     let thir = thir.borrow();
 
@@ -83,44 +103,31 @@ pub fn extract_extern_specs_from_item(ctx: &mut TranslationCtx, def_id: LocalDef
 
     visit.visit_expr(&thir[expr]);
 
+    let (id, subst) = visit.items.pop().unwrap();
+
+    // The parameters in the extern spec may have been declared in a different order from the original defition
+    // However, the must be a permutation of them. We create substitution which allows us to map from the inner
+    // definiton to the parameters of the outer definition.
+    let inner_subst = InternalSubsts::identity_for_item(ctx.tcx, id);
+    let outer_subst = InternalSubsts::identity_for_item(ctx.tcx, def_id.to_def_id());
+    let inverse = InternalSubsts::for_item(ctx.tcx, def_id.to_def_id(), |arg, _| {
+        let param = outer_subst[arg.index as usize];
+        let ix = subst.iter().position(|e| e == param).unwrap();
+        inner_subst[ix]
+    });
+
     let contract = crate::specification::contract_of(ctx, def_id.to_def_id()).unwrap();
-    (visit.items.pop().unwrap(), contract)
-    // panic!()
+
+    // Use the inverse substitution to turn predicates on the outer definition into ones on the inner definition.
+    let additional_predicates =
+        ctx.tcx.predicates_of(def_id).instantiate(ctx.tcx, inverse).predicates;
+    (id, ExternSpec { contract, additional_predicates })
 }
-
-// use rustc_hir::intravisit::{Visitor, NestedVisitorMap, walk_qpath};
-// use rustc_middle::hir::map::Map;
-// struct ExtractExternItems {
-//     pub items: IndexSet<DefId>,
-// }
-
-// impl<'tcx> Visitor<'tcx> for ExtractExternItems {
-//     type Map = Map<'tcx>;
-
-//     fn nested_visit_map(&mut self) -> NestedVisitorMap<Self::Map> {
-//         NestedVisitorMap::None
-//     }
-
-//     fn visit_qpath(&mut self, qpath: &'v rustc_hir::QPath<'v>, id: rustc_hir::HirId, span: rustc_span::Span) {
-//         eprintln!("{:?}\n", qpath);
-//         walk_qpath(self, qpath, id, span);
-
-//     }
-
-//     // fn visit_path(&mut self, path: &'v rustc_hir::Path<'v>, _id: rustc_hir::HirId) {
-//     //     eprintln!("{:?}\n", path);
-//     // }
-// }
-
-use rustc_middle::thir::visit::Visitor;
-use rustc_middle::thir::{self, Expr, ExprKind, Thir};
-
-use super::specification::PreContract;
 
 // We shouldn't need a full visitor... or an index set, there should be a single item per extern spec method.
 struct ExtractExternItems<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
-    pub items: IndexSet<DefId>,
+    pub items: IndexSet<(DefId, SubstsRef<'tcx>)>,
 }
 
 impl ExtractExternItems<'a, 'tcx> {
@@ -136,8 +143,8 @@ impl thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
 
     fn visit_expr(&mut self, expr: &Expr<'tcx>) {
         if let ExprKind::Call { ty, .. } = expr.kind {
-            if let TyKind::FnDef(id, _) = ty.kind() {
-                self.items.insert(*id);
+            if let TyKind::FnDef(id, subst) = ty.kind() {
+                self.items.insert((*id, subst));
             }
         }
         thir::visit::walk_expr(self, expr);

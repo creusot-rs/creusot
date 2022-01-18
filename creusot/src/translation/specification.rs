@@ -127,7 +127,7 @@ pub fn contract_of(ctx: &TranslationCtx, def_id: DefId) -> Result<PreContract, S
     let mut contract = PreContract::new();
 
     if let Some(extern_spec) = ctx.extern_spec(def_id) {
-        return Ok(extern_spec.clone());
+        return Ok(extern_spec.contract.clone());
     }
 
     for attr in attrs {
