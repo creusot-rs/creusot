@@ -282,7 +282,7 @@ pub fn translate_accessor(
     let field = &variant.fields[ix];
 
     let ty_name = translate_ty_name(ctx, adt_did).name();
-    let acc_name = format!("{}_{}_{}", &*ty_name, variant.ident.name, field.ident.name);
+    let acc_name = format!("{}_{}_{}", &*ty_name, variant.name, field.name);
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let mut names = CloneMap::new(ctx.tcx, adt_did, false);
@@ -352,7 +352,7 @@ pub fn translate_accessor(
 pub fn variant_accessor_name(tcx: TyCtxt, def: DefId, variant: &VariantDef, field: usize) -> Ident {
     let ty_name = item_name(tcx, def).to_string().to_lowercase();
 
-    format!("{}_{}_{}", &*ty_name, variant.ident.name, variant.fields[field].ident.name).into()
+    format!("{}_{}_{}", &*ty_name, variant.name, variant.fields[field].name).into()
 }
 
 fn intty_to_ty(

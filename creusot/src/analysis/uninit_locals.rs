@@ -50,11 +50,13 @@ impl GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
         &self,
         trans: &mut impl GenKill<Self::Idx>,
         _block: BasicBlock,
-        _func: &mir::Operand<'tcx>,
-        _args: &[mir::Operand<'tcx>],
-        return_place: mir::Place<'tcx>,
+        return_places: rustc_mir_dataflow::CallReturnPlaces<'_, 'tcx>,
     ) {
-        trans.kill(return_place.local)
+        return_places.for_each(|place| {
+            if let Some(local) = place.as_local() {
+                trans.kill(local);
+            }
+        });
     }
 
     /// See `Analysis::apply_yield_resume_effect`.

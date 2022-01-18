@@ -41,7 +41,7 @@ mod extended_location;
 mod gather_spec_closures;
 pub mod options;
 mod resolve;
-#[allow(dead_code)]
+// #[allow(dead_code)]
 mod rustc_extensions;
 mod translation;
 pub mod util;

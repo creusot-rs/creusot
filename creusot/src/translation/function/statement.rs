@@ -141,6 +141,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 match kind {
                     Tuple => Exp::Tuple(fields),
                     Adt(adt, varix, _, _, _) => {
+                        let adt = self.tcx.adt_def(*adt);
                         let variant_def = &adt.variants[*varix];
                         let qname = constructor_qname(self.tcx, variant_def);
 

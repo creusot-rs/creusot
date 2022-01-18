@@ -1,5 +1,7 @@
 use rustc_index::bit_set::BitSet;
-use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor};
+use rustc_middle::mir::visit::{
+    MutatingUseContext, NonMutatingUseContext, NonUseContext, PlaceContext, Visitor,
+};
 use rustc_middle::mir::{self, Local, Location};
 
 pub mod uninit_locals;
@@ -23,7 +25,7 @@ impl<'tcx> Visitor<'tcx> for NeverLive {
 
         let mir::Place { projection, local } = *place;
 
-        match DefUse::for_place(context) {
+        match categorize(context) {
             // Treat derefs as a use of the base local. `*p = 4` is not a def of `p` but a use.
             Some(_) if place.is_indirect() => {
                 self.0.remove(local);
@@ -38,7 +40,7 @@ impl<'tcx> Visitor<'tcx> for NeverLive {
     }
 
     fn visit_local(&mut self, &local: &Local, context: PlaceContext, _location: Location) {
-        match DefUse::for_place(context) {
+        match categorize(context) {
             Some(DefUse::Def) => {}
             Some(DefUse::Use) => {
                 self.0.remove(local);
@@ -53,46 +55,75 @@ impl<'tcx> Visitor<'tcx> for NeverLive {
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #[derive(Eq, PartialEq, Clone)]
-enum DefUse {
+pub enum DefUse {
     Def,
     Use,
+    Drop,
 }
 
-impl DefUse {
-    fn for_place(context: PlaceContext) -> Option<DefUse> {
-        match context {
-            PlaceContext::NonUse(_) => None,
+pub fn categorize(context: PlaceContext) -> Option<DefUse> {
+    match context {
+        ///////////////////////////////////////////////////////////////////////////
+        // DEFS
 
-            PlaceContext::MutatingUse(MutatingUseContext::Store) => Some(DefUse::Def),
+        PlaceContext::MutatingUse(MutatingUseContext::Store) |
 
-            // `MutatingUseContext::Call` and `MutatingUseContext::Yield` indicate that this is the
-            // destination place for a `Call` return or `Yield` resume respectively. Since this is
-            // only a `Def` when the function returns successfully, we handle this case separately
-            // in `call_return_effect` above.
-            PlaceContext::MutatingUse(MutatingUseContext::Call | MutatingUseContext::Yield) => None,
+        // We let Call define the result in both the success and
+        // unwind cases. This is not really correct, however it
+        // does not seem to be observable due to the way that we
+        // generate MIR. To do things properly, we would apply
+        // the def in call only to the input from the success
+        // path and not the unwind path. -nmatsakis
+        PlaceContext::MutatingUse(MutatingUseContext::Call) |
+        PlaceContext::MutatingUse(MutatingUseContext::LlvmAsmOutput) |
+        PlaceContext::MutatingUse(MutatingUseContext::AsmOutput) |
+        PlaceContext::MutatingUse(MutatingUseContext::Yield) |
 
-            // All other contexts are uses...
-            PlaceContext::MutatingUse(
-                MutatingUseContext::AddressOf
-                | MutatingUseContext::AsmOutput
-                | MutatingUseContext::Borrow
-                | MutatingUseContext::Drop
-                | MutatingUseContext::Retag,
-            )
-            | PlaceContext::NonMutatingUse(
-                NonMutatingUseContext::AddressOf
-                | NonMutatingUseContext::Copy
-                | NonMutatingUseContext::Inspect
-                | NonMutatingUseContext::Move
-                | NonMutatingUseContext::ShallowBorrow
-                | NonMutatingUseContext::SharedBorrow
-                | NonMutatingUseContext::UniqueBorrow,
-            ) => Some(DefUse::Use),
+        // Storage live and storage dead aren't proper defines, but we can ignore
+        // values that come before them.
+        PlaceContext::NonUse(NonUseContext::StorageLive) |
+        PlaceContext::NonUse(NonUseContext::StorageDead) => Some(DefUse::Def),
 
-            PlaceContext::MutatingUse(MutatingUseContext::Projection)
-            | PlaceContext::NonMutatingUse(NonMutatingUseContext::Projection) => {
-                unreachable!("A projection could be a def or a use and must be handled separately")
-            }
-        }
+        ///////////////////////////////////////////////////////////////////////////
+        // REGULAR USES
+        //
+        // These are uses that occur *outside* of a drop. For the
+        // purposes of NLL, these are special in that **all** the
+        // lifetimes appearing in the variable must be live for each regular use.
+
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::Projection) |
+        PlaceContext::MutatingUse(MutatingUseContext::Projection) |
+
+        // Borrows only consider their local used at the point of the borrow.
+        // This won't affect the results since we use this analysis for generators
+        // and we only care about the result at suspension points. Borrows cannot
+        // cross suspension points so this behavior is unproblematic.
+        PlaceContext::MutatingUse(MutatingUseContext::Borrow) |
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::SharedBorrow) |
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::ShallowBorrow) |
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::UniqueBorrow) |
+
+        PlaceContext::MutatingUse(MutatingUseContext::AddressOf) |
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::AddressOf) |
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::Inspect) |
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::Copy) |
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::Move) |
+        PlaceContext::NonUse(NonUseContext::AscribeUserTy) |
+        PlaceContext::MutatingUse(MutatingUseContext::Retag) =>
+            Some(DefUse::Use),
+
+        ///////////////////////////////////////////////////////////////////////////
+        // DROP USES
+        //
+        // These are uses that occur in a DROP (a MIR drop, not a
+        // call to `std::mem::drop()`). For the purposes of NLL,
+        // uses in drop are special because `#[may_dangle]`
+        // attributes can affect whether lifetimes must be live.
+
+        PlaceContext::MutatingUse(MutatingUseContext::Drop) =>
+            Some(DefUse::Drop),
+
+        // Debug info is neither def nor use.
+        PlaceContext::NonUse(NonUseContext::VarDebugInfo) => None,
     }
 }
