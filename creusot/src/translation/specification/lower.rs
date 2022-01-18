@@ -44,7 +44,7 @@ impl Lower<'_, '_, 'tcx> {
                 self.ctx,
                 self.names,
                 c.into(),
-                self.term_id,
+                self.ctx.tcx.param_env(self.term_id),
                 rustc_span::DUMMY_SP,
             ),
             TermKind::Var(v) => Exp::pure_var(util::ident_of(v)),

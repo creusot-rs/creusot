@@ -111,7 +111,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     Operand::Constant(box c) => crate::constant::from_mir_constant(
                         &mut self.ctx,
                         &mut self.clone_names,
-                        self.def_id,
+                        self.def_id.param_env(self.tcx),
                         c,
                     ),
                 };
@@ -138,7 +138,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
     ) -> QName {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(id) = it.container {
-                let params = self.ctx.tcx.param_env(self.def_id);
+                let params = self.def_id.param_env(self.ctx.tcx);
                 let method = traits::resolve_assoc_item_opt(self.tcx, params, def_id, subst)
                     .expect("could not find instance");
 

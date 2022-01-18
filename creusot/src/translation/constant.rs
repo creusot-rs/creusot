@@ -1,4 +1,4 @@
-use rustc_hir::def_id::DefId;
+use rustc_middle::ty::ParamEnv;
 use rustc_span::Span;
 use why3::mlcfg::{self, Constant, Exp};
 
@@ -7,17 +7,17 @@ use crate::{clone_map::CloneMap, ctx::TranslationCtx, translation::ty};
 pub fn from_mir_constant<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
-    _id: DefId,
+    param: ParamEnv<'tcx>,
     c: &rustc_middle::mir::Constant<'tcx>,
 ) -> mlcfg::Exp {
-    from_mir_constant_kind(ctx, names, c.literal, _id, c.span)
+    from_mir_constant_kind(ctx, names, c.literal, param, c.span)
 }
 
 pub fn from_mir_constant_kind<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     ck: rustc_middle::mir::ConstantKind<'tcx>,
-    _id: DefId,
+    param: ParamEnv<'tcx>,
     span: Span,
 ) -> mlcfg::Exp {
     use rustc_middle::ty::TyKind::{Bool, Int, Uint};
@@ -27,12 +27,12 @@ pub fn from_mir_constant_kind<'tcx>(
     match ck.ty().kind() {
         Int(I128) => unimplemented!("128-bit integers are not supported"),
         Int(_) => {
-            let bits = ck.try_eval_bits(ctx.tcx, ctx.tcx.param_env(_id), ck.ty());
+            let bits = ck.try_eval_bits(ctx.tcx, param, ck.ty());
             Exp::Const(Constant::Int(i128::from_be_bytes(bits.unwrap().to_be_bytes()), Some(ty)))
         }
         Uint(U128) => unimplemented!("128-bit integers are not supported"),
         Uint(_) => {
-            let bits = ck.try_eval_bits(ctx.tcx, ctx.tcx.param_env(_id), ck.ty());
+            let bits = ck.try_eval_bits(ctx.tcx, param, ck.ty());
             Exp::Const(Constant::Uint(bits.unwrap(), Some(ty)))
         }
         Bool => {

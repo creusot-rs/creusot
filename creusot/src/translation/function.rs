@@ -7,7 +7,7 @@ use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use rustc_infer::infer::TyCtxtInferExt;
-use rustc_middle::mir::Place;
+use rustc_middle::{mir::Place, ty::ParamEnv};
 use rustc_middle::ty::subst::GenericArg;
 use rustc_middle::ty::Ty;
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
@@ -87,10 +87,23 @@ pub fn translate_trusted(
 
 use crate::resolve::EagerResolver;
 
-// Split this into several sub-contexts: Core, Analysis, Results?
-pub struct FunctionTranslator<'body, 'sess, 'tcx> {
+// Hides the def id so we can control what apis are used
+#[derive(Copy, Clone, Debug)]
+struct BodyId(DefId);
+
+impl BodyId {
+    fn param_env(self, tcx: TyCtxt<'tcx>) -> ParamEnv<'tcx> {
+        tcx.param_env(self.0)
+    }
+
+    fn is_trusted(self, tcx: TyCtxt<'tcx>) -> bool {
+        util::is_trusted(tcx, self.0)
+    }
+}
+
+struct FunctionTranslator<'body, 'sess, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
-    def_id: DefId,
+    def_id: BodyId,
 
     body: &'body Body<'tcx>,
 
@@ -177,12 +190,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
         let name = module_name(self.tcx, self.def_id);
 
-        decls.extend(self.clone_names.to_clones(self.ctx));
-
-        if util::is_trusted(self.tcx, self.def_id) {
-            decls.push(Decl::ValDecl(ValKind::Val { sig }));
-            return Module { name, decls };
-        }
+        decls.extend(self.clone_names.to_clones(self.ctx)); z
 
         self.translate_body();
 
@@ -299,7 +307,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             self.tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
         let subst = self.tcx.mk_substs([GenericArg::from(ty)].iter());
 
-        let param_env = self.tcx.param_env(self.def_id);
+        let param_env = self.def_id.param_env(self.tcx);
         let resolve_impl =
             traits::resolve_assoc_item_opt(self.tcx, param_env, trait_meth_id, subst);
 
@@ -399,7 +407,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             Operand::Constant(c) => crate::constant::from_mir_constant(
                 &mut self.ctx,
                 &mut self.clone_names,
-                self.def_id,
+                self.def_id.param_env(self.tcx),
                 c,
             ),
         }

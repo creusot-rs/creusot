@@ -70,7 +70,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 Constant(box c) => crate::constant::from_mir_constant(
                     &mut self.ctx,
                     &mut self.clone_names,
-                    self.def_id,
+                    self.def_id.param_env(self.tcx),
                     c,
                 ),
             },
