@@ -201,7 +201,8 @@ pub fn resolve_assoc_item_opt(
             let leaf_def = trait_def
                 .ancestors(tcx, impl_data.impl_def_id)
                 .unwrap()
-                .leaf_def(tcx, assoc.ident, assoc.kind)
+                // .leaf_def(tcx, assoc.ident, assoc.kind)
+                .leaf_def(tcx, assoc.def_id)
                 .unwrap_or_else(|| {
                     panic!("{:?} not found in {:?}", assoc, impl_data.impl_def_id);
                 });
