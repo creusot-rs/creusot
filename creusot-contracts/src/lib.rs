@@ -1,6 +1,15 @@
 #![cfg_attr(feature = "contracts", feature(unsized_fn_params))]
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns, box_syntax))]
 
+// with_unique_ident! {( $my_ns:unique_ident ) => (
+//     #[doc(hidden)]
+//     #[macro_export]
+//     macro_rules! __custom_namespaced__ {( $item:item ) => (
+//         #[$crate::custom_namespace($my_ns)]
+//         $item
+//     )}
+// )}
+
 #[cfg(feature = "contracts")]
 mod macros {
     /// A pre-condition of a function or trait item

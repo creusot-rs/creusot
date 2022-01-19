@@ -1,3 +1,4 @@
+#![feature(proc_macro_def_site, proc_macro_span)]
 extern crate proc_macro;
 
 mod pretyping;
@@ -11,15 +12,119 @@ use syn::{
     *,
 };
 
-use proc_macro::TokenStream as TS1;
+use proc_macro::{TokenStream as TS1, TokenTree};
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, quote_spanned, spanned::Spanned, ToTokens};
 
 fn generate_unique_ident(prefix: &str) -> Ident {
     let uuid = uuid::Uuid::new_v4();
     let ident = format!("{}_{}", prefix, uuid).replace('-', "_");
 
     Ident::new(&ident, Span::call_site())
+}
+
+#[proc_macro]
+pub fn unique_ident(_: TS1) -> TS1 {
+    let ident: Ident = Ident::new("__creusot__", proc_macro::Span::def_site().into());
+
+    quote! {
+        #[doc(hidden)]
+        #[macro_export]
+        macro __custom_namespaced__ {( $item:item ) => (
+            #[$crate::custom_namespace(#ident)]
+            $item
+        )}
+    }.into()
+}
+
+#[proc_macro]
+pub fn test_gen(_: TS1) -> TS1 {
+    let ident: Ident = Ident::new("__creusot__", proc_macro::Span::def_site().into());
+
+    quote! {
+
+        #[doc(hidden)]
+        #[macro_export]
+        macro_rules! __test__ { ($i:ident) => {
+
+            test_spans!($i $i);
+        }
+        }
+         #[doc(hidden)]
+        #[macro_export]
+        macro_rules! __test2__ { () => {
+
+            __test__!(#ident);
+        }
+        }
+    }.into()
+}
+
+
+#[proc_macro]
+pub fn test_spans(tts : TS1) -> TS1 {
+    let mut tts = tts.into_iter();
+
+    let a = tts.next().unwrap();
+    let b = tts.next().unwrap();
+
+    eprintln!("a span: {:?}", a.span());
+    eprintln!("b span: {:?}", b.span());
+
+    if !a.span().eq(&b.span()) {
+        quote! { compile_error! { Spans not equal }}.into()
+    } else {
+        let asp = a.span().into();
+        quote_spanned! {asp=>
+            fn f() {}
+            fn g() { f() }
+        }.into()
+    }
+}
+
+
+#[proc_macro]
+pub fn def_site(_ : TS1) -> TS1 {
+    let sp = proc_macro::Span::def_site().into();
+    quote_spanned! {sp=>
+        fn g() {}
+        fn h() { g() }
+
+    }.into()
+}
+
+#[proc_macro_attribute]
+pub fn custom_namespace(attrs: TS1, body: TS1) -> TS1 {
+    eprintln!("{:?}", attrs);
+    if let Some(ns) = attrs.into_iter().next() {
+        // let mut tts = body.into_iter();
+        //
+        body.into_iter().map(|mut tt| {
+            tt.set_span(ns.span());
+            // tt.set_span(tt.span().resolved_at(ns.span().into()));
+            tt
+        }).collect()
+        // let body: TokenStream = body.into();
+        // let mut tts = body.into_iter();
+        // let tts = (
+        //     tts.next(),
+        //     tts.map(|mut tt| {
+        //         tt.set_span(tt.span().resolved_at(ns.span().into()));
+        //         // tt.set_span(proc_macro::Span::def_site().into());
+        //         tt
+        //     }),
+        //     // tts,
+        // );
+        // tts.0.into_iter().chain(tts.1)
+        // // .chain(tts.2)
+        // .collect::<TokenStream>().into()
+        // quote_spanned! {span=> #body }.into()
+    } else {
+        let body = TokenStream::from(body);
+        quote! {
+            __custom_namespaced__! { #body }
+        }.into()
+    }
 }
 
 // TODO: Add custom parse instance
