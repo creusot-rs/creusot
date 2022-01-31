@@ -27,20 +27,20 @@ use why3::declaration::{Module, TyDecl};
 pub use crate::translated_item::*;
 
 // TODO: The state in here should be as opaque as possible...
-pub struct TranslationCtx<'sess, 'tcx> {
+pub struct TranslationCtx<'opts, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     pub translated_items: IndexSet<DefId>,
     pub types: IndexMap<DefId, TypeDeclaration>,
     functions: IndexMap<DefId, TranslatedItem<'tcx>>,
     terms: IndexMap<DefId, Term<'tcx>>,
     pub externs: Metadata<'tcx>,
-    pub opts: &'sess Options,
+    pub opts: &'opts Options,
     creusot_items: CreusotItems,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
 }
 
-impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, opts: &'sess Options) -> Self {
+impl<'tcx, 'opts> TranslationCtx<'opts, 'tcx> {
+    pub fn new(tcx: TyCtxt<'tcx>, opts: &'opts Options) -> Self {
         let creusot_items = creusot_items::local_creusot_items(tcx);
 
         let mut ctx = Self {
@@ -100,12 +100,12 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         if let Some(assoc) = self.tcx.opt_associated_item(def_id) {
             match assoc.container {
                 AssocItemContainer::TraitContainer(id) => {
-                    self.translate(id);
+                    self.translate(id)?;
                     ()
                 }
                 AssocItemContainer::ImplContainer(id) => {
                     if let Some(_) = self.tcx.trait_id_of_impl(id) {
-                        self.translate(id);
+                        self.translate(id)?;
                     }
                 }
             }

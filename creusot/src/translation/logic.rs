@@ -40,12 +40,12 @@ pub fn logic_or_predicate(
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx));
 
-    let proof_modl = proof_module(ctx, def_id);
+    let proof_modl = proof_module(ctx, def_id)?;
     if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         let val = util::item_type(ctx.tcx, def_id).val(sig);
         decls.push(Decl::ValDecl(val));
     } else {
-        let term = ctx.term(def_id).unwrap().clone();
+        let term = ctx.term(def_id)?.clone();
         let body = specification::lower_pure(ctx, &mut names, def_id, term);
         decls.extend(names.to_clones(ctx));
 
@@ -83,9 +83,9 @@ pub fn logic_or_predicate(
     })
 }
 
-fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
+fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> CreusotResult<Option<Module>> {
     if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
-        return None;
+        return Ok(None);
     }
 
     let mut names = CloneMap::new(ctx.tcx, def_id, false);
@@ -94,12 +94,12 @@ fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
 
     if sig.contract.is_empty() {
-        return None;
+        return Ok(None);
     }
-    let term = ctx.term(def_id).unwrap().clone();
+    let term = ctx.term(def_id)?.clone();
     let body = specification::lower_impure(ctx, &mut names, def_id, term);
 
-    Some(implementation_module(ctx, def_id, &names, sig, body))
+    Ok(Some(implementation_module(ctx, def_id, &names, sig, body)))
 }
 
 fn spec_axiom(sig: &Signature) -> Axiom {
