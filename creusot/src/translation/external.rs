@@ -1,5 +1,5 @@
 use crate::function::all_generic_decls_for;
-use crate::translation::translate_logic_or_predicate;
+use crate::translation;
 use crate::util::item_type;
 use crate::{ctx::*, util};
 use indexmap::IndexSet;
@@ -58,7 +58,7 @@ pub fn extern_module(
             match item_type(ctx.tcx, def_id) {
                 // the dependencies should be what was already stored in the metadata...
                 ItemType::Logic | ItemType::Predicate => {
-                    (translate_logic_or_predicate(ctx, def_id, span).0, Err(def_id))
+                    (translation::logic_or_predicate(ctx, def_id, span).unwrap().body, Err(def_id))
                 }
                 _ => unreachable!("extern_module: unexpected term for {:?}", def_id),
             }

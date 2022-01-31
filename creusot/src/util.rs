@@ -236,7 +236,7 @@ pub fn signature_of<'tcx>(
 
     let mut contract = names.with_public_clones(|names| {
         let pre_contract = crate::specification::contract_of(ctx, def_id).unwrap();
-        pre_contract.check_and_lower(ctx, names, def_id)
+        pre_contract.check_and_lower(ctx, names).unwrap_or_else(|e| e.emit(ctx.tcx.sess))
     });
 
     if sig.output().is_never() {

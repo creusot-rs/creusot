@@ -10,14 +10,17 @@ use why3::declaration::*;
 use why3::mlcfg::{BinOp, Exp};
 use why3::Ident;
 
+use super::interface::interface_for;
+
 pub struct LogicItem<'tcx> {
+    pub interface: Module,
     pub body: Module,
     pub proof_obligations: Option<Module>,
     pub has_axioms: bool,
     pub dependencies: CloneSummary<'tcx>,
 }
 
-pub fn translate_logic_or_predicate(
+pub fn logic_or_predicate(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
     _span: rustc_span::Span,
@@ -70,7 +73,9 @@ pub fn translate_logic_or_predicate(
     }
 
     let name = module_name(ctx.tcx, def_id);
+    let (interface, _) = interface_for(ctx, def_id);
     Ok(LogicItem {
+        interface,
         body: Module { name, decls },
         proof_obligations: proof_modl,
         has_axioms,

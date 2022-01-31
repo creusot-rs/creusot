@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::error::CreusotResult;
 use crate::translation::function::real_locals;
 use crate::{ctx::*, util};
 use rustc_macros::{TyDecodable, TyEncodable};
@@ -15,36 +16,38 @@ mod builtins;
 mod lower;
 pub mod typing;
 
+/// Re-Exports
 pub use lower::*;
+pub use typing::typecheck;
 
 pub fn requires_to_why<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     req_id: DefId,
-) -> Exp {
+) -> CreusotResult<Exp> {
     log::debug!("require clause {:?}", req_id);
-    let term = ctx.term(req_id).unwrap().clone();
-    lower_pure(ctx, names, req_id, term)
+    let term = ctx.term(req_id)?.clone();
+    Ok(lower_pure(ctx, names, req_id, term))
 }
 
 pub fn variant_to_why<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     var_id: DefId,
-) -> Exp {
+) -> CreusotResult<Exp> {
     log::debug!("variant clause {:?}", var_id);
-    let term = ctx.term(var_id).unwrap().clone();
-    lower_pure(ctx, names, var_id, term)
+    let term = ctx.term(var_id)?.clone();
+    Ok(lower_pure(ctx, names, var_id, term))
 }
 
 pub fn ensures_to_why<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     ens_id: DefId,
-) -> Exp {
+) -> CreusotResult<Exp> {
     log::debug!("ensures clause {:?}", ens_id);
-    let term = ctx.term(ens_id).unwrap().clone();
-    lower_pure(ctx, names, ens_id, term)
+    let term = ctx.term(ens_id)?.clone();
+    Ok(lower_pure(ctx, names, ens_id, term))
 }
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
@@ -63,22 +66,21 @@ impl PreContract {
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut CloneMap<'tcx>,
-        _: DefId,
-    ) -> Contract {
+    ) -> CreusotResult<Contract> {
         let mut out = Contract::new();
 
         for req in self.requires {
-            out.requires.push(requires_to_why(ctx, names, req));
+            out.requires.push(requires_to_why(ctx, names, req)?);
         }
 
         for ens in self.ensures {
-            out.ensures.push(ensures_to_why(ctx, names, ens));
+            out.ensures.push(ensures_to_why(ctx, names, ens)?);
         }
 
         if let Some(variant) = self.variant {
-            out.variant = vec![variant_to_why(ctx, names, variant)];
+            out.variant = vec![variant_to_why(ctx, names, variant)?];
         };
-        out
+        Ok(out)
     }
 }
 

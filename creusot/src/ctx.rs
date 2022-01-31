@@ -4,11 +4,14 @@ pub use crate::clone_map::*;
 use crate::creusot_items::{self, CreusotItems};
 use crate::error::CreusotResult;
 use crate::metadata::{BinaryMetadata, Metadata};
-use crate::translation::external::{extract_extern_specs_from_item, ExternSpec};
-use crate::translation::interface::interface_for;
-use crate::translation::specification::typing::Term;
-use crate::translation::ty;
-use crate::translation::{external, specification};
+use crate::translation::external::ExternSpec;
+use crate::translation::{
+    self,
+    external::extract_extern_specs_from_item,
+    interface::interface_for,
+    specification::typing::Term,
+    ty,
+};
 use crate::util::item_type;
 use crate::{options::Options, util};
 use indexmap::{IndexMap, IndexSet};
@@ -96,7 +99,10 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
         if let Some(assoc) = self.tcx.opt_associated_item(def_id) {
             match assoc.container {
-                AssocItemContainer::TraitContainer(id) => {self.translate(id); ()},
+                AssocItemContainer::TraitContainer(id) => {
+                    self.translate(id);
+                    ()
+                }
                 AssocItemContainer::ImplContainer(id) => {
                     if let Some(_) = self.tcx.trait_id_of_impl(id) {
                         self.translate(id);
@@ -115,29 +121,22 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         }
 
         let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
-        let (interface, deps) = interface_for(self, def_id);
 
         let translated = if util::is_logic(self.tcx, def_id) || util::is_predicate(self.tcx, def_id)
         {
             debug!("translating {:?} as logical", def_id);
-            let result =
-                crate::translation::translate_logic_or_predicate(self, def_id, span)?;
+            let result = translation::logic_or_predicate(self, def_id, span)?;
             TranslatedItem::Logic(result)
-            // {
-            //     interface,
-            //     modl,
-            //     proof_modl,
-            //     has_axioms,
-            //     dependencies: deps.summary(),
-            // }
         } else if !def_id.is_local() {
             debug!("translating {:?} as extern", def_id);
-
-            let ext_modl = external::extern_module(self, def_id);
+            let (interface, _) = interface_for(self, def_id);
+            let ext_modl = translation::external::extern_module(self, def_id);
 
             TranslatedItem::Extern { interface, body: ext_modl.0, dependencies: ext_modl.1 }
         } else {
-            let modl = crate::translation::translate_function(self, def_id);
+            let (interface, deps) = interface_for(self, def_id);
+
+            let modl = translation::translate_function(self, def_id);
             TranslatedItem::Program { interface, modl, dependencies: deps.summary() }
         };
 
@@ -173,7 +172,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
         if util::has_body(self, def_id) {
             let t = self.terms.entry(def_id).or_insert_with(|| {
-                specification::typing::typecheck(self.tcx, def_id.expect_local())
+                translation::specification::typecheck(self.tcx, def_id.expect_local())
                     .unwrap_or_else(|e| e.emit(self.tcx.sess))
             });
             Ok(t)
