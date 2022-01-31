@@ -1,6 +1,7 @@
 use super::specification::typing::Term;
 use crate::creusot_items::CreusotItems;
 use crate::ctx::*;
+use crate::error::CreusotResult;
 use crate::external::ExternSpec;
 use creusot_metadata::decoder::{Decodable, MetadataBlob, MetadataDecoder};
 use creusot_metadata::encoder::{Encodable, MetadataEncoder};
@@ -48,9 +49,11 @@ impl Metadata<'tcx> {
         self.get(def_id.krate)?.dependencies.get(&def_id)
     }
 
-    pub fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
+    pub fn term(&self, def_id: DefId) -> CreusotResult<&Term<'tcx>> {
         assert!(!def_id.is_local());
-        self.get(def_id.krate)?.terms.get(&def_id)
+        self.get(def_id.krate).and_then(|i| i.terms.get(&def_id)).ok_or_else(|| {
+            crate::error::Error::new(rustc_span::DUMMY_SP, "omg")
+        })
     }
 
     pub fn debug_creusot_items(&self) {

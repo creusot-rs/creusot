@@ -53,7 +53,7 @@ pub fn extern_module(
     def_id: DefId,
 ) -> (Module, Result<CloneSummary<'tcx>, DefId>) {
     match ctx.externs.term(def_id) {
-        Some(_) => {
+        Ok(_) => {
             let span = ctx.tcx.def_span(def_id);
             match item_type(ctx.tcx, def_id) {
                 // the dependencies should be what was already stored in the metadata...
@@ -63,7 +63,7 @@ pub fn extern_module(
                 _ => unreachable!("extern_module: unexpected term for {:?}", def_id),
             }
         }
-        None => {
+        Err(_) => {
             let (modl, deps) = default_decl(ctx, def_id);
             // Why do we ever want to return `Err` shouldn't `deps` already be correct?
             let deps =

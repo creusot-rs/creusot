@@ -167,7 +167,7 @@ impl<'tcx, 'opts> TranslationCtx<'opts, 'tcx> {
 
     pub fn term(&mut self, def_id: DefId) -> CreusotResult<&Term<'tcx>> {
         if !def_id.is_local() {
-            return Ok(self.externs.term(def_id).unwrap());
+            return self.externs.term(def_id);
         }
 
         if util::has_body(self, def_id) {
