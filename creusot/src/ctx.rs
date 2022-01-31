@@ -3,10 +3,9 @@ use std::collections::HashMap;
 pub use crate::clone_map::*;
 use crate::creusot_items::{self, CreusotItems};
 use crate::metadata::{BinaryMetadata, Metadata};
-use crate::translation::external::extract_extern_specs_from_item;
+use crate::translation::external::{extract_extern_specs_from_item, ExternSpec};
 use crate::translation::interface::interface_for;
 use crate::translation::specification::typing::Term;
-use crate::translation::specification::PreContract;
 use crate::translation::ty;
 use crate::translation::{external, specification};
 use crate::util::item_type;
@@ -17,9 +16,7 @@ use rustc_errors::DiagnosticId;
 use rustc_hir::def::DefKind;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{AssocItemContainer, TyCtxt};
-use rustc_session::Session;
-use rustc_span::Span;
-use rustc_span::Symbol;
+use rustc_span::{Span, Symbol};
 pub use util::{item_name, module_name, ItemType};
 use why3::declaration::{Module, TyDecl};
 
@@ -27,7 +24,6 @@ pub use crate::translated_item::*;
 
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'sess, 'tcx> {
-    pub sess: &'sess Session,
     pub tcx: TyCtxt<'tcx>,
     pub translated_items: IndexSet<DefId>,
     pub types: IndexMap<DefId, TypeDeclaration>,
@@ -36,15 +32,14 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub externs: Metadata<'tcx>,
     pub opts: &'sess Options,
     creusot_items: CreusotItems,
-    extern_specs: HashMap<DefId, PreContract>,
+    extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
 }
 
 impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, sess: &'sess Session, opts: &'sess Options) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, opts: &'sess Options) -> Self {
         let creusot_items = creusot_items::local_creusot_items(tcx);
 
         let mut ctx = Self {
-            sess,
             tcx,
             translated_items: Default::default(),
             types: Default::default(),
@@ -175,7 +170,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         if util::has_body(self, def_id) {
             let t = self.terms.entry(def_id).or_insert_with(|| {
                 specification::typing::typecheck(self.tcx, def_id.expect_local())
-                    .unwrap_or_else(|e| e.emit(self.sess))
+                    .unwrap_or_else(|e| e.emit(self.tcx.sess))
             });
             Some(t)
         } else {
@@ -184,15 +179,15 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn crash_and_error(&self, span: Span, msg: &str) -> ! {
-        self.sess.span_fatal_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
+        self.tcx.sess.span_fatal_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
     }
 
     pub fn error(&self, span: Span, msg: &str) {
-        self.sess.span_err_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
+        self.tcx.sess.span_err_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
     }
 
     pub fn warn(&self, span: Span, msg: &str) {
-        self.sess.span_warn_with_code(
+        self.tcx.sess.span_warn_with_code(
             span,
             msg,
             DiagnosticId::Lint {
@@ -225,7 +220,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.functions.get(&def_id)
     }
 
-    pub fn extern_spec(&self, def_id: DefId) -> Option<&PreContract> {
+    pub(crate) fn extern_spec(&self, def_id: DefId) -> Option<&ExternSpec<'tcx>> {
         self.extern_specs.get(&def_id).or_else(|| self.externs.extern_spec(def_id))
     }
 
@@ -241,7 +236,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.functions.values().flat_map(|m| m.modules())
     }
 
-    pub fn metadata(&self) -> BinaryMetadata<'tcx> {
+    pub(crate) fn metadata(&self) -> BinaryMetadata<'tcx> {
         BinaryMetadata::from_parts(
             self.tcx,
             &self.functions,
@@ -263,8 +258,8 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 fn load_extern_specs(ctx: &mut TranslationCtx) {
     for def_id in ctx.tcx.hir().body_owners() {
         if crate::util::is_extern_spec(ctx.tcx, def_id.to_def_id()) {
-            let (i, v) = extract_extern_specs_from_item(ctx, def_id);
-            ctx.extern_specs.insert(i, v);
+            let (i, es) = extract_extern_specs_from_item(ctx, def_id);
+            ctx.extern_specs.insert(i, es);
         }
     }
 }

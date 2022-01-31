@@ -11,18 +11,15 @@ pub use function::translate_function;
 pub use function::LocalIdent;
 pub use logic::*;
 
-use heck::CamelCase;
-
 use crate::ctx;
-
 use crate::ctx::TypeDeclaration;
 use crate::metadata;
 use crate::options::Options;
 use crate::translation::external::extract_extern_specs_from_item;
 use crate::validate::validate_traits;
+use heck::CamelCase;
 use rustc_hir::def_id::LOCAL_CRATE;
 use rustc_middle::ty::TyCtxt;
-use rustc_session::Session;
 use std::io::Result;
 use std::io::Write;
 use why3::mlcfg;
@@ -32,8 +29,8 @@ use why3::{
 };
 
 // TODO: Move the main loop out of `translation.rs`
-pub fn translate(tcx: TyCtxt, sess: &Session, opts: &Options) -> Result<()> {
-    let mut ctx = ctx::TranslationCtx::new(tcx, sess, &opts);
+pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<()> {
+    let mut ctx = ctx::TranslationCtx::new(tcx, &opts);
 
     // Check that all trait laws are well-formed
     validate_traits(&mut ctx);

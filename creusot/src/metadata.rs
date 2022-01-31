@@ -1,6 +1,7 @@
+use super::specification::typing::Term;
 use crate::creusot_items::CreusotItems;
 use crate::ctx::*;
-use crate::translation::specification::PreContract;
+use crate::external::ExternSpec;
 use creusot_metadata::decoder::{Decodable, MetadataBlob, MetadataDecoder};
 use creusot_metadata::encoder::{Encodable, MetadataEncoder};
 use indexmap::IndexMap;
@@ -8,7 +9,7 @@ use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_metadata::creader::CStore;
 use rustc_middle::ty::subst::SubstsRef;
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{TyCtxt, Visibility};
 use rustc_session::cstore::CrateStore;
 use rustc_span::Symbol;
 use std::collections::HashMap;
@@ -17,16 +18,14 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use why3::declaration::Module;
 
-use super::specification::typing::Term;
-
 type CloneMetadata<'tcx> = HashMap<DefId, CloneSummary<'tcx>>;
-type ExternSpecs = HashMap<DefId, PreContract>;
+type ExternSpecs<'tcx> = HashMap<DefId, ExternSpec<'tcx>>;
 
 // TODO: this should lazily load the metadata.
 pub struct Metadata<'tcx> {
     tcx: TyCtxt<'tcx>,
     crates: HashMap<CrateNum, CrateMetadata<'tcx>>,
-    extern_specs: ExternSpecs,
+    extern_specs: ExternSpecs<'tcx>,
 }
 
 impl Metadata<'tcx> {
@@ -71,7 +70,7 @@ impl Metadata<'tcx> {
         return None;
     }
 
-    pub fn extern_spec(&self, id: DefId) -> Option<&PreContract> {
+    pub(crate) fn extern_spec(&self, id: DefId) -> Option<&ExternSpec<'tcx>> {
         self.extern_specs.get(&id)
     }
 
@@ -133,7 +132,7 @@ impl CrateMetadata<'tcx> {
         cstore: &CStore,
         overrides: &HashMap<String, String>,
         cnum: CrateNum,
-    ) -> (Self, ExternSpecs) {
+    ) -> (Self, ExternSpecs<'tcx>) {
         let mut meta = CrateMetadata::new();
 
         let base_path = creusot_metadata_base_path(cstore, overrides, cnum);
@@ -164,7 +163,7 @@ impl CrateMetadata<'tcx> {
 // for `IndexMap`. Instead, we flatten it to a association list and then convert that into
 // a proper index map after parsing.
 #[derive(TyDecodable, TyEncodable)]
-pub struct BinaryMetadata<'tcx> {
+pub(crate) struct BinaryMetadata<'tcx> {
     // Flatten the index map into a vector
     dependencies: HashMap<DefId, Vec<((DefId, SubstsRef<'tcx>), CloneInfo<'tcx>)>>,
 
@@ -172,18 +171,16 @@ pub struct BinaryMetadata<'tcx> {
 
     creusot_items: CreusotItems,
 
-    extern_specs: HashMap<DefId, PreContract>,
+    extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
 }
 
-use rustc_middle::ty::Visibility;
-
 impl BinaryMetadata<'tcx> {
-    pub fn from_parts(
+    pub(crate) fn from_parts(
         tcx: TyCtxt<'tcx>,
         functions: &IndexMap<DefId, TranslatedItem<'tcx>>,
         terms: &IndexMap<DefId, Term<'tcx>>,
         items: &CreusotItems,
-        extern_specs: &HashMap<DefId, PreContract>,
+        extern_specs: &HashMap<DefId, ExternSpec<'tcx>>,
     ) -> Self {
         let dependencies = functions
             .iter()
@@ -213,7 +210,7 @@ fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
         let outputs = ctx.tcx.output_filenames(());
 
         let crate_name = ctx.tcx.crate_name(LOCAL_CRATE);
-        let libname = format!("{}{}", crate_name.as_str(), ctx.sess.opts.cg.extra_filename);
+        let libname = format!("{}{}", crate_name.as_str(), ctx.tcx.sess.opts.cg.extra_filename);
 
         outputs.out_directory.join(&format!("lib{}.cmeta", libname))
     })

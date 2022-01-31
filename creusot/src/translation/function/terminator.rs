@@ -1,4 +1,10 @@
-use rustc_middle::ty::subst::SubstsRef;
+use rustc_infer::{
+    infer::{InferCtxt, TyCtxtInferExt},
+    traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
+};
+use rustc_middle::ty::{subst::SubstsRef, ParamEnv, Predicate};
+use rustc_span::Span;
+use rustc_trait_selection::traits::FulfillmentContext;
 use std::collections::HashMap;
 
 use rustc_errors::DiagnosticId;
@@ -39,7 +45,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
 
                 let discriminant = self.translate_operand(&real_discr);
                 let switch = make_switch(
-                    self.ctx.sess,
+                    self.ctx.tcx.sess,
                     self.tcx,
                     terminator.source_info,
                     real_discr.ty(self.body, self.tcx),
@@ -61,6 +67,27 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
 
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
 
+                let predicates = self
+                    .ctx
+                    .extern_spec(fun_def_id)
+                    .map(|p| p.predicates_for(self.tcx, subst))
+                    .unwrap_or_else(Vec::new);
+                use rustc_trait_selection::traits::error_reporting::InferCtxtExt;
+                self.tcx.infer_ctxt().enter(|infcx| {
+                    let res = evaluate_additional_predicates(
+                        &infcx,
+                        predicates,
+                        self.tcx.param_env(self.def_id),
+                        terminator.source_info.span,
+                    );
+                    if let Err(errs) = res {
+                        let hir_id =
+                            self.tcx.hir().local_def_id_to_hir_id(self.def_id.expect_local());
+                        let body_id = self.tcx.hir().body_owned_by(hir_id);
+                        infcx.report_fulfillment_errors(&errs, Some(body_id), false);
+                    }
+                });
+
                 let mut func_args: Vec<_> =
                     args.iter().map(|arg| self.translate_operand(arg)).collect();
 
@@ -68,7 +95,6 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     // We use tuple as a dummy argument for 0-ary functions
                     func_args.push(Exp::Tuple(vec![]))
                 }
-                // TODO: Get functions to be turned into QPaths!
                 let call_exp = if self.is_box_new(fun_def_id) {
                     assert_eq!(func_args.len(), 1);
 
@@ -163,6 +189,27 @@ fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, SubstsRef<'tcx>)> {
         Some((*def_id, subst))
     } else {
         None
+    }
+}
+
+fn evaluate_additional_predicates(
+    infcx: &InferCtxt<'_, 'tcx>,
+    p: Vec<Predicate<'tcx>>,
+    param_env: ParamEnv<'tcx>,
+    sp: Span,
+) -> Result<(), Vec<FulfillmentError<'tcx>>> {
+    let mut fulfill_cx = FulfillmentContext::new();
+    for predicate in p {
+        let cause = ObligationCause::dummy_with_span(sp);
+        let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
+        // holds &= infcx.predicate_may_hold(&obligation);
+        fulfill_cx.register_predicate_obligation(&infcx, obligation);
+    }
+    let errors = fulfill_cx.select_all_or_error(&infcx);
+    if !errors.is_empty() {
+        return Err(errors);
+    } else {
+        return Ok(());
     }
 }
 
