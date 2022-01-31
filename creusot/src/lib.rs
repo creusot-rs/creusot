@@ -46,7 +46,7 @@ mod rustc_extensions;
 mod translation;
 pub mod util;
 use translation::*;
-mod error;
+pub mod error;
 pub mod metadata;
 mod translated_item;
 mod validate;

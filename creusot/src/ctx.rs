@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 pub use crate::clone_map::*;
 use crate::creusot_items::{self, CreusotItems};
+use crate::error::CreusotResult;
 use crate::metadata::{BinaryMetadata, Metadata};
 use crate::translation::external::{extract_extern_specs_from_item, ExternSpec};
 use crate::translation::interface::interface_for;
@@ -60,16 +61,16 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.externs.load(&self.opts.extern_paths);
     }
 
-    pub fn translate(&mut self, def_id: DefId) {
+    pub fn translate(&mut self, def_id: DefId) -> CreusotResult<()> {
         debug!("translating {:?}", def_id);
         if self.translated_items.contains(&def_id) {
-            return;
+            return Ok(());
         }
         match item_type(self.tcx, def_id) {
             ItemType::Trait => self.translate_trait(def_id),
             ItemType::Impl => self.translate_impl(def_id),
             ItemType::Logic | ItemType::Predicate | ItemType::Program => {
-                self.translate_function(def_id)
+                self.translate_function(def_id)?
             }
             ItemType::AssocTy => {
                 let (modl, dependencies) = self.translate_assoc_ty(def_id);
@@ -83,10 +84,11 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                 &format!("unsupported definition kind {:?} {:?}", def_id, dk),
             ),
         }
+        Ok(())
     }
 
     // Generic entry point for function translation
-    fn translate_function(&mut self, def_id: DefId) {
+    fn translate_function(&mut self, def_id: DefId) -> CreusotResult<()> {
         assert!(matches!(
             self.tcx.def_kind(def_id),
             DefKind::Fn | DefKind::Closure | DefKind::AssocFn
@@ -94,22 +96,22 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
         if let Some(assoc) = self.tcx.opt_associated_item(def_id) {
             match assoc.container {
-                AssocItemContainer::TraitContainer(id) => self.translate(id),
+                AssocItemContainer::TraitContainer(id) => {self.translate(id); ()},
                 AssocItemContainer::ImplContainer(id) => {
                     if let Some(_) = self.tcx.trait_id_of_impl(id) {
-                        self.translate(id)
+                        self.translate(id);
                     }
                 }
             }
         }
 
         if !self.translated_items.insert(def_id) {
-            return;
+            return Ok(());
         }
 
         if !crate::util::should_translate(self.tcx, def_id) || util::is_spec(self.tcx, def_id) {
             debug!("Skipping {:?}", def_id);
-            return;
+            return Ok(());
         }
 
         let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
@@ -118,15 +120,16 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         let translated = if util::is_logic(self.tcx, def_id) || util::is_predicate(self.tcx, def_id)
         {
             debug!("translating {:?} as logical", def_id);
-            let (modl, proof_modl, has_axioms, deps) =
-                crate::translation::translate_logic_or_predicate(self, def_id, span);
-            TranslatedItem::Logic {
-                interface,
-                modl,
-                proof_modl,
-                has_axioms,
-                dependencies: deps.summary(),
-            }
+            let result =
+                crate::translation::translate_logic_or_predicate(self, def_id, span)?;
+            TranslatedItem::Logic(result)
+            // {
+            //     interface,
+            //     modl,
+            //     proof_modl,
+            //     has_axioms,
+            //     dependencies: deps.summary(),
+            // }
         } else if !def_id.is_local() {
             debug!("translating {:?} as extern", def_id);
 
@@ -139,6 +142,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         };
 
         self.functions.insert(def_id, translated);
+        Ok(())
     }
 
     pub fn translate_accessor(&mut self, field_id: DefId) {
@@ -162,9 +166,9 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.types[&adt_did].accessors.entry(variant_did).or_default().insert(field_id, accessor);
     }
 
-    pub fn term(&mut self, def_id: DefId) -> Option<&Term<'tcx>> {
+    pub fn term(&mut self, def_id: DefId) -> CreusotResult<&Term<'tcx>> {
         if !def_id.is_local() {
-            return self.externs.term(def_id);
+            return Ok(self.externs.term(def_id).unwrap());
         }
 
         if util::has_body(self, def_id) {
@@ -172,9 +176,9 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                 specification::typing::typecheck(self.tcx, def_id.expect_local())
                     .unwrap_or_else(|e| e.emit(self.tcx.sess))
             });
-            Some(t)
+            Ok(t)
         } else {
-            None
+            Err(crate::error::Error::new(rustc_span::DUMMY_SP, "no term"))
         }
     }
 

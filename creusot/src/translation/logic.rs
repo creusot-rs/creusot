@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use crate::error::CreusotResult;
 use crate::function::all_generic_decls_for;
 use crate::translation::specification;
 use crate::{ctx::*, util};
@@ -9,11 +10,18 @@ use why3::declaration::*;
 use why3::mlcfg::{BinOp, Exp};
 use why3::Ident;
 
+pub struct LogicItem<'tcx> {
+    pub body: Module,
+    pub proof_obligations: Option<Module>,
+    pub has_axioms: bool,
+    pub dependencies: CloneSummary<'tcx>,
+}
+
 pub fn translate_logic_or_predicate(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
     _span: rustc_span::Span,
-) -> (Module, Option<Module>, bool, CloneMap<'tcx>) {
+) -> CreusotResult<LogicItem<'tcx>> {
     let mut names = CloneMap::new(ctx.tcx, def_id, false);
     names.clone_self(def_id);
 
@@ -62,7 +70,12 @@ pub fn translate_logic_or_predicate(
     }
 
     let name = module_name(ctx.tcx, def_id);
-    (Module { name, decls }, proof_modl, has_axioms, names)
+    Ok(LogicItem {
+        body: Module { name, decls },
+        proof_obligations: proof_modl,
+        has_axioms,
+        dependencies: names.summary(),
+    })
 }
 
 fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {

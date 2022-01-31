@@ -85,7 +85,7 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
         ctx.tcx.hir().maybe_body_owned_by(hir_id).is_some()
     } else {
         match item_type(ctx.tcx, def_id) {
-            ItemType::Logic | ItemType::Predicate => ctx.term(def_id).is_some(),
+            ItemType::Logic | ItemType::Predicate => ctx.term(def_id).is_ok(),
             _ => false,
         }
     }

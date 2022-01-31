@@ -1,5 +1,5 @@
 pub use crate::clone_map::*;
-use crate::metadata::Metadata;
+use crate::{metadata::Metadata, translation::LogicItem};
 use crate::util;
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
@@ -7,13 +7,7 @@ pub use util::{item_name, module_name, ItemType};
 use why3::declaration::{Decl, Module, TyDecl};
 
 pub enum TranslatedItem<'tcx> {
-    Logic {
-        interface: Module,
-        modl: Module,
-        proof_modl: Option<Module>,
-        dependencies: CloneSummary<'tcx>,
-        has_axioms: bool,
-    },
+    Logic(LogicItem<'tcx>),
     Program {
         interface: Module,
         modl: Module,
@@ -74,7 +68,7 @@ impl TranslatedItem<'tcx> {
         use TranslatedItem::*;
 
         match self {
-            Logic { dependencies, .. } => dependencies,
+            Logic(LogicItem { dependencies, .. }) => dependencies,
             Program { dependencies, .. } => dependencies,
             Trait { dependencies, .. } => dependencies,
             Impl { dependencies, .. } => dependencies,
@@ -85,7 +79,7 @@ impl TranslatedItem<'tcx> {
 
     pub fn has_axioms(&self) -> bool {
         match self {
-            TranslatedItem::Logic { has_axioms, .. } => *has_axioms,
+            TranslatedItem::Logic(LogicItem { has_axioms, .. }) => *has_axioms,
             _ => false,
         }
     }
@@ -102,8 +96,8 @@ impl TranslatedItem<'tcx> {
         use std::iter;
         use TranslatedItem::*;
         match self {
-            Logic { interface, modl, proof_modl, .. } => {
-                box iter::once(interface).chain(iter::once(modl)).chain(proof_modl.iter())
+            Logic(LogicItem { interface, body, proof_obligations, .. }) => {
+                box iter::once(interface).chain(iter::once(body)).chain(proof_obligations.iter())
             }
             Program { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
             Trait { .. } => box iter::empty(),
