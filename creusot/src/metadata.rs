@@ -51,9 +51,9 @@ impl Metadata<'tcx> {
 
     pub fn term(&self, def_id: DefId) -> CreusotResult<&Term<'tcx>> {
         assert!(!def_id.is_local());
-        self.get(def_id.krate).and_then(|i| i.terms.get(&def_id)).ok_or_else(|| {
-            crate::error::Error::new(rustc_span::DUMMY_SP, "omg")
-        })
+        self.get(def_id.krate)
+            .and_then(|i| i.terms.get(&def_id))
+            .ok_or_else(|| crate::error::Error::new(rustc_span::DUMMY_SP, "omg"))
     }
 
     pub fn debug_creusot_items(&self) {

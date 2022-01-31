@@ -1,6 +1,6 @@
 pub use crate::clone_map::*;
-use crate::{metadata::Metadata, translation::LogicItem};
 use crate::util;
+use crate::{metadata::Metadata, translation::LogicItem};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 pub use util::{item_name, module_name, ItemType};

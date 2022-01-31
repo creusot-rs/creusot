@@ -6,11 +6,8 @@ use crate::error::CreusotResult;
 use crate::metadata::{BinaryMetadata, Metadata};
 use crate::translation::external::ExternSpec;
 use crate::translation::{
-    self,
-    external::extract_extern_specs_from_item,
-    interface::interface_for,
-    specification::typing::Term,
-    ty,
+    self, external::extract_extern_specs_from_item, interface::interface_for,
+    specification::typing::Term, ty,
 };
 use crate::util::item_type;
 use crate::{options::Options, util};

@@ -77,7 +77,10 @@ impl Lower<'_, '_, 'tcx> {
                 Ok(Exp::UnaryOp(unop_to_unop(op), box self.lower_term(arg)?))
             }
             TermKind::Call { id, subst, fun: box Term { kind: TermKind::Const(_), .. }, args } => {
-                let mut args: Vec<_> = args.into_iter().map(|arg| self.lower_term(arg)).collect::<CreusotResult<_>>()?;
+                let mut args: Vec<_> = args
+                    .into_iter()
+                    .map(|arg| self.lower_term(arg))
+                    .collect::<CreusotResult<_>>()?;
 
                 if args.is_empty() {
                     args = vec![Exp::Tuple(vec![])];
@@ -97,7 +100,10 @@ impl Lower<'_, '_, 'tcx> {
                     self.ctx.translate(method.0)?;
                     let clone = self.names.insert(method.0, method.1);
                     if self.pure == Purity::Program {
-                        Ok(mk_binders(Exp::QVar(clone.qname(self.ctx.tcx, method.0), self.pure), args))
+                        Ok(mk_binders(
+                            Exp::QVar(clone.qname(self.ctx.tcx, method.0), self.pure),
+                            args,
+                        ))
                     } else {
                         Ok(Exp::Call(
                             box Exp::QVar(clone.qname(self.ctx.tcx, method.0), self.pure),
@@ -116,7 +122,8 @@ impl Lower<'_, '_, 'tcx> {
             }
             TermKind::Constructor { adt, variant, fields } => {
                 self.names.import_prelude_module(PreludeModule::Type);
-                let args = fields.into_iter().map(|f| self.lower_term(f)).collect::<CreusotResult<_>>()?;
+                let args =
+                    fields.into_iter().map(|f| self.lower_term(f)).collect::<CreusotResult<_>>()?;
 
                 let ctor = constructor_qname(self.ctx.tcx, &adt.variants[variant]);
                 crate::ty::translate_tydecl(self.ctx, rustc_span::DUMMY_SP, adt.did);
@@ -182,7 +189,7 @@ impl Lower<'_, '_, 'tcx> {
                     ))
                 } else {
                     let _ = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, scrutinee.ty);
-                    let arms : Vec<_> = arms
+                    let arms: Vec<_> = arms
                         .into_iter()
                         .map(|arm| self.lower_arm(arm))
                         .collect::<CreusotResult<_>>()?;
@@ -194,9 +201,9 @@ impl Lower<'_, '_, 'tcx> {
                 arg: box self.lower_term(arg)?,
                 body: box self.lower_term(body)?,
             }),
-            TermKind::Tuple { fields } => {
-                Ok(Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect::<CreusotResult<_>>()?))
-            }
+            TermKind::Tuple { fields } => Ok(Exp::Tuple(
+                fields.into_iter().map(|f| self.lower_term(f)).collect::<CreusotResult<_>>()?,
+            )),
             TermKind::Projection { box lhs, name, def: did } => {
                 let def = self.ctx.tcx.adt_def(did);
                 let lhs = self.lower_term(lhs)?;
