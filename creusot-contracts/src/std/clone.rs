@@ -7,6 +7,8 @@ pub trait Clone: Sized {
 }
 
 impl<T: Copy> Clone for T {
+    #[trusted]
+    #[ensures(result === *self)]
     fn clone(&self) -> Self {
         *self
     }
