@@ -6,7 +6,7 @@ use creusot_contracts_proc::*;
 use std::ops::*;
 
 #[rustc_diagnostic_item = "creusot_int"]
-pub struct Int;
+pub struct Int(*mut ());
 
 impl WellFounded for Int {}
 
