@@ -100,10 +100,14 @@ fn m(t: Vec<i32>) -> Vec<i32> {
     while i < t.len() {
         if t[i] > 0 {
             // the tricky assertions, that needs lemmas
-            proof_assert! { {lemma_num_of_pos_strictly_increasing(@i,@u);
-            num_of_pos(0,@i,@t) < num_of_pos(0,@i+1,@t) } };
-            proof_assert! { {lemma_num_of_pos_increasing(0,@i+1,(@t).len(),@t);
-            @count < (@u).len() } };
+            proof_assert! {
+                lemma_num_of_pos_strictly_increasing(@i,@u);
+                num_of_pos(0,@i,@t) < num_of_pos(0,@i+1,@t)
+            };
+            proof_assert! {
+                lemma_num_of_pos_increasing(0,@i+1,(@t).len(),@t);
+                @count < (@u).len()
+            };
             u[count] = t[i];
             count += 1;
         }

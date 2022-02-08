@@ -290,11 +290,20 @@ pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
     })
 }
 
+struct Assertion(TBlock);
+
+impl Parse for Assertion {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let stmts = input.call(TBlock::parse_within)?;
+        Ok(Assertion(TBlock { brace_token: Brace { span: Span::call_site() }, stmts }))
+    }
+}
+
 #[proc_macro]
 pub fn proof_assert(assertion: TS1) -> TS1 {
-    let assert: pearlite_syn::Term = parse_macro_input!(assertion);
+    let assert = parse_macro_input!(assertion as Assertion);
 
-    let assert_body = pretyping::encode_term(assert).unwrap();
+    let assert_body = pretyping::encode_block(assert.0).unwrap();
 
     TS1::from(quote! {
         {

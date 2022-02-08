@@ -47,7 +47,7 @@ impl List {
     fn take_some(&mut self) -> &mut u32 {
         match self {
             Cons(ma, ml) => {
-                proof_assert! {{ ml.lemma_sum_nonneg(); true }};
+                proof_assert! { ml.lemma_sum_nonneg(); true };
                 if random() {
                     ma
                 } else {

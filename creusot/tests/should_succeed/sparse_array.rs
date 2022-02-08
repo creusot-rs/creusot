@@ -119,12 +119,7 @@ impl<T> Sparse<T> {
         let index = self.idx[i];
         if !(index < self.n && self.back[index] == i) {
             // the hard assertion!
-            proof_assert!(pearlite! {
-                {
-                    self.lemma_permutation(@i);
-                    true
-                }
-            });
+            proof_assert!( self.lemma_permutation(@i); true );
             proof_assert!(@(self.n) < @(self.size));
             // assert!(self.n < self.size);
             self.idx[i] = self.n;
