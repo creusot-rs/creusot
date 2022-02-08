@@ -40,7 +40,7 @@ impl<T> Model for Sparse<T> {
     fn model(self) -> Self::ModelTy {
         // we miss a way to define the sequence, we need
         // a higher-order definition by comprehension
-        panic!()
+        std::process::abort()
     }
 }
 

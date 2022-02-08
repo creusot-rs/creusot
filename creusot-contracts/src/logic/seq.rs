@@ -20,16 +20,24 @@ impl<T> EqLogic for Seq<T> {
     }
 
     #[logic]
-    fn eq_ne(_: Self, _: Self) {}
+    fn eq_ne(_: Self, _: Self) {
+        ()
+    }
 
     #[logic]
-    fn refl(_: Self) {}
+    fn refl(_: Self) {
+        ()
+    }
 
     #[logic]
-    fn symmetry(_: Self, _: Self) {}
+    fn symmetry(_: Self, _: Self) {
+        ()
+    }
 
     #[logic]
-    fn transitivity(_: Self, _: Self, _: Self) {}
+    fn transitivity(_: Self, _: Self, _: Self) {
+        ()
+    }
 }
 
 impl<T> Seq<T> {

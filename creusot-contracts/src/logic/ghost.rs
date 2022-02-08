@@ -11,7 +11,7 @@ impl<T> Model for Ghost<T> {
     #[logic]
     #[trusted]
     fn model(self) -> Self::ModelTy {
-        panic!()
+        std::process::abort()
     }
 }
 

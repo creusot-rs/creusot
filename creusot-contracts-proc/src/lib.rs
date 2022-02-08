@@ -313,7 +313,7 @@ struct LogicItem {
     vis: Visibility,
     attrs: Vec<Attribute>,
     sig: Signature,
-    body: Term,
+    body: Box<TBlock>,
 }
 
 enum LogicInput {
@@ -333,11 +333,15 @@ impl Parse for LogicInput {
             return Ok(LogicInput::Sig(TraitItemSignature { attrs, sig, semi_token }));
         } else {
             let body;
-            braced!(body in input);
-            // let stmts = content.call(Block::parse_within)?;
-            let body = body.parse()?;
+            let brace_token = braced!(body in input);
+            let stmts = body.call(TBlock::parse_within)?;
 
-            Ok(LogicInput::Item(LogicItem { vis, attrs, sig, body }))
+            Ok(LogicInput::Item(LogicItem {
+                vis,
+                attrs,
+                sig,
+                body: Box::new(TBlock { brace_token, stmts }),
+            }))
         }
     }
 }
@@ -364,7 +368,7 @@ fn logic_item(log: LogicItem) -> TS1 {
     let sig = log.sig;
     let attrs = log.attrs;
 
-    let req_body = pretyping::encode_term(term).unwrap();
+    let req_body = pretyping::encode_block(*term).unwrap();
 
     TS1::from(quote! {
         #[creusot::decl::logic]
@@ -408,7 +412,7 @@ fn predicate_item(log: LogicItem) -> TS1 {
     let sig = log.sig;
     let attrs = log.attrs;
 
-    let req_body = pretyping::encode_term(term).unwrap();
+    let req_body = pretyping::encode_block(*term).unwrap();
 
     TS1::from(quote! {
         #[creusot::decl::predicate]

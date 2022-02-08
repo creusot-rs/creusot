@@ -8,7 +8,7 @@ impl Model for Seven {
     #[logic]
     #[trusted]
     fn model(self) -> Self::ModelTy {
-        panic!()
+        std::process::abort()
     }
 }
 
@@ -25,7 +25,7 @@ impl<T, U> Model for Pair<T, U> {
     #[logic]
     #[trusted]
     fn model(self) -> Self::ModelTy {
-        panic!()
+        std::process::abort()
     }
 }
 

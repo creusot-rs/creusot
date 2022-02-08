@@ -25,7 +25,7 @@ impl From<u32> for Int {
     #[rustc_diagnostic_item = "u32_to_int"]
     #[creusot::builtins = "mach.int.UInt32.to_int"]
     fn from(_: u32) -> Self {
-        panic!()
+        std::process::abort()
     }
 }
 impl Model for u32 {
@@ -44,7 +44,7 @@ impl From<i32> for Int {
     #[rustc_diagnostic_item = "i32_to_int"]
     #[creusot::builtins = "mach.int.Int32.to_int"]
     fn from(_: i32) -> Self {
-        panic!()
+        std::process::abort()
     }
 }
 impl Model for i32 {
@@ -63,7 +63,7 @@ impl From<usize> for Int {
     #[rustc_diagnostic_item = "usize_to_int"]
     #[creusot::builtins = "mach.int.UInt64.to_int"]
     fn from(_: usize) -> Self {
-        panic!()
+        std::process::abort()
     }
 }
 impl Model for usize {
@@ -81,7 +81,7 @@ impl From<isize> for Int {
     #[trusted]
     #[rustc_diagnostic_item = "isize_to_int"]
     fn from(_: isize) -> Self {
-        panic!()
+        std::process::abort()
     }
 }
 impl Model for isize {
