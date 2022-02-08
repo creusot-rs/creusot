@@ -647,15 +647,14 @@ pub(crate) mod parsing {
                 while let Some(semi) = input.parse::<Option<Token![;]>>()? {
                     stmts.push(TermStmt::Semi(Term::Verbatim(TokenStream::new()), semi));
                 }
+                if input.is_empty() {
+                    break;
+                }
                 let s = parse_stmt(input, true)?;
                 let requires_semicolon =
                     if let TermStmt::Expr(s) = &s { super::requires_terminator(s) } else { false };
                 stmts.push(s);
                 if input.is_empty() {
-                    if let TermStmt::Semi(_, _) = stmts.last().unwrap() {
-                        // TODO: Fix error span, how?
-                        return Err(input.error("unexpected semicolon"));
-                    }
                     break;
                 } else if requires_semicolon {
                     return Err(input.error("unexpected token"));

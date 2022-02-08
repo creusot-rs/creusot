@@ -114,31 +114,49 @@ macro_rules! ord_logic_impl {
             }
 
             #[logic]
-            fn cmp_le_log(_: Self, _: Self) {}
+            fn cmp_le_log(_: Self, _: Self) {
+                ()
+            }
 
             #[logic]
-            fn cmp_lt_log(_: Self, _: Self) {}
+            fn cmp_lt_log(_: Self, _: Self) {
+                ()
+            }
 
             #[logic]
-            fn cmp_ge_log(_: Self, _: Self) {}
+            fn cmp_ge_log(_: Self, _: Self) {
+                ()
+            }
 
             #[logic]
-            fn cmp_gt_log(_: Self, _: Self) {}
+            fn cmp_gt_log(_: Self, _: Self) {
+                ()
+            }
 
             #[logic]
-            fn refl(_: Self) {}
+            fn refl(_: Self) {
+                ()
+            }
 
             #[logic]
-            fn trans(_: Self, _: Self, _: Self, _: Ordering) {}
+            fn trans(_: Self, _: Self, _: Self, _: Ordering) {
+                ()
+            }
 
             #[logic]
-            fn antisym1(_: Self, _: Self) {}
+            fn antisym1(_: Self, _: Self) {
+                ()
+            }
 
             #[logic]
-            fn antisym2(_: Self, _: Self) {}
+            fn antisym2(_: Self, _: Self) {
+                ()
+            }
 
             #[logic]
-            fn eq_cmp(_: Self, _: Self) {}
+            fn eq_cmp(_: Self, _: Self) {
+                ()
+            }
         }
     };
 }

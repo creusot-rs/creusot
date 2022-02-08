@@ -44,7 +44,7 @@ impl List {
     fn take_some_rest(&mut self) -> (&mut u32, &mut List) {
         match self {
             Cons(ma, ml) => {
-                proof_assert! { {ml.lemma_sum_nonneg(); true} };
+                proof_assert! { ml.lemma_sum_nonneg(); true };
                 if rand::random() {
                     (ma, ml)
                 } else {

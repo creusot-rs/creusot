@@ -112,9 +112,11 @@ fn heap_sort<T: Ord>(v: &mut Vec<T>) {
     while end > 1 {
         end -= 1;
         v.swap(0, end);
-        proof_assert! {{heap_frag_max(@v, 0/*dummy*/, @end);
-        forall<i : Int, j : Int> 0 <= i && i < @end && @end <= j && j < (@v).len() ==>
-                        (@v)[i] <= (@v)[j] }}
+        proof_assert! {
+            heap_frag_max(@v, 0/*dummy*/, @end);
+            forall<i : Int, j : Int> 0 <= i && i < @end && @end <= j && j < (@v).len() ==>
+                        (@v)[i] <= (@v)[j]
+        };
         sift_down(v, 0, end);
     }
 }

@@ -40,7 +40,7 @@ impl<T> Model for Sparse<T> {
     fn model(self) -> Self::ModelTy {
         // we miss a way to define the sequence, we need
         // a higher-order definition by comprehension
-        panic!()
+        std::process::abort()
     }
 }
 
@@ -119,12 +119,7 @@ impl<T> Sparse<T> {
         let index = self.idx[i];
         if !(index < self.n && self.back[index] == i) {
             // the hard assertion!
-            proof_assert!(pearlite! {
-                {
-                    self.lemma_permutation(@i);
-                    true
-                }
-            });
+            proof_assert!( self.lemma_permutation(@i); true );
             proof_assert!(@(self.n) < @(self.size));
             // assert!(self.n < self.size);
             self.idx[i] = self.n;

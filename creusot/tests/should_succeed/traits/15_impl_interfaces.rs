@@ -16,7 +16,7 @@ impl Tr for () {
 #[trusted]
 #[logic]
 fn x<T: Tr>(x: T) -> T::A {
-    panic!()
+    std::process::abort()
 }
 
 #[requires(x(a) === ())]

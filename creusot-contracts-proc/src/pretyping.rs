@@ -27,11 +27,7 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
                 _ => Ok(quote! { #left #op #right }),
             }
         }
-        RT::Block(TermBlock { block, .. }) => {
-            let stmts: Vec<_> =
-                block.stmts.into_iter().map(encode_stmt).collect::<Result<_, _>>()?;
-            Ok(quote! { { #(#stmts)* } })
-        }
+        RT::Block(TermBlock { block, .. }) => encode_block(block),
         RT::Call(TermCall { func, args, .. }) => {
             let func = encode_term(*func)?;
             let args: Vec<_> = args.into_iter().map(encode_term).collect::<Result<_, _>>()?;
@@ -154,6 +150,11 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
         RT::Pearlite(term) => Ok(quote! { (#term) }),
         RT::__Nonexhaustive => todo!(),
     }
+}
+
+pub fn encode_block(block: TBlock) -> Result<TokenStream, EncodeError> {
+    let stmts: Vec<_> = block.stmts.into_iter().map(encode_stmt).collect::<Result<_, _>>()?;
+    Ok(quote! { { #(#stmts)* } })
 }
 
 fn encode_stmt(stmt: TermStmt) -> Result<TokenStream, EncodeError> {

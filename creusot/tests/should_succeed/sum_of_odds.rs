@@ -39,9 +39,10 @@ fn compute_sum_of_odd(x: u32) -> u32 {
     #[invariant(i_bound, @i <= @x)]
     #[invariant(s_is_sum, @s === sum_of_odd(@i))]
     while i < x {
-        proof_assert! { {
-        sum_of_odd_is_sqr(@i);
-        true }}
+        proof_assert! {
+            sum_of_odd_is_sqr(@i);
+            true
+        };
         s += 2 * i + 1;
         i += 1;
     }
@@ -51,8 +52,8 @@ fn compute_sum_of_odd(x: u32) -> u32 {
 #[requires(@x < 0x10000)]
 fn test(x: u32) {
     let y = compute_sum_of_odd(x);
-    proof_assert! { {
+    proof_assert! {
         sum_of_odd_is_sqr(@x);
         is_square(@y)
-    } }
+    }
 }

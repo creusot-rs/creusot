@@ -36,11 +36,11 @@ impl Tree {
     fn sum_x(&self) -> u32 {
         match self {
             Node(tl, a, tr) => {
-                proof_assert! {{
+                proof_assert! {
                     tl.lemma_sum_nonneg();
                     tr.lemma_sum_nonneg();
                     true
-                }};
+                };
                 tl.sum_x() + *a + tr.sum_x()
             }
             Leaf => 0,
@@ -54,11 +54,11 @@ impl Tree {
     fn take_some_rest(&mut self) -> (&mut u32, &mut Tree) {
         match self {
             Node(mtl, ma, mtr) => {
-                proof_assert! {{
+                proof_assert! {
                     mtl.lemma_sum_nonneg();
                     mtr.lemma_sum_nonneg();
                     true
-                }};
+                };
                 if rand::random() {
                     (ma, if rand::random() { mtl } else { mtr })
                 } else if rand::random() {
