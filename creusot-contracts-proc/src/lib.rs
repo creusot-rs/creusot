@@ -316,31 +316,42 @@ struct LogicItem {
     body: Term,
 }
 
-impl syn::parse::Parse for LogicItem {
-    fn parse(input: parse::ParseStream) -> Result<Self> {
-        let attrs = Attribute::parse_outer(input)?;
-        let vis = input.parse()?;
-        let sig = input.parse()?;
-        let body;
-        braced!(body in input);
-        let body = body.parse()?;
+enum LogicInput {
+    Item(LogicItem),
+    Sig(TraitItemSignature),
+}
 
-        Ok(LogicItem { vis, attrs, sig, body })
+impl Parse for LogicInput {
+    fn parse(input: parse::ParseStream) -> Result<Self> {
+        let attrs = input.call(Attribute::parse_outer)?;
+        // Infalliable, no visibility = inherited
+        let vis: Visibility = input.parse()?;
+        let sig: Signature = input.parse()?;
+        let lookahead = input.lookahead1();
+        if lookahead.peek(Token![;]) {
+            let semi_token: Token![;] = input.parse()?;
+            return Ok(LogicInput::Sig(TraitItemSignature { attrs, sig, semi_token }));
+        } else {
+            let body;
+            braced!(body in input);
+            // let stmts = content.call(Block::parse_within)?;
+            let body = body.parse()?;
+
+            Ok(LogicInput::Item(LogicItem { vis, attrs, sig, body }))
+        }
     }
 }
 
 #[proc_macro_attribute]
 pub fn logic(_: TS1, tokens: TS1) -> TS1 {
-    match syn::parse::<LogicItem>(tokens.clone()) {
-        Ok(log) => logic_item(log),
-        Err(_) => match syn::parse(tokens) {
-            Ok(sig) => logic_sig(sig),
-            Err(err) => TS1::from(err.to_compile_error()),
-        },
+    let log = parse_macro_input!(tokens as LogicInput);
+    match log {
+        LogicInput::Item(log) => logic_item(log),
+        LogicInput::Sig(sig) => logic_sig(sig),
     }
 }
 
-fn logic_sig(sig: TraitItemMethod) -> TS1 {
+fn logic_sig(sig: TraitItemSignature) -> TS1 {
     TS1::from(quote! {
         #[creusot::decl::logic]
         #sig
@@ -374,45 +385,24 @@ pub fn law(_: TS1, tokens: TS1) -> TS1 {
     })
 }
 
-struct PredicateItem {
-    vis: Visibility,
-    attrs: Vec<Attribute>,
-    sig: Signature,
-    body: Term,
-}
-
-impl syn::parse::Parse for PredicateItem {
-    fn parse(input: parse::ParseStream) -> Result<Self> {
-        let attrs = Attribute::parse_outer(input)?;
-        let vis = input.parse()?;
-        let sig = input.parse()?;
-        let body;
-        braced!(body in input);
-        let body = body.parse()?;
-
-        Ok(PredicateItem { vis, attrs, sig, body })
-    }
-}
-
 #[proc_macro_attribute]
 pub fn predicate(_: TS1, tokens: TS1) -> TS1 {
-    match syn::parse::<PredicateItem>(tokens.clone()) {
-        Ok(log) => predicate_item(log),
-        Err(_) => match syn::parse(tokens) {
-            Ok(sig) => predicate_sig(sig),
-            Err(err) => TS1::from(err.to_compile_error()),
-        },
+    let pred = parse_macro_input!(tokens as LogicInput);
+
+    match pred {
+        LogicInput::Item(log) => predicate_item(log),
+        LogicInput::Sig(sig) => predicate_sig(sig),
     }
 }
 
-fn predicate_sig(sig: TraitItemMethod) -> TS1 {
+fn predicate_sig(sig: TraitItemSignature) -> TS1 {
     TS1::from(quote! {
         #[creusot::decl::predicate]
         #sig
     })
 }
 
-fn predicate_item(log: PredicateItem) -> TS1 {
+fn predicate_item(log: LogicItem) -> TS1 {
     let term = log.body;
     let vis = log.vis;
     let sig = log.sig;
