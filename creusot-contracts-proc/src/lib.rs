@@ -228,24 +228,29 @@ pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
 fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
     let p: pearlite_syn::Term = parse(attr)?;
 
-    let f: ItemFn = parse(tokens)?;
+    let mut f: ItemFn = parse(tokens)?;
 
     let var_name = generate_unique_ident(&f.sig.ident.to_string());
     let mut var_sig = f.sig.clone();
     var_sig.ident = var_name.clone();
-    var_sig.output = parse_quote! { -> impl creusot_contracts::logic::WellFounded };
+    // var_sig.output = parse_quote! { -> impl creusot_contracts::logic::WellFounded };
     let var_body = pretyping::encode_term(p).unwrap();
     let name_tag = format!("{}", quote! { #var_name });
 
+    let variant_tokens = quote! {
+        #[allow(unused_must_use)]
+        let _ =
+            #[creusot::no_translate]
+            #[creusot::item=#name_tag]
+            #[creusot::decl::spec]
+            ||{ creusot_contracts::stubs::variant_check(#var_body) }
+        ;
+    };
+
+    f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(variant_tokens)));
+
     // TODO: Parse and pass down all the function's arguments.
     Ok(TS1::from(quote! {
-      #[creusot::item=#name_tag]
-      #[creusot::no_translate]
-      #[creusot::decl::spec]
-      #var_sig {
-        #var_body
-      }
-
       #[creusot::spec::variant=#name_tag]
       #f
     }))

@@ -66,6 +66,7 @@ fn run_creusot(file: &Path, contracts: &str) -> std::process::Command {
 
     cmd.arg(format!("-Ldependency={}/", dep_path.display()));
     cmd.arg(format!("{}", file.display()));
+    cmd.arg("--crate-type=lib");
     cmd
 }
 

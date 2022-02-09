@@ -3,7 +3,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 struct Vec<T>(std::vec::Vec<T>);
-impl<T: ?Sized> Model for Vec<T> {
+impl<T> Model for Vec<T> {
     type ModelTy = Seq<T>;
     #[logic]
     #[trusted]

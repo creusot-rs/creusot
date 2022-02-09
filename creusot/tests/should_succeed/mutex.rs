@@ -149,7 +149,7 @@ struct SpawnPostCond<F> {
 
 impl<F: FakeFnOnce> Inv<F::Return> for SpawnPostCond<F> {
     #[predicate]
-    fn inv(self, v: F::Return) -> bool {
+    fn inv(&self, v: F::Return) -> bool {
         self.f.postcondition(v)
     }
 }

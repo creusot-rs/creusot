@@ -57,7 +57,7 @@ pub fn translate_function<'tcx, 'sess>(
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
     RemoveFalseEdge { tcx }.visit_body(&mut body);
-
+    // simplify_cfg(tcx, &mut body);
     // simplify_locals(&mut body, tcx);
     let (invariants, assertions) = gather.with_corrected_locations_and_names(tcx, &body);
     let func_translator =
