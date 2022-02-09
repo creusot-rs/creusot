@@ -8,7 +8,7 @@ use creusot_contracts::*;
 // We don't yet use the standard vec because we provide the non-standard `iter_mut` method.
 struct Vec<T>(std::vec::Vec<T>);
 
-impl<T: ?Sized> Model for Vec<T> {
+impl<T> Model for Vec<T> {
     type ModelTy = Seq<T>;
     #[logic]
     #[trusted]
@@ -36,7 +36,7 @@ impl<T> Vec<T> {
 
 struct IterMut<'a, T>(std::slice::IterMut<'a, T>);
 
-impl<'a, T: ?Sized> Model for IterMut<'a, T> {
+impl<'a, T> Model for IterMut<'a, T> {
     type ModelTy = Seq<&'a mut T>;
 
     #[trusted]

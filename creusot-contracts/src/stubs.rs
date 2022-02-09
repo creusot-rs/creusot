@@ -39,3 +39,9 @@ pub fn implication(_: bool, _: bool) -> bool {
 pub fn abs<T>() -> T {
     panic!()
 }
+
+#[creusot::no_translate]
+#[rustc_diagnostic_item = "variant_check"]
+pub fn variant_check<R: crate::WellFounded>(r: R) -> R {
+    r
+}

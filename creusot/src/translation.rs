@@ -36,6 +36,13 @@ pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
     validate_traits(&mut ctx);
 
     ctx.load_metadata();
+    rustc_typeck::check_crate(tcx).map_err(|_| CrErr)?;
+
+    tcx.hir().par_body_owners(|def_id| tcx.ensure().check_match(def_id.to_def_id()));
+
+    if tcx.sess.has_errors() {
+        return Err(Box::new(CrErr));
+    }
 
     for def_id in ctx.tcx.hir().body_owners() {
         let def_id = def_id.to_def_id();

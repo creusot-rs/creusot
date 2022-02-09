@@ -13,6 +13,19 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
+  type c10_pair 't 'u = 
+    | C10_Pair 't 'u
+    
+  function c10_pair_Pair_0 (self : c10_pair 't 'u) : 't
+  val c10_pair_Pair_0 (self : c10_pair 't 'u) : 't
+    ensures { result = c10_pair_Pair_0 self }
+    
+  axiom c10_pair_Pair_0_acc : forall a : 't, b : 'u . c10_pair_Pair_0 (C10_Pair a b : c10_pair 't 'u) = a
+  function c10_pair_Pair_1 (self : c10_pair 't 'u) : 'u
+  val c10_pair_Pair_1 (self : c10_pair 't 'u) : 'u
+    ensures { result = c10_pair_Pair_1 self }
+    
+  axiom c10_pair_Pair_1_acc : forall a : 't, b : 'u . c10_pair_Pair_1 (C10_Pair a b : c10_pair 't 'u) = b
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self   
@@ -25,23 +38,26 @@ end
 module C10_Impl0_Resolve_Interface
   type t1   
   type t2   
-  predicate resolve (self : (t1, t2))
+  use Type
+  predicate resolve (self : Type.c10_pair t1 t2)
 end
 module C10_Impl0_Resolve
   type t1   
   type t2   
+  use Type
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t1
-  predicate resolve (self : (t1, t2)) = 
-    Resolve0.resolve (let (a, _) = self in a) && Resolve1.resolve (let (_, a) = self in a)
+  predicate resolve (self : Type.c10_pair t1 t2) = 
+    Resolve0.resolve (Type.c10_pair_Pair_0 self) && Resolve1.resolve (Type.c10_pair_Pair_1 self)
 end
 module C10_Impl0
   type t1   
   type t2   
+  use Type
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = t1
   clone C10_Impl0_Resolve as Resolve0 with type t1 = t1, type t2 = t2, predicate Resolve0.resolve = Resolve2.resolve,
   predicate Resolve1.resolve = Resolve3.resolve
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = (t1, t2),
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.c10_pair t1 t2,
   predicate resolve = Resolve0.resolve
 end

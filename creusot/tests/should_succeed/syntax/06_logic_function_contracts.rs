@@ -26,7 +26,6 @@ fn all_zero(seq: Seq<Int>) -> bool {
     }
 }
 
-impl WellFounded for bool {}
 #[predicate]
 #[variant(i)]
 fn stupid<T>(x: T, i: Int) -> bool {

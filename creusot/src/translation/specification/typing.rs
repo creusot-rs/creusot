@@ -156,6 +156,7 @@ fn lower_expr<'tcx>(
 
                     Ok(Term { ty, kind: TermKind::Equals { lhs: box lhs, rhs: box rhs } })
                 }
+                Some(VariantCheck) => lower_expr(tcx, item_id, thir, args[0]),
                 None => {
                     let fun = lower_expr(tcx, item_id, thir, fun)?;
                     let args = args
@@ -376,6 +377,7 @@ enum Stub {
     Cur,
     Impl,
     Equals,
+    VariantCheck,
 }
 
 fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
@@ -397,6 +399,9 @@ fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("equal")) {
             return Some(Stub::Equals);
+        }
+        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("variant_check")) {
+            return Some(Stub::VariantCheck);
         }
         None
     } else {

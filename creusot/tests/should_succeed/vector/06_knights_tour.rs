@@ -3,7 +3,7 @@ extern crate creusot_contracts;
 use creusot_contracts::std::*;
 use creusot_contracts::*;
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 struct Point {
     x: isize,
     y: isize,
