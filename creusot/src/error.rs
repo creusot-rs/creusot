@@ -24,3 +24,13 @@ impl Error {
         )
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct CrErr;
+
+impl std::fmt::Display for CrErr {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "encountered errors during translation")
+    }
+}
+impl std::error::Error for CrErr {}
