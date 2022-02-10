@@ -13,11 +13,12 @@ use rustc_middle::ty::Ty;
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
 use rustc_middle::{
     mir::traversal::preorder,
-    mir::{visit::MutVisitor, BasicBlock, Body, Local, Location, Operand, VarDebugInfo},
+    mir::{BasicBlock, Body, Local, Location, MirPass, Operand, VarDebugInfo},
     ty::TyCtxt,
     ty::{TyKind, WithOptConstParam},
 };
 use rustc_mir_dataflow::move_paths::MoveData;
+use rustc_mir_transform::{remove_false_edges::*, simplify::*};
 use rustc_span::Symbol;
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
@@ -56,9 +57,9 @@ pub fn translate_function<'tcx, 'sess>(
     let mut body = body.borrow().clone();
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
-    RemoveFalseEdge { tcx }.visit_body(&mut body);
-    // simplify_cfg(tcx, &mut body);
-    // simplify_locals(&mut body, tcx);
+    RemoveFalseEdges.run_pass(tcx, &mut body);
+    SimplifyCfg::new("verify").run_pass(tcx, &mut body);
+
     let (invariants, assertions) = gather.with_corrected_locations_and_names(tcx, &body);
     let func_translator =
         FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, assertions, def_id);
@@ -465,7 +466,6 @@ pub fn all_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item =
     generic_decls((0..generics.count()).map(move |i| generics.param_at(i, tcx)))
 }
 
-#[allow(dead_code)]
 pub fn own_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
     let generics = tcx.generics_of(def_id);
     generic_decls(generics.params.iter())
@@ -485,26 +485,6 @@ fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
             None
         }
     })
-}
-
-struct RemoveFalseEdge<'tcx> {
-    tcx: TyCtxt<'tcx>,
-}
-
-impl<'tcx> MutVisitor<'tcx> for RemoveFalseEdge<'tcx> {
-    fn tcx<'a>(&'a self) -> TyCtxt<'tcx> {
-        self.tcx
-    }
-
-    fn visit_terminator(
-        &mut self,
-        terminator: &mut rustc_middle::mir::Terminator<'tcx>,
-        _location: Location,
-    ) {
-        if let rustc_middle::mir::TerminatorKind::FalseEdge { real_target, .. } = terminator.kind {
-            terminator.kind = rustc_middle::mir::TerminatorKind::Goto { target: real_target }
-        }
-    }
 }
 
 pub fn real_locals(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> HashMap<Local, Local> {
