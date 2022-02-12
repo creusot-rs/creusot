@@ -559,9 +559,9 @@ struct ProjectionTyVisitor<'a, 'tcx> {
 }
 
 impl TypeVisitor<'tcx> for ProjectionTyVisitor<'a, 'tcx> {
-    fn tcx_for_anon_const_substs(&self) -> Option<TyCtxt<'tcx>> {
-        None
-    }
+    // fn tcx_for_anon_const_substs(&self) -> Option<TyCtxt<'tcx>> {
+    //     None
+    // }
 
     fn visit_ty(&mut self, t: Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
         if let TyKind::Projection(t) = t.kind() {

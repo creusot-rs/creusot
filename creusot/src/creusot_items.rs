@@ -1,7 +1,7 @@
 use rustc_ast::ast::Attribute;
 use rustc_hir::hir_id::HirId;
-use rustc_hir::intravisit::NestedVisitorMap;
 use rustc_middle::hir::map::Map;
+use rustc_middle::hir::nested_filter::OnlyBodies; // use rustc_hir::intravisit::NestedVisitorMap;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::{def_id::DefId, symbol::Symbol};
 use std::collections::HashMap;
@@ -30,9 +30,10 @@ struct CreusotItemCollector<'tcx> {
 
 impl rustc_hir::intravisit::Visitor<'tcx> for CreusotItemCollector<'tcx> {
     type Map = Map<'tcx>;
+    type NestedFilter = OnlyBodies;
 
-    fn nested_visit_map(&mut self) -> NestedVisitorMap<Map<'tcx>> {
-        NestedVisitorMap::OnlyBodies(self.tcx.hir())
+    fn nested_visit_map(&mut self) -> Map<'tcx> {
+        self.tcx.hir()
     }
 
     fn visit_attribute(&mut self, id: HirId, attr: &Attribute) {

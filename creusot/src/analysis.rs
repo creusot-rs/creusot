@@ -75,7 +75,7 @@ pub fn categorize(context: PlaceContext) -> Option<DefUse> {
         // the def in call only to the input from the success
         // path and not the unwind path. -nmatsakis
         PlaceContext::MutatingUse(MutatingUseContext::Call) |
-        PlaceContext::MutatingUse(MutatingUseContext::LlvmAsmOutput) |
+        // PlaceContext::MutatingUse(MutatingUseContext::LlvmAsmOutput) |
         PlaceContext::MutatingUse(MutatingUseContext::AsmOutput) |
         PlaceContext::MutatingUse(MutatingUseContext::Yield) |
 

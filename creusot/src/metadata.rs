@@ -246,10 +246,7 @@ fn load_binary_metadata(
 ) -> Option<BinaryMetadata<'tcx>> {
     let metadata = MetadataBlob::from_file(&path).and_then(|blob| {
         let mut decoder = MetadataDecoder::new(tcx, cnum, &blob);
-        match BinaryMetadata::decode(&mut decoder) {
-            Ok(m) => Ok(m),
-            Err(e) => Err(std::io::Error::new(std::io::ErrorKind::Other, e)),
-        }
+        Ok(BinaryMetadata::decode(&mut decoder))
     });
 
     match metadata {

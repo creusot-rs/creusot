@@ -52,7 +52,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             decls.extend(own_generic_decls_for(self.tcx, item.def_id));
 
             let trait_item = trait_assocs
-                .find_by_name_and_kind(self.tcx, item.ident, item.kind, trait_ref.def_id)
+                .find_by_name_and_kind(self.tcx, item.ident(self.tcx), item.kind, trait_ref.def_id)
                 .unwrap();
 
             if is_law(self.tcx, trait_item.def_id) {
@@ -63,7 +63,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
             names.insert(trait_item.def_id, s).add_dep(
                 self.tcx,
-                item.ident.name,
+                item.ident(self.tcx).name,
                 (item.def_id, subst),
             );
         }

@@ -44,9 +44,9 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 "copy non overlapping is not supported",
             ),
             // No assembly!
-            LlvmInlineAsm(_) => self
-                .ctx
-                .crash_and_error(statement.source_info.span, "inline assembly is not supported"),
+            // LlvmInlineAsm(_) => self
+            //     .ctx
+            //     .crash_and_error(statement.source_info.span, "inline assembly is not supported"),
         }
     }
 

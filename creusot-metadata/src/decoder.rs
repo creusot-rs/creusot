@@ -2,14 +2,12 @@ use rustc_data_structures::owning_ref::OwningRef;
 use rustc_data_structures::rustc_erase_owner;
 use rustc_data_structures::sync::{Lrc, MetadataRef};
 use rustc_hir::def_id::{CrateNum, DefId, DefIndex, DefPathHash, StableCrateId};
-use rustc_metadata::creader::CStore;
 use rustc_middle::implement_ty_decoder;
 use rustc_middle::ty;
 use rustc_middle::ty::codec::TyDecoder;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_serialize::opaque;
 pub use rustc_serialize::{Decodable, Decoder};
-use rustc_session::cstore::CrateStore;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -43,18 +41,7 @@ impl MetadataDecoder<'a, 'tcx> {
 
     // From rustc
     fn def_path_hash_to_def_id(&self, hash: DefPathHash) -> DefId {
-        let stable_crate_id = hash.stable_crate_id();
-
-        // If this is a DefPathHash from the local crate, we can look up the
-        // DefId in the tcx's `Definitions`.
-        if stable_crate_id == self.tcx.sess.local_stable_crate_id() {
-            self.tcx.definitions_untracked().local_def_path_hash_to_def_id(hash).to_def_id()
-        } else {
-            // If this is a DefPathHash from an upstream crate, let the CrateStore map
-            // it to a DefId.
-            let cnum = self.tcx.stable_crate_id_to_crate_num(stable_crate_id);
-            CStore::from_tcx(self.tcx).def_path_hash_to_def_id(cnum, hash)
-        }
+        self.tcx.def_path_hash_to_def_id(hash, &mut || panic!())
     }
 }
 
@@ -64,8 +51,8 @@ impl MetadataDecoder<'a, 'tcx> {
 // because we would not know how to transform the `DefIndex` to the current
 // context.
 impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for DefIndex {
-    fn decode(d: &mut MetadataDecoder<'a, 'tcx>) -> Result<DefIndex, String> {
-        Err(d.error("trying to decode `DefIndex` outside the context of a `DefId`"))
+    fn decode(_: &mut MetadataDecoder<'a, 'tcx>) -> DefIndex {
+        panic!("trying to decode `DefIndex` outside the context of a `DefId`")
     }
 }
 
@@ -73,16 +60,16 @@ impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for DefIndex {
 // compilation sessions. We use the `DefPathHash`, which is stable across
 // sessions, to map the old `DefId` to the new one.
 impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for DefId {
-    fn decode(d: &mut MetadataDecoder<'a, 'tcx>) -> Result<Self, String> {
-        let def_path_hash = DefPathHash::decode(d)?;
-        Ok(d.def_path_hash_to_def_id(def_path_hash))
+    fn decode(d: &mut MetadataDecoder<'a, 'tcx>) -> Self {
+        let def_path_hash = DefPathHash::decode(d);
+        d.def_path_hash_to_def_id(def_path_hash)
     }
 }
 
 impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for CrateNum {
-    fn decode(d: &mut MetadataDecoder<'a, 'tcx>) -> Result<CrateNum, String> {
-        let stable_id = StableCrateId::decode(d)?;
-        Ok(d.tcx.stable_crate_id_to_crate_num(stable_id))
+    fn decode(d: &mut MetadataDecoder<'a, 'tcx>) -> CrateNum {
+        let stable_id = StableCrateId::decode(d);
+        d.tcx.stable_crate_id_to_crate_num(stable_id)
     }
 }
 
@@ -106,25 +93,21 @@ impl<'a, 'tcx> TyDecoder<'tcx> for MetadataDecoder<'a, 'tcx> {
         self.opaque.position()
     }
 
-    fn cached_ty_for_shorthand<F>(
-        &mut self,
-        shorthand: usize,
-        or_insert_with: F,
-    ) -> Result<Ty<'tcx>, Self::Error>
+    fn cached_ty_for_shorthand<F>(&mut self, shorthand: usize, or_insert_with: F) -> Ty<'tcx>
     where
-        F: FnOnce(&mut Self) -> Result<Ty<'tcx>, Self::Error>,
+        F: FnOnce(&mut Self) -> Ty<'tcx>,
     {
         let tcx = self.tcx();
 
         let key = ty::CReaderCacheKey { cnum: Some(self.cnum), pos: shorthand };
 
         if let Some(&ty) = tcx.ty_rcache.borrow().get(&key) {
-            return Ok(ty);
+            return ty;
         }
 
-        let ty = or_insert_with(self)?;
+        let ty = or_insert_with(self);
         tcx.ty_rcache.borrow_mut().insert(key, ty);
-        Ok(ty)
+        ty
     }
 
     fn with_position<F, R>(&mut self, pos: usize, f: F) -> R
@@ -138,7 +121,7 @@ impl<'a, 'tcx> TyDecoder<'tcx> for MetadataDecoder<'a, 'tcx> {
         r
     }
 
-    fn decode_alloc_id(&mut self) -> Result<rustc_middle::mir::interpret::AllocId, Self::Error> {
+    fn decode_alloc_id(&mut self) -> rustc_middle::mir::interpret::AllocId {
         unimplemented!("decode_alloc_id")
     }
 }
