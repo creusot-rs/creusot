@@ -2,6 +2,12 @@
 
 *Le marteau-pilon, forges et aciéries de Saint-Chamond, Joseph-Fortuné LAYRAUD, 1889*
 
+----
+
+📢 Are you interested in verifying Rust code? Don't know where to start? Please contact me, I'm always looking for case-studies. 📢
+
+----
+
 # About
 
 **Creusot** is a tool for *deductive verification* of Rust code. It allows you to annotate your code with specifications, invariants and assertions and then *verify* them formally and automatically, returning a *proof* that your code satisfies the specs.
@@ -10,7 +16,7 @@ Creusot works by translating Rust code to WhyML, the verification and specificat
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
 
-**Note**: :warning: This tool is mainly for research purposes now. Please tolerate the software quality! :warning:
+**Note**: :warning: This is _research_ software, and favors _progress_ over stability :warning:
 
 # Examples of Verification
 
