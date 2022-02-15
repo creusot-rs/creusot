@@ -3,7 +3,7 @@ use crate::util;
 use log::*;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_hir::HirId;
-use rustc_macros::{TyDecodable, TyEncodable};
+use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable};
 pub use rustc_middle::mir::Field;
 pub use rustc_middle::thir;
 use rustc_middle::thir::{
@@ -11,25 +11,46 @@ use rustc_middle::thir::{
 };
 use rustc_middle::ty::{AdtDef, Ty, TyKind, UpvarSubsts};
 use rustc_middle::{
-    mir::{BinOp, BorrowKind, Mutability::*, UnOp},
+    mir::{BorrowKind, Mutability::*},
     ty::{subst::SubstsRef, Const, TyCtxt, WithOptConstParam},
 };
 use rustc_span::Symbol;
 use rustc_target::abi::VariantIdx;
 
-#[derive(Clone, Debug, TyDecodable, TyEncodable)]
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
 pub enum LogicalOp {
     And,
     Or,
 }
 
-#[derive(Clone, Debug, TyDecodable, TyEncodable)]
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
+pub enum BinOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Rem,
+    Eq,
+    Lt,
+    Le,
+    Ne,
+    Ge,
+    Gt,
+}
+
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
+pub enum UnOp {
+    Not,
+    Neg,
+}
+
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
 pub struct Term<'tcx> {
     pub ty: Ty<'tcx>,
     pub kind: TermKind<'tcx>,
 }
 
-#[derive(Clone, Debug, TyDecodable, TyEncodable)]
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
 pub enum TermKind<'tcx> {
     Var(Symbol),
     Const(&'tcx Const<'tcx>),
@@ -51,7 +72,7 @@ pub enum TermKind<'tcx> {
     Absurd,
 }
 
-#[derive(Clone, Debug, TyDecodable, TyEncodable)]
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
 pub enum Pattern<'tcx> {
     Constructor { adt: &'tcx AdtDef, variant: VariantIdx, fields: Vec<Pattern<'tcx>> },
     Tuple(Vec<Pattern<'tcx>>),
@@ -95,6 +116,35 @@ fn lower_expr<'tcx>(
             let lhs = lower_expr(tcx, item_id, thir, lhs)?;
             let rhs = lower_expr(tcx, item_id, thir, rhs)?;
 
+            let op = match op {
+                rustc_middle::mir::BinOp::Add => BinOp::Add,
+                rustc_middle::mir::BinOp::Sub => BinOp::Sub,
+                rustc_middle::mir::BinOp::Mul => BinOp::Mul,
+                rustc_middle::mir::BinOp::Div => BinOp::Div,
+                rustc_middle::mir::BinOp::Rem => BinOp::Rem,
+                rustc_middle::mir::BinOp::BitXor => {
+                    return Err(Error::new(thir[expr].span, "unsupported operation"))
+                }
+                rustc_middle::mir::BinOp::BitAnd => {
+                    return Err(Error::new(thir[expr].span, "unsupported operation"))
+                }
+                rustc_middle::mir::BinOp::BitOr => {
+                    return Err(Error::new(thir[expr].span, "unsupported operation"))
+                }
+                rustc_middle::mir::BinOp::Shl => {
+                    return Err(Error::new(thir[expr].span, "unsupported operation"))
+                }
+                rustc_middle::mir::BinOp::Shr => {
+                    return Err(Error::new(thir[expr].span, "unsupported operation"))
+                }
+                rustc_middle::mir::BinOp::Eq => BinOp::Eq,
+                rustc_middle::mir::BinOp::Lt => BinOp::Lt,
+                rustc_middle::mir::BinOp::Le => BinOp::Le,
+                rustc_middle::mir::BinOp::Ne => BinOp::Ne,
+                rustc_middle::mir::BinOp::Ge => BinOp::Ge,
+                rustc_middle::mir::BinOp::Gt => BinOp::Gt,
+                rustc_middle::mir::BinOp::Offset => todo!(),
+            };
             Ok(Term { ty, kind: TermKind::Binary { op, operand_ty, lhs: box lhs, rhs: box rhs } })
         }
         ExprKind::LogicalOp { op, lhs, rhs } => {
@@ -108,6 +158,10 @@ fn lower_expr<'tcx>(
         }
         ExprKind::Unary { op, arg } => {
             let arg = lower_expr(tcx, item_id, thir, arg)?;
+            let op = match op {
+                rustc_middle::mir::UnOp::Not => UnOp::Not,
+                rustc_middle::mir::UnOp::Neg => UnOp::Neg,
+            };
             Ok(Term { ty, kind: TermKind::Unary { op, arg: box arg } })
         }
         ExprKind::VarRef { id } => {
