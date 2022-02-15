@@ -6,6 +6,7 @@ pub mod ord;
 mod resolve;
 mod seq;
 pub mod well_founded;
+mod mapping;
 
 pub use eq::*;
 pub use ghost::*;
@@ -15,3 +16,4 @@ pub use ord::*;
 pub use resolve::*;
 pub use seq::*;
 pub use well_founded::*;
+pub use mapping::*;
