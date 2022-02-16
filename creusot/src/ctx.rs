@@ -8,13 +8,13 @@ use crate::translation::interface::interface_for;
 use crate::translation::specification::typing::Term;
 use crate::translation::ty;
 use crate::translation::{external, specification};
-use crate::util::item_type;
+use crate::util::{closure_owner, item_type};
 use crate::{options::Options, util};
 use indexmap::{IndexMap, IndexSet};
 use rustc_data_structures::captures::Captures;
 use rustc_errors::DiagnosticId;
 use rustc_hir::def::DefKind;
-use rustc_hir::def_id::DefId;
+use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_middle::ty::{AssocItemContainer, TyCtxt};
 use rustc_span::{Span, Symbol};
 pub use util::{item_name, module_name, ItemType};
@@ -33,6 +33,7 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub opts: &'sess Options,
     creusot_items: CreusotItems,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
+    extern_spec_items: HashMap<LocalDefId, DefId>,
 }
 
 impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
@@ -49,6 +50,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             creusot_items,
             opts,
             extern_specs: Default::default(),
+            extern_spec_items: Default::default(),
         };
 
         load_extern_specs(&mut ctx);
@@ -169,8 +171,20 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
         if util::has_body(self, def_id) {
             let t = self.terms.entry(def_id).or_insert_with(|| {
-                specification::typing::typecheck(self.tcx, def_id.expect_local())
-                    .unwrap_or_else(|e| e.emit(self.tcx.sess))
+                let term = specification::typing::typecheck(self.tcx, def_id.expect_local())
+                    .unwrap_or_else(|e| e.emit(self.tcx.sess));
+                use rustc_middle::ty::subst::Subst;
+
+                let parent = closure_owner(self.tcx, def_id);
+                if let Some(e) = self
+                    .extern_spec_items
+                    .get(&parent.expect_local())
+                    .and_then(|id| self.extern_specs.get(&id))
+                {
+                    term.subst(self.tcx, e.ty_subst)
+                } else {
+                    term
+                }
             });
             Some(t)
         } else {
@@ -260,6 +274,7 @@ fn load_extern_specs(ctx: &mut TranslationCtx) {
         if crate::util::is_extern_spec(ctx.tcx, def_id.to_def_id()) {
             let (i, es) = extract_extern_specs_from_item(ctx, def_id);
             ctx.extern_specs.insert(i, es);
+            ctx.extern_spec_items.insert(def_id, i);
         }
     }
 }

@@ -29,3 +29,15 @@ extern_spec! {
 fn client<T: B>(y: T) {
     uses_a(y)
 }
+
+fn renamed_params<A, B, C>(a: A, b: B, c: C) {}
+
+#[logic]
+fn id<T>(x: T) -> T {
+    x
+}
+
+extern_spec! {
+    #[ensures(id(d) === d)]
+    fn renamed_params<T,U,V>(d: T, e: U, f: V)
+}

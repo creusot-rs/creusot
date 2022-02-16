@@ -9,6 +9,7 @@ use rustc_middle::thir::visit::Visitor;
 use rustc_middle::thir::{self, Expr, ExprKind, Thir};
 use rustc_middle::ty::subst::{InternalSubsts, Subst, SubstsRef};
 use rustc_middle::ty::{Predicate, TyCtxt, TyKind, WithOptConstParam};
+use rustc_span::Symbol;
 use why3::declaration::ValKind;
 use why3::declaration::{Decl, Module, ValKind::Val};
 
@@ -77,6 +78,8 @@ pub fn extern_module(
 pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
     pub contract: PreContract,
+    pub subst: Vec<(Symbol, Symbol)>,
+    pub ty_subst: SubstsRef<'tcx>,
     // Additional predicates we must verify to call this function
     additional_predicates: Vec<Predicate<'tcx>>,
 }
@@ -116,12 +119,22 @@ pub(crate) fn extract_extern_specs_from_item(
         inner_subst[ix]
     });
 
-    let contract = crate::specification::contract_of(ctx, def_id.to_def_id()).unwrap();
+    let mut contract = crate::specification::contract_of(ctx, def_id.to_def_id()).unwrap();
+    contract.func_id = id;
 
     // Use the inverse substitution to turn predicates on the outer definition into ones on the inner definition.
     let additional_predicates =
         ctx.tcx.predicates_of(def_id).instantiate(ctx.tcx, inverse).predicates;
-    (id, ExternSpec { contract, additional_predicates })
+
+    let ty_subst = inverse;
+    let subst = ctx
+        .tcx
+        .fn_arg_names(def_id)
+        .iter()
+        .zip(ctx.tcx.fn_arg_names(id).iter())
+        .map(|(i, i2)| (i.name, i2.name))
+        .collect();
+    (id, ExternSpec { contract, additional_predicates, subst, ty_subst })
 }
 
 // We shouldn't need a full visitor... or an index set, there should be a single item per extern spec method.

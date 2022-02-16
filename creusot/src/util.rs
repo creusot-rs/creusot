@@ -65,6 +65,14 @@ pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs(def_id), &["creusot", "extern_spec"]).is_some()
 }
 
+pub(crate) fn closure_owner(tcx: TyCtxt, mut def_id: DefId) -> DefId {
+    while tcx.is_closure(def_id) {
+        def_id = tcx.parent(def_id).unwrap();
+    }
+
+    def_id
+}
+
 pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     loop {
         if is_no_translate(tcx, def_id) {

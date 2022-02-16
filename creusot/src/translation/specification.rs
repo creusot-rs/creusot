@@ -5,6 +5,7 @@ use crate::{ctx::*, util};
 use rustc_macros::{TyDecodable, TyEncodable};
 use why3::declaration::Contract;
 use why3::mlcfg::Exp;
+use why3::Ident;
 
 use super::LocalIdent;
 use rustc_hir::def_id::DefId;
@@ -17,46 +18,17 @@ pub mod typing;
 
 pub use lower::*;
 
-pub fn requires_to_why<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
-    req_id: DefId,
-) -> Exp {
-    log::debug!("require clause {:?}", req_id);
-    let term = ctx.term(req_id).unwrap().clone();
-    lower_pure(ctx, names, req_id, term)
-}
-
-pub fn variant_to_why<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
-    var_id: DefId,
-) -> Exp {
-    log::debug!("variant clause {:?}", var_id);
-    let term = ctx.term(var_id).unwrap().clone();
-    lower_pure(ctx, names, var_id, term)
-}
-
-pub fn ensures_to_why<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
-    ens_id: DefId,
-) -> Exp {
-    log::debug!("ensures clause {:?}", ens_id);
-    let term = ctx.term(ens_id).unwrap().clone();
-    lower_pure(ctx, names, ens_id, term)
-}
-
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct PreContract {
-    pub variant: Option<DefId>,
-    pub requires: Vec<DefId>,
-    pub ensures: Vec<DefId>,
+    pub func_id: DefId,
+    variant: Option<DefId>,
+    requires: Vec<DefId>,
+    ensures: Vec<DefId>,
 }
 
 impl PreContract {
-    fn new() -> Self {
-        Self { variant: None, requires: Vec::new(), ensures: Vec::new() }
+    fn new(func_id: DefId) -> Self {
+        Self { func_id, variant: None, requires: Vec::new(), ensures: Vec::new() }
     }
 
     pub fn check_and_lower<'tcx>(
@@ -67,17 +39,33 @@ impl PreContract {
     ) -> Contract {
         let mut out = Contract::new();
 
-        for req in self.requires {
-            out.requires.push(requires_to_why(ctx, names, req));
+        for req_id in self.requires {
+            log::debug!("require clause {:?}", req_id);
+            let term = ctx.term(req_id).unwrap().clone();
+            out.requires.push(lower_pure(ctx, names, req_id, term));
         }
 
-        for ens in self.ensures {
-            out.ensures.push(ensures_to_why(ctx, names, ens));
+        for ens_id in self.ensures {
+            log::debug!("ensures clause {:?}", ens_id);
+            let term = ctx.term(ens_id).unwrap().clone();
+            out.ensures.push(lower_pure(ctx, names, ens_id, term));
         }
-
-        if let Some(variant) = self.variant {
-            out.variant = vec![variant_to_why(ctx, names, variant)];
+        if let Some(var_id) = self.variant {
+            log::debug!("variant clause {:?}", var_id);
+            let term = ctx.term(var_id).unwrap().clone();
+            out.variant = vec![lower_pure(ctx, names, var_id, term)];
         };
+
+        if let Some(extern_spec) = ctx.extern_spec(self.func_id) {
+            let subst = extern_spec
+                .subst
+                .iter()
+                .map(|(i, i2)| {
+                    (Ident::build(i.as_str()), Exp::impure_var(Ident::build(i2.as_str())))
+                })
+                .collect();
+            out.subst(&subst);
+        }
         out
     }
 }
@@ -121,14 +109,14 @@ pub enum SpecAttrError {
 }
 
 pub fn contract_of(ctx: &TranslationCtx, def_id: DefId) -> Result<PreContract, SpecAttrError> {
-    let attrs = ctx.tcx.get_attrs(def_id);
-
     use SpecAttrError::*;
-    let mut contract = PreContract::new();
 
     if let Some(extern_spec) = ctx.extern_spec(def_id) {
         return Ok(extern_spec.contract.clone());
     }
+
+    let attrs = ctx.tcx.get_attrs(def_id);
+    let mut contract = PreContract::new(def_id);
 
     for attr in attrs {
         if !util::is_attr(attr, "spec") {

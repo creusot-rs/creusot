@@ -1,7 +1,7 @@
-use super::typing::{LogicalOp, Pattern, Term, TermKind};
+use super::typing::{self, LogicalOp, Pattern, Term, TermKind};
 use crate::translation::traits::resolve_assoc_item_opt;
 use crate::translation::ty::variant_accessor_name;
-use crate::translation::{binop_to_binop, constant, ty::translate_ty, unop_to_unop};
+use crate::translation::{constant, ty::translate_ty};
 use crate::util::constructor_qname;
 use crate::{ctx::*, util};
 use why3::mlcfg::{BinOp, Exp, Pattern as Pat, Purity};
@@ -55,10 +55,10 @@ impl Lower<'_, '_, 'tcx> {
                 let rhs = self.lower_term(rhs);
 
                 match op {
-                    rustc_middle::mir::BinOp::Div => {
+                    typing::BinOp::Div => {
                         Exp::Call(box Exp::pure_var("div".into()), vec![lhs, rhs])
                     }
-                    rustc_middle::mir::BinOp::Rem => {
+                    typing::BinOp::Rem => {
                         Exp::Call(box Exp::pure_var("mod".into()), vec![lhs, rhs])
                     }
                     _ => Exp::BinaryOp(binop_to_binop(op), box lhs, box rhs),
@@ -73,7 +73,11 @@ impl Lower<'_, '_, 'tcx> {
                 box self.lower_term(rhs),
             ),
             TermKind::Unary { op, box arg } => {
-                Exp::UnaryOp(unop_to_unop(op), box self.lower_term(arg))
+                let op = match op {
+                    typing::UnOp::Not => why3::mlcfg::UnOp::Not,
+                    typing::UnOp::Neg => why3::mlcfg::UnOp::Neg,
+                };
+                Exp::UnaryOp(op, box self.lower_term(arg))
             }
             TermKind::Call { id, subst, fun: box Term { kind: TermKind::Const(_), .. }, args } => {
                 let mut args: Vec<_> = args.into_iter().map(|arg| self.lower_term(arg)).collect();
@@ -246,6 +250,22 @@ use rustc_middle::ty::{
     subst::{Subst, SubstsRef},
     TyCtxt,
 };
+
+fn binop_to_binop(op: typing::BinOp) -> why3::mlcfg::BinOp {
+    match op {
+        typing::BinOp::Add => BinOp::Add,
+        typing::BinOp::Sub => BinOp::Sub,
+        typing::BinOp::Mul => BinOp::Mul,
+        typing::BinOp::Div => BinOp::Div,
+        typing::BinOp::Eq => BinOp::Eq,
+        typing::BinOp::Lt => BinOp::Lt,
+        typing::BinOp::Le => BinOp::Le,
+        typing::BinOp::Gt => BinOp::Gt,
+        typing::BinOp::Ge => BinOp::Ge,
+        typing::BinOp::Ne => BinOp::Ne,
+        typing::BinOp::Rem => BinOp::Mod,
+    }
+}
 
 pub(super) fn mk_binders(func: Exp, args: Vec<Exp>) -> Exp {
     let mut impure_args = Vec::with_capacity(args.len());
