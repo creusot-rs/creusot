@@ -702,6 +702,7 @@ impl Pretty for Exp {
             }
             Exp::Pure(e) => alloc.text("pure ").append(e.pretty(alloc, env).braces()),
             Exp::Absurd => alloc.text("absurd"),
+            Exp::Old(e) => alloc.text("old").append(e.pretty(alloc, env).parens()),
         }
     }
 }

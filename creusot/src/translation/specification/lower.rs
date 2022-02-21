@@ -130,6 +130,7 @@ impl Lower<'_, '_, 'tcx> {
             TermKind::Impl { box lhs, box rhs } => {
                 Exp::Impl(box self.lower_term(lhs), box self.lower_term(rhs))
             }
+            TermKind::Old { box term } => Exp::Old(box self.lower_term(term)),
             TermKind::Equals { box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);

@@ -35,6 +35,12 @@ pub fn implication(_: bool, _: bool) -> bool {
 }
 
 #[creusot::no_translate]
+#[rustc_diagnostic_item = "old"]
+pub fn old<T>(_: T) -> T {
+    panic!()
+}
+
+#[creusot::no_translate]
 #[rustc_diagnostic_item = "absurd"]
 pub fn abs<T>() -> T {
     panic!()

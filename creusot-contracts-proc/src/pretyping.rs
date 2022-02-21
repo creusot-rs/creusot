@@ -29,8 +29,14 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
         }
         RT::Block(TermBlock { block, .. }) => encode_block(block),
         RT::Call(TermCall { func, args, .. }) => {
-            let func = encode_term(*func)?;
             let args: Vec<_> = args.into_iter().map(encode_term).collect::<Result<_, _>>()?;
+            if let RT::Path(p) = &*func {
+                if p.inner.path.is_ident("old") {
+                    return Ok(quote! { creusot_contracts :: stubs :: old ( #(#args),* ) });
+                }
+            }
+
+            let func = encode_term(*func)?;
             Ok(quote! { #func (#(#args),*)})
         }
         RT::Cast(_) => todo!("Cast"),
@@ -191,6 +197,16 @@ fn encode_arm(arm: TermArm) -> Result<TokenStream, EncodeError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn encode_old() {
+        let term: Term = syn::parse_str("old(x)").unwrap();
+
+        assert_eq!(
+            format!("{}", encode_term(term).unwrap()),
+            "creusot_contracts :: stubs :: old (x)"
+        );
+    }
 
     #[test]
     fn encode_fin() {
