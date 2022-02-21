@@ -183,6 +183,122 @@ pub enum Exp {
     Exists(Vec<(Ident, Type)>, Box<Exp>),
 }
 
+pub trait ExpMutVisitor: Sized {
+    fn visit_mut(&mut self, exp: &mut Exp) {
+        super_visit_mut(self, exp)
+    }
+}
+
+pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
+    match exp {
+        Exp::Current(e) => f.visit_mut(e),
+        Exp::Final(e) => f.visit_mut(e),
+        Exp::Let { pattern: _, arg, body } => {
+            f.visit_mut(arg);
+            f.visit_mut(body)
+        }
+        Exp::Var(_, _) => {}
+        Exp::QVar(_, _) => {}
+        Exp::RecUp { record, label: _, val } => {
+            f.visit_mut(record);
+            f.visit_mut(val)
+        }
+        Exp::RecField { record, label: _ } => f.visit_mut(record),
+        Exp::Tuple(exps) => exps.iter_mut().for_each(|e| f.visit_mut(e)),
+        Exp::Constructor { ctor: _, args } => args.iter_mut().for_each(|e| f.visit_mut(e)),
+        Exp::BorrowMut(e) => f.visit_mut(e),
+        Exp::Const(_) => {}
+        Exp::BinaryOp(_, l, r) => {
+            f.visit_mut(l);
+            f.visit_mut(r)
+        }
+        Exp::UnaryOp(_, exp) => f.visit_mut(exp),
+        Exp::Call(func, args) => {
+            f.visit_mut(func);
+            args.iter_mut().for_each(|e| f.visit_mut(e))
+        }
+        Exp::Verbatim(_) => {}
+        Exp::Abs(_, e) => f.visit_mut(e),
+        Exp::Match(scrut, arms) => {
+            f.visit_mut(scrut);
+            arms.iter_mut().for_each(|(_, e)| f.visit_mut(e))
+        }
+        Exp::IfThenElse(c, l, r) => {
+            f.visit_mut(c);
+            f.visit_mut(l);
+            f.visit_mut(r)
+        }
+        Exp::Ascribe(e, _) => f.visit_mut(e),
+        Exp::Pure(e) => f.visit_mut(e),
+        Exp::Old(e) => f.visit_mut(e),
+        Exp::Absurd => {}
+        Exp::Impl(l, r) => {
+            f.visit_mut(l);
+            f.visit_mut(r)
+        }
+        Exp::Forall(_, e) => f.visit_mut(e),
+        Exp::Exists(_, e) => f.visit_mut(e),
+    }
+}
+
+pub trait ExpVisitor: Sized {
+    fn visit(&mut self, exp: &Exp) {
+        super_visit(self, exp)
+    }
+}
+
+pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
+    match exp {
+        Exp::Current(e) => f.visit(e),
+        Exp::Final(e) => f.visit(e),
+        Exp::Let { pattern: _, arg, body } => {
+            f.visit(arg);
+            f.visit(body)
+        }
+        Exp::Var(_, _) => {}
+        Exp::QVar(_, _) => {}
+        Exp::RecUp { record, label: _, val } => {
+            f.visit(record);
+            f.visit(val)
+        }
+        Exp::RecField { record, label: _ } => f.visit(record),
+        Exp::Tuple(exps) => exps.iter().for_each(|e| f.visit(e)),
+        Exp::Constructor { ctor: _, args } => args.iter().for_each(|e| f.visit(e)),
+        Exp::BorrowMut(e) => f.visit(e),
+        Exp::Const(_) => {}
+        Exp::BinaryOp(_, l, r) => {
+            f.visit(l);
+            f.visit(r)
+        }
+        Exp::UnaryOp(_, exp) => f.visit(exp),
+        Exp::Call(func, args) => {
+            f.visit(func);
+            args.iter().for_each(|e| f.visit(e))
+        }
+        Exp::Verbatim(_) => {}
+        Exp::Abs(_, e) => f.visit(e),
+        Exp::Match(scrut, arms) => {
+            f.visit(scrut);
+            arms.iter().for_each(|(_, e)| f.visit(e))
+        }
+        Exp::IfThenElse(c, l, r) => {
+            f.visit(c);
+            f.visit(l);
+            f.visit(r)
+        }
+        Exp::Ascribe(e, _) => f.visit(e),
+        Exp::Pure(e) => f.visit(e),
+        Exp::Old(e) => f.visit(e),
+        Exp::Absurd => {}
+        Exp::Impl(l, r) => {
+            f.visit(l);
+            f.visit(r)
+        }
+        Exp::Forall(_, e) => f.visit(e),
+        Exp::Exists(_, e) => f.visit(e),
+    }
+}
+
 impl Exp {
     pub fn impure_qvar(q: QName) -> Self {
         Exp::QVar(q, Purity::Program)
@@ -213,126 +329,83 @@ impl Exp {
     }
 
     pub fn is_pure(&self) -> bool {
-        match self {
-            Exp::Current(e) => e.is_pure(),
-            Exp::Final(e) => e.is_pure(),
-            Exp::Let { arg, body, .. } => arg.is_pure() && body.is_pure(),
-            Exp::Var(_, Purity::Logic) => true,
-            Exp::Var(_, Purity::Program) => false,
-            Exp::QVar(_, Purity::Logic) => true,
-            Exp::QVar(_, Purity::Program) => false,
-            Exp::RecUp { record, val, .. } => record.is_pure() && val.is_pure(),
-            Exp::RecField { record, .. } => record.is_pure(),
-            Exp::Tuple(args) => args.iter().all(Exp::is_pure),
-            Exp::Constructor { args, .. } => args.iter().all(Exp::is_pure),
-            Exp::BorrowMut(e) => e.is_pure(),
-            Exp::Const(_) => true,
-            Exp::BinaryOp(_, l, r) => l.is_pure() && r.is_pure(),
-            Exp::UnaryOp(_, e) => e.is_pure(),
-            Exp::Call(f, args) => f.is_pure() && args.iter().all(Exp::is_pure),
-            Exp::Verbatim(_) => false,
-            Exp::Abs(_, e) => e.is_pure(),
-            Exp::Match(e, brs) => e.is_pure() && brs.iter().all(|(_, e)| e.is_pure()),
-            Exp::IfThenElse(s, i, e) => s.is_pure() && i.is_pure() && e.is_pure(),
-            Exp::Ascribe(e, _) => e.is_pure(),
-            Exp::Absurd => false,
-            Exp::Impl(l, r) => l.is_pure() && r.is_pure(),
-            Exp::Forall(_, e) => e.is_pure(),
-            Exp::Exists(_, e) => e.is_pure(),
-            Exp::Pure(_) => true,
-            Exp::Old(e) => e.is_pure(),
+        struct IsPure {
+            pure: bool,
         }
+
+        impl ExpVisitor for IsPure {
+            fn visit(&mut self, exp: &Exp) {
+                match exp {
+                    Exp::Var(_, Purity::Program) => self.pure &= false,
+                    Exp::QVar(_, Purity::Program) => self.pure &= false,
+                    Exp::Verbatim(_) => self.pure &= false,
+                    Exp::Absurd => self.pure &= false,
+                    _ => {
+                        super_visit(self, exp);
+                    }
+                }
+            }
+        }
+
+        let mut p = IsPure { pure: true };
+        p.visit(self);
+        p.pure
     }
 
     pub fn reassociate(&mut self) {
-        match self {
-            Exp::Current(e) => e.reassociate(),
-            Exp::Final(e) => e.reassociate(),
-            Exp::Let { arg, body, .. } => {
-                arg.reassociate();
-                body.reassociate()
-            }
-            Exp::Var(_, _) => (),
-            Exp::QVar(_, _) => (),
-            Exp::RecUp { val, record, .. } => {
-                record.reassociate();
-                val.reassociate()
-            }
-            Exp::RecField { record, .. } => record.reassociate(),
-            Exp::Tuple(fields) => fields.iter_mut().for_each(|f| f.reassociate()),
-            Exp::Constructor { args, .. } => args.iter_mut().for_each(|f| f.reassociate()),
-            Exp::BorrowMut(e) => e.reassociate(),
-            Exp::Const(_) => (),
-            Exp::BinaryOp(op, l, r) => {
-                let mut reordered = false;
-                match op.precedence().associativity() {
-                    Some(AssocDir::Left) => {
-                        //     self                self
-                        //   /       \            /    \
-                        //   l        r    =>    r     rr
-                        //           / \        / \
-                        //          rl rr      l  rl
-                        //
-                        // First swap rl and rr
-                        // Then swap the left child of with the left child of self moving `l` into
-                        // the left chid of `r` and moving `rr` to the left of self
-                        // Finally swap the two children of self which are now `r` and `rr`
-                        if let box Exp::BinaryOp(iop, rl, rr) = r {
-                            if *iop == *op {
-                                std::mem::swap(rl, rr);
-                                std::mem::swap(rl, l);
-                                std::mem::swap(l, r);
-                                reordered = true;
+        struct Reassociate;
+
+        impl ExpMutVisitor for Reassociate {
+            fn visit_mut(&mut self, exp: &mut Exp) {
+                match exp {
+                    Exp::BinaryOp(op, l, r) => {
+                        let mut reordered = false;
+                        match op.precedence().associativity() {
+                            Some(AssocDir::Left) => {
+                                //     self                self
+                                //   /       \            /    \
+                                //   l        r    =>    r     rr
+                                //           / \        / \
+                                //          rl rr      l  rl
+                                //
+                                // First swap rl and rr
+                                // Then swap the left child of with the left child of self moving `l` into
+                                // the left chid of `r` and moving `rr` to the left of self
+                                // Finally swap the two children of self which are now `r` and `rr`
+                                if let box Exp::BinaryOp(iop, rl, rr) = r {
+                                    if *iop == *op {
+                                        std::mem::swap(rl, rr);
+                                        std::mem::swap(rl, l);
+                                        std::mem::swap(l, r);
+                                        reordered = true;
+                                    }
+                                }
                             }
+                            Some(AssocDir::Right) => {
+                                // ll -> l, r -> lr, lr -> ll, l -> r;
+                                if let box Exp::BinaryOp(iop, ll, lr) = l {
+                                    if *iop == *op {
+                                        std::mem::swap(ll, lr);
+                                        std::mem::swap(lr, r);
+                                        std::mem::swap(l, r);
+                                        reordered = true;
+                                    }
+                                }
+                            }
+                            None => {}
+                        }
+                        if reordered {
+                            self.visit_mut(exp);
+                        } else {
+                            self.visit_mut(l);
+                            self.visit_mut(r);
                         }
                     }
-                    Some(AssocDir::Right) => {
-                        // ll -> l, r -> lr, lr -> ll, l -> r;
-                        if let box Exp::BinaryOp(iop, ll, lr) = l {
-                            if *iop == *op {
-                                std::mem::swap(ll, lr);
-                                std::mem::swap(lr, r);
-                                std::mem::swap(l, r);
-                                reordered = true;
-                            }
-                        }
-                    }
-                    None => {}
-                }
-                if reordered {
-                    self.reassociate();
-                } else {
-                    l.reassociate();
-                    r.reassociate();
+                    _ => super_visit_mut(self, exp),
                 }
             }
-            Exp::UnaryOp(_, e) => e.reassociate(),
-            Exp::Call(f, args) => {
-                f.reassociate();
-                args.iter_mut().for_each(|a| a.reassociate())
-            }
-            Exp::Verbatim(_) => (),
-            Exp::Abs(_, e) => e.reassociate(),
-            Exp::Match(e, brs) => {
-                e.reassociate();
-                brs.iter_mut().for_each(|(_, e)| e.reassociate())
-            }
-            Exp::IfThenElse(s, i, e) => {
-                s.reassociate();
-                i.reassociate();
-                e.reassociate();
-            }
-            Exp::Ascribe(e, _) => e.reassociate(),
-            Exp::Absurd => (),
-            Exp::Impl(l, r) => {
-                l.reassociate();
-                r.reassociate()
-            }
-            Exp::Forall(_, e) => e.reassociate(),
-            Exp::Exists(_, e) => e.reassociate(),
-            Exp::Pure(e) => e.reassociate(),
-            Exp::Old(e) => e.reassociate(),
         }
+        Reassociate.visit_mut(self);
     }
 }
 
@@ -441,169 +514,135 @@ impl Exp {
     }
 
     pub fn fvs(&self) -> IndexSet<Ident> {
-        match self {
-            Exp::Current(e) => e.fvs(),
-            Exp::Final(e) => e.fvs(),
-            Exp::Let { pattern, arg, body } => {
-                let bound = pattern.binders();
-
-                &(&body.fvs() - &bound) | &arg.fvs()
-            }
-            Exp::Var(v, _) => {
-                let mut fvs = IndexSet::new();
-                fvs.insert(v.clone());
-                fvs
-            }
-            Exp::QVar(_, _) => IndexSet::new(),
-            // Exp::RecUp { record, label, val } => {}
-            // Exp::Tuple(_) => {}
-            Exp::Constructor { ctor: _, args } => {
-                args.iter().fold(IndexSet::new(), |acc, v| &acc | &v.fvs())
-            }
-            Exp::Const(_) => IndexSet::new(),
-            Exp::BinaryOp(_, l, r) => &l.fvs() | &r.fvs(),
-            Exp::Call(f, args) => args.iter().fold(f.fvs(), |acc, a| &acc | &a.fvs()),
-            Exp::Impl(h, c) => &h.fvs() | &c.fvs(),
-            Exp::Forall(bnds, exp) => bnds.iter().fold(exp.fvs(), |mut acc, (l, _)| {
-                acc.remove(l);
-                acc
-            }),
-            Exp::BorrowMut(e) => e.fvs(),
-            Exp::Verbatim(_) => IndexSet::new(),
-            Exp::Pure(e) => e.fvs(),
-            _ => unimplemented!(),
+        struct Fvs {
+            fvs: IndexSet<Ident>,
         }
+
+        impl ExpVisitor for Fvs {
+            fn visit(&mut self, exp: &Exp) {
+                match exp {
+                    Exp::Var(v, _) => {
+                        self.fvs.insert(v.clone());
+                    }
+                    Exp::Let { pattern, arg, body } => {
+                        let fvs = std::mem::take(&mut self.fvs);
+                        self.visit(body);
+                        self.fvs = (&self.fvs) - &pattern.binders();
+                        self.visit(arg);
+                        self.fvs.extend(fvs);
+                    }
+                    Exp::Forall(bnds, exp) => {
+                        let fvs = std::mem::take(&mut self.fvs);
+                        self.visit(exp);
+
+                        bnds.iter().for_each(|(l, _)| {
+                            self.fvs.remove(l);
+                        });
+                        self.fvs.extend(fvs);
+                    }
+                    Exp::Exists(bnds, exp) => {
+                        let fvs = std::mem::take(&mut self.fvs);
+                        self.visit(exp);
+
+                        bnds.iter().for_each(|(l, _)| {
+                            self.fvs.remove(l);
+                        });
+                        self.fvs.extend(fvs);
+                    }
+                    _ => super_visit(self, exp),
+                }
+            }
+        }
+
+        let mut fvs = Fvs { fvs: IndexSet::new() };
+        fvs.visit(self);
+        fvs.fvs
     }
 
     pub fn qfvs(&self) -> IndexSet<QName> {
-        match self {
-            Exp::Current(e) => e.qfvs(),
-            Exp::Final(e) => e.qfvs(),
-            Exp::Let { arg, body, .. } => &body.qfvs() | &arg.qfvs(),
-            Exp::Var(_, _) => IndexSet::new(),
-            Exp::QVar(v, _) => {
-                let mut fvs = IndexSet::new();
-                fvs.insert(v.clone());
-                fvs
-            }
-            Exp::Constructor { ctor: _, args } => {
-                args.iter().fold(IndexSet::new(), |acc, v| &acc | &v.qfvs())
-            }
-            Exp::Const(_) => IndexSet::new(),
-            Exp::BinaryOp(_, l, r) => &l.qfvs() | &r.qfvs(),
-            Exp::Call(f, args) => args.iter().fold(f.qfvs(), |acc, a| &acc | &a.qfvs()),
-            Exp::Impl(h, c) => &h.qfvs() | &c.qfvs(),
-            Exp::Forall(_, exp) => exp.qfvs(),
-            Exp::Exists(_, exp) => exp.qfvs(),
-            Exp::BorrowMut(e) => e.qfvs(),
-            Exp::Verbatim(_) => IndexSet::new(),
-            Exp::Tuple(args) => args.iter().fold(IndexSet::new(), |acc, v| &acc | &v.qfvs()),
-            Exp::Match(scrut, brs) => {
-                brs.iter().fold(scrut.qfvs(), |acc, (_, br)| &acc | &br.qfvs())
-            }
-            Exp::IfThenElse(s, i, e) => &(&s.qfvs() | &i.qfvs()) | &e.qfvs(),
-            Exp::Absurd => IndexSet::new(),
-            Exp::Pure(e) => e.qfvs(),
-            _ => unimplemented!("qvfs: {:?}", self),
+        struct QFvs {
+            qfvs: IndexSet<QName>,
         }
+
+        impl ExpVisitor for QFvs {
+            fn visit(&mut self, exp: &Exp) {
+                match exp {
+                    Exp::QVar(v, _) => {
+                        self.qfvs.insert(v.clone());
+                    }
+                    _ => super_visit(self, exp),
+                }
+            }
+        }
+
+        let mut qfvs = QFvs { qfvs: IndexSet::new() };
+
+        qfvs.visit(self);
+
+        qfvs.qfvs
     }
 
-    pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
-        match self {
-            Exp::Current(e) => e.subst(subst),
-            Exp::Final(e) => e.subst(subst),
-            Exp::Let { pattern, arg, body } => {
-                arg.subst(subst);
-                let mut bound = pattern.binders();
-                let mut subst = subst.clone();
-                bound.drain(..).for_each(|k| {
-                    subst.remove(&k);
-                });
+    pub fn subst(&mut self, mut subst: &HashMap<Ident, Exp>) {
+        impl<'a> ExpMutVisitor for &'a HashMap<Ident, Exp> {
+            fn visit_mut(&mut self, exp: &mut Exp) {
+                match exp {
+                    Exp::Var(v, _) => {
+                        if let Some(e) = self.get(v) {
+                            *exp = e.clone()
+                        }
+                    }
+                    Exp::Abs(ident, body) => {
+                        let mut subst = self.clone();
+                        subst.remove(ident);
+                        let mut s = &subst;
+                        s.visit_mut(body);
+                    }
 
-                body.subst(&subst);
-            }
-            Exp::Var(v, _) => {
-                if let Some(e) = subst.get(v) {
-                    *self = e.clone()
-                }
-            }
-            Exp::RecUp { record, val, .. } => {
-                record.subst(subst);
-                val.subst(subst);
-            }
-            Exp::RecField { record, .. } => {
-                record.subst(subst);
-            }
-            Exp::Tuple(tuple) => {
-                for t in tuple {
-                    t.subst(subst);
-                }
-            }
-            Exp::Constructor { args, .. } => {
-                for a in args {
-                    a.subst(subst);
-                }
-            }
-            Exp::Abs(ident, body) => {
-                let mut subst = subst.clone();
-                subst.remove(ident);
-                body.subst(&subst);
-            }
-            Exp::Match(box scrut, brs) => {
-                scrut.subst(subst);
+                    Exp::Let { pattern, arg, body } => {
+                        self.visit_mut(arg);
+                        let mut bound = pattern.binders();
+                        let mut subst = self.clone();
+                        bound.drain(..).for_each(|k| {
+                            subst.remove(&k);
+                        });
 
-                for (pat, br) in brs {
-                    let mut s = subst.clone();
-                    pat.binders().drain(..).for_each(|b| {
-                        s.remove(&b);
-                    });
-                    br.subst(&s);
+                        let mut s = &subst;
+                        s.visit_mut(body);
+                    }
+                    Exp::Match(box scrut, brs) => {
+                        self.visit_mut(scrut);
+
+                        for (pat, br) in brs {
+                            let mut s = self.clone();
+                            pat.binders().drain(..).for_each(|b| {
+                                s.remove(&b);
+                            });
+
+                            let mut s = &s;
+                            s.visit_mut(br);
+                        }
+                    }
+                    Exp::Forall(binders, exp) => {
+                        let mut subst = self.clone();
+                        binders.iter().for_each(|k| {
+                            subst.remove(&k.0);
+                        });
+                        let mut s = &subst;
+                        s.visit_mut(exp);
+                    }
+                    Exp::Exists(binders, exp) => {
+                        let mut subst = self.clone();
+                        binders.iter().for_each(|k| {
+                            subst.remove(&k.0);
+                        });
+                        let mut s = &subst;
+                        s.visit_mut(exp);
+                    }
+                    _ => super_visit_mut(self, exp),
                 }
             }
-            Exp::IfThenElse(s, i, e) => {
-                s.subst(subst);
-                i.subst(subst);
-                e.subst(subst);
-            }
-            Exp::BorrowMut(e) => e.subst(subst),
-            Exp::UnaryOp(_, o) => {
-                o.subst(subst);
-            }
-            Exp::BinaryOp(_, l, r) => {
-                l.subst(subst);
-                r.subst(subst)
-            }
-            Exp::Impl(hyp, exp) => {
-                hyp.subst(subst);
-                exp.subst(subst)
-            }
-            Exp::Forall(binders, exp) => {
-                let mut subst = subst.clone();
-                binders.iter().for_each(|k| {
-                    subst.remove(&k.0);
-                });
-                exp.subst(&subst);
-            }
-            Exp::Exists(binders, exp) => {
-                let mut subst = subst.clone();
-                binders.iter().for_each(|k| {
-                    subst.remove(&k.0);
-                });
-                exp.subst(&subst);
-            }
-            Exp::Call(_, a) => {
-                for arg in a {
-                    arg.subst(subst);
-                }
-            }
-            Exp::Ascribe(e, _) => e.subst(subst),
-            Exp::Pure(e) => e.subst(subst),
-            Exp::QVar(_, _) => {}
-            Exp::Const(_) => {}
-            Exp::Verbatim(_) => {}
-            Exp::Absurd => {}
-            Exp::Old(e) => e.subst(subst),
         }
+        subst.visit_mut(self);
     }
 
     // Construct an application from this expression and an argument
