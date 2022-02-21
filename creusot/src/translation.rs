@@ -71,10 +71,6 @@ pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
-        // ctx.translate(*tr);
-    }
-
     if ctx.should_export() {
         metadata::dump_exports(&ctx, &ctx.opts.metadata_path);
     }
