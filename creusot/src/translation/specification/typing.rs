@@ -69,6 +69,7 @@ pub enum TermKind<'tcx> {
     Match { scrutinee: Box<Term<'tcx>>, arms: Vec<(Pattern<'tcx>, Term<'tcx>)> },
     Let { pattern: Pattern<'tcx>, arg: Box<Term<'tcx>>, body: Box<Term<'tcx>> },
     Projection { lhs: Box<Term<'tcx>>, name: Field, def: DefId },
+    Old { term: Box<Term<'tcx>> },
     Absurd,
 }
 
@@ -211,6 +212,11 @@ fn lower_expr<'tcx>(
                     Ok(Term { ty, kind: TermKind::Equals { lhs: box lhs, rhs: box rhs } })
                 }
                 Some(VariantCheck) => lower_expr(tcx, item_id, thir, args[0]),
+                Some(Old) => {
+                    let term = lower_expr(tcx, item_id, thir, args[0])?;
+
+                    Ok(Term { ty, kind: TermKind::Old { term: box term } })
+                }
                 None => {
                     let fun = lower_expr(tcx, item_id, thir, fun)?;
                     let args = args
@@ -432,6 +438,7 @@ enum Stub {
     Impl,
     Equals,
     VariantCheck,
+    Old,
 }
 
 fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
@@ -456,6 +463,9 @@ fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("variant_check")) {
             return Some(Stub::VariantCheck);
+        }
+        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("old")) {
+            return Some(Stub::Old);
         }
         None
     } else {

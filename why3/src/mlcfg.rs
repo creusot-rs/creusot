@@ -176,6 +176,7 @@ pub enum Exp {
     Ascribe(Box<Exp>, Type),
     Pure(Box<Exp>),
     // Predicates
+    Old(Box<Exp>),
     Absurd,
     Impl(Box<Exp>, Box<Exp>),
     Forall(Vec<(Ident, Type)>, Box<Exp>),
@@ -239,6 +240,7 @@ impl Exp {
             Exp::Forall(_, e) => e.is_pure(),
             Exp::Exists(_, e) => e.is_pure(),
             Exp::Pure(_) => true,
+            Exp::Old(e) => e.is_pure(),
         }
     }
 
@@ -329,6 +331,7 @@ impl Exp {
             Exp::Forall(_, e) => e.reassociate(),
             Exp::Exists(_, e) => e.reassociate(),
             Exp::Pure(e) => e.reassociate(),
+            Exp::Old(e) => e.reassociate(),
         }
     }
 }
@@ -344,7 +347,7 @@ enum Precedence {
     Conj,   // /\ / &&
     Not,    // not
     Infix1, // infix-op level 1 (right-assoc)
-    // AtOld,
+    AtOld,
     Infix2, // infix-op level 2 (left-assoc)
     Infix3, // infix-op level 3 (left-assoc)
     // Infix4, // infix-op level 4 (left-assoc)
@@ -371,7 +374,8 @@ impl Precedence {
             Precedence::Disj => Precedence::Conj,
             Precedence::Conj => Precedence::Not,
             Precedence::Not => Precedence::Infix1,
-            Precedence::Infix1 => Precedence::Infix2,
+            Precedence::Infix1 => Precedence::AtOld,
+            Precedence::AtOld => Precedence::Infix2,
             Precedence::Infix2 => Precedence::Infix3,
             Precedence::Infix3 => Precedence::Prefix,
             Precedence::Prefix => Precedence::Abs,
@@ -431,6 +435,7 @@ impl Exp {
             Exp::Ascribe(_, _) => Cast,
             Exp::Absurd => Atom,
             Exp::Pure(_) => Atom,
+            Exp::Old(_) => AtOld,
             _ => unimplemented!("{:?}", self),
         }
     }
@@ -597,6 +602,7 @@ impl Exp {
             Exp::Const(_) => {}
             Exp::Verbatim(_) => {}
             Exp::Absurd => {}
+            Exp::Old(e) => e.subst(subst),
         }
     }
 

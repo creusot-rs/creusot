@@ -84,3 +84,6 @@ fn primitive_comparison(x: X) {}
 fn bool_eq(a: bool, b: bool) -> bool {
     a == b
 }
+
+#[ensures(old(x) === x)]
+fn old_test(x: bool) {}
