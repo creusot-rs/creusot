@@ -44,6 +44,10 @@ pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
         return Err(Box::new(CrErr));
     }
 
+    for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
+        ctx.translate_trait(*tr);
+    }
+
     for def_id in ctx.tcx.hir().body_owners() {
         let def_id = def_id.to_def_id();
         if crate::util::is_extern_spec(ctx.tcx, def_id) {

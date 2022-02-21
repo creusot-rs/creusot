@@ -279,6 +279,7 @@ pub fn signature_of<'tcx>(
         } else {
             vec![]
         },
+
         // TODO: use real span
         retty: Some(
             names.with_public_clones(|names| ty::translate_ty(ctx, names, span, sig.output())),
