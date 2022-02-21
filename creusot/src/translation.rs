@@ -72,7 +72,7 @@ pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
     }
 
     for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
-        ctx.translate(*tr);
+        // ctx.translate(*tr);
     }
 
     if ctx.should_export() {
