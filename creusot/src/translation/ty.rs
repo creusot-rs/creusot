@@ -120,7 +120,8 @@ fn translate_ty_inner<'tcx>(
             names.import_prelude_module(PreludeModule::Prelude);
             MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
         }
-        _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
+        _ => unreachable!(),
+        // _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
 }
 
