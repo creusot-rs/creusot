@@ -1,16 +1,14 @@
 // basic tests for mappings
 
 extern crate creusot_contracts;
-use creusot_contracts::{*};
-
-
+use creusot_contracts::*;
 
 struct T {
     a: i32,
 }
 
 impl Model for T {
-    type ModelTy = Mapping<Int,Int>;
+    type ModelTy = Mapping<Int, Int>;
 
     #[logic]
     #[trusted]
@@ -20,16 +18,16 @@ impl Model for T {
     fn model(self) -> Self::ModelTy {
         std::process::abort()
     }
-
 }
 
 #[requires( 0 <= @((*t).a) )] // otherwise its wrong !
 #[requires( @((*t).a) < 1000 )] // to prevent overflow
-#[ensures( (@^t).eq((@*t).set(@((*t).a),1)) )]
-fn incr(t:&mut T) {
+#[ensures( @^t === (@*t).set(@((*t).a),1) )]
+fn incr(t: &mut T) {
     let old_t = Ghost::record(t);
     (*t).a += 1;
-    proof_assert!( (@^t).eq((@@old_t).set(@((@old_t).a),1)) );
+    // extensional equality of mappings
+    proof_assert!( @^t == (@@old_t).set(@((@old_t).a),1) );
 }
 
 fn main() {
@@ -39,5 +37,4 @@ fn main() {
     incr(&mut x);
     proof_assert!( (@x).get(13) === 1 );
     proof_assert!( (@x).get(42) === 1 );
-
 }
