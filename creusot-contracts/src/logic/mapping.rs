@@ -51,16 +51,13 @@ impl<A, B> EqLogic for Mapping<A, B> {
 
     #[trusted]
     #[logic]
-    fn refl(_: Self) {
-    }
+    fn refl(_: Self) {}
 
     #[trusted]
     #[logic]
-    fn symmetry(_: Self, _: Self) {
-    }
+    fn symmetry(_: Self, _: Self) {}
 
     #[trusted]
     #[logic]
-    fn transitivity(_: Self, _: Self, _: Self) {
-    }
+    fn transitivity(_: Self, _: Self, _: Self) {}
 }
