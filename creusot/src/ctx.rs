@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 
 pub use crate::clone_map::*;
 use crate::creusot_items::{self, CreusotItems};
@@ -15,7 +16,7 @@ use rustc_data_structures::captures::Captures;
 use rustc_errors::DiagnosticId;
 use rustc_hir::def::DefKind;
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_middle::ty::{AssocItemContainer, TyCtxt};
+use rustc_middle::ty::TyCtxt;
 use rustc_span::{Span, Symbol};
 pub use util::{item_name, module_name, ItemType};
 use why3::declaration::{Module, TyDecl};
@@ -36,11 +37,19 @@ pub struct TranslationCtx<'sess, 'tcx> {
     extern_spec_items: HashMap<LocalDefId, DefId>,
 }
 
+impl Deref for TranslationCtx<'_, 'tcx> {
+    type Target = TyCtxt<'tcx>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.tcx
+    }
+}
+
 impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, opts: &'sess Options) -> Self {
         let creusot_items = creusot_items::local_creusot_items(tcx);
 
-        let mut ctx = Self {
+        Self {
             tcx,
             translated_items: Default::default(),
             types: Default::default(),
@@ -51,11 +60,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             opts,
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
-        };
-
-        load_extern_specs(&mut ctx);
-
-        ctx
+        }
     }
 
     pub fn load_metadata(&mut self) {
@@ -63,13 +68,19 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn translate(&mut self, def_id: DefId) {
-        debug!("translating {:?}", def_id);
         if self.translated_items.contains(&def_id) {
             return;
         }
+        debug!("translating {:?}", def_id);
+
         match item_type(self.tcx, def_id) {
             ItemType::Trait => self.translate_trait(def_id),
-            ItemType::Impl => self.translate_impl(def_id),
+            ItemType::Impl => {
+                if self.tcx.impl_trait_ref(def_id).is_some() {
+                    self.translate_impl(def_id)
+                }
+            }
+
             ItemType::Logic | ItemType::Predicate | ItemType::Program => {
                 self.translate_function(def_id)
             }
@@ -80,6 +91,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             }
             ItemType::Type => unreachable!("ty"),
             ItemType::Interface => unreachable!(),
+            ItemType::Closure => self.translate_function(def_id),
             ItemType::Unsupported(dk) => self.crash_and_error(
                 self.tcx.def_span(def_id),
                 &format!("unsupported definition kind {:?} {:?}", def_id, dk),
@@ -93,17 +105,6 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             self.tcx.def_kind(def_id),
             DefKind::Fn | DefKind::Closure | DefKind::AssocFn
         ));
-
-        if let Some(assoc) = self.tcx.opt_associated_item(def_id) {
-            match assoc.container {
-                AssocItemContainer::TraitContainer(id) => self.translate(id),
-                AssocItemContainer::ImplContainer(id) => {
-                    if let Some(_) = self.tcx.trait_id_of_impl(id) {
-                        self.translate(id)
-                    }
-                }
-            }
-        }
 
         if !self.translated_items.insert(def_id) {
             return;
@@ -136,8 +137,14 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
             TranslatedItem::Extern { interface, body: ext_modl.0, dependencies: ext_modl.1 }
         } else {
+            debug!("translating {def_id:?} as program");
             let modl = crate::translation::translate_function(self, def_id);
-            TranslatedItem::Program { interface, modl, dependencies: deps.summary() }
+            TranslatedItem::Program {
+                interface,
+                modl,
+                dependencies: deps.summary(),
+                has_axioms: self.tcx.is_closure(def_id),
+            }
         };
 
         self.functions.insert(def_id, translated);
@@ -269,7 +276,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 }
 
-fn load_extern_specs(ctx: &mut TranslationCtx) {
+pub fn load_extern_specs(ctx: &mut TranslationCtx) {
     for def_id in ctx.tcx.hir().body_owners() {
         if crate::util::is_extern_spec(ctx.tcx, def_id.to_def_id()) {
             let (i, es) = extract_extern_specs_from_item(ctx, def_id);
@@ -281,5 +288,13 @@ fn load_extern_specs(ctx: &mut TranslationCtx) {
                 ctx.term(id).unwrap();
             }
         }
+    }
+
+    // Force extern spec items to get loaded so we export them properly
+    let need_to_load: Vec<_> =
+        ctx.extern_specs.values().flat_map(|e| e.contract.iter_items()).collect();
+
+    for id in need_to_load {
+        ctx.term(id);
     }
 }

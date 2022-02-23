@@ -11,8 +11,9 @@ use why3::QName;
 
 use super::FunctionTranslator;
 use crate::{
-    translation::{function::statement::uint_to_int, ty::variant_accessor_name},
-    util::constructor_qname,
+    translation::function::statement::uint_to_int,
+    translation::ty::{closure_accessor_name, variant_accessor_name},
+    util::{constructor_qname, item_qname},
 };
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
@@ -68,7 +69,16 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                             body: box Exp::impure_var("a".into()),
                         }
                     }
-                    _ => unreachable!(),
+                    TyKind::Closure(id, subst) => {
+                        let accessor_name = closure_accessor_name(self.tcx, *id, ix.as_usize());
+                        inner = Call(
+                            box Exp::impure_qvar(
+                                self.clone_names.insert(*id, subst).qname_ident(accessor_name),
+                            ),
+                            vec![inner],
+                        );
+                    }
+                    e => unreachable!("{:?}", e),
                 },
                 Downcast(_, _) => {}
                 Index(ix) => {
@@ -170,6 +180,26 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                             pattern: TupleP(field_pats),
                             arg: box self.translate_rplace_inner(lhs.local, stump),
                             body: box Tuple(varexps),
+                        }
+                    }
+                    TyKind::Closure(id, subst) => {
+                        let count = subst.as_closure().upvar_tys().count();
+                        let field_pats =
+                            ('a'..).map(|c| VarP(c.to_string().into())).take(count).collect();
+
+                        let mut varexps: Vec<Exp> = ('a'..)
+                            .map(|c| Exp::impure_var(c.to_string().into()))
+                            .take(count)
+                            .collect();
+
+                        varexps[ix.as_usize()] = inner;
+                        let mut cons = item_qname(self.tcx, *id);
+                        cons.name.capitalize();
+
+                        inner = Let {
+                            pattern: ConsP(cons.clone(), field_pats),
+                            arg: box self.translate_rplace_inner(lhs.local, stump),
+                            body: box Exp::Constructor { ctor: cons, args: varexps },
                         }
                     }
                     _ => unreachable!(),

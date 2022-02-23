@@ -18,6 +18,7 @@ pub enum TranslatedItem<'tcx> {
         interface: Module,
         modl: Module,
         dependencies: CloneSummary<'tcx>,
+        has_axioms: bool,
     },
     Trait {
         laws: Vec<DefId>,
@@ -86,6 +87,7 @@ impl TranslatedItem<'tcx> {
     pub fn has_axioms(&self) -> bool {
         match self {
             TranslatedItem::Logic { has_axioms, .. } => *has_axioms,
+            TranslatedItem::Program { has_axioms, .. } => *has_axioms,
             _ => false,
         }
     }

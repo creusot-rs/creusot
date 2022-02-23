@@ -8,6 +8,7 @@ pub mod traits;
 pub mod ty;
 
 use crate::ctx;
+use crate::ctx::load_extern_specs;
 use crate::ctx::TypeDeclaration;
 use crate::error::CrErr;
 use crate::metadata;
@@ -47,6 +48,7 @@ pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
     for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
         ctx.translate_trait(*tr);
     }
+    load_extern_specs(&mut ctx);
 
     for def_id in ctx.tcx.hir().body_owners() {
         let def_id = def_id.to_def_id();

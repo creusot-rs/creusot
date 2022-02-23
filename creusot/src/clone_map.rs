@@ -1,5 +1,6 @@
-use indexmap::IndexMap;
 use heck::CamelCase;
+use indexmap::{IndexMap, IndexSet};
+use petgraph::algo::is_cyclic_directed;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::EdgeDirection::Incoming;
 use rustc_hir::def_id::DefId;
@@ -8,7 +9,8 @@ use rustc_middle::ty::{
     subst::{InternalSubsts, Subst, SubstsRef},
     TyCtxt,
 };
-use rustc_span::Symbol;
+use rustc_middle::ty::{DefIdTree, ProjectionTy, Ty, TyKind};
+use rustc_span::{Symbol, DUMMY_SP};
 use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
 use why3::{Ident, QName};
 
@@ -80,8 +82,9 @@ pub struct CloneMap<'tcx> {
 
     // DefId of the item which is cloning. Used for trait resolution
     self_id: DefId,
+    // TODO: Push the graph into an opaque type with tight api boundary
     // Graph which is used to calculate the full clone set
-    clone_graph: DiGraphMap<CloneNode<'tcx>, Option<(DefId, SubstsRef<'tcx>)>>,
+    clone_graph: DiGraphMap<DepNode<'tcx>, IndexSet<(Kind, SymbolKind)>>,
     // Index of the last cloned entry
     last_cloned: usize,
 
@@ -89,12 +92,28 @@ pub struct CloneMap<'tcx> {
     public: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+enum DepNode<'tcx> {
+    Type(Ty<'tcx>),
+    Dep(CloneNode<'tcx>),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable, Hash)]
 enum Kind {
     Named(Symbol),
     Hidden,
     Export,
     // Use,
+}
+
+impl Kind {
+    pub fn qname_ident(&self, method: Ident) -> QName {
+        let module = match &self {
+            Kind::Named(name) => vec![name.to_string().into()],
+            _ => Vec::new(),
+        };
+        QName { module, name: method }
+    }
 }
 
 use rustc_macros::{TyDecodable, TyEncodable};
@@ -137,19 +156,18 @@ impl CloneInfo<'tcx> {
 
     // TODO: When traits stop holding all functions we can remove the last two arguments
     pub fn qname(&self, tcx: TyCtxt, def_id: DefId) -> QName {
-        self.qname_raw(item_name(tcx, def_id))
+        self.qname_ident(match tcx.def_kind(def_id) {
+            // DefKind::Closure => Ident::build("closure"),
+            _ => item_name(tcx, def_id),
+        })
     }
 
     pub fn qname_sym(&self, sym: rustc_span::symbol::Symbol) -> QName {
-        self.qname_raw(sym.to_string().into())
+        self.qname_ident(sym.to_string().into())
     }
 
-    fn qname_raw(&self, method: Ident) -> QName {
-        let module = match &self.kind {
-            Kind::Named(name) => vec![name.to_string().into()],
-            _ => Vec::new(),
-        };
-        QName { module, name: method }
+    pub fn qname_ident(&self, method: Ident) -> QName {
+        self.kind.qname_ident(method)
     }
 }
 
@@ -179,9 +197,9 @@ impl<'tcx> CloneMap<'tcx> {
             .collect()
     }
 
-    pub fn with_public_clones<F, A>(&mut self, mut f: F) -> A
+    pub fn with_public_clones<F, A>(&mut self, f: F) -> A
     where
-        F: FnMut(&mut Self) -> A,
+        F: FnOnce(&mut Self) -> A,
     {
         let public = std::mem::replace(&mut self.public, true);
         let ret = f(self);
@@ -192,10 +210,16 @@ impl<'tcx> CloneMap<'tcx> {
     pub fn insert(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
         let subst = self.tcx.erase_regions(subst);
 
+        let (def_id, subst) = self.closure_hack(def_id, subst);
+
         self.names.entry((def_id, subst)).or_insert_with(|| {
             debug!("inserting {:?} {:?}", def_id, subst);
             let base_sym = match util::item_type(self.tcx, def_id) {
                 ItemType::Impl => self.tcx.item_name(self.tcx.trait_id_of_impl(def_id).unwrap()),
+                ItemType::Closure => Symbol::intern(&format!(
+                    "closure{}",
+                    self.tcx.def_path(def_id).data.last().unwrap().disambiguator
+                )),
                 _ => self.tcx.item_name(def_id),
             };
 
@@ -209,7 +233,11 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     pub fn clone_self(&mut self, self_id: DefId) {
-        let subst = InternalSubsts::identity_for_item(self.tcx, self_id);
+        let subst = match self.tcx.type_of(self_id).kind() {
+            TyKind::Closure(_, subst) => subst,
+            _ => InternalSubsts::identity_for_item(self.tcx, self_id),
+        };
+
         let subst = self.tcx.erase_regions(subst);
 
         debug!("cloning self: {:?}", (self_id, subst));
@@ -240,6 +268,23 @@ impl<'tcx> CloneMap<'tcx> {
         self.clone_graph = DiGraphMap::new();
     }
 
+    fn closure_hack(&self, def_id: DefId, subst: SubstsRef<'tcx>) -> (DefId, SubstsRef<'tcx>) {
+        if self.tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), def_id)
+            || self.tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id)
+            || self.tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id)
+            || self.tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id)
+            || self.tcx.is_diagnostic_item(Symbol::intern("fn_impl_resolve"), def_id)
+        {
+            debug!("closure_hack: {:?} {:?}", self.self_id, def_id);
+            let self_ty = subst.types().nth(1).unwrap();
+            if let TyKind::Closure(id, csubst) = self_ty.kind() {
+                return (*id, csubst);
+            }
+        };
+
+        (def_id, subst)
+    }
+
     // Update the clone graph with new entries
     fn update_graph(&mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) {
         // Construct a maximal sharing graph for all dependencies.
@@ -262,7 +307,7 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            self.clone_graph.add_node(key);
+            self.clone_graph.add_node(DepNode::Dep(key));
             ctx.translate(key.0);
 
             debug!("{:?} has {:?} dependencies", key, ctx.dependencies(key.0).map(|d| d.len()));
@@ -277,6 +322,15 @@ impl<'tcx> CloneMap<'tcx> {
         ctx: &mut TranslationCtx<'_, 'tcx>,
         key: (DefId, SubstsRef<'tcx>),
     ) {
+        // Check the substitution for dependencies on closures
+        for ty in key.1.types() {
+            if let TyKind::Closure(id, subst) = ty.kind() {
+                self.insert(*id, subst);
+                // Sketchy... shouldn't we need to do something to subst?
+                self.add_graph_edge(DepNode::Dep(key), DepNode::Dep((*id, subst)));
+            }
+        }
+
         for (dep, info) in ctx.dependencies(key.0).iter().flat_map(|i| i.iter()) {
             // TODO: This only works because we use a completely separate set of clones for
             // function interfaces and bodies. It should be refactored to be less error prone.
@@ -286,42 +340,93 @@ impl<'tcx> CloneMap<'tcx> {
             trace!("adding dependency {:?} {:?}", dep, info.public);
 
             let orig = dep;
-            let dep = (dep.0, dep.1.subst(self.tcx, key.1));
+            let dep = self.resolve_dep(ctx, key.1, *dep);
 
-            let param_env = ctx.tcx.param_env(self.self_id);
-            let dep = traits::resolve_opt(ctx.tcx, param_env, dep.0, dep.1).unwrap_or(dep);
-
-            self.insert(dep.0, dep.1);
+            if let DepNode::Dep((defid, subst)) = dep {
+                self.insert(defid, subst);
+            }
 
             // Skip reflexive edges
-            if dep == key {
+            if dep == DepNode::Dep(key) {
                 continue;
             }
 
-            trace!("{:?} -> {:?}", dep, key);
-            self.clone_graph.add_edge(dep, key, Some(*orig));
+            let edge_set = self.add_graph_edge(DepNode::Dep(key), dep);
+            if let Some(sym) = refineable_symbol(ctx.tcx, orig.0) {
+                edge_set.insert((info.kind, sym));
+            }
         }
+    }
+
+    // Adds a dependency from `user` on `prov` for the symbol `sym`.
+    fn add_graph_edge(
+        &mut self,
+        user: DepNode<'tcx>,
+        prov: DepNode<'tcx>,
+    ) -> &mut IndexSet<(Kind, SymbolKind)> {
+        trace!("{:?} -> {:?}", prov, user);
+
+        if let None = self.clone_graph.edge_weight_mut(prov, user) {
+            self.clone_graph.add_edge(prov, user, IndexSet::new());
+        };
+
+        self.clone_graph.edge_weight_mut(prov, user).unwrap()
+    }
+
+    // Given an initial substitution, find out the substituted and resolved version of the dependency `dep`.
+    // This will attempt to normalize traits and associated types if the substitution provides enough
+    // information.
+    fn resolve_dep(
+        &self,
+        ctx: &TranslationCtx<'_, 'tcx>,
+        subst: SubstsRef<'tcx>,
+        dep: (DefId, SubstsRef<'tcx>),
+    ) -> DepNode<'tcx> {
+        let dep = (dep.0, dep.1.subst(self.tcx, subst));
+
+        let param_env = ctx.tcx.param_env(self.self_id);
+        let resolved = traits::resolve_opt(ctx.tcx, param_env, dep.0, dep.1).unwrap_or(dep);
+        let resolved = self.closure_hack(resolved.0, resolved.1);
+
+        if util::item_type(self.tcx, resolved.0) == ItemType::AssocTy
+            && self.tcx.trait_of_item(resolved.0).is_some()
+        {
+            let proj_ty = ProjectionTy { item_def_id: dep.0, substs: dep.1 };
+            let ty = self.tcx.mk_ty(TyKind::Projection(proj_ty));
+
+            let normed = self.tcx.try_normalize_erasing_regions(param_env, ty);
+            if let Ok(normed) = normed {
+                if ty != normed {
+                    return DepNode::Type(normed);
+                }
+            }
+        };
+
+        return DepNode::Dep(resolved);
     }
 
     fn clone_additional_deps(&mut self, key: (DefId, SubstsRef<'tcx>)) {
         let additional_deps = self.names[&key].additional_deps.clone();
-        for (_, dep) in &additional_deps {
+        for (sym, dep) in &additional_deps {
             self.insert(dep.0, dep.1);
+            let sym = refineable_symbol(self.tcx, key.0).filter(|sk| sk.sym() == *sym).unwrap();
 
-            trace!("{:?} -> {:?}", dep, key);
-            self.clone_graph.add_edge(*dep, key, None);
+            self.add_graph_edge(DepNode::Dep(key), DepNode::Dep(*dep)).insert((Kind::Hidden, sym));
         }
     }
 
     fn clone_laws(&mut self, ctx: &mut TranslationCtx<'_, 'tcx>, key: (DefId, SubstsRef<'tcx>)) {
         let Some(item) = ctx.tcx.opt_associated_item(key.0) else { return };
 
+        // Dont clone laws into the trait / impl which defines them.
         if let Some(self_trait) = ctx.tcx.opt_associated_item(self.self_id) {
             if self_trait.container.id() == item.container.id() {
                 return;
             }
         }
 
+        // If the function we are cloning into is `#[trusted]` there is no need for laws.
+        // Similarily, if it has no body, there will be no proofs.
         if util::is_trusted(ctx.tcx, self.self_id) || !util::has_body(ctx, self.self_id) {
             return;
         }
@@ -330,6 +435,7 @@ impl<'tcx> CloneMap<'tcx> {
             return;
         }
 
+        ctx.translate(item.container.id());
         let laws = ctx.item(item.container.id()).and_then(|i| i.laws()).unwrap_or(&[]);
 
         for law in laws {
@@ -345,7 +451,6 @@ impl<'tcx> CloneMap<'tcx> {
         let mut decls = Vec::new();
 
         use petgraph::visit::{Topo, Walker};
-        let empty = CloneSummary::new();
 
         // Update the clone graph with any new entries.
         self.update_graph(ctx);
@@ -363,14 +468,19 @@ impl<'tcx> CloneMap<'tcx> {
         // the dependency graph.
         // TODO: Ensure that if there is a cycle we emit a nice error.
 
+        debug_assert!(!is_cyclic_directed(&self.clone_graph));
+
         let mut topo = Topo::new(&self.clone_graph);
-        while let Some(node @ (def_id, subst)) = topo.walk_next(&self.clone_graph) {
+
+        while let Some(node) = topo.walk_next(&self.clone_graph) {
             debug!("processing node={:?}", node);
+
+            let DepNode::Dep(node @ (def_id, subst)) = node else { continue };
 
             // Though we pass in a &mut ref, it shouldn't actually be possible to add any new entries..
             let mut clone_subst = base_subst(ctx, self, def_id, subst);
 
-            if self.names.get(&node).unwrap_or_else(|| panic!("{:?}", node)).cloned {
+            if self.names[&node].cloned {
                 continue;
             }
             self.names[&node].cloned = true;
@@ -379,32 +489,29 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            let node_clones = ctx.dependencies(def_id).unwrap_or(&empty);
-            for (dep, t, &orig_subst) in self.clone_graph.edges_directed(node, Incoming) {
-                trace!("s={:?} t={:?} e={:?}", dep, t, orig_subst);
+            let inbound_nodes: Vec<_> =
+                self.clone_graph.neighbors_directed(DepNode::Dep(node), Incoming).collect();
 
-                let recv_info = match orig_subst {
-                    Some(recv_id) => &node_clones[&recv_id],
-                    None => continue,
-                };
+            // Grab definitions from all of our dependencies
+            for dep in inbound_nodes {
+                let syms = &self.clone_graph[(dep, DepNode::Dep(node))];
+                trace!("s={:?} t={:?} e={:?}", dep, node, syms);
 
-                // Grab the symbols from all dependencies
-                let caller_info = &self.names[&dep];
-                for sym in refinable_symbols(ctx.tcx, orig_subst.unwrap_or(dep).0) {
-                    let elem = sym.to_subst(recv_info, caller_info);
-                    // If we are in an interface, then we should not attempt to share
-                    // dependencies at all.
-                    clone_subst.push(elem);
+                match dep {
+                    DepNode::Type(ty) => {
+                        let (nm, sym) = syms.iter().next().unwrap(); // Type nodes only have have exactly one symbol
+
+                        let ty_name = nm.qname_ident(sym.ident());
+                        let ty = super::ty::translate_ty(ctx, self, DUMMY_SP, ty);
+                        clone_subst.push(CloneSubst::Type(ty_name, ty))
+                    }
+                    DepNode::Dep(dep) => {
+                        for (nm, sym) in syms {
+                            let elem = sym.to_subst(*nm, self.names[&dep].kind);
+                            clone_subst.push(elem);
+                        }
+                    }
                 }
-            }
-
-            // Add any 'additional dependencies'
-            for (sym, dep) in &self.names[&node].additional_deps {
-                let sym = refinable_symbols(ctx.tcx, def_id).filter(|sk| sk.sym() == *sym).unwrap();
-
-                let caller_info = &self.names[dep];
-                let src = CloneInfo::hidden();
-                clone_subst.push(sym.to_subst(&src, caller_info));
             }
 
             if ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false) {
@@ -435,12 +542,18 @@ impl<'tcx> CloneMap<'tcx> {
 pub fn base_subst<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
-    def_id: DefId,
+    mut def_id: DefId,
     subst: SubstsRef<'tcx>,
 ) -> Vec<CloneSubst> {
     use heck::SnakeCase;
     use rustc_middle::ty::GenericParamDefKind;
-
+    loop {
+        if ctx.tcx.is_closure(def_id) {
+            def_id = ctx.tcx.parent(def_id).unwrap();
+        } else {
+            break;
+        }
+    }
     let trait_params = ctx.tcx.generics_of(def_id);
     let mut clone_subst = Vec::new();
 
@@ -473,14 +586,15 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
                 module_name(tcx, def_id).into()
             }
         }
-        Interface | Program => {
+        Interface | Program | Closure => {
             QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
         }
         Trait | Type | AssocTy => module_name(tcx, def_id).into(),
-        _ => unreachable!(),
+        Unsupported(_) => unreachable!(),
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum SymbolKind {
     Val(Symbol),
     Type(Symbol),
@@ -505,29 +619,26 @@ impl SymbolKind {
         }
     }
 
-    fn to_subst(self, src: &CloneInfo, tgt: &CloneInfo) -> CloneSubst {
+    fn to_subst(self, src: Kind, tgt: Kind) -> CloneSubst {
         let id = self.ident();
         match self {
-            SymbolKind::Val(_) => CloneSubst::Val(src.qname_raw(id.clone()), tgt.qname_raw(id)),
+            SymbolKind::Val(_) => CloneSubst::Val(src.qname_ident(id.clone()), tgt.qname_ident(id)),
             SymbolKind::Type(_) => CloneSubst::Type(
-                src.qname_raw(id.clone()),
-                why3::mlcfg::Type::TConstructor(tgt.qname_raw(id)),
+                src.qname_ident(id.clone()),
+                why3::mlcfg::Type::TConstructor(tgt.qname_ident(id)),
             ),
             SymbolKind::Function(_) => {
-                CloneSubst::Function(src.qname_raw(id.clone()), tgt.qname_raw(id))
+                CloneSubst::Function(src.qname_ident(id.clone()), tgt.qname_ident(id))
             }
             SymbolKind::Predicate(_) => {
-                CloneSubst::Predicate(src.qname_raw(id.clone()), tgt.qname_raw(id))
+                CloneSubst::Predicate(src.qname_ident(id.clone()), tgt.qname_ident(id))
             }
         }
     }
 }
 
-// Gather the list of symbols that are exported from a DefId in the eyes of Creusot.
-// In short:
-// - All kinds of functions: function name
-// - Traits & Impls: All functions in the trait/impl + all associated types
-fn refinable_symbols(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKind> {
+// Identify the name and kind of symbol which can be refined in a given defid
+fn refineable_symbol(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKind> {
     use util::ItemType::*;
     match util::item_type(tcx, def_id) {
         Logic => Some(SymbolKind::Function(tcx.item_name(def_id))),

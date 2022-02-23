@@ -27,12 +27,12 @@ end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface
   type self   
   use Type
-  function cmp_log (self : self) (_2 : self) : Type.core_cmp_ordering
+  function cmp_log (self : self) (_2' : self) : Type.core_cmp_ordering
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog
   type self   
   use Type
-  function cmp_log (self : self) (_2 : self) : Type.core_cmp_ordering
+  function cmp_log (self : self) (_2' : self) : Type.core_cmp_ordering
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface
   type self   
@@ -44,6 +44,106 @@ module CreusotContracts_Logic_Ord_OrdLogic_LeLog
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   predicate le_log (self : self) (o : self) = 
     not (CmpLog0.cmp_log self o = Type.Core_Cmp_Ordering_Greater)
+end
+module C05BinarySearchGeneric_SortedRange_Interface
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  predicate sorted_range (s : Seq.seq t) (l : int) (u : int)
+end
+module C05BinarySearchGeneric_SortedRange
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
+  predicate sorted_range (s : Seq.seq t) (l : int) (u : int) = 
+    forall j : (int) . forall i : (int) . l <= i && i <= j && j < u -> LeLog0.le_log (Seq.get s i) (Seq.get s j)
+end
+module C05BinarySearchGeneric_Sorted_Interface
+  type t   
+  use seq.Seq
+  predicate sorted (s : Seq.seq t)
+end
+module C05BinarySearchGeneric_Sorted
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  clone C05BinarySearchGeneric_SortedRange_Interface as SortedRange0 with type t = t
+  predicate sorted (s : Seq.seq t) = 
+    SortedRange0.sorted_range s 0 (Seq.length s)
+end
+module CreusotContracts_Logic_Model_Model_ModelTy
+  type self   
+  type modelTy   
+end
+module CreusotContracts_Logic_Model_Model_Model_Interface
+  type self   
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model
+  type self   
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl0_Model_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  function model (self : t) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl0_Model
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  function model (self : t) : ModelTy0.modelTy = 
+    Model0.model self
+end
+module CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface
+  type self   
+  predicate lt_log (self : self) (o : self)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_LtLog
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  predicate lt_log (self : self) (o : self) = 
+    CmpLog0.cmp_log self o = Type.Core_Cmp_Ordering_Less
+end
+module CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface
+  type self   
+  predicate log_eq (self : self) (_2' : self)
+end
+module CreusotContracts_Logic_Eq_EqLogic_LogEq
+  type self   
+  predicate log_eq (self : self) (_2' : self)
+end
+module CreusotContracts_Std1_Vec_Impl0_ModelTy
+  type t   
+  use seq.Seq
+  type modelTy  = 
+    Seq.seq t
+end
+module CreusotContracts_Logic_Model_Impl0_ModelTy
+  type t   
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  type modelTy  = 
+    ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl0
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
+  function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Model_Impl0_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = t, function model = Model0.model,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = t, type modelTy = ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Interface
   type self   
@@ -59,17 +159,6 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = self
   function cmp_le_log (x : self) (y : self) : ()
   axiom cmp_le_log_spec : forall x : self, y : self . LeLog0.le_log x y = not (CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Greater)
-end
-module CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface
-  type self   
-  predicate lt_log (self : self) (o : self)
-end
-module CreusotContracts_Logic_Ord_OrdLogic_LtLog
-  type self   
-  use Type
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
-  predicate lt_log (self : self) (o : self) = 
-    CmpLog0.cmp_log self o = Type.Core_Cmp_Ordering_Less
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog_Interface
   type self   
@@ -190,21 +279,28 @@ module CreusotContracts_Logic_Ord_OrdLogic_Antisym2
   function antisym2 (x : self) (y : self) : ()
   axiom antisym2_spec : forall x : self, y : self . CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Greater -> CmpLog0.cmp_log y x = Type.Core_Cmp_Ordering_Less
 end
-module CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface
+module CreusotContracts_Logic_Ord_OrdLogic_EqCmp_Interface
   type self   
-  predicate log_eq (self : self) (_2 : self)
+  use Type
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  function eq_cmp (x : self) (y : self) : ()
 end
-module CreusotContracts_Logic_Eq_EqLogic_LogEq
+module CreusotContracts_Logic_Ord_OrdLogic_EqCmp
   type self   
-  predicate log_eq (self : self) (_2 : self)
+  use Type
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  function eq_cmp (x : self) (y : self) : ()
+  axiom eq_cmp_spec : forall x : self, y : self . (LogEq0.log_eq x y -> CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Equal) && (CmpLog0.cmp_log y x = Type.Core_Cmp_Ordering_Equal -> LogEq0.log_eq x y)
 end
 module CreusotContracts_Logic_Eq_EqLogic_LogNe_Interface
   type self   
-  predicate log_ne (self : self) (_2 : self)
+  predicate log_ne (self : self) (_2' : self)
 end
 module CreusotContracts_Logic_Eq_EqLogic_LogNe
   type self   
-  predicate log_ne (self : self) (_2 : self)
+  predicate log_ne (self : self) (_2' : self)
 end
 module CreusotContracts_Logic_Eq_EqLogic_EqNe_Interface
   type self   
@@ -252,102 +348,6 @@ module CreusotContracts_Logic_Eq_EqLogic_Transitivity
   function transitivity (x : self) (y : self) (z : self) : ()
   axiom transitivity_spec : forall x : self, y : self, z : self . LogEq0.log_eq y z -> LogEq0.log_eq x y -> LogEq0.log_eq x z
 end
-module CreusotContracts_Logic_Ord_OrdLogic_EqCmp_Interface
-  type self   
-  use Type
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
-  function eq_cmp (x : self) (y : self) : ()
-end
-module CreusotContracts_Logic_Ord_OrdLogic_EqCmp
-  type self   
-  use Type
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
-  function eq_cmp (x : self) (y : self) : ()
-  axiom eq_cmp_spec : forall x : self, y : self . (LogEq0.log_eq x y -> CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Equal) && (CmpLog0.cmp_log y x = Type.Core_Cmp_Ordering_Equal -> LogEq0.log_eq x y)
-end
-module C05BinarySearchGeneric_SortedRange_Interface
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  predicate sorted_range (s : Seq.seq t) (l : int) (u : int)
-end
-module C05BinarySearchGeneric_SortedRange
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
-  predicate sorted_range (s : Seq.seq t) (l : int) (u : int) = 
-    forall j : (int) . forall i : (int) . l <= i && i <= j && j < u -> LeLog0.le_log (Seq.get s i) (Seq.get s j)
-end
-module C05BinarySearchGeneric_Sorted_Interface
-  type t   
-  use seq.Seq
-  predicate sorted (s : Seq.seq t)
-end
-module C05BinarySearchGeneric_Sorted
-  type t   
-  use seq.Seq
-  use mach.int.Int
-  use mach.int.Int32
-  clone C05BinarySearchGeneric_SortedRange_Interface as SortedRange0 with type t = t
-  predicate sorted (s : Seq.seq t) = 
-    SortedRange0.sorted_range s 0 (Seq.length s)
-end
-module CreusotContracts_Logic_Model_Model_ModelTy
-  type self   
-  type modelTy   
-end
-module CreusotContracts_Logic_Model_Model_Model_Interface
-  type self   
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
-end
-module CreusotContracts_Logic_Model_Model_Model
-  type self   
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
-end
-module CreusotContracts_Logic_Model_Impl0_ModelTy
-  type t   
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  type modelTy  = 
-    ModelTy0.modelTy
-end
-module CreusotContracts_Logic_Model_Impl0_Model_Interface
-  type t   
-  use prelude.Prelude
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  function model (self : t) : ModelTy0.modelTy
-end
-module CreusotContracts_Logic_Model_Impl0_Model
-  type t   
-  use prelude.Prelude
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
-  type ModelTy0.modelTy = ModelTy0.modelTy
-  function model (self : t) : ModelTy0.modelTy = 
-    Model0.model self
-end
-module CreusotContracts_Logic_Model_Impl0
-  type t   
-  use prelude.Prelude
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
-  function Model0.model = Model2.model
-  clone CreusotContracts_Logic_Model_Impl0_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = t, type ModelTy0.modelTy = ModelTy0.modelTy,
-  function model = Model0.model
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = t, type modelTy = ModelTy0.modelTy
-end
-module CreusotContracts_Std1_Vec_Impl0_ModelTy
-  type t   
-  use seq.Seq
-  type modelTy  = 
-    Seq.seq t
-end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   type t   
   use Type
@@ -366,7 +366,7 @@ module CreusotContracts_Std1_Vec_Impl0
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
   clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.creusotcontracts_std1_vec_vec t,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function model = Model0.model
+  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.creusotcontracts_std1_vec_vec t,
   type modelTy = ModelTy0.modelTy
 end
@@ -429,11 +429,6 @@ module Core_Ops_Index_Index_Index
     requires {false}
     
 end
-module CreusotContracts_Std1_Vec_Impl3_Output
-  type t   
-  type output  = 
-    t
-end
 module CreusotContracts_Std1_Vec_Impl3_Index_Interface
   type t   
   use mach.int.UInt64
@@ -463,23 +458,6 @@ module CreusotContracts_Std1_Vec_Impl3_Index
     requires {UInt64.to_int ix < Seq.length (Model0.model self)}
     ensures { result = Seq.get (Model0.model self) (UInt64.to_int ix) }
     
-end
-module CreusotContracts_Std1_Vec_Impl3
-  type t   
-  use Type
-  use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
-  clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = t, function Model0.model = Model0.model
-  clone CreusotContracts_Std1_Vec_Impl3_Output as Output0 with type t = t
-  clone Core_Ops_Index_Index_Index_Interface as Index1 with type self = Type.creusotcontracts_std1_vec_vec t,
-  type idx = usize, type Output0.output = Output0.output, val index = Index0.index
-  clone Core_Ops_Index_Index_Output as Output1 with type self = Type.creusotcontracts_std1_vec_vec t, type idx = usize,
-  type output = Output0.output
 end
 module CreusotContracts_Std1_Ord_Ord_Cmp_Interface
   type self   
@@ -562,6 +540,28 @@ module CreusotContracts_Std1_Ord_Ord_Lt
   val lt [@cfg:stackify] (self : self) (o : self) : bool
     ensures { result = LtLog0.lt_log self o }
     
+end
+module CreusotContracts_Std1_Vec_Impl3_Output
+  type t   
+  type output  = 
+    t
+end
+module CreusotContracts_Std1_Vec_Impl3
+  type t   
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = t, function Model0.model = Model0.model
+  clone CreusotContracts_Std1_Vec_Impl3_Output as Output0 with type t = t
+  clone Core_Ops_Index_Index_Index_Interface as Index1 with type self = Type.creusotcontracts_std1_vec_vec t,
+  type idx = usize, val index = Index0.index, type Output0.output = Output0.output
+  clone Core_Ops_Index_Index_Output as Output1 with type self = Type.creusotcontracts_std1_vec_vec t, type idx = usize,
+  type output = Output0.output
 end
 module C05BinarySearchGeneric_BinarySearch_Interface
   type t   

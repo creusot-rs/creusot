@@ -20,7 +20,7 @@ use super::FunctionTranslator;
 use crate::{
     clone_map::PreludeModule,
     translation::{binop_to_binop, unop_to_unop},
-    util::{self, constructor_qname},
+    util::{self, constructor_qname, item_name},
 };
 
 impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
@@ -63,7 +63,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     // TODO: should this be done for *any* form of assignment?
                     let ty = place.ty(self.body, self.tcx).ty;
                     let pl_exp = self.translate_rplace(place);
-                    let assumption: Exp = self.resolve_predicate_of(ty).app_to(pl_exp);
+                    let assumption: Exp = self.resolve_ty(ty).app_to(pl_exp);
                     self.emit_statement(Assume(assumption));
                     self.translate_rplace(pl)
                 }
@@ -147,7 +147,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
 
                         Constructor { ctor: qname, args: fields }
                     }
-                    Closure(def_id, _) => {
+                    Closure(def_id, subst) => {
                         if util::is_invariant(self.tcx, *def_id) {
                             return;
                         } else if util::is_assertion(self.tcx, *def_id) {
@@ -160,7 +160,14 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                         } else if util::is_spec(self.tcx, *def_id) {
                             return;
                         } else {
-                            self.ctx.crash_and_error(si.span, "closures are not yet supported")
+                            let mut cons_name = item_name(self.tcx, *def_id);
+                            cons_name.capitalize();
+                            let cons =
+                                self.clone_names.insert(*def_id, subst).qname_ident(cons_name);
+                            // let cons = item_qname(self.tcx, *def_id);
+
+                            Constructor { ctor: cons, args: fields }
+                            // self.ctx.crash_and_error(si.span, "closures are not yet supported")
                         }
                     }
                     _ => self.ctx.crash_and_error(

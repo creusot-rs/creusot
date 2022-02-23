@@ -31,6 +31,14 @@ impl PreContract {
         Self { func_id, variant: None, requires: Vec::new(), ensures: Vec::new() }
     }
 
+    pub fn iter_items(&self) -> impl Iterator<Item = DefId> + '_ {
+        self.variant
+            .iter()
+            .cloned()
+            .chain(self.requires.iter().cloned())
+            .chain(self.ensures.iter().cloned())
+    }
+
     pub fn check_and_lower<'tcx>(
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
@@ -112,11 +120,11 @@ pub enum SpecAttrError {
     InvalidTokens,
 }
 
-pub fn contract_of(ctx: &TranslationCtx, def_id: DefId) -> Result<PreContract, SpecAttrError> {
+pub fn contract_of(ctx: &mut TranslationCtx, def_id: DefId) -> Result<PreContract, SpecAttrError> {
     use SpecAttrError::*;
 
-    if let Some(extern_spec) = ctx.extern_spec(def_id) {
-        return Ok(extern_spec.contract.clone());
+    if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
+        return Ok(extern_spec.contract);
     }
 
     let attrs = ctx.tcx.get_attrs(def_id);

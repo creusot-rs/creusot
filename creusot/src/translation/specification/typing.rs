@@ -225,6 +225,7 @@ impl ThirTerm<'a, 'tcx> {
 
                         Ok(Term { ty, kind: TermKind::Old { term: box term } })
                     }
+                    Some(ResultCheck) => Ok(Term { ty, kind: TermKind::Tuple { fields: vec![] } }),
 
                     None => {
                         let fun = self.expr_term(fun)?;
@@ -460,6 +461,7 @@ enum Stub {
     Equals,
     VariantCheck,
     Old,
+    ResultCheck,
 }
 
 fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
@@ -487,6 +489,9 @@ fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("old")) {
             return Some(Stub::Old);
+        }
+        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("closure_result_constraint")) {
+            return Some(Stub::ResultCheck);
         }
         None
     } else {
