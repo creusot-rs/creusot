@@ -85,6 +85,15 @@ impl ContractItem {
 impl Parse for ContractItem {
     fn parse(input: parse::ParseStream) -> Result<Self> {
         let mut attrs = input.call(Attribute::parse_outer)?;
+        if input.peek(Token![|])
+            || input.peek(Token![async]) && (input.peek2(Token![|]) || input.peek2(Token![move]))
+            || input.peek(Token![static])
+            || input.peek(Token![move])
+        {
+            let mut closure: ExprClosure = input.parse()?;
+            closure.attrs.extend(attrs);
+            return Ok(ContractItem::Closure(closure));
+        }
         // Infalliable, no visibility = inherited
         let vis: Visibility = input.parse()?;
         let sig: Signature = input.parse()?;
@@ -92,12 +101,6 @@ impl Parse for ContractItem {
         if lookahead.peek(Token![;]) {
             let semi_token: Token![;] = input.parse()?;
             return Ok(ContractItem::TraitSig(TraitItemSignature { attrs, sig, semi_token }));
-        } else if input.peek(Token![|])
-            || input.peek(Token![async]) && (input.peek2(Token![|]) || input.peek2(Token![move]))
-            || input.peek(Token![static])
-            || input.peek(Token![move])
-        {
-            return Ok(ContractItem::Closure(input.parse()?));
         } else {
             let content;
             let brace_token = braced!(content in input);
@@ -116,7 +119,7 @@ impl Parse for ContractItem {
 
 // Generate a token stream for the item representing a specific
 // `requires` or `ensures`
-fn fn_spec_item2(tag: Ident, result: Option<FnArg>, p: Term) -> TokenStream {
+fn fn_spec_item(tag: Ident, result: Option<FnArg>, p: Term) -> TokenStream {
     let req_body = pretyping::encode_term(p).unwrap();
     let name_tag = format!("{}", quote! { #tag });
 
@@ -131,7 +134,7 @@ fn fn_spec_item2(tag: Ident, result: Option<FnArg>, p: Term) -> TokenStream {
     }
 }
 
-fn sig_spec_item2(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
+fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
     let req_body = pretyping::encode_term(p).unwrap();
     let name_tag = format!("{}", quote! { #tag });
     sig.ident = tag;
@@ -156,7 +159,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
     match item {
         ContractItem::Fn(mut f) => {
-            let requires_tokens = fn_spec_item2(req_name, None, term);
+            let requires_tokens = fn_spec_item(req_name, None, term);
 
             f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)));
             TS1::from(quote! {
@@ -165,14 +168,29 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             })
         }
         ContractItem::TraitSig(s) => {
-            let requires_tokens = sig_spec_item2(req_name, s.sig.clone(), term);
+            let requires_tokens = sig_spec_item(req_name, s.sig.clone(), term);
             TS1::from(quote! {
               #requires_tokens
               #[creusot::spec::requires=#name_tag]
               #s
             })
         }
-        _ => panic!(),
+        ContractItem::Closure(clos) => {
+            let req_body = pretyping::encode_term(term).unwrap();
+            TS1::from(quote! {
+                {
+                    #[allow(unused_must_use)]
+                    let _ =
+                        #[creusot::no_translate]
+                        #[creusot::item=#name_tag]
+                        #[creusot::decl::spec]
+                        || {
+                            #req_body
+                        };
+                    #[creusot::spec::requires=#name_tag] #clos
+                }
+            })
+        }
     }
 }
 
@@ -190,7 +208,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                 ReturnType::Default => parse_quote! { result : () },
                 ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
             };
-            let ensures_tokens = fn_spec_item2(ens_name, Some(result), term);
+            let ensures_tokens = fn_spec_item(ens_name, Some(result), term);
 
             f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)));
             TS1::from(quote! {
@@ -206,14 +224,32 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
 
             let mut sig = s.sig.clone();
             sig.inputs.push(result);
-            let ensures_tokens = sig_spec_item2(ens_name, sig, term);
+            let ensures_tokens = sig_spec_item(ens_name, sig, term);
             TS1::from(quote! {
               #ensures_tokens
               #[creusot::spec::ensures=#name_tag]
               #s
             })
         }
-        _ => panic!(),
+        ContractItem::Closure(clos) => {
+            let req_body = pretyping::encode_term(term).unwrap();
+            let clos_name = Ident::new("closure", Span::mixed_site());
+            TS1::from(quote! {
+                {
+                    let #clos_name = #[creusot::spec::ensures=#name_tag] #clos;
+                    #[allow(unused_must_use)]
+                    let _ =
+                        #[creusot::no_translate]
+                        #[creusot::item=#name_tag]
+                        #[creusot::decl::spec]
+                        |result| {
+                            creusot_contracts::stubs::closure_result(#clos_name, result);
+                            #req_body
+                        };
+                    #clos_name
+                }
+            })
+        }
     }
 }
 
