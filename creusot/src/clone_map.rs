@@ -1,21 +1,16 @@
-use std::ops::ControlFlow;
-
 use indexmap::IndexMap;
-
+use heck::CamelCase;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::EdgeDirection::Incoming;
-use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
-use why3::{Ident, QName};
-
-use heck::CamelCase;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{
     self,
-    fold::TypeVisitor,
     subst::{InternalSubsts, Subst, SubstsRef},
-    ProjectionTy, Ty, TyCtxt, TyKind,
+    TyCtxt,
 };
 use rustc_span::Symbol;
+use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
+use why3::{Ident, QName};
 
 use crate::ctx::{self, *};
 use crate::translation::{interface, traits};
@@ -551,24 +546,5 @@ fn refinable_symbols(
         Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
         Type => unreachable!("types have no refinable symbols"),
         _ => unreachable!(),
-    }
-}
-
-// A basic visitor which can be used to gether ProjectionTys containd in
-// a foldable struct
-struct ProjectionTyVisitor<'a, 'tcx> {
-    f: Box<dyn FnMut(ProjectionTy<'tcx>) + 'a>,
-}
-
-impl TypeVisitor<'tcx> for ProjectionTyVisitor<'a, 'tcx> {
-    // fn tcx_for_anon_const_substs(&self) -> Option<TyCtxt<'tcx>> {
-    //     None
-    // }
-
-    fn visit_ty(&mut self, t: Ty<'tcx>) -> ControlFlow<Self::BreakTy> {
-        if let TyKind::Projection(t) = t.kind() {
-            (*self.f)(*t)
-        }
-        ControlFlow::CONTINUE
     }
 }
