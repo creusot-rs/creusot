@@ -37,7 +37,7 @@ impl<A, B> EqLogic for Mapping<A, B> {
     }
 
     #[predicate]
-    fn log_ne(self, o: Self) -> bool {
+    fn log_ne(self, _: Self) -> bool {
         std::process::abort()
     }
 
@@ -46,18 +46,21 @@ impl<A, B> EqLogic for Mapping<A, B> {
         std::process::abort()
     }
 
+    // lemmas below are marked trusted, until Creusot provides a way
+    // to prove them
+
+    #[trusted]
     #[logic]
     fn refl(_: Self) {
-        ()
     }
 
+    #[trusted]
     #[logic]
     fn symmetry(_: Self, _: Self) {
-        ()
     }
 
+    #[trusted]
     #[logic]
     fn transitivity(_: Self, _: Self, _: Self) {
-        ()
     }
 }

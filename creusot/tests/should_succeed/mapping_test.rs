@@ -26,7 +26,8 @@ impl Model for T {
 fn incr(t: &mut T) {
     let old_t = Ghost::record(t);
     (*t).a += 1;
-    // extensional equality of mappings
+    // proving the post-consition via extensional equality of mappings
+    // (notice `==` versus `===`)
     proof_assert!( @^t == (@@old_t).set(@((@old_t).a),1) );
 }
 
