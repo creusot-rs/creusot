@@ -400,9 +400,7 @@ impl<'tcx> CloneMap<'tcx> {
 
             // Add any 'additional dependencies'
             for (sym, dep) in &self.names[&node].additional_deps {
-                let mut syms = refinable_symbols(ctx.tcx, def_id).filter(|sk| sk.sym() == *sym);
-                let sym = syms.next().unwrap();
-                assert!(syms.next().is_none());
+                let sym = refinable_symbols(ctx.tcx, def_id).filter(|sk| sk.sym() == *sym).unwrap();
 
                 let caller_info = &self.names[dep];
                 let src = CloneInfo::hidden();
@@ -529,19 +527,15 @@ impl SymbolKind {
 // In short:
 // - All kinds of functions: function name
 // - Traits & Impls: All functions in the trait/impl + all associated types
-fn refinable_symbols(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-) -> Box<dyn Iterator<Item = SymbolKind> + 'tcx> {
-    use std::iter::{self, *};
+fn refinable_symbols(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKind> {
     use util::ItemType::*;
     match util::item_type(tcx, def_id) {
-        Logic => Box::new(iter::once(SymbolKind::Function(tcx.item_name(def_id)))),
-        Predicate => Box::new(iter::once(SymbolKind::Predicate(tcx.item_name(def_id)))),
-        Interface | Program => Box::new(iter::once(SymbolKind::Val(tcx.item_name(def_id)))),
+        Logic => Some(SymbolKind::Function(tcx.item_name(def_id))),
+        Predicate => Some(SymbolKind::Predicate(tcx.item_name(def_id))),
+        Interface | Program => Some(SymbolKind::Val(tcx.item_name(def_id))),
         AssocTy => match tcx.associated_item(def_id).container {
-            ty::TraitContainer(_) => box once(SymbolKind::Type(tcx.item_name(def_id))),
-            ty::ImplContainer(_) => box empty(),
+            ty::TraitContainer(_) => Some(SymbolKind::Type(tcx.item_name(def_id))),
+            ty::ImplContainer(_) => None,
         },
         Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
         Type => unreachable!("types have no refinable symbols"),
