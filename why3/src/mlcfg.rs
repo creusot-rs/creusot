@@ -654,6 +654,10 @@ impl Exp {
         }
         self
     }
+
+    pub fn and(self, other: Self) -> Self {
+        Exp::BinaryOp(BinOp::And, box self, box other)
+    }
 }
 
 #[derive(Debug, Clone)]

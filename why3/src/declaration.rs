@@ -1,7 +1,7 @@
 use indexmap::IndexSet;
 use std::collections::{BTreeMap, HashMap};
 
-use crate::mlcfg::{Block, BlockId, Exp, Type};
+use crate::mlcfg::{Block, BlockId, Exp, ExpMutVisitor, Type};
 use crate::*;
 
 #[cfg(feature = "serialize")]
@@ -67,17 +67,44 @@ impl Contract {
         self.variant.extend(other.variant);
     }
 
+    pub fn ensures_conj(&self) -> Exp {
+        let mut ensures = self.ensures.clone();
+
+        let postcond = ensures.pop().unwrap_or(Exp::mk_true());
+        let mut postcond = ensures.into_iter().rfold(postcond, Exp::conj);
+        postcond.reassociate();
+        postcond
+    }
+
+    pub fn requires_conj(&self) -> Exp {
+        let mut requires = self.requires.clone();
+
+        let precond = requires.pop().unwrap_or(Exp::mk_true());
+        let mut precond = requires.into_iter().rfold(precond, Exp::conj);
+        precond.reassociate();
+        precond
+    }
+
     pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
+        self.visit_mut(subst, subst, subst);
+    }
+
+    pub fn visit_mut<T: ExpMutVisitor>(
+        &mut self,
+        mut req_visitor: T,
+        mut ens_visitor: T,
+        mut var_visitor: T,
+    ) {
         for req in self.requires.iter_mut() {
-            req.subst(subst);
+            req_visitor.visit_mut(req);
         }
 
         for ens in self.ensures.iter_mut() {
-            ens.subst(subst);
+            ens_visitor.visit_mut(ens);
         }
 
         for var in self.variant.iter_mut() {
-            var.subst(subst);
+            var_visitor.visit_mut(var);
         }
     }
 
