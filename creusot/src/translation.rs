@@ -25,7 +25,7 @@ use std::io::Write;
 use why3::mlcfg;
 use why3::{
     declaration::{Decl, Module, Use},
-    Pretty, QName,
+    Print, QName,
 };
 
 // TODO: Move the main loop out of `translation.rs`
