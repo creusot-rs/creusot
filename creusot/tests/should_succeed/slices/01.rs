@@ -13,7 +13,8 @@ fn index_slice(a: &[u32]) -> u32 {
     a[10]
 }
 
-// #[requires((@a).len() === 5)]
-// fn index_mut_slice(a: &mut [u32]) {
-//     a[2] = 3;
-// }
+#[requires((@a).len() === 5)]
+// #[ensures(@((@^a)[2]) === 3)]
+fn index_mut_slice(a: &mut [u32]) {
+    a[2] = 3;
+}

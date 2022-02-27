@@ -175,7 +175,22 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                     _ => unreachable!(),
                 },
                 Downcast(_, _) => {}
-                _ => unimplemented!(),
+                Index(ix) => {
+                    let set = Exp::impure_qvar(QName::from_string("Seq.set").unwrap());
+                    let conv_func = uint_to_int(&UintTy::Usize);
+                    let ix_exp = Exp::impure_var(self.translate_local(ix).ident());
+
+                    inner = Call(
+                        box set,
+                        vec![
+                            self.translate_rplace_inner(lhs.local, stump),
+                            conv_func.app_to(ix_exp),
+                            inner,
+                        ],
+                    )
+                }
+                ConstantIndex { .. } => unimplemented!("ConstantIndex"),
+                Subslice { .. } => unimplemented!("Subslice"),
             }
         }
 
