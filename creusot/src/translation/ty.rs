@@ -104,6 +104,7 @@ fn translate_ty_inner<'tcx>(
         }
         Slice(ty) => {
             names.import_prelude_module(PreludeModule::Prelude);
+            names.import_prelude_module(PreludeModule::Seq);
             // names.import_prelude_module(PreludeModule:);
             MlT::TApp(
                 box MlT::TConstructor("seq".into()),

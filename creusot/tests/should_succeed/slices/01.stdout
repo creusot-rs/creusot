@@ -16,12 +16,14 @@ module Type
 end
 module C01_SliceArg_Interface
   use prelude.Prelude
+  use seq.Seq
   use mach.int.Int
   use mach.int.UInt32
   val slice_arg [@cfg:stackify] (a : seq uint32) : uint32
 end
 module C01_SliceArg
   use prelude.Prelude
+  use seq.Seq
   use mach.int.Int
   use mach.int.UInt32
   let rec cfg slice_arg [@cfg:stackify] (a : seq uint32) : uint32 = 
@@ -34,6 +36,45 @@ module C01_SliceArg
   BB0 {
     _0 <- (0 : uint32);
     assume { (fun x -> true) a_1 };
+    return _0
+  }
+  
+end
+module C01_IndexSlice_Interface
+  use prelude.Prelude
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.UInt32
+  val index_slice [@cfg:stackify] (a : seq uint32) : uint32
+end
+module C01_IndexSlice
+  use prelude.Prelude
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.UInt32
+  use mach.int.UInt64
+  let rec cfg index_slice [@cfg:stackify] (a : seq uint32) : uint32 = 
+  var _0 : uint32;
+  var a_1 : seq uint32;
+  var _2 : usize;
+  var _3 : usize;
+  var _4 : bool;
+  {
+    a_1 <- a;
+    goto BB0
+  }
+  BB0 {
+    _2 <- (10 : usize);
+    _3 <- UInt64.of_int (Seq.length a_1);
+    _4 <- _2 < _3;
+    assert { _4 };
+    goto BB1
+  }
+  BB1 {
+    assume { (fun x -> true) _0 };
+    _0 <- Seq.get a_1 (UInt64.to_int _2);
+    assume { (fun x -> true) a_1 };
+    assume { (fun x -> true) _2 };
     return _0
   }
   

@@ -170,7 +170,10 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 }
             }
             Rvalue::Len(pl) => {
-                RecField { record: box self.translate_rplace(pl), label: "length".into() }
+                let int_conversion = uint_from_int(&UintTy::Usize);
+                let len_call = Exp::impure_qvar(QName::from_string("Seq.length").unwrap())
+                    .app_to(self.translate_rplace(pl));
+                int_conversion.app_to(len_call)
             }
             Rvalue::Cast(CastKind::Misc, op, ty) => {
                 let op_ty = op.ty(self.body, self.tcx);
@@ -244,7 +247,7 @@ fn int_to_int(ity: &IntTy) -> Exp {
     }
 }
 
-fn uint_to_int(uty: &UintTy) -> Exp {
+pub fn uint_to_int(uty: &UintTy) -> Exp {
     match uty {
         UintTy::Usize => Exp::impure_qvar(QName::from_string("UInt64.to_int").unwrap()),
         UintTy::U8 => unimplemented!(),

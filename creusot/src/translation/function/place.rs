@@ -1,6 +1,6 @@
 use rustc_middle::{
     mir::{Local, Place},
-    ty::TyKind,
+    ty::{TyKind, UintTy},
 };
 use why3::mlcfg::{
     self,
@@ -10,7 +10,10 @@ use why3::mlcfg::{Pattern::*, Statement::*};
 use why3::QName;
 
 use super::FunctionTranslator;
-use crate::{translation::ty::variant_accessor_name, util::constructor_qname};
+use crate::{
+    translation::{function::statement::uint_to_int, ty::variant_accessor_name},
+    util::constructor_qname,
+};
 
 impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     pub fn translate_rplace(&mut self, rhs: &Place<'tcx>) -> Exp {
@@ -68,7 +71,17 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                     _ => unreachable!(),
                 },
                 Downcast(_, _) => {}
-                _ => unimplemented!("unimplemented place projection"),
+                Index(ix) => {
+                    // TODO: Use [_] syntax
+                    let ix_exp = Exp::impure_var(self.translate_local(*ix).ident());
+                    let conv_func = uint_to_int(&UintTy::Usize);
+                    inner = Call(
+                        box Exp::impure_qvar(QName::from_string("Seq.get").unwrap()),
+                        vec![inner, conv_func.app_to(ix_exp)],
+                    )
+                }
+                ConstantIndex { .. } => unimplemented!("constant index projection"),
+                Subslice { .. } => unimplemented!("subslice projection"),
             }
             place_ty = place_ty.projection_ty(self.tcx, *elem);
         }
