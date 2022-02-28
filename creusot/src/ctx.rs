@@ -273,8 +273,13 @@ fn load_extern_specs(ctx: &mut TranslationCtx) {
     for def_id in ctx.tcx.hir().body_owners() {
         if crate::util::is_extern_spec(ctx.tcx, def_id.to_def_id()) {
             let (i, es) = extract_extern_specs_from_item(ctx, def_id);
+            let c = es.contract.clone();
             ctx.extern_specs.insert(i, es);
             ctx.extern_spec_items.insert(def_id, i);
+
+            for id in c.iter_ids() {
+                ctx.term(id).unwrap();
+            }
         }
     }
 }

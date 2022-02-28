@@ -1,7 +1,7 @@
+use crate::ctx::*;
 use crate::function::all_generic_decls_for;
 use crate::translation::translate_logic_or_predicate;
 use crate::util::item_type;
-use crate::{ctx::*, util};
 use indexmap::IndexSet;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_macros::{TyDecodable, TyEncodable};
@@ -20,8 +20,7 @@ pub fn default_decl(
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
     info!("generating default declaration for def_id={:?}", def_id);
-    let mut names =
-        CloneMap::new(ctx.tcx, def_id, !util::item_type(ctx.tcx, def_id).is_transparent());
+    let mut names = CloneMap::new(ctx.tcx, def_id, false);
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
@@ -52,7 +51,10 @@ pub fn default_decl(
 pub fn extern_module(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
-) -> (Module, Result<CloneSummary<'tcx>, DefId>) {
+) -> (
+    Module,
+    Result<CloneSummary<'tcx>, DefId>, // Err(_) is used to refer to dependencies that should be fetched from metadata
+) {
     match ctx.externs.term(def_id) {
         Some(_) => {
             let span = ctx.tcx.def_span(def_id);

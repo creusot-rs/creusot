@@ -455,7 +455,7 @@ pub fn pearlite(tokens: TS1) -> TS1 {
 
 struct ExternSig {
     attrs: Vec<Attribute>,
-    path: Path,
+    path: ExprPath,
     generics: Generics,
     inputs: Punctuated<FnArg, Comma>,
     output: ReturnType,
@@ -466,7 +466,7 @@ impl Parse for ExternSig {
         let attrs: Vec<Attribute> = Attribute::parse_outer(input)?;
         let _: Token![fn] = input.parse()?;
         // let path = Punctuated::parse_separated_nonempty(input)?;
-        let path = Path::parse_mod_style(input)?;
+        let path = ExprPath::parse(input)?;
         let mut generics: Generics = input.parse()?;
 
         let content;
@@ -504,11 +504,7 @@ pub fn extern_spec(tokens: TS1) -> TS1 {
 
         let call = ExprCall {
             attrs: Vec::new(),
-            func: Box::new(Expr::Path(ExprPath {
-                attrs: Vec::new(),
-                qself: None,
-                path: spec.path,
-            })),
+            func: Box::new(Expr::Path(spec.path)),
             paren_token: Paren { span: Span::call_site() },
             args,
         };

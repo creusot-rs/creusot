@@ -13,41 +13,10 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
-  type self   
-  predicate resolve (self : self)
-end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve
-  type self   
-  predicate resolve (self : self)
-end
-module C01_SliceArg_Interface
-  use prelude.Prelude
-  use seq.Seq
-  use mach.int.Int
-  use mach.int.UInt32
-  val slice_arg [@cfg:stackify] (a : seq uint32) : uint32
-end
-module C01_SliceArg
-  use prelude.Prelude
-  use seq.Seq
-  use mach.int.Int
-  use mach.int.UInt32
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = seq uint32
-  let rec cfg slice_arg [@cfg:stackify] (a : seq uint32) : uint32 = 
-  var _0 : uint32;
-  var a_1 : seq uint32;
-  {
-    a_1 <- a;
-    goto BB0
-  }
-  BB0 {
-    _0 <- (0 : uint32);
-    assume { Resolve0.resolve a_1 };
-    return _0
-  }
-  
+  type core_option_option 't = 
+    | Core_Option_Option_None
+    | Core_Option_Option_Some 't
+    
 end
 module CreusotContracts_Logic_Model_Model_ModelTy
   type self   
@@ -102,6 +71,40 @@ module CreusotContracts_Logic_Model_Impl2_ModelTy
   type modelTy  = 
     Seq.seq t
 end
+module Core_Slice_Impl0_Len_Interface
+  type t   
+  use seq.Seq
+  use mach.int.UInt64
+  use prelude.Prelude
+  use mach.int.Int
+  clone CreusotContracts_Logic_Model_Impl2_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = seq t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val len [@cfg:stackify] (self : seq t) : usize
+    ensures { Seq.length (Model0.model self) = UInt64.to_int result }
+    
+end
+module Core_Slice_Impl0_Len
+  type t   
+  use seq.Seq
+  use mach.int.UInt64
+  use prelude.Prelude
+  use mach.int.Int
+  clone CreusotContracts_Logic_Model_Impl2_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = seq t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val len [@cfg:stackify] (self : seq t) : usize
+    ensures { Seq.length (Model0.model self) = UInt64.to_int result }
+    
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self   
+  predicate resolve (self : self)
+end
 module CreusotContracts_Logic_Model_Impl2_Model_Interface
   type t   
   use prelude.Prelude
@@ -125,108 +128,77 @@ module CreusotContracts_Logic_Model_Impl2
   type ModelTy0.modelTy = ModelTy0.modelTy, function model = Model0.model
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = seq t, type modelTy = ModelTy0.modelTy
 end
-module C01_IndexSlice_Interface
-  use mach.int.Int
-  use mach.int.Int32
-  use seq.Seq
+module C01_SliceFirst_Interface
+  type t   
   use prelude.Prelude
-  use mach.int.UInt32
-  clone CreusotContracts_Logic_Model_Impl2_ModelTy as ModelTy0 with type t = uint32
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = seq uint32,
-  type ModelTy0.modelTy = ModelTy0.modelTy
-  val index_slice [@cfg:stackify] (a : seq uint32) : uint32
-    requires {10 < Seq.length (Model0.model a) && Seq.length (Model0.model a) <= 100}
-    
+  use seq.Seq
+  use Type
+  val slice_first [@cfg:stackify] (a : seq t) : Type.core_option_option t
 end
-module C01_IndexSlice
-  use mach.int.Int
-  use mach.int.Int32
-  use seq.Seq
+module C01_SliceFirst
+  type t   
   use prelude.Prelude
-  use mach.int.UInt32
-  clone CreusotContracts_Logic_Model_Impl2_Model as Model1 with type t = uint32
-  clone CreusotContracts_Logic_Model_Impl2_ModelTy as ModelTy0 with type t = uint32
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = seq uint32,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  use seq.Seq
+  use Type
+  use mach.int.Int
   use mach.int.UInt64
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = usize
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = seq uint32
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = uint32
-  let rec cfg index_slice [@cfg:stackify] (a : seq uint32) : uint32
-    requires {10 < Seq.length (Model0.model a) && Seq.length (Model0.model a) <= 100}
-    
-   = 
-  var _0 : uint32;
-  var a_1 : seq uint32;
-  var _2 : usize;
-  var _3 : usize;
-  var _4 : bool;
-  {
-    a_1 <- a;
-    goto BB0
-  }
-  BB0 {
-    _2 <- (10 : usize);
-    _3 <- UInt64.of_int (Seq.length a_1);
-    _4 <- _2 < _3;
-    assert { _4 };
-    goto BB1
-  }
-  BB1 {
-    assume { Resolve0.resolve _0 };
-    _0 <- Seq.get a_1 (UInt64.to_int _2);
-    assume { Resolve1.resolve a_1 };
-    assume { Resolve2.resolve _2 };
-    return _0
-  }
-  
-end
-module C01_IndexMutSlice_Interface
-  use seq.Seq
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Prelude
-  use mach.int.UInt32
-  clone CreusotContracts_Logic_Model_Impl2_Model_Interface as Model0 with type t = uint32
-  val index_mut_slice [@cfg:stackify] (a : borrowed (seq uint32)) : ()
-    requires {Seq.length (Model0.model ( ^ a)) = 5}
-    
-end
-module C01_IndexMutSlice
-  use seq.Seq
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Prelude
-  use mach.int.UInt32
-  clone CreusotContracts_Logic_Model_Impl2_Model as Model0 with type t = uint32
-  use mach.int.UInt64
+  clone CreusotContracts_Logic_Model_Impl2_Model as Model1 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = usize
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = borrowed (seq uint32)
-  let rec cfg index_mut_slice [@cfg:stackify] (a : borrowed (seq uint32)) : ()
-    requires {Seq.length (Model0.model ( ^ a)) = 5}
-    
-   = 
-  var _0 : ();
-  var a_1 : borrowed (seq uint32);
-  var _2 : usize;
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = seq t
+  clone CreusotContracts_Logic_Model_Impl2_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = seq t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  clone Core_Slice_Impl0_Len_Interface as Len0 with type t = t, function Model0.model = Model0.model
+  let rec cfg slice_first [@cfg:stackify] (a : seq t) : Type.core_option_option t = 
+  var _0 : Type.core_option_option t;
+  var a_1 : seq t;
+  var _2 : bool;
   var _3 : usize;
-  var _4 : bool;
+  var _4 : seq t;
+  var _5 : t;
+  var _6 : t;
+  var _7 : usize;
+  var _8 : usize;
+  var _9 : bool;
   {
     a_1 <- a;
     goto BB0
   }
   BB0 {
-    _2 <- (2 : usize);
-    _3 <- UInt64.of_int (Seq.length ( * a_1));
-    _4 <- _2 < _3;
-    assert { _4 };
+    _4 <- a_1;
+    _3 <- Len0.len _4;
     goto BB1
   }
   BB1 {
-    a_1 <- { a_1 with current = Seq.set ( * a_1) (UInt64.to_int _2) (3 : uint32) };
+    _2 <- _3 > (0 : usize);
+    switch (_2)
+      | False -> goto BB4
+      | _ -> goto BB2
+      end
+  }
+  BB2 {
+    _7 <- (0 : usize);
+    _8 <- UInt64.of_int (Seq.length a_1);
+    _9 <- _7 < _8;
+    assert { _9 };
+    goto BB3
+  }
+  BB3 {
+    _6 <- Seq.get a_1 (UInt64.to_int _7);
     assume { Resolve0.resolve a_1 };
-    assume { Resolve1.resolve _2 };
-    _0 <- ();
+    assume { Resolve1.resolve _7 };
+    _5 <- _6;
+    assume { Resolve2.resolve _6 };
+    _0 <- Type.Core_Option_Option_Some _5;
+    goto BB5
+  }
+  BB4 {
+    assume { Resolve0.resolve a_1 };
+    _0 <- Type.Core_Option_Option_None;
+    goto BB5
+  }
+  BB5 {
     return _0
   }
   
