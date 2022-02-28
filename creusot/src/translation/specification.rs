@@ -68,6 +68,10 @@ impl PreContract {
         }
         out
     }
+
+    pub fn iter_ids(&self) -> impl Iterator<Item = DefId> + '_ {
+        self.requires.iter().chain(self.ensures.iter()).chain(self.variant.iter()).cloned()
+    }
 }
 
 // Turn a typing context into a substition.

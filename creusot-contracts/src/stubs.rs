@@ -1,6 +1,6 @@
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "fin"]
-pub fn fin<T>(_: &mut T) -> T {
+pub fn fin<T: ?Sized>(_: &mut T) -> Box<T> {
     panic!()
 }
 

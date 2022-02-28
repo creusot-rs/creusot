@@ -421,9 +421,9 @@ enum Precedence {
     Not,    // not
     Infix1, // infix-op level 1 (right-assoc)
     AtOld,
-    Infix2, // infix-op level 2 (left-assoc)
-    Infix3, // infix-op level 3 (left-assoc)
-    // Infix4, // infix-op level 4 (left-assoc)
+    Infix2,   // infix-op level 2 (left-assoc)
+    Infix3,   // infix-op level 3 (left-assoc)
+    Infix4,   // infix-op level 4 (left-assoc)
     Prefix,   // prefix-op
     Abs,      // Function abstraction
     App,      // Function application
@@ -450,7 +450,8 @@ impl Precedence {
             Precedence::Infix1 => Precedence::AtOld,
             Precedence::AtOld => Precedence::Infix2,
             Precedence::Infix2 => Precedence::Infix3,
-            Precedence::Infix3 => Precedence::Prefix,
+            Precedence::Infix3 => Precedence::Infix4,
+            Precedence::Infix4 => Precedence::Prefix,
             Precedence::Prefix => Precedence::Abs,
             Precedence::Abs => Precedence::App,
             Precedence::App => Precedence::Brackets,
@@ -489,7 +490,7 @@ impl Exp {
             Exp::Var(_, _) => Atom,
             Exp::QVar(_, _) => Atom,
             Exp::RecUp { .. } => App,
-            // Exp::RecField { .. } => Any,
+            Exp::RecField { .. } => Infix4,
             Exp::Tuple(_) => Atom,
             Exp::Constructor { .. } => App,
             // Exp::Seq(_, _) => { Term }

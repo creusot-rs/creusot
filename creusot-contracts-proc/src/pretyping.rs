@@ -104,7 +104,7 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
         RT::Final(TermFinal { term, .. }) => {
             let term = encode_term(*term)?;
             Ok(quote! {
-                creusot_contracts::stubs::fin(#term)
+                * creusot_contracts::stubs::fin(#term)
             })
         }
         RT::Model(TermModel { term, .. }) => {
@@ -213,13 +213,13 @@ mod tests {
         let term: Term = syn::parse_str("^ x").unwrap();
         assert_eq!(
             format!("{}", encode_term(term).unwrap()),
-            "creusot_contracts :: stubs :: fin (x)"
+            "* creusot_contracts :: stubs :: fin (x)"
         );
 
         let term: Term = syn::parse_str("^ ^ x").unwrap();
         assert_eq!(
             format!("{}", encode_term(term).unwrap()),
-            "creusot_contracts :: stubs :: fin (creusot_contracts :: stubs :: fin (x))"
+            "* creusot_contracts :: stubs :: fin (* creusot_contracts :: stubs :: fin (x))"
         );
     }
 
@@ -231,7 +231,7 @@ mod tests {
 
         assert_eq!(
             format!("{}", encode_term(term).unwrap()),
-            "* creusot_contracts :: stubs :: fin (x)"
+            "* * creusot_contracts :: stubs :: fin (x)"
         );
     }
 

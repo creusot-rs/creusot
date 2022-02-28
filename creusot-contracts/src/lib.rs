@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "contracts", feature(unsized_fn_params))]
+#![cfg_attr(feature = "contracts", feature(unsized_locals), allow(incomplete_features))]
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns, box_syntax))]
 
 #[cfg(feature = "contracts")]

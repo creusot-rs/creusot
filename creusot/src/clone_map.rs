@@ -38,6 +38,7 @@ pub enum PreludeModule {
     Double,
     Prelude,
     Ref,
+    Seq,
     Type,
 }
 
@@ -58,6 +59,7 @@ impl PreludeModule {
             PreludeModule::Double => QName::from_string("floating_point.Double").unwrap(),
             PreludeModule::Prelude => QName::from_string("prelude.Prelude").unwrap(),
             PreludeModule::Ref => QName::from_string("Ref").unwrap(),
+            PreludeModule::Seq => QName::from_string("seq.Seq").unwrap(),
             PreludeModule::Type => QName::from_string("Type").unwrap(),
         }
     }
