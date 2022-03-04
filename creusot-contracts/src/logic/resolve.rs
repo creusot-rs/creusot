@@ -8,7 +8,7 @@ pub unsafe trait Resolve {
     fn resolve(self) -> bool;
 }
 
-unsafe impl<T1: Resolve, T2: Resolve> Resolve for (T1, T2) {
+unsafe impl<T1, T2> Resolve for (T1, T2) {
     #[predicate]
     fn resolve(self) -> bool {
         Resolve::resolve(self.0) && Resolve::resolve(self.1)
@@ -19,5 +19,13 @@ unsafe impl<T> Resolve for &mut T {
     #[predicate]
     fn resolve(self) -> bool {
         pearlite! { ^self === *self }
+    }
+}
+
+unsafe impl<T> Resolve for T {
+    #[predicate]
+    #[rustc_diagnostic_item = "creusot_resolve_default"]
+    default fn resolve(self) -> bool {
+        true
     }
 }

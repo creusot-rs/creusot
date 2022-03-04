@@ -1,3 +1,4 @@
+#![feature(min_specialization)]
 extern crate creusot_contracts;
 
 pub mod nested {

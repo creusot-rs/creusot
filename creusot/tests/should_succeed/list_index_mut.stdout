@@ -72,13 +72,14 @@ module ListIndexMut_Get
       Type.ListIndexMut_Option_Some i
     
 end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
-  type self   
-  predicate resolve (self : self)
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t   
+  predicate resolve (self : t)
 end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve
-  type self   
-  predicate resolve (self : self)
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t   
+  predicate resolve (self : t) = 
+    true
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t   
@@ -91,11 +92,25 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   predicate resolve (self : borrowed t) = 
      ^ self =  * self
 end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self   
+  predicate resolve (self : self)
+end
 module CreusotContracts_Logic_Resolve_Impl1
   type t   
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = borrowed t,
+  predicate resolve = Resolve0.resolve
+end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t   
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
   predicate resolve = Resolve0.resolve
 end
 module ListIndexMut_IndexMut_Interface
@@ -126,9 +141,9 @@ module ListIndexMut_IndexMut
   clone ListIndexMut_Len as Len0
   use mach.int.Int64
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve4 with type t = uint32
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = ()
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve3 with type t = ()
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Type.listindexmut_list
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = usize
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = usize
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.listindexmut_list
   let rec cfg index_mut [@cfg:stackify] (param_l : borrowed (Type.listindexmut_list)) (param_ix : usize) : borrowed uint32
     requires {UInt64.to_int param_ix < Len0.len ( * param_l)}
@@ -260,8 +275,8 @@ module ListIndexMut_Write
   clone ListIndexMut_Len as Len0
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve3 with type t = uint32
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Type.listindexmut_list
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = usize
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = uint32
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = usize
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = uint32
   clone ListIndexMut_IndexMut_Interface as IndexMut0 with function Len0.len = Len0.len, function Get0.get = Get0.get
   let rec cfg write [@cfg:stackify] (l : borrowed (Type.listindexmut_list)) (ix : usize) (v : uint32) : ()
     requires {UInt64.to_int ix < Len0.len ( * l)}

@@ -14,13 +14,14 @@ module Type
   use floating_point.Double
   use prelude.Prelude
 end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
-  type self   
-  predicate resolve (self : self)
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t   
+  predicate resolve (self : t)
 end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve
-  type self   
-  predicate resolve (self : self)
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t   
+  predicate resolve (self : t) = 
+    true
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t   
@@ -32,6 +33,20 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   use prelude.Prelude
   predicate resolve (self : borrowed t) = 
      ^ self =  * self
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t   
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
+  predicate resolve = Resolve0.resolve
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t   
@@ -51,7 +66,7 @@ module ProjectionToggle_ProjToggle
   type t   
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = t
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = bool
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = bool
   let rec cfg proj_toggle [@cfg:stackify] (toggle : bool) (a : borrowed t) (b : borrowed t) : borrowed t
     ensures { if toggle then result = a &&  ^ b =  * b else result = b &&  ^ a =  * a }
     
@@ -114,10 +129,10 @@ module ProjectionToggle_Main
   use mach.int.Int
   use mach.int.Int32
   use prelude.Prelude
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = ()
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = ()
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = int32
   clone ProjectionToggle_ProjToggle_Interface as ProjToggle0 with type t = int32
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = int32
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = int32
   let rec cfg main [@cfg:stackify] () : () = 
   var _0 : ();
   var a_1 : int32;

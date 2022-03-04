@@ -34,6 +34,15 @@ module C17ImplRefinement_Tr_MyFunction
     ensures { UInt64.to_int result >= 10 }
     
 end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t   
+  predicate resolve (self : t)
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t   
+  predicate resolve (self : t) = 
+    true
+end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self   
   predicate resolve (self : self)
@@ -41,6 +50,12 @@ end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self   
   predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t   
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
+  predicate resolve = Resolve0.resolve
 end
 module C17ImplRefinement_Impl0_MyFunction_Interface
   use mach.int.UInt64
@@ -57,7 +72,7 @@ module C17ImplRefinement_Impl0_MyFunction
   use mach.int.Int
   use mach.int.Int32
   use prelude.Prelude
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = ()
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = ()
   let rec cfg my_function [@cfg:stackify] (self : ()) : usize
     requires {true}
     ensures { UInt64.to_int result >= 15 }

@@ -192,6 +192,8 @@ pub fn resolve_assoc_item_opt(
         return None;
     }
 
+    let trait_ref = TraitRef::from_method(tcx, tcx.trait_of_item(def_id).unwrap(), substs);
+    use crate::rustc_middle::ty::TypeFoldable;
     let source = resolve_impl_source_opt(tcx, param_env, def_id, substs)?;
 
     match source {
@@ -209,6 +211,9 @@ pub fn resolve_assoc_item_opt(
                 });
             use rustc_trait_selection::infer::TyCtxtInferExt;
 
+            if !leaf_def.is_final() && trait_ref.still_further_specializable() {
+                return Some((def_id, substs));
+            }
             // Translate the original substitution into one on the selected impl method
             let leaf_substs = tcx.infer_ctxt().enter(|infcx| {
                 let param_env = param_env.with_reveal_all_normalized(tcx);

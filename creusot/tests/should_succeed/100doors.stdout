@@ -83,13 +83,14 @@ module CreusotContracts_Std1_Vec_Impl1_WithCapacity
     ensures { Seq.length (Model0.model result) = 0 }
     
 end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
-  type self   
-  predicate resolve (self : self)
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t   
+  predicate resolve (self : t)
 end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve
-  type self   
-  predicate resolve (self : self)
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t   
+  predicate resolve (self : t) = 
+    true
 end
 module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t   
@@ -297,6 +298,36 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   predicate resolve (self : borrowed t) = 
      ^ self =  * self
 end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Std1_Vec_Impl5_Resolve_Interface
+  type t   
+  use Type
+  predicate resolve (self : Type.creusotcontracts_std1_vec_vec t)
+end
+module CreusotContracts_Std1_Vec_Impl5_Resolve
+  type t   
+  use Type
+  use mach.int.Int
+  use mach.int.Int32
+  use seq.Seq
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t
+  predicate resolve (self : Type.creusotcontracts_std1_vec_vec t) = 
+    forall i : (int) . 0 <= i && i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
+end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t   
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
+  predicate resolve = Resolve0.resolve
+end
 module CreusotContracts_Std1_Vec_Impl3_Output
   type t   
   type output  = 
@@ -340,6 +371,16 @@ module CreusotContracts_Logic_Resolve_Impl1
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = borrowed t,
+  predicate resolve = Resolve0.resolve
+end
+module CreusotContracts_Std1_Vec_Impl5
+  type t   
+  use Type
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = t
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl5_Resolve as Resolve0 with type t = t, function Model0.model = Model0.model,
+  predicate Resolve0.resolve = Resolve2.resolve
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.creusotcontracts_std1_vec_vec t,
   predicate resolve = Resolve0.resolve
 end
 module CreusotContracts_Logic_Model_Impl1_ModelTy
@@ -390,13 +431,12 @@ module C100doors_Main
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = bool
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve5 with type self = Type.creusotcontracts_std1_vec_vec bool
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve4 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = bool
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = bool
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = ()
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve3 with type t = bool
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = ()
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = usize
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = usize
   clone CreusotContracts_Logic_Model_Impl0_Model as Model2 with type t = Type.creusotcontracts_std1_vec_vec bool,
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
   clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = bool,
@@ -408,6 +448,8 @@ module C100doors_Main
   function Model0.model = Model0.model, function Model1.model = Model1.model
   clone CreusotContracts_Std1_Vec_Impl1_Push_Interface as Push0 with type t = bool,
   function Model0.model = Model0.model, function Model1.model = Model1.model
+  clone CreusotContracts_Std1_Vec_Impl5_Resolve as Resolve5 with type t = bool, function Model0.model = Model0.model,
+  predicate Resolve0.resolve = Resolve2.resolve
   clone CreusotContracts_Std1_Vec_Impl1_WithCapacity_Interface as WithCapacity0 with type t = bool,
   function Model0.model = Model0.model
   let rec cfg main [@cfg:stackify] () : () = 

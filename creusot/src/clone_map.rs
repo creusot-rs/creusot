@@ -282,6 +282,15 @@ impl<'tcx> CloneMap<'tcx> {
             }
         };
 
+        if self.tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), def_id)
+            || self.tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), def_id)
+        {
+            let self_ty = subst.types().nth(0).unwrap();
+            if let TyKind::Closure(id, csubst) = self_ty.kind() {
+                return (*id, csubst);
+            }
+        }
+
         (def_id, subst)
     }
 

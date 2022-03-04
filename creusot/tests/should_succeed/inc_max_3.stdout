@@ -30,13 +30,14 @@ module IncMax3_Swap
     ensures {  ^ mma =  * mmb &&  ^ mmb =  * mma }
     
 end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
-  type self   
-  predicate resolve (self : self)
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t   
+  predicate resolve (self : t)
 end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve
-  type self   
-  predicate resolve (self : self)
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t   
+  predicate resolve (self : t) = 
+    true
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t   
@@ -48,6 +49,20 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   use prelude.Prelude
   predicate resolve (self : borrowed t) = 
      ^ self =  * self
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t   
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
+  predicate resolve = Resolve0.resolve
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t   
@@ -70,10 +85,10 @@ module IncMax3_IncMax3
   use mach.int.UInt32
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve3 with type t = uint32
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = ()
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = ()
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = borrowed uint32
   clone IncMax3_Swap_Interface as Swap0
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = uint32
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = uint32
   let rec cfg inc_max_3 [@cfg:stackify] (ma : borrowed uint32) (mb : borrowed uint32) (mc : borrowed uint32) : ()
     requires { * ma <= (1000000 : uint32) &&  * mb <= (1000000 : uint32) &&  * mc <= (1000000 : uint32)}
     ensures {  ^ ma <>  ^ mb &&  ^ mb <>  ^ mc &&  ^ mc <>  ^ ma }
@@ -244,9 +259,9 @@ module IncMax3_TestIncMax3
   use mach.int.Int
   use mach.int.UInt32
   use prelude.Prelude
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = ()
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = bool
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = uint32
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve3 with type t = ()
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = uint32
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = uint32
   clone IncMax3_IncMax3_Interface as IncMax30
   let rec cfg test_inc_max_3 [@cfg:stackify] (a : uint32) (b : uint32) (c : uint32) : ()
