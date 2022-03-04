@@ -21,6 +21,14 @@ impl Ident {
     pub fn to_string(self) -> String {
         self.0
     }
+
+    pub fn decapitalize(&mut self) {
+        self.0[..1].make_ascii_lowercase();
+    }
+
+    pub fn capitalize(&mut self) {
+        self.0[..1].make_ascii_uppercase();
+    }
 }
 
 // TODO: Make this try_from and test for validity

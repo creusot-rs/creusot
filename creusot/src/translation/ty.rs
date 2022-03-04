@@ -1,9 +1,9 @@
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::subst::SubstsRef;
 use rustc_middle::ty::{self, subst::InternalSubsts, ProjectionTy, Ty, TyCtxt, TyKind::*};
-use rustc_middle::ty::{FieldDef, VariantDef};
-use rustc_span::Span;
+use rustc_middle::ty::{ClosureSubsts, FieldDef, VariantDef};
 use rustc_span::Symbol;
+use rustc_span::{Span, DUMMY_SP};
 use std::collections::VecDeque;
 use why3::declaration::TyDeclKind;
 use why3::declaration::{Axiom, Contract, Decl, Signature, ValKind};
@@ -122,7 +122,18 @@ fn translate_ty_inner<'tcx>(
             names.import_prelude_module(PreludeModule::Prelude);
             MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
         }
-        // _ => unreachable!(),
+        Closure(id, subst) => {
+            ctx.translate(*id);
+
+            let name = item_name(ctx.tcx, *id).to_string().to_lowercase();
+            let cons = MlT::TConstructor(names.insert(*id, subst).qname_ident(name.into()));
+
+            cons
+        }
+        // Foreign(_) => todo!(),
+        // FnDef(_, _) => todo!(),
+        // // FnPtr(_) => todo!(),
+        // FnPtr(_) => MlT::Tuple(vec![]),
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
 }
@@ -132,7 +143,7 @@ pub fn translate_projection_ty(
     names: &mut CloneMap<'tcx>,
     pty: &ProjectionTy<'tcx>,
 ) -> MlT {
-    ctx.translate_trait(pty.trait_def_id(ctx.tcx));
+    // ctx.translate(pty.trait_def_id(ctx.tcx));
     let name = names.insert(pty.item_def_id, pty.substs).qname(ctx.tcx, pty.item_def_id);
     MlT::TConstructor(name)
 }
@@ -190,6 +201,7 @@ fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
     if !ctx.translated_items.contains(&did) {
         translate_tydecl(ctx, rustc_span::DUMMY_SP, did);
     };
+
     let name = item_name(ctx.tcx, did).to_string().to_lowercase();
 
     QName { module: vec![module_name(ctx.tcx, did)], name: name.into() }
@@ -252,6 +264,37 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     ctx.add_type(did, ty_decl);
 }
 
+pub fn translate_closure_ty(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    did: DefId,
+    subst: SubstsRef<'tcx>,
+) -> TyDecl {
+    let ty_name = translate_ty_name(ctx, did).name;
+    let closure_subst = subst.as_closure();
+    let fields: Vec<_> = closure_subst
+        .upvar_tys()
+        .map(|uv| translate_ty_inner(TyTranslation::Usage, ctx, names, DUMMY_SP, uv))
+        .collect();
+
+    let mut cons_name = item_name(ctx.tcx, did);
+    cons_name.capitalize();
+    let kind = TyDeclKind::Adt(vec![(cons_name, fields)]);
+
+    // let params = closure_subst
+    //     .parent_substs()
+    //     .iter()
+    //     .filter_map(|gdef| match gdef.unpack() {
+    //         ty::subst::GenericArgKind::Type(ty) => match ty.kind() {
+    //             TyKind::Param(p) => Some(translate_ty_param(p.name)),
+    //             _ => None,
+    //         },
+    //         _ => None,
+    //     })
+    //     .collect();
+    TyDecl { ty_name, ty_params: vec![], kind }
+}
+
 fn ty_param_names(tcx: TyCtxt<'tcx>, def_id: DefId) -> impl Iterator<Item = Ident> + 'tcx {
     let gens = tcx.generics_of(def_id);
     gens.params
@@ -294,7 +337,6 @@ pub fn translate_accessor(
         .iter()
         .map(|f| field_ty(ctx, &mut names, f, substs, rustc_span::DUMMY_SP))
         .collect();
-    let field_ty = field_tys[ix].clone();
     let var_name = item_name(ctx.tcx, variant.def_id);
 
     let this = MlT::TApp(
@@ -302,8 +344,20 @@ pub fn translate_accessor(
         ty_param_names(ctx.tcx, adt_did).map(MlT::TVar).collect(),
     );
 
+    build_accessor(this, Ident::build(&acc_name), var_name, &field_tys, ix)
+}
+
+pub fn build_accessor(
+    this: MlT,
+    acc_name: Ident,
+    cons_name: Ident,
+    field_tys: &[MlT],
+    ix: usize,
+) -> Vec<Decl> {
+    let field_ty = field_tys[ix].clone();
+
     let mut sig = Signature {
-        name: Ident::build(&acc_name),
+        name: acc_name.clone(),
         attrs: Vec::new(),
         args: vec![("self".into(), this.clone())],
         retty: Some(field_ty),
@@ -319,7 +373,7 @@ pub fn translate_accessor(
     sig.contract.ensures.push(Exp::BinaryOp(
         BinOp::Eq,
         box Exp::pure_var("result".into()),
-        box Exp::pure_var(Ident::build(&acc_name)).app_to(Exp::pure_var("self".into())),
+        box Exp::pure_var(acc_name.clone()).app_to(Exp::pure_var("self".into())),
     ));
     decls.push(Decl::ValDecl(ValKind::Val { sig: sig.clone() }));
 
@@ -328,7 +382,7 @@ pub fn translate_accessor(
 
     // Build the generic contructor application
     let cons_app = Exp::Call(
-        box Exp::pure_var(var_name),
+        box Exp::pure_var(cons_name),
         bound_vars.iter().map(|(n, _)| Exp::pure_var(n.clone())).collect(),
     );
 
@@ -343,13 +397,45 @@ pub fn translate_accessor(
     );
 
     // The record projection axiom
-    let axiom_name = format!("{}_acc", acc_name);
+    let axiom_name = format!("{}_acc", &*acc_name);
     decls.push(Decl::Axiom(Axiom {
         name: Ident::build(&axiom_name),
         axiom: Exp::Forall(bound_vars, box projection),
     }));
 
     decls
+}
+
+pub fn closure_accessors(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    ty_id: DefId,
+    subst: ClosureSubsts<'tcx>,
+) -> Vec<Decl> {
+    let count = subst.upvar_tys().count();
+
+    let fields: Vec<_> =
+        subst.upvar_tys().map(|ty| translate_ty(ctx, names, DUMMY_SP, ty)).collect();
+    let mut cons_name = item_name(ctx.tcx, ty_id);
+    cons_name.capitalize();
+
+    let ty_name = translate_ty_name(ctx, ty_id).name;
+
+    let this = MlT::TConstructor(ty_name.into());
+
+    let mut accessors = Vec::new();
+    for i in 0..count {
+        let nm = closure_accessor_name(ctx.tcx, ty_id, i);
+
+        accessors.extend(build_accessor(this.clone(), nm, cons_name.clone(), &fields, i));
+    }
+    accessors
+}
+
+pub fn closure_accessor_name(tcx: TyCtxt, def: DefId, ix: usize) -> Ident {
+    let ty_name = item_name(tcx, def).to_string().to_lowercase();
+
+    format!("{}_{}", &*ty_name, ix).into()
 }
 
 pub fn variant_accessor_name(tcx: TyCtxt, def: DefId, variant: &VariantDef, field: usize) -> Ident {

@@ -585,7 +585,7 @@ impl Print for Exp {
             Exp::QVar(v, _) => v.pretty(alloc, env),
             Exp::RecUp { box record, label, box val } => alloc
                 .space()
-                .append(parens!(alloc, env, self, record))
+                .append(parens!(alloc, env, self.precedence().next(), record))
                 .append(" with ")
                 .append(alloc.text(label))
                 .append(" = ")

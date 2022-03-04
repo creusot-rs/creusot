@@ -1,14 +1,17 @@
 use crate::{
     gather_spec_closures::GatherSpecClosures,
     rustc_extensions::renumber,
+    translation::{
+        specification::contract_of,
+        ty::{closure_accessors, translate_closure_ty, translate_ty},
+    },
     util::{self, ident_of, signature_of},
 };
 use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use rustc_infer::infer::TyCtxtInferExt;
-use rustc_middle::mir::Place;
-use rustc_middle::ty::subst::GenericArg;
+use rustc_middle::ty::subst::{GenericArg, SubstsRef};
 use rustc_middle::ty::Ty;
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
 use rustc_middle::{
@@ -17,13 +20,14 @@ use rustc_middle::{
     ty::TyCtxt,
     ty::{TyKind, WithOptConstParam},
 };
+use rustc_middle::{mir::Place, ty::DefIdTree};
 use rustc_mir_dataflow::move_paths::MoveData;
 use rustc_mir_transform::{remove_false_edges::*, simplify::*};
-use rustc_span::Symbol;
+use rustc_span::{Symbol, DUMMY_SP};
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
-use why3::declaration::*;
 use why3::mlcfg::{self, Statement::*, *};
+use why3::{declaration::*, Ident};
 
 use indexmap::IndexMap;
 
@@ -173,7 +177,27 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
     fn translate(mut self) -> Module {
         let mut decls: Vec<_> = Vec::new();
-        decls.extend(all_generic_decls_for(self.tcx, self.def_id));
+        decls.extend(closure_generic_decls(self.tcx, self.def_id));
+
+        if self.tcx.is_closure(self.def_id) {
+            if let TyKind::Closure(_, subst) = self.tcx.type_of(self.def_id).kind() {
+                let env_ty = Decl::TyDecl(translate_closure_ty(
+                    self.ctx,
+                    &mut self.clone_names,
+                    self.def_id,
+                    subst,
+                ));
+                let accessors = closure_accessors(
+                    self.ctx,
+                    &mut self.clone_names,
+                    self.def_id,
+                    subst.as_closure(),
+                );
+                decls.extend(self.clone_names.to_clones(self.ctx));
+                decls.push(env_ty);
+                decls.extend(accessors);
+            }
+        }
 
         let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
         let name = module_name(self.tcx, self.def_id);
@@ -206,6 +230,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             terminator: Terminator::Goto(BlockId(0)),
         };
         decls.extend(self.clone_names.to_clones(self.ctx));
+
+        // decls.extend(closure_contract(self.ctx, &mut self.clone_names, self.def_id).into_iter());
 
         decls.push(Decl::FunDecl(CfgFunction {
             sig,
@@ -286,38 +312,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         self.emit_statement(assign);
     }
 
-    fn resolve_predicate_of(&mut self, ty: Ty<'tcx>) -> Exp {
-        if !resolve_trait_loaded(self.tcx) {
-            self.ctx.warn(
-                rustc_span::DUMMY_SP,
-                "load the `creusot_contract` crate to enable resolution of mutable borrows.",
-            );
-            return Exp::Abs("x".into(), box Exp::Const(Constant::const_true()));
-        }
-
-        let trait_id = self.tcx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap();
-        let trait_meth_id =
-            self.tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
-        let subst = self.tcx.mk_substs([GenericArg::from(ty)].iter());
-
-        let param_env = self.tcx.param_env(self.def_id);
-        let resolve_impl =
-            traits::resolve_assoc_item_opt(self.tcx, param_env, trait_meth_id, subst);
-
-        match resolve_impl {
-            Some(method) => {
-                self.ctx.translate(method.0);
-                Exp::impure_qvar(
-                    self.clone_names.insert(method.0, method.1).qname(self.tcx, method.0),
-                )
-            }
-            None => {
-                self.ctx.translate_trait(trait_id);
-                Exp::impure_qvar(
-                    self.clone_names.insert(trait_meth_id, subst).qname(self.tcx, trait_meth_id),
-                )
-            }
-        }
+    fn resolve_ty(&mut self, ty: Ty<'tcx>) -> Exp {
+        resolve_predicate_of(&mut self.ctx, &mut self.clone_names, self.def_id, ty)
     }
 
     // Inserts drop statements for variables which died over the course of a goto or switch
@@ -388,7 +384,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             let local_ty = self.body.local_decls[local].ty;
             let ident = self.translate_local(local).ident();
             let assumption: Exp =
-                self.resolve_predicate_of(local_ty).app_to(Exp::impure_var(ident));
+                resolve_predicate_of(&mut self.ctx, &mut self.clone_names, self.def_id, local_ty)
+                    .app_to(Exp::impure_var(ident));
             self.emit_statement(mlcfg::Statement::Assume(assumption));
         }
     }
@@ -443,7 +440,7 @@ impl LocalIdent {
 
     pub fn arg_name(&self) -> why3::Ident {
         match &self.1 {
-            None => format!("{:?}", self.0).into(),
+            None => format!("{:?}'", self.0).into(),
             Some(h) => ident_of(*h),
         }
     }
@@ -456,8 +453,219 @@ impl LocalIdent {
     }
 }
 
+pub fn closure_contract(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    def_id: DefId,
+) -> Vec<Decl> {
+    use rustc_middle::ty::{self, ClosureKind::*};
+    let subst = match ctx.tcx.type_of(def_id).kind() {
+        TyKind::Closure(_, substs) => substs,
+        _ => return Vec::new(),
+    };
+    let kind = subst.as_closure().kind();
+
+    let mut clos_sig = signature_of(ctx, names, def_id);
+
+    // Get the raw contracts
+    let contract = names.with_public_clones(|names| {
+        contract_of(ctx, def_id).unwrap().check_and_lower(ctx, names, def_id)
+    });
+
+    let postcondition = contract.ensures_conj();
+    let precondition = contract.requires_conj();
+
+    let result_ty = clos_sig.retty;
+    clos_sig.contract = Contract::new();
+    clos_sig.retty = None;
+
+    // Build the signatures for the pre and post conditions
+    let mut post_sig = clos_sig.clone();
+    post_sig.args.push((Ident::build("result"), result_ty.unwrap_or(Type::Tuple(vec![]))));
+    let pre_sig = clos_sig;
+
+    let mut contracts = Vec::new();
+    let env_ty =
+        ctx.tcx.closure_env_ty(def_id, subst, ty::RegionKind::ReErased).unwrap().peel_refs();
+    let self_ty = translate_ty(ctx, names, DUMMY_SP, env_ty);
+
+    {
+        // Preconditions are the same for every kind of closure
+        let mut pre_sig = pre_sig.clone();
+        pre_sig.name = Ident::build("precondition");
+        pre_sig.args[0].1 = self_ty.clone();
+        let mut subst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, FnOnce, true);
+
+        let mut precondition = precondition.clone();
+        subst.visit_mut(&mut precondition);
+
+        contracts.push(Decl::PredDecl(Predicate { sig: pre_sig, body: precondition }));
+    }
+
+    if kind <= Fn {
+        let mut post_sig = post_sig.clone();
+        post_sig.name = Ident::build("postcondition");
+        post_sig.args[0].1 = self_ty.clone();
+
+        let mut csubst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, Fn, true);
+        let mut postcondition = postcondition.clone();
+
+        csubst.visit_mut(&mut postcondition);
+        contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
+    }
+
+    if kind <= FnMut {
+        let mut post_sig = post_sig.clone();
+        post_sig.name = Ident::build("postcondition_mut");
+
+        let self_ty = Type::MutableBorrow(Box::new(self_ty.clone()));
+        post_sig.args[0].1 = self_ty;
+
+        let mut csubst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, FnMut, true);
+
+        let mut postcondition = postcondition.clone();
+        postcondition = postcondition.and(closure_unnest(ctx.tcx, names, def_id, subst));
+
+        csubst.visit_mut(&mut postcondition);
+        contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
+    }
+
+    if kind <= FnOnce {
+        let mut post_sig = post_sig.clone();
+        post_sig.name = Ident::build("postcondition_once");
+        post_sig.args[0].1 = self_ty.clone();
+
+        let mut csubst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, FnOnce, true);
+
+        let mut postcondition = postcondition.clone();
+        csubst.visit_mut(&mut postcondition);
+        contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
+    }
+
+    contracts.push(closure_resolve(ctx, names, def_id, subst));
+
+    return contracts;
+}
+
+fn closure_resolve(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    def_id: DefId,
+    subst: SubstsRef<'tcx>,
+) -> Decl {
+    let mut resolve = Exp::mk_true();
+
+    let csubst = subst.as_closure();
+    for (ix, ty) in csubst.upvar_tys().enumerate() {
+        let acc_name = ty::closure_accessor_name(ctx.tcx, def_id, ix);
+        let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
+        let self_ = Exp::pure_var(Ident::build("_1'"));
+
+        let resolve_one = resolve_predicate_of(ctx, names, def_id, ty).app_to(acc.app_to(self_));
+        resolve = resolve_one.and(resolve);
+    }
+
+    let sig = Signature {
+        attrs: Vec::new(),
+        contract: Contract::new(),
+        retty: None,
+        name: Ident::build("resolve"),
+        args: vec![(
+            Ident::build("_1'"),
+            translate_ty(ctx, names, ctx.def_span(def_id), ctx.type_of(def_id)),
+        )],
+    };
+
+    Decl::PredDecl(Predicate { sig, body: resolve })
+}
+
+pub fn closure_unnest(
+    tcx: TyCtxt<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    def_id: DefId,
+    subst: SubstsRef<'tcx>,
+) -> Exp {
+    let mut unnest = Exp::mk_true();
+
+    let csubst = subst.as_closure();
+    for (ix, up_ty) in csubst.upvar_tys().enumerate() {
+        if up_ty.is_mutable_ptr() {
+            let acc_name = ty::closure_accessor_name(tcx, def_id, ix);
+            let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
+
+            let self_ = Exp::pure_var(Ident::build("_1'"));
+
+            let unnest_one = Exp::BinaryOp(
+                BinOp::Eq,
+                box Exp::Final(box acc.clone().app_to(Exp::Final(box self_.clone()))),
+                box Exp::Final(box acc.app_to(Exp::Current(box self_))),
+            );
+
+            unnest = unnest_one.and(unnest);
+        }
+    }
+
+    unnest
+}
+
+fn resolve_predicate_of(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    def_id: DefId,
+    ty: Ty<'tcx>,
+) -> Exp {
+    if !resolve_trait_loaded(ctx.tcx) {
+        ctx.warn(
+            rustc_span::DUMMY_SP,
+            "load the `creusot_contract` crate to enable resolution of mutable borrows.",
+        );
+        return Exp::Abs("x".into(), box Exp::Const(Constant::const_true()));
+    }
+
+    // BIG HACK: Pretend closures have a Resolve instance.
+    if let TyKind::Closure(def_id, subst) = ty.kind() {
+        return Exp::impure_qvar(names.insert(*def_id, subst).qname_ident(Ident::build("resolve")));
+    }
+
+    let trait_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap();
+    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
+    let subst = ctx.mk_substs([GenericArg::from(ty)].iter());
+
+    let param_env = ctx.param_env(def_id);
+    let resolve_impl = traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst);
+
+    match resolve_impl {
+        Some(method) => {
+            ctx.translate(method.0);
+            Exp::impure_qvar(names.insert(method.0, method.1).qname(ctx.tcx, method.0))
+        }
+        None => {
+            ctx.translate(trait_id);
+            Exp::impure_qvar(names.insert(trait_meth_id, subst).qname(ctx.tcx, trait_meth_id))
+        }
+    }
+}
+
 fn resolve_trait_loaded(tcx: TyCtxt) -> bool {
     tcx.get_diagnostic_item(Symbol::intern("creusot_resolve")).is_some()
+}
+
+// Closures inherit the generic parameters of the original function they were defined in, but
+// add 3 'ghost' generics tracking metadata about the closure. We choose to erase those parameters,
+// as they contain a function type along with other irrelevant details (for us).
+pub(crate) fn closure_generic_decls(
+    tcx: TyCtxt,
+    mut def_id: DefId,
+) -> impl Iterator<Item = Decl> + '_ {
+    loop {
+        if tcx.is_closure(def_id) {
+            def_id = tcx.parent(def_id).unwrap();
+        } else {
+            break;
+        }
+    }
+
+    all_generic_decls_for(tcx, def_id)
 }
 
 pub fn all_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
