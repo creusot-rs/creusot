@@ -361,6 +361,7 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
 
 struct LogicItem {
     vis: Visibility,
+    defaultness: Option<Token![default]>,
     attrs: Vec<Attribute>,
     sig: Signature,
     body: Box<TBlock>,
@@ -376,6 +377,7 @@ impl Parse for LogicInput {
         let attrs = input.call(Attribute::parse_outer)?;
         // Infalliable, no visibility = inherited
         let vis: Visibility = input.parse()?;
+        let default = input.parse()?;
         let sig: Signature = input.parse()?;
         let lookahead = input.lookahead1();
         if lookahead.peek(Token![;]) {
@@ -388,6 +390,7 @@ impl Parse for LogicInput {
 
             Ok(LogicInput::Item(LogicItem {
                 vis,
+                defaultness: default,
                 attrs,
                 sig,
                 body: Box::new(TBlock { brace_token, stmts }),
@@ -415,6 +418,7 @@ fn logic_sig(sig: TraitItemSignature) -> TS1 {
 fn logic_item(log: LogicItem) -> TS1 {
     let term = log.body;
     let vis = log.vis;
+    let def = log.defaultness;
     let sig = log.sig;
     let attrs = log.attrs;
 
@@ -423,7 +427,7 @@ fn logic_item(log: LogicItem) -> TS1 {
     TS1::from(quote! {
         #[creusot::decl::logic]
         #(#attrs)*
-        #vis #sig {
+        #vis #def #sig {
             #req_body
         }
     })
@@ -459,6 +463,7 @@ fn predicate_sig(sig: TraitItemSignature) -> TS1 {
 fn predicate_item(log: LogicItem) -> TS1 {
     let term = log.body;
     let vis = log.vis;
+    let def = log.defaultness;
     let sig = log.sig;
     let attrs = log.attrs;
 
@@ -467,7 +472,7 @@ fn predicate_item(log: LogicItem) -> TS1 {
     TS1::from(quote! {
         #[creusot::decl::predicate]
         #(#attrs)*
-        #vis #sig {
+        #vis #def #sig {
             #req_body
         }
     })

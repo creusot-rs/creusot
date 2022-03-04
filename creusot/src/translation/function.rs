@@ -622,11 +622,6 @@ fn resolve_predicate_of(
         return Exp::Abs("x".into(), box Exp::Const(Constant::const_true()));
     }
 
-    // BIG HACK: Pretend closures have a Resolve instance.
-    if let TyKind::Closure(def_id, subst) = ty.kind() {
-        return Exp::impure_qvar(names.insert(*def_id, subst).qname_ident(Ident::build("resolve")));
-    }
-
     let trait_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap();
     let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
     let subst = ctx.mk_substs([GenericArg::from(ty)].iter());

@@ -37,6 +37,15 @@ module Knapsack_MaxLog
   function max_log (a : int) (b : int) : int = 
     if a < b then b else a
 end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t   
+  predicate resolve (self : t)
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t   
+  predicate resolve (self : t) = 
+    true
+end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self   
   predicate resolve (self : self)
@@ -44,6 +53,12 @@ end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self   
   predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t   
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
+  predicate resolve = Resolve0.resolve
 end
 module Knapsack_Max_Interface
   use mach.int.UInt64
@@ -60,7 +75,7 @@ module Knapsack_Max
   use mach.int.Int
   use prelude.Prelude
   clone Knapsack_MaxLog as MaxLog0
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = usize
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = usize
   let rec cfg max [@cfg:stackify] (a : usize) (b : usize) : usize
     requires {true}
     ensures { UInt64.to_int result = MaxLog0.max_log (UInt64.to_int a) (UInt64.to_int b) }
@@ -480,6 +495,22 @@ module CreusotContracts_Std1_Vec_Impl1_Push
     ensures { Model0.model ( ^ self) = Seq.snoc (Model1.model self) v }
     
 end
+module CreusotContracts_Std1_Vec_Impl5_Resolve_Interface
+  type t   
+  use Type
+  predicate resolve (self : Type.creusotcontracts_std1_vec_vec t)
+end
+module CreusotContracts_Std1_Vec_Impl5_Resolve
+  type t   
+  use Type
+  use mach.int.Int
+  use mach.int.Int32
+  use seq.Seq
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t
+  predicate resolve (self : Type.creusotcontracts_std1_vec_vec t) = 
+    forall i : (int) . 0 <= i && i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
+end
 module CreusotContracts_Std1_Vec_Impl3_Output
   type t   
   type output  = 
@@ -523,6 +554,16 @@ module CreusotContracts_Logic_Resolve_Impl1
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = borrowed t,
+  predicate resolve = Resolve0.resolve
+end
+module CreusotContracts_Std1_Vec_Impl5
+  type t   
+  use Type
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = t
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl5_Resolve as Resolve0 with type t = t, function Model0.model = Model0.model,
+  predicate Resolve0.resolve = Resolve2.resolve
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.creusotcontracts_std1_vec_vec t,
   predicate resolve = Resolve0.resolve
 end
 module CreusotContracts_Logic_Model_Impl1_ModelTy
@@ -577,8 +618,6 @@ module Knapsack_Knapsack01Dyn
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = Type.knapsack_item name
   clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec (Type.knapsack_item name),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model3.model
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve9 with type self = Type.creusotcontracts_std1_vec_vec (Type.creusotcontracts_std1_vec_vec usize)
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve8 with type self = Type.creusotcontracts_std1_vec_vec (Type.knapsack_item name)
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve7 with type self = Type.creusotcontracts_std1_vec_vec (Type.knapsack_item name)
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy3 with type t = Type.knapsack_item name
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model8 with type t = Type.knapsack_item name
@@ -588,16 +627,20 @@ module Knapsack_Knapsack01Dyn
   function Model0.model = Model8.model, function Model1.model = Model9.model
   clone CreusotContracts_Std1_Vec_Impl1_WithCapacity_Interface as WithCapacity0 with type t = Type.knapsack_item name,
   function Model0.model = Model8.model
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve6 with type self = ()
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve6 with type t = ()
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve5 with type t = usize
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve4 with type t = Type.creusotcontracts_std1_vec_vec usize
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = usize
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve3 with type t = usize
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy2 with type t = usize
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = Type.creusotcontracts_std1_vec_vec usize
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = Type.creusotcontracts_std1_vec_vec usize
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy1 with type t = Type.creusotcontracts_std1_vec_vec usize
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.knapsack_item name
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = usize
+  clone CreusotContracts_Std1_Vec_Impl5_Resolve as Resolve8 with type t = Type.knapsack_item name,
+  function Model0.model = Model8.model, predicate Resolve0.resolve = Resolve1.resolve
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = usize
   clone Knapsack_Max_Interface as Max0 with function MaxLog0.max_log = MaxLog0.max_log
+  clone CreusotContracts_Std1_Vec_Impl5_Resolve as Resolve10 with type t = usize, function Model0.model = Model2.model,
+  predicate Resolve0.resolve = Resolve0.resolve
   clone CreusotContracts_Logic_Model_Impl1_Model as Model7 with type t = Type.creusotcontracts_std1_vec_vec usize,
   type ModelTy0.modelTy = ModelTy2.modelTy, function Model0.model = Model2.model
   clone CreusotContracts_Std1_Vec_Impl2_IndexMut_Interface as IndexMut1 with type t = usize,
@@ -616,6 +659,8 @@ module Knapsack_Knapsack01Dyn
   type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model1.model
   clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index1 with type t = Type.creusotcontracts_std1_vec_vec usize,
   function Model0.model = Model4.model
+  clone CreusotContracts_Std1_Vec_Impl5_Resolve as Resolve9 with type t = Type.creusotcontracts_std1_vec_vec usize,
+  function Model0.model = Model1.model, predicate Resolve0.resolve = Resolve10.resolve
   clone CreusotContracts_Std1_Vec_FromElem_Interface as FromElem1 with type t = Type.creusotcontracts_std1_vec_vec usize,
   function Model0.model = Model1.model
   clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = Type.knapsack_item name,

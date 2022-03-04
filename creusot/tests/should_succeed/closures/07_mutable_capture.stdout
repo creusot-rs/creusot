@@ -101,6 +101,15 @@ module C07MutableCapture_TestFnmut_Closure2
   }
   
 end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t   
+  predicate resolve (self : t)
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t   
+  predicate resolve (self : t) = 
+    true
+end
 module CreusotContracts_Std1_Fun_FnOnceSpec_Precondition_Interface
   type self   
   type args   
@@ -158,6 +167,12 @@ module Core_Ops_Function_FnMut_CallMut
     ensures { PostconditionMut0.postcondition_mut self args result }
     
 end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t   
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
+  predicate resolve = Resolve0.resolve
+end
 module C07MutableCapture_TestFnmut_Interface
   use mach.int.UInt32
   use mach.int.Int
@@ -171,11 +186,11 @@ module C07MutableCapture_TestFnmut
   use mach.int.Int
   use mach.int.Int32
   use prelude.Prelude
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = ()
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = ()
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = uint32
   clone C07MutableCapture_TestFnmut_Closure2_Interface as Closure20 with predicate Resolve0.resolve = Resolve2.resolve,
   axiom .
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = uint32
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = uint32
   let rec cfg test_fnmut [@cfg:stackify] (x : uint32) : ()
     requires {UInt32.to_int x = 100000}
     

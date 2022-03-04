@@ -82,6 +82,15 @@ module SumOfOdds_SumOfOddIsSqr_Impl
    = 
     if x > 0 then sum_of_odd_is_sqr (x - 1) else ()
 end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t   
+  predicate resolve (self : t)
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t   
+  predicate resolve (self : t) = 
+    true
+end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self   
   predicate resolve (self : self)
@@ -89,6 +98,12 @@ end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self   
   predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t   
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
+  predicate resolve = Resolve0.resolve
 end
 module SumOfOdds_ComputeSumOfOdd_Interface
   use mach.int.UInt32
@@ -108,8 +123,8 @@ module SumOfOdds_ComputeSumOfOdd
   clone SumOfOdds_SumOfOdd as SumOfOdd0 with axiom .
   clone SumOfOdds_SumOfOddIsSqr as SumOfOddIsSqr0 with function SumOfOdd0.sum_of_odd = SumOfOdd0.sum_of_odd,
   function Sqr0.sqr = Sqr0.sqr, axiom .
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = ()
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = uint32
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = ()
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = uint32
   let rec cfg compute_sum_of_odd [@cfg:stackify] (x : uint32) : uint32
     requires {UInt32.to_int x < 65536}
     ensures { UInt32.to_int result = SumOfOdd0.sum_of_odd (UInt32.to_int x) }
@@ -197,7 +212,7 @@ module SumOfOdds_Test
   clone SumOfOdds_SumOfOdd as SumOfOdd0 with axiom .
   clone SumOfOdds_SumOfOddIsSqr as SumOfOddIsSqr0 with function SumOfOdd0.sum_of_odd = SumOfOdd0.sum_of_odd,
   function Sqr0.sqr = Sqr0.sqr, axiom .
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = uint32
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = uint32
   clone SumOfOdds_ComputeSumOfOdd_Interface as ComputeSumOfOdd0 with function SumOfOdd0.sum_of_odd = SumOfOdd0.sum_of_odd
   let rec cfg test [@cfg:stackify] (x : uint32) : ()
     requires {UInt32.to_int x < 65536}
