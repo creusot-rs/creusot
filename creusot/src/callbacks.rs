@@ -30,12 +30,11 @@ impl Callbacks for ToWhy {
     fn after_expansion<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
         queries.prepare_outputs().unwrap();
 
-        queries
+        let _ = queries
             .global_ctxt()
             .unwrap()
             .peek_mut()
-            .enter(|tcx| crate::translation::translate(tcx, &self.opts))
-            .unwrap();
+            .enter(|tcx| crate::translation::translate(tcx, &self.opts));
 
         c.session().abort_if_errors();
 
