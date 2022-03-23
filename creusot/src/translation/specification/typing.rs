@@ -332,6 +332,7 @@ impl ThirTerm<'a, 'tcx> {
             ExprKind::NeverToAny { .. } => Ok(Term { ty, kind: TermKind::Absurd }),
             ExprKind::ValueTypeAscription { source, .. } => self.expr_term(source),
             ExprKind::Box { value } => self.expr_term(value),
+            // ExprKind::Array { ref fields } => todo!("Array {:?}", fields),
             ref ek => todo!("lower_expr: {:?}", ek),
         }
     }

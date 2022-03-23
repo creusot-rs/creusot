@@ -15,7 +15,7 @@ unsafe impl<T1, T2> Resolve for (T1, T2) {
     }
 }
 
-unsafe impl<T> Resolve for &mut T {
+unsafe impl<T: ?Sized> Resolve for &mut T {
     #[predicate]
     fn resolve(self) -> bool {
         pearlite! { ^self === *self }
