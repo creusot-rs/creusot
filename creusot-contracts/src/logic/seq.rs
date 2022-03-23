@@ -50,6 +50,13 @@ impl<T> Seq<T> {
         }
     }
 
+    #[logic]
+    #[trusted]
+    #[creusot::builtins = "seq_ext.SeqExt.mk_empty"]
+    pub fn empty() -> Self {
+        std::process::abort()
+    }
+
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq_ext.SeqExt.subsequence"]
