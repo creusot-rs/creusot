@@ -6,7 +6,7 @@ use std::mem;
 
 extern_spec! {
     #[ensures(match result {
-        None => (@s).len() == 0 && ^s === * s && @*s === Seq::empty(),
+        None => (@s).len() == 0 && ^s === * s && @*s === Seq::EMPTY,
         Some((first, tail)) => *first === (@*s)[0] && ^first === (@^s)[0]
             && (@*s).len() > 0 && (@^s).len() > 0
             && @*tail === (@*s).tail()
@@ -29,8 +29,8 @@ extern_spec! {
 impl<'a, T> DefaultSpec for &'a mut [T] {
     #[logic]
     #[trusted]
-    #[ensures(@*result === Seq::empty())]
-    #[ensures(@^result === Seq::empty())]
+    #[ensures(@*result === Seq::EMPTY)]
+    #[ensures(@^result === Seq::EMPTY)]
     fn default_log() -> Self {
         std::process::abort()
     }

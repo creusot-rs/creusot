@@ -38,6 +38,10 @@ pub enum TranslatedItem<'tcx> {
         body: Module,
         dependencies: Result<CloneSummary<'tcx>, DefId>,
     },
+    Constant {
+        modl: Module,
+        dependencies: CloneSummary<'tcx>,
+    },
 }
 
 pub struct TypeDeclaration {
@@ -80,6 +84,7 @@ impl TranslatedItem<'tcx> {
             Trait { dependencies, .. } => dependencies,
             Impl { dependencies, .. } => dependencies,
             AssocTy { dependencies, .. } => dependencies,
+            Constant { dependencies, .. } => dependencies,
             Extern { .. } => unreachable!("local_dependencies: called on a non-local item"),
         }
     }
@@ -111,6 +116,7 @@ impl TranslatedItem<'tcx> {
             Trait { .. } => box iter::empty(),
             Impl { modl, .. } => box iter::once(modl),
             AssocTy { modl, .. } => box iter::once(modl),
+            Constant { modl, .. } => box iter::once(modl),
             Extern { interface, body, .. } => box iter::once(interface).chain(iter::once(body)),
         }
     }

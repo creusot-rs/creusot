@@ -200,6 +200,7 @@ pub enum ItemType {
     Type,
     AssocTy,
     Interface,
+    Constant,
     Unsupported(DefKind),
 }
 
@@ -242,6 +243,7 @@ pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
                 ItemType::Program
             }
         }
+        DefKind::AssocConst => ItemType::Constant,
         DefKind::Closure => ItemType::Closure,
         DefKind::Struct | DefKind::Enum => ItemType::Type,
         DefKind::AssocTy => ItemType::AssocTy,
