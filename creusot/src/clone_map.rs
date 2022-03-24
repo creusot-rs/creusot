@@ -598,7 +598,7 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
         Interface | Program | Closure => {
             QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
         }
-        Trait | Type | AssocTy => module_name(tcx, def_id).into(),
+        Constant | Trait | Type | AssocTy => module_name(tcx, def_id).into(),
         Unsupported(_) => unreachable!(),
     }
 }

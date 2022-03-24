@@ -41,6 +41,10 @@ impl<T> EqLogic for Seq<T> {
 }
 
 impl<T> Seq<T> {
+    #[trusted]
+    #[creusot::builtins = "seq.Seq.empty"]
+    pub const EMPTY: Self = { panic!() };
+
     #[logic]
     pub fn get(self, ix: Int) -> Option<T> {
         if ix < self.len() {
@@ -48,13 +52,6 @@ impl<T> Seq<T> {
         } else {
             None
         }
-    }
-
-    #[logic]
-    #[trusted]
-    #[creusot::builtins = "seq_ext.SeqExt.mk_empty"]
-    pub fn empty() -> Self {
-        std::process::abort()
     }
 
     #[trusted]

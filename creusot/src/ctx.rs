@@ -89,6 +89,11 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                 self.translated_items.insert(def_id);
                 self.functions.insert(def_id, TranslatedItem::AssocTy { modl, dependencies });
             }
+            ItemType::Constant => {
+                let (modl, dependencies) = self.translate_constant(def_id);
+                self.translated_items.insert(def_id);
+                self.functions.insert(def_id, TranslatedItem::Constant { modl, dependencies });
+            }
             ItemType::Type => unreachable!("ty"),
             ItemType::Interface => unreachable!(),
             ItemType::Closure => self.translate_function(def_id),
