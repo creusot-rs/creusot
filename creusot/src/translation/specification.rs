@@ -3,14 +3,17 @@ use std::collections::HashMap;
 use crate::translation::function::real_locals;
 use crate::{ctx::*, util};
 use rustc_macros::{TyDecodable, TyEncodable};
+use rustc_middle::thir::{self, ExprKind, Thir};
 use why3::declaration::Contract;
-use why3::mlcfg::Exp;
+use why3::mlcfg::{Exp, Purity};
 use why3::Ident;
+
+use self::typing::pearlite_stub;
 
 use super::LocalIdent;
 use rustc_hir::def_id::DefId;
 use rustc_middle::mir::{Body, Location};
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{self, TyCtxt};
 
 mod builtins;
 mod lower;
@@ -160,4 +163,61 @@ pub fn contract_of(ctx: &mut TranslationCtx, def_id: DefId) -> Result<PreContrac
     }
 
     Ok(contract)
+}
+
+struct PurityVisitor<'a, 'tcx> {
+    tcx: TyCtxt<'tcx>,
+    thir: &'a Thir<'tcx>,
+}
+
+impl PurityVisitor<'_, '_> {
+    fn is_overloaded_item(&self, def_id: DefId) -> bool {
+        let def_path = self.tcx.def_path_str(def_id);
+
+        def_path == "std::ops::Index::index"
+            || def_path == "std::convert::Into::into"
+            || def_path == "std::convert::From::from"
+            || def_path == "std::ops::Mul::mul"
+            || def_path == "std::ops::Add::add"
+            || def_path == "std::ops::Sub::sub"
+            || def_path == "std::ops::Div::div"
+            || def_path == "std::ops::Rem::rem"
+            || def_path == "std::ops::Neg::neg"
+            || def_path == "std::boxed::Box::<T>::new"
+    }
+}
+
+impl thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
+    fn thir(&self) -> &'a thir::Thir<'tcx> {
+        self.thir
+    }
+
+    fn visit_expr(&mut self, expr: &thir::Expr<'tcx>) {
+        match expr.kind {
+            ExprKind::Call { fun, .. } => {
+                if let &ty::FnDef(func_did, _) = self.thir[fun].ty.kind() {
+                    if !util::is_predicate(self.tcx, func_did)
+                        && !util::is_logic(self.tcx, func_did)
+                        && !util::get_builtin(self.tcx, func_did).is_some()
+                        && !pearlite_stub(self.tcx, self.thir[fun].ty).is_some()
+                        && !self.is_overloaded_item(func_did)
+                    {
+                        self.tcx.sess.span_err_with_code(
+                            self.thir[fun].span,
+                            "called impure program function in logical context",
+                            rustc_errors::DiagnosticId::Error(String::from("creusot")),
+                        );
+                    }
+                } else {
+                    self.tcx.sess.span_fatal_with_code(
+                        expr.span,
+                        "non function call in logical context",
+                        rustc_errors::DiagnosticId::Error(String::from("creusot")),
+                    )
+                }
+            }
+            _ => {}
+        }
+        thir::visit::walk_expr(self, expr)
+    }
 }

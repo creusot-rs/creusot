@@ -7,7 +7,7 @@ use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable};
 pub use rustc_middle::mir::Field;
 pub use rustc_middle::thir;
 use rustc_middle::thir::{
-    Adt, ArmId, Block, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
+    visit, Adt, ArmId, Block, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
 };
 use rustc_middle::ty::{AdtDef, Ty, TyKind, UpvarSubsts};
 use rustc_middle::{
@@ -16,6 +16,8 @@ use rustc_middle::{
 };
 use rustc_span::Symbol;
 use rustc_target::abi::VariantIdx;
+
+use super::PurityVisitor;
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
 pub enum LogicalOp {
@@ -88,6 +90,8 @@ pub fn typecheck(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
     if thir.exprs.is_empty() {
         return Err(Error::new(tcx.def_span(id), "type checking failed"));
     };
+
+    visit::walk_expr(&mut PurityVisitor { tcx, thir: &thir }, &thir[expr]);
 
     let lower = ThirTerm { tcx, item_id: id, thir: &thir };
 
@@ -453,7 +457,7 @@ impl ThirTerm<'a, 'tcx> {
 }
 
 #[derive(Debug)]
-enum Stub {
+pub(crate) enum Stub {
     Forall,
     Exists,
     Fin,
@@ -465,7 +469,7 @@ enum Stub {
     ResultCheck,
 }
 
-fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
+pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
     if let TyKind::FnDef(id, _) = ty.kind() {
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("forall")) {
             return Some(Stub::Forall);
