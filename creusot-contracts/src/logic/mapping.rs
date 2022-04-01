@@ -36,11 +36,13 @@ impl<A, B> EqLogic for Mapping<A, B> {
         std::process::abort()
     }
 
+    #[trusted]
     #[predicate]
     fn log_ne(self, _: Self) -> bool {
         std::process::abort()
     }
 
+    #[trusted]
     #[logic]
     fn eq_ne(_: Self, _: Self) {
         std::process::abort()

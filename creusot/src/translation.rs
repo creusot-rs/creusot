@@ -77,6 +77,10 @@ pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
         }
     }
 
+    if tcx.sess.has_errors() {
+        return Err(Box::new(CrErr));
+    }
+
     if ctx.should_export() {
         metadata::dump_exports(&ctx, &ctx.opts.metadata_path);
     }

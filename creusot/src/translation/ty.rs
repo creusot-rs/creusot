@@ -93,7 +93,13 @@ fn translate_ty_inner<'tcx>(
                 MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
             }
         }
-        Projection(pty) => translate_projection_ty(ctx, names, pty),
+        Projection(pty) => {
+            if matches!(trans, TyTranslation::Declaration) {
+                ctx.crash_and_error(span, "associated types are unsupported in type declarations")
+            } else {
+                translate_projection_ty(ctx, names, pty)
+            }
+        }
         Ref(_, ty, borkind) => {
             use rustc_ast::Mutability::*;
             names.import_prelude_module(PreludeModule::Prelude);
@@ -199,7 +205,7 @@ pub fn check_not_mutally_recursive<'tcx>(
 fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
     // Check if we've already translated this type before.
     if !ctx.translated_items.contains(&did) {
-        translate_tydecl(ctx, rustc_span::DUMMY_SP, did);
+        translate_tydecl(ctx, ctx.def_span(did), did);
     };
 
     let name = item_name(ctx.tcx, did).to_string().to_lowercase();
@@ -247,11 +253,8 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
         let mut ml_ty_def = Vec::new();
 
         for var_def in adt.variants.iter() {
-            let field_tys: Vec<_> = var_def
-                .fields
-                .iter()
-                .map(|f| field_ty(ctx, &mut names, f, substs, rustc_span::DUMMY_SP))
-                .collect();
+            let field_tys: Vec<_> =
+                var_def.fields.iter().map(|f| field_ty(ctx, &mut names, f, substs)).collect();
             let var_name = item_name(ctx.tcx, var_def.def_id);
 
             ml_ty_def.push((var_name, field_tys));
@@ -311,9 +314,14 @@ fn field_ty(
     names: &mut CloneMap<'tcx>,
     field: &FieldDef,
     substs: SubstsRef<'tcx>,
-    span: Span,
 ) -> MlT {
-    translate_ty_inner(TyTranslation::Declaration, ctx, names, span, field.ty(ctx.tcx, substs))
+    translate_ty_inner(
+        TyTranslation::Declaration,
+        ctx,
+        names,
+        ctx.def_span(field.did),
+        field.ty(ctx.tcx, substs),
+    )
 }
 
 pub fn translate_accessor(
@@ -332,11 +340,8 @@ pub fn translate_accessor(
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let mut names = CloneMap::new(ctx.tcx, adt_did, false);
-    let field_tys: Vec<_> = variant
-        .fields
-        .iter()
-        .map(|f| field_ty(ctx, &mut names, f, substs, rustc_span::DUMMY_SP))
-        .collect();
+    let field_tys: Vec<_> =
+        variant.fields.iter().map(|f| field_ty(ctx, &mut names, f, substs)).collect();
     let var_name = item_name(ctx.tcx, variant.def_id);
 
     let this = MlT::TApp(
