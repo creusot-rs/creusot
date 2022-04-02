@@ -5,35 +5,10 @@ use creusot_contracts::std::*;
 struct HSet<T> { inner: Vec<Option<T>> } 
 
 trait Hash {
-    // Range 0 to n
     #[ensures(result < state)]
     fn hash(&self, state: usize) -> usize;
 }
 
-/*
-#[trusted]
-#[ensures(*target === *oldv ==> result === *newv)]
-#[ensures((*target === *oldv) ==> result === *target)]
-fn compare_and_swap<T>(target: &mut T, oldv: &T, newv: &T) -> T {
-    std::process::abort()
-}
-*/
-
-// enum Tok { Unset(Int), Set(Int) }
-
-// impl Tok {
-//     #[predicate]
-//     fn le(self, rhs: Self) -> Option<bool> {
-//         match (self, rhs) {
-//             (Unset(i), Unset(j)) => {}
-//             (Set(i), Set(j)) => {}
-//             (Unset(i), Set(j)) => {}
-//             (Set(i), Unset(j)) => {}
-// }
-//     }    
-// }
-
-// struct Inv { s : Seq<Tok> }
 
 
 impl<T: Hash + Eq> HSet<T> {
@@ -42,12 +17,6 @@ impl<T: Hash + Eq> HSet<T> {
         pearlite! {
             forall<i: Int> 0 <= i && i < (@self.inner).len() ==>
                 (@self.inner)[i] === None
-            /*
-            match (@self.inner)[i] {
-                None => true,
-                _ => false,
-            }
-            */
         }
     }
     #[predicate]
@@ -120,9 +89,6 @@ impl<T: Hash + Eq> HSet<T> {
             !((@self.inner)[(j + @hash)%(@self.inner).len()] === None)
         )]
         #[invariant(unch, @old_self === self)]
-        #[invariant(deep_eq, forall<j: Int> 0 <= j && j < (@self.inner).len() ==>
-            (@self.inner)[j] == (@(@old_self).inner)[j]
-        )]
         #[invariant(proph, ^@old_self === ^self)]
         while i < self.len() {
             match &self.inner[(i+hash)%n] {
@@ -137,5 +103,3 @@ impl<T: Hash + Eq> HSet<T> {
         return false;
     }
 }
-
-
