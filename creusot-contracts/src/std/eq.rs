@@ -21,7 +21,7 @@ extern_spec! {
 
 impl<T : Eq> Eq for Option<T> {
     #[trusted]
-    #[ensures(*self == *rhs)]
+    #[ensures(result === (*self == *rhs))]
     fn eq(&self, rhs: &Self) -> bool {
         match (self, rhs) {
             (Some(x), Some(y)) => x.eq(y),

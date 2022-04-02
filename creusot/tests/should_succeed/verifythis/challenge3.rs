@@ -6,20 +6,68 @@ struct HSet<T> { inner: Vec<Option<T>> }
 
 trait Hash {
     // Range 0 to n
+    #[ensures(result < state)]
     fn hash(&self, state: usize) -> usize;
 }
 
+/*
 #[trusted]
-fn compare_and_swap<T>(el: &T, inv: &T, key: &T) -> T {
+#[ensures(*target === *oldv ==> result === *newv)]
+#[ensures((*target === *oldv) ==> result === *target)]
+fn compare_and_swap<T>(target: &mut T, oldv: &T, newv: &T) -> T {
     std::process::abort()
 }
+*/
+
+// enum Tok { Unset(Int), Set(Int) }
+
+// impl Tok {
+//     #[predicate]
+//     fn le(self, rhs: Self) -> Option<bool> {
+//         match (self, rhs) {
+//             (Unset(i), Unset(j)) => {}
+//             (Set(i), Set(j)) => {}
+//             (Unset(i), Set(j)) => {}
+//             (Set(i), Unset(j)) => {}
+// }
+//     }    
+// }
+
+// struct Inv { s : Seq<Tok> }
+
 
 impl<T: Hash + Eq> HSet<T> {
-    // #[ensures((@self.inner).len() === @n)]
+    #[predicate]
+    fn all_none(&self) -> bool {
+        pearlite! {
+            forall<i: Int> 0 <= i && i < (@self.inner).len() ==>
+                (@self.inner)[i] === None
+            /*
+            match (@self.inner)[i] {
+                None => true,
+                _ => false,
+            }
+            */
+        }
+    }
+    #[predicate]
+    fn full(&self, hash: usize) -> bool {
+        pearlite! {
+            forall<i: Int> 0 <= i && i < (@self.inner).len() ==>
+                !((@self.inner)[(i + @hash) % (@self.inner).len()] === None)
+        }
+    }
+
+    #[ensures((@result.inner).len() === @n)]
+    #[ensures(result.all_none())]
     pub fn empty(n: usize) -> Self {
-        let mut v  = Vec::new();
+        let mut v: Vec<Option<T>> = Vec::new();
         let mut i: usize = 0;
-        // #[invariant(len_ok, @i <= @n)]
+        #[invariant(len_ok, @i <= @n)]
+        #[invariant(len_is, @i === (@v).len())]
+        #[invariant(all_none, forall<j: Int> 0 <= j && j < @i ==>
+            (@v)[j] === None
+        )]
         while i < n {
             v.push(None);
             i += 1;
@@ -27,23 +75,25 @@ impl<T: Hash + Eq> HSet<T> {
         HSet { inner: v }
     }
     
+    #[ensures(@result === (@self.inner).len())]
     fn len(&self) -> usize {
-        0
+        return self.inner.len()
     }
 
     pub fn member(&self, k: T) -> bool {
         let n = self.inner.len();
 
         let i0 = k.hash(n);
-        let mut i = 0;
+        let mut i : usize = 0;
 
+        #[invariant(i_loop, @i < @n)]
         loop {
             let k1 = &self.inner[i]; // atomic_load
             match k1 {
                 Some(k2)=>  { if k2.eq(&k) { return true } }
                 _ => return false,
             }
-            i += (i + 1) % n;
+            i = (i + 1) % n;
             if i == i0 {
                 break
             }
@@ -52,41 +102,39 @@ impl<T: Hash + Eq> HSet<T> {
         return false;
     }
     
-    fn insert(&self, key: T) -> bool {
+    #[requires((@self.inner).len() < @usize::MAX/2)]
+    #[ensures((!result) ==> ((exists<i : _> self.full(i)) && self.resolve()))]
+    #[ensures(result ==> exists<i : Int> (@(^self).inner)[i] == Some(key_in))]
+    fn insert(&mut self, key_in: T) -> bool {
+        let old_self = Ghost::record(&self);
         let n: usize = self.len();
-        let mut i: usize = key.hash(n);
-        let i_start = i;
-        let key = Some(key);
-        #[invariant(i_ok, @i < @n)]
-        loop {
-            /* // OPT
-            kk: Key = atomic_load(self[i]);
-            match kk {
-                key => return true;
-                None => {
-                    break;
-                } // Spot taken, take next
-                _ => {
-                    i = (i + 1) % n
-                    if i == i_start {
-                        return false;
-                    }
-                }
-
+        let hash: usize = key_in.hash(n);
+        let mut i: usize = 0;
+        let key = Some(key_in);
+        #[invariant(i_ok, @i <= (@self.inner).len())]
+        #[invariant(neq, @n === (@self.inner).len())]
+        #[invariant(inv, forall<j: Int> 0 <= j && j < @i ==>
+            !((@self.inner)[(j + @hash)%(@self.inner).len()] === key)
+        )]
+        #[invariant(inv2, forall<j: Int> 0 <= j && j < @i ==>
+            !((@self.inner)[(j + @hash)%(@self.inner).len()] === None)
+        )]
+        #[invariant(unch, @old_self === self)]
+        #[invariant(deep_eq, forall<j: Int> 0 <= j && j < (@self.inner).len() ==>
+            (@self.inner)[j] == (@(@old_self).inner)[j]
+        )]
+        #[invariant(proph, ^@old_self === ^self)]
+        while i < self.len() {
+            match &self.inner[(i+hash)%n] {
+            None  => { 
+                 self.inner[(i+hash)%n] = key;
+                    return true;
             }
-
-            */
-            let none = None;
-            let other_key = compare_and_swap(&self.inner[i],&none, &key);
-            if other_key.eq(&key) {
-                return true;
+            a@Some(_) => { if a.eq(&key) { return true } },
             }
-            i = (i + 1) % n;
-
-            if i == i_start {
-                return false
-            }
+            i += 1;
         }
+        return false;
     }
 }
 
