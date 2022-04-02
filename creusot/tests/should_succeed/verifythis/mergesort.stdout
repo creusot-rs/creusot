@@ -1,0 +1,1844 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type core_cmp_ordering  = 
+    | Core_Cmp_Ordering_Less
+    | Core_Cmp_Ordering_Equal
+    | Core_Cmp_Ordering_Greater
+    
+  type creusotcontracts_std1_vec_vec 't  
+  type mergesort_sr 't = 
+    | Mergesort_Sr (creusotcontracts_std1_vec_vec usize) (creusotcontracts_std1_vec_vec 't)
+    
+  function mergesort_sr_Sr_runs (self : mergesort_sr 't) : creusotcontracts_std1_vec_vec usize
+  val mergesort_sr_Sr_runs (self : mergesort_sr 't) : creusotcontracts_std1_vec_vec usize
+    ensures { result = mergesort_sr_Sr_runs self }
+    
+  axiom mergesort_sr_Sr_runs_acc : forall a : creusotcontracts_std1_vec_vec usize, b : creusotcontracts_std1_vec_vec 't . mergesort_sr_Sr_runs (Mergesort_Sr a b : mergesort_sr 't) = a
+  function mergesort_sr_Sr_data (self : mergesort_sr 't) : creusotcontracts_std1_vec_vec 't
+  val mergesort_sr_Sr_data (self : mergesort_sr 't) : creusotcontracts_std1_vec_vec 't
+    ensures { result = mergesort_sr_Sr_data self }
+    
+  axiom mergesort_sr_Sr_data_acc : forall a : creusotcontracts_std1_vec_vec usize, b : creusotcontracts_std1_vec_vec 't . mergesort_sr_Sr_data (Mergesort_Sr a b : mergesort_sr 't) = b
+  type creusotcontracts_logic_ghost_ghost 't = 
+    | CreusotContracts_Logic_Ghost_Ghost opaque_ptr
+    
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface
+  type self   
+  use Type
+  function cmp_log (self : self) (_2' : self) : Type.core_cmp_ordering
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpLog
+  type self   
+  use Type
+  function cmp_log (self : self) (_2' : self) : Type.core_cmp_ordering
+end
+module CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface
+  type self   
+  predicate le_log (self : self) (o : self)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_LeLog
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  predicate le_log (self : self) (o : self) = 
+    not (CmpLog0.cmp_log self o = Type.Core_Cmp_Ordering_Greater)
+end
+module Mergesort_SortedRange_Interface
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  predicate sorted_range (s : Seq.seq t) (l : int) (u : int)
+end
+module Mergesort_SortedRange
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
+  predicate sorted_range (s : Seq.seq t) (l : int) (u : int) = 
+    forall j : (int) . forall i : (int) . l <= i && i < j && j < u -> LeLog0.le_log (Seq.get s i) (Seq.get s j)
+end
+module Mergesort_Sorted_Interface
+  type t   
+  use seq.Seq
+  predicate sorted (s : Seq.seq t)
+end
+module Mergesort_Sorted
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  clone Mergesort_SortedRange_Interface as SortedRange0 with type t = t
+  predicate sorted (s : Seq.seq t) = 
+    SortedRange0.sorted_range s 0 (Seq.length s)
+end
+module Mergesort_SortedRangeUsize_Interface
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  predicate sorted_range_usize (s : Seq.seq usize) (l : int) (u : int)
+end
+module Mergesort_SortedRangeUsize
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  predicate sorted_range_usize (s : Seq.seq usize) (l : int) (u : int) = 
+    forall j : (int) . forall i : (int) . l <= i && i < j && j < u -> Seq.get s i <= Seq.get s j
+end
+module Mergesort_SortedUsize_Interface
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  predicate sorted_usize (s : Seq.seq usize)
+end
+module Mergesort_SortedUsize
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use mach.int.Int32
+  clone Mergesort_SortedRangeUsize_Interface as SortedRangeUsize0
+  predicate sorted_usize (s : Seq.seq usize) = 
+    SortedRangeUsize0.sorted_range_usize s 0 (Seq.length s)
+end
+module Mergesort_Partition_Interface
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  predicate partition (s : Seq.seq t) (i : int)
+end
+module Mergesort_Partition
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
+  predicate partition (s : Seq.seq t) (i : int) = 
+    forall r : (int) . forall l : (int) . 0 <= l && l < i && i <= r && r < Seq.length s -> LeLog0.le_log (Seq.get s l) (Seq.get s r)
+end
+module Mergesort_CorrectRunIndexes_Interface
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  predicate correct_run_indexes (s : Seq.seq usize) (d : Seq.seq t)
+end
+module Mergesort_CorrectRunIndexes
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use mach.int.Int32
+  predicate correct_run_indexes (s : Seq.seq usize) (d : Seq.seq t) = 
+    forall i : (int) . 0 <= i && i < Seq.length s -> true
+end
+module CreusotContracts_Std1_Vec_Impl0_Model_Interface
+  type t   
+  use Type
+  use seq.Seq
+  function model (self : Type.creusotcontracts_std1_vec_vec t) : Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0_Model
+  type t   
+  use Type
+  use seq.Seq
+  function model (self : Type.creusotcontracts_std1_vec_vec t) : Seq.seq t
+end
+module CreusotContracts_Logic_Model_Model_ModelTy
+  type self   
+  type modelTy   
+end
+module CreusotContracts_Logic_Model_Model_Model_Interface
+  type self   
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model
+  type self   
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Std1_Vec_Impl0_ModelTy
+  type t   
+  use seq.Seq
+  type modelTy  = 
+    Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0
+  type t   
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.creusotcontracts_std1_vec_vec t,
+  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.creusotcontracts_std1_vec_vec t,
+  type modelTy = ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t   
+  predicate resolve (self : t)
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t   
+  predicate resolve (self : t) = 
+    true
+end
+module CreusotContracts_Logic_Model_Impl0_Model_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  function model (self : t) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl0_Model
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  function model (self : t) : ModelTy0.modelTy = 
+    Model0.model self
+end
+module CreusotContracts_Std1_Vec_Impl1_Len_Interface
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val len [@cfg:stackify] (self : Type.creusotcontracts_std1_vec_vec t) : usize
+    ensures { UInt64.to_int result = Seq.length (Model0.model self) }
+    
+end
+module CreusotContracts_Std1_Vec_Impl1_Len
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val len [@cfg:stackify] (self : Type.creusotcontracts_std1_vec_vec t) : usize
+    ensures { UInt64.to_int result = Seq.length (Model0.model self) }
+    
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self   
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self   
+  predicate resolve (self : self)
+end
+module Core_Ops_Index_Index_Output
+  type self   
+  type idx   
+  type output   
+end
+module Core_Ops_Index_Index_Index_Interface
+  type self   
+  type idx   
+  use prelude.Prelude
+  clone Core_Ops_Index_Index_Output as Output0 with type self = self, type idx = idx
+  val index [@cfg:stackify] (self : self) (index : idx) : Output0.output
+    requires {false}
+    
+end
+module Core_Ops_Index_Index_Index
+  type self   
+  type idx   
+  use prelude.Prelude
+  clone Core_Ops_Index_Index_Output as Output0 with type self = self, type idx = idx
+  val index [@cfg:stackify] (self : self) (index : idx) : Output0.output
+    requires {false}
+    
+end
+module CreusotContracts_Std1_Vec_Impl3_Index_Interface
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val index [@cfg:stackify] (self : Type.creusotcontracts_std1_vec_vec t) (ix : usize) : t
+    requires {UInt64.to_int ix < Seq.length (Model0.model self)}
+    ensures { result = Seq.get (Model0.model self) (UInt64.to_int ix) }
+    
+end
+module CreusotContracts_Std1_Vec_Impl3_Index
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val index [@cfg:stackify] (self : Type.creusotcontracts_std1_vec_vec t) (ix : usize) : t
+    requires {UInt64.to_int ix < Seq.length (Model0.model self)}
+    ensures { result = Seq.get (Model0.model self) (UInt64.to_int ix) }
+    
+end
+module CreusotContracts_Std1_Ord_Ord_Cmp_Interface
+  type self   
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  val cmp [@cfg:stackify] (self : self) (o : self) : Type.core_cmp_ordering
+    ensures { result = CmpLog0.cmp_log self o }
+    
+end
+module CreusotContracts_Std1_Ord_Ord_Cmp
+  type self   
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  val cmp [@cfg:stackify] (self : self) (o : self) : Type.core_cmp_ordering
+    ensures { result = CmpLog0.cmp_log self o }
+    
+end
+module CreusotContracts_Std1_Ord_Ord_Le_Interface
+  type self   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = self
+  val le [@cfg:stackify] (self : self) (o : self) : bool
+    ensures { result = LeLog0.le_log self o }
+    
+end
+module CreusotContracts_Std1_Ord_Ord_Le
+  type self   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = self
+  val le [@cfg:stackify] (self : self) (o : self) : bool
+    ensures { result = LeLog0.le_log self o }
+    
+end
+module CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface
+  type self   
+  predicate ge_log (self : self) (o : self)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_GeLog
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  predicate ge_log (self : self) (o : self) = 
+    not (CmpLog0.cmp_log self o = Type.Core_Cmp_Ordering_Less)
+end
+module CreusotContracts_Std1_Ord_Ord_Ge_Interface
+  type self   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with type self = self
+  val ge [@cfg:stackify] (self : self) (o : self) : bool
+    ensures { result = GeLog0.ge_log self o }
+    
+end
+module CreusotContracts_Std1_Ord_Ord_Ge
+  type self   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with type self = self
+  val ge [@cfg:stackify] (self : self) (o : self) : bool
+    ensures { result = GeLog0.ge_log self o }
+    
+end
+module CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface
+  type self   
+  predicate gt_log (self : self) (o : self)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_GtLog
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  predicate gt_log (self : self) (o : self) = 
+    CmpLog0.cmp_log self o = Type.Core_Cmp_Ordering_Greater
+end
+module CreusotContracts_Std1_Ord_Ord_Gt_Interface
+  type self   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface as GtLog0 with type self = self
+  val gt [@cfg:stackify] (self : self) (o : self) : bool
+    ensures { result = GtLog0.gt_log self o }
+    
+end
+module CreusotContracts_Std1_Ord_Ord_Gt
+  type self   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface as GtLog0 with type self = self
+  val gt [@cfg:stackify] (self : self) (o : self) : bool
+    ensures { result = GtLog0.gt_log self o }
+    
+end
+module CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface
+  type self   
+  predicate lt_log (self : self) (o : self)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_LtLog
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  predicate lt_log (self : self) (o : self) = 
+    CmpLog0.cmp_log self o = Type.Core_Cmp_Ordering_Less
+end
+module CreusotContracts_Std1_Ord_Ord_Lt_Interface
+  type self   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = self
+  val lt [@cfg:stackify] (self : self) (o : self) : bool
+    ensures { result = LtLog0.lt_log self o }
+    
+end
+module CreusotContracts_Std1_Ord_Ord_Lt
+  type self   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = self
+  val lt [@cfg:stackify] (self : self) (o : self) : bool
+    ensures { result = LtLog0.lt_log self o }
+    
+end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t   
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
+  predicate resolve = Resolve0.resolve
+end
+module CreusotContracts_Std1_Vec_Impl3_Output
+  type t   
+  type output  = 
+    t
+end
+module CreusotContracts_Std1_Vec_Impl3
+  type t   
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = t, function Model0.model = Model0.model
+  clone CreusotContracts_Std1_Vec_Impl3_Output as Output0 with type t = t
+  clone Core_Ops_Index_Index_Index_Interface as Index1 with type self = Type.creusotcontracts_std1_vec_vec t,
+  type idx = usize, val index = Index0.index, type Output0.output = Output0.output
+  clone Core_Ops_Index_Index_Output as Output1 with type self = Type.creusotcontracts_std1_vec_vec t, type idx = usize,
+  type output = Output0.output
+end
+module CreusotContracts_Logic_Model_Impl0_ModelTy
+  type t   
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  type modelTy  = 
+    ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl0
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
+  function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Model_Impl0_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = t, function model = Model0.model,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = t, type modelTy = ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Interface
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = self
+  function cmp_le_log (x : self) (y : self) : ()
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = self
+  function cmp_le_log (x : self) (y : self) : ()
+  axiom cmp_le_log_spec : forall x : self, y : self . LeLog0.le_log x y = not (CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Greater)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog_Interface
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = self
+  function cmp_lt_log (x : self) (y : self) : ()
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = self
+  function cmp_lt_log (x : self) (y : self) : ()
+  axiom cmp_lt_log_spec : forall x : self, y : self . LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Less)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog_Interface
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with type self = self
+  function cmp_ge_log (x : self) (y : self) : ()
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with type self = self
+  function cmp_ge_log (x : self) (y : self) : ()
+  axiom cmp_ge_log_spec : forall x : self, y : self . GeLog0.ge_log x y = not (CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Less)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog_Interface
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface as GtLog0 with type self = self
+  function cmp_gt_log (x : self) (y : self) : ()
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface as GtLog0 with type self = self
+  function cmp_gt_log (x : self) (y : self) : ()
+  axiom cmp_gt_log_spec : forall x : self, y : self . GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Greater)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_Refl_Interface
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  function refl (x : self) : ()
+end
+module CreusotContracts_Logic_Ord_OrdLogic_Refl
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  function refl (x : self) : ()
+  axiom refl_spec : forall x : self . CmpLog0.cmp_log x x = Type.Core_Cmp_Ordering_Equal
+end
+module CreusotContracts_Logic_Ord_OrdLogic_Trans_Interface
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  function trans (x : self) (y : self) (z : self) (o : Type.core_cmp_ordering) : ()
+end
+module CreusotContracts_Logic_Ord_OrdLogic_Trans
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  function trans (x : self) (y : self) (z : self) (o : Type.core_cmp_ordering) : ()
+  axiom trans_spec : forall x : self, y : self, z : self, o : Type.core_cmp_ordering . CmpLog0.cmp_log y z = o -> CmpLog0.cmp_log x y = o -> CmpLog0.cmp_log x z = o
+end
+module CreusotContracts_Logic_Ord_OrdLogic_Antisym1_Interface
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  function antisym1 (x : self) (y : self) : ()
+end
+module CreusotContracts_Logic_Ord_OrdLogic_Antisym1
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  function antisym1 (x : self) (y : self) : ()
+  axiom antisym1_spec : forall x : self, y : self . CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Less -> CmpLog0.cmp_log y x = Type.Core_Cmp_Ordering_Greater
+end
+module CreusotContracts_Logic_Ord_OrdLogic_Antisym2_Interface
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  function antisym2 (x : self) (y : self) : ()
+end
+module CreusotContracts_Logic_Ord_OrdLogic_Antisym2
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  function antisym2 (x : self) (y : self) : ()
+  axiom antisym2_spec : forall x : self, y : self . CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Greater -> CmpLog0.cmp_log y x = Type.Core_Cmp_Ordering_Less
+end
+module CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface
+  type self   
+  predicate log_eq (self : self) (_2' : self)
+end
+module CreusotContracts_Logic_Eq_EqLogic_LogEq
+  type self   
+  predicate log_eq (self : self) (_2' : self)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_EqCmp_Interface
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  function eq_cmp (x : self) (y : self) : ()
+end
+module CreusotContracts_Logic_Ord_OrdLogic_EqCmp
+  type self   
+  use Type
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  function eq_cmp (x : self) (y : self) : ()
+  axiom eq_cmp_spec : forall x : self, y : self . (LogEq0.log_eq x y -> CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Equal) && (CmpLog0.cmp_log y x = Type.Core_Cmp_Ordering_Equal -> LogEq0.log_eq x y)
+end
+module CreusotContracts_Logic_Eq_EqLogic_LogNe_Interface
+  type self   
+  predicate log_ne (self : self) (_2' : self)
+end
+module CreusotContracts_Logic_Eq_EqLogic_LogNe
+  type self   
+  predicate log_ne (self : self) (_2' : self)
+end
+module CreusotContracts_Logic_Eq_EqLogic_EqNe_Interface
+  type self   
+  clone CreusotContracts_Logic_Eq_EqLogic_LogNe_Interface as LogNe0 with type self = self
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
+  function eq_ne (a : self) (b : self) : ()
+end
+module CreusotContracts_Logic_Eq_EqLogic_EqNe
+  type self   
+  clone CreusotContracts_Logic_Eq_EqLogic_LogNe_Interface as LogNe0 with type self = self
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
+  function eq_ne (a : self) (b : self) : ()
+  axiom eq_ne_spec : forall a : self, b : self . not (LogEq0.log_eq a b = LogNe0.log_ne a b)
+end
+module CreusotContracts_Logic_Eq_EqLogic_Refl_Interface
+  type self   
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
+  function refl (x : self) : ()
+end
+module CreusotContracts_Logic_Eq_EqLogic_Refl
+  type self   
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
+  function refl (x : self) : ()
+  axiom refl_spec : forall x : self . LogEq0.log_eq x x
+end
+module CreusotContracts_Logic_Eq_EqLogic_Symmetry_Interface
+  type self   
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
+  function symmetry (x : self) (y : self) : ()
+end
+module CreusotContracts_Logic_Eq_EqLogic_Symmetry
+  type self   
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
+  function symmetry (x : self) (y : self) : ()
+  axiom symmetry_spec : forall x : self, y : self . LogEq0.log_eq x y -> LogEq0.log_eq y x
+end
+module CreusotContracts_Logic_Eq_EqLogic_Transitivity_Interface
+  type self   
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
+  function transitivity (x : self) (y : self) (z : self) : ()
+end
+module CreusotContracts_Logic_Eq_EqLogic_Transitivity
+  type self   
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
+  function transitivity (x : self) (y : self) (z : self) : ()
+  axiom transitivity_spec : forall x : self, y : self, z : self . LogEq0.log_eq y z -> LogEq0.log_eq x y -> LogEq0.log_eq x z
+end
+module Mergesort_DoCheck_Interface
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = usize
+  val do_check [@cfg:stackify] (left : Type.mergesort_sr t) (right : Type.mergesort_sr t) (left_idx : usize) (right_idx : usize) (left_data_idx : usize) (right_data_idx : usize) : bool
+    ensures { UInt64.to_int left_idx = Seq.length (Model0.model (Type.mergesort_sr_Sr_runs left)) -> result = false }
+    
+end
+module Mergesort_DoCheck
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = usize
+  clone CreusotContracts_Logic_Eq_EqLogic_LogNe as LogNe0 with type self = t
+  clone CreusotContracts_Logic_Eq_EqLogic_LogEq as LogEq0 with type self = t
+  clone CreusotContracts_Logic_Eq_EqLogic_Transitivity as Transitivity0 with type self = t,
+  predicate LogEq0.log_eq = LogEq0.log_eq, axiom .
+  clone CreusotContracts_Logic_Eq_EqLogic_Symmetry as Symmetry0 with type self = t,
+  predicate LogEq0.log_eq = LogEq0.log_eq, axiom .
+  clone CreusotContracts_Logic_Eq_EqLogic_Refl as Refl1 with type self = t, predicate LogEq0.log_eq = LogEq0.log_eq,
+  axiom .
+  clone CreusotContracts_Logic_Eq_EqLogic_EqNe as EqNe0 with type self = t, predicate LogEq0.log_eq = LogEq0.log_eq,
+  predicate LogNe0.log_ne = LogNe0.log_ne, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog as CmpLog0 with type self = t
+  clone CreusotContracts_Logic_Ord_OrdLogic_GtLog as GtLog0 with type self = t,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog as CmpGtLog0 with type self = t,
+  predicate GtLog0.gt_log = GtLog0.gt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_GeLog as GeLog0 with type self = t,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog as CmpGeLog0 with type self = t,
+  predicate GeLog0.ge_log = GeLog0.ge_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog as LtLog0 with type self = t,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog as CmpLtLog0 with type self = t,
+  predicate LtLog0.lt_log = LtLog0.lt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_EqCmp as EqCmp0 with type self = t,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log, predicate LogEq0.log_eq = LogEq0.log_eq, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Antisym2 as Antisym20 with type self = t,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Antisym1 as Antisym10 with type self = t,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Trans as Trans0 with type self = t,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Refl as Refl0 with type self = t,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog as LeLog0 with type self = t,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t,
+  predicate LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Std1_Ord_Ord_Le_Interface as Le0 with type self = t, predicate LeLog0.le_log = LeLog0.le_log
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy1 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model2 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model3.model
+  clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = t, function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.mergesort_sr t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = usize
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = usize
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model1 with type t = Type.creusotcontracts_std1_vec_vec usize,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
+  clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = usize, function Model0.model = Model1.model
+  let rec cfg do_check [@cfg:stackify] (left : Type.mergesort_sr t) (right : Type.mergesort_sr t) (left_idx : usize) (right_idx : usize) (left_data_idx : usize) (right_data_idx : usize) : bool
+    ensures { UInt64.to_int left_idx = Seq.length (Model0.model (Type.mergesort_sr_Sr_runs left)) -> result = false }
+    
+   = 
+  var _0 : bool;
+  var left_1 : Type.mergesort_sr t;
+  var right_2 : Type.mergesort_sr t;
+  var left_idx_3 : usize;
+  var right_idx_4 : usize;
+  var left_data_idx_5 : usize;
+  var right_data_idx_6 : usize;
+  var _7 : bool;
+  var _8 : usize;
+  var _9 : usize;
+  var _10 : Type.creusotcontracts_std1_vec_vec usize;
+  var _11 : bool;
+  var _12 : usize;
+  var _13 : usize;
+  var _14 : Type.creusotcontracts_std1_vec_vec usize;
+  var _15 : ();
+  var _16 : ();
+  var _17 : t;
+  var _18 : t;
+  var _19 : Type.creusotcontracts_std1_vec_vec t;
+  var _20 : usize;
+  var _21 : t;
+  var _22 : t;
+  var _23 : t;
+  var _24 : Type.creusotcontracts_std1_vec_vec t;
+  var _25 : usize;
+  {
+    left_1 <- left;
+    right_2 <- right;
+    left_idx_3 <- left_idx;
+    right_idx_4 <- right_idx;
+    left_data_idx_5 <- left_data_idx;
+    right_data_idx_6 <- right_data_idx;
+    goto BB0
+  }
+  BB0 {
+    assume { Resolve0.resolve _8 };
+    _8 <- left_idx_3;
+    assume { Resolve0.resolve left_idx_3 };
+    _10 <- Type.mergesort_sr_Sr_runs left_1;
+    _9 <- Len0.len _10;
+    goto BB1
+  }
+  BB1 {
+    _7 <- _8 < _9;
+    switch (_7)
+      | False -> goto BB9
+      | _ -> goto BB2
+      end
+  }
+  BB2 {
+    assume { Resolve0.resolve _12 };
+    _12 <- right_idx_4;
+    assume { Resolve0.resolve right_idx_4 };
+    _14 <- Type.mergesort_sr_Sr_runs right_2;
+    _13 <- Len0.len _14;
+    goto BB3
+  }
+  BB3 {
+    _11 <- _12 = _13;
+    switch (_11)
+      | False -> goto BB5
+      | _ -> goto BB4
+      end
+  }
+  BB4 {
+    assume { Resolve1.resolve left_1 };
+    assume { Resolve1.resolve right_2 };
+    assume { Resolve0.resolve left_data_idx_5 };
+    assume { Resolve0.resolve right_data_idx_6 };
+    _0 <- true;
+    goto BB10
+  }
+  BB5 {
+    _19 <- Type.mergesort_sr_Sr_data left_1;
+    assume { Resolve1.resolve left_1 };
+    assume { Resolve0.resolve _20 };
+    _20 <- left_data_idx_5;
+    assume { Resolve0.resolve left_data_idx_5 };
+    _18 <- Index0.index _19 _20;
+    goto BB6
+  }
+  BB6 {
+    _17 <- _18;
+    assume { Resolve2.resolve _18 };
+    _24 <- Type.mergesort_sr_Sr_data right_2;
+    assume { Resolve1.resolve right_2 };
+    assume { Resolve0.resolve _25 };
+    _25 <- right_data_idx_6;
+    assume { Resolve0.resolve right_data_idx_6 };
+    _23 <- Index0.index _24 _25;
+    goto BB7
+  }
+  BB7 {
+    _22 <- _23;
+    assume { Resolve2.resolve _23 };
+    _21 <- _22;
+    assume { Resolve2.resolve _22 };
+    _0 <- Le0.le _17 _21;
+    goto BB8
+  }
+  BB8 {
+    goto BB10
+  }
+  BB9 {
+    assume { Resolve1.resolve left_1 };
+    assume { Resolve1.resolve right_2 };
+    assume { Resolve0.resolve right_idx_4 };
+    assume { Resolve0.resolve left_data_idx_5 };
+    assume { Resolve0.resolve right_data_idx_6 };
+    _0 <- false;
+    goto BB11
+  }
+  BB10 {
+    goto BB11
+  }
+  BB11 {
+    return _0
+  }
+  
+end
+module Mergesort_ExtendVec_Interface
+  type t   
+  use mach.int.UInt64
+  use mach.int.Int
+  use seq.Seq
+  use seq_ext.SeqExt
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val extend_vec [@cfg:stackify] (tgt : borrowed (Type.creusotcontracts_std1_vec_vec t)) (src : Type.creusotcontracts_std1_vec_vec t) (l : usize) (h : usize) : ()
+    requires {UInt64.to_int l <= UInt64.to_int h}
+    requires {UInt64.to_int h <= Seq.length (Model0.model src)}
+    ensures { Seq.length (Model1.model ( ^ tgt)) = Seq.length (Model1.model ( * tgt)) + UInt64.to_int h - UInt64.to_int l }
+    ensures { Model1.model ( ^ tgt) = Seq.(++) (Model1.model ( * tgt)) (SeqExt.subsequence (Model0.model src) (UInt64.to_int l) (UInt64.to_int h)) }
+    
+end
+module Mergesort_ExtendVec
+  type t   
+  use mach.int.UInt64
+  use mach.int.Int
+  use seq.Seq
+  use seq_ext.SeqExt
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  val extend_vec [@cfg:stackify] (tgt : borrowed (Type.creusotcontracts_std1_vec_vec t)) (src : Type.creusotcontracts_std1_vec_vec t) (l : usize) (h : usize) : ()
+    requires {UInt64.to_int l <= UInt64.to_int h}
+    requires {UInt64.to_int h <= Seq.length (Model0.model src)}
+    ensures { Seq.length (Model1.model ( ^ tgt)) = Seq.length (Model1.model ( * tgt)) + UInt64.to_int h - UInt64.to_int l }
+    ensures { Model1.model ( ^ tgt) = Seq.(++) (Model1.model ( * tgt)) (SeqExt.subsequence (Model0.model src) (UInt64.to_int l) (UInt64.to_int h)) }
+    
+end
+module Mergesort_SrInvariant_Interface
+  type t   
+  use Type
+  predicate sr_invariant (s : Type.mergesort_sr t)
+end
+module Mergesort_SrInvariant
+  type t   
+  use Type
+  use mach.int.Int
+  use mach.int.Int32
+  use seq.Seq
+  use mach.int.UInt64
+  use prelude.Prelude
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t
+  clone Mergesort_SortedUsize_Interface as SortedUsize0
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = usize
+  predicate sr_invariant (s : Type.mergesort_sr t) = 
+    SortedUsize0.sorted_usize (Model0.model (Type.mergesort_sr_Sr_runs s)) && (forall i : (int) . 0 <= i && i < Seq.length (Model0.model (Type.mergesort_sr_Sr_runs s)) -> UInt64.to_int (Seq.get (Model0.model (Type.mergesort_sr_Sr_runs s)) i) <= Seq.length (Model1.model (Type.mergesort_sr_Sr_data s)))
+end
+module CreusotContracts_Logic_Ghost_Impl0_Model_Interface
+  type t   
+  use Type
+  function model (self : Type.creusotcontracts_logic_ghost_ghost t) : t
+end
+module CreusotContracts_Logic_Ghost_Impl0_Model
+  type t   
+  use Type
+  function model (self : Type.creusotcontracts_logic_ghost_ghost t) : t
+end
+module CreusotContracts_Logic_Ghost_Impl0_ModelTy
+  type t   
+  type modelTy  = 
+    t
+end
+module CreusotContracts_Logic_Ghost_Impl0
+  type t   
+  use Type
+  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = t
+  clone CreusotContracts_Logic_Ghost_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
+  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
+  type modelTy = ModelTy0.modelTy
+end
+module CreusotContracts_Std1_Vec_Impl1_New_Interface
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t
+  val new [@cfg:stackify] () : Type.creusotcontracts_std1_vec_vec t
+    ensures { Seq.length (Model0.model result) = 0 }
+    
+end
+module CreusotContracts_Std1_Vec_Impl1_New
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t
+  val new [@cfg:stackify] () : Type.creusotcontracts_std1_vec_vec t
+    ensures { Seq.length (Model0.model result) = 0 }
+    
+end
+module CreusotContracts_Logic_Ghost_Impl1_Record_Interface
+  type t   
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Logic_Ghost_Impl0_Model_Interface as Model0 with type t = t
+  val record [@cfg:stackify] (a : t) : Type.creusotcontracts_logic_ghost_ghost t
+    ensures { Model0.model result = a }
+    
+end
+module CreusotContracts_Logic_Ghost_Impl1_Record
+  type t   
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Logic_Ghost_Impl0_Model_Interface as Model0 with type t = t
+  val record [@cfg:stackify] (a : t) : Type.creusotcontracts_logic_ghost_ghost t
+    ensures { Model0.model result = a }
+    
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve
+  type t   
+  use prelude.Prelude
+  predicate resolve (self : borrowed t) = 
+     ^ self =  * self
+end
+module CreusotContracts_Logic_Model_Impl1_Model_Interface
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  function model (self : borrowed t) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl1_Model
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  function model (self : borrowed t) : ModelTy0.modelTy = 
+    Model0.model ( * self)
+end
+module CreusotContracts_Std1_Vec_Impl1_Push_Interface
+  type t   
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t
+  val push [@cfg:stackify] (self : borrowed (Type.creusotcontracts_std1_vec_vec t)) (v : t) : ()
+    ensures { Model0.model ( ^ self) = Seq.snoc (Model1.model self) v }
+    
+end
+module CreusotContracts_Std1_Vec_Impl1_Push
+  type t   
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t
+  val push [@cfg:stackify] (self : borrowed (Type.creusotcontracts_std1_vec_vec t)) (v : t) : ()
+    ensures { Model0.model ( ^ self) = Seq.snoc (Model1.model self) v }
+    
+end
+module CreusotContracts_Logic_Resolve_Impl1
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = borrowed t,
+  predicate resolve = Resolve0.resolve
+end
+module CreusotContracts_Logic_Model_Impl1_ModelTy
+  type t   
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  type modelTy  = 
+    ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl1
+  type t   
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
+  function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Model_Impl1_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = borrowed t, function model = Model0.model,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = borrowed t,
+  type modelTy = ModelTy0.modelTy
+end
+module Mergesort_Merge_Interface
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  use Type
+  use prelude.Prelude
+  use mach.int.UInt64
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = usize
+  clone Mergesort_SrInvariant_Interface as SrInvariant0 with type t = t
+  val merge [@cfg:stackify] (r1 : Type.mergesort_sr t) (r2 : Type.mergesort_sr t) : Type.mergesort_sr t
+    requires {SrInvariant0.sr_invariant r2}
+    requires {SrInvariant0.sr_invariant r1}
+    requires {Seq.length (Model0.model (Type.mergesort_sr_Sr_runs r2)) < 1000}
+    requires {Seq.length (Model0.model (Type.mergesort_sr_Sr_runs r1)) < 1000}
+    ensures { SrInvariant0.sr_invariant result }
+    ensures { Seq.length (Model0.model (Type.mergesort_sr_Sr_runs result)) < 1000 }
+    
+end
+module Mergesort_Merge
+  type t   
+  use mach.int.UInt64
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.Int32
+  use Type
+  clone Mergesort_SortedRangeUsize as SortedRangeUsize0
+  clone Mergesort_SortedUsize as SortedUsize0 with predicate SortedRangeUsize0.sorted_range_usize = SortedRangeUsize0.sorted_range_usize
+  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model2 with type t = Type.creusotcontracts_std1_vec_vec t
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = usize
+  clone Mergesort_SrInvariant as SrInvariant0 with type t = t, function Model0.model = Model0.model,
+  predicate SortedUsize0.sorted_usize = SortedUsize0.sorted_usize, function Model1.model = Model1.model
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve8 with type self = Type.mergesort_sr t
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve7 with type t = Type.creusotcontracts_std1_vec_vec t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy1 with type t = t
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve6 with type t = usize
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve5 with type t = ()
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve4 with type t = bool
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = Type.mergesort_sr t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = Type.creusotcontracts_logic_ghost_ghost (Type.creusotcontracts_std1_vec_vec t)
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.creusotcontracts_std1_vec_vec t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = usize
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = usize
+  clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model4 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model1.model
+  clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len1 with type t = t, function Model0.model = Model4.model
+  clone Mergesort_ExtendVec_Interface as ExtendVec0 with type t = t, function Model0.model = Model4.model,
+  function Model1.model = Model1.model
+  clone CreusotContracts_Std1_Vec_Impl1_New_Interface as New1 with type t = t, function Model0.model = Model1.model
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model5 with type t = Type.creusotcontracts_std1_vec_vec usize,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
+  clone CreusotContracts_Std1_Vec_Impl1_Push_Interface as Push0 with type t = usize,
+  function Model0.model = Model0.model, function Model1.model = Model5.model
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model3 with type t = Type.creusotcontracts_std1_vec_vec usize,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
+  clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = usize,
+  function Model0.model = Model3.model
+  clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = usize, function Model0.model = Model3.model
+  clone Mergesort_DoCheck_Interface as DoCheck0 with type t = t, function Model0.model = Model0.model
+  clone CreusotContracts_Std1_Vec_Impl1_New_Interface as New0 with type t = usize, function Model0.model = Model0.model
+  let rec cfg merge [@cfg:stackify] (r1 : Type.mergesort_sr t) (r2 : Type.mergesort_sr t) : Type.mergesort_sr t
+    requires {SrInvariant0.sr_invariant r2}
+    requires {SrInvariant0.sr_invariant r1}
+    requires {Seq.length (Model0.model (Type.mergesort_sr_Sr_runs r2)) < 1000}
+    requires {Seq.length (Model0.model (Type.mergesort_sr_Sr_runs r1)) < 1000}
+    ensures { SrInvariant0.sr_invariant result }
+    ensures { Seq.length (Model0.model (Type.mergesort_sr_Sr_runs result)) < 1000 }
+    
+   = 
+  var _0 : Type.mergesort_sr t;
+  var r1_1 : Type.mergesort_sr t;
+  var r2_2 : Type.mergesort_sr t;
+  var _3 : ();
+  var res_4 : Type.mergesort_sr t;
+  var _5 : Type.creusotcontracts_std1_vec_vec usize;
+  var _6 : Type.creusotcontracts_std1_vec_vec t;
+  var di1_7 : usize;
+  var ri1_8 : usize;
+  var di2_9 : usize;
+  var ri2_10 : usize;
+  var _11 : ();
+  var _12 : ();
+  var _13 : bool;
+  var _14 : bool;
+  var _15 : usize;
+  var _16 : usize;
+  var _17 : Type.creusotcontracts_std1_vec_vec usize;
+  var _18 : bool;
+  var _19 : usize;
+  var _20 : usize;
+  var _21 : Type.creusotcontracts_std1_vec_vec usize;
+  var old_data_22 : Type.creusotcontracts_logic_ghost_ghost (Type.creusotcontracts_std1_vec_vec t);
+  var _23 : Type.creusotcontracts_std1_vec_vec t;
+  var _24 : Type.creusotcontracts_std1_vec_vec t;
+  var t1_25 : bool;
+  var _26 : Type.mergesort_sr t;
+  var _27 : Type.mergesort_sr t;
+  var _28 : Type.mergesort_sr t;
+  var _29 : Type.mergesort_sr t;
+  var _30 : usize;
+  var _31 : usize;
+  var _32 : usize;
+  var _33 : usize;
+  var t2_34 : bool;
+  var _35 : Type.mergesort_sr t;
+  var _36 : Type.mergesort_sr t;
+  var _37 : Type.mergesort_sr t;
+  var _38 : Type.mergesort_sr t;
+  var _39 : usize;
+  var _40 : usize;
+  var _41 : usize;
+  var _42 : usize;
+  var _43 : ();
+  var _44 : bool;
+  var _45 : ();
+  var _46 : ();
+  var _47 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var _48 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var _49 : Type.creusotcontracts_std1_vec_vec t;
+  var _50 : Type.creusotcontracts_std1_vec_vec t;
+  var _51 : usize;
+  var _52 : usize;
+  var _53 : usize;
+  var _54 : Type.creusotcontracts_std1_vec_vec usize;
+  var _55 : usize;
+  var _56 : usize;
+  var _57 : usize;
+  var _58 : Type.creusotcontracts_std1_vec_vec usize;
+  var _59 : usize;
+  var _60 : ();
+  var _61 : ();
+  var _62 : ();
+  var _63 : bool;
+  var _64 : ();
+  var _65 : ();
+  var _66 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var _67 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var _68 : Type.creusotcontracts_std1_vec_vec t;
+  var _69 : Type.creusotcontracts_std1_vec_vec t;
+  var _70 : usize;
+  var _71 : usize;
+  var _72 : usize;
+  var _73 : Type.creusotcontracts_std1_vec_vec usize;
+  var _74 : usize;
+  var _75 : usize;
+  var _76 : usize;
+  var _77 : Type.creusotcontracts_std1_vec_vec usize;
+  var _78 : usize;
+  var _79 : ();
+  var l_80 : usize;
+  var _81 : Type.creusotcontracts_std1_vec_vec t;
+  var _82 : ();
+  var _83 : borrowed (Type.creusotcontracts_std1_vec_vec usize);
+  var _84 : usize;
+  var _85 : ();
+  var _86 : ();
+  var _87 : ();
+  {
+    r1_1 <- r1;
+    r2_2 <- r2;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    goto BB3
+  }
+  BB3 {
+    goto BB4
+  }
+  BB4 {
+    _5 <- New0.new ();
+    goto BB5
+  }
+  BB5 {
+    _6 <- New1.new ();
+    goto BB6
+  }
+  BB6 {
+    res_4 <- Type.Mergesort_Sr _5 _6;
+    goto BB7
+  }
+  BB7 {
+    goto BB8
+  }
+  BB8 {
+    di1_7 <- (0 : usize);
+    ri1_8 <- (0 : usize);
+    di2_9 <- (0 : usize);
+    ri2_10 <- (0 : usize);
+    goto BB9
+  }
+  BB9 {
+    goto BB10
+  }
+  BB10 {
+    goto BB11
+  }
+  BB11 {
+    goto BB12
+  }
+  BB12 {
+    invariant di_data { UInt64.to_int ri1_8 < Seq.length (Model0.model (Type.mergesort_sr_Sr_runs r1_1)) -> UInt64.to_int di1_7 <= Seq.length (Model1.model (Type.mergesort_sr_Sr_data r1_1)) && di1_7 <= Seq.get (Model0.model (Type.mergesort_sr_Sr_runs r1_1)) (UInt64.to_int ri1_8) };
+    invariant di_data { UInt64.to_int ri2_10 < Seq.length (Model0.model (Type.mergesort_sr_Sr_runs r2_2)) -> UInt64.to_int di2_9 <= Seq.length (Model1.model (Type.mergesort_sr_Sr_data r2_2)) && di2_9 <= Seq.get (Model0.model (Type.mergesort_sr_Sr_runs r2_2)) (UInt64.to_int ri2_10) };
+    invariant res_inv { SrInvariant0.sr_invariant res_4 };
+    assume { Resolve0.resolve _15 };
+    _15 <- ri1_8;
+    _17 <- Type.mergesort_sr_Sr_runs r1_1;
+    _16 <- Len0.len _17;
+    goto BB16
+  }
+  BB13 {
+    _13 <- true;
+    goto BB15
+  }
+  BB14 {
+    assume { Resolve0.resolve _19 };
+    _19 <- ri2_10;
+    _21 <- Type.mergesort_sr_Sr_runs r2_2;
+    _20 <- Len0.len _21;
+    goto BB17
+  }
+  BB15 {
+    switch (_13)
+      | False -> goto BB41
+      | _ -> goto BB18
+      end
+  }
+  BB16 {
+    _14 <- _15 < _16;
+    switch (_14)
+      | False -> goto BB14
+      | _ -> goto BB13
+      end
+  }
+  BB17 {
+    _18 <- _19 < _20;
+    assume { Resolve4.resolve _13 };
+    _13 <- _18;
+    goto BB15
+  }
+  BB18 {
+    _24 <- Type.mergesort_sr_Sr_data res_4;
+    _23 <- _24;
+    assume { Resolve1.resolve _24 };
+    old_data_22 <- Record0.record _23;
+    goto BB19
+  }
+  BB19 {
+    assume { Resolve2.resolve old_data_22 };
+    _27 <- r1_1;
+    _26 <- _27;
+    assume { Resolve3.resolve _27 };
+    _29 <- r2_2;
+    _28 <- _29;
+    assume { Resolve3.resolve _29 };
+    assume { Resolve0.resolve _30 };
+    _30 <- ri1_8;
+    assume { Resolve0.resolve _31 };
+    _31 <- ri2_10;
+    assume { Resolve0.resolve _32 };
+    _32 <- di1_7;
+    assume { Resolve0.resolve _33 };
+    _33 <- di2_9;
+    t1_25 <- DoCheck0.do_check _26 _28 _30 _31 _32 _33;
+    goto BB20
+  }
+  BB20 {
+    _36 <- r2_2;
+    _35 <- _36;
+    assume { Resolve3.resolve _36 };
+    _38 <- r1_1;
+    _37 <- _38;
+    assume { Resolve3.resolve _38 };
+    assume { Resolve0.resolve _39 };
+    _39 <- ri2_10;
+    assume { Resolve0.resolve _40 };
+    _40 <- ri1_8;
+    assume { Resolve0.resolve _41 };
+    _41 <- di2_9;
+    assume { Resolve0.resolve _42 };
+    _42 <- di1_7;
+    t2_34 <- DoCheck0.do_check _35 _37 _39 _40 _41 _42;
+    goto BB21
+  }
+  BB21 {
+    assume { Resolve4.resolve _44 };
+    _44 <- t1_25;
+    assume { Resolve4.resolve t1_25 };
+    switch (_44)
+      | False -> goto BB29
+      | _ -> goto BB22
+      end
+  }
+  BB22 {
+    assert { UInt64.to_int ri1_8 < Seq.length (Model0.model (Type.mergesort_sr_Sr_runs r1_1)) };
+    goto BB23
+  }
+  BB23 {
+    _45 <- ();
+    assume { Resolve5.resolve _45 };
+    _48 <- borrow_mut (Type.mergesort_sr_Sr_data res_4);
+    res_4 <- (let Type.Mergesort_Sr a b = res_4 in Type.Mergesort_Sr a ( ^ _48));
+    _47 <- borrow_mut ( * _48);
+    _48 <- { _48 with current = ( ^ _47) };
+    _50 <- Type.mergesort_sr_Sr_data r1_1;
+    _49 <- _50;
+    assume { Resolve1.resolve _50 };
+    assume { Resolve0.resolve _51 };
+    _51 <- di1_7;
+    assume { Resolve0.resolve di1_7 };
+    _54 <- Type.mergesort_sr_Sr_runs r1_1;
+    assume { Resolve0.resolve _55 };
+    _55 <- ri1_8;
+    _53 <- Index0.index _54 _55;
+    goto BB24
+  }
+  BB24 {
+    assume { Resolve0.resolve _52 };
+    _52 <- _53;
+    assume { Resolve6.resolve _53 };
+    _46 <- ExtendVec0.extend_vec _47 _49 _51 _52;
+    goto BB25
+  }
+  BB25 {
+    assume { Resolve7.resolve _48 };
+    _58 <- Type.mergesort_sr_Sr_runs r1_1;
+    assume { Resolve0.resolve _59 };
+    _59 <- ri1_8;
+    _57 <- Index0.index _58 _59;
+    goto BB26
+  }
+  BB26 {
+    assume { Resolve0.resolve _56 };
+    _56 <- _57;
+    assume { Resolve6.resolve _57 };
+    assume { Resolve0.resolve di1_7 };
+    di1_7 <- _56;
+    assert { UInt64.to_int di1_7 <= Seq.length (Model1.model (Type.mergesort_sr_Sr_data r1_1)) };
+    goto BB27
+  }
+  BB27 {
+    _60 <- ();
+    assume { Resolve5.resolve _60 };
+    ri1_8 <- ri1_8 + (1 : usize);
+    assert { Seq.length (Model1.model (Model2.model old_data_22)) <= Seq.length (Model1.model (Type.mergesort_sr_Sr_data res_4)) };
+    goto BB28
+  }
+  BB28 {
+    _61 <- ();
+    assume { Resolve5.resolve _61 };
+    _43 <- ();
+    assume { Resolve5.resolve _43 };
+    goto BB30
+  }
+  BB29 {
+    _43 <- ();
+    assume { Resolve5.resolve _43 };
+    goto BB30
+  }
+  BB30 {
+    assume { Resolve4.resolve _63 };
+    _63 <- t2_34;
+    assume { Resolve4.resolve t2_34 };
+    switch (_63)
+      | False -> goto BB37
+      | _ -> goto BB31
+      end
+  }
+  BB31 {
+    assert { UInt64.to_int ri2_10 < Seq.length (Model0.model (Type.mergesort_sr_Sr_runs r2_2)) };
+    goto BB32
+  }
+  BB32 {
+    _64 <- ();
+    assume { Resolve5.resolve _64 };
+    _67 <- borrow_mut (Type.mergesort_sr_Sr_data res_4);
+    res_4 <- (let Type.Mergesort_Sr a b = res_4 in Type.Mergesort_Sr a ( ^ _67));
+    _66 <- borrow_mut ( * _67);
+    _67 <- { _67 with current = ( ^ _66) };
+    _69 <- Type.mergesort_sr_Sr_data r2_2;
+    _68 <- _69;
+    assume { Resolve1.resolve _69 };
+    assume { Resolve0.resolve _70 };
+    _70 <- di2_9;
+    assume { Resolve0.resolve di2_9 };
+    _73 <- Type.mergesort_sr_Sr_runs r2_2;
+    assume { Resolve0.resolve _74 };
+    _74 <- ri2_10;
+    _72 <- Index0.index _73 _74;
+    goto BB33
+  }
+  BB33 {
+    assume { Resolve0.resolve _71 };
+    _71 <- _72;
+    assume { Resolve6.resolve _72 };
+    _65 <- ExtendVec0.extend_vec _66 _68 _70 _71;
+    goto BB34
+  }
+  BB34 {
+    assume { Resolve7.resolve _67 };
+    _77 <- Type.mergesort_sr_Sr_runs r2_2;
+    assume { Resolve0.resolve _78 };
+    _78 <- ri2_10;
+    _76 <- Index0.index _77 _78;
+    goto BB35
+  }
+  BB35 {
+    assume { Resolve0.resolve _75 };
+    _75 <- _76;
+    assume { Resolve6.resolve _76 };
+    assume { Resolve0.resolve di2_9 };
+    di2_9 <- _75;
+    ri2_10 <- ri2_10 + (1 : usize);
+    assert { Seq.length (Model1.model (Model2.model old_data_22)) <= Seq.length (Model1.model (Type.mergesort_sr_Sr_data res_4)) };
+    goto BB36
+  }
+  BB36 {
+    _79 <- ();
+    assume { Resolve5.resolve _79 };
+    _62 <- ();
+    assume { Resolve5.resolve _62 };
+    goto BB38
+  }
+  BB37 {
+    _62 <- ();
+    assume { Resolve5.resolve _62 };
+    goto BB38
+  }
+  BB38 {
+    _81 <- Type.mergesort_sr_Sr_data res_4;
+    l_80 <- Len1.len _81;
+    goto BB39
+  }
+  BB39 {
+    _83 <- borrow_mut (Type.mergesort_sr_Sr_runs res_4);
+    res_4 <- (let Type.Mergesort_Sr a b = res_4 in Type.Mergesort_Sr ( ^ _83) b);
+    assume { Resolve0.resolve _84 };
+    _84 <- l_80;
+    assume { Resolve0.resolve l_80 };
+    _82 <- Push0.push _83 _84;
+    goto BB40
+  }
+  BB40 {
+    _12 <- ();
+    assume { Resolve5.resolve _12 };
+    goto BB12
+  }
+  BB41 {
+    assume { Resolve0.resolve di1_7 };
+    assume { Resolve0.resolve ri1_8 };
+    assume { Resolve0.resolve di2_9 };
+    assume { Resolve0.resolve ri2_10 };
+    _11 <- ();
+    assume { Resolve5.resolve _11 };
+    assume { Resolve8.resolve _0 };
+    _0 <- res_4;
+    goto BB42
+  }
+  BB42 {
+    goto BB43
+  }
+  BB43 {
+    assume { Resolve8.resolve r2_2 };
+    goto BB44
+  }
+  BB44 {
+    assume { Resolve8.resolve r1_1 };
+    return _0
+  }
+  
+end
+module CreusotContracts_Std1_Clone_Clone_Clone_Interface
+  type self   
+  use prelude.Prelude
+  val clone' [@cfg:stackify] (self : self) : self
+    ensures { result = self }
+    
+end
+module CreusotContracts_Std1_Clone_Clone_Clone
+  type self   
+  use prelude.Prelude
+  val clone' [@cfg:stackify] (self : self) : self
+    ensures { result = self }
+    
+end
+module Mergesort_Msort_Interface
+  type t   
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.UInt64
+  use prelude.Prelude
+  use Type
+  clone Mergesort_SrInvariant_Interface as SrInvariant0 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = usize
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val msort [@cfg:stackify] (arr : Type.creusotcontracts_std1_vec_vec t) (l : usize) (h : usize) : Type.mergesort_sr t
+    requires {Seq.length (Model0.model arr) <= 1000}
+    requires {UInt64.to_int h < Seq.length (Model0.model arr)}
+    requires {UInt64.to_int l <= UInt64.to_int h}
+    ensures { Seq.length (Model1.model (Type.mergesort_sr_Sr_runs result)) < 1000 }
+    ensures { SrInvariant0.sr_invariant result }
+    
+end
+module Mergesort_Msort
+  type t   
+  use mach.int.UInt64
+  use mach.int.Int
+  use seq.Seq
+  use mach.int.Int32
+  use prelude.Prelude
+  use Type
+  clone Mergesort_SortedRangeUsize as SortedRangeUsize0
+  clone Mergesort_SortedUsize as SortedUsize0 with predicate SortedRangeUsize0.sorted_range_usize = SortedRangeUsize0.sorted_range_usize
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = usize
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = t
+  clone Mergesort_SrInvariant as SrInvariant0 with type t = t, function Model0.model = Model1.model,
+  predicate SortedUsize0.sorted_usize = SortedUsize0.sorted_usize, function Model1.model = Model2.model
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model2.model
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy1 with type t = usize
+  clone CreusotContracts_Std1_Clone_Clone_Clone_Interface as Clone0 with type self = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve4 with type self = t
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve3 with type t = ()
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = Type.mergesort_sr t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.creusotcontracts_std1_vec_vec t
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = usize
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model4 with type t = Type.creusotcontracts_std1_vec_vec usize,
+  type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model1.model
+  clone CreusotContracts_Std1_Vec_Impl1_Push_Interface as Push1 with type t = usize,
+  function Model0.model = Model1.model, function Model1.model = Model4.model
+  clone CreusotContracts_Std1_Vec_Impl1_New_Interface as New0 with type t = usize, function Model0.model = Model1.model
+  clone CreusotContracts_Std1_Vec_Impl1_New_Interface as New1 with type t = t, function Model0.model = Model2.model
+  clone Mergesort_Merge_Interface as Merge0 with type t = t,
+  predicate SrInvariant0.sr_invariant = SrInvariant0.sr_invariant, function Model0.model = Model1.model
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model3 with type t = Type.creusotcontracts_std1_vec_vec t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model2.model
+  clone CreusotContracts_Std1_Vec_Impl1_Push_Interface as Push0 with type t = t, function Model0.model = Model2.model,
+  function Model1.model = Model3.model
+  clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = t, function Model0.model = Model0.model
+  clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = t, function Model0.model = Model0.model
+  let rec cfg msort [@cfg:stackify] (arr : Type.creusotcontracts_std1_vec_vec t) (l : usize) (h : usize) : Type.mergesort_sr t
+    requires {Seq.length (Model0.model arr) <= 1000}
+    requires {UInt64.to_int h < Seq.length (Model0.model arr)}
+    requires {UInt64.to_int l <= UInt64.to_int h}
+    ensures { Seq.length (Model1.model (Type.mergesort_sr_Sr_runs result)) < 1000 }
+    ensures { SrInvariant0.sr_invariant result }
+    
+   = 
+  var _0 : Type.mergesort_sr t;
+  var arr_1 : Type.creusotcontracts_std1_vec_vec t;
+  var l_2 : usize;
+  var h_3 : usize;
+  var _4 : ();
+  var _5 : ();
+  var _6 : bool;
+  var _7 : usize;
+  var _8 : usize;
+  var _9 : ();
+  var res_10 : Type.mergesort_sr t;
+  var _11 : Type.creusotcontracts_std1_vec_vec usize;
+  var _12 : Type.creusotcontracts_std1_vec_vec t;
+  var _13 : ();
+  var _14 : bool;
+  var _15 : usize;
+  var _16 : usize;
+  var _17 : usize;
+  var _18 : ();
+  var res_19 : Type.mergesort_sr t;
+  var _20 : Type.creusotcontracts_std1_vec_vec usize;
+  var _21 : Type.creusotcontracts_std1_vec_vec t;
+  var _22 : ();
+  var _23 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var _24 : t;
+  var _25 : t;
+  var _26 : t;
+  var _27 : Type.creusotcontracts_std1_vec_vec t;
+  var _28 : usize;
+  var l_29 : usize;
+  var _30 : Type.creusotcontracts_std1_vec_vec t;
+  var _31 : ();
+  var _32 : borrowed (Type.creusotcontracts_std1_vec_vec usize);
+  var _33 : usize;
+  var m_34 : usize;
+  var _35 : usize;
+  var _36 : usize;
+  var _37 : usize;
+  var _38 : usize;
+  var _39 : usize;
+  var _40 : bool;
+  var _41 : ();
+  var res1_42 : Type.mergesort_sr t;
+  var _43 : Type.creusotcontracts_std1_vec_vec t;
+  var _44 : usize;
+  var _45 : usize;
+  var res2_46 : Type.mergesort_sr t;
+  var _47 : Type.creusotcontracts_std1_vec_vec t;
+  var _48 : usize;
+  var _49 : usize;
+  var _50 : Type.mergesort_sr t;
+  var _51 : Type.mergesort_sr t;
+  {
+    arr_1 <- arr;
+    l_2 <- l;
+    h_3 <- h;
+    goto BB0
+  }
+  BB0 {
+    assume { Resolve0.resolve _7 };
+    _7 <- l_2;
+    assume { Resolve0.resolve _8 };
+    _8 <- h_3;
+    _6 <- _7 = _8;
+    switch (_6)
+      | False -> goto BB6
+      | _ -> goto BB1
+      end
+  }
+  BB1 {
+    assume { Resolve1.resolve arr_1 };
+    assume { Resolve0.resolve l_2 };
+    assume { Resolve0.resolve h_3 };
+    _11 <- New0.new ();
+    goto BB2
+  }
+  BB2 {
+    _12 <- New1.new ();
+    goto BB3
+  }
+  BB3 {
+    res_10 <- Type.Mergesort_Sr _11 _12;
+    goto BB4
+  }
+  BB4 {
+    goto BB5
+  }
+  BB5 {
+    assume { Resolve2.resolve _0 };
+    _0 <- res_10;
+    goto BB25
+  }
+  BB6 {
+    _5 <- ();
+    assume { Resolve3.resolve _5 };
+    assume { Resolve0.resolve _16 };
+    _16 <- h_3;
+    assume { Resolve0.resolve _17 };
+    _17 <- l_2;
+    _15 <- _16 - _17;
+    _14 <- _15 = (1 : usize);
+    switch (_14)
+      | False -> goto BB8
+      | _ -> goto BB7
+      end
+  }
+  BB7 {
+    assume { Resolve0.resolve h_3 };
+    _20 <- New0.new ();
+    goto BB9
+  }
+  BB8 {
+    _13 <- ();
+    assume { Resolve3.resolve _13 };
+    assume { Resolve0.resolve _35 };
+    _35 <- l_2;
+    assume { Resolve0.resolve _38 };
+    _38 <- h_3;
+    assume { Resolve0.resolve _39 };
+    _39 <- l_2;
+    _37 <- _38 - _39;
+    _40 <- (2 : usize) = (0 : usize);
+    assert { not _40 };
+    goto BB18
+  }
+  BB9 {
+    _21 <- New1.new ();
+    goto BB10
+  }
+  BB10 {
+    res_19 <- Type.Mergesort_Sr _20 _21;
+    goto BB11
+  }
+  BB11 {
+    goto BB12
+  }
+  BB12 {
+    _23 <- borrow_mut (Type.mergesort_sr_Sr_data res_19);
+    res_19 <- (let Type.Mergesort_Sr a b = res_19 in Type.Mergesort_Sr a ( ^ _23));
+    _27 <- arr_1;
+    assume { Resolve1.resolve arr_1 };
+    assume { Resolve0.resolve _28 };
+    _28 <- l_2;
+    assume { Resolve0.resolve l_2 };
+    _26 <- Index0.index _27 _28;
+    goto BB13
+  }
+  BB13 {
+    _25 <- _26;
+    assume { Resolve4.resolve _26 };
+    _24 <- Clone0.clone' _25;
+    goto BB14
+  }
+  BB14 {
+    _22 <- Push0.push _23 _24;
+    goto BB15
+  }
+  BB15 {
+    _30 <- Type.mergesort_sr_Sr_data res_19;
+    l_29 <- Len0.len _30;
+    goto BB16
+  }
+  BB16 {
+    _32 <- borrow_mut (Type.mergesort_sr_Sr_runs res_19);
+    res_19 <- (let Type.Mergesort_Sr a b = res_19 in Type.Mergesort_Sr ( ^ _32) b);
+    assume { Resolve0.resolve _33 };
+    _33 <- l_29;
+    assume { Resolve0.resolve l_29 };
+    _31 <- Push1.push _32 _33;
+    goto BB17
+  }
+  BB17 {
+    assume { Resolve2.resolve _0 };
+    _0 <- res_19;
+    goto BB24
+  }
+  BB18 {
+    _36 <- _37 / (2 : usize);
+    m_34 <- _35 + _36;
+    assert { UInt64.to_int m_34 < UInt64.to_int h_3 };
+    _41 <- ();
+    assume { Resolve3.resolve _41 };
+    _43 <- arr_1;
+    assume { Resolve0.resolve _44 };
+    _44 <- l_2;
+    assume { Resolve0.resolve l_2 };
+    assume { Resolve0.resolve _45 };
+    _45 <- m_34;
+    res1_42 <- msort _43 _44 _45;
+    goto BB19
+  }
+  BB19 {
+    _47 <- arr_1;
+    assume { Resolve1.resolve arr_1 };
+    assume { Resolve0.resolve _48 };
+    _48 <- m_34;
+    assume { Resolve0.resolve m_34 };
+    assume { Resolve0.resolve _49 };
+    _49 <- h_3;
+    assume { Resolve0.resolve h_3 };
+    res2_46 <- msort _47 _48 _49;
+    goto BB20
+  }
+  BB20 {
+    assume { Resolve2.resolve _50 };
+    _50 <- res1_42;
+    assume { Resolve2.resolve _51 };
+    _51 <- res2_46;
+    _0 <- Merge0.merge _50 _51;
+    goto BB21
+  }
+  BB21 {
+    goto BB22
+  }
+  BB22 {
+    goto BB23
+  }
+  BB23 {
+    goto BB26
+  }
+  BB24 {
+    goto BB26
+  }
+  BB25 {
+    goto BB26
+  }
+  BB26 {
+    return _0
+  }
+  
+end

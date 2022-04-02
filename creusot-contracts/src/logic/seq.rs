@@ -73,6 +73,12 @@ impl<T> Seq<T> {
     pub fn ext_eq(self, _: Self) -> bool {
         absurd
     }
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "seq.Seq.(++)"]
+    pub fn concat(self, _ : Self) -> Self {
+        std::process::abort()  
+    }
 
     #[trusted]
     #[logic]
