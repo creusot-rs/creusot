@@ -73,7 +73,7 @@ The project is composed of a few main crates which we will cover in the followin
 
 ## Binaries
 
-The binaries are structured following the pattern laid out by [flowistry]():
+The binaries are structured following the pattern laid out by [flowistry](https://github.com/willcrichton/flowistry):
 
 - `cargo-creusot`, a cargo extension which provides a cargo-like compilation of a project with creusot
 - `creusot-rustc`, a rustc wrapper which provides rustc-like interaction with creusot.
