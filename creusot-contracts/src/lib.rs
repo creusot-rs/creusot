@@ -51,6 +51,14 @@ mod macros {
     /// Allows specifications to be attached to functions coming from external crates
     /// TODO: Document syntax
     pub use creusot_contracts_proc::extern_spec;
+
+    /// Allows specifying both a pre- and post-condition in a single statement.
+    /// Expects an expression in either the form of a method or function call
+    /// Arguments to the call can be prefixed with `mut` to indicate that they are mutable borrows.
+    ///
+    /// Generates a `requires` and `ensures` clause in the shape of the input expression, with
+    /// `mut` replaced by `*` in the `requires` and `^` in the ensures.
+    pub use creusot_contracts_proc::maintains;
 }
 
 #[cfg(not(feature = "contracts"))]
@@ -94,11 +102,19 @@ mod macros {
     pub use creusot_contracts_dummy::variant;
 
     /// Enables Pearlite syntax, granting access to Pearlite specific operators and syntax
-    pub use creusot_contracts_proc::pearlite;
+    pub use creusot_contracts_dummy::pearlite;
 
     /// Allows specifications to be attached to functions coming from external crates
     /// TODO: Document syntax
-    pub use creusot_contracts_proc::extern_spec;
+    pub use creusot_contracts_dummy::extern_spec;
+
+    /// Allows specifying both a pre- and post-condition in a single statement.
+    /// Expects an expression in either the form of a method or function call
+    /// Arguments to the call can be prefixed with `mut` to indicate that they are mutable borrows.
+    ///
+    /// Generates a `requires` and `ensures` clause in the shape of the input expression, with
+    /// `mut` replaced by `*` in the `requires` and `^` in the ensures.
+    pub use creusot_contracts_dummy::maintains;
 }
 
 pub use macros::*;
