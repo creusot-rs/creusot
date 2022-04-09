@@ -12,6 +12,7 @@ use syn::{
     *,
 };
 
+mod maintains;
 mod pretyping;
 
 trait FilterAttrs<'a> {
@@ -582,4 +583,14 @@ pub fn extern_spec(tokens: TS1) -> TS1 {
           #specs
         )*
     })
+}
+
+#[proc_macro_attribute]
+pub fn maintains(attr: TS1, body: TS1) -> TS1 {
+    let tokens = maintains::maintains_impl(attr, body);
+
+    match tokens {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
+    }
 }
