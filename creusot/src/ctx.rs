@@ -255,7 +255,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn should_compile(&self) -> bool {
-        !self.opts.dependency
+        self.opts.should_output
     }
 
     pub fn modules(&self) -> impl Iterator<Item = &Module> + Captures<'tcx> {

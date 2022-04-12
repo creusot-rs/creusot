@@ -1,4 +1,3 @@
-use crate::arg_value;
 use serde_json::from_str;
 use std::collections::HashMap;
 
@@ -9,9 +8,16 @@ pub struct Options {
     pub has_contracts: bool,
     pub be_rustc: bool,
     pub export_metadata: bool,
-    pub dependency: bool,
-    pub output_file: Option<String>,
+    pub should_output: bool,
+    pub output_file: Option<OutputFile>,
     pub bounds_check: bool,
+    pub in_cargo: bool,
+}
+
+#[derive(Debug)]
+pub enum OutputFile {
+    File(String),
+    Stdout,
 }
 
 impl Options {
@@ -23,12 +29,24 @@ impl Options {
 
         let be_rustc = args.iter().any(|arg| arg.contains("--print"));
 
+        let cargo_creusot = std::env::var("CARGO_CREUSOT").is_ok();
         // If we're compiling an upstream dependency or we're compiling `creusot_contracts_proc` lets be silent.
-        let export_metadata = export_metadata();
-        let dependency = arg_value::arg_value(args, "--cap-lints", |val| val == "allow").is_some();
+        let export_metadata = export_metadata() && cargo_creusot;
 
+        // Either we're not running under `cargo-creusot` (aka `creusot-rustc`) or we are but we're compiling a 'primary' package
+        let should_output = !cargo_creusot || std::env::var("CARGO_PRIMARY_PACKAGE").is_ok();
+
+        // All options shoudl be parsed before we get here.
+        let stdout: bool = args.iter().position(|a| a == "--stdout").is_some() || stdout_output();
         let output_file =
             args.iter().position(|a| a == "-o").map(|ix| args[ix + 1].clone()).or_else(output_file);
+
+        let output_file = match (stdout, output_file) {
+            (true, Some(_)) => panic!("cannot set --stdout and output file at the same time"),
+            (true, None) => Some(OutputFile::Stdout),
+            (false, Some(p)) => Some(OutputFile::File(p)),
+            (false, None) => None,
+        };
 
         let extern_paths = match creusot_externs() {
             Some(val) => from_str(&val).expect("could not parse CREUSOT_EXTERNS"),
@@ -41,14 +59,19 @@ impl Options {
             has_contracts,
             be_rustc,
             export_metadata,
-            dependency,
+            should_output,
             output_file,
             continue_compilation: continue_compiler(),
             metadata_path: creusot_metadata_path(),
             extern_paths,
             bounds_check,
+            in_cargo: cargo_creusot,
         }
     }
+}
+
+fn stdout_output() -> bool {
+    std::env::var_os("CREUSOT_STDOUT_OUTPUT").is_some()
 }
 
 fn output_file() -> Option<String> {

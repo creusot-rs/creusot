@@ -13,6 +13,7 @@ use crate::ctx::TypeDeclaration;
 use crate::error::CrErr;
 use crate::metadata;
 use crate::options::Options;
+use crate::options::OutputFile;
 use crate::translation::external::extract_extern_specs_from_item;
 use crate::validate::validate_traits;
 pub use function::translate_function;
@@ -87,10 +88,24 @@ pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
 
     if ctx.should_compile() {
         use std::fs::File;
-
         let mut out: Box<dyn Write> = match ctx.opts.output_file {
-            Some(ref f) => Box::new(std::io::BufWriter::new(File::create(f)?)),
-            None => Box::new(std::io::stdout()),
+            Some(OutputFile::File(ref f)) => Box::new(std::io::BufWriter::new(File::create(f)?)),
+            Some(OutputFile::Stdout) => Box::new(std::io::stdout()),
+            None => {
+                let outputs = ctx.tcx.output_filenames(());
+                let crate_name = ctx.tcx.crate_name(LOCAL_CRATE);
+                let libname = format!("{}.mlcfg", crate_name.as_str());
+
+                let directory = if ctx.opts.in_cargo {
+                    let mut dir = outputs.out_directory.clone();
+                    dir.pop();
+                    dir
+                } else {
+                    outputs.out_directory.clone()
+                };
+                let out_path = directory.join(&libname);
+                Box::new(std::io::BufWriter::new(File::create(out_path)?))
+            }
         };
 
         print_crate(
