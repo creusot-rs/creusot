@@ -94,7 +94,9 @@ pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
             None => {
                 let outputs = ctx.tcx.output_filenames(());
                 let crate_name = ctx.tcx.crate_name(LOCAL_CRATE);
-                let libname = format!("{}.mlcfg", crate_name.as_str());
+
+                let libname =
+                    format!("{}-{}.mlcfg", crate_name.as_str(), ctx.sess.crate_types()[0]);
 
                 let directory = if ctx.opts.in_cargo {
                     let mut dir = outputs.out_directory.clone();
