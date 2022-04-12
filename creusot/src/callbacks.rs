@@ -38,7 +38,7 @@ impl Callbacks for ToWhy {
 
         c.session().abort_if_errors();
 
-        if self.opts.continue_compilation {
+        if self.opts.in_cargo {
             Compilation::Continue
         } else {
             Compilation::Stop

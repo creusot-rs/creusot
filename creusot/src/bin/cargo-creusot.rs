@@ -26,9 +26,10 @@ fn main() {
 
     let mut cmd = Command::new(cargo_path);
     cmd.arg(&cargo_cmd)
-        .arg("-q")
+        // .arg("-v")
         .args(std::env::args().skip(2))
-        .env("RUSTC_WRAPPER", creusot_rustc_path);
+        .env("RUSTC_WRAPPER", creusot_rustc_path)
+        .env("CARGO_CREUSOT", "1");
 
     if matches.is_present("unbounded") {
         cmd.env("CREUSOT_UNBOUNDED", "1");

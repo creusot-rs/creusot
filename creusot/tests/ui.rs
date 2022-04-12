@@ -53,6 +53,7 @@ fn run_creusot(file: &Path, contracts: &str) -> std::process::Command {
     cmd.envs(env::vars());
     cmd.env("CREUSOT_EXPORT_METADATA", "false");
     cmd.env("CREUSOT_EXTERNS", format!("{{ \"creusot_contracts\": \"{}\" }}", contracts));
+    cmd.env("CREUSOT_STDOUT_OUTPUT", "1");
     cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path.display())]);
 
     let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
