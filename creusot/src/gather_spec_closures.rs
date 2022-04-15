@@ -25,7 +25,8 @@ impl GatherSpecClosures {
         names: &mut CloneMap<'tcx>,
         base_id: DefId,
     ) -> GatherSpecClosures {
-        let (thir, expr) = ctx.tcx.thir_body(WithOptConstParam::unknown(base_id.expect_local()));
+        let (thir, expr) =
+            ctx.tcx.thir_body(WithOptConstParam::unknown(base_id.expect_local())).unwrap();
         let thir = &thir.borrow();
 
         let mut visitor = InvariantClosures::new(thir);
@@ -104,13 +105,13 @@ pub struct InvariantClosures<'a, 'tcx> {
     pub closures: IndexSet<DefId>,
 }
 
-impl InvariantClosures<'a, 'tcx> {
+impl<'a, 'tcx> InvariantClosures<'a, 'tcx> {
     pub fn new(thir: &'a Thir<'tcx>) -> Self {
         InvariantClosures { thir, closures: IndexSet::new() }
     }
 }
 
-impl thir::visit::Visitor<'a, 'tcx> for InvariantClosures<'a, 'tcx> {
+impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for InvariantClosures<'a, 'tcx> {
     fn thir(&self) -> &'a Thir<'tcx> {
         self.thir
     }
@@ -156,7 +157,10 @@ impl<'tcx> Visitor<'tcx> for InvariantLocations<'tcx> {
 }
 
 // Calculate the *actual* location of invariants in MIR
-fn invariant_locations(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<BasicBlock, Vec<DefId>> {
+fn invariant_locations<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &Body<'tcx>,
+) -> IndexMap<BasicBlock, Vec<DefId>> {
     let mut results = IndexMap::new();
 
     let mut invs_gather = InvariantLocations { tcx, invariants: IndexMap::new() };

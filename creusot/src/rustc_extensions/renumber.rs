@@ -1,10 +1,9 @@
 use rustc_index::vec::IndexVec;
+use rustc_infer::infer::{InferCtxt, NllRegionVariableOrigin};
 use rustc_middle::mir::visit::{MutVisitor, TyContext};
-use rustc_middle::mir::{Body, Location, PlaceElem, Promoted};
+use rustc_middle::mir::{Body, Location, Promoted};
 use rustc_middle::ty::subst::SubstsRef;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable};
-use rustc_trait_selection::infer::InferCtxt;
-use rustc_trait_selection::infer::NllRegionVariableOrigin;
 
 /// Replaces all free regions appearing in the MIR with fresh
 /// inference variables, returning the number of variables created.
@@ -52,36 +51,20 @@ impl<'a, 'tcx> MutVisitor<'tcx> for NllVisitor<'a, 'tcx> {
         self.infcx.tcx
     }
 
-    fn visit_ty(&mut self, ty: &mut Ty<'tcx>, _ty_context: TyContext) {
-        *ty = self.renumber_regions(ty);
+    fn visit_ty(&mut self, ty: &mut Ty<'tcx>, _: TyContext) {
+        *ty = self.renumber_regions(*ty);
     }
 
-    fn process_projection_elem(
-        &mut self,
-        elem: PlaceElem<'tcx>,
-        _: Location,
-    ) -> Option<PlaceElem<'tcx>> {
-        if let PlaceElem::Field(field, ty) = elem {
-            let new_ty = self.renumber_regions(ty);
-
-            if new_ty != ty {
-                return Some(PlaceElem::Field(field, new_ty));
-            }
-        }
-
-        None
-    }
-
-    fn visit_substs(&mut self, substs: &mut SubstsRef<'tcx>, _location: Location) {
+    fn visit_substs(&mut self, substs: &mut SubstsRef<'tcx>, _: Location) {
         *substs = self.renumber_regions(*substs);
     }
 
-    fn visit_region(&mut self, region: &mut ty::Region<'tcx>, _location: Location) {
+    fn visit_region(&mut self, region: &mut ty::Region<'tcx>, _: Location) {
         let old_region = *region;
-        *region = self.renumber_regions(&old_region);
+        *region = self.renumber_regions(old_region);
     }
 
-    fn visit_const(&mut self, constant: &mut &'tcx ty::Const<'tcx>, _location: Location) {
-        *constant = self.renumber_regions(&*constant);
+    fn visit_const(&mut self, constant: &mut ty::Const<'tcx>, _location: Location) {
+        *constant = self.renumber_regions(*constant);
     }
 }

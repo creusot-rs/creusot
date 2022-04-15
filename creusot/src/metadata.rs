@@ -28,7 +28,7 @@ pub struct Metadata<'tcx> {
     extern_specs: ExternSpecs<'tcx>,
 }
 
-impl Metadata<'tcx> {
+impl<'tcx> Metadata<'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>) -> Self {
         Metadata { tcx, crates: Default::default(), extern_specs: Default::default() }
     }
@@ -97,7 +97,7 @@ pub struct CrateMetadata<'tcx> {
     // extern_specs: HashMap<DefId, PreContract>,
 }
 
-impl CrateMetadata<'tcx> {
+impl<'tcx> CrateMetadata<'tcx> {
     pub fn new() -> Self {
         Self {
             modules: Default::default(),
@@ -174,7 +174,7 @@ pub(crate) struct BinaryMetadata<'tcx> {
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
 }
 
-impl BinaryMetadata<'tcx> {
+impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
         tcx: TyCtxt<'tcx>,
         functions: &IndexMap<DefId, TranslatedItem<'tcx>>,
@@ -223,7 +223,7 @@ pub fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
     dump_binary_metadata(ctx.tcx, &out_filename, ctx.metadata()).unwrap();
 }
 
-fn dump_binary_metadata(
+fn dump_binary_metadata<'tcx>(
     tcx: TyCtxt<'tcx>,
     path: &Path,
     dep_info: BinaryMetadata<'tcx>,
@@ -238,7 +238,7 @@ fn dump_binary_metadata(
     Ok(())
 }
 
-fn load_binary_metadata(
+fn load_binary_metadata<'tcx>(
     tcx: TyCtxt<'tcx>,
     cstore: &CStore,
     cnum: CrateNum,
@@ -278,7 +278,7 @@ fn creusot_metadata_binary_path(mut path: PathBuf) -> PathBuf {
     path
 }
 
-fn external_crates(tcx: TyCtxt<'tcx>) -> Vec<CrateNum> {
+fn external_crates(tcx: TyCtxt<'_>) -> Vec<CrateNum> {
     let mut deps = Vec::new();
     for cr in tcx.crates(()) {
         if let Some(extern_crate) = tcx.extern_crate(cr.as_def_id()) {

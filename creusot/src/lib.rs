@@ -1,6 +1,6 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_syntax, box_patterns, control_flow_enum, drain_filter)]
-#![feature(in_band_lifetimes, let_else, let_chains)]
+#![feature(let_else, let_chains)]
 #![register_tool(creusot)]
 
 extern crate rustc_ast;

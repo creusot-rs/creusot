@@ -136,7 +136,7 @@ impl Into<CloneKind> for Kind {
     }
 }
 
-impl CloneInfo<'tcx> {
+impl<'tcx> CloneInfo<'tcx> {
     fn from_name(name: Symbol, public: bool) -> Self {
         CloneInfo { kind: Kind::Named(name), additional_deps: Vec::new(), cloned: false, public }
     }
@@ -647,7 +647,7 @@ impl SymbolKind {
 }
 
 // Identify the name and kind of symbol which can be refined in a given defid
-fn refineable_symbol(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKind> {
+fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKind> {
     use util::ItemType::*;
     match util::item_type(tcx, def_id) {
         Logic => Some(SymbolKind::Function(tcx.item_name(def_id))),

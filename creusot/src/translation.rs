@@ -42,7 +42,7 @@ pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
 
     tcx.hir().par_body_owners(|def_id| tcx.ensure().check_match(def_id.to_def_id()));
 
-    if tcx.sess.has_errors() {
+    if tcx.sess.has_errors().is_some() {
         return Err(Box::new(CrErr));
     }
 
@@ -59,7 +59,7 @@ pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
 
         tcx.ensure().check_match(def_id);
 
-        if tcx.sess.has_errors() {
+        if tcx.sess.has_errors().is_some() {
             return Err(Box::new(CrErr));
         }
 
@@ -78,7 +78,7 @@ pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    if tcx.sess.has_errors() {
+    if tcx.sess.has_errors().is_some() {
         return Err(Box::new(CrErr));
     }
 

@@ -15,7 +15,7 @@ use super::{
     ty::{closure_accessors, translate_closure_ty},
 };
 
-pub fn interface_for(
+pub fn interface_for<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
 ) -> (Module, CloneMap<'tcx>) {

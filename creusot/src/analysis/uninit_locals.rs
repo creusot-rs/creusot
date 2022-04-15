@@ -6,7 +6,7 @@ use rustc_mir_dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis};
 
 pub struct MaybeUninitializedLocals;
 
-impl AnalysisDomain<'tcx> for MaybeUninitializedLocals {
+impl<'tcx> AnalysisDomain<'tcx> for MaybeUninitializedLocals {
     type Domain = BitSet<Local>;
 
     const NAME: &'static str = "maybe_uninit_locals";
@@ -25,7 +25,7 @@ impl AnalysisDomain<'tcx> for MaybeUninitializedLocals {
     }
 }
 
-impl GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
+impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
     type Idx = Local;
 
     fn statement_effect(
@@ -74,7 +74,7 @@ struct TransferFunction<'a, T> {
     trans: &'a mut T,
 }
 
-impl<T> Visitor<'tcx> for TransferFunction<'a, T>
+impl<'a, 'tcx, T> Visitor<'tcx> for TransferFunction<'a, T>
 where
     T: GenKill<Local>,
 {

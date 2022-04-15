@@ -11,7 +11,7 @@ struct LawParams<'tcx> {
     law_violations: Vec<(LocalDefId, Span)>,
 }
 
-impl<'tcx, 'v> ItemLikeVisitor<'v> for LawParams<'tcx> {
+impl<'hir, 'tcx> ItemLikeVisitor<'hir> for LawParams<'tcx> {
     fn visit_item(&mut self, _: &'hir Item<'hir>) {}
     fn visit_trait_item(&mut self, trait_item: &'hir TraitItem<'hir>) {
         if is_law(self.tcx, trait_item.def_id.to_def_id()) && !trait_item.generics.params.is_empty()

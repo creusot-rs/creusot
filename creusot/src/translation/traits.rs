@@ -111,7 +111,7 @@ use crate::function::{all_generic_decls_for, own_generic_decls_for};
 use rustc_middle::ty::subst::InternalSubsts;
 use rustc_middle::ty::{AssocItem, Binder};
 
-fn resolve_impl_source_opt(
+fn resolve_impl_source_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
@@ -135,7 +135,7 @@ fn resolve_impl_source_opt(
 
     match source {
         Ok(src) => Some(src),
-        Err(mut err) => {
+        Err(err) => {
             err.cancel();
 
             return None;
@@ -143,7 +143,7 @@ fn resolve_impl_source_opt(
     }
 }
 
-pub fn resolve_opt(
+pub fn resolve_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
@@ -156,7 +156,7 @@ pub fn resolve_opt(
     }
 }
 
-pub fn resolve_trait_opt(
+pub fn resolve_trait_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
@@ -178,7 +178,7 @@ pub fn resolve_trait_opt(
 
 use rustc_middle::ty::AssocItemContainer;
 
-pub fn resolve_assoc_item_opt(
+pub fn resolve_assoc_item_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,

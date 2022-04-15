@@ -503,7 +503,7 @@ impl<'a> ExpMutVisitor for ClosureSubst {
         }
     }
 }
-pub fn closure_capture_subst(
+pub fn closure_capture_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,

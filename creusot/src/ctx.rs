@@ -37,7 +37,7 @@ pub struct TranslationCtx<'sess, 'tcx> {
     extern_spec_items: HashMap<LocalDefId, DefId>,
 }
 
-impl Deref for TranslationCtx<'_, 'tcx> {
+impl<'tcx> Deref for TranslationCtx<'_, 'tcx> {
     type Target = TyCtxt<'tcx>;
 
     fn deref(&self) -> &Self::Target {
@@ -166,7 +166,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         let (adt_did, variant_did) = match self.tcx.def_kind(parent) {
             DefKind::Variant => (self.tcx.parent(parent).unwrap(), parent),
             DefKind::Struct | DefKind::Enum | DefKind::Union => {
-                (parent, self.tcx.adt_def(parent).variants[0u32.into()].def_id)
+                (parent, self.tcx.adt_def(parent).variants()[0u32.into()].def_id)
             }
             _ => unreachable!(),
         };

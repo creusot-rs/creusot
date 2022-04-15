@@ -9,7 +9,7 @@ use rustc_span::{symbol::sym, Symbol};
 use why3::mlcfg::{BinOp, Constant, Exp, Purity, UnOp};
 use why3::QName;
 
-impl Lower<'_, '_, 'tcx> {
+impl<'tcx> Lower<'_, '_, 'tcx> {
     pub fn lookup_builtin(
         &mut self,
         method: (DefId, SubstsRef<'tcx>),

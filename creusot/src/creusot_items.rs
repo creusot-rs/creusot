@@ -28,7 +28,7 @@ struct CreusotItemCollector<'tcx> {
     creusot_items: CreusotItems,
 }
 
-impl rustc_hir::intravisit::Visitor<'tcx> for CreusotItemCollector<'tcx> {
+impl<'tcx> rustc_hir::intravisit::Visitor<'tcx> for CreusotItemCollector<'tcx> {
     type Map = Map<'tcx>;
     type NestedFilter = OnlyBodies;
 

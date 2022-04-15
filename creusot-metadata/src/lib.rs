@@ -1,5 +1,4 @@
 #![feature(rustc_private)]
-#![feature(in_band_lifetimes)]
 #![feature(min_specialization)]
 
 extern crate rustc_data_structures;

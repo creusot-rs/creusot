@@ -9,6 +9,7 @@
 
 use rustc_errors::DiagnosticBuilder;
 // use rustc_errors::ErrorReported;
+use rustc_errors::ErrorGuaranteed;
 use rustc_middle::ty::fold::TypeFoldable;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_trait_selection::infer::{InferCtxt, TyCtxtInferExt};
@@ -28,7 +29,7 @@ use rustc_trait_selection::traits::{
 pub fn codegen_fulfill_obligation<'tcx>(
     tcx: TyCtxt<'tcx>,
     (param_env, trait_ref): (ty::ParamEnv<'tcx>, ty::PolyTraitRef<'tcx>),
-) -> Result<ImplSource<'tcx, ()>, DiagnosticBuilder<'tcx>> {
+) -> Result<ImplSource<'tcx, ()>, DiagnosticBuilder<'tcx, ErrorGuaranteed>> {
     // Remove any references to regions; this helps improve caching.
     let trait_ref = tcx.erase_regions(trait_ref);
     // We expect the input to be fully normalized.
@@ -109,11 +110,11 @@ pub fn codegen_fulfill_obligation<'tcx>(
 /// type inference variables that appear in `result` to be
 /// unified, and hence we need to process those obligations to get
 /// the complete picture of the type.
-fn drain_fulfillment_cx_or_panic<T>(
+fn drain_fulfillment_cx_or_panic<'tcx, T>(
     infcx: &InferCtxt<'_, 'tcx>,
     fulfill_cx: &mut FulfillmentContext<'tcx>,
     result: T,
-) -> Result<T, DiagnosticBuilder<'tcx>>
+) -> Result<T, DiagnosticBuilder<'tcx, ErrorGuaranteed>>
 where
     T: TypeFoldable<'tcx>,
 {
