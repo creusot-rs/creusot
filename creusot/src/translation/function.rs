@@ -71,9 +71,9 @@ pub fn translate_function<'tcx, 'sess>(
     func_translator.translate()
 }
 
-pub fn translate_trusted(
+pub fn translate_trusted<'tcx>(
     tcx: TyCtxt<'tcx>,
-    ctx: &mut TranslationCtx<'sess, 'tcx>,
+    ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
 ) -> Module {
     let mut names = CloneMap::new(tcx, def_id, true);
@@ -453,7 +453,7 @@ impl LocalIdent {
     }
 }
 
-pub fn closure_contract(
+pub fn closure_contract<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
@@ -547,7 +547,7 @@ pub fn closure_contract(
     return contracts;
 }
 
-fn closure_resolve(
+fn closure_resolve<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
@@ -579,7 +579,7 @@ fn closure_resolve(
     Decl::PredDecl(Predicate { sig, body: resolve })
 }
 
-pub fn closure_unnest(
+pub fn closure_unnest<'tcx>(
     tcx: TyCtxt<'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
@@ -608,7 +608,7 @@ pub fn closure_unnest(
     unnest
 }
 
-fn resolve_predicate_of(
+fn resolve_predicate_of<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
@@ -690,7 +690,7 @@ fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
     })
 }
 
-pub fn real_locals(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> HashMap<Local, Local> {
+pub fn real_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> HashMap<Local, Local> {
     let mut spec_local = 0;
     body.local_decls
         .iter_enumerated()

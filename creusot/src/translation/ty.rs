@@ -62,28 +62,28 @@ fn translate_ty_inner<'tcx>(
                 return translate_ty_inner(trans, ctx, names, span, s[0].expect_ty());
             }
 
-            if Some(def.did) == ctx.tcx.get_diagnostic_item(Symbol::intern("creusot_int")) {
+            if Some(def.did()) == ctx.tcx.get_diagnostic_item(Symbol::intern("creusot_int")) {
                 names.import_prelude_module(PreludeModule::Int);
                 return MlT::Integer;
             }
 
             let cons = if let Some(builtin) =
-                get_builtin(ctx.tcx, def.did).and_then(|a| QName::from_string(&a.as_str()))
+                get_builtin(ctx.tcx, def.did()).and_then(|a| QName::from_string(&a.as_str()))
             {
                 names.import_builtin_module(builtin.clone().module_qname());
                 MlT::TConstructor(builtin.without_search_path())
             } else {
                 names.import_prelude_module(PreludeModule::Type);
-                MlT::TConstructor(translate_ty_name(ctx, def.did))
+                MlT::TConstructor(translate_ty_name(ctx, def.did()))
             };
 
             let args = s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
 
             MlT::TApp(box cons, args)
         }
-        Tuple(args) => {
+        Tuple(ref args) => {
             let tys =
-                args.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
+                (*args).iter().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
             MlT::Tuple(tys)
         }
         Param(p) => {
@@ -104,8 +104,8 @@ fn translate_ty_inner<'tcx>(
             use rustc_ast::Mutability::*;
             names.import_prelude_module(PreludeModule::Prelude);
             match borkind {
-                Mut => MlT::MutableBorrow(box translate_ty_inner(trans, ctx, names, span, ty)),
-                Not => translate_ty_inner(trans, ctx, names, span, ty),
+                Mut => MlT::MutableBorrow(box translate_ty_inner(trans, ctx, names, span, *ty)),
+                Not => translate_ty_inner(trans, ctx, names, span, *ty),
             }
         }
         Slice(ty) => {
@@ -114,12 +114,12 @@ fn translate_ty_inner<'tcx>(
             // names.import_prelude_module(PreludeModule:);
             MlT::TApp(
                 box MlT::TConstructor("seq".into()),
-                vec![translate_ty_inner(trans, ctx, names, span, ty)],
+                vec![translate_ty_inner(trans, ctx, names, span, *ty)],
             )
         }
         Array(ty, _) => MlT::TApp(
             box MlT::TConstructor("rust_array".into()),
-            vec![translate_ty_inner(trans, ctx, names, span, ty)],
+            vec![translate_ty_inner(trans, ctx, names, span, *ty)],
         ),
         Str => MlT::TConstructor("string".into()),
         // Slice()
@@ -144,7 +144,7 @@ fn translate_ty_inner<'tcx>(
     }
 }
 
-pub fn translate_projection_ty(
+pub fn translate_projection_ty<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     pty: &ProjectionTy<'tcx>,
@@ -171,10 +171,10 @@ pub fn check_not_mutally_recursive<'tcx>(
     // Construct graph of type dependencies
     while let Some(next) = to_visit.pop_front() {
         let def = ctx.tcx.adt_def(next);
-        let substs = InternalSubsts::identity_for_item(ctx.tcx, def.did);
+        let substs = InternalSubsts::identity_for_item(ctx.tcx, def.did());
 
         // TODO: Look up a more efficient way of getting this info
-        for variant in &def.variants {
+        for variant in def.variants() {
             for field in &variant.fields {
                 for ty in field.ty(ctx.tcx, substs).walk() {
                     let k = match ty.unpack() {
@@ -182,10 +182,10 @@ pub fn check_not_mutally_recursive<'tcx>(
                         _ => continue,
                     };
                     if let Adt(def, _) = k.kind() {
-                        if !graph.contains_node(def.did) {
-                            to_visit.push_back(def.did);
+                        if !graph.contains_node(def.did()) {
+                            to_visit.push_back(def.did());
                         }
-                        graph.add_edge(next, def.did, ());
+                        graph.add_edge(next, def.did(), ());
                     }
                 }
             }
@@ -252,7 +252,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
         let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
         let mut ml_ty_def = Vec::new();
 
-        for var_def in adt.variants.iter() {
+        for var_def in adt.variants().iter() {
             let field_tys: Vec<_> =
                 var_def.fields.iter().map(|f| field_ty(ctx, &mut names, f, substs)).collect();
             let var_name = item_name(ctx.tcx, var_def.def_id);
@@ -267,7 +267,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     ctx.add_type(did, ty_decl);
 }
 
-pub fn translate_closure_ty(
+pub fn translate_closure_ty<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     did: DefId,
@@ -298,7 +298,7 @@ pub fn translate_closure_ty(
     TyDecl { ty_name, ty_params: vec![], kind }
 }
 
-fn ty_param_names(tcx: TyCtxt<'tcx>, def_id: DefId) -> impl Iterator<Item = Ident> + 'tcx {
+fn ty_param_names(tcx: TyCtxt<'_>, def_id: DefId) -> impl Iterator<Item = Ident> + '_ {
     let gens = tcx.generics_of(def_id);
     gens.params
         .iter()
@@ -309,7 +309,7 @@ fn ty_param_names(tcx: TyCtxt<'tcx>, def_id: DefId) -> impl Iterator<Item = Iden
         .map(Ident::from)
 }
 
-fn field_ty(
+fn field_ty<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     field: &FieldDef,
@@ -411,7 +411,7 @@ pub fn build_accessor(
     decls
 }
 
-pub fn closure_accessors(
+pub fn closure_accessors<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     ty_id: DefId,
@@ -491,7 +491,7 @@ fn intty_to_ty(
 
 fn uintty_to_ty(
     ctx: &TranslationCtx<'_, '_>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut CloneMap<'_>,
     ity: &rustc_middle::ty::UintTy,
 ) -> MlT {
     use rustc_middle::ty::UintTy::*;

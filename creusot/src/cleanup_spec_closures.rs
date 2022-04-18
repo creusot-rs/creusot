@@ -58,7 +58,7 @@ pub struct NoTranslateNoMoves<'tcx> {
     pub unused: IndexSet<Local>,
 }
 
-impl MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
+impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
     fn tcx(&self) -> TyCtxt<'tcx> {
         self.tcx
     }

@@ -30,10 +30,14 @@ fn report_panic(info: &PanicInfo) {
 
     // Separate the output with an empty line
     eprintln!();
+    let fallback_bundle =
+        rustc_errors::fallback_fluent_bundle(rustc_errors::DEFAULT_LOCALE_RESOURCES, false);
 
     let emitter = box rustc_errors::emitter::EmitterWriter::stderr(
         rustc_errors::ColorConfig::Auto,
         None,
+        None,
+        fallback_bundle,
         false,
         false,
         None,

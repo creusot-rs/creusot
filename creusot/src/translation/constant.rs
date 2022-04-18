@@ -1,5 +1,8 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{Const, ConstKind, ParamEnv, Ty, Unevaluated};
+use rustc_middle::{
+    mir::ConstantKind,
+    ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
+};
 use rustc_span::Span;
 use why3::{
     declaration::Module,
@@ -14,7 +17,7 @@ use crate::{
     util::get_builtin,
 };
 
-impl TranslationCtx<'_, 'tcx> {
+impl<'tcx> TranslationCtx<'_, 'tcx> {
     pub fn translate_constant(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
         let names = CloneMap::new(self.tcx, def_id, false);
 
@@ -44,65 +47,87 @@ pub fn from_mir_constant_kind<'tcx>(
         return from_ty_const(ctx, names, c, ctx.param_env(_id), span);
     }
 
-    ctx.crash_and_error(span, "unsupported constant expression")
+    if ck.ty().is_unit() {
+        return Exp::Tuple(Vec::new());
+    }
+
+    let env = ctx.param_env(_id);
+
+    return try_to_bits(ctx, names, env, ck.ty(), span, ck);
 }
 
-fn from_ty_const(
+pub fn from_ty_const<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
-    c: &Const<'tcx>,
+    c: Const<'tcx>,
     env: ParamEnv<'tcx>,
-    // ty: Ty<'tcx>,
     span: Span,
 ) -> Exp {
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
-    if let ConstKind::Unevaluated(u) = c.val &&
+    if let ConstKind::Unevaluated(u) = c.val() &&
        let Some(builtin_nm) = get_builtin(ctx.tcx, u.def.did) &&
        let Some(nm) = QName::from_string(builtin_nm.as_str()) {
             return Exp::pure_qvar(nm.without_search_path());
     };
 
-    // Normalize the constant?
-    match c.val.eval(ctx.tcx, env) {
-        ConstKind::Value(v) => {
-            use rustc_middle::ty::TyKind::{Bool, Int, Uint};
-            use rustc_middle::ty::{IntTy::*, UintTy::*};
-            let why3_ty = ty::translate_ty(ctx, names, span, c.ty);
+    return try_to_bits(ctx, names, env, c.ty(), span, c);
+}
 
-            match c.ty.kind() {
-                Int(I128) => unimplemented!("128-bit integers are not supported"),
-                Int(_) => {
-                    let bits = c.try_eval_bits(ctx.tcx, env, c.ty);
-                    Exp::Const(Constant::Int(
-                        i128::from_be_bytes(bits.unwrap().to_be_bytes()),
-                        Some(why3_ty),
-                    ))
-                }
-                Uint(U128) => unimplemented!("128-bit integers are not supported"),
-                Uint(_) => {
-                    let bits = c.try_eval_bits(ctx.tcx, env, c.ty);
-                    Exp::Const(Constant::Uint(bits.unwrap(), Some(why3_ty)))
-                }
-                Bool => {
-                    if c.val.try_to_bool().unwrap() {
-                        Exp::mk_true()
-                    } else {
-                        Exp::mk_false()
-                    }
-                }
-                _ if c.ty.is_unit() => Exp::Tuple(Vec::new()),
-                _ => {
-                    ctx.crash_and_error(
+fn try_to_bits<'tcx, C: ToBits<'tcx>>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    env: ParamEnv<'tcx>,
+    ty: Ty<'tcx>,
+    span: Span,
+    c: C,
+) -> Exp {
+    use rustc_middle::ty::TyKind::{Bool, Int, Uint};
+    use rustc_middle::ty::{IntTy::*, UintTy::*};
+    let why3_ty = ty::translate_ty(ctx, names, span, ty);
+
+    match ty.kind() {
+        Int(I128) => unimplemented!("128-bit integers are not supported"),
+        Int(_) => {
+            let bits = c.get_bits(ctx.tcx, env, ty);
+            Exp::Const(Constant::Int(
+                i128::from_be_bytes(bits.unwrap().to_be_bytes()),
+                Some(why3_ty),
+            ))
+        }
+        Uint(U128) => unimplemented!("128-bit integers are not supported"),
+        Uint(_) => {
+            let bits = c.get_bits(ctx.tcx, env, ty);
+            Exp::Const(Constant::Uint(bits.unwrap(), Some(why3_ty)))
+        }
+        Bool => {
+            if c.get_bits(ctx.tcx, env, ty) == Some(1) {
+                Exp::mk_true()
+            } else {
+                Exp::mk_false()
+            }
+        }
+        _ if ty.is_unit() => Exp::Tuple(Vec::new()),
+        _ => {
+            ctx.crash_and_error(
                 span,
                 &format!("unsupported constant expression, try binding this to a variable. See issue #163"),
             );
-                }
-            }
         }
-        _ => ctx.crash_and_error(
-            span,
-            "unsupported constant expression, try binding this to a variable. See issue #163",
-        ),
+    }
+}
+
+trait ToBits<'tcx> {
+    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, ty: Ty<'tcx>) -> Option<u128>;
+}
+
+impl<'tcx> ToBits<'tcx> for Const<'tcx> {
+    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, ty: Ty<'tcx>) -> Option<u128> {
+        self.try_eval_bits(tcx, env, ty)
+    }
+}
+impl<'tcx> ToBits<'tcx> for ConstantKind<'tcx> {
+    fn get_bits(&self, tcx: TyCtxt<'tcx>, env: ParamEnv<'tcx>, ty: Ty<'tcx>) -> Option<u128> {
+        self.try_eval_bits(tcx, env, ty)
     }
 }

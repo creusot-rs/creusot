@@ -1,13 +1,15 @@
-use super::typing::{self, LogicalOp, Pattern, Term, TermKind};
+use super::typing::{self, Literal, LogicalOp, Pattern, Term, TermKind};
 use crate::translation::traits::resolve_assoc_item_opt;
+use crate::translation::ty::translate_ty;
 use crate::translation::ty::variant_accessor_name;
-use crate::translation::{constant, ty::translate_ty};
 use crate::util::constructor_qname;
 use crate::{ctx::*, util};
-use why3::mlcfg::{BinOp, Exp, Pattern as Pat, Purity};
+use rustc_middle::ty;
+use rustc_middle::ty::TyKind;
+use why3::mlcfg::{BinOp, Constant, Exp, Pattern as Pat, Purity};
 use why3::QName;
 
-pub fn lower_pure(
+pub fn lower_pure<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     term_id: DefId,
@@ -18,7 +20,7 @@ pub fn lower_pure(
     term
 }
 
-pub fn lower_impure(
+pub fn lower_impure<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     term_id: DefId,
@@ -36,17 +38,53 @@ pub(super) struct Lower<'a, 'sess, 'tcx> {
     pub(super) pure: Purity,
     pub(super) term_id: DefId,
 }
-
-impl Lower<'_, '_, 'tcx> {
+impl<'tcx> Lower<'_, '_, 'tcx> {
     pub fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
         match term.kind {
-            TermKind::Const(c) => constant::from_mir_constant_kind(
-                self.ctx,
-                self.names,
-                c.into(),
-                self.term_id,
-                rustc_span::DUMMY_SP,
-            ),
+            TermKind::Lit(l) => {
+                let c = match l {
+                    Literal::Int(u, _) => {
+                        let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, term.ty);
+
+                        match term.ty.kind() {
+                            TyKind::Int(_) => Constant::Int(u as i128, Some(ty)),
+                            TyKind::Uint(_) => Constant::Uint(u, Some(ty)),
+                            _ => unreachable!(),
+                        }
+                    }
+                    Literal::Bool(b) => {
+                        if b {
+                            Constant::const_true()
+                        } else {
+                            Constant::const_false()
+                        }
+                    }
+                };
+                Exp::Const(c)
+            }
+            TermKind::Item(id, subst) => {
+                let param_env = self.ctx.tcx.param_env(self.term_id);
+
+                let method = resolve_assoc_item_opt(self.ctx.tcx, param_env, id, subst)
+                    .unwrap_or((id, subst));
+                debug!("resolved_method={:?}", method);
+                self.lookup_builtin(method, &mut Vec::new()).unwrap_or_else(|| {
+                    let uneval = ty::Unevaluated::new(ty::WithOptConstParam::unknown(id), subst);
+
+                    let constant = self.ctx.tcx.mk_const(ty::ConstS {
+                        val: ty::ConstKind::Unevaluated(uneval),
+                        ty: term.ty,
+                    });
+
+                    crate::constant::from_ty_const(
+                        self.ctx,
+                        self.names,
+                        constant,
+                        param_env,
+                        rustc_span::DUMMY_SP,
+                    )
+                })
+            }
             TermKind::Var(v) => Exp::pure_var(util::ident_of(v)),
             TermKind::Binary { op, operand_ty, box lhs, box rhs } => {
                 translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, operand_ty);
@@ -79,7 +117,12 @@ impl Lower<'_, '_, 'tcx> {
                 };
                 Exp::UnaryOp(op, box self.lower_term(arg))
             }
-            TermKind::Call { id, subst, fun: box Term { kind: TermKind::Const(_), .. }, args } => {
+            TermKind::Call {
+                id,
+                subst,
+                fun: box Term { kind: TermKind::Item(_, _), .. },
+                args,
+            } => {
                 let mut args: Vec<_> = args.into_iter().map(|arg| self.lower_term(arg)).collect();
 
                 if args.is_empty() {
@@ -121,8 +164,8 @@ impl Lower<'_, '_, 'tcx> {
                 self.names.import_prelude_module(PreludeModule::Type);
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
-                let ctor = constructor_qname(self.ctx.tcx, &adt.variants[variant]);
-                crate::ty::translate_tydecl(self.ctx, self.ctx.def_span(adt.did), adt.did);
+                let ctor = constructor_qname(self.ctx.tcx, &adt.variants()[variant]);
+                crate::ty::translate_tydecl(self.ctx, self.ctx.def_span(adt.did()), adt.did());
                 Exp::Constructor { ctor, args }
             }
             TermKind::Cur { box term } => Exp::Current(box self.lower_term(term)),
@@ -204,11 +247,12 @@ impl Lower<'_, '_, 'tcx> {
             TermKind::Projection { box lhs, name, def: did } => {
                 let def = self.ctx.tcx.adt_def(did);
                 let lhs = self.lower_term(lhs);
-                self.ctx.translate_accessor(def.variants[0u32.into()].fields[name.as_usize()].did);
+                self.ctx
+                    .translate_accessor(def.variants()[0u32.into()].fields[name.as_usize()].did);
                 let accessor = variant_accessor_name(
                     self.ctx.tcx,
                     did,
-                    &def.variants[0u32.into()],
+                    &def.variants()[0u32.into()],
                     name.as_usize(),
                 );
                 Exp::Call(
@@ -226,7 +270,7 @@ impl Lower<'_, '_, 'tcx> {
     fn lower_pat(&mut self, pat: Pattern<'tcx>) -> Pat {
         match pat {
             Pattern::Constructor { adt, variant, fields } => {
-                let variant = &adt.variants[variant];
+                let variant = &adt.variants()[variant];
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
                 Pat::ConsP(constructor_qname(self.ctx.tcx, variant), fields)
             }

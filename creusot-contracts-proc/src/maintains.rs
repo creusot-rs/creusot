@@ -2,14 +2,12 @@
 
 use pearlite_syn::*;
 use proc_macro::TokenStream as TS1;
-use proc_macro2::Span;
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens, TokenStreamExt};
-use std::iter;
+use quote::quote;
 use syn::{
     parse::{Parse, Result},
-    punctuated::{Pair, Punctuated},
-    token::{Brace, Comma, Paren},
+    punctuated::Punctuated,
+    token::Comma,
     *,
 };
 

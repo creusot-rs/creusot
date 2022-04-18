@@ -5,7 +5,7 @@ use crate::{ctx::*, util};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::thir::{self, ExprKind, Thir};
 use why3::declaration::Contract;
-use why3::mlcfg::{Exp, Purity};
+use why3::mlcfg::Exp;
 use why3::Ident;
 
 use self::typing::pearlite_stub;
@@ -86,7 +86,11 @@ impl PreContract {
 }
 
 // Turn a typing context into a substition.
-pub fn inv_subst(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, loc: Location) -> HashMap<why3::Ident, Exp> {
+pub fn inv_subst<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &Body<'tcx>,
+    loc: Location,
+) -> HashMap<why3::Ident, Exp> {
     use rustc_middle::mir::VarDebugInfoContents::Place;
     let local_map = real_locals(tcx, body);
     let mut scope = body.source_info(loc).scope;
@@ -120,7 +124,8 @@ pub fn inv_subst(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, loc: Location) -> HashMap
 
 #[derive(Debug)]
 pub enum SpecAttrError {
-    InvalidTokens,
+    InvalidTokens { id: DefId },
+    InvalidTerm { id: DefId },
 }
 
 pub fn contract_of(ctx: &mut TranslationCtx, def_id: DefId) -> Result<PreContract, SpecAttrError> {
@@ -144,18 +149,21 @@ pub fn contract_of(ctx: &mut TranslationCtx, def_id: DefId) -> Result<PreContrac
         // Use a custom HIR visitor which walks the attributes
         match attr.path.segments[2].ident.to_string().as_str() {
             "requires" => {
-                let req_name = util::ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?;
-                let req_id = ctx.creusot_item(req_name).ok_or(InvalidTokens)?;
+                let req_name = util::ts_to_symbol(attr.args.inner_tokens())
+                    .ok_or(InvalidTokens { id: def_id })?;
+                let req_id = ctx.creusot_item(req_name).ok_or(InvalidTerm { id: def_id })?;
                 contract.requires.push(req_id);
             }
             "ensures" => {
-                let ens_name = util::ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?;
-                let ens_id = ctx.creusot_item(ens_name).ok_or(InvalidTokens)?;
+                let ens_name = util::ts_to_symbol(attr.args.inner_tokens())
+                    .ok_or(InvalidTokens { id: def_id })?;
+                let ens_id = ctx.creusot_item(ens_name).ok_or(InvalidTerm { id: def_id })?;
                 contract.ensures.push(ens_id);
             }
             "variant" => {
-                let var_name = util::ts_to_symbol(attr.args.inner_tokens()).ok_or(InvalidTokens)?;
-                let var_id = ctx.creusot_item(var_name).ok_or(InvalidTokens)?;
+                let var_name = util::ts_to_symbol(attr.args.inner_tokens())
+                    .ok_or(InvalidTokens { id: def_id })?;
+                let var_id = ctx.creusot_item(var_name).ok_or(InvalidTerm { id: def_id })?;
                 contract.variant = Some(var_id);
             }
             _ => {}
@@ -187,7 +195,7 @@ impl PurityVisitor<'_, '_> {
     }
 }
 
-impl thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
+impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
     fn thir(&self) -> &'a thir::Thir<'tcx> {
         self.thir
     }

@@ -34,7 +34,7 @@ pub struct MetadataDecoder<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
 }
 
-impl MetadataDecoder<'a, 'tcx> {
+impl<'a, 'tcx> MetadataDecoder<'a, 'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, cnum: CrateNum, blob: &'a MetadataBlob) -> Self {
         MetadataDecoder { opaque: opaque::Decoder::new(&blob.0, 0), cnum, tcx }
     }

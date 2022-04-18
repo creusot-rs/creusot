@@ -61,7 +61,7 @@ pub enum DefaultOrExtern<'tcx> {
     Extern { modl: Module, def_id: DefId },
 }
 
-impl TranslatedItem<'tcx> {
+impl<'a, 'tcx> TranslatedItem<'tcx> {
     pub fn dependencies(&'a self, metadata: &'a Metadata<'tcx>) -> &'a CloneSummary<'tcx> {
         use TranslatedItem::*;
         match self {

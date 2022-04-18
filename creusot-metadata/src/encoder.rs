@@ -16,7 +16,7 @@ pub struct MetadataEncoder<'tcx> {
     interpret_allocs: FxIndexSet<AllocId>,
 }
 
-impl MetadataEncoder<'tcx> {
+impl<'tcx> MetadataEncoder<'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>) -> Self {
         MetadataEncoder {
             tcx,
@@ -39,7 +39,7 @@ macro_rules! encoder_methods {
         })*
     }
 }
-impl Encoder for MetadataEncoder<'tcx> {
+impl<'tcx> Encoder for MetadataEncoder<'tcx> {
     type Error = <opaque::Encoder as Encoder>::Error;
 
     #[inline]
@@ -89,7 +89,7 @@ impl<'tcx> Encodable<MetadataEncoder<'tcx>> for CrateNum {
     }
 }
 
-impl TyEncoder<'tcx> for MetadataEncoder<'tcx> {
+impl<'tcx> TyEncoder<'tcx> for MetadataEncoder<'tcx> {
     // What the fuck does this mean?
     const CLEAR_CROSS_CRATE: bool = true;
 

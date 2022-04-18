@@ -1,9 +1,10 @@
 use crate::error::{CreusotResult, Error};
 use crate::util;
 use log::*;
+use rustc_ast::{LitIntType, LitKind};
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_hir::HirId;
-use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable};
+use rustc_macros::{Decodable, Encodable, TyDecodable, TyEncodable, TypeFoldable};
 pub use rustc_middle::mir::Field;
 pub use rustc_middle::thir;
 use rustc_middle::thir::{
@@ -12,7 +13,7 @@ use rustc_middle::thir::{
 use rustc_middle::ty::{AdtDef, Ty, TyKind, UpvarSubsts};
 use rustc_middle::{
     mir::{BorrowKind, Mutability::*},
-    ty::{subst::SubstsRef, Const, TyCtxt, WithOptConstParam},
+    ty::{subst::SubstsRef, TyCtxt, WithOptConstParam},
 };
 use rustc_span::Symbol;
 use rustc_target::abi::VariantIdx;
@@ -55,14 +56,15 @@ pub struct Term<'tcx> {
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
 pub enum TermKind<'tcx> {
     Var(Symbol),
-    Const(&'tcx Const<'tcx>),
+    Lit(Literal),
+    Item(DefId, SubstsRef<'tcx>),
     Binary { op: BinOp, operand_ty: Ty<'tcx>, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Logical { op: LogicalOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Unary { op: UnOp, arg: Box<Term<'tcx>> },
     Forall { binder: (String, Ty<'tcx>), body: Box<Term<'tcx>> },
     Exists { binder: (String, Ty<'tcx>), body: Box<Term<'tcx>> },
     Call { id: DefId, subst: SubstsRef<'tcx>, fun: Box<Term<'tcx>>, args: Vec<Term<'tcx>> },
-    Constructor { adt: &'tcx AdtDef, variant: VariantIdx, fields: Vec<Term<'tcx>> },
+    Constructor { adt: AdtDef<'tcx>, variant: VariantIdx, fields: Vec<Term<'tcx>> },
     Tuple { fields: Vec<Term<'tcx>> },
     Cur { term: Box<Term<'tcx>> },
     Fin { term: Box<Term<'tcx>> },
@@ -75,9 +77,32 @@ pub enum TermKind<'tcx> {
     Absurd,
 }
 
+use rustc_middle::ty::fold::TypeFoldable;
+impl<'tcx> TypeFoldable<'tcx> for Literal {
+    fn try_super_fold_with<F: rustc_middle::ty::FallibleTypeFolder<'tcx>>(
+        self,
+        _: &mut F,
+    ) -> Result<Self, F::Error> {
+        Ok(self)
+    }
+
+    fn super_visit_with<V: rustc_middle::ty::TypeVisitor<'tcx>>(
+        &self,
+        _: &mut V,
+    ) -> std::ops::ControlFlow<V::BreakTy> {
+        ::std::ops::ControlFlow::CONTINUE
+    }
+}
+
+#[derive(Clone, Debug, Decodable, Encodable)]
+pub enum Literal {
+    Bool(bool),
+    Int(u128, LitIntType),
+}
+
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
 pub enum Pattern<'tcx> {
-    Constructor { adt: &'tcx AdtDef, variant: VariantIdx, fields: Vec<Pattern<'tcx>> },
+    Constructor { adt: AdtDef<'tcx>, variant: VariantIdx, fields: Vec<Pattern<'tcx>> },
     Tuple(Vec<Pattern<'tcx>>),
     Wildcard,
     Binder(String),
@@ -85,7 +110,7 @@ pub enum Pattern<'tcx> {
 }
 
 pub fn typecheck(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
-    let (thir, expr) = tcx.thir_body(WithOptConstParam::unknown(id));
+    let (thir, expr) = tcx.thir_body(WithOptConstParam::unknown(id)).unwrap();
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
         return Err(Error::new(tcx.def_span(id), "type checking failed"));
@@ -104,11 +129,11 @@ struct ThirTerm<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
 }
 
-impl ThirTerm<'a, 'tcx> {
+impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn expr_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
         let ty = self.thir[expr].ty;
-        // eprintln!("{:?}", &thir[expr].kind);
-        match self.thir[expr].kind {
+        let thir_term = &self.thir[expr];
+        match thir_term.kind {
             ExprKind::Scope { value, .. } => self.expr_term(value),
             ExprKind::Block { body: Block { ref stmts, expr, .. } } => {
                 let mut inner = match expr {
@@ -189,7 +214,14 @@ impl ThirTerm<'a, 'tcx> {
 
                 Ok(Term { ty, kind: TermKind::Var(name) })
             }
-            ExprKind::Literal { literal, .. } => Ok(Term { ty, kind: TermKind::Const(literal) }),
+            ExprKind::Literal { lit, .. } => {
+                let lit = match lit.node {
+                    LitKind::Bool(b) => Literal::Bool(b),
+                    LitKind::Int(u, s) => Literal::Int(u, s),
+                    _ => unimplemented!("Unsupported literal"),
+                };
+                Ok(Term { ty, kind: TermKind::Lit(lit) })
+            }
             ExprKind::Call { ty: f_ty, fun, ref args, .. } => {
                 use Stub::*;
                 match pearlite_stub(self.tcx, f_ty) {
@@ -306,7 +338,7 @@ impl ThirTerm<'a, 'tcx> {
                         let lhs = self.expr_term(lhs)?;
                         Ok(Term {
                             ty,
-                            kind: TermKind::Projection { lhs: box lhs, name, def: def.did },
+                            kind: TermKind::Projection { lhs: box lhs, name, def: def.did() },
                         })
                     }
                     TyKind::Tuple(_) => {
@@ -337,6 +369,13 @@ impl ThirTerm<'a, 'tcx> {
             ExprKind::ValueTypeAscription { source, .. } => self.expr_term(source),
             ExprKind::Box { value } => self.expr_term(value),
             // ExprKind::Array { ref fields } => todo!("Array {:?}", fields),
+            ExprKind::NonHirLiteral { .. } => match ty.kind() {
+                TyKind::FnDef(id, substs) => Ok(Term { ty, kind: TermKind::Item(*id, substs) }),
+                _ => Err(Error::new(thir_term.span, "unhandled literal expression")),
+            },
+            ExprKind::NamedConst { def_id, substs, .. } => {
+                Ok(Term { ty, kind: TermKind::Item(def_id, substs) })
+            }
             ref ek => todo!("lower_expr: {:?}", ek),
         }
     }
@@ -365,7 +404,7 @@ impl ThirTerm<'a, 'tcx> {
                     .map(|pat| self.pattern_term(&pat.pattern))
                     .collect::<Result<_, _>>()?;
 
-                Ok(Pattern::Constructor { adt: adt_def, variant: *variant_index, fields })
+                Ok(Pattern::Constructor { adt: *adt_def, variant: *variant_index, fields })
             }
             PatKind::Leaf { subpatterns } => {
                 let fields: Vec<_> = subpatterns
@@ -394,7 +433,7 @@ impl ThirTerm<'a, 'tcx> {
                         "non-boolean constant patterns are unsupported",
                     ));
                 }
-                Ok(Pattern::Boolean(value.val.try_to_bool().unwrap()))
+                Ok(Pattern::Boolean(value.val().try_to_bool().unwrap()))
             }
             ref pk => todo!("lower_pattern: unsupported pattern kind {:?}", pk),
         }
@@ -512,21 +551,21 @@ fn field_pattern(ty: Ty, field: Field) -> Option<Pattern> {
 
             Some(Pattern::Tuple(fields))
         }
-        TyKind::Adt(adt, _) => {
+        TyKind::Adt(ref adt, _) => {
             assert!(adt.is_struct(), "can only access fields of struct types");
-            assert_eq!(adt.variants.len(), 1, "expected a single variant");
-            let variant = &adt.variants[0u32.into()];
+            assert_eq!(adt.variants().len(), 1, "expected a single variant");
+            let variant = &adt.variants()[0u32.into()];
 
             let mut fields: Vec<_> = (0..variant.fields.len()).map(|_| Pattern::Wildcard).collect();
             fields[field.as_usize()] = Pattern::Binder("a".into());
 
-            Some(Pattern::Constructor { adt, variant: 0usize.into(), fields })
+            Some(Pattern::Constructor { adt: *adt, variant: 0usize.into(), fields })
         }
         _ => unreachable!("field_pattern: {:?}", ty),
     }
 }
 
-fn not_spec(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, id: StmtId) -> bool {
+fn not_spec(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: StmtId) -> bool {
     match thir[id].kind {
         StmtKind::Expr { expr, .. } => not_spec_expr(tcx, thir, expr),
         StmtKind::Let { initializer, .. } => {
@@ -539,7 +578,7 @@ fn not_spec(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, id: StmtId) -> bool {
     }
 }
 
-fn not_spec_expr(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, id: ExprId) -> bool {
+fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
     match thir[id].kind {
         ExprKind::Scope { value, .. } => not_spec_expr(tcx, thir, value),
         ExprKind::Closure { closure_id, .. } => !util::is_spec(tcx, closure_id),

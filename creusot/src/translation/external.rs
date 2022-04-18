@@ -15,7 +15,7 @@ use why3::declaration::{Decl, Module, ValKind::Val};
 
 use super::specification::PreContract;
 
-pub fn default_decl(
+pub fn default_decl<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
@@ -48,7 +48,7 @@ pub fn default_decl(
     (Module { name, decls }, names.summary())
 }
 
-pub fn extern_module(
+pub fn extern_module<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
 ) -> (
@@ -86,7 +86,7 @@ pub(crate) struct ExternSpec<'tcx> {
     additional_predicates: Vec<Predicate<'tcx>>,
 }
 
-impl ExternSpec<'tcx> {
+impl<'tcx> ExternSpec<'tcx> {
     pub(crate) fn predicates_for(
         &self,
         tcx: TyCtxt<'tcx>,
@@ -97,11 +97,11 @@ impl ExternSpec<'tcx> {
 }
 
 // Must be run before MIR generation.
-pub(crate) fn extract_extern_specs_from_item(
+pub(crate) fn extract_extern_specs_from_item<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: LocalDefId,
 ) -> (DefId, ExternSpec<'tcx>) {
-    let (thir, expr) = ctx.tcx.thir_body(WithOptConstParam::unknown(def_id));
+    let (thir, expr) = ctx.tcx.thir_body(WithOptConstParam::unknown(def_id)).unwrap();
     let thir = thir.borrow();
 
     let mut visit = ExtractExternItems::new(&thir);
@@ -145,13 +145,13 @@ struct ExtractExternItems<'a, 'tcx> {
     pub items: IndexSet<(DefId, SubstsRef<'tcx>)>,
 }
 
-impl ExtractExternItems<'a, 'tcx> {
+impl<'a, 'tcx> ExtractExternItems<'a, 'tcx> {
     pub fn new(thir: &'a Thir<'tcx>) -> Self {
         ExtractExternItems { thir, items: IndexSet::new() }
     }
 }
 
-impl thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
+impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItems<'a, 'tcx> {
     fn thir(&self) -> &'a Thir<'tcx> {
         self.thir
     }

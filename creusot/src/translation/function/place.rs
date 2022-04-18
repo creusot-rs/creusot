@@ -45,12 +45,13 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 Field(ix, _) => match place_ty.ty.kind() {
                     TyKind::Adt(def, _) => {
                         let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
-                        let variant = &def.variants[variant_id];
+                        let variant = &def.variants()[variant_id];
 
-                        self.ctx
-                            .translate_accessor(def.variants[variant_id].fields[ix.as_usize()].did);
+                        self.ctx.translate_accessor(
+                            def.variants()[variant_id].fields[ix.as_usize()].did,
+                        );
                         let accessor_name =
-                            variant_accessor_name(self.tcx, def.did, variant, ix.as_usize());
+                            variant_accessor_name(self.tcx, def.did(), variant, ix.as_usize());
                         inner = Call(
                             box Exp::impure_qvar(QName {
                                 module: vec!["Type".into()],
@@ -144,7 +145,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 Field(ix, _) => match place_ty.ty.kind() {
                     TyKind::Adt(def, _) => {
                         let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
-                        let variant = &def.variants[variant_id];
+                        let variant = &def.variants()[variant_id];
                         let var_size = variant.fields.len();
 
                         let field_pats =

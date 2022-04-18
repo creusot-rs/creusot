@@ -192,7 +192,7 @@ fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, SubstsRef<'tcx>)> {
     }
 }
 
-fn evaluate_additional_predicates(
+fn evaluate_additional_predicates<'tcx>(
     infcx: &InferCtxt<'_, 'tcx>,
     p: Vec<Predicate<'tcx>>,
     param_env: ParamEnv<'tcx>,
@@ -256,7 +256,7 @@ pub fn make_switch<'tcx>(
                 .iter()
                 .map(|(disc, tgt)| (variant_pattern(tcx, def, d_to_var[&disc]), mk_goto(tgt)))
                 .chain(std::iter::once((Wildcard, mk_goto(targets.otherwise()))))
-                .take(def.variants.len())
+                .take(def.variants().len())
                 .collect();
 
             MlT::Switch(discr, branches)
@@ -321,7 +321,7 @@ where
 }
 
 pub fn variant_pattern(tcx: TyCtxt<'_>, def: &AdtDef, vid: VariantIdx) -> Pattern {
-    let variant = &def.variants[vid];
+    let variant = &def.variants()[vid];
     let wilds = variant.fields.iter().map(|_| Pattern::Wildcard).collect();
     let cons_name = constructor_qname(tcx, variant);
 

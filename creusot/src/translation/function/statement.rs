@@ -43,6 +43,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 statement.source_info.span,
                 "copy non overlapping is not supported",
             ),
+            Deinit(_) => unreachable!("Deinit unsupported")
             // No assembly!
             // LlvmInlineAsm(_) => self
             //     .ctx
@@ -142,7 +143,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     Tuple => Exp::Tuple(fields),
                     Adt(adt, varix, _, _, _) => {
                         let adt = self.tcx.adt_def(*adt);
-                        let variant_def = &adt.variants[*varix];
+                        let variant_def = &adt.variants()[*varix];
                         let qname = constructor_qname(self.tcx, variant_def);
 
                         Constructor { ctor: qname, args: fields }

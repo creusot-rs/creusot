@@ -9,7 +9,7 @@ use why3::declaration::*;
 use why3::mlcfg::{BinOp, Exp};
 use why3::Ident;
 
-pub fn translate_logic_or_predicate(
+pub fn translate_logic_or_predicate<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
     _span: rustc_span::Span,
@@ -127,7 +127,7 @@ fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
     Axiom { name: "def".into(), axiom }
 }
 
-fn implementation_module(
+fn implementation_module<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
     names: &CloneMap<'tcx>,
