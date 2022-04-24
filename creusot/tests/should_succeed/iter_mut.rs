@@ -13,7 +13,7 @@ impl<T> Model for Vec<T> {
     #[logic]
     #[trusted]
     fn model(self) -> Self::ModelTy {
-        std::process::abort()
+        absurd
     }
 }
 
@@ -42,7 +42,7 @@ impl<'a, T> Model for IterMut<'a, T> {
     #[trusted]
     #[logic]
     fn model(self) -> Self::ModelTy {
-        std::process::abort()
+        absurd
     }
 }
 

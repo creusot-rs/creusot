@@ -13,7 +13,7 @@ use crate::util;
 
 pub fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut Body<'tcx>) {
     trace!("cleanup_spec_closures: {:?}", def_id);
-    if no_mir(tcx, def_id) {
+    if util::no_mir(tcx, def_id) {
         trace!("replacing function body");
         *body.basic_blocks_mut() = make_loop(tcx);
         body.var_debug_info = Vec::new();
@@ -125,10 +125,4 @@ impl<'tcx> MutVisitor<'tcx> for LocalUpdater<'tcx> {
     fn visit_local(&mut self, l: &mut Local, _: PlaceContext, _: Location) {
         *l = self.map[*l].unwrap();
     }
-}
-
-fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
-    crate::util::is_no_translate(tcx, def_id)
-        || crate::util::is_logic(tcx, def_id)
-        || crate::util::is_predicate(tcx, def_id)
 }

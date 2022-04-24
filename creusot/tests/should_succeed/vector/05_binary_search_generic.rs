@@ -1,5 +1,4 @@
 // WHY3PROVE CVC4
-#![feature(unsized_fn_params)]
 extern crate creusot_contracts;
 use creusot_contracts::std::*;
 use creusot_contracts::*;

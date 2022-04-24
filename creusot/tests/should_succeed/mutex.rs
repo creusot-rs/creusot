@@ -1,4 +1,3 @@
-#![feature(unsized_fn_params)]
 extern crate creusot_contracts;
 
 use creusot_contracts::*;

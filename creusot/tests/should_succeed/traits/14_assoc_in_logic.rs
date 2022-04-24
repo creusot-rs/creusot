@@ -9,13 +9,13 @@ trait Assoc {
 #[logic]
 #[trusted]
 fn from_ty<T: Assoc>(x: T::Ty) -> T {
-    std::process::abort()
+    absurd
 }
 
 #[logic]
 #[trusted]
 fn to_ty<T: Assoc>(x: T) -> T::Ty {
-    std::process::abort()
+    absurd
 }
 
 #[trusted]

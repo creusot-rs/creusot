@@ -1,5 +1,5 @@
 use crate::{
-    gather_spec_closures::GatherSpecClosures,
+    gather_spec_closures::corrected_invariant_names_and_locations,
     rustc_extensions::renumber,
     translation::{
         specification::contract_of,
@@ -49,14 +49,10 @@ pub fn translate_function<'tcx, 'sess>(
     assert!(def_id.is_local(), "translate_function: expected local DefId");
 
     if util::is_trusted(tcx, def_id) || !util::has_body(ctx, def_id) {
-        if util::has_body(ctx, def_id) {
-            tcx.ensure().mir_borrowck(def_id.expect_local());
-        }
         return translate_trusted(tcx, ctx, def_id);
     }
 
-    let gather = GatherSpecClosures::gather(ctx, &mut names, def_id);
-    tcx.ensure().mir_borrowck(def_id.expect_local());
+    // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
     let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
@@ -64,7 +60,7 @@ pub fn translate_function<'tcx, 'sess>(
     RemoveFalseEdges.run_pass(tcx, &mut body);
     SimplifyCfg::new("verify").run_pass(tcx, &mut body);
 
-    let (invariants, assertions) = gather.with_corrected_locations_and_names(tcx, &body);
+    let (invariants, assertions) = corrected_invariant_names_and_locations(ctx, &mut names, &body);
     let func_translator =
         FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, assertions, def_id);
 

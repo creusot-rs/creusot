@@ -16,7 +16,7 @@ impl Model for T {
         forall<i:Int>
             result.get(i) === (if 0 <= i && i < @(self.a) { 1 } else { 0 }))]
     fn model(self) -> Self::ModelTy {
-        std::process::abort()
+        absurd
     }
 }
 

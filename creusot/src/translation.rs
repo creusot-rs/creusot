@@ -12,16 +12,14 @@ use crate::ctx::load_extern_specs;
 use crate::ctx::TypeDeclaration;
 use crate::error::CrErr;
 use crate::metadata;
-use crate::options::Options;
 use crate::options::OutputFile;
-use crate::translation::external::extract_extern_specs_from_item;
 use crate::validate::validate_traits;
+use ctx::TranslationCtx;
 pub use function::translate_function;
 pub use function::LocalIdent;
 use heck::CamelCase;
 pub use logic::*;
 use rustc_hir::def_id::LOCAL_CRATE;
-use rustc_middle::ty::TyCtxt;
 use std::error::Error;
 use std::io::Write;
 use why3::mlcfg;
@@ -30,38 +28,34 @@ use why3::{
     Print, QName,
 };
 
-// TODO: Move the main loop out of `translation.rs`
-pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
-    let mut ctx = ctx::TranslationCtx::new(tcx, &opts);
-
-    // Check that all trait laws are well-formed
-    validate_traits(&mut ctx);
-
+pub fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     ctx.load_metadata();
-    rustc_typeck::check_crate(tcx).map_err(|_| CrErr)?;
-
-    tcx.hir().par_body_owners(|def_id| tcx.ensure().check_match(def_id.to_def_id()));
-
-    if tcx.sess.has_errors().is_some() {
-        return Err(Box::new(CrErr));
-    }
-
-    for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
-        ctx.translate_trait(*tr);
-    }
-    load_extern_specs(&mut ctx);
+    load_extern_specs(ctx);
 
     for def_id in ctx.tcx.hir().body_owners() {
         let def_id = def_id.to_def_id();
-        if crate::util::is_extern_spec(ctx.tcx, def_id) {
-            extract_extern_specs_from_item(&mut ctx, def_id.expect_local());
+        if crate::util::is_spec(ctx.tcx, def_id)
+            || crate::util::is_logic(ctx.tcx, def_id)
+            || crate::util::is_predicate(ctx.tcx, def_id)
+        {
+            let _ = ctx.term(def_id);
         }
+    }
 
-        tcx.ensure().check_match(def_id);
+    // Check that all trait laws are well-formed
+    validate_traits(ctx);
 
-        if tcx.sess.has_errors().is_some() {
-            return Err(Box::new(CrErr));
-        }
+    Ok(())
+}
+
+// TODO: Move the main loop out of `translation.rs`
+pub fn after_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
+    for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
+        ctx.translate_trait(*tr);
+    }
+
+    for def_id in ctx.tcx.hir().body_owners() {
+        let def_id = def_id.to_def_id();
 
         if !crate::util::should_translate(ctx.tcx, def_id) {
             info!("Skipping {:?}", def_id);
@@ -78,7 +72,7 @@ pub fn translate(tcx: TyCtxt, opts: &Options) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    if tcx.sess.has_errors().is_some() {
+    if ctx.tcx.sess.has_errors().is_some() {
         return Err(Box::new(CrErr));
     }
 

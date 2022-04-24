@@ -8,7 +8,7 @@ impl<T> Model for Vec<T> {
     #[logic]
     #[trusted]
     fn model(self) -> Self::ModelTy {
-        std::process::abort()
+        absurd
     }
 }
 

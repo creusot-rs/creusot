@@ -1,6 +1,6 @@
-use creusot_contracts_proc::*;
-
+use crate as creusot_contracts;
 use crate::logic::*;
+use creusot_contracts_proc::*;
 
 #[creusot::builtins = "map.Map.map"]
 pub struct Mapping<A, B>(std::marker::PhantomData<(A, B)>);
@@ -10,21 +10,21 @@ impl<A, B> Mapping<A, B> {
     #[logic]
     #[creusot::builtins = "map.Map.get"]
     pub fn get(self, _: A) -> B {
-        std::process::abort()
+        absurd
     }
 
     #[trusted]
     #[logic]
     #[creusot::builtins = "map.Map.set"]
     pub fn set(self, _: A, _: B) -> Self {
-        std::process::abort()
+        absurd
     }
 
     #[trusted]
     #[logic]
     #[creusot::builtins = "map.Const.const"]
     pub fn cst(_: B) -> Self {
-        std::process::abort()
+        absurd
     }
 }
 
@@ -33,19 +33,19 @@ impl<A, B> EqLogic for Mapping<A, B> {
     #[logic]
     #[creusot::builtins = "map.MapExt.(==)"]
     fn log_eq(self, _: Self) -> bool {
-        std::process::abort()
+        absurd
     }
 
     #[trusted]
     #[predicate]
     fn log_ne(self, _: Self) -> bool {
-        std::process::abort()
+        absurd
     }
 
     #[trusted]
     #[logic]
     fn eq_ne(_: Self, _: Self) {
-        std::process::abort()
+        absurd
     }
 
     // lemmas below are marked trusted, until Creusot provides a way

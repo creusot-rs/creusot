@@ -41,14 +41,14 @@ impl<Args, F: FnOnce<Args>> FnOnceSpec<Args> for F {
     #[trusted]
     #[rustc_diagnostic_item = "fn_once_impl_precond"]
     fn precondition(self, _: Args) -> bool {
-        std::process::abort()
+        absurd
     }
 
     #[predicate]
     #[trusted]
     #[rustc_diagnostic_item = "fn_once_impl_postcond"]
     fn postcondition_once(self, _: Args, _: Self::Output) -> bool {
-        std::process::abort()
+        absurd
     }
 }
 
@@ -57,7 +57,7 @@ impl<Args, F: FnMut<Args>> FnMutSpec<Args> for F {
     #[trusted]
     #[rustc_diagnostic_item = "fn_mut_impl_postcond"]
     fn postcondition_mut(&mut self, _: Args, _: Self::Output) -> bool {
-        std::process::abort()
+        absurd
     }
 
     #[law]
@@ -69,7 +69,7 @@ impl<Args, F: Fn<Args>> FnSpec<Args> for F {
     #[trusted]
     #[rustc_diagnostic_item = "fn_impl_postcond"]
     fn postcondition(&self, _: Args, _: Self::Output) -> bool {
-        std::process::abort()
+        absurd
     }
 
     #[law]

@@ -4,7 +4,7 @@ use creusot_contracts::*;
 
 // Tests that we can use field access syntax in pearlite.
 
-struct A {
+pub struct A {
     a: bool,
 }
 

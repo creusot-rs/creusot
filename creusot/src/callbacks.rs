@@ -2,7 +2,6 @@ use rustc_driver::{Callbacks, Compilation};
 use rustc_interface::{interface::Compiler, Config, Queries};
 
 use crate::cleanup_spec_closures::*;
-
 use crate::options::Options;
 
 pub struct ToWhy {
@@ -14,6 +13,7 @@ impl ToWhy {
         ToWhy { opts }
     }
 }
+use crate::ctx;
 
 impl Callbacks for ToWhy {
     fn config(&mut self, config: &mut Config) {
@@ -29,12 +29,15 @@ impl Callbacks for ToWhy {
 
     fn after_expansion<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
         queries.prepare_outputs().unwrap();
+        queries.global_ctxt().unwrap();
 
-        let _ = queries
-            .global_ctxt()
-            .unwrap()
-            .peek_mut()
-            .enter(|tcx| crate::translation::translate(tcx, &self.opts));
+        let _ = queries.global_ctxt().unwrap().peek_mut().enter(|tcx| {
+            let mut ctx = ctx::TranslationCtx::new(tcx, &self.opts);
+            crate::translation::before_analysis(&mut ctx).unwrap();
+            let _ = tcx.analysis(());
+
+            crate::translation::after_analysis(&mut ctx).unwrap();
+        });
 
         c.session().abort_if_errors();
 

@@ -32,7 +32,7 @@ impl<'a, T> DefaultSpec for &'a mut [T] {
     #[ensures(@*result === Seq::EMPTY)]
     #[ensures(@^result === Seq::EMPTY)]
     fn default_log() -> Self {
-        std::process::abort()
+        absurd
     }
 }
 

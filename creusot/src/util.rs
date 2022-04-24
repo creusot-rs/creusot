@@ -28,6 +28,12 @@ pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {
     module_id
 }
 
+pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
+    crate::util::is_no_translate(tcx, def_id)
+        || crate::util::is_logic(tcx, def_id)
+        || crate::util::is_predicate(tcx, def_id)
+}
+
 pub(crate) fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs(def_id), &["creusot", "no_translate"]).is_some()
 }

@@ -3,124 +3,95 @@ use indexmap::{IndexMap, IndexSet};
 use rustc_data_structures::graph::WithSuccessors;
 use rustc_hir::def_id::DefId;
 use rustc_middle::mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Rvalue};
-use rustc_middle::thir::{self, Expr, ExprKind, Thir};
-use rustc_middle::ty::{TyCtxt, WithOptConstParam};
+use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 
 use why3::mlcfg::Exp;
 
 use crate::clone_map::CloneMap;
 use crate::ctx::TranslationCtx;
-use crate::translation::specification::{self, inv_subst, lower_pure};
+use crate::translation::specification::{inv_subst, lower_pure};
 use crate::util;
 
-pub struct GatherSpecClosures {
-    invariants: IndexMap<DefId, (Symbol, Exp)>,
-    assertions: IndexMap<DefId, Exp>,
-}
+pub fn corrected_invariant_names_and_locations<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    body: &Body<'tcx>,
+) -> (IndexMap<BasicBlock, Vec<(Symbol, Exp)>>, IndexMap<DefId, Exp>) {
+    let mut visitor = InvariantClosures::new(ctx.tcx);
+    visitor.visit_body(&body);
 
-impl GatherSpecClosures {
-    pub fn gather<'tcx>(
-        ctx: &mut TranslationCtx<'_, 'tcx>,
-        names: &mut CloneMap<'tcx>,
-        base_id: DefId,
-    ) -> GatherSpecClosures {
-        let (thir, expr) =
-            ctx.tcx.thir_body(WithOptConstParam::unknown(base_id.expect_local())).unwrap();
-        let thir = &thir.borrow();
+    let mut assertions: IndexMap<_, _> = Default::default();
+    let mut invariants: IndexMap<_, _> = Default::default();
+    for clos in visitor.closures.into_iter() {
+        if let Some(name) = util::invariant_name(ctx.tcx, clos) {
+            let term = ctx.term(clos).unwrap().clone();
+            let exp = lower_pure(ctx, names, clos, term);
 
-        let mut visitor = InvariantClosures::new(thir);
-        use rustc_middle::thir::visit::Visitor;
-        visitor.visit_expr(&thir[expr]);
+            invariants.insert(clos, (name, exp));
+        } else if util::is_assertion(ctx.tcx, clos) {
+            let term = ctx.term(clos).unwrap().clone();
+            let exp = lower_pure(ctx, names, clos, term);
 
-        let mut assertions: IndexMap<_, _> = Default::default();
-        let mut invariants: IndexMap<_, _> = Default::default();
-        for clos in visitor.closures.into_iter() {
-            if let Some(name) = util::invariant_name(ctx.tcx, clos) {
-                let term = specification::typing::typecheck(ctx.tcx, clos.expect_local())
-                    .unwrap_or_else(|e| e.emit(ctx.tcx.sess));
-                let exp = lower_pure(ctx, names, clos, term);
-
-                invariants.insert(clos, (name, exp));
-            } else if util::is_assertion(ctx.tcx, clos) {
-                let term = specification::typing::typecheck(ctx.tcx, clos.expect_local())
-                    .unwrap_or_else(|e| e.emit(ctx.tcx.sess));
-                let exp = lower_pure(ctx, names, clos, term);
-
-                assertions.insert(clos, exp);
-            }
+            assertions.insert(clos, exp);
         }
-
-        Self { assertions, invariants }
     }
 
-    // Shift the locations of every invariant to be inside their corresponding loop header block
-    pub fn with_corrected_locations_and_names<'tcx>(
-        mut self,
-        tcx: TyCtxt<'tcx>,
-        body: &Body<'tcx>,
-    ) -> (IndexMap<BasicBlock, Vec<(Symbol, Exp)>>, IndexMap<DefId, Exp>) {
-        let locations = invariant_locations(tcx, body);
+    let locations = invariant_locations(ctx.tcx, body);
 
-        let invariants = locations
-            .into_iter()
-            .map(|(loc, invs)| {
-                let inv_subst = inv_subst(tcx, body, loc.start_location());
-                let inv_exps: Vec<_> = invs
-                    .into_iter()
-                    .map(|id| {
-                        let mut inv = self.invariants.remove(&id).unwrap();
-                        inv.1.subst(&inv_subst);
-                        inv
-                    })
-                    .collect();
+    let correct_inv = locations
+        .into_iter()
+        .map(|(loc, invs)| {
+            let inv_subst = inv_subst(ctx.tcx, body, loc.start_location());
+            let inv_exps: Vec<_> = invs
+                .into_iter()
+                .map(|id| {
+                    let mut inv = invariants.remove(&id).unwrap();
+                    inv.1.subst(&inv_subst);
+                    inv
+                })
+                .collect();
 
-                (loc, inv_exps)
-            })
-            .collect();
+            (loc, inv_exps)
+        })
+        .collect();
 
-        let mut ass_loc = AssertionLocations { tcx, locations: IndexMap::new() };
-        ass_loc.visit_body(body);
-        let locations = ass_loc.locations;
+    let mut ass_loc = AssertionLocations { tcx: ctx.tcx, locations: IndexMap::new() };
+    ass_loc.visit_body(body);
+    let locations = ass_loc.locations;
 
-        let assertions = self
-            .assertions
-            .into_iter()
-            .map(|mut ass| {
-                let inv_subst = inv_subst(tcx, body, locations[&ass.0]);
+    let assertions = assertions
+        .into_iter()
+        .map(|mut ass| {
+            let inv_subst = inv_subst(ctx.tcx, body, locations[&ass.0]);
 
-                ass.1.subst(&inv_subst);
-                ass
-            })
-            .collect();
-        assert!(self.invariants.is_empty());
-        (invariants, assertions)
-    }
+            ass.1.subst(&inv_subst);
+            ass
+        })
+        .collect();
+    assert!(invariants.is_empty());
+    (correct_inv, assertions)
 }
 
 // Collect the closures in thir, so that we can do typechecking ourselves, and
 // translate the invariant closure from thir.
-pub struct InvariantClosures<'a, 'tcx> {
-    thir: &'a Thir<'tcx>,
+pub struct InvariantClosures<'tcx> {
+    pub tcx: TyCtxt<'tcx>,
     pub closures: IndexSet<DefId>,
 }
 
-impl<'a, 'tcx> InvariantClosures<'a, 'tcx> {
-    pub fn new(thir: &'a Thir<'tcx>) -> Self {
-        InvariantClosures { thir, closures: IndexSet::new() }
+impl<'tcx> InvariantClosures<'tcx> {
+    pub fn new(tcx: TyCtxt<'tcx>) -> Self {
+        InvariantClosures { tcx, closures: IndexSet::new() }
     }
 }
 
-impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for InvariantClosures<'a, 'tcx> {
-    fn thir(&self) -> &'a Thir<'tcx> {
-        self.thir
-    }
-
-    fn visit_expr(&mut self, expr: &Expr<'tcx>) {
-        if let ExprKind::Closure { closure_id, .. } = expr.kind {
-            self.closures.insert(closure_id);
+impl<'tcx> Visitor<'tcx> for InvariantClosures<'tcx> {
+    fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
+        if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
+            self.closures.insert(*id);
         }
-        thir::visit::walk_expr(self, expr);
+        self.super_rvalue(rvalue, loc);
     }
 }
 

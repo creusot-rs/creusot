@@ -1,3 +1,4 @@
+use crate as creusot_contracts;
 use creusot_contracts_proc::*;
 
 use crate::logic::*;
@@ -58,7 +59,7 @@ impl<T> Seq<T> {
     #[logic]
     #[creusot::builtins = "seq_ext.SeqExt.subsequence"]
     pub fn subsequence(self, _: Int, _: Int) -> Self {
-        std::process::abort()
+        absurd
     }
 
     #[logic]
@@ -70,21 +71,21 @@ impl<T> Seq<T> {
     #[logic]
     #[creusot::builtins = "seq.Seq.length"]
     pub fn len(self) -> Int {
-        std::process::abort()
+        absurd
     }
 
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.set"]
     pub fn set(self, _: Int, _: T) -> Self {
-        std::process::abort()
+        absurd
     }
 
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.snoc"]
     pub fn push(self, _: T) -> Self {
-        std::process::abort()
+        absurd
     }
 
     #[predicate]
@@ -96,14 +97,14 @@ impl<T> Seq<T> {
     #[predicate]
     #[creusot::builtins = "seq.Permut.permut"]
     pub fn permut(self, _: Self, _: Int, _: Int) -> bool {
-        std::process::abort()
+        absurd
     }
 
     #[trusted]
     #[predicate]
     #[creusot::builtins = "seq.Permut.exchange"]
     pub fn exchange(self, _: Self, _: Int, _: Int) -> bool {
-        std::process::abort()
+        absurd
     }
 }
 
@@ -118,6 +119,6 @@ impl<T> std::ops::Index<Int> for Seq<T> {
     #[logic]
     #[creusot::builtins = "seq.Seq.get"]
     fn index(&self, _: Int) -> &T {
-        std::process::abort()
+        absurd
     }
 }
