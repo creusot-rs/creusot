@@ -166,35 +166,44 @@ pub struct Predicate {
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct TyDecl {
-    pub ty_name: Ident,
-    pub ty_params: Vec<Ident>,
-    pub kind: TyDeclKind,
+pub enum TyDecl {
+    Adt { tys: Vec<AdtDecl> },
+    Alias { ty_name: Ident, ty_params: Vec<Ident>, alias: Type },
+    Opaque { ty_name: Ident, ty_params: Vec<Ident> },
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub enum TyDeclKind {
-    Adt(Vec<(Ident, Vec<Type>)>),
-    Alias(Type),
-    Opaque,
+pub struct AdtDecl {
+    pub ty_name: Ident,
+    pub ty_params: Vec<Ident>,
+    pub constrs: Vec<ConstructorDecl>,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct ConstructorDecl {
+    pub name: Ident,
+    pub fields: Vec<Type>,
 }
 
 impl TyDecl {
     pub fn used_types(&self) -> IndexSet<QName> {
         let mut used = IndexSet::new();
-        match &self.kind {
-            TyDeclKind::Adt(cons) => {
-                for (_, var_decl) in cons {
-                    for ty in var_decl {
-                        ty.find_used_types(&mut used);
+        match &self {
+            TyDecl::Adt { tys } => {
+                for AdtDecl { constrs, .. } in tys {
+                    for cons in constrs {
+                        for ty in &cons.fields {
+                            ty.find_used_types(&mut used);
+                        }
                     }
                 }
             }
-            TyDeclKind::Alias(ty) => {
-                ty.find_used_types(&mut used);
+            TyDecl::Alias { alias, .. } => {
+                alias.find_used_types(&mut used);
             }
-            TyDeclKind::Opaque => {}
+            TyDecl::Opaque { .. } => {}
         }
         used
     }

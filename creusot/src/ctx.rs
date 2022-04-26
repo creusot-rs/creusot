@@ -28,6 +28,7 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     pub translated_items: IndexSet<DefId>,
     pub types: IndexMap<DefId, TypeDeclaration>,
+    ty_binding_groups: HashMap<DefId, DefId>, // maps type ids to their 'representative type'
     functions: IndexMap<DefId, TranslatedItem<'tcx>>,
     terms: IndexMap<DefId, Term<'tcx>>,
     pub externs: Metadata<'tcx>,
@@ -58,6 +59,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             terms: Default::default(),
             creusot_items,
             opts,
+            ty_binding_groups: Default::default(),
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
         }
@@ -172,8 +174,8 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         };
 
         let accessor = ty::translate_accessor(self, adt_did, variant_did, field_id);
-
-        self.types[&adt_did].accessors.entry(variant_did).or_default().insert(field_id, accessor);
+        let repr_id = self.ty_binding_groups[&adt_did];
+        self.types[&repr_id].accessors.entry(variant_did).or_default().insert(field_id, accessor);
     }
 
     pub fn term(&mut self, def_id: DefId) -> Option<&Term<'tcx>> {
@@ -224,8 +226,12 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         )
     }
 
-    pub fn add_type(&mut self, def_id: DefId, decl: TyDecl) {
-        self.types.insert(def_id, TypeDeclaration { ty_decl: decl, accessors: Default::default() });
+    pub fn add_type(&mut self, def_ids: &[DefId], decl: TyDecl) {
+        self.types
+            .insert(def_ids[0], TypeDeclaration { ty_decl: decl, accessors: Default::default() });
+        for i in def_ids {
+            self.ty_binding_groups.insert(*i, def_ids[0]);
+        }
     }
 
     pub fn add_trait(&mut self, def_id: DefId, laws: Vec<DefId>) {

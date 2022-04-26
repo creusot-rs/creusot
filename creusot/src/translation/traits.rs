@@ -2,8 +2,8 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, AssocItemContainer::*, ParamEnv, TraitRef, TyCtxt};
 use rustc_trait_selection::traits::ImplSource;
 
+use why3::declaration::TyDecl;
 use why3::declaration::{Decl, Module};
-use why3::declaration::{TyDecl, TyDeclKind};
 
 use crate::{rustc_extensions, util};
 
@@ -80,22 +80,24 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         self.translated_items.insert(def_id);
 
         let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
+        let name = item_name(self.tcx, def_id);
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
             rustc_middle::ty::ImplContainer(_) => names.with_public_clones(|names| {
                 let assoc_ty = self.tcx.type_of(def_id);
-                TyDeclKind::Alias(ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty))
+                TyDecl::Alias {
+                    ty_name: name.clone(),
+                    ty_params: vec![],
+                    alias: ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty),
+                }
             }),
-            rustc_middle::ty::TraitContainer(_) => TyDeclKind::Opaque,
+            rustc_middle::ty::TraitContainer(_) => {
+                TyDecl::Opaque { ty_name: name.clone(), ty_params: vec![] }
+            }
         };
 
-        // TODO: Clean up translation of names to handle this automatically
-        let name = item_name(self.tcx, def_id);
-        let ty_decl =
-            Decl::TyDecl(TyDecl { ty_name: name.clone(), ty_params: Vec::new(), kind: ty_decl });
-
         decls.extend(names.to_clones(self));
-        decls.push(ty_decl);
+        decls.push(Decl::TyDecl(ty_decl));
 
         (Module { name: module_name(self.tcx, def_id), decls }, names.summary())
     }
