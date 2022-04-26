@@ -5,7 +5,7 @@ use rustc_middle::ty::{ClosureSubsts, FieldDef, VariantDef};
 use rustc_span::Symbol;
 use rustc_span::{Span, DUMMY_SP};
 use std::collections::VecDeque;
-use why3::declaration::TyDeclKind;
+use why3::declaration::{AdtDecl, ConstructorDecl};
 use why3::declaration::{Axiom, Contract, Decl, Signature, ValKind};
 use why3::mlcfg::{BinOp, Exp};
 use why3::Ident;
@@ -157,11 +157,7 @@ pub fn translate_projection_ty<'tcx>(
 use petgraph::algo::tarjan_scc;
 use petgraph::graphmap::DiGraphMap;
 
-pub fn check_not_mutally_recursive<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
-    ty_id: DefId,
-    span: Span,
-) {
+pub fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> Vec<DefId> {
     let mut graph = DiGraphMap::<_, ()>::new();
     graph.add_node(ty_id);
 
@@ -170,13 +166,13 @@ pub fn check_not_mutally_recursive<'tcx>(
 
     // Construct graph of type dependencies
     while let Some(next) = to_visit.pop_front() {
-        let def = ctx.tcx.adt_def(next);
-        let substs = InternalSubsts::identity_for_item(ctx.tcx, def.did());
+        let def = tcx.adt_def(next);
+        let substs = InternalSubsts::identity_for_item(tcx, def.did());
 
         // TODO: Look up a more efficient way of getting this info
         for variant in def.variants() {
             for field in &variant.fields {
-                for ty in field.ty(ctx.tcx, substs).walk() {
+                for ty in field.ty(tcx, substs).walk() {
                     let k = match ty.unpack() {
                         rustc_middle::ty::subst::GenericArgKind::Type(ty) => ty,
                         _ => continue,
@@ -197,9 +193,7 @@ pub fn check_not_mutally_recursive<'tcx>(
     let group = sccs.last().unwrap();
     assert!(group.contains(&ty_id));
 
-    if group.len() != 1 {
-        ctx.crash_and_error(span, "Mutually recursive types are not currently allowed");
-    }
+    group.clone()
 }
 
 fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
@@ -229,15 +223,44 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     // mark this type as translated
     if ctx.translated_items.contains(&did) {
         return;
-    } else {
-        ctx.translated_items.insert(did);
     }
-
-    // TODO: allow mutually recursive types
-    check_not_mutally_recursive(ctx, did, span);
 
     let mut names = CloneMap::new(ctx.tcx, did, false);
 
+    let bg = ty_binding_group(ctx.tcx, did);
+
+    for did in &bg {
+        if !ctx.translated_items.insert(*did) {
+            ctx.crash_and_error(
+                span,
+                &format!("already translated member of mutually recursive binding group {:?}", did),
+            );
+        }
+    }
+    // Trusted types (opaque)
+    if util::is_trusted(ctx.tcx, bg[0]) {
+        if bg.len() > 1 {
+            ctx.crash_and_error(span, "cannot mark mutually recursive types as trusted");
+        }
+        let ty_name = translate_ty_name(ctx, did).name;
+
+        let ty_params: Vec<_> = ty_param_names(ctx.tcx, did).collect();
+        ctx.add_type(&bg, TyDecl::Opaque { ty_name, ty_params });
+        return;
+    }
+
+    let mut decls = Vec::new();
+    for did in &bg {
+        decls.push(build_ty_decl(ctx, &mut names, *did));
+    }
+    ctx.add_type(&bg, TyDecl::Adt { tys: decls });
+}
+
+fn build_ty_decl<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    did: DefId,
+) -> AdtDecl {
     let adt = ctx.tcx.adt_def(did);
 
     // HACK(xavier): Clean up
@@ -246,25 +269,22 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     // Collect type variables of declaration
     let ty_args: Vec<_> = ty_param_names(ctx.tcx, did).collect();
 
-    let kind = if util::is_trusted(ctx.tcx, did) {
-        TyDeclKind::Opaque
-    } else {
+    let kind = {
         let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
         let mut ml_ty_def = Vec::new();
 
         for var_def in adt.variants().iter() {
             let field_tys: Vec<_> =
-                var_def.fields.iter().map(|f| field_ty(ctx, &mut names, f, substs)).collect();
+                var_def.fields.iter().map(|f| field_ty(ctx, names, f, substs)).collect();
             let var_name = item_name(ctx.tcx, var_def.def_id);
 
-            ml_ty_def.push((var_name, field_tys));
+            ml_ty_def.push(ConstructorDecl { name: var_name, fields: field_tys });
         }
 
-        TyDeclKind::Adt(ml_ty_def)
+        AdtDecl { ty_name, ty_params: ty_args, constrs: ml_ty_def }
     };
 
-    let ty_decl = TyDecl { ty_name, ty_params: ty_args, kind };
-    ctx.add_type(did, ty_decl);
+    kind
 }
 
 pub fn translate_closure_ty<'tcx>(
@@ -282,20 +302,13 @@ pub fn translate_closure_ty<'tcx>(
 
     let mut cons_name = item_name(ctx.tcx, did);
     cons_name.capitalize();
-    let kind = TyDeclKind::Adt(vec![(cons_name, fields)]);
+    let kind = AdtDecl {
+        ty_name,
+        ty_params: vec![],
+        constrs: vec![ConstructorDecl { name: cons_name, fields }],
+    };
 
-    // let params = closure_subst
-    //     .parent_substs()
-    //     .iter()
-    //     .filter_map(|gdef| match gdef.unpack() {
-    //         ty::subst::GenericArgKind::Type(ty) => match ty.kind() {
-    //             TyKind::Param(p) => Some(translate_ty_param(p.name)),
-    //             _ => None,
-    //         },
-    //         _ => None,
-    //     })
-    //     .collect();
-    TyDecl { ty_name, ty_params: vec![], kind }
+    TyDecl::Adt { tys: vec![kind] }
 }
 
 fn ty_param_names(tcx: TyCtxt<'_>, def_id: DefId) -> impl Iterator<Item = Ident> + '_ {

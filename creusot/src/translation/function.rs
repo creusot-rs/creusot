@@ -675,10 +675,9 @@ fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
 ) -> impl Iterator<Item = Decl> + 'tcx {
     it.filter_map(|param| {
         if let GenericParamDefKind::Type { .. } = param.kind {
-            Some(Decl::TyDecl(TyDecl {
+            Some(Decl::TyDecl(TyDecl::Opaque {
                 ty_name: (&*param.name.as_str().to_lowercase()).into(),
                 ty_params: vec![],
-                kind: TyDeclKind::Opaque,
             }))
         } else {
             None
