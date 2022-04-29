@@ -340,7 +340,7 @@ pub fn signature_of<'tcx>(
     Signature {
         // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure
         name,
-        attrs: if item_type(ctx.tcx, def_id) == ItemType::Program {
+        attrs: if matches!(item_type(ctx.tcx, def_id), ItemType::Program | ItemType::Closure) {
             vec![declaration::Attribute("cfg:stackify".into())]
         } else {
             vec![]

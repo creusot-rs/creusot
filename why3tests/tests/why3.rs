@@ -40,7 +40,7 @@ fn main() {
         command.arg(file);
 
         let mut has_prover = false;
-        let do_proof = header_line.contains("WHY3PROVE");
+        let do_proof = header_line.contains("WHY3PROVE") && std::env::var("NOPROOF").is_err();
         if do_proof {
             if !header_line.contains("NO_SPLIT") {
                 command.args(&["-a", "split_vc"]);
