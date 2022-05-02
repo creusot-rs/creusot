@@ -1,4 +1,4 @@
-use crate::error::{CreusotResult, Error};
+use crate::error::{CreusotResult, Error, CrErr};
 use crate::util;
 use log::*;
 use rustc_ast::{LitIntType, LitKind};
@@ -110,7 +110,7 @@ pub enum Pattern<'tcx> {
 }
 
 pub fn typecheck(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
-    let (thir, expr) = tcx.thir_body(WithOptConstParam::unknown(id)).unwrap();
+    let (thir, expr) = tcx.thir_body(WithOptConstParam::unknown(id)).map_err(|_| CrErr)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
         return Err(Error::new(tcx.def_span(id), "type checking failed"));

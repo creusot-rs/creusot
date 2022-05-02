@@ -1,6 +1,6 @@
 use rustc_errors::DiagnosticId;
 use rustc_session::Session;
-use rustc_span::Span;
+use rustc_span::{Span, DUMMY_SP};
 
 pub type CreusotResult<T> = Result<T, Error>;
 
@@ -27,6 +27,12 @@ impl Error {
 
 #[derive(Debug, Clone)]
 pub struct CrErr;
+
+impl From<CrErr> for Error {
+    fn from(_: CrErr) -> Error {
+        Error::new(DUMMY_SP, "internal error")
+    }
+}
 
 impl std::fmt::Display for CrErr {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
