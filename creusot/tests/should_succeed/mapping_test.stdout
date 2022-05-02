@@ -73,15 +73,6 @@ module MappingTest_Impl0
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.mappingtest_t,
   type modelTy = ModelTy0.modelTy
 end
-module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
-  type t
-  predicate resolve (self : t)
-end
-module CreusotContracts_Logic_Resolve_Impl2_Resolve
-  type t
-  predicate resolve (self : t) = 
-    true
-end
 module CreusotContracts_Logic_Ghost_Impl0_Model_Interface
   type t
   use Type
@@ -144,12 +135,6 @@ module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
   predicate resolve (self : self)
 end
-module CreusotContracts_Logic_Resolve_Impl2
-  type t
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
-  predicate resolve = Resolve0.resolve
-end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
   use prelude.Prelude
@@ -179,9 +164,7 @@ module MappingTest_Incr
   use Type
   clone CreusotContracts_Logic_Ghost_Impl0_Model as Model1 with type t = Type.mappingtest_t
   clone MappingTest_Impl0_Model as Model0 with axiom .
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = ()
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Type.mappingtest_t
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = Type.creusotcontracts_logic_ghost_ghost (Type.mappingtest_t)
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.mappingtest_t
   clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = Type.mappingtest_t,
   function Model0.model = Model1.model
   let rec cfg incr [@cfg:stackify] (t : borrowed (Type.mappingtest_t)) : ()
@@ -205,12 +188,10 @@ module MappingTest_Incr
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve old_t_2 };
     t_1 <- { t_1 with current = (let Type.MappingTest_T a =  * t_1 in Type.MappingTest_T (Type.mappingtest_t_T_a ( * t_1) + (1 : int32))) };
-    assume { Resolve1.resolve t_1 };
+    assume { Resolve0.resolve t_1 };
     assert { MapExt.(==) (Model0.model ( ^ t_1)) (Map.set (Model0.model (Model1.model old_t_2)) (Int32.to_int (Type.mappingtest_t_T_a (Model1.model old_t_2))) 1) };
     _4 <- ();
-    assume { Resolve2.resolve _4 };
     _0 <- ();
     return _0
   }
@@ -226,9 +207,7 @@ module MappingTest_Main
   clone MappingTest_Impl0_Model as Model0 with axiom .
   use Type
   use prelude.Prelude
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Type.mappingtest_t
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = Type.mappingtest_t
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = ()
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.mappingtest_t
   clone MappingTest_Incr_Interface as Incr0 with function Model0.model = Model0.model
   let rec cfg main [@cfg:stackify] () : () = 
   var _0 : ();
@@ -247,26 +226,21 @@ module MappingTest_Main
     x_1 <- Type.MappingTest_T (42 : int32);
     assert { Map.get (Model0.model x_1) 13 = 1 };
     _2 <- ();
-    assume { Resolve0.resolve _2 };
     assert { Map.get (Model0.model x_1) 42 = 0 };
     _3 <- ();
-    assume { Resolve0.resolve _3 };
     _6 <- borrow_mut x_1;
     x_1 <-  ^ _6;
-    assume { Resolve1.resolve x_1 };
     _5 <- borrow_mut ( * _6);
     _6 <- { _6 with current = ( ^ _5) };
     _4 <- Incr0.incr _5;
     goto BB1
   }
   BB1 {
-    assume { Resolve2.resolve _6 };
+    assume { Resolve0.resolve _6 };
     assert { Map.get (Model0.model x_1) 13 = 1 };
     _7 <- ();
-    assume { Resolve0.resolve _7 };
     assert { Map.get (Model0.model x_1) 42 = 1 };
     _8 <- ();
-    assume { Resolve0.resolve _8 };
     _0 <- ();
     return _0
   }

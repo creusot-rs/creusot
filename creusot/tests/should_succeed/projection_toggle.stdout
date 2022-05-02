@@ -14,15 +14,6 @@ module Type
   use floating_point.Double
   use prelude.Prelude
 end
-module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
-  type t
-  predicate resolve (self : t)
-end
-module CreusotContracts_Logic_Resolve_Impl2_Resolve
-  type t
-  predicate resolve (self : t) = 
-    true
-end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Prelude
@@ -42,12 +33,6 @@ module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
   predicate resolve (self : self)
 end
-module CreusotContracts_Logic_Resolve_Impl2
-  type t
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
-  predicate resolve = Resolve0.resolve
-end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
   use prelude.Prelude
@@ -65,8 +50,7 @@ end
 module ProjectionToggle_ProjToggle
   type t
   use prelude.Prelude
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = t
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = bool
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
   let rec cfg proj_toggle [@cfg:stackify] (toggle : bool) (a : borrowed t) (b : borrowed t) : borrowed t
     ensures { if toggle then result = a &&  ^ b =  * b else result = b &&  ^ a =  * a }
     
@@ -86,38 +70,36 @@ module ProjectionToggle_ProjToggle
     goto BB0
   }
   BB0 {
-    assume { Resolve0.resolve _6 };
     _6 <- toggle_1;
-    assume { Resolve0.resolve toggle_1 };
     switch (_6)
       | False -> goto BB2
       | _ -> goto BB1
       end
   }
   BB1 {
-    assume { Resolve1.resolve b_3 };
+    assume { Resolve0.resolve b_3 };
     _7 <- borrow_mut ( * a_2);
     a_2 <- { a_2 with current = ( ^ _7) };
-    assume { Resolve1.resolve a_2 };
+    assume { Resolve0.resolve a_2 };
     _5 <- borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ _5) };
-    assume { Resolve1.resolve _7 };
+    assume { Resolve0.resolve _7 };
     goto BB3
   }
   BB2 {
-    assume { Resolve1.resolve a_2 };
+    assume { Resolve0.resolve a_2 };
     _5 <- borrow_mut ( * b_3);
     b_3 <- { b_3 with current = ( ^ _5) };
-    assume { Resolve1.resolve b_3 };
+    assume { Resolve0.resolve b_3 };
     goto BB3
   }
   BB3 {
     _4 <- borrow_mut ( * _5);
     _5 <- { _5 with current = ( ^ _4) };
-    assume { Resolve1.resolve _5 };
+    assume { Resolve0.resolve _5 };
     _0 <- borrow_mut ( * _4);
     _4 <- { _4 with current = ( ^ _0) };
-    assume { Resolve1.resolve _4 };
+    assume { Resolve0.resolve _4 };
     return _0
   }
   
@@ -129,10 +111,8 @@ module ProjectionToggle_Main
   use mach.int.Int
   use mach.int.Int32
   use prelude.Prelude
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = ()
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = int32
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = int32
   clone ProjectionToggle_ProjToggle_Interface as ProjToggle0 with type t = int32
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = int32
   let rec cfg main [@cfg:stackify] () : () = 
   var _0 : ();
   var a_1 : int32;
@@ -159,20 +139,17 @@ module ProjectionToggle_Main
     _5 <- { _5 with current = ( ^ _4) };
     _7 <- borrow_mut b_2;
     b_2 <-  ^ _7;
-    assume { Resolve0.resolve b_2 };
     _6 <- borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ _6) };
     x_3 <- ProjToggle0.proj_toggle true _4 _6;
     goto BB1
   }
   BB1 {
-    assume { Resolve1.resolve _5 };
-    assume { Resolve1.resolve _7 };
+    assume { Resolve0.resolve _5 };
+    assume { Resolve0.resolve _7 };
     x_3 <- { x_3 with current = ( * x_3 + (5 : int32)) };
-    assume { Resolve1.resolve x_3 };
-    assume { Resolve0.resolve _11 };
+    assume { Resolve0.resolve x_3 };
     _11 <- a_1;
-    assume { Resolve0.resolve a_1 };
     _10 <- _11 = (15 : int32);
     _9 <- not _10;
     switch (_9)
@@ -185,7 +162,6 @@ module ProjectionToggle_Main
   }
   BB3 {
     _8 <- ();
-    assume { Resolve2.resolve _8 };
     _0 <- ();
     return _0
   }

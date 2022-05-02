@@ -79,15 +79,6 @@ module CreusotContracts_Std1_Vec_Impl1_New
     ensures { Seq.length (Model0.model result) = 0 }
     
 end
-module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
-  type t
-  predicate resolve (self : t)
-end
-module CreusotContracts_Logic_Resolve_Impl2_Resolve
-  type t
-  predicate resolve (self : t) = 
-    true
-end
 module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
   use prelude.Prelude
@@ -153,12 +144,6 @@ module CreusotContracts_Std1_Vec_Impl5_Resolve
   predicate resolve (self : Type.creusotcontracts_std1_vec_vec t) = 
     forall i : (int) . 0 <= i && i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
 end
-module CreusotContracts_Logic_Resolve_Impl2
-  type t
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
-  predicate resolve = Resolve0.resolve
-end
 module CreusotContracts_Std1_Vec_Impl5
   type t
   use Type
@@ -188,6 +173,21 @@ module CreusotContracts_Logic_Model_Impl1
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = borrowed t,
   type modelTy = ModelTy0.modelTy
 end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t
+  predicate resolve (self : t)
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t
+  predicate resolve (self : t) = 
+    true
+end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
+  predicate resolve = Resolve0.resolve
+end
 module C01ResolveUnsoundness_MakeVecOfSize_Interface
   use seq.Seq
   use mach.int.UInt64
@@ -206,16 +206,14 @@ module C01ResolveUnsoundness_MakeVecOfSize
   use seq.Seq
   use Type
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve3 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = ()
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = bool
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = usize
   clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Type.creusotcontracts_std1_vec_vec bool,
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
   clone CreusotContracts_Std1_Vec_Impl1_Push_Interface as Push0 with type t = bool,
   function Model0.model = Model0.model, function Model1.model = Model1.model
-  clone CreusotContracts_Std1_Vec_Impl5_Resolve as Resolve2 with type t = bool, function Model0.model = Model0.model,
-  predicate Resolve0.resolve = Resolve3.resolve
+  clone CreusotContracts_Std1_Vec_Impl5_Resolve as Resolve0 with type t = bool, function Model0.model = Model0.model,
+  predicate Resolve0.resolve = Resolve1.resolve
   clone CreusotContracts_Std1_Vec_Impl1_New_Interface as New0 with type t = bool, function Model0.model = Model0.model
   let rec cfg make_vec_of_size [@cfg:stackify] (n : usize) : Type.creusotcontracts_std1_vec_vec bool
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
@@ -250,9 +248,7 @@ module C01ResolveUnsoundness_MakeVecOfSize
   }
   BB2 {
     invariant loop_invariant { (0 : usize) <= i_4 && i_4 <= n_1 };
-    assume { Resolve0.resolve _8 };
     _8 <- i_4;
-    assume { Resolve0.resolve _9 };
     _9 <- n_1;
     _7 <- _8 <= _9;
     switch (_7)
@@ -269,15 +265,11 @@ module C01ResolveUnsoundness_MakeVecOfSize
   BB4 {
     i_4 <- i_4 + (1 : usize);
     _6 <- ();
-    assume { Resolve1.resolve _6 };
     goto BB2
   }
   BB5 {
-    assume { Resolve0.resolve n_1 };
-    assume { Resolve0.resolve i_4 };
     _5 <- ();
-    assume { Resolve1.resolve _5 };
-    assume { Resolve2.resolve _0 };
+    assume { Resolve0.resolve _0 };
     _0 <- out_3;
     goto BB6
   }
