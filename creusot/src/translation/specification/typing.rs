@@ -1,4 +1,4 @@
-use crate::error::{CreusotResult, Error, CrErr};
+use crate::error::{CrErr, CreusotResult, Error};
 use crate::util;
 use log::*;
 use rustc_ast::{LitIntType, LitKind};
