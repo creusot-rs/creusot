@@ -50,29 +50,6 @@ module C09Maintains_OtherInv
   predicate other_inv (a : Type.c09maintains_a) (b : bool) = 
     true
 end
-module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
-  type t
-  predicate resolve (self : t)
-end
-module CreusotContracts_Logic_Resolve_Impl2_Resolve
-  type t
-  predicate resolve (self : t) = 
-    true
-end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Logic_Resolve_Impl2
-  type t
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
-  predicate resolve = Resolve0.resolve
-end
 module C09Maintains_Test1_Interface
   use Type
   use mach.int.Int
@@ -88,9 +65,6 @@ module C09Maintains_Test1
   use mach.int.Int
   use mach.int.UInt64
   clone C09Maintains_Impl0_Invariant as Invariant0
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = uint64
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = Type.c09maintains_a
   let rec cfg test_1 [@cfg:stackify] (a : Type.c09maintains_a) (b : bool) (c : uint64) : ()
     requires {Invariant0.invariant' a b c}
     ensures { Invariant0.invariant' a b c }
@@ -107,9 +81,6 @@ module C09Maintains_Test1
     goto BB0
   }
   BB0 {
-    assume { Resolve0.resolve a_1 };
-    assume { Resolve1.resolve b_2 };
-    assume { Resolve2.resolve c_3 };
     _0 <- ();
     return _0
   }
@@ -125,6 +96,14 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   use prelude.Prelude
   predicate resolve (self : borrowed t) = 
      ^ self =  * self
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
@@ -150,8 +129,6 @@ module C09Maintains_Test2
   use mach.int.Int
   use mach.int.UInt64
   clone C09Maintains_Impl0_Invariant as Invariant0
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = uint64
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = bool
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.c09maintains_a
   let rec cfg test_2 [@cfg:stackify] (a : borrowed (Type.c09maintains_a)) (b : bool) (c : uint64) : ()
     requires {Invariant0.invariant' ( * a) b c}
@@ -170,8 +147,6 @@ module C09Maintains_Test2
   }
   BB0 {
     assume { Resolve0.resolve a_1 };
-    assume { Resolve1.resolve b_2 };
-    assume { Resolve2.resolve c_3 };
     _0 <- ();
     return _0
   }
@@ -194,7 +169,6 @@ module C09Maintains_Test3
   use mach.int.Int
   use mach.int.UInt64
   clone C09Maintains_Impl0_Invariant as Invariant0
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = uint64
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = bool
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.c09maintains_a
   let rec cfg test_3 [@cfg:stackify] (a : borrowed (Type.c09maintains_a)) (b : borrowed bool) (c : uint64) : ()
@@ -215,7 +189,6 @@ module C09Maintains_Test3
   BB0 {
     assume { Resolve0.resolve a_1 };
     assume { Resolve1.resolve b_2 };
-    assume { Resolve2.resolve c_3 };
     _0 <- ();
     return _0
   }
@@ -240,8 +213,6 @@ module C09Maintains_Test5
   use Type
   use prelude.Prelude
   clone C09Maintains_Impl0_Inv2 as Inv20
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = usize
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = Type.c09maintains_a
   let rec cfg test_5 [@cfg:stackify] (a : Type.c09maintains_a) (b : usize) : ()
     requires {Inv20.inv2 a (UInt64.to_int b + 0)}
     ensures { Inv20.inv2 a (UInt64.to_int b + 0) }
@@ -256,8 +227,6 @@ module C09Maintains_Test5
     goto BB0
   }
   BB0 {
-    assume { Resolve0.resolve a_1 };
-    assume { Resolve1.resolve b_2 };
     _0 <- ();
     return _0
   }
@@ -274,8 +243,6 @@ end
 module C09Maintains_Test6
   use Type
   clone C09Maintains_OtherInv as OtherInv0
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = Type.c09maintains_a
   let rec cfg test_6 [@cfg:stackify] (a : Type.c09maintains_a) (b : bool) : ()
     requires {OtherInv0.other_inv a b}
     ensures { OtherInv0.other_inv a b }
@@ -290,8 +257,6 @@ module C09Maintains_Test6
     goto BB0
   }
   BB0 {
-    assume { Resolve0.resolve a_1 };
-    assume { Resolve1.resolve b_2 };
     _0 <- ();
     return _0
   }

@@ -11,8 +11,11 @@ use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use rustc_infer::infer::TyCtxtInferExt;
-use rustc_middle::ty::subst::{GenericArg, SubstsRef};
 use rustc_middle::ty::Ty;
+use rustc_middle::ty::{
+    subst::{GenericArg, SubstsRef},
+    TypeFoldable,
+};
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
 use rustc_middle::{
     mir::traversal::preorder,
@@ -308,7 +311,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         self.emit_statement(assign);
     }
 
-    fn resolve_ty(&mut self, ty: Ty<'tcx>) -> Exp {
+    fn resolve_ty(&mut self, ty: Ty<'tcx>) -> ResolveStmt {
         resolve_predicate_of(&mut self.ctx, &mut self.clone_names, self.def_id, ty)
     }
 
@@ -379,10 +382,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         for local in dying.iter() {
             let local_ty = self.body.local_decls[local].ty;
             let ident = self.translate_local(local).ident();
-            let assumption: Exp =
-                resolve_predicate_of(&mut self.ctx, &mut self.clone_names, self.def_id, local_ty)
-                    .app_to(Exp::impure_var(ident));
-            self.emit_statement(mlcfg::Statement::Assume(assumption));
+            resolve_predicate_of(&mut self.ctx, &mut self.clone_names, self.def_id, local_ty)
+                .emit(Exp::impure_var(ident), self);
         }
     }
 
@@ -557,7 +558,7 @@ fn closure_resolve<'tcx>(
         let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
         let self_ = Exp::pure_var(Ident::build("_1'"));
 
-        let resolve_one = resolve_predicate_of(ctx, names, def_id, ty).app_to(acc.app_to(self_));
+        let resolve_one = resolve_predicate_of(ctx, names, def_id, ty).exp(acc.app_to(self_));
         resolve = resolve_one.and(resolve);
     }
 
@@ -604,18 +605,37 @@ pub fn closure_unnest<'tcx>(
     unnest
 }
 
+struct ResolveStmt {
+    exp: Option<Exp>,
+}
+
+impl ResolveStmt {
+    fn exp(self, to: Exp) -> Exp {
+        match self.exp {
+            None => Exp::mk_true(),
+            Some(e) => e.app_to(to),
+        }
+    }
+    fn emit(self, to: Exp, fctx: &mut FunctionTranslator) {
+        match self.exp {
+            None => {}
+            Some(e) => fctx.emit_statement(mlcfg::Statement::Assume(e.app_to(to))),
+        }
+    }
+}
+
 fn resolve_predicate_of<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
     ty: Ty<'tcx>,
-) -> Exp {
+) -> ResolveStmt {
     if !resolve_trait_loaded(ctx.tcx) {
         ctx.warn(
             rustc_span::DUMMY_SP,
             "load the `creusot_contract` crate to enable resolution of mutable borrows.",
         );
-        return Exp::Abs("x".into(), box Exp::Const(Constant::const_true()));
+        return ResolveStmt { exp: None };
     }
 
     let trait_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap();
@@ -627,12 +647,26 @@ fn resolve_predicate_of<'tcx>(
 
     match resolve_impl {
         Some(method) => {
+            if !ty.still_further_specializable()
+                && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), method.0)
+            {
+                return ResolveStmt { exp: None };
+            }
             ctx.translate(method.0);
-            Exp::impure_qvar(names.insert(method.0, method.1).qname(ctx.tcx, method.0))
+
+            ResolveStmt {
+                exp: Some(Exp::impure_qvar(
+                    names.insert(method.0, method.1).qname(ctx.tcx, method.0),
+                )),
+            }
         }
         None => {
             ctx.translate(trait_id);
-            Exp::impure_qvar(names.insert(trait_meth_id, subst).qname(ctx.tcx, trait_meth_id))
+            ResolveStmt {
+                exp: Some(Exp::impure_qvar(
+                    names.insert(trait_meth_id, subst).qname(ctx.tcx, trait_meth_id),
+                )),
+            }
         }
     }
 }

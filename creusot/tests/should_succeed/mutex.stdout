@@ -122,15 +122,6 @@ module Mutex_Inv_Inv
   use prelude.Prelude
   predicate inv (self : self) (x : t)
 end
-module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
-  type t
-  predicate resolve (self : t)
-end
-module CreusotContracts_Logic_Resolve_Impl2_Resolve
-  type t
-  predicate resolve (self : t) = 
-    true
-end
 module CreusotContracts_Logic_Ghost_Impl0_Model_Interface
   type t
   use Type
@@ -205,20 +196,6 @@ module Mutex_Impl1_Set
     requires {Inv0.inv (Model0.model (Type.mutex_mutexguard_MutexGuard_1 ( * self))) v}
     
 end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Logic_Resolve_Impl2
-  type t
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
-  predicate resolve = Resolve0.resolve
-end
 module CreusotContracts_Logic_Model_Model_ModelTy
   type self
   type modelTy
@@ -279,9 +256,6 @@ module Mutex_Impl3_Call
   use mach.int.Int
   use mach.int.UInt32
   use prelude.Prelude
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve3 with type t = Type.mutex_mutexguard uint32 (Type.mutex_even)
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = uint32
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = uint32
   clone Mutex_Impl2_Inv as Inv0
   clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = Type.mutex_even
   clone Mutex_Impl1_Set_Interface as Set0 with type t = uint32, type i = Type.mutex_even,
@@ -290,7 +264,6 @@ module Mutex_Impl3_Call
   function Model0.model = Model0.model, predicate Inv0.inv = Inv0.inv
   clone Mutex_Impl0_Lock_Interface as Lock0 with type t = uint32, type i = Type.mutex_even,
   function Model0.model = Model0.model
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = Type.mutex_addstwo
   let rec cfg call [@cfg:stackify] (self : Type.mutex_addstwo) : () = 
   var _0 : ();
   var self_1 : Type.mutex_addstwo;
@@ -313,7 +286,6 @@ module Mutex_Impl3_Call
   }
   BB0 {
     _3 <- Type.mutex_addstwo_AddsTwo_mutex self_1;
-    assume { Resolve0.resolve self_1 };
     v_2 <- Lock0.lock _3;
     goto BB1
   }
@@ -323,10 +295,7 @@ module Mutex_Impl3_Call
     goto BB2
   }
   BB2 {
-    assume { Resolve1.resolve val'_4 };
     val'_4 <- _5;
-    assume { Resolve2.resolve _5 };
-    assume { Resolve1.resolve _8 };
     _8 <- val'_4;
     _7 <- _8 < (100000 : uint32);
     switch (_7)
@@ -337,9 +306,7 @@ module Mutex_Impl3_Call
   BB3 {
     _10 <- borrow_mut v_2;
     v_2 <-  ^ _10;
-    assume { Resolve1.resolve _12 };
     _12 <- val'_4;
-    assume { Resolve1.resolve val'_4 };
     _11 <- _12 + (2 : uint32);
     _9 <- Set0.set _10 _11;
     goto BB4
@@ -349,7 +316,6 @@ module Mutex_Impl3_Call
     goto BB7
   }
   BB5 {
-    assume { Resolve1.resolve val'_4 };
     _14 <- borrow_mut v_2;
     v_2 <-  ^ _14;
     _13 <- Set0.set _14 (0 : uint32);
@@ -363,7 +329,6 @@ module Mutex_Impl3_Call
     goto BB8
   }
   BB8 {
-    assume { Resolve3.resolve v_2 };
     return _0
   }
   
@@ -455,6 +420,14 @@ module Mutex_Impl4_Join
       end }
     
 end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
   use prelude.Prelude
@@ -541,13 +514,9 @@ module Mutex_Concurrent
   clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = Type.mutex_spawnpostcond (Type.mutex_addstwo)
   clone Mutex_Impl4_Join_Interface as Join0 with type t = (), type i = Type.mutex_spawnpostcond (Type.mutex_addstwo),
   function Model0.model = Model0.model, predicate Inv0.inv = Inv1.inv
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve4 with type t = Type.mutex_joinhandle () (Type.mutex_spawnpostcond (Type.mutex_addstwo))
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve3 with type t = Type.mutex_mutex uint32 (Type.mutex_even)
   clone Mutex_Impl3_Precondition as Precondition0
   clone Mutex_Spawn_Interface as Spawn0 with type t = (), type f = Type.mutex_addstwo,
   predicate Precondition0.precondition = Precondition0.precondition
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = Type.mutex_addstwo
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = Type.mutex_mutex uint32 (Type.mutex_even)
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.mutex_mutex uint32 (Type.mutex_even)
   clone Mutex_Leak_Interface as Leak0 with type t = Type.mutex_mutex uint32 (Type.mutex_even)
   clone Mutex_Impl2_Inv as Inv0
@@ -594,32 +563,25 @@ module Mutex_Concurrent
     assume { Resolve0.resolve _2 };
     _8 <- m_1;
     _7 <- _8;
-    assume { Resolve1.resolve _8 };
     t1_6 <- Type.Mutex_AddsTwo _7;
-    assume { Resolve2.resolve _10 };
     _10 <- t1_6;
     j1_9 <- Spawn0.spawn _10;
     goto BB4
   }
   BB4 {
     _13 <- m_1;
-    assume { Resolve3.resolve m_1 };
     _12 <- _13;
-    assume { Resolve1.resolve _13 };
     t2_11 <- Type.Mutex_AddsTwo _12;
-    assume { Resolve2.resolve _15 };
     _15 <- t2_11;
     j2_14 <- Spawn0.spawn _15;
     goto BB5
   }
   BB5 {
-    assume { Resolve4.resolve _17 };
     _17 <- j1_9;
     _16 <- Join0.join _17;
     goto BB6
   }
   BB6 {
-    assume { Resolve4.resolve _19 };
     _19 <- j2_14;
     _18 <- Join0.join _19;
     goto BB7

@@ -64,8 +64,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     // TODO: should this be done for *any* form of assignment?
                     let ty = place.ty(self.body, self.tcx).ty;
                     let pl_exp = self.translate_rplace(place);
-                    let assumption: Exp = self.resolve_ty(ty).app_to(pl_exp);
-                    self.emit_statement(Assume(assumption));
+                    self.resolve_ty(ty).emit(pl_exp, self);
                     self.translate_rplace(pl)
                 }
                 Constant(box c) => crate::constant::from_mir_constant(
