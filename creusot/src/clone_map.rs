@@ -352,6 +352,7 @@ impl<'tcx> CloneMap<'tcx> {
             let dep = self.resolve_dep(ctx, key.1, *dep);
 
             if let DepNode::Dep((defid, subst)) = dep {
+                trace!("inserting dependency {:?}", dep);
                 self.insert(defid, subst);
             }
 
@@ -393,7 +394,7 @@ impl<'tcx> CloneMap<'tcx> {
     ) -> DepNode<'tcx> {
         let dep = (dep.0, dep.1.subst(self.tcx, subst));
 
-        let param_env = ctx.tcx.param_env(self.self_id);
+        let param_env = ctx.param_env(self.self_id);
         let resolved = traits::resolve_opt(ctx.tcx, param_env, dep.0, dep.1).unwrap_or(dep);
         let resolved = self.closure_hack(resolved.0, resolved.1);
 
@@ -404,9 +405,11 @@ impl<'tcx> CloneMap<'tcx> {
             let ty = self.tcx.mk_ty(TyKind::Projection(proj_ty));
 
             let normed = self.tcx.try_normalize_erasing_regions(param_env, ty);
-            if let Ok(normed) = normed {
-                if ty != normed {
-                    return DepNode::Type(normed);
+            trace!("normed {ty:?} into {normed:?}");
+            if let Ok(normed) = normed && ty != normed {
+                match normed.kind() {
+                    TyKind::Projection(pty) => return DepNode::Dep((pty.item_def_id, pty.substs)),
+                    _ => return DepNode::Type(normed),
                 }
             }
         };

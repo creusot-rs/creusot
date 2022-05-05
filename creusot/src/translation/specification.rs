@@ -30,7 +30,7 @@ pub struct PreContract {
 }
 
 impl PreContract {
-    fn new(func_id: DefId) -> Self {
+    pub fn new(func_id: DefId) -> Self {
         Self { func_id, variant: None, requires: Vec::new(), ensures: Vec::new() }
     }
 

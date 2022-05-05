@@ -7,6 +7,7 @@ use crate::metadata::{BinaryMetadata, Metadata};
 use crate::translation::external::{extract_extern_specs_from_item, ExternSpec};
 use crate::translation::interface::interface_for;
 use crate::translation::specification::typing::Term;
+use crate::translation::specification::PreContract;
 use crate::translation::ty;
 use crate::translation::{external, specification};
 use crate::util::{closure_owner, item_type};
@@ -16,10 +17,10 @@ use rustc_data_structures::captures::Captures;
 use rustc_errors::DiagnosticId;
 use rustc_hir::def::DefKind;
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_middle::ty::TyCtxt;
-use rustc_span::{Span, Symbol};
+use rustc_middle::ty::{List, ParamEnv, TyCtxt};
+use rustc_span::{Span, Symbol, DUMMY_SP};
 pub use util::{item_name, module_name, ItemType};
-use why3::declaration::{Module, TyDecl};
+use why3::declaration::{Contract, Module, TyDecl};
 
 pub use crate::translated_item::*;
 
@@ -285,14 +286,43 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             .cloned()
             .or_else(|| self.externs.creusot_item(name))
     }
+
+    pub fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {
+        match self.extern_specs.get(&def_id) {
+            Some(es) => {
+                use rustc_middle::ty;
+                let mut additional_predicates = Vec::new();
+                let impl_subst = ty::subst::InternalSubsts::identity_for_item(self.tcx, def_id);
+                additional_predicates.extend(es.predicates_for(self.tcx, impl_subst));
+                additional_predicates.extend(self.tcx.param_env(def_id).caller_bounds());
+                ParamEnv::new(
+                    self.mk_predicates(additional_predicates.into_iter()),
+                    rustc_infer::traits::Reveal::UserFacing,
+                    rustc_hir::Constness::NotConst,
+                )
+            }
+            None => self.tcx.param_env(def_id),
+        }
+    }
 }
 
 pub fn load_extern_specs(ctx: &mut TranslationCtx) {
+    let mut traits_or_impls = Vec::new();
+
     for def_id in ctx.tcx.hir().body_owners() {
         if crate::util::is_extern_spec(ctx.tcx, def_id.to_def_id()) {
+            if let Some(container) = ctx.opt_associated_item(def_id.to_def_id()) {
+                traits_or_impls.push(container.def_id)
+            }
+
             let (i, es) = extract_extern_specs_from_item(ctx, def_id);
             let c = es.contract.clone();
-            ctx.extern_specs.insert(i, es);
+
+            match ctx.extern_specs.insert(i, es) {
+                Some(_) => ctx.crash_and_error(DUMMY_SP, "duplicate extern specification"),
+                None => (),
+            };
+
             ctx.extern_spec_items.insert(def_id, i);
 
             for id in c.iter_ids() {
@@ -307,5 +337,23 @@ pub fn load_extern_specs(ctx: &mut TranslationCtx) {
 
     for id in need_to_load {
         ctx.term(id);
+    }
+
+    for def_id in traits_or_impls {
+        let mut additional_predicates = Vec::new();
+        for item in ctx.associated_items(def_id).in_definition_order() {
+            additional_predicates
+                .extend(ctx.extern_spec(item.def_id).unwrap().additional_predicates.clone());
+        }
+
+        ctx.extern_specs.insert(
+            def_id,
+            ExternSpec {
+                contract: PreContract::new(def_id),
+                subst: Vec::new(),
+                ty_subst: List::empty(),
+                additional_predicates,
+            },
+        );
     }
 }

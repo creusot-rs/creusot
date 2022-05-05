@@ -163,7 +163,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
     ) -> QName {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(id) = it.container {
-                let params = self.ctx.tcx.param_env(self.def_id);
+                let params = self.ctx.param_env(self.def_id);
                 let method = traits::resolve_assoc_item_opt(self.tcx, params, def_id, subst)
                     .expect("could not find instance");
 
