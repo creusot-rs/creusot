@@ -1,4 +1,6 @@
 use rustc_hir::def_id::DefId;
+use rustc_hir::Constness;
+use rustc_infer::traits::Reveal;
 use rustc_middle::ty::{subst::SubstsRef, AssocItemContainer::*, ParamEnv, TraitRef, TyCtxt};
 use rustc_trait_selection::traits::ImplSource;
 
@@ -42,6 +44,8 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         let mut decls: Vec<_> = own_generic_decls_for(self.tcx, impl_id).collect();
         let trait_assocs = self.tcx.associated_items(trait_ref.def_id);
         let mut names = CloneMap::new(self.tcx, impl_id, true);
+
+        // names.param_env(param_env);
 
         let mut laws = Vec::new();
         for item in associated_items(self.tcx, impl_id) {

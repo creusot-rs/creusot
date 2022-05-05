@@ -63,7 +63,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 Exp::Const(c)
             }
             TermKind::Item(id, subst) => {
-                let param_env = self.ctx.tcx.param_env(self.term_id);
+                let param_env = self.ctx.param_env(self.term_id);
 
                 let method = resolve_assoc_item_opt(self.ctx.tcx, param_env, id, subst)
                     .unwrap_or((id, subst));
@@ -129,7 +129,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                     args = vec![Exp::Tuple(vec![])];
                 }
 
-                let param_env = self.ctx.tcx.param_env(self.term_id);
+                let param_env = self.ctx.param_env(self.term_id);
 
                 let method = resolve_assoc_item_opt(self.ctx.tcx, param_env, id, subst)
                     .unwrap_or((id, subst));

@@ -83,7 +83,7 @@ pub(crate) struct ExternSpec<'tcx> {
     pub subst: Vec<(Symbol, Symbol)>,
     pub ty_subst: SubstsRef<'tcx>,
     // Additional predicates we must verify to call this function
-    additional_predicates: Vec<Predicate<'tcx>>,
+    pub additional_predicates: Vec<Predicate<'tcx>>,
 }
 
 impl<'tcx> ExternSpec<'tcx> {
