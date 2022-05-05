@@ -14,33 +14,29 @@ module Type
   use floating_point.Double
   use prelude.Prelude
   type creusotcontracts_std1_vec_vec 't
-  type hashmap_list  = 
+  type hashmap_list 't = 
     | Hashmap_List_Nil
-    | Hashmap_List_Cons usize isize (hashmap_list)
+    | Hashmap_List_Cons 't (hashmap_list 't)
     
-  function hashmap_list_Cons_0 (self : hashmap_list) : usize
-  val hashmap_list_Cons_0 (self : hashmap_list) : usize
+  function hashmap_list_Cons_0 (self : hashmap_list 't) : 't
+  val hashmap_list_Cons_0 (self : hashmap_list 't) : 't
     ensures { result = hashmap_list_Cons_0 self }
     
-  axiom hashmap_list_Cons_0_acc : forall a : usize, b : isize, c : hashmap_list . hashmap_list_Cons_0 (Hashmap_List_Cons a b c : hashmap_list) = a
-  function hashmap_list_Cons_1 (self : hashmap_list) : isize
-  val hashmap_list_Cons_1 (self : hashmap_list) : isize
+  axiom hashmap_list_Cons_0_acc : forall a : 't, b : hashmap_list 't . hashmap_list_Cons_0 (Hashmap_List_Cons a b : hashmap_list 't) = a
+  function hashmap_list_Cons_1 (self : hashmap_list 't) : hashmap_list 't
+  val hashmap_list_Cons_1 (self : hashmap_list 't) : hashmap_list 't
     ensures { result = hashmap_list_Cons_1 self }
     
-  axiom hashmap_list_Cons_1_acc : forall a : usize, b : isize, c : hashmap_list . hashmap_list_Cons_1 (Hashmap_List_Cons a b c : hashmap_list) = b
-  function hashmap_list_Cons_2 (self : hashmap_list) : hashmap_list
-  val hashmap_list_Cons_2 (self : hashmap_list) : hashmap_list
-    ensures { result = hashmap_list_Cons_2 self }
-    
-  axiom hashmap_list_Cons_2_acc : forall a : usize, b : isize, c : hashmap_list . hashmap_list_Cons_2 (Hashmap_List_Cons a b c : hashmap_list) = c
+  axiom hashmap_list_Cons_1_acc : forall a : 't, b : hashmap_list 't . hashmap_list_Cons_1 (Hashmap_List_Cons a b : hashmap_list 't) = b
   type hashmap_myhashmap  = 
-    | Hashmap_MyHashMap (creusotcontracts_std1_vec_vec (hashmap_list))
+    | Hashmap_MyHashMap (creusotcontracts_std1_vec_vec (hashmap_list (usize, isize)))
     
-  function hashmap_myhashmap_MyHashMap_buckets (self : hashmap_myhashmap) : creusotcontracts_std1_vec_vec (hashmap_list)
-  val hashmap_myhashmap_MyHashMap_buckets (self : hashmap_myhashmap) : creusotcontracts_std1_vec_vec (hashmap_list)
+  function hashmap_myhashmap_MyHashMap_buckets (self : hashmap_myhashmap) : creusotcontracts_std1_vec_vec (hashmap_list (usize, isize))
+    
+  val hashmap_myhashmap_MyHashMap_buckets (self : hashmap_myhashmap) : creusotcontracts_std1_vec_vec (hashmap_list (usize, isize))
     ensures { result = hashmap_myhashmap_MyHashMap_buckets self }
     
-  axiom hashmap_myhashmap_MyHashMap_buckets_acc : forall a : creusotcontracts_std1_vec_vec (hashmap_list) . hashmap_myhashmap_MyHashMap_buckets (Hashmap_MyHashMap a : hashmap_myhashmap) = a
+  axiom hashmap_myhashmap_MyHashMap_buckets_acc : forall a : creusotcontracts_std1_vec_vec (hashmap_list (usize, isize)) . hashmap_myhashmap_MyHashMap_buckets (Hashmap_MyHashMap a : hashmap_myhashmap) = a
   type core_option_option 't = 
     | Core_Option_Option_None
     | Core_Option_Option_Some 't
@@ -66,35 +62,42 @@ module Hashmap_GetBucket_Interface
   use mach.int.Int32
   use seq.Seq
   use Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.hashmap_list
-  function get_bucket (h : Type.hashmap_myhashmap) (i : int) : Type.hashmap_list
+  use prelude.Prelude
+  use mach.int.UInt64
+  use mach.int.Int64
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.hashmap_list (usize, isize)
+  function get_bucket (h : Type.hashmap_myhashmap) (i : int) : Type.hashmap_list (usize, isize)
 end
 module Hashmap_GetBucket
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
   use Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.hashmap_list
-  function get_bucket (h : Type.hashmap_myhashmap) (i : int) : Type.hashmap_list
+  use prelude.Prelude
+  use mach.int.UInt64
+  use mach.int.Int64
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.hashmap_list (usize, isize)
+  function get_bucket (h : Type.hashmap_myhashmap) (i : int) : Type.hashmap_list (usize, isize)
   axiom get_bucket_spec : forall h : Type.hashmap_myhashmap, i : int . 0 <= i && i < Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets h)) -> get_bucket h i = Seq.get (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets h)) i
 end
 module Hashmap_GetInBucket_Interface
   use Type
   use mach.int.Int
   use prelude.Prelude
+  use mach.int.UInt64
   use mach.int.Int64
-  function get_in_bucket (l : Type.hashmap_list) (index : int) : Type.core_option_option isize
+  function get_in_bucket (l : Type.hashmap_list (usize, isize)) (index : int) : Type.core_option_option isize
 end
 module Hashmap_GetInBucket
   use Type
   use mach.int.Int
   use prelude.Prelude
-  use mach.int.Int64
   use mach.int.UInt64
-  function get_in_bucket (l : Type.hashmap_list) (index : int) : Type.core_option_option isize = 
+  use mach.int.Int64
+  function get_in_bucket (l : Type.hashmap_list (usize, isize)) (index : int) : Type.core_option_option isize = 
     match (l) with
       | Type.Hashmap_List_Nil -> Type.Core_Option_Option_None
-      | Type.Hashmap_List_Cons k v tl -> if UInt64.to_int k = index then
+      | Type.Hashmap_List_Cons (k, v) tl -> if UInt64.to_int k = index then
         Type.Core_Option_Option_Some v
       else
         get_in_bucket tl index
@@ -110,7 +113,7 @@ module Hashmap_Impl1_Model_Interface
   use Type
   use mach.int.Int64
   clone Hashmap_GetInBucket_Interface as GetInBucket0
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.hashmap_list
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.hashmap_list (usize, isize)
   clone Hashmap_GetBucket_Interface as GetBucket0 with function Model0.model = Model0.model, axiom .
   function model (self : Type.hashmap_myhashmap) : Map.map usize (Type.core_option_option isize)
 end
@@ -123,7 +126,7 @@ module Hashmap_Impl1_Model
   use Type
   use mach.int.Int64
   clone Hashmap_GetInBucket_Interface as GetInBucket0
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.hashmap_list
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.hashmap_list (usize, isize)
   clone Hashmap_GetBucket_Interface as GetBucket0 with function Model0.model = Model0.model, axiom .
   function model (self : Type.hashmap_myhashmap) : Map.map usize (Type.core_option_option isize)
   axiom model_spec : forall self : Type.hashmap_myhashmap . forall i : (usize) . Map.get (model self) i = GetInBucket0.get_in_bucket (GetBucket0.get_bucket self (mod (UInt64.to_int i) (Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self))))) (UInt64.to_int i)
@@ -139,7 +142,9 @@ module Hashmap_Impl2_HashmapInv
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.hashmap_list
+  use mach.int.UInt64
+  use mach.int.Int64
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.hashmap_list (usize, isize)
   predicate hashmap_inv (self : Type.hashmap_myhashmap) = 
     0 < Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self))
 end
@@ -169,8 +174,12 @@ module Hashmap_Impl1_ModelTy
 end
 module Hashmap_Impl1
   use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use mach.int.Int64
   clone Hashmap_GetInBucket as GetInBucket0
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = Type.hashmap_list
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = Type.hashmap_list (usize, isize)
   clone Hashmap_GetBucket as GetBucket0 with function Model0.model = Model2.model, axiom .
   clone Hashmap_Impl1_Model as Model0 with function Model0.model = Model2.model,
   function GetBucket0.get_bucket = GetBucket0.get_bucket,
@@ -232,9 +241,10 @@ module Hashmap_Create_Interface
   use prelude.Prelude
   use map.Map
   use Type
+  use mach.int.Int64
   clone Hashmap_Impl2_HashmapInv_Interface as HashmapInv0
   clone Hashmap_GetInBucket_Interface as GetInBucket0
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = Type.hashmap_list
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = Type.hashmap_list (usize, isize)
   clone Hashmap_GetBucket_Interface as GetBucket0 with function Model0.model = Model1.model, axiom .
   clone Hashmap_Impl1_Model_Interface as Model0 with function Model0.model = Model1.model,
   function GetBucket0.get_bucket = GetBucket0.get_bucket,
@@ -252,14 +262,15 @@ module Hashmap_Create
   use prelude.Prelude
   use map.Map
   use Type
+  use mach.int.Int64
   clone Hashmap_GetInBucket as GetInBucket0
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Type.hashmap_list
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Type.hashmap_list (usize, isize)
   clone Hashmap_GetBucket as GetBucket0 with function Model0.model = Model1.model, axiom .
   clone Hashmap_Impl1_Model as Model0 with function Model0.model = Model1.model,
   function GetBucket0.get_bucket = GetBucket0.get_bucket,
   function GetInBucket0.get_in_bucket = GetInBucket0.get_in_bucket, axiom .
   clone Hashmap_Impl2_HashmapInv as HashmapInv0 with function Model0.model = Model1.model
-  clone CreusotContracts_Std1_Vec_FromElem_Interface as FromElem0 with type t = Type.hashmap_list,
+  clone CreusotContracts_Std1_Vec_FromElem_Interface as FromElem0 with type t = Type.hashmap_list (usize, isize),
   function Model0.model = Model1.model
   let rec cfg create [@cfg:stackify] (size : usize) : Type.hashmap_myhashmap
     requires {0 < UInt64.to_int size}
@@ -270,8 +281,8 @@ module Hashmap_Create
   var _0 : Type.hashmap_myhashmap;
   var size_1 : usize;
   var res_2 : Type.hashmap_myhashmap;
-  var _3 : Type.creusotcontracts_std1_vec_vec (Type.hashmap_list);
-  var _4 : Type.hashmap_list;
+  var _3 : Type.creusotcontracts_std1_vec_vec (Type.hashmap_list (usize, isize));
+  var _4 : Type.hashmap_list (usize, isize);
   var _5 : usize;
   var _6 : ();
   {
@@ -460,7 +471,7 @@ module Hashmap_Impl2_Get
   use mach.int.Int64
   clone Hashmap_Impl1_ModelTy as ModelTy0
   clone Hashmap_GetInBucket as GetInBucket0
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Type.hashmap_list
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Type.hashmap_list (usize, isize)
   clone Hashmap_Impl2_HashmapInv as HashmapInv0 with function Model0.model = Model1.model
   clone Hashmap_GetBucket as GetBucket0 with function Model0.model = Model1.model, axiom .
   clone Hashmap_Impl1_Model as Model2 with function Model0.model = Model1.model,
@@ -468,12 +479,12 @@ module Hashmap_Impl2_Get
   function GetInBucket0.get_in_bucket = GetInBucket0.get_in_bucket, axiom .
   clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Type.hashmap_myhashmap,
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model2.model
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy1 with type t = Type.hashmap_list
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model3 with type t = Type.creusotcontracts_std1_vec_vec (Type.hashmap_list),
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy1 with type t = Type.hashmap_list (usize, isize)
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model3 with type t = Type.creusotcontracts_std1_vec_vec (Type.hashmap_list (usize, isize)),
   type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model1.model
-  clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = Type.hashmap_list,
+  clone CreusotContracts_Std1_Vec_Impl3_Index_Interface as Index0 with type t = Type.hashmap_list (usize, isize),
   function Model0.model = Model3.model
-  clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = Type.hashmap_list,
+  clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = Type.hashmap_list (usize, isize),
   function Model0.model = Model3.model
   let rec cfg get [@cfg:stackify] (self : Type.hashmap_myhashmap) (key : usize) : Type.core_option_option isize
     requires {HashmapInv0.hashmap_inv self}
@@ -487,30 +498,29 @@ module Hashmap_Impl2_Get
   var index_4 : usize;
   var _5 : usize;
   var _6 : usize;
-  var _7 : Type.creusotcontracts_std1_vec_vec (Type.hashmap_list);
+  var _7 : Type.creusotcontracts_std1_vec_vec (Type.hashmap_list (usize, isize));
   var _8 : bool;
-  var l_9 : Type.hashmap_list;
-  var _10 : Type.hashmap_list;
-  var _11 : Type.hashmap_list;
-  var _12 : Type.creusotcontracts_std1_vec_vec (Type.hashmap_list);
-  var _13 : usize;
+  var l_9 : Type.hashmap_list (usize, isize);
+  var _10 : Type.hashmap_list (usize, isize);
+  var _11 : Type.creusotcontracts_std1_vec_vec (Type.hashmap_list (usize, isize));
+  var _12 : usize;
+  var _13 : ();
   var _14 : ();
-  var _15 : ();
-  var _16 : isize;
-  var k_17 : usize;
-  var v_18 : isize;
-  var tl_19 : Type.hashmap_list;
-  var _20 : ();
-  var _21 : bool;
+  var _15 : isize;
+  var k_16 : usize;
+  var v_17 : isize;
+  var tl_18 : Type.hashmap_list (usize, isize);
+  var _19 : ();
+  var _20 : bool;
+  var _21 : usize;
   var _22 : usize;
-  var _23 : usize;
-  var _24 : ();
-  var _25 : isize;
-  var _26 : Type.hashmap_list;
-  var _27 : Type.hashmap_list;
+  var _23 : ();
+  var _24 : isize;
+  var _25 : Type.hashmap_list (usize, isize);
+  var _26 : Type.hashmap_list (usize, isize);
+  var _27 : ();
   var _28 : ();
   var _29 : ();
-  var _30 : ();
   {
     self_1 <- self;
     key_2 <- key;
@@ -529,50 +539,49 @@ module Hashmap_Impl2_Get
   }
   BB2 {
     index_4 <- _5 % _6;
-    _12 <- Type.hashmap_myhashmap_MyHashMap_buckets self_1;
-    _13 <- index_4;
-    _11 <- Index0.index _12 _13;
+    _11 <- Type.hashmap_myhashmap_MyHashMap_buckets self_1;
+    _12 <- index_4;
+    _10 <- Index0.index _11 _12;
     goto BB3
   }
   BB3 {
-    _10 <- _11;
     l_9 <- _10;
     goto BB4
   }
   BB4 {
     invariant not_already_found { GetInBucket0.get_in_bucket (GetBucket0.get_bucket self_1 (UInt64.to_int index_4)) (UInt64.to_int key_2) = GetInBucket0.get_in_bucket l_9 (UInt64.to_int key_2) };
     switch (l_9)
-      | Type.Hashmap_List_Cons _ _ _ -> goto BB5
+      | Type.Hashmap_List_Cons _ _ -> goto BB5
       | _ -> goto BB8
       end
   }
   BB5 {
-    k_17 <- Type.hashmap_list_Cons_0 l_9;
-    v_18 <- Type.hashmap_list_Cons_1 l_9;
-    tl_19 <- Type.hashmap_list_Cons_2 l_9;
-    _22 <- k_17;
-    _23 <- key_2;
-    _21 <- _22 = _23;
-    switch (_21)
+    k_16 <- (let (a, _) = Type.hashmap_list_Cons_0 l_9 in a);
+    v_17 <- (let (_, a) = Type.hashmap_list_Cons_0 l_9 in a);
+    tl_18 <- Type.hashmap_list_Cons_1 l_9;
+    _21 <- k_16;
+    _22 <- key_2;
+    _20 <- _21 = _22;
+    switch (_20)
       | False -> goto BB7
       | _ -> goto BB6
       end
   }
   BB6 {
-    _25 <- v_18;
-    _0 <- Type.Core_Option_Option_Some _25;
+    _24 <- v_17;
+    _0 <- Type.Core_Option_Option_Some _24;
     goto BB9
   }
   BB7 {
-    _20 <- ();
-    _27 <- tl_19;
-    _26 <- _27;
-    l_9 <- _26;
-    _15 <- ();
+    _19 <- ();
+    _26 <- tl_18;
+    _25 <- _26;
+    l_9 <- _25;
+    _14 <- ();
     goto BB4
   }
   BB8 {
-    _14 <- ();
+    _13 <- ();
     _0 <- Type.Core_Option_Option_None;
     goto BB9
   }
@@ -782,7 +791,7 @@ module Hashmap_Impl2_Add_Interface
   use Type
   use mach.int.Int64
   clone Hashmap_GetInBucket_Interface as GetInBucket0
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = Type.hashmap_list
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = Type.hashmap_list (usize, isize)
   clone Hashmap_GetBucket_Interface as GetBucket0 with function Model0.model = Model1.model, axiom .
   clone Hashmap_Impl1_Model_Interface as Model0 with function Model0.model = Model1.model,
   function GetBucket0.get_bucket = GetBucket0.get_bucket,
@@ -805,33 +814,33 @@ module Hashmap_Impl2_Add
   use prelude.Prelude
   use map.Map
   use mach.int.Int64
-  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model1 with type t = borrowed (Type.hashmap_list)
+  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model1 with type t = borrowed (Type.hashmap_list (usize, isize))
   clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = borrowed (Type.hashmap_myhashmap)
   clone Hashmap_GetInBucket as GetInBucket0
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = Type.hashmap_list
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = Type.hashmap_list (usize, isize)
   clone Hashmap_Impl2_HashmapInv as HashmapInv0 with function Model0.model = Model3.model
   clone Hashmap_GetBucket as GetBucket0 with function Model0.model = Model3.model, axiom .
   clone Hashmap_Impl1_Model as Model2 with function Model0.model = Model3.model,
   function GetBucket0.get_bucket = GetBucket0.get_bucket,
   function GetInBucket0.get_in_bucket = GetInBucket0.get_in_bucket, axiom .
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve4 with type t = isize
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve3 with type t = Type.hashmap_list
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve3 with type t = Type.hashmap_list (usize, isize)
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = usize
-  clone CreusotContracts_Std1_Mem_Replace_Interface as Replace0 with type t = Type.hashmap_list
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Type.hashmap_list
+  clone CreusotContracts_Std1_Mem_Replace_Interface as Replace0 with type t = Type.hashmap_list (usize, isize)
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Type.hashmap_list (usize, isize)
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.hashmap_myhashmap
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = Type.hashmap_list
-  clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record1 with type t = borrowed (Type.hashmap_list),
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = Type.hashmap_list (usize, isize)
+  clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record1 with type t = borrowed (Type.hashmap_list (usize, isize)),
   function Model0.model = Model1.model
   clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = borrowed (Type.hashmap_myhashmap),
   function Model0.model = Model0.model
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model5 with type t = Type.creusotcontracts_std1_vec_vec (Type.hashmap_list),
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model5 with type t = Type.creusotcontracts_std1_vec_vec (Type.hashmap_list (usize, isize)),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model3.model
-  clone CreusotContracts_Std1_Vec_Impl2_IndexMut_Interface as IndexMut0 with type t = Type.hashmap_list,
+  clone CreusotContracts_Std1_Vec_Impl2_IndexMut_Interface as IndexMut0 with type t = Type.hashmap_list (usize, isize),
   function Model0.model = Model3.model, function Model1.model = Model5.model
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model4 with type t = Type.creusotcontracts_std1_vec_vec (Type.hashmap_list),
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model4 with type t = Type.creusotcontracts_std1_vec_vec (Type.hashmap_list (usize, isize)),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model3.model
-  clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = Type.hashmap_list,
+  clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = Type.hashmap_list (usize, isize),
   function Model0.model = Model4.model
   let rec cfg add [@cfg:stackify] (self : borrowed (Type.hashmap_myhashmap)) (key : usize) (val' : isize) : ()
     requires {HashmapInv0.hashmap_inv ( * self)}
@@ -851,44 +860,45 @@ module Hashmap_Impl2_Add
   var _5 : borrowed (Type.hashmap_myhashmap);
   var _6 : borrowed (Type.hashmap_myhashmap);
   var length_7 : usize;
-  var _8 : Type.creusotcontracts_std1_vec_vec (Type.hashmap_list);
+  var _8 : Type.creusotcontracts_std1_vec_vec (Type.hashmap_list (usize, isize));
   var index_9 : usize;
   var _10 : usize;
   var _11 : usize;
   var _12 : bool;
-  var l_13 : borrowed (Type.hashmap_list);
-  var _14 : borrowed (Type.hashmap_list);
-  var _15 : borrowed (Type.hashmap_list);
-  var _16 : borrowed (Type.creusotcontracts_std1_vec_vec (Type.hashmap_list));
+  var l_13 : borrowed (Type.hashmap_list (usize, isize));
+  var _14 : borrowed (Type.hashmap_list (usize, isize));
+  var _15 : borrowed (Type.hashmap_list (usize, isize));
+  var _16 : borrowed (Type.creusotcontracts_std1_vec_vec (Type.hashmap_list (usize, isize)));
   var _17 : usize;
-  var old_l_18 : Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.hashmap_list));
-  var _19 : borrowed (Type.hashmap_list);
-  var _20 : borrowed (Type.hashmap_list);
+  var old_l_18 : Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.hashmap_list (usize, isize)));
+  var _19 : borrowed (Type.hashmap_list (usize, isize));
+  var _20 : borrowed (Type.hashmap_list (usize, isize));
   var _21 : ();
   var _22 : ();
   var _23 : ();
   var _24 : isize;
   var k_25 : borrowed usize;
   var v_26 : borrowed isize;
-  var tl_27 : borrowed (Type.hashmap_list);
+  var tl_27 : borrowed (Type.hashmap_list (usize, isize));
   var _28 : ();
   var _29 : bool;
   var _30 : usize;
   var _31 : usize;
   var _32 : ();
   var _33 : isize;
-  var _34 : borrowed (Type.hashmap_list);
-  var _35 : borrowed (Type.hashmap_list);
+  var _34 : borrowed (Type.hashmap_list (usize, isize));
+  var _35 : borrowed (Type.hashmap_list (usize, isize));
   var _36 : ();
   var _37 : ();
   var _38 : ();
-  var _39 : Type.hashmap_list;
-  var _40 : borrowed (Type.hashmap_list);
-  var _41 : Type.hashmap_list;
-  var _42 : usize;
-  var _43 : isize;
-  var _44 : Type.hashmap_list;
-  var _45 : Type.hashmap_list;
+  var _39 : Type.hashmap_list (usize, isize);
+  var _40 : borrowed (Type.hashmap_list (usize, isize));
+  var _41 : Type.hashmap_list (usize, isize);
+  var _42 : (usize, isize);
+  var _43 : usize;
+  var _44 : isize;
+  var _45 : Type.hashmap_list (usize, isize);
+  var _46 : Type.hashmap_list (usize, isize);
   {
     self_1 <- self;
     key_2 <- key;
@@ -945,17 +955,17 @@ module Hashmap_Impl2_Add
     invariant zz { GetInBucket0.get_in_bucket ( ^ l_13) (UInt64.to_int key_2) = Type.Core_Option_Option_Some val'_3 -> GetInBucket0.get_in_bucket ( ^ Model1.model old_l_18) (UInt64.to_int key_2) = Type.Core_Option_Option_Some val'_3 };
     invariant magic_get_other { forall i : (int) . GetInBucket0.get_in_bucket ( ^ l_13) i = GetInBucket0.get_in_bucket ( * l_13) i -> GetInBucket0.get_in_bucket ( ^ Model1.model old_l_18) i = GetInBucket0.get_in_bucket ( * Model1.model old_l_18) i };
     switch ( * l_13)
-      | Type.Hashmap_List_Cons _ _ _ -> goto BB7
+      | Type.Hashmap_List_Cons _ _ -> goto BB7
       | _ -> goto BB10
       end
   }
   BB7 {
-    k_25 <- borrow_mut (Type.hashmap_list_Cons_0 ( * l_13));
-    l_13 <- { l_13 with current = (let Type.Hashmap_List_Cons a b c =  * l_13 in Type.Hashmap_List_Cons ( ^ k_25) b c) };
-    v_26 <- borrow_mut (Type.hashmap_list_Cons_1 ( * l_13));
-    l_13 <- { l_13 with current = (let Type.Hashmap_List_Cons a b c =  * l_13 in Type.Hashmap_List_Cons a ( ^ v_26) c) };
-    tl_27 <- borrow_mut (Type.hashmap_list_Cons_2 ( * l_13));
-    l_13 <- { l_13 with current = (let Type.Hashmap_List_Cons a b c =  * l_13 in Type.Hashmap_List_Cons a b ( ^ tl_27)) };
+    k_25 <- borrow_mut (let (a, _) = Type.hashmap_list_Cons_0 ( * l_13) in a);
+    l_13 <- { l_13 with current = (let Type.Hashmap_List_Cons a b =  * l_13 in Type.Hashmap_List_Cons (let (a, b) = Type.hashmap_list_Cons_0 ( * l_13) in ( ^ k_25, b)) b) };
+    v_26 <- borrow_mut (let (_, a) = Type.hashmap_list_Cons_0 ( * l_13) in a);
+    l_13 <- { l_13 with current = (let Type.Hashmap_List_Cons a b =  * l_13 in Type.Hashmap_List_Cons (let (a, b) = Type.hashmap_list_Cons_0 ( * l_13) in (a,  ^ v_26)) b) };
+    tl_27 <- borrow_mut (Type.hashmap_list_Cons_1 ( * l_13));
+    l_13 <- { l_13 with current = (let Type.Hashmap_List_Cons a b =  * l_13 in Type.Hashmap_List_Cons a ( ^ tl_27)) };
     assume { Resolve1.resolve l_13 };
     _30 <-  * k_25;
     assume { Resolve2.resolve k_25 };
@@ -992,14 +1002,15 @@ module Hashmap_Impl2_Add
     _22 <- ();
     _40 <- borrow_mut ( * l_13);
     l_13 <- { l_13 with current = ( ^ _40) };
-    _42 <- key_2;
-    _43 <- val'_3;
-    _45 <- Type.Hashmap_List_Nil;
-    _44 <- _45;
+    _43 <- key_2;
+    _44 <- val'_3;
+    _42 <- (_43, _44);
+    _46 <- Type.Hashmap_List_Nil;
+    _45 <- _46;
     goto BB11
   }
   BB11 {
-    _41 <- Type.Hashmap_List_Cons _42 _43 _44;
+    _41 <- Type.Hashmap_List_Cons _42 _45;
     goto BB12
   }
   BB12 {
@@ -1030,7 +1041,7 @@ module Hashmap_Main
   use Type
   clone Hashmap_Impl1_ModelTy as ModelTy0
   clone Hashmap_GetInBucket as GetInBucket0
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Type.hashmap_list
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Type.hashmap_list (usize, isize)
   clone Hashmap_GetBucket as GetBucket0 with function Model0.model = Model1.model, axiom .
   clone Hashmap_Impl1_Model as Model0 with function Model0.model = Model1.model,
   function GetBucket0.get_bucket = GetBucket0.get_bucket,
@@ -1199,16 +1210,18 @@ module Hashmap_Main
   
 end
 module Hashmap_Impl0_Clone_Interface
+  type t
   use prelude.Prelude
   use Type
-  val clone' [@cfg:stackify] (self : Type.hashmap_list) : Type.hashmap_list
+  val clone' [@cfg:stackify] (self : Type.hashmap_list t) : Type.hashmap_list t
     ensures { result = self }
     
 end
 module Hashmap_Impl0_Clone
+  type t
   use prelude.Prelude
   use Type
-  val clone' [@cfg:stackify] (self : Type.hashmap_list) : Type.hashmap_list
+  val clone' [@cfg:stackify] (self : Type.hashmap_list t) : Type.hashmap_list t
     ensures { result = self }
     
 end
@@ -1227,8 +1240,9 @@ module CreusotContracts_Std1_Clone_Clone_Clone
     
 end
 module Hashmap_Impl0
+  type t
   use Type
-  clone Hashmap_Impl0_Clone_Interface as Clone0
-  clone CreusotContracts_Std1_Clone_Clone_Clone_Interface as Clone1 with type self = Type.hashmap_list,
+  clone Hashmap_Impl0_Clone_Interface as Clone0 with type t = t
+  clone CreusotContracts_Std1_Clone_Clone_Clone_Interface as Clone1 with type self = Type.hashmap_list t,
   val clone' = Clone0.clone'
 end

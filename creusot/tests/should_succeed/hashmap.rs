@@ -1,33 +1,33 @@
 extern crate creusot_contracts;
 use creusot_contracts::{std::vec, std::vec::Vec, std::Clone, *};
 
-enum List {
+enum List<T> {
     Nil,
-    Cons(usize, isize, Box<List>),
+    Cons(T, Box<List<T>>),
 }
 
-impl Clone for List {
+impl<T: Clone> Clone for List<T> {
     #[trusted]
     #[ensures(result === *self)]
     fn clone(&self) -> Self {
         use List::*;
         match self {
             Nil => Nil,
-            Cons(u, i, tl) => Cons(*u, *i, Box::new(Clone::clone(&*tl))),
+            Cons(t, tl) => Cons(Clone::clone(t), Box::new(Clone::clone(&*tl))),
         }
     }
 }
 
 struct MyHashMap {
-    buckets: Vec<List>,
+    buckets: Vec<List<(usize, isize)>>,
 }
 
 #[logic]
-fn get_in_bucket(l: List, index: Int) -> Option<isize> {
+fn get_in_bucket(l: List<(usize, isize)>, index: Int) -> Option<isize> {
     pearlite! {
         match l {
             List::Nil => None,
-            List::Cons(k,v,tl) => if @k === index { Some(v) } else { get_in_bucket(*tl, index) }
+            List::Cons((k,v),tl) => if @k === index { Some(v) } else { get_in_bucket(*tl, index) }
         }
     }
 }
@@ -38,7 +38,7 @@ fn get_in_bucket(l: List, index: Int) -> Option<isize> {
     0 <= i && i < (@(h.buckets)).len() ==>
     result === (@(h.buckets))[i]
 )]
-fn get_bucket(h: MyHashMap, i: Int) -> List {
+fn get_bucket(h: MyHashMap, i: Int) -> List<(usize, isize)> {
     absurd
 }
 
@@ -66,7 +66,7 @@ impl MyHashMap {
         let old_self = Ghost::record(&self);
         let length = self.buckets.len();
         let index: usize = key % length;
-        let mut l: &mut List = &mut self.buckets[index];
+        let mut l: &mut List<_> = &mut self.buckets[index];
         let old_l = Ghost::record(&l);
 
         proof_assert! {
@@ -80,7 +80,7 @@ impl MyHashMap {
         #[invariant(magic_get_other, forall <i:Int>
                      get_in_bucket(^l,i) === get_in_bucket(*l,i) ==>
                      get_in_bucket(^@old_l,i) === get_in_bucket(*@old_l,i))]
-        while let Cons(k, v, tl) = l {
+        while let Cons((k, v), tl) = l {
             if *k == key {
                 *v = val;
 
@@ -90,19 +90,19 @@ impl MyHashMap {
             l = &mut **tl;
         }
 
-        creusot_contracts::std::mem::replace(l, Cons(key, val, Box::new(Nil)));
+        creusot_contracts::std::mem::replace(l, Cons((key, val), Box::new(Nil)));
     }
 
     #[requires(self.hashmap_inv())]
     #[ensures(result === (@self).get(key))]
     fn get(&self, key: usize) -> Option<isize> {
         let index: usize = key % self.buckets.len();
-        let mut l: &List = &self.buckets[index];
+        let mut l = &self.buckets[index];
         #[invariant(not_already_found,
                     get_in_bucket(get_bucket(*self,@index),@key) ===
                     get_in_bucket(*l,@key)
         )]
-        while let List::Cons(k, v, tl) = l {
+        while let List::Cons((k, v), tl) = l {
             if *k == key {
                 return Some(*v);
             }
