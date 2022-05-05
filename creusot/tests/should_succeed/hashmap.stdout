@@ -128,21 +128,6 @@ module Hashmap_Impl1_Model
   function model (self : Type.hashmap_myhashmap) : Map.map usize (Type.core_option_option isize)
   axiom model_spec : forall self : Type.hashmap_myhashmap . forall i : (usize) . Map.get (model self) i = GetInBucket0.get_in_bucket (GetBucket0.get_bucket self (mod (UInt64.to_int i) (Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self))))) (UInt64.to_int i)
 end
-module Hashmap_BucketInv_Interface
-  use Type
-  use mach.int.Int
-  predicate bucket_inv (l : Type.hashmap_list) (index : int) (size : int)
-end
-module Hashmap_BucketInv
-  use Type
-  use mach.int.Int
-  use mach.int.UInt64
-  predicate bucket_inv (l : Type.hashmap_list) (index : int) (size : int) = 
-    match (l) with
-      | Type.Hashmap_List_Nil -> true
-      | Type.Hashmap_List_Cons k _ tl -> mod (UInt64.to_int k) size = index && bucket_inv tl index size
-      end
-end
 module Hashmap_Impl2_HashmapInv_Interface
   use prelude.Prelude
   use Type
@@ -154,10 +139,9 @@ module Hashmap_Impl2_HashmapInv
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
-  clone Hashmap_BucketInv_Interface as BucketInv0
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.hashmap_list
   predicate hashmap_inv (self : Type.hashmap_myhashmap) = 
-    0 < Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self)) && (forall i : (int) . 0 <= i && i < Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self)) -> BucketInv0.bucket_inv (Seq.get (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self)) i) i (Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self))))
+    0 < Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self))
 end
 module CreusotContracts_Logic_Model_Model_ModelTy
   type self
@@ -268,15 +252,13 @@ module Hashmap_Create
   use prelude.Prelude
   use map.Map
   use Type
-  clone Hashmap_BucketInv as BucketInv0
   clone Hashmap_GetInBucket as GetInBucket0
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Type.hashmap_list
   clone Hashmap_GetBucket as GetBucket0 with function Model0.model = Model1.model, axiom .
   clone Hashmap_Impl1_Model as Model0 with function Model0.model = Model1.model,
   function GetBucket0.get_bucket = GetBucket0.get_bucket,
   function GetInBucket0.get_in_bucket = GetInBucket0.get_in_bucket, axiom .
-  clone Hashmap_Impl2_HashmapInv as HashmapInv0 with function Model0.model = Model1.model,
-  predicate BucketInv0.bucket_inv = BucketInv0.bucket_inv
+  clone Hashmap_Impl2_HashmapInv as HashmapInv0 with function Model0.model = Model1.model
   clone CreusotContracts_Std1_Vec_FromElem_Interface as FromElem0 with type t = Type.hashmap_list,
   function Model0.model = Model1.model
   let rec cfg create [@cfg:stackify] (size : usize) : Type.hashmap_myhashmap
@@ -477,11 +459,9 @@ module Hashmap_Impl2_Get
   use mach.int.Int
   use mach.int.Int64
   clone Hashmap_Impl1_ModelTy as ModelTy0
-  clone Hashmap_BucketInv as BucketInv0
   clone Hashmap_GetInBucket as GetInBucket0
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Type.hashmap_list
-  clone Hashmap_Impl2_HashmapInv as HashmapInv0 with function Model0.model = Model1.model,
-  predicate BucketInv0.bucket_inv = BucketInv0.bucket_inv
+  clone Hashmap_Impl2_HashmapInv as HashmapInv0 with function Model0.model = Model1.model
   clone Hashmap_GetBucket as GetBucket0 with function Model0.model = Model1.model, axiom .
   clone Hashmap_Impl1_Model as Model2 with function Model0.model = Model1.model,
   function GetBucket0.get_bucket = GetBucket0.get_bucket,
@@ -826,12 +806,10 @@ module Hashmap_Impl2_Add
   use map.Map
   use mach.int.Int64
   clone CreusotContracts_Logic_Ghost_Impl0_Model as Model1 with type t = borrowed (Type.hashmap_list)
-  clone Hashmap_BucketInv as BucketInv0
   clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = borrowed (Type.hashmap_myhashmap)
   clone Hashmap_GetInBucket as GetInBucket0
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = Type.hashmap_list
-  clone Hashmap_Impl2_HashmapInv as HashmapInv0 with function Model0.model = Model3.model,
-  predicate BucketInv0.bucket_inv = BucketInv0.bucket_inv
+  clone Hashmap_Impl2_HashmapInv as HashmapInv0 with function Model0.model = Model3.model
   clone Hashmap_GetBucket as GetBucket0 with function Model0.model = Model3.model, axiom .
   clone Hashmap_Impl1_Model as Model2 with function Model0.model = Model3.model,
   function GetBucket0.get_bucket = GetBucket0.get_bucket,
@@ -964,8 +942,6 @@ module Hashmap_Impl2_Add
   BB6 {
     invariant y {  ^ Model0.model old_self_4 =  ^ self_1 };
     invariant z { HashmapInv0.hashmap_inv ( ^ self_1) -> HashmapInv0.hashmap_inv ( ^ Model0.model old_self_4) };
-    invariant a { BucketInv0.bucket_inv ( * l_13) (UInt64.to_int index_9) (UInt64.to_int length_7) };
-    invariant w { BucketInv0.bucket_inv ( ^ l_13) (UInt64.to_int index_9) (UInt64.to_int length_7) -> BucketInv0.bucket_inv ( ^ Model1.model old_l_18) (UInt64.to_int index_9) (UInt64.to_int length_7) };
     invariant zz { GetInBucket0.get_in_bucket ( ^ l_13) (UInt64.to_int key_2) = Type.Core_Option_Option_Some val'_3 -> GetInBucket0.get_in_bucket ( ^ Model1.model old_l_18) (UInt64.to_int key_2) = Type.Core_Option_Option_Some val'_3 };
     invariant magic_get_other { forall i : (int) . GetInBucket0.get_in_bucket ( ^ l_13) i = GetInBucket0.get_in_bucket ( * l_13) i -> GetInBucket0.get_in_bucket ( ^ Model1.model old_l_18) i = GetInBucket0.get_in_bucket ( * Model1.model old_l_18) i };
     switch ( * l_13)
@@ -1052,7 +1028,6 @@ module Hashmap_Main
   use mach.int.Int64
   use mach.int.UInt64
   use Type
-  clone Hashmap_BucketInv as BucketInv0
   clone Hashmap_Impl1_ModelTy as ModelTy0
   clone Hashmap_GetInBucket as GetInBucket0
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Type.hashmap_list
@@ -1062,8 +1037,7 @@ module Hashmap_Main
   function GetInBucket0.get_in_bucket = GetInBucket0.get_in_bucket, axiom .
   clone CreusotContracts_Logic_Model_Impl0_Model as Model2 with type t = Type.hashmap_myhashmap,
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
-  clone Hashmap_Impl2_HashmapInv as HashmapInv0 with function Model0.model = Model1.model,
-  predicate BucketInv0.bucket_inv = BucketInv0.bucket_inv
+  clone Hashmap_Impl2_HashmapInv as HashmapInv0 with function Model0.model = Model1.model
   clone Hashmap_Impl2_Add_Interface as Add0 with predicate HashmapInv0.hashmap_inv = HashmapInv0.hashmap_inv,
   function Model0.model = Model0.model, function Model1.model = Model1.model,
   function GetBucket0.get_bucket = GetBucket0.get_bucket,

@@ -22,16 +22,6 @@ struct MyHashMap {
     buckets: Vec<List>,
 }
 
-#[predicate]
-fn bucket_inv(l: List, index: Int, size: Int) -> bool {
-    pearlite! {
-        match l {
-            List::Nil => true,
-            List::Cons(k,_,tl) => @k % size === index && bucket_inv(*tl, index, size)
-        }
-    }
-}
-
 #[logic]
 fn get_in_bucket(l: List, index: Int) -> Option<isize> {
     pearlite! {
@@ -86,8 +76,6 @@ impl MyHashMap {
 
         #[invariant(y, ^@old_self === ^self)]
         #[invariant(z, (^self).hashmap_inv() ==> (^@old_self).hashmap_inv())]
-        #[invariant(a, bucket_inv(*l, @index, @length))]
-        #[invariant(w, bucket_inv(^l, @index, @length)  ==> bucket_inv(^@old_l, @index, @length))]
         #[invariant(zz, get_in_bucket(^l, @key) === Some(val) ==> get_in_bucket(^@old_l, @key) === Some(val))]
         #[invariant(magic_get_other, forall <i:Int>
                      get_in_bucket(^l,i) === get_in_bucket(*l,i) ==>
@@ -96,10 +84,6 @@ impl MyHashMap {
             if *k == key {
                 *v = val;
 
-                // // Most likely unnnecessary
-                // proof_assert! { get_bucket(^self, @index) === ^@old_l };
-                // proof_assert! { get_in_bucket(^@old_l, @key) === Some(val) };
-                // proof_assert! { bucket_inv(*l, @index, @length) };
                 return;
             }
 
@@ -132,9 +116,7 @@ impl MyHashMap {
     #[predicate]
     fn hashmap_inv(&self) -> bool {
         pearlite! {
-            0 < (@(self.buckets)).len() &&
-            forall<i: Int> 0 <= i && i < (@(self.buckets)).len() ==>
-                bucket_inv((@(self.buckets))[i],i,(@(self.buckets)).len())
+            0 < (@(self.buckets)).len()
         }
     }
 }
