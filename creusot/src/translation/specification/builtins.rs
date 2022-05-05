@@ -58,7 +58,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             let l = args.remove(0);
             let r = args.remove(0);
 
-            return Some(Exp::Call(box Exp::pure_var("mod".into()), vec![l, r]));
+            return Some(Exp::Call(box Exp::pure_var("Int.mod".into()), vec![l, r]));
         } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("neg_int")) {
             let a = args.remove(0);
 
