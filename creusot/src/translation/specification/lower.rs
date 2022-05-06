@@ -97,6 +97,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                         Exp::Call(box Exp::pure_var("div".into()), vec![lhs, rhs])
                     }
                     typing::BinOp::Rem => {
+                        self.names.import_prelude_module(PreludeModule::Int);
                         Exp::Call(box Exp::pure_var("mod".into()), vec![lhs, rhs])
                     }
                     _ => Exp::BinaryOp(binop_to_binop(op), box lhs, box rhs),
