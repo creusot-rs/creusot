@@ -1,6 +1,4 @@
 use rustc_hir::def_id::DefId;
-use rustc_hir::Constness;
-use rustc_infer::traits::Reveal;
 use rustc_middle::ty::{subst::SubstsRef, AssocItemContainer::*, ParamEnv, TraitRef, TyCtxt};
 use rustc_trait_selection::traits::ImplSource;
 
