@@ -20,7 +20,7 @@ use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_middle::ty::{List, ParamEnv, TyCtxt};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 pub use util::{item_name, module_name, ItemType};
-use why3::declaration::{Contract, Module, TyDecl};
+use why3::declaration::{Module, TyDecl};
 
 pub use crate::translated_item::*;
 

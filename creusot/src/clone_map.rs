@@ -7,7 +7,7 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{
     self,
     subst::{InternalSubsts, Subst, SubstsRef},
-    TyCtxt,
+    TyCtxt, TypeFoldable, TypeVisitor,
 };
 use rustc_middle::ty::{DefIdTree, ProjectionTy, Ty, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
@@ -340,6 +340,11 @@ impl<'tcx> CloneMap<'tcx> {
             }
         }
 
+        walk_projections(key.1, |pty: &ProjectionTy<'tcx>| {
+            self.insert(pty.item_def_id, pty.substs);
+            self.add_graph_edge(DepNode::Dep(key), DepNode::Dep((pty.item_def_id, pty.substs)));
+        });
+
         for (dep, info) in ctx.dependencies(key.0).iter().flat_map(|i| i.iter()) {
             // TODO: This only works because we use a completely separate set of clones for
             // function interfaces and bodies. It should be refactored to be less error prone.
@@ -663,5 +668,27 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
         Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
         Type => unreachable!("types have no refinable symbols"),
         _ => unreachable!(),
+    }
+}
+
+// Walk all the projections in a substitution so we can add dependencies on them
+fn walk_projections<'tcx, F: FnMut(&ProjectionTy<'tcx>)>(s: SubstsRef<'tcx>, f: F) {
+    s.visit_with(&mut ProjectionTyVisitor { f, p: std::marker::PhantomData });
+}
+
+struct ProjectionTyVisitor<'tcx, F: FnMut(&ProjectionTy<'tcx>)> {
+    f: F,
+    p: std::marker::PhantomData<&'tcx ()>,
+}
+
+impl<'tcx, F: FnMut(&ProjectionTy<'tcx>)> TypeVisitor<'tcx> for ProjectionTyVisitor<'tcx, F> {
+    fn visit_ty(&mut self, t: Ty<'tcx>) -> std::ops::ControlFlow<Self::BreakTy> {
+        match t.kind() {
+            TyKind::Projection(pty) => {
+                (self.f)(pty);
+                t.super_visit_with(self)
+            }
+            _ => t.super_visit_with(self),
+        }
     }
 }

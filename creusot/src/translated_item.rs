@@ -36,6 +36,7 @@ pub enum TranslatedItem<'tcx> {
     Extern {
         interface: Module,
         body: Module,
+        // TODO: Get rid of this result.
         dependencies: Result<CloneSummary<'tcx>, DefId>,
     },
     Constant {
@@ -53,12 +54,6 @@ impl TypeDeclaration {
     pub fn accessors(&self) -> impl Iterator<Item = &Decl> {
         self.accessors.values().flat_map(|v| v.values().flat_map(|f| f.iter()))
     }
-}
-
-pub enum DefaultOrExtern<'tcx> {
-    // dependencies is always empty.
-    Default { modl: Module, dependencies: CloneSummary<'tcx> },
-    Extern { modl: Module, def_id: DefId },
 }
 
 impl<'a, 'tcx> TranslatedItem<'tcx> {
