@@ -132,9 +132,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
         #[invariant(get_key, (^l).get(@key) === Some(val) ==> (^@old_l).get(@key) === Some(val))]
         #[invariant(get_rest, forall <i:_> (^l).get(i) === (*l).get(i) ==> (^@old_l).get(i) === (*@old_l).get(i))]
         #[invariant(no_double_binding, (*l).no_double_binding())]
-        #[invariant(no_double_binding_magic,
-            (forall <i:_> (*l).get(i) === None ==> (i === @key || (^l).get(i) === None)) ==>
-            (^l).no_double_binding() ==> (^@old_l).no_double_binding())]
+        #[invariant(no_double_binding_magic, (forall <i:_> (*l).get(i) === (^l).get(i) || i === @key) && (^l).no_double_binding() ==> (^@old_l).no_double_binding())]
         while let Cons((k, v), tl) = l {
             let tl = tl;
             if *k == key {
@@ -195,22 +193,17 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
 
             #[invariant(a, new.hashmap_inv())]
             #[invariant(x, forall<k : K> (@self_old).bucket_ix(k) < @i ==> (@*@self_old).get(@k) === (@new).get(@k))]
-            #[invariant(x, forall<k : K> // Shoudln't really be necessary?
-                @i < (@self_old).bucket_ix(k) &&
-                     (@self_old).bucket_ix(k) <= (@(@self_old).buckets).len()  ==> (@new).get(@k) === None
+            #[invariant(x, forall<k : K>
+                @i < (@self_old).bucket_ix(k) && (@self_old).bucket_ix(k) <= (@(@self_old).buckets).len()  ==> (@new).get(@k) === None
             )]
-            #[invariant(zzz1, forall<k : K, v : V> (@self_old).bucket_ix(k) === @i ==> (@@self_old).get(@k) === Some(v) ==> (@new).get(@k) === Some(v) || l.get(@k) === Some(v))]
-            #[invariant(zzz2, forall<k : K, v : V> (@self_old).bucket_ix(k) === @i ==> (@new).get(@k) === Some(v) || l.get(@k) === Some(v) ==> (@@self_old).get(@k) === Some(v))]
+            #[invariant(zzz, forall<k : K> (@self_old).bucket_ix(k) === @i ==>
+                        (@@self_old).get(@k) === match l.get(@k) { None => (@new).get(@k), Some(v) => Some(v) })]
             #[invariant(l_no_double_binding, l.no_double_binding())]
             #[invariant(x, (@self_old).good_bucket(l, @i))]
             while let List::Cons((k, v), tl) = l {
                 new.add(k, v);
                 l = *tl;
             }
-            // Why3 adts seem to have a hard time with this...
-            proof_assert! { forall<k : K> (@*@self_old).get(@k) === None || exists< v: _> (@*@self_old).get(@k) === Some(v) };
-            proof_assert! { forall<k : K> (@new).get(@k) === None || exists< v: _> (@new).get(@k) === Some(v) };
-            // What we actually want to show
             proof_assert! { forall<k : K, v: V> (@self_old).bucket_ix(k) === @i  ==> (@*@self_old).get(@k) === (@new).get(@k) };
             i += 1;
         }
