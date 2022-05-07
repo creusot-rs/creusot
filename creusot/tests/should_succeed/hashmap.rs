@@ -26,14 +26,41 @@ impl<T: Clone> Clone for List<T> {
     }
 }
 
+impl<K: Model, V> List<(K, V)> {
+    #[logic]
+    fn get(self, index: K::ModelTy) -> Option<V> {
+        pearlite! {
+            match self {
+                List::Nil => None,
+                List::Cons((k,v),tl) => if @k === index { Some(v) } else { tl.get(index) }
+            }
+        }
+    }
+
+    #[predicate]
+    fn no_double_binding(self) -> bool {
+        pearlite! {
+            match self {
+                List::Nil => true,
+                List::Cons((k, v), tl) => tl.get(@k) === None && tl.no_double_binding()
+            }
+        }
+    }
+}
+
 // A slightly simplified version of the Rust hashing mechanisms, this sufficiently captures the behavior though
-trait Hash {
+trait Hash: Model {
     #[ensures(@result === self.hash_log())]
     fn hash(&self) -> u64;
 
     #[logic]
     #[ensures(result >= 0)]
     fn hash_log(self) -> Int;
+
+    #[law]
+    #[requires(@x === @y)]
+    #[ensures(x.hash_log() === y.hash_log())]
+    fn hash_log_eq_model(x: Self, y: Self);
 }
 
 impl Hash for usize {
@@ -46,20 +73,15 @@ impl Hash for usize {
     fn hash_log(self) -> Int {
         pearlite! { @self }
     }
+
+    #[logic]
+    #[requires(@x === @y)]
+    #[ensures(x.hash_log() === y.hash_log())]
+    fn hash_log_eq_model(x: Self, y: Self) {}
 }
 
 struct MyHashMap<K, V> {
     buckets: Vec<List<(K, V)>>,
-}
-
-#[logic]
-fn get_in_bucket<K: Model, V>(l: List<(K, V)>, index: K) -> Option<V> {
-    pearlite! {
-        match l {
-            List::Nil => None,
-            List::Cons((k,v),tl) => if @k === @index { Some(v) } else { get_in_bucket(*tl, index) }
-        }
-    }
 }
 
 impl<K: Hash + Model, V> Model for MyHashMap<K, V> {
@@ -67,22 +89,20 @@ impl<K: Hash + Model, V> Model for MyHashMap<K, V> {
 
     #[logic]
     #[trusted]
-    #[ensures(
-        forall<k : _>
-            result.get(@k) === get_in_bucket(self.bucket(k),k)
-    )]
+    #[ensures(forall<k : _> result.get(@k) === self.bucket(k).get(@k))]
     fn model(self) -> Self::ModelTy {
         absurd
     }
 }
 impl<K: Hash, V> MyHashMap<K, V> {
     #[logic]
-    #[trusted]
-    #[ensures(
-        result === (@(self.buckets))[k.hash_log() % (@self.buckets).len()]
-    )]
     fn bucket(self, k: K) -> List<(K, V)> {
-        absurd
+        pearlite! { (@(self.buckets))[self.bucket_ix(k)] }
+    }
+
+    #[logic]
+    fn bucket_ix(self, k: K) -> Int {
+        pearlite! { k.hash_log() % (@self.buckets).len() }
     }
 }
 
@@ -92,17 +112,12 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[ensures(forall<i: K> (@result).get(@i) === None)]
     fn new(size: usize) -> MyHashMap<K, V> {
         let res = MyHashMap { buckets: vec::from_elem(List::Nil, size) };
-
-        proof_assert!(forall<k : K> k.hash_log() % (@res.buckets).len() >= 0 && k.hash_log() % (@res.buckets).len() < (@res.buckets).len());
-        proof_assert! { forall<k : _> res.bucket(k) === List::Nil };
-
         res
     }
 
     #[requires((*self).hashmap_inv())]
     #[ensures((^self).hashmap_inv())]
-    #[ensures(forall<i: K> (@^self).get(@i) ===
-              (if @i === @key { Some(val) } else { (@*self).get(@i) } ))]
+    #[ensures(forall<i: K> (@^self).get(@i) === (if @i === @key { Some(val) } else { (@*self).get(@i) } ))]
     fn add(&mut self, key: K, val: V) {
         use List::*;
         let old_self = Ghost::record(&self);
@@ -112,20 +127,27 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
         let old_l = Ghost::record(&l);
 
         #[invariant(y, ^@old_self === ^self)]
-        #[invariant(z, (^self).hashmap_inv() ==> (^@old_self).hashmap_inv())]
-        #[invariant(zz, get_in_bucket(^l, key) === Some(val) ==> get_in_bucket(^@old_l, key) === Some(val))]
-        #[invariant(magic_get_other, forall <i:_>
-                     get_in_bucket(^l,i) === get_in_bucket(*l,i) ==>
-                     get_in_bucket(^@old_l,i) === get_in_bucket(*@old_l,i))]
+        #[invariant(xx, self.good_bucket(*l, @index))]
+        #[invariant(xx, self.good_bucket(^l, @index) ==> self.good_bucket(^@old_l, @index ))]
+        #[invariant(get_key, (^l).get(@key) === Some(val) ==> (^@old_l).get(@key) === Some(val))]
+        #[invariant(get_rest, forall <i:_> (^l).get(i) === (*l).get(i) ==> (^@old_l).get(i) === (*@old_l).get(i))]
+        #[invariant(no_double_binding, (*l).no_double_binding())]
+        #[invariant(no_double_binding_magic,
+            (forall <i:_> (*l).get(i) === None ==> (i === @key || (^l).get(i) === None)) ==>
+            (^l).no_double_binding() ==> (^@old_l).no_double_binding())]
         while let Cons((k, v), tl) = l {
+            let tl = tl;
             if *k == key {
                 *v = val;
+                proof_assert! { (self).hashmap_inv() };
                 return;
             }
             l = &mut **tl;
         }
 
-        creusot_contracts::std::mem::replace(l, Cons((key, val), Box::new(Nil)));
+        *l = Cons((key, val), Box::new(Nil));
+
+        proof_assert! { (self).hashmap_inv() };
     }
 
     #[requires(self.hashmap_inv())]
@@ -137,11 +159,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
         let index: usize = key.hash() as usize % self.buckets.len();
         let mut l = &self.buckets[index];
 
-        proof_assert! { self.bucket(key) === *l };
-        #[invariant(not_already_found,
-                    get_in_bucket(self.bucket(key), key) ===
-                    get_in_bucket(*l, key)
-        )]
+        #[invariant(not_already_found, self.bucket(key).get(@key) === (*l).get(@key))]
         while let List::Cons((k, v), tl) = l {
             if *k == key {
                 return Some(v);
@@ -151,12 +169,69 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
         return None;
     }
 
+    // TODO: Cleanup.
+    #[requires((@self.buckets).len() < 1000)]
+    #[requires((*self).hashmap_inv())]
+    #[ensures((^self).hashmap_inv())]
+    #[ensures(forall<k : K> (@^self).get(@k) === (@*self).get(@k))] // lets prove the extensional version for now
+    fn resize(&mut self) {
+        let self_old = Ghost::record(&self);
+        let mut new = Self::new(self.buckets.len() * 2);
+
+        let mut i: usize = 0;
+        #[invariant(seen, forall<k : K> (@self_old).bucket_ix(k) < @i ==> (@*@self_old).get(@k) === (@new).get(@k))]
+        #[invariant(unseen, forall<k : K>
+            @i <=   (@self_old).bucket_ix(k) &&
+                    (@self_old).bucket_ix(k) <= (@(@self_old).buckets).len() ==> (@new).get(@k) === None
+        )]
+        #[invariant(rest, forall<j : Int> @i <= j && j < (@(@self_old).buckets).len() ==> (@self.buckets)[j] === (@(@self_old).buckets)[j])]
+        #[invariant(a, new.hashmap_inv())]
+        #[invariant(p, ^@self_old === ^self)]
+        #[invariant(l, (@(@self_old).buckets).len() === (@self.buckets).len())]
+        #[invariant(z, @i <= (@self.buckets).len())]
+        while i < self.buckets.len() {
+            let mut l: List<_> =
+                creusot_contracts::std::mem::replace(&mut self.buckets[i], List::Nil);
+
+            #[invariant(a, new.hashmap_inv())]
+            #[invariant(x, forall<k : K> (@self_old).bucket_ix(k) < @i ==> (@*@self_old).get(@k) === (@new).get(@k))]
+            #[invariant(x, forall<k : K> // Shoudln't really be necessary?
+                @i < (@self_old).bucket_ix(k) &&
+                     (@self_old).bucket_ix(k) <= (@(@self_old).buckets).len()  ==> (@new).get(@k) === None
+            )]
+            #[invariant(zzz1, forall<k : K, v : V> (@self_old).bucket_ix(k) === @i ==> (@@self_old).get(@k) === Some(v) ==> (@new).get(@k) === Some(v) || l.get(@k) === Some(v))]
+            #[invariant(zzz2, forall<k : K, v : V> (@self_old).bucket_ix(k) === @i ==> (@new).get(@k) === Some(v) || l.get(@k) === Some(v) ==> (@@self_old).get(@k) === Some(v))]
+            #[invariant(l_no_double_binding, l.no_double_binding())]
+            #[invariant(x, (@self_old).good_bucket(l, @i))]
+            while let List::Cons((k, v), tl) = l {
+                new.add(k, v);
+                l = *tl;
+            }
+            // Why3 adts seem to have a hard time with this...
+            proof_assert! { forall<k : K> (@*@self_old).get(@k) === None || exists< v: _> (@*@self_old).get(@k) === Some(v) };
+            proof_assert! { forall<k : K> (@new).get(@k) === None || exists< v: _> (@new).get(@k) === Some(v) };
+            // What we actually want to show
+            proof_assert! { forall<k : K, v: V> (@self_old).bucket_ix(k) === @i  ==> (@*@self_old).get(@k) === (@new).get(@k) };
+            i += 1;
+        }
+
+        *self = new;
+    }
+
+    #[predicate]
+    fn good_bucket(self, l: List<(K, V)>, h: Int) -> bool {
+        pearlite! {
+            forall<k : _, v: _> l.get(@k) === Some(v) ==> self.bucket_ix(k) === h
+        }
+    }
+
     /* The data invariant of the HashMap structure
      */
     #[predicate]
     fn hashmap_inv(&self) -> bool {
         pearlite! {
-            0 < (@(self.buckets)).len()
+            0 < (@(self.buckets)).len() &&
+            forall<i : _> 0 <= i && i < (@self.buckets).len() ==> self.good_bucket((@self.buckets)[i], i) && (@self.buckets)[i].no_double_binding()
         }
     }
 }
