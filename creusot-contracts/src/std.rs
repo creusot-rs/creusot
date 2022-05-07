@@ -2,6 +2,7 @@ pub mod clone;
 pub mod eq;
 mod fun;
 pub mod mem;
+pub mod option;
 pub mod ord;
 mod slice;
 pub mod vec;
