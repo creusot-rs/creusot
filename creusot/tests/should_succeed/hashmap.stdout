@@ -1207,7 +1207,7 @@ module Hashmap_Impl5_Add
     invariant get_key { Get0.get ( ^ l_15) (Model2.model key_2) = Type.Core_Option_Option_Some val'_3 -> Get0.get ( ^ Model1.model old_l_20) (Model2.model key_2) = Type.Core_Option_Option_Some val'_3 };
     invariant get_rest { forall i : (ModelTy0.modelTy) . Get0.get ( ^ l_15) i = Get0.get ( * l_15) i -> Get0.get ( ^ Model1.model old_l_20) i = Get0.get ( * Model1.model old_l_20) i };
     invariant no_double_binding { NoDoubleBinding0.no_double_binding ( * l_15) };
-    invariant no_double_binding_magic { (forall i : (ModelTy0.modelTy) . Get0.get ( * l_15) i = Type.Core_Option_Option_None -> i = Model2.model key_2 || Get0.get ( ^ l_15) i = Type.Core_Option_Option_None) -> NoDoubleBinding0.no_double_binding ( ^ l_15) -> NoDoubleBinding0.no_double_binding ( ^ Model1.model old_l_20) };
+    invariant no_double_binding_magic { (forall i : (ModelTy0.modelTy) . Get0.get ( * l_15) i = Get0.get ( ^ l_15) i || i = Model2.model key_2) && NoDoubleBinding0.no_double_binding ( ^ l_15) -> NoDoubleBinding0.no_double_binding ( ^ Model1.model old_l_20) };
     switch ( * l_15)
       | Type.Hashmap_List_Cons _ _ -> goto BB8
       | _ -> goto BB12
@@ -1767,9 +1767,7 @@ module Hashmap_Impl5_Resize
   var _37 : ();
   var _38 : ();
   var _39 : ();
-  var _40 : ();
-  var _41 : ();
-  var _42 : Type.hashmap_myhashmap k v;
+  var _40 : Type.hashmap_myhashmap k v;
   {
     self_1 <- self;
     goto BB0
@@ -1818,7 +1816,7 @@ module Hashmap_Impl5_Resize
   BB7 {
     _12 <- _13 < _14;
     switch (_12)
-      | False -> goto BB27
+      | False -> goto BB25
       | _ -> goto BB8
       end
   }
@@ -1859,22 +1857,21 @@ module Hashmap_Impl5_Resize
     goto BB16
   }
   BB16 {
-    goto BB17
-  }
-  BB17 {
     invariant a { HashmapInv0.hashmap_inv new_5 };
     invariant x { forall k : (k) . BucketIx0.bucket_ix ( * Model0.model self_old_2) k < UInt64.to_int i_9 -> Map.get (Model1.model ( * Model0.model self_old_2)) (Model2.model k) = Map.get (Model1.model new_5) (Model2.model k) };
     invariant x { forall k : (k) . UInt64.to_int i_9 < BucketIx0.bucket_ix ( * Model0.model self_old_2) k && BucketIx0.bucket_ix ( * Model0.model self_old_2) k <= Seq.length (Model3.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * Model0.model self_old_2))) -> Map.get (Model1.model new_5) (Model2.model k) = Type.Core_Option_Option_None };
-    invariant zzz1 { forall v : (v) . forall k : (k) . BucketIx0.bucket_ix ( * Model0.model self_old_2) k = UInt64.to_int i_9 -> Map.get (Model4.model (Model0.model self_old_2)) (Model2.model k) = Type.Core_Option_Option_Some v -> Map.get (Model1.model new_5) (Model2.model k) = Type.Core_Option_Option_Some v || Get0.get l_16 (Model2.model k) = Type.Core_Option_Option_Some v };
-    invariant zzz2 { forall v : (v) . forall k : (k) . BucketIx0.bucket_ix ( * Model0.model self_old_2) k = UInt64.to_int i_9 -> Map.get (Model1.model new_5) (Model2.model k) = Type.Core_Option_Option_Some v || Get0.get l_16 (Model2.model k) = Type.Core_Option_Option_Some v -> Map.get (Model4.model (Model0.model self_old_2)) (Model2.model k) = Type.Core_Option_Option_Some v };
+    invariant zzz { forall k : (k) . BucketIx0.bucket_ix ( * Model0.model self_old_2) k = UInt64.to_int i_9 -> Map.get (Model4.model (Model0.model self_old_2)) (Model2.model k) = match (Get0.get l_16 (Model2.model k)) with
+      | Type.Core_Option_Option_None -> Map.get (Model1.model new_5) (Model2.model k)
+      | Type.Core_Option_Option_Some v -> Type.Core_Option_Option_Some v
+      end };
     invariant l_no_double_binding { NoDoubleBinding0.no_double_binding l_16 };
     invariant x { GoodBucket0.good_bucket ( * Model0.model self_old_2) l_16 (UInt64.to_int i_9) };
     switch (l_16)
-      | Type.Hashmap_List_Cons _ _ -> goto BB18
-      | _ -> goto BB22
+      | Type.Hashmap_List_Cons _ _ -> goto BB17
+      | _ -> goto BB21
       end
   }
-  BB18 {
+  BB17 {
     assume { Resolve4.resolve k_25 };
     k_25 <- (let (a, _) = Type.hashmap_list_Cons_0 l_16 in a);
     assume { Resolve5.resolve v_26 };
@@ -1890,65 +1887,58 @@ module Hashmap_Impl5_Resize
     _31 <- v_26;
     assume { Resolve5.resolve v_26 };
     _28 <- Add0.add _29 _30 _31;
-    goto BB19
+    goto BB18
   }
-  BB19 {
+  BB18 {
     assume { Resolve3.resolve _32 };
     _32 <- tl_27;
     assume { Resolve3.resolve l_16 };
     l_16 <- _32;
+    goto BB19
+  }
+  BB19 {
     goto BB20
   }
   BB20 {
-    goto BB21
+    _11 <- ();
+    goto BB22
   }
   BB21 {
-    _11 <- ();
+    _23 <- ();
+    assert { forall v : (v) . forall k : (k) . BucketIx0.bucket_ix ( * Model0.model self_old_2) k = UInt64.to_int i_9 -> Map.get (Model1.model ( * Model0.model self_old_2)) (Model2.model k) = Map.get (Model1.model new_5) (Model2.model k) };
     goto BB23
   }
   BB22 {
-    _23 <- ();
-    assert { forall k : (k) . Map.get (Model1.model ( * Model0.model self_old_2)) (Model2.model k) = Type.Core_Option_Option_None || (exists v : (v) . Map.get (Model1.model ( * Model0.model self_old_2)) (Model2.model k) = Type.Core_Option_Option_Some v) };
-    _36 <- ();
-    assert { forall k : (k) . Map.get (Model1.model new_5) (Model2.model k) = Type.Core_Option_Option_None || (exists v : (v) . Map.get (Model1.model new_5) (Model2.model k) = Type.Core_Option_Option_Some v) };
-    goto BB24
+    assume { Resolve6.resolve tl_27 };
+    goto BB16
   }
   BB23 {
-    assume { Resolve6.resolve tl_27 };
-    goto BB17
-  }
-  BB24 {
-    _37 <- ();
-    assert { forall v : (v) . forall k : (k) . BucketIx0.bucket_ix ( * Model0.model self_old_2) k = UInt64.to_int i_9 -> Map.get (Model1.model ( * Model0.model self_old_2)) (Model2.model k) = Map.get (Model1.model new_5) (Model2.model k) };
-    goto BB25
-  }
-  BB25 {
-    _38 <- ();
+    _36 <- ();
     i_9 <- i_9 + (1 : usize);
     _11 <- ();
-    goto BB26
+    goto BB24
   }
-  BB26 {
+  BB24 {
     assume { Resolve3.resolve l_16 };
     goto BB6
   }
-  BB27 {
+  BB25 {
     _10 <- ();
-    assume { Resolve7.resolve _42 };
-    _42 <- new_5;
+    assume { Resolve7.resolve _40 };
+    _40 <- new_5;
     assume { Resolve7.resolve ( * self_1) };
-    self_1 <- { self_1 with current = _42 };
+    self_1 <- { self_1 with current = _40 };
+    goto BB26
+  }
+  BB26 {
+    assume { Resolve8.resolve self_1 };
+    goto BB27
+  }
+  BB27 {
+    _0 <- ();
     goto BB28
   }
   BB28 {
-    assume { Resolve8.resolve self_1 };
-    goto BB29
-  }
-  BB29 {
-    _0 <- ();
-    goto BB30
-  }
-  BB30 {
     return _0
   }
   
