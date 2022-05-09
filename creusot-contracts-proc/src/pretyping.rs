@@ -18,8 +18,8 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
             let left = encode_term(*left)?;
             let right = encode_term(*right)?;
             match op {
-                syn::BinOp::Eq(_) => Ok(quote! { (#left).log_eq(#right) }),
-                syn::BinOp::Ne(_) => Ok(quote! { (#left).log_ne(#right) }),
+                syn::BinOp::Eq(_) => Ok(quote! { creusot_contracts::stubs::equal(#left, #right) }),
+                syn::BinOp::Ne(_) => Ok(quote! { creusot_contracts::stubs::neq(#left, #right) }),
                 syn::BinOp::Lt(_) => Ok(quote! { (#left).lt_log(#right) }),
                 syn::BinOp::Le(_) => Ok(quote! { (#left).le_log(#right) }),
                 syn::BinOp::Ge(_) => Ok(quote! { (#left).ge_log(#right) }),

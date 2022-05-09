@@ -4,6 +4,7 @@ use crate::translation::function::real_locals;
 use crate::{ctx::*, util};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::thir::{self, ExprKind, Thir};
+use rustc_middle::ty::subst::InternalSubsts;
 use why3::declaration::Contract;
 use why3::mlcfg::Exp;
 use why3::Ident;
@@ -49,21 +50,24 @@ impl PreContract {
         _: DefId,
     ) -> Contract {
         let mut out = Contract::new();
+        let subst = InternalSubsts::identity_for_item(ctx.tcx, self.func_id);
 
+        use crate::rustc_middle::ty::subst::Subst;
         for req_id in self.requires {
             log::debug!("require clause {:?}", req_id);
-            let term = ctx.term(req_id).unwrap().clone();
+            let term = ctx.term(req_id).unwrap().clone().subst(ctx.tcx, subst);
             out.requires.push(lower_pure(ctx, names, req_id, term));
         }
 
         for ens_id in self.ensures {
             log::debug!("ensures clause {:?}", ens_id);
-            let term = ctx.term(ens_id).unwrap().clone();
+            let term = ctx.term(ens_id).unwrap().clone().subst(ctx.tcx, subst);
             out.ensures.push(lower_pure(ctx, names, ens_id, term));
         }
+
         if let Some(var_id) = self.variant {
             log::debug!("variant clause {:?}", var_id);
-            let term = ctx.term(var_id).unwrap().clone();
+            let term = ctx.term(var_id).unwrap().clone().subst(ctx.tcx, subst);
             out.variant = vec![lower_pure(ctx, names, var_id, term)];
         };
 

@@ -41,7 +41,7 @@ impl<'a, 'tcx> MetadataDecoder<'a, 'tcx> {
 
     // From rustc
     fn def_path_hash_to_def_id(&self, hash: DefPathHash) -> DefId {
-        self.tcx.def_path_hash_to_def_id(hash, &mut || panic!())
+        self.tcx.def_path_hash_to_def_id(hash, &mut || panic!("testxxx"))
     }
 }
 

@@ -3,6 +3,7 @@ use std::ops::Deref;
 
 pub use crate::clone_map::*;
 use crate::creusot_items::{self, CreusotItems};
+use crate::error::CreusotResult;
 use crate::metadata::{BinaryMetadata, Metadata};
 use crate::translation::external::{extract_extern_specs_from_item, ExternSpec};
 use crate::translation::interface::interface_for;
@@ -14,10 +15,11 @@ use crate::util::{closure_owner, item_type};
 use crate::{options::Options, util};
 use indexmap::{IndexMap, IndexSet};
 use rustc_data_structures::captures::Captures;
-use rustc_errors::DiagnosticId;
+use rustc_errors::{DiagnosticBuilder, DiagnosticId};
 use rustc_hir::def::DefKind;
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_middle::ty::{List, ParamEnv, TyCtxt};
+use rustc_middle::ty::subst::InternalSubsts;
+use rustc_middle::ty::{ParamEnv, TyCtxt};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 pub use util::{item_name, module_name, ItemType};
 use why3::declaration::{Module, TyDecl};
@@ -188,15 +190,16 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             let t = self.terms.entry(def_id).or_insert_with(|| {
                 let term = specification::typing::typecheck(self.tcx, def_id.expect_local())
                     .unwrap_or_else(|e| e.emit(self.tcx.sess));
-                use rustc_middle::ty::subst::Subst;
 
                 let parent = closure_owner(self.tcx, def_id);
-                if let Some(e) = self
+                if let Some(_) = self
                     .extern_spec_items
                     .get(&parent.expect_local())
                     .and_then(|id| self.extern_specs.get(&id))
                 {
-                    term.subst(self.tcx, e.ty_subst)
+                    let i = InternalSubsts::identity_for_item(self.tcx, def_id);
+                    use rustc_middle::ty::subst::Subst;
+                    term.subst(self.tcx, i)
                 } else {
                     term
                 }
@@ -209,6 +212,14 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
     pub fn crash_and_error(&self, span: Span, msg: &str) -> ! {
         self.tcx.sess.span_fatal_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
+    }
+
+    pub fn fatal_error(&self, span: Span, msg: &str) -> DiagnosticBuilder<'tcx, !> {
+        self.tcx.sess.struct_span_fatal_with_code(
+            span,
+            msg,
+            DiagnosticId::Error(String::from("creusot")),
+        )
     }
 
     pub fn error(&self, span: Span, msg: &str) {
@@ -288,11 +299,12 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {
-        match self.extern_specs.get(&def_id) {
+        match self.extern_spec(def_id) {
             Some(es) => {
                 use rustc_middle::ty;
                 let mut additional_predicates = Vec::new();
                 let impl_subst = ty::subst::InternalSubsts::identity_for_item(self.tcx, def_id);
+
                 additional_predicates.extend(es.predicates_for(self.tcx, impl_subst));
                 additional_predicates.extend(self.tcx.param_env(def_id).caller_bounds());
                 ParamEnv::new(
@@ -306,7 +318,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 }
 
-pub fn load_extern_specs(ctx: &mut TranslationCtx) {
+pub fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
     let mut traits_or_impls = Vec::new();
 
     for def_id in ctx.tcx.hir().body_owners() {
@@ -315,7 +327,7 @@ pub fn load_extern_specs(ctx: &mut TranslationCtx) {
                 traits_or_impls.push(container.def_id)
             }
 
-            let (i, es) = extract_extern_specs_from_item(ctx, def_id);
+            let (i, es) = extract_extern_specs_from_item(ctx, def_id)?;
             let c = es.contract.clone();
 
             match ctx.extern_specs.insert(i, es) {
@@ -340,20 +352,23 @@ pub fn load_extern_specs(ctx: &mut TranslationCtx) {
     }
 
     for def_id in traits_or_impls {
-        let mut additional_predicates = Vec::new();
+        let mut additional_predicates: Vec<_> = Vec::new();
         for item in ctx.associated_items(def_id).in_definition_order() {
             additional_predicates
                 .extend(ctx.extern_spec(item.def_id).unwrap().additional_predicates.clone());
         }
+        // let additional_predicates = ctx.arena.alloc_slice(&additional_predicates);
+        // let additional_predicates = rustc_middle::ty::GenericPredicates { parent: None, predicates: additional_predicates };
 
         ctx.extern_specs.insert(
             def_id,
             ExternSpec {
                 contract: PreContract::new(def_id),
                 subst: Vec::new(),
-                ty_subst: List::empty(),
                 additional_predicates,
             },
         );
     }
+
+    Ok(())
 }
