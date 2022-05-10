@@ -28,9 +28,9 @@ fn heap_frag_max<T: OrdLogic>(s: Seq<T>, i: Int, end: Int) {
     }
 }
 
-#[requires(heap_frag(@v, @start + 1, @end))]
+#[requires(heap_frag(@*v, @start + 1, @end))]
 #[requires(@start < @end)]
-#[requires(@end <= (@v).len())]
+#[requires(@end <= (@*v).len())]
 #[ensures(heap_frag(@^v, @start, @end))]
 #[ensures((@^v).permutation_of(@v))]
 #[ensures(forall<i: Int> 0 <= i && i < @start || @end <= i && i < (@v).len()

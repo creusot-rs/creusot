@@ -13,7 +13,7 @@ fn main() {
 fn has_params<V, U, X>(a: V, b: U, c: X) {}
 
 extern_spec! {
-    fn has_params<C,B,A>(a: A, b: B, c: C)
+    fn has_params<V,U,X>(a: V, b: U, c: X)
 }
 
 trait A {}
@@ -35,9 +35,4 @@ fn renamed_params<A, B, C>(a: A, b: B, c: C) {}
 #[logic]
 fn id<T>(x: T) -> T {
     x
-}
-
-extern_spec! {
-    #[ensures(id(d) === d)]
-    fn renamed_params<T,U,V>(d: T, e: U, f: V)
 }

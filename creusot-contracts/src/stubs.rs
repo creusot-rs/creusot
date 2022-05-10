@@ -17,6 +17,12 @@ pub fn equal<T: ?Sized>(_: T, _: T) -> bool {
 }
 
 #[creusot::no_translate]
+#[rustc_diagnostic_item = "neq"]
+pub fn neq<T: ?Sized>(_: T, _: T) -> bool {
+    panic!();
+}
+
+#[creusot::no_translate]
 #[rustc_diagnostic_item = "exists"]
 pub fn exists<T, F: Fn(T) -> bool>(_: F) -> bool {
     panic!()

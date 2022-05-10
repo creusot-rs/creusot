@@ -25,7 +25,7 @@
 // free.
 
 extern crate creusot_contracts;
-use creusot_contracts::{std::vec, std::vec::Vec, *};
+use creusot_contracts::{std::vec, *};
 
 // number of positive elements of `t` between `i` (included) and `j`
 // (excluded)

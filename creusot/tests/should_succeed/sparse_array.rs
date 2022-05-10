@@ -12,7 +12,7 @@
 // requires to reason about permutation,
 
 extern crate creusot_contracts;
-use creusot_contracts::{std::vec, std::vec::Vec, *};
+use creusot_contracts::{std::vec, *};
 
 /* The sparse array data structure
  */

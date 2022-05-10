@@ -304,82 +304,18 @@ module CreusotContracts_Logic_Ord_OrdLogic_Antisym2
   function antisym2 (x : self) (y : self) : ()
   axiom antisym2_spec : forall x : self, y : self . CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Greater -> CmpLog0.cmp_log y x = Type.Core_Cmp_Ordering_Less
 end
-module CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface
-  type self
-  predicate log_eq (self : self) (_2' : self)
-end
-module CreusotContracts_Logic_Eq_EqLogic_LogEq
-  type self
-  predicate log_eq (self : self) (_2' : self)
-end
 module CreusotContracts_Logic_Ord_OrdLogic_EqCmp_Interface
   type self
   use Type
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function eq_cmp (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_EqCmp
   type self
   use Type
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function eq_cmp (x : self) (y : self) : ()
-  axiom eq_cmp_spec : forall x : self, y : self . (LogEq0.log_eq x y -> CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Equal) && (CmpLog0.cmp_log y x = Type.Core_Cmp_Ordering_Equal -> LogEq0.log_eq x y)
-end
-module CreusotContracts_Logic_Eq_EqLogic_LogNe_Interface
-  type self
-  predicate log_ne (self : self) (_2' : self)
-end
-module CreusotContracts_Logic_Eq_EqLogic_LogNe
-  type self
-  predicate log_ne (self : self) (_2' : self)
-end
-module CreusotContracts_Logic_Eq_EqLogic_EqNe_Interface
-  type self
-  clone CreusotContracts_Logic_Eq_EqLogic_LogNe_Interface as LogNe0 with type self = self
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
-  function eq_ne (a : self) (b : self) : ()
-end
-module CreusotContracts_Logic_Eq_EqLogic_EqNe
-  type self
-  clone CreusotContracts_Logic_Eq_EqLogic_LogNe_Interface as LogNe0 with type self = self
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
-  function eq_ne (a : self) (b : self) : ()
-  axiom eq_ne_spec : forall a : self, b : self . not (LogEq0.log_eq a b = LogNe0.log_ne a b)
-end
-module CreusotContracts_Logic_Eq_EqLogic_Refl_Interface
-  type self
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
-  function refl (x : self) : ()
-end
-module CreusotContracts_Logic_Eq_EqLogic_Refl
-  type self
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
-  function refl (x : self) : ()
-  axiom refl_spec : forall x : self . LogEq0.log_eq x x
-end
-module CreusotContracts_Logic_Eq_EqLogic_Symmetry_Interface
-  type self
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
-  function symmetry (x : self) (y : self) : ()
-end
-module CreusotContracts_Logic_Eq_EqLogic_Symmetry
-  type self
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
-  function symmetry (x : self) (y : self) : ()
-  axiom symmetry_spec : forall x : self, y : self . LogEq0.log_eq x y -> LogEq0.log_eq y x
-end
-module CreusotContracts_Logic_Eq_EqLogic_Transitivity_Interface
-  type self
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
-  function transitivity (x : self) (y : self) (z : self) : ()
-end
-module CreusotContracts_Logic_Eq_EqLogic_Transitivity
-  type self
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq_Interface as LogEq0 with type self = self
-  function transitivity (x : self) (y : self) (z : self) : ()
-  axiom transitivity_spec : forall x : self, y : self, z : self . LogEq0.log_eq y z -> LogEq0.log_eq x y -> LogEq0.log_eq x z
+  axiom eq_cmp_spec : forall x : self, y : self . (x = y -> CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Equal) && (CmpLog0.cmp_log y x = Type.Core_Cmp_Ordering_Equal -> x = y)
 end
 module EqExtern_UseOrd_Interface
   type k
@@ -391,16 +327,6 @@ module EqExtern_UseOrd
   use prelude.Prelude
   use Type
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = k
-  clone CreusotContracts_Logic_Eq_EqLogic_LogNe as LogNe0 with type self = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Eq_EqLogic_LogEq as LogEq0 with type self = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Eq_EqLogic_Transitivity as Transitivity0 with type self = ModelTy0.modelTy,
-  predicate LogEq0.log_eq = LogEq0.log_eq, axiom .
-  clone CreusotContracts_Logic_Eq_EqLogic_Symmetry as Symmetry0 with type self = ModelTy0.modelTy,
-  predicate LogEq0.log_eq = LogEq0.log_eq, axiom .
-  clone CreusotContracts_Logic_Eq_EqLogic_Refl as Refl1 with type self = ModelTy0.modelTy,
-  predicate LogEq0.log_eq = LogEq0.log_eq, axiom .
-  clone CreusotContracts_Logic_Eq_EqLogic_EqNe as EqNe0 with type self = ModelTy0.modelTy,
-  predicate LogEq0.log_eq = LogEq0.log_eq, predicate LogNe0.log_ne = LogNe0.log_ne, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog as CmpLog0 with type self = ModelTy0.modelTy
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog as GtLog0 with type self = ModelTy0.modelTy,
   function CmpLog0.cmp_log = CmpLog0.cmp_log
@@ -419,7 +345,7 @@ module EqExtern_UseOrd
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = ModelTy0.modelTy,
   predicate LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_EqCmp as EqCmp0 with type self = ModelTy0.modelTy,
-  function CmpLog0.cmp_log = CmpLog0.cmp_log, predicate LogEq0.log_eq = LogEq0.log_eq, axiom .
+  function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym2 as Antisym20 with type self = ModelTy0.modelTy,
   function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym1 as Antisym10 with type self = ModelTy0.modelTy,

@@ -75,6 +75,18 @@ pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs(def_id), &["creusot", "extern_spec"]).is_some()
 }
 
+pub(crate) fn is_extern_spec_impl(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs(def_id), &["creusot", "extern_spec", "impl_"]).is_some()
+}
+
+pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
+    let matches = get_attrs(tcx.get_attrs(def_id), &["why3", "attr"]);
+    matches
+        .into_iter()
+        .map(|a| declaration::Attribute(a.value_str().unwrap().as_str().into()))
+        .collect()
+}
+
 pub(crate) fn closure_owner(tcx: TyCtxt, mut def_id: DefId) -> DefId {
     while tcx.is_closure(def_id) {
         def_id = tcx.parent(def_id).unwrap();
@@ -262,7 +274,7 @@ pub fn signature_of<'tcx>(
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Signature {
-    debug!("signature_of");
+    debug!("signature_of {def_id:?}");
     let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) =
         match ctx.tcx.type_of(def_id).kind() {
             TyKind::FnDef(..) => {
@@ -295,7 +307,6 @@ pub fn signature_of<'tcx>(
             }
             _ => unreachable!(),
         };
-    debug!("signature_of");
 
     let mut contract = names.with_public_clones(|names| {
         let pre_contract = crate::specification::contract_of(ctx, def_id).unwrap();
@@ -319,7 +330,6 @@ pub fn signature_of<'tcx>(
     let name = item_name(ctx.tcx, def_id);
 
     let span = ctx.tcx.def_span(def_id);
-    debug!("signature_of");
 
     let args = names.with_public_clones(|names| {
         inputs
@@ -335,18 +345,15 @@ pub fn signature_of<'tcx>(
             })
             .collect()
     });
-    debug!("signature_of");
 
+    let mut attrs = why3_attrs(ctx.tcx, def_id);
+    if matches!(item_type(ctx.tcx, def_id), ItemType::Program | ItemType::Closure) {
+        attrs.push(declaration::Attribute("cfg:stackify".into()))
+    };
     Signature {
         // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure
         name,
-        attrs: if matches!(item_type(ctx.tcx, def_id), ItemType::Program | ItemType::Closure) {
-            vec![declaration::Attribute("cfg:stackify".into())]
-        } else {
-            vec![]
-        },
-
-        // TODO: use real span
+        attrs,
         retty: Some(
             names.with_public_clones(|names| {
                 translation::ty::translate_ty(ctx, names, span, output)
@@ -381,6 +388,10 @@ pub fn get_attr<'a>(attrs: Attributes<'a>, path: &[&str]) -> Option<&'a AttrItem
 
         let attr = attr.get_normal_item();
 
+        if attr.path.segments.len() != path.len() {
+            continue;
+        }
+
         let matches = attr
             .path
             .segments
@@ -393,6 +404,34 @@ pub fn get_attr<'a>(attrs: Attributes<'a>, path: &[&str]) -> Option<&'a AttrItem
         }
     }
     None
+}
+
+pub fn get_attrs<'a>(attrs: Attributes<'a>, path: &[&str]) -> Vec<&'a Attribute> {
+    let mut matched = Vec::new();
+
+    for attr in attrs.iter() {
+        if attr.is_doc_comment() {
+            continue;
+        }
+
+        let item = attr.get_normal_item();
+
+        if item.path.segments.len() != path.len() {
+            continue;
+        }
+
+        let matches = item
+            .path
+            .segments
+            .iter()
+            .zip(path.iter())
+            .fold(true, |acc, (seg, s)| acc && &*seg.ident.as_str() == *s);
+
+        if matches {
+            matched.push(attr)
+        }
+    }
+    matched
 }
 
 pub fn is_attr(attr: &Attribute, str: &str) -> bool {

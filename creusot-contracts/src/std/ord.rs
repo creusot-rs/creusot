@@ -2,7 +2,6 @@ use crate as creusot_contracts;
 use creusot_contracts_proc::*;
 
 use crate::logic::ord::*;
-use crate::std::eq::*;
 pub use std::cmp::Ordering;
 
 pub trait Ord: OrdLogic + Eq {

@@ -84,6 +84,7 @@ fn main() {
     args.push("-Coverflow-checks=off".to_owned());
     args.push("-Zcrate-attr=feature(register_tool)".to_owned());
     args.push("-Zcrate-attr=register_tool(creusot)".to_owned());
+    args.push("-Zcrate-attr=register_tool(why3)".to_owned());
     args.push("-Zcrate-attr=feature(stmt_expr_attributes)".to_owned());
     args.push("-Zcrate-attr=feature(proc_macro_hygiene)".to_owned());
     args.push("-Zcrate-attr=feature(rustc_attrs)".to_owned());

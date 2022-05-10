@@ -33,10 +33,10 @@ impl Callbacks for ToWhy {
 
         let _ = queries.global_ctxt().unwrap().peek_mut().enter(|tcx| {
             let mut ctx = ctx::TranslationCtx::new(tcx, &self.opts);
-            crate::translation::before_analysis(&mut ctx).unwrap();
+            let _ = crate::translation::before_analysis(&mut ctx);
             let _ = tcx.analysis(());
 
-            crate::translation::after_analysis(&mut ctx).unwrap();
+            let _ = crate::translation::after_analysis(&mut ctx);
         });
 
         c.session().abort_if_errors();

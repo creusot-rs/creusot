@@ -1,4 +1,3 @@
-pub mod eq;
 mod ghost;
 mod int;
 mod mapping;
@@ -8,7 +7,6 @@ mod resolve;
 mod seq;
 pub mod well_founded;
 
-pub use eq::*;
 pub use ghost::*;
 pub use int::*;
 pub use mapping::*;

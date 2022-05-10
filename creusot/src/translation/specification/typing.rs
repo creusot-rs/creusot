@@ -58,6 +58,7 @@ pub enum TermKind<'tcx> {
     Var(Symbol),
     Lit(Literal),
     Item(DefId, SubstsRef<'tcx>),
+    // TODO Remove "operand_ty"
     Binary { op: BinOp, operand_ty: Ty<'tcx>, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Logical { op: LogicalOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Unary { op: UnOp, arg: Box<Term<'tcx>> },
@@ -254,6 +255,21 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         let rhs = self.expr_term(args[1])?;
 
                         Ok(Term { ty, kind: TermKind::Equals { lhs: box lhs, rhs: box rhs } })
+                    }
+                    Some(Neq) => {
+                        let operand_ty = self.thir[args[0]].ty;
+                        let lhs = self.expr_term(args[0])?;
+                        let rhs = self.expr_term(args[1])?;
+
+                        Ok(Term {
+                            ty,
+                            kind: TermKind::Binary {
+                                op: BinOp::Ne,
+                                operand_ty,
+                                lhs: box lhs,
+                                rhs: box rhs,
+                            },
+                        })
                     }
                     Some(VariantCheck) => self.expr_term(args[0]),
                     Some(Old) => {
@@ -503,6 +519,7 @@ pub(crate) enum Stub {
     Cur,
     Impl,
     Equals,
+    Neq,
     VariantCheck,
     Old,
     ResultCheck,
@@ -528,6 +545,9 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("equal")) {
             return Some(Stub::Equals);
+        }
+        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("neq")) {
+            return Some(Stub::Neq);
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("variant_check")) {
             return Some(Stub::VariantCheck);

@@ -30,7 +30,7 @@ use why3::{
 
 pub fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     ctx.load_metadata();
-    load_extern_specs(ctx);
+    load_extern_specs(ctx).map_err(|_| Box::new(CrErr))?;
 
     for def_id in ctx.tcx.hir().body_owners() {
         let def_id = def_id.to_def_id();

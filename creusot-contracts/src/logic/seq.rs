@@ -8,39 +8,6 @@ use std::ops::Index;
 #[creusot::builtins = "seq.Seq.seq"]
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
 
-impl<T> EqLogic for Seq<T> {
-    #[predicate]
-    #[creusot::builtins = "seq.Seq.(==)"]
-    fn log_eq(self, _: Self) -> bool {
-        true
-    }
-
-    #[predicate]
-    fn log_ne(self, o: Self) -> bool {
-        pearlite! { !(self == o)}
-    }
-
-    #[logic]
-    fn eq_ne(_: Self, _: Self) {
-        ()
-    }
-
-    #[logic]
-    fn refl(_: Self) {
-        ()
-    }
-
-    #[logic]
-    fn symmetry(_: Self, _: Self) {
-        ()
-    }
-
-    #[logic]
-    fn transitivity(_: Self, _: Self, _: Self) {
-        ()
-    }
-}
-
 impl<T> Seq<T> {
     #[trusted]
     #[creusot::builtins = "seq.Seq.empty"]

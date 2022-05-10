@@ -18,8 +18,8 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
             let left = encode_term(*left)?;
             let right = encode_term(*right)?;
             match op {
-                syn::BinOp::Eq(_) => Ok(quote! { (#left).log_eq(#right) }),
-                syn::BinOp::Ne(_) => Ok(quote! { (#left).log_ne(#right) }),
+                syn::BinOp::Eq(_) => Ok(quote! { creusot_contracts::stubs::equal(#left, #right) }),
+                syn::BinOp::Ne(_) => Ok(quote! { creusot_contracts::stubs::neq(#left, #right) }),
                 syn::BinOp::Lt(_) => Ok(quote! { (#left).lt_log(#right) }),
                 syn::BinOp::Le(_) => Ok(quote! { (#left).le_log(#right) }),
                 syn::BinOp::Ge(_) => Ok(quote! { (#left).ge_log(#right) }),
@@ -243,7 +243,7 @@ mod tests {
         let term: Term = syn::parse_str("forall<x:Int> x == x").unwrap();
         assert_eq!(
             format!("{}", encode_term(term).unwrap()),
-            "creusot_contracts :: stubs :: forall (# [creusot :: no_translate] | x : Int | { (x) . log_eq (x) })"
+            "creusot_contracts :: stubs :: forall (# [creusot :: no_translate] | x : Int | { creusot_contracts :: stubs :: equal (x , x) })"
         );
 
         let term: Term = syn::parse_str("forall<x:Int> forall<y:Int> true").unwrap();
@@ -258,7 +258,7 @@ mod tests {
         let term: Term = syn::parse_str("exists<x:Int> x == x").unwrap();
         assert_eq!(
             format!("{}", encode_term(term).unwrap()),
-            "creusot_contracts :: stubs :: exists (# [creusot :: no_translate] | x : Int | { (x) . log_eq (x) })"
+            "creusot_contracts :: stubs :: exists (# [creusot :: no_translate] | x : Int | { creusot_contracts :: stubs :: equal (x , x) })"
         );
 
         let term: Term = syn::parse_str("exists<x:Int> exists<y:Int> true").unwrap();
