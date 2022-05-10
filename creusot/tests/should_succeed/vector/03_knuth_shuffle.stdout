@@ -13,7 +13,20 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use prelude.Prelude
-  type creusotcontracts_std1_vec_vec 't
+  type core_marker_phantomdata 't = 
+    ()
+  type core_ptr_unique_unique 't = 
+    | Core_Ptr_Unique_Unique opaque_ptr (core_marker_phantomdata 't)
+    
+  type alloc_rawvec_rawvec 't 'a = 
+    | Alloc_RawVec_RawVec (core_ptr_unique_unique 't) usize 'a
+    
+  type alloc_vec_vec 't 'a = 
+    | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) usize
+    
+  type alloc_alloc_global  = 
+    | Alloc_Alloc_Global
+    
   type creusotcontracts_logic_ghost_ghost 't = 
     | CreusotContracts_Logic_Ghost_Ghost opaque_ptr
     
@@ -38,15 +51,17 @@ module C03KnuthShuffle_RandInRange
 end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   type t
+  type a
   use Type
   use seq.Seq
-  function model (self : Type.creusotcontracts_std1_vec_vec t) : Seq.seq t
+  function model (self : Type.alloc_vec_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
+  type a
   use Type
   use seq.Seq
-  function model (self : Type.creusotcontracts_std1_vec_vec t) : Seq.seq t
+  function model (self : Type.alloc_vec_vec t a) : Seq.seq t
 end
 module CreusotContracts_Logic_Model_Model_ModelTy
   type self
@@ -77,12 +92,12 @@ module CreusotContracts_Logic_Model_Impl1_Model
   function model (self : borrowed t) : ModelTy0.modelTy = 
     Model0.model ( * self)
 end
-module CreusotContracts_Logic_Seq_Impl1_PermutationOf_Interface
+module CreusotContracts_Logic_Seq_Impl0_PermutationOf_Interface
   type t
   use seq.Seq
   predicate permutation_of (self : Seq.seq t) (o : Seq.seq t)
 end
-module CreusotContracts_Logic_Seq_Impl1_PermutationOf
+module CreusotContracts_Logic_Seq_Impl0_PermutationOf
   type t
   use seq.Seq
   use mach.int.Int
@@ -93,6 +108,7 @@ module CreusotContracts_Logic_Seq_Impl1_PermutationOf
 end
 module CreusotContracts_Std1_Vec_Impl0_ModelTy
   type t
+  type a
   use seq.Seq
   type modelTy  = 
     Seq.seq t
@@ -143,12 +159,13 @@ module CreusotContracts_Logic_Ghost_Impl0
 end
 module CreusotContracts_Std1_Vec_Impl0
   type t
+  type a
   use Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.creusotcontracts_std1_vec_vec t,
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = a
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = a
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.alloc_vec_vec t a,
   function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.creusotcontracts_std1_vec_vec t,
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.alloc_vec_vec t a,
   type modelTy = ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
@@ -177,83 +194,129 @@ module CreusotContracts_Logic_Ghost_Impl1_Record
     ensures { Model0.model result = a }
     
 end
-module CreusotContracts_Logic_Model_Impl0_Model_Interface
+module Alloc_Vec_Impl1_Len_Interface
   type t
-  use prelude.Prelude
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  function model (self : t) : ModelTy0.modelTy
-end
-module CreusotContracts_Logic_Model_Impl0_Model
-  type t
-  use prelude.Prelude
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
-  type ModelTy0.modelTy = ModelTy0.modelTy
-  function model (self : t) : ModelTy0.modelTy = 
-    Model0.model self
-end
-module CreusotContracts_Std1_Vec_Impl1_Len_Interface
-  type t
+  type a
   use mach.int.UInt64
   use seq.Seq
   use prelude.Prelude
   use Type
   use mach.int.Int
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
-  type ModelTy0.modelTy = ModelTy0.modelTy
-  val len [@cfg:stackify] (self : Type.creusotcontracts_std1_vec_vec t) : usize
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a
+  val len [@cfg:stackify] (self : Type.alloc_vec_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
-module CreusotContracts_Std1_Vec_Impl1_Len
+module Alloc_Vec_Impl1_Len
   type t
+  type a
   use mach.int.UInt64
   use seq.Seq
   use prelude.Prelude
   use Type
   use mach.int.Int
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
-  type ModelTy0.modelTy = ModelTy0.modelTy
-  val len [@cfg:stackify] (self : Type.creusotcontracts_std1_vec_vec t) : usize
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a
+  val len [@cfg:stackify] (self : Type.alloc_vec_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
-module CreusotContracts_Std1_Vec_Impl1_Swap_Interface
+module Core_Ops_Deref_Deref_Target
+  type self
+  type target
+end
+module Core_Ops_Deref_DerefMut_DerefMut_Interface
+  type self
+  use prelude.Prelude
+  clone Core_Ops_Deref_Deref_Target as Target0 with type self = self
+  val deref_mut [@cfg:stackify] (self : borrowed self) : borrowed Target0.target
+    requires {false}
+    
+end
+module Core_Ops_Deref_DerefMut_DerefMut
+  type self
+  use prelude.Prelude
+  clone Core_Ops_Deref_Deref_Target as Target0 with type self = self
+  val deref_mut [@cfg:stackify] (self : borrowed self) : borrowed Target0.target
+    requires {false}
+    
+end
+module CreusotContracts_Logic_Model_Impl2_Model_Interface
+  type t
+  use prelude.Prelude
+  use seq.Seq
+  function model (self : seq t) : Seq.seq t
+end
+module CreusotContracts_Logic_Model_Impl2_Model
+  type t
+  use prelude.Prelude
+  use seq.Seq
+  function model (self : seq t) : Seq.seq t = 
+    Prelude.id self
+end
+module Alloc_Vec_Impl11_DerefMut_Interface
+  type t
+  type a
+  use prelude.Prelude
+  use Type
+  use seq.Seq
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t, type a = a
+  clone CreusotContracts_Logic_Model_Impl2_Model_Interface as Model0 with type t = t
+  val deref_mut [@cfg:stackify] (self : borrowed (Type.alloc_vec_vec t a)) : borrowed (seq t)
+    ensures { Model0.model ( ^ result) = Model1.model ( ^ self) }
+    ensures { Model0.model ( * result) = Model1.model ( * self) }
+    
+end
+module Alloc_Vec_Impl11_DerefMut
+  type t
+  type a
+  use prelude.Prelude
+  use Type
+  use seq.Seq
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t, type a = a
+  clone CreusotContracts_Logic_Model_Impl2_Model_Interface as Model0 with type t = t
+  val deref_mut [@cfg:stackify] (self : borrowed (Type.alloc_vec_vec t a)) : borrowed (seq t)
+    ensures { Model0.model ( ^ result) = Model1.model ( ^ self) }
+    ensures { Model0.model ( * result) = Model1.model ( * self) }
+    
+end
+module CreusotContracts_Logic_Model_Impl2_ModelTy
+  type t
+  use seq.Seq
+  type modelTy  = 
+    Seq.seq t
+end
+module Core_Slice_Impl0_Swap_Interface
   type t
   use mach.int.UInt64
   use seq.Seq
   use mach.int.Int
   use seq.Permut
   use prelude.Prelude
-  use Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  clone CreusotContracts_Logic_Model_Impl2_Model_Interface as Model1 with type t = t
+  clone CreusotContracts_Logic_Model_Impl2_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  val swap [@cfg:stackify] (self : borrowed (Type.creusotcontracts_std1_vec_vec t)) (i : usize) (j : usize) : ()
-    requires {UInt64.to_int j < Seq.length (Model0.model self)}
-    requires {UInt64.to_int i < Seq.length (Model0.model self)}
-    ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int i) (UInt64.to_int j) }
+  val swap [@cfg:stackify] (self : borrowed (seq t)) (a : usize) (b : usize) : ()
+    requires {UInt64.to_int b < Seq.length (Model0.model self)}
+    requires {UInt64.to_int a < Seq.length (Model0.model self)}
+    ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int a) (UInt64.to_int b) }
     
 end
-module CreusotContracts_Std1_Vec_Impl1_Swap
+module Core_Slice_Impl0_Swap
   type t
   use mach.int.UInt64
   use seq.Seq
   use mach.int.Int
   use seq.Permut
   use prelude.Prelude
-  use Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  clone CreusotContracts_Logic_Model_Impl2_Model_Interface as Model1 with type t = t
+  clone CreusotContracts_Logic_Model_Impl2_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  val swap [@cfg:stackify] (self : borrowed (Type.creusotcontracts_std1_vec_vec t)) (i : usize) (j : usize) : ()
-    requires {UInt64.to_int j < Seq.length (Model0.model self)}
-    requires {UInt64.to_int i < Seq.length (Model0.model self)}
-    ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int i) (UInt64.to_int j) }
+  val swap [@cfg:stackify] (self : borrowed (seq t)) (a : usize) (b : usize) : ()
+    requires {UInt64.to_int b < Seq.length (Model0.model self)}
+    requires {UInt64.to_int a < Seq.length (Model0.model self)}
+    ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int a) (UInt64.to_int b) }
     
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
@@ -267,6 +330,26 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   predicate resolve (self : borrowed t) = 
      ^ self =  * self
 end
+module Alloc_Vec_Impl10_Target
+  type t
+  type a
+  use prelude.Prelude
+  use seq.Seq
+  type target  = 
+    seq t
+end
+module Alloc_Vec_Impl11
+  type t
+  type a
+  use Type
+  clone Alloc_Vec_Impl10_Target as Target0 with type t = t, type a = a
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t, type a = a
+  clone CreusotContracts_Logic_Model_Impl2_Model as Model0 with type t = t
+  clone Alloc_Vec_Impl11_DerefMut_Interface as DerefMut0 with type t = t, type a = a,
+  function Model0.model = Model0.model, function Model1.model = Model1.model
+  clone Core_Ops_Deref_DerefMut_DerefMut_Interface as DerefMut1 with type self = Type.alloc_vec_vec t a,
+  val deref_mut = DerefMut0.deref_mut, type Target0.target = Target0.target
+end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
   use prelude.Prelude
@@ -274,34 +357,26 @@ module CreusotContracts_Logic_Resolve_Impl1
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = borrowed t,
   predicate resolve = Resolve0.resolve
 end
-module CreusotContracts_Logic_Model_Impl0_ModelTy
-  type t
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  type modelTy  = 
-    ModelTy0.modelTy
-end
-module CreusotContracts_Logic_Model_Impl0
+module CreusotContracts_Logic_Model_Impl2
   type t
   use prelude.Prelude
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
-  function Model0.model = Model2.model
-  clone CreusotContracts_Logic_Model_Impl0_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = t, function model = Model0.model,
+  use seq.Seq
+  clone CreusotContracts_Logic_Model_Impl2_Model as Model0 with type t = t
+  clone CreusotContracts_Logic_Model_Impl2_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = seq t, function model = Model0.model,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = t, type modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = seq t, type modelTy = ModelTy0.modelTy
 end
 module C03KnuthShuffle_KnuthShuffle_Interface
   type t
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Logic_Seq_Impl1_PermutationOf_Interface as PermutationOf0 with type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Type.creusotcontracts_std1_vec_vec t,
+  clone CreusotContracts_Logic_Seq_Impl0_PermutationOf_Interface as PermutationOf0 with type t = t
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = Type.alloc_alloc_global
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t
-  val knuth_shuffle [@cfg:stackify] (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) : ()
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global
+  val knuth_shuffle [@cfg:stackify] (v : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))) : ()
     ensures { PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
     
 end
@@ -309,52 +384,59 @@ module C03KnuthShuffle_KnuthShuffle
   type t
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Logic_Seq_Impl1_PermutationOf as PermutationOf0 with type t = t
-  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model1 with type t = borrowed (Type.creusotcontracts_std1_vec_vec t)
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Type.creusotcontracts_std1_vec_vec t,
+  clone CreusotContracts_Logic_Seq_Impl0_PermutationOf as PermutationOf0 with type t = t
+  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model1 with type t = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = t, type a = Type.alloc_alloc_global
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = Type.alloc_alloc_global
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model2.model
   use mach.int.Int
   use mach.int.UInt64
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Type.creusotcontracts_std1_vec_vec t
+  use seq.Seq
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve3 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global)
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = seq t
+  clone CreusotContracts_Logic_Model_Impl2_ModelTy as ModelTy1 with type t = t
+  clone CreusotContracts_Logic_Model_Impl2_Model as Model3 with type t = t
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model4 with type t = seq t,
+  type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model3.model
+  clone Core_Slice_Impl0_Swap_Interface as Swap0 with type t = t, function Model0.model = Model4.model,
+  function Model1.model = Model3.model
   clone C03KnuthShuffle_RandInRange_Interface as RandInRange0
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.creusotcontracts_std1_vec_vec t))
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = borrowed (Type.creusotcontracts_std1_vec_vec t)
-  clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = borrowed (Type.creusotcontracts_std1_vec_vec t),
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global)))
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))
+  clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global)),
   function Model0.model = Model1.model
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model3 with type t = Type.creusotcontracts_std1_vec_vec t,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model2.model
-  clone CreusotContracts_Std1_Vec_Impl1_Len_Interface as Len0 with type t = t, function Model0.model = Model3.model
-  clone CreusotContracts_Std1_Vec_Impl1_Swap_Interface as Swap0 with type t = t, function Model0.model = Model0.model,
-  function Model1.model = Model2.model
-  let rec cfg knuth_shuffle [@cfg:stackify] (v : borrowed (Type.creusotcontracts_std1_vec_vec t)) : ()
+  clone Alloc_Vec_Impl11_DerefMut_Interface as DerefMut0 with type t = t, type a = Type.alloc_alloc_global,
+  function Model0.model = Model3.model, function Model1.model = Model2.model
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Type.alloc_alloc_global,
+  function Model0.model = Model2.model
+  let rec cfg knuth_shuffle [@cfg:stackify] (v : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))) : ()
     ensures { PermutationOf0.permutation_of (Model2.model ( ^ v)) (Model0.model v) }
     
    = 
   var _0 : ();
-  var v_1 : borrowed (Type.creusotcontracts_std1_vec_vec t);
-  var old_v_2 : Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.creusotcontracts_std1_vec_vec t));
-  var _3 : borrowed (Type.creusotcontracts_std1_vec_vec t);
-  var _4 : borrowed (Type.creusotcontracts_std1_vec_vec t);
+  var v_1 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
+  var old_v_2 : Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global)));
+  var _3 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
+  var _4 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
   var n_5 : usize;
   var _6 : ();
   var _7 : bool;
   var _8 : usize;
   var _9 : usize;
-  var _10 : Type.creusotcontracts_std1_vec_vec t;
-  var i_11 : usize;
+  var _10 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
+  var upper_11 : usize;
   var _12 : usize;
-  var _13 : usize;
-  var _14 : Type.creusotcontracts_std1_vec_vec t;
-  var _15 : usize;
-  var _16 : ();
-  var _17 : borrowed (Type.creusotcontracts_std1_vec_vec t);
-  var _18 : usize;
-  var _19 : usize;
-  var _20 : usize;
+  var _13 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
+  var _14 : usize;
+  var i_15 : usize;
+  var _16 : usize;
+  var _17 : ();
+  var _18 : borrowed (seq t);
+  var _19 : borrowed (seq t);
+  var _20 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
   var _21 : usize;
-  var _22 : Type.creusotcontracts_std1_vec_vec t;
+  var _22 : usize;
   var _23 : usize;
   var _24 : ();
   var _25 : ();
@@ -391,38 +473,40 @@ module C03KnuthShuffle_KnuthShuffle
       end
   }
   BB4 {
-    _14 <-  * v_1;
-    _13 <- Len0.len _14;
+    _13 <-  * v_1;
+    _12 <- Len0.len _13;
     goto BB5
   }
   BB5 {
-    _15 <- n_5;
-    _12 <- _13 - _15;
-    i_11 <- RandInRange0.rand_in_range (0 : usize) _12;
+    _14 <- n_5;
+    upper_11 <- _12 - _14;
+    _16 <- upper_11;
+    i_15 <- RandInRange0.rand_in_range (0 : usize) _16;
     goto BB6
   }
   BB6 {
-    _17 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _17) };
-    _18 <- i_11;
-    _22 <-  * _17;
-    _21 <- Len0.len _22;
+    _20 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _20) };
+    _19 <- DerefMut0.deref_mut _20;
     goto BB7
   }
   BB7 {
-    _23 <- n_5;
-    _20 <- _21 - _23;
-    _19 <- _20 - (1 : usize);
-    _16 <- Swap0.swap _17 _18 _19;
+    _18 <- borrow_mut ( * _19);
+    _19 <- { _19 with current = ( ^ _18) };
+    _21 <- i_15;
+    _23 <- upper_11;
+    _22 <- _23 - (1 : usize);
+    _17 <- Swap0.swap _18 _21 _22;
     goto BB8
   }
   BB8 {
+    assume { Resolve2.resolve _19 };
     n_5 <- n_5 + (1 : usize);
     _6 <- ();
     goto BB2
   }
   BB9 {
-    assume { Resolve2.resolve v_1 };
+    assume { Resolve3.resolve v_1 };
     _0 <- ();
     return _0
   }

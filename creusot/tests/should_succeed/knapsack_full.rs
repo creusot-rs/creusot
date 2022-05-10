@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{std::vec, std::vec::Vec, *};
+use creusot_contracts::{std::*, *};
 
 struct Item<Name> {
     name: Name,

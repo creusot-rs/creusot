@@ -243,7 +243,7 @@ mod tests {
         let term: Term = syn::parse_str("forall<x:Int> x == x").unwrap();
         assert_eq!(
             format!("{}", encode_term(term).unwrap()),
-            "creusot_contracts :: stubs :: forall (# [creusot :: no_translate] | x : Int | { (x) . log_eq (x) })"
+            "creusot_contracts :: stubs :: forall (# [creusot :: no_translate] | x : Int | { creusot_contracts :: stubs :: equal (x , x) })"
         );
 
         let term: Term = syn::parse_str("forall<x:Int> forall<y:Int> true").unwrap();
@@ -258,7 +258,7 @@ mod tests {
         let term: Term = syn::parse_str("exists<x:Int> x == x").unwrap();
         assert_eq!(
             format!("{}", encode_term(term).unwrap()),
-            "creusot_contracts :: stubs :: exists (# [creusot :: no_translate] | x : Int | { (x) . log_eq (x) })"
+            "creusot_contracts :: stubs :: exists (# [creusot :: no_translate] | x : Int | { creusot_contracts :: stubs :: equal (x , x) })"
         );
 
         let term: Term = syn::parse_str("exists<x:Int> exists<y:Int> true").unwrap();

@@ -14,8 +14,7 @@ module Type
   use floating_point.Double
   use prelude.Prelude
   type core_marker_phantomdata 't = 
-    | Core_Marker_PhantomData
-    
+    ()
   type core_ptr_unique_unique 't = 
     | Core_Ptr_Unique_Unique opaque_ptr (core_marker_phantomdata 't)
     
@@ -43,11 +42,110 @@ module Alloc_Vec_Impl0_New
     requires {true = true}
     
 end
+module CreusotContracts_Std1_Vec_Impl0_Model_Interface
+  type t
+  type a
+  use Type
+  use seq.Seq
+  function model (self : Type.alloc_vec_vec t a) : Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0_Model
+  type t
+  type a
+  use Type
+  use seq.Seq
+  function model (self : Type.alloc_vec_vec t a) : Seq.seq t
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Std1_Vec_Impl2_Resolve_Interface
+  type t
+  use Type
+  predicate resolve (self : Type.alloc_vec_vec t (Type.alloc_alloc_global))
+end
+module CreusotContracts_Std1_Vec_Impl2_Resolve
+  type t
+  use Type
+  use mach.int.Int
+  use mach.int.Int32
+  use seq.Seq
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global
+  predicate resolve (self : Type.alloc_vec_vec t (Type.alloc_alloc_global)) = 
+    forall i : (int) . 0 <= i && i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
+end
+module CreusotContracts_Std1_Vec_Impl2
+  type t
+  use Type
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = t
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = Type.alloc_alloc_global
+  clone CreusotContracts_Std1_Vec_Impl2_Resolve as Resolve0 with type t = t, function Model0.model = Model0.model,
+  predicate Resolve0.resolve = Resolve2.resolve
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.alloc_vec_vec t (Type.alloc_alloc_global),
+  predicate resolve = Resolve0.resolve
+end
+module CreusotContracts_Logic_Model_Model_ModelTy
+  type self
+  type modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model_Interface
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Std1_Vec_Impl0_ModelTy
+  type t
+  type a
+  use seq.Seq
+  type modelTy  = 
+    Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0
+  type t
+  type a
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = a
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = a
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.alloc_vec_vec t a,
+  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.alloc_vec_vec t a,
+  type modelTy = ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t
+  predicate resolve (self : t)
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t
+  predicate resolve (self : t) = 
+    true
+end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
+  predicate resolve = Resolve0.resolve
+end
 module C07ExternSpec_Main_Interface
   val main [@cfg:stackify] () : ()
 end
 module C07ExternSpec_Main
   use Type
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = bool
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = bool, type a = Type.alloc_alloc_global
+  clone CreusotContracts_Std1_Vec_Impl2_Resolve as Resolve0 with type t = bool, function Model0.model = Model0.model,
+  predicate Resolve0.resolve = Resolve1.resolve
   clone Alloc_Vec_Impl0_New_Interface as New0 with type t = bool
   let rec cfg main [@cfg:stackify] () : () = 
   var _0 : ();
@@ -64,17 +162,10 @@ module C07ExternSpec_Main
     goto BB2
   }
   BB2 {
+    assume { Resolve0.resolve v_1 };
     return _0
   }
   
-end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
 end
 module C07ExternSpec_HasParams_Interface
   type v
@@ -172,36 +263,20 @@ module C07ExternSpec_Client
   }
   
 end
-module C07ExternSpec_Id_Interface
-  type t
-  function id (x : t) : t
-end
-module C07ExternSpec_Id
-  type t
-  function id (x : t) : t = 
-    x
-end
 module C07ExternSpec_RenamedParams_Interface
   type a
   type b
   type c
-  clone C07ExternSpec_Id_Interface as Id0 with type t = a
   val renamed_params [@cfg:stackify] (a : a) (b : b) (c : c) : ()
-    ensures { Id0.id a = a }
-    
 end
 module C07ExternSpec_RenamedParams
   type a
   type b
   type c
-  clone C07ExternSpec_Id as Id0 with type t = a
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = a
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = b
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = c
-  let rec cfg renamed_params [@cfg:stackify] (a : a) (b : b) (c : c) : ()
-    ensures { Id0.id a = a }
-    
-   = 
+  let rec cfg renamed_params [@cfg:stackify] (a : a) (b : b) (c : c) : () = 
   var _0 : ();
   var a_1 : a;
   var b_2 : b;
@@ -229,4 +304,13 @@ module C07ExternSpec_RenamedParams
     return _0
   }
   
+end
+module C07ExternSpec_Id_Interface
+  type t
+  function id (x : t) : t
+end
+module C07ExternSpec_Id
+  type t
+  function id (x : t) : t = 
+    x
 end

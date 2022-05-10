@@ -79,17 +79,20 @@ impl<Args, F: Fn<Args>> FnSpec<Args> for F {
 extern_spec! {
     #[requires(f.precondition(a))]
     #[ensures(f.postcondition_once(a, result))]
-    fn std::ops::FnOnce::call_once<A, F : FnOnceSpec<A>>(f: F, a: A) -> F::Output
+    fn std::ops::FnOnce::call_once<Self_, Args>(f: Self_, a: Args) -> Self_::Output
+        where Self_ : FnOnceSpec<Args>
 }
 
 extern_spec! {
     #[requires((*f).precondition(a))]
     #[ensures(f.postcondition_mut(a, result))]
-    fn std::ops::FnMut::call_mut<A, F : FnMutSpec<A>>(f: &mut F, a: A) -> F::Output
+    fn std::ops::FnMut::call_mut<Self_, Args>(f: &mut Self_, a: Args) -> Self_::Output
+        where Self_ : FnMutSpec<Args>
 }
 
 extern_spec! {
     #[requires((*f).precondition(a))]
     #[ensures(f.postcondition(a, result))]
-    fn std::ops::Fn::call<A, F : FnSpec<A>>(f: &F, a: A) -> F::Output
+    fn std::ops::Fn::call<Self_, Args>(f: &Self_, a: Args) -> Self_::Output
+        where Self_ : FnSpec<Args>
 }

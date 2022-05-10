@@ -32,6 +32,6 @@ impl<T> Model for [T] {
 }
 
 #[creusot::builtins = "prelude.Prelude.id"]
-fn id<T>(x: [T]) -> crate::Seq<T> {
+fn id<T>(_: [T]) -> crate::Seq<T> {
     std::process::abort()
 }

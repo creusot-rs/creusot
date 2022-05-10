@@ -1,12 +1,12 @@
 extern crate creusot_contracts;
-use creusot_contracts::{std::vec, std::vec::Vec, std::Clone, *};
+use creusot_contracts::{std::vec, *};
 
 extern_spec! {
     #[ensures(result === (@self_ === @rhs))]
-    fn std::cmp::PartialEq::eq<T, Rhs>(self_: &T, rhs: &Rhs) -> bool
-        where T : PartialEq<Rhs>,
-              T : Model,
-              Rhs: Model<ModelTy = T::ModelTy>,
+    fn std::cmp::PartialEq::eq<Self_, Rhs>(self_: &Self_, rhs: &Rhs) -> bool
+        where Self_ : PartialEq<Rhs>,
+              Self_ : Model,
+              Rhs: Model<ModelTy = Self_::ModelTy>,
 }
 
 enum List<T> {

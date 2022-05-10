@@ -1,11 +1,11 @@
 use crate as creusot_contracts;
-use crate::logic::EqLogic;
+// use crate::logic::EqLogic;
 use crate::logic::Int;
 use creusot_contracts_proc::*;
 pub use std::cmp::Ordering;
 
 #[allow(unused)]
-pub trait OrdLogic: EqLogic {
+pub trait OrdLogic {
     #[logic]
     fn cmp_log(self, _: Self) -> Ordering;
 
@@ -166,5 +166,5 @@ ord_logic_impl!(usize);
 ord_logic_impl!(u64);
 ord_logic_impl!(u32);
 ord_logic_impl!(isize);
-ord_logic_impl!(i64);
 ord_logic_impl!(i32);
+ord_logic_impl!(i64);

@@ -1,6 +1,4 @@
 // WHY3PROVE CVC4
-#![feature(type_ascription)]
-
 extern crate creusot_contracts;
 
 use creusot_contracts::std::*;
@@ -24,8 +22,9 @@ fn knuth_shuffle<T>(v: &mut Vec<T>) {
     while n < v.len() {
         // We assign the length to a variable to work around a limitation with two-phase borrows
         // where we forget the value stored in the reference.
-        let i = rand_in_range(0, v.len() - n);
-        v.swap(i, v.len() - n - 1);
+        let upper = v.len() - n;
+        let i = rand_in_range(0, upper);
+        v.swap(i, upper - 1);
         n += 1;
     }
 }
