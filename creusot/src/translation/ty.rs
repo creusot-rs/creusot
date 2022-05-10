@@ -237,6 +237,14 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
             );
         }
     }
+
+    if ctx.type_of(did).is_phantom_data() {
+        let ty_name = translate_ty_name(ctx, did).name;
+        let ty_params: Vec<_> = ty_param_names(ctx.tcx, did).collect();
+
+        ctx.add_type(&bg, TyDecl::Alias { ty_name, ty_params, alias: MlT::Tuple(vec![]) });
+        return;
+    }
     // Trusted types (opaque)
     if util::is_trusted(ctx.tcx, bg[0]) {
         if bg.len() > 1 {
