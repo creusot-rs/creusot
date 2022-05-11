@@ -64,10 +64,26 @@ pub fn translate_function<'tcx, 'sess>(
     SimplifyCfg::new("verify").run_pass(tcx, &mut body);
 
     let (invariants, assertions) = corrected_invariant_names_and_locations(ctx, &mut names, &body);
+
+    let mut decls = Vec::new();
+    decls.extend(closure_generic_decls(ctx.tcx, def_id));
+
+    if ctx.tcx.is_closure(def_id) {
+        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
+            let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
+            let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
+            decls.extend(names.to_clones(ctx));
+            decls.push(env_ty);
+            decls.extend(accessors);
+        }
+    }
+
     let func_translator =
         FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, assertions, def_id);
 
-    func_translator.translate()
+    decls.extend(func_translator.translate());
+    let name = module_name(ctx.tcx, def_id);
+    Module { name, decls }
 }
 
 pub fn translate_trusted<'tcx>(
@@ -95,7 +111,6 @@ use crate::resolve::EagerResolver;
 pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     def_id: DefId,
-
     body: &'body Body<'tcx>,
 
     resolver: EagerResolver<'body, 'tcx>,
@@ -174,39 +189,11 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         }
     }
 
-    fn translate(mut self) -> Module {
+    fn translate(mut self) -> Vec<Decl> {
         let mut decls: Vec<_> = Vec::new();
-        decls.extend(closure_generic_decls(self.tcx, self.def_id));
-
-        if self.tcx.is_closure(self.def_id) {
-            if let TyKind::Closure(_, subst) = self.tcx.type_of(self.def_id).kind() {
-                let env_ty = Decl::TyDecl(translate_closure_ty(
-                    self.ctx,
-                    &mut self.clone_names,
-                    self.def_id,
-                    subst,
-                ));
-                let accessors = closure_accessors(
-                    self.ctx,
-                    &mut self.clone_names,
-                    self.def_id,
-                    subst.as_closure(),
-                );
-                decls.extend(self.clone_names.to_clones(self.ctx));
-                decls.push(env_ty);
-                decls.extend(accessors);
-            }
-        }
-
         let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
-        let name = module_name(self.tcx, self.def_id);
 
         decls.extend(self.clone_names.to_clones(self.ctx));
-
-        if util::is_trusted(self.tcx, self.def_id) {
-            decls.push(Decl::ValDecl(ValKind::Val { sig }));
-            return Module { name, decls };
-        }
 
         self.translate_body();
 
@@ -230,15 +217,13 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         };
         decls.extend(self.clone_names.to_clones(self.ctx));
 
-        // decls.extend(closure_contract(self.ctx, &mut self.clone_names, self.def_id).into_iter());
-
         decls.push(Decl::FunDecl(CfgFunction {
             sig,
             vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(),
             entry,
             blocks: self.past_blocks,
         }));
-        Module { name, decls }
+        decls
     }
 
     fn translate_body(&mut self) {
