@@ -11,12 +11,12 @@ use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use rustc_infer::infer::TyCtxtInferExt;
-use rustc_middle::ty::Ty;
 use rustc_middle::ty::{
     subst::{GenericArg, SubstsRef},
     TypeFoldable,
 };
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
+use rustc_middle::ty::{ParamEnv, Ty};
 use rustc_middle::{
     mir::traversal::preorder,
     mir::{BasicBlock, Body, Local, Location, MirPass, Operand, VarDebugInfo},
@@ -132,7 +132,7 @@ pub struct BodyTranslator<'body, 'sess, 'tcx> {
     fresh_id: usize,
 
     // Gives a fresh name to every mono-morphization of a function or trait
-    clone_names: CloneMap<'tcx>,
+    names: CloneMap<'tcx>,
 
     invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
 
@@ -145,7 +145,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'sess, 'tcx>,
         body: &'body Body<'tcx>,
-        clone_names: CloneMap<'tcx>,
+        names: CloneMap<'tcx>,
         invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
         assertions: IndexMap<DefId, Exp>,
         def_id: DefId,
@@ -181,7 +181,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             past_blocks: BTreeMap::new(),
             ctx,
             fresh_id: body.basic_blocks().len(),
-            clone_names,
+            names,
             invariants,
             assertions,
             local_map,
@@ -191,9 +191,9 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
     fn translate(mut self) -> Vec<Decl> {
         let mut decls: Vec<_> = Vec::new();
-        let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
+        let sig = signature_of(self.ctx, &mut self.names, self.def_id);
 
-        decls.extend(self.clone_names.to_clones(self.ctx));
+        decls.extend(self.names.to_clones(self.ctx));
 
         self.translate_body();
 
@@ -215,7 +215,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
                 .collect(),
             terminator: Terminator::Goto(BlockId(0)),
         };
-        decls.extend(self.clone_names.to_clones(self.ctx));
+        decls.extend(self.names.to_clones(self.ctx));
 
         decls.push(Decl::FunDecl(CfgFunction {
             sig,
@@ -269,16 +269,15 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             let ident = self.translate_local(loc);
             vars.push((
                 ident,
-                ty::translate_ty(
-                    &mut self.ctx,
-                    &mut self.clone_names,
-                    decl.source_info.span,
-                    decl.ty,
-                ),
+                ty::translate_ty(&mut self.ctx, &mut self.names, decl.source_info.span, decl.ty),
             ))
         }
 
         vars
+    }
+
+    fn param_env(&self) -> ParamEnv<'tcx> {
+        self.ctx.param_env(self.def_id)
     }
 
     fn emit_statement(&mut self, s: mlcfg::Statement) {
@@ -297,7 +296,8 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     }
 
     fn resolve_ty(&mut self, ty: Ty<'tcx>) -> ResolveStmt {
-        resolve_predicate_of(&mut self.ctx, &mut self.clone_names, self.def_id, ty)
+        let param_env = self.param_env();
+        resolve_predicate_of(&mut self.ctx, &mut self.names, param_env, ty)
     }
 
     // Inserts drop statements for variables which died over the course of a goto or switch
@@ -363,11 +363,12 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
     fn freeze_locals(&mut self, mut dying: BitSet<Local>) {
         dying.subtract(&self.erased_locals);
+        let param_env = self.param_env();
 
         for local in dying.iter() {
             let local_ty = self.body.local_decls[local].ty;
             let ident = self.translate_local(local).ident();
-            resolve_predicate_of(&mut self.ctx, &mut self.clone_names, self.def_id, local_ty)
+            resolve_predicate_of(&mut self.ctx, &mut self.names, param_env, local_ty)
                 .emit(Exp::impure_var(ident), self);
         }
     }
@@ -377,9 +378,9 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(pl),
             Operand::Constant(c) => crate::constant::from_mir_constant(
+                self.param_env(),
                 &mut self.ctx,
-                &mut self.clone_names,
-                self.def_id,
+                &mut self.names,
                 c,
             ),
         }
@@ -543,7 +544,8 @@ fn closure_resolve<'tcx>(
         let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
         let self_ = Exp::pure_var(Ident::build("_1'"));
 
-        let resolve_one = resolve_predicate_of(ctx, names, def_id, ty).exp(acc.app_to(self_));
+        let param_env = ctx.param_env(def_id);
+        let resolve_one = resolve_predicate_of(ctx, names, param_env, ty).exp(acc.app_to(self_));
         resolve = resolve_one.and(resolve);
     }
 
@@ -612,7 +614,7 @@ impl ResolveStmt {
 fn resolve_predicate_of<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
-    def_id: DefId,
+    param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
 ) -> ResolveStmt {
     if !resolve_trait_loaded(ctx.tcx) {
@@ -627,7 +629,6 @@ fn resolve_predicate_of<'tcx>(
     let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
     let subst = ctx.mk_substs([GenericArg::from(ty)].iter());
 
-    let param_env = ctx.param_env(def_id);
     let resolve_impl = traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst);
 
     match resolve_impl {

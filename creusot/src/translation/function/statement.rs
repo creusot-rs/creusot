@@ -68,9 +68,9 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     self.translate_rplace(pl)
                 }
                 Constant(box c) => crate::constant::from_mir_constant(
+                    self.param_env(),
                     &mut self.ctx,
-                    &mut self.clone_names,
-                    self.def_id,
+                    &mut self.names,
                     c,
                 ),
             },
@@ -122,7 +122,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
             },
             Rvalue::Discriminant(_) => return,
             Rvalue::BinaryOp(BinOp::Eq, box (l, r)) if l.ty(self.body, self.tcx).is_bool() => {
-                self.clone_names.import_prelude_module(PreludeModule::Prelude);
+                self.names.import_prelude_module(PreludeModule::Prelude);
                 Call(
                     box Exp::impure_qvar(QName::from_string("Prelude.eqb").unwrap()),
                     vec![self.translate_operand(l), self.translate_operand(r)],
@@ -162,8 +162,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                         } else {
                             let mut cons_name = item_name(self.tcx, *def_id);
                             cons_name.capitalize();
-                            let cons =
-                                self.clone_names.insert(*def_id, subst).qname_ident(cons_name);
+                            let cons = self.names.insert(*def_id, subst).qname_ident(cons_name);
                             // let cons = item_qname(self.tcx, *def_id);
 
                             Constructor { ctor: cons, args: fields }

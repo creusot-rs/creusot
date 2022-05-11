@@ -74,7 +74,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
                         let accessor_name = closure_accessor_name(self.tcx, *id, ix.as_usize());
                         inner = Call(
                             box Exp::impure_qvar(
-                                self.clone_names.insert(*id, subst).qname_ident(accessor_name),
+                                self.names.insert(*id, subst).qname_ident(accessor_name),
                             ),
                             vec![inner],
                         );

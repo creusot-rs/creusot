@@ -28,30 +28,28 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 }
 
 pub fn from_mir_constant<'tcx>(
+    env: ParamEnv<'tcx>,
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
-    _id: DefId,
     c: &rustc_middle::mir::Constant<'tcx>,
 ) -> mlcfg::Exp {
-    from_mir_constant_kind(ctx, names, c.literal, _id, c.span)
+    from_mir_constant_kind(ctx, names, c.literal, env, c.span)
 }
 
 pub fn from_mir_constant_kind<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     ck: rustc_middle::mir::ConstantKind<'tcx>,
-    _id: DefId,
+    env: ParamEnv<'tcx>,
     span: Span,
 ) -> mlcfg::Exp {
     if let Some(c) = ck.const_for_ty() {
-        return from_ty_const(ctx, names, c, ctx.param_env(_id), span);
+        return from_ty_const(ctx, names, c, env, span);
     }
 
     if ck.ty().is_unit() {
         return Exp::Tuple(Vec::new());
     }
-
-    let env = ctx.param_env(_id);
 
     return try_to_bits(ctx, names, env, ck.ty(), span, ck);
 }
