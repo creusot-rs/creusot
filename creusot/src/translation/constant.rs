@@ -1,7 +1,7 @@
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::ConstantKind,
-    ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
+    ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt, Unevaluated},
 };
 use rustc_span::Span;
 use why3::{
@@ -68,6 +68,14 @@ pub fn from_ty_const<'tcx>(
        let Some(nm) = QName::from_string(builtin_nm.as_str()) {
             return Exp::pure_qvar(nm.without_search_path());
     };
+
+    if let ConstKind::Unevaluated(Unevaluated { promoted: Some(p), .. }) = c.val() {
+        return Exp::impure_var(format!("promoted{:?}", p.as_usize()).into());
+    }
+
+    if let ConstKind::Param(_) = c.val() {
+        ctx.crash_and_error(span, "const generic parameters are not yet supported");
+    }
 
     return try_to_bits(ctx, names, env, c.ty(), span, c);
 }

@@ -135,8 +135,8 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     Operand::Move(pl) | Operand::Copy(pl) => self.translate_rplace(pl),
                     Operand::Constant(box c) => crate::constant::from_mir_constant(
                         self.param_env(),
-                        &mut self.ctx,
-                        &mut self.names,
+                        self.ctx,
+                        self.names,
                         c,
                     ),
                 };

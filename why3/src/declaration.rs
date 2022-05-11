@@ -36,6 +36,7 @@ pub enum Decl {
     Clone(DeclClone),
     UseDecl(Use),
     Axiom(Axiom),
+    // ConstantDecl(Constant),
 }
 
 impl Decl {
@@ -152,6 +153,8 @@ pub struct Logic {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct CfgFunction {
     pub sig: Signature,
+    pub rec: bool,
+    pub constant: bool,
     pub vars: Vec<(Ident, Type)>,
     pub entry: Block,
     pub blocks: BTreeMap<BlockId, Block>,
@@ -267,6 +270,7 @@ pub struct Axiom {
 pub struct LetDecl {
     pub sig: Signature,
     pub rec: bool,
+    pub constant: bool,
     pub body: Exp,
 }
 

@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 use rustc_middle::{
-    mir::{Local, Place},
+    mir::{Body, Local, Place},
     ty::{TyKind, UintTy},
 };
 use why3::mlcfg::{
@@ -9,8 +11,9 @@ use why3::mlcfg::{
 use why3::mlcfg::{Pattern::*, Statement::*};
 use why3::QName;
 
-use super::BodyTranslator;
+use super::{BodyTranslator, LocalIdent};
 use crate::{
+    ctx::{CloneMap, TranslationCtx},
     translation::function::statement::uint_to_int,
     translation::ty::{closure_accessor_name, variant_accessor_name},
     util::{constructor_qname, item_qname},
@@ -18,86 +21,14 @@ use crate::{
 
 impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     pub fn translate_rplace(&mut self, rhs: &Place<'tcx>) -> Exp {
-        self.translate_rplace_inner(rhs.local, rhs.projection)
-    }
-
-    // [(P as Some)]   ---> [_1]
-    // [(P as Some).0] ---> let Some(a) = [_1] in a
-    // [(* P)] ---> * [P]
-    fn translate_rplace_inner(
-        &mut self,
-        loc: Local,
-        proj: &[rustc_middle::mir::PlaceElem<'tcx>],
-    ) -> Exp {
-        let mut inner = Exp::impure_var(self.translate_local(loc).ident());
-        use rustc_middle::mir::ProjectionElem::*;
-        let mut place_ty = Place::ty_from(loc, &[], self.body, self.tcx);
-
-        for elem in proj {
-            match elem {
-                Deref => {
-                    use rustc_hir::Mutability::*;
-                    let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
-                    if mutability == Mut {
-                        inner = Current(box inner)
-                    }
-                }
-                Field(ix, _) => match place_ty.ty.kind() {
-                    TyKind::Adt(def, _) => {
-                        let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
-                        let variant = &def.variants()[variant_id];
-
-                        self.ctx.translate_accessor(
-                            def.variants()[variant_id].fields[ix.as_usize()].did,
-                        );
-                        let accessor_name =
-                            variant_accessor_name(self.tcx, def.did(), variant, ix.as_usize());
-                        inner = Call(
-                            box Exp::impure_qvar(QName {
-                                module: vec!["Type".into()],
-                                name: accessor_name,
-                            }),
-                            vec![inner],
-                        );
-                    }
-                    TyKind::Tuple(fields) => {
-                        let mut pat = vec![Wildcard; fields.len()];
-                        pat[ix.as_usize()] = VarP("a".into());
-
-                        inner = Let {
-                            pattern: TupleP(pat),
-                            arg: box inner,
-                            body: box Exp::impure_var("a".into()),
-                        }
-                    }
-                    TyKind::Closure(id, subst) => {
-                        let accessor_name = closure_accessor_name(self.tcx, *id, ix.as_usize());
-                        inner = Call(
-                            box Exp::impure_qvar(
-                                self.names.insert(*id, subst).qname_ident(accessor_name),
-                            ),
-                            vec![inner],
-                        );
-                    }
-                    e => unreachable!("{:?}", e),
-                },
-                Downcast(_, _) => {}
-                Index(ix) => {
-                    // TODO: Use [_] syntax
-                    let ix_exp = Exp::impure_var(self.translate_local(*ix).ident());
-                    let conv_func = uint_to_int(&UintTy::Usize);
-                    inner = Call(
-                        box Exp::impure_qvar(QName::from_string("Seq.get").unwrap()),
-                        vec![inner, conv_func.app_to(ix_exp)],
-                    )
-                }
-                ConstantIndex { .. } => unimplemented!("constant index projection"),
-                Subslice { .. } => unimplemented!("subslice projection"),
-            }
-            place_ty = place_ty.projection_ty(self.tcx, *elem);
-        }
-
-        inner
+        translate_rplace_inner(
+            &mut self.ctx,
+            &mut self.names,
+            &self.body,
+            &self.local_map,
+            rhs.local,
+            rhs.projection,
+        )
     }
 
     /// Correctly translate an assignment from one place to another. The challenge here is correctly
@@ -136,7 +67,14 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
                     let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
                     if mutability == Mut {
                         inner = RecUp {
-                            record: box self.translate_rplace_inner(lhs.local, stump),
+                            record: box translate_rplace_inner(
+                                &mut self.ctx,
+                                &mut self.names,
+                                &self.body,
+                                &self.local_map,
+                                lhs.local,
+                                stump,
+                            ),
                             label: "current".into(),
                             val: box inner,
                         }
@@ -161,7 +99,14 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
                         inner = Let {
                             pattern: ConsP(tyname.clone(), field_pats),
-                            arg: box self.translate_rplace_inner(lhs.local, stump),
+                            arg: box translate_rplace_inner(
+                                &mut self.ctx,
+                                &mut self.names,
+                                &self.body,
+                                &self.local_map,
+                                lhs.local,
+                                stump,
+                            ),
                             body: box Constructor { ctor: tyname, args: varexps },
                         }
                     }
@@ -179,7 +124,14 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
                         inner = Let {
                             pattern: TupleP(field_pats),
-                            arg: box self.translate_rplace_inner(lhs.local, stump),
+                            arg: box translate_rplace_inner(
+                                &mut self.ctx,
+                                &mut self.names,
+                                &self.body,
+                                &self.local_map,
+                                lhs.local,
+                                stump,
+                            ),
                             body: box Tuple(varexps),
                         }
                     }
@@ -199,7 +151,14 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
                         inner = Let {
                             pattern: ConsP(cons.clone(), field_pats),
-                            arg: box self.translate_rplace_inner(lhs.local, stump),
+                            arg: box translate_rplace_inner(
+                                &mut self.ctx,
+                                &mut self.names,
+                                &self.body,
+                                &self.local_map,
+                                lhs.local,
+                                stump,
+                            ),
                             body: box Exp::Constructor { ctor: cons, args: varexps },
                         }
                     }
@@ -214,7 +173,14 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
                     inner = Call(
                         box set,
                         vec![
-                            self.translate_rplace_inner(lhs.local, stump),
+                            translate_rplace_inner(
+                                &mut self.ctx,
+                                &mut self.names,
+                                &self.body,
+                                &self.local_map,
+                                lhs.local,
+                                stump,
+                            ),
                             conv_func.app_to(ix_exp),
                             inner,
                         ],
@@ -227,5 +193,102 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
         let ident = self.translate_local(lhs.local);
         Assign { lhs: ident.ident(), rhs: inner }
+    }
+}
+
+// [(P as Some)]   ---> [_1]
+// [(P as Some).0] ---> let Some(a) = [_1] in a
+// [(* P)] ---> * [P]
+pub(super) fn translate_rplace_inner<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    body: &Body<'tcx>,
+    map: &HashMap<Local, Local>,
+    loc: Local,
+    proj: &[rustc_middle::mir::PlaceElem<'tcx>],
+) -> Exp {
+    let mut inner = Exp::impure_var(translate_local(body, map, loc).ident());
+    use rustc_middle::mir::ProjectionElem::*;
+    let mut place_ty = Place::ty_from(loc, &[], body, ctx.tcx);
+
+    for elem in proj {
+        match elem {
+            Deref => {
+                use rustc_hir::Mutability::*;
+                let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
+                if mutability == Mut {
+                    inner = Current(box inner)
+                }
+            }
+            Field(ix, _) => match place_ty.ty.kind() {
+                TyKind::Adt(def, _) => {
+                    let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
+                    let variant = &def.variants()[variant_id];
+
+                    ctx.translate_accessor(def.variants()[variant_id].fields[ix.as_usize()].did);
+                    let accessor_name =
+                        variant_accessor_name(ctx.tcx, def.did(), variant, ix.as_usize());
+                    inner = Call(
+                        box Exp::impure_qvar(QName {
+                            module: vec!["Type".into()],
+                            name: accessor_name,
+                        }),
+                        vec![inner],
+                    );
+                }
+                TyKind::Tuple(fields) => {
+                    let mut pat = vec![Wildcard; fields.len()];
+                    pat[ix.as_usize()] = VarP("a".into());
+
+                    inner = Let {
+                        pattern: TupleP(pat),
+                        arg: box inner,
+                        body: box Exp::impure_var("a".into()),
+                    }
+                }
+                TyKind::Closure(id, subst) => {
+                    let accessor_name = closure_accessor_name(ctx.tcx, *id, ix.as_usize());
+                    inner = Call(
+                        box Exp::impure_qvar(names.insert(*id, subst).qname_ident(accessor_name)),
+                        vec![inner],
+                    );
+                }
+                e => unreachable!("{:?}", e),
+            },
+            Downcast(_, _) => {}
+            Index(ix) => {
+                // TODO: Use [_] syntax
+                let ix_exp = Exp::impure_var(translate_local(body, map, *ix).ident());
+                let conv_func = uint_to_int(&UintTy::Usize);
+                inner = Call(
+                    box Exp::impure_qvar(QName::from_string("Seq.get").unwrap()),
+                    vec![inner, conv_func.app_to(ix_exp)],
+                )
+            }
+            ConstantIndex { .. } => unimplemented!("constant index projection"),
+            Subslice { .. } => unimplemented!("subslice projection"),
+        }
+        place_ty = place_ty.projection_ty(ctx.tcx, *elem);
+    }
+
+    inner
+}
+
+pub(super) fn translate_local(body: &Body, map: &HashMap<Local, Local>, loc: Local) -> LocalIdent {
+    use rustc_middle::mir::VarDebugInfoContents::Place;
+    let debug_info: Vec<_> = body
+        .var_debug_info
+        .iter()
+        .filter(|var_info| match var_info.value {
+            Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
+            _ => false,
+        })
+        .collect();
+
+    assert!(debug_info.len() <= 1, "expected at most one debug entry for local {:?}", loc);
+    let loc = *map.get(&loc).unwrap_or(&loc);
+    match debug_info.get(0) {
+        Some(info) => LocalIdent::dbg(loc, *info),
+        None => LocalIdent::anon(loc),
     }
 }

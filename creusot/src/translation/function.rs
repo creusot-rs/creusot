@@ -35,6 +35,7 @@ use why3::{declaration::*, Ident};
 use indexmap::IndexMap;
 
 mod place;
+mod promoted;
 mod statement;
 mod terminator;
 
@@ -56,14 +57,12 @@ pub fn translate_function<'tcx, 'sess>(
     }
 
     // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
-    let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
+    let (body, promoted) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
     RemoveFalseEdges.run_pass(tcx, &mut body);
     SimplifyCfg::new("verify").run_pass(tcx, &mut body);
-
-    let (invariants, assertions) = corrected_invariant_names_and_locations(ctx, &mut names, &body);
 
     let mut decls = Vec::new();
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
@@ -78,8 +77,16 @@ pub fn translate_function<'tcx, 'sess>(
         }
     }
 
-    let func_translator =
-        BodyTranslator::build_context(tcx, ctx, &body, names, invariants, assertions, def_id);
+    let param_env = ctx.param_env(def_id);
+    for p in promoted.borrow().iter_enumerated() {
+        let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p)
+            .unwrap_or_else(|e| e.emit(ctx.tcx.sess));
+        decls.extend(names.to_clones(ctx));
+        decls.push(promoted);
+    }
+    let sig = signature_of(ctx, &mut names, def_id);
+
+    let func_translator = BodyTranslator::build_context(tcx, ctx, &body, &mut names, sig, def_id);
 
     decls.extend(func_translator.translate());
     let name = module_name(ctx.tcx, def_id);
@@ -110,14 +117,17 @@ use crate::resolve::EagerResolver;
 // Split this into several sub-contexts: Core, Analysis, Results?
 pub struct BodyTranslator<'body, 'sess, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
+
     def_id: DefId,
+
     body: &'body Body<'tcx>,
+
+    sig: Signature,
 
     resolver: EagerResolver<'body, 'tcx>,
 
     // Spec / Ghost variables
     erased_locals: BitSet<Local>,
-
     local_map: HashMap<Local, Local>,
 
     // Current block being generated
@@ -132,11 +142,12 @@ pub struct BodyTranslator<'body, 'sess, 'tcx> {
     fresh_id: usize,
 
     // Gives a fresh name to every mono-morphization of a function or trait
-    names: CloneMap<'tcx>,
+    names: &'body mut CloneMap<'tcx>,
 
     invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
 
     assertions: IndexMap<DefId, Exp>,
+
     borrows: Rc<BorrowSet<'tcx>>,
 }
 
@@ -145,12 +156,12 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'sess, 'tcx>,
         body: &'body Body<'tcx>,
-        names: CloneMap<'tcx>,
-        invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
-        assertions: IndexMap<DefId, Exp>,
+        names: &'body mut CloneMap<'tcx>,
+        sig: Signature,
         def_id: DefId,
     ) -> Self {
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
+        let (invariants, assertions) = corrected_invariant_names_and_locations(ctx, names, &body);
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
@@ -167,16 +178,20 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         });
         let move_paths = MoveData::gather_moves(&clean_body, tcx, tcx.param_env(def_id)).unwrap();
         let borrows = BorrowSet::build(tcx, &clean_body, true, &move_paths);
-        let local_map = real_locals(tcx, body);
         let borrows = Rc::new(borrows);
         let resolver = EagerResolver::new(tcx, body, borrows.clone());
 
+        // TODO: Remove?
+        let local_map = real_locals(tcx, body);
+
         BodyTranslator {
             tcx,
+            sig,
             body,
             def_id,
             resolver,
             erased_locals,
+            local_map,
             current_block: (Vec::new(), None),
             past_blocks: BTreeMap::new(),
             ctx,
@@ -184,14 +199,12 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             names,
             invariants,
             assertions,
-            local_map,
             borrows,
         }
     }
 
     fn translate(mut self) -> Vec<Decl> {
         let mut decls: Vec<_> = Vec::new();
-        let sig = signature_of(self.ctx, &mut self.names, self.def_id);
 
         decls.extend(self.names.to_clones(self.ctx));
 
@@ -218,7 +231,9 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         decls.extend(self.names.to_clones(self.ctx));
 
         decls.push(Decl::FunDecl(CfgFunction {
-            sig,
+            sig: self.sig,
+            rec: true,
+            constant: false,
             vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(),
             entry,
             blocks: self.past_blocks,
@@ -377,34 +392,14 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     pub fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Exp {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(pl),
-            Operand::Constant(c) => crate::constant::from_mir_constant(
-                self.param_env(),
-                &mut self.ctx,
-                &mut self.names,
-                c,
-            ),
+            Operand::Constant(c) => {
+                crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
+            }
         }
     }
 
     fn translate_local(&self, loc: Local) -> LocalIdent {
-        use rustc_middle::mir::VarDebugInfoContents::Place;
-        let debug_info: Vec<_> = self
-            .body
-            .var_debug_info
-            .iter()
-            .filter(|var_info| match var_info.value {
-                Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
-                _ => false,
-            })
-            .collect();
-
-        assert!(debug_info.len() <= 1, "expected at most one debug entry for local {:?}", loc);
-
-        let loc = self.local_map[&loc];
-        match debug_info.get(0) {
-            Some(info) => LocalIdent::dbg(loc, *info),
-            None => LocalIdent::anon(loc),
-        }
+        place::translate_local(&self.body, &self.local_map, loc)
     }
 }
 

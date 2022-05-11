@@ -192,6 +192,10 @@ impl Print for LetDecl {
             doc = doc.append("rec ");
         }
 
+        if self.constant {
+            doc = doc.append("constant ");
+        }
+
         doc = doc
             .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
             .group()
@@ -302,9 +306,7 @@ fn arg_list<'b: 'a, 'a, A: DocAllocator<'a>>(
 where
     A::Doc: Clone,
 {
-    if args.is_empty() {
-        alloc.text("()")
-    } else {
+    {
         alloc.intersperse(
             args.iter().map(|(id, ty)| {
                 id.pretty(alloc, env).append(" : ").append(ty.pretty(alloc, env)).parens()
@@ -486,7 +488,10 @@ impl Print for CfgFunction {
         A::Doc: Clone,
     {
         alloc
-            .text("let rec cfg ")
+            .text("let ")
+            .append(if self.rec { "rec " } else { "" })
+            .append("cfg ")
+            .append(if self.constant { "constant " } else { "" })
             .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
             .group()
             .append(alloc.line())

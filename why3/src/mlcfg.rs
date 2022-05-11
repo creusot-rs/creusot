@@ -65,6 +65,8 @@ pub enum Type {
 }
 
 impl Type {
+    pub const UNIT: Self = Self::Tuple(Vec::new());
+
     pub fn predicate(ty: Self) -> Self {
         Self::TFun(box ty, box Self::Bool)
     }

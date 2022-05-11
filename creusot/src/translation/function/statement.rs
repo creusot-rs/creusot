@@ -67,12 +67,9 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     self.resolve_ty(ty).emit(pl_exp, self);
                     self.translate_rplace(pl)
                 }
-                Constant(box c) => crate::constant::from_mir_constant(
-                    self.param_env(),
-                    &mut self.ctx,
-                    &mut self.names,
-                    c,
-                ),
+                Constant(box c) => {
+                    crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
+                }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
                 Shared | Shallow | Unique => {
@@ -231,7 +228,7 @@ fn int_from_int(ity: &IntTy) -> Exp {
     }
 }
 
-fn uint_from_int(uty: &UintTy) -> Exp {
+pub fn uint_from_int(uty: &UintTy) -> Exp {
     match uty {
         UintTy::Usize => Exp::impure_qvar(QName::from_string("UInt64.of_int").unwrap()),
         UintTy::U8 => unimplemented!(),
