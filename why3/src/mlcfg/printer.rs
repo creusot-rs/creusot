@@ -571,6 +571,7 @@ impl Print for Exp {
         A::Doc: Clone,
     {
         match self {
+            Exp::Any(ty) => alloc.text("any ").append(ty.pretty(alloc, env)),
             Exp::Current(box e) => alloc.text(" * ").append(parens!(alloc, env, self, e)),
             Exp::Final(box e) => alloc.text(" ^ ").append(parens!(alloc, env, self, e)),
             // TODO parenthesization

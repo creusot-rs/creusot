@@ -154,6 +154,7 @@ pub enum Purity {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
+    Any(Type),
     Current(Box<Exp>),
     Final(Box<Exp>),
     Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
@@ -191,6 +192,7 @@ pub trait ExpMutVisitor: Sized {
 
 pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
     match exp {
+        Exp::Any(_) => {}
         Exp::Current(e) => f.visit_mut(e),
         Exp::Final(e) => f.visit_mut(e),
         Exp::Let { pattern: _, arg, body } => {
@@ -249,6 +251,7 @@ pub trait ExpVisitor: Sized {
 
 pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
     match exp {
+        Exp::Any(_) => {}
         Exp::Current(e) => f.visit(e),
         Exp::Final(e) => f.visit(e),
         Exp::Let { pattern: _, arg, body } => {

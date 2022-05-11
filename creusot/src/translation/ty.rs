@@ -5,15 +5,15 @@ use rustc_middle::ty::{ClosureSubsts, FieldDef, VariantDef};
 use rustc_span::Symbol;
 use rustc_span::{Span, DUMMY_SP};
 use std::collections::VecDeque;
-use why3::declaration::{AdtDecl, ConstructorDecl};
-use why3::declaration::{Axiom, Contract, Decl, Signature, ValKind};
-use why3::mlcfg::{BinOp, Exp};
+use why3::declaration::{AdtDecl, ConstructorDecl, LetFun};
+use why3::declaration::{Contract, Decl, Signature};
+use why3::mlcfg::{Exp, Pattern};
 use why3::Ident;
 
 use why3::declaration::TyDecl;
 use why3::{mlcfg::Type as MlT, QName};
 
-use crate::util::{get_builtin, item_name};
+use crate::util::{get_builtin, item_name, item_qname};
 use crate::{ctx::*, util};
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:
@@ -356,78 +356,53 @@ pub fn translate_accessor(
     let ix = variant.fields.iter().position(|f| f.did == field_id).unwrap();
     let field = &variant.fields[ix];
 
-    let ty_name = translate_ty_name(ctx, adt_did).name();
-    let acc_name = format!("{}_{}_{}", &*ty_name, variant.name, field.name);
+    let ty_name = translate_ty_name(ctx, adt_did);
+    let acc_name = format!("{}_{}_{}", &*ty_name.name(), variant.name, field.name);
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let mut names = CloneMap::new(ctx.tcx, adt_did, false);
-    let field_tys: Vec<_> =
-        variant.fields.iter().map(|f| field_ty(ctx, &mut names, f, substs)).collect();
-    let var_name = item_name(ctx.tcx, variant.def_id);
+    let target_ty = field_ty(ctx, &mut names, &variant.fields[ix], substs);
+    let var_name = item_qname(ctx.tcx, variant.def_id);
 
     let this = MlT::TApp(
         box MlT::TConstructor(ty_name.clone().into()),
         ty_param_names(ctx.tcx, adt_did).map(MlT::TVar).collect(),
     );
 
-    build_accessor(this, Ident::build(&acc_name), var_name, &field_tys, ix)
+    build_accessor(this, Ident::build(&acc_name), var_name, variant.fields.len(), (ix, target_ty))
 }
 
 pub fn build_accessor(
     this: MlT,
     acc_name: Ident,
-    cons_name: Ident,
-    field_tys: &[MlT],
-    ix: usize,
+    cons_name: QName,
+    field_count: usize,
+    target_field: (usize, MlT),
 ) -> Vec<Decl> {
-    let field_ty = field_tys[ix].clone();
+    let field_ty = target_field.1;
+    let ix = target_field.0;
 
-    let mut sig = Signature {
+    let sig = Signature {
         name: acc_name.clone(),
         attrs: Vec::new(),
         args: vec![("self".into(), this.clone())],
-        retty: Some(field_ty),
+        retty: Some(field_ty.clone()),
         contract: Contract::new(),
     };
 
     let mut decls = Vec::new();
 
-    // The function symbol
-    decls.push(Decl::ValDecl(ValKind::Function { sig: sig.clone() }));
-
-    // Ensure the program and function symbols line up
-    sig.contract.ensures.push(Exp::BinaryOp(
-        BinOp::Eq,
-        box Exp::pure_var("result".into()),
-        box Exp::pure_var(acc_name.clone()).app_to(Exp::pure_var("self".into())),
-    ));
-    decls.push(Decl::ValDecl(ValKind::Val { sig: sig.clone() }));
-
-    let bound_vars: Vec<(Ident, _)> =
-        ('a'..).zip(field_tys.iter()).map(|(c, t)| (c.to_string().into(), t.clone())).collect();
-
-    // Build the generic contructor application
-    let cons_app = Exp::Call(
-        box Exp::pure_var(cons_name),
-        bound_vars.iter().map(|(n, _)| Exp::pure_var(n.clone())).collect(),
+    let mut good_pat = vec![Pattern::Wildcard; field_count];
+    good_pat[ix] = Pattern::VarP("a".into());
+    let discr_exp = Exp::Match(
+        box Exp::pure_var("self".into()),
+        vec![
+            (Pattern::ConsP(cons_name, good_pat), Exp::pure_var("a".into())),
+            (Pattern::Wildcard, Exp::Any(field_ty)),
+        ],
     );
 
-    // The projection equality
-    let projection = Exp::BinaryOp(
-        BinOp::Eq,
-        box Exp::Call(
-            box Exp::pure_var(Ident::build(&acc_name)),
-            vec![Exp::Ascribe(box cons_app, this)],
-        ),
-        box Exp::pure_var(bound_vars[ix].0.clone()),
-    );
-
-    // The record projection axiom
-    let axiom_name = format!("{}_acc", &*acc_name);
-    decls.push(Decl::Axiom(Axiom {
-        name: Ident::build(&axiom_name),
-        axiom: Exp::Forall(bound_vars, box projection),
-    }));
+    decls.push(Decl::LetFun(LetFun { sig, rec: false, ghost: false, body: discr_exp }));
 
     decls
 }
@@ -440,20 +415,19 @@ pub fn closure_accessors<'tcx>(
 ) -> Vec<Decl> {
     let count = subst.upvar_tys().count();
 
-    let fields: Vec<_> =
+    let mut fields: Vec<_> =
         subst.upvar_tys().map(|ty| translate_ty(ctx, names, DUMMY_SP, ty)).collect();
-    let mut cons_name = item_name(ctx.tcx, ty_id);
-    cons_name.capitalize();
+
+    let mut cons_name = item_qname(ctx.tcx, ty_id);
+    cons_name.name.capitalize();
 
     let ty_name = translate_ty_name(ctx, ty_id).name;
-
     let this = MlT::TConstructor(ty_name.into());
 
     let mut accessors = Vec::new();
-    for i in 0..count {
-        let nm = closure_accessor_name(ctx.tcx, ty_id, i);
-
-        accessors.extend(build_accessor(this.clone(), nm, cons_name.clone(), &fields, i));
+    for tgt in fields.drain(..).enumerate() {
+        let nm = closure_accessor_name(ctx.tcx, ty_id, tgt.0);
+        accessors.extend(build_accessor(this.clone(), nm, cons_name.clone(), count, tgt));
     }
     accessors
 }
