@@ -16,14 +16,14 @@ use why3::{
     QName,
 };
 
-use super::FunctionTranslator;
+use super::BodyTranslator;
 use crate::{
     clone_map::PreludeModule,
     translation::{binop_to_binop, unop_to_unop},
     util::{self, constructor_qname, item_name},
 };
 
-impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
+impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>, loc: Location) {
         use StatementKind::*;
         match statement.kind {

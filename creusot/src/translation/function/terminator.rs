@@ -25,7 +25,7 @@ use why3::QName;
 
 use crate::{translation::traits, util::constructor_qname};
 
-use super::FunctionTranslator;
+use super::BodyTranslator;
 
 // Translate the terminator of a basic block.
 // There isn't much that's special about this. The only subtlety is in how
@@ -33,7 +33,7 @@ use super::FunctionTranslator;
 // rather than switching on discriminant since WhyML doesn't have integer
 // patterns in match expressions.
 
-impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
+impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
     pub fn translate_terminator(&mut self, terminator: &Terminator<'tcx>, location: Location) {
         match &terminator.kind {
             Goto { target } => self.emit_terminator(mk_goto(*target)),

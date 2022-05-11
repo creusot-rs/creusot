@@ -79,7 +79,7 @@ pub fn translate_function<'tcx, 'sess>(
     }
 
     let func_translator =
-        FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, assertions, def_id);
+        BodyTranslator::build_context(tcx, ctx, &body, names, invariants, assertions, def_id);
 
     decls.extend(func_translator.translate());
     let name = module_name(ctx.tcx, def_id);
@@ -108,7 +108,7 @@ pub fn translate_trusted<'tcx>(
 use crate::resolve::EagerResolver;
 
 // Split this into several sub-contexts: Core, Analysis, Results?
-pub struct FunctionTranslator<'body, 'sess, 'tcx> {
+pub struct BodyTranslator<'body, 'sess, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     def_id: DefId,
     body: &'body Body<'tcx>,
@@ -140,7 +140,7 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     borrows: Rc<BorrowSet<'tcx>>,
 }
 
-impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
+impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     fn build_context(
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'sess, 'tcx>,
@@ -171,7 +171,7 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         let borrows = Rc::new(borrows);
         let resolver = EagerResolver::new(tcx, body, borrows.clone());
 
-        FunctionTranslator {
+        BodyTranslator {
             tcx,
             body,
             def_id,
@@ -601,7 +601,7 @@ impl ResolveStmt {
             Some(e) => e.app_to(to),
         }
     }
-    fn emit(self, to: Exp, fctx: &mut FunctionTranslator) {
+    fn emit(self, to: Exp, fctx: &mut BodyTranslator) {
         match self.exp {
             None => {}
             Some(e) => fctx.emit_statement(mlcfg::Statement::Assume(e.app_to(to))),

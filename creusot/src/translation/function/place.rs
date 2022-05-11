@@ -9,14 +9,14 @@ use why3::mlcfg::{
 use why3::mlcfg::{Pattern::*, Statement::*};
 use why3::QName;
 
-use super::FunctionTranslator;
+use super::BodyTranslator;
 use crate::{
     translation::function::statement::uint_to_int,
     translation::ty::{closure_accessor_name, variant_accessor_name},
     util::{constructor_qname, item_qname},
 };
 
-impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
+impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     pub fn translate_rplace(&mut self, rhs: &Place<'tcx>) -> Exp {
         self.translate_rplace_inner(rhs.local, rhs.projection)
     }
