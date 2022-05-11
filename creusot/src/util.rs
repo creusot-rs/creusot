@@ -265,6 +265,7 @@ pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
         DefKind::Closure => ItemType::Closure,
         DefKind::Struct | DefKind::Enum => ItemType::Type,
         DefKind::AssocTy => ItemType::AssocTy,
+        DefKind::AnonConst => panic!(),
         dk => ItemType::Unsupported(dk),
     }
 }

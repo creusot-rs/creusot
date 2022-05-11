@@ -117,10 +117,15 @@ fn translate_ty_inner<'tcx>(
                 vec![translate_ty_inner(trans, ctx, names, span, *ty)],
             )
         }
-        Array(ty, _) => MlT::TApp(
-            box MlT::TConstructor("rust_array".into()),
-            vec![translate_ty_inner(trans, ctx, names, span, *ty)],
-        ),
+        Array(ty, _) => {
+            names.import_prelude_module(PreludeModule::Prelude);
+            names.import_prelude_module(PreludeModule::Seq);
+
+            MlT::TApp(
+                box MlT::TConstructor("rust_array".into()),
+                vec![translate_ty_inner(trans, ctx, names, span, *ty)],
+            )
+        }
         Str => MlT::TConstructor("string".into()),
         // Slice()
         Never => MlT::Tuple(vec![]),
