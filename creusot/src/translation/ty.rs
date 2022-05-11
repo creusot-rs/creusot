@@ -420,6 +420,7 @@ pub fn closure_accessors<'tcx>(
 
     let mut cons_name = item_qname(ctx.tcx, ty_id);
     cons_name.name.capitalize();
+    cons_name.module = vec![]; // ugly hack to fix printer
 
     let ty_name = translate_ty_name(ctx, ty_id).name;
     let this = MlT::TConstructor(ty_name.into());
