@@ -19,6 +19,7 @@ pub use function::translate_function;
 pub use function::LocalIdent;
 use heck::CamelCase;
 pub use logic::*;
+use rustc_hir::def::DefKind;
 use rustc_hir::def_id::LOCAL_CRATE;
 use std::error::Error;
 use std::io::Write;
@@ -59,6 +60,10 @@ pub fn after_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
 
         if !crate::util::should_translate(ctx.tcx, def_id) {
             info!("Skipping {:?}", def_id);
+            continue;
+        }
+
+        if ctx.def_kind(def_id) == DefKind::AnonConst {
             continue;
         }
 

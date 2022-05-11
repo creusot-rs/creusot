@@ -1,3 +1,4 @@
+use crate as creusot_contracts;
 use creusot_contracts_proc::*;
 
 pub trait Model {
@@ -28,6 +29,17 @@ impl<T> Model for [T] {
     #[logic]
     fn model(self) -> Self::ModelTy {
         id(self)
+    }
+}
+
+impl<T, const N: usize> Model for [T; N] {
+    type ModelTy = crate::Seq<T>;
+
+    #[logic]
+    #[trusted]
+    #[creusot::builtins = "prelude.Prelude.id"]
+    fn model(self) -> Self::ModelTy {
+        pearlite! { absurd }
     }
 }
 
