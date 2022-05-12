@@ -188,8 +188,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
         #[invariant(l, (@(@self_old).buckets).len() === (@self.buckets).len())]
         #[invariant(z, @i <= (@self.buckets).len())]
         while i < self.buckets.len() {
-            let mut l: List<_> =
-                creusot_contracts::std::mem::replace(&mut self.buckets[i], List::Nil);
+            let mut l: List<_> = std::mem::replace(&mut self.buckets[i], List::Nil);
 
             #[invariant(a, new.hashmap_inv())]
             #[invariant(x, forall<k : K> (@self_old).bucket_ix(k) < @i ==> (@*@self_old).get(@k) === (@new).get(@k))]

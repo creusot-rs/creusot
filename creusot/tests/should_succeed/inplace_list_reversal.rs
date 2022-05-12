@@ -2,8 +2,8 @@
 #![feature(box_patterns)]
 
 extern crate creusot_contracts;
-pub use creusot_contracts::std::mem::replace;
-pub use creusot_contracts::*;
+use creusot_contracts::*;
+use std::mem::replace;
 
 enum List<T> {
     Nil,
