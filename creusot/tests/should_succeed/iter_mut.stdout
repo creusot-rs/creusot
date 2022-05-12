@@ -227,21 +227,6 @@ module CreusotContracts_Logic_Ghost_Impl0_Model
   use Type
   function model (self : Type.creusotcontracts_logic_ghost_ghost t) : t
 end
-module CreusotContracts_Logic_Ghost_Impl0_ModelTy
-  type t
-  type modelTy  = 
-    t
-end
-module CreusotContracts_Logic_Ghost_Impl0
-  type t
-  use Type
-  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = t
-  clone CreusotContracts_Logic_Ghost_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
-  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
-  type modelTy = ModelTy0.modelTy
-end
 module IterMut_Impl0
   type t
   use Type
@@ -269,6 +254,21 @@ module CreusotContracts_Logic_Model_Impl1
   clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = borrowed t, function model = Model0.model,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = borrowed t,
+  type modelTy = ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Ghost_Impl0_ModelTy
+  type t
+  type modelTy  = 
+    t
+end
+module CreusotContracts_Logic_Ghost_Impl0
+  type t
+  use Type
+  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = t
+  clone CreusotContracts_Logic_Ghost_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
+  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
   type modelTy = ModelTy0.modelTy
 end
 module IterMut_Impl2_ModelTy
@@ -352,24 +352,24 @@ module IterMut_IncVec
   use prelude.Prelude
   use Type
   clone IterMut_Impl2_Model as Model3 with type t = int
+  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model2 with type t = borrowed (Type.itermut_vec int)
   clone IterMut_Impl0_ModelTy as ModelTy0 with type t = int
-  clone IterMut_Impl0_Model as Model1 with type t = int
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model2 with type t = Type.itermut_vec int,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
-  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = borrowed (Type.itermut_vec int)
+  clone IterMut_Impl0_Model as Model0 with type t = int
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Type.itermut_vec int,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = int
   clone CreusotContracts_Logic_Seq_Impl0_Get as Get0 with type t = borrowed int
   clone CreusotContracts_Logic_Seq_Impl0_Tail as Tail0 with type t = borrowed int
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.itermut_vec int
   clone IterMut_Impl3_Next_Interface as Next0 with type t = int, function Model0.model = Model3.model,
   function Tail0.tail = Tail0.tail, function Get0.get = Get0.get
-  clone IterMut_Impl1_IterMut_Interface as IterMut0 with type t = int, function Model0.model = Model1.model,
-  function Model1.model = Model3.model
   clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = borrowed (Type.itermut_vec int),
-  function Model0.model = Model0.model
+  function Model0.model = Model2.model
+  clone IterMut_Impl1_IterMut_Interface as IterMut0 with type t = int, function Model0.model = Model0.model,
+  function Model1.model = Model3.model
   let rec cfg inc_vec [@cfg:stackify] (v : borrowed (Type.itermut_vec int)) : ()
-    ensures { forall i : (int) . 0 <= i && i < Seq.length (Model1.model ( ^ v)) -> Seq.get (Model1.model ( ^ v)) i = Seq.get (Model2.model v) i + 5 }
-    ensures { Seq.length (Model1.model ( ^ v)) = Seq.length (Model2.model v) }
+    ensures { forall i : (int) . 0 <= i && i < Seq.length (Model0.model ( ^ v)) -> Seq.get (Model0.model ( ^ v)) i = Seq.get (Model1.model v) i + 5 }
+    ensures { Seq.length (Model0.model ( ^ v)) = Seq.length (Model1.model v) }
     
    = 
   var _0 : ();
@@ -410,9 +410,9 @@ module IterMut_IncVec
     goto BB3
   }
   BB3 {
-    invariant incremented { forall i : (int) . 0 <= i && i < _ghost_seen_7 -> Seq.get (Model1.model ( ^ Model0.model old_v_2)) i = Seq.get (Model2.model (Model0.model old_v_2)) i + 5 };
-    invariant to_come { forall i : (int) . 0 <= i && i < Seq.length (Model3.model it_5) ->  * Seq.get (Model3.model it_5) i = Seq.get (Model2.model (Model0.model old_v_2)) (i + _ghost_seen_7) &&  ^ Seq.get (Model3.model it_5) i = Seq.get (Model1.model ( ^ Model0.model old_v_2)) (i + _ghost_seen_7) };
-    invariant _ghost_seen { _ghost_seen_7 + Seq.length (Model3.model it_5) = Seq.length (Model2.model (Model0.model old_v_2)) };
+    invariant incremented { forall i : (int) . 0 <= i && i < _ghost_seen_7 -> Seq.get (Model0.model ( ^ Model2.model old_v_2)) i = Seq.get (Model1.model (Model2.model old_v_2)) i + 5 };
+    invariant to_come { forall i : (int) . 0 <= i && i < Seq.length (Model3.model it_5) ->  * Seq.get (Model3.model it_5) i = Seq.get (Model1.model (Model2.model old_v_2)) (i + _ghost_seen_7) &&  ^ Seq.get (Model3.model it_5) i = Seq.get (Model0.model ( ^ Model2.model old_v_2)) (i + _ghost_seen_7) };
+    invariant _ghost_seen { _ghost_seen_7 + Seq.length (Model3.model it_5) = Seq.length (Model1.model (Model2.model old_v_2)) };
     _10 <- borrow_mut it_5;
     it_5 <-  ^ _10;
     _9 <- Next0.next _10;

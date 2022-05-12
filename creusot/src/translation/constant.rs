@@ -1,7 +1,7 @@
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::ConstantKind,
-    ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
+    ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt, Unevaluated},
 };
 use rustc_span::Span;
 use why3::{
@@ -28,30 +28,28 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 }
 
 pub fn from_mir_constant<'tcx>(
+    env: ParamEnv<'tcx>,
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
-    _id: DefId,
     c: &rustc_middle::mir::Constant<'tcx>,
 ) -> mlcfg::Exp {
-    from_mir_constant_kind(ctx, names, c.literal, _id, c.span)
+    from_mir_constant_kind(ctx, names, c.literal, env, c.span)
 }
 
 pub fn from_mir_constant_kind<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     ck: rustc_middle::mir::ConstantKind<'tcx>,
-    _id: DefId,
+    env: ParamEnv<'tcx>,
     span: Span,
 ) -> mlcfg::Exp {
     if let Some(c) = ck.const_for_ty() {
-        return from_ty_const(ctx, names, c, ctx.param_env(_id), span);
+        return from_ty_const(ctx, names, c, env, span);
     }
 
     if ck.ty().is_unit() {
         return Exp::Tuple(Vec::new());
     }
-
-    let env = ctx.param_env(_id);
 
     return try_to_bits(ctx, names, env, ck.ty(), span, ck);
 }
@@ -70,6 +68,14 @@ pub fn from_ty_const<'tcx>(
        let Some(nm) = QName::from_string(builtin_nm.as_str()) {
             return Exp::pure_qvar(nm.without_search_path());
     };
+
+    if let ConstKind::Unevaluated(Unevaluated { promoted: Some(p), .. }) = c.val() {
+        return Exp::impure_var(format!("promoted{:?}", p.as_usize()).into());
+    }
+
+    if let ConstKind::Param(_) = c.val() {
+        ctx.crash_and_error(span, "const generic parameters are not yet supported");
+    }
 
     return try_to_bits(ctx, names, env, c.ty(), span, c);
 }

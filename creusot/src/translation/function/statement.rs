@@ -16,14 +16,14 @@ use why3::{
     QName,
 };
 
-use super::FunctionTranslator;
+use super::BodyTranslator;
 use crate::{
     clone_map::PreludeModule,
     translation::{binop_to_binop, unop_to_unop},
     util::{self, constructor_qname, item_name},
 };
 
-impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
+impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>, loc: Location) {
         use StatementKind::*;
         match statement.kind {
@@ -67,12 +67,9 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     self.resolve_ty(ty).emit(pl_exp, self);
                     self.translate_rplace(pl)
                 }
-                Constant(box c) => crate::constant::from_mir_constant(
-                    &mut self.ctx,
-                    &mut self.clone_names,
-                    self.def_id,
-                    c,
-                ),
+                Constant(box c) => {
+                    crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
+                }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
                 Shared | Shallow | Unique => {
@@ -122,7 +119,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
             },
             Rvalue::Discriminant(_) => return,
             Rvalue::BinaryOp(BinOp::Eq, box (l, r)) if l.ty(self.body, self.tcx).is_bool() => {
-                self.clone_names.import_prelude_module(PreludeModule::Prelude);
+                self.names.import_prelude_module(PreludeModule::Prelude);
                 Call(
                     box Exp::impure_qvar(QName::from_string("Prelude.eqb").unwrap()),
                     vec![self.translate_operand(l), self.translate_operand(r)],
@@ -162,8 +159,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                         } else {
                             let mut cons_name = item_name(self.tcx, *def_id);
                             cons_name.capitalize();
-                            let cons =
-                                self.clone_names.insert(*def_id, subst).qname_ident(cons_name);
+                            let cons = self.names.insert(*def_id, subst).qname_ident(cons_name);
                             // let cons = item_qname(self.tcx, *def_id);
 
                             Constructor { ctor: cons, args: fields }
@@ -232,7 +228,7 @@ fn int_from_int(ity: &IntTy) -> Exp {
     }
 }
 
-fn uint_from_int(uty: &UintTy) -> Exp {
+pub fn uint_from_int(uty: &UintTy) -> Exp {
     match uty {
         UintTy::Usize => Exp::impure_qvar(QName::from_string("UInt64.of_int").unwrap()),
         UintTy::U8 => unimplemented!(),

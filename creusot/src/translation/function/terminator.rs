@@ -25,7 +25,7 @@ use why3::QName;
 
 use crate::{translation::traits, util::constructor_qname};
 
-use super::FunctionTranslator;
+use super::BodyTranslator;
 
 // Translate the terminator of a basic block.
 // There isn't much that's special about this. The only subtlety is in how
@@ -33,7 +33,7 @@ use super::FunctionTranslator;
 // rather than switching on discriminant since WhyML doesn't have integer
 // patterns in match expressions.
 
-impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
+impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
     pub fn translate_terminator(&mut self, terminator: &Terminator<'tcx>, location: Location) {
         match &terminator.kind {
             Goto { target } => self.emit_terminator(mk_goto(*target)),
@@ -77,7 +77,7 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                     let res = evaluate_additional_predicates(
                         &infcx,
                         predicates,
-                        self.tcx.param_env(self.def_id),
+                        self.param_env(),
                         terminator.source_info.span,
                     );
                     if let Err(errs) = res {
@@ -134,9 +134,9 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
                 let rhs = match value {
                     Operand::Move(pl) | Operand::Copy(pl) => self.translate_rplace(pl),
                     Operand::Constant(box c) => crate::constant::from_mir_constant(
-                        &mut self.ctx,
-                        &mut self.clone_names,
-                        self.def_id,
+                        self.param_env(),
+                        self.ctx,
+                        self.names,
                         c,
                     ),
                 };
@@ -163,21 +163,21 @@ impl<'tcx> FunctionTranslator<'_, '_, 'tcx> {
     ) -> QName {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(id) = it.container {
-                let params = self.ctx.param_env(self.def_id);
+                let params = self.param_env();
                 let method = traits::resolve_assoc_item_opt(self.tcx, params, def_id, subst)
                     .expect("could not find instance");
 
                 self.ctx.translate(id);
                 self.ctx.translate(method.0);
 
-                return self.clone_names.insert(method.0, method.1).qname(self.tcx, method.0);
+                return self.names.insert(method.0, method.1).qname(self.tcx, method.0);
             }
         }
 
         // TODO: better spans during errors...
         self.ctx.translate(def_id);
 
-        self.clone_names.insert(def_id, subst).qname(self.tcx, def_id)
+        self.names.insert(def_id, subst).qname(self.tcx, def_id)
     }
 }
 

@@ -123,6 +123,17 @@ module CreusotContracts_Logic_Ghost_Impl0_Model
   use Type
   function model (self : Type.creusotcontracts_logic_ghost_ghost t) : t
 end
+module CreusotContracts_Std1_Vec_Impl0
+  type t
+  type a
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = a
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = a
+  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.alloc_vec_vec t a,
+  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.alloc_vec_vec t a,
+  type modelTy = ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Impl1_ModelTy
   type t
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
@@ -155,17 +166,6 @@ module CreusotContracts_Logic_Ghost_Impl0
   clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
   function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
-  type modelTy = ModelTy0.modelTy
-end
-module CreusotContracts_Std1_Vec_Impl0
-  type t
-  type a
-  use Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = a
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = a
-  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.alloc_vec_vec t a,
-  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.alloc_vec_vec t a,
   type modelTy = ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
@@ -384,12 +384,12 @@ module C03KnuthShuffle_KnuthShuffle
   type t
   use prelude.Prelude
   use Type
+  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model2 with type t = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf as PermutationOf0 with type t = t
-  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model1 with type t = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = t, type a = Type.alloc_alloc_global
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = Type.alloc_alloc_global
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global),
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model2.model
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = Type.alloc_alloc_global
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global),
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
   use mach.int.Int
   use mach.int.UInt64
   use seq.Seq
@@ -405,13 +405,13 @@ module C03KnuthShuffle_KnuthShuffle
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global)))
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))
   clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global)),
-  function Model0.model = Model1.model
-  clone Alloc_Vec_Impl11_DerefMut_Interface as DerefMut0 with type t = t, type a = Type.alloc_alloc_global,
-  function Model0.model = Model3.model, function Model1.model = Model2.model
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Type.alloc_alloc_global,
   function Model0.model = Model2.model
+  clone Alloc_Vec_Impl11_DerefMut_Interface as DerefMut0 with type t = t, type a = Type.alloc_alloc_global,
+  function Model0.model = Model3.model, function Model1.model = Model0.model
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Type.alloc_alloc_global,
+  function Model0.model = Model0.model
   let rec cfg knuth_shuffle [@cfg:stackify] (v : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))) : ()
-    ensures { PermutationOf0.permutation_of (Model2.model ( ^ v)) (Model0.model v) }
+    ensures { PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
     
    = 
   var _0 : ();
@@ -458,8 +458,8 @@ module C03KnuthShuffle_KnuthShuffle
     goto BB2
   }
   BB2 {
-    invariant permutation { PermutationOf0.permutation_of (Model0.model v_1) (Model0.model (Model1.model old_v_2)) };
-    invariant proph_const {  ^ v_1 =  ^ Model1.model old_v_2 };
+    invariant permutation { PermutationOf0.permutation_of (Model1.model v_1) (Model1.model (Model2.model old_v_2)) };
+    invariant proph_const {  ^ v_1 =  ^ Model2.model old_v_2 };
     _8 <- n_5;
     _10 <-  * v_1;
     _9 <- Len0.len _10;

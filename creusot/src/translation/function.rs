@@ -11,12 +11,12 @@ use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use rustc_infer::infer::TyCtxtInferExt;
-use rustc_middle::ty::Ty;
 use rustc_middle::ty::{
     subst::{GenericArg, SubstsRef},
     TypeFoldable,
 };
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
+use rustc_middle::ty::{ParamEnv, Ty};
 use rustc_middle::{
     mir::traversal::preorder,
     mir::{BasicBlock, Body, Local, Location, MirPass, Operand, VarDebugInfo},
@@ -35,6 +35,7 @@ use why3::{declaration::*, Ident};
 use indexmap::IndexMap;
 
 mod place;
+mod promoted;
 mod statement;
 mod terminator;
 
@@ -56,18 +57,40 @@ pub fn translate_function<'tcx, 'sess>(
     }
 
     // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
-    let (body, _) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
+    let (body, promoted) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
     RemoveFalseEdges.run_pass(tcx, &mut body);
     SimplifyCfg::new("verify").run_pass(tcx, &mut body);
 
-    let (invariants, assertions) = corrected_invariant_names_and_locations(ctx, &mut names, &body);
-    let func_translator =
-        FunctionTranslator::build_context(tcx, ctx, &body, names, invariants, assertions, def_id);
+    let mut decls = Vec::new();
+    decls.extend(closure_generic_decls(ctx.tcx, def_id));
 
-    func_translator.translate()
+    if ctx.tcx.is_closure(def_id) {
+        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
+            let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
+            let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
+            decls.extend(names.to_clones(ctx));
+            decls.push(env_ty);
+            decls.extend(accessors);
+        }
+    }
+
+    let param_env = ctx.param_env(def_id);
+    for p in promoted.borrow().iter_enumerated() {
+        let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p)
+            .unwrap_or_else(|e| e.emit(ctx.tcx.sess));
+        decls.extend(names.to_clones(ctx));
+        decls.push(promoted);
+    }
+    let sig = signature_of(ctx, &mut names, def_id);
+
+    let func_translator = BodyTranslator::build_context(tcx, ctx, &body, &mut names, sig, def_id);
+
+    decls.extend(func_translator.translate());
+    let name = module_name(ctx.tcx, def_id);
+    Module { name, decls }
 }
 
 pub fn translate_trusted<'tcx>(
@@ -92,17 +115,19 @@ pub fn translate_trusted<'tcx>(
 use crate::resolve::EagerResolver;
 
 // Split this into several sub-contexts: Core, Analysis, Results?
-pub struct FunctionTranslator<'body, 'sess, 'tcx> {
+pub struct BodyTranslator<'body, 'sess, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
+
     def_id: DefId,
 
     body: &'body Body<'tcx>,
+
+    sig: Signature,
 
     resolver: EagerResolver<'body, 'tcx>,
 
     // Spec / Ghost variables
     erased_locals: BitSet<Local>,
-
     local_map: HashMap<Local, Local>,
 
     // Current block being generated
@@ -117,25 +142,26 @@ pub struct FunctionTranslator<'body, 'sess, 'tcx> {
     fresh_id: usize,
 
     // Gives a fresh name to every mono-morphization of a function or trait
-    clone_names: CloneMap<'tcx>,
+    names: &'body mut CloneMap<'tcx>,
 
     invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
 
     assertions: IndexMap<DefId, Exp>,
+
     borrows: Rc<BorrowSet<'tcx>>,
 }
 
-impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
+impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     fn build_context(
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'sess, 'tcx>,
         body: &'body Body<'tcx>,
-        clone_names: CloneMap<'tcx>,
-        invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
-        assertions: IndexMap<DefId, Exp>,
+        names: &'body mut CloneMap<'tcx>,
+        sig: Signature,
         def_id: DefId,
     ) -> Self {
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
+        let (invariants, assertions) = corrected_invariant_names_and_locations(ctx, names, &body);
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
@@ -152,61 +178,35 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
         });
         let move_paths = MoveData::gather_moves(&clean_body, tcx, tcx.param_env(def_id)).unwrap();
         let borrows = BorrowSet::build(tcx, &clean_body, true, &move_paths);
-        let local_map = real_locals(tcx, body);
         let borrows = Rc::new(borrows);
         let resolver = EagerResolver::new(tcx, body, borrows.clone());
 
-        FunctionTranslator {
+        // TODO: Remove?
+        let local_map = real_locals(tcx, body);
+
+        BodyTranslator {
             tcx,
+            sig,
             body,
             def_id,
             resolver,
             erased_locals,
+            local_map,
             current_block: (Vec::new(), None),
             past_blocks: BTreeMap::new(),
             ctx,
             fresh_id: body.basic_blocks().len(),
-            clone_names,
+            names,
             invariants,
             assertions,
-            local_map,
             borrows,
         }
     }
 
-    fn translate(mut self) -> Module {
+    fn translate(mut self) -> Vec<Decl> {
         let mut decls: Vec<_> = Vec::new();
-        decls.extend(closure_generic_decls(self.tcx, self.def_id));
 
-        if self.tcx.is_closure(self.def_id) {
-            if let TyKind::Closure(_, subst) = self.tcx.type_of(self.def_id).kind() {
-                let env_ty = Decl::TyDecl(translate_closure_ty(
-                    self.ctx,
-                    &mut self.clone_names,
-                    self.def_id,
-                    subst,
-                ));
-                let accessors = closure_accessors(
-                    self.ctx,
-                    &mut self.clone_names,
-                    self.def_id,
-                    subst.as_closure(),
-                );
-                decls.extend(self.clone_names.to_clones(self.ctx));
-                decls.push(env_ty);
-                decls.extend(accessors);
-            }
-        }
-
-        let sig = signature_of(self.ctx, &mut self.clone_names, self.def_id);
-        let name = module_name(self.tcx, self.def_id);
-
-        decls.extend(self.clone_names.to_clones(self.ctx));
-
-        if util::is_trusted(self.tcx, self.def_id) {
-            decls.push(Decl::ValDecl(ValKind::Val { sig }));
-            return Module { name, decls };
-        }
+        decls.extend(self.names.to_clones(self.ctx));
 
         self.translate_body();
 
@@ -228,17 +228,17 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
                 .collect(),
             terminator: Terminator::Goto(BlockId(0)),
         };
-        decls.extend(self.clone_names.to_clones(self.ctx));
-
-        // decls.extend(closure_contract(self.ctx, &mut self.clone_names, self.def_id).into_iter());
+        decls.extend(self.names.to_clones(self.ctx));
 
         decls.push(Decl::FunDecl(CfgFunction {
-            sig,
+            sig: self.sig,
+            rec: true,
+            constant: false,
             vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(),
             entry,
             blocks: self.past_blocks,
         }));
-        Module { name, decls }
+        decls
     }
 
     fn translate_body(&mut self) {
@@ -284,16 +284,15 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
             let ident = self.translate_local(loc);
             vars.push((
                 ident,
-                ty::translate_ty(
-                    &mut self.ctx,
-                    &mut self.clone_names,
-                    decl.source_info.span,
-                    decl.ty,
-                ),
+                ty::translate_ty(&mut self.ctx, &mut self.names, decl.source_info.span, decl.ty),
             ))
         }
 
         vars
+    }
+
+    fn param_env(&self) -> ParamEnv<'tcx> {
+        self.ctx.param_env(self.def_id)
     }
 
     fn emit_statement(&mut self, s: mlcfg::Statement) {
@@ -312,7 +311,8 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     }
 
     fn resolve_ty(&mut self, ty: Ty<'tcx>) -> ResolveStmt {
-        resolve_predicate_of(&mut self.ctx, &mut self.clone_names, self.def_id, ty)
+        let param_env = self.param_env();
+        resolve_predicate_of(&mut self.ctx, &mut self.names, param_env, ty)
     }
 
     // Inserts drop statements for variables which died over the course of a goto or switch
@@ -378,11 +378,12 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
 
     fn freeze_locals(&mut self, mut dying: BitSet<Local>) {
         dying.subtract(&self.erased_locals);
+        let param_env = self.param_env();
 
         for local in dying.iter() {
             let local_ty = self.body.local_decls[local].ty;
             let ident = self.translate_local(local).ident();
-            resolve_predicate_of(&mut self.ctx, &mut self.clone_names, self.def_id, local_ty)
+            resolve_predicate_of(&mut self.ctx, &mut self.names, param_env, local_ty)
                 .emit(Exp::impure_var(ident), self);
         }
     }
@@ -391,34 +392,14 @@ impl<'body, 'sess, 'tcx> FunctionTranslator<'body, 'sess, 'tcx> {
     pub fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Exp {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(pl),
-            Operand::Constant(c) => crate::constant::from_mir_constant(
-                &mut self.ctx,
-                &mut self.clone_names,
-                self.def_id,
-                c,
-            ),
+            Operand::Constant(c) => {
+                crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
+            }
         }
     }
 
     fn translate_local(&self, loc: Local) -> LocalIdent {
-        use rustc_middle::mir::VarDebugInfoContents::Place;
-        let debug_info: Vec<_> = self
-            .body
-            .var_debug_info
-            .iter()
-            .filter(|var_info| match var_info.value {
-                Place(p) => p.as_local().map(|l| l == loc).unwrap_or(false),
-                _ => false,
-            })
-            .collect();
-
-        assert!(debug_info.len() <= 1, "expected at most one debug entry for local {:?}", loc);
-
-        let loc = self.local_map[&loc];
-        match debug_info.get(0) {
-            Some(info) => LocalIdent::dbg(loc, *info),
-            None => LocalIdent::anon(loc),
-        }
+        place::translate_local(&self.body, &self.local_map, loc)
     }
 }
 
@@ -558,7 +539,8 @@ fn closure_resolve<'tcx>(
         let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
         let self_ = Exp::pure_var(Ident::build("_1'"));
 
-        let resolve_one = resolve_predicate_of(ctx, names, def_id, ty).exp(acc.app_to(self_));
+        let param_env = ctx.param_env(def_id);
+        let resolve_one = resolve_predicate_of(ctx, names, param_env, ty).exp(acc.app_to(self_));
         resolve = resolve_one.and(resolve);
     }
 
@@ -616,7 +598,7 @@ impl ResolveStmt {
             Some(e) => e.app_to(to),
         }
     }
-    fn emit(self, to: Exp, fctx: &mut FunctionTranslator) {
+    fn emit(self, to: Exp, fctx: &mut BodyTranslator) {
         match self.exp {
             None => {}
             Some(e) => fctx.emit_statement(mlcfg::Statement::Assume(e.app_to(to))),
@@ -627,7 +609,7 @@ impl ResolveStmt {
 fn resolve_predicate_of<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
-    def_id: DefId,
+    param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
 ) -> ResolveStmt {
     if !resolve_trait_loaded(ctx.tcx) {
@@ -642,7 +624,6 @@ fn resolve_predicate_of<'tcx>(
     let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
     let subst = ctx.mk_substs([GenericArg::from(ty)].iter());
 
-    let param_env = ctx.param_env(def_id);
     let resolve_impl = traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst);
 
     match resolve_impl {

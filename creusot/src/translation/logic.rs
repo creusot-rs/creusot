@@ -96,7 +96,7 @@ fn spec_axiom(sig: &Signature) -> Axiom {
 
     let func_call = function_call(sig);
     condition.subst(&[("result".into(), func_call)].into_iter().collect());
-    let args = sig.args.clone();
+    let args: Vec<_> = sig.args.iter().cloned().filter(|arg| &*arg.0 != "_").collect();
 
     let axiom = if args.is_empty() { condition } else { Exp::Forall(args, box condition) };
 
@@ -104,7 +104,13 @@ fn spec_axiom(sig: &Signature) -> Axiom {
 }
 
 fn function_call(sig: &Signature) -> Exp {
-    let mut args: Vec<_> = sig.args.iter().cloned().map(|arg| Exp::pure_var(arg.0)).collect();
+    let mut args: Vec<_> = sig
+        .args
+        .iter()
+        .cloned()
+        .filter(|arg| &*arg.0 != "_")
+        .map(|arg| Exp::pure_var(arg.0))
+        .collect();
     if args.is_empty() {
         args = vec![Exp::Tuple(vec![])];
     }

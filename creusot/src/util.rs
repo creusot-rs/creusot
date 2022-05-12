@@ -8,7 +8,7 @@ use rustc_middle::ty::{DefIdTree, ReErased, TyCtxt};
 use rustc_span::Symbol;
 use std::collections::HashMap;
 use std::iter;
-use why3::mlcfg::ExpMutVisitor;
+use why3::mlcfg::{ExpMutVisitor, Type};
 use why3::{declaration, QName};
 use why3::{
     declaration::{Signature, ValKind},
@@ -332,7 +332,7 @@ pub fn signature_of<'tcx>(
 
     let span = ctx.tcx.def_span(def_id);
 
-    let args = names.with_public_clones(|names| {
+    let mut args: Vec<_> = names.with_public_clones(|names| {
         inputs
             .enumerate()
             .map(|(ix, (id, ty))| {
@@ -346,6 +346,11 @@ pub fn signature_of<'tcx>(
             })
             .collect()
     });
+
+    if args.is_empty() {
+        // TODO: Change arguments to be patterns not identifiers
+        args.push(("_".into(), Type::UNIT));
+    };
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);
     if matches!(item_type(ctx.tcx, def_id), ItemType::Program | ItemType::Closure) {
