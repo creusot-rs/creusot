@@ -355,9 +355,10 @@ pub fn translate_accessor(
     adt_did: DefId,
     variant_did: DefId,
     field_id: DefId,
-) -> Vec<Decl> {
+) -> Decl {
     let adt_def = ctx.tcx.adt_def(adt_did);
-    let variant = adt_def.variant_with_id(variant_did);
+    let variant_ix = adt_def.variant_index_with_id(variant_did);
+    let variant = &adt_def.variants()[variant_ix];
     let ix = variant.fields.iter().position(|f| f.did == field_id).unwrap();
     let field = &variant.fields[ix];
 
@@ -367,25 +368,36 @@ pub fn translate_accessor(
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let mut names = CloneMap::new(ctx.tcx, adt_did, false);
     let target_ty = field_ty(ctx, &mut names, &variant.fields[ix], substs);
-    let var_name = item_qname(ctx.tcx, variant.def_id);
+
+    let variant_arities: Vec<_> = adt_def
+        .variants()
+        .iter()
+        .map(|var| (item_qname(ctx.tcx, var.def_id), var.fields.len()))
+        .collect();
 
     let this = MlT::TApp(
         box MlT::TConstructor(ty_name.clone().into()),
         ty_param_names(ctx.tcx, adt_did).map(MlT::TVar).collect(),
     );
 
-    build_accessor(this, Ident::build(&acc_name), var_name, variant.fields.len(), (ix, target_ty))
+    build_accessor(
+        this,
+        Ident::build(&acc_name),
+        variant_ix.into(),
+        &variant_arities,
+        (ix, target_ty),
+    )
 }
 
 pub fn build_accessor(
     this: MlT,
     acc_name: Ident,
-    cons_name: QName,
-    field_count: usize,
+    variant_ix: usize,
+    variant_arities: &[(QName, usize)],
     target_field: (usize, MlT),
-) -> Vec<Decl> {
+) -> Decl {
     let field_ty = target_field.1;
-    let ix = target_field.0;
+    let field_ix = target_field.0;
 
     let sig = Signature {
         name: acc_name.clone(),
@@ -395,21 +407,23 @@ pub fn build_accessor(
         contract: Contract::new(),
     };
 
-    let mut decls = Vec::new();
+    let branches = variant_arities
+        .into_iter()
+        .enumerate()
+        .map(|(ix, (name, arity))| {
+            let mut pat = vec![Pattern::Wildcard; *arity];
+            let mut exp = Exp::Any(field_ty.clone());
+            if ix == variant_ix {
+                pat[field_ix] = Pattern::VarP("a".into());
+                exp = Exp::pure_var("a".into());
+            };
+            (Pattern::ConsP(name.clone(), pat), exp)
+        })
+        .collect();
 
-    let mut good_pat = vec![Pattern::Wildcard; field_count];
-    good_pat[ix] = Pattern::VarP("a".into());
-    let discr_exp = Exp::Match(
-        box Exp::pure_var("self".into()),
-        vec![
-            (Pattern::ConsP(cons_name, good_pat), Exp::pure_var("a".into())),
-            (Pattern::Wildcard, Exp::Any(field_ty)),
-        ],
-    );
+    let discr_exp = Exp::Match(box Exp::pure_var("self".into()), branches);
 
-    decls.push(Decl::LetFun(LetFun { sig, rec: false, ghost: false, body: discr_exp }));
-
-    decls
+    Decl::LetFun(LetFun { sig, rec: false, ghost: false, body: discr_exp })
 }
 
 pub fn closure_accessors<'tcx>(
@@ -431,9 +445,12 @@ pub fn closure_accessors<'tcx>(
     let this = MlT::TConstructor(ty_name.into());
 
     let mut accessors = Vec::new();
+
+    let variant_arity = vec![(cons_name, count)];
+
     for tgt in fields.drain(..).enumerate() {
         let nm = closure_accessor_name(ctx.tcx, ty_id, tgt.0);
-        accessors.extend(build_accessor(this.clone(), nm, cons_name.clone(), count, tgt));
+        accessors.push(build_accessor(this.clone(), nm, tgt.0, &variant_arity, tgt));
     }
     accessors
 }

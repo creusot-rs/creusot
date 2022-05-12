@@ -47,12 +47,12 @@ pub enum TranslatedItem<'tcx> {
 
 pub struct TypeDeclaration {
     pub ty_decl: TyDecl,
-    pub accessors: IndexMap<DefId, IndexMap<DefId, Vec<Decl>>>,
+    pub accessors: IndexMap<DefId, IndexMap<DefId, Decl>>,
 }
 
 impl TypeDeclaration {
     pub fn accessors(&self) -> impl Iterator<Item = &Decl> {
-        self.accessors.values().flat_map(|v| v.values().flat_map(|f| f.iter()))
+        self.accessors.values().flat_map(|v| v.values())
     }
 }
 
