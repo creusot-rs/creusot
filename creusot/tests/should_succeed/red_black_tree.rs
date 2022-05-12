@@ -3,8 +3,8 @@ extern crate creusot_contracts;
 
 use creusot_contracts::std::*;
 use creusot_contracts::*;
-use std::cmp::Ordering::*;
 use std::cmp::Ord;
+use std::cmp::Ordering::*;
 
 extern_spec! {
     #[ensures(result === (@self_).cmp_log(@*o))]
@@ -32,7 +32,10 @@ struct Tree<K, V> {
     node: Option<Box<Node<K, V>>>,
 }
 
-impl<K: Model, V> Node<K, V> where K::ModelTy: OrdLogic {
+impl<K: Model, V> Node<K, V>
+where
+    K::ModelTy: OrdLogic,
+{
     #[requires((*self).ord_invariant())]
     #[requires((*self).left.is_red_log())]
     #[ensures((*self).same_mappings(^self))]
@@ -54,7 +57,7 @@ impl<K: Model, V> Node<K, V> where K::ModelTy: OrdLogic {
         // Rip out the left subtree
         let mut x: Box<_> = match std::mem::replace(&mut self.left.node, None) {
             Some(x) => x,
-            None => panic!()
+            None => panic!(),
         };
 
         //     self
@@ -101,7 +104,7 @@ impl<K: Model, V> Node<K, V> where K::ModelTy: OrdLogic {
 
         let mut x: Box<_> = match std::mem::replace(&mut self.right.node, None) {
             Some(x) => x,
-            None => panic!()
+            None => panic!(),
         };
         std::mem::swap(&mut self.right, &mut x.left);
         std::mem::swap(self, &mut x);
@@ -150,15 +153,13 @@ impl<K: Model, V> Node<K, V> where K::ModelTy: OrdLogic {
         if self.left.is_red() && self.right.is_red() {
             self.color = Red;
             match self {
-                Node { left: Tree { node: Some(l) },
-                       right: Tree { node: Some(r) }, .. } =>
-                {
+                Node { left: Tree { node: Some(l) }, right: Tree { node: Some(r) }, .. } => {
                     l.color = Black;
                     r.color = Black;
                     proof_assert!((*l).ord_invariant());
                     proof_assert!((*r).ord_invariant());
-                },
-                _ => panic!()
+                }
+                _ => panic!(),
             }
             proof_assert!((*self).ord_invariant_here());
         }
@@ -190,7 +191,10 @@ impl<K: Model, V> Node<K, V> where K::ModelTy: OrdLogic {
     }
 }
 
-impl<K: Model, V> Tree<K, V> where K::ModelTy: OrdLogic {
+impl<K: Model, V> Tree<K, V>
+where
+    K::ModelTy: OrdLogic,
+{
     #[ensures(@result === Mapping::cst(None))]
     #[ensures(result.invariant())]
     pub fn new() -> Tree<K, V> {
@@ -208,7 +212,10 @@ impl<K: Model, V> Tree<K, V> where K::ModelTy: OrdLogic {
     #[ensures((^self).has_mapping(@key, val))]
     #[ensures(forall<k: K::ModelTy, v: V> k === @key || (*self).has_mapping(k, v) === (^self).has_mapping(k, v))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
-    fn insert_rec(&mut self, key: K, val: V) where K: Ord {
+    fn insert_rec(&mut self, key: K, val: V)
+    where
+        K: Ord,
+    {
         let old_self = Ghost::record(&*self);
         match &mut self.node {
             None => {
@@ -217,13 +224,17 @@ impl<K: Model, V> Tree<K, V> where K::ModelTy: OrdLogic {
                     color: Red,
                     key,
                     val,
-                    right: Tree { node: None }}));
-                return
-            },
+                    right: Tree { node: None },
+                }));
+                return;
+            }
             Some(node) => {
                 match key.cmp(&node.key) {
                     Less => node.left.insert_rec(key, val),
-                    Equal => { node.val = val; return },
+                    Equal => {
+                        node.val = val;
+                        return;
+                    }
                     Greater => node.right.insert_rec(key, val),
                 }
                 proof_assert!(forall<h: Int> (@old_self).has_height(h) ==> node.has_height(h));
@@ -237,12 +248,15 @@ impl<K: Model, V> Tree<K, V> where K::ModelTy: OrdLogic {
     #[requires(forall<k:K::ModelTy> @key == k ==> @key === k)] // FIXME: get rid of log_eq
     #[ensures((^self).invariant())]
     #[ensures(@^self === (@*self).set(@key, Some(val)))]
-    pub fn insert(&mut self, key: K, val: V) where K: Ord {
+    pub fn insert(&mut self, key: K, val: V)
+    where
+        K: Ord,
+    {
         let old_self = Ghost::record(&*self);
         self.insert_rec(key, val);
         self.node.as_mut().unwrap().color = Black;
         proof_assert! { forall<h: Int> (@old_self).has_height(h) ==>
-                        (*self).has_height(h) || (*self).has_height(h+1) }
+        (*self).has_height(h) || (*self).has_height(h+1) }
         proof_assert! { (*self).has_binding_model(@key /* dummy */, val /* dummy */); true }
     }
 
@@ -250,16 +264,17 @@ impl<K: Model, V> Tree<K, V> where K::ModelTy: OrdLogic {
     #[requires(forall<k:K::ModelTy> @key == k ==> @key === k)] // FIXME: get rid of log_eq
     #[ensures(forall<r: &V> result === Some(r) ==> (*self).has_mapping(@*key, *r))]
     #[ensures(result === None ==> forall<v: V> !(*self).has_mapping(@*key, v))]
-    fn get_rec(&self, key: &K) -> Option<&V> where K: Ord {
+    fn get_rec(&self, key: &K) -> Option<&V>
+    where
+        K: Ord,
+    {
         match &self.node {
             None => None,
-            Some(node) => {
-                match key.cmp(&node.key) {
-                    Less => node.left.get_rec(key),
-                    Equal => Some(&node.val),
-                    Greater => node.right.get_rec(key)
-                }
-            }
+            Some(node) => match key.cmp(&node.key) {
+                Less => node.left.get_rec(key),
+                Equal => Some(&node.val),
+                Greater => node.right.get_rec(key),
+            },
         }
     }
 
@@ -267,7 +282,10 @@ impl<K: Model, V> Tree<K, V> where K::ModelTy: OrdLogic {
     #[requires(forall<k:K::ModelTy> @key == k ==> @key === k)] // FIXME: get rid of log_eq
     #[ensures(forall<v: &V> (result === Some(v)) === ((@*self).get(@*key) === Some(*v)))]
     #[ensures((result === None) === (@*self).get(@*key) === None)]
-    pub fn get(&self, key: &K) -> Option<&V> where K: Ord {
+    pub fn get(&self, key: &K) -> Option<&V>
+    where
+        K: Ord,
+    {
         proof_assert! { forall<v:V> { self.has_binding_model(@*key, v); true } }
         self.get_rec(key)
     }
@@ -280,16 +298,17 @@ impl<K: Model, V> Tree<K, V> where K::ModelTy: OrdLogic {
     #[ensures(result === None ==> forall<v: V> !(*self).has_mapping(@*key, v) && !(^self).has_mapping(@*key, v))]
     #[ensures(forall<k: K::ModelTy, v: V> k === @key || (*self).has_mapping(k, v) === (^self).has_mapping(k, v))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
-    fn get_mut_rec(&mut self, key: &K) -> Option<&mut V> where K: Ord {
+    fn get_mut_rec(&mut self, key: &K) -> Option<&mut V>
+    where
+        K: Ord,
+    {
         match &mut self.node {
             None => None,
-            Some(node) => {
-                match key.cmp(&node.key) {
-                    Less => node.left.get_mut_rec(key),
-                    Equal => Some(&mut node.val),
-                    Greater => node.right.get_mut_rec(key)
-                }
-            }
+            Some(node) => match key.cmp(&node.key) {
+                Less => node.left.get_mut_rec(key),
+                Equal => Some(&mut node.val),
+                Greater => node.right.get_mut_rec(key),
+            },
         }
     }
 
@@ -299,7 +318,10 @@ impl<K: Model, V> Tree<K, V> where K::ModelTy: OrdLogic {
     #[ensures(forall<v: &mut V> result === Some(v) ==>
               (@*self).get(@*key) === Some(*v) && @^self === (@*self).set(@key, Some(^v)))]
     #[ensures(result === None ==> (@*self).get(@*key) === None && (@^self).get(@*key) === None)]
-    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> where K: Ord {
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V>
+    where
+        K: Ord,
+    {
         proof_assert! { forall<v:V> { self.has_binding_model(@*key, v); true } }
         self.get_mut_rec(key)
     }
@@ -343,8 +365,8 @@ impl<K, V> Tree<K, V> {
     #[ensures(result == self.is_red_log())]
     fn is_red(&self) -> bool {
         match self.node {
-            Some(box Node{color: Red, ..}) => true,
-            _ => false
+            Some(box Node { color: Red, .. }) => true,
+            _ => false,
         }
     }
 
@@ -352,7 +374,7 @@ impl<K, V> Tree<K, V> {
     fn is_red_log(self) -> bool {
         match self.node {
             Some(box Node { left, color: Red, key, val, right }) => true,
-            _ => false
+            _ => false,
         }
     }
 }
@@ -371,10 +393,10 @@ impl<K: Model, V> Node<K, V> {
     #[predicate]
     fn has_height(self, h: Int) -> bool {
         match self {
-            Node { left, color: Red, key, val, right } =>
-                left.has_height(h) && right.has_height(h),
-            Node { left, color: Black, key, val, right } =>
-                left.has_height(h-1) && right.has_height(h-1)
+            Node { left, color: Red, key, val, right } => left.has_height(h) && right.has_height(h),
+            Node { left, color: Black, key, val, right } => {
+                left.has_height(h - 1) && right.has_height(h - 1)
+            }
         }
     }
 }
@@ -414,8 +436,7 @@ impl<K: Model, V> Tree<K, V> {
     }
 
     #[logic]
-    fn model_acc(self, accu: <Self as Model>::ModelTy) -> <Self as Model>::ModelTy
-    {
+    fn model_acc(self, accu: <Self as Model>::ModelTy) -> <Self as Model>::ModelTy {
         pearlite! {
             match self {
                 Tree { node: None } => accu,
@@ -448,7 +469,10 @@ impl<K: Model, V> Tree<K, V> {
     #[logic]
     #[requires(self.ord_invariant())]
     #[ensures(forall<v: V> self.has_mapping(k, v) ==> self.model_acc(accu).get(k) === Some(v))]
-    fn has_binding_model_acc(self, accu: <Self as Model>::ModelTy, k: K::ModelTy) where K::ModelTy: OrdLogic {
+    fn has_binding_model_acc(self, accu: <Self as Model>::ModelTy, k: K::ModelTy)
+    where
+        K::ModelTy: OrdLogic,
+    {
         pearlite! {
             match self {
                 Tree { node: None } => (),
@@ -466,7 +490,10 @@ impl<K: Model, V> Tree<K, V> {
     #[logic]
     #[requires(self.ord_invariant())]
     #[ensures(self.has_mapping(k, v) === ((@self).get(k) === Some(v)))]
-    fn has_binding_model(self, k: K::ModelTy, v: V) where K::ModelTy: OrdLogic {
+    fn has_binding_model(self, k: K::ModelTy, v: V)
+    where
+        K::ModelTy: OrdLogic,
+    {
         pearlite! { {
             self.model_acc_has_binding(Mapping::cst(None), k);
             self.has_binding_model_acc(Mapping::cst(None), k)
@@ -474,7 +501,7 @@ impl<K: Model, V> Tree<K, V> {
     }
 }
 
-impl<K: Model, V> Model for Node<K, V>{
+impl<K: Model, V> Model for Node<K, V> {
     type ModelTy = Mapping<K::ModelTy, Option<V>>;
 
     #[logic]
