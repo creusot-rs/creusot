@@ -85,7 +85,6 @@ pub fn from_ty_const<'tcx>(
         return Exp::impure_var(format!("promoted{:?}", p.as_usize()).into());
     }
 
-    dbg!(&c.val());
     if let ConstKind::Param(_) = c.val() {
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
