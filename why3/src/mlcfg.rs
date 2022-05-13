@@ -671,6 +671,7 @@ pub enum Constant {
     Int(i128, Option<Type>),
     Uint(u128, Option<Type>),
     // Float(f64),
+    String(String),
     Other(String),
 }
 impl Constant {

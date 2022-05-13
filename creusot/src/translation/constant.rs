@@ -1,9 +1,11 @@
 use rustc_hir::def_id::DefId;
+use rustc_middle::mir::interpret::{AllocRange, ConstValue};
 use rustc_middle::{
     mir::ConstantKind,
     ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt, Unevaluated},
 };
 use rustc_span::Span;
+use rustc_target::abi::Size;
 use why3::{
     declaration::Module,
     mlcfg::{self, Constant, Exp},
@@ -51,6 +53,16 @@ pub fn from_mir_constant_kind<'tcx>(
         return Exp::Tuple(Vec::new());
     }
 
+    if ck.ty().peel_refs().is_str() {
+        if let Some(ConstValue::Slice { data, start, end }) = ck.try_val() {
+            let start = Size::from_bytes(start);
+            let size = Size::from_bytes(end);
+            let bytes = data.inner().get_bytes(&ctx.tcx, AllocRange { start, size }).unwrap();
+            let string = std::str::from_utf8(bytes).unwrap();
+            return Exp::Const(Constant::String(string.into()));
+        }
+    }
+
     return try_to_bits(ctx, names, env, ck.ty(), span, ck);
 }
 
@@ -73,6 +85,7 @@ pub fn from_ty_const<'tcx>(
         return Exp::impure_var(format!("promoted{:?}", p.as_usize()).into());
     }
 
+    dbg!(&c.val());
     if let ConstKind::Param(_) = c.val() {
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
