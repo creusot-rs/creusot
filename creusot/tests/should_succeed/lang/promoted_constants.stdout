@@ -17,6 +17,23 @@ module Type
     | Core_Option_Option_None
     | Core_Option_Option_Some 't
     
+  type core_marker_phantomdata 't = 
+    ()
+  type core_ptr_unique_unique 't = 
+    | Core_Ptr_Unique_Unique opaque_ptr (core_marker_phantomdata 't)
+    
+  type alloc_rawvec_rawvec 't 'a = 
+    | Alloc_RawVec_RawVec (core_ptr_unique_unique 't) usize 'a
+    
+  type alloc_vec_vec 't 'a = 
+    | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) usize
+    
+  type alloc_alloc_global  = 
+    | Alloc_Alloc_Global
+    
+  type alloc_string_string  = 
+    | Alloc_String_String (alloc_vec_vec uint8 (alloc_alloc_global))
+    
 end
 module PromotedConstants_PromotedNone_Interface
   val promoted_none [@cfg:stackify] (_ : ()) : ()
@@ -114,6 +131,46 @@ module PromotedConstants_PromotedInt
     absurd
   }
   BB2 {
+    _0 <- ();
+    return _0
+  }
+  
+end
+module PromotedConstants_String_Interface
+  use Type
+  val string [@cfg:stackify] (s : Type.alloc_string_string) : ()
+end
+module PromotedConstants_String
+  use Type
+  let rec cfg string [@cfg:stackify] (s : Type.alloc_string_string) : () = 
+  var _0 : ();
+  var s_1 : Type.alloc_string_string;
+  {
+    s_1 <- s;
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end
+module PromotedConstants_Str_Interface
+  val str [@cfg:stackify] (_ : ()) : ()
+end
+module PromotedConstants_Str
+  use prelude.Prelude
+  let rec cfg str [@cfg:stackify] (_ : ()) : () = 
+  var _0 : ();
+  var s_1 : string;
+  {
+    goto BB0
+  }
+  BB0 {
+    s_1 <- "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
     _0 <- ();
     return _0
   }

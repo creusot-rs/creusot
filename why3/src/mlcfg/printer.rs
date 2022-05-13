@@ -916,6 +916,7 @@ impl Print for Constant {
             Constant::Uint(i, Some(t)) => {
                 alloc.as_string(i).append(" : ").append(t.pretty(alloc, env)).parens()
             }
+            Constant::String(s) => alloc.text(s).double_quotes(),
             Constant::Uint(i, None) => alloc.as_string(i),
         }
     }
