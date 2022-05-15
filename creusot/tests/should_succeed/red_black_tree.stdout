@@ -1493,22 +1493,22 @@ module RedBlackTree_Impl12_RotateLeft
   }
   
 end
-module Core_Option_Impl0_AsRef_Interface
+module Core_Option_Impl0_AsMut_Interface
   type t
   use Type
   use prelude.Prelude
-  val as_ref [@cfg:stackify] (self : Type.core_option_option t) : Type.core_option_option t
-    ensures { self = Type.Core_Option_Option_None || (exists r : (borrowed t) . result = Type.Core_Option_Option_Some ( * r) && self = Type.Core_Option_Option_Some ( * r)) }
-    ensures { self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None }
+  val as_mut [@cfg:stackify] (self : borrowed (Type.core_option_option t)) : Type.core_option_option (borrowed t)
+    ensures {  * self = Type.Core_Option_Option_None || (exists r : (borrowed t) . result = Type.Core_Option_Option_Some r &&  * self = Type.Core_Option_Option_Some ( * r) &&  ^ self = Type.Core_Option_Option_Some ( ^ r)) }
+    ensures {  * self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None &&  ^ self = Type.Core_Option_Option_None }
     
 end
-module Core_Option_Impl0_AsRef
+module Core_Option_Impl0_AsMut
   type t
   use Type
   use prelude.Prelude
-  val as_ref [@cfg:stackify] (self : Type.core_option_option t) : Type.core_option_option t
-    ensures { self = Type.Core_Option_Option_None || (exists r : (borrowed t) . result = Type.Core_Option_Option_Some ( * r) && self = Type.Core_Option_Option_Some ( * r)) }
-    ensures { self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None }
+  val as_mut [@cfg:stackify] (self : borrowed (Type.core_option_option t)) : Type.core_option_option (borrowed t)
+    ensures {  * self = Type.Core_Option_Option_None || (exists r : (borrowed t) . result = Type.Core_Option_Option_Some r &&  * self = Type.Core_Option_Option_Some ( * r) &&  ^ self = Type.Core_Option_Option_Some ( ^ r)) }
+    ensures {  * self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None &&  ^ self = Type.Core_Option_Option_None }
     
 end
 module Core_Option_Impl0_Unwrap_Interface
@@ -1527,7 +1527,189 @@ module Core_Option_Impl0_Unwrap
     ensures { Type.Core_Option_Option_Some result = self }
     
 end
-module RedBlackTree_Impl12_InsertRebalance_Interface
+module RedBlackTree_Impl12_FlipColors_Interface
+  type k
+  type v
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  clone RedBlackTree_Impl8_HasHeight_Interface as HasHeight0 with type k = k, type v = v
+  clone RedBlackTree_Impl1_SameMappings_Interface as SameMappings0 with type k = k, type v = v
+  clone RedBlackTree_Impl4_BstInvariant_Interface as BstInvariant0 with type k = k, type v = v
+  clone RedBlackTree_Impl6_IsRedLog_Interface as IsRedLog0 with type k = k, type v = v
+  val flip_colors [@cfg:stackify] (self : borrowed (Type.redblacktree_node k v)) : ()
+    requires {not (Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red) = IsRedLog0.is_red_log (Type.redblacktree_node_Node_right ( * self))}
+    requires {IsRedLog0.is_red_log (Type.redblacktree_node_Node_left ( * self)) = IsRedLog0.is_red_log (Type.redblacktree_node_Node_right ( * self))}
+    requires {not (Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_None)}
+    requires {not (Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_None)}
+    requires {BstInvariant0.bst_invariant ( * self)}
+    ensures { exists r2 : (Type.redblacktree_node k v) . exists r1 : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r1 && Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r2 && Type.redblacktree_node_Node_left r1 = Type.redblacktree_node_Node_left r2 && Type.redblacktree_node_Node_right r1 = Type.redblacktree_node_Node_right r2 && Type.redblacktree_node_Node_color ( * self) = Type.redblacktree_node_Node_color r2 && Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color r1 }
+    ensures { exists l2 : (Type.redblacktree_node k v) . exists l1 : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l1 && Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l2 && Type.redblacktree_node_Node_left l1 = Type.redblacktree_node_Node_left l2 && Type.redblacktree_node_Node_right l1 = Type.redblacktree_node_Node_right l2 && Type.redblacktree_node_Node_color ( * self) = Type.redblacktree_node_Node_color l2 && Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color l1 }
+    ensures { SameMappings0.same_mappings ( * self) ( ^ self) }
+    ensures { BstInvariant0.bst_invariant ( ^ self) }
+    ensures { forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
+    
+end
+module RedBlackTree_Impl12_FlipColors
+  type k
+  type v
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = k
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog as CmpLog0 with type self = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Ord_OrdLogic_GtLog as GtLog0 with type self = ModelTy0.modelTy,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog as CmpGtLog0 with type self = ModelTy0.modelTy,
+  predicate GtLog0.gt_log = GtLog0.gt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_GeLog as GeLog0 with type self = ModelTy0.modelTy,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog as CmpGeLog0 with type self = ModelTy0.modelTy,
+  predicate GeLog0.ge_log = GeLog0.ge_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog as LeLog0 with type self = ModelTy0.modelTy,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = ModelTy0.modelTy,
+  predicate LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_EqCmp as EqCmp0 with type self = ModelTy0.modelTy,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Antisym2 as Antisym20 with type self = ModelTy0.modelTy,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Antisym1 as Antisym10 with type self = ModelTy0.modelTy,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Trans as Trans0 with type self = ModelTy0.modelTy,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Refl as Refl0 with type self = ModelTy0.modelTy,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog as LtLog0 with type self = ModelTy0.modelTy,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog as CmpLtLog0 with type self = ModelTy0.modelTy,
+  predicate LtLog0.lt_log = LtLog0.lt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Model_Model_Model as Model0 with type self = k, type ModelTy0.modelTy = ModelTy0.modelTy
+  clone RedBlackTree_Impl0_HasMapping as HasMapping0 with type k = k, type v = v,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
+  clone RedBlackTree_Impl4_BstInvariantHere as BstInvariantHere0 with type k = k, type v = v,
+  type ModelTy0.modelTy = ModelTy0.modelTy, predicate HasMapping0.has_mapping = HasMapping0.has_mapping,
+  function Model0.model = Model0.model, predicate LtLog0.lt_log = LtLog0.lt_log
+  clone RedBlackTree_Impl5_BstInvariant as BstInvariant1 with type k = k, type v = v,
+  predicate BstInvariantHere0.bst_invariant_here = BstInvariantHere0.bst_invariant_here
+  clone RedBlackTree_Impl4_BstInvariant as BstInvariant0 with type k = k, type v = v,
+  predicate BstInvariantHere0.bst_invariant_here = BstInvariantHere0.bst_invariant_here,
+  predicate BstInvariant0.bst_invariant = BstInvariant1.bst_invariant
+  clone RedBlackTree_Impl0_SameMappings as SameMappings1 with type k = k, type v = v,
+  type ModelTy0.modelTy = ModelTy0.modelTy, predicate HasMapping0.has_mapping = HasMapping0.has_mapping
+  clone RedBlackTree_Impl1_SameMappings as SameMappings0 with type k = k, type v = v,
+  predicate SameMappings0.same_mappings = SameMappings1.same_mappings
+  clone RedBlackTree_Impl9_HasHeight as HasHeight1 with type k = k, type v = v
+  clone RedBlackTree_Impl8_HasHeight as HasHeight0 with type k = k, type v = v,
+  predicate HasHeight0.has_height = HasHeight1.has_height
+  clone RedBlackTree_Impl6_IsRedLog as IsRedLog0 with type k = k, type v = v
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Type.redblacktree_color
+  clone Core_Mem_Swap_Interface as Swap0 with type t = Type.redblacktree_color
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Type.redblacktree_node k v
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.redblacktree_node k v
+  clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = borrowed (Type.redblacktree_node k v)
+  clone Core_Option_Impl0_AsMut_Interface as AsMut0 with type t = Type.redblacktree_node k v
+  let rec cfg flip_colors [@cfg:stackify] (self : borrowed (Type.redblacktree_node k v)) : ()
+    requires {not (Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red) = IsRedLog0.is_red_log (Type.redblacktree_node_Node_right ( * self))}
+    requires {IsRedLog0.is_red_log (Type.redblacktree_node_Node_left ( * self)) = IsRedLog0.is_red_log (Type.redblacktree_node_Node_right ( * self))}
+    requires {not (Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_None)}
+    requires {not (Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_None)}
+    requires {BstInvariant0.bst_invariant ( * self)}
+    ensures { exists r2 : (Type.redblacktree_node k v) . exists r1 : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r1 && Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r2 && Type.redblacktree_node_Node_left r1 = Type.redblacktree_node_Node_left r2 && Type.redblacktree_node_Node_right r1 = Type.redblacktree_node_Node_right r2 && Type.redblacktree_node_Node_color ( * self) = Type.redblacktree_node_Node_color r2 && Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color r1 }
+    ensures { exists l2 : (Type.redblacktree_node k v) . exists l1 : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l1 && Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l2 && Type.redblacktree_node_Node_left l1 = Type.redblacktree_node_Node_left l2 && Type.redblacktree_node_Node_right l1 = Type.redblacktree_node_Node_right l2 && Type.redblacktree_node_Node_color ( * self) = Type.redblacktree_node_Node_color l2 && Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color l1 }
+    ensures { SameMappings0.same_mappings ( * self) ( ^ self) }
+    ensures { BstInvariant0.bst_invariant ( ^ self) }
+    ensures { forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
+    
+   = 
+  var _0 : ();
+  var self_1 : borrowed (Type.redblacktree_node k v);
+  var _2 : Type.redblacktree_color;
+  var _3 : borrowed (Type.redblacktree_node k v);
+  var _4 : Type.core_option_option (borrowed (Type.redblacktree_node k v));
+  var _5 : borrowed (Type.core_option_option (Type.redblacktree_node k v));
+  var _6 : ();
+  var _7 : borrowed (Type.redblacktree_color);
+  var _8 : borrowed (Type.redblacktree_color);
+  var _9 : borrowed (Type.redblacktree_color);
+  var _10 : borrowed (Type.redblacktree_color);
+  var _11 : borrowed (Type.redblacktree_node k v);
+  var _12 : Type.core_option_option (borrowed (Type.redblacktree_node k v));
+  var _13 : borrowed (Type.core_option_option (Type.redblacktree_node k v));
+  var _14 : ();
+  var _15 : ();
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    _2 <- Type.redblacktree_node_Node_color ( * self_1);
+    _5 <- borrow_mut (Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self_1)));
+    self_1 <- { self_1 with current = (let Type.RedBlackTree_Node a b c d e =  * self_1 in Type.RedBlackTree_Node (let Type.RedBlackTree_Tree a = Type.redblacktree_node_Node_left ( * self_1) in Type.RedBlackTree_Tree ( ^ _5)) b c d e) };
+    _4 <- AsMut0.as_mut _5;
+    goto BB1
+  }
+  BB1 {
+    _3 <- Unwrap0.unwrap _4;
+    goto BB2
+  }
+  BB2 {
+    _3 <- { _3 with current = (let Type.RedBlackTree_Node a b c d e =  * _3 in Type.RedBlackTree_Node a _2 c d e) };
+    assume { Resolve0.resolve _3 };
+    _8 <- borrow_mut (Type.redblacktree_node_Node_color ( * self_1));
+    self_1 <- { self_1 with current = (let Type.RedBlackTree_Node a b c d e =  * self_1 in Type.RedBlackTree_Node a ( ^ _8) c d e) };
+    _7 <- borrow_mut ( * _8);
+    _8 <- { _8 with current = ( ^ _7) };
+    _13 <- borrow_mut (Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self_1)));
+    self_1 <- { self_1 with current = (let Type.RedBlackTree_Node a b c d e =  * self_1 in Type.RedBlackTree_Node a b c d (let Type.RedBlackTree_Tree a = Type.redblacktree_node_Node_right ( * self_1) in Type.RedBlackTree_Tree ( ^ _13))) };
+    _12 <- AsMut0.as_mut _13;
+    goto BB3
+  }
+  BB3 {
+    assume { Resolve1.resolve self_1 };
+    _11 <- Unwrap0.unwrap _12;
+    goto BB4
+  }
+  BB4 {
+    _10 <- borrow_mut (Type.redblacktree_node_Node_color ( * _11));
+    _11 <- { _11 with current = (let Type.RedBlackTree_Node a b c d e =  * _11 in Type.RedBlackTree_Node a ( ^ _10) c d e) };
+    assume { Resolve0.resolve _11 };
+    _9 <- borrow_mut ( * _10);
+    _10 <- { _10 with current = ( ^ _9) };
+    _6 <- Swap0.swap _7 _9;
+    goto BB5
+  }
+  BB5 {
+    assume { Resolve2.resolve _8 };
+    assume { Resolve2.resolve _10 };
+    assert { SameMappings1.same_mappings (Type.redblacktree_node_Node_left ( * self_1)) (Type.redblacktree_node_Node_left ( ^ self_1)) };
+    _14 <- ();
+    assert { SameMappings1.same_mappings (Type.redblacktree_node_Node_right ( * self_1)) (Type.redblacktree_node_Node_right ( ^ self_1)) };
+    _15 <- ();
+    _0 <- ();
+    return _0
+  }
+  
+end
+module Core_Option_Impl0_AsRef_Interface
+  type t
+  use Type
+  use prelude.Prelude
+  val as_ref [@cfg:stackify] (self : Type.core_option_option t) : Type.core_option_option t
+    ensures { self = Type.Core_Option_Option_None || (exists r : (borrowed t) . result = Type.Core_Option_Option_Some ( * r) && self = Type.Core_Option_Option_Some ( * r)) }
+    ensures { self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None }
+    
+end
+module Core_Option_Impl0_AsRef
+  type t
+  use Type
+  use prelude.Prelude
+  val as_ref [@cfg:stackify] (self : Type.core_option_option t) : Type.core_option_option t
+    ensures { self = Type.Core_Option_Option_None || (exists r : (borrowed t) . result = Type.Core_Option_Option_Some ( * r) && self = Type.Core_Option_Option_Some ( * r)) }
+    ensures { self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None }
+    
+end
+module RedBlackTree_Impl12_Balance_Interface
   type k
   type v
   use Type
@@ -1539,7 +1721,7 @@ module RedBlackTree_Impl12_InsertRebalance_Interface
   clone RedBlackTree_Impl4_BstInvariant_Interface as BstInvariant0 with type k = k, type v = v
   clone RedBlackTree_Impl6_ColorInvariant_Interface as ColorInvariant0 with type k = k, type v = v
   clone RedBlackTree_Impl6_IsRedLog_Interface as IsRedLog0 with type k = k, type v = v
-  val insert_rebalance [@cfg:stackify] (self : borrowed (Type.redblacktree_node k v)) : ()
+  val balance [@cfg:stackify] (self : borrowed (Type.redblacktree_node k v)) : ()
     requires {Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red && IsRedLog0.is_red_log (Type.redblacktree_node_Node_right ( * self)) && IsRedLog0.is_red_log (Type.redblacktree_node_Node_left ( * self)) -> false}
     requires {Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red && IsRedLog0.is_red_log (Type.redblacktree_node_Node_right ( * self)) -> ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self))}
     requires {Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red && IsRedLog0.is_red_log (Type.redblacktree_node_Node_left ( * self)) -> ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self))}
@@ -1553,7 +1735,7 @@ module RedBlackTree_Impl12_InsertRebalance_Interface
     ensures { SameMappings0.same_mappings ( * self) ( ^ self) }
     
 end
-module RedBlackTree_Impl12_InsertRebalance
+module RedBlackTree_Impl12_Balance
   type k
   type v
   use Type
@@ -1613,12 +1795,15 @@ module RedBlackTree_Impl12_InsertRebalance
   clone RedBlackTree_Impl7_ColorInvariant as ColorInvariant1 with type k = k, type v = v,
   predicate ColorInvariantHere0.color_invariant_here = ColorInvariantHere0.color_invariant_here,
   predicate ColorInvariant0.color_invariant = ColorInvariant0.color_invariant
-  use mach.int.Int64
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Type.redblacktree_node k v
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Type.redblacktree_node k v
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = Type.redblacktree_node k v
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = Type.redblacktree_node k v
   clone Core_Option_Impl0_AsRef_Interface as AsRef0 with type t = Type.redblacktree_node k v
+  clone RedBlackTree_Impl12_FlipColors_Interface as FlipColors0 with type k = k, type v = v,
+  predicate IsRedLog0.is_red_log = IsRedLog0.is_red_log,
+  predicate BstInvariant0.bst_invariant = BstInvariant0.bst_invariant,
+  predicate SameMappings0.same_mappings = SameMappings0.same_mappings,
+  predicate HasHeight0.has_height = HasHeight0.has_height
   clone RedBlackTree_Impl12_RotateRight_Interface as RotateRight0 with type k = k, type v = v,
   predicate IsRedLog0.is_red_log = IsRedLog0.is_red_log,
   predicate BstInvariant0.bst_invariant = BstInvariant0.bst_invariant,
@@ -1631,7 +1816,7 @@ module RedBlackTree_Impl12_InsertRebalance
   predicate SameMappings0.same_mappings = SameMappings0.same_mappings
   clone RedBlackTree_Impl11_IsRed_Interface as IsRed0 with type k = k, type v = v,
   predicate IsRedLog0.is_red_log = IsRedLog0.is_red_log
-  let rec cfg insert_rebalance [@cfg:stackify] (self : borrowed (Type.redblacktree_node k v)) : ()
+  let rec cfg balance [@cfg:stackify] (self : borrowed (Type.redblacktree_node k v)) : ()
     requires {Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red && IsRedLog0.is_red_log (Type.redblacktree_node_Node_right ( * self)) && IsRedLog0.is_red_log (Type.redblacktree_node_Node_left ( * self)) -> false}
     requires {Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red && IsRedLog0.is_red_log (Type.redblacktree_node_Node_right ( * self)) -> ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self))}
     requires {Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red && IsRedLog0.is_red_log (Type.redblacktree_node_Node_left ( * self)) -> ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self))}
@@ -1672,18 +1857,8 @@ module RedBlackTree_Impl12_InsertRebalance
   var _24 : Type.redblacktree_tree k v;
   var _25 : bool;
   var _26 : Type.redblacktree_tree k v;
-  var _27 : Type.redblacktree_color;
-  var _28 : ();
-  var _29 : isize;
-  var _30 : isize;
-  var l_31 : borrowed (Type.redblacktree_node k v);
-  var r_32 : borrowed (Type.redblacktree_node k v);
-  var _33 : Type.redblacktree_color;
-  var _34 : Type.redblacktree_color;
-  var _35 : ();
-  var _36 : ();
-  var _37 : ();
-  var _38 : ();
+  var _27 : ();
+  var _28 : borrowed (Type.redblacktree_node k v);
   {
     self_1 <- self;
     goto BB0
@@ -1803,7 +1978,7 @@ module RedBlackTree_Impl12_InsertRebalance
   }
   BB23 {
     switch (_22)
-      | False -> goto BB30
+      | False -> goto BB28
       | _ -> goto BB26
       end
   }
@@ -1818,51 +1993,22 @@ module RedBlackTree_Impl12_InsertRebalance
     goto BB23
   }
   BB26 {
-    _27 <- Type.RedBlackTree_Color_Red;
-    self_1 <- { self_1 with current = (let Type.RedBlackTree_Node a b c d e =  * self_1 in Type.RedBlackTree_Node a _27 c d e) };
-    switch (Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self_1)))
-      | Type.Core_Option_Option_Some _ -> goto BB28
-      | _ -> goto BB27
-      end
+    _28 <- borrow_mut ( * self_1);
+    self_1 <- { self_1 with current = ( ^ _28) };
+    _27 <- FlipColors0.flip_colors _28;
+    goto BB27
   }
   BB27 {
     assume { Resolve1.resolve self_1 };
-    absurd
+    _0 <- ();
+    goto BB29
   }
   BB28 {
-    switch (Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self_1)))
-      | Type.Core_Option_Option_Some _ -> goto BB29
-      | _ -> goto BB27
-      end
+    assume { Resolve1.resolve self_1 };
+    _0 <- ();
+    goto BB29
   }
   BB29 {
-    l_31 <- borrow_mut (Type.core_option_option_Some_0 (Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self_1))));
-    self_1 <- { self_1 with current = (let Type.RedBlackTree_Node a b c d e =  * self_1 in Type.RedBlackTree_Node (let Type.RedBlackTree_Tree a = Type.redblacktree_node_Node_left ( * self_1) in Type.RedBlackTree_Tree (let Type.Core_Option_Option_Some a = Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self_1)) in Type.Core_Option_Option_Some ( ^ l_31))) b c d e) };
-    r_32 <- borrow_mut (Type.core_option_option_Some_0 (Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self_1))));
-    self_1 <- { self_1 with current = (let Type.RedBlackTree_Node a b c d e =  * self_1 in Type.RedBlackTree_Node a b c d (let Type.RedBlackTree_Tree a = Type.redblacktree_node_Node_right ( * self_1) in Type.RedBlackTree_Tree (let Type.Core_Option_Option_Some a = Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self_1)) in Type.Core_Option_Option_Some ( ^ r_32)))) };
-    assume { Resolve1.resolve self_1 };
-    _33 <- Type.RedBlackTree_Color_Black;
-    l_31 <- { l_31 with current = (let Type.RedBlackTree_Node a b c d e =  * l_31 in Type.RedBlackTree_Node a _33 c d e) };
-    assume { Resolve2.resolve l_31 };
-    _34 <- Type.RedBlackTree_Color_Black;
-    r_32 <- { r_32 with current = (let Type.RedBlackTree_Node a b c d e =  * r_32 in Type.RedBlackTree_Node a _34 c d e) };
-    assume { Resolve2.resolve r_32 };
-    assert { BstInvariant0.bst_invariant ( * l_31) };
-    _35 <- ();
-    assert { BstInvariant0.bst_invariant ( * r_32) };
-    _36 <- ();
-    _28 <- ();
-    assert { BstInvariantHere0.bst_invariant_here ( * self_1) };
-    _38 <- ();
-    _0 <- ();
-    goto BB31
-  }
-  BB30 {
-    assume { Resolve1.resolve self_1 };
-    _0 <- ();
-    goto BB31
-  }
-  BB31 {
     return _0
   }
   
@@ -2158,7 +2304,7 @@ module RedBlackTree_Impl13_InsertRec
   clone RedBlackTree_Impl4_BstInvariant as BstInvariant1 with type k = k, type v = v,
   predicate BstInvariantHere0.bst_invariant_here = BstInvariantHere0.bst_invariant_here,
   predicate BstInvariant0.bst_invariant = BstInvariant0.bst_invariant
-  clone RedBlackTree_Impl12_InsertRebalance_Interface as InsertRebalance0 with type k = k, type v = v,
+  clone RedBlackTree_Impl12_Balance_Interface as Balance0 with type k = k, type v = v,
   predicate IsRedLog0.is_red_log = IsRedLog0.is_red_log,
   predicate ColorInvariant0.color_invariant = ColorInvariant0.color_invariant,
   predicate BstInvariant0.bst_invariant = BstInvariant1.bst_invariant,
@@ -2370,7 +2516,7 @@ module RedBlackTree_Impl13_InsertRec
     _35 <- ();
     _37 <- borrow_mut ( * node_20);
     node_20 <- { node_20 with current = ( ^ _37) };
-    _36 <- InsertRebalance0.insert_rebalance _37;
+    _36 <- Balance0.balance _37;
     goto BB27
   }
   BB27 {
@@ -2391,24 +2537,6 @@ module RedBlackTree_Impl13_InsertRec
     return _0
   }
   
-end
-module Core_Option_Impl0_AsMut_Interface
-  type t
-  use Type
-  use prelude.Prelude
-  val as_mut [@cfg:stackify] (self : borrowed (Type.core_option_option t)) : Type.core_option_option (borrowed t)
-    ensures {  * self = Type.Core_Option_Option_None || (exists r : (borrowed t) . result = Type.Core_Option_Option_Some r &&  * self = Type.Core_Option_Option_Some ( * r) &&  ^ self = Type.Core_Option_Option_Some ( ^ r)) }
-    ensures {  * self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None &&  ^ self = Type.Core_Option_Option_None }
-    
-end
-module Core_Option_Impl0_AsMut
-  type t
-  use Type
-  use prelude.Prelude
-  val as_mut [@cfg:stackify] (self : borrowed (Type.core_option_option t)) : Type.core_option_option (borrowed t)
-    ensures {  * self = Type.Core_Option_Option_None || (exists r : (borrowed t) . result = Type.Core_Option_Option_Some r &&  * self = Type.Core_Option_Option_Some ( * r) &&  ^ self = Type.Core_Option_Option_Some ( ^ r)) }
-    ensures {  * self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None &&  ^ self = Type.Core_Option_Option_None }
-    
 end
 module RedBlackTree_Impl13_Insert_Interface
   type k

@@ -5,6 +5,7 @@ use creusot_contracts::std::*;
 use creusot_contracts::*;
 use std::cmp::Ord;
 use std::cmp::Ordering::*;
+use std::mem::{swap, replace};
 
 extern_spec! {
     #[ensures(result == (@self_).cmp_log(@*o))]
@@ -307,7 +308,7 @@ where
         //  / \
         // a   b
         // Rip out the left subtree
-        let mut x: Box<_> = match std::mem::replace(&mut self.left.node, None) {
+        let mut x: Box<_> = match replace(&mut self.left.node, None) {
             Some(x) => x,
             None => panic!(),
         };
@@ -317,13 +318,13 @@ where
         //   x      c
         //  / \
         // a   b
-        std::mem::swap(&mut self.left, &mut x.right);
+        swap(&mut self.left, &mut x.right);
         //        self
         //       /    \
         //   x  b      c
         //  /
         // a
-        std::mem::swap(self, &mut x);
+        swap(self, &mut x);
         self.color = x.color;
         x.color = Red;
         //   self
@@ -354,17 +355,38 @@ where
     fn rotate_left(&mut self) {
         let old_self = Ghost::record(&*self);
 
-        let mut x: Box<_> = match std::mem::replace(&mut self.right.node, None) {
+        let mut x: Box<_> = match replace(&mut self.right.node, None) {
             Some(x) => x,
             None => panic!(),
         };
-        std::mem::swap(&mut self.right, &mut x.left);
-        std::mem::swap(self, &mut x);
+        swap(&mut self.right, &mut x.left);
+        swap(self, &mut x);
         self.color = x.color;
         x.color = Red;
         proof_assert! { (@old_self).right.has_mapping(@(*self).key, (*self).val) }
         proof_assert! { forall<k: K::ModelTy, v: V> x.right.has_mapping(k, v) ==> (@old_self).right.has_mapping(k, v) }
         self.left = Tree { node: Some(x) };
+    }
+
+    #[requires((*self).bst_invariant())]
+    #[requires(!((*self).left.node == None))]
+    #[requires(!((*self).right.node == None))]
+    #[requires((*self).left.is_red_log() == (*self).right.is_red_log())]
+    #[requires(!((*self).color == Red) == (*self).right.is_red_log())]
+    #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
+    #[ensures((^self).bst_invariant())]
+    #[ensures((*self).same_mappings(^self))]
+    #[ensures(exists<l1: Box<Self>, l2: Box<Self>> (*self).left.node == Some(l1) && (^self).left.node == Some(l2) &&
+              l1.left == l2.left && l1.right == l2.right &&
+              (*self).color == l2.color && (^self).color == l1.color)]
+    #[ensures(exists<r1: Box<Self>, r2: Box<Self>> (*self).right.node == Some(r1) && (^self).right.node == Some(r2) &&
+              r1.left == r2.left && r1.right == r2.right &&
+              (*self).color == r2.color && (^self).color == r1.color)]
+    fn flip_colors(&mut self) {
+        self.left.node.as_mut().unwrap().color = self.color;
+        swap(&mut self.color, &mut self.right.node.as_mut().unwrap().color);
+        proof_assert!((*self).left.same_mappings((^self).left));
+        proof_assert!((*self).right.same_mappings((^self).right));
     }
 
     #[requires((*self).bst_invariant())]
@@ -393,7 +415,7 @@ where
               (*self).right.is_red_log() && (*self).right.color_invariant() ==>
               (^self).color == Red && (^self).color_invariant())]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
-    fn insert_rebalance(&mut self) {
+    fn balance(&mut self) {
         if self.right.is_red() && !self.left.is_red() {
             self.rotate_left();
         }
@@ -403,17 +425,7 @@ where
         }
 
         if self.left.is_red() && self.right.is_red() {
-            self.color = Red;
-            match self {
-                Node { left: Tree { node: Some(l) }, right: Tree { node: Some(r) }, .. } => {
-                    l.color = Black;
-                    r.color = Black;
-                    proof_assert!((*l).bst_invariant());
-                    proof_assert!((*r).bst_invariant());
-                }
-                _ => panic!(),
-            }
-            proof_assert!((*self).bst_invariant_here());
+            self.flip_colors();
         }
     }
 }
@@ -462,7 +474,7 @@ where
                 }
                 proof_assert!(forall<h: Int> (@old_self).has_height(h) ==> node.has_height(h));
 
-                node.insert_rebalance();
+                node.balance();
             }
         }
     }
