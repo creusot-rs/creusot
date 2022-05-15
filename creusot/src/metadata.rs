@@ -77,6 +77,7 @@ impl<'tcx> Metadata<'tcx> {
     pub fn load(&mut self, overrides: &HashMap<String, String>) {
         let cstore = CStore::from_tcx(self.tcx);
         for cnum in external_crates(self.tcx) {
+            eprintln!("loading metadata for {:?}", cnum);
             let (cmeta, mut ext_specs) = CrateMetadata::load(self.tcx, cstore, overrides, cnum);
             self.crates.insert(cnum, cmeta);
 
