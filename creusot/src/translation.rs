@@ -39,7 +39,7 @@ pub fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
             || crate::util::is_logic(ctx.tcx, def_id)
             || crate::util::is_predicate(ctx.tcx, def_id)
         {
-            eprintln!("getting term for {:?}");
+            eprintln!("getting term for {:?}", def_id);
             let _ = ctx.term(def_id);
         }
     }
