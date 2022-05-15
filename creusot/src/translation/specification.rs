@@ -139,7 +139,7 @@ pub fn contract_of(ctx: &mut TranslationCtx, def_id: DefId) -> Result<PreContrac
         return Ok(extern_spec.contract);
     }
 
-    let attrs = ctx.tcx.get_attrs(def_id);
+    let attrs = ctx.tcx.get_attrs_unchecked(def_id);
     let mut contract = PreContract::new(def_id);
 
     for attr in attrs {
@@ -148,25 +148,32 @@ pub fn contract_of(ctx: &mut TranslationCtx, def_id: DefId) -> Result<PreContrac
         }
 
         let attr = attr.get_normal_item();
+        use rustc_ast::ast::{MacArgs, MacArgsEq};
 
         // Stop using diagnostic item.
         // Use a custom HIR visitor which walks the attributes
         match attr.path.segments[2].ident.to_string().as_str() {
             "requires" => {
-                let req_name = util::ts_to_symbol(attr.args.inner_tokens())
-                    .ok_or(InvalidTokens { id: def_id })?;
+                let req_name = match &attr.args {
+                    MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token.symbol,
+                    _ => return Err(InvalidTokens { id: def_id }),
+                };
                 let req_id = ctx.creusot_item(req_name).ok_or(InvalidTerm { id: def_id })?;
                 contract.requires.push(req_id);
             }
             "ensures" => {
-                let ens_name = util::ts_to_symbol(attr.args.inner_tokens())
-                    .ok_or(InvalidTokens { id: def_id })?;
+                let ens_name = match &attr.args {
+                    MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token.symbol,
+                    _ => return Err(InvalidTokens { id: def_id }),
+                };
                 let ens_id = ctx.creusot_item(ens_name).ok_or(InvalidTerm { id: def_id })?;
                 contract.ensures.push(ens_id);
             }
             "variant" => {
-                let var_name = util::ts_to_symbol(attr.args.inner_tokens())
-                    .ok_or(InvalidTokens { id: def_id })?;
+                let var_name = match &attr.args {
+                    MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token.symbol,
+                    _ => return Err(InvalidTokens { id: def_id }),
+                };
                 let var_id = ctx.creusot_item(var_name).ok_or(InvalidTerm { id: def_id })?;
                 contract.variant = Some(var_id);
             }
