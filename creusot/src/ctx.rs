@@ -330,10 +330,11 @@ pub fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
             let (i, es) = extract_extern_specs_from_item(ctx, def_id)?;
             let c = es.contract.clone();
 
-            match ctx.extern_specs.insert(i, es) {
-                Some(_) => ctx.crash_and_error(DUMMY_SP, "duplicate extern specification"),
-                None => (),
+            if ctx.extern_spec(i).is_some() {
+                ctx.crash_and_error(DUMMY_SP, &format!("duplicate extern specification for {i:?}"));
             };
+
+            let _ = ctx.extern_specs.insert(i, es);
 
             ctx.extern_spec_items.insert(def_id, i);
 
