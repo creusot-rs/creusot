@@ -167,9 +167,9 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             return;
         }
 
-        let parent = self.tcx.parent(field_id).unwrap();
+        let parent = self.tcx.parent(field_id);
         let (adt_did, variant_did) = match self.tcx.def_kind(parent) {
-            DefKind::Variant => (self.tcx.parent(parent).unwrap(), parent),
+            DefKind::Variant => (self.tcx.parent(parent), parent),
             DefKind::Struct | DefKind::Enum | DefKind::Union => {
                 (parent, self.tcx.adt_def(parent).variants()[0u32.into()].def_id)
             }

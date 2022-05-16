@@ -566,7 +566,7 @@ pub fn base_subst<'tcx>(
     use rustc_middle::ty::GenericParamDefKind;
     loop {
         if ctx.tcx.is_closure(def_id) {
-            def_id = ctx.tcx.parent(def_id).unwrap();
+            def_id = ctx.tcx.parent(def_id);
         } else {
             break;
         }

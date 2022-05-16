@@ -665,7 +665,7 @@ pub(crate) fn closure_generic_decls(
 ) -> impl Iterator<Item = Decl> + '_ {
     loop {
         if tcx.is_closure(def_id) {
-            def_id = tcx.parent(def_id).unwrap();
+            def_id = tcx.parent(def_id);
         } else {
             break;
         }

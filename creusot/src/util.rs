@@ -1,9 +1,10 @@
 use crate::translation::ty::closure_accessor_name;
 use crate::{ctx::*, translation};
+use rustc_ast::ast::{MacArgs, MacArgsEq};
 use rustc_ast::{AttrItem, AttrKind, Attribute};
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::subst::SubstsRef;
-use rustc_middle::ty::{self, Attributes, TyKind, VariantDef};
+use rustc_middle::ty::{self, TyKind, VariantDef};
 use rustc_middle::ty::{DefIdTree, ReErased, TyCtxt};
 use rustc_span::Symbol;
 use std::collections::HashMap;
@@ -19,8 +20,8 @@ use why3::{
 pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {
     let mut module_id = def_id;
 
-    while let Some(parent) = tcx.parent(module_id) {
-        module_id = parent;
+    loop {
+        module_id = tcx.parent(module_id);
         if tcx.def_kind(module_id) == DefKind::Mod {
             break;
         }
@@ -35,16 +36,20 @@ pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
 }
 
 pub(crate) fn is_no_translate(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "no_translate"]).is_some()
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "no_translate"]).is_some()
 }
 
 pub(crate) fn is_spec(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "spec"]).is_some()
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "spec"]).is_some()
 }
 
 pub(crate) fn invariant_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "invariant"])
-        .and_then(|a| ts_to_symbol(a.args.inner_tokens()))
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"]).and_then(|a| {
+        match &a.args {
+            MacArgs::Eq(_, MacArgsEq::Hir(l)) => Some(l.token.symbol),
+            _ => None,
+        }
+    })
 }
 
 pub(crate) fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -52,35 +57,35 @@ pub(crate) fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
 }
 
 pub(crate) fn is_assertion(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "spec", "assert"]).is_some()
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "assert"]).is_some()
 }
 
 pub(crate) fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "predicate"]).is_some()
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "predicate"]).is_some()
 }
 
 pub(crate) fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "logic"]).is_some()
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "logic"]).is_some()
 }
 
 pub(crate) fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "trusted"]).is_some()
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "trusted"]).is_some()
 }
 
 pub(crate) fn is_law(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "decl", "law"]).is_some()
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "law"]).is_some()
 }
 
 pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "extern_spec"]).is_some()
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "extern_spec"]).is_some()
 }
 
 pub(crate) fn is_extern_spec_impl(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "extern_spec", "impl_"]).is_some()
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "extern_spec", "impl_"]).is_some()
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
-    let matches = get_attrs(tcx.get_attrs(def_id), &["why3", "attr"]);
+    let matches = get_attrs(tcx.get_attrs_unchecked(def_id), &["why3", "attr"]);
     matches
         .into_iter()
         .map(|a| declaration::Attribute(a.value_str().unwrap().as_str().into()))
@@ -89,7 +94,7 @@ pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::A
 
 pub(crate) fn closure_owner(tcx: TyCtxt, mut def_id: DefId) -> DefId {
     while tcx.is_closure(def_id) {
-        def_id = tcx.parent(def_id).unwrap();
+        def_id = tcx.parent(def_id);
     }
 
     def_id
@@ -102,7 +107,7 @@ pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
         }
 
         if tcx.is_closure(def_id) {
-            def_id = tcx.parent(def_id).unwrap();
+            def_id = tcx.parent(def_id);
         } else {
             return true;
         }
@@ -122,8 +127,12 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
 }
 
 pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx.get_attrs(def_id), &["creusot", "builtins"])
-        .and_then(|a| ts_to_symbol(a.args.inner_tokens()))
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).and_then(|a| {
+        match &a.args {
+            MacArgs::Eq(_, MacArgsEq::Hir(l)) => Some(l.token.symbol),
+            _ => None,
+        }
+    })
 }
 
 pub fn constructor_qname(tcx: TyCtxt, var: &VariantDef) -> QName {
@@ -386,7 +395,7 @@ pub fn ts_to_symbol(ts: TokenStream) -> Option<Symbol> {
     None
 }
 
-pub fn get_attr<'a>(attrs: Attributes<'a>, path: &[&str]) -> Option<&'a AttrItem> {
+pub fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a AttrItem> {
     for attr in attrs.iter() {
         if attr.is_doc_comment() {
             continue;
@@ -412,7 +421,7 @@ pub fn get_attr<'a>(attrs: Attributes<'a>, path: &[&str]) -> Option<&'a AttrItem
     None
 }
 
-pub fn get_attrs<'a>(attrs: Attributes<'a>, path: &[&str]) -> Vec<&'a Attribute> {
+pub fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
     let mut matched = Vec::new();
 
     for attr in attrs.iter() {
@@ -565,7 +574,7 @@ pub fn closure_capture_subst<'tcx>(
 ) -> ClosureSubst {
     let mut fun_def_id = def_id;
     while tcx.is_closure(fun_def_id) {
-        fun_def_id = tcx.parent(fun_def_id).unwrap();
+        fun_def_id = tcx.parent(fun_def_id);
     }
 
     let capture_names = tcx.symbols_for_closure_captures((fun_def_id.expect_local(), def_id));
