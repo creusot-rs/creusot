@@ -17,7 +17,7 @@ impl<T> Model for Ghost<T> {
 
 impl<T> Ghost<T> {
     #[trusted]
-    #[ensures(@result === *a)]
+    #[ensures(@result == *a)]
     pub fn record(a: &T) -> Ghost<T> {
         panic!()
     }

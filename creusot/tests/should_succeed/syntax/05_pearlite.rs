@@ -9,5 +9,5 @@ pub struct A {
 }
 
 #[trusted]
-#[ensures(x.a === x.a)]
+#[ensures(x.a == x.a)]
 pub fn solver(x: A) {}

@@ -40,13 +40,13 @@ impl<T> List<T> {
     }
 
     #[requires(@ix < self.len_logic())]
-    #[ensures(Some(*result) === self.get(@ix))]
+    #[ensures(Some(*result) == self.get(@ix))]
     fn index(&self, mut ix: usize) -> &T {
         let orig_ix = ix;
         let mut l = self;
 
         #[invariant(ix_valid, @ix < l.len_logic())]
-        #[invariant(res_get, self.get(@orig_ix) === l.get(@ix))]
+        #[invariant(res_get, self.get(@orig_ix) == l.get(@ix))]
         while let Cons(t, ls) = l {
             if ix > 0 {
                 l = &*ls;
@@ -100,10 +100,10 @@ impl List<u32> {
 
 #[requires(arr.len_logic() <= 1_000_000)]
 #[requires(arr.is_sorted())]
-#[ensures(forall<x:usize> result === Ok(x) ==> arr.get(@x) === Some(elem))]
-#[ensures(forall<x:usize> result === Err(x) ==>
+#[ensures(forall<x:usize> result == Ok(x) ==> arr.get(@x) == Some(elem))]
+#[ensures(forall<x:usize> result == Err(x) ==>
     forall<i:Int> 0 <= i && i < @x ==> arr.get_default(i, 0u32) < elem)]
-#[ensures(forall<x:usize> result === Err(x) ==>
+#[ensures(forall<x:usize> result == Err(x) ==>
     forall<i:Int> @x < i && i < arr.len_logic() ==> elem < arr.get_default(i, 0u32))]
 fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
     if arr.len() == 0 {

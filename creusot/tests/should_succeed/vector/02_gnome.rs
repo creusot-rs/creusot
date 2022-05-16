@@ -21,7 +21,7 @@ fn gnome_sort<T: Ord>(v: &mut Vec<T>) {
     let old_v = Ghost::record(&v);
     let mut i = 0;
     #[invariant(sorted, sorted_range(@v, 0, @i))]
-    #[invariant(proph_const, ^v === ^@old_v)]
+    #[invariant(proph_const, ^v == ^@old_v)]
     #[invariant(permutation, (@*v).permutation_of(@*@old_v))]
     while i < v.len() {
         if i == 0 || v[i - 1].le(&v[i]) {

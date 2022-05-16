@@ -13,7 +13,7 @@ fn max_Int(a: Int, b: Int) -> Int {
 }
 
 #[trusted]
-#[ensures(@result === max_Int(@a, @b))]
+#[ensures(@result == max_Int(@a, @b))]
 fn max_usize(a: usize, b: usize) -> usize {
     if a < b {
         b

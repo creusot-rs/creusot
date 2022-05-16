@@ -4,7 +4,7 @@ use creusot_contracts::*;
 
 #[logic]
 fn reflexive<T: PartialEq>(x: T) -> bool {
-    pearlite! { x === x }
+    pearlite! { x == x }
 }
 
 #[ensures(reflexive(result))]

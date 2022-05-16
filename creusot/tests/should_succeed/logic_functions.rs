@@ -13,7 +13,7 @@ fn use_logic() {}
 // When we want to use pearlite syntax, we use pearlite! macro
 #[logic]
 fn logic_pearlite() -> bool {
-    pearlite! { 0 === 0 }
+    pearlite! { 0 == 0 }
 }
 
 #[ensures(logic_pearlite())]

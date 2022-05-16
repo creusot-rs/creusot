@@ -16,8 +16,8 @@ pub trait FnMutSpec<Args>: FnMut<Args> + FnOnceSpec<Args> {
     fn postcondition_mut(&mut self, a: Args, res: Self::Output) -> bool;
 
     #[law]
-    #[ensures((exists<s: &mut Self> *s === self && s.postcondition_mut(a, res) && (^s).resolve()) ==> self.postcondition_once(a, res))]
-    #[ensures(self.postcondition_once(a, res) ==> exists<s: &mut Self> *s === self && s.postcondition_mut(a, res) && (^s).resolve())]
+    #[ensures((exists<s: &mut Self> *s == self && s.postcondition_mut(a, res) && (^s).resolve()) ==> self.postcondition_once(a, res))]
+    #[ensures(self.postcondition_once(a, res) ==> exists<s: &mut Self> *s == self && s.postcondition_mut(a, res) && (^s).resolve())]
     fn fn_mut_once(self, a: Args, res: Self::Output)
     where
         Self: crate::Resolve + Sized;
@@ -29,8 +29,8 @@ pub trait FnSpec<Args>: Fn<Args> + FnMutSpec<Args> {
     fn postcondition(&self, _: Args, _: Self::Output) -> bool;
 
     #[law]
-    #[ensures(self.postcondition(args, res) ==> exists<s: &mut Self> *s === *self && s.resolve() && s.postcondition_mut(args, res))]
-    #[ensures((exists<s: &mut Self> *s === *self && s.resolve() && s.postcondition_mut(args, res)) ==> self.postcondition(args, res))]
+    #[ensures(self.postcondition(args, res) ==> exists<s: &mut Self> *s == *self && s.resolve() && s.postcondition_mut(args, res))]
+    #[ensures((exists<s: &mut Self> *s == *self && s.resolve() && s.postcondition_mut(args, res)) ==> self.postcondition(args, res))]
     fn fn_mut(&self, args: Args, res: Self::Output)
     where
         Self: crate::Resolve + Sized;

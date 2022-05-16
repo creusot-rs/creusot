@@ -8,7 +8,7 @@ use creusot_contracts::*;
 #[variant(seq.len())]
 fn sum(seq: Seq<Int>) -> Int {
     pearlite! {
-        if seq.len() === 0 { 0 }
+        if seq.len() == 0 { 0 }
         else {
             seq[seq.len() - 1] + sum(seq.subsequence(0, seq.len() - 1))
         }
@@ -19,9 +19,9 @@ fn sum(seq: Seq<Int>) -> Int {
 #[variant(seq.len())]
 fn all_zero(seq: Seq<Int>) -> bool {
     pearlite! {
-        if seq.len() === 0 { true }
+        if seq.len() == 0 { true }
         else {
-            seq[seq.len() - 1] === 0 && all_zero(seq.subsequence(0, seq.len() - 1))
+            seq[seq.len() - 1] == 0 && all_zero(seq.subsequence(0, seq.len() - 1))
         }
     }
 }
@@ -32,7 +32,7 @@ fn stupid<T>(x: T, i: Int) -> bool {
     pearlite! {
         if i <= 0 {
             true
-        } else if x === x {
+        } else if x == x {
             stupid(x, 0)
         } else {
             false

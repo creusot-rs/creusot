@@ -19,5 +19,5 @@ fn to_ty<T: Assoc>(x: T) -> T::Ty {
 }
 
 #[trusted]
-#[ensures(a === from_ty(to_ty(a)))]
+#[ensures(a == from_ty(to_ty(a)))]
 fn test<T: Assoc>(a: T) {}

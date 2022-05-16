@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 #[trusted]
-#[ensures(^mma === *mmb && ^mmb === *mma)]
+#[ensures(^mma == *mmb && ^mmb == *mma)]
 fn swap<'a, 'b>(mma: &'a mut &'b mut u32, mmb: &'a mut &'b mut u32) {
     std::mem::swap(mma, mmb);
 }

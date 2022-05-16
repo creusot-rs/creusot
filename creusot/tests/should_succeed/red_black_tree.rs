@@ -7,7 +7,7 @@ use std::cmp::Ord;
 use std::cmp::Ordering::*;
 
 extern_spec! {
-    #[ensures(result === (@self_).cmp_log(@*o))]
+    #[ensures(result == (@self_).cmp_log(@*o))]
     fn std::cmp::Ord::cmp<Self_>(self_: &Self_, o: &Self_) -> Ordering
         where Self_: Ord + Model,
               Self_::ModelTy: OrdLogic
@@ -41,10 +41,10 @@ where
     #[ensures((*self).same_mappings(^self))]
     #[ensures((^self).ord_invariant())]
     #[ensures((^self).right.is_red_log())]
-    #[ensures((^self).color === (*self).color)]
+    #[ensures((^self).color == (*self).color)]
     #[ensures(exists<l: Box<Self>, r: Box<Self>>
-              (*self).left.node === Some(l) && (^self).right.node === Some(r) &&
-              ((^self).left, r.left, r.right) === (l.left, l.right, (*self).right))]
+              (*self).left.node == Some(l) && (^self).right.node == Some(r) &&
+              ((^self).left, r.left, r.right) == (l.left, l.right, (*self).right))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     fn rotate_right(&mut self) {
         let old_self = Ghost::record(&*self);
@@ -94,10 +94,10 @@ where
     #[ensures((*self).same_mappings(^self))]
     #[ensures((^self).ord_invariant())]
     #[ensures((^self).left.is_red_log())]
-    #[ensures((^self).color === (*self).color)]
+    #[ensures((^self).color == (*self).color)]
     #[ensures(exists<l: Box<Self>, r: Box<Self>>
-              (*self).right.node === Some(r) && (^self).left.node === Some(l) &&
-              (l.left, l.right, (^self).right) === ((*self).left, r.left, r.right))]
+              (*self).right.node == Some(r) && (^self).left.node == Some(l) &&
+              (l.left, l.right, (^self).right) == ((*self).left, r.left, r.right))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     fn rotate_left(&mut self) {
         let old_self = Ghost::record(&*self);
@@ -116,30 +116,30 @@ where
     }
 
     #[requires((*self).ord_invariant())]
-    #[requires((*self).color === Red && (*self).left.is_red_log() ==>
+    #[requires((*self).color == Red && (*self).left.is_red_log() ==>
                (*self).left.color_invariant())]
-    #[requires((*self).color === Red && (*self).right.is_red_log() ==>
+    #[requires((*self).color == Red && (*self).right.is_red_log() ==>
                (*self).right.color_invariant())]
-    #[requires((*self).color === Red && (*self).right.is_red_log() && (*self).left.is_red_log() ==> false)]
+    #[requires((*self).color == Red && (*self).right.is_red_log() && (*self).left.is_red_log() ==> false)]
     #[ensures((*self).same_mappings(^self))]
     #[ensures((^self).ord_invariant())]
     #[ensures((*self).left.color_invariant() && !(*self).right.is_red_log() ==>
-              (*self) === (^self))]
-    #[ensures(forall<l: Box<Self>> (*self).left.node === Some(l) &&
-              (*self).color === Black && l.color === Red &&
+              (*self) == (^self))]
+    #[ensures(forall<l: Box<Self>> (*self).left.node == Some(l) &&
+              (*self).color == Black && l.color == Red &&
               l.left.is_red_log() && l.left.color_invariant() &&
               !l.right.is_red_log() && l.right.color_invariant() &&
               !(*self).right.is_red_log() && (*self).right.color_invariant() ==>
-              (^self).color === Red && (^self).color_invariant())]
+              (^self).color == Red && (^self).color_invariant())]
     #[ensures(!(*self).left.is_red_log() && (*self).left.color_invariant() &&
               (*self).right.is_red_log() && (*self).right.color_invariant() ==>
               (^self).left.is_red_log() && (^self).left.color_invariant() &&
               !(^self).right.is_red_log() && (^self).right.color_invariant() &&
-              (^self).color === (*self).color)]
-    #[ensures((*self).color === Black &&
+              (^self).color == (*self).color)]
+    #[ensures((*self).color == Black &&
               (*self).left.is_red_log() && (*self).left.color_invariant() &&
               (*self).right.is_red_log() && (*self).right.color_invariant() ==>
-              (^self).color === Red && (^self).color_invariant())]
+              (^self).color == Red && (^self).color_invariant())]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     fn insert_rebalance(&mut self) {
         if self.right.is_red() && !self.left.is_red() {
@@ -182,7 +182,7 @@ where
 
     #[predicate]
     fn color_invariant_here(self) -> bool {
-        pearlite! { !self.right.is_red_log() && (self.color === Red ==> !self.left.is_red_log()) }
+        pearlite! { !self.right.is_red_log() && (self.color == Red ==> !self.left.is_red_log()) }
     }
 
     #[predicate]
@@ -195,7 +195,7 @@ impl<K: Model, V> Tree<K, V>
 where
     K::ModelTy: OrdLogic,
 {
-    #[ensures(@result === Mapping::cst(None))]
+    #[ensures(@result == Mapping::cst(None))]
     #[ensures(result.invariant())]
     pub fn new() -> Tree<K, V> {
         Tree { node: None }
@@ -203,14 +203,13 @@ where
 
     #[requires((*self).ord_invariant())]
     #[requires((*self).color_invariant())]
-    #[requires(forall<k:K::ModelTy> @key == k ==> @key === k)] // FIXME: get rid of log_eq
     #[ensures((^self).ord_invariant())]
-    #[ensures(exists<node: Box<Node<K, V>>> (^self).node === Some(node) &&
+    #[ensures(exists<node: Box<Node<K, V>>> (^self).node == Some(node) &&
               !node.right.is_red_log() &&
               node.left.color_invariant() && node.right.color_invariant())]
     #[ensures(!(*self).is_red_log() ==> (^self).color_invariant())]
     #[ensures((^self).has_mapping(@key, val))]
-    #[ensures(forall<k: K::ModelTy, v: V> k === @key || (*self).has_mapping(k, v) === (^self).has_mapping(k, v))]
+    #[ensures(forall<k: K::ModelTy, v: V> k == @key || (*self).has_mapping(k, v) == (^self).has_mapping(k, v))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     fn insert_rec(&mut self, key: K, val: V)
     where
@@ -245,9 +244,8 @@ where
     }
 
     #[requires((*self).invariant())]
-    #[requires(forall<k:K::ModelTy> @key == k ==> @key === k)] // FIXME: get rid of log_eq
     #[ensures((^self).invariant())]
-    #[ensures(@^self === (@*self).set(@key, Some(val)))]
+    #[ensures(@^self == (@*self).set(@key, Some(val)))]
     pub fn insert(&mut self, key: K, val: V)
     where
         K: Ord,
@@ -261,9 +259,8 @@ where
     }
 
     #[requires((*self).ord_invariant())]
-    #[requires(forall<k:K::ModelTy> @key == k ==> @key === k)] // FIXME: get rid of log_eq
-    #[ensures(forall<r: &V> result === Some(r) ==> (*self).has_mapping(@*key, *r))]
-    #[ensures(result === None ==> forall<v: V> !(*self).has_mapping(@*key, v))]
+    #[ensures(forall<r: &V> result == Some(r) ==> (*self).has_mapping(@*key, *r))]
+    #[ensures(result == None ==> forall<v: V> !(*self).has_mapping(@*key, v))]
     fn get_rec(&self, key: &K) -> Option<&V>
     where
         K: Ord,
@@ -279,9 +276,8 @@ where
     }
 
     #[requires((*self).invariant())]
-    #[requires(forall<k:K::ModelTy> @key == k ==> @key === k)] // FIXME: get rid of log_eq
-    #[ensures(forall<v: &V> (result === Some(v)) === ((@*self).get(@*key) === Some(*v)))]
-    #[ensures((result === None) === (@*self).get(@*key) === None)]
+    #[ensures(forall<v: &V> (result == Some(v)) == ((@*self).get(@*key) == Some(*v)))]
+    #[ensures((result == None) == ((@*self).get(@*key) == None))]
     pub fn get(&self, key: &K) -> Option<&V>
     where
         K: Ord,
@@ -291,12 +287,11 @@ where
     }
 
     #[requires((*self).invariant())]
-    #[requires(forall<k:K::ModelTy> @key == k ==> @key === k)] // FIXME: get rid of log_eq
     #[ensures((^self).invariant())]
-    #[ensures((^self).is_red_log() === (*self).is_red_log())]
-    #[ensures(forall<r: &mut V> result === Some(r) ==> (*self).has_mapping(@*key, *r) && (^self).has_mapping(@*key, ^r))]
-    #[ensures(result === None ==> forall<v: V> !(*self).has_mapping(@*key, v) && !(^self).has_mapping(@*key, v))]
-    #[ensures(forall<k: K::ModelTy, v: V> k === @key || (*self).has_mapping(k, v) === (^self).has_mapping(k, v))]
+    #[ensures((^self).is_red_log() == (*self).is_red_log())]
+    #[ensures(forall<r: &mut V> result == Some(r) ==> (*self).has_mapping(@*key, *r) && (^self).has_mapping(@*key, ^r))]
+    #[ensures(result == None ==> forall<v: V> !(*self).has_mapping(@*key, v) && !(^self).has_mapping(@*key, v))]
+    #[ensures(forall<k: K::ModelTy, v: V> k == @key || (*self).has_mapping(k, v) == (^self).has_mapping(k, v))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     fn get_mut_rec(&mut self, key: &K) -> Option<&mut V>
     where
@@ -313,11 +308,10 @@ where
     }
 
     #[requires((*self).invariant())]
-    #[requires(forall<k:K::ModelTy> @key == k ==> @key === k)] // FIXME: get rid of log_eq
     #[ensures((^self).invariant())]
-    #[ensures(forall<v: &mut V> result === Some(v) ==>
-              (@*self).get(@*key) === Some(*v) && @^self === (@*self).set(@key, Some(^v)))]
-    #[ensures(result === None ==> (@*self).get(@*key) === None && (@^self).get(@*key) === None)]
+    #[ensures(forall<v: &mut V> result == Some(v) ==>
+              (@*self).get(@*key) == Some(*v) && @^self == (@*self).set(@key, Some(^v)))]
+    #[ensures(result == None ==> (@*self).get(@*key) == None && (@^self).get(@*key) == None)]
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V>
     where
         K: Ord,
@@ -384,8 +378,8 @@ impl<K: Model, V> Node<K, V> {
     fn same_mappings(self, o: Self) -> bool {
         pearlite! {
             forall<st: Tree<K, V>, ot: Tree<K, V>>
-                (match st { Tree { node: Some(x) } => self === *x, _ => false }) &&
-                (match ot { Tree { node: Some(x) } => o === *x, _ => false }) ==>
+                (match st { Tree { node: Some(x) } => self == *x, _ => false }) &&
+                (match ot { Tree { node: Some(x) } => o == *x, _ => false }) ==>
                 st.same_mappings(ot)
         }
     }
@@ -410,7 +404,7 @@ impl<K: Model, V> Tree<K, V> {
             match self {
                 Tree { node: None } => false,
                 Tree { node: Some(box Node { left, color, key, val, right }) } =>
-                    left.has_mapping(k, v) || right.has_mapping(k, v) || k === @key && v === val
+                    left.has_mapping(k, v) || right.has_mapping(k, v) || k == @key && v == val
             }
         }
     }
@@ -419,7 +413,7 @@ impl<K: Model, V> Tree<K, V> {
     fn has_height(self, h: Int) -> bool {
         pearlite! {
             match self {
-                Tree { node: None } => h === 0,
+                Tree { node: None } => h == 0,
                 Tree { node: Some(box Node { left, color: Red, key, val, right }) } =>
                     left.has_height(h) && right.has_height(h),
                 Tree { node: Some(box Node { left, color: Black, key, val, right }) } =>
@@ -431,7 +425,7 @@ impl<K: Model, V> Tree<K, V> {
     #[predicate]
     fn same_mappings(self, o: Self) -> bool {
         pearlite! {
-            forall<k: K::ModelTy, v: V> self.has_mapping(k, v) === o.has_mapping(k, v)
+            forall<k: K::ModelTy, v: V> self.has_mapping(k, v) == o.has_mapping(k, v)
         }
     }
 
@@ -450,8 +444,8 @@ impl<K: Model, V> Tree<K, V> {
     }
 
     #[logic]
-    #[ensures(self.model_acc(accu).get(k) === accu.get(k) ||
-              exists<v: V> self.model_acc(accu).get(k) === Some(v) && self.has_mapping(k, v))]
+    #[ensures(self.model_acc(accu).get(k) == accu.get(k) ||
+              exists<v: V> self.model_acc(accu).get(k) == Some(v) && self.has_mapping(k, v))]
     fn model_acc_has_binding(self, accu: <Self as Model>::ModelTy, k: K::ModelTy) {
         pearlite! {
             match self {
@@ -468,7 +462,7 @@ impl<K: Model, V> Tree<K, V> {
 
     #[logic]
     #[requires(self.ord_invariant())]
-    #[ensures(forall<v: V> self.has_mapping(k, v) ==> self.model_acc(accu).get(k) === Some(v))]
+    #[ensures(forall<v: V> self.has_mapping(k, v) ==> self.model_acc(accu).get(k) == Some(v))]
     fn has_binding_model_acc(self, accu: <Self as Model>::ModelTy, k: K::ModelTy)
     where
         K::ModelTy: OrdLogic,
@@ -489,7 +483,7 @@ impl<K: Model, V> Tree<K, V> {
 
     #[logic]
     #[requires(self.ord_invariant())]
-    #[ensures(self.has_mapping(k, v) === ((@self).get(k) === Some(v)))]
+    #[ensures(self.has_mapping(k, v) == ((@self).get(k) == Some(v)))]
     fn has_binding_model(self, k: K::ModelTy, v: V)
     where
         K::ModelTy: OrdLogic,

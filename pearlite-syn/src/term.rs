@@ -862,27 +862,7 @@ pub(crate) mod parsing {
         base: Precedence,
     ) -> Result<Term> {
         loop {
-            if Precedence::Compare >= base && input.peek(Token![==]) && input.peek3(Token![=]) {
-                // a === b
-                let eqeq_token: Token![==] = input.parse()?;
-                let eq_token: Token![=] = input.parse()?;
-                let precedence = Precedence::Compare;
-                let mut rhs = unary_term(input, allow_struct)?;
-                loop {
-                    let next = peek_precedence(input);
-                    if next > precedence || next == precedence {
-                        rhs = parse_term(input, rhs, allow_struct, next)?;
-                    } else {
-                        break;
-                    }
-                }
-                lhs = Term::LogEq(TermLogEq {
-                    lhs: Box::new(lhs),
-                    eqeq_token,
-                    eq_token,
-                    rhs: Box::new(rhs),
-                });
-            } else if Precedence::Impl >= base && input.peek(Token![==]) && input.peek3(Token![>]) {
+            if Precedence::Impl >= base && input.peek(Token![==]) && input.peek3(Token![>]) {
                 // a ==> b
                 let eqeq_token: Token![==] = input.parse()?;
                 let gt_token: Token![>] = input.parse()?;

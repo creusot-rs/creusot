@@ -10,7 +10,7 @@ fn weaken<A, F: FnSpec<A> + Resolve>(f: F, a: A) -> F::Output {
 }
 
 #[requires(f.precondition(a))]
-#[ensures(exists<f2: &mut F> *f2 === f && f2.postcondition_mut(a, result))]
+#[ensures(exists<f2: &mut F> *f2 == f && f2.postcondition_mut(a, result))]
 #[ensures(f.resolve())]
 fn weaken_2<A, F: FnMutSpec<A> + Resolve>(f: F, a: A) -> F::Output {
     weaken_3(f, a)

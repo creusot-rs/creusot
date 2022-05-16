@@ -31,11 +31,9 @@ impl<T> Model for Sparse<T> {
 
     #[logic]
     #[trusted]
-    #[ensures(result.len() === @(self.size))]
-    #[ensures(
-        forall<i:Int>
-            result[i] ===
-            (if self.is_elt(i) { Some((@(self.values))[i]) } else { None})
+    #[ensures(result.len() == @(self.size))]
+    #[ensures(forall<i:Int>
+              result[i] == (if self.is_elt(i) { Some((@(self.values))[i]) } else { None })
     )]
     fn model(self) -> Self::ModelTy {
         // we miss a way to define the sequence, we need
@@ -54,7 +52,7 @@ impl<T> Sparse<T> {
     fn is_elt(&self, i: Int) -> bool {
         pearlite! { 0 <= i && i < @(self.size)
                     && @((@(self.idx))[i]) < @(self.n)
-                    && @((@(self.back))[@((@(self.idx))[i])]) === i
+                    && @((@(self.back))[@((@(self.idx))[i])]) == i
         }
     }
 
@@ -64,14 +62,14 @@ impl<T> Sparse<T> {
     fn sparse_inv(&self) -> bool {
         pearlite! {
             @(self.n) <= @(self.size)
-                && (@self).len() === @(self.size)
-                && (@(self.values)).len() === @(self.size)
-                && (@(self.idx)).len() === @(self.size)
-                && (@(self.back)).len() === @(self.size)
+                && (@self).len() == @(self.size)
+                && (@(self.values)).len() == @(self.size)
+                && (@(self.idx)).len() == @(self.size)
+                && (@(self.back)).len() == @(self.size)
                 && forall<i: Int> 0 <= i && i < @(self.n) ==>
                 match (@(self.back))[i] {
                     j => 0 <= @j && @j < @(self.size)
-                        && @((@(self.idx))[@j]) === i
+                        && @((@(self.idx))[@j]) == i
                 }
         }
     }
@@ -81,12 +79,12 @@ impl<T> Sparse<T> {
     #[requires(self.sparse_inv())]
     #[requires(@i < (@self).len())]
     #[ensures(match result {
-        None => (@self)[@i] === None,
-        Some(x) => (@self)[@i] === Some(*x)
+        None => (@self)[@i] == None,
+        Some(x) => (@self)[@i] == Some(*x)
     })]
     #[ensures(match (@self)[@i] {
-        None => result === None,
-        Some(x) => true // result === Some(x) need 'asref'
+        None => result == None,
+        Some(x) => true // result == Some(x) need 'asref'
     })]
     fn get(&self, i: usize) -> Option<&T> {
         let index = self.idx[i];
@@ -101,7 +99,7 @@ impl<T> Sparse<T> {
      */
     #[logic]
     #[requires(self.sparse_inv())]
-    #[requires(self.n === self.size)]
+    #[requires(self.n == self.size)]
     #[requires(0 <= i && i < @(self.size))]
     #[ensures(self.is_elt(i))]
     fn lemma_permutation(self, i: Int) {}
@@ -111,9 +109,9 @@ impl<T> Sparse<T> {
     #[requires((*self).sparse_inv())]
     #[requires(@i < (@*self).len())]
     #[ensures((^self).sparse_inv())]
-    #[ensures((@^self).len() === (@*self).len())]
-    #[ensures(forall<j: Int> !(j === @i) ==> (@^self)[j] === (@*self)[j])]
-    #[ensures((@^self)[@i] === Some(v))]
+    #[ensures((@^self).len() == (@*self).len())]
+    #[ensures(forall<j: Int> j != @i ==> (@^self)[j] == (@*self)[j])]
+    #[ensures((@^self)[@i] == Some(v))]
     fn set(&mut self, i: usize, v: T) {
         self.values[i] = v;
         let index = self.idx[i];
@@ -135,8 +133,8 @@ impl<T> Sparse<T> {
  * to create non-initialized arrays.
  */
 #[ensures(result.sparse_inv())]
-#[ensures(result.size === sz)]
-#[ensures(forall<i: Int> (@result)[i] === None)]
+#[ensures(result.size == sz)]
+#[ensures(forall<i: Int> (@result)[i] == None)]
 fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
     Sparse {
         size: sz,
@@ -158,7 +156,7 @@ fn main() {
     let mut b = create(20, default);
     let mut x = a.get(5);
     let mut y = b.get(7);
-    proof_assert!(x === None && y === None);
+    proof_assert!(x == None && y == None);
     // assert!(x == None && y == None);
     a.set(5, 1);
     b.set(7, 2);
@@ -166,23 +164,23 @@ fn main() {
     y = b.get(7);
     proof_assert!(match x {
         None => false,
-        Some(z) => @z === 1
+        Some(z) => @z == 1
     });
     proof_assert!(match y {
         None => false,
-        Some(z) => @z === 2
+        Some(z) => @z == 2
     });
     // assert!(x == Some(1) && y == Some(2));
     x = a.get(7);
     y = b.get(5);
-    proof_assert!(x === None && y === None);
+    proof_assert!(x == None && y == None);
     // assert!(x == None && y == None);
     x = a.get(0);
     y = b.get(0);
-    proof_assert!(x === None && y === None);
+    proof_assert!(x == None && y == None);
     // assert!(x == None && y == None);
     x = a.get(9);
     y = b.get(9);
-    proof_assert!(x === None && y === None)
+    proof_assert!(x == None && y == None)
     // assert!(x == None && y == None);
 }
