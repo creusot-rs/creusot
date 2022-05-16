@@ -81,7 +81,7 @@ fn m(t: Vec<i32>) -> Vec<i32> {
     let mut i: usize = 0;
     #[invariant(loop_bound, @i <= (@t).len())]
     #[invariant(count_bound, @count <= @i)]
-    #[invariant(num, @count === num_of_pos(0,@i,@t))]
+    #[invariant(num, @count == num_of_pos(0,@i,@t))]
     //#[variant((@t).len() - @i)]
     while i < t.len() {
         if t[i] > 0 {
@@ -94,8 +94,8 @@ fn m(t: Vec<i32>) -> Vec<i32> {
     count = 0;
 
     i = 0;
-    #[invariant(num, @count === num_of_pos(0,@i,@t))]
-    #[invariant(ulength, (@u).len() === num_of_pos(0,(@t).len(),@t))]
+    #[invariant(num, @count == num_of_pos(0,@i,@t))]
+    #[invariant(ulength, (@u).len() == num_of_pos(0,(@t).len(),@t))]
     //#[variant((@t).len() - @i)]
     while i < t.len() {
         if t[i] > 0 {

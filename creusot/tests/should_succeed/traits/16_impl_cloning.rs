@@ -12,5 +12,5 @@ impl<T> Model for Vec<T> {
     }
 }
 
-#[ensures(@x === @*x)]
+#[ensures(@x == @*x)]
 fn test<T>(x: &mut Vec<T>) {}

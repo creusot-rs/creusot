@@ -20,12 +20,12 @@ fn rev_append<T>(n: List<T>, o: List<T>) -> List<T> {
     }
 }
 
-#[ensures(^l === rev_append(*l, Nil))]
+#[ensures(^l == rev_append(*l, Nil))]
 fn rev<T>(l: &mut List<T>) {
     let old_l = Ghost::record(&*l);
     let mut prev = Nil;
     let mut head = replace(l, Nil);
-    #[invariant(x, rev_append(head, prev) === rev_append(@old_l, Nil))]
+    #[invariant(x, rev_append(head, prev) == rev_append(@old_l, Nil))]
     while let Cons(mut curr) = head {
         let next = curr.1;
         curr.1 = prev;

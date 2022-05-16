@@ -13,15 +13,15 @@ use creusot_contracts::*;
 //     a[10]
 // }
 
-// #[requires((@a).len() === 5)]
-// #[ensures(@((@^a)[2]) === 3)]
+// #[requires((@a).len() == 5)]
+// #[ensures(@((@^a)[2]) == 3)]
 // fn index_mut_slice(a: &mut [u32]) {
 //     a[2] = 3;
 // }
 
 // #[ensures(match result {
-//     Some(v) => *v === (@a)[0],
-//     None => (@a).len() === 0
+//     Some(v) => *v == (@a)[0],
+//     None => (@a).len() == 0
 // })]
 fn slice_first<T>(a: &[T]) -> Option<&T> {
     if a.len() > 0 {

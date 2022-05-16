@@ -28,13 +28,13 @@ impl<T, I: Inv<T>> Mutex<T, I> {
 
     #[trusted]
     #[ensures((*self).1.inv(*result))]
-    #[ensures(forall<v: T> (^self).1.inv(v) === true)]
+    #[ensures(forall<v: T> (^self).1.inv(v) == true)]
     fn get_mut(&mut self) -> &mut T {
         self.0 .0.get_mut().unwrap()
     }
 
     #[trusted]
-    #[ensures(self.1 === @(result.1))]
+    #[ensures(self.1 == @(result.1))]
     fn lock(&self) -> MutexGuard<'_, T, I> {
         MutexGuard(GuardInner(self.0 .0.lock().unwrap()), Ghost::record(&self.1))
     }
@@ -156,7 +156,7 @@ impl<F: FakeFnOnce> Inv<F::Return> for SpawnPostCond<F> {
 // A version of Box::leak
 
 #[trusted]
-#[ensures(*result === *b)]
+#[ensures(*result == *b)]
 fn leak<'a, T: 'a>(b: Box<T>) -> &'a mut T {
     Box::leak(b)
 }

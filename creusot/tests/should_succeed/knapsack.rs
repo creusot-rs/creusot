@@ -18,7 +18,7 @@ fn max_log(a: Int, b: Int) -> Int {
 }
 
 #[requires(true)]
-#[ensures(@result === max_log(@a, @b))]
+#[ensures(@result == max_log(@a, @b))]
 fn max(a: usize, b: usize) -> usize {
     if a < b {
         b
@@ -57,11 +57,11 @@ fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&Item
         vec::from_elem(vec::from_elem(0, max_weight + 1), items.len() + 1);
     let mut i = 0;
 
-    #[invariant(items_len, (@items).len() + 1 === (@best_value).len())]
+    #[invariant(items_len, (@items).len() + 1 == (@best_value).len())]
     #[invariant(weight_len, forall<i: Int> 0 <= i && i < (@best_value).len() ==>
-                  @max_weight + 1 === (@(@best_value)[i]).len())]
+                  @max_weight + 1 == (@(@best_value)[i]).len())]
     #[invariant(best_value, forall<ii: Int, ww: Int> 0 <= ii && ii <= @i && 0 <= ww && ww <= @max_weight ==>
-                  @(@(@best_value)[ii])[ww] === m(@items, ii, ww))]
+                  @(@(@best_value)[ii])[ww] == m(@items, ii, ww))]
     #[invariant(best_value_bounds, forall<ii: Int, ww: Int> 0 <= ii && ii <= (@items).len() && 0 <= ww && ww <= @max_weight ==>
                   @(@(@best_value)[ii])[ww] <= 10000000 * ii)]
     while i < items.len() {
@@ -71,14 +71,14 @@ fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&Item
         // This makes it possible to allow 0-weight items, and makes the proof simpler.
         let mut w = 0;
 
-        #[invariant(items_len2, (@items).len() + 1 === (@best_value).len())]
+        #[invariant(items_len2, (@items).len() + 1 == (@best_value).len())]
         #[invariant(weight_len2, forall<i: Int> 0 <= i && i < (@best_value).len() ==>
-                      @max_weight + 1 === (@(@best_value)[i]).len())]
+                      @max_weight + 1 == (@(@best_value)[i]).len())]
         #[invariant(best_value2, forall<ii: Int, ww: Int>
                       0 <= ii && ii <= @i && 0 <= ww && ww <= @max_weight ==>
-                      @(@(@best_value)[ii])[ww] === m(@items, ii, ww))]
+                      @(@(@best_value)[ii])[ww] == m(@items, ii, ww))]
         #[invariant(best_value2, forall<ww: Int> 0 <= ww && ww <= @w-1 ==>
-                      @(@(@best_value)[@i+1])[ww] === m(@items, @i+1, ww))]
+                      @(@(@best_value)[@i+1])[ww] == m(@items, @i+1, ww))]
         #[invariant(best_value_bounds, forall<ii: Int, ww: Int> 0 <= ii && ii <= (@items).len() && 0 <= ww && ww <= @max_weight ==>
                   @(@(@best_value)[ii])[ww] <= 10000000 * ii)]
         while w <= max_weight {

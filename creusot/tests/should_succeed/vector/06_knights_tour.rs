@@ -15,8 +15,8 @@ impl Point {
     #[requires(-10000 <= @(self.y) && @(self.y) <= 10000)]
     #[requires(-10000 <= @(p.0) && @(p.0) <= 10000)]
     #[requires(-10000 <= @(p.1) && @(p.1) <= 10000)]
-    #[ensures(@(result.x) === @(self.x) + @(p.0))]
-    #[ensures(@(result.y) === @(self.y) + @(p.1))]
+    #[ensures(@(result.x) == @(self.x) + @(p.0))]
+    #[ensures(@(result.y) == @(self.y) + @(p.1))]
     fn mov(&self, p: &(isize, isize)) -> Self {
         Self { x: (self.x + p.0), y: (self.y + p.1) }
     }
@@ -32,12 +32,12 @@ impl Board {
     fn wf(self) -> bool {
         pearlite! {
             @(self.size) <= 1_000 &&
-            (@(self.field)).len() === @self.size &&
-            forall<i : Int> 0 <= i && i < @self.size ==> (@(@(self.field))[i]).len() === @self.size
+            (@(self.field)).len() == @self.size &&
+            forall<i : Int> 0 <= i && i < @self.size ==> (@(@(self.field))[i]).len() == @self.size
         }
     }
     #[requires(@size <= 1000)]
-    #[ensures(result.size === size)]
+    #[ensures(result.size == size)]
     #[ensures(result.wf())]
     fn new(size: usize) -> Self {
         let mut rows: Vec<Vec<_>> = Vec::with_capacity(size);
@@ -45,8 +45,8 @@ impl Board {
         let mut i = 0;
         #[invariant(i_size, i <= size)]
         #[invariant(rows,
-            forall<j : Int> 0 <= j && j < @i ==> (@((@rows)[j])).len() === @size)]
-        #[invariant(row_len, (@rows).len() === @i )]
+            forall<j : Int> 0 <= j && j < @i ==> (@((@rows)[j])).len() == @size)]
+        #[invariant(row_len, (@rows).len() == @i )]
         while i < size {
             rows.push(vec::from_elem(0, size));
             i += 1;
@@ -93,14 +93,14 @@ impl Board {
     #[requires(self.wf())]
     #[requires(self.in_bounds(p))]
     #[ensures((^self).wf())]
-    #[ensures((^self).size === (*self).size)]
+    #[ensures((^self).size == (*self).size)]
     fn set(&mut self, p: Point, v: usize) {
         self.field[p.x as usize][p.y as usize] = v
     }
 }
 
 #[trusted]
-#[ensures((@result).len() === 8)]
+#[ensures((@result).len() == 8)]
 #[ensures(forall<i : Int> 0 <= i && i < 8 ==> -2 <= @((@result)[i].0) && @((@result)[i].0) <= 2 && -2 <= @((@result)[i].1) &&@((@result)[i].1) <= 2)]
 fn moves() -> Vec<(isize, isize)> {
     let mut v = Vec::new();
@@ -150,7 +150,7 @@ fn knights_tour(size: usize, x: usize, y: usize) -> Option<Board> {
     step += 1;
 
     proof_assert! { dumb_nonlinear_arith(size); true }
-    #[invariant(b, board.size === size)]
+    #[invariant(b, board.size == size)]
     #[invariant(b, board.wf())]
     #[invariant(p, board.in_bounds(p))]
     // rather annoyingly z3 gets stuck proving size * size is inbounds, seemingly

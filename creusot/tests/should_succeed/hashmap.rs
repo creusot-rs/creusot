@@ -1,14 +1,6 @@
 extern crate creusot_contracts;
 use creusot_contracts::{std::vec, *};
 
-extern_spec! {
-    #[ensures(result === (@self_ === @rhs))]
-    fn std::cmp::PartialEq::eq<Self_, Rhs>(self_: &Self_, rhs: &Rhs) -> bool
-        where Self_ : PartialEq<Rhs>,
-              Self_ : Model,
-              Rhs: Model<ModelTy = Self_::ModelTy>,
-}
-
 enum List<T> {
     Nil,
     Cons(T, Box<List<T>>),
@@ -16,7 +8,7 @@ enum List<T> {
 
 impl<T: Clone> Clone for List<T> {
     #[trusted]
-    #[ensures(result === *self)]
+    #[ensures(result == *self)]
     fn clone(&self) -> Self {
         use List::*;
         match self {
@@ -32,7 +24,7 @@ impl<K: Model, V> List<(K, V)> {
         pearlite! {
             match self {
                 List::Nil => None,
-                List::Cons((k,v),tl) => if @k === index { Some(v) } else { tl.get(index) }
+                List::Cons((k,v),tl) => if @k == index { Some(v) } else { tl.get(index) }
             }
         }
     }
@@ -42,7 +34,7 @@ impl<K: Model, V> List<(K, V)> {
         pearlite! {
             match self {
                 List::Nil => true,
-                List::Cons((k, v), tl) => tl.get(@k) === None && tl.no_double_binding()
+                List::Cons((k, v), tl) => tl.get(@k) == None && tl.no_double_binding()
             }
         }
     }
@@ -50,7 +42,7 @@ impl<K: Model, V> List<(K, V)> {
 
 // A slightly simplified version of the Rust hashing mechanisms, this sufficiently captures the behavior though
 trait Hash: Model {
-    #[ensures(@result === self.hash_log())]
+    #[ensures(@result == self.hash_log())]
     fn hash(&self) -> u64;
 
     #[logic]
@@ -58,13 +50,13 @@ trait Hash: Model {
     fn hash_log(self) -> Int;
 
     #[law]
-    #[requires(@x === @y)]
-    #[ensures(x.hash_log() === y.hash_log())]
+    #[requires(@x == @y)]
+    #[ensures(x.hash_log() == y.hash_log())]
     fn hash_log_eq_model(x: Self, y: Self);
 }
 
 impl Hash for usize {
-    #[ensures(@result === self.hash_log())]
+    #[ensures(@result == self.hash_log())]
     fn hash(&self) -> u64 {
         *self as u64
     }
@@ -75,8 +67,8 @@ impl Hash for usize {
     }
 
     #[logic]
-    #[requires(@x === @y)]
-    #[ensures(x.hash_log() === y.hash_log())]
+    #[requires(@x == @y)]
+    #[ensures(x.hash_log() == y.hash_log())]
     fn hash_log_eq_model(x: Self, y: Self) {}
 }
 
@@ -89,7 +81,7 @@ impl<K: Hash + Model, V> Model for MyHashMap<K, V> {
 
     #[logic]
     #[trusted]
-    #[ensures(forall<k : _> result.get(@k) === self.bucket(k).get(@k))]
+    #[ensures(forall<k : _> result.get(@k) == self.bucket(k).get(@k))]
     fn model(self) -> Self::ModelTy {
         absurd
     }
@@ -109,7 +101,7 @@ impl<K: Hash, V> MyHashMap<K, V> {
 impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[requires(0 < @size)]
     #[ensures(result.hashmap_inv())]
-    #[ensures(forall<i: K> (@result).get(@i) === None)]
+    #[ensures(forall<i: K> (@result).get(@i) == None)]
     fn new(size: usize) -> MyHashMap<K, V> {
         let res = MyHashMap { buckets: vec::from_elem(List::Nil, size) };
         res
@@ -117,7 +109,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
 
     #[requires((*self).hashmap_inv())]
     #[ensures((^self).hashmap_inv())]
-    #[ensures(forall<i: K> (@^self).get(@i) === (if @i === @key { Some(val) } else { (@*self).get(@i) } ))]
+    #[ensures(forall<i: K> (@^self).get(@i) == (if @i == @key { Some(val) } else { (@*self).get(@i) } ))]
     fn add(&mut self, key: K, val: V) {
         use List::*;
         let old_self = Ghost::record(&self);
@@ -126,13 +118,14 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
         let mut l: &mut List<_> = &mut self.buckets[index];
         let old_l = Ghost::record(&l);
 
-        #[invariant(y, ^@old_self === ^self)]
+        #[invariant(y, ^@old_self == ^self)]
         #[invariant(xx, self.good_bucket(*l, @index))]
         #[invariant(xx, self.good_bucket(^l, @index) ==> self.good_bucket(^@old_l, @index ))]
-        #[invariant(get_key, (^l).get(@key) === Some(val) ==> (^@old_l).get(@key) === Some(val))]
-        #[invariant(get_rest, forall <i:_> (^l).get(i) === (*l).get(i) ==> (^@old_l).get(i) === (*@old_l).get(i))]
+        #[invariant(get_key, (^l).get(@key) == Some(val) ==> (^@old_l).get(@key) == Some(val))]
+        #[invariant(get_rest, forall <i:_> (^l).get(i) == (*l).get(i) ==> (^@old_l).get(i) == (*@old_l).get(i))]
         #[invariant(no_double_binding, (*l).no_double_binding())]
-        #[invariant(no_double_binding_magic, (forall <i:_> (*l).get(i) === (^l).get(i) || i === @key) && (^l).no_double_binding() ==> (^@old_l).no_double_binding())]
+        #[invariant(no_double_binding_magic, (forall <i:_> (*l).get(i) == (^l).get(i) || i == @key) && (^l).no_double_binding() ==>
+                                             (^@old_l).no_double_binding())]
         while let Cons((k, v), tl) = l {
             let tl = tl;
             if *k == key {
@@ -150,14 +143,14 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
 
     #[requires(self.hashmap_inv())]
     #[ensures(match result {
-        Some(v) => (@self).get(@key) === Some(*v),
-        None => (@self).get(@key) === None,
+        Some(v) => (@self).get(@key) == Some(*v),
+        None => (@self).get(@key) == None,
     })]
     fn get(&self, key: K) -> Option<&V> {
         let index: usize = key.hash() as usize % self.buckets.len();
         let mut l = &self.buckets[index];
 
-        #[invariant(not_already_found, self.bucket(key).get(@key) === (*l).get(@key))]
+        #[invariant(not_already_found, self.bucket(key).get(@key) == (*l).get(@key))]
         while let List::Cons((k, v), tl) = l {
             if *k == key {
                 return Some(v);
@@ -171,39 +164,39 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[requires((@self.buckets).len() < 1000)]
     #[requires((*self).hashmap_inv())]
     #[ensures((^self).hashmap_inv())]
-    #[ensures(forall<k : K> (@^self).get(@k) === (@*self).get(@k))] // lets prove the extensional version for now
+    #[ensures(forall<k : K> (@^self).get(@k) == (@*self).get(@k))] // lets prove the extensional version for now
     fn resize(&mut self) {
         let self_old = Ghost::record(&self);
         let mut new = Self::new(self.buckets.len() * 2);
 
         let mut i: usize = 0;
-        #[invariant(seen, forall<k : K> (@self_old).bucket_ix(k) < @i ==> (@*@self_old).get(@k) === (@new).get(@k))]
+        #[invariant(seen, forall<k : K> (@self_old).bucket_ix(k) < @i ==> (@*@self_old).get(@k) == (@new).get(@k))]
         #[invariant(unseen, forall<k : K>
             @i <=   (@self_old).bucket_ix(k) &&
-                    (@self_old).bucket_ix(k) <= (@(@self_old).buckets).len() ==> (@new).get(@k) === None
+                    (@self_old).bucket_ix(k) <= (@(@self_old).buckets).len() ==> (@new).get(@k) == None
         )]
-        #[invariant(rest, forall<j : Int> @i <= j && j < (@(@self_old).buckets).len() ==> (@self.buckets)[j] === (@(@self_old).buckets)[j])]
+        #[invariant(rest, forall<j : Int> @i <= j && j < (@(@self_old).buckets).len() ==> (@self.buckets)[j] == (@(@self_old).buckets)[j])]
         #[invariant(a, new.hashmap_inv())]
-        #[invariant(p, ^@self_old === ^self)]
-        #[invariant(l, (@(@self_old).buckets).len() === (@self.buckets).len())]
+        #[invariant(p, ^@self_old == ^self)]
+        #[invariant(l, (@(@self_old).buckets).len() == (@self.buckets).len())]
         #[invariant(z, @i <= (@self.buckets).len())]
         while i < self.buckets.len() {
             let mut l: List<_> = std::mem::replace(&mut self.buckets[i], List::Nil);
 
             #[invariant(a, new.hashmap_inv())]
-            #[invariant(x, forall<k : K> (@self_old).bucket_ix(k) < @i ==> (@*@self_old).get(@k) === (@new).get(@k))]
+            #[invariant(x, forall<k : K> (@self_old).bucket_ix(k) < @i ==> (@*@self_old).get(@k) == (@new).get(@k))]
             #[invariant(x, forall<k : K>
-                @i < (@self_old).bucket_ix(k) && (@self_old).bucket_ix(k) <= (@(@self_old).buckets).len()  ==> (@new).get(@k) === None
+                @i < (@self_old).bucket_ix(k) && (@self_old).bucket_ix(k) <= (@(@self_old).buckets).len()  ==> (@new).get(@k) == None
             )]
-            #[invariant(zzz, forall<k : K> (@self_old).bucket_ix(k) === @i ==>
-                        (@@self_old).get(@k) === match l.get(@k) { None => (@new).get(@k), Some(v) => Some(v) })]
+            #[invariant(zzz, forall<k : K> (@self_old).bucket_ix(k) == @i ==>
+                        (@@self_old).get(@k) == match l.get(@k) { None => (@new).get(@k), Some(v) => Some(v) })]
             #[invariant(l_no_double_binding, l.no_double_binding())]
             #[invariant(x, (@self_old).good_bucket(l, @i))]
             while let List::Cons((k, v), tl) = l {
                 new.add(k, v);
                 l = *tl;
             }
-            proof_assert! { forall<k : K, v: V> (@self_old).bucket_ix(k) === @i  ==> (@*@self_old).get(@k) === (@new).get(@k) };
+            proof_assert! { forall<k : K, v: V> (@self_old).bucket_ix(k) == @i  ==> (@*@self_old).get(@k) == (@new).get(@k) };
             i += 1;
         }
 
@@ -213,7 +206,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[predicate]
     fn good_bucket(self, l: List<(K, V)>, h: Int) -> bool {
         pearlite! {
-            forall<k : _, v: _> l.get(@k) === Some(v) ==> self.bucket_ix(k) === h
+            forall<k : _, v: _> l.get(@k) == Some(v) ==> self.bucket_ix(k) == h
         }
     }
 
@@ -242,20 +235,20 @@ fn main() {
     let mut z = h2.get(1);
     let mut t = h2.get(2);
     // // assert!(x == none && y == none && z == none && t == none);
-    // // proof_assert!(x === none && y === none && z === none && t === none);
+    // // proof_assert!(x == none && y == none && z == none && t == none);
 
     h1.add(1, 17);
     x = h1.get(1);
     y = h1.get(2);
     z = h2.get(1);
     t = h2.get(2);
-    // // assert!(x === some17 && y === none && z === none && t === none);
-    // // proof_assert!(x === some17 && y === none && z === none && t === none);
+    // // assert!(x == some17 && y == none && z == none && t == none);
+    // // proof_assert!(x == some17 && y == none && z == none && t == none);
     h2.add(1, 42);
     x = h1.get(1);
     y = h1.get(2);
     z = h2.get(1);
     t = h2.get(2);
-    // assert!(x === some17 && y === none && z === some42 && t === none);
-    // proof_assert!(x === some17 && y === none && z === some42 && t === none);
+    // assert!(x == some17 && y == none && z == some42 && t == none);
+    // proof_assert!(x == some17 && y == none && z == some42 && t == none);
 }

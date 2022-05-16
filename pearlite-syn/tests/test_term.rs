@@ -29,50 +29,6 @@ fn test_impl() {
 }
 
 #[test]
-fn test_logeq() {
-    snapshot!(quote!(a === b) as Term, @r###"
-    TermLogEq {
-        lhs: TermPath {
-            inner: ExprPath {
-                attrs: [],
-                qself: None,
-                path: Path {
-                    leading_colon: None,
-                    segments: [
-                        PathSegment {
-                            ident: Ident(
-                                a,
-                            ),
-                            arguments: None,
-                        },
-                    ],
-                },
-            },
-        },
-        eqeq_token: EqEq,
-        eq_token: Eq,
-        rhs: TermPath {
-            inner: ExprPath {
-                attrs: [],
-                qself: None,
-                path: Path {
-                    leading_colon: None,
-                    segments: [
-                        PathSegment {
-                            ident: Ident(
-                                b,
-                            ),
-                            arguments: None,
-                        },
-                    ],
-                },
-            },
-        },
-    }
-    "###);
-}
-
-#[test]
 fn test_final() {
     snapshot!(quote!(^a) as Term, @r###"
     TermFinal {

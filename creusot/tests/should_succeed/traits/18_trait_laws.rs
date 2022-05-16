@@ -7,14 +7,14 @@ trait Symmetric {
     fn op(self, _: Self) -> Self;
 
     #[law]
-    #[ensures(a.op(b) === b.op(a))]
+    #[ensures(a.op(b) == b.op(a))]
     fn reflexive(a: Self, b: Self);
 }
 
 #[logic]
-#[ensures(result === true)]
+#[ensures(result == true)]
 fn uses_op<T: Symmetric>(x: T, y: T) -> bool {
-    pearlite! { x.op(y) === y.op(x) }
+    pearlite! { x.op(y) == y.op(x) }
 }
 
 impl Symmetric for () {
@@ -28,7 +28,7 @@ impl Symmetric for () {
 }
 
 #[logic]
-#[ensures(result === true)]
+#[ensures(result == true)]
 fn impl_laws() -> bool {
-    pearlite! { ().op(()) === ().op(()) }
+    pearlite! { ().op(()) == ().op(()) }
 }

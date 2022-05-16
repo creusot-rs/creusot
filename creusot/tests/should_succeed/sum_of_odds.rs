@@ -10,7 +10,7 @@ fn sqr(x: Int) -> Int {
 
 #[predicate]
 fn is_square(y: Int) -> bool {
-    pearlite! { exists<z: Int> y === sqr(z) }
+    pearlite! { exists<z: Int> y == sqr(z) }
 }
 
 #[logic]
@@ -25,19 +25,19 @@ fn sum_of_odd(x: Int) -> Int {
 
 #[logic]
 #[requires(x >= 0)]
-#[ensures(sum_of_odd(x) === sqr(x))]
+#[ensures(sum_of_odd(x) == sqr(x))]
 #[variant(x)]
 fn sum_of_odd_is_sqr(x: Int) {
     pearlite! { if x > 0 { sum_of_odd_is_sqr(x-1) } else { () } }
 }
 
 #[requires(@x < 0x10000)]
-#[ensures(@result === sum_of_odd(@x))]
+#[ensures(@result == sum_of_odd(@x))]
 fn compute_sum_of_odd(x: u32) -> u32 {
     let mut s: u32 = 0;
     let mut i: u32 = 0;
     #[invariant(i_bound, @i <= @x)]
-    #[invariant(s_is_sum, @s === sum_of_odd(@i))]
+    #[invariant(s_is_sum, @s == sum_of_odd(@i))]
     while i < x {
         proof_assert! {
             sum_of_odd_is_sqr(@i);

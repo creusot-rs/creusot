@@ -5,10 +5,10 @@ use crate::logic::ord::*;
 pub use std::cmp::Ordering;
 
 pub trait Ord: OrdLogic + Eq {
-    #[ensures(result === self.cmp_log(*o))]
+    #[ensures(result == self.cmp_log(*o))]
     fn cmp(&self, o: &Self) -> Ordering;
 
-    #[ensures(result === *self <= *o)]
+    #[ensures(result == (*self <= *o))]
     fn le(&self, o: &Self) -> bool {
         match self.cmp(o) {
             Ordering::Greater => false,
@@ -16,7 +16,7 @@ pub trait Ord: OrdLogic + Eq {
         }
     }
 
-    #[ensures(result === *self >= *o)]
+    #[ensures(result == (*self >= *o))]
     fn ge(&self, o: &Self) -> bool {
         match self.cmp(o) {
             Ordering::Less => false,
@@ -24,7 +24,7 @@ pub trait Ord: OrdLogic + Eq {
         }
     }
 
-    #[ensures(result === *self > *o)]
+    #[ensures(result == (*self > *o))]
     fn gt(&self, o: &Self) -> bool {
         match self.cmp(o) {
             Ordering::Greater => true,
@@ -32,7 +32,7 @@ pub trait Ord: OrdLogic + Eq {
         }
     }
 
-    #[ensures(result === *self < *o)]
+    #[ensures(result == (*self < *o))]
     fn lt(&self, o: &Self) -> bool {
         match self.cmp(o) {
             Ordering::Less => true,

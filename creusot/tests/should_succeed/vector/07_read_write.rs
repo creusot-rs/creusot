@@ -5,7 +5,7 @@ use creusot_contracts::std::*;
 use creusot_contracts::*;
 
 // extern_spec! {
-//     #[ensures(result === (@self_ === @rhs))]
+//     #[ensures(result == (@self_ == @rhs))]
 //     fn std::cmp::PartialEq::eq<Self_, Rhs>(self_: &Self_, rhs: &Rhs) -> bool
 //         where Self_ : PartialEq<Rhs>,
 //               Self_ : Model,

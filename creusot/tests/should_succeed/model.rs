@@ -13,7 +13,7 @@ impl Model for Seven {
 }
 
 #[trusted]
-#[ensures(@result === 7)]
+#[ensures(@result == 7)]
 fn seven() -> Seven {
     Seven()
 }
@@ -30,7 +30,7 @@ impl<T, U> Model for Pair<T, U> {
 }
 
 #[trusted]
-#[ensures(@result === (a, b))]
+#[ensures(@result == (a, b))]
 fn pair<T, U>(a: T, b: U) -> Pair<T, U> {
     Pair(a, b)
 }

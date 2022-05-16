@@ -17,10 +17,10 @@ fn sorted(s: Seq<u32>) -> bool {
 
 #[requires((@arr).len() <= @usize::MAX)]
 #[requires(sorted(@arr))]
-#[ensures(forall<x:usize> result === Ok(x) ==> (@arr)[@x] === elem)]
-#[ensures(forall<x:usize> result === Err(x) ==>
+#[ensures(forall<x:usize> result == Ok(x) ==> (@arr)[@x] == elem)]
+#[ensures(forall<x:usize> result == Err(x) ==>
     forall<i:usize>  i < x ==> (@arr)[@i] <= elem)]
-#[ensures(forall<x:usize> result === Err(x) ==>
+#[ensures(forall<x:usize> result == Err(x) ==>
     forall<i:usize> x < i && @i < (@arr).len() ==> elem < (@arr)[@i])]
 fn binary_search(arr: &Vec<u32>, elem: u32) -> Result<usize, usize> {
     if arr.len() == 0 {

@@ -10,7 +10,7 @@ fn id<T>(x: T) -> T {
 trait A {
     type T;
 
-    #[ensures(id(x) === x)]
+    #[ensures(id(x) == x)]
     fn f(x: Self::T);
 }
 

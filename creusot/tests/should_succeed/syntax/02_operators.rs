@@ -80,10 +80,10 @@ struct X {
 #[ensures((x.a) <= (x.a))]
 fn primitive_comparison(x: X) {}
 
-#[ensures(result === (a === b))]
+#[ensures(result == (a == b))]
 fn bool_eq(a: bool, b: bool) -> bool {
     a == b
 }
 
-#[ensures(old(x) === x)]
+#[ensures(old(x) == x)]
 fn old_test(x: bool) {}

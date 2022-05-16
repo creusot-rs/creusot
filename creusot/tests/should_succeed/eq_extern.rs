@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 extern_spec! {
-    #[ensures(result === (@self_).cmp_log(@*o))]
+    #[ensures(result == (@self_).cmp_log(@*o))]
     fn std::cmp::Ord::cmp<Self_>(self_: &Self_, o: &Self_) -> Ordering
         where Self_: Ord,
               Self_: Model,

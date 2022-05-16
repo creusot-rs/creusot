@@ -144,7 +144,7 @@ CREUSOT_UNBOUNDED=1 REPO/mlcfg PATH/TO/PROGRAM.rs > PATH/TO/OUTPUT.mlcfg
 
 Contracts and logic functions are written in Pearlite, a specification language for Rust we are developing. Pearlite can be seen as a pure, immutable fragment of Rust which has access to a few additional logical operations and connectives. In practice you have:
 - Base Rust expressions: matching, function calls, let bindings, binary and unary operators, tuples, structs and enums, projections, primitive casts, and dereferencing
-- Logical Expressions: quantifiers (`forall` and `exists`), logical implication `==>`, *logical* equality `a === b`, labels
+- Logical Expressions: quantifiers (`forall` and `exists`), logical implication `==>`, *logical* equality `a == b`, labels
 - Rust specific logical expressions: access to the **final** value of a mutable reference `^`, access to the *model* of an object `@`
 
 We also provide two new attributes on Rust functions: `logic` and `predicate`.
@@ -167,7 +167,7 @@ impl<T, U> Model for MyPair<T, U> {
     type Target = (T, U);
 }
 #[trusted]
-#[ensures(@result === (a, b))]
+#[ensures(@result == (a, b))]
 fn my_pair<T, U>(a: T, b: U) -> MyPair<T, U> {
   ...
 }

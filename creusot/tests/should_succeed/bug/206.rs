@@ -5,7 +5,7 @@ use creusot_contracts::*;
 
 struct A(Vec<usize>);
 #[logic]
-#[ensures(@a.0 === @a.0)]
+#[ensures(@a.0 == @a.0)]
 fn u2(a: A) {}
 
 #[logic]
@@ -15,5 +15,5 @@ fn u(a: A) {
     }
 }
 
-#[ensures(u(*a) === (u(*a)))]
+#[ensures(u(*a) == (u(*a)))]
 fn ex(a: &A) {}

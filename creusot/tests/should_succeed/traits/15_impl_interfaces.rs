@@ -19,11 +19,11 @@ fn x<T: Tr>(x: T) -> T::A {
     absurd
 }
 
-#[requires(x(a) === ())]
+#[requires(x(a) == ())]
 fn calls(a: ()) -> <() as Tr>::A {}
 
 // // This call used to break
-// #[ensures(x(a) === ())]
+// #[ensures(x(a) == ())]
 // fn breaks(a: ()) {
 //     calls(a)
 // }
