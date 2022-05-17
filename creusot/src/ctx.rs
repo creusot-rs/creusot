@@ -23,6 +23,7 @@ use rustc_middle::ty::{ParamEnv, TyCtxt};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 pub use util::{item_name, module_name, ItemType};
 use why3::declaration::{Module, TyDecl};
+use why3::exp::Exp;
 
 pub use crate::translated_item::*;
 
@@ -317,14 +318,22 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         }
     }
 
-    pub fn span_attr(&self, span: Span) -> why3::declaration::Attribute {
+    fn span_attr(&self, span: Span) -> why3::declaration::Attribute {
         let lo = self.sess.source_map().lookup_char_pos(span.lo());
         let hi = self.sess.source_map().lookup_char_pos(span.hi());
-        // TODO: Fix / make conditional
-        let filename =
-            format!("../{}", self.sess.source_map().filename_for_diagnostics(&lo.file.name));
+        let filename = self.sess.source_map().filename_for_diagnostics(&lo.file.name);
+        // TODO: Switch between relative and absolute
+        let filename = format!("../{}", filename);
 
         why3::declaration::Attribute::Span(filename, lo.line, lo.col_display, hi.col_display)
+    }
+
+    pub fn attach_span(&self, span: Span, exp: Exp) -> Exp {
+        if let Some(_) = self.opts.span_mode {
+            Exp::Attr(self.span_attr(span), box exp)
+        } else {
+            exp
+        }
     }
 }
 

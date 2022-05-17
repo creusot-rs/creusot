@@ -12,6 +12,12 @@ pub struct Options {
     pub output_file: Option<OutputFile>,
     pub bounds_check: bool,
     pub in_cargo: bool,
+    pub span_mode: Option<SpanMode>,
+}
+
+pub enum SpanMode {
+    Relative,
+    Absolute,
 }
 
 #[derive(Debug)]
@@ -66,6 +72,7 @@ impl Options {
             extern_paths,
             bounds_check,
             in_cargo: cargo_creusot,
+            span_mode: Some(SpanMode::Relative),
         }
     }
 }

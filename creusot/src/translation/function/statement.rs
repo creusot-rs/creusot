@@ -123,14 +123,13 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                 )
             }
             Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => {
-                Exp::Attr(
-                    self.ctx.span_attr(si.span),
-                    box BinaryOp(
-                        binop_to_binop(*op),
-                        box self.translate_operand(l),
-                        box self.translate_operand(r),
-                    ),
-                )
+                let exp = BinaryOp(
+                    binop_to_binop(*op),
+                    box self.translate_operand(l),
+                    box self.translate_operand(r),
+                );
+
+                self.ctx.attach_span(si.span, exp)
             }
             Rvalue::UnaryOp(op, v) => UnaryOp(unop_to_unop(*op), box self.translate_operand(v)),
             Rvalue::Aggregate(box kind, ops) => {
