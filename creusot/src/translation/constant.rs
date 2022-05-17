@@ -9,7 +9,6 @@ use rustc_target::abi::Size;
 use why3::{
     declaration::Module,
     exp::{Constant, Exp},
-    mlcfg::{self},
     QName,
 };
 

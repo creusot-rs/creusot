@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{ty::Type, Ident, QName};
+use crate::{declaration::Attribute, ty::Type, Ident, QName};
 use indexmap::IndexSet;
 
 #[cfg(feature = "serialize")]
@@ -59,6 +59,7 @@ pub enum Purity {
     Program,
 }
 
+// TODO: Should we introduce an 'ExprKind' struct which wraps `Exp` with attributes?
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Exp {
@@ -78,6 +79,7 @@ pub enum Exp {
     UnaryOp(UnOp, Box<Exp>),
     Call(Box<Exp>, Vec<Exp>),
     Verbatim(String),
+    Attr(Vec<Attribute>, Box<Exp>),
     // Seq(Box<Exp>, Box<Exp>),
     Abs(Ident, Box<Exp>),
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
@@ -148,6 +150,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
         }
         Exp::Forall(_, e) => f.visit_mut(e),
         Exp::Exists(_, e) => f.visit_mut(e),
+        Exp::Attr(_, e) => f.visit_mut(e),
     }
 }
 
@@ -207,6 +210,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
         }
         Exp::Forall(_, e) => f.visit(e),
         Exp::Exists(_, e) => f.visit(e),
+        Exp::Attr(_, e) => f.visit(e),
     }
 }
 
@@ -324,7 +328,7 @@ impl Exp {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum Precedence {
     IfLet, // if then else / let in
-    // Attr,
+    Attr,
     Cast,
     Impl,   // -> / <-> / by / so
     Disj,   // \/ / ||
@@ -352,7 +356,8 @@ pub enum AssocDir {
 impl Precedence {
     pub fn next(&self) -> Self {
         match self {
-            Precedence::IfLet => Precedence::Cast,
+            Precedence::IfLet => Precedence::Attr,
+            Precedence::Attr => Precedence::Cast,
             Precedence::Cast => Precedence::Impl,
             Precedence::Impl => Precedence::Disj,
             Precedence::Disj => Precedence::Conj,
@@ -422,7 +427,10 @@ impl Exp {
             Exp::Absurd => Atom,
             Exp::Pure(_) => Atom,
             Exp::Old(_) => AtOld,
-            _ => unimplemented!("{:?}", self),
+            Exp::Any(_) => Prefix,
+            Exp::Verbatim(_) => Atom,
+            Exp::Attr(_, _) => Attr,
+            // _ => unimplemented!("{:?}", self),
         }
     }
 

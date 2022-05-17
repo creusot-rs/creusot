@@ -89,7 +89,7 @@ pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::A
     let matches = get_attrs(tcx.get_attrs_unchecked(def_id), &["why3", "attr"]);
     matches
         .into_iter()
-        .map(|a| declaration::Attribute(a.value_str().unwrap().as_str().into()))
+        .map(|a| declaration::Attribute::Attr(a.value_str().unwrap().as_str().into()))
         .collect()
 }
 
@@ -364,7 +364,7 @@ pub fn signature_of<'tcx>(
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);
     if matches!(item_type(ctx.tcx, def_id), ItemType::Program | ItemType::Closure) {
-        attrs.push(declaration::Attribute("cfg:stackify".into()))
+        attrs.push(declaration::Attribute::Attr("cfg:stackify".into()))
     };
     Signature {
         // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure

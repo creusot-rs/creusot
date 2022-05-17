@@ -1,6 +1,3 @@
-use indexmap::IndexSet;
-use std::collections::HashMap;
-
 use crate::{
     exp::{Exp, Pattern},
     ty::Type,
