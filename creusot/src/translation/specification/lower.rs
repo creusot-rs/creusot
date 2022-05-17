@@ -17,6 +17,10 @@ pub fn lower_pure<'tcx>(
 ) -> Exp {
     let mut term = Lower { ctx, names, pure: Purity::Logic, term_id }.lower_term(term);
     term.reassociate();
+    if term_id.is_local() {
+        term = Exp::Attr(ctx.span_attr(ctx.def_span(term_id)), Box::new(term));
+    }
+
     term
 }
 
@@ -28,6 +32,10 @@ pub fn lower_impure<'tcx>(
 ) -> Exp {
     let mut term = Lower { ctx, names, pure: Purity::Program, term_id }.lower_term(term);
     term.reassociate();
+
+    if term_id.is_local() {
+        term = Exp::Attr(ctx.span_attr(ctx.def_span(term_id)), Box::new(term));
+    }
     term
 }
 

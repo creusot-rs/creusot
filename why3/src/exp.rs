@@ -79,7 +79,7 @@ pub enum Exp {
     UnaryOp(UnOp, Box<Exp>),
     Call(Box<Exp>, Vec<Exp>),
     Verbatim(String),
-    Attr(Vec<Attribute>, Box<Exp>),
+    Attr(Attribute, Box<Exp>),
     // Seq(Box<Exp>, Box<Exp>),
     Abs(Ident, Box<Exp>),
     Match(Box<Exp>, Vec<(Pattern, Exp)>),

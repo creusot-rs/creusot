@@ -660,10 +660,9 @@ impl Print for Exp {
             }
 
             Exp::Verbatim(verb) => alloc.text(verb),
-            Exp::Attr(attrs, e) => alloc
-                .intersperse(attrs.iter().map(|attr| attr.pretty(alloc, env)), alloc.space())
-                .append(alloc.space())
-                .append(e.pretty(alloc, env)),
+            Exp::Attr(attr, e) => {
+                attr.pretty(alloc, env).append(alloc.space()).append(e.pretty(alloc, env))
+            }
             Exp::Abs(ident, box body) => alloc
                 .text("fun ")
                 .append(ident.pretty(alloc, env))

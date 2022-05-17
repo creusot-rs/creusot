@@ -62,7 +62,9 @@ impl PreContract {
         for ens_id in self.ensures {
             log::debug!("ensures clause {:?}", ens_id);
             let term = ctx.term(ens_id).unwrap().clone().subst(ctx.tcx, subst);
-            out.ensures.push(lower_pure(ctx, names, ens_id, term));
+            let exp = lower_pure(ctx, names, ens_id, term);
+
+            out.ensures.push(exp);
         }
 
         if let Some(var_id) = self.variant {

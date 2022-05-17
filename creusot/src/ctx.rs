@@ -316,6 +316,16 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             None => self.tcx.param_env(def_id),
         }
     }
+
+    pub fn span_attr(&self, span: Span) -> why3::declaration::Attribute {
+        let lo = self.sess.source_map().lookup_char_pos(span.lo());
+        let hi = self.sess.source_map().lookup_char_pos(span.hi());
+        // TODO: Fix / make conditional
+        let filename =
+            format!("../{}", self.sess.source_map().filename_for_diagnostics(&lo.file.name));
+
+        why3::declaration::Attribute::Span(filename, lo.line, lo.col_display, hi.col_display)
+    }
 }
 
 pub fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {

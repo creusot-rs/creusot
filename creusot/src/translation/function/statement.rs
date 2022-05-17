@@ -122,11 +122,16 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     vec![self.translate_operand(l), self.translate_operand(r)],
                 )
             }
-            Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => BinaryOp(
-                binop_to_binop(*op),
-                box self.translate_operand(l),
-                box self.translate_operand(r),
-            ),
+            Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => {
+                Exp::Attr(
+                    self.ctx.span_attr(si.span),
+                    box BinaryOp(
+                        binop_to_binop(*op),
+                        box self.translate_operand(l),
+                        box self.translate_operand(r),
+                    ),
+                )
+            }
             Rvalue::UnaryOp(op, v) => UnaryOp(unop_to_unop(*op), box self.translate_operand(v)),
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;

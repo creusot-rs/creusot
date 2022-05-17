@@ -41,6 +41,7 @@ fn main() {
 
 fn run_creusot(file: &Path, contracts: &str) -> std::process::Command {
     let mut cmd = Command::cargo_bin("creusot-rustc").unwrap();
+    cmd.current_dir(file.parent().unwrap());
     let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     base_path.pop();
     base_path.push("target");
@@ -66,7 +67,7 @@ fn run_creusot(file: &Path, contracts: &str) -> std::process::Command {
     dep_path.push("deps");
 
     cmd.arg(format!("-Ldependency={}/", dep_path.display()));
-    cmd.arg(format!("{}", file.display()));
+    cmd.arg(file.file_name().unwrap());
     cmd.arg("--crate-type=lib");
     cmd
 }
