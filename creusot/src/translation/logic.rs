@@ -22,6 +22,12 @@ pub fn translate_logic_or_predicate<'tcx>(
         sig.retty = None;
     }
 
+    def_id
+        .as_local()
+        .map(|d| ctx.def_span(d))
+        .and_then(|span| ctx.span_attr(span))
+        .map(|attr| sig.attrs.push(attr));
+
     let sig_contract = sig.clone();
     sig.contract = Contract::new();
 
