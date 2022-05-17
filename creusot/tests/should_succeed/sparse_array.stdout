@@ -164,7 +164,7 @@ module SparseArray_Impl1_IsElt
   use seq.Seq
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = usize, type a = Type.alloc_alloc_global
   predicate is_elt (self : Type.sparsearray_sparse t) (i : int) = 
-    0 <= i && i < UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && UInt64.to_int (Seq.get (Model0.model (Type.sparsearray_sparse_Sparse_idx self)) i) < UInt64.to_int (Type.sparsearray_sparse_Sparse_n self) && UInt64.to_int (Seq.get (Model0.model (Type.sparsearray_sparse_Sparse_back self)) (UInt64.to_int (Seq.get (Model0.model (Type.sparsearray_sparse_Sparse_idx self)) i))) = i
+    [#"../sparse_array.rs" 52 4 36] 0 <= i && i < UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && UInt64.to_int (Seq.get (Model0.model (Type.sparsearray_sparse_Sparse_idx self)) i) < UInt64.to_int (Type.sparsearray_sparse_Sparse_n self) && UInt64.to_int (Seq.get (Model0.model (Type.sparsearray_sparse_Sparse_back self)) (UInt64.to_int (Seq.get (Model0.model (Type.sparsearray_sparse_Sparse_idx self)) i))) = i
 end
 module SparseArray_Impl0_Model_Interface
   type t
@@ -185,7 +185,7 @@ module SparseArray_Impl0_Model
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global
   clone SparseArray_Impl1_IsElt_Interface as IsElt0 with type t = t
   function model (self : Type.sparsearray_sparse t) : Seq.seq (Type.core_option_option t)
-  axiom model_spec : forall self : Type.sparsearray_sparse t . Seq.length (model self) = UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && (forall i : (int) . Seq.get (model self) i = (if IsElt0.is_elt self i then
+  axiom model_spec : forall self : Type.sparsearray_sparse t . ([#"../sparse_array.rs" 34 4 44] Seq.length (model self) = UInt64.to_int (Type.sparsearray_sparse_Sparse_size self)) && ([#"../sparse_array.rs" 35 4 6] forall i : (int) . Seq.get (model self) i = (if IsElt0.is_elt self i then
     Type.Core_Option_Option_Some (Seq.get (Model0.model (Type.sparsearray_sparse_Sparse_values self)) i)
   else
     Type.Core_Option_Option_None
@@ -218,7 +218,7 @@ module SparseArray_Impl1_SparseInv
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.sparsearray_sparse t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   predicate sparse_inv (self : Type.sparsearray_sparse t) = 
-    UInt64.to_int (Type.sparsearray_sparse_Sparse_n self) <= UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && Seq.length (Model0.model self) = UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && Seq.length (Model1.model (Type.sparsearray_sparse_Sparse_values self)) = UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && Seq.length (Model2.model (Type.sparsearray_sparse_Sparse_idx self)) = UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && Seq.length (Model2.model (Type.sparsearray_sparse_Sparse_back self)) = UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && (forall i : (int) . 0 <= i && i < UInt64.to_int (Type.sparsearray_sparse_Sparse_n self) -> match (Seq.get (Model2.model (Type.sparsearray_sparse_Sparse_back self)) i) with
+    [#"../sparse_array.rs" 62 4 32] UInt64.to_int (Type.sparsearray_sparse_Sparse_n self) <= UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && Seq.length (Model0.model self) = UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && Seq.length (Model1.model (Type.sparsearray_sparse_Sparse_values self)) = UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && Seq.length (Model2.model (Type.sparsearray_sparse_Sparse_idx self)) = UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && Seq.length (Model2.model (Type.sparsearray_sparse_Sparse_back self)) = UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && (forall i : (int) . 0 <= i && i < UInt64.to_int (Type.sparsearray_sparse_Sparse_n self) -> match (Seq.get (Model2.model (Type.sparsearray_sparse_Sparse_back self)) i) with
       | j -> 0 <= UInt64.to_int j && UInt64.to_int j < UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) && UInt64.to_int (Seq.get (Model2.model (Type.sparsearray_sparse_Sparse_idx self)) (UInt64.to_int j)) = i
       end)
 end
@@ -306,9 +306,9 @@ module SparseArray_Create_Interface
   clone SparseArray_Impl0_Model_Interface as Model0 with type t = t, predicate IsElt0.is_elt = IsElt0.is_elt,
   function Model0.model = Model1.model, axiom .
   val create [@cfg:stackify] (sz : usize) (dummy : t) : Type.sparsearray_sparse t
-    ensures { forall i : (int) . Seq.get (Model0.model result) i = Type.Core_Option_Option_None }
-    ensures { Type.sparsearray_sparse_Sparse_size result = sz }
-    ensures { SparseInv0.sparse_inv result }
+    ensures { [#"../sparse_array.rs" 137 0 47] forall i : (int) . Seq.get (Model0.model result) i = Type.Core_Option_Option_None }
+    ensures { [#"../sparse_array.rs" 136 0 29] Type.sparsearray_sparse_Sparse_size result = sz }
+    ensures { [#"../sparse_array.rs" 135 0 31] SparseInv0.sparse_inv result }
     
 end
 module SparseArray_Create
@@ -332,9 +332,9 @@ module SparseArray_Create
   clone Alloc_Vec_FromElem_Interface as FromElem1 with type t = usize, function Model0.model = Model3.model
   clone Alloc_Vec_FromElem_Interface as FromElem0 with type t = t, function Model0.model = Model1.model
   let rec cfg create [@cfg:stackify] (sz : usize) (dummy : t) : Type.sparsearray_sparse t
-    ensures { forall i : (int) . Seq.get (Model0.model result) i = Type.Core_Option_Option_None }
-    ensures { Type.sparsearray_sparse_Sparse_size result = sz }
-    ensures { SparseInv0.sparse_inv result }
+    ensures { [#"../sparse_array.rs" 137 0 47] forall i : (int) . Seq.get (Model0.model result) i = Type.Core_Option_Option_None }
+    ensures { [#"../sparse_array.rs" 136 0 29] Type.sparsearray_sparse_Sparse_size result = sz }
+    ensures { [#"../sparse_array.rs" 135 0 31] SparseInv0.sparse_inv result }
     
    = 
   var _0 : Type.sparsearray_sparse t;
@@ -359,17 +359,17 @@ module SparseArray_Create
     _5 <- dummy_2;
     assume { Resolve0.resolve dummy_2 };
     _6 <- sz_1;
-    _4 <- FromElem0.from_elem _5 _6;
+    _4 <- ([#"../sparse_array.rs" 143 16 41] FromElem0.from_elem _5 _6);
     goto BB1
   }
   BB1 {
     _8 <- sz_1;
-    _7 <- FromElem1.from_elem (0 : usize) _8;
+    _7 <- ([#"../sparse_array.rs" 145 13 34] FromElem1.from_elem (0 : usize) _8);
     goto BB2
   }
   BB2 {
     _10 <- sz_1;
-    _9 <- FromElem1.from_elem (0 : usize) _10;
+    _9 <- ([#"../sparse_array.rs" 147 14 35] FromElem1.from_elem (0 : usize) _10);
     goto BB3
   }
   BB3 {
@@ -898,13 +898,13 @@ module SparseArray_Impl1_Get_Interface
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.sparsearray_sparse t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   val get [@cfg:stackify] (self : Type.sparsearray_sparse t) (i : usize) : Type.core_option_option t
-    requires {UInt64.to_int i < Seq.length (Model0.model self)}
-    requires {SparseInv0.sparse_inv self}
-    ensures { match (Seq.get (Model0.model self) (UInt64.to_int i)) with
+    requires {[#"../sparse_array.rs" 80 4 35] UInt64.to_int i < Seq.length (Model0.model self)}
+    requires {[#"../sparse_array.rs" 79 4 34] SparseInv0.sparse_inv self}
+    ensures { [#"../sparse_array.rs" 85 4 7] match (Seq.get (Model0.model self) (UInt64.to_int i)) with
       | Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None
       | Type.Core_Option_Option_Some x -> true
       end }
-    ensures { match (result) with
+    ensures { [#"../sparse_array.rs" 81 4 7] match (result) with
       | Type.Core_Option_Option_None -> Seq.get (Model0.model self) (UInt64.to_int i) = Type.Core_Option_Option_None
       | Type.Core_Option_Option_Some x -> Seq.get (Model0.model self) (UInt64.to_int i) = Type.Core_Option_Option_Some x
       end }
@@ -945,13 +945,13 @@ module SparseArray_Impl1_Get
   function Model0.model = Model2.model, predicate InBounds0.in_bounds = InBounds1.in_bounds,
   predicate HasValue0.has_value = HasValue1.has_value, type Output0.output = Output1.output
   let rec cfg get [@cfg:stackify] (self : Type.sparsearray_sparse t) (i : usize) : Type.core_option_option t
-    requires {UInt64.to_int i < Seq.length (Model0.model self)}
-    requires {SparseInv0.sparse_inv self}
-    ensures { match (Seq.get (Model0.model self) (UInt64.to_int i)) with
+    requires {[#"../sparse_array.rs" 80 4 35] UInt64.to_int i < Seq.length (Model0.model self)}
+    requires {[#"../sparse_array.rs" 79 4 34] SparseInv0.sparse_inv self}
+    ensures { [#"../sparse_array.rs" 85 4 7] match (Seq.get (Model0.model self) (UInt64.to_int i)) with
       | Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None
       | Type.Core_Option_Option_Some x -> true
       end }
-    ensures { match (result) with
+    ensures { [#"../sparse_array.rs" 81 4 7] match (result) with
       | Type.Core_Option_Option_None -> Seq.get (Model0.model self) (UInt64.to_int i) = Type.Core_Option_Option_None
       | Type.Core_Option_Option_Some x -> Seq.get (Model0.model self) (UInt64.to_int i) = Type.Core_Option_Option_Some x
       end }
@@ -987,14 +987,14 @@ module SparseArray_Impl1_Get
   BB0 {
     _5 <- Type.sparsearray_sparse_Sparse_idx self_1;
     _6 <- i_2;
-    _4 <- Index0.index _5 _6;
+    _4 <- ([#"../sparse_array.rs" 90 20 31] Index0.index _5 _6);
     goto BB1
   }
   BB1 {
     index_3 <- _4;
     _9 <- index_3;
     _10 <- Type.sparsearray_sparse_Sparse_n self_1;
-    _8 <- _9 < _10;
+    _8 <- ([#"../sparse_array.rs" 91 11 25] _9 < _10);
     switch (_8)
       | False -> goto BB2
       | _ -> goto BB3
@@ -1007,7 +1007,7 @@ module SparseArray_Impl1_Get
   BB3 {
     _14 <- Type.sparsearray_sparse_Sparse_back self_1;
     _15 <- index_3;
-    _13 <- Index0.index _14 _15;
+    _13 <- ([#"../sparse_array.rs" 91 29 45] Index0.index _14 _15);
     goto BB5
   }
   BB4 {
@@ -1019,7 +1019,7 @@ module SparseArray_Impl1_Get
   BB5 {
     _12 <- _13;
     _16 <- i_2;
-    _11 <- _12 = _16;
+    _11 <- ([#"../sparse_array.rs" 91 29 50] _12 = _16);
     _7 <- _11;
     goto BB4
   }
@@ -1027,7 +1027,7 @@ module SparseArray_Impl1_Get
     _20 <- Type.sparsearray_sparse_Sparse_values self_1;
     assume { Resolve0.resolve self_1 };
     _21 <- i_2;
-    _19 <- Index1.index _20 _21;
+    _19 <- ([#"../sparse_array.rs" 92 18 32] Index1.index _20 _21);
     goto BB7
   }
   BB7 {
@@ -1067,8 +1067,8 @@ module SparseArray_Impl1_LemmaPermutation
   clone SparseArray_Impl1_IsElt_Interface as IsElt0 with type t = t
   clone SparseArray_Impl1_SparseInv_Interface as SparseInv0 with type t = t
   function lemma_permutation (self : Type.sparsearray_sparse t) (i : int) : () = 
-    ()
-  axiom lemma_permutation_spec : forall self : Type.sparsearray_sparse t, i : int . 0 <= i && i < UInt64.to_int (Type.sparsearray_sparse_Sparse_size self) -> Type.sparsearray_sparse_Sparse_n self = Type.sparsearray_sparse_Sparse_size self -> SparseInv0.sparse_inv self -> IsElt0.is_elt self i
+    [#"../sparse_array.rs" 105 4 38] ()
+  axiom lemma_permutation_spec : forall self : Type.sparsearray_sparse t, i : int . ([#"../sparse_array.rs" 103 4 43] 0 <= i && i < UInt64.to_int (Type.sparsearray_sparse_Sparse_size self)) -> ([#"../sparse_array.rs" 102 4 36] Type.sparsearray_sparse_Sparse_n self = Type.sparsearray_sparse_Sparse_size self) -> ([#"../sparse_array.rs" 101 4 34] SparseInv0.sparse_inv self) -> ([#"../sparse_array.rs" 104 4 30] IsElt0.is_elt self i)
 end
 module SparseArray_Impl1_LemmaPermutation_Impl
   type t
@@ -1088,13 +1088,13 @@ module SparseArray_Impl1_LemmaPermutation_Impl
   clone SparseArray_Impl1_SparseInv as SparseInv0 with type t = t, function Model0.model = Model0.model,
   function Model1.model = Model1.model, function Model2.model = Model2.model
   let rec ghost function lemma_permutation (self : Type.sparsearray_sparse t) (i : int) : ()
-    requires {0 <= i && i < UInt64.to_int (Type.sparsearray_sparse_Sparse_size self)}
-    requires {Type.sparsearray_sparse_Sparse_n self = Type.sparsearray_sparse_Sparse_size self}
-    requires {SparseInv0.sparse_inv self}
-    ensures { IsElt0.is_elt self i }
+    requires {[#"../sparse_array.rs" 103 4 43] 0 <= i && i < UInt64.to_int (Type.sparsearray_sparse_Sparse_size self)}
+    requires {[#"../sparse_array.rs" 102 4 36] Type.sparsearray_sparse_Sparse_n self = Type.sparsearray_sparse_Sparse_size self}
+    requires {[#"../sparse_array.rs" 101 4 34] SparseInv0.sparse_inv self}
+    ensures { [#"../sparse_array.rs" 104 4 30] IsElt0.is_elt self i }
     
    = 
-    ()
+    [#"../sparse_array.rs" 105 4 38] ()
 end
 module Core_Ops_Index_IndexMut_IndexMut_Interface
   type self
@@ -1217,12 +1217,12 @@ module SparseArray_Impl1_Set_Interface
   clone SparseArray_Impl0_Model_Interface as Model0 with type t = t, predicate IsElt0.is_elt = IsElt0.is_elt,
   function Model0.model = Model1.model, axiom .
   val set [@cfg:stackify] (self : borrowed (Type.sparsearray_sparse t)) (i : usize) (v : t) : ()
-    requires {UInt64.to_int i < Seq.length (Model0.model ( * self))}
-    requires {SparseInv0.sparse_inv ( * self)}
-    ensures { Seq.get (Model0.model ( ^ self)) (UInt64.to_int i) = Type.Core_Option_Option_Some v }
-    ensures { forall j : (int) . j <> UInt64.to_int i -> Seq.get (Model0.model ( ^ self)) j = Seq.get (Model0.model ( * self)) j }
-    ensures { Seq.length (Model0.model ( ^ self)) = Seq.length (Model0.model ( * self)) }
-    ensures { SparseInv0.sparse_inv ( ^ self) }
+    requires {[#"../sparse_array.rs" 110 4 36] UInt64.to_int i < Seq.length (Model0.model ( * self))}
+    requires {[#"../sparse_array.rs" 109 4 37] SparseInv0.sparse_inv ( * self)}
+    ensures { [#"../sparse_array.rs" 114 4 39] Seq.get (Model0.model ( ^ self)) (UInt64.to_int i) = Type.Core_Option_Option_Some v }
+    ensures { [#"../sparse_array.rs" 113 4 69] forall j : (int) . j <> UInt64.to_int i -> Seq.get (Model0.model ( ^ self)) j = Seq.get (Model0.model ( * self)) j }
+    ensures { [#"../sparse_array.rs" 112 4 48] Seq.length (Model0.model ( ^ self)) = Seq.length (Model0.model ( * self)) }
+    ensures { [#"../sparse_array.rs" 111 4 36] SparseInv0.sparse_inv ( ^ self) }
     
 end
 module SparseArray_Impl1_Set
@@ -1273,12 +1273,12 @@ module SparseArray_Impl1_Set
   predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere,
   predicate HasValue0.has_value = HasValue0.has_value, type Output0.output = Output0.output
   let rec cfg set [@cfg:stackify] (self : borrowed (Type.sparsearray_sparse t)) (i : usize) (v : t) : ()
-    requires {UInt64.to_int i < Seq.length (Model0.model ( * self))}
-    requires {SparseInv0.sparse_inv ( * self)}
-    ensures { Seq.get (Model0.model ( ^ self)) (UInt64.to_int i) = Type.Core_Option_Option_Some v }
-    ensures { forall j : (int) . j <> UInt64.to_int i -> Seq.get (Model0.model ( ^ self)) j = Seq.get (Model0.model ( * self)) j }
-    ensures { Seq.length (Model0.model ( ^ self)) = Seq.length (Model0.model ( * self)) }
-    ensures { SparseInv0.sparse_inv ( ^ self) }
+    requires {[#"../sparse_array.rs" 110 4 36] UInt64.to_int i < Seq.length (Model0.model ( * self))}
+    requires {[#"../sparse_array.rs" 109 4 37] SparseInv0.sparse_inv ( * self)}
+    ensures { [#"../sparse_array.rs" 114 4 39] Seq.get (Model0.model ( ^ self)) (UInt64.to_int i) = Type.Core_Option_Option_Some v }
+    ensures { [#"../sparse_array.rs" 113 4 69] forall j : (int) . j <> UInt64.to_int i -> Seq.get (Model0.model ( ^ self)) j = Seq.get (Model0.model ( * self)) j }
+    ensures { [#"../sparse_array.rs" 112 4 48] Seq.length (Model0.model ( ^ self)) = Seq.length (Model0.model ( * self)) }
+    ensures { [#"../sparse_array.rs" 111 4 36] SparseInv0.sparse_inv ( ^ self) }
     
    = 
   var _0 : ();
@@ -1329,7 +1329,7 @@ module SparseArray_Impl1_Set
     _6 <- borrow_mut (Type.sparsearray_sparse_Sparse_values ( * self_1));
     self_1 <- { self_1 with current = (let Type.SparseArray_Sparse a b c d e =  * self_1 in Type.SparseArray_Sparse a b ( ^ _6) d e) };
     _7 <- i_2;
-    _5 <- IndexMut0.index_mut _6 _7;
+    _5 <- ([#"../sparse_array.rs" 116 8 22] IndexMut0.index_mut _6 _7);
     goto BB2
   }
   BB2 {
@@ -1344,14 +1344,14 @@ module SparseArray_Impl1_Set
   BB4 {
     _10 <- Type.sparsearray_sparse_Sparse_idx ( * self_1);
     _11 <- i_2;
-    _9 <- Index0.index _10 _11;
+    _9 <- ([#"../sparse_array.rs" 117 20 31] Index0.index _10 _11);
     goto BB5
   }
   BB5 {
     index_8 <- _9;
     _15 <- index_8;
     _16 <- Type.sparsearray_sparse_Sparse_n ( * self_1);
-    _14 <- _15 < _16;
+    _14 <- ([#"../sparse_array.rs" 118 13 27] _15 < _16);
     switch (_14)
       | False -> goto BB6
       | _ -> goto BB7
@@ -1364,7 +1364,7 @@ module SparseArray_Impl1_Set
   BB7 {
     _20 <- Type.sparsearray_sparse_Sparse_back ( * self_1);
     _21 <- index_8;
-    _19 <- Index0.index _20 _21;
+    _19 <- ([#"../sparse_array.rs" 118 31 47] Index0.index _20 _21);
     goto BB9
   }
   BB8 {
@@ -1377,20 +1377,20 @@ module SparseArray_Impl1_Set
   BB9 {
     _18 <- _19;
     _22 <- i_2;
-    _17 <- _18 = _22;
+    _17 <- ([#"../sparse_array.rs" 118 31 52] _18 = _22);
     _13 <- _17;
     goto BB8
   }
   BB10 {
-    assert { let _ = LemmaPermutation0.lemma_permutation ( * self_1) (UInt64.to_int i_2) in true };
+    assert { [#"../sparse_array.rs" 120 12 61] let _ = LemmaPermutation0.lemma_permutation ( * self_1) (UInt64.to_int i_2) in true };
     _23 <- ();
-    assert { UInt64.to_int (Type.sparsearray_sparse_Sparse_n ( * self_1)) < UInt64.to_int (Type.sparsearray_sparse_Sparse_size ( * self_1)) };
+    assert { [#"../sparse_array.rs" 121 12 51] UInt64.to_int (Type.sparsearray_sparse_Sparse_n ( * self_1)) < UInt64.to_int (Type.sparsearray_sparse_Sparse_size ( * self_1)) };
     _24 <- ();
     _25 <- Type.sparsearray_sparse_Sparse_n ( * self_1);
     _27 <- borrow_mut (Type.sparsearray_sparse_Sparse_idx ( * self_1));
     self_1 <- { self_1 with current = (let Type.SparseArray_Sparse a b c d e =  * self_1 in Type.SparseArray_Sparse a b c ( ^ _27) e) };
     _28 <- i_2;
-    _26 <- IndexMut1.index_mut _27 _28;
+    _26 <- ([#"../sparse_array.rs" 123 12 23] IndexMut1.index_mut _27 _28);
     goto BB11
   }
   BB11 {
@@ -1400,13 +1400,13 @@ module SparseArray_Impl1_Set
     _31 <- borrow_mut (Type.sparsearray_sparse_Sparse_back ( * self_1));
     self_1 <- { self_1 with current = (let Type.SparseArray_Sparse a b c d e =  * self_1 in Type.SparseArray_Sparse a b c d ( ^ _31)) };
     _32 <- Type.sparsearray_sparse_Sparse_n ( * self_1);
-    _30 <- IndexMut1.index_mut _31 _32;
+    _30 <- ([#"../sparse_array.rs" 124 12 29] IndexMut1.index_mut _31 _32);
     goto BB12
   }
   BB12 {
     _30 <- { _30 with current = _29 };
     assume { Resolve2.resolve _30 };
-    self_1 <- { self_1 with current = (let Type.SparseArray_Sparse a b c d e =  * self_1 in Type.SparseArray_Sparse a (Type.sparsearray_sparse_Sparse_n ( * self_1) + (1 : usize)) c d e) };
+    self_1 <- { self_1 with current = (let Type.SparseArray_Sparse a b c d e =  * self_1 in Type.SparseArray_Sparse a ([#"../sparse_array.rs" 125 12 23] Type.sparsearray_sparse_Sparse_n ( * self_1) + (1 : usize)) c d e) };
     assume { Resolve3.resolve self_1 };
     _0 <- ();
     goto BB14
@@ -1497,102 +1497,102 @@ module SparseArray_Main
   BB0 {
     default_1 <- (0 : int32);
     _3 <- default_1;
-    a_2 <- Create0.create (10 : usize) _3;
+    a_2 <- ([#"../sparse_array.rs" 155 16 35] Create0.create (10 : usize) _3);
     goto BB1
   }
   BB1 {
     _5 <- default_1;
-    b_4 <- Create0.create (20 : usize) _5;
+    b_4 <- ([#"../sparse_array.rs" 156 16 35] Create0.create (20 : usize) _5);
     goto BB2
   }
   BB2 {
     _7 <- a_2;
-    x_6 <- Get0.get _7 (5 : usize);
+    x_6 <- ([#"../sparse_array.rs" 157 16 24] Get0.get _7 (5 : usize));
     goto BB3
   }
   BB3 {
     _9 <- b_4;
-    y_8 <- Get0.get _9 (7 : usize);
+    y_8 <- ([#"../sparse_array.rs" 158 16 24] Get0.get _9 (7 : usize));
     goto BB4
   }
   BB4 {
-    assert { x_6 = Type.Core_Option_Option_None && y_8 = Type.Core_Option_Option_None };
+    assert { [#"../sparse_array.rs" 159 4 41] x_6 = Type.Core_Option_Option_None && y_8 = Type.Core_Option_Option_None };
     _10 <- ();
     _12 <- borrow_mut a_2;
     a_2 <-  ^ _12;
-    _11 <- Set0.set _12 (5 : usize) (1 : int32);
+    _11 <- ([#"../sparse_array.rs" 161 4 15] Set0.set _12 (5 : usize) (1 : int32));
     goto BB5
   }
   BB5 {
     _14 <- borrow_mut b_4;
     b_4 <-  ^ _14;
-    _13 <- Set0.set _14 (7 : usize) (2 : int32);
+    _13 <- ([#"../sparse_array.rs" 162 4 15] Set0.set _14 (7 : usize) (2 : int32));
     goto BB6
   }
   BB6 {
     _16 <- a_2;
-    _15 <- Get0.get _16 (5 : usize);
+    _15 <- ([#"../sparse_array.rs" 163 8 16] Get0.get _16 (5 : usize));
     goto BB7
   }
   BB7 {
     x_6 <- _15;
     _18 <- b_4;
-    _17 <- Get0.get _18 (7 : usize);
+    _17 <- ([#"../sparse_array.rs" 164 8 16] Get0.get _18 (7 : usize));
     goto BB8
   }
   BB8 {
     y_8 <- _17;
-    assert { match (x_6) with
+    assert { [#"../sparse_array.rs" 165 4 6] match (x_6) with
       | Type.Core_Option_Option_None -> false
       | Type.Core_Option_Option_Some z -> Model0.model z = 1
       end };
     _19 <- ();
-    assert { match (y_8) with
+    assert { [#"../sparse_array.rs" 169 4 6] match (y_8) with
       | Type.Core_Option_Option_None -> false
       | Type.Core_Option_Option_Some z -> Model0.model z = 2
       end };
     _20 <- ();
     _22 <- a_2;
-    _21 <- Get0.get _22 (7 : usize);
+    _21 <- ([#"../sparse_array.rs" 174 8 16] Get0.get _22 (7 : usize));
     goto BB9
   }
   BB9 {
     x_6 <- _21;
     _24 <- b_4;
-    _23 <- Get0.get _24 (5 : usize);
+    _23 <- ([#"../sparse_array.rs" 175 8 16] Get0.get _24 (5 : usize));
     goto BB10
   }
   BB10 {
     y_8 <- _23;
-    assert { x_6 = Type.Core_Option_Option_None && y_8 = Type.Core_Option_Option_None };
+    assert { [#"../sparse_array.rs" 176 4 41] x_6 = Type.Core_Option_Option_None && y_8 = Type.Core_Option_Option_None };
     _25 <- ();
     _27 <- a_2;
-    _26 <- Get0.get _27 (0 : usize);
+    _26 <- ([#"../sparse_array.rs" 178 8 16] Get0.get _27 (0 : usize));
     goto BB11
   }
   BB11 {
     x_6 <- _26;
     _29 <- b_4;
-    _28 <- Get0.get _29 (0 : usize);
+    _28 <- ([#"../sparse_array.rs" 179 8 16] Get0.get _29 (0 : usize));
     goto BB12
   }
   BB12 {
     y_8 <- _28;
-    assert { x_6 = Type.Core_Option_Option_None && y_8 = Type.Core_Option_Option_None };
+    assert { [#"../sparse_array.rs" 180 4 41] x_6 = Type.Core_Option_Option_None && y_8 = Type.Core_Option_Option_None };
     _30 <- ();
     _32 <- a_2;
-    _31 <- Get0.get _32 (9 : usize);
+    _31 <- ([#"../sparse_array.rs" 182 8 16] Get0.get _32 (9 : usize));
     goto BB13
   }
   BB13 {
     x_6 <- _31;
     _34 <- b_4;
-    _33 <- Get0.get _34 (9 : usize);
+    _33 <- ([#"../sparse_array.rs" 183 8 16] Get0.get _34 (9 : usize));
     goto BB14
   }
   BB14 {
     y_8 <- _33;
-    assert { x_6 = Type.Core_Option_Option_None && y_8 = Type.Core_Option_Option_None };
+    assert { [#"../sparse_array.rs" 184 4 41] x_6 = Type.Core_Option_Option_None && y_8 = Type.Core_Option_Option_None };
     _0 <- ();
     goto BB15
   }

@@ -51,7 +51,7 @@ module HeapsortGeneric_Parent
   use mach.int.Int
   use mach.int.Int32
   function parent (i : int) : int = 
-    div (i + 1) 2 - 1
+    [#"../heapsort_generic.rs" 10 0 24] div (i + 1) 2 - 1
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface
   type self
@@ -87,7 +87,7 @@ module HeapsortGeneric_HeapFrag
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
   clone HeapsortGeneric_Parent_Interface as Parent0
   predicate heap_frag (s : Seq.seq t) (start : int) (end' : int) = 
-    forall i : (int) . start <= Parent0.parent i && i < end' -> LeLog0.le_log (Seq.get s i) (Seq.get s (Parent0.parent i))
+    [#"../heapsort_generic.rs" 15 0 66] forall i : (int) . start <= Parent0.parent i && i < end' -> LeLog0.le_log (Seq.get s i) (Seq.get s (Parent0.parent i))
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Interface
   type self
@@ -265,12 +265,12 @@ module HeapsortGeneric_HeapFragMax
   clone HeapsortGeneric_HeapFrag_Interface as HeapFrag0 with type t = t
   clone HeapsortGeneric_Parent_Interface as Parent0
   function heap_frag_max (s : Seq.seq t) (i : int) (end' : int) : ()
-  axiom def : forall s : Seq.seq t, i : int, end' : int . heap_frag_max s i end' = (if i > 0 then
+  axiom def : forall s : Seq.seq t, i : int, end' : int . heap_frag_max s i end' = ([#"../heapsort_generic.rs" 25 0 58] if i > 0 then
     heap_frag_max s (Parent0.parent i) end'
   else
     ()
   )
-  axiom heap_frag_max_spec : forall s : Seq.seq t, i : int, end' : int . 0 <= i && i < end' -> HeapFrag0.heap_frag s 0 end' -> LeLog0.le_log (Seq.get s i) (Seq.get s 0)
+  axiom heap_frag_max_spec : forall s : Seq.seq t, i : int, end' : int . ([#"../heapsort_generic.rs" 22 0 30] 0 <= i && i < end') -> ([#"../heapsort_generic.rs" 21 0 33] HeapFrag0.heap_frag s 0 end') -> ([#"../heapsort_generic.rs" 23 0 24] LeLog0.le_log (Seq.get s i) (Seq.get s 0))
 end
 module HeapsortGeneric_HeapFragMax_Impl
   type t
@@ -308,13 +308,13 @@ module HeapsortGeneric_HeapFragMax_Impl
   clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, function Parent0.parent = Parent0.parent,
   predicate LeLog0.le_log = LeLog0.le_log
   let rec ghost function heap_frag_max (s : Seq.seq t) (i : int) (end' : int) : ()
-    requires {0 <= i && i < end'}
-    requires {HeapFrag0.heap_frag s 0 end'}
-    ensures { LeLog0.le_log (Seq.get s i) (Seq.get s 0) }
-    variant {i}
+    requires {[#"../heapsort_generic.rs" 22 0 30] 0 <= i && i < end'}
+    requires {[#"../heapsort_generic.rs" 21 0 33] HeapFrag0.heap_frag s 0 end'}
+    ensures { [#"../heapsort_generic.rs" 23 0 24] LeLog0.le_log (Seq.get s i) (Seq.get s 0) }
+    variant {[#"../heapsort_generic.rs" 24 0 13] i}
     
    = 
-    if i > 0 then let b' = Parent0.parent i in heap_frag_max s b' end' else ()
+    [#"../heapsort_generic.rs" 25 0 58] if i > 0 then let b' = Parent0.parent i in heap_frag_max s b' end' else ()
 end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   type t
@@ -1176,13 +1176,13 @@ module HeapsortGeneric_SiftDown_Interface
   clone HeapsortGeneric_HeapFrag_Interface as HeapFrag0 with type t = t
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global
   val sift_down [@cfg:stackify] (v : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))) (start : usize) (end' : usize) : ()
-    requires {UInt64.to_int end' <= Seq.length (Model0.model ( * v))}
-    requires {UInt64.to_int start < UInt64.to_int end'}
-    requires {HeapFrag0.heap_frag (Model0.model ( * v)) (UInt64.to_int start + 1) (UInt64.to_int end')}
-    ensures { forall m : (t) . (forall j : (int) . UInt64.to_int start <= j && j < UInt64.to_int end' -> LeLog0.le_log (Seq.get (Model1.model v) j) m) -> (forall j : (int) . UInt64.to_int start <= j && j < UInt64.to_int end' -> LeLog0.le_log (Seq.get (Model0.model ( ^ v)) j) m) }
-    ensures { forall i : (int) . 0 <= i && i < UInt64.to_int start || UInt64.to_int end' <= i && i < Seq.length (Model1.model v) -> Seq.get (Model1.model v) i = Seq.get (Model0.model ( ^ v)) i }
-    ensures { PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
-    ensures { HeapFrag0.heap_frag (Model0.model ( ^ v)) (UInt64.to_int start) (UInt64.to_int end') }
+    requires {[#"../heapsort_generic.rs" 33 0 32] UInt64.to_int end' <= Seq.length (Model0.model ( * v))}
+    requires {[#"../heapsort_generic.rs" 32 0 26] UInt64.to_int start < UInt64.to_int end'}
+    requires {[#"../heapsort_generic.rs" 31 0 45] HeapFrag0.heap_frag (Model0.model ( * v)) (UInt64.to_int start + 1) (UInt64.to_int end')}
+    ensures { [#"../heapsort_generic.rs" 38 0 68] forall m : (t) . (forall j : (int) . UInt64.to_int start <= j && j < UInt64.to_int end' -> LeLog0.le_log (Seq.get (Model1.model v) j) m) -> (forall j : (int) . UInt64.to_int start <= j && j < UInt64.to_int end' -> LeLog0.le_log (Seq.get (Model0.model ( ^ v)) j) m) }
+    ensures { [#"../heapsort_generic.rs" 36 0 47] forall i : (int) . 0 <= i && i < UInt64.to_int start || UInt64.to_int end' <= i && i < Seq.length (Model1.model v) -> Seq.get (Model1.model v) i = Seq.get (Model0.model ( ^ v)) i }
+    ensures { [#"../heapsort_generic.rs" 35 0 36] PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
+    ensures { [#"../heapsort_generic.rs" 34 0 40] HeapFrag0.heap_frag (Model0.model ( ^ v)) (UInt64.to_int start) (UInt64.to_int end') }
     
 end
 module HeapsortGeneric_SiftDown
@@ -1253,13 +1253,13 @@ module HeapsortGeneric_SiftDown
   function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
   predicate HasValue0.has_value = HasValue0.has_value, type Output0.output = Output0.output
   let rec cfg sift_down [@cfg:stackify] (v : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))) (start : usize) (end' : usize) : ()
-    requires {UInt64.to_int end' <= Seq.length (Model0.model ( * v))}
-    requires {UInt64.to_int start < UInt64.to_int end'}
-    requires {HeapFrag0.heap_frag (Model0.model ( * v)) (UInt64.to_int start + 1) (UInt64.to_int end')}
-    ensures { forall m : (t) . (forall j : (int) . UInt64.to_int start <= j && j < UInt64.to_int end' -> LeLog0.le_log (Seq.get (Model1.model v) j) m) -> (forall j : (int) . UInt64.to_int start <= j && j < UInt64.to_int end' -> LeLog0.le_log (Seq.get (Model0.model ( ^ v)) j) m) }
-    ensures { forall i : (int) . 0 <= i && i < UInt64.to_int start || UInt64.to_int end' <= i && i < Seq.length (Model1.model v) -> Seq.get (Model1.model v) i = Seq.get (Model0.model ( ^ v)) i }
-    ensures { PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
-    ensures { HeapFrag0.heap_frag (Model0.model ( ^ v)) (UInt64.to_int start) (UInt64.to_int end') }
+    requires {[#"../heapsort_generic.rs" 33 0 32] UInt64.to_int end' <= Seq.length (Model0.model ( * v))}
+    requires {[#"../heapsort_generic.rs" 32 0 26] UInt64.to_int start < UInt64.to_int end'}
+    requires {[#"../heapsort_generic.rs" 31 0 45] HeapFrag0.heap_frag (Model0.model ( * v)) (UInt64.to_int start + 1) (UInt64.to_int end')}
+    ensures { [#"../heapsort_generic.rs" 38 0 68] forall m : (t) . (forall j : (int) . UInt64.to_int start <= j && j < UInt64.to_int end' -> LeLog0.le_log (Seq.get (Model1.model v) j) m) -> (forall j : (int) . UInt64.to_int start <= j && j < UInt64.to_int end' -> LeLog0.le_log (Seq.get (Model0.model ( ^ v)) j) m) }
+    ensures { [#"../heapsort_generic.rs" 36 0 47] forall i : (int) . 0 <= i && i < UInt64.to_int start || UInt64.to_int end' <= i && i < Seq.length (Model1.model v) -> Seq.get (Model1.model v) i = Seq.get (Model0.model ( ^ v)) i }
+    ensures { [#"../heapsort_generic.rs" 35 0 36] PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
+    ensures { [#"../heapsort_generic.rs" 34 0 40] HeapFrag0.heap_frag (Model0.model ( ^ v)) (UInt64.to_int start) (UInt64.to_int end') }
     
    = 
   var _0 : ();
@@ -1328,7 +1328,7 @@ module HeapsortGeneric_SiftDown
     _6 <- v_1;
     _5 <- _6;
     assume { Resolve0.resolve _6 };
-    old_v_4 <- Record0.record _5;
+    old_v_4 <- ([#"../heapsort_generic.rs" 42 16 33] Record0.record _5);
     goto BB1
   }
   BB1 {
@@ -1337,23 +1337,23 @@ module HeapsortGeneric_SiftDown
     goto BB2
   }
   BB2 {
-    invariant proph_const {  ^ v_1 =  ^ Model2.model old_v_4 };
-    invariant permutation { PermutationOf0.permutation_of (Model1.model v_1) (Model1.model (Model2.model old_v_4)) };
-    invariant i_bounds { UInt64.to_int start_2 <= UInt64.to_int i_7 && UInt64.to_int i_7 < UInt64.to_int end'_3 };
-    invariant unchanged { forall j : (int) . 0 <= j && j < UInt64.to_int start_2 || UInt64.to_int end'_3 <= j && j < Seq.length (Model1.model v_1) -> Seq.get (Model1.model (Model2.model old_v_4)) j = Seq.get (Model1.model v_1) j };
-    invariant keep_bound { forall m : (t) . (forall j : (int) . UInt64.to_int start_2 <= j && j < UInt64.to_int end'_3 -> LeLog0.le_log (Seq.get (Model1.model (Model2.model old_v_4)) j) m) -> (forall j : (int) . UInt64.to_int start_2 <= j && j < UInt64.to_int end'_3 -> LeLog0.le_log (Seq.get (Model1.model v_1) j) m) };
-    invariant heap { forall j : (int) . UInt64.to_int start_2 <= Parent0.parent j && j < UInt64.to_int end'_3 && UInt64.to_int i_7 <> Parent0.parent j -> LeLog0.le_log (Seq.get (Model1.model v_1) j) (Seq.get (Model1.model v_1) (Parent0.parent j)) };
-    invariant hole_left { let c = 2 * UInt64.to_int i_7 + 1 in c < UInt64.to_int end'_3 && UInt64.to_int start_2 <= Parent0.parent (UInt64.to_int i_7) -> LeLog0.le_log (Seq.get (Model1.model v_1) c) (Seq.get (Model1.model v_1) (Parent0.parent (Parent0.parent c))) };
-    invariant hole_right { let c = 2 * UInt64.to_int i_7 + 2 in c < UInt64.to_int end'_3 && UInt64.to_int start_2 <= Parent0.parent (UInt64.to_int i_7) -> LeLog0.le_log (Seq.get (Model1.model v_1) c) (Seq.get (Model1.model v_1) (Parent0.parent (Parent0.parent c))) };
+    invariant proph_const { [#"../heapsort_generic.rs" 45 4 44]  ^ v_1 =  ^ Model2.model old_v_4 };
+    invariant permutation { [#"../heapsort_generic.rs" 46 4 59] PermutationOf0.permutation_of (Model1.model v_1) (Model1.model (Model2.model old_v_4)) };
+    invariant i_bounds { [#"../heapsort_generic.rs" 47 4 53] UInt64.to_int start_2 <= UInt64.to_int i_7 && UInt64.to_int i_7 < UInt64.to_int end'_3 };
+    invariant unchanged { [#"../heapsort_generic.rs" 48 4 59] forall j : (int) . 0 <= j && j < UInt64.to_int start_2 || UInt64.to_int end'_3 <= j && j < Seq.length (Model1.model v_1) -> Seq.get (Model1.model (Model2.model old_v_4)) j = Seq.get (Model1.model v_1) j };
+    invariant keep_bound { [#"../heapsort_generic.rs" 50 4 67] forall m : (t) . (forall j : (int) . UInt64.to_int start_2 <= j && j < UInt64.to_int end'_3 -> LeLog0.le_log (Seq.get (Model1.model (Model2.model old_v_4)) j) m) -> (forall j : (int) . UInt64.to_int start_2 <= j && j < UInt64.to_int end'_3 -> LeLog0.le_log (Seq.get (Model1.model v_1) j) m) };
+    invariant heap { [#"../heapsort_generic.rs" 53 4 40] forall j : (int) . UInt64.to_int start_2 <= Parent0.parent j && j < UInt64.to_int end'_3 && UInt64.to_int i_7 <> Parent0.parent j -> LeLog0.le_log (Seq.get (Model1.model v_1) j) (Seq.get (Model1.model v_1) (Parent0.parent j)) };
+    invariant hole_left { [#"../heapsort_generic.rs" 55 4 119] let c = 2 * UInt64.to_int i_7 + 1 in c < UInt64.to_int end'_3 && UInt64.to_int start_2 <= Parent0.parent (UInt64.to_int i_7) -> LeLog0.le_log (Seq.get (Model1.model v_1) c) (Seq.get (Model1.model v_1) (Parent0.parent (Parent0.parent c))) };
+    invariant hole_right { [#"../heapsort_generic.rs" 56 4 119] let c = 2 * UInt64.to_int i_7 + 2 in c < UInt64.to_int end'_3 && UInt64.to_int start_2 <= Parent0.parent (UInt64.to_int i_7) -> LeLog0.le_log (Seq.get (Model1.model v_1) c) (Seq.get (Model1.model v_1) (Parent0.parent (Parent0.parent c))) };
     _12 <- i_7;
     _14 <- end'_3;
-    _15 <- (2 : usize) = (0 : usize);
+    _15 <- ([#"../heapsort_generic.rs" 58 16 23] (2 : usize) = (0 : usize));
     assert { not _15 };
     goto BB3
   }
   BB3 {
-    _13 <- _14 / (2 : usize);
-    _11 <- _12 >= _13;
+    _13 <- ([#"../heapsort_generic.rs" 58 16 23] _14 / (2 : usize));
+    _11 <- ([#"../heapsort_generic.rs" 58 11 23] _12 >= _13);
     switch (_11)
       | False -> goto BB5
       | _ -> goto BB4
@@ -1367,12 +1367,12 @@ module HeapsortGeneric_SiftDown
   BB5 {
     _10 <- ();
     _19 <- i_7;
-    _18 <- (2 : usize) * _19;
-    child_17 <- _18 + (1 : usize);
+    _18 <- ([#"../heapsort_generic.rs" 62 24 29] (2 : usize) * _19);
+    child_17 <- ([#"../heapsort_generic.rs" 62 24 33] _18 + (1 : usize));
     _24 <- child_17;
-    _23 <- _24 + (1 : usize);
+    _23 <- ([#"../heapsort_generic.rs" 63 11 20] _24 + (1 : usize));
     _25 <- end'_3;
-    _22 <- _23 < _25;
+    _22 <- ([#"../heapsort_generic.rs" 63 11 26] _23 < _25);
     switch (_22)
       | False -> goto BB6
       | _ -> goto BB7
@@ -1385,7 +1385,7 @@ module HeapsortGeneric_SiftDown
   BB7 {
     _29 <-  * v_1;
     _30 <- child_17;
-    _28 <- Index0.index _29 _30;
+    _28 <- ([#"../heapsort_generic.rs" 63 30 38] Index0.index _29 _30);
     goto BB9
   }
   BB8 {
@@ -1399,8 +1399,8 @@ module HeapsortGeneric_SiftDown
     assume { Resolve3.resolve _28 };
     _34 <-  * v_1;
     _36 <- child_17;
-    _35 <- _36 + (1 : usize);
-    _33 <- Index0.index _34 _35;
+    _35 <- ([#"../heapsort_generic.rs" 63 45 54] _36 + (1 : usize));
+    _33 <- ([#"../heapsort_generic.rs" 63 43 55] Index0.index _34 _35);
     goto BB10
   }
   BB10 {
@@ -1408,7 +1408,7 @@ module HeapsortGeneric_SiftDown
     assume { Resolve3.resolve _33 };
     _31 <- _32;
     assume { Resolve3.resolve _32 };
-    _26 <- Lt0.lt _27 _31;
+    _26 <- ([#"../heapsort_generic.rs" 63 30 56] Lt0.lt _27 _31);
     goto BB11
   }
   BB11 {
@@ -1416,7 +1416,7 @@ module HeapsortGeneric_SiftDown
     goto BB8
   }
   BB12 {
-    child_17 <- child_17 + (1 : usize);
+    child_17 <- ([#"../heapsort_generic.rs" 64 12 22] child_17 + (1 : usize));
     _20 <- ();
     goto BB14
   }
@@ -1427,7 +1427,7 @@ module HeapsortGeneric_SiftDown
   BB14 {
     _41 <-  * v_1;
     _42 <- child_17;
-    _40 <- Index0.index _41 _42;
+    _40 <- ([#"../heapsort_generic.rs" 66 11 19] Index0.index _41 _42);
     goto BB15
   }
   BB15 {
@@ -1435,7 +1435,7 @@ module HeapsortGeneric_SiftDown
     assume { Resolve3.resolve _40 };
     _46 <-  * v_1;
     _47 <- i_7;
-    _45 <- Index0.index _46 _47;
+    _45 <- ([#"../heapsort_generic.rs" 66 24 28] Index0.index _46 _47);
     goto BB16
   }
   BB16 {
@@ -1443,7 +1443,7 @@ module HeapsortGeneric_SiftDown
     assume { Resolve3.resolve _45 };
     _43 <- _44;
     assume { Resolve3.resolve _44 };
-    _38 <- Le0.le _39 _43;
+    _38 <- ([#"../heapsort_generic.rs" 66 11 29] Le0.le _39 _43);
     goto BB17
   }
   BB17 {
@@ -1461,7 +1461,7 @@ module HeapsortGeneric_SiftDown
     _37 <- ();
     _52 <- borrow_mut ( * v_1);
     v_1 <- { v_1 with current = ( ^ _52) };
-    _51 <- DerefMut0.deref_mut _52;
+    _51 <- ([#"../heapsort_generic.rs" 69 8 24] DerefMut0.deref_mut _52);
     goto BB20
   }
   BB20 {
@@ -1469,7 +1469,7 @@ module HeapsortGeneric_SiftDown
     _51 <- { _51 with current = ( ^ _50) };
     _53 <- i_7;
     _54 <- child_17;
-    _49 <- Swap0.swap _50 _53 _54;
+    _49 <- ([#"../heapsort_generic.rs" 69 8 24] Swap0.swap _50 _53 _54);
     goto BB21
   }
   BB21 {
@@ -1496,7 +1496,7 @@ module HeapsortGeneric_SortedRange
   use mach.int.Int
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
   predicate sorted_range (s : Seq.seq t) (l : int) (u : int) = 
-    forall j : (int) . forall i : (int) . l <= i && i < j && j < u -> LeLog0.le_log (Seq.get s i) (Seq.get s j)
+    [#"../heapsort_generic.rs" 75 0 58] forall j : (int) . forall i : (int) . l <= i && i < j && j < u -> LeLog0.le_log (Seq.get s i) (Seq.get s j)
 end
 module HeapsortGeneric_Sorted_Interface
   type t
@@ -1510,7 +1510,7 @@ module HeapsortGeneric_Sorted
   use mach.int.Int32
   clone HeapsortGeneric_SortedRange_Interface as SortedRange0 with type t = t
   predicate sorted (s : Seq.seq t) = 
-    SortedRange0.sorted_range s 0 (Seq.length s)
+    [#"../heapsort_generic.rs" 82 0 36] SortedRange0.sorted_range s 0 (Seq.length s)
 end
 module Alloc_Vec_Impl1_Len_Interface
   type t
@@ -1553,9 +1553,9 @@ module HeapsortGeneric_HeapSort_Interface
   clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
   val heap_sort [@cfg:stackify] (v : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))) : ()
-    requires {Seq.length (Model0.model v) < div 18446744073709551615 2}
-    ensures { PermutationOf0.permutation_of (Model1.model ( ^ v)) (Model0.model v) }
-    ensures { Sorted0.sorted (Model1.model ( ^ v)) }
+    requires {[#"../heapsort_generic.rs" 88 0 44] Seq.length (Model0.model v) < div 18446744073709551615 2}
+    ensures { [#"../heapsort_generic.rs" 90 0 36] PermutationOf0.permutation_of (Model1.model ( ^ v)) (Model0.model v) }
+    ensures { [#"../heapsort_generic.rs" 89 0 23] Sorted0.sorted (Model1.model ( ^ v)) }
     
 end
 module HeapsortGeneric_HeapSort
@@ -1628,9 +1628,9 @@ module HeapsortGeneric_HeapSort
   predicate HeapFrag0.heap_frag = HeapFrag0.heap_frag, function Model1.model = Model0.model,
   predicate LeLog0.le_log = LeLog0.le_log, predicate PermutationOf0.permutation_of = PermutationOf0.permutation_of
   let rec cfg heap_sort [@cfg:stackify] (v : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))) : ()
-    requires {Seq.length (Model0.model v) < div 18446744073709551615 2}
-    ensures { PermutationOf0.permutation_of (Model1.model ( ^ v)) (Model0.model v) }
-    ensures { Sorted0.sorted (Model1.model ( ^ v)) }
+    requires {[#"../heapsort_generic.rs" 88 0 44] Seq.length (Model0.model v) < div 18446744073709551615 2}
+    ensures { [#"../heapsort_generic.rs" 90 0 36] PermutationOf0.permutation_of (Model1.model ( ^ v)) (Model0.model v) }
+    ensures { [#"../heapsort_generic.rs" 89 0 23] Sorted0.sorted (Model1.model ( ^ v)) }
     
    = 
   var _0 : ();
@@ -1678,47 +1678,47 @@ module HeapsortGeneric_HeapSort
     _4 <- v_1;
     _3 <- _4;
     assume { Resolve0.resolve _4 };
-    old_v_2 <- Record0.record _3;
+    old_v_2 <- ([#"../heapsort_generic.rs" 92 16 33] Record0.record _3);
     goto BB1
   }
   BB1 {
     assume { Resolve1.resolve old_v_2 };
     _7 <-  * v_1;
-    _6 <- Len0.len _7;
+    _6 <- ([#"../heapsort_generic.rs" 94 20 27] Len0.len _7);
     goto BB2
   }
   BB2 {
-    _8 <- (2 : usize) = (0 : usize);
+    _8 <- ([#"../heapsort_generic.rs" 94 20 31] (2 : usize) = (0 : usize));
     assert { not _8 };
     goto BB3
   }
   BB3 {
-    start_5 <- _6 / (2 : usize);
+    start_5 <- ([#"../heapsort_generic.rs" 94 20 31] _6 / (2 : usize));
     goto BB4
   }
   BB4 {
-    invariant permutation { PermutationOf0.permutation_of (Model0.model v_1) (Model0.model (Model2.model old_v_2)) };
-    invariant proph_const {  ^ v_1 =  ^ Model2.model old_v_2 };
-    invariant heap { HeapFrag0.heap_frag (Model0.model v_1) (UInt64.to_int start_5) (Seq.length (Model0.model v_1)) };
-    invariant start_bound { UInt64.to_int start_5 <= div (Seq.length (Model0.model v_1)) 2 };
+    invariant permutation { [#"../heapsort_generic.rs" 95 4 59] PermutationOf0.permutation_of (Model0.model v_1) (Model0.model (Model2.model old_v_2)) };
+    invariant proph_const { [#"../heapsort_generic.rs" 96 4 44]  ^ v_1 =  ^ Model2.model old_v_2 };
+    invariant heap { [#"../heapsort_generic.rs" 97 4 57] HeapFrag0.heap_frag (Model0.model v_1) (UInt64.to_int start_5) (Seq.length (Model0.model v_1)) };
+    invariant start_bound { [#"../heapsort_generic.rs" 98 4 53] UInt64.to_int start_5 <= div (Seq.length (Model0.model v_1)) 2 };
     _12 <- start_5;
-    _11 <- _12 > (0 : usize);
+    _11 <- ([#"../heapsort_generic.rs" 99 10 19] _12 > (0 : usize));
     switch (_11)
       | False -> goto BB8
       | _ -> goto BB5
       end
   }
   BB5 {
-    start_5 <- start_5 - (1 : usize);
+    start_5 <- ([#"../heapsort_generic.rs" 100 8 18] start_5 - (1 : usize));
     _14 <- borrow_mut ( * v_1);
     v_1 <- { v_1 with current = ( ^ _14) };
     _15 <- start_5;
     _17 <-  * _14;
-    _16 <- Len0.len _17;
+    _16 <- ([#"../heapsort_generic.rs" 101 28 35] Len0.len _17);
     goto BB6
   }
   BB6 {
-    _13 <- SiftDown0.sift_down _14 _15 _16;
+    _13 <- ([#"../heapsort_generic.rs" 101 8 36] SiftDown0.sift_down _14 _15 _16);
     goto BB7
   }
   BB7 {
@@ -1728,48 +1728,48 @@ module HeapsortGeneric_HeapSort
   BB8 {
     _9 <- ();
     _22 <-  * v_1;
-    end'_21 <- Len0.len _22;
+    end'_21 <- ([#"../heapsort_generic.rs" 104 18 25] Len0.len _22);
     goto BB9
   }
   BB9 {
     goto BB10
   }
   BB10 {
-    invariant end_bound { UInt64.to_int end'_21 <= Seq.length (Model0.model v_1) };
-    invariant permutation { PermutationOf0.permutation_of (Model0.model v_1) (Model0.model (Model2.model old_v_2)) };
-    invariant proph_const {  ^ v_1 =  ^ Model2.model old_v_2 };
-    invariant heap { HeapFrag0.heap_frag (Model0.model v_1) 0 (UInt64.to_int end'_21) };
-    invariant sorted { SortedRange0.sorted_range (Model0.model v_1) (UInt64.to_int end'_21) (Seq.length (Model0.model v_1)) };
-    invariant heap_le { forall j : (int) . forall i : (int) . 0 <= i && i < UInt64.to_int end'_21 && UInt64.to_int end'_21 <= j && j < Seq.length (Model0.model v_1) -> LeLog0.le_log (Seq.get (Model0.model v_1) i) (Seq.get (Model0.model v_1) j) };
+    invariant end_bound { [#"../heapsort_generic.rs" 105 4 47] UInt64.to_int end'_21 <= Seq.length (Model0.model v_1) };
+    invariant permutation { [#"../heapsort_generic.rs" 106 4 59] PermutationOf0.permutation_of (Model0.model v_1) (Model0.model (Model2.model old_v_2)) };
+    invariant proph_const { [#"../heapsort_generic.rs" 107 4 44]  ^ v_1 =  ^ Model2.model old_v_2 };
+    invariant heap { [#"../heapsort_generic.rs" 108 4 46] HeapFrag0.heap_frag (Model0.model v_1) 0 (UInt64.to_int end'_21) };
+    invariant sorted { [#"../heapsort_generic.rs" 109 4 60] SortedRange0.sorted_range (Model0.model v_1) (UInt64.to_int end'_21) (Seq.length (Model0.model v_1)) };
+    invariant heap_le { [#"../heapsort_generic.rs" 110 4 48] forall j : (int) . forall i : (int) . 0 <= i && i < UInt64.to_int end'_21 && UInt64.to_int end'_21 <= j && j < Seq.length (Model0.model v_1) -> LeLog0.le_log (Seq.get (Model0.model v_1) i) (Seq.get (Model0.model v_1) j) };
     _24 <- end'_21;
-    _23 <- _24 > (1 : usize);
+    _23 <- ([#"../heapsort_generic.rs" 112 10 17] _24 > (1 : usize));
     switch (_23)
       | False -> goto BB15
       | _ -> goto BB11
       end
   }
   BB11 {
-    end'_21 <- end'_21 - (1 : usize);
+    end'_21 <- ([#"../heapsort_generic.rs" 113 8 16] end'_21 - (1 : usize));
     _28 <- borrow_mut ( * v_1);
     v_1 <- { v_1 with current = ( ^ _28) };
-    _27 <- DerefMut0.deref_mut _28;
+    _27 <- ([#"../heapsort_generic.rs" 114 8 22] DerefMut0.deref_mut _28);
     goto BB12
   }
   BB12 {
     _26 <- borrow_mut ( * _27);
     _27 <- { _27 with current = ( ^ _26) };
     _29 <- end'_21;
-    _25 <- Swap0.swap _26 (0 : usize) _29;
+    _25 <- ([#"../heapsort_generic.rs" 114 8 22] Swap0.swap _26 (0 : usize) _29);
     goto BB13
   }
   BB13 {
     assume { Resolve2.resolve _27 };
-    assert { let _ = HeapFragMax0.heap_frag_max (Model0.model v_1) 0 (UInt64.to_int end'_21) in forall j : (int) . forall i : (int) . 0 <= i && i < UInt64.to_int end'_21 && UInt64.to_int end'_21 <= j && j < Seq.length (Model0.model v_1) -> LeLog0.le_log (Seq.get (Model0.model v_1) i) (Seq.get (Model0.model v_1) j) };
+    assert { [#"../heapsort_generic.rs" 115 8 9] let _ = HeapFragMax0.heap_frag_max (Model0.model v_1) 0 (UInt64.to_int end'_21) in forall j : (int) . forall i : (int) . 0 <= i && i < UInt64.to_int end'_21 && UInt64.to_int end'_21 <= j && j < Seq.length (Model0.model v_1) -> LeLog0.le_log (Seq.get (Model0.model v_1) i) (Seq.get (Model0.model v_1) j) };
     _30 <- ();
     _32 <- borrow_mut ( * v_1);
     v_1 <- { v_1 with current = ( ^ _32) };
     _33 <- end'_21;
-    _31 <- SiftDown0.sift_down _32 (0 : usize) _33;
+    _31 <- ([#"../heapsort_generic.rs" 120 8 28] SiftDown0.sift_down _32 (0 : usize) _33);
     goto BB14
   }
   BB14 {

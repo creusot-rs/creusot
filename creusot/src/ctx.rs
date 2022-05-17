@@ -5,6 +5,7 @@ pub use crate::clone_map::*;
 use crate::creusot_items::{self, CreusotItems};
 use crate::error::CreusotResult;
 use crate::metadata::{BinaryMetadata, Metadata};
+use crate::options::SpanMode;
 use crate::translation::external::{extract_extern_specs_from_item, ExternSpec};
 use crate::translation::interface::interface_for;
 use crate::translation::specification::typing::Term;
@@ -321,9 +322,31 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     fn span_attr(&self, span: Span) -> why3::declaration::Attribute {
         let lo = self.sess.source_map().lookup_char_pos(span.lo());
         let hi = self.sess.source_map().lookup_char_pos(span.hi());
-        let filename = self.sess.source_map().filename_for_diagnostics(&lo.file.name);
-        // TODO: Switch between relative and absolute
-        let filename = format!("../{}", filename);
+
+        let filename = match self.opts.span_mode {
+            Some(SpanMode::Absolute) if lo.file.name.is_real() => {
+                if let rustc_span::FileName::Real(path) = &lo.file.name {
+                    let path = path.local_path_if_available();
+                    let mut buf;
+                    let path = if path.is_relative() {
+                        buf = std::env::current_dir().unwrap();
+                        buf.push(path);
+                        buf.as_path()
+                    } else {
+                        path
+                    };
+
+                    path.to_string_lossy().into_owned()
+                } else {
+                    panic!()
+                }
+            }
+            Some(SpanMode::Relative) => {
+                // Should really be relative to the source file the location is in
+                format!("../{}", self.sess.source_map().filename_for_diagnostics(&lo.file.name))
+            }
+            _ => panic!(),
+        };
 
         why3::declaration::Attribute::Span(filename, lo.line, lo.col_display, hi.col_display)
     }

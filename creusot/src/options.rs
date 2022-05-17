@@ -60,6 +60,7 @@ impl Options {
         };
 
         let bounds_check = !creusot_unbounded();
+        let span_mode = creusot_spans();
 
         Options {
             has_contracts,
@@ -72,7 +73,22 @@ impl Options {
             extern_paths,
             bounds_check,
             in_cargo: cargo_creusot,
-            span_mode: Some(SpanMode::Relative),
+            span_mode,
+        }
+    }
+}
+
+fn creusot_spans() -> Option<SpanMode> {
+    match std::env::var_os("CREUSOT_SPAN") {
+        None => Some(SpanMode::Absolute),
+        Some(opt) => {
+            if opt == "relative" {
+                Some(SpanMode::Relative)
+            } else if opt == "none" {
+                None
+            } else {
+                Some(SpanMode::Absolute)
+            }
         }
     }
 }

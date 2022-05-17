@@ -55,6 +55,7 @@ fn run_creusot(file: &Path, contracts: &str) -> std::process::Command {
     cmd.env("CREUSOT_EXPORT_METADATA", "false");
     cmd.env("CREUSOT_EXTERNS", format!("{{ \"creusot_contracts\": \"{}\" }}", contracts));
     cmd.env("CREUSOT_STDOUT_OUTPUT", "1");
+    cmd.env("CREUSOT_SPAN", "relative");
     cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path.display())]);
 
     let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
@@ -180,6 +181,7 @@ fn should_succeed_case(
             let expect = &std::fs::read(stdout).unwrap_or_else(|_| Vec::new());
             let gotten = &output.stdout;
 
+            // write!(std::io::stderr(), "{}", from_utf8(&output.stderr)?)?;
             let success = compare_str(&mut buf, from_utf8(gotten)?, from_utf8(expect)?);
             Ok((success, buf))
         }
