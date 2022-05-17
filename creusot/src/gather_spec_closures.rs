@@ -6,7 +6,7 @@ use rustc_middle::mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Locatio
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 
-use why3::mlcfg::Exp;
+use why3::exp::Exp;
 
 use crate::clone_map::CloneMap;
 use crate::ctx::TranslationCtx;

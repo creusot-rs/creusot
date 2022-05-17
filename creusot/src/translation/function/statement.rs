@@ -8,11 +8,8 @@ use rustc_middle::{
 };
 
 use why3::{
-    mlcfg::{
-        // Constant,
-        Exp::{self, *},
-        Statement::*,
-    },
+    exp::Exp::{self, *},
+    mlcfg::Statement::*,
     QName,
 };
 

@@ -39,7 +39,7 @@ pub fn default_decl<'tcx>(
         }
         ItemType::Program => {
             if !ctx.externs.verified(def_id) && ctx.extern_spec(def_id).is_none() {
-                sig.contract.requires.push(why3::mlcfg::Exp::mk_false());
+                sig.contract.requires.push(why3::exp::Exp::mk_false());
             }
             Val { sig }
         }

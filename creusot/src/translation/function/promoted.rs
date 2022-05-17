@@ -18,7 +18,7 @@ use rustc_middle::{
 };
 use why3::{
     declaration::{Contract, Decl, LetDecl, Signature},
-    mlcfg::{Exp, Pattern},
+    exp::{Exp, Pattern},
     QName,
 };
 

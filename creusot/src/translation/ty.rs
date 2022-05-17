@@ -7,7 +7,7 @@ use rustc_span::{Span, DUMMY_SP};
 use std::collections::VecDeque;
 use why3::declaration::{AdtDecl, ConstructorDecl, LetFun};
 use why3::declaration::{Contract, Decl, Signature};
-use why3::mlcfg::{Exp, Pattern};
+use why3::exp::{Exp, Pattern};
 use why3::Ident;
 
 use why3::declaration::TyDecl;

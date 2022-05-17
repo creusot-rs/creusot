@@ -6,7 +6,7 @@ use crate::{ctx::*, util};
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::TyCtxt;
 use why3::declaration::*;
-use why3::mlcfg::{BinOp, Exp};
+use why3::exp::{BinOp, Exp};
 use why3::Ident;
 
 pub fn translate_logic_or_predicate<'tcx>(

@@ -6,7 +6,7 @@ use crate::util::get_builtin;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 use rustc_span::{symbol::sym, Symbol};
-use why3::mlcfg::{BinOp, Constant, Exp, Purity, UnOp};
+use why3::exp::{BinOp, Constant, Exp, Purity, UnOp};
 use why3::QName;
 
 impl<'tcx> Lower<'_, '_, 'tcx> {

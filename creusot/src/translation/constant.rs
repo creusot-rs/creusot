@@ -8,7 +8,8 @@ use rustc_span::Span;
 use rustc_target::abi::Size;
 use why3::{
     declaration::Module,
-    mlcfg::{self, Constant, Exp},
+    exp::{Constant, Exp},
+    mlcfg::{self},
     QName,
 };
 
@@ -34,7 +35,7 @@ pub fn from_mir_constant<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     c: &rustc_middle::mir::Constant<'tcx>,
-) -> mlcfg::Exp {
+) -> Exp {
     from_mir_constant_kind(ctx, names, c.literal, env, c.span)
 }
 
@@ -44,7 +45,7 @@ pub fn from_mir_constant_kind<'tcx>(
     ck: rustc_middle::mir::ConstantKind<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
-) -> mlcfg::Exp {
+) -> Exp {
     if let Some(c) = ck.const_for_ty() {
         return from_ty_const(ctx, names, c, env, span);
     }

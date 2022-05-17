@@ -9,11 +9,11 @@ use rustc_middle::ty::{DefIdTree, ReErased, TyCtxt};
 use rustc_span::Symbol;
 use std::collections::HashMap;
 use std::iter;
-use why3::mlcfg::ExpMutVisitor;
+use why3::exp::ExpMutVisitor;
 use why3::{declaration, QName};
 use why3::{
     declaration::{Signature, ValKind},
-    mlcfg::{super_visit_mut, Constant, Exp},
+    exp::{super_visit_mut, Constant, Exp},
     ty::Type,
     Ident,
 };

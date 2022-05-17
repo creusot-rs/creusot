@@ -1,7 +1,8 @@
 use indexmap::IndexSet;
 use std::collections::{BTreeMap, HashMap};
 
-use crate::mlcfg::{Block, BlockId, Exp, ExpMutVisitor};
+use crate::exp::{Exp, ExpMutVisitor};
+use crate::mlcfg::{Block, BlockId};
 use crate::ty::Type;
 use crate::*;
 

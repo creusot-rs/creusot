@@ -6,7 +6,7 @@ use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::thir::{self, ExprKind, Thir};
 use rustc_middle::ty::subst::InternalSubsts;
 use why3::declaration::Contract;
-use why3::mlcfg::Exp;
+use why3::exp::Exp;
 use why3::Ident;
 
 use self::typing::pearlite_stub;

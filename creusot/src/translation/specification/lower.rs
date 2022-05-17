@@ -6,7 +6,7 @@ use crate::util::constructor_qname;
 use crate::{ctx::*, util};
 use rustc_middle::ty;
 use rustc_middle::ty::TyKind;
-use why3::mlcfg::{BinOp, Constant, Exp, Pattern as Pat, Purity};
+use why3::exp::{BinOp, Constant, Exp, Pattern as Pat, Purity};
 use why3::QName;
 
 pub fn lower_pure<'tcx>(
@@ -113,8 +113,8 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             ),
             TermKind::Unary { op, box arg } => {
                 let op = match op {
-                    typing::UnOp::Not => why3::mlcfg::UnOp::Not,
-                    typing::UnOp::Neg => why3::mlcfg::UnOp::Neg,
+                    typing::UnOp::Not => why3::exp::UnOp::Not,
+                    typing::UnOp::Neg => why3::exp::UnOp::Neg,
                 };
                 Exp::UnaryOp(op, box self.lower_term(arg))
             }
@@ -297,7 +297,7 @@ use rustc_middle::ty::{
     TyCtxt,
 };
 
-fn binop_to_binop(op: typing::BinOp) -> why3::mlcfg::BinOp {
+fn binop_to_binop(op: typing::BinOp) -> why3::exp::BinOp {
     match op {
         typing::BinOp::Add => BinOp::Add,
         typing::BinOp::Sub => BinOp::Sub,

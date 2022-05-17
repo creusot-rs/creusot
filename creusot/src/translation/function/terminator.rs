@@ -20,7 +20,8 @@ use rustc_middle::{
 use rustc_session::Session;
 use rustc_target::abi::VariantIdx;
 
-use why3::mlcfg::{BinOp, BlockId, Constant, Exp, Pattern, Statement, Terminator as MlT};
+use why3::exp::{BinOp, Constant, Exp, Pattern};
+use why3::mlcfg::{BlockId, Statement, Terminator as MlT};
 use why3::QName;
 
 use crate::{translation::traits, util::constructor_qname};
@@ -111,7 +112,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
             Assert { cond, expected, msg: _, target, cleanup: _ } => {
                 let mut ass = self.translate_operand(cond);
                 if !expected {
-                    ass = Exp::UnaryOp(why3::mlcfg::UnOp::Not, box ass);
+                    ass = Exp::UnaryOp(why3::exp::UnOp::Not, box ass);
                 }
                 self.emit_statement(Statement::Assert(ass));
                 self.emit_terminator(mk_goto(*target))

@@ -1,7 +1,10 @@
 use std::{fmt::Display, iter::once};
 
 use super::*;
-use crate::declaration::*;
+use crate::{
+    declaration::*,
+    exp::{AssocDir, BinOp, Constant, Precedence, UnOp},
+};
 use pretty::*;
 
 #[derive(Default)]

@@ -120,9 +120,9 @@ pub fn after_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::mlcfg::BinOp {
+pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::exp::BinOp {
     use rustc_middle::mir;
-    use why3::mlcfg::BinOp;
+    use why3::exp::BinOp;
     match op {
         mir::BinOp::Add => BinOp::Add,
         mir::BinOp::Sub => BinOp::Sub,
@@ -139,10 +139,10 @@ pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::mlcfg::BinOp {
     }
 }
 
-fn unop_to_unop(op: rustc_middle::mir::UnOp) -> why3::mlcfg::UnOp {
+fn unop_to_unop(op: rustc_middle::mir::UnOp) -> why3::exp::UnOp {
     match op {
-        rustc_middle::mir::UnOp::Not => why3::mlcfg::UnOp::Not,
-        rustc_middle::mir::UnOp::Neg => why3::mlcfg::UnOp::Neg,
+        rustc_middle::mir::UnOp::Not => why3::exp::UnOp::Not,
+        rustc_middle::mir::UnOp::Neg => why3::exp::UnOp::Neg,
     }
 }
 
