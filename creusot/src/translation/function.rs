@@ -29,8 +29,11 @@ use rustc_mir_transform::{remove_false_edges::*, simplify::*};
 use rustc_span::{Symbol, DUMMY_SP};
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
-use why3::mlcfg::{self, Statement::*, *};
 use why3::{declaration::*, Ident};
+use why3::{
+    mlcfg::{self, Statement::*, *},
+    ty::Type,
+};
 
 use indexmap::IndexMap;
 

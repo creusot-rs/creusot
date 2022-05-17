@@ -1,7 +1,8 @@
 use indexmap::IndexSet;
 use std::collections::{BTreeMap, HashMap};
 
-use crate::mlcfg::{Block, BlockId, Exp, ExpMutVisitor, Type};
+use crate::mlcfg::{Block, BlockId, Exp, ExpMutVisitor};
+use crate::ty::Type;
 use crate::*;
 
 #[cfg(feature = "serialize")]

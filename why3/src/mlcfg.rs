@@ -1,7 +1,7 @@
 use indexmap::IndexSet;
 use std::collections::HashMap;
 
-use crate::*;
+use crate::{ty::Type, Ident, QName};
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 
@@ -48,56 +48,6 @@ pub enum Statement {
     Invariant(Ident, Exp),
     Assume(Exp),
     Assert(Exp),
-}
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub enum Type {
-    Bool,
-    Char,
-    Integer,
-    MutableBorrow(Box<Type>),
-    TVar(Ident),
-    TConstructor(QName),
-    TApp(Box<Type>, Vec<Type>),
-    Tuple(Vec<Type>),
-    TFun(Box<Type>, Box<Type>),
-}
-
-impl Type {
-    pub const UNIT: Self = Self::Tuple(Vec::new());
-
-    pub fn predicate(ty: Self) -> Self {
-        Self::TFun(box ty, box Self::Bool)
-    }
-
-    fn complex(&self) -> bool {
-        use Type::*;
-        !matches!(self, Bool | Char | Integer | TVar(_) | Tuple(_) | TConstructor(_))
-    }
-
-    pub(crate) fn find_used_types(&self, tys: &mut IndexSet<QName>) {
-        use Type::*;
-
-        match self {
-            MutableBorrow(t) => t.find_used_types(tys),
-            TConstructor(qn) => {
-                tys.insert(qn.clone());
-            }
-            TApp(f, args) => {
-                f.find_used_types(tys);
-                args.iter().for_each(|arg| arg.find_used_types(tys));
-            }
-            Tuple(args) => {
-                args.iter().for_each(|arg| arg.find_used_types(tys));
-            }
-            TFun(a, b) => {
-                a.find_used_types(tys);
-                b.find_used_types(tys);
-            }
-            _ => (),
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
