@@ -319,7 +319,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         }
     }
 
-    fn span_attr(&self, span: Span) -> why3::declaration::Attribute {
+    pub fn span_attr(&self, span: Span) -> Option<why3::declaration::Attribute> {
         let lo = self.sess.source_map().lookup_char_pos(span.lo());
         let hi = self.sess.source_map().lookup_char_pos(span.hi());
 
@@ -338,7 +338,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
                     path.to_string_lossy().into_owned()
                 } else {
-                    panic!()
+                    return None;
                 }
             }
             Some(SpanMode::Relative) => {
@@ -348,12 +348,12 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             _ => panic!(),
         };
 
-        why3::declaration::Attribute::Span(filename, lo.line, lo.col_display, hi.col_display)
+        Some(why3::declaration::Attribute::Span(filename, lo.line, lo.col_display, hi.col_display))
     }
 
     pub fn attach_span(&self, span: Span, exp: Exp) -> Exp {
         if let Some(_) = self.opts.span_mode {
-            Exp::Attr(self.span_attr(span), box exp)
+            Exp::Attr(self.span_attr(span).unwrap(), box exp)
         } else {
             exp
         }
