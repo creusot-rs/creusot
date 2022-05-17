@@ -1,12 +1,8 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-extern_spec! {
-    #[requires(true == true)]
-    fn std::vec::Vec::new<T>() -> Vec<T>
-}
-
 fn main() {
+    // An extern spec defined in `creusot_contracts`
     let v: Vec<bool> = Vec::new();
 }
 

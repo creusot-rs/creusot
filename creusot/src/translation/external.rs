@@ -132,7 +132,9 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let inner_subst = InternalSubsts::identity_for_item(ctx.tcx, id);
     let outer_subst = InternalSubsts::identity_for_item(ctx.tcx, def_id.to_def_id());
 
-    let valid_subst = if ctx.generics_of(id).param_at(0, ctx.tcx).name == kw::SelfUpper {
+    let valid_subst = if ctx.generics_of(id).count() > 0
+        && ctx.generics_of(id).param_at(0, ctx.tcx).name == kw::SelfUpper
+    {
         ctx.generics_of(def_id).param_at(0, ctx.tcx).name.as_str().starts_with("Self")
             && inner_subst[1..] == outer_subst[1..]
     } else {
