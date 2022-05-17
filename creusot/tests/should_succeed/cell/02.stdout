@@ -79,7 +79,7 @@ module C02_Impl0_Get_Interface
   use Type
   clone C02_Inv_Inv_Interface as Inv0 with type self = i, type t = t
   val get [@cfg:stackify] (self : Type.c02_cell t i) : t
-    ensures { Inv0.inv (Type.c02_cell_Cell_ghost_inv self) result }
+    ensures { [#"../02.rs" 21 4 42] Inv0.inv (Type.c02_cell_Cell_ghost_inv self) result }
     
 end
 module C02_Impl0_Get
@@ -89,7 +89,7 @@ module C02_Impl0_Get
   use Type
   clone C02_Inv_Inv as Inv0 with type self = i, type t = t
   val get [@cfg:stackify] (self : Type.c02_cell t i) : t
-    ensures { Inv0.inv (Type.c02_cell_Cell_ghost_inv self) result }
+    ensures { [#"../02.rs" 21 4 42] Inv0.inv (Type.c02_cell_Cell_ghost_inv self) result }
     
 end
 module C02_Impl0_Set_Interface
@@ -99,7 +99,7 @@ module C02_Impl0_Set_Interface
   use Type
   clone C02_Inv_Inv_Interface as Inv0 with type self = i, type t = t
   val set [@cfg:stackify] (self : Type.c02_cell t i) (v : t) : ()
-    requires {Inv0.inv (Type.c02_cell_Cell_ghost_inv self) v}
+    requires {[#"../02.rs" 27 4 38] Inv0.inv (Type.c02_cell_Cell_ghost_inv self) v}
     
 end
 module C02_Impl0_Set
@@ -109,7 +109,7 @@ module C02_Impl0_Set
   use Type
   clone C02_Inv_Inv as Inv0 with type self = i, type t = t
   val set [@cfg:stackify] (self : Type.c02_cell t i) (v : t) : ()
-    requires {Inv0.inv (Type.c02_cell_Cell_ghost_inv self) v}
+    requires {[#"../02.rs" 27 4 38] Inv0.inv (Type.c02_cell_Cell_ghost_inv self) v}
     
 end
 module C02_Fib_Interface
@@ -120,17 +120,21 @@ module C02_Fib
   use mach.int.Int
   use mach.int.Int32
   function fib (i : int) : int
-  axiom def : forall i : int . fib i = (if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2))
+  axiom def : forall i : int . fib i = ([#"../02.rs" 38 0 21] if i <= 0 then
+    0
+  else
+    if i = 1 then 1 else fib (i - 1) + fib (i - 2)
+  )
   axiom fib_spec : forall i : int . true
 end
 module C02_Fib_Impl
   use mach.int.Int
   use mach.int.Int32
   let rec ghost function fib (i : int) : int
-    variant {i}
+    variant {[#"../02.rs" 37 0 13] i}
     
    = 
-    if i <= 0 then 0 else if pure {i = 1} then 1 else fib (i - 1) + fib (i - 2)
+    [#"../02.rs" 38 0 21] if i <= 0 then 0 else if pure {i = 1} then 1 else fib (i - 1) + fib (i - 2)
 end
 module C02_LemmaFibBound_Interface
   use mach.int.Int
@@ -145,12 +149,12 @@ module C02_LemmaFibBound
   use int.Power
   clone C02_Fib_Interface as Fib0 with axiom .
   function lemma_fib_bound (i : int) : ()
-  axiom def : forall i : int . lemma_fib_bound i = (if i = 0 then
+  axiom def : forall i : int . lemma_fib_bound i = ([#"../02.rs" 52 0 26] if i = 0 then
     ()
   else
     if i = 1 then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
   )
-  axiom lemma_fib_bound_spec : forall i : int . 0 <= i -> Fib0.fib i <= Power.power 2 i
+  axiom lemma_fib_bound_spec : forall i : int . ([#"../02.rs" 49 0 19] 0 <= i) -> ([#"../02.rs" 50 0 30] Fib0.fib i <= Power.power 2 i)
 end
 module C02_LemmaFibBound_Impl
   use mach.int.Int
@@ -158,12 +162,16 @@ module C02_LemmaFibBound_Impl
   use int.Power
   clone C02_Fib as Fib0 with axiom .
   let rec ghost function lemma_fib_bound (i : int) : ()
-    requires {0 <= i}
-    ensures { Fib0.fib i <= Power.power 2 i }
-    variant {i}
+    requires {[#"../02.rs" 49 0 19] 0 <= i}
+    ensures { [#"../02.rs" 50 0 30] Fib0.fib i <= Power.power 2 i }
+    variant {[#"../02.rs" 51 0 13] i}
     
    = 
-    if pure {i = 0} then () else if pure {i = 1} then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
+    [#"../02.rs" 52 0 26] if pure {i = 0} then
+      ()
+    else
+      if pure {i = 1} then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
+    
 end
 module C02_LemmaMaxInt_Interface
   use mach.int.Int
@@ -180,7 +188,7 @@ module C02_LemmaMaxInt
   use prelude.Prelude
   use mach.int.UInt64
   function lemma_max_int (_ : ()) : ()
-  axiom lemma_max_int_spec : Power.power 2 63 < 18446744073709551615
+  axiom lemma_max_int_spec : [#"../02.rs" 65 0 51] Power.power 2 63 < 18446744073709551615
 end
 module C02_Impl1_Inv_Interface
   use prelude.Prelude
@@ -196,7 +204,7 @@ module C02_Impl1_Inv
   use mach.int.UInt64
   clone C02_Fib_Interface as Fib0 with axiom .
   predicate inv (self : Type.c02_fib) (v : Type.core_option_option usize) = 
-    match (v) with
+    [#"../02.rs" 73 4 43] match (v) with
       | Type.Core_Option_Option_None -> true
       | Type.Core_Option_Option_Some i -> UInt64.to_int i = Fib0.fib (UInt64.to_int (Type.c02_fib_Fib_ix self))
       end
@@ -234,7 +242,7 @@ module C02_FibCell
   predicate fib_cell (v : Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global))
     
    = 
-    forall i : (int) . UInt64.to_int (Type.c02_fib_Fib_ix (Type.c02_cell_Cell_ghost_inv (Seq.get (Model0.model v) i))) = i
+    [#"../02.rs" 86 0 32] forall i : (int) . UInt64.to_int (Type.c02_fib_Fib_ix (Type.c02_cell_Cell_ghost_inv (Seq.get (Model0.model v) i))) = i
 end
 module CreusotContracts_Logic_Model_Model_ModelTy
   type self
@@ -824,10 +832,10 @@ module C02_FibMemo_Interface
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
   val fib_memo [@cfg:stackify] (mem : Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global)) (i : usize) : usize
-    requires {UInt64.to_int i <= 63}
-    requires {UInt64.to_int i < Seq.length (Model0.model mem)}
-    requires {FibCell0.fib_cell mem}
-    ensures { UInt64.to_int result = Fib0.fib (UInt64.to_int i) }
+    requires {[#"../02.rs" 95 0 21] UInt64.to_int i <= 63}
+    requires {[#"../02.rs" 93 0 30] UInt64.to_int i < Seq.length (Model0.model mem)}
+    requires {[#"../02.rs" 92 0 27] FibCell0.fib_cell mem}
+    ensures { [#"../02.rs" 94 0 30] UInt64.to_int result = Fib0.fib (UInt64.to_int i) }
     
 end
 module C02_FibMemo
@@ -862,10 +870,10 @@ module C02_FibMemo
   predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
   type Output0.output = Output0.output
   let rec cfg fib_memo [@cfg:stackify] (mem : Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global)) (i : usize) : usize
-    requires {UInt64.to_int i <= 63}
-    requires {UInt64.to_int i < Seq.length (Model0.model mem)}
-    requires {FibCell0.fib_cell mem}
-    ensures { UInt64.to_int result = Fib0.fib (UInt64.to_int i) }
+    requires {[#"../02.rs" 95 0 21] UInt64.to_int i <= 63}
+    requires {[#"../02.rs" 93 0 30] UInt64.to_int i < Seq.length (Model0.model mem)}
+    requires {[#"../02.rs" 92 0 27] FibCell0.fib_cell mem}
+    ensures { [#"../02.rs" 94 0 30] UInt64.to_int result = Fib0.fib (UInt64.to_int i) }
     
    = 
   var _0 : usize;
@@ -909,12 +917,12 @@ module C02_FibMemo
   BB0 {
     _6 <- mem_1;
     _7 <- i_2;
-    _5 <- Index0.index _6 _7;
+    _5 <- ([#"../02.rs" 97 10 16] Index0.index _6 _7);
     goto BB1
   }
   BB1 {
     _4 <- _5;
-    _3 <- Get0.get _4;
+    _3 <- ([#"../02.rs" 97 10 22] Get0.get _4);
     goto BB2
   }
   BB2 {
@@ -925,7 +933,7 @@ module C02_FibMemo
   }
   BB3 {
     _12 <- i_2;
-    _11 <- _12 = (0 : usize);
+    _11 <- ([#"../02.rs" 100 27 33] _12 = (0 : usize));
     switch (_11)
       | False -> goto BB7
       | _ -> goto BB6
@@ -945,7 +953,7 @@ module C02_FibMemo
   }
   BB7 {
     _14 <- i_2;
-    _13 <- _14 = (1 : usize);
+    _13 <- ([#"../02.rs" 102 22 28] _14 = (1 : usize));
     switch (_13)
       | False -> goto BB9
       | _ -> goto BB8
@@ -956,43 +964,43 @@ module C02_FibMemo
     goto BB12
   }
   BB9 {
-    assert { let _ = LemmaMaxInt0.lemma_max_int () in true };
+    assert { [#"../02.rs" 105 16 55] let _ = LemmaMaxInt0.lemma_max_int () in true };
     _15 <- ();
-    assert { let _ = LemmaFibBound0.lemma_fib_bound 0 in true };
+    assert { [#"../02.rs" 106 16 58] let _ = LemmaFibBound0.lemma_fib_bound 0 in true };
     _16 <- ();
     _18 <- mem_1;
     _20 <- i_2;
-    _19 <- _20 - (1 : usize);
-    _17 <- fib_memo _18 _19;
+    _19 <- ([#"../02.rs" 107 30 35] _20 - (1 : usize));
+    _17 <- ([#"../02.rs" 107 16 36] fib_memo _18 _19);
     goto BB10
   }
   BB10 {
     _22 <- mem_1;
     _24 <- i_2;
-    _23 <- _24 - (2 : usize);
-    _21 <- fib_memo _22 _23;
+    _23 <- ([#"../02.rs" 107 53 58] _24 - (2 : usize));
+    _21 <- ([#"../02.rs" 107 39 59] fib_memo _22 _23);
     goto BB11
   }
   BB11 {
-    fib_i_10 <- _17 + _21;
+    fib_i_10 <- ([#"../02.rs" 107 16 59] _17 + _21);
     goto BB12
   }
   BB12 {
     goto BB13
   }
   BB13 {
-    assert { UInt64.to_int fib_i_10 = Fib0.fib (UInt64.to_int i_2) };
+    assert { [#"../02.rs" 109 12 46] UInt64.to_int fib_i_10 = Fib0.fib (UInt64.to_int i_2) };
     _25 <- ();
     _29 <- mem_1;
     _30 <- i_2;
-    _28 <- Index0.index _29 _30;
+    _28 <- ([#"../02.rs" 110 12 18] Index0.index _29 _30);
     goto BB14
   }
   BB14 {
     _27 <- _28;
     _32 <- fib_i_10;
     _31 <- Type.Core_Option_Option_Some _32;
-    _26 <- Set0.set _27 _31;
+    _26 <- ([#"../02.rs" 110 12 35] Set0.set _27 _31);
     goto BB15
   }
   BB15 {

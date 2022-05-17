@@ -642,7 +642,7 @@ impl SymbolKind {
             SymbolKind::Val(_) => CloneSubst::Val(src.qname_ident(id.clone()), tgt.qname_ident(id)),
             SymbolKind::Type(_) => CloneSubst::Type(
                 src.qname_ident(id.clone()),
-                why3::mlcfg::Type::TConstructor(tgt.qname_ident(id)),
+                why3::ty::Type::TConstructor(tgt.qname_ident(id)),
             ),
             SymbolKind::Function(_) => {
                 CloneSubst::Function(src.qname_ident(id.clone()), tgt.qname_ident(id))

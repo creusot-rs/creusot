@@ -6,7 +6,7 @@ use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::thir::{self, ExprKind, Thir};
 use rustc_middle::ty::subst::InternalSubsts;
 use why3::declaration::Contract;
-use why3::mlcfg::Exp;
+use why3::exp::Exp;
 use why3::Ident;
 
 use self::typing::pearlite_stub;
@@ -62,7 +62,9 @@ impl PreContract {
         for ens_id in self.ensures {
             log::debug!("ensures clause {:?}", ens_id);
             let term = ctx.term(ens_id).unwrap().clone().subst(ctx.tcx, subst);
-            out.ensures.push(lower_pure(ctx, names, ens_id, term));
+            let exp = lower_pure(ctx, names, ens_id, term);
+
+            out.ensures.push(exp);
         }
 
         if let Some(var_id) = self.variant {

@@ -4,11 +4,11 @@ use rustc_middle::{
     mir::{Body, Local, Place},
     ty::{TyKind, UintTy},
 };
-use why3::mlcfg::{
-    self,
+use why3::exp::{
     Exp::{self, *},
+    Pattern::*,
 };
-use why3::mlcfg::{Pattern::*, Statement::*};
+use why3::mlcfg::{self, Statement::*};
 use why3::QName;
 
 use super::{BodyTranslator, LocalIdent};

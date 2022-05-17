@@ -29,8 +29,12 @@ use rustc_mir_transform::{remove_false_edges::*, simplify::*};
 use rustc_span::{Symbol, DUMMY_SP};
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
-use why3::mlcfg::{self, Statement::*, *};
 use why3::{declaration::*, Ident};
+use why3::{
+    exp::*,
+    mlcfg::{self, Statement::*, *},
+    ty::Type,
+};
 
 use indexmap::IndexMap;
 
@@ -305,7 +309,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         self.current_block.1 = Some(t);
     }
 
-    fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: mlcfg::Exp) {
+    fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: Exp) {
         let assign = self.create_assign(lhs, rhs);
         self.emit_statement(assign);
     }

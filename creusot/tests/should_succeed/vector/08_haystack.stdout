@@ -92,7 +92,7 @@ module C08Haystack_MatchAt
   predicate match_at (needle : Type.alloc_vec_vec uint8 (Type.alloc_alloc_global)) (haystack : Type.alloc_vec_vec uint8 (Type.alloc_alloc_global)) (pos : int) (len : int)
     
    = 
-    len <= Seq.length (Model0.model needle) && pos <= Seq.length (Model0.model haystack) - len && (forall i : (int) . 0 <= i && i < len -> Seq.get (Model0.model needle) i = Seq.get (Model0.model haystack) (pos + i))
+    [#"../08_haystack.rs" 9 0 77] len <= Seq.length (Model0.model needle) && pos <= Seq.length (Model0.model haystack) - len && (forall i : (int) . 0 <= i && i < len -> Seq.get (Model0.model needle) i = Seq.get (Model0.model haystack) (pos + i))
 end
 module CreusotContracts_Logic_Model_Impl0_ModelTy
   type t
@@ -675,10 +675,10 @@ module C08Haystack_Search_Interface
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.alloc_vec_vec uint8 (Type.alloc_alloc_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
   val search [@cfg:stackify] (needle : Type.alloc_vec_vec uint8 (Type.alloc_alloc_global)) (haystack : Type.alloc_vec_vec uint8 (Type.alloc_alloc_global)) : usize
-    requires {Seq.length (Model0.model needle) >= 1 && Seq.length (Model0.model needle) <= Seq.length (Model0.model haystack)}
-    ensures { UInt64.to_int result = Seq.length (Model0.model haystack) -> (forall i : (int) . 0 <= i && i < Seq.length (Model0.model haystack) -> not (MatchAt0.match_at needle haystack i (Seq.length (Model0.model needle)))) }
-    ensures { UInt64.to_int result < Seq.length (Model0.model haystack) -> MatchAt0.match_at needle haystack (UInt64.to_int result) (Seq.length (Model0.model needle)) && (forall i : (int) . 0 <= i && i < UInt64.to_int result -> not (MatchAt0.match_at needle haystack i (Seq.length (Model0.model needle)))) }
-    ensures { UInt64.to_int result = Seq.length (Model0.model haystack) || UInt64.to_int result < Seq.length (Model0.model haystack) - Seq.length (Model0.model needle) + 1 }
+    requires {[#"../08_haystack.rs" 17 0 73] Seq.length (Model0.model needle) >= 1 && Seq.length (Model0.model needle) <= Seq.length (Model0.model haystack)}
+    ensures { [#"../08_haystack.rs" 22 0 147] UInt64.to_int result = Seq.length (Model0.model haystack) -> (forall i : (int) . 0 <= i && i < Seq.length (Model0.model haystack) -> not (MatchAt0.match_at needle haystack i (Seq.length (Model0.model needle)))) }
+    ensures { [#"../08_haystack.rs" 19 0 111] UInt64.to_int result < Seq.length (Model0.model haystack) -> MatchAt0.match_at needle haystack (UInt64.to_int result) (Seq.length (Model0.model needle)) && (forall i : (int) . 0 <= i && i < UInt64.to_int result -> not (MatchAt0.match_at needle haystack i (Seq.length (Model0.model needle)))) }
+    ensures { [#"../08_haystack.rs" 18 0 93] UInt64.to_int result = Seq.length (Model0.model haystack) || UInt64.to_int result < Seq.length (Model0.model haystack) - Seq.length (Model0.model needle) + 1 }
     
 end
 module C08Haystack_Search
@@ -705,10 +705,10 @@ module C08Haystack_Search
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = uint8, type a = Type.alloc_alloc_global,
   function Model0.model = Model1.model
   let rec cfg search [@cfg:stackify] (needle : Type.alloc_vec_vec uint8 (Type.alloc_alloc_global)) (haystack : Type.alloc_vec_vec uint8 (Type.alloc_alloc_global)) : usize
-    requires {Seq.length (Model0.model needle) >= 1 && Seq.length (Model0.model needle) <= Seq.length (Model0.model haystack)}
-    ensures { UInt64.to_int result = Seq.length (Model0.model haystack) -> (forall i : (int) . 0 <= i && i < Seq.length (Model0.model haystack) -> not (MatchAt0.match_at needle haystack i (Seq.length (Model0.model needle)))) }
-    ensures { UInt64.to_int result < Seq.length (Model0.model haystack) -> MatchAt0.match_at needle haystack (UInt64.to_int result) (Seq.length (Model0.model needle)) && (forall i : (int) . 0 <= i && i < UInt64.to_int result -> not (MatchAt0.match_at needle haystack i (Seq.length (Model0.model needle)))) }
-    ensures { UInt64.to_int result = Seq.length (Model0.model haystack) || UInt64.to_int result < Seq.length (Model0.model haystack) - Seq.length (Model0.model needle) + 1 }
+    requires {[#"../08_haystack.rs" 17 0 73] Seq.length (Model0.model needle) >= 1 && Seq.length (Model0.model needle) <= Seq.length (Model0.model haystack)}
+    ensures { [#"../08_haystack.rs" 22 0 147] UInt64.to_int result = Seq.length (Model0.model haystack) -> (forall i : (int) . 0 <= i && i < Seq.length (Model0.model haystack) -> not (MatchAt0.match_at needle haystack i (Seq.length (Model0.model needle)))) }
+    ensures { [#"../08_haystack.rs" 19 0 111] UInt64.to_int result < Seq.length (Model0.model haystack) -> MatchAt0.match_at needle haystack (UInt64.to_int result) (Seq.length (Model0.model needle)) && (forall i : (int) . 0 <= i && i < UInt64.to_int result -> not (MatchAt0.match_at needle haystack i (Seq.length (Model0.model needle)))) }
+    ensures { [#"../08_haystack.rs" 18 0 93] UInt64.to_int result = Seq.length (Model0.model haystack) || UInt64.to_int result < Seq.length (Model0.model haystack) - Seq.length (Model0.model needle) + 1 }
     
    = 
   var _0 : usize;
@@ -769,21 +769,21 @@ module C08Haystack_Search
     goto BB1
   }
   BB1 {
-    invariant no_match { forall k : (int) . 0 <= k && k < UInt64.to_int i_4 -> not (MatchAt0.match_at needle_1 haystack_2 k (Seq.length (Model0.model needle_1))) };
+    invariant no_match { [#"../08_haystack.rs" 25 4 111] forall k : (int) . 0 <= k && k < UInt64.to_int i_4 -> not (MatchAt0.match_at needle_1 haystack_2 k (Seq.length (Model0.model needle_1))) };
     _8 <- i_4;
     _12 <- haystack_2;
-    _11 <- Len0.len _12;
+    _11 <- ([#"../08_haystack.rs" 26 14 28] Len0.len _12);
     goto BB2
   }
   BB2 {
     _14 <- needle_1;
-    _13 <- Len0.len _14;
+    _13 <- ([#"../08_haystack.rs" 26 31 43] Len0.len _14);
     goto BB3
   }
   BB3 {
-    _10 <- _11 - _13;
-    _9 <- _10 + (1 : usize);
-    _7 <- _8 < _9;
+    _10 <- ([#"../08_haystack.rs" 26 14 43] _11 - _13);
+    _9 <- ([#"../08_haystack.rs" 26 14 47] _10 + (1 : usize));
+    _7 <- ([#"../08_haystack.rs" 26 10 47] _8 < _9);
     switch (_7)
       | False -> goto BB17
       | _ -> goto BB4
@@ -794,25 +794,25 @@ module C08Haystack_Search
     goto BB5
   }
   BB5 {
-    invariant partial_match { MatchAt0.match_at needle_1 haystack_2 (UInt64.to_int i_4) (UInt64.to_int j_15) };
+    invariant partial_match { [#"../08_haystack.rs" 28 8 70] MatchAt0.match_at needle_1 haystack_2 (UInt64.to_int i_4) (UInt64.to_int j_15) };
     _18 <- j_15;
     _20 <- needle_1;
-    _19 <- Len0.len _20;
+    _19 <- ([#"../08_haystack.rs" 29 18 30] Len0.len _20);
     goto BB6
   }
   BB6 {
-    _17 <- _18 < _19;
+    _17 <- ([#"../08_haystack.rs" 29 14 30] _18 < _19);
     switch (_17)
       | False -> goto BB12
       | _ -> goto BB7
       end
   }
   BB7 {
-    assert { UInt64.to_int j_15 <= Seq.length (Model0.model needle_1) };
+    assert { [#"../08_haystack.rs" 30 12 48] UInt64.to_int j_15 <= Seq.length (Model0.model needle_1) };
     _21 <- ();
     _26 <- needle_1;
     _27 <- j_15;
-    _25 <- Index0.index _26 _27;
+    _25 <- ([#"../08_haystack.rs" 31 15 24] Index0.index _26 _27);
     goto BB8
   }
   BB8 {
@@ -820,13 +820,13 @@ module C08Haystack_Search
     _30 <- haystack_2;
     _32 <- i_4;
     _33 <- j_15;
-    _31 <- _32 + _33;
-    _29 <- Index0.index _30 _31;
+    _31 <- ([#"../08_haystack.rs" 31 37 42] _32 + _33);
+    _29 <- ([#"../08_haystack.rs" 31 28 43] Index0.index _30 _31);
     goto BB9
   }
   BB9 {
     _28 <- _29;
-    _23 <- _24 <> _28;
+    _23 <- ([#"../08_haystack.rs" 31 15 43] _24 <> _28);
     switch (_23)
       | False -> goto BB11
       | _ -> goto BB10
@@ -838,7 +838,7 @@ module C08Haystack_Search
   }
   BB11 {
     _22 <- ();
-    j_15 <- j_15 + (1 : usize);
+    j_15 <- ([#"../08_haystack.rs" 34 12 18] j_15 + (1 : usize));
     _6 <- ();
     goto BB5
   }
@@ -849,11 +849,11 @@ module C08Haystack_Search
   BB13 {
     _40 <- j_15;
     _42 <- needle_1;
-    _41 <- Len0.len _42;
+    _41 <- ([#"../08_haystack.rs" 37 16 28] Len0.len _42);
     goto BB14
   }
   BB14 {
-    _39 <- _40 = _41;
+    _39 <- ([#"../08_haystack.rs" 37 11 28] _40 = _41);
     switch (_39)
       | False -> goto BB16
       | _ -> goto BB15
@@ -865,14 +865,14 @@ module C08Haystack_Search
   }
   BB16 {
     _38 <- ();
-    i_4 <- i_4 + (1 : usize);
+    i_4 <- ([#"../08_haystack.rs" 41 8 14] i_4 + (1 : usize));
     _6 <- ();
     goto BB1
   }
   BB17 {
     _5 <- ();
     _47 <- haystack_2;
-    _0 <- Len0.len _47;
+    _0 <- ([#"../08_haystack.rs" 43 11 25] Len0.len _47);
     goto BB18
   }
   BB18 {

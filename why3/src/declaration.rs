@@ -1,7 +1,9 @@
 use indexmap::IndexSet;
 use std::collections::{BTreeMap, HashMap};
 
-use crate::mlcfg::{Block, BlockId, Exp, ExpMutVisitor, Type};
+use crate::exp::{Exp, ExpMutVisitor};
+use crate::mlcfg::{Block, BlockId};
+use crate::ty::Type;
 use crate::*;
 
 #[cfg(feature = "serialize")]
@@ -130,7 +132,10 @@ impl Contract {
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct Attribute(pub String);
+pub enum Attribute {
+    Attr(String),
+    Span(String, usize, usize, usize), // file, line, start col, end col
+}
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]

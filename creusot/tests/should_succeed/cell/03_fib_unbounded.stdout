@@ -79,7 +79,7 @@ module C03FibUnbounded_Impl0_Get_Interface
   use Type
   clone C03FibUnbounded_Inv_Inv_Interface as Inv0 with type self = i, type t = t
   val get [@cfg:stackify] (self : Type.c03fibunbounded_cell t i) : t
-    ensures { Inv0.inv (Type.c03fibunbounded_cell_Cell_ghost_inv self) result }
+    ensures { [#"../03_fib_unbounded.rs" 20 4 42] Inv0.inv (Type.c03fibunbounded_cell_Cell_ghost_inv self) result }
     
 end
 module C03FibUnbounded_Impl0_Get
@@ -89,7 +89,7 @@ module C03FibUnbounded_Impl0_Get
   use Type
   clone C03FibUnbounded_Inv_Inv as Inv0 with type self = i, type t = t
   val get [@cfg:stackify] (self : Type.c03fibunbounded_cell t i) : t
-    ensures { Inv0.inv (Type.c03fibunbounded_cell_Cell_ghost_inv self) result }
+    ensures { [#"../03_fib_unbounded.rs" 20 4 42] Inv0.inv (Type.c03fibunbounded_cell_Cell_ghost_inv self) result }
     
 end
 module C03FibUnbounded_Impl0_Set_Interface
@@ -99,7 +99,7 @@ module C03FibUnbounded_Impl0_Set_Interface
   use Type
   clone C03FibUnbounded_Inv_Inv_Interface as Inv0 with type self = i, type t = t
   val set [@cfg:stackify] (self : Type.c03fibunbounded_cell t i) (v : t) : ()
-    requires {Inv0.inv (Type.c03fibunbounded_cell_Cell_ghost_inv self) v}
+    requires {[#"../03_fib_unbounded.rs" 26 4 38] Inv0.inv (Type.c03fibunbounded_cell_Cell_ghost_inv self) v}
     
 end
 module C03FibUnbounded_Impl0_Set
@@ -109,7 +109,7 @@ module C03FibUnbounded_Impl0_Set
   use Type
   clone C03FibUnbounded_Inv_Inv as Inv0 with type self = i, type t = t
   val set [@cfg:stackify] (self : Type.c03fibunbounded_cell t i) (v : t) : ()
-    requires {Inv0.inv (Type.c03fibunbounded_cell_Cell_ghost_inv self) v}
+    requires {[#"../03_fib_unbounded.rs" 26 4 38] Inv0.inv (Type.c03fibunbounded_cell_Cell_ghost_inv self) v}
     
 end
 module C03FibUnbounded_Fib_Interface
@@ -119,16 +119,20 @@ end
 module C03FibUnbounded_Fib
   use mach.int.Int
   function fib (i : int) : int
-  axiom def : forall i : int . fib i = (if i <= 0 then 0 else if i = 1 then 1 else fib (i - 1) + fib (i - 2))
+  axiom def : forall i : int . fib i = ([#"../03_fib_unbounded.rs" 37 0 21] if i <= 0 then
+    0
+  else
+    if i = 1 then 1 else fib (i - 1) + fib (i - 2)
+  )
   axiom fib_spec : forall i : int . true
 end
 module C03FibUnbounded_Fib_Impl
   use mach.int.Int
   let rec ghost function fib (i : int) : int
-    variant {i}
+    variant {[#"../03_fib_unbounded.rs" 36 0 13] i}
     
    = 
-    if i <= 0 then 0 else if pure {i = 1} then 1 else fib (i - 1) + fib (i - 2)
+    [#"../03_fib_unbounded.rs" 37 0 21] if i <= 0 then 0 else if pure {i = 1} then 1 else fib (i - 1) + fib (i - 2)
 end
 module C03FibUnbounded_Impl1_Inv_Interface
   use prelude.Prelude
@@ -142,7 +146,7 @@ module C03FibUnbounded_Impl1_Inv
   use mach.int.Int
   clone C03FibUnbounded_Fib_Interface as Fib0 with axiom .
   predicate inv (self : Type.c03fibunbounded_fib) (v : Type.core_option_option int) = 
-    match (v) with
+    [#"../03_fib_unbounded.rs" 52 4 43] match (v) with
       | Type.Core_Option_Option_None -> true
       | Type.Core_Option_Option_Some i -> i = Fib0.fib (Type.c03fibunbounded_fib_Fib_ix self)
       end
@@ -176,7 +180,7 @@ module C03FibUnbounded_FibCell
   predicate fib_cell (v : Type.alloc_vec_vec (Type.c03fibunbounded_cell (Type.core_option_option int) (Type.c03fibunbounded_fib)) (Type.alloc_alloc_global))
     
    = 
-    forall i : (int) . Type.c03fibunbounded_fib_Fib_ix (Type.c03fibunbounded_cell_Cell_ghost_inv (Seq.get (Model0.model v) i)) = i
+    [#"../03_fib_unbounded.rs" 65 0 32] forall i : (int) . Type.c03fibunbounded_fib_Fib_ix (Type.c03fibunbounded_cell_Cell_ghost_inv (Seq.get (Model0.model v) i)) = i
 end
 module CreusotContracts_Logic_Model_Model_ModelTy
   type self
@@ -734,10 +738,10 @@ module C03FibUnbounded_FibMemo_Interface
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.alloc_vec_vec (Type.c03fibunbounded_cell (Type.core_option_option int) (Type.c03fibunbounded_fib)) (Type.alloc_alloc_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
   val fib_memo [@cfg:stackify] (mem : Type.alloc_vec_vec (Type.c03fibunbounded_cell (Type.core_option_option int) (Type.c03fibunbounded_fib)) (Type.alloc_alloc_global)) (i : int) : int
-    requires {0 <= i}
-    requires {i < Seq.length (Model0.model mem)}
-    requires {FibCell0.fib_cell mem}
-    ensures { result = Fib0.fib i }
+    requires {[#"../03_fib_unbounded.rs" 74 0 20] 0 <= i}
+    requires {[#"../03_fib_unbounded.rs" 72 0 30] i < Seq.length (Model0.model mem)}
+    requires {[#"../03_fib_unbounded.rs" 71 0 27] FibCell0.fib_cell mem}
+    ensures { [#"../03_fib_unbounded.rs" 73 0 30] result = Fib0.fib i }
     
 end
 module C03FibUnbounded_FibMemo
@@ -767,10 +771,10 @@ module C03FibUnbounded_FibMemo
   predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
   type Output0.output = Output0.output
   let rec cfg fib_memo [@cfg:stackify] (mem : Type.alloc_vec_vec (Type.c03fibunbounded_cell (Type.core_option_option int) (Type.c03fibunbounded_fib)) (Type.alloc_alloc_global)) (i : int) : int
-    requires {0 <= i}
-    requires {i < Seq.length (Model0.model mem)}
-    requires {FibCell0.fib_cell mem}
-    ensures { result = Fib0.fib i }
+    requires {[#"../03_fib_unbounded.rs" 74 0 20] 0 <= i}
+    requires {[#"../03_fib_unbounded.rs" 72 0 30] i < Seq.length (Model0.model mem)}
+    requires {[#"../03_fib_unbounded.rs" 71 0 27] FibCell0.fib_cell mem}
+    ensures { [#"../03_fib_unbounded.rs" 73 0 30] result = Fib0.fib i }
     
    = 
   var _0 : int;
@@ -812,12 +816,12 @@ module C03FibUnbounded_FibMemo
   BB0 {
     _6 <- mem_1;
     _7 <- i_2;
-    _5 <- Index0.index _6 _7;
+    _5 <- ([#"../03_fib_unbounded.rs" 76 10 16] Index0.index _6 _7);
     goto BB1
   }
   BB1 {
     _4 <- _5;
-    _3 <- Get0.get _4;
+    _3 <- ([#"../03_fib_unbounded.rs" 76 10 22] Get0.get _4);
     goto BB2
   }
   BB2 {
@@ -828,7 +832,7 @@ module C03FibUnbounded_FibMemo
   }
   BB3 {
     _12 <- i_2;
-    _11 <- _12 = (0 : int);
+    _11 <- ([#"../03_fib_unbounded.rs" 79 27 33] _12 = (0 : int));
     switch (_11)
       | False -> goto BB7
       | _ -> goto BB6
@@ -848,7 +852,7 @@ module C03FibUnbounded_FibMemo
   }
   BB7 {
     _14 <- i_2;
-    _13 <- _14 = (1 : int);
+    _13 <- ([#"../03_fib_unbounded.rs" 81 22 28] _14 = (1 : int));
     switch (_13)
       | False -> goto BB9
       | _ -> goto BB8
@@ -861,37 +865,37 @@ module C03FibUnbounded_FibMemo
   BB9 {
     _16 <- mem_1;
     _18 <- i_2;
-    _17 <- _18 - (1 : int);
-    _15 <- fib_memo _16 _17;
+    _17 <- ([#"../03_fib_unbounded.rs" 84 30 35] _18 - (1 : int));
+    _15 <- ([#"../03_fib_unbounded.rs" 84 16 36] fib_memo _16 _17);
     goto BB10
   }
   BB10 {
     _20 <- mem_1;
     _22 <- i_2;
-    _21 <- _22 - (2 : int);
-    _19 <- fib_memo _20 _21;
+    _21 <- ([#"../03_fib_unbounded.rs" 84 53 58] _22 - (2 : int));
+    _19 <- ([#"../03_fib_unbounded.rs" 84 39 59] fib_memo _20 _21);
     goto BB11
   }
   BB11 {
-    fib_i_10 <- _15 + _19;
+    fib_i_10 <- ([#"../03_fib_unbounded.rs" 84 16 59] _15 + _19);
     goto BB12
   }
   BB12 {
     goto BB13
   }
   BB13 {
-    assert { fib_i_10 = Fib0.fib i_2 };
+    assert { [#"../03_fib_unbounded.rs" 86 12 46] fib_i_10 = Fib0.fib i_2 };
     _23 <- ();
     _27 <- mem_1;
     _28 <- i_2;
-    _26 <- Index0.index _27 _28;
+    _26 <- ([#"../03_fib_unbounded.rs" 87 12 18] Index0.index _27 _28);
     goto BB14
   }
   BB14 {
     _25 <- _26;
     _30 <- fib_i_10;
     _29 <- Type.Core_Option_Option_Some _30;
-    _24 <- Set0.set _25 _29;
+    _24 <- ([#"../03_fib_unbounded.rs" 87 12 35] Set0.set _25 _29);
     goto BB15
   }
   BB15 {

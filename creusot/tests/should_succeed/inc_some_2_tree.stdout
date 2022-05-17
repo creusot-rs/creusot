@@ -44,7 +44,7 @@ module IncSome2Tree_Impl1_Sum
   use mach.int.UInt32
   use mach.int.Int32
   function sum (self : Type.incsome2tree_tree) : int = 
-    match (self) with
+    [#"../inc_some_2_tree.rs" 13 4 23] match (self) with
       | Type.IncSome2Tree_Tree_Node tl a tr -> sum tl + UInt32.to_int a + sum tr
       | Type.IncSome2Tree_Tree_Leaf -> 0
       end
@@ -64,11 +64,11 @@ module IncSome2Tree_Impl1_LemmaSumNonneg
   use Type
   clone IncSome2Tree_Impl1_Sum_Interface as Sum0
   function lemma_sum_nonneg (self : Type.incsome2tree_tree) : ()
-  axiom def : forall self : Type.incsome2tree_tree . lemma_sum_nonneg self = match (self) with
+  axiom def : forall self : Type.incsome2tree_tree . lemma_sum_nonneg self = ([#"../inc_some_2_tree.rs" 24 4 30] match (self) with
     | Type.IncSome2Tree_Tree_Node tl _ tr -> let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in ()
     | Type.IncSome2Tree_Tree_Leaf -> ()
-    end
-  axiom lemma_sum_nonneg_spec : forall self : Type.incsome2tree_tree . Sum0.sum self >= 0
+    end)
+  axiom lemma_sum_nonneg_spec : forall self : Type.incsome2tree_tree . [#"../inc_some_2_tree.rs" 23 4 31] Sum0.sum self >= 0
 end
 module IncSome2Tree_Impl1_LemmaSumNonneg_Impl
   use mach.int.Int
@@ -77,11 +77,11 @@ module IncSome2Tree_Impl1_LemmaSumNonneg_Impl
   use Type
   clone IncSome2Tree_Impl1_Sum as Sum0
   let rec ghost function lemma_sum_nonneg (self : Type.incsome2tree_tree) : ()
-    ensures { Sum0.sum self >= 0 }
-    variant {self}
+    ensures { [#"../inc_some_2_tree.rs" 23 4 31] Sum0.sum self >= 0 }
+    variant {[#"../inc_some_2_tree.rs" 22 4 21] self}
     
    = 
-    match (self) with
+    [#"../inc_some_2_tree.rs" 24 4 30] match (self) with
       | Type.IncSome2Tree_Tree_Node tl _ tr -> let _ = lemma_sum_nonneg tl in let _ = lemma_sum_nonneg tr in ()
       | Type.IncSome2Tree_Tree_Leaf -> ()
       end
@@ -94,8 +94,8 @@ module IncSome2Tree_Impl1_SumX_Interface
   use Type
   clone IncSome2Tree_Impl1_Sum_Interface as Sum0
   val sum_x [@cfg:stackify] (self : Type.incsome2tree_tree) : uint32
-    requires {Sum0.sum self <= 1000000}
-    ensures { UInt32.to_int result = Sum0.sum self }
+    requires {[#"../inc_some_2_tree.rs" 34 4 40] Sum0.sum self <= 1000000}
+    ensures { [#"../inc_some_2_tree.rs" 35 4 37] UInt32.to_int result = Sum0.sum self }
     
 end
 module IncSome2Tree_Impl1_SumX
@@ -108,8 +108,8 @@ module IncSome2Tree_Impl1_SumX
   clone IncSome2Tree_Impl1_LemmaSumNonneg as LemmaSumNonneg0 with function Sum0.sum = Sum0.sum, axiom .
   use mach.int.Int64
   let rec cfg sum_x [@cfg:stackify] (self : Type.incsome2tree_tree) : uint32
-    requires {Sum0.sum self <= 1000000}
-    ensures { UInt32.to_int result = Sum0.sum self }
+    requires {[#"../inc_some_2_tree.rs" 34 4 40] Sum0.sum self <= 1000000}
+    ensures { [#"../inc_some_2_tree.rs" 35 4 37] UInt32.to_int result = Sum0.sum self }
     
    = 
   var _0 : uint32;
@@ -146,21 +146,21 @@ module IncSome2Tree_Impl1_SumX
     tl_3 <- Type.incsome2tree_tree_Node_0 self_1;
     a_4 <- Type.incsome2tree_tree_Node_1 self_1;
     tr_5 <- Type.incsome2tree_tree_Node_2 self_1;
-    assert { let _ = LemmaSumNonneg0.lemma_sum_nonneg tl_3 in let _ = LemmaSumNonneg0.lemma_sum_nonneg tr_5 in true };
+    assert { [#"../inc_some_2_tree.rs" 39 16 17] let _ = LemmaSumNonneg0.lemma_sum_nonneg tl_3 in let _ = LemmaSumNonneg0.lemma_sum_nonneg tr_5 in true };
     _6 <- ();
     _9 <- tl_3;
-    _8 <- sum_x _9;
+    _8 <- ([#"../inc_some_2_tree.rs" 44 16 26] sum_x _9);
     goto BB4
   }
   BB4 {
     _10 <- a_4;
-    _7 <- _8 + _10;
+    _7 <- ([#"../inc_some_2_tree.rs" 44 16 31] _8 + _10);
     _12 <- tr_5;
-    _11 <- sum_x _12;
+    _11 <- ([#"../inc_some_2_tree.rs" 44 34 44] sum_x _12);
     goto BB5
   }
   BB5 {
-    _0 <- _7 + _11;
+    _0 <- ([#"../inc_some_2_tree.rs" 44 16 44] _7 + _11);
     goto BB6
   }
   BB6 {
@@ -289,9 +289,9 @@ module IncSome2Tree_Impl1_TakeSomeRest_Interface
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone IncSome2Tree_Impl1_Sum_Interface as Sum0
   val take_some_rest [@cfg:stackify] (self : borrowed (Type.incsome2tree_tree)) : (borrowed uint32, borrowed (Type.incsome2tree_tree))
-    ensures { Sum0.sum ( * (let (_, a) = result in a)) <= Sum0.sum ( * self) }
-    ensures { Model0.model (let (a, _) = result in a) <= Sum0.sum ( * self) }
-    ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ (let (a, _) = result in a)) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model0.model (let (a, _) = result in a) - Sum0.sum ( * (let (_, a) = result in a)) }
+    ensures { [#"../inc_some_2_tree.rs" 53 4 44] Sum0.sum ( * (let (_, a) = result in a)) <= Sum0.sum ( * self) }
+    ensures { [#"../inc_some_2_tree.rs" 52 4 39] Model0.model (let (a, _) = result in a) <= Sum0.sum ( * self) }
+    ensures { [#"../inc_some_2_tree.rs" 50 4 72] Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ (let (a, _) = result in a)) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model0.model (let (a, _) = result in a) - Sum0.sum ( * (let (_, a) = result in a)) }
     
 end
 module IncSome2Tree_Impl1_TakeSomeRest
@@ -311,9 +311,9 @@ module IncSome2Tree_Impl1_TakeSomeRest
   clone Rand_Random_Interface as Random0 with type t = bool
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.incsome2tree_tree
   let rec cfg take_some_rest [@cfg:stackify] (self : borrowed (Type.incsome2tree_tree)) : (borrowed uint32, borrowed (Type.incsome2tree_tree))
-    ensures { Sum0.sum ( * (let (_, a) = result in a)) <= Sum0.sum ( * self) }
-    ensures { Model0.model (let (a, _) = result in a) <= Sum0.sum ( * self) }
-    ensures { Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ (let (a, _) = result in a)) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model0.model (let (a, _) = result in a) - Sum0.sum ( * (let (_, a) = result in a)) }
+    ensures { [#"../inc_some_2_tree.rs" 53 4 44] Sum0.sum ( * (let (_, a) = result in a)) <= Sum0.sum ( * self) }
+    ensures { [#"../inc_some_2_tree.rs" 52 4 39] Model0.model (let (a, _) = result in a) <= Sum0.sum ( * self) }
+    ensures { [#"../inc_some_2_tree.rs" 50 4 72] Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ (let (a, _) = result in a)) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model0.model (let (a, _) = result in a) - Sum0.sum ( * (let (_, a) = result in a)) }
     
    = 
   var _0 : (borrowed uint32, borrowed (Type.incsome2tree_tree));
@@ -360,9 +360,9 @@ module IncSome2Tree_Impl1_TakeSomeRest
     mtr_5 <- borrow_mut (Type.incsome2tree_tree_Node_2 ( * self_1));
     self_1 <- { self_1 with current = (let Type.IncSome2Tree_Tree_Node a b c =  * self_1 in Type.IncSome2Tree_Tree_Node a b ( ^ mtr_5)) };
     assume { Resolve0.resolve self_1 };
-    assert { let _ = LemmaSumNonneg0.lemma_sum_nonneg ( * mtl_3) in let _ = LemmaSumNonneg0.lemma_sum_nonneg ( * mtr_5) in true };
+    assert { [#"../inc_some_2_tree.rs" 57 16 17] let _ = LemmaSumNonneg0.lemma_sum_nonneg ( * mtl_3) in let _ = LemmaSumNonneg0.lemma_sum_nonneg ( * mtr_5) in true };
     _6 <- ();
-    _7 <- Random0.random ();
+    _7 <- ([#"../inc_some_2_tree.rs" 62 19 33] Random0.random ());
     goto BB4
   }
   BB4 {
@@ -375,7 +375,7 @@ module IncSome2Tree_Impl1_TakeSomeRest
     _8 <- borrow_mut ( * ma_4);
     ma_4 <- { ma_4 with current = ( ^ _8) };
     assume { Resolve1.resolve ma_4 };
-    _11 <- Random0.random ();
+    _11 <- ([#"../inc_some_2_tree.rs" 63 28 42] Random0.random ());
     goto BB6
   }
   BB6 {
@@ -410,7 +410,7 @@ module IncSome2Tree_Impl1_TakeSomeRest
   }
   BB10 {
     assume { Resolve1.resolve ma_4 };
-    _13 <- Random0.random ();
+    _13 <- ([#"../inc_some_2_tree.rs" 64 26 40] Random0.random ());
     goto BB11
   }
   BB11 {
@@ -423,7 +423,7 @@ module IncSome2Tree_Impl1_TakeSomeRest
     assume { Resolve2.resolve mtr_5 };
     _14 <- borrow_mut ( * mtl_3);
     mtl_3 <- { mtl_3 with current = ( ^ _14) };
-    _0 <- take_some_rest _14;
+    _0 <- ([#"../inc_some_2_tree.rs" 65 20 40] take_some_rest _14);
     goto BB13
   }
   BB13 {
@@ -434,7 +434,7 @@ module IncSome2Tree_Impl1_TakeSomeRest
     assume { Resolve2.resolve mtl_3 };
     _15 <- borrow_mut ( * mtr_5);
     mtr_5 <- { mtr_5 with current = ( ^ _15) };
-    _0 <- take_some_rest _15;
+    _0 <- ([#"../inc_some_2_tree.rs" 67 20 40] take_some_rest _15);
     goto BB15
   }
   BB15 {
@@ -483,7 +483,7 @@ module IncSome2Tree_IncSome2Tree_Interface
   use Type
   clone IncSome2Tree_Impl1_Sum_Interface as Sum0
   val inc_some_2_tree [@cfg:stackify] (t : Type.incsome2tree_tree) (j : uint32) (k : uint32) : ()
-    requires {Sum0.sum t + UInt32.to_int j + UInt32.to_int k <= 1000000}
+    requires {[#"../inc_some_2_tree.rs" 75 0 43] Sum0.sum t + UInt32.to_int j + UInt32.to_int k <= 1000000}
     
 end
 module IncSome2Tree_IncSome2Tree
@@ -506,7 +506,7 @@ module IncSome2Tree_IncSome2Tree
   function Model0.model = Model0.model
   clone IncSome2Tree_Impl1_SumX_Interface as SumX0 with function Sum0.sum = Sum0.sum
   let rec cfg inc_some_2_tree [@cfg:stackify] (t : Type.incsome2tree_tree) (j : uint32) (k : uint32) : ()
-    requires {Sum0.sum t + UInt32.to_int j + UInt32.to_int k <= 1000000}
+    requires {[#"../inc_some_2_tree.rs" 75 0 43] Sum0.sum t + UInt32.to_int j + UInt32.to_int k <= 1000000}
     
    = 
   var _0 : ();
@@ -546,13 +546,13 @@ module IncSome2Tree_IncSome2Tree
   }
   BB1 {
     _5 <- t_1;
-    sum0_4 <- SumX0.sum_x _5;
+    sum0_4 <- ([#"../inc_some_2_tree.rs" 77 15 24] SumX0.sum_x _5);
     goto BB2
   }
   BB2 {
     _9 <- borrow_mut t_1;
     t_1 <-  ^ _9;
-    _8 <- TakeSomeRest0.take_some_rest _9;
+    _8 <- ([#"../inc_some_2_tree.rs" 78 19 37] TakeSomeRest0.take_some_rest _9);
     goto BB3
   }
   BB3 {
@@ -563,7 +563,7 @@ module IncSome2Tree_IncSome2Tree
     assume { Resolve2.resolve _8 };
     _12 <- borrow_mut ( * mt_7);
     mt_7 <- { mt_7 with current = ( ^ _12) };
-    _11 <- TakeSomeRest0.take_some_rest _12;
+    _11 <- ([#"../inc_some_2_tree.rs" 79 18 37] TakeSomeRest0.take_some_rest _12);
     goto BB4
   }
   BB4 {
@@ -572,22 +572,22 @@ module IncSome2Tree_IncSome2Tree
     mb_10 <- (let (a, _) = _11 in a);
     assume { Resolve2.resolve _11 };
     _13 <- j_2;
-    ma_6 <- { ma_6 with current = ( * ma_6 + _13) };
+    ma_6 <- { ma_6 with current = ([#"../inc_some_2_tree.rs" 80 4 12]  * ma_6 + _13) };
     assume { Resolve0.resolve ma_6 };
     _14 <- k_3;
-    mb_10 <- { mb_10 with current = ( * mb_10 + _14) };
+    mb_10 <- { mb_10 with current = ([#"../inc_some_2_tree.rs" 81 4 12]  * mb_10 + _14) };
     assume { Resolve0.resolve mb_10 };
     _19 <- t_1;
-    _18 <- SumX0.sum_x _19;
+    _18 <- ([#"../inc_some_2_tree.rs" 82 12 21] SumX0.sum_x _19);
     goto BB5
   }
   BB5 {
     _22 <- sum0_4;
     _23 <- j_2;
-    _21 <- _22 + _23;
+    _21 <- ([#"../inc_some_2_tree.rs" 82 25 33] _22 + _23);
     _24 <- k_3;
-    _20 <- _21 + _24;
-    _17 <- _18 = _20;
+    _20 <- ([#"../inc_some_2_tree.rs" 82 25 37] _21 + _24);
+    _17 <- ([#"../inc_some_2_tree.rs" 82 12 37] _18 = _20);
     _16 <- not _17;
     switch (_16)
       | False -> goto BB7

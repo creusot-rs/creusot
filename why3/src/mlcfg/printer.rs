@@ -1,7 +1,10 @@
 use std::{fmt::Display, iter::once};
 
 use super::*;
-use crate::declaration::*;
+use crate::{
+    declaration::*,
+    exp::{AssocDir, BinOp, Constant, Precedence, UnOp},
+};
 use pretty::*;
 
 #[derive(Default)]
@@ -245,7 +248,19 @@ impl Print for Attribute {
     where
         A::Doc: Clone,
     {
-        alloc.text("@").append(&self.0).brackets()
+        match &self {
+            Attribute::Attr(s) => alloc.text("@").append(s),
+            Attribute::Span(f, l, s, e) => alloc
+                .text("#")
+                .append(alloc.text(f).double_quotes())
+                .append(alloc.space())
+                .append(alloc.as_string(l))
+                .append(alloc.space())
+                .append(alloc.as_string(s))
+                .append(alloc.space())
+                .append(alloc.as_string(e)),
+        }
+        .brackets()
     }
 }
 
@@ -645,7 +660,9 @@ impl Print for Exp {
             }
 
             Exp::Verbatim(verb) => alloc.text(verb),
-
+            Exp::Attr(attr, e) => {
+                attr.pretty(alloc, env).append(alloc.space()).append(e.pretty(alloc, env))
+            }
             Exp::Abs(ident, box body) => alloc
                 .text("fun ")
                 .append(ident.pretty(alloc, env))

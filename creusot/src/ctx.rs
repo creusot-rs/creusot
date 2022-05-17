@@ -5,6 +5,7 @@ pub use crate::clone_map::*;
 use crate::creusot_items::{self, CreusotItems};
 use crate::error::CreusotResult;
 use crate::metadata::{BinaryMetadata, Metadata};
+use crate::options::SpanMode;
 use crate::translation::external::{extract_extern_specs_from_item, ExternSpec};
 use crate::translation::interface::interface_for;
 use crate::translation::specification::typing::Term;
@@ -23,6 +24,7 @@ use rustc_middle::ty::{ParamEnv, TyCtxt};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 pub use util::{item_name, module_name, ItemType};
 use why3::declaration::{Module, TyDecl};
+use why3::exp::Exp;
 
 pub use crate::translated_item::*;
 
@@ -314,6 +316,46 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                 )
             }
             None => self.tcx.param_env(def_id),
+        }
+    }
+
+    fn span_attr(&self, span: Span) -> why3::declaration::Attribute {
+        let lo = self.sess.source_map().lookup_char_pos(span.lo());
+        let hi = self.sess.source_map().lookup_char_pos(span.hi());
+
+        let filename = match self.opts.span_mode {
+            Some(SpanMode::Absolute) if lo.file.name.is_real() => {
+                if let rustc_span::FileName::Real(path) = &lo.file.name {
+                    let path = path.local_path_if_available();
+                    let mut buf;
+                    let path = if path.is_relative() {
+                        buf = std::env::current_dir().unwrap();
+                        buf.push(path);
+                        buf.as_path()
+                    } else {
+                        path
+                    };
+
+                    path.to_string_lossy().into_owned()
+                } else {
+                    panic!()
+                }
+            }
+            Some(SpanMode::Relative) => {
+                // Should really be relative to the source file the location is in
+                format!("../{}", self.sess.source_map().filename_for_diagnostics(&lo.file.name))
+            }
+            _ => panic!(),
+        };
+
+        why3::declaration::Attribute::Span(filename, lo.line, lo.col_display, hi.col_display)
+    }
+
+    pub fn attach_span(&self, span: Span, exp: Exp) -> Exp {
+        if let Some(_) = self.opts.span_mode {
+            Exp::Attr(self.span_attr(span), box exp)
+        } else {
+            exp
         }
     }
 }

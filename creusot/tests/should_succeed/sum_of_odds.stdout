@@ -21,7 +21,7 @@ end
 module SumOfOdds_Sqr
   use mach.int.Int
   function sqr (x : int) : int = 
-    x * x
+    [#"../sum_of_odds.rs" 7 0 21] x * x
 end
 module SumOfOdds_IsSquare_Interface
   use mach.int.Int
@@ -31,7 +31,7 @@ module SumOfOdds_IsSquare
   use mach.int.Int
   clone SumOfOdds_Sqr_Interface as Sqr0
   predicate is_square (y : int) = 
-    exists z : (int) . y = Sqr0.sqr z
+    [#"../sum_of_odds.rs" 12 0 28] exists z : (int) . y = Sqr0.sqr z
 end
 module SumOfOdds_SumOfOdd_Interface
   use mach.int.Int
@@ -41,17 +41,21 @@ module SumOfOdds_SumOfOdd
   use mach.int.Int
   use mach.int.Int32
   function sum_of_odd (x : int) : int
-  axiom def : forall x : int . sum_of_odd x = (if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1)
+  axiom def : forall x : int . sum_of_odd x = ([#"../sum_of_odds.rs" 18 0 28] if x <= 0 then
+    0
+  else
+    sum_of_odd (x - 1) + 2 * x - 1
+  )
   axiom sum_of_odd_spec : forall x : int . true
 end
 module SumOfOdds_SumOfOdd_Impl
   use mach.int.Int
   use mach.int.Int32
   let rec ghost function sum_of_odd (x : int) : int
-    variant {x}
+    variant {[#"../sum_of_odds.rs" 17 0 13] x}
     
    = 
-    if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1
+    [#"../sum_of_odds.rs" 18 0 28] if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1
 end
 module SumOfOdds_SumOfOddIsSqr_Interface
   use mach.int.Int
@@ -66,8 +70,12 @@ module SumOfOdds_SumOfOddIsSqr
   clone SumOfOdds_Sqr_Interface as Sqr0
   clone SumOfOdds_SumOfOdd_Interface as SumOfOdd0 with axiom .
   function sum_of_odd_is_sqr (x : int) : ()
-  axiom def : forall x : int . sum_of_odd_is_sqr x = (if x > 0 then sum_of_odd_is_sqr (x - 1) else ())
-  axiom sum_of_odd_is_sqr_spec : forall x : int . x >= 0 -> SumOfOdd0.sum_of_odd x = Sqr0.sqr x
+  axiom def : forall x : int . sum_of_odd_is_sqr x = ([#"../sum_of_odds.rs" 30 0 28] if x > 0 then
+    sum_of_odd_is_sqr (x - 1)
+  else
+    ()
+  )
+  axiom sum_of_odd_is_sqr_spec : forall x : int . ([#"../sum_of_odds.rs" 27 0 19] x >= 0) -> ([#"../sum_of_odds.rs" 28 0 35] SumOfOdd0.sum_of_odd x = Sqr0.sqr x)
 end
 module SumOfOdds_SumOfOddIsSqr_Impl
   use mach.int.Int
@@ -75,12 +83,12 @@ module SumOfOdds_SumOfOddIsSqr_Impl
   clone SumOfOdds_Sqr as Sqr0
   clone SumOfOdds_SumOfOdd as SumOfOdd0 with axiom .
   let rec ghost function sum_of_odd_is_sqr (x : int) : ()
-    requires {x >= 0}
-    ensures { SumOfOdd0.sum_of_odd x = Sqr0.sqr x }
-    variant {x}
+    requires {[#"../sum_of_odds.rs" 27 0 19] x >= 0}
+    ensures { [#"../sum_of_odds.rs" 28 0 35] SumOfOdd0.sum_of_odd x = Sqr0.sqr x }
+    variant {[#"../sum_of_odds.rs" 29 0 13] x}
     
    = 
-    if x > 0 then sum_of_odd_is_sqr (x - 1) else ()
+    [#"../sum_of_odds.rs" 30 0 28] if x > 0 then sum_of_odd_is_sqr (x - 1) else ()
 end
 module SumOfOdds_ComputeSumOfOdd_Interface
   use mach.int.UInt32
@@ -88,8 +96,8 @@ module SumOfOdds_ComputeSumOfOdd_Interface
   use mach.int.Int32
   clone SumOfOdds_SumOfOdd_Interface as SumOfOdd0 with axiom .
   val compute_sum_of_odd [@cfg:stackify] (x : uint32) : uint32
-    requires {UInt32.to_int x < 65536}
-    ensures { UInt32.to_int result = SumOfOdd0.sum_of_odd (UInt32.to_int x) }
+    requires {[#"../sum_of_odds.rs" 34 0 25] UInt32.to_int x < 65536}
+    ensures { [#"../sum_of_odds.rs" 35 0 37] UInt32.to_int result = SumOfOdd0.sum_of_odd (UInt32.to_int x) }
     
 end
 module SumOfOdds_ComputeSumOfOdd
@@ -101,8 +109,8 @@ module SumOfOdds_ComputeSumOfOdd
   clone SumOfOdds_SumOfOddIsSqr as SumOfOddIsSqr0 with function SumOfOdd0.sum_of_odd = SumOfOdd0.sum_of_odd,
   function Sqr0.sqr = Sqr0.sqr, axiom .
   let rec cfg compute_sum_of_odd [@cfg:stackify] (x : uint32) : uint32
-    requires {UInt32.to_int x < 65536}
-    ensures { UInt32.to_int result = SumOfOdd0.sum_of_odd (UInt32.to_int x) }
+    requires {[#"../sum_of_odds.rs" 34 0 25] UInt32.to_int x < 65536}
+    ensures { [#"../sum_of_odds.rs" 35 0 37] UInt32.to_int result = SumOfOdd0.sum_of_odd (UInt32.to_int x) }
     
    = 
   var _0 : uint32;
@@ -132,24 +140,24 @@ module SumOfOdds_ComputeSumOfOdd
     goto BB1
   }
   BB1 {
-    invariant i_bound { UInt32.to_int i_4 <= UInt32.to_int x_1 };
-    invariant s_is_sum { UInt32.to_int s_3 = SumOfOdd0.sum_of_odd (UInt32.to_int i_4) };
+    invariant i_bound { [#"../sum_of_odds.rs" 39 4 35] UInt32.to_int i_4 <= UInt32.to_int x_1 };
+    invariant s_is_sum { [#"../sum_of_odds.rs" 40 4 48] UInt32.to_int s_3 = SumOfOdd0.sum_of_odd (UInt32.to_int i_4) };
     _8 <- i_4;
     _9 <- x_1;
-    _7 <- _8 < _9;
+    _7 <- ([#"../sum_of_odds.rs" 41 10 15] _8 < _9);
     switch (_7)
       | False -> goto BB3
       | _ -> goto BB2
       end
   }
   BB2 {
-    assert { let _ = SumOfOddIsSqr0.sum_of_odd_is_sqr (UInt32.to_int i_4) in true };
+    assert { [#"../sum_of_odds.rs" 42 8 9] let _ = SumOfOddIsSqr0.sum_of_odd_is_sqr (UInt32.to_int i_4) in true };
     _10 <- ();
     _13 <- i_4;
-    _12 <- (2 : uint32) * _13;
-    _11 <- _12 + (1 : uint32);
-    s_3 <- s_3 + _11;
-    i_4 <- i_4 + (1 : uint32);
+    _12 <- ([#"../sum_of_odds.rs" 46 13 18] (2 : uint32) * _13);
+    _11 <- ([#"../sum_of_odds.rs" 46 13 22] _12 + (1 : uint32));
+    s_3 <- ([#"../sum_of_odds.rs" 46 8 22] s_3 + _11);
+    i_4 <- ([#"../sum_of_odds.rs" 47 8 14] i_4 + (1 : uint32));
     _6 <- ();
     goto BB1
   }
@@ -165,7 +173,7 @@ module SumOfOdds_Test_Interface
   use mach.int.Int
   use mach.int.Int32
   val test [@cfg:stackify] (x : uint32) : ()
-    requires {UInt32.to_int x < 65536}
+    requires {[#"../sum_of_odds.rs" 52 0 25] UInt32.to_int x < 65536}
     
 end
 module SumOfOdds_Test
@@ -179,7 +187,7 @@ module SumOfOdds_Test
   function Sqr0.sqr = Sqr0.sqr, axiom .
   clone SumOfOdds_ComputeSumOfOdd_Interface as ComputeSumOfOdd0 with function SumOfOdd0.sum_of_odd = SumOfOdd0.sum_of_odd
   let rec cfg test [@cfg:stackify] (x : uint32) : ()
-    requires {UInt32.to_int x < 65536}
+    requires {[#"../sum_of_odds.rs" 52 0 25] UInt32.to_int x < 65536}
     
    = 
   var _0 : ();
@@ -192,11 +200,11 @@ module SumOfOdds_Test
   }
   BB0 {
     _3 <- x_1;
-    y_2 <- ComputeSumOfOdd0.compute_sum_of_odd _3;
+    y_2 <- ([#"../sum_of_odds.rs" 54 12 33] ComputeSumOfOdd0.compute_sum_of_odd _3);
     goto BB1
   }
   BB1 {
-    assert { let _ = SumOfOddIsSqr0.sum_of_odd_is_sqr (UInt32.to_int x_1) in IsSquare0.is_square (UInt32.to_int y_2) };
+    assert { [#"../sum_of_odds.rs" 55 4 5] let _ = SumOfOddIsSqr0.sum_of_odd_is_sqr (UInt32.to_int x_1) in IsSquare0.is_square (UInt32.to_int y_2) };
     _0 <- ();
     return _0
   }

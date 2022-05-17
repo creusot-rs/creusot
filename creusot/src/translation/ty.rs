@@ -7,11 +7,11 @@ use rustc_span::{Span, DUMMY_SP};
 use std::collections::VecDeque;
 use why3::declaration::{AdtDecl, ConstructorDecl, LetFun};
 use why3::declaration::{Contract, Decl, Signature};
-use why3::mlcfg::{Exp, Pattern};
+use why3::exp::{Exp, Pattern};
 use why3::Ident;
 
 use why3::declaration::TyDecl;
-use why3::{mlcfg::Type as MlT, QName};
+use why3::{ty::Type as MlT, QName};
 
 use crate::util::{get_builtin, item_name, item_qname};
 use crate::{ctx::*, util};
