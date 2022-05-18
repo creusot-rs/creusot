@@ -1,19 +1,35 @@
 use pearlite_syn::Term as RT;
-use proc_macro2::TokenStream;
-use syn::Pat;
+use proc_macro2::{Span, TokenStream};
+use syn::{spanned::Spanned, Pat};
 
 use pearlite_syn::term::*;
-use quote::quote;
+use quote::{quote, quote_spanned, ToTokens};
 use syn::Lit;
 
 #[derive(Debug)]
 pub enum EncodeError {
     LocalErr,
+    Unsupported(Span, String),
 }
 
+impl EncodeError {
+    pub fn into_tokens(self) -> TokenStream {
+        match self {
+            Self::LocalErr => {
+                quote! { compile_error!("LocalErr: what does this even mean? -- Xavier") }
+            }
+            Self::Unsupported(sp, msg) => {
+                let msg = format!("Unsupported expression: {}", msg);
+                quote_spanned! {sp=> compile_error!(#msg) }
+            }
+        }
+    }
+}
+
+// TODO: Rewrite this as a source to source transform and *then* call ToTokens on the result
 pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
     match term {
-        RT::Array(_) => todo!("Array"),
+        RT::Array(_) => Err(EncodeError::Unsupported(term.span(), "Array".into())),
         RT::Binary(TermBinary { left, op, right }) => {
             let left = encode_term(*left)?;
             let right = encode_term(*right)?;
@@ -39,12 +55,12 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
             let func = encode_term(*func)?;
             Ok(quote! { #func (#(#args),*)})
         }
-        RT::Cast(_) => todo!("Cast"),
+        RT::Cast(_) => Err(EncodeError::Unsupported(term.span(), "Cast".into())),
         RT::Field(TermField { base, member, .. }) => {
             let base = encode_term(*base)?;
             Ok(quote!({ #base . #member }))
         }
-        RT::Group(_) => todo!("Group"),
+        RT::Group(_) => Err(EncodeError::Unsupported(term.span(), "Group".into())),
         RT::If(TermIf { cond, then_branch, else_branch, .. }) => {
             let cond = encode_term(*cond)?;
             let then_branch: Vec<_> =
@@ -66,7 +82,7 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
                 #expr [#index]
             })
         }
-        RT::Let(_) => todo!("Let"),
+        RT::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
         RT::Lit(TermLit { ref lit }) => match lit {
             Lit::Int(int) if int.suffix() == "" => Ok(quote! { Int::from(#lit) }),
             _ => Ok(quote! { #lit }),
@@ -87,9 +103,38 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
             Ok(quote! { (#term) })
         }
         RT::Path(_) => Ok(quote! { #term }),
-        RT::Range(_) => todo!("Range"),
-        RT::Repeat(_) => todo!("Repeat"),
-        RT::Struct(_) => todo!("Struct"),
+        RT::Range(_) => Err(EncodeError::Unsupported(term.span(), "Range".into())),
+        RT::Repeat(_) => Err(EncodeError::Unsupported(term.span(), "Repeat".into())),
+        RT::Struct(TermStruct { path, fields, rest, brace_token, dot2_token }) => {
+            let mut ts = TokenStream::new();
+            path.to_tokens(&mut ts);
+
+            let mut inner = TokenStream::new();
+
+            for p in fields.into_pairs() {
+                let (tv, punc) = p.into_tuple();
+
+                tv.member.to_tokens(&mut inner);
+                if let Some(colon) = tv.colon_token {
+                    colon.to_tokens(&mut inner);
+                    inner.extend(encode_term(tv.expr)?)
+                }
+                punc.to_tokens(&mut inner);
+            }
+
+            brace_token.surround(&mut ts, |tokens| {
+                tokens.extend(inner);
+
+                if let Some(dot2_token) = &dot2_token {
+                    dot2_token.to_tokens(tokens);
+                } else if rest.is_some() {
+                    syn::Token![..](Span::call_site()).to_tokens(tokens);
+                }
+                rest.to_tokens(tokens);
+            });
+
+            Ok(ts)
+        }
         RT::Tuple(TermTuple { elems, .. }) => {
             if elems.is_empty() {
                 return Ok(quote! { () });

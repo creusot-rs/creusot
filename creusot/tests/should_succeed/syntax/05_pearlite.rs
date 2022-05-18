@@ -11,3 +11,25 @@ pub struct A {
 #[trusted]
 #[ensures(x.a == x.a)]
 pub fn solver(x: A) {}
+
+#[ensures(x == A { a : false })]
+pub fn struct_in_pearlite(x: A) {}
+
+pub struct B {
+    field1: bool,
+    field2: u32,
+}
+
+#[ensures(x == B { field2: 0u32, field1: false })]
+pub fn struct_order(x: B) {}
+
+#[predicate]
+fn field1_is_true(x: B) -> bool {
+    pearlite! {
+        match x {
+            B { field1: true, .. } => true,
+            B { field2, field1 } => @field2 == 0,
+            _ => false
+        }
+    }
+}
