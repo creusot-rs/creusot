@@ -307,8 +307,14 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
             }
             ExprKind::Adt(box Adt { adt_def, variant_index, ref fields, .. }) => {
-                let fields =
-                    fields.iter().map(|f| self.expr_term(f.expr)).collect::<Result<_, _>>()?;
+                let mut fields: Vec<_> = fields
+                    .iter()
+                    .map(|f| Ok((f.name, self.expr_term(f.expr)?)))
+                    .collect::<Result<_, Error>>()?;
+
+                fields.sort_by_key(|f| f.0);
+
+                let fields = fields.into_iter().map(|f| f.1).collect();
                 Ok(Term {
                     ty,
                     kind: TermKind::Constructor { adt: adt_def, variant: variant_index, fields },
