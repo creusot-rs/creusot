@@ -743,7 +743,7 @@ impl Print for Statement {
             Statement::Assign { lhs, rhs } => lhs
                 .pretty(alloc, env)
                 .append(" <- ")
-                .append(parens!(alloc, env, Precedence::Infix1, rhs)),
+                .append(parens!(alloc, env, Precedence::Impl, rhs)),
             Statement::Invariant(nm, e) => {
                 let doc =
                     alloc.text("invariant ").append(alloc.text(nm)).append(alloc.space()).append(

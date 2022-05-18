@@ -416,7 +416,7 @@ impl Exp {
             Exp::BorrowMut(_) => App,
             Exp::Const(_) => Atom,
             Exp::UnaryOp(UnOp::Neg, _) => Prefix,
-            Exp::UnaryOp(UnOp::Not, _) => BangOp,
+            Exp::UnaryOp(UnOp::Not, _) => Not,
             Exp::BinaryOp(op, _, _) => op.precedence(),
             Exp::Call(_, _) => App,
             // Exp::Verbatim(_) => Any,
