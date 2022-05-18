@@ -34,14 +34,6 @@ macro_rules! ast_struct {
 }
 
 macro_rules! ast_enum {
-    // Drop the `#no_visit` attribute, if present.
-    (
-        [$($attrs_pub:tt)*]
-        enum $name:ident #no_visit $($rest:tt)*
-    ) => (
-        ast_enum!([$($attrs_pub)*] enum $name $($rest)*);
-    );
-
     (
         [$($attrs_pub:tt)*]
         enum $name:ident $($rest:tt)*
@@ -55,15 +47,6 @@ macro_rules! ast_enum {
 }
 
 macro_rules! ast_enum_of_structs {
-    (
-        $(#[$enum_attr:meta])*
-        $pub:ident $enum:ident $name:ident #$tag:ident $body:tt
-        $($remaining:tt)*
-    ) => {
-        ast_enum!($(#[$enum_attr])* $pub $enum $name #$tag $body);
-        ast_enum_of_structs_impl!($pub $enum $name $body $($remaining)*);
-    };
-
     (
         $(#[$enum_attr:meta])*
         $pub:ident $enum:ident $name:ident $body:tt
@@ -113,9 +96,6 @@ macro_rules! ast_enum_from_struct {
     // No From<TokenStream> for verbatim variants.
     ($name:ident::Verbatim, $member:ident) => {};
 
-    // No From<TokenStream> for private variants.
-    ($name:ident::$variant:ident, crate::private) => {};
-
     ($name:ident::$variant:ident, $member:ident) => {
         impl From<$member> for $name {
             fn from(e: $member) -> $name {
@@ -127,8 +107,6 @@ macro_rules! ast_enum_from_struct {
 
 #[cfg(feature = "printing")]
 macro_rules! generate_to_tokens {
-    (do_not_generate_to_tokens $($foo:tt)*) => ();
-
     (($($arms:tt)*) $tokens:ident $name:ident { $variant:ident, $($next:tt)*}) => {
         generate_to_tokens!(
             ($($arms)* $name::$variant => {})
@@ -139,13 +117,6 @@ macro_rules! generate_to_tokens {
     (($($arms:tt)*) $tokens:ident $name:ident { $variant:ident $member:ident, $($next:tt)*}) => {
         generate_to_tokens!(
             ($($arms)* $name::$variant(_e) => _e.to_tokens($tokens),)
-            $tokens $name { $($next)* }
-        );
-    };
-
-    (($($arms:tt)*) $tokens:ident $name:ident { $variant:ident crate::private, $($next:tt)*}) => {
-        generate_to_tokens!(
-            ($($arms)* $name::$variant(_) => unreachable!(),)
             $tokens $name { $($next)* }
         );
     };
@@ -163,8 +134,6 @@ macro_rules! generate_to_tokens {
 }
 
 macro_rules! generate_debug {
-    (do_not_generate_debug $($foo:tt)*) => ();
-
     (($($arms:tt)*) $f:ident $name:ident { $variant:ident, $($next:tt)*}) => {
         generate_debug!(
             ($($arms)* $name::$variant => { Ok(()) })
@@ -176,13 +145,6 @@ macro_rules! generate_debug {
         generate_debug!(
             ($($arms)* $name::$variant(_e) => std::fmt::Debug::fmt(&_e, $f),)
             $f $name { $($next)* }
-        );
-    };
-
-    (($($arms:tt)*) $f:ident $name:ident { $variant:ident crate::private, $($next:tt)*}) => {
-        generate_debug!(
-            ($($arms)* $name::$variant(_) => unreachable!(),)
-            $tokens $name { $($next)* }
         );
     };
 
@@ -206,7 +168,6 @@ macro_rules! strip_attrs_pub {
 }
 
 macro_rules! check_keyword_matches {
-    (struct struct) => {};
     (enum enum) => {};
     (pub pub) => {};
 }
