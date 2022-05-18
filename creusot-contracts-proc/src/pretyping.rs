@@ -1,16 +1,23 @@
 use pearlite_syn::Term as RT;
-use proc_macro2::TokenStream;
-use syn::Pat;
+use proc_macro2::{Span, TokenStream};
+use syn::{
+    braced, parse_quote,
+    punctuated::Punctuated,
+    token::{Comma, Token},
+    ExprCall, Pat,
+};
 
 use pearlite_syn::term::*;
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::Lit;
 
 #[derive(Debug)]
 pub enum EncodeError {
     LocalErr,
+    Unsupported(String),
 }
 
+// TODO: Rewrite this as a source to source transform and *then* call ToTokens on the result
 pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
     match term {
         RT::Array(_) => todo!("Array"),
@@ -89,7 +96,33 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
         RT::Path(_) => Ok(quote! { #term }),
         RT::Range(_) => todo!("Range"),
         RT::Repeat(_) => todo!("Repeat"),
-        RT::Struct(_) => todo!("Struct"),
+        RT::Struct(TermStruct { path, fields, rest, brace_token, dot2_token }) => {
+            let mut ts = TokenStream::new();
+            path.to_tokens(&mut ts);
+
+            let mut inner = TokenStream::new();
+            for p in fields.into_pairs() {
+                let (tv, punc) = p.into_tuple();
+
+                let mut ts = tv.member.into_token_stream();
+                if let Some(_) = tv.colon_token {
+                    ts.extend(encode_term(tv.expr)?)
+                }
+                punc.to_tokens(&mut inner);
+            }
+            brace_token.surround(&mut ts, |tokens| {
+                tokens.extend(inner);
+
+                if let Some(dot2_token) = &dot2_token {
+                    dot2_token.to_tokens(tokens);
+                } else if rest.is_some() {
+                    syn::Token![..](Span::call_site()).to_tokens(tokens);
+                }
+                rest.to_tokens(tokens);
+            });
+
+            Ok(ts)
+        }
         RT::Tuple(TermTuple { elems, .. }) => {
             if elems.is_empty() {
                 return Ok(quote! { () });
