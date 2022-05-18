@@ -49,7 +49,7 @@ impl<T> SliceIndexSpec<[T]> for usize {
     #[predicate]
     #[why3::attr = "inline:trivial"]
     fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i != @self && i <= old.len() ==> old[i] == fin[i] }
+        pearlite! { forall<i : Int> 0 <= i && i != @self && i < old.len() ==> old[i] == fin[i] }
     }
 }
 
