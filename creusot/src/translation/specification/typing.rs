@@ -1,5 +1,6 @@
 use crate::error::{CrErr, CreusotResult, Error};
 use crate::util;
+use itertools::Itertools;
 use log::*;
 use rustc_ast::{LitIntType, LitKind};
 use rustc_hir::def_id::{DefId, LocalDefId};
@@ -421,23 +422,42 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             PatKind::Wild => Ok(Pattern::Wildcard),
             PatKind::Binding { name, .. } => Ok(Pattern::Binder(name.to_string())),
             PatKind::Variant { subpatterns, adt_def, variant_index, .. } => {
-                let fields: Vec<_> = subpatterns
+                let mut fields: Vec<_> = subpatterns
                     .iter()
-                    .map(|pat| self.pattern_term(&pat.pattern))
-                    .collect::<Result<_, _>>()?;
+                    .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern)?)))
+                    .collect::<Result<_, Error>>()?;
+                fields.sort_by_key(|f| f.0);
+
+                let field_count = adt_def.variants()[*variant_index].fields.len();
+                let defaults = (0usize..field_count).map(|i| (i.into(), Pattern::Wildcard));
+
+                let fields = defaults
+                    .merge_join_by(fields, |i: &(Field, _), j: &(Field, _)| i.0.cmp(&j.0))
+                    .map(|el| el.reduce(|_, a| a).1)
+                    .collect();
 
                 Ok(Pattern::Constructor { adt: *adt_def, variant: *variant_index, fields })
             }
             PatKind::Leaf { subpatterns } => {
-                let fields: Vec<_> = subpatterns
+                let mut fields: Vec<_> = subpatterns
                     .iter()
-                    .map(|pat| self.pattern_term(&pat.pattern))
-                    .collect::<Result<_, _>>()?;
+                    .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern)?)))
+                    .collect::<Result<_, Error>>()?;
+                fields.sort_by_key(|f| f.0);
 
                 if matches!(pat.ty.kind(), TyKind::Tuple(_)) {
+                    let fields = fields.into_iter().map(|a| a.1).collect();
                     Ok(Pattern::Tuple(fields))
                 } else {
                     let adt_def = pat.ty.ty_adt_def().unwrap();
+
+                    let field_count = adt_def.variants()[0usize.into()].fields.len();
+                    let defaults = (0..field_count).map(|i| (i.into(), Pattern::Wildcard));
+
+                    let fields = defaults
+                        .merge_join_by(fields, |i: &(Field, _), j: &(Field, _)| i.0.cmp(&j.0))
+                        .map(|el| el.reduce(|_, a| a).1)
+                        .collect();
                     Ok(Pattern::Constructor { adt: adt_def, variant: 0u32.into(), fields })
                 }
             }
