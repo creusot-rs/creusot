@@ -3,8 +3,8 @@ use rustc_hir::hir_id::HirId;
 use rustc_middle::hir::map::Map;
 use rustc_middle::hir::nested_filter::OnlyBodies; // use rustc_hir::intravisit::NestedVisitorMap;
 use rustc_middle::ty::TyCtxt;
-use rustc_span::{def_id::DefId, symbol::Symbol};
 use std::collections::HashMap;
+use tool_lib::{DefId, Symbol};
 
 use crate::util;
 

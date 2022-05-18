@@ -10,7 +10,7 @@ use rustc_middle::ty::{
     TyCtxt, TypeFoldable, TypeVisitor,
 };
 use rustc_middle::ty::{DefIdTree, ProjectionTy, Ty, TyKind};
-use rustc_span::{Symbol, DUMMY_SP};
+use tool_lib::{Symbol, DUMMY_SP};
 use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
 use why3::{Ident, QName};
 
@@ -162,7 +162,7 @@ impl<'tcx> CloneInfo<'tcx> {
         })
     }
 
-    pub fn qname_sym(&self, sym: rustc_span::symbol::Symbol) -> QName {
+    pub fn qname_sym(&self, sym: tool_lib::Symbol) -> QName {
         self.qname_ident(sym.to_string().into())
     }
 
@@ -582,7 +582,7 @@ pub fn base_subst<'tcx>(
         let p = trait_params.param_at(ix, ctx.tcx);
         let ty = subst[ix];
         if let GenericParamDefKind::Type { .. } = p.kind {
-            let ty = super::ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, ty.expect_ty());
+            let ty = super::ty::translate_ty(ctx, names, tool_lib::DUMMY_SP, ty.expect_ty());
             clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
         }
     }

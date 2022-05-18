@@ -15,8 +15,8 @@ use rustc_middle::{
     mir::{BorrowKind, Mutability::*},
     ty::{subst::SubstsRef, TyCtxt, WithOptConstParam},
 };
-use rustc_span::Symbol;
-use rustc_target::abi::VariantIdx;
+use tool_lib::Symbol;
+use tool_lib::VariantIdx;
 
 use super::PurityVisitor;
 

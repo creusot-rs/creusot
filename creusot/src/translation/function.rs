@@ -26,7 +26,7 @@ use rustc_middle::{
 use rustc_middle::{mir::Place, ty::DefIdTree};
 use rustc_mir_dataflow::move_paths::MoveData;
 use rustc_mir_transform::{remove_false_edges::*, simplify::*};
-use rustc_span::{Symbol, DUMMY_SP};
+use tool_lib::{Symbol, DUMMY_SP};
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 use why3::{declaration::*, Ident};
@@ -624,7 +624,7 @@ fn resolve_predicate_of<'tcx>(
 ) -> ResolveStmt {
     if !resolve_trait_loaded(ctx.tcx) {
         ctx.warn(
-            rustc_span::DUMMY_SP,
+            tool_lib::DUMMY_SP,
             "load the `creusot_contract` crate to enable resolution of mutable borrows.",
         );
         return ResolveStmt { exp: None };

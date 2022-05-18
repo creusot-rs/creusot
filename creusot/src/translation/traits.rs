@@ -90,7 +90,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                 TyDecl::Alias {
                     ty_name: name.clone(),
                     ty_params: vec![],
-                    alias: ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty),
+                    alias: ty::translate_ty(self, names, tool_lib::DUMMY_SP, assoc_ty),
                 }
             }),
             rustc_middle::ty::TraitContainer(_) => {

@@ -4,8 +4,8 @@ use rustc_middle::{
     mir::ConstantKind,
     ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt, Unevaluated},
 };
-use rustc_span::Span;
-use rustc_target::abi::Size;
+use tool_lib::Span;
+use tool_lib::Size;
 use why3::{
     declaration::Module,
     exp::{Constant, Exp},

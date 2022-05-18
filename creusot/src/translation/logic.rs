@@ -12,7 +12,7 @@ use why3::Ident;
 pub fn translate_logic_or_predicate<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
-    _span: rustc_span::Span,
+    _span: tool_lib::Span,
 ) -> (Module, Option<Module>, bool, CloneMap<'tcx>) {
     let mut names = CloneMap::new(ctx.tcx, def_id, false);
     names.clone_self(def_id);

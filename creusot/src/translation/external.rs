@@ -10,8 +10,8 @@ use rustc_middle::thir::visit::Visitor;
 use rustc_middle::thir::{self, Expr, ExprKind, Thir};
 use rustc_middle::ty::subst::{InternalSubsts, Subst, SubstsRef};
 use rustc_middle::ty::{Predicate, TyCtxt, TyKind, WithOptConstParam};
-use rustc_span::symbol::kw;
-use rustc_span::Symbol;
+use tool_lib::kw;
+use tool_lib::Symbol;
 use why3::declaration::ValKind;
 use why3::declaration::{Decl, Module, ValKind::Val};
 

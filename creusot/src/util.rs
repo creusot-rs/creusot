@@ -1,12 +1,12 @@
 use crate::translation::ty::closure_accessor_name;
 use crate::{ctx::*, translation};
-use rustc_ast::ast::{MacArgs, MacArgsEq};
-use rustc_ast::{AttrItem, AttrKind, Attribute};
-use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::subst::SubstsRef;
-use rustc_middle::ty::{self, TyKind, VariantDef};
-use rustc_middle::ty::{DefIdTree, ReErased, TyCtxt};
-use rustc_span::Symbol;
+use tool_lib::{MacArgs, MacArgsEq};
+use tool_lib::{AttrItem, AttrKind, Attribute};
+use tool_lib::{DefKind, DefId};
+use tool_lib::ty::SubstsRef;
+use tool_lib::ty::{self, TyKind, VariantDef};
+use tool_lib::ty::{DefIdTree, ReErased, TyCtxt};
+use tool_lib::Symbol;
 use std::collections::HashMap;
 use std::iter;
 use why3::exp::ExpMutVisitor;
@@ -149,7 +149,7 @@ pub fn item_qname(tcx: TyCtxt, def_id: DefId) -> QName {
 // The reason for this that we cannot distinguish a struct being used in a type
 // from a struct being used as a constructor! (very annoying).
 pub fn item_name(tcx: TyCtxt, def_id: DefId) -> Ident {
-    use rustc_hir::def::DefKind::*;
+    use tool_lib::DefKind::*;
 
     match tcx.def_kind(def_id) {
         AssocTy => ident_of_ty(tcx.item_name(def_id)),
@@ -186,7 +186,7 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
 
 pub fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
     let kind = tcx.def_kind(def_id);
-    use rustc_hir::def::DefKind::*;
+    use tool_lib::DefKind::*;
 
     match kind {
         Ctor(_, _) | Variant | Struct | Enum => "Type".into(),
@@ -286,7 +286,7 @@ pub fn signature_of<'tcx>(
     def_id: DefId,
 ) -> Signature {
     debug!("signature_of {def_id:?}");
-    let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) =
+    let (inputs, output): (Box<dyn Iterator<Item = (tool_lib::Ident, _)>>, _) =
         match ctx.tcx.type_of(def_id).kind() {
             TyKind::FnDef(..) => {
                 let gen_sig = ctx.tcx.fn_sig(def_id);
@@ -304,13 +304,13 @@ pub fn signature_of<'tcx>(
                 let env_region = ReErased;
                 let env_ty = ctx.tcx.closure_env_ty(def_id, subst, env_region).unwrap();
 
-                let closure_env = (rustc_span::symbol::Ident::empty(), env_ty);
+                let closure_env = (tool_lib::Ident::empty(), env_ty);
                 let names = ctx
                     .tcx
                     .fn_arg_names(def_id)
                     .iter()
                     .cloned()
-                    .chain(iter::repeat(rustc_span::symbol::Ident::empty()));
+                    .chain(iter::repeat(tool_lib::Ident::empty()));
                 (
                     box iter::once(closure_env).chain(names.zip(sig.inputs().iter().cloned())),
                     sig.output(),

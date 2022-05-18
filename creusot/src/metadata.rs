@@ -11,7 +11,7 @@ use rustc_metadata::creader::CStore;
 use rustc_middle::ty::subst::SubstsRef;
 use rustc_middle::ty::{TyCtxt, Visibility};
 use rustc_session::cstore::CrateStore;
-use rustc_span::Symbol;
+use tool_lib::Symbol;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;

@@ -4,7 +4,7 @@ use rustc_hir::def_id::LocalDefId;
 use rustc_hir::itemlikevisit::ItemLikeVisitor;
 use rustc_hir::{ForeignItem, ImplItem, Item, TraitItem};
 use rustc_middle::ty::TyCtxt;
-use rustc_span::Span;
+use tool_lib::Span;
 
 struct LawParams<'tcx> {
     tcx: TyCtxt<'tcx>,

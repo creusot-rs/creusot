@@ -52,7 +52,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             TermKind::Lit(l) => {
                 let c = match l {
                     Literal::Int(u, _) => {
-                        let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, term.ty);
+                        let ty = translate_ty(self.ctx, self.names, tool_lib::DUMMY_SP, term.ty);
 
                         match term.ty.kind() {
                             TyKind::Int(_) => Constant::Int(u as i128, Some(ty)),
@@ -89,13 +89,13 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                         self.names,
                         constant,
                         param_env,
-                        rustc_span::DUMMY_SP,
+                        tool_lib::DUMMY_SP,
                     )
                 })
             }
             TermKind::Var(v) => Exp::pure_var(util::ident_of(v)),
             TermKind::Binary { op, operand_ty, box lhs, box rhs } => {
-                translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, operand_ty);
+                translate_ty(self.ctx, self.names, tool_lib::DUMMY_SP, operand_ty);
 
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -162,11 +162,11 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 })
             }
             TermKind::Forall { binder, box body } => {
-                let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
+                let ty = translate_ty(self.ctx, self.names, tool_lib::DUMMY_SP, binder.1);
                 Exp::Forall(vec![(binder.0.into(), ty)], box self.lower_term(body))
             }
             TermKind::Exists { binder, box body } => {
-                let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
+                let ty = translate_ty(self.ctx, self.names, tool_lib::DUMMY_SP, binder.1);
                 Exp::Exists(vec![(binder.0.into(), ty)], box self.lower_term(body))
             }
             TermKind::Constructor { adt, variant, fields } => {
@@ -237,7 +237,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                         box self.lower_term(false_br),
                     )
                 } else {
-                    let _ = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, scrutinee.ty);
+                    let _ = translate_ty(self.ctx, self.names, tool_lib::DUMMY_SP, scrutinee.ty);
                     let arms = arms
                         .into_iter()
                         .map(|(pat, body)| (self.lower_pat(pat), self.lower_term(body)))

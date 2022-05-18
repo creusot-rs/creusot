@@ -3,7 +3,7 @@ use rustc_infer::{
     traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
 };
 use rustc_middle::ty::{subst::SubstsRef, ParamEnv, Predicate};
-use rustc_span::Span;
+use tool_lib::Span;
 use rustc_trait_selection::traits::FulfillmentContext;
 use std::collections::HashMap;
 
@@ -18,7 +18,7 @@ use rustc_middle::{
     ty::AdtDef,
 };
 use rustc_session::Session;
-use rustc_target::abi::VariantIdx;
+use tool_lib::VariantIdx;
 
 use why3::exp::{BinOp, Constant, Exp, Pattern};
 use why3::mlcfg::{BlockId, Statement, Terminator as MlT};
@@ -163,7 +163,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
         &mut self,
         def_id: DefId,
         subst: SubstsRef<'tcx>,
-        _sp: rustc_span::Span,
+        _sp: tool_lib::Span,
     ) -> QName {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(id) = it.container {

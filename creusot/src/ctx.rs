@@ -21,7 +21,7 @@ use rustc_hir::def::DefKind;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_middle::ty::subst::InternalSubsts;
 use rustc_middle::ty::{ParamEnv, TyCtxt};
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use tool_lib::{Span, Symbol, DUMMY_SP};
 pub use util::{item_name, module_name, ItemType};
 use why3::declaration::{Module, TyDecl};
 use why3::exp::Exp;
@@ -127,7 +127,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             return;
         }
 
-        let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
+        let span = self.tcx.hir().span_if_local(def_id).unwrap_or(tool_lib::DUMMY_SP);
         let (interface, deps) = interface_for(self, def_id);
 
         let translated = if util::is_logic(self.tcx, def_id) || util::is_predicate(self.tcx, def_id)
@@ -325,7 +325,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
         let filename = match self.opts.span_mode {
             Some(SpanMode::Absolute) if lo.file.name.is_real() => {
-                if let rustc_span::FileName::Real(path) = &lo.file.name {
+                if let tool_lib::FileName::Real(path) = &lo.file.name {
                     let path = path.local_path_if_available();
                     let mut buf;
                     let path = if path.is_relative() {
