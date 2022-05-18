@@ -1,5 +1,5 @@
-use rustc_mir_dataflow::impls::{MaybeInitializedLocals, MaybeLiveLocals};
-use rustc_mir_dataflow::Analysis;
+use tool_lib::dataflow::{MaybeInitializedLocals, MaybeLiveLocals};
+use tool_lib::dataflow::Analysis;
 
 use tool_lib::{mir::traversal::preorder, mir::Body, ty::TyCtxt};
 

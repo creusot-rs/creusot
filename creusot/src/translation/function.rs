@@ -7,7 +7,7 @@ use crate::{
     },
     util::{self, ident_of, signature_of},
 };
-use rustc_borrowck::borrow_set::BorrowSet;
+use tool_lib::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use tool_lib::TyCtxtInferExt;
@@ -24,7 +24,7 @@ use tool_lib::{
     ty::{TyKind, WithOptConstParam},
 };
 use tool_lib::{mir::Place, ty::DefIdTree};
-use rustc_mir_dataflow::move_paths::MoveData;
+use tool_lib::dataflow::MoveData;
 use rustc_mir_transform::{remove_false_edges::*, simplify::*};
 use tool_lib::{Symbol, DUMMY_SP};
 use std::collections::{BTreeMap, HashMap};

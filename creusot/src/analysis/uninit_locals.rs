@@ -2,7 +2,7 @@
 use rustc_index::bit_set::BitSet;
 use tool_lib::mir::visit::{PlaceContext, Visitor};
 use tool_lib::mir::{self, BasicBlock, Local, Location};
-use rustc_mir_dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis};
+use tool_lib::dataflow::{AnalysisDomain, GenKill, GenKillAnalysis};
 
 pub struct MaybeUninitializedLocals;
 
@@ -50,7 +50,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
         &self,
         trans: &mut impl GenKill<Self::Idx>,
         _block: BasicBlock,
-        return_places: rustc_mir_dataflow::CallReturnPlaces<'_, 'tcx>,
+        return_places: tool_lib::dataflow::CallReturnPlaces<'_, 'tcx>,
     ) {
         return_places.for_each(|place| {
             if let Some(local) = place.as_local() {
