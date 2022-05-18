@@ -354,7 +354,7 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
                 #[creusot::no_translate]
                 #[creusot::decl::spec]
                 #[creusot::spec::assert]
-                ||{ #assert_body }
+                || -> bool { #assert_body }
             };
         }
     })
