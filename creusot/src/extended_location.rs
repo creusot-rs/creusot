@@ -1,4 +1,4 @@
-use rustc_middle::mir::Location;
+use tool_lib::mir::Location;
 use rustc_mir_dataflow::Analysis;
 use rustc_mir_dataflow::{Results, ResultsCursor};
 use std::borrow::Borrow;

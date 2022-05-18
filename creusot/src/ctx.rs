@@ -19,8 +19,8 @@ use rustc_data_structures::captures::Captures;
 use rustc_errors::{DiagnosticBuilder, DiagnosticId};
 use rustc_hir::def::DefKind;
 use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_middle::ty::subst::InternalSubsts;
-use rustc_middle::ty::{ParamEnv, TyCtxt};
+use tool_lib::ty::InternalSubsts;
+use tool_lib::ty::{ParamEnv, TyCtxt};
 use tool_lib::{Span, Symbol, DUMMY_SP};
 pub use util::{item_name, module_name, ItemType};
 use why3::declaration::{Module, TyDecl};
@@ -163,7 +163,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn translate_accessor(&mut self, field_id: DefId) {
-        use rustc_middle::ty::DefIdTree;
+        use tool_lib::ty::DefIdTree;
 
         if !self.translated_items.insert(field_id) {
             return;
@@ -200,7 +200,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                     .and_then(|id| self.extern_specs.get(&id))
                 {
                     let i = InternalSubsts::identity_for_item(self.tcx, def_id);
-                    use rustc_middle::ty::subst::Subst;
+                    use tool_lib::ty::Subst;
                     term.subst(self.tcx, i)
                 } else {
                     term
@@ -303,15 +303,15 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     pub fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {
         match self.extern_spec(def_id) {
             Some(es) => {
-                use rustc_middle::ty;
+                use tool_lib::ty;
                 let mut additional_predicates = Vec::new();
-                let impl_subst = ty::subst::InternalSubsts::identity_for_item(self.tcx, def_id);
+                let impl_subst = ty::InternalSubsts::identity_for_item(self.tcx, def_id);
 
                 additional_predicates.extend(es.predicates_for(self.tcx, impl_subst));
                 additional_predicates.extend(self.tcx.param_env(def_id).caller_bounds());
                 ParamEnv::new(
                     self.mk_predicates(additional_predicates.into_iter()),
-                    rustc_infer::traits::Reveal::UserFacing,
+                    tool_lib::Reveal::UserFacing,
                     rustc_hir::Constness::NotConst,
                 )
             }

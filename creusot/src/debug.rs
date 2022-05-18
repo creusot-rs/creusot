@@ -1,7 +1,7 @@
 use rustc_mir_dataflow::impls::{MaybeInitializedLocals, MaybeLiveLocals};
 use rustc_mir_dataflow::Analysis;
 
-use rustc_middle::{mir::traversal::preorder, mir::Body, ty::TyCtxt};
+use tool_lib::{mir::traversal::preorder, mir::Body, ty::TyCtxt};
 
 pub fn debug<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) {
     let mut init = MaybeInitializedLocals

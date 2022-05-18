@@ -1,6 +1,6 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::mir::interpret::{AllocRange, ConstValue};
-use rustc_middle::{
+use tool_lib::mir::interpret::{AllocRange, ConstValue};
+use tool_lib::{
     mir::ConstantKind,
     ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt, Unevaluated},
 };
@@ -100,8 +100,8 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
     span: Span,
     c: C,
 ) -> Exp {
-    use rustc_middle::ty::TyKind::{Bool, Int, Uint};
-    use rustc_middle::ty::{IntTy::*, UintTy::*};
+    use tool_lib::ty::TyKind::{Bool, Int, Uint};
+    use tool_lib::ty::{IntTy::*, UintTy::*};
     let why3_ty = ty::translate_ty(ctx, names, span, ty);
 
     match ty.kind() {

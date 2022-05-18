@@ -2,8 +2,8 @@ use indexmap::{IndexMap, IndexSet};
 
 use rustc_data_structures::graph::WithSuccessors;
 use rustc_hir::def_id::DefId;
-use rustc_middle::mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Rvalue};
-use rustc_middle::ty::TyCtxt;
+use tool_lib::mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Rvalue};
+use tool_lib::ty::TyCtxt;
 use tool_lib::Symbol;
 
 use why3::exp::Exp;

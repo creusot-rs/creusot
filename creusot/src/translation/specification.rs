@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::translation::function::real_locals;
 use crate::{ctx::*, util};
 use rustc_macros::{TyDecodable, TyEncodable};
-use rustc_middle::thir::{self, ExprKind, Thir};
-use rustc_middle::ty::subst::InternalSubsts;
+use tool_lib::thir::{self, ExprKind, Thir};
+use tool_lib::ty::InternalSubsts;
 use why3::declaration::Contract;
 use why3::exp::Exp;
 use why3::Ident;
@@ -13,8 +13,8 @@ use self::typing::pearlite_stub;
 
 use super::LocalIdent;
 use rustc_hir::def_id::DefId;
-use rustc_middle::mir::{Body, Location};
-use rustc_middle::ty::{self, TyCtxt};
+use tool_lib::mir::{Body, Location};
+use tool_lib::ty::{self, TyCtxt};
 
 mod builtins;
 mod lower;
@@ -52,7 +52,7 @@ impl PreContract {
         let mut out = Contract::new();
         let subst = InternalSubsts::identity_for_item(ctx.tcx, self.func_id);
 
-        use crate::rustc_middle::ty::subst::Subst;
+        use tool_lib::ty::Subst;
         for req_id in self.requires {
             log::debug!("require clause {:?}", req_id);
             let term = ctx.term(req_id).unwrap().clone().subst(ctx.tcx, subst);
@@ -97,7 +97,7 @@ pub fn inv_subst<'tcx>(
     body: &Body<'tcx>,
     loc: Location,
 ) -> HashMap<why3::Ident, Exp> {
-    use rustc_middle::mir::VarDebugInfoContents::Place;
+    use tool_lib::mir::VarDebugInfoContents::Place;
     let local_map = real_locals(tcx, body);
     let mut scope = body.source_info(loc).scope;
 
@@ -216,7 +216,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
     fn visit_expr(&mut self, expr: &thir::Expr<'tcx>) {
         match expr.kind {
             ExprKind::Call { fun, .. } => {
-                if let &ty::FnDef(func_did, _) = self.thir[fun].ty.kind() {
+                if let &ty::TyKind::FnDef(func_did, _) = self.thir[fun].ty.kind() {
                     if !util::is_predicate(self.tcx, func_did)
                         && !util::is_logic(self.tcx, func_did)
                         && !util::get_builtin(self.tcx, func_did).is_some()

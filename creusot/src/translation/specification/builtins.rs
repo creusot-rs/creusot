@@ -4,7 +4,7 @@ use crate::translation::traits::resolve_opt;
 use crate::translation::ty::translate_ty;
 use crate::util::get_builtin;
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
+use tool_lib::ty::{SubstsRef, TyCtxt};
 use tool_lib::{sym, Symbol};
 use why3::exp::{BinOp, Constant, Exp, Purity, UnOp};
 use why3::QName;

@@ -4,8 +4,8 @@ use crate::translation::ty::translate_ty;
 use crate::translation::ty::variant_accessor_name;
 use crate::util::constructor_qname;
 use crate::{ctx::*, util};
-use rustc_middle::ty;
-use rustc_middle::ty::TyKind;
+use tool_lib::ty;
+use tool_lib::ty::TyKind;
 use why3::exp::{BinOp, Constant, Exp, Pattern as Pat, Purity};
 use why3::QName;
 
@@ -300,10 +300,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
 }
 
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{
-    subst::{Subst, SubstsRef},
-    TyCtxt,
-};
+use tool_lib::ty::{Subst, SubstsRef, TyCtxt};
 
 fn binop_to_binop(op: typing::BinOp) -> why3::exp::BinOp {
     match op {

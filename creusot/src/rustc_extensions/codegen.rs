@@ -10,8 +10,8 @@
 use rustc_errors::DiagnosticBuilder;
 // use rustc_errors::ErrorReported;
 use rustc_errors::ErrorGuaranteed;
-use rustc_middle::ty::fold::TypeFoldable;
-use rustc_middle::ty::{self, TyCtxt};
+use tool_lib::ty::fold::TypeFoldable;
+use tool_lib::ty::{self, TyCtxt};
 use rustc_trait_selection::infer::{InferCtxt, TyCtxtInferExt};
 use rustc_trait_selection::traits::{
     FulfillmentContext, ImplSource, Obligation, ObligationCause, SelectionContext, TraitEngine,

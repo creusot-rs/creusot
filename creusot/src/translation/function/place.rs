@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use rustc_middle::{
+use tool_lib::{
     mir::{Body, Local, Place},
     ty::{TyKind, UintTy},
 };
@@ -53,7 +53,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         // So we track the path from the root as we traverse, which we call the stump.
         let mut stump: &[_] = lhs.projection;
 
-        use rustc_middle::mir::ProjectionElem::*;
+        use tool_lib::mir::ProjectionElem::*;
 
         for (proj, elem) in lhs.iter_projections().rev() {
             // twisted stuff
@@ -208,7 +208,7 @@ pub(super) fn translate_rplace_inner<'tcx>(
     proj: &[rustc_middle::mir::PlaceElem<'tcx>],
 ) -> Exp {
     let mut inner = Exp::impure_var(translate_local(body, map, loc).ident());
-    use rustc_middle::mir::ProjectionElem::*;
+    use tool_lib::mir::ProjectionElem::*;
     let mut place_ty = Place::ty_from(loc, &[], body, ctx.tcx);
 
     for elem in proj {
@@ -275,7 +275,7 @@ pub(super) fn translate_rplace_inner<'tcx>(
 }
 
 pub(super) fn translate_local(body: &Body, map: &HashMap<Local, Local>, loc: Local) -> LocalIdent {
-    use rustc_middle::mir::VarDebugInfoContents::Place;
+    use tool_lib::mir::VarDebugInfoContents::Place;
     let debug_info: Vec<_> = body
         .var_debug_info
         .iter()

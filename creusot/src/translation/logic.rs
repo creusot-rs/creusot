@@ -4,7 +4,7 @@ use crate::function::all_generic_decls_for;
 use crate::translation::specification;
 use crate::{ctx::*, util};
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::TyCtxt;
+use tool_lib::ty::TyCtxt;
 use why3::declaration::*;
 use why3::exp::{BinOp, Exp};
 use why3::Ident;

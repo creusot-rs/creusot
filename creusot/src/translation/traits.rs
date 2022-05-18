@@ -1,5 +1,5 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, AssocItemContainer::*, ParamEnv, TraitRef, TyCtxt};
+use tool_lib::ty::{SubstsRef, AssocItemContainer::*, ParamEnv, TraitRef, TyCtxt};
 use rustc_trait_selection::traits::ImplSource;
 
 use why3::declaration::TyDecl;
@@ -85,7 +85,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         let name = item_name(self.tcx, def_id);
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
-            rustc_middle::ty::ImplContainer(_) => names.with_public_clones(|names| {
+            rustc_middle::ty::AssocItemContainer::ImplContainer(_) => names.with_public_clones(|names| {
                 let assoc_ty = self.tcx.type_of(def_id);
                 TyDecl::Alias {
                     ty_name: name.clone(),
@@ -93,7 +93,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                     alias: ty::translate_ty(self, names, tool_lib::DUMMY_SP, assoc_ty),
                 }
             }),
-            rustc_middle::ty::TraitContainer(_) => {
+            rustc_middle::ty::AssocItemContainer::TraitContainer(_) => {
                 TyDecl::Opaque { ty_name: name.clone(), ty_params: vec![] }
             }
         };
@@ -112,8 +112,8 @@ pub fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &Ass
 }
 
 use crate::function::{all_generic_decls_for, own_generic_decls_for};
-use rustc_middle::ty::subst::InternalSubsts;
-use rustc_middle::ty::{AssocItem, Binder};
+use tool_lib::ty::InternalSubsts;
+use tool_lib::ty::{AssocItem, Binder};
 
 fn resolve_impl_source_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -180,7 +180,7 @@ pub fn resolve_trait_opt<'tcx>(
     }
 }
 
-use rustc_middle::ty::AssocItemContainer;
+use tool_lib::ty::AssocItemContainer;
 
 pub fn resolve_assoc_item_opt<'tcx>(
     tcx: TyCtxt<'tcx>,

@@ -1,7 +1,7 @@
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::subst::SubstsRef;
-use rustc_middle::ty::{self, subst::InternalSubsts, ProjectionTy, Ty, TyCtxt, TyKind::*};
-use rustc_middle::ty::{ClosureSubsts, FieldDef, VariantDef};
+use tool_lib::ty::SubstsRef;
+use tool_lib::ty::{self, InternalSubsts, ProjectionTy, Ty, TyCtxt, TyKind::*};
+use tool_lib::ty::{ClosureSubsts, FieldDef, VariantDef};
 use tool_lib::Symbol;
 use tool_lib::{Span, DUMMY_SP};
 use std::collections::VecDeque;
@@ -179,7 +179,7 @@ pub fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> Vec<DefId> {
             for field in &variant.fields {
                 for ty in field.ty(tcx, substs).walk() {
                     let k = match ty.unpack() {
-                        rustc_middle::ty::subst::GenericArgKind::Type(ty) => ty,
+                        tool_lib::ty::GenericArgKind::Type(ty) => ty,
                         _ => continue,
                     };
                     if let Adt(def, _) = k.kind() {
@@ -472,7 +472,7 @@ fn intty_to_ty(
     names: &mut CloneMap<'_>,
     ity: &rustc_middle::ty::IntTy,
 ) -> MlT {
-    use rustc_middle::ty::IntTy::*;
+    use tool_lib::ty::IntTy::*;
     names.import_prelude_module(PreludeModule::Int);
 
     if !ctx.opts.bounds_check {
@@ -512,7 +512,7 @@ fn uintty_to_ty(
     names: &mut CloneMap<'_>,
     ity: &rustc_middle::ty::UintTy,
 ) -> MlT {
-    use rustc_middle::ty::UintTy::*;
+    use tool_lib::ty::UintTy::*;
     names.import_prelude_module(PreludeModule::Int);
 
     if !ctx.opts.bounds_check {
@@ -548,7 +548,7 @@ fn uintty_to_ty(
 }
 
 fn floatty_to_ty(_: &mut CloneMap<'_>, fty: &rustc_middle::ty::FloatTy) -> MlT {
-    use rustc_middle::ty::FloatTy::*;
+    use tool_lib::ty::FloatTy::*;
 
     match fty {
         F32 => single_ty(),

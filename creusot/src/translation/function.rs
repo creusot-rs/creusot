@@ -10,20 +10,20 @@ use crate::{
 use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
-use rustc_infer::infer::TyCtxtInferExt;
-use rustc_middle::ty::{
-    subst::{GenericArg, SubstsRef},
+use tool_lib::TyCtxtInferExt;
+use tool_lib::ty::{
+    {GenericArg, SubstsRef},
     TypeFoldable,
 };
-use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
-use rustc_middle::ty::{ParamEnv, Ty};
-use rustc_middle::{
+use tool_lib::ty::{GenericParamDef, GenericParamDefKind};
+use tool_lib::ty::{ParamEnv, Ty};
+use tool_lib::{
     mir::traversal::preorder,
     mir::{BasicBlock, Body, Local, Location, MirPass, Operand, VarDebugInfo},
     ty::TyCtxt,
     ty::{TyKind, WithOptConstParam},
 };
-use rustc_middle::{mir::Place, ty::DefIdTree};
+use tool_lib::{mir::Place, ty::DefIdTree};
 use rustc_mir_dataflow::move_paths::MoveData;
 use rustc_mir_transform::{remove_false_edges::*, simplify::*};
 use tool_lib::{Symbol, DUMMY_SP};
@@ -446,7 +446,7 @@ pub fn closure_contract<'tcx>(
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Vec<Decl> {
-    use rustc_middle::ty::{self, ClosureKind::*};
+    use tool_lib::ty::{self, ClosureKind::*};
     let subst = match ctx.tcx.type_of(def_id).kind() {
         TyKind::Closure(_, substs) => substs,
         _ => return Vec::new(),

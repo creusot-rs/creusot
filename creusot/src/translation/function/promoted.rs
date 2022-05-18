@@ -12,7 +12,7 @@ use crate::{
     },
     util::constructor_qname,
 };
-use rustc_middle::{
+use tool_lib::{
     mir::{Body, BorrowKind, Operand, Promoted, StatementKind, TerminatorKind},
     ty::ParamEnv,
 };
@@ -77,8 +77,8 @@ pub fn translate_promoted<'tcx>(
             _ => {}
         }
         previous_block = Some(id);
-        use rustc_middle::mir::Rvalue::*;
-        use rustc_middle::ty::UintTy;
+        use tool_lib::mir::Rvalue::*;
+        use tool_lib::ty::UintTy;
         for stmt in bbd.statements.iter().rev() {
             match &stmt.kind {
                 StatementKind::Assign(box (tgt, val)) => {
@@ -111,7 +111,7 @@ pub fn translate_promoted<'tcx>(
                             box translate_operand(ctx, names, body, param_env, v),
                         ),
                         Aggregate(box kind, ops) => {
-                            use rustc_middle::mir::AggregateKind::*;
+                            use tool_lib::mir::AggregateKind::*;
                             let fields = ops
                                 .iter()
                                 .map(|op| translate_operand(ctx, names, body, param_env, op))
@@ -185,7 +185,7 @@ fn translate_operand<'tcx>(
     param_env: ParamEnv<'tcx>,
     operand: &Operand<'tcx>,
 ) -> Exp {
-    use rustc_middle::mir::Operand::*;
+    use tool_lib::mir::Operand::*;
 
     match operand {
         Move(pl) | Copy(pl) => {

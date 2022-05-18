@@ -121,7 +121,7 @@ pub fn after_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::exp::BinOp {
-    use rustc_middle::mir;
+    use tool_lib::mir;
     use why3::exp::BinOp;
     match op {
         mir::BinOp::Add => BinOp::Add,

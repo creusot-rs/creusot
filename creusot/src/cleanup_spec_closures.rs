@@ -1,13 +1,13 @@
 use indexmap::IndexSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::vec::IndexVec;
-use rustc_middle::mir::visit::MutVisitor;
-use rustc_middle::mir::{AggregateKind, Rvalue};
-use rustc_middle::mir::{
+use tool_lib::mir::visit::MutVisitor;
+use tool_lib::mir::{AggregateKind, Rvalue};
+use tool_lib::mir::{
     BasicBlock, BasicBlockData, Body, Local, Location, SourceInfo, Terminator, TerminatorKind,
 };
 
-use rustc_middle::ty::TyCtxt;
+use tool_lib::ty::TyCtxt;
 
 use crate::util;
 
@@ -31,7 +31,7 @@ pub fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut 
 }
 
 fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) {
-    use rustc_middle::mir::StatementKind;
+    use tool_lib::mir::StatementKind;
 
     for data in body.basic_blocks_mut() {
         data.statements.retain(|statement| match &statement.kind {
@@ -110,7 +110,7 @@ pub fn map_locals<V>(
     map
 }
 
-use rustc_middle::mir::visit::PlaceContext;
+use tool_lib::mir::visit::PlaceContext;
 
 pub struct LocalUpdater<'tcx> {
     pub map: IndexVec<Local, Option<Local>>,

@@ -1,5 +1,5 @@
 use rustc_borrowck::borrow_set::TwoPhaseActivation;
-use rustc_middle::{
+use tool_lib::{
     mir::{
         BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
@@ -133,7 +133,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
             }
             Rvalue::UnaryOp(op, v) => UnaryOp(unop_to_unop(*op), box self.translate_operand(v)),
             Rvalue::Aggregate(box kind, ops) => {
-                use rustc_middle::mir::AggregateKind::*;
+                use tool_lib::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
 
                 match kind {

@@ -4,12 +4,12 @@ use petgraph::algo::is_cyclic_directed;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::EdgeDirection::Incoming;
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{
+use tool_lib::ty::{
     self,
-    subst::{InternalSubsts, Subst, SubstsRef},
+    {InternalSubsts, Subst, SubstsRef},
     TyCtxt, TypeFoldable, TypeVisitor,
 };
-use rustc_middle::ty::{DefIdTree, ProjectionTy, Ty, TyKind};
+use tool_lib::ty::{DefIdTree, ProjectionTy, Ty, TyKind};
 use tool_lib::{Symbol, DUMMY_SP};
 use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
 use why3::{Ident, QName};
@@ -563,7 +563,7 @@ pub fn base_subst<'tcx>(
     subst: SubstsRef<'tcx>,
 ) -> Vec<CloneSubst> {
     use heck::SnakeCase;
-    use rustc_middle::ty::GenericParamDefKind;
+    use tool_lib::ty::GenericParamDefKind;
     loop {
         if ctx.tcx.is_closure(def_id) {
             def_id = ctx.tcx.parent(def_id);
@@ -662,8 +662,8 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
         Predicate => Some(SymbolKind::Predicate(tcx.item_name(def_id))),
         Interface | Program => Some(SymbolKind::Val(tcx.item_name(def_id))),
         AssocTy => match tcx.associated_item(def_id).container {
-            ty::TraitContainer(_) => Some(SymbolKind::Type(tcx.item_name(def_id))),
-            ty::ImplContainer(_) => None,
+            ty::AssocItemContainer::TraitContainer(_) => Some(SymbolKind::Type(tcx.item_name(def_id))),
+            ty::AssocItemContainer::ImplContainer(_) => None,
         },
         Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
         Type => unreachable!("types have no refinable symbols"),

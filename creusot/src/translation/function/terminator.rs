@@ -1,19 +1,18 @@
-use rustc_infer::{
-    infer::{InferCtxt, TyCtxtInferExt},
-    traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
+use tool_lib::{
+    FulfillmentError, InferCtxt, Obligation, ObligationCause, TraitEngine, TyCtxtInferExt,
 };
-use rustc_middle::ty::{subst::SubstsRef, ParamEnv, Predicate};
-use tool_lib::Span;
+use tool_lib::ty::{SubstsRef, ParamEnv, Predicate};
 use rustc_trait_selection::traits::FulfillmentContext;
 use std::collections::HashMap;
+use tool_lib::Span;
 
 use rustc_errors::DiagnosticId;
 use rustc_hir::def_id::DefId;
-use rustc_middle::{
+use tool_lib::{
     mir::{Location, Operand, Terminator, TerminatorKind::*},
     ty,
 };
-use rustc_middle::{
+use tool_lib::{
     mir::{SourceInfo, SwitchTargets},
     ty::AdtDef,
 };
@@ -166,7 +165,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
         _sp: tool_lib::Span,
     ) -> QName {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
-            if let ty::TraitContainer(id) = it.container {
+            if let ty::AssocItemContainer::TraitContainer(id) = it.container {
                 let params = self.param_env();
                 let method = traits::resolve_assoc_item_opt(self.tcx, params, def_id, subst)
                     .expect("could not find instance");
@@ -216,8 +215,8 @@ fn evaluate_additional_predicates<'tcx>(
     }
 }
 
-use rustc_middle::mir::{BasicBlockData, Place, Rvalue, StatementKind, TerminatorKind};
-use rustc_middle::ty::{Ty, TyCtxt};
+use tool_lib::mir::{BasicBlockData, Place, Rvalue, StatementKind, TerminatorKind};
+use tool_lib::ty::{Ty, TyCtxt};
 
 // Find the place being discriminated, if there is one
 pub fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Place<'tcx>> {
@@ -248,7 +247,7 @@ pub fn make_switch<'tcx>(
     targets: &SwitchTargets,
     discr: Exp,
 ) -> MlT {
-    use rustc_middle::ty::TyKind::*;
+    use tool_lib::ty::TyKind::*;
     use Pattern::*;
     match switch_ty.kind() {
         Adt(def, _) => {

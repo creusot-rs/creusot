@@ -1,7 +1,7 @@
 // use crate::dataflow::{self, GenKill};
 use rustc_index::bit_set::BitSet;
-use rustc_middle::mir::visit::{PlaceContext, Visitor};
-use rustc_middle::mir::{self, BasicBlock, Local, Location};
+use tool_lib::mir::visit::{PlaceContext, Visitor};
+use tool_lib::mir::{self, BasicBlock, Local, Location};
 use rustc_mir_dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis};
 
 pub struct MaybeUninitializedLocals;
@@ -79,7 +79,7 @@ where
     T: GenKill<Local>,
 {
     fn visit_local(&mut self, &local: &Local, context: PlaceContext, _: Location) {
-        use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, NonUseContext};
+        use tool_lib::mir::visit::{MutatingUseContext, NonMutatingUseContext, NonUseContext};
         match context {
             // These are handled specially in `call_return_effect` and `yield_resume_effect`.
             PlaceContext::MutatingUse(MutatingUseContext::Call | MutatingUseContext::Yield) => {}

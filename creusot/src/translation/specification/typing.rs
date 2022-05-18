@@ -5,18 +5,18 @@ use rustc_ast::{LitIntType, LitKind};
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_hir::HirId;
 use rustc_macros::{Decodable, Encodable, TyDecodable, TyEncodable, TypeFoldable};
-pub use rustc_middle::mir::Field;
-pub use rustc_middle::thir;
-use rustc_middle::thir::{
+use tool_lib::ty::{AdtDef, Ty, TyKind, UpvarSubsts};
+pub use tool_lib::mir::Field;
+pub use tool_lib::thir;
+use tool_lib::thir::{
     visit, Adt, ArmId, Block, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
-};
-use rustc_middle::ty::{AdtDef, Ty, TyKind, UpvarSubsts};
-use rustc_middle::{
-    mir::{BorrowKind, Mutability::*},
-    ty::{subst::SubstsRef, TyCtxt, WithOptConstParam},
 };
 use tool_lib::Symbol;
 use tool_lib::VariantIdx;
+use tool_lib::{
+    mir::{BorrowKind, Mutability::*},
+    ty::{SubstsRef, TyCtxt, WithOptConstParam},
+};
 
 use super::PurityVisitor;
 
@@ -78,7 +78,7 @@ pub enum TermKind<'tcx> {
     Absurd,
 }
 
-use rustc_middle::ty::fold::TypeFoldable;
+use tool_lib::ty::fold::TypeFoldable;
 impl<'tcx> TypeFoldable<'tcx> for Literal {
     fn try_super_fold_with<F: rustc_middle::ty::FallibleTypeFolder<'tcx>>(
         self,
@@ -198,8 +198,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Unary { op, arg } => {
                 let arg = self.expr_term(arg)?;
                 let op = match op {
-                    rustc_middle::mir::UnOp::Not => UnOp::Not,
-                    rustc_middle::mir::UnOp::Neg => UnOp::Neg,
+                    tool_lib::mir::UnOp::Not => UnOp::Not,
+                    tool_lib::mir::UnOp::Neg => UnOp::Neg,
                 };
                 Ok(Term { ty, kind: TermKind::Unary { op, arg: box arg } })
             }

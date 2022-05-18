@@ -1,8 +1,8 @@
 use rustc_ast::ast::Attribute;
 use rustc_hir::hir_id::HirId;
-use rustc_middle::hir::map::Map;
-use rustc_middle::hir::nested_filter::OnlyBodies; // use rustc_hir::intravisit::NestedVisitorMap;
-use rustc_middle::ty::TyCtxt;
+use tool_lib::hir::Map;
+use tool_lib::hir::nested_filter::OnlyBodies; // use rustc_hir::intravisit::NestedVisitorMap;
+use tool_lib::ty::TyCtxt;
 use std::collections::HashMap;
 use tool_lib::{DefId, Symbol};
 

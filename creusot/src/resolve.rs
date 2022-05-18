@@ -3,7 +3,7 @@ use std::rc::Rc;
 use crate::analysis::uninit_locals::MaybeUninitializedLocals;
 use rustc_borrowck::borrow_set::{BorrowSet, TwoPhaseActivation};
 use rustc_index::bit_set::BitSet;
-use rustc_middle::{
+use tool_lib::{
     mir::{BasicBlock, Body, Local, Location},
     ty::TyCtxt,
 };
