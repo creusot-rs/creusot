@@ -42,11 +42,11 @@ pub fn corrected_invariant_names_and_locations<'tcx>(
     let correct_inv = locations
         .into_iter()
         .map(|(loc, invs)| {
-            let inv_subst = inv_subst(ctx.tcx, body, loc.start_location());
             let inv_exps: Vec<_> = invs
                 .into_iter()
                 .map(|id| {
-                    let mut inv = invariants.remove(&id).unwrap();
+                    let mut inv = invariants.remove(&id.1).unwrap();
+                    let inv_subst = inv_subst(ctx.tcx, body, id.0);
                     inv.1.subst(&inv_subst);
                     inv
                 })
@@ -131,7 +131,7 @@ impl<'tcx> Visitor<'tcx> for InvariantLocations<'tcx> {
 fn invariant_locations<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
-) -> IndexMap<BasicBlock, Vec<DefId>> {
+) -> IndexMap<BasicBlock, Vec<(Location, DefId)>> {
     let mut results = IndexMap::new();
 
     let mut invs_gather = InvariantLocations { tcx, invariants: IndexMap::new() };
@@ -162,7 +162,7 @@ fn invariant_locations<'tcx>(
             }
         }
 
-        results.entry(target).or_insert_with(Vec::new).push(clos);
+        results.entry(target).or_insert_with(Vec::new).push((loc, clos));
     }
 
     results

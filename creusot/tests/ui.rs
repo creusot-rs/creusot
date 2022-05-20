@@ -181,8 +181,10 @@ fn should_succeed_case(
             let expect = &std::fs::read(stdout).unwrap_or_else(|_| Vec::new());
             let gotten = &output.stdout;
 
-            // write!(std::io::stderr(), "{}", from_utf8(&output.stderr)?)?;
             let success = compare_str(&mut buf, from_utf8(gotten)?, from_utf8(expect)?);
+            if !success {
+                write!(std::io::stderr(), "{}", from_utf8(&output.stderr)?)?;
+            }
             Ok((success, buf))
         }
         Err(err) => {
