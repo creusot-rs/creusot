@@ -99,30 +99,36 @@ pub fn inv_subst<'tcx>(
 ) -> HashMap<why3::Ident, Exp> {
     use rustc_middle::mir::VarDebugInfoContents::Place;
     let local_map = real_locals(tcx, body);
-    let mut scope = body.source_info(loc).scope;
-
+    let info = body.source_info(loc);
     let mut args = HashMap::new();
-    loop {
-        for var_info in &body.var_debug_info {
-            if var_info.source_info.scope != scope {
-                continue;
-            }
+    let mut name_to_scope = HashMap::new();
 
-            let loc = match var_info.value {
-                Place(p) => p.as_local().unwrap(),
-                _ => panic!(),
-            };
-            let loc = local_map[&loc];
-            let source_name = var_info.name.to_string();
-            args.entry(source_name.into())
-                .or_insert_with(|| Exp::pure_var(LocalIdent::dbg(loc, var_info).ident()));
+    for var_info in &body.var_debug_info {
+        // All variables in the DebugVarInfo should be user variables and thus be just locals
+        let loc = match var_info.value {
+            Place(p) => p.as_local().unwrap(),
+            _ => panic!(),
+        };
+        let source_info = var_info.source_info;
+        // let source_info = body.local_decls[loc].source_info;
+        let scope_info = &body.source_scopes[source_info.scope];
+
+        // Skip all variables that straight up do not include the current location in their span
+        if !scope_info.span.contains(info.span) {
+            continue;
         }
 
-        if let Some(parent) = body.source_scopes[scope].parent_scope {
-            scope = parent
-        } else {
-            break;
+        if let Some(scope) = name_to_scope.get(&var_info.name) &&
+            // If we already found a mapping for this local with a tighter scope, lets skip
+            scope_info.span.contains(body.source_scopes[*scope].span) {
+            continue
         }
+
+        name_to_scope.insert(var_info.name, source_info.scope);
+
+        let loc = local_map[&loc];
+        let source_name = var_info.name.to_string();
+        args.insert(source_name.into(), Exp::pure_var(LocalIdent::dbg(loc, var_info).ident()));
     }
 
     return args;
