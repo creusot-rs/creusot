@@ -1,9 +1,9 @@
+use rustc_data_structures::fx::FxHashMap;
 use rustc_data_structures::owning_ref::OwningRef;
 use rustc_data_structures::rustc_erase_owner;
 use rustc_data_structures::sync::{Lrc, MetadataRef};
 use rustc_hir::def_id::{CrateNum, DefId, DefIndex, DefPathHash, StableCrateId};
 use rustc_middle::implement_ty_decoder;
-use rustc_middle::ty;
 use rustc_middle::ty::codec::TyDecoder;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_serialize::opaque;
@@ -32,11 +32,17 @@ pub struct MetadataDecoder<'a, 'tcx> {
     opaque: opaque::Decoder<'a>,
     cnum: CrateNum,
     tcx: TyCtxt<'tcx>,
+    ty_rcache: FxHashMap<usize, Ty<'tcx>>,
 }
 
 impl<'a, 'tcx> MetadataDecoder<'a, 'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, cnum: CrateNum, blob: &'a MetadataBlob) -> Self {
-        MetadataDecoder { opaque: opaque::Decoder::new(&blob.0, 0), cnum, tcx }
+        MetadataDecoder {
+            opaque: opaque::Decoder::new(&blob.0, 0),
+            cnum,
+            tcx,
+            ty_rcache: Default::default(),
+        }
     }
 
     // From rustc
@@ -99,14 +105,12 @@ impl<'a, 'tcx> TyDecoder<'tcx> for MetadataDecoder<'a, 'tcx> {
     {
         let tcx = self.tcx();
 
-        let key = ty::CReaderCacheKey { cnum: Some(self.cnum), pos: shorthand };
-
-        if let Some(&ty) = tcx.ty_rcache.borrow().get(&key) {
+        if let Some(&ty) = self.ty_rcache.get(&shorthand) {
             return ty;
         }
 
         let ty = or_insert_with(self);
-        tcx.ty_rcache.borrow_mut().insert(key, ty);
+        self.ty_rcache.insert(shorthand, ty);
         ty
     }
 
