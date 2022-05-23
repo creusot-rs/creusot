@@ -14,6 +14,7 @@ impl<T, A: Allocator> Model for Vec<T, A> {
     type ModelTy = Seq<T>;
     #[logic]
     #[trusted]
+    #[ensures(result.len() <= @usize::MAX)]
     fn model(self) -> Self::ModelTy {
         absurd
     }

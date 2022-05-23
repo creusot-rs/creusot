@@ -34,32 +34,32 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
         let def_id = Some(def_id);
         let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
 
-        if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("add_int")) {
+        if builtin_attr == Some(Symbol::intern("add_int")) {
             let l = args.remove(0);
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Add, box l, box r));
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("sub_int")) {
+        } else if builtin_attr == Some(Symbol::intern("sub_int")) {
             let l = args.remove(0);
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Sub, box l, box r));
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("mul_int")) {
+        } else if builtin_attr == Some(Symbol::intern("mul_int")) {
             let l = args.remove(0);
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Mul, box l, box r));
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("div_int")) {
+        } else if builtin_attr == Some(Symbol::intern("div_int")) {
             let l = args.remove(0);
             let r = args.remove(0);
 
             return Some(Exp::Call(box Exp::pure_var("div".into()), vec![l, r]));
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("rem_int")) {
+        } else if builtin_attr == Some(Symbol::intern("rem_int")) {
             let l = args.remove(0);
             let r = args.remove(0);
 
             return Some(Exp::Call(box Exp::pure_var("Int.mod".into()), vec![l, r]));
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("neg_int")) {
+        } else if builtin_attr == Some(Symbol::intern("neg_int")) {
             let a = args.remove(0);
 
             return Some(Exp::UnaryOp(UnOp::Neg, box a));
@@ -111,33 +111,61 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Ne, box l, box r));
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("u32_to_int"))
-            || def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("u32_model"))
-        {
+        } else if builtin_attr == Some(Symbol::intern("mach.int.UInt8.to_int")) {
             if let Exp::Const(Constant::Uint(v, _)) = args[0] {
                 return Some(Exp::Const(Constant::Uint(v, None)));
             } else if !self.ctx.opts.bounds_check {
                 return Some(args.remove(0));
             }
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("i32_to_int"))
-            || def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("i32_model"))
-        {
+        } else if builtin_attr == Some(Symbol::intern("mach.int.UInt16.to_int")) {
+            if let Exp::Const(Constant::Uint(v, _)) = args[0] {
+                return Some(Exp::Const(Constant::Uint(v, None)));
+            } else if !self.ctx.opts.bounds_check {
+                return Some(args.remove(0));
+            }
+        } else if builtin_attr == Some(Symbol::intern("mach.int.UInt32.to_int")) {
+            if let Exp::Const(Constant::Uint(v, _)) = args[0] {
+                return Some(Exp::Const(Constant::Uint(v, None)));
+            } else if !self.ctx.opts.bounds_check {
+                return Some(args.remove(0));
+            }
+        } else if builtin_attr == Some(Symbol::intern("mach.int.UInt64.to_int")) {
+            if let Exp::Const(Constant::Uint(v, _)) = args[0] {
+                return Some(Exp::Const(Constant::Uint(v, None)));
+            } else if !self.ctx.opts.bounds_check {
+                return Some(args.remove(0));
+            }
+        } else if builtin_attr == Some(Symbol::intern("mach.int.UInt128.to_int")) {
+            if let Exp::Const(Constant::Uint(v, _)) = args[0] {
+                return Some(Exp::Const(Constant::Uint(v, None)));
+            } else if !self.ctx.opts.bounds_check {
+                return Some(args.remove(0));
+            }
+        } else if builtin_attr == Some(Symbol::intern("mach.int.Int8.to_int")) {
             if let Exp::Const(Constant::Int(v, _)) = args[0] {
                 return Some(Exp::Const(Constant::Int(v, None)));
             } else if !self.ctx.opts.bounds_check {
                 return Some(args.remove(0));
             }
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("usize_to_int"))
-            || def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("usize_model"))
-        {
-            if let Exp::Const(Constant::Uint(v, _)) = args[0] {
-                return Some(Exp::Const(Constant::Uint(v, None)));
+        } else if builtin_attr == Some(Symbol::intern("mach.int.Int16.to_int")) {
+            if let Exp::Const(Constant::Int(v, _)) = args[0] {
+                return Some(Exp::Const(Constant::Int(v, None)));
             } else if !self.ctx.opts.bounds_check {
                 return Some(args.remove(0));
             }
-        } else if def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("isize_to_int"))
-            || def_id == self.ctx.tcx.get_diagnostic_item(Symbol::intern("isize_model"))
-        {
+        } else if builtin_attr == Some(Symbol::intern("mach.int.Int32.to_int")) {
+            if let Exp::Const(Constant::Int(v, _)) = args[0] {
+                return Some(Exp::Const(Constant::Int(v, None)));
+            } else if !self.ctx.opts.bounds_check {
+                return Some(args.remove(0));
+            }
+        } else if builtin_attr == Some(Symbol::intern("mach.int.Int64.to_int")) {
+            if let Exp::Const(Constant::Int(v, _)) = args[0] {
+                return Some(Exp::Const(Constant::Int(v, None)));
+            } else if !self.ctx.opts.bounds_check {
+                return Some(args.remove(0));
+            }
+        } else if builtin_attr == Some(Symbol::intern("mach.int.Int128.to_int")) {
             if let Exp::Const(Constant::Int(v, _)) = args[0] {
                 return Some(Exp::Const(Constant::Int(v, None)));
             } else if !self.ctx.opts.bounds_check {

@@ -503,7 +503,10 @@ fn intty_to_ty(
             names.import_prelude_module(PreludeModule::Int64);
             i64_ty()
         }
-        I128 => unimplemented!("128 bit integers not yet implemented"),
+        I128 => {
+            names.import_prelude_module(PreludeModule::Int128);
+            i128_ty()
+        }
     }
 }
 
@@ -543,7 +546,10 @@ fn uintty_to_ty(
             names.import_prelude_module(PreludeModule::UInt64);
             u64_ty()
         }
-        U128 => unimplemented!("128 bit integers not yet implemented"),
+        U128 => {
+            names.import_prelude_module(PreludeModule::UInt128);
+            u128_ty()
+        }
     }
 }
 
@@ -580,6 +586,10 @@ pub fn u64_ty() -> MlT {
     MlT::TConstructor(QName::from_string("uint64").unwrap())
 }
 
+pub fn u128_ty() -> MlT {
+    MlT::TConstructor(QName::from_string("uint128").unwrap())
+}
+
 pub fn usize_ty() -> MlT {
     MlT::TConstructor(QName::from_string("usize").unwrap())
 }
@@ -598,6 +608,10 @@ pub fn i32_ty() -> MlT {
 
 pub fn i64_ty() -> MlT {
     MlT::TConstructor(QName::from_string("int64").unwrap())
+}
+
+pub fn i128_ty() -> MlT {
+    MlT::TConstructor(QName::from_string("int128").unwrap())
 }
 
 pub fn isize_ty() -> MlT {

@@ -19,140 +19,46 @@ impl Int {
     }
 }
 
-impl From<u8> for Int {
-    #[logic]
-    #[trusted]
-    #[creusot::builtins = "prelude.UInt8.to_int"]
-    fn from(_: u8) -> Self {
-        absurd
-    }
-}
-impl Model for u8 {
-    type ModelTy = Int;
-    #[logic]
-    #[creusot::builtins = "prelude.UInt8.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
+macro_rules! mach_int {
+    ($t:ty, $ty_nm:expr) => {
+        impl Model for $t {
+            type ModelTy = Int;
+            #[logic]
+            #[creusot::builtins = concat!($ty_nm, ".to_int")]
+            fn model(self) -> Self::ModelTy {
+                Int::from(self)
+            }
+        }
+
+        impl From<$t> for Int {
+            #[logic]
+            #[trusted]
+            #[creusot::builtins = concat!($ty_nm, ".to_int")]
+            fn from(_: $t) -> Self {
+                absurd
+            }
+        }
+    };
 }
 
-impl From<u32> for Int {
-    #[logic]
-    #[trusted]
-    #[rustc_diagnostic_item = "u32_to_int"]
-    #[creusot::builtins = "mach.int.UInt32.to_int"]
-    fn from(_: u32) -> Self {
-        absurd
-    }
-}
-impl Model for u32 {
-    type ModelTy = Int;
-    #[logic]
-    #[rustc_diagnostic_item = "u32_model"]
-    #[creusot::builtins = "mach.int.UInt32.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
+mach_int!(u8, "prelude.UInt8");
+mach_int!(u16, "prelude.UInt16");
+mach_int!(u32, "mach.int.UInt32");
+mach_int!(u64, "mach.int.UInt64");
+mach_int!(u128, "prelude.UInt128");
+mach_int!(usize, "mach.int.UInt64");
 
-impl From<u64> for Int {
-    #[logic]
-    #[trusted]
-    #[rustc_diagnostic_item = "u64_to_int"]
-    #[creusot::builtins = "mach.int.UInt64.to_int"]
-    fn from(_: u64) -> Self {
-        absurd
-    }
-}
-impl Model for u64 {
-    type ModelTy = Int;
-    #[logic]
-    #[rustc_diagnostic_item = "u64_model"]
-    #[creusot::builtins = "mach.int.UInt64.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
-
-impl From<i64> for Int {
-    #[logic]
-    #[trusted]
-    #[rustc_diagnostic_item = "i64_to_int"]
-    #[creusot::builtins = "mach.int.Int64.to_int"]
-    fn from(_: i64) -> Self {
-        absurd
-    }
-}
-impl Model for i64 {
-    type ModelTy = Int;
-    #[logic]
-    #[rustc_diagnostic_item = "i64_model"]
-    #[creusot::builtins = "mach.int.Int64.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
-
-impl From<i32> for Int {
-    #[logic]
-    #[trusted]
-    #[rustc_diagnostic_item = "i32_to_int"]
-    #[creusot::builtins = "mach.int.Int32.to_int"]
-    fn from(_: i32) -> Self {
-        absurd
-    }
-}
-impl Model for i32 {
-    type ModelTy = Int;
-    #[logic]
-    #[rustc_diagnostic_item = "i32_model"]
-    #[creusot::builtins = "mach.int.Int32.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
-
-impl From<usize> for Int {
-    #[logic]
-    #[trusted]
-    #[rustc_diagnostic_item = "usize_to_int"]
-    #[creusot::builtins = "mach.int.UInt64.to_int"]
-    fn from(_: usize) -> Self {
-        absurd
-    }
-}
-impl Model for usize {
-    type ModelTy = Int;
-    #[logic]
-    #[rustc_diagnostic_item = "usize_model"]
-    #[creusot::builtins = "mach.int.UInt64.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
-
-impl From<isize> for Int {
-    #[logic]
-    #[trusted]
-    #[rustc_diagnostic_item = "isize_to_int"]
-    fn from(_: isize) -> Self {
-        absurd
-    }
-}
-impl Model for isize {
-    type ModelTy = Int;
-    #[logic]
-    #[rustc_diagnostic_item = "isize_model"]
-    #[creusot::builtins = "mach.int.Int64.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
+mach_int!(i8, "prelude.Int8");
+mach_int!(i16, "prelude.Int16");
+mach_int!(i32, "mach.int.Int32");
+mach_int!(i64, "mach.int.Int64");
+mach_int!(i128, "prelude.Int128");
+mach_int!(isize, "mach.int.Int64");
 
 impl Add<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
-    #[rustc_diagnostic_item = "add_int"]
+    #[creusot::builtins = "add_int"]
     fn add(self, _: Int) -> Self {
         panic!()
     }
@@ -161,7 +67,7 @@ impl Add<Int> for Int {
 impl Sub<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
-    #[rustc_diagnostic_item = "sub_int"]
+    #[creusot::builtins = "sub_int"]
     fn sub(self, _: Int) -> Self {
         panic!()
     }
@@ -170,7 +76,7 @@ impl Sub<Int> for Int {
 impl Mul<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
-    #[rustc_diagnostic_item = "mul_int"]
+    #[creusot::builtins = "mul_int"]
     fn mul(self, _: Int) -> Self {
         panic!()
     }
@@ -179,7 +85,7 @@ impl Mul<Int> for Int {
 impl Div<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
-    #[rustc_diagnostic_item = "div_int"]
+    #[creusot::builtins = "div_int"]
     fn div(self, _: Int) -> Self {
         panic!()
     }
@@ -188,7 +94,7 @@ impl Div<Int> for Int {
 impl Rem<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
-    #[rustc_diagnostic_item = "rem_int"]
+    #[creusot::builtins = "rem_int"]
     fn rem(self, _: Int) -> Self {
         panic!()
     }
@@ -197,7 +103,7 @@ impl Rem<Int> for Int {
 impl Neg for Int {
     type Output = Int;
     #[creusot::no_translate]
-    #[rustc_diagnostic_item = "neg_int"]
+    #[creusot::builtins = "neg_int"]
     fn neg(self) -> Self {
         panic!()
     }
