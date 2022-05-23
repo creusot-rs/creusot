@@ -90,7 +90,7 @@ fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
     Some(implementation_module(ctx, def_id, &names, sig, body))
 }
 
-fn spec_axiom(sig: &Signature) -> Axiom {
+pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     let mut ensures = sig.contract.ensures.clone();
     let postcondition: Exp = ensures.pop().unwrap_or(Exp::mk_true());
 

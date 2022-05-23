@@ -5,7 +5,7 @@ use why3::{
     Ident,
 };
 
-use crate::{clone_map::CloneMap, ctx::*, util};
+use crate::{clone_map::CloneMap, ctx::*, translation::spec_axiom, util};
 
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{ClosureKind, TyCtxt, TyKind};
@@ -52,13 +52,23 @@ pub fn interface_for<'tcx>(
 
     match util::item_type(ctx.tcx, def_id) {
         ItemType::Predicate => {
+            let sig_ = sig.clone();
             sig.retty = None;
             sig.contract = Contract::new();
             decls.push(Decl::ValDecl(ValKind::Predicate { sig }));
+            let has_axioms = !sig_.contract.is_empty();
+            if has_axioms {
+                decls.push(Decl::Axiom(spec_axiom(&sig_)));
+            }
         }
         ItemType::Logic => {
+            let sig_ = sig.clone();
             sig.contract = Contract::new();
             decls.push(Decl::ValDecl(ValKind::Function { sig }));
+            let has_axioms = !sig_.contract.is_empty();
+            if has_axioms {
+                decls.push(Decl::Axiom(spec_axiom(&sig_)));
+            }
         }
         _ => {
             if !def_id.is_local()
