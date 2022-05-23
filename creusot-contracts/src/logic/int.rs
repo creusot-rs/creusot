@@ -39,7 +39,6 @@ impl Model for u8 {
 impl From<u32> for Int {
     #[logic]
     #[trusted]
-    #[rustc_diagnostic_item = "u32_to_int"]
     #[creusot::builtins = "mach.int.UInt32.to_int"]
     fn from(_: u32) -> Self {
         absurd
@@ -48,7 +47,6 @@ impl From<u32> for Int {
 impl Model for u32 {
     type ModelTy = Int;
     #[logic]
-    #[rustc_diagnostic_item = "u32_model"]
     #[creusot::builtins = "mach.int.UInt32.to_int"]
     fn model(self) -> Self::ModelTy {
         Int::from(self)
@@ -58,7 +56,6 @@ impl Model for u32 {
 impl From<u64> for Int {
     #[logic]
     #[trusted]
-    #[rustc_diagnostic_item = "u64_to_int"]
     #[creusot::builtins = "mach.int.UInt64.to_int"]
     fn from(_: u64) -> Self {
         absurd
@@ -67,7 +64,6 @@ impl From<u64> for Int {
 impl Model for u64 {
     type ModelTy = Int;
     #[logic]
-    #[rustc_diagnostic_item = "u64_model"]
     #[creusot::builtins = "mach.int.UInt64.to_int"]
     fn model(self) -> Self::ModelTy {
         Int::from(self)
@@ -77,7 +73,6 @@ impl Model for u64 {
 impl From<i64> for Int {
     #[logic]
     #[trusted]
-    #[rustc_diagnostic_item = "i64_to_int"]
     #[creusot::builtins = "mach.int.Int64.to_int"]
     fn from(_: i64) -> Self {
         absurd
@@ -86,7 +81,6 @@ impl From<i64> for Int {
 impl Model for i64 {
     type ModelTy = Int;
     #[logic]
-    #[rustc_diagnostic_item = "i64_model"]
     #[creusot::builtins = "mach.int.Int64.to_int"]
     fn model(self) -> Self::ModelTy {
         Int::from(self)
@@ -96,7 +90,6 @@ impl Model for i64 {
 impl From<i32> for Int {
     #[logic]
     #[trusted]
-    #[rustc_diagnostic_item = "i32_to_int"]
     #[creusot::builtins = "mach.int.Int32.to_int"]
     fn from(_: i32) -> Self {
         absurd
@@ -105,7 +98,6 @@ impl From<i32> for Int {
 impl Model for i32 {
     type ModelTy = Int;
     #[logic]
-    #[rustc_diagnostic_item = "i32_model"]
     #[creusot::builtins = "mach.int.Int32.to_int"]
     fn model(self) -> Self::ModelTy {
         Int::from(self)
@@ -115,7 +107,6 @@ impl Model for i32 {
 impl From<usize> for Int {
     #[logic]
     #[trusted]
-    #[rustc_diagnostic_item = "usize_to_int"]
     #[creusot::builtins = "mach.int.UInt64.to_int"]
     fn from(_: usize) -> Self {
         absurd
@@ -124,7 +115,6 @@ impl From<usize> for Int {
 impl Model for usize {
     type ModelTy = Int;
     #[logic]
-    #[rustc_diagnostic_item = "usize_model"]
     #[creusot::builtins = "mach.int.UInt64.to_int"]
     fn model(self) -> Self::ModelTy {
         Int::from(self)
@@ -142,7 +132,6 @@ impl From<isize> for Int {
 impl Model for isize {
     type ModelTy = Int;
     #[logic]
-    #[rustc_diagnostic_item = "isize_model"]
     #[creusot::builtins = "mach.int.Int64.to_int"]
     fn model(self) -> Self::ModelTy {
         Int::from(self)
@@ -152,7 +141,7 @@ impl Model for isize {
 impl Add<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
-    #[rustc_diagnostic_item = "add_int"]
+    #[creusot::builtins = "add_int"]
     fn add(self, _: Int) -> Self {
         panic!()
     }
@@ -161,7 +150,7 @@ impl Add<Int> for Int {
 impl Sub<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
-    #[rustc_diagnostic_item = "sub_int"]
+    #[creusot::builtins = "sub_int"]
     fn sub(self, _: Int) -> Self {
         panic!()
     }
@@ -170,7 +159,7 @@ impl Sub<Int> for Int {
 impl Mul<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
-    #[rustc_diagnostic_item = "mul_int"]
+    #[creusot::builtins = "mul_int"]
     fn mul(self, _: Int) -> Self {
         panic!()
     }
@@ -179,7 +168,7 @@ impl Mul<Int> for Int {
 impl Div<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
-    #[rustc_diagnostic_item = "div_int"]
+    #[creusot::builtins = "div_int"]
     fn div(self, _: Int) -> Self {
         panic!()
     }
@@ -188,7 +177,7 @@ impl Div<Int> for Int {
 impl Rem<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
-    #[rustc_diagnostic_item = "rem_int"]
+    #[creusot::builtins = "rem_int"]
     fn rem(self, _: Int) -> Self {
         panic!()
     }
@@ -197,7 +186,7 @@ impl Rem<Int> for Int {
 impl Neg for Int {
     type Output = Int;
     #[creusot::no_translate]
-    #[rustc_diagnostic_item = "neg_int"]
+    #[creusot::builtins = "neg_int"]
     fn neg(self) -> Self {
         panic!()
     }
