@@ -19,124 +19,41 @@ impl Int {
     }
 }
 
-impl From<u8> for Int {
-    #[logic]
-    #[trusted]
-    #[creusot::builtins = "prelude.UInt8.to_int"]
-    fn from(_: u8) -> Self {
-        absurd
-    }
-}
-impl Model for u8 {
-    type ModelTy = Int;
-    #[logic]
-    #[creusot::builtins = "prelude.UInt8.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
+macro_rules! mach_int {
+    ($t:ty, $ty_nm:expr) => {
+        impl Model for $t {
+            type ModelTy = Int;
+            #[logic]
+            #[creusot::builtins = concat!($ty_nm, ".to_int")]
+            fn model(self) -> Self::ModelTy {
+                Int::from(self)
+            }
+        }
+
+        impl From<$t> for Int {
+            #[logic]
+            #[trusted]
+            #[creusot::builtins = concat!($ty_nm, ".to_int")]
+            fn from(_: $t) -> Self {
+                absurd
+            }
+        }
+    };
 }
 
-impl From<u32> for Int {
-    #[logic]
-    #[trusted]
-    #[creusot::builtins = "mach.int.UInt32.to_int"]
-    fn from(_: u32) -> Self {
-        absurd
-    }
-}
-impl Model for u32 {
-    type ModelTy = Int;
-    #[logic]
-    #[creusot::builtins = "mach.int.UInt32.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
+mach_int!(u8, "prelude.UInt8");
+mach_int!(u16, "prelude.UInt16");
+mach_int!(u32, "mach.int.UInt32");
+mach_int!(u64, "mach.int.UInt64");
+mach_int!(u128, "prelude.UInt128");
+mach_int!(usize, "mach.int.UInt64");
 
-impl From<u64> for Int {
-    #[logic]
-    #[trusted]
-    #[creusot::builtins = "mach.int.UInt64.to_int"]
-    fn from(_: u64) -> Self {
-        absurd
-    }
-}
-impl Model for u64 {
-    type ModelTy = Int;
-    #[logic]
-    #[creusot::builtins = "mach.int.UInt64.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
-
-impl From<i64> for Int {
-    #[logic]
-    #[trusted]
-    #[creusot::builtins = "mach.int.Int64.to_int"]
-    fn from(_: i64) -> Self {
-        absurd
-    }
-}
-impl Model for i64 {
-    type ModelTy = Int;
-    #[logic]
-    #[creusot::builtins = "mach.int.Int64.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
-
-impl From<i32> for Int {
-    #[logic]
-    #[trusted]
-    #[creusot::builtins = "mach.int.Int32.to_int"]
-    fn from(_: i32) -> Self {
-        absurd
-    }
-}
-impl Model for i32 {
-    type ModelTy = Int;
-    #[logic]
-    #[creusot::builtins = "mach.int.Int32.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
-
-impl From<usize> for Int {
-    #[logic]
-    #[trusted]
-    #[creusot::builtins = "mach.int.UInt64.to_int"]
-    fn from(_: usize) -> Self {
-        absurd
-    }
-}
-impl Model for usize {
-    type ModelTy = Int;
-    #[logic]
-    #[creusot::builtins = "mach.int.UInt64.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
-
-impl From<isize> for Int {
-    #[logic]
-    #[trusted]
-    #[rustc_diagnostic_item = "isize_to_int"]
-    fn from(_: isize) -> Self {
-        absurd
-    }
-}
-impl Model for isize {
-    type ModelTy = Int;
-    #[logic]
-    #[creusot::builtins = "mach.int.Int64.to_int"]
-    fn model(self) -> Self::ModelTy {
-        Int::from(self)
-    }
-}
+mach_int!(i8, "prelude.Int8");
+mach_int!(i16, "prelude.Int16");
+mach_int!(i32, "mach.int.Int32");
+mach_int!(i64, "mach.int.Int64");
+mach_int!(i128, "prelude.Int128");
+mach_int!(isize, "mach.int.Int64");
 
 impl Add<Int> for Int {
     type Output = Int;
