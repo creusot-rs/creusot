@@ -640,6 +640,7 @@ fn resolve_predicate_of<'tcx>(
         Some(method) => {
             if !ty.still_further_specializable()
                 && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), method.0)
+                && !method.1.type_at(0).is_closure()
             {
                 return ResolveStmt { exp: None };
             }
