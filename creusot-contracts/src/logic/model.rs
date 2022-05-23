@@ -27,8 +27,10 @@ impl<T> Model for [T] {
     type ModelTy = crate::Seq<T>;
 
     #[logic]
+    #[trusted]
+    #[creusot::builtins = "prelude.Prelude.id"]
     fn model(self) -> Self::ModelTy {
-        id(self)
+        pearlite! { absurd }
     }
 }
 
@@ -41,9 +43,4 @@ impl<T, const N: usize> Model for [T; N] {
     fn model(self) -> Self::ModelTy {
         pearlite! { absurd }
     }
-}
-
-#[creusot::builtins = "prelude.Prelude.id"]
-fn id<T>(_: [T]) -> crate::Seq<T> {
-    std::process::abort()
 }

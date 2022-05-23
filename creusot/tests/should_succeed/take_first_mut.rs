@@ -1,3 +1,4 @@
+// WHY3PROVE NO_SPLIT Z3
 extern crate creusot_contracts;
 
 use creusot_contracts::std::*;
