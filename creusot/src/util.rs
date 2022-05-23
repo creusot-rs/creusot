@@ -349,6 +349,8 @@ pub fn signature_of<'tcx>(
                 let ty = translation::ty::translate_ty(ctx, names, span, ty);
                 let id = if id.name.is_empty() {
                     format!("_{}'", ix + 1).into()
+                } else if id.name == Symbol::intern("result") {
+                    ctx.crash_and_error(id.span, "`result` is not allowed as a parameter name");
                 } else {
                     ident_of(id.name)
                 };
