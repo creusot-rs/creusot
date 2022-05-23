@@ -73,6 +73,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     .extern_spec(fun_def_id)
                     .map(|p| p.predicates_for(self.tcx, subst))
                     .unwrap_or_else(Vec::new);
+
                 use rustc_trait_selection::traits::error_reporting::InferCtxtExt;
                 self.tcx.infer_ctxt().enter(|infcx| {
                     let res = evaluate_additional_predicates(
@@ -163,7 +164,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
         &mut self,
         def_id: DefId,
         subst: SubstsRef<'tcx>,
-        _sp: rustc_span::Span,
+        sp: rustc_span::Span,
     ) -> QName {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(id) = it.container {
@@ -174,11 +175,22 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                 self.ctx.translate(id);
                 self.ctx.translate(method.0);
 
+                if !method.0.is_local()
+                    && !(self.ctx.extern_spec(method.0).is_some()
+                        || self.ctx.externs.verified(method.0))
+                {
+                    self.ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
+                }
+
                 return self.names.insert(method.0, method.1).qname(self.tcx, method.0);
             }
         }
 
-        // TODO: better spans during errors...
+        if !def_id.is_local()
+            && !(self.ctx.extern_spec(def_id).is_some() || self.ctx.externs.verified(def_id))
+        {
+            self.ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
+        }
         self.ctx.translate(def_id);
 
         self.names.insert(def_id, subst).qname(self.tcx, def_id)
