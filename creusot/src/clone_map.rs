@@ -122,12 +122,20 @@ impl Kind {
 
 use rustc_macros::{TyDecodable, TyEncodable};
 
+#[derive(Clone, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
+enum CloneOpacity {
+    Transparent,
+    Opaque,
+    Default,
+}
+
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct CloneInfo<'tcx> {
     kind: Kind,
     additional_deps: Vec<(Symbol, (DefId, SubstsRef<'tcx>))>,
     cloned: bool,
     public: bool,
+    opaque: CloneOpacity,
 }
 
 impl Into<CloneKind> for Kind {
@@ -142,11 +150,23 @@ impl Into<CloneKind> for Kind {
 
 impl<'tcx> CloneInfo<'tcx> {
     fn from_name(name: Symbol, public: bool) -> Self {
-        CloneInfo { kind: Kind::Named(name), additional_deps: Vec::new(), cloned: false, public }
+        CloneInfo {
+            kind: Kind::Named(name),
+            additional_deps: Vec::new(),
+            cloned: false,
+            public,
+            opaque: CloneOpacity::Default,
+        }
     }
 
     fn hidden() -> Self {
-        CloneInfo { kind: Kind::Hidden, additional_deps: Vec::new(), cloned: false, public: false }
+        CloneInfo {
+            kind: Kind::Hidden,
+            additional_deps: Vec::new(),
+            cloned: false,
+            public: false,
+            opaque: CloneOpacity::Default,
+        }
     }
 
     pub fn mk_export(&mut self) {
@@ -156,6 +176,14 @@ impl<'tcx> CloneInfo<'tcx> {
     pub fn add_dep(&mut self, tcx: TyCtxt<'tcx>, name: Symbol, mut dep: (DefId, SubstsRef<'tcx>)) {
         dep.1 = tcx.erase_regions(dep.1);
         self.additional_deps.push((name, dep));
+    }
+
+    pub fn opaque(&mut self) {
+        self.opaque = CloneOpacity::Opaque;
+    }
+
+    pub fn transparent(&mut self) {
+        self.opaque = CloneOpacity::Transparent;
     }
 
     // TODO: When traits stop holding all functions we can remove the last two arguments
@@ -535,12 +563,24 @@ impl<'tcx> CloneMap<'tcx> {
                 }
             }
 
-            if ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false) {
+            let use_axioms = match self.names[&node].opaque {
+                CloneOpacity::Opaque | CloneOpacity::Default => {
+                    ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false)
+                }
+                _ => false,
+            };
+            if use_axioms {
                 clone_subst.push(CloneSubst::Axiom(None))
             }
 
+            let interface = match self.names[&node].opaque {
+                CloneOpacity::Opaque => true,
+                CloneOpacity::Default => !self.use_full_clones,
+                CloneOpacity::Transparent => false,
+            };
+
             decls.push(Decl::Clone(DeclClone {
-                name: cloneable_name(ctx.tcx, def_id, !self.use_full_clones),
+                name: cloneable_name(ctx.tcx, def_id, interface),
                 subst: clone_subst,
                 kind: self.names[&node].kind.clone().into(),
             }));

@@ -114,6 +114,7 @@ module KnapsackFull_SumWeights_Interface
   use prelude.Prelude
   use Type
   function sum_weights (s : Seq.seq (Type.knapsackfull_item name)) (i : int) : int
+  axiom sum_weights_spec : forall s : Seq.seq (Type.knapsackfull_item name), i : int . ([#"../knapsack_full.rs" 30 0 35] 0 <= i && i <= Seq.length s) -> ([#"../knapsack_full.rs" 31 0 23] sum_weights s i >= 0)
 end
 module KnapsackFull_SumWeights
   type name
@@ -159,6 +160,7 @@ module KnapsackFull_SumValues_Interface
   use prelude.Prelude
   use Type
   function sum_values (s : Seq.seq (Type.knapsackfull_item name)) (i : int) : int
+  axiom sum_values_spec : forall s : Seq.seq (Type.knapsackfull_item name), i : int . ([#"../knapsack_full.rs" 41 0 35] i >= 0 && i <= Seq.length s) -> true
 end
 module KnapsackFull_SumValues
   type name
@@ -202,6 +204,7 @@ module KnapsackFull_SubseqRev_Interface
   use seq.Seq
   use prelude.Prelude
   predicate subseq_rev (s1 : Seq.seq t) (i1 : int) (s2 : Seq.seq t) (i2 : int)
+  axiom subseq_rev_spec : forall s1 : Seq.seq t, i1 : int, s2 : Seq.seq t, i2 : int . ([#"../knapsack_full.rs" 52 0 38] 0 <= i2 && i2 <= Seq.length s2) -> ([#"../knapsack_full.rs" 51 0 38] 0 <= i1 && i1 <= Seq.length s1) -> true
 end
 module KnapsackFull_SubseqRev
   type t
@@ -246,6 +249,7 @@ module KnapsackFull_M_Interface
   clone KnapsackFull_SumWeights_Interface as SumWeights0 with type name = name, axiom .
   clone KnapsackFull_SubseqRev_Interface as SubseqRev0 with type t = Type.knapsackfull_item name, axiom .
   function m (items : Seq.seq (Type.knapsackfull_item name)) (i : int) (w : int) : int
+  axiom m_spec : forall items : Seq.seq (Type.knapsackfull_item name), i : int, w : int . ([#"../knapsack_full.rs" 66 0 19] 0 <= w) -> ([#"../knapsack_full.rs" 65 0 39] 0 <= i && i <= Seq.length items) -> ([#"../knapsack_full.rs" 67 0 23] m items i w >= 0) && ([#"../knapsack_full.rs" 68 0 2] forall j : (int) . forall s : (Seq.seq (Type.knapsackfull_item name)) . 0 <= j && j <= Seq.length s && SubseqRev0.subseq_rev s j items i && SumWeights0.sum_weights s j <= w -> SumValues0.sum_values s j <= m items i w)
 end
 module KnapsackFull_M
   type name
@@ -339,6 +343,7 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use mach.int.UInt64
   use Type
   function model (self : Type.alloc_vec_vec t a) : Seq.seq t
+  axiom model_spec : forall self : Type.alloc_vec_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -372,7 +377,7 @@ module CreusotContracts_Logic_Model_Impl0
   clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
   function Model0.model = Model2.model
   clone CreusotContracts_Logic_Model_Impl0_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = t, function model = Model0.model,
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = t, function model = Model0.model,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = t, type modelTy = ModelTy0.modelTy
 end
@@ -382,7 +387,7 @@ module CreusotContracts_Std1_Vec_Impl0
   use Type
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = a, axiom .
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = a
-  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = Type.alloc_vec_vec t a,
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = Type.alloc_vec_vec t a,
   function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.alloc_vec_vec t a,
   type modelTy = ModelTy0.modelTy
@@ -766,7 +771,7 @@ module CreusotContracts_Logic_Resolve_Impl1
   type t
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = borrowed t,
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = borrowed t,
   predicate resolve = Resolve0.resolve
 end
 module CreusotContracts_Std1_Vec_Impl2
@@ -776,7 +781,7 @@ module CreusotContracts_Std1_Vec_Impl2
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = Type.alloc_alloc_global, axiom .
   clone CreusotContracts_Std1_Vec_Impl2_Resolve as Resolve0 with type t = t, function Model0.model = Model0.model,
   predicate Resolve0.resolve = Resolve2.resolve
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.alloc_vec_vec t (Type.alloc_alloc_global),
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = Type.alloc_vec_vec t (Type.alloc_alloc_global),
   predicate resolve = Resolve0.resolve
 end
 module CreusotContracts_Std1_Vec_Impl1_InBounds_Interface
@@ -846,14 +851,14 @@ module CreusotContracts_Std1_Vec_Impl1
   clone Core_Slice_Index_Impl2_Output as Output0 with type t = t
   clone CreusotContracts_Std1_Vec_Impl1_HasValue as HasValue0 with type t = t
   clone CreusotContracts_Logic_Model_Impl2_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Std1_Vec_SliceIndexSpec_ResolveElswhere as ResolveElswhere1 with type self = usize,
+  clone CreusotContracts_Std1_Vec_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere1 with type self = usize,
   type t = seq t, predicate resolve_elswhere = ResolveElswhere0.resolve_elswhere,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Std1_Vec_SliceIndexSpec_HasValue as HasValue1 with type self = usize, type t = seq t,
+  clone CreusotContracts_Std1_Vec_SliceIndexSpec_HasValue_Interface as HasValue1 with type self = usize, type t = seq t,
   predicate has_value = HasValue0.has_value, type ModelTy0.modelTy = ModelTy0.modelTy,
   type Output0.output = Output0.output
   clone CreusotContracts_Std1_Vec_Impl1_InBounds as InBounds0 with type t = t
-  clone CreusotContracts_Std1_Vec_SliceIndexSpec_InBounds as InBounds1 with type self = usize, type t = seq t,
+  clone CreusotContracts_Std1_Vec_SliceIndexSpec_InBounds_Interface as InBounds1 with type self = usize, type t = seq t,
   predicate in_bounds = InBounds0.in_bounds, type ModelTy0.modelTy = ModelTy0.modelTy
 end
 module Core_Slice_Index_SliceIndex_Get_Interface
@@ -1131,8 +1136,8 @@ module CreusotContracts_Logic_Model_Impl2
   use seq.Seq
   clone CreusotContracts_Logic_Model_Impl2_Model as Model0 with type t = t
   clone CreusotContracts_Logic_Model_Impl2_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = seq t, function model = Model0.model,
-  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = seq t,
+  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = seq t, type modelTy = ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
@@ -1147,7 +1152,7 @@ end
 module CreusotContracts_Logic_Resolve_Impl2
   type t
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t,
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = t,
   predicate resolve = Resolve0.resolve
 end
 module KnapsackFull_Knapsack01Dyn_Interface

@@ -40,35 +40,42 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         // Impl Refinement module
         let mut decls: Vec<_> = own_generic_decls_for(self.tcx, impl_id).collect();
-        let trait_assocs = self.tcx.associated_items(trait_ref.def_id);
         let mut names = CloneMap::new(self.tcx, impl_id, true);
 
         // names.param_env(param_env);
-
         let mut laws = Vec::new();
-        for item in associated_items(self.tcx, impl_id) {
-            self.translate(item.def_id);
+        let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
+        for trait_item in associated_items(self.tcx, trait_ref.def_id) {
+            let trait_item_id = trait_item.def_id;
+            let &impl_item_id = implementor_map.get(&trait_item.def_id).unwrap_or(&trait_item_id);
 
-            let subst = InternalSubsts::identity_for_item(self.tcx, item.def_id);
-            names.insert(item.def_id, subst);
+            self.translate(impl_item_id);
 
-            decls.extend(own_generic_decls_for(self.tcx, item.def_id));
+            let subst = InternalSubsts::identity_for_item(self.tcx, impl_item_id);
 
-            let trait_item = trait_assocs
-                .find_by_name_and_kind(self.tcx, item.ident(self.tcx), item.kind, trait_ref.def_id)
-                .unwrap();
-
-            if is_law(self.tcx, trait_item.def_id) {
-                laws.push(item.def_id);
+            if implementor_map.get(&trait_item_id).is_some() {
+                names.insert(impl_item_id, subst);
             }
 
-            let s = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
+            decls.extend(own_generic_decls_for(self.tcx, impl_item_id));
 
-            names.insert(trait_item.def_id, s).add_dep(
-                self.tcx,
-                item.ident(self.tcx).name,
-                (item.def_id, subst),
-            );
+            if is_law(self.tcx, trait_item_id) {
+                laws.push(impl_item_id);
+            }
+
+            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
+            let refinement = names.insert(trait_item_id, refn_subst);
+
+            if implementor_map.get(&trait_item_id).is_some() {
+                refinement.add_dep(
+                    self.tcx,
+                    self.tcx.item_name(impl_item_id),
+                    (impl_item_id, subst),
+                );
+                refinement.opaque();
+            } else {
+                refinement.transparent();
+            }
         }
 
         decls.extend(names.to_clones(self));
