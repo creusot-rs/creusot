@@ -1,0 +1,63 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module Opaque_Two_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  function two (_ : ()) : int
+end
+module Opaque_Two
+  use mach.int.Int
+  use mach.int.Int32
+  function two [#"../opaque.rs" 7 0 15] (_ : ()) : int = 
+    [#"../opaque.rs" 7 0 15] 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1
+  axiom two_spec : [#"../opaque.rs" 6 0 23] two () = 2
+end
+module Opaque_Two_Impl
+  use mach.int.Int
+  use mach.int.Int32
+  let rec ghost function two (_ : ()) : int
+    ensures { [#"../opaque.rs" 6 0 23] result = 2 }
+    
+   = 
+    [#"../opaque.rs" 7 0 15] 1 + 1 - 1 + 1 - 1 + 1 - 1 + 1
+end
+module Opaque_X_Interface
+  use mach.int.UInt64
+  use mach.int.Int
+  clone Opaque_Two_Interface as Two0 with axiom .
+  val x [@cfg:stackify] (_ : ()) : uint64
+    ensures { [#"../opaque.rs" 13 0 28] UInt64.to_int result = Two0.two () }
+    
+end
+module Opaque_X
+  use mach.int.UInt64
+  use mach.int.Int
+  clone Opaque_Two_Interface as Two0 with axiom .
+  let rec cfg x [@cfg:stackify] [#"../opaque.rs" 14 0 13] (_ : ()) : uint64
+    ensures { [#"../opaque.rs" 13 0 28] UInt64.to_int result = Two0.two () }
+    
+   = 
+  var _0 : uint64;
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- (2 : uint64);
+    return _0
+  }
+  
+end

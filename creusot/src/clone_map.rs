@@ -600,7 +600,8 @@ fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
     // TODO: Refactor.
     match util::item_type(tcx, def_id) {
         Logic | Predicate | Impl => {
-            if interface {
+            let is_opaque = util::is_opaque(tcx, def_id);
+            if interface || is_opaque {
                 // TODO: this should directly be a function...
                 QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
             } else {

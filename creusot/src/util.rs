@@ -73,6 +73,10 @@ pub(crate) fn is_trusted(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "trusted"]).is_some()
 }
 
+pub(crate) fn is_opaque(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "opaque"]).is_some()
+}
+
 pub(crate) fn is_law(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "decl", "law"]).is_some()
 }
