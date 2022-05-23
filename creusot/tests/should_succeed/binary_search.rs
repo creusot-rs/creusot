@@ -1,4 +1,4 @@
-// SHOULD_SUCCEED: parse-print
+// Proof needs alt-ergo apparently
 // Here we prove the Rust stdlib implementation of binary search with a few changes
 // 1. We use a List rather than a slice, this restriction is because Creusot cannot yet
 //    axiomatize types, and should be lifted soon.
@@ -18,6 +18,7 @@ use List::*;
 
 impl<T> List<T> {
     #[logic]
+    #[ensures(result >= 0)]
     fn len_logic(self) -> Int {
         match self {
             Cons(_, ls) => 1 + ls.len_logic(),
@@ -102,9 +103,9 @@ impl List<u32> {
 #[requires(arr.is_sorted())]
 #[ensures(forall<x:usize> result == Ok(x) ==> arr.get(@x) == Some(elem))]
 #[ensures(forall<x:usize> result == Err(x) ==>
-    forall<i:Int> 0 <= i && i < @x ==> arr.get_default(i, 0u32) < elem)]
+    forall<i:usize> 0 <= @i && @i < @x ==> arr.get_default(@i, 0u32) <= elem)]
 #[ensures(forall<x:usize> result == Err(x) ==>
-    forall<i:Int> @x < i && i < arr.len_logic() ==> elem < arr.get_default(i, 0u32))]
+    forall<i:usize> @x < @i && @i < arr.len_logic() ==> elem < arr.get_default(@i, 0u32))]
 fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
     if arr.len() == 0 {
         return Err(0);
@@ -112,10 +113,9 @@ fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
     let mut size = arr.len();
     let mut base = 0;
 
-    #[invariant(size_valid, @size + @base <= arr.len_logic())]
-    #[invariant(in_interval, arr.get_default(@base, 0u32) <= elem &&
-        elem <= arr.get_default(@base + @size, 0u32))]
-    #[invariant(size_pos, size > 0usize)]
+    #[invariant(size_valid, 0 < @size && @size + @base <= (arr).len_logic())]
+    #[invariant(lower_b, forall<i : usize> i < base ==> (arr).get_default(@i, 0u32) <= elem)]
+    #[invariant(lower_b, forall<i : usize> @base + @size < @i && @i < (arr).len_logic() ==> elem < (arr).get_default(@i, 0u32))]
     while size > 1 {
         let half = size / 2;
         let mid = base + half;
