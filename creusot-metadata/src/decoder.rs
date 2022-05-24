@@ -28,18 +28,17 @@ impl MetadataBlob {
     }
 }
 
+// This is only safe to decode the metadata of a single crate or the `ty_rcache` might confuse shorthands (see #360)
 pub struct MetadataDecoder<'a, 'tcx> {
     opaque: opaque::Decoder<'a>,
-    cnum: CrateNum,
     tcx: TyCtxt<'tcx>,
     ty_rcache: FxHashMap<usize, Ty<'tcx>>,
 }
 
 impl<'a, 'tcx> MetadataDecoder<'a, 'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, cnum: CrateNum, blob: &'a MetadataBlob) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, blob: &'a MetadataBlob) -> Self {
         MetadataDecoder {
             opaque: opaque::Decoder::new(&blob.0, 0),
-            cnum,
             tcx,
             ty_rcache: Default::default(),
         }
@@ -103,8 +102,6 @@ impl<'a, 'tcx> TyDecoder<'tcx> for MetadataDecoder<'a, 'tcx> {
     where
         F: FnOnce(&mut Self) -> Ty<'tcx>,
     {
-        let tcx = self.tcx();
-
         if let Some(&ty) = self.ty_rcache.get(&shorthand) {
             return ty;
         }

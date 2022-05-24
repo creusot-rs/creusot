@@ -127,14 +127,13 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             return;
         }
 
-        let span = self.tcx.hir().span_if_local(def_id).unwrap_or(rustc_span::DUMMY_SP);
         let (interface, deps) = interface_for(self, def_id);
 
         let translated = if util::is_logic(self.tcx, def_id) || util::is_predicate(self.tcx, def_id)
         {
             debug!("translating {:?} as logical", def_id);
             let (modl, proof_modl, has_axioms, deps) =
-                crate::translation::translate_logic_or_predicate(self, def_id, span);
+                crate::translation::translate_logic_or_predicate(self, def_id);
             TranslatedItem::Logic {
                 interface,
                 modl,
@@ -388,7 +387,7 @@ pub fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
 
     // Force extern spec items to get loaded so we export them properly
     let need_to_load: Vec<_> =
-        ctx.extern_specs.values().flat_map(|e| e.contract.iter_items()).collect();
+        ctx.extern_specs.values().flat_map(|e| e.contract.iter_ids()).collect();
 
     for id in need_to_load {
         ctx.term(id);

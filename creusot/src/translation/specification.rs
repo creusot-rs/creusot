@@ -35,14 +35,6 @@ impl PreContract {
         Self { func_id, variant: None, requires: Vec::new(), ensures: Vec::new() }
     }
 
-    pub fn iter_items(&self) -> impl Iterator<Item = DefId> + '_ {
-        self.variant
-            .iter()
-            .cloned()
-            .chain(self.requires.iter().cloned())
-            .chain(self.ensures.iter().cloned())
-    }
-
     pub fn check_and_lower<'tcx>(
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
