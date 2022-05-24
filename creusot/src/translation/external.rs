@@ -59,11 +59,10 @@ pub fn extern_module<'tcx>(
 ) {
     match ctx.externs.term(def_id) {
         Some(_) => {
-            let span = ctx.tcx.def_span(def_id);
             match item_type(ctx.tcx, def_id) {
                 // the dependencies should be what was already stored in the metadata...
                 ItemType::Logic | ItemType::Predicate => {
-                    (translate_logic_or_predicate(ctx, def_id, span).0, Err(def_id))
+                    (translate_logic_or_predicate(ctx, def_id).0, Err(def_id))
                 }
                 _ => unreachable!("extern_module: unexpected term for {:?}", def_id),
             }

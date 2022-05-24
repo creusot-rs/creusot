@@ -245,7 +245,7 @@ fn load_binary_metadata<'tcx>(
     path: &Path,
 ) -> Option<BinaryMetadata<'tcx>> {
     let metadata = MetadataBlob::from_file(&path).and_then(|blob| {
-        let mut decoder = MetadataDecoder::new(tcx, cnum, &blob);
+        let mut decoder = MetadataDecoder::new(tcx, &blob);
         Ok(BinaryMetadata::decode(&mut decoder))
     });
 
