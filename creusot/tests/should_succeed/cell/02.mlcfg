@@ -1,0 +1,1025 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type core_cell_unsafecell 't =
+    | Core_Cell_UnsafeCell 't
+    
+  type core_cell_cell 't =
+    | Core_Cell_Cell (core_cell_unsafecell 't)
+    
+  type c02_cell 't 'i =
+    | C02_Cell (core_cell_cell 't) 'i
+    
+  let function c02_cell_Cell_ghost_inv (self : c02_cell 't 'i) : 'i =
+    match (self) with
+      | C02_Cell _ a -> a
+      end
+  type c02_fib  =
+    | C02_Fib usize
+    
+  let function c02_fib_Fib_ix (self : c02_fib) : usize =
+    match (self) with
+      | C02_Fib a -> a
+      end
+  type core_option_option 't =
+    | Core_Option_Option_None
+    | Core_Option_Option_Some 't
+    
+  let function core_option_option_Some_0 (self : core_option_option 't) : 't =
+    match (self) with
+      | Core_Option_Option_None -> any 't
+      | Core_Option_Option_Some a -> a
+      end
+  type core_ptr_nonnull_nonnull 't =
+    | Core_Ptr_NonNull_NonNull opaque_ptr
+    
+  type core_marker_phantomdata 't =
+    ()
+  type core_ptr_unique_unique 't =
+    | Core_Ptr_Unique_Unique (core_ptr_nonnull_nonnull 't) (core_marker_phantomdata 't)
+    
+  type alloc_rawvec_rawvec 't 'a =
+    | Alloc_RawVec_RawVec (core_ptr_unique_unique 't) usize 'a
+    
+  type alloc_vec_vec 't 'a =
+    | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) usize
+    
+  type alloc_alloc_global  =
+    | Alloc_Alloc_Global
+    
+end
+module C02_Inv_Inv_Interface
+  type self
+  type t
+  use prelude.Prelude
+  predicate inv (self : self) (x : t)
+end
+module C02_Inv_Inv
+  type self
+  type t
+  use prelude.Prelude
+  predicate inv [#"../02.rs" 9 4 32] (self : self) (x : t)
+end
+module C02_Impl0_Get_Interface
+  type t
+  type i
+  use prelude.Prelude
+  use Type
+  clone C02_Inv_Inv_Interface as Inv0 with type self = i, type t = t
+  val get [@cfg:stackify] (self : Type.c02_cell t i) : t
+    ensures { [#"../02.rs" 20 4 42] Inv0.inv (Type.c02_cell_Cell_ghost_inv self) result }
+    
+end
+module C02_Impl0_Get
+  type t
+  type i
+  use prelude.Prelude
+  use Type
+  clone C02_Inv_Inv as Inv0 with type self = i, type t = t
+  val get [@cfg:stackify] (self : Type.c02_cell t i) : t
+    ensures { [#"../02.rs" 20 4 42] Inv0.inv (Type.c02_cell_Cell_ghost_inv self) result }
+    
+end
+module C02_Impl0_Set_Interface
+  type t
+  type i
+  use prelude.Prelude
+  use Type
+  clone C02_Inv_Inv_Interface as Inv0 with type self = i, type t = t
+  val set [@cfg:stackify] (self : Type.c02_cell t i) (v : t) : ()
+    requires {[#"../02.rs" 26 4 38] Inv0.inv (Type.c02_cell_Cell_ghost_inv self) v}
+    
+end
+module C02_Impl0_Set
+  type t
+  type i
+  use prelude.Prelude
+  use Type
+  clone C02_Inv_Inv as Inv0 with type self = i, type t = t
+  val set [@cfg:stackify] (self : Type.c02_cell t i) (v : t) : ()
+    requires {[#"../02.rs" 26 4 38] Inv0.inv (Type.c02_cell_Cell_ghost_inv self) v}
+    
+end
+module C02_Fib_Interface
+  use mach.int.Int
+  function fib (i : int) : int
+end
+module C02_Fib
+  use mach.int.Int
+  use mach.int.Int32
+  function fib [#"../02.rs" 34 0 21] (i : int) : int
+  axiom def : forall i : int . fib i = ([#"../02.rs" 34 0 21] if i <= 0 then
+    0
+  else
+    if i = 1 then 1 else fib (i - 1) + fib (i - 2)
+  )
+  axiom fib_spec : forall i : int . true
+end
+module C02_Fib_Impl
+  use mach.int.Int
+  use mach.int.Int32
+  let rec ghost function fib (i : int) : int
+    variant {[#"../02.rs" 33 0 13] i}
+    
+   =
+    [#"../02.rs" 34 0 21] if i <= 0 then 0 else if pure {i = 1} then 1 else fib (i - 1) + fib (i - 2)
+end
+module C02_LemmaFibBound_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  use int.Power
+  clone C02_Fib_Interface as Fib0 with axiom .
+  function lemma_fib_bound (i : int) : ()
+end
+module C02_LemmaFibBound
+  use mach.int.Int
+  use mach.int.Int32
+  use int.Power
+  clone C02_Fib_Interface as Fib0 with axiom .
+  function lemma_fib_bound [#"../02.rs" 48 0 26] (i : int) : ()
+  axiom def : forall i : int . lemma_fib_bound i = ([#"../02.rs" 48 0 26] if i = 0 then
+    ()
+  else
+    if i = 1 then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
+  )
+  axiom lemma_fib_bound_spec : forall i : int . ([#"../02.rs" 45 0 19] 0 <= i) -> ([#"../02.rs" 46 0 30] Fib0.fib i <= Power.power 2 i)
+end
+module C02_LemmaFibBound_Impl
+  use mach.int.Int
+  use mach.int.Int32
+  use int.Power
+  clone C02_Fib as Fib0 with axiom .
+  let rec ghost function lemma_fib_bound (i : int) : ()
+    requires {[#"../02.rs" 45 0 19] 0 <= i}
+    ensures { [#"../02.rs" 46 0 30] Fib0.fib i <= Power.power 2 i }
+    variant {[#"../02.rs" 47 0 13] i}
+    
+   =
+    [#"../02.rs" 48 0 26] if pure {i = 0} then
+      ()
+    else
+      if pure {i = 1} then () else let _ = lemma_fib_bound (i - 2) in lemma_fib_bound (i - 1)
+    
+end
+module C02_LemmaMaxInt_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  use int.Power
+  use prelude.Prelude
+  use mach.int.UInt64
+  function lemma_max_int (_ : ()) : ()
+end
+module C02_LemmaMaxInt
+  use mach.int.Int
+  use mach.int.Int32
+  use int.Power
+  use prelude.Prelude
+  use mach.int.UInt64
+  function lemma_max_int [#"../02.rs" 62 0 18] (_ : ()) : ()
+  axiom lemma_max_int_spec : [#"../02.rs" 61 0 51] Power.power 2 63 < 18446744073709551615
+end
+module C02_Impl1_Inv_Interface
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  use mach.int.UInt64
+  predicate inv (self : Type.c02_fib) (v : Type.core_option_option usize)
+end
+module C02_Impl1_Inv
+  use prelude.Prelude
+  use Type
+  use mach.int.Int
+  use mach.int.UInt64
+  clone C02_Fib_Interface as Fib0 with axiom .
+  predicate inv [#"../02.rs" 69 4 43] (self : Type.c02_fib) (v : Type.core_option_option usize) =
+    [#"../02.rs" 69 4 43] match (v) with
+      | Type.Core_Option_Option_None -> true
+      | Type.Core_Option_Option_Some i -> UInt64.to_int i = Fib0.fib (UInt64.to_int (Type.c02_fib_Fib_ix self))
+      end
+end
+module CreusotContracts_Std1_Vec_Impl0_Model_Interface
+  type t
+  type a
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.Int64
+  use Type
+  function model (self : Type.alloc_vec_vec t a) : Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0_Model
+  type t
+  type a
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.Int64
+  use Type
+  function model (self : Type.alloc_vec_vec t a) : Seq.seq t
+  axiom model_spec : forall self : Type.alloc_vec_vec t a . Seq.length (model self) <= 9223372036854775807
+end
+module C02_FibCell_Interface
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  predicate fib_cell (v : Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global))
+    
+end
+module C02_FibCell
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib),
+  type a = Type.alloc_alloc_global, axiom .
+  predicate fib_cell [#"../02.rs" 82 0 32] (v : Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global))
+    
+   =
+    [#"../02.rs" 82 0 32] forall i : (int) . UInt64.to_int (Type.c02_fib_Fib_ix (Type.c02_cell_Cell_ghost_inv (Seq.get (Model0.model v) i))) = i
+end
+module CreusotContracts_Logic_Model_Model_ModelTy
+  type self
+  type modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model_Interface
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl0_Model_Interface
+  type t
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  function model (self : t) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl0_Model
+  type t
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  function model (self : t) : ModelTy0.modelTy =
+    Model0.model self
+end
+module CreusotContracts_Std1_Vec_Impl0_ModelTy
+  type t
+  type a
+  use seq.Seq
+  type modelTy  =
+    Seq.seq t
+end
+module CreusotContracts_Logic_Model_Impl0_ModelTy
+  type t
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  type modelTy  =
+    ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl0
+  type t
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
+  function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Model_Impl0_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = t, function model = Model0.model,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = t, type modelTy = ModelTy0.modelTy
+end
+module CreusotContracts_Std1_Vec_Impl0
+  type t
+  type a
+  use Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = a, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = a
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = Type.alloc_vec_vec t a,
+  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.alloc_vec_vec t a,
+  type modelTy = ModelTy0.modelTy
+end
+module Core_Ops_Index_Index_Output
+  type self
+  type idx
+  type output
+end
+module Core_Ops_Index_Index_Index_Interface
+  type self
+  type idx
+  use prelude.Prelude
+  clone Core_Ops_Index_Index_Output as Output0 with type self = self, type idx = idx
+  val index [@cfg:stackify] (self : self) (index : idx) : Output0.output
+    requires {false}
+    
+end
+module Core_Ops_Index_Index_Index
+  type self
+  type idx
+  use prelude.Prelude
+  clone Core_Ops_Index_Index_Output as Output0 with type self = self, type idx = idx
+  val index [@cfg:stackify] (self : self) (index : idx) : Output0.output
+    requires {false}
+    
+end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface
+  type self
+  type t
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
+end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds
+  type self
+  type t
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
+end
+module Core_Slice_Index_SliceIndex_Output
+  type self
+  type t
+  type output
+end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface
+  type self
+  type t
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = self, type t = t
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
+end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue
+  type self
+  type t
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = self, type t = t
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
+end
+module CreusotContracts_Std1_Slice_Impl0_ModelTy
+  type t
+  use seq.Seq
+  type modelTy  =
+    Seq.seq t
+end
+module Alloc_Vec_Impl16_Index_Interface
+  type t
+  type i
+  type a
+  use prelude.Prelude
+  use Type
+  use seq.Seq
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = i, type t = seq t
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
+  val index [@cfg:stackify] (self : Type.alloc_vec_vec t a) (index : i) : Output0.output
+    requires {InBounds0.in_bounds index (Model0.model self)}
+    ensures { HasValue0.has_value index (Model0.model self) result }
+    
+end
+module Alloc_Vec_Impl16_Index
+  type t
+  type i
+  type a
+  use prelude.Prelude
+  use Type
+  use seq.Seq
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = i, type t = seq t
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
+  val index [@cfg:stackify] (self : Type.alloc_vec_vec t a) (index : i) : Output0.output
+    requires {InBounds0.in_bounds index (Model0.model self)}
+    ensures { HasValue0.has_value index (Model0.model self) result }
+    
+end
+module Alloc_Vec_Impl16_Output
+  type t
+  type i
+  type a
+  use prelude.Prelude
+  use seq.Seq
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = i, type t = seq t
+  type output  =
+    Output0.output
+end
+module Alloc_Vec_Impl16
+  type t
+  type i
+  type a
+  use prelude.Prelude
+  use seq.Seq
+  use Type
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds as InBounds0 with type self = i, type t = seq t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = a, axiom .
+  clone Core_Slice_Index_SliceIndex_Output as Output2 with type self = i, type t = seq t
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue as HasValue0 with type self = i, type t = seq t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output2.output
+  clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = t, type i = i, type a = a,
+  function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
+  predicate HasValue0.has_value = HasValue0.has_value, type Output0.output = Output2.output
+  clone Alloc_Vec_Impl16_Output as Output0 with type t = t, type i = i, type a = a, type Output0.output = Output2.output
+  clone Core_Ops_Index_Index_Index_Interface as Index1 with type self = Type.alloc_vec_vec t a, type idx = i,
+  val index = Index0.index, type Output0.output = Output0.output
+  clone Core_Ops_Index_Index_Output as Output1 with type self = Type.alloc_vec_vec t a, type idx = i,
+  type output = Output0.output
+end
+module CreusotContracts_Std1_Slice_Impl3_InBounds_Interface
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
+end
+module CreusotContracts_Std1_Slice_Impl3_InBounds
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
+    UInt64.to_int self < Seq.length seq
+end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface
+  type self
+  type t
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  predicate resolve_elswhere (self : self) (old' : ModelTy0.modelTy) (fin : ModelTy0.modelTy)
+end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere
+  type self
+  type t
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  predicate resolve_elswhere (self : self) (old' : ModelTy0.modelTy) (fin : ModelTy0.modelTy)
+end
+module CreusotContracts_Std1_Slice_Impl3_HasValue_Interface
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
+end
+module CreusotContracts_Std1_Slice_Impl3_HasValue
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
+    Seq.get seq (UInt64.to_int self) = out
+end
+module CreusotContracts_Std1_Slice_Impl3_ResolveElswhere_Interface
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t)
+end
+module CreusotContracts_Std1_Slice_Impl3_ResolveElswhere
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  use mach.int.Int32
+  predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) =
+    forall i : (int) . 0 <= i && i <> UInt64.to_int self && i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+end
+module Core_Slice_Index_Impl2_Output
+  type t
+  type output  =
+    t
+end
+module CreusotContracts_Std1_Slice_Impl3
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  clone CreusotContracts_Std1_Slice_Impl3_ResolveElswhere as ResolveElswhere0 with type t = t
+  clone Core_Slice_Index_Impl2_Output as Output0 with type t = t
+  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = t
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere1 with type self = usize,
+  type t = seq t, predicate resolve_elswhere = ResolveElswhere0.resolve_elswhere,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue1 with type self = usize,
+  type t = seq t, predicate has_value = HasValue0.has_value, type ModelTy0.modelTy = ModelTy0.modelTy,
+  type Output0.output = Output0.output
+  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = t
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds1 with type self = usize,
+  type t = seq t, predicate in_bounds = InBounds0.in_bounds, type ModelTy0.modelTy = ModelTy0.modelTy
+end
+module Core_Slice_Index_SliceIndex_Get_Interface
+  type self
+  type t
+  use prelude.Prelude
+  use Type
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = self, type t = t
+  val get [@cfg:stackify] (self : self) (slice : t) : Type.core_option_option Output0.output
+    requires {false}
+    
+end
+module Core_Slice_Index_SliceIndex_Get
+  type self
+  type t
+  use prelude.Prelude
+  use Type
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = self, type t = t
+  val get [@cfg:stackify] (self : self) (slice : t) : Type.core_option_option Output0.output
+    requires {false}
+    
+end
+module Core_Slice_Index_SliceIndex_GetMut_Interface
+  type self
+  type t
+  use prelude.Prelude
+  use Type
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = self, type t = t
+  val get_mut [@cfg:stackify] (self : self) (slice : borrowed t) : Type.core_option_option (borrowed Output0.output)
+    requires {false}
+    
+end
+module Core_Slice_Index_SliceIndex_GetMut
+  type self
+  type t
+  use prelude.Prelude
+  use Type
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = self, type t = t
+  val get_mut [@cfg:stackify] (self : self) (slice : borrowed t) : Type.core_option_option (borrowed Output0.output)
+    requires {false}
+    
+end
+module Core_Slice_Index_SliceIndex_GetUnchecked_Interface
+  type self
+  type t
+  use prelude.Prelude
+  val get_unchecked [@cfg:stackify] (self : self) (slice : opaque_ptr) : opaque_ptr
+    requires {false}
+    
+end
+module Core_Slice_Index_SliceIndex_GetUnchecked
+  type self
+  type t
+  use prelude.Prelude
+  val get_unchecked [@cfg:stackify] (self : self) (slice : opaque_ptr) : opaque_ptr
+    requires {false}
+    
+end
+module Core_Slice_Index_SliceIndex_GetUncheckedMut_Interface
+  type self
+  type t
+  use prelude.Prelude
+  val get_unchecked_mut [@cfg:stackify] (self : self) (slice : opaque_ptr) : opaque_ptr
+    requires {false}
+    
+end
+module Core_Slice_Index_SliceIndex_GetUncheckedMut
+  type self
+  type t
+  use prelude.Prelude
+  val get_unchecked_mut [@cfg:stackify] (self : self) (slice : opaque_ptr) : opaque_ptr
+    requires {false}
+    
+end
+module Core_Slice_Index_SliceIndex_Index_Interface
+  type self
+  type t
+  use prelude.Prelude
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = self, type t = t
+  val index [@cfg:stackify] (self : self) (slice : t) : Output0.output
+    requires {false}
+    
+end
+module Core_Slice_Index_SliceIndex_Index
+  type self
+  type t
+  use prelude.Prelude
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = self, type t = t
+  val index [@cfg:stackify] (self : self) (slice : t) : Output0.output
+    requires {false}
+    
+end
+module Core_Slice_Index_SliceIndex_IndexMut_Interface
+  type self
+  type t
+  use prelude.Prelude
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = self, type t = t
+  val index_mut [@cfg:stackify] (self : self) (slice : borrowed t) : borrowed Output0.output
+    requires {false}
+    
+end
+module Core_Slice_Index_SliceIndex_IndexMut
+  type self
+  type t
+  use prelude.Prelude
+  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = self, type t = t
+  val index_mut [@cfg:stackify] (self : self) (slice : borrowed t) : borrowed Output0.output
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2_Get_Interface
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  use Type
+  val get [@cfg:stackify] (self : usize) (slice : seq t) : Type.core_option_option t
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2_Get
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  use Type
+  val get [@cfg:stackify] (self : usize) (slice : seq t) : Type.core_option_option t
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2_GetMut_Interface
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  use Type
+  val get_mut [@cfg:stackify] (self : usize) (slice : borrowed (seq t)) : Type.core_option_option (borrowed t)
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2_GetMut
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  use Type
+  val get_mut [@cfg:stackify] (self : usize) (slice : borrowed (seq t)) : Type.core_option_option (borrowed t)
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2_GetUnchecked_Interface
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  val get_unchecked [@cfg:stackify] (self : usize) (slice : opaque_ptr) : opaque_ptr
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2_GetUnchecked
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  val get_unchecked [@cfg:stackify] (self : usize) (slice : opaque_ptr) : opaque_ptr
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2_GetUncheckedMut_Interface
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  val get_unchecked_mut [@cfg:stackify] (self : usize) (slice : opaque_ptr) : opaque_ptr
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2_GetUncheckedMut
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  val get_unchecked_mut [@cfg:stackify] (self : usize) (slice : opaque_ptr) : opaque_ptr
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2_Index_Interface
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  val index [@cfg:stackify] (self : usize) (slice : seq t) : t
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2_Index
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  val index [@cfg:stackify] (self : usize) (slice : seq t) : t
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2_IndexMut_Interface
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  val index_mut [@cfg:stackify] (self : usize) (slice : borrowed (seq t)) : borrowed t
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2_IndexMut
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  val index_mut [@cfg:stackify] (self : usize) (slice : borrowed (seq t)) : borrowed t
+    requires {false}
+    
+end
+module Core_Slice_Index_Impl2
+  type t
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use seq.Seq
+  clone Core_Slice_Index_Impl2_IndexMut_Interface as IndexMut0 with type t = t
+  clone Core_Slice_Index_Impl2_Index_Interface as Index0 with type t = t
+  clone Core_Slice_Index_Impl2_GetUncheckedMut_Interface as GetUncheckedMut0 with type t = t
+  clone Core_Slice_Index_SliceIndex_GetUncheckedMut_Interface as GetUncheckedMut1 with type self = usize,
+  type t = seq t, val get_unchecked_mut = GetUncheckedMut0.get_unchecked_mut
+  clone Core_Slice_Index_Impl2_GetUnchecked_Interface as GetUnchecked0 with type t = t
+  clone Core_Slice_Index_SliceIndex_GetUnchecked_Interface as GetUnchecked1 with type self = usize, type t = seq t,
+  val get_unchecked = GetUnchecked0.get_unchecked
+  clone Core_Slice_Index_Impl2_GetMut_Interface as GetMut0 with type t = t
+  clone Core_Slice_Index_Impl2_Get_Interface as Get0 with type t = t
+  clone Core_Slice_Index_Impl2_Output as Output0 with type t = t
+  clone Core_Slice_Index_SliceIndex_IndexMut_Interface as IndexMut1 with type self = usize, type t = seq t,
+  val index_mut = IndexMut0.index_mut, type Output0.output = Output0.output
+  clone Core_Slice_Index_SliceIndex_Index_Interface as Index1 with type self = usize, type t = seq t,
+  val index = Index0.index, type Output0.output = Output0.output
+  clone Core_Slice_Index_SliceIndex_GetMut_Interface as GetMut1 with type self = usize, type t = seq t,
+  val get_mut = GetMut0.get_mut, type Output0.output = Output0.output
+  clone Core_Slice_Index_SliceIndex_Get_Interface as Get1 with type self = usize, type t = seq t, val get = Get0.get,
+  type Output0.output = Output0.output
+  clone Core_Slice_Index_SliceIndex_Output as Output1 with type self = usize, type t = seq t,
+  type output = Output0.output
+end
+module CreusotContracts_Std1_Slice_Impl0_Model_Interface
+  type t
+  use prelude.Prelude
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int64
+  function model (self : seq t) : Seq.seq t
+end
+module CreusotContracts_Std1_Slice_Impl0_Model
+  type t
+  use prelude.Prelude
+  use seq.Seq
+  use mach.int.Int
+  use mach.int.Int64
+  function model (self : seq t) : Seq.seq t
+  axiom model_spec : forall self : seq t . Seq.length (model self) <= 9223372036854775807 && model self = Prelude.id self
+end
+module CreusotContracts_Std1_Slice_Impl0
+  type t
+  use prelude.Prelude
+  use seq.Seq
+  clone CreusotContracts_Std1_Slice_Impl0_Model as Model0 with type t = t, axiom .
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = seq t,
+  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = seq t, type modelTy = ModelTy0.modelTy
+end
+module C02_Impl1
+  use Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  clone C02_Fib as Fib0 with axiom .
+  clone C02_Impl1_Inv as Inv0 with function Fib0.fib = Fib0.fib
+  clone C02_Inv_Inv_Interface as Inv1 with type self = Type.c02_fib, type t = Type.core_option_option usize,
+  predicate inv = Inv0.inv
+end
+module C02_FibMemo_Interface
+  use mach.int.UInt64
+  use mach.int.Int
+  use mach.int.Int32
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  clone C02_Fib_Interface as Fib0 with axiom .
+  clone C02_FibCell_Interface as FibCell0
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib),
+  type a = Type.alloc_alloc_global
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global),
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  val fib_memo [@cfg:stackify] (mem : Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global)) (i : usize) : usize
+    requires {[#"../02.rs" 91 0 21] UInt64.to_int i <= 63}
+    requires {[#"../02.rs" 89 0 30] UInt64.to_int i < Seq.length (Model0.model mem)}
+    requires {[#"../02.rs" 88 0 27] FibCell0.fib_cell mem}
+    ensures { [#"../02.rs" 90 0 30] UInt64.to_int result = Fib0.fib (UInt64.to_int i) }
+    
+end
+module C02_FibMemo
+  use mach.int.UInt64
+  use mach.int.Int
+  use mach.int.Int32
+  use seq.Seq
+  use prelude.Prelude
+  use Type
+  clone C02_LemmaMaxInt as LemmaMaxInt0 with axiom .
+  clone C02_Fib as Fib0 with axiom .
+  clone C02_LemmaFibBound as LemmaFibBound0 with function Fib0.fib = Fib0.fib, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib),
+  type a = Type.alloc_alloc_global, axiom .
+  clone C02_FibCell as FibCell0 with function Model0.model = Model1.model
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib),
+  type a = Type.alloc_alloc_global
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global),
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  use mach.int.Int64
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy1 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)
+  clone Core_Slice_Index_Impl2_Output as Output0 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)
+  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)
+  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)
+  clone C02_Impl1_Inv as Inv0 with function Fib0.fib = Fib0.fib
+  clone C02_Impl0_Set_Interface as Set0 with type t = Type.core_option_option usize, type i = Type.c02_fib,
+  predicate Inv0.inv = Inv0.inv
+  clone C02_Impl0_Get_Interface as Get0 with type t = Type.core_option_option usize, type i = Type.c02_fib,
+  predicate Inv0.inv = Inv0.inv
+  clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = Type.c02_cell (Type.core_option_option usize) (Type.c02_fib),
+  type i = usize, type a = Type.alloc_alloc_global, function Model0.model = Model1.model,
+  predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
+  type Output0.output = Output0.output
+  let rec cfg fib_memo [@cfg:stackify] [#"../02.rs" 92 0 46] (mem : Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global)) (i : usize) : usize
+    requires {[#"../02.rs" 91 0 21] UInt64.to_int i <= 63}
+    requires {[#"../02.rs" 89 0 30] UInt64.to_int i < Seq.length (Model0.model mem)}
+    requires {[#"../02.rs" 88 0 27] FibCell0.fib_cell mem}
+    ensures { [#"../02.rs" 90 0 30] UInt64.to_int result = Fib0.fib (UInt64.to_int i) }
+    
+   =
+  var _0 : usize;
+  var mem_1 : Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global);
+  var i_2 : usize;
+  var _3 : Type.core_option_option usize;
+  var _4 : Type.c02_cell (Type.core_option_option usize) (Type.c02_fib);
+  var _5 : Type.c02_cell (Type.core_option_option usize) (Type.c02_fib);
+  var _6 : Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global);
+  var _7 : usize;
+  var _8 : isize;
+  var v_9 : usize;
+  var fib_i_10 : usize;
+  var _11 : bool;
+  var _12 : usize;
+  var _13 : bool;
+  var _14 : usize;
+  var _15 : ();
+  var _16 : ();
+  var _17 : usize;
+  var _18 : Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global);
+  var _19 : usize;
+  var _20 : usize;
+  var _21 : usize;
+  var _22 : Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global);
+  var _23 : usize;
+  var _24 : usize;
+  var _25 : ();
+  var _26 : ();
+  var _27 : Type.c02_cell (Type.core_option_option usize) (Type.c02_fib);
+  var _28 : Type.c02_cell (Type.core_option_option usize) (Type.c02_fib);
+  var _29 : Type.alloc_vec_vec (Type.c02_cell (Type.core_option_option usize) (Type.c02_fib)) (Type.alloc_alloc_global);
+  var _30 : usize;
+  var _31 : Type.core_option_option usize;
+  var _32 : usize;
+  {
+    mem_1 <- mem;
+    i_2 <- i;
+    goto BB0
+  }
+  BB0 {
+    _6 <- mem_1;
+    _7 <- i_2;
+    _5 <- ([#"../02.rs" 93 10 16] Index0.index _6 _7);
+    goto BB1
+  }
+  BB1 {
+    _4 <- _5;
+    _3 <- ([#"../02.rs" 93 10 22] Get0.get _4);
+    goto BB2
+  }
+  BB2 {
+    switch (_3)
+      | Type.Core_Option_Option_None -> goto BB3
+      | Type.Core_Option_Option_Some _ -> goto BB5
+      end
+  }
+  BB3 {
+    _12 <- i_2;
+    _11 <- ([#"../02.rs" 96 27 33] _12 = (0 : usize));
+    switch (_11)
+      | False -> goto BB7
+      | _ -> goto BB6
+      end
+  }
+  BB4 {
+    absurd
+  }
+  BB5 {
+    v_9 <- Type.core_option_option_Some_0 _3;
+    _0 <- v_9;
+    goto BB16
+  }
+  BB6 {
+    fib_i_10 <- (0 : usize);
+    goto BB13
+  }
+  BB7 {
+    _14 <- i_2;
+    _13 <- ([#"../02.rs" 98 22 28] _14 = (1 : usize));
+    switch (_13)
+      | False -> goto BB9
+      | _ -> goto BB8
+      end
+  }
+  BB8 {
+    fib_i_10 <- (1 : usize);
+    goto BB12
+  }
+  BB9 {
+    assert { [#"../02.rs" 101 16 55] let _ = LemmaMaxInt0.lemma_max_int () in true };
+    _15 <- ();
+    assert { [#"../02.rs" 102 16 58] let _ = LemmaFibBound0.lemma_fib_bound 0 in true };
+    _16 <- ();
+    _18 <- mem_1;
+    _20 <- i_2;
+    _19 <- ([#"../02.rs" 103 30 35] _20 - (1 : usize));
+    _17 <- ([#"../02.rs" 103 16 36] fib_memo _18 _19);
+    goto BB10
+  }
+  BB10 {
+    _22 <- mem_1;
+    _24 <- i_2;
+    _23 <- ([#"../02.rs" 103 53 58] _24 - (2 : usize));
+    _21 <- ([#"../02.rs" 103 39 59] fib_memo _22 _23);
+    goto BB11
+  }
+  BB11 {
+    fib_i_10 <- ([#"../02.rs" 103 16 59] _17 + _21);
+    goto BB12
+  }
+  BB12 {
+    goto BB13
+  }
+  BB13 {
+    assert { [#"../02.rs" 105 12 46] UInt64.to_int fib_i_10 = Fib0.fib (UInt64.to_int i_2) };
+    _25 <- ();
+    _29 <- mem_1;
+    _30 <- i_2;
+    _28 <- ([#"../02.rs" 106 12 18] Index0.index _29 _30);
+    goto BB14
+  }
+  BB14 {
+    _27 <- _28;
+    _32 <- fib_i_10;
+    _31 <- Type.Core_Option_Option_Some _32;
+    _26 <- ([#"../02.rs" 106 12 35] Set0.set _27 _31);
+    goto BB15
+  }
+  BB15 {
+    _0 <- fib_i_10;
+    goto BB16
+  }
+  BB16 {
+    return _0
+  }
+  
+end

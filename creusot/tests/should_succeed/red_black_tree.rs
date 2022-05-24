@@ -55,7 +55,7 @@ where
         //  / \
         // a   b
         // Rip out the left subtree
-        let mut x: Box<_> = match std::mem::replace(&mut self.left.node, None) {
+        let mut x: Box<_> = match std::mem::take(&mut self.left.node) {
             Some(x) => x,
             None => panic!(),
         };

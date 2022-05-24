@@ -1,0 +1,77 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module C11_A_T
+  type self
+  type t
+end
+module C11_Id_Interface
+  type t
+  function id (x : t) : t
+end
+module C11_Id
+  type t
+  function id [#"../11.rs" 6 0 19] (x : t) : t =
+    [#"../11.rs" 6 0 19] x
+end
+module C11_A_F_Interface
+  type self
+  clone C11_A_T as T0 with type self = self
+  clone C11_Id_Interface as Id0 with type t = T0.t
+  val f [@cfg:stackify] (x : T0.t) : ()
+    ensures { [#"../11.rs" 13 4 26] Id0.id x = x }
+    
+end
+module C11_A_F
+  type self
+  clone C11_A_T as T0 with type self = self
+  clone C11_Id as Id0 with type t = T0.t
+  val f [@cfg:stackify] (x : T0.t) : ()
+    ensures { [#"../11.rs" 13 4 26] Id0.id x = x }
+    
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+end
+module C11_Test_Interface
+  type t
+  val test [@cfg:stackify] (_1' : t) : ()
+end
+module C11_Test
+  type t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = t
+  let rec cfg test [@cfg:stackify] [#"../11.rs" 17 0 19] (_1' : t) : () =
+  var _0 : ();
+  var _1 : t;
+  {
+    _1 <- _1';
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    goto BB1
+  }
+  BB1 {
+    assume { Resolve0.resolve _1 };
+    return _0
+  }
+  
+end

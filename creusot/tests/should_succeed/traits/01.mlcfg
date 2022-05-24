@@ -1,0 +1,73 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module C01_A_FromB_Interface
+  type self
+  type b
+  val from_b [@cfg:stackify] (x : self) : b
+end
+module C01_A_FromB
+  type self
+  type b
+  val from_b [@cfg:stackify] (x : self) : b
+end
+module C01_UsesGeneric_Interface
+  type t
+  use mach.int.Int
+  use mach.int.UInt32
+  val uses_generic [@cfg:stackify] (b : t) : uint32
+end
+module C01_UsesGeneric
+  type t
+  use mach.int.Int
+  use mach.int.UInt32
+  clone C01_A_FromB_Interface as FromB0 with type self = t, type b = uint32
+  let rec cfg uses_generic [@cfg:stackify] [#"../01.rs" 6 0 34] (b : t) : uint32 =
+  var _0 : uint32;
+  var b_1 : t;
+  var _2 : t;
+  {
+    b_1 <- b;
+    goto BB0
+  }
+  BB0 {
+    _2 <- b_1;
+    _0 <- ([#"../01.rs" 7 4 16] FromB0.from_b _2);
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    return _0
+  }
+  
+end
+module C01_Main_Interface
+  val main [@cfg:stackify] (_ : ()) : ()
+end
+module C01_Main
+  let rec cfg main [@cfg:stackify] [#"../01.rs" 10 0 9] (_ : ()) : () =
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end

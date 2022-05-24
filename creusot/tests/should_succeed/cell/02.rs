@@ -1,7 +1,6 @@
-// skip the test for now since it was randomly failing in ci.
-// Flaky? WHY3PROVE CVC4
 extern crate creusot_contracts;
 
+use creusot_contracts::std::*;
 use creusot_contracts::*;
 use std::marker::PhantomData;
 
@@ -30,9 +29,6 @@ impl<T: Copy, I: Inv<T>> Cell<T, I> {
     }
 }
 
-use creusot_contracts::std::*;
-
-// TODO: this function shouldn't actually be pure, the program version will abort.
 #[logic]
 #[variant(i)]
 fn fib(i: Int) -> Int {

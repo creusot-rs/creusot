@@ -5,7 +5,7 @@ use why3::{
     Ident,
 };
 
-use crate::{clone_map::CloneMap, ctx::*, translation::spec_axiom, util};
+use crate::{clone_map::CloneMap, ctx::*, util};
 
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{ClosureKind, TyCtxt, TyKind};

@@ -111,7 +111,7 @@ where
         let output = b(&entry).output().unwrap();
 
         let stderr = entry.with_extension("stderr");
-        let stdout = entry.with_extension("stdout");
+        let stdout = entry.with_extension("mlcfg");
 
         write!(&mut out, "Testing {} ... ", entry.display()).unwrap();
 

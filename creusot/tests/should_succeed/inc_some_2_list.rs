@@ -8,6 +8,11 @@ enum List {
 use List::*;
 impl WellFounded for List {}
 
+#[trusted]
+fn random() -> bool {
+    panic!()
+}
+
 impl List {
     #[logic]
     fn sum(self) -> Int {
@@ -45,7 +50,7 @@ impl List {
         match self {
             Cons(ma, ml) => {
                 proof_assert! { ml.lemma_sum_nonneg(); true };
-                if rand::random() {
+                if random() {
                     (ma, ml)
                 } else {
                     ml.take_some_rest()

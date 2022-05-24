@@ -1,4 +1,5 @@
 pub mod clone;
+pub mod default;
 pub mod eq;
 mod fun;
 pub mod mem;

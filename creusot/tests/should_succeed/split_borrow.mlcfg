@@ -1,0 +1,95 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type splitborrow_myint  =
+    | SplitBorrow_MyInt usize
+    
+  let function splitborrow_myint_MyInt_0 (self : splitborrow_myint) : usize =
+    match (self) with
+      | SplitBorrow_MyInt a -> a
+      end
+end
+module SplitBorrow_Z_Interface
+  val z [@cfg:stackify] (_ : ()) : bool
+end
+module SplitBorrow_Z
+  let rec cfg z [@cfg:stackify] [#"../split_borrow.rs" 3 0 14] (_ : ()) : bool =
+  var _0 : bool;
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- true;
+    return _0
+  }
+  
+end
+module SplitBorrow_Main_Interface
+  val main [@cfg:stackify] (_ : ()) : ()
+end
+module SplitBorrow_Main
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use Type
+  clone SplitBorrow_Z_Interface as Z0
+  let rec cfg main [@cfg:stackify] [#"../split_borrow.rs" 7 0 9] (_ : ()) : () =
+  var _0 : ();
+  var x_1 : (Type.splitborrow_myint, Type.splitborrow_myint);
+  var _2 : Type.splitborrow_myint;
+  var _3 : Type.splitborrow_myint;
+  var y_4 : borrowed (Type.splitborrow_myint, Type.splitborrow_myint);
+  var _5 : ();
+  var _6 : bool;
+  var _7 : Type.splitborrow_myint;
+  var _8 : Type.splitborrow_myint;
+  var _9 : usize;
+  {
+    goto BB0
+  }
+  BB0 {
+    _2 <- Type.SplitBorrow_MyInt (1 : usize);
+    _3 <- Type.SplitBorrow_MyInt (2 : usize);
+    x_1 <- (_2, _3);
+    y_4 <- borrow_mut x_1;
+    x_1 <-  ^ y_4;
+    _6 <- ([#"../split_borrow.rs" 11 7 12] Z0.z ());
+    goto BB1
+  }
+  BB1 {
+    switch (_6)
+      | False -> goto BB3
+      | _ -> goto BB2
+      end
+  }
+  BB2 {
+    _7 <- Type.SplitBorrow_MyInt (4 : usize);
+    y_4 <- { y_4 with current = (let (a, b) =  * y_4 in (a, _7)) };
+    _5 <- ();
+    goto BB4
+  }
+  BB3 {
+    _8 <- Type.SplitBorrow_MyInt (10 : usize);
+    y_4 <- { y_4 with current = (let (a, b) =  * y_4 in (_8, b)) };
+    _5 <- ();
+    goto BB4
+  }
+  BB4 {
+    _9 <- Type.splitborrow_myint_MyInt_0 (let (a, _) =  * y_4 in a);
+    _0 <- ();
+    return _0
+  }
+  
+end

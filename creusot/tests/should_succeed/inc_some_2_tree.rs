@@ -8,6 +8,11 @@ enum Tree {
 use Tree::*;
 impl WellFounded for Tree {}
 
+#[trusted]
+fn random() -> bool {
+    panic!()
+}
+
 impl Tree {
     #[logic]
     fn sum(self) -> Int {
@@ -17,7 +22,6 @@ impl Tree {
         }
     }
 
-    // TODO: Make this ghost
     #[logic]
     #[variant(*self)]
     #[ensures(self.sum() >= 0)]
@@ -59,9 +63,9 @@ impl Tree {
                     mtr.lemma_sum_nonneg();
                     true
                 };
-                if rand::random() {
-                    (ma, if rand::random() { mtl } else { mtr })
-                } else if rand::random() {
+                if random() {
+                    (ma, if random() { mtl } else { mtr })
+                } else if random() {
                     mtl.take_some_rest()
                 } else {
                     mtr.take_some_rest()

@@ -1,5 +1,3 @@
-// SHOULD_SUCCEED: parse-print
-#![feature(min_specialization)]
 extern crate creusot_contracts;
 
 use creusot_contracts::*;
@@ -12,13 +10,6 @@ enum Option<T> {
 use Option::*;
 
 pub struct List(u32, Option<Box<List>>);
-
-unsafe impl Resolve for List {
-    #[predicate]
-    fn resolve(self) -> bool {
-        true
-    }
-}
 
 #[logic]
 fn len(l: List) -> Int {

@@ -1,0 +1,106 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type c05pearlite_a  =
+    | C05Pearlite_A bool
+    
+  let function c05pearlite_a_A_a (self : c05pearlite_a) : bool =
+    match (self) with
+      | C05Pearlite_A a -> a
+      end
+  type c05pearlite_b  =
+    | C05Pearlite_B bool uint32
+    
+end
+module C05Pearlite_Solver_Interface
+  use Type
+  val solver [@cfg:stackify] (x : Type.c05pearlite_a) : ()
+    ensures { [#"../05_pearlite.rs" 12 0 22] Type.c05pearlite_a_A_a x = Type.c05pearlite_a_A_a x }
+    
+end
+module C05Pearlite_Solver
+  use Type
+  val solver [@cfg:stackify] (x : Type.c05pearlite_a) : ()
+    ensures { [#"../05_pearlite.rs" 12 0 22] Type.c05pearlite_a_A_a x = Type.c05pearlite_a_A_a x }
+    
+end
+module C05Pearlite_StructInPearlite_Interface
+  use Type
+  val struct_in_pearlite [@cfg:stackify] (x : Type.c05pearlite_a) : ()
+    ensures { [#"../05_pearlite.rs" 15 0 32] x = Type.C05Pearlite_A false }
+    
+end
+module C05Pearlite_StructInPearlite
+  use Type
+  let rec cfg struct_in_pearlite [@cfg:stackify] [#"../05_pearlite.rs" 16 0 31] (x : Type.c05pearlite_a) : ()
+    ensures { [#"../05_pearlite.rs" 15 0 32] x = Type.C05Pearlite_A false }
+    
+   =
+  var _0 : ();
+  var x_1 : Type.c05pearlite_a;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end
+module C05Pearlite_StructOrder_Interface
+  use Type
+  use mach.int.Int
+  use mach.int.UInt32
+  val struct_order [@cfg:stackify] (x : Type.c05pearlite_b) : ()
+    ensures { [#"../05_pearlite.rs" 23 0 50] x = Type.C05Pearlite_B false (0 : uint32) }
+    
+end
+module C05Pearlite_StructOrder
+  use Type
+  use mach.int.Int
+  use mach.int.UInt32
+  let rec cfg struct_order [@cfg:stackify] [#"../05_pearlite.rs" 24 0 25] (x : Type.c05pearlite_b) : ()
+    ensures { [#"../05_pearlite.rs" 23 0 50] x = Type.C05Pearlite_B false (0 : uint32) }
+    
+   =
+  var _0 : ();
+  var x_1 : Type.c05pearlite_b;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end
+module C05Pearlite_Field1IsTrue_Interface
+  use Type
+  predicate field1_is_true (x : Type.c05pearlite_b)
+end
+module C05Pearlite_Field1IsTrue
+  use Type
+  use mach.int.UInt32
+  use mach.int.Int
+  use mach.int.Int32
+  predicate field1_is_true [#"../05_pearlite.rs" 27 0 31] (x : Type.c05pearlite_b) =
+    [#"../05_pearlite.rs" 27 0 31] match (x) with
+      | Type.C05Pearlite_B (True) _ -> true
+      | Type.C05Pearlite_B field1 field2 -> UInt32.to_int field2 = 0
+      | _ -> false
+      end
+end

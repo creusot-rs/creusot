@@ -1,4 +1,3 @@
-// SHOULD_PROVE CVC4
 // This example was tken from an issue of @yannickmoy (#309).
 // It performs a 'substring' match between two vectors of u8.
 extern crate creusot_contracts;

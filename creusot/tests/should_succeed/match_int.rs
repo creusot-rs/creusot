@@ -1,4 +1,3 @@
-// SHOULD_SUCCEED: parse-print
 #![feature(exclusive_range_pattern)]
 // Test that matching constant integer values works
 fn main() {
