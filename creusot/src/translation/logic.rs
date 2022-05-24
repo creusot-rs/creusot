@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use crate::function::all_generic_decls_for;
 use crate::translation::specification;
+use crate::util::get_builtin;
 use crate::{ctx::*, util};
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::TyCtxt;
@@ -20,6 +21,14 @@ pub fn translate_logic_or_predicate<'tcx>(
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
     if util::is_predicate(ctx.tcx, def_id) {
         sig.retty = None;
+    }
+
+    // Check that we don't have both `builtins` and a contract at the same time (which are contradictory)
+    if !sig.contract.is_empty() && get_builtin(ctx.tcx, def_id).is_some() {
+        ctx.crash_and_error(
+            ctx.def_span(def_id),
+            "cannot specify both `creusot::builtins` and a contract on the same definition",
+        );
     }
 
     def_id

@@ -388,7 +388,7 @@ pub fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
 
     // Force extern spec items to get loaded so we export them properly
     let need_to_load: Vec<_> =
-        ctx.extern_specs.values().flat_map(|e| e.contract.iter_items()).collect();
+        ctx.extern_specs.values().flat_map(|e| e.contract.iter_ids()).collect();
 
     for id in need_to_load {
         ctx.term(id);
