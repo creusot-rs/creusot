@@ -6,6 +6,7 @@ use termcolor::*;
 
 fn main() {
     let why3_path = std::env::var("WHY3_PATH").unwrap_or_else(|_| "why3".into());
+    let config_path = std::env::var("WHY3_CONFIG");
     let mut out = StandardStream::stdout(ColorChoice::Always);
     let orange = Color::Ansi256(214);
     let lazy = std::env::args().any(|arg| arg == "--lazy");
@@ -53,6 +54,10 @@ fn main() {
             if lazy {
                 command.arg("--obsolete-only");
             }
+            if let Ok(ref config) = config_path {
+                command.args(&["-C", config]);
+                // command.arg(&format!("--extra-config={config}"));
+            }
             command.arg(sessiondir);
             output = command.ok();
             if output.is_ok() {
@@ -89,7 +94,9 @@ fn main() {
             out.reset().unwrap();
 
             let output = output.unwrap_err();
+            eprint!("{output}");
             let output = output.as_output().unwrap();
+
             writeln!(&mut out, "{}", std::str::from_utf8(&output.stdout).unwrap()).unwrap();
 
             success = false;
