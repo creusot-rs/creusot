@@ -4,7 +4,7 @@ use rustc_ast::ast::{MacArgs, MacArgsEq};
 use rustc_ast::{AttrItem, AttrKind, Attribute};
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::subst::SubstsRef;
-use rustc_middle::ty::{self, TyKind, VariantDef};
+use rustc_middle::ty::{self, Ty, TyKind, VariantDef};
 use rustc_middle::ty::{DefIdTree, ReErased, TyCtxt};
 use rustc_span::Symbol;
 use std::collections::HashMap;
@@ -59,6 +59,16 @@ pub(crate) fn is_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
 
 pub(crate) fn is_assertion(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "assert"]).is_some()
+}
+
+pub(crate) fn is_ghost(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "ghost"]).is_some()
+}
+
+pub(crate) fn is_ghost_closure<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
+    if let TyKind::Closure(def_id, _) = ty.peel_refs().kind()  && is_ghost(tcx, *def_id)  {
+        Some(*def_id)
+    } else { None }
 }
 
 pub(crate) fn is_predicate(tcx: TyCtxt, def_id: DefId) -> bool {

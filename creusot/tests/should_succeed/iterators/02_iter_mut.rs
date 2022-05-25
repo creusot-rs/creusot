@@ -63,33 +63,33 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     }
 }
 
-// Commented until we can get the ghost code for `produced.push` to work.
+#[trusted]
+#[ensures(@*result.inner == @*v)]
+#[ensures(@^result.inner == @^v)]
+#[ensures((@^v).len() == (@v).len())]
+fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
+    // IterMut { inner : &mut v[..] }
+    panic!()
+}
 
-// #[trusted]
-// #[ensures(@*result.inner == @*v)]
-// #[ensures(@^result.inner == @^v)]
-// #[ensures((@^v).len() == (@v).len())]
-// fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
-//     // IterMut { inner : &mut v[..] }
-//     panic!()
-// }
+#[ensures((@^v).len() == (@v).len())]
+#[ensures(forall<i : _> 0 <= i && i < (@v).len() ==> @(@^v)[i] == 0)]
+fn all_zero(v: &mut Vec<usize>) {
+    let mut it = iter_mut(v);
+    let it_old = ghost! { it };
 
-// #[ensures((@^v).len() == (@v).len())]
-// #[ensures(forall<i : _> 0 <= i && i < (@v).len() ==> @(@^v)[i] == 0)]
-// fn all_zero(v : &mut Vec<usize>) {
-//     let mut it = iter_mut(v);
-//     let it_old = Ghost::record(&it);
-//     let mut produced = Seq::EMPTY;
+    // let a : Seq<&mut _> = Seq::EMPTY; // issue with promoted ghost expressions
+    let mut produced = ghost! { Seq::new() };
 
-//     #[invariant(structural, (@it_old).produces(produced, it))]
-//     #[invariant(user, forall<i : Int> 0 <= i && i < produced.len() ==> @^ produced[i] == 0)]
-//     loop {
-//         match it.next() {
-//             Some(x) => {
-//                 // produced = produced.push(x);
-//                 *x = 0;
-//             }
-//             None => break,
-//         }
-//     }
-// }
+    #[invariant(structural, (it_old.inner()).produces(produced.inner(), it))]
+    #[invariant(user, forall<i : Int> 0 <= i && i < produced.inner().len() ==> @^ (produced.inner())[i] == 0)]
+    loop {
+        match it.next() {
+            Some(x) => {
+                produced = ghost! { produced.inner().push(x) };
+                *x = 0;
+            }
+            None => break,
+        }
+    }
+}

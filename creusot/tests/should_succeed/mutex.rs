@@ -36,7 +36,7 @@ impl<T, I: Inv<T>> Mutex<T, I> {
     #[trusted]
     #[ensures(self.1 == @(result.1))]
     fn lock(&self) -> MutexGuard<'_, T, I> {
-        MutexGuard(GuardInner(self.0 .0.lock().unwrap()), Ghost::record(&self.1))
+        MutexGuard(GuardInner(self.0 .0.lock().unwrap()), ghost! { self.1 })
     }
 }
 
@@ -138,7 +138,7 @@ fn spawn<T: Send + 'static, F: Send + 'static + FakeFnOnce<Return = T>>(
             #[creusot::no_translate]
             || f.call(),
         )),
-        Ghost::record(&SpawnPostCond { f }),
+        ghost! { SpawnPostCond { f } },
     )
 }
 

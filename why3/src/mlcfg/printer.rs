@@ -512,9 +512,8 @@ impl Print for CfgFunction {
             .append(alloc.line())
             .append(sep_end_by(
                 alloc,
-                self.vars.iter().map(|(var, ty)| {
-                    alloc
-                        .text("var ")
+                self.vars.iter().map(|(ghost, var, ty)| {
+                    if *ghost { alloc.text("ghost var ") } else { alloc.text("var ") }
                         .append(alloc.as_string(&var.0))
                         .append(" : ")
                         .append(ty.pretty(alloc, env))
@@ -724,6 +723,9 @@ impl Print for Exp {
                 e.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env)).group()
             }
             Exp::Pure(e) => alloc.text("pure ").append(e.pretty(alloc, env).braces()),
+            Exp::Ghost(e) => {
+                alloc.text("ghost ").append(parens!(alloc, env, Precedence::App.next(), e))
+            }
             Exp::Absurd => alloc.text("absurd"),
             Exp::Old(e) => alloc.text("old").append(e.pretty(alloc, env).parens()),
         }

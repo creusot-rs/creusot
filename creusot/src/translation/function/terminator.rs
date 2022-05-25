@@ -1,30 +1,31 @@
+use rustc_errors::DiagnosticId;
+use rustc_hir::def_id::DefId;
 use rustc_infer::{
     infer::{InferCtxt, TyCtxtInferExt},
     traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
 };
-use rustc_middle::ty::{subst::SubstsRef, ParamEnv, Predicate};
-use rustc_span::Span;
-use rustc_trait_selection::traits::FulfillmentContext;
-use std::collections::HashMap;
-
-use rustc_errors::DiagnosticId;
-use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{Location, Operand, Terminator, TerminatorKind::*},
-    ty,
-};
-use rustc_middle::{
-    mir::{SourceInfo, SwitchTargets},
-    ty::AdtDef,
+    mir::{Location, Operand, SourceInfo, SwitchTargets, Terminator, TerminatorKind::*},
+    ty::{
+        self,
+        subst::{GenericArgKind, SubstsRef},
+        AdtDef, ParamEnv, Predicate,
+    },
 };
 use rustc_session::Session;
+use rustc_span::Span;
 use rustc_target::abi::VariantIdx;
+use rustc_trait_selection::traits::FulfillmentContext;
 
+use std::collections::HashMap;
 use why3::exp::{BinOp, Constant, Exp, Pattern};
 use why3::mlcfg::{BlockId, Statement, Terminator as MlT};
 use why3::QName;
 
-use crate::{translation::traits, util::constructor_qname};
+use crate::{
+    translation::traits,
+    util::{constructor_qname, is_ghost_closure},
+};
 
 use super::BodyTranslator;
 
@@ -67,6 +68,17 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                 }
 
                 let (fun_def_id, subst) = func_defid(func).expect("expected call with function");
+
+                if let Some(param) = subst.get(0) &&
+                    let GenericArgKind::Type(ty) = param.unpack() &&
+                    let Some(def_id) = is_ghost_closure(self.tcx, ty) {
+                    let assertion = self.assertions.remove(&def_id).unwrap();
+                    let (loc, bb) = destination.unwrap();
+
+                    self.emit_assignment(&loc, Exp::Ghost(Box::new(assertion)));
+                    self.emit_terminator(MlT::Goto(BlockId(bb.into())));
+                    return;
+                }
 
                 let predicates = self
                     .ctx

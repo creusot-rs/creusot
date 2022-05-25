@@ -24,11 +24,11 @@ impl Model for T {
 #[requires( @((*t).a) < 1000 )] // to prevent overflow
 #[ensures( @^t == (@*t).set(@((*t).a),1) )]
 fn incr(t: &mut T) {
-    let old_t = Ghost::record(t);
+    let old_t = ghost! { t };
     (*t).a += 1;
     // proving the post-consition via extensional equality of mappings
     // (notice `==` versus `==`)
-    proof_assert!( @^t == (@@old_t).set(@((@old_t).a),1) );
+    proof_assert!( @^t == (@old_t.inner()).set(@((old_t.inner()).a),1) );
 }
 
 fn main() {

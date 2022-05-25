@@ -55,27 +55,28 @@ impl Iterator for Range {
     }
 }
 
-// #[requires(@n >= 0)]
-// #[ensures(result == n)]
-// fn sum_range(n: isize) -> isize {
-//     let mut i = 0;
-//     {
-//         // the for loop
-//         let mut it = Range { start: 0, end: n };
-//         let it_old = Ghost::record(&it);
-//         let mut produced = Seq::EMPTY;
-//         #[invariant(free, (@it_old).produces(produced, it))]
-//         // user invariant
-//         #[invariant(user, @i == produced.len())]
-//         loop {
-//             match it.next() {
-//                 Some(j) => {
-//                     // produced = produced.push(j);
-//                     i += 1;
-//                 }
-//                 None => break,
-//             }
-//         }
-//     }
-//     i
-// }
+#[requires(@n >= 0)]
+#[ensures(result == n)]
+fn sum_range(n: isize) -> isize {
+    let mut i = 0;
+    {
+        // the for loop
+        let mut it = Range { start: 0, end: n };
+        let it_old = ghost! { &it };
+        let a = Seq::EMPTY; // issue with promoted ghost expressions
+        let mut produced = ghost! { a };
+        #[invariant(free, (it_old.inner()).produces(produced.inner(), it))]
+        // user invariant
+        #[invariant(user, @i == produced.inner().len() && i <= n)]
+        loop {
+            match it.next() {
+                Some(j) => {
+                    produced = ghost! { produced.inner().push(j) };
+                    i += 1;
+                }
+                None => break,
+            }
+        }
+    }
+    i
+}

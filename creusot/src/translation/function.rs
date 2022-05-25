@@ -5,7 +5,7 @@ use crate::{
         specification::contract_of,
         ty::{closure_accessors, translate_closure_ty, translate_ty},
     },
-    util::{self, ident_of, signature_of},
+    util::{self, ident_of, is_ghost_closure, signature_of},
 };
 use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
@@ -83,6 +83,10 @@ pub fn translate_function<'tcx, 'sess>(
 
     let param_env = ctx.param_env(def_id);
     for p in promoted.borrow().iter_enumerated() {
+        if is_ghost_closure(ctx.tcx, p.1.return_ty()).is_some() {
+            continue;
+        }
+
         let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p)
             .unwrap_or_else(|e| e.emit(ctx.tcx.sess));
         decls.extend(names.to_clones(ctx));
@@ -170,8 +174,9 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         sig: Signature,
         def_id: DefId,
     ) -> Self {
+        let (invariants, assertions) =
+            corrected_invariant_names_and_locations(ctx, names, def_id, &body);
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
-        let (invariants, assertions) = corrected_invariant_names_and_locations(ctx, names, &body);
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
             if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
@@ -186,7 +191,8 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         tcx.infer_ctxt().enter(|infcx| {
             renumber::renumber_mir(&infcx, &mut clean_body, &mut Default::default());
         });
-        let move_paths = MoveData::gather_moves(&clean_body, tcx, tcx.param_env(def_id)).unwrap();
+        let move_paths = MoveData::gather_moves(&clean_body, tcx, tcx.param_env(def_id))
+            .unwrap_or_else(|_| ctx.crash_and_error(ctx.def_span(def_id), "illegal move"));
         let borrows = BorrowSet::build(tcx, &clean_body, true, &move_paths);
         let borrows = Rc::new(borrows);
         let resolver = EagerResolver::new(tcx, body, borrows.clone());
@@ -231,7 +237,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
                 .iter()
                 .skip(1)
                 .take(arg_count)
-                .map(|(id, _)| {
+                .map(|(_, id, _)| {
                     let rhs = id.arg_name();
                     Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
                 })
@@ -244,7 +250,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             sig: self.sig,
             rec: true,
             constant: false,
-            vars: vars.into_iter().map(|i| (i.0.ident(), i.1)).collect(),
+            vars: vars.into_iter().map(|i| (i.0, i.1.ident(), i.2)).collect(),
             entry,
             blocks: self.past_blocks,
         }));
@@ -284,7 +290,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         }
     }
 
-    fn translate_vars(&mut self) -> Vec<(LocalIdent, Type)> {
+    fn translate_vars(&mut self) -> Vec<(bool, LocalIdent, Type)> {
         let mut vars = Vec::with_capacity(self.body.local_decls.len());
 
         for (loc, decl) in self.body.local_decls.iter_enumerated() {
@@ -292,7 +298,13 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
                 continue;
             }
             let ident = self.translate_local(loc);
+            let ghost = if let TyKind::Adt(def, _) = decl.ty.kind() {
+                self.ctx.is_diagnostic_item(Symbol::intern("creusot_ghost"), def.did())
+            } else {
+                false
+            };
             vars.push((
+                ghost,
                 ident,
                 ty::translate_ty(&mut self.ctx, &mut self.names, decl.source_info.span, decl.ty),
             ))

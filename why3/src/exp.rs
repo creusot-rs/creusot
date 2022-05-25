@@ -80,7 +80,7 @@ pub enum Exp {
     Call(Box<Exp>, Vec<Exp>),
     Verbatim(String),
     Attr(Attribute, Box<Exp>),
-    // Seq(Box<Exp>, Box<Exp>),
+    Ghost(Box<Exp>),
     Abs(Ident, Box<Exp>),
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
     IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
@@ -151,6 +151,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
         Exp::Forall(_, e) => f.visit_mut(e),
         Exp::Exists(_, e) => f.visit_mut(e),
         Exp::Attr(_, e) => f.visit_mut(e),
+        Exp::Ghost(e) => f.visit_mut(e),
     }
 }
 
@@ -211,6 +212,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
         Exp::Forall(_, e) => f.visit(e),
         Exp::Exists(_, e) => f.visit(e),
         Exp::Attr(_, e) => f.visit(e),
+        Exp::Ghost(e) => f.visit(e),
     }
 }
 
@@ -430,6 +432,7 @@ impl Exp {
             Exp::Any(_) => Prefix,
             Exp::Verbatim(_) => Atom,
             Exp::Attr(_, _) => Attr,
+            Exp::Ghost(_) => App,
             // _ => unimplemented!("{:?}", self),
         }
     }

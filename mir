@@ -1,0 +1,18 @@
+#!/bin/bash
+
+pushd $(dirname $1) > /dev/null
+INPUTPATH=$(pwd)/$(basename $1)
+popd > /dev/null
+SCRIPTPATH=$(dirname "$BASH_SOURCE")
+pushd $SCRIPTPATH > /dev/null
+rustc \
+  --extern creusot_contracts=./target/debug/libcreusot_contracts.rlib \
+  -Ldependency=./target/debug/deps/ \
+  --crate-type=lib \
+  -Zcrate-attr="feature(stmt_expr_attributes)" \
+  -Zcrate-attr="feature(register_tool)" \
+  -Zcrate-attr="register_tool(creusot)" \
+  -Zunpretty=mir \
+  -Zdump-mir= \
+  $INPUTPATH
+popd > /dev/null
