@@ -1,4 +1,3 @@
-// WHY3PROVE Z3 NO_SPLIT
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
@@ -11,7 +10,7 @@ impl WellFounded for List {}
 
 #[trusted]
 fn random() -> bool {
-    rand::random()
+    panic!()
 }
 
 impl List {

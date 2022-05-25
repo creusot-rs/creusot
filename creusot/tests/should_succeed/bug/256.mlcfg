@@ -1,0 +1,85 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type core_ptr_nonnull_nonnull 't =
+    | Core_Ptr_NonNull_NonNull opaque_ptr
+    
+  type core_marker_phantomdata 't =
+    ()
+  type core_ptr_unique_unique 't =
+    | Core_Ptr_Unique_Unique (core_ptr_nonnull_nonnull 't) (core_marker_phantomdata 't)
+    
+  type alloc_rawvec_rawvec 't 'a =
+    | Alloc_RawVec_RawVec (core_ptr_unique_unique 't) usize 'a
+    
+  type alloc_vec_vec 't 'a =
+    | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) usize
+    
+  type alloc_alloc_global  =
+    | Alloc_Alloc_Global
+    
+  type alloc_string_string  =
+    | Alloc_String_String (alloc_vec_vec uint8 (alloc_alloc_global))
+    
+end
+module C256_U8Safe_Interface
+  use mach.int.Int
+  use prelude.Prelude
+  use prelude.UInt8
+  val u8_safe [@cfg:stackify] (u : uint8) : ()
+end
+module C256_U8Safe
+  use mach.int.Int
+  use prelude.Prelude
+  use prelude.UInt8
+  let rec cfg u8_safe [@cfg:stackify] [#"../256.rs" 5 0 17] (u : uint8) : () =
+  var _0 : ();
+  var u_1 : uint8;
+  var _2 : uint8;
+  var _3 : uint8;
+  {
+    u_1 <- u;
+    goto BB0
+  }
+  BB0 {
+    _3 <- u_1;
+    _2 <- ([#"../256.rs" 6 4 9] _3 + (0 : uint8));
+    _0 <- ();
+    return _0
+  }
+  
+end
+module C256_Bug256_Interface
+  use Type
+  val bug_256 [@cfg:stackify] (x : Type.alloc_string_string) : ()
+end
+module C256_Bug256
+  use Type
+  let rec cfg bug_256 [@cfg:stackify] [#"../256.rs" 10 0 21] (x : Type.alloc_string_string) : () =
+  var _0 : ();
+  var x_1 : Type.alloc_string_string;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end

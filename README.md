@@ -60,7 +60,7 @@ This will produce a file named `PROGRAM-rlib.mlcfg` in the `REPO` directory. Thi
 
 
 You can play with examples in [creusot/tests/should_succeed](creusot/tests/should_succeed).
-(There we have `*.stdout` files for the MLCFG outputs.)
+(There we have `*.mlcfg` files for the MLCFG outputs.)
 
 Later we show how to write Rust programs with specs for Creusot.
 

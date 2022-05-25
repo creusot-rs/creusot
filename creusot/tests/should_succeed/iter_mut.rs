@@ -1,4 +1,4 @@
-// UNBOUNDED WHY3PROVE Z3
+// UNBOUNDED
 #![feature(type_ascription, box_syntax)]
 
 extern crate creusot_contracts;

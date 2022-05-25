@@ -1,3 +1,5 @@
+// UNBOUNDED
+
 #![feature(type_ascription)]
 
 extern crate creusot_contracts;

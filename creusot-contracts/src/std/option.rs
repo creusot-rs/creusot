@@ -1,4 +1,5 @@
 use crate as creusot_contracts;
+use crate::std::default::DefaultSpec;
 use creusot_contracts_proc::*;
 
 extern_spec! {
@@ -17,4 +18,11 @@ extern_spec! {
     #[ensures(*o == None ==> result == None)]
     #[ensures(*o == None || exists<r: &mut T> result == Some(r) && *o == Some(*r))]
     fn std::option::Option::as_ref<T>(o: &Option<T>) -> Option<&T>
+}
+
+impl<T> DefaultSpec for Option<T> {
+    #[logic]
+    fn default_log() -> Option<T> {
+        None
+    }
 }

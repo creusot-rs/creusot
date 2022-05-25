@@ -4,53 +4,20 @@ use crate::{Int, Model, Seq};
 use creusot_contracts_proc::*;
 
 use std::alloc::Allocator;
-use std::slice::SliceIndex;
 
-use std::ops::{Index, IndexMut};
+use crate::std::slice::SliceIndexSpec;
+use std::ops::{Deref, DerefMut, Index, IndexMut};
 
 pub use ::std::vec::from_elem;
 
 impl<T, A: Allocator> Model for Vec<T, A> {
     type ModelTy = Seq<T>;
+
     #[logic]
     #[trusted]
-    #[ensures(result.len() <= @usize::MAX)]
+    #[ensures(result.len() <= @isize::MAX)]
     fn model(self) -> Self::ModelTy {
-        absurd
-    }
-}
-
-pub(crate) trait SliceIndexSpec<T: ?Sized>: SliceIndex<T>
-where
-    T: Model,
-{
-    #[predicate]
-    fn in_bounds(self, seq: T::ModelTy) -> bool;
-
-    #[predicate]
-    fn has_value(self, seq: T::ModelTy, out: Self::Output) -> bool;
-
-    #[predicate]
-    fn resolve_elswhere(self, old: T::ModelTy, fin: T::ModelTy) -> bool;
-}
-
-impl<T> SliceIndexSpec<[T]> for usize {
-    #[predicate]
-    #[why3::attr = "inline:trivial"]
-    fn in_bounds(self, seq: Seq<T>) -> bool {
-        pearlite! { @self < seq.len() }
-    }
-
-    #[predicate]
-    #[why3::attr = "inline:trivial"]
-    fn has_value(self, seq: Seq<T>, out: T) -> bool {
-        pearlite! { seq[@self] == out }
-    }
-
-    #[predicate]
-    #[why3::attr = "inline:trivial"]
-    fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i != @self && i < old.len() ==> old[i] == fin[i] }
+        pearlite! { absurd }
     }
 }
 
@@ -85,7 +52,11 @@ extern_spec! {
   fn std::vec::Vec::new<T>() -> Vec<T>
 }
 
-use std::ops::DerefMut;
+extern_spec! {
+    #[creusot::extern_spec::impl_]
+    #[ensures(@*result == @*self_)]
+    fn std::vec::Vec::deref<T, A : Allocator>(self_: &Vec<T, A>) -> &[T]
+}
 
 extern_spec! {
     #[creusot::extern_spec::impl_]

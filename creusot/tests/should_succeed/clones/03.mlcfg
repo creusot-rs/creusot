@@ -1,0 +1,126 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module C03_Omg_Interface
+  type t
+  function omg (x : t) : bool
+end
+module C03_Omg
+  type t
+  function omg [#"../03.rs" 6 0 23] (x : t) : bool =
+    [#"../03.rs" 6 0 23] true
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+end
+module C03_Prog_Interface
+  type t
+  clone C03_Omg_Interface as Omg0 with type t = t
+  val prog [@cfg:stackify] (x : t) : ()
+    ensures { [#"../03.rs" 10 0 18] Omg0.omg x }
+    
+end
+module C03_Prog
+  type t
+  clone C03_Omg as Omg0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = t
+  let rec cfg prog [@cfg:stackify] [#"../03.rs" 11 0 16] (x : t) : ()
+    ensures { [#"../03.rs" 10 0 18] Omg0.omg x }
+    
+   =
+  var _0 : ();
+  var x_1 : t;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    _0 <- ();
+    goto BB2
+  }
+  BB2 {
+    assume { Resolve0.resolve x_1 };
+    return _0
+  }
+  
+end
+module C03_Prog2_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  clone C03_Omg_Interface as Omg0 with type t = int
+  val prog2 [@cfg:stackify] (_ : ()) : ()
+    ensures { [#"../03.rs" 13 0 18] Omg0.omg 0 }
+    
+end
+module C03_Prog2
+  use mach.int.Int
+  use mach.int.Int32
+  clone C03_Omg as Omg0 with type t = int
+  clone C03_Omg as Omg1 with type t = int32
+  clone C03_Prog_Interface as Prog0 with type t = int32, function Omg0.omg = Omg1.omg
+  let rec cfg prog2 [@cfg:stackify] [#"../03.rs" 14 0 10] (_ : ()) : ()
+    ensures { [#"../03.rs" 13 0 18] Omg0.omg 0 }
+    
+   =
+  var _0 : ();
+  var _1 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _1 <- ([#"../03.rs" 15 4 11] Prog0.prog (0 : int32));
+    goto BB1
+  }
+  BB1 {
+    _0 <- ();
+    return _0
+  }
+  
+end
+module C03_Prog3_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  clone C03_Omg_Interface as Omg0 with type t = (int, int)
+  val prog3 [@cfg:stackify] (_ : ()) : ()
+    ensures { [#"../03.rs" 18 0 23] Omg0.omg (0, 0) }
+    
+end
+module C03_Prog3
+  use mach.int.Int
+  use mach.int.Int32
+  clone C03_Omg as Omg0 with type t = (int, int)
+  let rec cfg prog3 [@cfg:stackify] [#"../03.rs" 19 0 10] (_ : ()) : ()
+    ensures { [#"../03.rs" 18 0 23] Omg0.omg (0, 0) }
+    
+   =
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end

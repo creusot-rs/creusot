@@ -1,4 +1,3 @@
-// SHOULD_SUCCEED: parse-print
 // Check that module paths are properly printed in MLCFG.
 
 mod a {
@@ -12,8 +11,7 @@ mod b {
 
     pub mod c {
         pub struct T(::a::T);
-        // FIXME: Currently cannot handle types that depend on outer modules!
-        // pub struct U(super::O);
+        pub struct U(super::O);
     }
 }
 

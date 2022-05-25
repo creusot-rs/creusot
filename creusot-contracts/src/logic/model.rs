@@ -23,27 +23,12 @@ impl<T: Model + ?Sized> Model for &mut T {
     }
 }
 
-impl<T> Model for [T] {
-    type ModelTy = crate::Seq<T>;
-
-    #[logic]
-    fn model(self) -> Self::ModelTy {
-        id(self)
-    }
-}
-
 impl<T, const N: usize> Model for [T; N] {
     type ModelTy = crate::Seq<T>;
 
     #[logic]
-    #[trusted]
     #[creusot::builtins = "prelude.Prelude.id"]
     fn model(self) -> Self::ModelTy {
         pearlite! { absurd }
     }
-}
-
-#[creusot::builtins = "prelude.Prelude.id"]
-fn id<T>(_: [T]) -> crate::Seq<T> {
-    std::process::abort()
 }

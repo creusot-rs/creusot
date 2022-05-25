@@ -200,7 +200,7 @@ impl Print for LetDecl {
         }
 
         doc = doc
-            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
+            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" =")))
             .group()
             .append(alloc.line())
             .append(self.body.pretty(alloc, env).indent(2));
@@ -230,7 +230,7 @@ impl Print for LetFun {
 
         doc = doc
             .append("function ")
-            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
+            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" =")))
             .group()
             .append(alloc.line())
             .append(self.body.pretty(alloc, env).indent(2));
@@ -306,7 +306,7 @@ impl Print for Predicate {
     {
         alloc
             .text("predicate ")
-            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
+            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" =")))
             .group()
             .append(alloc.line())
             .append(self.body.pretty(alloc, env).indent(2))
@@ -342,7 +342,7 @@ impl Print for Logic {
     {
         alloc
             .text("function ")
-            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
+            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" =")))
             .group()
             .append(alloc.line())
             .append(self.body.pretty(alloc, env).indent(2))
@@ -507,7 +507,7 @@ impl Print for CfgFunction {
             .append(if self.rec { "rec " } else { "" })
             .append("cfg ")
             .append(if self.constant { "constant " } else { "" })
-            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = ")))
+            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" =")))
             .group()
             .append(alloc.line())
             .append(sep_end_by(
@@ -968,7 +968,7 @@ impl Print for TyDecl {
                     ty_params.iter().map(|p| alloc.text("'").append(p.pretty(alloc, env))),
                     alloc.space(),
                 ))
-                .append(alloc.text(" = ").append(alloc.hardline()))
+                .append(alloc.text(" =").append(alloc.hardline()))
                 .append(alias.pretty(alloc, env).indent(2)),
             TyDecl::Adt { tys } => {
                 use std::iter::*;
@@ -997,7 +997,7 @@ impl Print for TyDecl {
                         inner_doc = inner_doc.append(ty_cons.append(alloc.hardline()))
                     }
                     decl = decl
-                        .append(alloc.text(" = ").append(alloc.hardline()))
+                        .append(alloc.text(" =").append(alloc.hardline()))
                         .append(inner_doc.indent(2))
                 }
                 decl
@@ -1013,7 +1013,7 @@ impl Print for TyDecl {
         //     );
 
         // if !matches!(self, TyDecl::Opaque { .. }) {
-        //     ty_decl = ty_decl.append(alloc.text(" = ").append(alloc.hardline()));
+        //     ty_decl = ty_decl.append(alloc.text(" =").append(alloc.hardline()));
         // }
         ty_decl
         // ty_decl.append(self.kind.pretty(alloc, env).indent(2))

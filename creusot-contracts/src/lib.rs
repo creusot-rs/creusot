@@ -147,6 +147,3 @@ pub mod logic {
 }
 
 pub use logic::*;
-
-// Re-export the rand crate
-pub use rand;

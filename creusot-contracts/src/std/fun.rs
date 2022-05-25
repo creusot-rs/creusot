@@ -1,4 +1,5 @@
 use crate as creusot_contracts;
+use crate::Resolve;
 use creusot_contracts_proc::*;
 
 #[rustc_diagnostic_item = "fn_once_spec"]
@@ -13,14 +14,13 @@ pub trait FnOnceSpec<Args>: FnOnce<Args> {
 #[rustc_diagnostic_item = "fn_mut_spec"]
 pub trait FnMutSpec<Args>: FnMut<Args> + FnOnceSpec<Args> {
     #[predicate]
-    fn postcondition_mut(&mut self, a: Args, res: Self::Output) -> bool;
+    fn postcondition_mut(&mut self, _: Args, _: Self::Output) -> bool;
 
     #[law]
-    #[ensures((exists<s: &mut Self> *s == self && s.postcondition_mut(a, res) && (^s).resolve()) ==> self.postcondition_once(a, res))]
-    #[ensures(self.postcondition_once(a, res) ==> exists<s: &mut Self> *s == self && s.postcondition_mut(a, res) && (^s).resolve())]
-    fn fn_mut_once(self, a: Args, res: Self::Output)
+    #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && (^s).resolve())]
+    fn fn_mut_once(self, args: Args, res: Self::Output)
     where
-        Self: crate::Resolve + Sized;
+        Self: Sized;
 }
 
 #[rustc_diagnostic_item = "fn_spec"]
@@ -29,11 +29,14 @@ pub trait FnSpec<Args>: Fn<Args> + FnMutSpec<Args> {
     fn postcondition(&self, _: Args, _: Self::Output) -> bool;
 
     #[law]
-    #[ensures(self.postcondition(args, res) ==> exists<s: &mut Self> *s == *self && s.resolve() && s.postcondition_mut(args, res))]
-    #[ensures((exists<s: &mut Self> *s == *self && s.resolve() && s.postcondition_mut(args, res)) ==> self.postcondition(args, res))]
-    fn fn_mut(&self, args: Args, res: Self::Output)
+    #[ensures(self.postcondition_mut(args, res) == (self.resolve() && self.postcondition(args, res)))]
+    fn fn_mut(&mut self, args: Args, res: Self::Output);
+
+    #[law]
+    #[ensures(self.postcondition_once(args, res) == (self.resolve() && self.postcondition(args, res)))]
+    fn fn_once(self, args: Args, res: Self::Output)
     where
-        Self: crate::Resolve + Sized;
+        Self: Sized;
 }
 
 impl<Args, F: FnOnce<Args>> FnOnceSpec<Args> for F {
@@ -73,7 +76,10 @@ impl<Args, F: Fn<Args>> FnSpec<Args> for F {
     }
 
     #[law]
-    fn fn_mut(&self, _: Args, _: Self::Output) {}
+    fn fn_mut(&mut self, _: Args, _: Self::Output) {}
+
+    #[law]
+    fn fn_once(self, _: Args, _: Self::Output) {}
 }
 
 extern_spec! {

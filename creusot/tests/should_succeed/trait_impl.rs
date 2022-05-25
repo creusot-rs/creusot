@@ -1,5 +1,3 @@
-// SHOULD_SUCCEED: parse-print
-
 // This file tests that the implementation of a trait is correctly translated
 
 // #[derive(PartialEq)]

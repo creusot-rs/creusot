@@ -1,0 +1,95 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+  type switchstruct_m 't =
+    | SwitchStruct_M_F uint32
+    | SwitchStruct_M_G 't
+    
+  let function switchstruct_m_G_field2 (self : switchstruct_m 't) : 't =
+    match (self) with
+      | SwitchStruct_M_F _ -> any 't
+      | SwitchStruct_M_G a -> a
+      end
+  let function switchstruct_m_F_field1 (self : switchstruct_m 't) : uint32 =
+    match (self) with
+      | SwitchStruct_M_F a -> a
+      | SwitchStruct_M_G _ -> any uint32
+      end
+end
+module SwitchStruct_Test_Interface
+  use Type
+  use mach.int.Int
+  use mach.int.UInt32
+  val test [@cfg:stackify] (o : Type.switchstruct_m uint32) : bool
+end
+module SwitchStruct_Test
+  use Type
+  use mach.int.Int
+  use mach.int.UInt32
+  use prelude.Prelude
+  use mach.int.Int64
+  let rec cfg test [@cfg:stackify] [#"../switch_struct.rs" 6 0 26] (o : Type.switchstruct_m uint32) : bool =
+  var _0 : bool;
+  var o_1 : Type.switchstruct_m uint32;
+  var _2 : isize;
+  var field1_3 : uint32;
+  var _4 : uint32;
+  var field2_5 : uint32;
+  var _6 : uint32;
+  {
+    o_1 <- o;
+    goto BB0
+  }
+  BB0 {
+    switch (o_1)
+      | Type.SwitchStruct_M_F _ -> goto BB3
+      | Type.SwitchStruct_M_G _ -> goto BB1
+      end
+  }
+  BB1 {
+    field2_5 <- Type.switchstruct_m_G_field2 o_1;
+    _6 <- field2_5;
+    _0 <- ([#"../switch_struct.rs" 10 24 35] _6 = (0 : uint32));
+    goto BB4
+  }
+  BB2 {
+    absurd
+  }
+  BB3 {
+    field1_3 <- Type.switchstruct_m_F_field1 o_1;
+    _4 <- field1_3;
+    _0 <- ([#"../switch_struct.rs" 9 24 34] _4 > (0 : uint32));
+    goto BB4
+  }
+  BB4 {
+    return _0
+  }
+  
+end
+module SwitchStruct_Main_Interface
+  val main [@cfg:stackify] (_ : ()) : ()
+end
+module SwitchStruct_Main
+  let rec cfg main [@cfg:stackify] [#"../switch_struct.rs" 14 0 9] (_ : ()) : () =
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end

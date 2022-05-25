@@ -1,0 +1,86 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use prelude.Prelude
+end
+module MutCall_Kill_Interface
+  use prelude.Prelude
+  use mach.int.Int
+  use mach.int.UInt32
+  val kill [@cfg:stackify] (_1' : borrowed uint32) : ()
+end
+module MutCall_Kill
+  use prelude.Prelude
+  use mach.int.Int
+  use mach.int.UInt32
+  let rec cfg kill [@cfg:stackify] [#"../mut_call.rs" 1 0 20] (_1' : borrowed uint32) : () =
+  var _0 : ();
+  var _1 : borrowed uint32;
+  {
+    _1 <- _1';
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end
+module MutCall_Test_Interface
+  val test [@cfg:stackify] (_ : ()) : ()
+end
+module MutCall_Test
+  use mach.int.Int
+  use mach.int.UInt32
+  use prelude.Prelude
+  clone MutCall_Kill_Interface as Kill0
+  let rec cfg test [@cfg:stackify] [#"../mut_call.rs" 2 0 9] (_ : ()) : () =
+  var _0 : ();
+  var a_1 : uint32;
+  var _2 : ();
+  var _3 : borrowed uint32;
+  var _4 : borrowed uint32;
+  {
+    goto BB0
+  }
+  BB0 {
+    a_1 <- (10 : uint32);
+    _4 <- borrow_mut a_1;
+    a_1 <-  ^ _4;
+    _3 <- borrow_mut ( * _4);
+    _4 <- { _4 with current = ( ^ _3) };
+    _2 <- ([#"../mut_call.rs" 4 4 16] Kill0.kill _3);
+    goto BB1
+  }
+  BB1 {
+    _0 <- ();
+    return _0
+  }
+  
+end
+module MutCall_Main_Interface
+  val main [@cfg:stackify] (_ : ()) : ()
+end
+module MutCall_Main
+  let rec cfg main [@cfg:stackify] [#"../mut_call.rs" 7 0 9] (_ : ()) : () =
+  var _0 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    _0 <- ();
+    return _0
+  }
+  
+end
