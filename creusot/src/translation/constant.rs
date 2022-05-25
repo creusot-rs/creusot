@@ -78,6 +78,7 @@ pub fn from_ty_const<'tcx>(
     if let ConstKind::Unevaluated(u) = c.val() &&
        let Some(builtin_nm) = get_builtin(ctx.tcx, u.def.did) &&
        let Some(nm) = QName::from_string(builtin_nm.as_str()) {
+            names.import_builtin_module(nm.clone().module_qname());
             return Exp::pure_qvar(nm.without_search_path());
     };
 

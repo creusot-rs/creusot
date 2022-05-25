@@ -161,6 +161,7 @@ pub fn prelude_imports(type_import: bool) -> Vec<Decl> {
         Decl::UseDecl(Use { name: QName::from_string("string.Char").unwrap() }),
         Decl::UseDecl(Use { name: QName::from_string("floating_point.Single").unwrap() }),
         Decl::UseDecl(Use { name: QName::from_string("floating_point.Double").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("seq.Seq").unwrap() }),
         Decl::UseDecl(Use { name: QName::from_string("prelude.Prelude").unwrap() }),
     ];
 
