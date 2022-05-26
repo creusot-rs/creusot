@@ -37,16 +37,16 @@ fn heap_frag_max<T: OrdLogic>(s: Seq<T>, i: Int, end: Int) {
           (forall<j: Int> @start <= j && j < @end ==> (@v)[j] <= m) ==>
           forall<j: Int> @start <= j && j < @end ==> (@^v)[j] <= m)]
 fn sift_down<T: Ord>(v: &mut Vec<T>, start: usize, end: usize) {
-    let old_v = Ghost::record(&v);
+    let old_v = ghost! { v };
     let mut i = start;
 
-    #[invariant(proph_const, ^v == ^@old_v)]
-    #[invariant(permutation, (@v).permutation_of(@@old_v))]
+    #[invariant(proph_const, ^v == ^old_v.inner())]
+    #[invariant(permutation, (@v).permutation_of(@old_v.inner()))]
     #[invariant(i_bounds, @start <= @i && @i < @end)]
     #[invariant(unchanged, forall<j: Int> 0 <= j && j < @start || @end <= j && j < (@v).len()
-                              ==> (@@old_v)[j] == (@v)[j])]
+                              ==> (@old_v.inner())[j] == (@v)[j])]
     #[invariant(keep_bound, forall<m: T>
-          (forall<j: Int> @start <= j && j < @end ==> (@@old_v)[j] <= m) ==>
+          (forall<j: Int> @start <= j && j < @end ==> (@old_v.inner())[j] <= m) ==>
           forall<j: Int> @start <= j && j < @end ==> (@v)[j] <= m)]
     #[invariant(heap, forall<j: Int> @start <= parent(j) && j < @end && @i != parent(j) ==>
             (@v)[j] <= (@v)[parent(j)])]
@@ -87,11 +87,11 @@ fn sorted<T: Ord>(s: Seq<T>) -> bool {
 #[ensures(sorted(@^v))]
 #[ensures((@^v).permutation_of(@v))]
 fn heap_sort<T: Ord>(v: &mut Vec<T>) {
-    let old_v = Ghost::record(&v);
+    let old_v = ghost! { v };
 
     let mut start = v.len() / 2;
-    #[invariant(permutation, (@v).permutation_of(@@old_v))]
-    #[invariant(proph_const, ^v == ^@old_v)]
+    #[invariant(permutation, (@v).permutation_of(@old_v.inner()))]
+    #[invariant(proph_const, ^v == ^old_v.inner())]
     #[invariant(heap, heap_frag(@v, @start, (@v).len()))]
     #[invariant(start_bound, @start <= (@v).len()/2)]
     while start > 0 {
@@ -101,8 +101,8 @@ fn heap_sort<T: Ord>(v: &mut Vec<T>) {
 
     let mut end = v.len();
     #[invariant(end_bound, @end <= (@v).len())]
-    #[invariant(permutation, (@v).permutation_of(@@old_v))]
-    #[invariant(proph_const, ^v == ^@old_v)]
+    #[invariant(permutation, (@v).permutation_of(@old_v.inner()))]
+    #[invariant(proph_const, ^v == ^old_v.inner())]
     #[invariant(heap, heap_frag(@v, 0, @end))]
     #[invariant(sorted, sorted_range(@v, @end, (@v).len()))]
     #[invariant(heap_le, forall<i : Int, j : Int> 0 <= i && i < @end && @end <= j && j < (@v).len() ==>

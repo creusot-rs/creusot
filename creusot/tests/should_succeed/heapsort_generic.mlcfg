@@ -23,7 +23,8 @@ module Type
     | Core_Ptr_NonNull_NonNull opaque_ptr
     
   type core_marker_phantomdata 't =
-    ()
+    | Core_Marker_PhantomData
+    
   type core_ptr_unique_unique 't =
     | Core_Ptr_Unique_Unique (core_ptr_nonnull_nonnull 't) (core_marker_phantomdata 't)
     
@@ -35,9 +36,6 @@ module Type
     
   type alloc_alloc_global  =
     | Alloc_Alloc_Global
-    
-  type creusotcontracts_logic_ghost_ghost 't =
-    | CreusotContracts_Logic_Ghost_Ghost opaque_ptr
     
   type core_option_option 't =
     | Core_Option_Option_None
@@ -388,16 +386,6 @@ module CreusotContracts_Std1_Vec_Impl0_ModelTy
   type modelTy  =
     Seq.seq t
 end
-module CreusotContracts_Logic_Ghost_Impl0_Model_Interface
-  type t
-  use Type
-  function model (self : Type.creusotcontracts_logic_ghost_ghost t) : t
-end
-module CreusotContracts_Logic_Ghost_Impl0_Model
-  type t
-  use Type
-  function model (self : Type.creusotcontracts_logic_ghost_ghost t) : t
-end
 module CreusotContracts_Std1_Vec_Impl0
   type t
   type a
@@ -428,21 +416,6 @@ module CreusotContracts_Logic_Model_Impl1
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = borrowed t,
   type modelTy = ModelTy0.modelTy
 end
-module CreusotContracts_Logic_Ghost_Impl0_ModelTy
-  type t
-  type modelTy  =
-    t
-end
-module CreusotContracts_Logic_Ghost_Impl0
-  type t
-  use Type
-  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = t
-  clone CreusotContracts_Logic_Ghost_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
-  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
-  type modelTy = ModelTy0.modelTy
-end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
@@ -450,24 +423,6 @@ end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
   predicate resolve (self : self)
-end
-module CreusotContracts_Logic_Ghost_Impl1_Record_Interface
-  type t
-  use prelude.Prelude
-  use Type
-  clone CreusotContracts_Logic_Ghost_Impl0_Model_Interface as Model0 with type t = t
-  val record [@cfg:stackify] (a : t) : Type.creusotcontracts_logic_ghost_ghost t
-    ensures { Model0.model result = a }
-    
-end
-module CreusotContracts_Logic_Ghost_Impl1_Record
-  type t
-  use prelude.Prelude
-  use Type
-  clone CreusotContracts_Logic_Ghost_Impl0_Model_Interface as Model0 with type t = t
-  val record [@cfg:stackify] (a : t) : Type.creusotcontracts_logic_ghost_ghost t
-    ensures { Model0.model result = a }
-    
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
@@ -1206,7 +1161,6 @@ module HeapsortGeneric_SiftDown
   use mach.int.Int32
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model2 with type t = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf as PermutationOf0 with type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog as CmpLog0 with type self = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog as GtLog0 with type self = t,
@@ -1242,26 +1196,23 @@ module HeapsortGeneric_SiftDown
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = Type.alloc_alloc_global, axiom .
   clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve4 with type t = seq t
-  clone CreusotContracts_Std1_Slice_Impl0_Model as Model3 with type t = t, axiom .
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = t
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve3 with type t = seq t
+  clone CreusotContracts_Std1_Slice_Impl0_Model as Model2 with type t = t, axiom .
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = t
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy1 with type t = t
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model4 with type t = seq t,
-  type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model3.model
-  clone Core_Slice_Impl0_Swap_Interface as Swap0 with type t = t, function Model0.model = Model4.model,
-  function Model1.model = Model3.model
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model3 with type t = seq t,
+  type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model2.model
+  clone Core_Slice_Impl0_Swap_Interface as Swap0 with type t = t, function Model0.model = Model3.model,
+  function Model1.model = Model2.model
   clone Core_Slice_Index_Impl2_Output as Output0 with type t = t
   clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = t
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = t
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global)
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global)))
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global)
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))
-  clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global)),
-  function Model0.model = Model2.model
   clone CreusotContracts_Std1_Ord_Ord_Lt_Interface as Lt0 with type self = t, predicate LtLog0.lt_log = LtLog0.lt_log
   clone CreusotContracts_Std1_Ord_Ord_Le_Interface as Le0 with type self = t, predicate LeLog0.le_log = LeLog0.le_log
   clone Alloc_Vec_Impl11_DerefMut_Interface as DerefMut0 with type t = t, type a = Type.alloc_alloc_global,
-  function Model0.model = Model3.model, function Model1.model = Model0.model
+  function Model0.model = Model2.model, function Model1.model = Model0.model
   clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = t, type i = usize, type a = Type.alloc_alloc_global,
   function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
   predicate HasValue0.has_value = HasValue0.has_value, type Output0.output = Output0.output
@@ -1279,58 +1230,57 @@ module HeapsortGeneric_SiftDown
   var v_1 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
   var start_2 : usize;
   var end'_3 : usize;
-  var old_v_4 : Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global)));
-  var _5 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
-  var _6 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
-  var i_7 : usize;
+  ghost var old_v_4 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
+  var _5 : ();
+  var i_6 : usize;
+  var _7 : ();
   var _8 : ();
   var _9 : ();
-  var _10 : ();
-  var _11 : bool;
+  var _10 : bool;
+  var _11 : usize;
   var _12 : usize;
   var _13 : usize;
-  var _14 : usize;
-  var _15 : bool;
-  var _16 : ();
-  var child_17 : usize;
+  var _14 : bool;
+  var _15 : ();
+  var child_16 : usize;
+  var _17 : usize;
   var _18 : usize;
-  var _19 : usize;
-  var _20 : ();
+  var _19 : ();
+  var _20 : bool;
   var _21 : bool;
-  var _22 : bool;
+  var _22 : usize;
   var _23 : usize;
   var _24 : usize;
-  var _25 : usize;
-  var _26 : bool;
+  var _25 : bool;
+  var _26 : t;
   var _27 : t;
-  var _28 : t;
-  var _29 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
-  var _30 : usize;
+  var _28 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
+  var _29 : usize;
+  var _30 : t;
   var _31 : t;
   var _32 : t;
-  var _33 : t;
-  var _34 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
+  var _33 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
+  var _34 : usize;
   var _35 : usize;
-  var _36 : usize;
-  var _37 : ();
-  var _38 : bool;
+  var _36 : ();
+  var _37 : bool;
+  var _38 : t;
   var _39 : t;
-  var _40 : t;
-  var _41 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
-  var _42 : usize;
+  var _40 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
+  var _41 : usize;
+  var _42 : t;
   var _43 : t;
   var _44 : t;
-  var _45 : t;
-  var _46 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
-  var _47 : usize;
+  var _45 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
+  var _46 : usize;
+  var _47 : ();
   var _48 : ();
-  var _49 : ();
+  var _49 : borrowed (seq t);
   var _50 : borrowed (seq t);
-  var _51 : borrowed (seq t);
-  var _52 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
+  var _51 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
+  var _52 : usize;
   var _53 : usize;
   var _54 : usize;
-  var _55 : usize;
   {
     v_1 <- v;
     start_2 <- start;
@@ -1338,158 +1288,156 @@ module HeapsortGeneric_SiftDown
     goto BB0
   }
   BB0 {
-    _6 <- v_1;
-    _5 <- _6;
-    assume { Resolve0.resolve _6 };
-    old_v_4 <- ([#"../heapsort_generic.rs" 40 16 33] Record0.record _5);
+    _5 <- ();
+    old_v_4 <- ghost ([#"../heapsort_generic.rs" 40 16 28] v_1);
     goto BB1
   }
   BB1 {
-    assume { Resolve1.resolve old_v_4 };
-    i_7 <- start_2;
+    assume { Resolve0.resolve old_v_4 };
+    i_6 <- start_2;
     goto BB2
   }
   BB2 {
-    invariant proph_const { [#"../heapsort_generic.rs" 43 4 44]  ^ v_1 =  ^ Model2.model old_v_4 };
-    invariant permutation { [#"../heapsort_generic.rs" 44 4 59] PermutationOf0.permutation_of (Model1.model v_1) (Model1.model (Model2.model old_v_4)) };
-    invariant i_bounds { [#"../heapsort_generic.rs" 45 4 53] UInt64.to_int start_2 <= UInt64.to_int i_7 && UInt64.to_int i_7 < UInt64.to_int end'_3 };
-    invariant unchanged { [#"../heapsort_generic.rs" 46 4 59] forall j : (int) . 0 <= j && j < UInt64.to_int start_2 || UInt64.to_int end'_3 <= j && j < Seq.length (Model1.model v_1) -> Seq.get (Model1.model (Model2.model old_v_4)) j = Seq.get (Model1.model v_1) j };
-    invariant keep_bound { [#"../heapsort_generic.rs" 48 4 67] forall m : (t) . (forall j : (int) . UInt64.to_int start_2 <= j && j < UInt64.to_int end'_3 -> LeLog0.le_log (Seq.get (Model1.model (Model2.model old_v_4)) j) m) -> (forall j : (int) . UInt64.to_int start_2 <= j && j < UInt64.to_int end'_3 -> LeLog0.le_log (Seq.get (Model1.model v_1) j) m) };
-    invariant heap { [#"../heapsort_generic.rs" 51 4 40] forall j : (int) . UInt64.to_int start_2 <= Parent0.parent j && j < UInt64.to_int end'_3 && UInt64.to_int i_7 <> Parent0.parent j -> LeLog0.le_log (Seq.get (Model1.model v_1) j) (Seq.get (Model1.model v_1) (Parent0.parent j)) };
-    invariant hole_left { [#"../heapsort_generic.rs" 53 4 119] let c = 2 * UInt64.to_int i_7 + 1 in c < UInt64.to_int end'_3 && UInt64.to_int start_2 <= Parent0.parent (UInt64.to_int i_7) -> LeLog0.le_log (Seq.get (Model1.model v_1) c) (Seq.get (Model1.model v_1) (Parent0.parent (Parent0.parent c))) };
-    invariant hole_right { [#"../heapsort_generic.rs" 54 4 119] let c = 2 * UInt64.to_int i_7 + 2 in c < UInt64.to_int end'_3 && UInt64.to_int start_2 <= Parent0.parent (UInt64.to_int i_7) -> LeLog0.le_log (Seq.get (Model1.model v_1) c) (Seq.get (Model1.model v_1) (Parent0.parent (Parent0.parent c))) };
-    _12 <- i_7;
-    _14 <- end'_3;
-    _15 <- ([#"../heapsort_generic.rs" 56 16 23] (2 : usize) = (0 : usize));
-    assert { not _15 };
+    invariant proph_const { [#"../heapsort_generic.rs" 43 4 51]  ^ v_1 =  ^ old_v_4 };
+    invariant permutation { [#"../heapsort_generic.rs" 44 4 66] PermutationOf0.permutation_of (Model1.model v_1) (Model1.model old_v_4) };
+    invariant i_bounds { [#"../heapsort_generic.rs" 45 4 53] UInt64.to_int start_2 <= UInt64.to_int i_6 && UInt64.to_int i_6 < UInt64.to_int end'_3 };
+    invariant unchanged { [#"../heapsort_generic.rs" 46 4 66] forall j : (int) . 0 <= j && j < UInt64.to_int start_2 || UInt64.to_int end'_3 <= j && j < Seq.length (Model1.model v_1) -> Seq.get (Model1.model old_v_4) j = Seq.get (Model1.model v_1) j };
+    invariant keep_bound { [#"../heapsort_generic.rs" 48 4 67] forall m : (t) . (forall j : (int) . UInt64.to_int start_2 <= j && j < UInt64.to_int end'_3 -> LeLog0.le_log (Seq.get (Model1.model old_v_4) j) m) -> (forall j : (int) . UInt64.to_int start_2 <= j && j < UInt64.to_int end'_3 -> LeLog0.le_log (Seq.get (Model1.model v_1) j) m) };
+    invariant heap { [#"../heapsort_generic.rs" 51 4 40] forall j : (int) . UInt64.to_int start_2 <= Parent0.parent j && j < UInt64.to_int end'_3 && UInt64.to_int i_6 <> Parent0.parent j -> LeLog0.le_log (Seq.get (Model1.model v_1) j) (Seq.get (Model1.model v_1) (Parent0.parent j)) };
+    invariant hole_left { [#"../heapsort_generic.rs" 53 4 119] let c = 2 * UInt64.to_int i_6 + 1 in c < UInt64.to_int end'_3 && UInt64.to_int start_2 <= Parent0.parent (UInt64.to_int i_6) -> LeLog0.le_log (Seq.get (Model1.model v_1) c) (Seq.get (Model1.model v_1) (Parent0.parent (Parent0.parent c))) };
+    invariant hole_right { [#"../heapsort_generic.rs" 54 4 119] let c = 2 * UInt64.to_int i_6 + 2 in c < UInt64.to_int end'_3 && UInt64.to_int start_2 <= Parent0.parent (UInt64.to_int i_6) -> LeLog0.le_log (Seq.get (Model1.model v_1) c) (Seq.get (Model1.model v_1) (Parent0.parent (Parent0.parent c))) };
+    _11 <- i_6;
+    _13 <- end'_3;
+    _14 <- ([#"../heapsort_generic.rs" 56 16 23] (2 : usize) = (0 : usize));
+    assert { not _14 };
     goto BB3
   }
   BB3 {
-    _13 <- ([#"../heapsort_generic.rs" 56 16 23] _14 / (2 : usize));
-    _11 <- ([#"../heapsort_generic.rs" 56 11 23] _12 >= _13);
-    switch (_11)
+    _12 <- ([#"../heapsort_generic.rs" 56 16 23] _13 / (2 : usize));
+    _10 <- ([#"../heapsort_generic.rs" 56 11 23] _11 >= _12);
+    switch (_10)
       | False -> goto BB5
       | _ -> goto BB4
       end
   }
   BB4 {
-    assume { Resolve2.resolve v_1 };
+    assume { Resolve1.resolve v_1 };
     _0 <- ();
     goto BB22
   }
   BB5 {
-    _10 <- ();
-    _19 <- i_7;
-    _18 <- ([#"../heapsort_generic.rs" 60 24 29] (2 : usize) * _19);
-    child_17 <- ([#"../heapsort_generic.rs" 60 24 33] _18 + (1 : usize));
-    _24 <- child_17;
-    _23 <- ([#"../heapsort_generic.rs" 61 11 20] _24 + (1 : usize));
-    _25 <- end'_3;
-    _22 <- ([#"../heapsort_generic.rs" 61 11 26] _23 < _25);
-    switch (_22)
+    _9 <- ();
+    _18 <- i_6;
+    _17 <- ([#"../heapsort_generic.rs" 60 24 29] (2 : usize) * _18);
+    child_16 <- ([#"../heapsort_generic.rs" 60 24 33] _17 + (1 : usize));
+    _23 <- child_16;
+    _22 <- ([#"../heapsort_generic.rs" 61 11 20] _23 + (1 : usize));
+    _24 <- end'_3;
+    _21 <- ([#"../heapsort_generic.rs" 61 11 26] _22 < _24);
+    switch (_21)
       | False -> goto BB6
       | _ -> goto BB7
       end
   }
   BB6 {
-    _21 <- false;
+    _20 <- false;
     goto BB8
   }
   BB7 {
-    _29 <-  * v_1;
-    _30 <- child_17;
-    _28 <- ([#"../heapsort_generic.rs" 61 30 38] Index0.index _29 _30);
+    _28 <-  * v_1;
+    _29 <- child_16;
+    _27 <- ([#"../heapsort_generic.rs" 61 30 38] Index0.index _28 _29);
     goto BB9
   }
   BB8 {
-    switch (_21)
+    switch (_20)
       | False -> goto BB13
       | _ -> goto BB12
       end
   }
   BB9 {
-    _27 <- _28;
-    assume { Resolve3.resolve _28 };
-    _34 <-  * v_1;
-    _36 <- child_17;
-    _35 <- ([#"../heapsort_generic.rs" 61 45 54] _36 + (1 : usize));
-    _33 <- ([#"../heapsort_generic.rs" 61 43 55] Index0.index _34 _35);
+    _26 <- _27;
+    assume { Resolve2.resolve _27 };
+    _33 <-  * v_1;
+    _35 <- child_16;
+    _34 <- ([#"../heapsort_generic.rs" 61 45 54] _35 + (1 : usize));
+    _32 <- ([#"../heapsort_generic.rs" 61 43 55] Index0.index _33 _34);
     goto BB10
   }
   BB10 {
-    _32 <- _33;
-    assume { Resolve3.resolve _33 };
     _31 <- _32;
-    assume { Resolve3.resolve _32 };
-    _26 <- ([#"../heapsort_generic.rs" 61 30 56] Lt0.lt _27 _31);
+    assume { Resolve2.resolve _32 };
+    _30 <- _31;
+    assume { Resolve2.resolve _31 };
+    _25 <- ([#"../heapsort_generic.rs" 61 30 56] Lt0.lt _26 _30);
     goto BB11
   }
   BB11 {
-    _21 <- _26;
+    _20 <- _25;
     goto BB8
   }
   BB12 {
-    child_17 <- ([#"../heapsort_generic.rs" 62 12 22] child_17 + (1 : usize));
-    _20 <- ();
+    child_16 <- ([#"../heapsort_generic.rs" 62 12 22] child_16 + (1 : usize));
+    _19 <- ();
     goto BB14
   }
   BB13 {
-    _20 <- ();
+    _19 <- ();
     goto BB14
   }
   BB14 {
-    _41 <-  * v_1;
-    _42 <- child_17;
-    _40 <- ([#"../heapsort_generic.rs" 64 11 19] Index0.index _41 _42);
+    _40 <-  * v_1;
+    _41 <- child_16;
+    _39 <- ([#"../heapsort_generic.rs" 64 11 19] Index0.index _40 _41);
     goto BB15
   }
   BB15 {
-    _39 <- _40;
-    assume { Resolve3.resolve _40 };
-    _46 <-  * v_1;
-    _47 <- i_7;
-    _45 <- ([#"../heapsort_generic.rs" 64 24 28] Index0.index _46 _47);
+    _38 <- _39;
+    assume { Resolve2.resolve _39 };
+    _45 <-  * v_1;
+    _46 <- i_6;
+    _44 <- ([#"../heapsort_generic.rs" 64 24 28] Index0.index _45 _46);
     goto BB16
   }
   BB16 {
-    _44 <- _45;
-    assume { Resolve3.resolve _45 };
     _43 <- _44;
-    assume { Resolve3.resolve _44 };
-    _38 <- ([#"../heapsort_generic.rs" 64 11 29] Le0.le _39 _43);
+    assume { Resolve2.resolve _44 };
+    _42 <- _43;
+    assume { Resolve2.resolve _43 };
+    _37 <- ([#"../heapsort_generic.rs" 64 11 29] Le0.le _38 _42);
     goto BB17
   }
   BB17 {
-    switch (_38)
+    switch (_37)
       | False -> goto BB19
       | _ -> goto BB18
       end
   }
   BB18 {
-    assume { Resolve2.resolve v_1 };
+    assume { Resolve1.resolve v_1 };
     _0 <- ();
     goto BB22
   }
   BB19 {
-    _37 <- ();
-    _52 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _52) };
-    _51 <- ([#"../heapsort_generic.rs" 67 8 24] DerefMut0.deref_mut _52);
+    _36 <- ();
+    _51 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _51) };
+    _50 <- ([#"../heapsort_generic.rs" 67 8 24] DerefMut0.deref_mut _51);
     goto BB20
   }
   BB20 {
-    _50 <- borrow_mut ( * _51);
-    _51 <- { _51 with current = ( ^ _50) };
-    _53 <- i_7;
-    _54 <- child_17;
-    _49 <- ([#"../heapsort_generic.rs" 67 8 24] Swap0.swap _50 _53 _54);
+    _49 <- borrow_mut ( * _50);
+    _50 <- { _50 with current = ( ^ _49) };
+    _52 <- i_6;
+    _53 <- child_16;
+    _48 <- ([#"../heapsort_generic.rs" 67 8 24] Swap0.swap _49 _52 _53);
     goto BB21
   }
   BB21 {
-    assume { Resolve4.resolve _51 };
-    _55 <- child_17;
-    i_7 <- _55;
-    _9 <- ();
+    assume { Resolve3.resolve _50 };
+    _54 <- child_16;
+    i_6 <- _54;
+    _8 <- ();
     goto BB2
   }
   BB22 {
@@ -1616,26 +1564,22 @@ module HeapsortGeneric_HeapSort
   clone HeapsortGeneric_HeapFragMax as HeapFragMax0 with type t = t,
   predicate HeapFrag0.heap_frag = HeapFrag0.heap_frag, predicate LeLog0.le_log = LeLog0.le_log,
   function Parent0.parent = Parent0.parent, axiom .
-  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model2 with type t = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf as PermutationOf0 with type t = t
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t, type a = Type.alloc_alloc_global, axiom .
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = Type.alloc_alloc_global
   clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve3 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global)
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = seq t
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global)
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = seq t
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy1 with type t = t
-  clone CreusotContracts_Std1_Slice_Impl0_Model as Model3 with type t = t, axiom .
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model4 with type t = seq t,
-  type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model3.model
-  clone Core_Slice_Impl0_Swap_Interface as Swap0 with type t = t, function Model0.model = Model4.model,
-  function Model1.model = Model3.model
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global)))
+  clone CreusotContracts_Std1_Slice_Impl0_Model as Model2 with type t = t, axiom .
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model3 with type t = seq t,
+  type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model2.model
+  clone Core_Slice_Impl0_Swap_Interface as Swap0 with type t = t, function Model0.model = Model3.model,
+  function Model1.model = Model2.model
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))
-  clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global)),
-  function Model0.model = Model2.model
   clone Alloc_Vec_Impl11_DerefMut_Interface as DerefMut0 with type t = t, type a = Type.alloc_alloc_global,
-  function Model0.model = Model3.model, function Model1.model = Model1.model
+  function Model0.model = Model2.model, function Model1.model = Model1.model
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Type.alloc_alloc_global,
   function Model0.model = Model1.model
   clone HeapsortGeneric_SiftDown_Interface as SiftDown0 with type t = t, function Model0.model = Model1.model,
@@ -1649,149 +1593,146 @@ module HeapsortGeneric_HeapSort
    =
   var _0 : ();
   var v_1 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
-  var old_v_2 : Type.creusotcontracts_logic_ghost_ghost (borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global)));
-  var _3 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
-  var _4 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
-  var start_5 : usize;
-  var _6 : usize;
-  var _7 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
-  var _8 : bool;
+  ghost var old_v_2 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
+  var _3 : ();
+  var start_4 : usize;
+  var _5 : usize;
+  var _6 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
+  var _7 : bool;
+  var _8 : ();
   var _9 : ();
-  var _10 : ();
-  var _11 : bool;
-  var _12 : usize;
-  var _13 : ();
-  var _14 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
+  var _10 : bool;
+  var _11 : usize;
+  var _12 : ();
+  var _13 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
+  var _14 : usize;
   var _15 : usize;
-  var _16 : usize;
-  var _17 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
+  var _16 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
+  var _17 : ();
   var _18 : ();
   var _19 : ();
-  var _20 : ();
-  var end'_21 : usize;
-  var _22 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
-  var _23 : bool;
-  var _24 : usize;
-  var _25 : ();
+  var end'_20 : usize;
+  var _21 : Type.alloc_vec_vec t (Type.alloc_alloc_global);
+  var _22 : bool;
+  var _23 : usize;
+  var _24 : ();
+  var _25 : borrowed (seq t);
   var _26 : borrowed (seq t);
-  var _27 : borrowed (seq t);
-  var _28 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
-  var _29 : usize;
+  var _27 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
+  var _28 : usize;
+  var _29 : ();
   var _30 : ();
-  var _31 : ();
-  var _32 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
-  var _33 : usize;
+  var _31 : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global));
+  var _32 : usize;
+  var _33 : ();
   var _34 : ();
   var _35 : ();
-  var _36 : ();
   {
     v_1 <- v;
     goto BB0
   }
   BB0 {
-    _4 <- v_1;
-    _3 <- _4;
-    assume { Resolve0.resolve _4 };
-    old_v_2 <- ([#"../heapsort_generic.rs" 90 16 33] Record0.record _3);
+    _3 <- ();
+    old_v_2 <- ghost ([#"../heapsort_generic.rs" 90 16 28] v_1);
     goto BB1
   }
   BB1 {
-    assume { Resolve1.resolve old_v_2 };
-    _7 <-  * v_1;
-    _6 <- ([#"../heapsort_generic.rs" 92 20 27] Len0.len _7);
+    assume { Resolve0.resolve old_v_2 };
+    _6 <-  * v_1;
+    _5 <- ([#"../heapsort_generic.rs" 92 20 27] Len0.len _6);
     goto BB2
   }
   BB2 {
-    _8 <- ([#"../heapsort_generic.rs" 92 20 31] (2 : usize) = (0 : usize));
-    assert { not _8 };
+    _7 <- ([#"../heapsort_generic.rs" 92 20 31] (2 : usize) = (0 : usize));
+    assert { not _7 };
     goto BB3
   }
   BB3 {
-    start_5 <- ([#"../heapsort_generic.rs" 92 20 31] _6 / (2 : usize));
+    start_4 <- ([#"../heapsort_generic.rs" 92 20 31] _5 / (2 : usize));
     goto BB4
   }
   BB4 {
-    invariant permutation { [#"../heapsort_generic.rs" 93 4 59] PermutationOf0.permutation_of (Model0.model v_1) (Model0.model (Model2.model old_v_2)) };
-    invariant proph_const { [#"../heapsort_generic.rs" 94 4 44]  ^ v_1 =  ^ Model2.model old_v_2 };
-    invariant heap { [#"../heapsort_generic.rs" 95 4 57] HeapFrag0.heap_frag (Model0.model v_1) (UInt64.to_int start_5) (Seq.length (Model0.model v_1)) };
-    invariant start_bound { [#"../heapsort_generic.rs" 96 4 53] UInt64.to_int start_5 <= div (Seq.length (Model0.model v_1)) 2 };
-    _12 <- start_5;
-    _11 <- ([#"../heapsort_generic.rs" 97 10 19] _12 > (0 : usize));
-    switch (_11)
+    invariant permutation { [#"../heapsort_generic.rs" 93 4 66] PermutationOf0.permutation_of (Model0.model v_1) (Model0.model old_v_2) };
+    invariant proph_const { [#"../heapsort_generic.rs" 94 4 51]  ^ v_1 =  ^ old_v_2 };
+    invariant heap { [#"../heapsort_generic.rs" 95 4 57] HeapFrag0.heap_frag (Model0.model v_1) (UInt64.to_int start_4) (Seq.length (Model0.model v_1)) };
+    invariant start_bound { [#"../heapsort_generic.rs" 96 4 53] UInt64.to_int start_4 <= div (Seq.length (Model0.model v_1)) 2 };
+    _11 <- start_4;
+    _10 <- ([#"../heapsort_generic.rs" 97 10 19] _11 > (0 : usize));
+    switch (_10)
       | False -> goto BB8
       | _ -> goto BB5
       end
   }
   BB5 {
-    start_5 <- ([#"../heapsort_generic.rs" 98 8 18] start_5 - (1 : usize));
-    _14 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _14) };
-    _15 <- start_5;
-    _17 <-  * _14;
-    _16 <- ([#"../heapsort_generic.rs" 99 28 35] Len0.len _17);
+    start_4 <- ([#"../heapsort_generic.rs" 98 8 18] start_4 - (1 : usize));
+    _13 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _13) };
+    _14 <- start_4;
+    _16 <-  * _13;
+    _15 <- ([#"../heapsort_generic.rs" 99 28 35] Len0.len _16);
     goto BB6
   }
   BB6 {
-    _13 <- ([#"../heapsort_generic.rs" 99 8 36] SiftDown0.sift_down _14 _15 _16);
+    _12 <- ([#"../heapsort_generic.rs" 99 8 36] SiftDown0.sift_down _13 _14 _15);
     goto BB7
   }
   BB7 {
-    _10 <- ();
+    _9 <- ();
     goto BB4
   }
   BB8 {
-    _9 <- ();
-    _22 <-  * v_1;
-    end'_21 <- ([#"../heapsort_generic.rs" 102 18 25] Len0.len _22);
+    _8 <- ();
+    _21 <-  * v_1;
+    end'_20 <- ([#"../heapsort_generic.rs" 102 18 25] Len0.len _21);
     goto BB9
   }
   BB9 {
     goto BB10
   }
   BB10 {
-    invariant end_bound { [#"../heapsort_generic.rs" 103 4 47] UInt64.to_int end'_21 <= Seq.length (Model0.model v_1) };
-    invariant permutation { [#"../heapsort_generic.rs" 104 4 59] PermutationOf0.permutation_of (Model0.model v_1) (Model0.model (Model2.model old_v_2)) };
-    invariant proph_const { [#"../heapsort_generic.rs" 105 4 44]  ^ v_1 =  ^ Model2.model old_v_2 };
-    invariant heap { [#"../heapsort_generic.rs" 106 4 46] HeapFrag0.heap_frag (Model0.model v_1) 0 (UInt64.to_int end'_21) };
-    invariant sorted { [#"../heapsort_generic.rs" 107 4 60] SortedRange0.sorted_range (Model0.model v_1) (UInt64.to_int end'_21) (Seq.length (Model0.model v_1)) };
-    invariant heap_le { [#"../heapsort_generic.rs" 108 4 48] forall j : (int) . forall i : (int) . 0 <= i && i < UInt64.to_int end'_21 && UInt64.to_int end'_21 <= j && j < Seq.length (Model0.model v_1) -> LeLog0.le_log (Seq.get (Model0.model v_1) i) (Seq.get (Model0.model v_1) j) };
-    _24 <- end'_21;
-    _23 <- ([#"../heapsort_generic.rs" 110 10 17] _24 > (1 : usize));
-    switch (_23)
+    invariant end_bound { [#"../heapsort_generic.rs" 103 4 47] UInt64.to_int end'_20 <= Seq.length (Model0.model v_1) };
+    invariant permutation { [#"../heapsort_generic.rs" 104 4 66] PermutationOf0.permutation_of (Model0.model v_1) (Model0.model old_v_2) };
+    invariant proph_const { [#"../heapsort_generic.rs" 105 4 51]  ^ v_1 =  ^ old_v_2 };
+    invariant heap { [#"../heapsort_generic.rs" 106 4 46] HeapFrag0.heap_frag (Model0.model v_1) 0 (UInt64.to_int end'_20) };
+    invariant sorted { [#"../heapsort_generic.rs" 107 4 60] SortedRange0.sorted_range (Model0.model v_1) (UInt64.to_int end'_20) (Seq.length (Model0.model v_1)) };
+    invariant heap_le { [#"../heapsort_generic.rs" 108 4 48] forall j : (int) . forall i : (int) . 0 <= i && i < UInt64.to_int end'_20 && UInt64.to_int end'_20 <= j && j < Seq.length (Model0.model v_1) -> LeLog0.le_log (Seq.get (Model0.model v_1) i) (Seq.get (Model0.model v_1) j) };
+    _23 <- end'_20;
+    _22 <- ([#"../heapsort_generic.rs" 110 10 17] _23 > (1 : usize));
+    switch (_22)
       | False -> goto BB15
       | _ -> goto BB11
       end
   }
   BB11 {
-    end'_21 <- ([#"../heapsort_generic.rs" 111 8 16] end'_21 - (1 : usize));
-    _28 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _28) };
-    _27 <- ([#"../heapsort_generic.rs" 112 8 22] DerefMut0.deref_mut _28);
+    end'_20 <- ([#"../heapsort_generic.rs" 111 8 16] end'_20 - (1 : usize));
+    _27 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _27) };
+    _26 <- ([#"../heapsort_generic.rs" 112 8 22] DerefMut0.deref_mut _27);
     goto BB12
   }
   BB12 {
-    _26 <- borrow_mut ( * _27);
-    _27 <- { _27 with current = ( ^ _26) };
-    _29 <- end'_21;
-    _25 <- ([#"../heapsort_generic.rs" 112 8 22] Swap0.swap _26 (0 : usize) _29);
+    _25 <- borrow_mut ( * _26);
+    _26 <- { _26 with current = ( ^ _25) };
+    _28 <- end'_20;
+    _24 <- ([#"../heapsort_generic.rs" 112 8 22] Swap0.swap _25 (0 : usize) _28);
     goto BB13
   }
   BB13 {
-    assume { Resolve2.resolve _27 };
-    assert { [#"../heapsort_generic.rs" 113 8 9] let _ = HeapFragMax0.heap_frag_max (Model0.model v_1) 0 (UInt64.to_int end'_21) in forall j : (int) . forall i : (int) . 0 <= i && i < UInt64.to_int end'_21 && UInt64.to_int end'_21 <= j && j < Seq.length (Model0.model v_1) -> LeLog0.le_log (Seq.get (Model0.model v_1) i) (Seq.get (Model0.model v_1) j) };
-    _30 <- ();
-    _32 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _32) };
-    _33 <- end'_21;
-    _31 <- ([#"../heapsort_generic.rs" 118 8 28] SiftDown0.sift_down _32 (0 : usize) _33);
+    assume { Resolve1.resolve _26 };
+    assert { [#"../heapsort_generic.rs" 113 8 9] let _ = HeapFragMax0.heap_frag_max (Model0.model v_1) 0 (UInt64.to_int end'_20) in forall j : (int) . forall i : (int) . 0 <= i && i < UInt64.to_int end'_20 && UInt64.to_int end'_20 <= j && j < Seq.length (Model0.model v_1) -> LeLog0.le_log (Seq.get (Model0.model v_1) i) (Seq.get (Model0.model v_1) j) };
+    _29 <- ();
+    _31 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _31) };
+    _32 <- end'_20;
+    _30 <- ([#"../heapsort_generic.rs" 118 8 28] SiftDown0.sift_down _31 (0 : usize) _32);
     goto BB14
   }
   BB14 {
-    _10 <- ();
+    _9 <- ();
     goto BB10
   }
   BB15 {
-    assume { Resolve3.resolve v_1 };
+    assume { Resolve2.resolve v_1 };
     _0 <- ();
     return _0
   }

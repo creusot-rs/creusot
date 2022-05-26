@@ -114,20 +114,20 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[ensures(forall<i: K> (@^self).get(@i) == (if @i == @key { Some(val) } else { (@*self).get(@i) } ))]
     fn add(&mut self, key: K, val: V) {
         use List::*;
-        let old_self = Ghost::record(&self);
+        let old_self = ghost! { self };
         let length = self.buckets.len();
         let index: usize = key.hash() as usize % length;
         let mut l: &mut List<_> = &mut self.buckets[index];
-        let old_l = Ghost::record(&l);
+        let old_l = ghost! { l };
 
-        #[invariant(y, ^@old_self == ^self)]
+        #[invariant(y, ^old_self.inner() == ^self)]
         #[invariant(xx, self.good_bucket(*l, @index))]
-        #[invariant(xx, self.good_bucket(^l, @index) ==> self.good_bucket(^@old_l, @index ))]
-        #[invariant(get_key, (^l).get(@key) == Some(val) ==> (^@old_l).get(@key) == Some(val))]
-        #[invariant(get_rest, forall <i:_> (^l).get(i) == (*l).get(i) ==> (^@old_l).get(i) == (*@old_l).get(i))]
+        #[invariant(xx, self.good_bucket(^l, @index) ==> self.good_bucket(^old_l.inner(), @index ))]
+        #[invariant(get_key, (^l).get(@key) == Some(val) ==> (^old_l.inner()).get(@key) == Some(val))]
+        #[invariant(get_rest, forall <i:_> (^l).get(i) == (*l).get(i) ==> (^old_l.inner()).get(i) == (*old_l.inner()).get(i))]
         #[invariant(no_double_binding, (*l).no_double_binding())]
         #[invariant(no_double_binding_magic, (forall <i:_> (*l).get(i) == (^l).get(i) || i == @key) && (^l).no_double_binding() ==>
-                                             (^@old_l).no_double_binding())]
+                                             (^old_l.inner()).no_double_binding())]
         while let Cons((k, v), tl) = l {
             let tl = tl;
             if *k == key {
@@ -168,37 +168,37 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[ensures((^self).hashmap_inv())]
     #[ensures(forall<k : K> (@^self).get(@k) == (@*self).get(@k))] // lets prove the extensional version for now
     fn resize(&mut self) {
-        let self_old = Ghost::record(&self);
+        let old_self = ghost! { self };
         let mut new = Self::new(self.buckets.len() * 2);
 
         let mut i: usize = 0;
-        #[invariant(seen, forall<k : K> (@self_old).bucket_ix(k) < @i ==> (@*@self_old).get(@k) == (@new).get(@k))]
+        #[invariant(seen, forall<k : K> (old_self.inner()).bucket_ix(k) < @i ==> (@*old_self.inner()).get(@k) == (@new).get(@k))]
         #[invariant(unseen, forall<k : K>
-            @i <=   (@self_old).bucket_ix(k) &&
-                    (@self_old).bucket_ix(k) <= (@(@self_old).buckets).len() ==> (@new).get(@k) == None
+            @i <=   (old_self.inner()).bucket_ix(k) &&
+                    (old_self.inner()).bucket_ix(k) <= (@(old_self.inner()).buckets).len() ==> (@new).get(@k) == None
         )]
-        #[invariant(rest, forall<j : Int> @i <= j && j < (@(@self_old).buckets).len() ==> (@self.buckets)[j] == (@(@self_old).buckets)[j])]
+        #[invariant(rest, forall<j : Int> @i <= j && j < (@(old_self.inner()).buckets).len() ==> (@self.buckets)[j] == (@(old_self.inner()).buckets)[j])]
         #[invariant(a, new.hashmap_inv())]
-        #[invariant(p, ^@self_old == ^self)]
-        #[invariant(l, (@(@self_old).buckets).len() == (@self.buckets).len())]
+        #[invariant(p, ^old_self.inner() == ^self)]
+        #[invariant(l, (@(old_self.inner()).buckets).len() == (@self.buckets).len())]
         #[invariant(z, @i <= (@self.buckets).len())]
         while i < self.buckets.len() {
             let mut l: List<_> = std::mem::replace(&mut self.buckets[i], List::Nil);
 
             #[invariant(a, new.hashmap_inv())]
-            #[invariant(x, forall<k : K> (@self_old).bucket_ix(k) < @i ==> (@*@self_old).get(@k) == (@new).get(@k))]
+            #[invariant(x, forall<k : K> (old_self.inner()).bucket_ix(k) < @i ==> (@*old_self.inner()).get(@k) == (@new).get(@k))]
             #[invariant(x, forall<k : K>
-                @i < (@self_old).bucket_ix(k) && (@self_old).bucket_ix(k) <= (@(@self_old).buckets).len()  ==> (@new).get(@k) == None
+                @i < (old_self.inner()).bucket_ix(k) && (old_self.inner()).bucket_ix(k) <= (@(old_self.inner()).buckets).len()  ==> (@new).get(@k) == None
             )]
-            #[invariant(zzz, forall<k : K> (@self_old).bucket_ix(k) == @i ==>
-                        (@@self_old).get(@k) == match l.get(@k) { None => (@new).get(@k), Some(v) => Some(v) })]
+            #[invariant(zzz, forall<k : K> (old_self.inner()).bucket_ix(k) == @i ==>
+                        (@old_self.inner()).get(@k) == match l.get(@k) { None => (@new).get(@k), Some(v) => Some(v) })]
             #[invariant(l_no_double_binding, l.no_double_binding())]
-            #[invariant(x, (@self_old).good_bucket(l, @i))]
+            #[invariant(x, (old_self.inner()).good_bucket(l, @i))]
             while let List::Cons((k, v), tl) = l {
                 new.add(k, v);
                 l = *tl;
             }
-            proof_assert! { forall<k : K, v: V> (@self_old).bucket_ix(k) == @i  ==> (@*@self_old).get(@k) == (@new).get(@k) };
+            proof_assert! { forall<k : K, v: V> (old_self.inner()).bucket_ix(k) == @i  ==> (@*old_self.inner()).get(@k) == (@new).get(@k) };
             i += 1;
         }
 

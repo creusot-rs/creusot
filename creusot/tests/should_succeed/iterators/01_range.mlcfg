@@ -18,6 +18,11 @@ module Type
     | Core_Option_Option_None
     | Core_Option_Option_Some 't
     
+  let function core_option_option_Some_0 (self : core_option_option 't) : 't =
+    match (self) with
+      | Core_Option_Option_None -> any 't
+      | Core_Option_Option_Some a -> a
+      end
   type c01range_range  =
     | C01Range_Range isize isize
     
@@ -336,4 +341,109 @@ module C01Range_Impl0
   clone C01Range_Common_Iterator_Produces_Interface as Produces1 with type self = Type.c01range_range,
   predicate produces = Produces0.produces, type Item0.item = Item0.item
   clone C01Range_Common_Iterator_Item as Item1 with type self = Type.c01range_range, type item = Item0.item
+end
+module C01Range_SumRange_Interface
+  use mach.int.Int64
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Prelude
+  val sum_range [@cfg:stackify] (n : isize) : isize
+    requires {[#"../01_range.rs" 58 0 20] Int64.to_int n >= 0}
+    ensures { [#"../01_range.rs" 59 0 23] result = n }
+    
+end
+module C01Range_SumRange
+  use mach.int.Int64
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Prelude
+  use seq.Seq
+  clone C01Range_Impl0_Produces as Produces0
+  clone C01Range_Impl0_ProducesTrans as ProducesTrans0 with predicate Produces0.produces = Produces0.produces, axiom .
+  clone C01Range_Impl0_ProducesRefl as ProducesRefl0 with predicate Produces0.produces = Produces0.produces, axiom .
+  use Type
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.c01range_range
+  clone C01Range_Impl0_Completed as Completed0
+  clone C01Range_Impl0_Next_Interface as Next0 with predicate Completed0.completed = Completed0.completed,
+  predicate Resolve0.resolve = Resolve0.resolve, predicate Produces0.produces = Produces0.produces
+  let rec cfg sum_range [@cfg:stackify] [#"../01_range.rs" 60 0 31] (n : isize) : isize
+    requires {[#"../01_range.rs" 58 0 20] Int64.to_int n >= 0}
+    ensures { [#"../01_range.rs" 59 0 23] result = n }
+    
+   =
+  var _0 : isize;
+  var n_1 : isize;
+  var i_2 : isize;
+  var _3 : ();
+  var it_4 : Type.c01range_range;
+  var _5 : isize;
+  ghost var it_old_6 : Type.c01range_range;
+  var _7 : ();
+  var a_8 : Seq.seq isize;
+  ghost var produced_9 : Seq.seq isize;
+  var _10 : ();
+  var _11 : ();
+  var _12 : Type.core_option_option isize;
+  var _13 : borrowed (Type.c01range_range);
+  var _14 : isize;
+  var j_15 : isize;
+  ghost var _16 : Seq.seq isize;
+  var _17 : ();
+  var _18 : ();
+  {
+    n_1 <- n;
+    goto BB0
+  }
+  BB0 {
+    i_2 <- (0 : isize);
+    _5 <- n_1;
+    it_4 <- Type.C01Range_Range (0 : isize) _5;
+    _7 <- ();
+    it_old_6 <- ghost ([#"../01_range.rs" 65 21 35] it_4);
+    goto BB1
+  }
+  BB1 {
+    a_8 <- Seq.empty;
+    _10 <- ();
+    produced_9 <- ghost ([#"../01_range.rs" 67 27 39] a_8);
+    goto BB2
+  }
+  BB2 {
+    goto BB3
+  }
+  BB3 {
+    invariant free { [#"../01_range.rs" 68 8 75] Produces0.produces it_old_6 produced_9 it_4 };
+    invariant user { [#"../01_range.rs" 70 8 66] Int64.to_int i_2 = Seq.length produced_9 && i_2 <= n_1 };
+    _13 <- borrow_mut it_4;
+    it_4 <-  ^ _13;
+    _12 <- ([#"../01_range.rs" 72 18 27] Next0.next _13);
+    goto BB4
+  }
+  BB4 {
+    switch (_12)
+      | Type.Core_Option_Option_None -> goto BB5
+      | Type.Core_Option_Option_Some _ -> goto BB7
+      end
+  }
+  BB5 {
+    _3 <- ();
+    _0 <- i_2;
+    return _0
+  }
+  BB6 {
+    absurd
+  }
+  BB7 {
+    j_15 <- Type.core_option_option_Some_0 _12;
+    _17 <- ();
+    _16 <- ghost ([#"../01_range.rs" 74 31 66] Seq.snoc produced_9 j_15);
+    goto BB8
+  }
+  BB8 {
+    produced_9 <- _16;
+    i_2 <- ([#"../01_range.rs" 75 20 26] i_2 + (1 : isize));
+    _11 <- ();
+    goto BB3
+  }
+  
 end

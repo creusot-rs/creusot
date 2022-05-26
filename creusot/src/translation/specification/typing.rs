@@ -304,7 +304,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 if let ExprKind::Deref { arg } = self.thir[arg].kind {
                     self.expr_term(arg)
                 } else {
-                    unreachable!("unexpected borrow in pearlite");
+                    Err(Error::new(self.thir[arg].span, "cannot perform a mutable borrow"))
                 }
             }
             ExprKind::Adt(box Adt { adt_def, variant_index, ref fields, .. }) => {

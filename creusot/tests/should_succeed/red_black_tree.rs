@@ -47,7 +47,7 @@ where
               ((^self).left, r.left, r.right) == (l.left, l.right, (*self).right))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     fn rotate_right(&mut self) {
-        let old_self = Ghost::record(&*self);
+        let old_self = ghost! { self };
 
         //     self
         //    /    \
@@ -79,8 +79,8 @@ where
         // a      x
         //       / \
         //      b   c
-        proof_assert! { (@old_self).left.has_mapping(@(*self).key, (*self).val) }
-        proof_assert! { forall<k: K::ModelTy, v: V> x.left.has_mapping(k, v) ==> (@old_self).left.has_mapping(k, v) }
+        proof_assert! { (old_self.inner()).left.has_mapping(@(*self).key, (*self).val) }
+        proof_assert! { forall<k: K::ModelTy, v: V> x.left.has_mapping(k, v) ==> (old_self.inner()).left.has_mapping(k, v) }
         self.right = Tree { node: Some(x) };
         //   self
         //  /    \
@@ -100,7 +100,7 @@ where
               (l.left, l.right, (^self).right) == ((*self).left, r.left, r.right))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     fn rotate_left(&mut self) {
-        let old_self = Ghost::record(&*self);
+        let old_self = ghost! { self };
 
         let mut x: Box<_> = match std::mem::replace(&mut self.right.node, None) {
             Some(x) => x,
@@ -110,8 +110,8 @@ where
         std::mem::swap(self, &mut x);
         self.color = x.color;
         x.color = Red;
-        proof_assert! { (@old_self).right.has_mapping(@(*self).key, (*self).val) }
-        proof_assert! { forall<k: K::ModelTy, v: V> x.right.has_mapping(k, v) ==> (@old_self).right.has_mapping(k, v) }
+        proof_assert! { (old_self.inner()).right.has_mapping(@(*self).key, (*self).val) }
+        proof_assert! { forall<k: K::ModelTy, v: V> x.right.has_mapping(k, v) ==> (old_self.inner()).right.has_mapping(k, v) }
         self.left = Tree { node: Some(x) };
     }
 
@@ -215,7 +215,7 @@ where
     where
         K: Ord,
     {
-        let old_self = Ghost::record(&*self);
+        let old_self = ghost! { self };
         match &mut self.node {
             None => {
                 self.node = Some(Box::new(Node {
@@ -236,7 +236,7 @@ where
                     }
                     Greater => node.right.insert_rec(key, val),
                 }
-                proof_assert!(forall<h: Int> (@old_self).has_height(h) ==> node.has_height(h));
+                proof_assert!(forall<h: Int> (old_self.inner()).has_height(h) ==> node.has_height(h));
 
                 node.insert_rebalance();
             }
@@ -250,10 +250,10 @@ where
     where
         K: Ord,
     {
-        let old_self = Ghost::record(&*self);
+        let old_self = ghost! { self };
         self.insert_rec(key, val);
         self.node.as_mut().unwrap().color = Black;
-        proof_assert! { forall<h: Int> (@old_self).has_height(h) ==>
+        proof_assert! { forall<h: Int> (old_self.inner()).has_height(h) ==>
         (*self).has_height(h) || (*self).has_height(h+1) }
         proof_assert! { (*self).has_binding_model(@key /* dummy */, val /* dummy */); true }
     }

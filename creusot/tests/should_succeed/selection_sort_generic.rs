@@ -27,9 +27,9 @@ fn partition<T: Ord>(v: Seq<T>, i: Int) -> bool {
 #[ensures((@^v).permutation_of(@v))]
 fn selection_sort<T: Ord>(v: &mut Vec<T>) {
     let mut i: usize = 0;
-    let old_v = Ghost::record(&v);
-    #[invariant(proph_const, ^v == ^@old_v)]
-    #[invariant(permutation, (@v).permutation_of(@*@old_v))]
+    let old_v = ghost! { v };
+    #[invariant(proph_const, ^v == ^old_v.inner())]
+    #[invariant(permutation, (@v).permutation_of(@*old_v.inner()))]
     #[invariant(i_bound, @i <= (@v).len())]
     #[invariant(sorted, sorted_range(@v, 0, @i))]
     #[invariant(partition, partition(@v, @i))]

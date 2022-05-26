@@ -2,8 +2,9 @@ use indexmap::{IndexMap, IndexSet};
 
 use rustc_data_structures::graph::WithSuccessors;
 use rustc_hir::def_id::DefId;
+use rustc_middle::mir::Operand;
 use rustc_middle::mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Rvalue};
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{TyCtxt, TyKind};
 use rustc_span::Symbol;
 
 use why3::exp::Exp;
@@ -11,17 +12,19 @@ use why3::exp::Exp;
 use crate::clone_map::CloneMap;
 use crate::ctx::TranslationCtx;
 use crate::translation::specification::{inv_subst, lower_pure};
-use crate::util;
+use crate::util::{self, is_ghost_closure};
 
 pub fn corrected_invariant_names_and_locations<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
+    def_id: DefId,
     body: &Body<'tcx>,
 ) -> (IndexMap<BasicBlock, Vec<(Symbol, Exp)>>, IndexMap<DefId, Exp>) {
-    let mut visitor = InvariantClosures::new(ctx.tcx);
+    let mut visitor = InvariantClosures::new(ctx.tcx, def_id);
     visitor.visit_body(&body);
 
     let mut assertions: IndexMap<_, _> = Default::default();
+    // let mut ghosts: IndexMap<_, _> = Default::default();
     let mut invariants: IndexMap<_, _> = Default::default();
     for clos in visitor.closures.into_iter() {
         if let Some(name) = util::invariant_name(ctx.tcx, clos) {
@@ -33,6 +36,12 @@ pub fn corrected_invariant_names_and_locations<'tcx>(
             let term = ctx.term(clos).unwrap().clone();
             let exp = lower_pure(ctx, names, clos, term);
 
+            assertions.insert(clos, exp);
+        } else if util::is_ghost(ctx.tcx, clos) {
+            let term = ctx.term(clos).unwrap().clone();
+            let exp = lower_pure(ctx, names, clos, term);
+
+            // A hack should probably be separately tracked
             assertions.insert(clos, exp);
         }
     }
@@ -56,7 +65,7 @@ pub fn corrected_invariant_names_and_locations<'tcx>(
         })
         .collect();
 
-    let mut ass_loc = AssertionLocations { tcx: ctx.tcx, locations: IndexMap::new() };
+    let mut ass_loc = ClosureLocations { locations: IndexMap::new() };
     ass_loc.visit_body(body);
     let locations = ass_loc.locations;
 
@@ -69,6 +78,7 @@ pub fn corrected_invariant_names_and_locations<'tcx>(
             ass
         })
         .collect();
+
     assert!(invariants.is_empty());
     (correct_inv, assertions)
 }
@@ -77,36 +87,55 @@ pub fn corrected_invariant_names_and_locations<'tcx>(
 // translate the invariant closure from thir.
 pub struct InvariantClosures<'tcx> {
     pub tcx: TyCtxt<'tcx>,
+    pub def_id: DefId,
     pub closures: IndexSet<DefId>,
 }
 
 impl<'tcx> InvariantClosures<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>) -> Self {
-        InvariantClosures { tcx, closures: IndexSet::new() }
+    pub fn new(tcx: TyCtxt<'tcx>, def_id: DefId) -> Self {
+        InvariantClosures { tcx, def_id, closures: IndexSet::new() }
     }
 }
 
 impl<'tcx> Visitor<'tcx> for InvariantClosures<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
-        if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
-            self.closures.insert(*id);
+        match rvalue {
+            Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) => {
+                self.closures.insert(*id);
+            }
+            Rvalue::Use(Operand::Constant(box ck)) => {
+                if let Some(c) = ck.literal.const_for_ty() {
+                    if let Some(def_id) = is_ghost_closure(self.tcx, c.ty()) {
+                        self.closures.insert(def_id);
+                    }
+                }
+            }
+            _ => {}
         }
         self.super_rvalue(rvalue, loc);
     }
 }
 
-struct AssertionLocations<'tcx> {
-    tcx: TyCtxt<'tcx>,
+struct ClosureLocations {
     locations: IndexMap<DefId, Location>,
 }
 
-impl<'tcx> Visitor<'tcx> for AssertionLocations<'tcx> {
+impl<'tcx> Visitor<'tcx> for ClosureLocations {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
-        if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
-            if util::is_assertion(self.tcx, *id) {
+        match rvalue {
+            Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) => {
                 self.locations.insert(*id, loc);
             }
+            Rvalue::Use(Operand::Constant(box ck)) => {
+                if let Some(c) = ck.literal.const_for_ty() {
+                    if let TyKind::Closure(def_id, _) = c.ty().peel_refs().kind() {
+                        self.locations.insert(*def_id, loc);
+                    }
+                }
+            }
+            _ => {}
         }
+
         self.super_rvalue(rvalue, loc);
     }
 }

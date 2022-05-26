@@ -10,7 +10,7 @@ use crate::{
         ty::translate_ty,
         unop_to_unop,
     },
-    util::constructor_qname,
+    util::{self, constructor_qname},
 };
 use rustc_middle::{
     mir::{Body, BorrowKind, Operand, Promoted, StatementKind, TerminatorKind},
@@ -126,6 +126,11 @@ pub fn translate_promoted<'tcx>(
 
                                     Exp::Constructor { ctor: qname, args: fields }
                                 }
+                                Closure(def_id, _) if util::is_ghost(ctx.tcx, *def_id) => ctx
+                                    .crash_and_error(
+                                        body.span,
+                                        "should not have translated ghost closure",
+                                    ),
                                 _ => ctx.crash_and_error(
                                     stmt.source_info.span,
                                     "unsupported aggregate kind",

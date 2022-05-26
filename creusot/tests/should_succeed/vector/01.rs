@@ -7,11 +7,11 @@ use creusot_contracts::*;
 #[ensures((@*v).len() == (@^v).len())]
 fn all_zero(v: &mut Vec<u32>) {
     let mut i = 0;
-    let old_v = Ghost::record(&v);
+    let old_v = ghost! { v };
     // This invariant is because why3 can't determine that the prophecy isn't modified by the loop
     // Either Why3 or Creusot should be improved to do this automaticallly (probably why3)
-    #[invariant(proph_const, ^v == ^@old_v)]
-    #[invariant(in_bounds, (@*v).len() == (@*@old_v).len())]
+    #[invariant(proph_const, ^v == ^old_v.inner())]
+    #[invariant(in_bounds, (@*v).len() == (@*old_v.inner()).len())]
     #[invariant(all_zero, forall<j : Int> 0 <= j && j < i.into() ==> (@*v)[j] == 0u32)]
     while i < v.len() {
         v[i] = 0;

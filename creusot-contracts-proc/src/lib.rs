@@ -366,6 +366,20 @@ pub fn proof_assert(assertion: TS1) -> TS1 {
     })
 }
 
+#[proc_macro]
+pub fn ghost(assertion: TS1) -> TS1 {
+    let assertion = TokenStream::from(assertion);
+    TS1::from(quote! {
+        {
+            (
+                #[creusot::decl::spec]
+                #[creusot::spec::ghost]
+                || { Ghost::new(&#assertion) }
+            )()
+        }
+    })
+}
+
 struct LogicItem {
     vis: Visibility,
     defaultness: Option<Token![default]>,

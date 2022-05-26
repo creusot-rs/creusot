@@ -13,6 +13,8 @@ mod macros {
     /// A post-condition of a function or trait item
     pub use creusot_contracts_proc::ensures;
 
+    pub use creusot_contracts_proc::ghost;
+
     /// A loop invariant
     /// The first argument should be a name for the invariant
     /// The second argument is the Pearlite expression for the loop invariant
@@ -68,6 +70,8 @@ mod macros {
 
     /// A post-condition of a function or trait item
     pub use creusot_contracts_dummy::ensures;
+
+    pub use creusot_contracts_proc::ghost;
 
     /// A loop invariant
     /// The first argument should be a name for the invariant

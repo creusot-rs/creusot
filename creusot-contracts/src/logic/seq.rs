@@ -11,7 +11,12 @@ pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
 impl<T> Seq<T> {
     #[trusted]
     #[creusot::builtins = "seq.Seq.empty"]
-    pub const EMPTY: Self = { panic!() };
+    pub const EMPTY: Self = { Seq(std::marker::PhantomData) };
+
+    #[logic]
+    pub fn new() -> Self {
+        Self::EMPTY
+    }
 
     #[logic]
     pub fn get(self, ix: Int) -> Option<T> {
@@ -58,7 +63,7 @@ impl<T> Seq<T> {
     #[trusted]
     #[predicate]
     #[creusot::builtins = "seq.Seq.(==)"]
-    pub fn ext_eq(self, rhs: Self) -> bool {
+    pub fn ext_eq(self, _: Self) -> bool {
         absurd
     }
 

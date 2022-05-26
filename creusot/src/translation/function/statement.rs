@@ -17,7 +17,7 @@ use super::BodyTranslator;
 use crate::{
     clone_map::PreludeModule,
     translation::{binop_to_binop, unop_to_unop},
-    util::{self, constructor_qname, item_name},
+    util::{self, constructor_qname, is_ghost_closure, item_name},
 };
 
 impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
@@ -65,11 +65,20 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     self.translate_rplace(pl)
                 }
                 Constant(box c) => {
+                    if let Some(c) = c.literal.const_for_ty() {
+                        if is_ghost_closure(self.tcx, c.ty()).is_some() {
+                            return;
+                        }
+                    };
                     crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
                 }
             },
             Rvalue::Ref(_, ss, pl) => match ss {
                 Shared | Shallow | Unique => {
+                    if self.erased_locals.contains(pl.local) {
+                        return;
+                    }
+
                     let dom = self.body.dominators();
                     let two_phase = self
                         .borrows
@@ -107,6 +116,10 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     }
                 }
                 Mut { .. } => {
+                    if self.erased_locals.contains(pl.local) {
+                        return;
+                    }
+
                     let borrow = BorrowMut(box self.translate_rplace(pl));
                     self.emit_assignment(place, borrow);
                     let reassign = Final(box self.translate_rplace(place));
@@ -155,16 +168,16 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                                 .expect("Could not find body of assertion");
                             self.emit_statement(Assert(assertion));
                             return;
+                        } else if util::is_ghost(self.tcx, *def_id) {
+                            return;
                         } else if util::is_spec(self.tcx, *def_id) {
                             return;
                         } else {
                             let mut cons_name = item_name(self.tcx, *def_id);
                             cons_name.capitalize();
                             let cons = self.names.insert(*def_id, subst).qname_ident(cons_name);
-                            // let cons = item_qname(self.tcx, *def_id);
 
                             Constructor { ctor: cons, args: fields }
-                            // self.ctx.crash_and_error(si.span, "closures are not yet supported")
                         }
                     }
                     _ => self.ctx.crash_and_error(

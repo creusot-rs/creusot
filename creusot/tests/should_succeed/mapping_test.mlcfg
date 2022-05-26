@@ -21,9 +21,6 @@ module Type
     match (self) with
       | MappingTest_T a -> a
       end
-  type creusotcontracts_logic_ghost_ghost 't =
-    | CreusotContracts_Logic_Ghost_Ghost opaque_ptr
-    
 end
 module MappingTest_Impl0_Model_Interface
   use mach.int.Int
@@ -73,48 +70,39 @@ module MappingTest_Impl0
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.mappingtest_t,
   type modelTy = ModelTy0.modelTy
 end
-module CreusotContracts_Logic_Ghost_Impl0_Model_Interface
+module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
-  use Type
-  function model (self : Type.creusotcontracts_logic_ghost_ghost t) : t
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  function model (self : borrowed t) : ModelTy0.modelTy
 end
-module CreusotContracts_Logic_Ghost_Impl0_Model
+module CreusotContracts_Logic_Model_Impl1_Model
   type t
-  use Type
-  function model (self : Type.creusotcontracts_logic_ghost_ghost t) : t
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  function model (self : borrowed t) : ModelTy0.modelTy =
+    Model0.model ( * self)
 end
-module CreusotContracts_Logic_Ghost_Impl0_ModelTy
+module CreusotContracts_Logic_Model_Impl1_ModelTy
   type t
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
   type modelTy  =
-    t
+    ModelTy0.modelTy
 end
-module CreusotContracts_Logic_Ghost_Impl0
+module CreusotContracts_Logic_Model_Impl1
   type t
-  use Type
-  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model0 with type t = t
-  clone CreusotContracts_Logic_Ghost_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
+  function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Model_Impl1_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = borrowed t,
   function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.creusotcontracts_logic_ghost_ghost t,
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = borrowed t,
   type modelTy = ModelTy0.modelTy
-end
-module CreusotContracts_Logic_Ghost_Impl1_Record_Interface
-  type t
-  use prelude.Prelude
-  use Type
-  clone CreusotContracts_Logic_Ghost_Impl0_Model_Interface as Model0 with type t = t
-  val record [@cfg:stackify] (a : t) : Type.creusotcontracts_logic_ghost_ghost t
-    ensures { Model0.model result = a }
-    
-end
-module CreusotContracts_Logic_Ghost_Impl1_Record
-  type t
-  use prelude.Prelude
-  use Type
-  clone CreusotContracts_Logic_Ghost_Impl0_Model_Interface as Model0 with type t = t
-  val record [@cfg:stackify] (a : t) : Type.creusotcontracts_logic_ghost_ghost t
-    ensures { Model0.model result = a }
-    
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
@@ -161,11 +149,11 @@ module MappingTest_Incr
   use map.Map
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Logic_Ghost_Impl0_Model as Model1 with type t = Type.mappingtest_t
+  clone MappingTest_Impl0_ModelTy as ModelTy0
   clone MappingTest_Impl0_Model as Model0 with axiom .
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Type.mappingtest_t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.mappingtest_t
-  clone CreusotContracts_Logic_Ghost_Impl1_Record_Interface as Record0 with type t = Type.mappingtest_t,
-  function Model0.model = Model1.model
   let rec cfg incr [@cfg:stackify] [#"../mapping_test.rs" 26 0 18] (t : borrowed (Type.mappingtest_t)) : ()
     requires {[#"../mapping_test.rs" 24 0 31] Int32.to_int (Type.mappingtest_t_T_a ( * t)) < 1000}
     requires {[#"../mapping_test.rs" 23 0 29] 0 <= Int32.to_int (Type.mappingtest_t_T_a ( * t))}
@@ -174,22 +162,22 @@ module MappingTest_Incr
    =
   var _0 : ();
   var t_1 : borrowed (Type.mappingtest_t);
-  var old_t_2 : Type.creusotcontracts_logic_ghost_ghost (Type.mappingtest_t);
-  var _3 : Type.mappingtest_t;
+  ghost var old_t_2 : borrowed (Type.mappingtest_t);
+  var _3 : ();
   var _4 : ();
   {
     t_1 <- t;
     goto BB0
   }
   BB0 {
-    _3 <-  * t_1;
-    old_t_2 <- ([#"../mapping_test.rs" 27 16 32] Record0.record _3);
+    _3 <- ();
+    old_t_2 <- ghost ([#"../mapping_test.rs" 27 16 28] t_1);
     goto BB1
   }
   BB1 {
     t_1 <- { t_1 with current = (let Type.MappingTest_T a =  * t_1 in Type.MappingTest_T ([#"../mapping_test.rs" 28 4 15] Type.mappingtest_t_T_a ( * t_1) + (1 : int32))) };
     assume { Resolve0.resolve t_1 };
-    assert { [#"../mapping_test.rs" 31 4 58] Model0.model ( ^ t_1) = Map.set (Model0.model (Model1.model old_t_2)) (Int32.to_int (Type.mappingtest_t_T_a (Model1.model old_t_2))) 1 };
+    assert { [#"../mapping_test.rs" 31 4 72] Model0.model ( ^ t_1) = Map.set (Model1.model old_t_2) (Int32.to_int (Type.mappingtest_t_T_a ( * old_t_2))) 1 };
     _4 <- ();
     _0 <- ();
     return _0
