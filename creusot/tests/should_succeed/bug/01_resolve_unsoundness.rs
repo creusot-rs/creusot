@@ -1,4 +1,4 @@
-// UNBOUNDED
+// UNBOUNDED UNSTABLE
 
 #![feature(type_ascription)]
 
