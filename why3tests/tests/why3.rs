@@ -34,8 +34,7 @@ fn main() {
         write!(&mut out, "Testing {} ... ", file.display()).unwrap();
         out.flush().unwrap();
 
-        if header_line.contains("WHY3SKIP")
-           || (skip_unstable && header_line.contains("UNSTABLE")) {
+        if header_line.contains("WHY3SKIP") || (skip_unstable && header_line.contains("UNSTABLE")) {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
             writeln!(&mut out, "skipped").unwrap();
             out.reset().unwrap();
