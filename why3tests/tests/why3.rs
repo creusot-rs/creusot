@@ -10,6 +10,8 @@ fn main() {
     let mut out = StandardStream::stdout(ColorChoice::Always);
     let orange = Color::Ansi256(214);
     let lazy = std::env::args().any(|arg| arg == "--lazy");
+    let fail_obsoleate = std::env::args().any(|arg| arg == "--fail-obsolete");
+    let skip_unstable = std::env::args().any(|arg| arg == "--skip-unstable");
 
     let filter = std::env::args().nth(1);
 
@@ -32,7 +34,8 @@ fn main() {
         write!(&mut out, "Testing {} ... ", file.display()).unwrap();
         out.flush().unwrap();
 
-        if header_line.contains("WHY3SKIP") {
+        if header_line.contains("WHY3SKIP")
+           || (skip_unstable && header_line.contains("UNSTABLE")) {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
             writeln!(&mut out, "skipped").unwrap();
             out.reset().unwrap();
@@ -68,6 +71,9 @@ fn main() {
                     out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
                     writeln!(&mut out, "obsolete").unwrap();
                     obsolete = true;
+                    if lazy && fail_obsoleate {
+                        break;
+                    }
                 } else {
                     out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
                     writeln!(&mut out, "replayed").unwrap();
@@ -94,10 +100,13 @@ fn main() {
             out.reset().unwrap();
 
             let output = output.unwrap_err();
-            eprint!("{output}");
             let output = output.as_output().unwrap();
 
+            writeln!(&mut out, "******** STDOUT ********").unwrap();
             writeln!(&mut out, "{}", std::str::from_utf8(&output.stdout).unwrap()).unwrap();
+            writeln!(&mut out, "******** STDERR ********").unwrap();
+            writeln!(&mut out, "{}", std::str::from_utf8(&output.stderr).unwrap()).unwrap();
+            writeln!(&mut out, "************************").unwrap();
 
             success = false;
             if lazy {
@@ -113,13 +122,14 @@ fn main() {
             write!(&mut out, "obsolete").unwrap();
             out.reset().unwrap();
             writeln!(&mut out, ".").unwrap();
-            exit(2)
+            if fail_obsoleate {
+                exit(1)
+            }
         } else {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
             write!(&mut out, "Success").unwrap();
             out.reset().unwrap();
             writeln!(&mut out, "!").unwrap();
-            exit(0)
         }
     } else {
         out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
