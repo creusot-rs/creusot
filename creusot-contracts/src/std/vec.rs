@@ -15,7 +15,7 @@ impl<T, A: Allocator> Model for Vec<T, A> {
 
     #[logic]
     #[trusted]
-    #[ensures(result.len() <= @isize::MAX)]
+    #[ensures(result.len() <= @usize::MAX)]
     fn model(self) -> Self::ModelTy {
         pearlite! { absurd }
     }
@@ -79,6 +79,16 @@ extern_spec! {
   #[ensures((@result).len() == @n)]
   #[ensures(forall<i : Int> 0 <= i && i < @n ==> (@result)[i] == elem)]
   fn std::vec::from_elem<T : Clone>(elem : T, n : usize) -> Vec<T>
+}
+
+extern_spec! {
+    #[ensures(match result {
+        Some(t) =>
+            (@^self_) == (@*self_).subsequence(0, (@*self_).len() - 1) &&
+            (@self_) == (@^self_).push(t),
+        None => (@self_).len() == (@^self_).len() && (@*self_).len() == 0
+    })]
+    fn std::vec::Vec::pop<T, A : Allocator>(self_ : &mut Vec<T, A>) -> Option<T>
 }
 
 // impl<T> Vec<T> {
