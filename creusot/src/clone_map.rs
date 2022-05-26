@@ -7,7 +7,7 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{
     self,
     subst::{InternalSubsts, Subst, SubstsRef},
-    TyCtxt, TypeFoldable, TypeVisitor,
+    EarlyBinder, TyCtxt, TypeFoldable, TypeVisitor,
 };
 use rustc_middle::ty::{DefIdTree, ProjectionTy, Ty, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
@@ -429,7 +429,7 @@ impl<'tcx> CloneMap<'tcx> {
         subst: SubstsRef<'tcx>,
         dep: (DefId, SubstsRef<'tcx>),
     ) -> DepNode<'tcx> {
-        let dep = (dep.0, dep.1.subst(self.tcx, subst));
+        let dep = (dep.0, EarlyBinder(dep.1).subst(self.tcx, subst));
 
         let param_env = ctx.param_env(self.self_id);
         let resolved = traits::resolve_opt(ctx.tcx, param_env, dep.0, dep.1).unwrap_or(dep);

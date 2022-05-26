@@ -475,7 +475,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         "non-boolean constant patterns are unsupported",
                     ));
                 }
-                Ok(Pattern::Boolean(value.val().try_to_bool().unwrap()))
+                Ok(Pattern::Boolean(value.try_to_bool().unwrap()))
             }
             ref pk => todo!("lower_pattern: unsupported pattern kind {:?}", pk),
         }

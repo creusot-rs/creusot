@@ -199,8 +199,8 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                     .and_then(|id| self.extern_specs.get(&id))
                 {
                     let i = InternalSubsts::identity_for_item(self.tcx, def_id);
-                    use rustc_middle::ty::subst::Subst;
-                    term.subst(self.tcx, i)
+                    use rustc_middle::ty::{subst::Subst, EarlyBinder};
+                    EarlyBinder(term).subst(self.tcx, i)
                 } else {
                     term
                 }

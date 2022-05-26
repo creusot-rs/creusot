@@ -59,8 +59,8 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
             Abort => self.emit_terminator(MlT::Absurd),
             Return => self.emit_terminator(MlT::Return),
             Unreachable => self.emit_terminator(MlT::Absurd),
-            Call { func, args, destination, .. } => {
-                if destination.is_none() {
+            Call { func, args, destination, target, .. } => {
+                if target.is_none() {
                     // If we have no target block after the call, then we cannot move past it.
                     self.emit_terminator(MlT::Absurd);
                     return;
@@ -109,7 +109,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     )
                 };
 
-                let (loc, bb) = destination.unwrap();
+                let (loc, bb) = (destination, target.unwrap());
                 self.emit_assignment(&loc, call_exp);
                 self.emit_terminator(MlT::Goto(BlockId(bb.into())));
             }

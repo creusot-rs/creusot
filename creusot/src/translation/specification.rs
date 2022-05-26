@@ -14,7 +14,7 @@ use self::typing::pearlite_stub;
 use super::LocalIdent;
 use rustc_hir::def_id::DefId;
 use rustc_middle::mir::{Body, Location};
-use rustc_middle::ty::{self, TyCtxt};
+use rustc_middle::ty::{self, EarlyBinder, TyCtxt};
 
 mod builtins;
 mod lower;
@@ -47,13 +47,13 @@ impl PreContract {
         use crate::rustc_middle::ty::subst::Subst;
         for req_id in self.requires {
             log::debug!("require clause {:?}", req_id);
-            let term = ctx.term(req_id).unwrap().clone().subst(ctx.tcx, subst);
+            let term = EarlyBinder(ctx.term(req_id).unwrap().clone()).subst(ctx.tcx, subst);
             out.requires.push(lower_pure(ctx, names, req_id, term));
         }
 
         for ens_id in self.ensures {
             log::debug!("ensures clause {:?}", ens_id);
-            let term = ctx.term(ens_id).unwrap().clone().subst(ctx.tcx, subst);
+            let term = EarlyBinder(ctx.term(ens_id).unwrap().clone()).subst(ctx.tcx, subst);
             let exp = lower_pure(ctx, names, ens_id, term);
 
             out.ensures.push(exp);
@@ -61,7 +61,7 @@ impl PreContract {
 
         if let Some(var_id) = self.variant {
             log::debug!("variant clause {:?}", var_id);
-            let term = ctx.term(var_id).unwrap().clone().subst(ctx.tcx, subst);
+            let term = EarlyBinder(ctx.term(var_id).unwrap().clone()).subst(ctx.tcx, subst);
             out.variant = vec![lower_pure(ctx, names, var_id, term)];
         };
 

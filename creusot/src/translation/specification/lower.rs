@@ -344,7 +344,7 @@ pub(super) fn mk_binders(func: Exp, args: Vec<Exp>) -> Exp {
 
 fn is_identity_from<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, subst: SubstsRef<'tcx>) -> bool {
     if tcx.def_path_str(id) == "std::convert::From::from" && subst.len() == 1 {
-        let out_ty = tcx.fn_sig(id).no_bound_vars().unwrap().output();
+        let out_ty = tcx.bound_fn_sig(id).map_bound(|sig| sig.no_bound_vars().unwrap().output());
         return subst[0].expect_ty() == out_ty.subst(tcx, subst);
     }
     false
