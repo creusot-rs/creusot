@@ -88,7 +88,7 @@ impl<T> Sparse<T> {
         None => result == None,
         Some(_) => true // result == Some(x) need 'asref'
     })]
-     pub fn get(&self, i: usize) -> Option<&T> {
+    pub fn get(&self, i: usize) -> Option<&T> {
         let index = self.idx[i];
         if index < self.n && self.back[index] == i {
             Some(&self.values[i])

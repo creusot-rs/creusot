@@ -1,8 +1,8 @@
 #![feature(type_ascription)]
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
 use creusot_contracts::std::cmp::Ord;
+use creusot_contracts::*;
 
 #[logic]
 fn parent(i: Int) -> Int {

@@ -160,7 +160,7 @@ pub fn knights_tour(size: usize, x: usize, y: usize) -> Option<Board> {
     // due to a why3 bug / limitation in mlcfg
     while step <= (size * size) {
         // choose next square by Warnsdorf's rule
-        let mut candidates : Vec<(usize, Point)> = Vec::new();
+        let mut candidates: Vec<(usize, Point)> = Vec::new();
         let mut i = 0;
         #[invariant(c, forall<i: Int> 0 <= i && i < (@candidates).len() ==>
                     board.in_bounds((@candidates)[i].1))]
