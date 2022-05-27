@@ -1,7 +1,6 @@
 #![feature(box_patterns)]
 extern crate creusot_contracts;
 
-use creusot_contracts::std::*;
 use creusot_contracts::*;
 use std::cmp::Ord;
 use std::cmp::Ordering::*;
@@ -21,7 +20,7 @@ struct Node<K, V> {
     right: Tree<K, V>,
 }
 
-struct Tree<K, V> {
+pub struct Tree<K, V> {
     node: Option<Box<Node<K, V>>>,
 }
 
@@ -145,6 +144,7 @@ where
 
         if self.left.is_red() && self.right.is_red() {
             self.color = Red;
+            proof_assert!((*self).ord_invariant_here());
             match self {
                 Node { left: Tree { node: Some(l) }, right: Tree { node: Some(r) }, .. } => {
                     l.color = Black;
@@ -319,7 +319,7 @@ where
             match self {
                 Tree { node: None } => true,
                 Tree { node: Some(box node) } => {
-                    let Node { left, color, key, val, right } = node;
+                    let Node { left, right, .. } = node;
                     node.ord_invariant_here() && left.ord_invariant() && right.ord_invariant()
                 }
             }
@@ -332,7 +332,7 @@ where
             match self {
                 Tree { node: None } => true,
                 Tree { node: Some(box node) } => {
-                    let Node { left, color, key, val, right } = node;
+                    let Node { left, right, .. } = node;
                     node.color_invariant_here() && left.color_invariant() && right.color_invariant()
                 }
             }
@@ -360,7 +360,7 @@ impl<K, V> Tree<K, V> {
     #[predicate]
     fn is_red_log(self) -> bool {
         match self.node {
-            Some(box Node { left, color: Red, key, val, right }) => true,
+            Some(box Node { color: Red, .. }) => true,
             _ => false,
         }
     }
@@ -380,8 +380,8 @@ impl<K: Model, V> Node<K, V> {
     #[predicate]
     fn has_height(self, h: Int) -> bool {
         match self {
-            Node { left, color: Red, key, val, right } => left.has_height(h) && right.has_height(h),
-            Node { left, color: Black, key, val, right } => {
+            Node { left, color: Red, right, .. } => left.has_height(h) && right.has_height(h),
+            Node { left, color: Black, right, .. } => {
                 left.has_height(h - 1) && right.has_height(h - 1)
             }
         }
@@ -396,7 +396,7 @@ impl<K: Model, V> Tree<K, V> {
         pearlite! {
             match self {
                 Tree { node: None } => false,
-                Tree { node: Some(box Node { left, color, key, val, right }) } =>
+                Tree { node: Some(box Node { left, key, val, right, .. }) } =>
                     left.has_mapping(k, v) || right.has_mapping(k, v) || k == @key && v == val
             }
         }
@@ -407,9 +407,9 @@ impl<K: Model, V> Tree<K, V> {
         pearlite! {
             match self {
                 Tree { node: None } => h == 0,
-                Tree { node: Some(box Node { left, color: Red, key, val, right }) } =>
+                Tree { node: Some(box Node { left, color: Red, right, .. }) } =>
                     left.has_height(h) && right.has_height(h),
-                Tree { node: Some(box Node { left, color: Black, key, val, right }) } =>
+                Tree { node: Some(box Node { left, color: Black, right, .. }) } =>
                     left.has_height(h-1) && right.has_height(h-1)
             }
         }
@@ -427,7 +427,7 @@ impl<K: Model, V> Tree<K, V> {
         pearlite! {
             match self {
                 Tree { node: None } => accu,
-                Tree { node: Some(box Node { left, color, key, val, right }) } => {
+                Tree { node: Some(box Node { left, key, val, right, .. }) } => {
                     let accu1 = left.model_acc(accu);
                     let accu2 = accu1.set(@key, Some(val));
                     right.model_acc(accu2)
@@ -443,7 +443,7 @@ impl<K: Model, V> Tree<K, V> {
         pearlite! {
             match self {
                 Tree { node: None } => (),
-                Tree { node: Some(box Node { left, color, key, val, right }) } => {
+                Tree { node: Some(box Node { left, key, val, right, .. }) } => {
                     left.model_acc_has_binding(accu, k);
                     let accu1 = left.model_acc(accu);
                     let accu2 = accu1.set(@key, Some(val));
@@ -463,7 +463,7 @@ impl<K: Model, V> Tree<K, V> {
         pearlite! {
             match self {
                 Tree { node: None } => (),
-                Tree { node: Some(box Node { left, color, key, val, right }) } => {
+                Tree { node: Some(box Node { left, key, val, right, .. }) } => {
                     left.has_binding_model_acc(accu, k);
                     let accu1 = left.model_acc(accu);
                     let accu2 = accu1.set(@key, Some(val));

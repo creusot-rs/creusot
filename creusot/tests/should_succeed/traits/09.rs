@@ -1,11 +1,13 @@
-trait Tr {
+extern crate creusot_contracts;
+
+pub trait Tr {
     type X;
 }
 
-fn test<T: Tr<X = u32>>(t: T::X) -> u32 {
+pub fn test<T: Tr<X = u32>>(t: T::X) -> u32 {
     t + 0
 }
 
-fn test2<T: Tr, U: Tr<X = T::X>>(t: T::X) -> U::X {
+pub fn test2<T: Tr, U: Tr<X = T::X>>(t: T::X) -> U::X {
     t
 }

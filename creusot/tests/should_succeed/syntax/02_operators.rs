@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 extern crate creusot_contracts;
 
 use creusot_contracts::*;

@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-struct Seven();
+pub struct Seven();
 
 impl Model for Seven {
     type ModelTy = Int;
@@ -14,11 +14,11 @@ impl Model for Seven {
 
 #[trusted]
 #[ensures(@result == 7)]
-fn seven() -> Seven {
+pub fn seven() -> Seven {
     Seven()
 }
 
-struct Pair<T, U>(T, U);
+pub struct Pair<T, U>(T, U);
 
 impl<T, U> Model for Pair<T, U> {
     type ModelTy = (T, U);
@@ -31,6 +31,6 @@ impl<T, U> Model for Pair<T, U> {
 
 #[trusted]
 #[ensures(@result == (a, b))]
-fn pair<T, U>(a: T, b: U) -> Pair<T, U> {
+pub fn pair<T, U>(a: T, b: U) -> Pair<T, U> {
     Pair(a, b)
 }

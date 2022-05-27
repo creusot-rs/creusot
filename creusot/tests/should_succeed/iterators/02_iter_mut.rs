@@ -60,7 +60,7 @@ fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
 
 #[ensures((@^v).len() == (@v).len())]
 #[ensures(forall<i : _> 0 <= i && i < (@v).len() ==> @(@^v)[i] == 0)]
-fn all_zero(v: &mut Vec<usize>) {
+pub fn all_zero(v: &mut Vec<usize>) {
     let mut it = iter_mut(v);
     let it_old = ghost! { it };
 

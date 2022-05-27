@@ -16,19 +16,20 @@ pub fn solver(x: A) {}
 pub fn struct_in_pearlite(x: A) {}
 
 pub struct B {
-    field1: bool,
-    field2: u32,
+    pub field1: bool,
+    pub field2: u32,
 }
 
 #[ensures(x == B { field2: 0u32, field1: false })]
 pub fn struct_order(x: B) {}
 
 #[predicate]
+#[allow(unreachable_patterns)]
 fn field1_is_true(x: B) -> bool {
     pearlite! {
         match x {
             B { field1: true, .. } => true,
-            B { field2, field1 } => @field2 == 0,
+            B { field2, field1: _f } => @field2 == 0,
             _ => false
         }
     }

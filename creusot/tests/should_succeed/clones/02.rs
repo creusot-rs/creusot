@@ -17,4 +17,4 @@ fn uses_simple() -> bool {
 
 #[requires(uses_simple())]
 #[ensures(simple())]
-fn program() {}
+pub fn program() {}

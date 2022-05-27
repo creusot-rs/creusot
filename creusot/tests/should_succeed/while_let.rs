@@ -1,14 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-enum Option<T> {
-    Some(T),
-    None,
-}
-
-use Option::*;
-
-fn main() {
+pub fn f() {
     let mut a = Some(10);
     let b = &mut a;
 

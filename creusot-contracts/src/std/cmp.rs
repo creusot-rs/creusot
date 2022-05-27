@@ -53,11 +53,18 @@ mod real_ord {
         mod std {
             mod cmp {
                 trait Ord
-                where Self : Model,
+                where Self: Model,
                       Self::ModelTy: OrdLogic {
 
-                    #[ensures(result == (@self_).cmp_log(@*rhs))]
+                    #[ensures(result == (@self).cmp_log(@*rhs))]
                     fn cmp(&self, rhs: &Self) -> Ordering;
+
+                    #[ensures(@result >= @self)]
+                    #[ensures(@result >= @o)]
+                    #[ensures(result == self || result == o)]
+                    #[ensures(@self <= @o ==> result == o)]
+                    #[ensures(@o < @self ==> result == self)]
+                    fn max(self, o: Self_) -> Self;
                 }
             }
         }

@@ -1,9 +1,8 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::*;
-use std::marker::PhantomData;
 
-trait Inv<T> {
+pub trait Inv<T> {
     #[predicate]
     fn inv(&self, x: T) -> bool;
 }
@@ -11,31 +10,31 @@ trait Inv<T> {
 #[trusted]
 struct MutexInner<T>(std::sync::Mutex<T>);
 
-struct Mutex<T, I>(MutexInner<T>, I);
+pub struct Mutex<T, I>(MutexInner<T>, I);
 // We ignore poisoning, thus we don't use `LockResult` like in `std`.
 impl<T, I: Inv<T>> Mutex<T, I> {
     #[trusted]
     #[requires(i.inv(val))]
-    fn new(val: T, i: I) -> Self {
+    pub fn new(val: T, i: I) -> Self {
         Mutex(MutexInner(std::sync::Mutex::new(val)), i)
     }
 
     #[trusted]
     #[ensures(self.1.inv(result))]
-    fn into_inner(self) -> T {
+    pub fn into_inner(self) -> T {
         self.0 .0.into_inner().unwrap()
     }
 
     #[trusted]
     #[ensures((*self).1.inv(*result))]
     #[ensures(forall<v: T> (^self).1.inv(v) == true)]
-    fn get_mut(&mut self) -> &mut T {
+    pub fn get_mut(&mut self) -> &mut T {
         self.0 .0.get_mut().unwrap()
     }
 
     #[trusted]
     #[ensures(self.1 == *result.1)]
-    fn lock(&self) -> MutexGuard<'_, T, I> {
+    pub fn lock(&self) -> MutexGuard<'_, T, I> {
         MutexGuard(GuardInner(self.0 .0.lock().unwrap()), ghost! { self.1 })
     }
 }
@@ -43,9 +42,7 @@ impl<T, I: Inv<T>> Mutex<T, I> {
 #[trusted]
 struct GuardInner<'a, T: ?Sized + 'a>(std::sync::MutexGuard<'a, T>);
 
-struct MutexGuard<'a, T: ?Sized + 'a, I>(GuardInner<'a, T>, Ghost<I>);
-
-struct WithInv<T, I>(T, I);
+pub struct MutexGuard<'a, T: ?Sized + 'a, I>(GuardInner<'a, T>, Ghost<I>);
 
 impl<'a, T, I: Inv<T>> MutexGuard<'a, T, I> {
     #[trusted]
@@ -161,15 +158,16 @@ fn leak<'a, T: 'a>(b: Box<T>) -> &'a mut T {
     Box::leak(b)
 }
 
-fn concurrent() {
+pub fn concurrent() {
     let m: &'static _ = leak(Box::new(Mutex::new(0, Even)));
     let t1 = AddsTwo { mutex: &m };
     let j1 = spawn(t1);
     let t2 = AddsTwo { mutex: &m };
     let j2 = spawn(t2);
 
-    j1.join();
-    j2.join();
+    // FIXME: cannot unwrap() here
+    let _ = j1.join();
+    let _ = j2.join();
 
     // assert!(m.into_inner() % 2 == 0);
 }

@@ -1,5 +1,4 @@
 // UISKIP WHY3SKIP
-use creusot_contracts::std::*;
 use creusot_contracts::*;
 
 pub trait Iterator {

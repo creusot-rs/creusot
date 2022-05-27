@@ -107,13 +107,13 @@ extern_spec! {
 
         #[ensures(match result {
             Some(r) => {
-                * r == (@**self_)[0] &&
-                ^ r == (@^*self_)[0] &&
-                (@**self_).len() > 0 && // ^*s.len == **s.len ? (i dont think so)
-                (@^*self_).len() > 0 &&
-                (@*^self_).ext_eq((@**self_).tail()) && (@^^self_).ext_eq((@^*self_).tail())
+                * r == (@**self)[0] &&
+                ^ r == (@^*self)[0] &&
+                (@**self).len() > 0 && // ^*s.len == **s.len ? (i dont think so)
+                (@^*self).len() > 0 &&
+                (@*^self).ext_eq((@**self).tail()) && (@^^self).ext_eq((@^*self).tail())
             }
-            None => ^self_ == * self_ && (@**self_).len() == 0
+            None => ^self == * self && (@**self).len() == 0
         })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
     }

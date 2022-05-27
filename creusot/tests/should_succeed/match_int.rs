@@ -1,6 +1,10 @@
+#![allow(unreachable_patterns)]
 #![feature(exclusive_range_pattern)]
+
+extern crate creusot_contracts;
+
 // Test that matching constant integer values works
-fn main() {
+pub fn f() {
     match 1 {
         0..10 => {
             assert!(true)

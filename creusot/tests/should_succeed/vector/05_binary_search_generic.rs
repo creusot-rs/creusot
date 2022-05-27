@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::std::*;
+use creusot_contracts::std::cmp::Ord;
 use creusot_contracts::*;
 use std::cmp::Ordering;
 
@@ -22,7 +22,7 @@ fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
     forall<i:usize>  i < x ==> (@arr)[@i] <= elem)]
 #[ensures(forall<x:usize> result == Err(x) ==>
     forall<i:usize> x <= i && @i < (@arr).len() ==> elem < (@arr)[@i])]
-fn binary_search<T: Ord + OrdLogic>(arr: &Vec<T>, elem: T) -> Result<usize, usize> {
+pub fn binary_search<T: Ord + OrdLogic>(arr: &Vec<T>, elem: T) -> Result<usize, usize> {
     if arr.len() == 0 {
         return Err(0);
     }

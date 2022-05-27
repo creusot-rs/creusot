@@ -22,15 +22,30 @@ module Type
       | OneSideUpdate_MyInt a -> a
       end
 end
-module OneSideUpdate_Main_Interface
-  val main [@cfg:stackify] (_ : ()) : ()
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Prelude
+  predicate resolve (self : borrowed t)
 end
-module OneSideUpdate_Main
+module CreusotContracts_Logic_Resolve_Impl1_Resolve
+  type t
+  use prelude.Prelude
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+end
+module CreusotContracts_Logic_Resolve_Impl1
+  type t
+end
+module OneSideUpdate_F_Interface
+  val f [@cfg:stackify] (_ : ()) : ()
+end
+module OneSideUpdate_F
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
   use Type
-  let rec cfg main [@cfg:stackify] [#"../one_side_update.rs" 3 0 9] (_ : ()) : () =
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.onesideupdate_myint
+  let rec cfg f [@cfg:stackify] [#"../one_side_update.rs" 5 0 10] (_ : ()) : () =
   var _0 : ();
   var a_1 : Type.onesideupdate_myint;
   var b_2 : borrowed (Type.onesideupdate_myint);
@@ -52,14 +67,16 @@ module OneSideUpdate_Main
       end
   }
   BB1 {
+    assume { Resolve0.resolve b_2 };
     _5 <- Type.onesideupdate_myint_MyInt_0 a_1;
-    _4 <- ([#"../one_side_update.rs" 7 8 17] _5 = (10 : usize));
+    _4 <- ([#"../one_side_update.rs" 9 16 25] _5 = (10 : usize));
     _0 <- ();
     goto BB3
   }
   BB2 {
     _6 <- Type.OneSideUpdate_MyInt (5 : usize);
     b_2 <- { b_2 with current = _6 };
+    assume { Resolve0.resolve b_2 };
     _0 <- ();
     goto BB3
   }

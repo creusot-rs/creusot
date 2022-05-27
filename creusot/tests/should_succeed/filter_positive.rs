@@ -76,7 +76,7 @@ fn lemma_num_of_pos_increasing(i: Int, j: Int, k: Int, t: Seq<i32>) {
 fn lemma_num_of_pos_strictly_increasing(i: Int, t: Seq<i32>) {}
 
 // the main function to prove
-fn m(t: Vec<i32>) -> Vec<i32> {
+pub fn m(t: Vec<i32>) -> Vec<i32> {
     let mut count: usize = 0;
     let mut i: usize = 0;
     #[invariant(loop_bound, @i <= (@t).len())]
@@ -118,7 +118,7 @@ fn m(t: Vec<i32>) -> Vec<i32> {
 
 #[trusted]
 #[requires(false)]
-fn main() {
+pub fn main() {
     let mut v = Vec::new();
     v.push(1);
     v.push(-2);

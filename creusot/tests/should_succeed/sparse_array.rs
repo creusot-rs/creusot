@@ -18,7 +18,7 @@ use creusot_contracts::{std::vec, *};
 
 /* The sparse array data structure
  */
-struct Sparse<T> {
+pub struct Sparse<T> {
     size: usize,      // allocated size
     n: usize,         // number of elements stored so far
     values: Vec<T>,   // actual values at their actual indexes
@@ -86,9 +86,9 @@ impl<T> Sparse<T> {
     })]
     #[ensures(match (@self)[@i] {
         None => result == None,
-        Some(x) => true // result == Some(x) need 'asref'
+        Some(_) => true // result == Some(x) need 'asref'
     })]
-    fn get(&self, i: usize) -> Option<&T> {
+     pub fn get(&self, i: usize) -> Option<&T> {
         let index = self.idx[i];
         if index < self.n && self.back[index] == i {
             Some(&self.values[i])
@@ -114,7 +114,7 @@ impl<T> Sparse<T> {
     #[ensures((@^self).len() == (@*self).len())]
     #[ensures(forall<j: Int> j != @i ==> (@^self)[j] == (@*self)[j])]
     #[ensures((@^self)[@i] == Some(v))]
-    fn set(&mut self, i: usize, v: T) {
+    pub fn set(&mut self, i: usize, v: T) {
         self.values[i] = v;
         let index = self.idx[i];
         if !(index < self.n && self.back[index] == i) {
@@ -137,7 +137,7 @@ impl<T> Sparse<T> {
 #[ensures(result.sparse_inv())]
 #[ensures(result.size == sz)]
 #[ensures(forall<i: Int> (@result)[i] == None)]
-fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
+pub fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
     Sparse {
         size: sz,
         n: 0,
@@ -152,7 +152,7 @@ fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
 
 /* A test program
  */
-fn main() {
+pub fn f() {
     let default = 0;
     let mut a = create(10, default);
     let mut b = create(20, default);

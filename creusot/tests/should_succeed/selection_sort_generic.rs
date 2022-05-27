@@ -1,7 +1,7 @@
 #![feature(type_ascription)]
 extern crate creusot_contracts;
 
-use creusot_contracts::std::*;
+use creusot_contracts::std::cmp::Ord;
 use creusot_contracts::*;
 
 #[predicate]
@@ -25,7 +25,7 @@ fn partition<T: Ord>(v: Seq<T>, i: Int) -> bool {
 
 #[ensures(sorted(@^v))]
 #[ensures((@^v).permutation_of(@v))]
-fn selection_sort<T: Ord>(v: &mut Vec<T>) {
+pub fn selection_sort<T: Ord>(v: &mut Vec<T>) {
     let mut i: usize = 0;
     let old_v = ghost! { v };
     #[invariant(proph_const, ^v == ^old_v.inner())]

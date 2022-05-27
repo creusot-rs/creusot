@@ -1,9 +1,9 @@
-fn clone() {}
+pub fn clone() {}
 
-fn function() {}
+pub fn function() {}
 
-fn import() {}
+pub fn import() {}
 
-fn export() {}
+pub fn export() {}
 
-fn result() {}
+pub fn result() {}

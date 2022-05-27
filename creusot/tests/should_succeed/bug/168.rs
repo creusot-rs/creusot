@@ -1,3 +1,3 @@
-fn max_int() -> usize {
+pub fn max_int() -> usize {
     usize::MAX
 }

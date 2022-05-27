@@ -4,7 +4,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 use std::mem::replace;
 
-enum List<T> {
+pub enum List<T> {
     Nil,
     Cons(Node<T>),
 }
@@ -12,7 +12,7 @@ use List::*;
 type Node<T> = Box<(T, List<T>)>;
 
 #[logic]
-fn rev_append<T>(n: List<T>, o: List<T>) -> List<T> {
+pub fn rev_append<T>(n: List<T>, o: List<T>) -> List<T> {
     match n {
         Nil => o,
         Cons(box (hd, tl)) => rev_append(tl, Cons(Box::new((hd, o)))),
@@ -20,7 +20,7 @@ fn rev_append<T>(n: List<T>, o: List<T>) -> List<T> {
 }
 
 #[ensures(^l == rev_append(*l, Nil))]
-fn rev<T>(l: &mut List<T>) {
+pub fn rev<T>(l: &mut List<T>) {
     let old_l = ghost! { l };
     let mut prev = Nil;
     let mut head = replace(l, Nil);

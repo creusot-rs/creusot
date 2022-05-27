@@ -4,7 +4,7 @@ use creusot_contracts::*;
 
 // Bug #181
 #[logic]
-fn max_Int(a: Int, b: Int) -> Int {
+pub fn max_int(a: Int, b: Int) -> Int {
     if a < b {
         b
     } else {
@@ -13,8 +13,8 @@ fn max_Int(a: Int, b: Int) -> Int {
 }
 
 #[trusted]
-#[ensures(@result == max_Int(@a, @b))]
-fn max_usize(a: usize, b: usize) -> usize {
+#[ensures(@result == max_int(@a, @b))]
+pub fn max_usize(a: usize, b: usize) -> usize {
     if a < b {
         b
     } else {

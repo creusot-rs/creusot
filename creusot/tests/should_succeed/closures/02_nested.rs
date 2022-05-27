@@ -1,6 +1,8 @@
-fn nested_closure() {
+extern crate creusot_contracts;
+
+pub fn nested_closure() {
     let a = true;
-    let a = (|| {
+    let _a = (|| {
         let omg = || a;
         (omg)()
     })();

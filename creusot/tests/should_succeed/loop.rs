@@ -1,4 +1,6 @@
-fn main() {
+extern crate creusot_contracts;
+
+pub fn f() {
     let mut a = 10;
     let b = &mut a;
     *b = 5;
@@ -7,5 +9,5 @@ fn main() {
             break;
         }
     }
-    a == 15;
+    let _ = a == 15;
 }

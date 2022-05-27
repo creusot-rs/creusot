@@ -1,14 +1,16 @@
+extern crate creusot_contracts;
+
 // fn uses_ord<T : Ord>(t : T) -> bool {
 // 	true
 // }
 
-trait TraitWParams<D, C> {}
+pub trait TraitWParams<D, C> {}
 
-fn uses_custom<A, B, T: TraitWParams<A, B>>(t: T) {}
+pub fn uses_custom<A, B, T: TraitWParams<A, B>>(_t: T) {}
 
-trait TraitWParams2<D: Ord, C>: TraitWParams<D, C> {}
+pub trait TraitWParams2<D: Ord, C>: TraitWParams<D, C> {}
 
-fn uses_custom2<A: Ord, B, T: TraitWParams2<A, B>>(t: T) {}
+pub fn uses_custom2<A: Ord, B, T: TraitWParams2<A, B>>(_t: T) {}
 
 // trait Super {}
 
@@ -26,5 +28,3 @@ fn uses_custom2<A: Ord, B, T: TraitWParams2<A, B>>(t: T) {}
 // }
 
 // fn uses_assoc_type<T : AssocType>(t : T::T) {}
-
-fn main() {}

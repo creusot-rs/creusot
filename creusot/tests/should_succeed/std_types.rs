@@ -1,5 +1,5 @@
-struct MyType(Option<u32>);
+extern crate creusot_contracts;
 
-fn x(x: MyType) {}
+pub struct MyType(Option<u32>);
 
-fn main() {}
+pub fn x(_x: MyType) {}

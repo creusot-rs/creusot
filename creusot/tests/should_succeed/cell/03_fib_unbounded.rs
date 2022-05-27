@@ -2,14 +2,13 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::*;
-use std::marker::PhantomData;
 
-trait Inv<T> {
+pub trait Inv<T> {
     #[predicate]
     fn inv(&self, x: T) -> bool;
 }
 
-struct Cell<T, I> {
+pub struct Cell<T, I> {
     inner: std::cell::Cell<T>,
     // Pretend that `I` is ghost
     ghost_inv: I,
@@ -18,18 +17,16 @@ struct Cell<T, I> {
 impl<T: Copy, I: Inv<T>> Cell<T, I> {
     #[trusted]
     #[ensures(self.ghost_inv.inv(result))]
-    fn get(&self) -> T {
+    pub fn get(&self) -> T {
         self.inner.get()
     }
 
     #[trusted]
     #[requires(self.ghost_inv.inv(v))]
-    fn set(&self, v: T) {
+    pub fn set(&self, v: T) {
         self.inner.set(v)
     }
 }
-
-use creusot_contracts::std::*;
 
 // TODO: this function shouldn't actually be pure, the program version will abort.
 #[logic]
@@ -44,7 +41,7 @@ fn fib(i: Int) -> Int {
     }
 }
 
-struct Fib {
+pub struct Fib {
     ix: usize,
 }
 impl Inv<Option<usize>> for Fib {
@@ -59,7 +56,7 @@ impl Inv<Option<usize>> for Fib {
     }
 }
 
-type FibCache = Vec<Cell<Option<usize>, Fib>>;
+pub type FibCache = Vec<Cell<Option<usize>, Fib>>;
 
 #[predicate]
 fn fib_cell(v: FibCache) -> bool {
@@ -72,7 +69,7 @@ fn fib_cell(v: FibCache) -> bool {
 #[requires(@i < (@mem).len())]
 #[ensures(@result == fib(@i))]
 #[requires(0 <= @i)]
-fn fib_memo(mem: &FibCache, i: usize) -> usize {
+pub fn fib_memo(mem: &FibCache, i: usize) -> usize {
     match mem[i].get() {
         Some(v) => v,
         None => {

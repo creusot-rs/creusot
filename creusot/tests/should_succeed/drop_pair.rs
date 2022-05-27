@@ -1,21 +1,17 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-fn main() {}
+#[ensures(_x.resolve())]
+#[ensures(^_x.0 == *_x.0)]
+#[ensures(^_x.1 == *_x.1)]
+pub fn drop_pair(_x: (&mut u32, &mut u32)) {}
 
-// Fix spec parser!
-// #[ensures(^ x.0 == * x.0)]
-// #[ensures(^ x.1 == * x.1)]
-#[ensures(x.resolve())]
-#[ensures(^x.0 == *x.0)]
-fn drop_pair(x: (&mut u32, &mut u32)) {}
-
-fn drop_pair2(x: (&mut u32, &mut u32)) {
-    x;
+pub fn drop_pair2(x: (&mut u32, &mut u32)) {
+    let _ = x;
 }
 
 // Checks that we generate drop for x which is always init but never live *and* written to.
 // However we should *not* get a drop for *y*
-fn drop<'a>(mut x: &'a mut u32, y: &'a mut u32) {
-    x = y;
+pub fn drop<'a>(mut _x: &'a mut u32, y: &'a mut u32) {
+    _x = y;
 }

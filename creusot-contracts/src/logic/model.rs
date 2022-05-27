@@ -32,3 +32,14 @@ impl<T, const N: usize> Model for [T; N] {
         pearlite! { absurd }
     }
 }
+
+impl<A: Model, B: Model> Model for (A, B) {
+    type ModelTy = (A::ModelTy, B::ModelTy);
+
+    #[logic]
+    fn model(self) -> Self::ModelTy {
+        pearlite! {
+            (@self.0, @self.1)
+        }
+    }
+}

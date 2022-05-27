@@ -1,10 +1,10 @@
-struct Something {
-    a: u32,
-    b: Option<Box<Something>>,
+extern crate creusot_contracts;
+
+pub struct Something {
+    pub a: u32,
+    pub b: Option<Box<Something>>,
 }
 
-fn test(mut a: Something, b: Something) {
-    a = b;
+pub fn test(mut _a: Something, b: Something) {
+    _a = b;
 }
-
-fn main() {}

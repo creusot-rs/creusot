@@ -1,15 +1,13 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::std::*;
 use creusot_contracts::*;
-use std::marker::PhantomData;
 
-trait Inv<T> {
+pub trait Inv<T> {
     #[predicate]
     fn inv(&self, x: T) -> bool;
 }
 
-struct Cell<T, I> {
+pub struct Cell<T, I> {
     inner: std::cell::Cell<T>,
     // Pretend that `I` is ghost
     ghost_inv: I,
@@ -18,20 +16,20 @@ struct Cell<T, I> {
 impl<T: Copy, I: Inv<T>> Cell<T, I> {
     #[trusted]
     #[ensures(self.ghost_inv.inv(result))]
-    fn get(&self) -> T {
+    pub fn get(&self) -> T {
         self.inner.get()
     }
 
     #[trusted]
     #[requires(self.ghost_inv.inv(v))]
-    fn set(&self, v: T) {
+    pub fn set(&self, v: T) {
         self.inner.set(v)
     }
 }
 
 #[logic]
 #[variant(i)]
-fn fib(i: Int) -> Int {
+pub fn fib(i: Int) -> Int {
     if i <= 0 {
         0
     } else if i == 1 {
@@ -45,7 +43,7 @@ fn fib(i: Int) -> Int {
 #[requires(0 <= i)]
 #[ensures(fib(i) <= 2.pow(i))]
 #[variant(i)]
-fn lemma_fib_bound(i: Int) {
+pub fn lemma_fib_bound(i: Int) {
     if i == 0 {
         ()
     } else if i == 1 {
@@ -59,9 +57,9 @@ fn lemma_fib_bound(i: Int) {
 #[trusted]
 #[logic]
 #[ensures(2.pow(63) < @0xffff_ffff_ffff_ffffusize)]
-fn lemma_max_int() {}
+pub fn lemma_max_int() {}
 
-struct Fib {
+pub struct Fib {
     ix: usize,
 }
 impl Inv<Option<usize>> for Fib {
@@ -76,7 +74,7 @@ impl Inv<Option<usize>> for Fib {
     }
 }
 
-type FibCache = Vec<Cell<Option<usize>, Fib>>;
+pub type FibCache = Vec<Cell<Option<usize>, Fib>>;
 
 #[predicate]
 fn fib_cell(v: FibCache) -> bool {
@@ -89,7 +87,7 @@ fn fib_cell(v: FibCache) -> bool {
 #[requires(@i < (@mem).len())]
 #[ensures(@result == fib(@i))]
 #[requires(@i <= 63)]
-fn fib_memo(mem: &FibCache, i: usize) -> usize {
+pub fn fib_memo(mem: &FibCache, i: usize) -> usize {
     match mem[i].get() {
         Some(v) => v,
         None => {

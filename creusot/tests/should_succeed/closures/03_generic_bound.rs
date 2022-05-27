@@ -1,7 +1,9 @@
+extern crate creusot_contracts;
+
 fn closure_param<F: Fn(u32)>(f: F) {
     (f)(0)
 }
 
-fn caller() {
-    closure_param(|x: u32| ())
+pub fn caller() {
+    closure_param(|_x: u32| ())
 }

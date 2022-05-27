@@ -15,6 +15,20 @@ module Type
   use seq.Seq
   use prelude.Prelude
 end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Prelude
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve
+  type t
+  use prelude.Prelude
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+end
+module CreusotContracts_Logic_Resolve_Impl1
+  type t
+end
 module MutCall_Kill_Interface
   use prelude.Prelude
   use mach.int.Int
@@ -25,7 +39,8 @@ module MutCall_Kill
   use prelude.Prelude
   use mach.int.Int
   use mach.int.UInt32
-  let rec cfg kill [@cfg:stackify] [#"../mut_call.rs" 1 0 20] (_1' : borrowed uint32) : () =
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = uint32
+  let rec cfg kill [@cfg:stackify] [#"../mut_call.rs" 3 0 20] (_1' : borrowed uint32) : () =
   var _0 : ();
   var _1 : borrowed uint32;
   {
@@ -34,6 +49,7 @@ module MutCall_Kill
   }
   BB0 {
     _0 <- ();
+    assume { Resolve0.resolve _1 };
     return _0
   }
   
@@ -45,8 +61,9 @@ module MutCall_Test
   use mach.int.Int
   use mach.int.UInt32
   use prelude.Prelude
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = uint32
   clone MutCall_Kill_Interface as Kill0
-  let rec cfg test [@cfg:stackify] [#"../mut_call.rs" 2 0 9] (_ : ()) : () =
+  let rec cfg test [@cfg:stackify] [#"../mut_call.rs" 4 0 13] (_ : ()) : () =
   var _0 : ();
   var a_1 : uint32;
   var _2 : ();
@@ -61,25 +78,11 @@ module MutCall_Test
     a_1 <-  ^ _4;
     _3 <- borrow_mut ( * _4);
     _4 <- { _4 with current = ( ^ _3) };
-    _2 <- ([#"../mut_call.rs" 4 4 16] Kill0.kill _3);
+    _2 <- ([#"../mut_call.rs" 6 4 16] Kill0.kill _3);
     goto BB1
   }
   BB1 {
-    _0 <- ();
-    return _0
-  }
-  
-end
-module MutCall_Main_Interface
-  val main [@cfg:stackify] (_ : ()) : ()
-end
-module MutCall_Main
-  let rec cfg main [@cfg:stackify] [#"../mut_call.rs" 7 0 9] (_ : ()) : () =
-  var _0 : ();
-  {
-    goto BB0
-  }
-  BB0 {
+    assume { Resolve0.resolve _4 };
     _0 <- ();
     return _0
   }

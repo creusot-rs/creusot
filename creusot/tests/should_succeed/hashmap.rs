@@ -36,7 +36,7 @@ impl<K: Model, V> List<(K, V)> {
         pearlite! {
             match self {
                 List::Nil => true,
-                List::Cons((k, v), tl) => tl.get(@k) == None && tl.no_double_binding()
+                List::Cons((k, _), tl) => tl.get(@k) == None && tl.no_double_binding()
             }
         }
     }
@@ -105,7 +105,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[requires(0 < @size)]
     #[ensures(result.hashmap_inv())]
     #[ensures(forall<i: K> (@result).get(@i) == None)]
-    fn new(size: usize) -> MyHashMap<K, V> {
+    pub fn new(size: usize) -> MyHashMap<K, V> {
         let res = MyHashMap { buckets: vec::from_elem(List::Nil, size) };
         res
     }
@@ -113,7 +113,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[requires((*self).hashmap_inv())]
     #[ensures((^self).hashmap_inv())]
     #[ensures(forall<i: K> (@^self).get(@i) == (if @i == @key { Some(val) } else { (@*self).get(@i) } ))]
-    fn add(&mut self, key: K, val: V) {
+    pub fn add(&mut self, key: K, val: V) {
         use List::*;
         let old_self = ghost! { self };
         let length = self.buckets.len();
@@ -149,7 +149,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
         Some(v) => (@self).get(@key) == Some(*v),
         None => (@self).get(@key) == None,
     })]
-    fn get(&self, key: K) -> Option<&V> {
+    pub fn get(&self, key: K) -> Option<&V> {
         let index: usize = key.hash() as usize % self.buckets.len();
         let mut l = &self.buckets[index];
 
@@ -168,6 +168,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[requires((*self).hashmap_inv())]
     #[ensures((^self).hashmap_inv())]
     #[ensures(forall<k : K> (@^self).get(@k) == (@*self).get(@k))] // lets prove the extensional version for now
+    #[allow(dead_code)]
     fn resize(&mut self) {
         let old_self = ghost! { self };
         let mut new = Self::new(self.buckets.len() * 2);
@@ -199,7 +200,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
                 new.add(k, v);
                 l = *tl;
             }
-            proof_assert! { forall<k : K, v: V> old_self.bucket_ix(k) == @i  ==> (@*old_self).get(@k) == (@new).get(@k) };
+            proof_assert! { forall<k : K> old_self.bucket_ix(k) == @i  ==> (@*old_self).get(@k) == (@new).get(@k) };
             i += 1;
         }
 
@@ -224,7 +225,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     }
 }
 
-fn main() {
+pub fn main() {
     // working around issue #163
     // let none = None;
 
@@ -233,25 +234,25 @@ fn main() {
     // real tests
     let mut h1: MyHashMap<usize, isize> = MyHashMap::new(17);
     let mut h2: MyHashMap<usize, isize> = MyHashMap::new(42);
-    let mut x = h1.get(1);
-    let mut y = h1.get(2);
-    let mut z = h2.get(1);
-    let mut t = h2.get(2);
+    let mut _x = h1.get(1);
+    let mut _y = h1.get(2);
+    let mut _z = h2.get(1);
+    let mut _t = h2.get(2);
     // // assert!(x == none && y == none && z == none && t == none);
     // // proof_assert!(x == none && y == none && z == none && t == none);
 
     h1.add(1, 17);
-    x = h1.get(1);
-    y = h1.get(2);
-    z = h2.get(1);
-    t = h2.get(2);
+    _x = h1.get(1);
+    _y = h1.get(2);
+    _z = h2.get(1);
+    _t = h2.get(2);
     // // assert!(x == some17 && y == none && z == none && t == none);
     // // proof_assert!(x == some17 && y == none && z == none && t == none);
     h2.add(1, 42);
-    x = h1.get(1);
-    y = h1.get(2);
-    z = h2.get(1);
-    t = h2.get(2);
+    _x = h1.get(1);
+    _y = h1.get(2);
+    _z = h2.get(1);
+    _t = h2.get(2);
     // assert!(x == some17 && y == none && z == some42 && t == none);
     // proof_assert!(x == some17 && y == none && z == some42 && t == none);
 }

@@ -49,7 +49,7 @@ module CreusotContracts_Logic_Ord_OrdLogic_LeLog
   predicate le_log (self : self) (o : self) =
     CmpLog0.cmp_log self o <> Type.Core_Cmp_Ordering_Greater
 end
-module CreusotContracts_Std1_Ord_Ord_Le_Interface
+module CreusotContracts_Std1_Cmp_Ord_Le_Interface
   type self
   use prelude.Prelude
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = self
@@ -57,7 +57,7 @@ module CreusotContracts_Std1_Ord_Ord_Le_Interface
     ensures { result = LeLog0.le_log self o }
     
 end
-module CreusotContracts_Std1_Ord_Ord_Le
+module CreusotContracts_Std1_Cmp_Ord_Le
   type self
   use prelude.Prelude
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = self
@@ -221,7 +221,7 @@ module CreusotContracts_Logic_Ord_OrdLogic_EqCmp
   use Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function eq_cmp (x : self) (y : self) : ()
-  axiom eq_cmp_spec : forall x : self, y : self . (x = y -> CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Equal) && (CmpLog0.cmp_log y x = Type.Core_Cmp_Ordering_Equal -> x = y)
+  axiom eq_cmp_spec : forall x : self, y : self . (x = y) = (CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Equal)
 end
 module OrdTrait_X_Interface
   type t
@@ -260,9 +260,9 @@ module OrdTrait_X
   function CmpLog0.cmp_log = CmpLog0.cmp_log
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t,
   predicate LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Std1_Ord_Ord_Le_Interface as Le0 with type self = t, predicate LeLog0.le_log = LeLog0.le_log
+  clone CreusotContracts_Std1_Cmp_Ord_Le_Interface as Le0 with type self = t, predicate LeLog0.le_log = LeLog0.le_log
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = t
-  let rec cfg x [@cfg:stackify] [#"../ord_trait.rs" 6 0 27] (x : t) : bool
+  let rec cfg x [@cfg:stackify] [#"../ord_trait.rs" 6 0 31] (x : t) : bool
     ensures { [#"../ord_trait.rs" 5 0 26] result = true }
     
    =
@@ -286,7 +286,7 @@ module OrdTrait_X
   }
   
 end
-module CreusotContracts_Std1_Ord_Ord_Ge_Interface
+module CreusotContracts_Std1_Cmp_Ord_Ge_Interface
   type self
   use prelude.Prelude
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with type self = self
@@ -294,7 +294,7 @@ module CreusotContracts_Std1_Ord_Ord_Ge_Interface
     ensures { result = GeLog0.ge_log self o }
     
 end
-module CreusotContracts_Std1_Ord_Ord_Ge
+module CreusotContracts_Std1_Cmp_Ord_Ge
   type self
   use prelude.Prelude
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with type self = self
@@ -341,8 +341,8 @@ module OrdTrait_GtOrLe
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t,
   predicate LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = t
-  clone CreusotContracts_Std1_Ord_Ord_Ge_Interface as Ge0 with type self = t, predicate GeLog0.ge_log = GeLog0.ge_log
-  let rec cfg gt_or_le [@cfg:stackify] [#"../ord_trait.rs" 11 0 41] (x : t) (y : t) : bool
+  clone CreusotContracts_Std1_Cmp_Ord_Ge_Interface as Ge0 with type self = t, predicate GeLog0.ge_log = GeLog0.ge_log
+  let rec cfg gt_or_le [@cfg:stackify] [#"../ord_trait.rs" 11 0 45] (x : t) (y : t) : bool
     ensures { [#"../ord_trait.rs" 10 0 32] result = LeLog0.le_log y x }
     
    =
@@ -381,7 +381,7 @@ module OrdTrait_GtOrLeInt
   use mach.int.UInt64
   use mach.int.Int
   use prelude.Prelude
-  let rec cfg gt_or_le_int [@cfg:stackify] [#"../ord_trait.rs" 16 0 43] (x : usize) (y : usize) : bool
+  let rec cfg gt_or_le_int [@cfg:stackify] [#"../ord_trait.rs" 16 0 47] (x : usize) (y : usize) : bool
     ensures { [#"../ord_trait.rs" 15 0 32] result = (UInt64.to_int x <= UInt64.to_int y) }
     
    =

@@ -311,7 +311,7 @@ module CreusotContracts_Logic_Ord_OrdLogic_EqCmp
   use Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function eq_cmp (x : self) (y : self) : ()
-  axiom eq_cmp_spec : forall x : self, y : self . (x = y -> CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Equal) && (CmpLog0.cmp_log y x = Type.Core_Cmp_Ordering_Equal -> x = y)
+  axiom eq_cmp_spec : forall x : self, y : self . (x = y) = (CmpLog0.cmp_log x y = Type.Core_Cmp_Ordering_Equal)
 end
 module Alloc_Vec_Impl1_Len_Interface
   type t
@@ -422,7 +422,7 @@ module Alloc_Vec_Impl16_Index
     ensures { HasValue0.has_value index (Model0.model self) result }
     
 end
-module CreusotContracts_Std1_Ord_Ord_Gt_Interface
+module CreusotContracts_Std1_Cmp_Ord_Gt_Interface
   type self
   use prelude.Prelude
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface as GtLog0 with type self = self
@@ -430,7 +430,7 @@ module CreusotContracts_Std1_Ord_Ord_Gt_Interface
     ensures { result = GtLog0.gt_log self o }
     
 end
-module CreusotContracts_Std1_Ord_Ord_Gt
+module CreusotContracts_Std1_Cmp_Ord_Gt
   type self
   use prelude.Prelude
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface as GtLog0 with type self = self
@@ -438,7 +438,7 @@ module CreusotContracts_Std1_Ord_Ord_Gt
     ensures { result = GtLog0.gt_log self o }
     
 end
-module CreusotContracts_Std1_Ord_Ord_Cmp_Interface
+module CreusotContracts_Std1_Cmp_Ord_Cmp_Interface
   type self
   use prelude.Prelude
   use Type
@@ -447,7 +447,7 @@ module CreusotContracts_Std1_Ord_Ord_Cmp_Interface
     ensures { result = CmpLog0.cmp_log self o }
     
 end
-module CreusotContracts_Std1_Ord_Ord_Cmp
+module CreusotContracts_Std1_Cmp_Ord_Cmp
   type self
   use prelude.Prelude
   use Type
@@ -580,15 +580,15 @@ module C05BinarySearchGeneric_BinarySearch
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = Type.alloc_vec_vec t (Type.alloc_alloc_global)
-  clone CreusotContracts_Std1_Ord_Ord_Cmp_Interface as Cmp0 with type self = t,
+  clone CreusotContracts_Std1_Cmp_Ord_Cmp_Interface as Cmp0 with type self = t,
   function CmpLog0.cmp_log = CmpLog0.cmp_log
-  clone CreusotContracts_Std1_Ord_Ord_Gt_Interface as Gt0 with type self = t, predicate GtLog0.gt_log = GtLog0.gt_log
+  clone CreusotContracts_Std1_Cmp_Ord_Gt_Interface as Gt0 with type self = t, predicate GtLog0.gt_log = GtLog0.gt_log
   clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = t, type i = usize, type a = Type.alloc_alloc_global,
   function Model0.model = Model1.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
   predicate HasValue0.has_value = HasValue0.has_value, type Output0.output = Output0.output
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Type.alloc_alloc_global,
   function Model0.model = Model1.model
-  let rec cfg binary_search [@cfg:stackify] [#"../05_binary_search_generic.rs" 25 0 82] (arr : Type.alloc_vec_vec t (Type.alloc_alloc_global)) (elem : t) : Type.core_result_result usize usize
+  let rec cfg binary_search [@cfg:stackify] [#"../05_binary_search_generic.rs" 25 0 86] (arr : Type.alloc_vec_vec t (Type.alloc_alloc_global)) (elem : t) : Type.core_result_result usize usize
     requires {[#"../05_binary_search_generic.rs" 19 0 25] Sorted0.sorted (Model0.model arr)}
     requires {[#"../05_binary_search_generic.rs" 18 0 40] Seq.length (Model0.model arr) <= 18446744073709551615}
     ensures { [#"../05_binary_search_generic.rs" 23 0 71] forall x : (usize) . result = Type.Core_Result_Result_Err x -> (forall i : (usize) . x <= i && UInt64.to_int i < Seq.length (Model0.model arr) -> LtLog0.lt_log elem (Seq.get (Model0.model arr) (UInt64.to_int i))) }

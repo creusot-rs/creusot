@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-enum List {
+pub enum List {
     Cons(u32, Box<List>),
     Nil,
 }
@@ -29,7 +29,7 @@ fn get(l: List, ix: Int) -> Option<u32> {
 
 #[ensures(forall<i:Int> 0 <= i && i < len(*l) ==> get(^l, i) == Some(0u32))]
 #[ensures(len(*l) == len(^l))]
-fn all_zero(l: &mut List) {
+pub fn all_zero(l: &mut List) {
     use List::*;
     let mut loop_l = l;
 
@@ -42,5 +42,3 @@ fn all_zero(l: &mut List) {
         loop_l = next;
     }
 }
-
-fn main() {}

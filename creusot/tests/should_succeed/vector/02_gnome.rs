@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::std::*;
+use creusot_contracts::std::cmp::Ord;
 use creusot_contracts::*;
 
 #[predicate]
@@ -17,7 +17,7 @@ fn sorted<T: Ord>(s: Seq<T>) -> bool {
 
 #[ensures(sorted(@^v))]
 #[ensures((@^v).permutation_of(@*v))]
-fn gnome_sort<T: Ord>(v: &mut Vec<T>) {
+pub fn gnome_sort<T: Ord>(v: &mut Vec<T>) {
     let old_v = ghost! { v };
     let mut i = 0;
     #[invariant(sorted, sorted_range(@v, 0, @i))]

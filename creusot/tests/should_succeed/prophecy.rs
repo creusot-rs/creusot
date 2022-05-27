@@ -1,4 +1,6 @@
-fn main() {
+extern crate creusot_contracts;
+
+pub fn f() {
     let mut x = 0;
     let y = &mut x;
 

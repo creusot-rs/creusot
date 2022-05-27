@@ -1,4 +1,6 @@
-fn main() {
+extern crate creusot_contracts;
+
+pub fn f() {
     let mut a = 10;
     let mut b = 10;
     let mut c = 10;
@@ -6,7 +8,7 @@ fn main() {
     let x = &mut a;
     let y = &mut b;
     let z = &mut c;
-    let mut w;
+    let w;
 
     match 3 {
         1 => {

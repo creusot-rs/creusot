@@ -16,7 +16,7 @@ use creusot_contracts::*;
 //     let i = n;
 // }
 
-fn test_233() {
+pub fn test_233() {
     let x = 17;
     proof_assert!( @x == 17 );
     let x = 42;

@@ -2,7 +2,7 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-struct Vec<T>(std::vec::Vec<T>);
+pub struct Vec<T>(std::vec::Vec<T>);
 impl<T> Model for Vec<T> {
     type ModelTy = Seq<T>;
     #[logic]
@@ -13,4 +13,4 @@ impl<T> Model for Vec<T> {
 }
 
 #[ensures(@x == @*x)]
-fn test<T>(x: &mut Vec<T>) {}
+pub fn test<T>(x: &mut Vec<T>) {}

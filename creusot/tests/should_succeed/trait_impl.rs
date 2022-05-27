@@ -1,3 +1,5 @@
+extern crate creusot_contracts;
+
 // This file tests that the implementation of a trait is correctly translated
 
 // #[derive(PartialEq)]
@@ -6,8 +8,6 @@
 //   II,
 //   III,
 // }
-
-fn main() {}
 
 // trait MyTrait<U> {
 //   fn some<T>(self, t: T);
