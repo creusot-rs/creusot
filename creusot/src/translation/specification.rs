@@ -203,6 +203,7 @@ impl PurityVisitor<'_, '_> {
             || def_path == "std::ops::Rem::rem"
             || def_path == "std::ops::Neg::neg"
             || def_path == "std::boxed::Box::<T>::new"
+            || def_path == "std::ops::Deref::deref"
     }
 }
 
@@ -223,7 +224,10 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     {
                         self.tcx.sess.span_err_with_code(
                             self.thir[fun].span,
-                            "called impure program function in logical context",
+                            &format!(
+                                "called impure program function in logical context {:?}",
+                                self.tcx.def_path_str(func_did)
+                            ),
                             rustc_errors::DiagnosticId::Error(String::from("creusot")),
                         );
                     }

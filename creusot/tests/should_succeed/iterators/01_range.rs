@@ -63,15 +63,14 @@ fn sum_range(n: isize) -> isize {
         // the for loop
         let mut it = Range { start: 0, end: n };
         let it_old = ghost! { &it };
-        let a = Seq::EMPTY; // issue with promoted ghost expressions
-        let mut produced = ghost! { a };
-        #[invariant(free, (it_old.inner()).produces(produced.inner(), it))]
+        let mut produced = ghost! { Seq::EMPTY };
+        #[invariant(free, (it_old).produces(produced.inner(), it))]
         // user invariant
-        #[invariant(user, @i == produced.inner().len() && i <= n)]
+        #[invariant(user, @i == produced.len() && i <= n)]
         loop {
             match it.next() {
                 Some(j) => {
-                    produced = ghost! { produced.inner().push(j) };
+                    produced = ghost! { produced.push(j) };
                     i += 1;
                 }
                 None => break,

@@ -5,6 +5,13 @@ use crate::logic::*;
 use crate::Int;
 use std::ops::Index;
 
+impl<T: ?Sized> Copy for Seq<T> {}
+impl<T: ?Sized> Clone for Seq<T> {
+    #[logic]
+    fn clone(&self) -> Self {
+        pearlite! {  * self }
+    }
+}
 #[creusot::builtins = "seq.Seq.seq"]
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
 

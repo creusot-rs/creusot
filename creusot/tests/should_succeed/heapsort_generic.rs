@@ -44,9 +44,9 @@ fn sift_down<T: Ord>(v: &mut Vec<T>, start: usize, end: usize) {
     #[invariant(permutation, (@v).permutation_of(@old_v.inner()))]
     #[invariant(i_bounds, @start <= @i && @i < @end)]
     #[invariant(unchanged, forall<j: Int> 0 <= j && j < @start || @end <= j && j < (@v).len()
-                              ==> (@old_v.inner())[j] == (@v)[j])]
+                              ==> (@*old_v)[j] == (@v)[j])]
     #[invariant(keep_bound, forall<m: T>
-          (forall<j: Int> @start <= j && j < @end ==> (@old_v.inner())[j] <= m) ==>
+          (forall<j: Int> @start <= j && j < @end ==> (@*old_v)[j] <= m) ==>
           forall<j: Int> @start <= j && j < @end ==> (@v)[j] <= m)]
     #[invariant(heap, forall<j: Int> @start <= parent(j) && j < @end && @i != parent(j) ==>
             (@v)[j] <= (@v)[parent(j)])]

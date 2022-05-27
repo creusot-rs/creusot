@@ -79,8 +79,8 @@ where
         // a      x
         //       / \
         //      b   c
-        proof_assert! { (old_self.inner()).left.has_mapping(@(*self).key, (*self).val) }
-        proof_assert! { forall<k: K::ModelTy, v: V> x.left.has_mapping(k, v) ==> (old_self.inner()).left.has_mapping(k, v) }
+        proof_assert! { old_self.left.has_mapping(@(*self).key, (*self).val) }
+        proof_assert! { forall<k: K::ModelTy, v: V> x.left.has_mapping(k, v) ==> old_self.left.has_mapping(k, v) }
         self.right = Tree { node: Some(x) };
         //   self
         //  /    \
@@ -110,8 +110,8 @@ where
         std::mem::swap(self, &mut x);
         self.color = x.color;
         x.color = Red;
-        proof_assert! { (old_self.inner()).right.has_mapping(@(*self).key, (*self).val) }
-        proof_assert! { forall<k: K::ModelTy, v: V> x.right.has_mapping(k, v) ==> (old_self.inner()).right.has_mapping(k, v) }
+        proof_assert! { old_self.right.has_mapping(@(*self).key, (*self).val) }
+        proof_assert! { forall<k: K::ModelTy, v: V> x.right.has_mapping(k, v) ==> old_self.right.has_mapping(k, v) }
         self.left = Tree { node: Some(x) };
     }
 
@@ -236,7 +236,7 @@ where
                     }
                     Greater => node.right.insert_rec(key, val),
                 }
-                proof_assert!(forall<h: Int> (old_self.inner()).has_height(h) ==> node.has_height(h));
+                proof_assert!(forall<h: Int> old_self.has_height(h) ==> node.has_height(h));
 
                 node.insert_rebalance();
             }
@@ -253,7 +253,7 @@ where
         let old_self = ghost! { self };
         self.insert_rec(key, val);
         self.node.as_mut().unwrap().color = Black;
-        proof_assert! { forall<h: Int> (old_self.inner()).has_height(h) ==>
+        proof_assert! { forall<h: Int> old_self.has_height(h) ==>
         (*self).has_height(h) || (*self).has_height(h+1) }
         proof_assert! { (*self).has_binding_model(@key /* dummy */, val /* dummy */); true }
     }
