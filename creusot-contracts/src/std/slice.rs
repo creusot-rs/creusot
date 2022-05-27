@@ -12,7 +12,7 @@ impl<T> Model for [T] {
     // TODO: remove the trusted attribute, and use slice_model as the definition of this.
     #[logic]
     #[trusted]
-    #[ensures(result.len() <= @isize::MAX)]
+    #[ensures(result.len() <= @usize::MAX)]
     #[ensures(result == slice_model(self))]
     fn model(self) -> Self::ModelTy {
         pearlite! { absurd }
