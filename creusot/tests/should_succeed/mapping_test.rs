@@ -28,7 +28,7 @@ fn incr(t: &mut T) {
     (*t).a += 1;
     // proving the post-consition via extensional equality of mappings
     // (notice `==` versus `==`)
-    proof_assert!( @^t == (@old_t.inner()).set(@((old_t.inner()).a),1) );
+    proof_assert!( @^t == (@*old_t).set(@old_t.a,1) );
 }
 
 fn main() {

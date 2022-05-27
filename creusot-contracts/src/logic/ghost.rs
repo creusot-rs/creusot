@@ -1,5 +1,6 @@
 use crate as creusot_contracts;
 use crate::logic::*;
+use core::ops::Deref;
 use creusot_contracts_proc::*;
 
 #[rustc_diagnostic_item = "creusot_ghost"]
@@ -7,12 +8,14 @@ pub struct Ghost<T>(*mut T)
 where
     T: ?Sized;
 
-impl<T> Model for Ghost<T> {
-    type ModelTy = T;
+impl<T: ?Sized> Deref for Ghost<T> {
+    type Target = T;
+
     #[logic]
     #[trusted]
-    fn model(self) -> Self::ModelTy {
-        absurd
+    #[creusot::builtins = "ghost_deref"]
+    fn deref(&self) -> &Self::Target {
+        pearlite! { absurd }
     }
 }
 

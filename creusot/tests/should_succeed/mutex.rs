@@ -34,7 +34,7 @@ impl<T, I: Inv<T>> Mutex<T, I> {
     }
 
     #[trusted]
-    #[ensures(self.1 == @(result.1))]
+    #[ensures(self.1 == *result.1)]
     fn lock(&self) -> MutexGuard<'_, T, I> {
         MutexGuard(GuardInner(self.0 .0.lock().unwrap()), ghost! { self.1 })
     }
@@ -49,13 +49,13 @@ struct WithInv<T, I>(T, I);
 
 impl<'a, T, I: Inv<T>> MutexGuard<'a, T, I> {
     #[trusted]
-    #[ensures((@(self.1)).inv(*result))]
+    #[ensures(self.1.inv(*result))]
     fn deref(&self) -> &T {
         &*self.0 .0
     }
 
     #[trusted]
-    #[requires((@(self.1)).inv(v))]
+    #[requires(self.1.inv(v))]
     fn set(&mut self, v: T) {
         *self.0 .0 = v;
     }
@@ -117,7 +117,7 @@ struct JoinHandle<T, I>(JoinHandleInner<T>, Ghost<I>);
 impl<T, I: Inv<T>> JoinHandle<T, I> {
     #[trusted]
     #[ensures(match result {
-      Ok(v) => (@(self.1)).inv(v),
+      Ok(v) => self.1.inv(v),
       _ => true,
     })]
     fn join(self) -> Result<T, ()> {

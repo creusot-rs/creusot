@@ -78,11 +78,10 @@ fn all_zero(v: &mut Vec<usize>) {
     let mut it = iter_mut(v);
     let it_old = ghost! { it };
 
-    // let a : Seq<&mut _> = Seq::EMPTY; // issue with promoted ghost expressions
-    let mut produced = ghost! { Seq::new() };
+    let mut produced = ghost! { Seq::EMPTY };
 
-    #[invariant(structural, (it_old.inner()).produces(produced.inner(), it))]
-    #[invariant(user, forall<i : Int> 0 <= i && i < produced.inner().len() ==> @^ (produced.inner())[i] == 0)]
+    #[invariant(structural, it_old.produces(produced.inner(), it))]
+    #[invariant(user, forall<i : Int> 0 <= i && i < produced.len() ==> @^ produced[i] == 0)]
     loop {
         match it.next() {
             Some(x) => {
