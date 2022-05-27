@@ -15,7 +15,7 @@ impl<T, A: Allocator> Model for Vec<T, A> {
 
     #[logic]
     #[trusted]
-    #[ensures(result.len() <= @usize::MAX)]
+    #[ensures(result.len() <= @isize::MAX)]
     fn model(self) -> Self::ModelTy {
         pearlite! { absurd }
     }
