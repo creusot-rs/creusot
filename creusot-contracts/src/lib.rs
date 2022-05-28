@@ -71,7 +71,7 @@ mod macros {
     /// A post-condition of a function or trait item
     pub use creusot_contracts_dummy::ensures;
 
-    pub use creusot_contracts_proc::ghost;
+    pub use creusot_contracts_dummy::ghost;
 
     /// A loop invariant
     /// The first argument should be a name for the invariant
@@ -144,7 +144,7 @@ pub mod logic {
         T: ?Sized;
 
     impl<T> Ghost<T> {
-        pub fn record(_: &T) -> Ghost<T> {
+        pub fn new(_: T) -> Ghost<T> {
             Ghost(std::marker::PhantomData)
         }
     }
