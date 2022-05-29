@@ -2,7 +2,7 @@ use crate::ctx::*;
 use crate::error::{CrErr, CreusotResult};
 use crate::function::all_generic_decls_for;
 use crate::translation::{traits, translate_logic_or_predicate};
-use crate::util::{is_extern_spec_impl, item_type};
+use crate::util::item_type;
 use indexmap::IndexSet;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_macros::{TyDecodable, TyEncodable};
@@ -10,7 +10,6 @@ use rustc_middle::thir::visit::Visitor;
 use rustc_middle::thir::{self, Expr, ExprKind, Thir};
 use rustc_middle::ty::subst::{InternalSubsts, Subst, SubstsRef};
 use rustc_middle::ty::{Predicate, TyCtxt, TyKind, WithOptConstParam};
-use rustc_span::symbol::kw;
 use rustc_span::Symbol;
 use why3::declaration::ValKind;
 use why3::declaration::{Decl, Module, ValKind::Val};
@@ -111,7 +110,8 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     let (id, subst) = visit.items.pop().unwrap();
 
-    let (id, _) = if is_extern_spec_impl(ctx.tcx, def_id.to_def_id()) {
+    // Do we need a marker for this? can we not just always do it?
+    let (id, _) = if ctx.trait_of_item(id).is_some() {
         let resolved = traits::resolve_opt(ctx.tcx, ctx.param_env(def_id.to_def_id()), id, subst);
 
         if let None = resolved {
@@ -132,7 +132,8 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let outer_subst = InternalSubsts::identity_for_item(ctx.tcx, def_id.to_def_id());
 
     let valid_subst = if ctx.generics_of(id).count() > 0
-        && ctx.generics_of(id).param_at(0, ctx.tcx).name == kw::SelfUpper
+        && ctx.generics_of(def_id).count() > 0
+        && ctx.trait_of_item(id).is_some()
     {
         ctx.generics_of(def_id).param_at(0, ctx.tcx).name.as_str().starts_with("Self")
             && inner_subst[1..] == outer_subst[1..]

@@ -40,3 +40,26 @@ pub trait Ord: OrdLogic + Eq {
         }
     }
 }
+
+// The new spec, but peacefully coexisting with the previous approach
+mod real_ord {
+    use crate as creusot_contracts;
+    use crate::logic::ord::*;
+    use crate::Model;
+    use creusot_contracts_proc::*;
+    pub use std::cmp::Ordering;
+
+    extern_spec! {
+        mod std {
+            mod cmp {
+                trait Ord
+                where Self : Model,
+                      Self::ModelTy: OrdLogic {
+
+                    #[ensures(result == (@self_).cmp_log(@*rhs))]
+                    fn cmp(&self, rhs: &Self) -> Ordering;
+                }
+            }
+        }
+    }
+}

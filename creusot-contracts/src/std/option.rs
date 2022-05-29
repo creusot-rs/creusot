@@ -3,21 +3,23 @@ use crate::std::default::DefaultSpec;
 use creusot_contracts_proc::*;
 
 extern_spec! {
-    #[requires(o != None)]
-    #[ensures(Some(result) == o)]
-    fn std::option::Option::unwrap<T>(o: Option<T>) -> T
-}
+    mod std {
+        mod option {
+            impl<T> Option<T> {
+                #[requires(self != None)]
+                #[ensures(Some(result) == self)]
+                fn unwrap(self) -> T;
 
-extern_spec! {
-    #[ensures(*o == None ==> result == None && ^o == None)]
-    #[ensures(*o == None || exists<r: &mut T> result == Some(r) && *o == Some(*r) && ^o == Some(^r))]
-    fn std::option::Option::as_mut<T>(o: &mut Option<T>) -> Option<&mut T>
-}
+                #[ensures(*self == None ==> result == None && ^self == None)]
+                #[ensures(*self == None || exists<r: &mut T> result == Some(r) && *self == Some(*r) && ^self == Some(^r))]
+                fn as_mut(&mut self) -> Option<&mut T>;
 
-extern_spec! {
-    #[ensures(*o == None ==> result == None)]
-    #[ensures(*o == None || exists<r: &mut T> result == Some(r) && *o == Some(*r))]
-    fn std::option::Option::as_ref<T>(o: &Option<T>) -> Option<&T>
+                #[ensures(*self == None ==> result == None)]
+                #[ensures(*self == None || exists<r: &mut T> result == Some(r) && *self == Some(*r))]
+                fn as_ref(&self) -> Option<&T>;
+            }
+        }
+    }
 }
 
 impl<T> DefaultSpec for Option<T> {

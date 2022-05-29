@@ -1,4 +1,6 @@
+#![feature(let_chains, box_patterns)]
 extern crate proc_macro;
+use extern_spec::ExternSpecs;
 use pearlite_syn::*;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::Span;
@@ -7,11 +9,11 @@ use quote::{quote, ToTokens, TokenStreamExt};
 use std::iter;
 use syn::{
     parse::{Parse, Result},
-    punctuated::{Pair, Punctuated},
-    token::{Brace, Comma, Paren},
+    token::Brace,
     *,
 };
 
+mod extern_spec;
 mod maintains;
 mod pretyping;
 
@@ -515,94 +517,26 @@ pub fn pearlite(tokens: TS1) -> TS1 {
     TS1::from(pretyping::encode_term(term).unwrap())
 }
 
-struct ExternSig {
-    attrs: Vec<Attribute>,
-    path: ExprPath,
-    generics: Generics,
-    inputs: Punctuated<FnArg, Comma>,
-    output: ReturnType,
-}
-
-impl Parse for ExternSig {
-    fn parse(input: parse::ParseStream) -> Result<Self> {
-        let attrs: Vec<Attribute> = Attribute::parse_outer(input)?;
-        let _: Token![fn] = input.parse()?;
-        // let path = Punctuated::parse_separated_nonempty(input)?;
-        let path = ExprPath::parse(input)?;
-        let mut generics: Generics = input.parse()?;
-
-        let content;
-        let _ = parenthesized!(content in input);
-        let inputs = Punctuated::parse_terminated(&content)?;
-
-        let output = input.parse()?;
-        generics.where_clause = input.parse()?;
-
-        Ok(ExternSig { attrs, path, generics, inputs, output })
-    }
-}
-
 #[proc_macro]
 pub fn extern_spec(tokens: TS1) -> TS1 {
-    // TODO: extend to vectors
-    let externs: ExternSig = parse_macro_input!(tokens);
-    let externs = vec![externs];
+    let externs: ExternSpecs = parse_macro_input!(tokens);
 
     let mut specs = Vec::new();
+    let externs = match externs.flatten() {
+        Ok(externs) => externs,
+        Err(err) => return TS1::from(err.to_compile_error()),
+    };
+
     for spec in externs {
-        let args: Punctuated<Expr, Comma> = spec
-            .inputs
-            .clone()
-            .into_pairs()
-            .map(|inp| {
-                let (inp, comma) = inp.into_tuple();
-                let exp: Expr = match inp {
-                    FnArg::Receiver(_) => Expr::Verbatim(quote! { self }),
-                    FnArg::Typed(PatType { pat, .. }) => Expr::Verbatim(quote! { #pat }),
-                };
-                Pair::new(exp, comma)
-            })
-            .collect();
-
-        let call = ExprCall {
-            attrs: Vec::new(),
-            func: Box::new(Expr::Path(spec.path)),
-            paren_token: Paren { span: Span::call_site() },
-            args,
-        };
-
-        let ident = generate_unique_ident("extern_spec");
-        let sig = Signature {
-            constness: None,
-            asyncness: None,
-            unsafety: None,
-            abi: None,
-            fn_token: Token![fn](Span::call_site()),
-            ident,
-            generics: spec.generics,
-            paren_token: Paren { span: Span::call_site() },
-            inputs: spec.inputs,
-            variadic: None,
-            output: spec.output,
-        };
-
-        specs.push(ItemFn {
-            attrs: spec.attrs,
-            vis: Visibility::Inherited,
-            sig,
-            block: Box::new(Block {
-                brace_token: Brace { span: Span::call_site() },
-                stmts: vec![Stmt::Expr(Expr::Call(call))],
-            }),
-        });
+        specs.push(spec.to_tokens());
     }
 
-    TS1::from(quote! {
+    return TS1::from(quote! {
         #(#[creusot::no_translate]
           #[creusot::extern_spec]
           #specs
         )*
-    })
+    });
 }
 
 #[proc_macro_attribute]

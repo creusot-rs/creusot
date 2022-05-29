@@ -83,22 +83,25 @@ impl<Args, F: Fn<Args>> FnSpec<Args> for F {
 }
 
 extern_spec! {
-    #[requires(f.precondition(a))]
-    #[ensures(f.postcondition_once(a, result))]
-    fn std::ops::FnOnce::call_once<Self_, Args>(f: Self_, a: Args) -> Self_::Output
-        where Self_ : FnOnceSpec<Args>
-}
+    mod std {
+        mod ops {
+            trait FnOnce<Args> where Self : FnOnceSpec<Args> {
+                #[requires(self.precondition(arg))]
+                #[ensures(self.postcondition_once(arg, result))]
+                fn call_once(self, arg: Args) -> Self::Output;
+            }
 
-extern_spec! {
-    #[requires((*f).precondition(a))]
-    #[ensures(f.postcondition_mut(a, result))]
-    fn std::ops::FnMut::call_mut<Self_, Args>(f: &mut Self_, a: Args) -> Self_::Output
-        where Self_ : FnMutSpec<Args>
-}
+            trait FnMut<Args> where Self : FnMutSpec<Args> {
+                #[requires((*self).precondition(arg))]
+                #[ensures(self.postcondition_mut(arg, result))]
+                fn call_mut(&mut self, arg: Args) -> Self::Output;
+            }
 
-extern_spec! {
-    #[requires((*f).precondition(a))]
-    #[ensures(f.postcondition(a, result))]
-    fn std::ops::Fn::call<Self_, Args>(f: &Self_, a: Args) -> Self_::Output
-        where Self_ : FnSpec<Args>
+            trait Fn<Args> where Self : FnSpec<Args> {
+                #[requires((*self).precondition(arg))]
+                #[ensures(self.postcondition(arg, result))]
+                fn call(&self, arg: Args) -> Self::Output;
+            }
+        }
+    }
 }

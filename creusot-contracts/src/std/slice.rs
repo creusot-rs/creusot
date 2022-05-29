@@ -80,52 +80,59 @@ impl<T> SliceIndexSpec<[T]> for usize {
 }
 
 extern_spec! {
-  #[ensures((@s).len() == @result)]
-  fn <[T]>::len<T>(s: &[T]) -> usize
-}
+    impl<T> [T] {
+        #[ensures((@self).len() == @result)]
+        fn len(&self) -> usize;
 
-extern_spec! {
-  #[requires(@i < (@s).len())]
-  #[requires(@j < (@s).len())]
-  #[ensures((@^s).exchange(@*s, @i, @j))]
-  fn <[T]>::swap<T>(s: &mut [T], i: usize, j: usize)
-}
+        #[requires(@i < (@self).len())]
+        #[requires(@j < (@self).len())]
+        #[ensures((@^self).exchange(@*self, @i, @j))]
+        fn swap(&mut self, i: usize, j: usize);
 
-extern_spec! {
-  #[requires(ix.in_bounds(@*self_))]
- // #[ensures(match result {
- //      Some(t) => *t == (@*self)[ix.into()],
- //      None => (@*self).len() <= ix.into(),
- //  })]
-  fn <[T]>::get<T, I : SliceIndexSpec<[T]>>(self_: &[T], ix: I) -> Option<&<I as SliceIndex<[T]>>::Output>
-}
+        #[requires(ix.in_bounds(@*self))]
+        // #[ensures(match result {
+        //       Some(t) => *t == (@*self)[ix.into()],
+        //       None => (@*self).len() <= ix.into(),
+        // })]
+        fn get<I : SliceIndexSpec<[T]>>(&self, ix: I) -> Option<&<I as SliceIndex<[T]>>::Output>;
 
-extern_spec! {
-  #[creusot::extern_spec::impl_]
-  // #[requires(ix.in_bounds(@*self_))]
-  // #[ensures(ix.has_value(@*self_, *result))]
-  // #[ensures(ix.has_value(@^self_, ^result))]
-  // #[ensures(ix.resolve_elswhere(@*self_, @^self_))]
-  // #[ensures((@^self_).len() == (@*self_).len())]
-  fn <[T]>::index_mut<T, I>(self_ : &mut [T], ix: I) -> &mut <[T] as Index<I>>::Output
-    where I : SliceIndexSpec<[T]>,
-}
+        #[ensures(result == None ==> (@self).len() == 0 && ^self == *self && @*self == Seq::EMPTY)]
+        #[ensures(forall<first: &mut T, tail: &mut [T]>
+                  result == Some((first, tail))
+                && *first == (@*self)[0] && ^first == (@^self)[0]
+                && (@*self).len() > 0 && (@^self).len() > 0
+                && @*tail == (@*self).tail()
+                && @^tail == (@^self).tail())]
+        fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])>;
 
-extern_spec! {
-  #[creusot::extern_spec::impl_]
-  // #[requires(ix.in_bounds(@*self_))]
-  // #[ensures(ix.has_value(@*self_, *result))]
-  fn <[T]>::index<T, I>(self_ : &[T], ix: I) -> &<[T] as Index<I>>::Output
-    where I : SliceIndexSpec<[T]>,
-}
+        #[ensures(match result {
+            Some(r) => {
+                * r == (@**self_)[0] &&
+                ^ r == (@^*self_)[0] &&
+                (@**self_).len() > 0 && // ^*s.len == **s.len ? (i dont think so)
+                (@^*self_).len() > 0 &&
+                (@*^self_).ext_eq((@**self_).tail()) && (@^^self_).ext_eq((@^*self_).tail())
+            }
+            None => ^self_ == * self_ && (@**self_).len() == 0
+        })]
+        fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
+    }
 
-extern_spec! {
-    #[ensures(result == None ==> (@s).len() == 0 && ^s == *s && @*s == Seq::EMPTY)]
-    #[ensures(forall<first: &mut T, tail: &mut [T]>
-              result == Some((first, tail))
-            && *first == (@*s)[0] && ^first == (@^s)[0]
-            && (@*s).len() > 0 && (@^s).len() > 0
-            && @*tail == (@*s).tail()
-            && @^tail == (@^s).tail())]
-    fn <[T]>::split_first_mut<'a, T>(s: &'a mut [T]) -> Option<(&'a mut T, &'a mut [T])>
+    impl<T, I> IndexMut<I> for [T]
+        where I : SliceIndexSpec<[T]> {
+       #[requires(ix.in_bounds(@*self))]
+       #[ensures(ix.has_value(@*self, *result))]
+       #[ensures(ix.has_value(@^self, ^result))]
+       #[ensures(ix.resolve_elswhere(@*self, @^self))]
+       #[ensures((@^self).len() == (@*self).len())]
+        fn index_mut(&mut self, ix: I) -> &mut <[T] as Index<I>>::Output;
+    }
+
+    impl<T, I> Index<I> for [T]
+    where I : SliceIndexSpec<[T]> {
+      #[requires(ix.in_bounds(@*self))]
+      #[ensures(ix.has_value(@*self, *result))]
+      fn index(&self, ix: I) -> &<[T] as Index<I>>::Output;
+    }
+
 }

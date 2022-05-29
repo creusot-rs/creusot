@@ -1,5 +1,4 @@
 use crate as creusot_contracts;
-use crate::logic::*;
 use core::ops::Deref;
 use creusot_contracts_proc::*;
 
