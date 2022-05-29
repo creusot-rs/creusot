@@ -122,7 +122,7 @@ pub fn translate_trusted<'tcx>(
 
     decls.extend(names.to_clones(ctx));
 
-    decls.push(Decl::ValDecl(ValKind::Val { sig }));
+    decls.push(Decl::ValDecl(ValKind::Val { sig, ghost: false }));
     return Module { name, decls };
 }
 
@@ -481,7 +481,7 @@ pub fn closure_contract<'tcx>(
 
     // Build the signatures for the pre and post conditions
     let mut post_sig = clos_sig.clone();
-    post_sig.args.push((Ident::build("result"), result_ty.unwrap_or(Type::Tuple(vec![]))));
+    post_sig.args.push((Ident::build("result'"), result_ty.unwrap_or(Type::Tuple(vec![]))));
     let pre_sig = clos_sig;
 
     let mut contracts = Vec::new();
@@ -499,7 +499,7 @@ pub fn closure_contract<'tcx>(
         let mut precondition = precondition.clone();
         subst.visit_mut(&mut precondition);
 
-        contracts.push(Decl::PredDecl(Predicate { sig: pre_sig, body: precondition }));
+        contracts.push(Decl::LetPred(LetPred { sig: pre_sig, body: Exp::Pure(box precondition), rec: false, ghost: true }));
     }
 
     if kind <= Fn {
@@ -511,7 +511,7 @@ pub fn closure_contract<'tcx>(
         let mut postcondition = postcondition.clone();
 
         csubst.visit_mut(&mut postcondition);
-        contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
+        contracts.push(Decl::LetPred(LetPred { sig: post_sig, body: Exp::Pure(box postcondition), rec: false, ghost: true }));
     }
 
     if kind <= FnMut {
@@ -527,7 +527,7 @@ pub fn closure_contract<'tcx>(
         postcondition = postcondition.and(closure_unnest(ctx.tcx, names, def_id, subst));
 
         csubst.visit_mut(&mut postcondition);
-        contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
+        contracts.push(Decl::LetPred(LetPred { sig: post_sig, body: Exp::Pure(box postcondition), rec: false, ghost: true }));
     }
 
     if kind <= FnOnce {
@@ -539,7 +539,7 @@ pub fn closure_contract<'tcx>(
 
         let mut postcondition = postcondition.clone();
         csubst.visit_mut(&mut postcondition);
-        contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
+        contracts.push(Decl::LetPred(LetPred { sig: post_sig, body: Exp::Pure(box postcondition), rec: false, ghost: true }));
     }
 
     contracts.push(closure_resolve(ctx, names, def_id, subst));

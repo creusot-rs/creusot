@@ -33,12 +33,12 @@ end
 module C01_Inv_Inv_Interface
   type self
   type t
-  predicate inv (x : t)
+  val ghost predicate inv (x : t)
 end
 module C01_Inv_Inv
   type self
   type t
-  predicate inv [#"../01.rs" 8 4 25] (x : t)
+  val ghost predicate inv [#"../01.rs" 8 4 25] (x : t)
 end
 module C01_Impl0_Get_Interface
   type t
@@ -83,20 +83,20 @@ end
 module C01_Impl1_Inv_Interface
   use mach.int.Int
   use mach.int.UInt32
-  predicate inv (x : uint32)
+  val ghost predicate inv (x : uint32)
 end
 module C01_Impl1_Inv
   use mach.int.Int
   use mach.int.UInt32
-  predicate inv [#"../01.rs" 34 4 26] (x : uint32) =
-    [#"../01.rs" 34 4 26] mod x (2 : uint32) = (0 : uint32)
+  let rec ghost predicate inv [#"../01.rs" 34 4 26] (x : uint32) =
+    [#"../01.rs" 34 4 26] pure {mod x (2 : uint32) = (0 : uint32)}
 end
 module C01_Impl1
   use Type
   use mach.int.Int
   use mach.int.UInt32
   clone C01_Impl1_Inv as Inv0
-  clone C01_Inv_Inv_Interface as Inv1 with type self = Type.c01_even, type t = uint32, predicate inv = Inv0.inv
+  clone C01_Inv_Inv_Interface as Inv1 with type self = Type.c01_even, type t = uint32, val inv = Inv0.inv
 end
 module C01_AddsTwo_Interface
   use prelude.Prelude
@@ -111,8 +111,8 @@ module C01_AddsTwo
   use mach.int.Int
   use mach.int.UInt32
   clone C01_Impl1_Inv as Inv0
-  clone C01_Impl0_Set_Interface as Set0 with type t = uint32, type i = Type.c01_even, predicate Inv0.inv = Inv0.inv
-  clone C01_Impl0_Get_Interface as Get0 with type t = uint32, type i = Type.c01_even, predicate Inv0.inv = Inv0.inv
+  clone C01_Impl0_Set_Interface as Set0 with type t = uint32, type i = Type.c01_even, val Inv0.inv = Inv0.inv
+  clone C01_Impl0_Get_Interface as Get0 with type t = uint32, type i = Type.c01_even, val Inv0.inv = Inv0.inv
   let rec cfg adds_two [@cfg:stackify] [#"../01.rs" 39 0 32] (c : Type.c01_cell uint32 (Type.c01_even)) : () =
   var _0 : ();
   var c_1 : Type.c01_cell uint32 (Type.c01_even);

@@ -161,14 +161,14 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                     }
                 })
             }
-            TermKind::Forall { binder, box body } => {
-                let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
-                Exp::Forall(vec![(binder.0.into(), ty)], box self.lower_term(body))
-            }
-            TermKind::Exists { binder, box body } => {
-                let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
-                Exp::Exists(vec![(binder.0.into(), ty)], box self.lower_term(body))
-            }
+            TermKind::Forall { binder, box body } => self.as_pure(|lwr| {
+                let ty = translate_ty(lwr.ctx, lwr.names, rustc_span::DUMMY_SP, binder.1);
+                Exp::Forall(vec![(binder.0.into(), ty)], box lwr.lower_term(body))
+            }),
+            TermKind::Exists { binder, box body } => self.as_pure(|lwr| {
+                let ty = translate_ty(lwr.ctx, lwr.names, rustc_span::DUMMY_SP, binder.1);
+                Exp::Exists(vec![(binder.0.into(), ty)], box lwr.lower_term(body))
+            }),
             TermKind::Constructor { adt, variant, fields } => {
                 self.names.import_prelude_module(PreludeModule::Type);
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
@@ -177,12 +177,14 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 crate::ty::translate_tydecl(self.ctx, self.ctx.def_span(adt.did()), adt.did());
                 Exp::Constructor { ctor, args }
             }
-            TermKind::Cur { box term } => Exp::Current(box self.lower_term(term)),
-            TermKind::Fin { box term } => Exp::Final(box self.lower_term(term)),
-            TermKind::Impl { box lhs, box rhs } => {
-                Exp::Impl(box self.lower_term(lhs), box self.lower_term(rhs))
+            TermKind::Cur { box term } => {
+                self.as_pure(|lwr| Exp::Current(box lwr.lower_term(term)))
             }
-            TermKind::Old { box term } => Exp::Old(box self.lower_term(term)),
+            TermKind::Fin { box term } => self.as_pure(|lwr| Exp::Final(box lwr.lower_term(term))),
+            TermKind::Impl { box lhs, box rhs } => {
+                self.as_pure(|lwr| Exp::Impl(box lwr.lower_term(lhs), box lwr.lower_term(rhs)))
+            }
+            TermKind::Old { box term } => self.as_pure(|lwr| Exp::Old(box lwr.lower_term(term))),
             TermKind::Equals { box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -190,13 +192,17 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 if let Purity::Logic = self.pure {
                     Exp::BinaryOp(BinOp::Eq, box lhs, box rhs)
                 } else {
-                    let (a, lhs) = if lhs.is_pure() {
+                    let (a, lhs) = if let Exp::Pure(box lhs) = lhs {
+                        (lhs, None)
+                    } else if lhs.is_pure() {
                         (lhs, None)
                     } else {
                         (Exp::Var("a".into(), self.pure), Some(lhs))
                     };
 
-                    let (b, rhs) = if rhs.is_pure() {
+                    let (b, rhs) = if let Exp::Pure(box rhs) = rhs {
+                        (rhs, None)
+                    } else if rhs.is_pure() {
                         (rhs, None)
                     } else {
                         (Exp::Var("b".into(), self.pure), Some(rhs))
@@ -296,6 +302,19 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 Pat::TupleP(pats.into_iter().map(|pat| self.lower_pat(pat)).collect())
             }
         }
+    }
+
+    fn as_pure<F>(&mut self, f: F) -> Exp
+    where
+        F: FnOnce(&mut Self) -> Exp,
+    {
+        let old = std::mem::replace(&mut self.pure, Purity::Logic);
+        let mut r = f(self);
+        if old == Purity::Program {
+            r = Exp::Pure(box r);
+        }
+        self.pure = old;
+        r
     }
 }
 

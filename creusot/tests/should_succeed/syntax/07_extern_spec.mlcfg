@@ -41,7 +41,9 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use prelude.Prelude
   use mach.int.UInt64
   use Type
-  function model (self : Type.alloc_vec_vec t a) : Seq.seq t
+  val ghost function model (self : Type.alloc_vec_vec t a) : Seq.seq t
+    ensures { Seq.length result <= 18446744073709551615 }
+    
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -51,7 +53,7 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use prelude.Prelude
   use mach.int.UInt64
   use Type
-  function model (self : Type.alloc_vec_vec t a) : Seq.seq t
+  val ghost function model (self : Type.alloc_vec_vec t a) : Seq.seq t
   axiom model_spec : forall self : Type.alloc_vec_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module Alloc_Vec_Impl0_New_Interface
@@ -80,16 +82,16 @@ module Alloc_Vec_Impl0_New
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Std1_Vec_Impl1_Resolve_Interface
   type t
   use Type
-  predicate resolve (self : Type.alloc_vec_vec t (Type.alloc_alloc_global))
+  val ghost predicate resolve (self : Type.alloc_vec_vec t (Type.alloc_alloc_global))
 end
 module CreusotContracts_Std1_Vec_Impl1_Resolve
   type t
@@ -100,18 +102,18 @@ module CreusotContracts_Std1_Vec_Impl1_Resolve
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global,
   axiom .
-  predicate resolve (self : Type.alloc_vec_vec t (Type.alloc_alloc_global)) =
-    forall i : (int) . 0 <= i && i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
+  let rec ghost predicate resolve (self : Type.alloc_vec_vec t (Type.alloc_alloc_global)) =
+    pure {forall i : (int) . 0 <= i && i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)}
 end
 module CreusotContracts_Std1_Vec_Impl1
   type t
   use Type
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = t
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = Type.alloc_alloc_global, axiom .
-  clone CreusotContracts_Std1_Vec_Impl1_Resolve as Resolve0 with type t = t, function Model0.model = Model0.model,
-  predicate Resolve0.resolve = Resolve2.resolve
+  clone CreusotContracts_Std1_Vec_Impl1_Resolve as Resolve0 with type t = t, val Model0.model = Model0.model,
+  val Resolve0.resolve = Resolve2.resolve
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = Type.alloc_vec_vec t (Type.alloc_alloc_global),
-  predicate resolve = Resolve0.resolve
+  val resolve = Resolve0.resolve
 end
 module CreusotContracts_Logic_Model_Model_ModelTy
   type self
@@ -120,12 +122,12 @@ end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
+  val ghost function model (self : self) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Model_Model
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
+  val ghost function model (self : self) : ModelTy0.modelTy
 end
 module CreusotContracts_Std1_Vec_Impl0_ModelTy
   type t
@@ -141,24 +143,24 @@ module CreusotContracts_Std1_Vec_Impl0
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = a, axiom .
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = a
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = Type.alloc_vec_vec t a,
-  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  val model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.alloc_vec_vec t a,
   type modelTy = ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
   type t
-  predicate resolve (self : t)
+  val ghost predicate resolve (self : t)
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve
   type t
-  predicate resolve (self : t) =
+  let rec ghost predicate resolve (self : t) =
     true
 end
 module CreusotContracts_Logic_Resolve_Impl2
   type t
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = t,
-  predicate resolve = Resolve0.resolve
+  val resolve = Resolve0.resolve
 end
 module C07ExternSpec_Main_Interface
   val main [@cfg:stackify] (_ : ()) : ()
@@ -167,9 +169,9 @@ module C07ExternSpec_Main
   use Type
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = bool
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = bool, type a = Type.alloc_alloc_global, axiom .
-  clone CreusotContracts_Std1_Vec_Impl1_Resolve as Resolve0 with type t = bool, function Model0.model = Model0.model,
-  predicate Resolve0.resolve = Resolve1.resolve
-  clone Alloc_Vec_Impl0_New_Interface as New0 with type t = bool, function Model0.model = Model0.model
+  clone CreusotContracts_Std1_Vec_Impl1_Resolve as Resolve0 with type t = bool, val Model0.model = Model0.model,
+  val Resolve0.resolve = Resolve1.resolve
+  clone Alloc_Vec_Impl0_New_Interface as New0 with type t = bool, val Model0.model = Model0.model
   let rec cfg main [@cfg:stackify] [#"../07_extern_spec.rs" 4 0 9] (_ : ()) : () =
   var _0 : ();
   var v_1 : Type.alloc_vec_vec bool (Type.alloc_alloc_global);
@@ -330,10 +332,10 @@ module C07ExternSpec_RenamedParams
 end
 module C07ExternSpec_Id_Interface
   type t
-  function id (x : t) : t
+  val ghost function id (x : t) : t
 end
 module C07ExternSpec_Id
   type t
-  function id [#"../07_extern_spec.rs" 32 0 19] (x : t) : t =
+  let rec ghost function id [#"../07_extern_spec.rs" 32 0 19] (x : t) : t =
     [#"../07_extern_spec.rs" 32 0 19] x
 end

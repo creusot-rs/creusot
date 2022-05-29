@@ -32,23 +32,23 @@ module DropPair_Main
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve_Interface
   type t1
   type t2
-  predicate resolve (self : (t1, t2))
+  val ghost predicate resolve (self : (t1, t2))
 end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve
   type t1
   type t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t1
-  predicate resolve (self : (t1, t2)) =
+  let rec ghost predicate resolve (self : (t1, t2)) =
     Resolve0.resolve (let (a, _) = self in a) && Resolve1.resolve (let (_, a) = self in a)
 end
 module CreusotContracts_Logic_Resolve_Impl0
@@ -57,27 +57,27 @@ module CreusotContracts_Logic_Resolve_Impl0
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = t1
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = t1, type t2 = t2,
-  predicate Resolve0.resolve = Resolve2.resolve, predicate Resolve1.resolve = Resolve3.resolve
+  val Resolve0.resolve = Resolve2.resolve, val Resolve1.resolve = Resolve3.resolve
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = (t1, t2),
-  predicate resolve = Resolve0.resolve
+  val resolve = Resolve0.resolve
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
+  let rec ghost predicate resolve (self : borrowed t) =
+    pure { ^ self =  * self}
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = borrowed t,
-  predicate resolve = Resolve0.resolve
+  val resolve = Resolve0.resolve
 end
 module DropPair_DropPair2_Interface
   use prelude.Prelude
@@ -91,8 +91,7 @@ module DropPair_DropPair2
   use mach.int.UInt32
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = uint32
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = borrowed uint32,
-  type t2 = borrowed uint32, predicate Resolve0.resolve = Resolve1.resolve,
-  predicate Resolve1.resolve = Resolve1.resolve
+  type t2 = borrowed uint32, val Resolve0.resolve = Resolve1.resolve, val Resolve1.resolve = Resolve1.resolve
   let rec cfg drop_pair2 [@cfg:stackify] [#"../drop_pair.rs" 13 0 38] (x : (borrowed uint32, borrowed uint32)) : () =
   var _0 : ();
   var x_1 : (borrowed uint32, borrowed uint32);
@@ -160,8 +159,7 @@ module DropPair_DropPair
   use mach.int.UInt32
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = uint32
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = borrowed uint32,
-  type t2 = borrowed uint32, predicate Resolve0.resolve = Resolve1.resolve,
-  predicate Resolve1.resolve = Resolve1.resolve
+  type t2 = borrowed uint32, val Resolve0.resolve = Resolve1.resolve, val Resolve1.resolve = Resolve1.resolve
   let rec cfg drop_pair [@cfg:stackify] [#"../drop_pair.rs" 11 0 37] (x : (borrowed uint32, borrowed uint32)) : ()
     ensures { [#"../drop_pair.rs" 10 0 24]  ^ (let (a, _) = x in a) =  * (let (a, _) = x in a) }
     ensures { [#"../drop_pair.rs" 9 0 23] Resolve0.resolve x }

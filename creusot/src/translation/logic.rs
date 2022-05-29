@@ -49,13 +49,13 @@ pub fn translate_logic_or_predicate<'tcx>(
         decls.push(Decl::ValDecl(val));
     } else {
         let term = ctx.term(def_id).unwrap().clone();
-        let body = specification::lower_pure(ctx, &mut names, def_id, term);
+        let body = specification::lower_impure(ctx, &mut names, def_id, term);
         decls.extend(names.to_clones(ctx));
 
         if sig_contract.contract.variant.is_empty() {
             let decl = match util::item_type(ctx.tcx, def_id) {
-                ItemType::Logic => Decl::LogicDecl(Logic { sig, body }),
-                ItemType::Predicate => Decl::PredDecl(Predicate { sig, body }),
+                ItemType::Logic => Decl::LetFun(LetFun { sig, body, rec: true, ghost: true }),
+                ItemType::Predicate => Decl::LetPred(LetPred { sig, body, rec: true, ghost: true }),
                 _ => unreachable!(),
             };
             decls.push(decl);

@@ -100,6 +100,7 @@ impl Print for Decl {
             Decl::Axiom(a) => a.pretty(alloc, env),
             Decl::Let(l) => l.pretty(alloc, env),
             Decl::LetFun(l) => l.pretty(alloc, env),
+            Decl::LetPred(p) => p.pretty(alloc, env),
         }
     }
 }
@@ -230,6 +231,36 @@ impl Print for LetFun {
 
         doc = doc
             .append("function ")
+            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" =")))
+            .group()
+            .append(alloc.line())
+            .append(self.body.pretty(alloc, env).indent(2));
+
+        doc
+    }
+}
+
+impl Print for LetPred {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        let mut doc = alloc.text("let ");
+
+        if self.rec {
+            doc = doc.append("rec ");
+        }
+
+        if self.ghost {
+            doc = doc.append("ghost ");
+        }
+
+        doc = doc
+            .append("predicate ")
             .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" =")))
             .group()
             .append(alloc.line())
@@ -442,9 +473,20 @@ impl Print for ValKind {
         A::Doc: Clone,
     {
         match self {
-            ValKind::Val { sig } => alloc.text("val ").append(sig.pretty(alloc, env)),
-            ValKind::Predicate { sig } => alloc.text("predicate ").append(sig.pretty(alloc, env)),
-            ValKind::Function { sig } => alloc.text("function ").append(sig.pretty(alloc, env)),
+            ValKind::Val { ghost, sig } => alloc
+                .text("val ")
+                .append(if *ghost { "ghost " } else { "" })
+                .append(sig.pretty(alloc, env)),
+            ValKind::Predicate { ghost, sig } => alloc
+                .text("val ")
+                .append(if *ghost { "ghost " } else { "" })
+                .append("predicate ")
+                .append(sig.pretty(alloc, env)),
+            ValKind::Function { ghost, sig } => alloc
+                .text("val ")
+                .append(if *ghost { "ghost " } else { "" })
+                .append("function ")
+                .append(sig.pretty(alloc, env)),
         }
     }
 }

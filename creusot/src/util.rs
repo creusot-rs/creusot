@@ -260,9 +260,9 @@ impl ItemType {
 
     pub fn val(&self, sig: Signature) -> ValKind {
         match self {
-            ItemType::Logic => ValKind::Function { sig },
-            ItemType::Predicate => ValKind::Predicate { sig },
-            ItemType::Program => ValKind::Val { sig },
+            ItemType::Logic => ValKind::Function { sig, ghost: true },
+            ItemType::Predicate => ValKind::Predicate { sig, ghost: true },
+            ItemType::Program => ValKind::Val { sig, ghost: false },
             _ => unreachable!(),
         }
     }
@@ -498,6 +498,9 @@ impl<'a> ExpMutVisitor for ClosureSubst {
                 }
             }
             Exp::Var(v, _) => {
+                if &**v == "result" {
+                    *v = "result'".into();
+                }
                 if let Some((e, is_bor)) = self.0.get(v) {
                     let arg = if self.1 == ty::ClosureKind::FnMut {
                         if self.2 {

@@ -41,37 +41,39 @@ module C01Range_Common_Iterator_Item
 end
 module C01Range_Common_Iterator_Completed_Interface
   type self
-  predicate completed (self : self)
+  val ghost predicate completed (self : self)
 end
 module C01Range_Common_Iterator_Completed
   type self
-  predicate completed [#"../common.rs" 9 4 31] (self : self)
+  val ghost predicate completed [#"../common.rs" 9 4 31] (self : self)
 end
 module C01Range_Common_Iterator_Produces_Interface
   type self
   use seq.Seq
   clone C01Range_Common_Iterator_Item as Item0 with type self = self
-  predicate produces (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+  val ghost predicate produces (self : self) (visited : Seq.seq Item0.item) (_3' : self)
 end
 module C01Range_Common_Iterator_Produces
   type self
   use seq.Seq
   clone C01Range_Common_Iterator_Item as Item0 with type self = self
-  predicate produces [#"../common.rs" 12 4 65] (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+  val ghost predicate produces [#"../common.rs" 12 4 65] (self : self) (visited : Seq.seq Item0.item) (_3' : self)
 end
 module C01Range_Common_Iterator_ProducesRefl_Interface
   type self
   use seq.Seq
   clone C01Range_Common_Iterator_Item as Item0 with type self = self
   clone C01Range_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  function produces_refl (a : self) : ()
+  val ghost function produces_refl (a : self) : ()
+    ensures { [#"../common.rs" 15 4 41] Produces0.produces a (Seq.empty ) a }
+    
 end
 module C01Range_Common_Iterator_ProducesRefl
   type self
   use seq.Seq
   clone C01Range_Common_Iterator_Item as Item0 with type self = self
   clone C01Range_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  function produces_refl [#"../common.rs" 16 4 30] (a : self) : ()
+  val ghost function produces_refl [#"../common.rs" 16 4 30] (a : self) : ()
   axiom produces_refl_spec : forall a : self . [#"../common.rs" 15 4 41] Produces0.produces a (Seq.empty ) a
 end
 module C01Range_Common_Iterator_ProducesTrans_Interface
@@ -79,14 +81,18 @@ module C01Range_Common_Iterator_ProducesTrans_Interface
   use seq.Seq
   clone C01Range_Common_Iterator_Item as Item0 with type self = self
   clone C01Range_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  function produces_trans (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+  val ghost function produces_trans (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+    requires {[#"../common.rs" 20 4 34] Produces0.produces b bc c}
+    requires {[#"../common.rs" 19 4 34] Produces0.produces a ab b}
+    ensures { [#"../common.rs" 21 4 44] Produces0.produces a (Seq.(++) ab bc) c }
+    
 end
 module C01Range_Common_Iterator_ProducesTrans
   type self
   use seq.Seq
   clone C01Range_Common_Iterator_Item as Item0 with type self = self
   clone C01Range_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  function produces_trans [#"../common.rs" 22 4 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+  val ghost function produces_trans [#"../common.rs" 22 4 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
     
   axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 20 4 34] Produces0.produces b bc c) -> ([#"../common.rs" 19 4 34] Produces0.produces a ab b) -> ([#"../common.rs" 21 4 44] Produces0.produces a (Seq.(++) ab bc) c)
 end
@@ -122,14 +128,14 @@ module C01Range_Common_Iterator_Next
 end
 module C01Range_Impl0_Completed_Interface
   use Type
-  predicate completed (self : Type.c01range_range)
+  val ghost predicate completed (self : Type.c01range_range)
 end
 module C01Range_Impl0_Completed
   use Type
   use mach.int.Int
   use prelude.Prelude
   use mach.int.Int64
-  predicate completed [#"../01_range.rs" 18 4 30] (self : Type.c01range_range) =
+  let rec ghost predicate completed [#"../01_range.rs" 18 4 30] (self : Type.c01range_range) =
     [#"../01_range.rs" 18 4 30] Type.c01range_range_Range_start self >= Type.c01range_range_Range_end self
 end
 module C01Range_Impl0_Produces_Interface
@@ -138,7 +144,7 @@ module C01Range_Impl0_Produces_Interface
   use mach.int.Int
   use prelude.Prelude
   use mach.int.Int64
-  predicate produces (self : Type.c01range_range) (visited : Seq.seq isize) (o : Type.c01range_range)
+  val ghost predicate produces (self : Type.c01range_range) (visited : Seq.seq isize) (o : Type.c01range_range)
 end
 module C01Range_Impl0_Produces
   use Type
@@ -147,22 +153,24 @@ module C01Range_Impl0_Produces
   use prelude.Prelude
   use mach.int.Int64
   use mach.int.Int32
-  predicate produces [#"../01_range.rs" 23 4 64] (self : Type.c01range_range) (visited : Seq.seq isize) (o : Type.c01range_range)
+  let rec ghost predicate produces [#"../01_range.rs" 23 4 64] (self : Type.c01range_range) (visited : Seq.seq isize) (o : Type.c01range_range)
     
    =
-    [#"../01_range.rs" 23 4 64] Type.c01range_range_Range_end self = Type.c01range_range_Range_end o && Type.c01range_range_Range_start self <= Type.c01range_range_Range_start o && Seq.length visited = Int64.to_int (Type.c01range_range_Range_start o) - Int64.to_int (Type.c01range_range_Range_start self) && (forall i : (int) . 0 <= i && i < Seq.length visited -> Int64.to_int (Seq.get visited i) = Int64.to_int (Type.c01range_range_Range_start self) + i)
+    [#"../01_range.rs" 23 4 64] (let b = Type.c01range_range_Range_end o in let a = Type.c01range_range_Range_end self in pure {a = b}) && Type.c01range_range_Range_start self <= Type.c01range_range_Range_start o && (let b = (let a' = Type.c01range_range_Range_start o in Int64.to_int a') - (let a' = Type.c01range_range_Range_start self in Int64.to_int a') in pure {Seq.length visited = b}) && pure {forall i : (int) . 0 <= i && i < Seq.length visited -> Int64.to_int (Seq.get visited i) = Int64.to_int (Type.c01range_range_Range_start self) + i}
 end
 module C01Range_Impl0_ProducesRefl_Interface
   use seq.Seq
   use Type
   clone C01Range_Impl0_Produces_Interface as Produces0
-  function produces_refl (a : Type.c01range_range) : ()
+  val ghost function produces_refl (a : Type.c01range_range) : ()
+    ensures { [#"../01_range.rs" 33 4 41] Produces0.produces a (Seq.empty ) a }
+    
 end
 module C01Range_Impl0_ProducesRefl
   use seq.Seq
   use Type
   clone C01Range_Impl0_Produces_Interface as Produces0
-  function produces_refl [#"../01_range.rs" 34 4 29] (a : Type.c01range_range) : () =
+  let rec ghost function produces_refl [#"../01_range.rs" 34 4 29] (a : Type.c01range_range) : () =
     [#"../01_range.rs" 34 4 29] ()
   axiom produces_refl_spec : forall a : Type.c01range_range . [#"../01_range.rs" 33 4 41] Produces0.produces a (Seq.empty ) a
 end
@@ -183,7 +191,10 @@ module C01Range_Impl0_ProducesTrans_Interface
   use prelude.Prelude
   use mach.int.Int64
   clone C01Range_Impl0_Produces_Interface as Produces0
-  function produces_trans (a : Type.c01range_range) (ab : Seq.seq isize) (b : Type.c01range_range) (bc : Seq.seq isize) (c : Type.c01range_range) : ()
+  val ghost function produces_trans (a : Type.c01range_range) (ab : Seq.seq isize) (b : Type.c01range_range) (bc : Seq.seq isize) (c : Type.c01range_range) : ()
+    requires {[#"../01_range.rs" 38 4 34] Produces0.produces b bc c}
+    requires {[#"../01_range.rs" 37 4 34] Produces0.produces a ab b}
+    ensures { [#"../01_range.rs" 39 4 44] Produces0.produces a (Seq.(++) ab bc) c }
     
 end
 module C01Range_Impl0_ProducesTrans
@@ -193,7 +204,7 @@ module C01Range_Impl0_ProducesTrans
   use prelude.Prelude
   use mach.int.Int64
   clone C01Range_Impl0_Produces_Interface as Produces0
-  function produces_trans [#"../01_range.rs" 40 4 90] (a : Type.c01range_range) (ab : Seq.seq isize) (b : Type.c01range_range) (bc : Seq.seq isize) (c : Type.c01range_range) : ()
+  let rec ghost function produces_trans [#"../01_range.rs" 40 4 90] (a : Type.c01range_range) (ab : Seq.seq isize) (b : Type.c01range_range) (bc : Seq.seq isize) (c : Type.c01range_range) : ()
     
    =
     [#"../01_range.rs" 40 4 90] ()
@@ -217,28 +228,28 @@ end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
+  let rec ghost predicate resolve (self : borrowed t) =
+    pure { ^ self =  * self}
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = borrowed t,
-  predicate resolve = Resolve0.resolve
+  val resolve = Resolve0.resolve
 end
 module C01Range_Impl0_Next_Interface
   use Type
@@ -321,25 +332,25 @@ module C01Range_Impl0
   use Type
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.c01range_range
   clone C01Range_Impl0_Produces as Produces0
-  clone C01Range_Impl0_ProducesTrans as ProducesTrans0 with predicate Produces0.produces = Produces0.produces, axiom .
-  clone C01Range_Impl0_ProducesRefl as ProducesRefl0 with predicate Produces0.produces = Produces0.produces, axiom .
+  clone C01Range_Impl0_ProducesTrans as ProducesTrans0 with val Produces0.produces = Produces0.produces, axiom .
+  clone C01Range_Impl0_ProducesRefl as ProducesRefl0 with val Produces0.produces = Produces0.produces, axiom .
   clone C01Range_Impl0_Completed as Completed0
-  clone C01Range_Impl0_Next_Interface as Next0 with predicate Completed0.completed = Completed0.completed,
-  predicate Resolve0.resolve = Resolve0.resolve, predicate Produces0.produces = Produces0.produces
+  clone C01Range_Impl0_Next_Interface as Next0 with val Completed0.completed = Completed0.completed,
+  val Resolve0.resolve = Resolve0.resolve, val Produces0.produces = Produces0.produces
   clone C01Range_Common_Iterator_Completed_Interface as Completed1 with type self = Type.c01range_range,
-  predicate completed = Completed0.completed
+  val completed = Completed0.completed
   clone C01Range_Impl0_Item as Item0
   clone C01Range_Common_Iterator_Next_Interface as Next1 with type self = Type.c01range_range, val next = Next0.next,
-  type Item0.item = Item0.item, predicate Completed0.completed = Completed0.completed,
-  predicate Produces0.produces = Produces0.produces
+  type Item0.item = Item0.item, val Completed0.completed = Completed0.completed,
+  val Produces0.produces = Produces0.produces
   clone C01Range_Common_Iterator_ProducesTrans_Interface as ProducesTrans1 with type self = Type.c01range_range,
-  function produces_trans = ProducesTrans0.produces_trans, predicate Produces0.produces = Produces0.produces,
+  val produces_trans = ProducesTrans0.produces_trans, val Produces0.produces = Produces0.produces,
   type Item0.item = Item0.item, axiom .
   clone C01Range_Common_Iterator_ProducesRefl_Interface as ProducesRefl1 with type self = Type.c01range_range,
-  function produces_refl = ProducesRefl0.produces_refl, predicate Produces0.produces = Produces0.produces,
+  val produces_refl = ProducesRefl0.produces_refl, val Produces0.produces = Produces0.produces,
   type Item0.item = Item0.item, axiom .
   clone C01Range_Common_Iterator_Produces_Interface as Produces1 with type self = Type.c01range_range,
-  predicate produces = Produces0.produces, type Item0.item = Item0.item
+  val produces = Produces0.produces, type Item0.item = Item0.item
   clone C01Range_Common_Iterator_Item as Item1 with type self = Type.c01range_range, type item = Item0.item
 end
 module C01Range_SumRange_Interface
@@ -359,13 +370,13 @@ module C01Range_SumRange
   use prelude.Prelude
   use seq.Seq
   clone C01Range_Impl0_Produces as Produces0
-  clone C01Range_Impl0_ProducesTrans as ProducesTrans0 with predicate Produces0.produces = Produces0.produces, axiom .
-  clone C01Range_Impl0_ProducesRefl as ProducesRefl0 with predicate Produces0.produces = Produces0.produces, axiom .
+  clone C01Range_Impl0_ProducesTrans as ProducesTrans0 with val Produces0.produces = Produces0.produces, axiom .
+  clone C01Range_Impl0_ProducesRefl as ProducesRefl0 with val Produces0.produces = Produces0.produces, axiom .
   use Type
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.c01range_range
   clone C01Range_Impl0_Completed as Completed0
-  clone C01Range_Impl0_Next_Interface as Next0 with predicate Completed0.completed = Completed0.completed,
-  predicate Resolve0.resolve = Resolve0.resolve, predicate Produces0.produces = Produces0.produces
+  clone C01Range_Impl0_Next_Interface as Next0 with val Completed0.completed = Completed0.completed,
+  val Resolve0.resolve = Resolve0.resolve, val Produces0.produces = Produces0.produces
   let rec cfg sum_range [@cfg:stackify] [#"../01_range.rs" 60 0 31] (n : isize) : isize
     requires {[#"../01_range.rs" 58 0 20] Int64.to_int n >= 0}
     ensures { [#"../01_range.rs" 59 0 23] result = n }

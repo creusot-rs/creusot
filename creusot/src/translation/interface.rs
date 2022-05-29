@@ -53,12 +53,12 @@ pub fn interface_for<'tcx>(
     match util::item_type(ctx.tcx, def_id) {
         ItemType::Predicate => {
             sig.retty = None;
-            sig.contract = Contract::new();
-            decls.push(Decl::ValDecl(ValKind::Predicate { sig }));
+            // sig.contract = Contract::new();
+            decls.push(Decl::ValDecl(ValKind::Predicate { sig, ghost: true }));
         }
         ItemType::Logic => {
-            sig.contract = Contract::new();
-            decls.push(Decl::ValDecl(ValKind::Function { sig }));
+            // sig.contract = Contract::new();
+            decls.push(Decl::ValDecl(ValKind::Function { sig, ghost: true }));
         }
         _ => {
             if !def_id.is_local()
@@ -68,7 +68,7 @@ pub fn interface_for<'tcx>(
                 sig.contract.requires.push(why3::exp::Exp::mk_false());
             }
 
-            decls.push(Decl::ValDecl(ValKind::Val { sig }));
+            decls.push(Decl::ValDecl(ValKind::Val { sig, ghost: false }));
         }
     }
 

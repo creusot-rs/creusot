@@ -38,13 +38,13 @@ end
 module ListIndexMut_Len_Interface
   use Type
   use mach.int.Int
-  function len (l : Type.listindexmut_list) : int
+  val ghost function len (l : Type.listindexmut_list) : int
 end
 module ListIndexMut_Len
   use Type
   use mach.int.Int
   use mach.int.Int32
-  function len [#"../list_index_mut.rs" 15 0 22] (l : Type.listindexmut_list) : int =
+  let rec ghost function len [#"../list_index_mut.rs" 15 0 22] (l : Type.listindexmut_list) : int =
     [#"../list_index_mut.rs" 15 0 22] let Type.ListIndexMut_List _ ls = l in 1 + match (ls) with
       | Type.ListIndexMut_Option_Some ls -> len ls
       | Type.ListIndexMut_Option_None -> 0
@@ -54,14 +54,14 @@ module ListIndexMut_Get_Interface
   use Type
   use mach.int.Int
   use mach.int.UInt32
-  function get (l : Type.listindexmut_list) (ix : int) : Type.listindexmut_option uint32
+  val ghost function get (l : Type.listindexmut_list) (ix : int) : Type.listindexmut_option uint32
 end
 module ListIndexMut_Get
   use Type
   use mach.int.Int
   use mach.int.UInt32
   use mach.int.Int32
-  function get [#"../list_index_mut.rs" 26 0 39] (l : Type.listindexmut_list) (ix : int) : Type.listindexmut_option uint32
+  let rec ghost function get [#"../list_index_mut.rs" 26 0 39] (l : Type.listindexmut_list) (ix : int) : Type.listindexmut_option uint32
     
    =
     [#"../list_index_mut.rs" 26 0 39] let Type.ListIndexMut_List i ls = l in if ix > 0 then
@@ -76,28 +76,28 @@ end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
+  let rec ghost predicate resolve (self : borrowed t) =
+    pure { ^ self =  * self}
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = borrowed t,
-  predicate resolve = Resolve0.resolve
+  val resolve = Resolve0.resolve
 end
 module ListIndexMut_IndexMut_Interface
   use mach.int.UInt64
@@ -250,7 +250,7 @@ module ListIndexMut_Write
   clone ListIndexMut_Len as Len0
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = uint32
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.listindexmut_list
-  clone ListIndexMut_IndexMut_Interface as IndexMut0 with function Len0.len = Len0.len, function Get0.get = Get0.get
+  clone ListIndexMut_IndexMut_Interface as IndexMut0 with val Len0.len = Len0.len, val Get0.get = Get0.get
   let rec cfg write [@cfg:stackify] [#"../list_index_mut.rs" 74 0 45] (l : borrowed (Type.listindexmut_list)) (ix : usize) (v : uint32) : ()
     requires {[#"../list_index_mut.rs" 70 0 26] UInt64.to_int ix < Len0.len ( * l)}
     ensures { [#"../list_index_mut.rs" 73 0 88] forall i : (int) . 0 <= i && i < Len0.len ( * l) && i <> UInt64.to_int ix -> Get0.get ( * l) i = Get0.get ( ^ l) i }
@@ -301,7 +301,7 @@ module ListIndexMut_Main
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.listindexmut_list
   clone ListIndexMut_Get as Get0
   clone ListIndexMut_Len as Len0
-  clone ListIndexMut_Write_Interface as Write0 with function Len0.len = Len0.len, function Get0.get = Get0.get
+  clone ListIndexMut_Write_Interface as Write0 with val Len0.len = Len0.len, val Get0.get = Get0.get
   let rec cfg main [@cfg:stackify] [#"../list_index_mut.rs" 78 0 9] (_ : ()) : () =
   var _0 : ();
   var l_1 : Type.listindexmut_list;

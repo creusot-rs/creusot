@@ -32,16 +32,16 @@ pub fn default_decl<'tcx>(
 
     decls.extend(names.to_clones(ctx));
     let decl = match item_type(ctx.tcx, def_id) {
-        ItemType::Logic => ValKind::Function { sig },
+        ItemType::Logic => ValKind::Function { sig, ghost: true },
         ItemType::Predicate => {
             sig.retty = None;
-            ValKind::Predicate { sig }
+            ValKind::Predicate { sig, ghost: true }
         }
         ItemType::Program => {
             if !ctx.externs.verified(def_id) && ctx.extern_spec(def_id).is_none() {
                 sig.contract.requires.push(why3::exp::Exp::mk_false());
             }
-            Val { sig }
+            Val { sig, ghost: false }
         }
         _ => unreachable!("default_decl: Expected function"),
     };

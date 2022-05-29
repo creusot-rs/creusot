@@ -18,12 +18,12 @@ end
 module CreusotContracts_Std1_Fun_FnOnceSpec_Precondition_Interface
   type self
   type args
-  predicate precondition (self : self) (a : args)
+  val ghost predicate precondition (self : self) (a : args)
 end
 module CreusotContracts_Std1_Fun_FnOnceSpec_Precondition
   type self
   type args
-  predicate precondition (self : self) (a : args)
+  val ghost predicate precondition (self : self) (a : args)
 end
 module Core_Ops_Function_FnOnce_Output
   type self
@@ -35,51 +35,51 @@ module CreusotContracts_Std1_Fun_FnSpec_Postcondition_Interface
   type args
   use prelude.Prelude
   clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
-  predicate postcondition (self : self) (_2' : args) (_3' : Output0.output)
+  val ghost predicate postcondition (self : self) (_2' : args) (_3' : Output0.output)
 end
 module CreusotContracts_Std1_Fun_FnSpec_Postcondition
   type self
   type args
   use prelude.Prelude
   clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
-  predicate postcondition (self : self) (_2' : args) (_3' : Output0.output)
+  val ghost predicate postcondition (self : self) (_2' : args) (_3' : Output0.output)
 end
 module CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce_Interface
   type self
   type args
   clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
-  predicate postcondition_once (self : self) (a : args) (res : Output0.output)
+  val ghost predicate postcondition_once (self : self) (a : args) (res : Output0.output)
 end
 module CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce
   type self
   type args
   clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
-  predicate postcondition_once (self : self) (a : args) (res : Output0.output)
+  val ghost predicate postcondition_once (self : self) (a : args) (res : Output0.output)
 end
 module CreusotContracts_Std1_Fun_FnMutSpec_PostconditionMut_Interface
   type self
   type args
   use prelude.Prelude
   clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
-  predicate postcondition_mut (self : borrowed self) (_2' : args) (_3' : Output0.output)
+  val ghost predicate postcondition_mut (self : borrowed self) (_2' : args) (_3' : Output0.output)
 end
 module CreusotContracts_Std1_Fun_FnMutSpec_PostconditionMut
   type self
   type args
   use prelude.Prelude
   clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
-  predicate postcondition_mut (self : borrowed self) (_2' : args) (_3' : Output0.output)
+  val ghost predicate postcondition_mut (self : borrowed self) (_2' : args) (_3' : Output0.output)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
+  let rec ghost predicate resolve (self : borrowed t) =
+    pure { ^ self =  * self}
 end
 module CreusotContracts_Std1_Fun_FnSpec_FnMut_Interface
   type self
@@ -91,7 +91,9 @@ module CreusotContracts_Std1_Fun_FnSpec_FnMut_Interface
   type args = args, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Fun_FnMutSpec_PostconditionMut_Interface as PostconditionMut0 with type self = self,
   type args = args, type Output0.output = Output0.output
-  function fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
+  val ghost function fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
+    ensures { PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self && Postcondition0.postcondition ( * self) args res) }
+    
 end
 module CreusotContracts_Std1_Fun_FnSpec_FnMut
   type self
@@ -103,16 +105,16 @@ module CreusotContracts_Std1_Fun_FnSpec_FnMut
   type args = args, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Fun_FnMutSpec_PostconditionMut_Interface as PostconditionMut0 with type self = self,
   type args = args, type Output0.output = Output0.output
-  function fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
+  val ghost function fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
   axiom fn_mut_spec : forall self : borrowed self, args : args, res : Output0.output . PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self && Postcondition0.postcondition ( * self) args res)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Std1_Fun_FnSpec_FnOnce_Interface
   type self
@@ -123,7 +125,9 @@ module CreusotContracts_Std1_Fun_FnSpec_FnOnce_Interface
   type args = args, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce_Interface as PostconditionOnce0 with type self = self,
   type args = args, type Output0.output = Output0.output
-  function fn_once (self : self) (args : args) (res : Output0.output) : ()
+  val ghost function fn_once (self : self) (args : args) (res : Output0.output) : ()
+    ensures { PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self && Postcondition0.postcondition self args res) }
+    
 end
 module CreusotContracts_Std1_Fun_FnSpec_FnOnce
   type self
@@ -134,7 +138,7 @@ module CreusotContracts_Std1_Fun_FnSpec_FnOnce
   type args = args, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce_Interface as PostconditionOnce0 with type self = self,
   type args = args, type Output0.output = Output0.output
-  function fn_once (self : self) (args : args) (res : Output0.output) : ()
+  val ghost function fn_once (self : self) (args : args) (res : Output0.output) : ()
   axiom fn_once_spec : forall self : self, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self && Postcondition0.postcondition self args res)
 end
 module Core_Ops_Function_FnOnce_CallOnce_Interface
@@ -173,7 +177,9 @@ module CreusotContracts_Std1_Fun_FnMutSpec_FnMutOnce_Interface
   type args = args, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce_Interface as PostconditionOnce0 with type self = self,
   type args = args, type Output0.output = Output0.output
-  function fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
+  val ghost function fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
+    ensures { PostconditionOnce0.postcondition_once self args res = (exists s : (borrowed self) .  * s = self && PostconditionMut0.postcondition_mut s args res && Resolve0.resolve ( ^ s)) }
+    
 end
 module CreusotContracts_Std1_Fun_FnMutSpec_FnMutOnce
   type self
@@ -185,7 +191,7 @@ module CreusotContracts_Std1_Fun_FnMutSpec_FnMutOnce
   type args = args, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce_Interface as PostconditionOnce0 with type self = self,
   type args = args, type Output0.output = Output0.output
-  function fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
+  val ghost function fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
   axiom fn_mut_once_spec : forall self : self, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = (exists s : (borrowed self) .  * s = self && PostconditionMut0.postcondition_mut s args res && Resolve0.resolve ( ^ s))
 end
 module CreusotContracts_Logic_Resolve_Impl1
@@ -193,7 +199,7 @@ module CreusotContracts_Logic_Resolve_Impl1
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = borrowed t,
-  predicate resolve = Resolve0.resolve
+  val resolve = Resolve0.resolve
 end
 module C06FnSpecs_Weaken3_Interface
   type a
@@ -217,8 +223,8 @@ module C06FnSpecs_Weaken3
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = a
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = f
   clone Core_Ops_Function_FnOnce_CallOnce_Interface as CallOnce0 with type self = f, type args = a,
-  predicate Precondition0.precondition = Precondition0.precondition,
-  predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
+  val Precondition0.precondition = Precondition0.precondition,
+  val PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
   type Output0.output = Output0.output
   let rec cfg weaken_3 [@cfg:stackify] [#"../06_fn_specs.rs" 20 0 67] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 18 0 30] Precondition0.precondition f a}
@@ -285,14 +291,14 @@ module C06FnSpecs_Weaken2
   clone CreusotContracts_Std1_Fun_FnMutSpec_PostconditionMut as PostconditionMut0 with type self = f, type args = a,
   type Output0.output = Output0.output
   clone CreusotContracts_Std1_Fun_FnMutSpec_FnMutOnce as FnMutOnce0 with type self = f, type args = a,
-  predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
-  predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
-  predicate Resolve0.resolve = Resolve0.resolve, type Output0.output = Output0.output, axiom .
+  val PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
+  val PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+  val Resolve0.resolve = Resolve0.resolve, type Output0.output = Output0.output, axiom .
   clone CreusotContracts_Std1_Fun_FnOnceSpec_Precondition as Precondition0 with type self = f, type args = a
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = a
   clone C06FnSpecs_Weaken3_Interface as Weaken30 with type a = a, type f = f,
-  predicate Precondition0.precondition = Precondition0.precondition,
-  predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
+  val Precondition0.precondition = Precondition0.precondition,
+  val PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
   type Output0.output = Output0.output
   let rec cfg weaken_2 [@cfg:stackify] [#"../06_fn_specs.rs" 14 0 66] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 12 0 30] Precondition0.precondition f a}
@@ -357,25 +363,25 @@ module C06FnSpecs_Weaken
   clone CreusotContracts_Std1_Fun_FnMutSpec_PostconditionMut as PostconditionMut0 with type self = f, type args = a,
   type Output0.output = Output0.output
   clone CreusotContracts_Std1_Fun_FnMutSpec_FnMutOnce as FnMutOnce0 with type self = f, type args = a,
-  predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
-  predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
-  predicate Resolve0.resolve = Resolve1.resolve, type Output0.output = Output0.output, axiom .
+  val PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
+  val PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+  val Resolve0.resolve = Resolve1.resolve, type Output0.output = Output0.output, axiom .
   clone CreusotContracts_Std1_Fun_FnSpec_Postcondition as Postcondition0 with type self = f, type args = a,
   type Output0.output = Output0.output
   clone CreusotContracts_Std1_Fun_FnSpec_FnOnce as FnOnce0 with type self = f, type args = a,
-  predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
-  predicate Resolve0.resolve = Resolve1.resolve, predicate Postcondition0.postcondition = Postcondition0.postcondition,
+  val PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
+  val Resolve0.resolve = Resolve1.resolve, val Postcondition0.postcondition = Postcondition0.postcondition,
   type Output0.output = Output0.output, axiom .
   clone CreusotContracts_Std1_Fun_FnSpec_FnMut as FnMut0 with type self = f, type args = a,
-  predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
-  predicate Resolve0.resolve = Resolve0.resolve, predicate Postcondition0.postcondition = Postcondition0.postcondition,
+  val PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+  val Resolve0.resolve = Resolve0.resolve, val Postcondition0.postcondition = Postcondition0.postcondition,
   type Output0.output = Output0.output, axiom .
   clone CreusotContracts_Std1_Fun_FnOnceSpec_Precondition as Precondition0 with type self = f, type args = a
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = a
   clone C06FnSpecs_Weaken2_Interface as Weaken20 with type a = a, type f = f,
-  predicate Precondition0.precondition = Precondition0.precondition,
-  predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
-  predicate Resolve0.resolve = Resolve1.resolve, type Output0.output = Output0.output
+  val Precondition0.precondition = Precondition0.precondition,
+  val PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+  val Resolve0.resolve = Resolve1.resolve, type Output0.output = Output0.output
   let rec cfg weaken [@cfg:stackify] [#"../06_fn_specs.rs" 8 0 61] (f : f) (a : a) : Output0.output
     requires {[#"../06_fn_specs.rs" 6 0 30] Precondition0.precondition f a}
     ensures { [#"../06_fn_specs.rs" 7 0 38] Postcondition0.postcondition f a result }

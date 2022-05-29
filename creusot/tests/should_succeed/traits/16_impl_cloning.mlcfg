@@ -40,13 +40,13 @@ module C16ImplCloning_Impl0_Model_Interface
   type t
   use Type
   use seq.Seq
-  function model (self : Type.c16implcloning_vec t) : Seq.seq t
+  val ghost function model (self : Type.c16implcloning_vec t) : Seq.seq t
 end
 module C16ImplCloning_Impl0_Model
   type t
   use Type
   use seq.Seq
-  function model [#"../16_impl_cloning.rs" 10 4 35] (self : Type.c16implcloning_vec t) : Seq.seq t
+  val ghost function model [#"../16_impl_cloning.rs" 10 4 35] (self : Type.c16implcloning_vec t) : Seq.seq t
 end
 module CreusotContracts_Logic_Model_Model_ModelTy
   type self
@@ -55,18 +55,18 @@ end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
+  val ghost function model (self : self) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Model_Model
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
+  val ghost function model (self : self) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
   use prelude.Prelude
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  function model (self : borrowed t) : ModelTy0.modelTy
+  val ghost function model (self : borrowed t) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Impl1_Model
   type t
@@ -74,8 +74,8 @@ module CreusotContracts_Logic_Model_Impl1_Model
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  function model (self : borrowed t) : ModelTy0.modelTy =
-    Model0.model ( * self)
+  let rec ghost function model (self : borrowed t) : ModelTy0.modelTy =
+    let a' = pure { * self} in Model0.model a'
 end
 module C16ImplCloning_Impl0_ModelTy
   type t
@@ -95,10 +95,10 @@ module CreusotContracts_Logic_Model_Impl1
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
   clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
-  function Model0.model = Model2.model
+  val Model0.model = Model2.model
   clone CreusotContracts_Logic_Model_Impl1_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = borrowed t,
-  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  val model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = borrowed t,
   type modelTy = ModelTy0.modelTy
 end
@@ -108,35 +108,35 @@ module C16ImplCloning_Impl0
   clone C16ImplCloning_Impl0_Model as Model0 with type t = t
   clone C16ImplCloning_Impl0_ModelTy as ModelTy0 with type t = t
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = Type.c16implcloning_vec t,
-  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  val model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.c16implcloning_vec t,
   type modelTy = ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
+  let rec ghost predicate resolve (self : borrowed t) =
+    pure { ^ self =  * self}
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = borrowed t,
-  predicate resolve = Resolve0.resolve
+  val resolve = Resolve0.resolve
 end
 module C16ImplCloning_Test_Interface
   type t
@@ -157,7 +157,7 @@ module C16ImplCloning_Test
   clone C16ImplCloning_Impl0_Model as Model1 with type t = t
   clone C16ImplCloning_Impl0_ModelTy as ModelTy0 with type t = t
   clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Type.c16implcloning_vec t,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  type ModelTy0.modelTy = ModelTy0.modelTy, val Model0.model = Model1.model
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.c16implcloning_vec t
   let rec cfg test [@cfg:stackify] [#"../16_impl_cloning.rs" 16 0 26] (x : borrowed (Type.c16implcloning_vec t)) : ()
     ensures { [#"../16_impl_cloning.rs" 15 0 21] Model0.model x = Model1.model ( * x) }

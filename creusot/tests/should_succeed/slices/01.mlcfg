@@ -26,18 +26,18 @@ end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
+  val ghost function model (self : self) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Model_Model
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
+  val ghost function model (self : self) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Impl0_Model_Interface
   type t
   use prelude.Prelude
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  function model (self : t) : ModelTy0.modelTy
+  val ghost function model (self : t) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Impl0_Model
   type t
@@ -45,7 +45,7 @@ module CreusotContracts_Logic_Model_Impl0_Model
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  function model (self : t) : ModelTy0.modelTy =
+  let rec ghost function model (self : t) : ModelTy0.modelTy =
     Model0.model self
 end
 module CreusotContracts_Std1_Slice_Impl0_ModelTy
@@ -66,9 +66,9 @@ module CreusotContracts_Logic_Model_Impl0
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
   clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
-  function Model0.model = Model2.model
+  val Model0.model = Model2.model
   clone CreusotContracts_Logic_Model_Impl0_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = t, function model = Model0.model,
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = t, val model = Model0.model,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = t, type modelTy = ModelTy0.modelTy
 end
@@ -78,7 +78,10 @@ module CreusotContracts_Std1_Slice_Impl0_Model_Interface
   use seq.Seq
   use mach.int.Int
   use mach.int.UInt64
-  function model (self : seq t) : Seq.seq t
+  val ghost function model (self : seq t) : Seq.seq t
+    ensures { result = Prelude.id self }
+    ensures { Seq.length result <= 18446744073709551615 }
+    
 end
 module CreusotContracts_Std1_Slice_Impl0_Model
   type t
@@ -86,7 +89,7 @@ module CreusotContracts_Std1_Slice_Impl0_Model
   use seq.Seq
   use mach.int.Int
   use mach.int.UInt64
-  function model (self : seq t) : Seq.seq t
+  val ghost function model (self : seq t) : Seq.seq t
   axiom model_spec : forall self : seq t . Seq.length (model self) <= 18446744073709551615 && model self = Prelude.id self
 end
 module CreusotContracts_Std1_Slice_Impl0
@@ -95,8 +98,8 @@ module CreusotContracts_Std1_Slice_Impl0
   use seq.Seq
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model0 with type t = t, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = seq t,
-  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = seq t, val model = Model0.model,
+  type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = seq t, type modelTy = ModelTy0.modelTy
 end
 module C01_IndexSlice_Interface
@@ -121,7 +124,7 @@ module C01_IndexSlice
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model1 with type t = uint32, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = uint32
   clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = seq uint32,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  type ModelTy0.modelTy = ModelTy0.modelTy, val Model0.model = Model1.model
   use mach.int.UInt64
   let rec cfg index_slice [@cfg:stackify] [#"../01.rs" 6 0 32] (a : seq uint32) : uint32
     requires {[#"../01.rs" 5 0 28] 10 < Seq.length (Model0.model a)}
@@ -153,7 +156,7 @@ module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
   use prelude.Prelude
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  function model (self : borrowed t) : ModelTy0.modelTy
+  val ghost function model (self : borrowed t) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Impl1_Model
   type t
@@ -161,8 +164,8 @@ module CreusotContracts_Logic_Model_Impl1_Model
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  function model (self : borrowed t) : ModelTy0.modelTy =
-    Model0.model ( * self)
+  let rec ghost function model (self : borrowed t) : ModelTy0.modelTy =
+    let a' = pure { * self} in Model0.model a'
 end
 module CreusotContracts_Logic_Model_Impl1_ModelTy
   type t
@@ -176,38 +179,38 @@ module CreusotContracts_Logic_Model_Impl1
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
   clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
-  function Model0.model = Model2.model
+  val Model0.model = Model2.model
   clone CreusotContracts_Logic_Model_Impl1_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = borrowed t,
-  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  val model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = borrowed t,
   type modelTy = ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
+  let rec ghost predicate resolve (self : borrowed t) =
+    pure { ^ self =  * self}
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = borrowed t,
-  predicate resolve = Resolve0.resolve
+  val resolve = Resolve0.resolve
 end
 module C01_IndexMutSlice_Interface
   use seq.Seq
@@ -233,7 +236,7 @@ module C01_IndexMutSlice
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model1 with type t = uint32, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = uint32
   clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = seq uint32,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  type ModelTy0.modelTy = ModelTy0.modelTy, val Model0.model = Model1.model
   use mach.int.UInt64
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = seq uint32
   let rec cfg index_mut_slice [@cfg:stackify] [#"../01.rs" 12 0 33] (a : borrowed (seq uint32)) : ()
@@ -318,11 +321,11 @@ module C01_SliceFirst
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model1 with type t = t, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
   clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = seq t,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  type ModelTy0.modelTy = ModelTy0.modelTy, val Model0.model = Model1.model
   use mach.int.UInt64
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = seq t
-  clone Core_Slice_Impl0_Len_Interface as Len0 with type t = t, function Model0.model = Model0.model
+  clone Core_Slice_Impl0_Len_Interface as Len0 with type t = t, val Model0.model = Model0.model
   let rec cfg slice_first [@cfg:stackify] [#"../01.rs" 20 0 40] (a : seq t) : Type.core_option_option t
     ensures { [#"../01.rs" 16 0 3] match (result) with
       | Type.Core_Option_Option_Some v -> v = Seq.get (Model0.model a) 0

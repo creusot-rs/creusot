@@ -29,6 +29,7 @@ pub enum Decl {
     FunDecl(CfgFunction),
     Let(LetDecl),
     LetFun(LetFun),
+    LetPred(LetPred),
     ValDecl(ValKind),
     LogicDecl(Logic),
     Scope(Scope),
@@ -252,9 +253,9 @@ impl CloneSubst {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum ValKind {
-    Val { sig: Signature },
-    Predicate { sig: Signature },
-    Function { sig: Signature },
+    Val { ghost: bool, sig: Signature },
+    Predicate { ghost: bool, sig: Signature },
+    Function { ghost: bool, sig: Signature },
 }
 
 #[derive(Debug, Clone)]
@@ -282,6 +283,15 @@ pub struct LetDecl {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct LetFun {
+    pub sig: Signature,
+    pub rec: bool,
+    pub ghost: bool,
+    pub body: Exp,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct LetPred {
     pub sig: Signature,
     pub rec: bool,
     pub ghost: bool,

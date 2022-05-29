@@ -27,14 +27,20 @@ module MappingTest_Impl0_Model_Interface
   use map.Map
   use mach.int.Int32
   use Type
-  function model (self : Type.mappingtest_t) : Map.map int int
+  val ghost function model (self : Type.mappingtest_t) : Map.map int int
+    ensures { [#"../mapping_test.rs" 15 4 76] forall i : (int) . Map.get result i = (if 0 <= i && i < Int32.to_int (Type.mappingtest_t_T_a self) then
+      1
+    else
+      0
+    ) }
+    
 end
 module MappingTest_Impl0_Model
   use mach.int.Int
   use map.Map
   use mach.int.Int32
   use Type
-  function model [#"../mapping_test.rs" 18 4 35] (self : Type.mappingtest_t) : Map.map int int
+  val ghost function model [#"../mapping_test.rs" 18 4 35] (self : Type.mappingtest_t) : Map.map int int
   axiom model_spec : forall self : Type.mappingtest_t . [#"../mapping_test.rs" 15 4 76] forall i : (int) . Map.get (model self) i = (if 0 <= i && i < Int32.to_int (Type.mappingtest_t_T_a self) then
     1
   else
@@ -48,12 +54,12 @@ end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
+  val ghost function model (self : self) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Model_Model
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
+  val ghost function model (self : self) : ModelTy0.modelTy
 end
 module MappingTest_Impl0_ModelTy
   use map.Map
@@ -66,7 +72,7 @@ module MappingTest_Impl0
   clone MappingTest_Impl0_Model as Model0 with axiom .
   clone MappingTest_Impl0_ModelTy as ModelTy0
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = Type.mappingtest_t,
-  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  val model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = Type.mappingtest_t,
   type modelTy = ModelTy0.modelTy
 end
@@ -74,7 +80,7 @@ module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
   use prelude.Prelude
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
-  function model (self : borrowed t) : ModelTy0.modelTy
+  val ghost function model (self : borrowed t) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Impl1_Model
   type t
@@ -82,8 +88,8 @@ module CreusotContracts_Logic_Model_Impl1_Model
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  function model (self : borrowed t) : ModelTy0.modelTy =
-    Model0.model ( * self)
+  let rec ghost function model (self : borrowed t) : ModelTy0.modelTy =
+    let a' = pure { * self} in Model0.model a'
 end
 module CreusotContracts_Logic_Model_Impl1_ModelTy
   type t
@@ -97,38 +103,38 @@ module CreusotContracts_Logic_Model_Impl1
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy2.modelTy
   clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy,
-  function Model0.model = Model2.model
+  val Model0.model = Model2.model
   clone CreusotContracts_Logic_Model_Impl1_ModelTy as ModelTy0 with type t = t, type ModelTy0.modelTy = ModelTy2.modelTy
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = borrowed t,
-  function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  val model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = borrowed t,
   type modelTy = ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve
   type t
   use prelude.Prelude
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
+  let rec ghost predicate resolve (self : borrowed t) =
+    pure { ^ self =  * self}
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = borrowed t,
-  predicate resolve = Resolve0.resolve
+  val resolve = Resolve0.resolve
 end
 module MappingTest_Incr_Interface
   use mach.int.Int32
@@ -152,7 +158,7 @@ module MappingTest_Incr
   clone MappingTest_Impl0_ModelTy as ModelTy0
   clone MappingTest_Impl0_Model as Model0 with axiom .
   clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Type.mappingtest_t,
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
+  type ModelTy0.modelTy = ModelTy0.modelTy, val Model0.model = Model0.model
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.mappingtest_t
   let rec cfg incr [@cfg:stackify] [#"../mapping_test.rs" 26 0 18] (t : borrowed (Type.mappingtest_t)) : ()
     requires {[#"../mapping_test.rs" 24 0 31] Int32.to_int (Type.mappingtest_t_T_a ( * t)) < 1000}
@@ -195,7 +201,7 @@ module MappingTest_Main
   use Type
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.mappingtest_t
-  clone MappingTest_Incr_Interface as Incr0 with function Model0.model = Model0.model
+  clone MappingTest_Incr_Interface as Incr0 with val Model0.model = Model0.model
   let rec cfg main [@cfg:stackify] [#"../mapping_test.rs" 34 0 9] (_ : ()) : () =
   var _0 : ();
   var x_1 : Type.mappingtest_t;

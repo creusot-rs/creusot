@@ -10,6 +10,7 @@ fn main() {
     let mut out = StandardStream::stdout(ColorChoice::Always);
     let orange = Color::Ansi256(214);
     let lazy = std::env::args().any(|arg| arg == "--lazy");
+    let only_type = std::env::args().any(|arg| arg == "--only-type");
     let fail_obsoleate = std::env::args().any(|arg| arg == "--fail-obsolete");
     let skip_unstable = std::env::args().any(|arg| arg == "--skip-unstable");
 
@@ -48,7 +49,7 @@ fn main() {
         sessionfile.push("why3session.xml");
 
         let output;
-        if sessionfile.is_file() {
+        if sessionfile.is_file() && !only_type {
             // There is a session directory. Try to replay the session.
             let mut command = Command::new(why3_path.clone());
             command.arg("replay");

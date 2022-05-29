@@ -257,6 +257,8 @@ impl Exp {
                     Exp::QVar(_, Purity::Program) => self.pure &= false,
                     Exp::Verbatim(_) => self.pure &= false,
                     Exp::Absurd => self.pure &= false,
+                    // Ironically enough `pure { }` is not pure
+                    Exp::Pure(_) => self.pure &= false,
                     _ => {
                         super_visit(self, exp);
                     }
