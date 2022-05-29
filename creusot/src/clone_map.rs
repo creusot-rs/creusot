@@ -122,7 +122,7 @@ impl Kind {
 
 use rustc_macros::{TyDecodable, TyEncodable};
 
-#[derive(Clone, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
 enum CloneOpacity {
     Transparent,
     Opaque,
@@ -245,7 +245,6 @@ impl<'tcx> CloneMap<'tcx> {
         let (def_id, subst) = self.closure_hack(def_id, subst);
 
         self.names.entry((def_id, subst)).or_insert_with(|| {
-            debug!("inserting {:?} {:?}", def_id, subst);
             let base_sym = match util::item_type(self.tcx, def_id) {
                 ItemType::Impl => self.tcx.item_name(self.tcx.trait_id_of_impl(def_id).unwrap()),
                 ItemType::Closure => Symbol::intern(&format!(
@@ -257,6 +256,7 @@ impl<'tcx> CloneMap<'tcx> {
 
             let base = Symbol::intern(&base_sym.as_str().to_camel_case());
             let count: usize = *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
+            debug!("inserting {:?} {:?} as {}{}", def_id, subst, base, count);
 
             let info =
                 CloneInfo::from_name(Symbol::intern(&format!("{}{}", base, count)), self.public);
@@ -373,24 +373,31 @@ impl<'tcx> CloneMap<'tcx> {
         }
 
         walk_projections(key.1, |pty: &ProjectionTy<'tcx>| {
-            self.insert(pty.item_def_id, pty.substs);
-            self.add_graph_edge(DepNode::Dep(key), DepNode::Dep((pty.item_def_id, pty.substs)));
+            let dep = self.resolve_dep(ctx, (pty.item_def_id, pty.substs));
+
+            if let DepNode::Dep((defid, subst)) = dep {
+                trace!("inserting projection dependency {:?}", dep);
+                self.insert(defid, subst);
+            }
+
+            self.add_graph_edge(DepNode::Dep(key), dep);
         });
 
+        let key_public = self.names[&key].public;
+        // Whether we are treating this clone as an opaque symbol
+        let opaque_clone = !self.use_full_clones || self.names[&key].opaque == CloneOpacity::Opaque;
         for (dep, info) in ctx.dependencies(key.0).iter().flat_map(|i| i.iter()) {
-            // TODO: This only works because we use a completely separate set of clones for
-            // function interfaces and bodies. It should be refactored to be less error prone.
-            if !self.use_full_clones && !info.public {
+            if opaque_clone && !info.public {
                 continue;
             }
             trace!("adding dependency {:?} {:?}", dep, info.public);
 
             let orig = dep;
-            let dep = self.resolve_dep(ctx, key.1, *dep);
+            let dep = self.resolve_dep(ctx, dep.subst(self.tcx, key.1));
 
             if let DepNode::Dep((defid, subst)) = dep {
                 trace!("inserting dependency {:?}", dep);
-                self.insert(defid, subst);
+                self.insert(defid, subst).public |= key_public && info.public;
             }
 
             // Skip reflexive edges
@@ -426,12 +433,11 @@ impl<'tcx> CloneMap<'tcx> {
     fn resolve_dep(
         &self,
         ctx: &TranslationCtx<'_, 'tcx>,
-        subst: SubstsRef<'tcx>,
         dep: (DefId, SubstsRef<'tcx>),
     ) -> DepNode<'tcx> {
-        let dep = (dep.0, dep.1.subst(self.tcx, subst));
-
         let param_env = ctx.param_env(self.self_id);
+        let dep = self.tcx.try_normalize_erasing_regions(param_env, dep).unwrap_or(dep);
+
         let resolved = traits::resolve_opt(ctx.tcx, param_env, dep.0, dep.1).unwrap_or(dep);
         let resolved = self.closure_hack(resolved.0, resolved.1);
 
