@@ -16,7 +16,7 @@ use rustc_middle::{
     mir::{BorrowKind, Mutability::*},
     ty::{subst::SubstsRef, TyCtxt, WithOptConstParam},
 };
-use rustc_span::Symbol;
+use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
 
 use super::PurityVisitor;
@@ -52,6 +52,7 @@ pub enum UnOp {
 pub struct Term<'tcx> {
     pub ty: Ty<'tcx>,
     pub kind: TermKind<'tcx>,
+    pub span: Span,
 }
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
@@ -135,12 +136,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn expr_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
         let ty = self.thir[expr].ty;
         let thir_term = &self.thir[expr];
+        let span = self.thir[expr].span;
         match thir_term.kind {
             ExprKind::Scope { value, .. } => self.expr_term(value),
             ExprKind::Block { body: Block { ref stmts, expr, .. } } => {
                 let mut inner = match expr {
                     Some(e) => self.expr_term(e)?,
-                    None => Term { ty, kind: TermKind::Tuple { fields: vec![] } },
+                    None => Term { ty, span, kind: TermKind::Tuple { fields: vec![] } },
                 };
 
                 for stmt in stmts.iter().rev().filter(|id| not_spec(self.tcx, self.thir, **id)) {
@@ -184,6 +186,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 };
                 Ok(Term {
                     ty,
+                    span,
                     kind: TermKind::Binary { op, operand_ty, lhs: box lhs, rhs: box rhs },
                 })
             }
@@ -194,7 +197,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     thir::LogicalOp::And => LogicalOp::And,
                     thir::LogicalOp::Or => LogicalOp::Or,
                 };
-                Ok(Term { ty, kind: TermKind::Logical { op, lhs: box lhs, rhs: box rhs } })
+                Ok(Term { ty, span, kind: TermKind::Logical { op, lhs: box lhs, rhs: box rhs } })
             }
             ExprKind::Unary { op, arg } => {
                 let arg = self.expr_term(arg)?;
@@ -202,19 +205,19 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     rustc_middle::mir::UnOp::Not => UnOp::Not,
                     rustc_middle::mir::UnOp::Neg => UnOp::Neg,
                 };
-                Ok(Term { ty, kind: TermKind::Unary { op, arg: box arg } })
+                Ok(Term { ty, span, kind: TermKind::Unary { op, arg: box arg } })
             }
             ExprKind::VarRef { id } => {
                 let map = self.tcx.hir();
                 let name = map.name(id);
-                Ok(Term { ty, kind: TermKind::Var(name) })
+                Ok(Term { ty, span, kind: TermKind::Var(name) })
             }
             // TODO: confirm this works
             ExprKind::UpvarRef { var_hir_id: id, .. } => {
                 let map = self.tcx.hir();
                 let name = map.name(id);
 
-                Ok(Term { ty, kind: TermKind::Var(name) })
+                Ok(Term { ty, span, kind: TermKind::Var(name) })
             }
             ExprKind::Literal { lit, .. } => {
                 let lit = match lit.node {
@@ -222,40 +225,40 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     LitKind::Int(u, s) => Literal::Int(u, s),
                     _ => unimplemented!("Unsupported literal"),
                 };
-                Ok(Term { ty, kind: TermKind::Lit(lit) })
+                Ok(Term { ty, span, kind: TermKind::Lit(lit) })
             }
             ExprKind::Call { ty: f_ty, fun, ref args, .. } => {
                 use Stub::*;
                 match pearlite_stub(self.tcx, f_ty) {
                     Some(Forall) => {
                         let (binder, body) = self.quant_term(args[0])?;
-                        Ok(Term { ty, kind: TermKind::Forall { binder, body: box body } })
+                        Ok(Term { ty, span, kind: TermKind::Forall { binder, body: box body } })
                     }
                     Some(Exists) => {
                         let (binder, body) = self.quant_term(args[0])?;
-                        Ok(Term { ty, kind: TermKind::Exists { binder, body: box body } })
+                        Ok(Term { ty, span, kind: TermKind::Exists { binder, body: box body } })
                     }
                     Some(Fin) => {
                         let term = self.expr_term(args[0])?;
 
-                        Ok(Term { ty, kind: TermKind::Fin { term: box term } })
+                        Ok(Term { ty, span, kind: TermKind::Fin { term: box term } })
                     }
                     Some(Cur) => {
                         let term = self.expr_term(args[0])?;
 
-                        Ok(Term { ty, kind: TermKind::Cur { term: box term } })
+                        Ok(Term { ty, span, kind: TermKind::Cur { term: box term } })
                     }
                     Some(Impl) => {
                         let lhs = self.expr_term(args[0])?;
                         let rhs = self.expr_term(args[1])?;
 
-                        Ok(Term { ty, kind: TermKind::Impl { lhs: box lhs, rhs: box rhs } })
+                        Ok(Term { ty, span, kind: TermKind::Impl { lhs: box lhs, rhs: box rhs } })
                     }
                     Some(Equals) => {
                         let lhs = self.expr_term(args[0])?;
                         let rhs = self.expr_term(args[1])?;
 
-                        Ok(Term { ty, kind: TermKind::Equals { lhs: box lhs, rhs: box rhs } })
+                        Ok(Term { ty, span, kind: TermKind::Equals { lhs: box lhs, rhs: box rhs } })
                     }
                     Some(Neq) => {
                         let operand_ty = self.thir[args[0]].ty;
@@ -264,6 +267,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
                         Ok(Term {
                             ty,
+                            span,
                             kind: TermKind::Binary {
                                 op: BinOp::Ne,
                                 operand_ty,
@@ -276,10 +280,12 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Some(Old) => {
                         let term = self.expr_term(args[0])?;
 
-                        Ok(Term { ty, kind: TermKind::Old { term: box term } })
+                        Ok(Term { ty, span, kind: TermKind::Old { term: box term } })
                     }
-                    Some(ResultCheck) => Ok(Term { ty, kind: TermKind::Tuple { fields: vec![] } }),
-                    Some(Absurd) => Ok(Term { ty, kind: TermKind::Absurd }),
+                    Some(ResultCheck) => {
+                        Ok(Term { ty, span, kind: TermKind::Tuple { fields: vec![] } })
+                    }
+                    Some(Absurd) => Ok(Term { ty, span, kind: TermKind::Absurd }),
                     None => {
                         let fun = self.expr_term(fun)?;
                         let args = args
@@ -292,7 +298,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                             unreachable!("Call on non-function type");
                         };
 
-                        Ok(Term { ty, kind: TermKind::Call { id, subst, fun: box fun, args } })
+                        Ok(Term {
+                            ty,
+                            span,
+                            kind: TermKind::Call { id, subst, fun: box fun, args },
+                        })
                     }
                 }
             }
@@ -318,6 +328,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let fields = fields.into_iter().map(|f| f.1).collect();
                 Ok(Term {
                     ty,
+                    span,
                     kind: TermKind::Constructor { adt: adt_def, variant: variant_index, fields },
                 })
             }
@@ -327,14 +338,14 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 if self.thir[arg].ty.is_box() || self.thir[arg].ty.ref_mutability() == Some(Not) {
                     self.expr_term(arg)
                 } else {
-                    Ok(Term { ty, kind: TermKind::Cur { term: box self.expr_term(arg)? } })
+                    Ok(Term { ty, span, kind: TermKind::Cur { term: box self.expr_term(arg)? } })
                 }
             }
             ExprKind::Match { scrutinee, ref arms } => {
                 let scrutinee = self.expr_term(scrutinee)?;
                 let arms = arms.iter().map(|arm| self.arm_term(*arm)).collect::<Result<_, _>>()?;
 
-                Ok(Term { ty, kind: TermKind::Match { scrutinee: box scrutinee, arms } })
+                Ok(Term { ty, span, kind: TermKind::Match { scrutinee: box scrutinee, arms } })
             }
             ExprKind::If { cond, then, else_opt, .. } => {
                 let cond = self.expr_term(cond)?;
@@ -342,10 +353,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let els = if let Some(els) = else_opt {
                     self.expr_term(els)?
                 } else {
-                    Term { ty: self.tcx.types.unit, kind: TermKind::Tuple { fields: vec![] } }
+                    Term { span, ty: self.tcx.types.unit, kind: TermKind::Tuple { fields: vec![] } }
                 };
                 Ok(Term {
                     ty,
+                    span,
                     kind: TermKind::Match {
                         scrutinee: box cond,
                         arms: vec![(Pattern::Boolean(true), then), (Pattern::Boolean(false), els)],
@@ -361,6 +373,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         let lhs = self.expr_term(lhs)?;
                         Ok(Term {
                             ty,
+                            span,
                             kind: TermKind::Projection { lhs: box lhs, name, def: def.did() },
                         })
                     }
@@ -368,11 +381,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         let lhs = self.expr_term(lhs)?;
                         Ok(Term {
                             ty,
+                            span,
                             kind: TermKind::Let {
                                 pattern: pat,
                                 // this is the wrong type
                                 body: box Term {
                                     ty: lhs.ty,
+                                    span: rustc_span::DUMMY_SP,
                                     kind: TermKind::Var(Symbol::intern("a")),
                                 },
                                 arg: box lhs,
@@ -385,19 +400,21 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Tuple { ref fields } => {
                 let fields: Vec<_> =
                     fields.iter().map(|f| self.expr_term(*f)).collect::<Result<_, _>>()?;
-                Ok(Term { ty, kind: TermKind::Tuple { fields } })
+                Ok(Term { ty, span, kind: TermKind::Tuple { fields } })
             }
             ExprKind::Use { source } => self.expr_term(source),
-            ExprKind::NeverToAny { .. } => Ok(Term { ty, kind: TermKind::Absurd }),
+            ExprKind::NeverToAny { .. } => Ok(Term { ty, span, kind: TermKind::Absurd }),
             ExprKind::ValueTypeAscription { source, .. } => self.expr_term(source),
             ExprKind::Box { value } => self.expr_term(value),
             // ExprKind::Array { ref fields } => todo!("Array {:?}", fields),
             ExprKind::NonHirLiteral { .. } => match ty.kind() {
-                TyKind::FnDef(id, substs) => Ok(Term { ty, kind: TermKind::Item(*id, substs) }),
+                TyKind::FnDef(id, substs) => {
+                    Ok(Term { ty, span, kind: TermKind::Item(*id, substs) })
+                }
                 _ => Err(Error::new(thir_term.span, "unhandled literal expression")),
             },
             ExprKind::NamedConst { def_id, substs, .. } => {
-                Ok(Term { ty, kind: TermKind::Item(def_id, substs) })
+                Ok(Term { ty, span, kind: TermKind::Item(def_id, substs) })
             }
             ref ek => todo!("lower_expr: {:?}", ek),
         }
@@ -490,9 +507,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         return Ok(inner);
                     }
                 };
+                let span = self.thir[*expr].span;
 
                 Ok(Term {
                     ty: inner.ty,
+                    span,
                     kind: TermKind::Let {
                         pattern: Pattern::Wildcard,
                         arg: box arg,
@@ -504,8 +523,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let pattern = self.pattern_term(pattern)?;
                 if let Some(initializer) = initializer {
                     let initializer = self.expr_term(*initializer)?;
+                    let span = init_scope.span(self.tcx, self.tcx.region_scope_tree(self.item_id));
                     Ok(Term {
                         ty: inner.ty,
+                        span,
                         kind: TermKind::Let { pattern, arg: box initializer, body: box inner },
                     })
                 } else {

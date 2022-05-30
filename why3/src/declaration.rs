@@ -38,6 +38,7 @@ pub enum Decl {
     Clone(DeclClone),
     UseDecl(Use),
     Axiom(Axiom),
+    Goal(Goal),
     // ConstantDecl(Constant),
 }
 
@@ -268,6 +269,13 @@ pub struct Use {
 pub struct Axiom {
     pub name: Ident,
     pub axiom: Exp,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Goal {
+    pub name: Ident,
+    pub goal: Exp,
 }
 
 #[derive(Debug, Clone)]
