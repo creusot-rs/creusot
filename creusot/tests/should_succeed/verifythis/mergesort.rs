@@ -1,10 +1,10 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
 use creusot_contracts::std::*;
+use creusot_contracts::*;
 
 struct Sr<T> {
     runs: Vec<usize>,
-    data: Vec<T>
+    data: Vec<T>,
 }
 
 #[predicate]
@@ -35,9 +35,8 @@ fn sorted_usize(s: Seq<usize>) -> bool {
     }
 }
 
-
 #[predicate]
-fn partition<T: Ord>(s: Seq<T>, i: Int) -> bool{
+fn partition<T: Ord>(s: Seq<T>, i: Int) -> bool {
     pearlite! {
         forall<l: Int, r: Int> 0 <= l && l < i && i <= r
         && r < s.len() ==> s[l] <= s[r]
@@ -52,7 +51,6 @@ fn correct_run_indexes<T: Ord>(s: Seq<usize>, d: Seq<T>) -> bool {
     }
 }
 
-
 //extend_vec(&mut res.data, &r1.data, di1, r1.runs[ri1]);
 // #[requires(@left_data_idx <= @left_idx)]
 // #[requires(@right_data_idx <= @right_idx)]
@@ -63,8 +61,14 @@ fn correct_run_indexes<T: Ord>(s: Seq<usize>, d: Seq<T>) -> bool {
 // #[requires(@left_data_idx < (@left.data).len())]
 // #[requires(@right_data_idx < (@right.data).len())]
 #[ensures(@left_idx === (@left.runs).len() ==> result === false)]
-fn do_check<T : Ord + Clone>(left: &Sr<T>, right: &Sr<T>, left_idx: usize, 
-    right_idx: usize, left_data_idx: usize, right_data_idx: usize) -> bool {
+fn do_check<T: Ord + Clone>(
+    left: &Sr<T>,
+    right: &Sr<T>,
+    left_idx: usize,
+    right_idx: usize,
+    left_data_idx: usize,
+    right_data_idx: usize,
+) -> bool {
     if left_idx < left.runs.len() {
         if right_idx == right.runs.len() {
             return true;
@@ -94,7 +98,7 @@ fn extend_vec<T: Clone>(tgt: &mut Vec<T>, src: &Vec<T>, mut l: usize, h: usize) 
     //    (@tgt)[(@@old_tgt).len() + i - @old_l] === (@src)[i])]
     //#[invariant(els_from_src, @*tgt === (@@old_tgt).concat((@src).subsequence(@old_l, @l)))]
     //#[invariant(els_from_src(
-            //forall<i: Int> @old_l <= i && i < @l ==>))]
+    //forall<i: Int> @old_l <= i && i < @l ==>))]
     #[invariant(len_ok, (@tgt).len() === (@@old_tgt).len() + @l - @old_l)]
     while l < h {
         tgt.push(src[l].clone());
@@ -120,8 +124,8 @@ fn sr_invariant<T>(s: Sr<T>) -> bool {
 #[requires(sr_invariant(r2))]
 #[ensures((@result.runs).len() < 1_000)]
 #[ensures(sr_invariant(result))]
-fn merge<T : Ord + Clone>(r1: Sr<T>, r2: Sr<T>) -> Sr<T> {
-    let mut res: Sr<T> = Sr { runs: Vec::new(), data: Vec::new()};
+fn merge<T: Ord + Clone>(r1: Sr<T>, r2: Sr<T>) -> Sr<T> {
+    let mut res: Sr<T> = Sr { runs: Vec::new(), data: Vec::new() };
     let mut di1: usize = 0;
     let mut ri1: usize = 0;
     let mut di2: usize = 0;
@@ -142,7 +146,7 @@ fn merge<T : Ord + Clone>(r1: Sr<T>, r2: Sr<T>) -> Sr<T> {
         let t1 = do_check(&r1, &r2, ri1, ri2, di1, di2);
         let t2 = do_check(&r2, &r1, ri2, ri1, di2, di1);
         if t1 {
-            proof_assert!{ @ri1 < (@r1.runs).len() };
+            proof_assert! { @ri1 < (@r1.runs).len() };
             extend_vec(&mut res.data, &r1.data, di1, r1.runs[ri1]);
             di1 = r1.runs[ri1];
             proof_assert! { @di1 <= (@r1.data).len() };
@@ -151,7 +155,7 @@ fn merge<T : Ord + Clone>(r1: Sr<T>, r2: Sr<T>) -> Sr<T> {
             proof_assert! { (@@old_data).len() <= (@res.data).len() };
         }
         if t2 {
-            proof_assert!{ @ri2 < (@r2.runs).len() };
+            proof_assert! { @ri2 < (@r2.runs).len() };
             extend_vec(&mut res.data, &r2.data, di2, r2.runs[ri2]);
             di2 = r2.runs[ri2];
             ri2 += 1;
@@ -176,14 +180,13 @@ fn merge<T : Ord + Clone>(r1: Sr<T>, r2: Sr<T>) -> Sr<T> {
 #[requires((@arr).len() <= 1000)]
 #[ensures(sr_invariant(result))]
 #[ensures((@result.runs).len() < 1000)]
-fn msort<T : Ord + Clone>(arr: &Vec<T>, l: usize, h: usize) -> Sr<T> {
-   
-    if l == h { 
+fn msort<T: Ord + Clone>(arr: &Vec<T>, l: usize, h: usize) -> Sr<T> {
+    if l == h {
         let res = Sr { runs: Vec::new(), data: Vec::new() };
-        return res; 
+        return res;
     }
 
-    if h - l == 1  {
+    if h - l == 1 {
         let mut res = Sr { runs: Vec::new(), data: Vec::new() };
         res.data.push(arr[l].clone());
         // putting in in the next line causes invalid code gen
@@ -193,7 +196,7 @@ fn msort<T : Ord + Clone>(arr: &Vec<T>, l: usize, h: usize) -> Sr<T> {
     }
 
     let m = l + (h - l) / 2;
-    
+
     proof_assert! { @m < @h };
     let res1 = msort(arr, l, m);
     let res2 = msort(arr, m, h);

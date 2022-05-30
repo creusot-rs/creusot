@@ -18,15 +18,14 @@ extern_spec! {
     }
 }
 
-
-impl<T : Eq> Eq for Option<T> {
-    #[trusted]
-    #[ensures(result === (*self == *rhs))]
-    fn eq(&self, rhs: &Self) -> bool {
-        match (self, rhs) {
-            (Some(x), Some(y)) => x.eq(y),
-            (None, None) => true,
-            _ => false
-        }
-    }   
-}
+// impl<T: Eq> Eq for Option<T> {
+//     #[trusted]
+//     #[ensures(result == (*self == *rhs))]
+//     fn eq(&self, rhs: &Self) -> bool {
+//         match (self, rhs) {
+//             (Some(x), Some(y)) => x.eq(y),
+//             (None, None) => true,
+//             _ => false,
+//         }
+//     }
+// }
