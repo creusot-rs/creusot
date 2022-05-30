@@ -22,7 +22,6 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         let mut laws = Vec::new();
 
         for item in associated_items(self.tcx, def_id) {
-            self.translate(item.def_id);
             if is_law(self.tcx, item.def_id) {
                 laws.push(item.def_id);
             }

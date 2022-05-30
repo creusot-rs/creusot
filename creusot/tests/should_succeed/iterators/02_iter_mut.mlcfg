@@ -14,6 +14,13 @@ module Type
   use floating_point.Double
   use seq.Seq
   use prelude.Prelude
+  type c02itermut_itermut 't =
+    | C02IterMut_IterMut (borrowed (seq 't))
+    
+  let function c02itermut_itermut_IterMut_inner (self : c02itermut_itermut 't) : borrowed (seq 't) =
+    match (self) with
+      | C02IterMut_IterMut a -> a
+      end
   type core_option_option 't =
     | Core_Option_Option_None
     | Core_Option_Option_Some 't
@@ -22,13 +29,6 @@ module Type
     match (self) with
       | Core_Option_Option_None -> any 't
       | Core_Option_Option_Some a -> a
-      end
-  type c02itermut_itermut 't =
-    | C02IterMut_IterMut (borrowed (seq 't))
-    
-  let function c02itermut_itermut_IterMut_inner (self : c02itermut_itermut 't) : borrowed (seq 't) =
-    match (self) with
-      | C02IterMut_IterMut a -> a
       end
   type core_ptr_nonnull_nonnull 't =
     | Core_Ptr_NonNull_NonNull opaque_ptr
@@ -47,91 +47,6 @@ module Type
     
   type alloc_alloc_global  =
     | Alloc_Alloc_Global
-    
-end
-module C02IterMut_Common_Iterator_Item
-  type self
-  type item
-end
-module C02IterMut_Common_Iterator_Completed_Interface
-  type self
-  predicate completed (self : self)
-end
-module C02IterMut_Common_Iterator_Completed
-  type self
-  predicate completed [#"../common.rs" 9 4 31] (self : self)
-end
-module C02IterMut_Common_Iterator_Produces_Interface
-  type self
-  use seq.Seq
-  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
-  predicate produces (self : self) (visited : Seq.seq Item0.item) (_3' : self)
-end
-module C02IterMut_Common_Iterator_Produces
-  type self
-  use seq.Seq
-  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
-  predicate produces [#"../common.rs" 12 4 65] (self : self) (visited : Seq.seq Item0.item) (_3' : self)
-end
-module C02IterMut_Common_Iterator_ProducesRefl_Interface
-  type self
-  use seq.Seq
-  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
-  clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  function produces_refl (a : self) : ()
-end
-module C02IterMut_Common_Iterator_ProducesRefl
-  type self
-  use seq.Seq
-  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
-  clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  function produces_refl [#"../common.rs" 16 4 30] (a : self) : ()
-  axiom produces_refl_spec : forall a : self . [#"../common.rs" 15 4 41] Produces0.produces a (Seq.empty ) a
-end
-module C02IterMut_Common_Iterator_ProducesTrans_Interface
-  type self
-  use seq.Seq
-  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
-  clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  function produces_trans (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
-end
-module C02IterMut_Common_Iterator_ProducesTrans
-  type self
-  use seq.Seq
-  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
-  clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  function produces_trans [#"../common.rs" 22 4 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
-    
-  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 20 4 34] Produces0.produces b bc c) -> ([#"../common.rs" 19 4 34] Produces0.produces a ab b) -> ([#"../common.rs" 21 4 44] Produces0.produces a (Seq.(++) ab bc) c)
-end
-module C02IterMut_Common_Iterator_Next_Interface
-  type self
-  use Type
-  use seq.Seq
-  use prelude.Prelude
-  clone C02IterMut_Common_Iterator_Completed_Interface as Completed0 with type self = self
-  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
-  clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  val next [@cfg:stackify] (self : borrowed self) : Type.core_option_option Item0.item
-    ensures { [#"../common.rs" 24 4 7] match (result) with
-      | Type.Core_Option_Option_None -> Completed0.completed ( * self)
-      | Type.Core_Option_Option_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self) && not Completed0.completed ( * self)
-      end }
-    
-end
-module C02IterMut_Common_Iterator_Next
-  type self
-  use Type
-  use seq.Seq
-  use prelude.Prelude
-  clone C02IterMut_Common_Iterator_Completed as Completed0 with type self = self
-  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
-  clone C02IterMut_Common_Iterator_Produces as Produces0 with type self = self, type Item0.item = Item0.item
-  val next [@cfg:stackify] (self : borrowed self) : Type.core_option_option Item0.item
-    ensures { [#"../common.rs" 24 4 7] match (result) with
-      | Type.Core_Option_Option_None -> Completed0.completed ( * self)
-      | Type.Core_Option_Option_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self) && not Completed0.completed ( * self)
-      end }
     
 end
 module CreusotContracts_Logic_Model_Model_ModelTy
@@ -522,6 +437,91 @@ module C02IterMut_Impl0_Item
   use prelude.Prelude
   type item  =
     borrowed t
+end
+module C02IterMut_Common_Iterator_Item
+  type self
+  type item
+end
+module C02IterMut_Common_Iterator_Completed_Interface
+  type self
+  predicate completed (self : self)
+end
+module C02IterMut_Common_Iterator_Completed
+  type self
+  predicate completed [#"../common.rs" 9 4 31] (self : self)
+end
+module C02IterMut_Common_Iterator_Produces_Interface
+  type self
+  use seq.Seq
+  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
+  predicate produces (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+end
+module C02IterMut_Common_Iterator_Produces
+  type self
+  use seq.Seq
+  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
+  predicate produces [#"../common.rs" 12 4 65] (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+end
+module C02IterMut_Common_Iterator_ProducesRefl_Interface
+  type self
+  use seq.Seq
+  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
+  clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  function produces_refl (a : self) : ()
+end
+module C02IterMut_Common_Iterator_ProducesRefl
+  type self
+  use seq.Seq
+  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
+  clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  function produces_refl [#"../common.rs" 16 4 30] (a : self) : ()
+  axiom produces_refl_spec : forall a : self . [#"../common.rs" 15 4 41] Produces0.produces a (Seq.empty ) a
+end
+module C02IterMut_Common_Iterator_ProducesTrans_Interface
+  type self
+  use seq.Seq
+  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
+  clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  function produces_trans (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+end
+module C02IterMut_Common_Iterator_ProducesTrans
+  type self
+  use seq.Seq
+  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
+  clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  function produces_trans [#"../common.rs" 22 4 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+    
+  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 20 4 34] Produces0.produces b bc c) -> ([#"../common.rs" 19 4 34] Produces0.produces a ab b) -> ([#"../common.rs" 21 4 44] Produces0.produces a (Seq.(++) ab bc) c)
+end
+module C02IterMut_Common_Iterator_Next_Interface
+  type self
+  use Type
+  use seq.Seq
+  use prelude.Prelude
+  clone C02IterMut_Common_Iterator_Completed_Interface as Completed0 with type self = self
+  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
+  clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  val next [@cfg:stackify] (self : borrowed self) : Type.core_option_option Item0.item
+    ensures { [#"../common.rs" 24 4 7] match (result) with
+      | Type.Core_Option_Option_None -> Completed0.completed ( * self)
+      | Type.Core_Option_Option_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self) && not Completed0.completed ( * self)
+      end }
+    
+end
+module C02IterMut_Common_Iterator_Next
+  type self
+  use Type
+  use seq.Seq
+  use prelude.Prelude
+  clone C02IterMut_Common_Iterator_Completed as Completed0 with type self = self
+  clone C02IterMut_Common_Iterator_Item as Item0 with type self = self
+  clone C02IterMut_Common_Iterator_Produces as Produces0 with type self = self, type Item0.item = Item0.item
+  val next [@cfg:stackify] (self : borrowed self) : Type.core_option_option Item0.item
+    ensures { [#"../common.rs" 24 4 7] match (result) with
+      | Type.Core_Option_Option_None -> Completed0.completed ( * self)
+      | Type.Core_Option_Option_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self) && not Completed0.completed ( * self)
+      end }
+    
 end
 module C02IterMut_Impl0
   type t
