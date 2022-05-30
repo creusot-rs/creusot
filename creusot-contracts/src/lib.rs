@@ -1,7 +1,8 @@
 #![cfg_attr(
     feature = "contracts",
     feature(unsized_locals, fn_traits, unboxed_closures, min_specialization, allocator_api),
-    allow(incomplete_features)
+    allow(incomplete_features),
+    feature(slice_take)
 )]
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns, box_syntax))]
 

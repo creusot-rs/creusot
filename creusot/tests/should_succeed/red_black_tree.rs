@@ -6,13 +6,6 @@ use creusot_contracts::*;
 use std::cmp::Ord;
 use std::cmp::Ordering::*;
 
-extern_spec! {
-    #[ensures(result == (@self_).cmp_log(@*o))]
-    fn std::cmp::Ord::cmp<Self_>(self_: &Self_, o: &Self_) -> Ordering
-        where Self_: Ord + Model,
-              Self_::ModelTy: OrdLogic
-}
-
 #[derive(Clone, Copy)]
 enum Color {
     Red,

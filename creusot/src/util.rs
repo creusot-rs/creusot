@@ -91,10 +91,6 @@ pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "extern_spec"]).is_some()
 }
 
-pub(crate) fn is_extern_spec_impl(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "extern_spec", "impl_"]).is_some()
-}
-
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
     let matches = get_attrs(tcx.get_attrs_unchecked(def_id), &["why3", "attr"]);
     matches

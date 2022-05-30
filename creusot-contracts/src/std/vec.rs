@@ -22,102 +22,65 @@ impl<T, A: Allocator> Model for Vec<T, A> {
 }
 
 extern_spec! {
-  #[creusot::extern_spec::impl_]
-  #[requires(ix.in_bounds(@*self_))]
-  #[ensures(ix.has_value(@*self_, *result))]
-  #[ensures(ix.has_value(@^self_, ^result))]
-  #[ensures(ix.resolve_elswhere(@*self_, @^self_))]
-  #[ensures((@^self_).len() == (@*self_).len())]
-  fn std::vec::Vec::index_mut<T, I, A>(self_ : &mut Vec<T, A>, ix: I) -> &mut <Vec<T, A> as Index<I>>::Output
-    where A : Allocator,
-          I : SliceIndexSpec<[T]>,
+    mod std {
+        mod vec {
+            impl<T> Vec<T> {
+                #[ensures((@result).len() == 0)]
+                fn new() -> Vec<T>;
+
+                #[ensures((@result).len() == 0)]
+                fn with_capacity(capacity: usize) -> Vec<T>;
+            }
+
+            impl<T, A : Allocator> Vec<T, A> {
+                #[ensures(@result == (@*self).len())]
+                fn len(&self) -> usize;
+
+                #[ensures(@^self == (@*self).push(v))]
+                fn push(&mut self, v: T);
+
+                #[ensures(match result {
+                    Some(t) =>
+                        (@^self) == (@*self).subsequence(0, (@*self).len() - 1) &&
+                        (@self) == (@^self).push(t),
+                    None => (@self).len() == (@^self).len() && (@*self).len() == 0
+                })]
+                fn pop(&mut self) -> Option<T>;
+            }
+
+            impl<T, I : SliceIndexSpec<[T]>, A : Allocator> IndexMut<I> for Vec<T, A> {
+                #[requires(ix.in_bounds(@*self))]
+                #[ensures(ix.has_value(@*self, *result))]
+                #[ensures(ix.has_value(@^self, ^result))]
+                #[ensures(ix.resolve_elswhere(@*self, @^self))]
+                #[ensures((@^self).len() == (@*self).len())]
+                fn index_mut(&mut self, ix: I) -> &mut <Vec<T, A> as Index<I>>::Output;
+            }
+
+            impl<T, I : SliceIndexSpec<[T]>, A : Allocator> Index<I> for Vec<T, A> {
+                #[requires(ix.in_bounds(@*self))]
+                #[ensures(ix.has_value(@*self, *result))]
+                fn index(&self, ix: I) -> & <Vec<T, A> as Index<I>>::Output;
+            }
+
+            impl<T, A : Allocator> Deref for Vec<T, A> {
+                #[ensures(@*result == @*self)]
+                fn deref(&self) -> &[T];
+            }
+
+            impl<T, A : Allocator> DerefMut for Vec<T, A> {
+                #[ensures(@*result == @*self)]
+                #[ensures(@^result == @^self)]
+                fn deref_mut(&mut self) -> &mut [T];
+            }
+
+            #[ensures((@result).len() == @n)]
+            #[ensures(forall<i : Int> 0 <= i && i < @n ==> (@result)[i] == elem)]
+            fn from_elem<T : Clone>(elem : T, n : usize) -> Vec<T>;
+
+        }
+    }
 }
-
-extern_spec! {
-  #[creusot::extern_spec::impl_]
-  #[requires(ix.in_bounds(@*self_))]
-  #[ensures(ix.has_value(@*self_, *result))]
-  fn std::vec::Vec::index<T, I, A>(self_ : &Vec<T, A>, ix: I) -> &<Vec<T, A> as Index<I>>::Output
-    where A : Allocator,
-          I : SliceIndexSpec<[T]>,
-}
-
-extern_spec! {
-    #[ensures(@result == (@*self_).len())]
-    fn std::vec::Vec::len<T, A : Allocator>(self_ : &Vec<T, A>) -> usize
-}
-
-extern_spec! {
-  #[ensures((@result).len() == 0)]
-  fn std::vec::Vec::new<T>() -> Vec<T>
-}
-
-extern_spec! {
-    #[creusot::extern_spec::impl_]
-    #[ensures(@*result == @*self_)]
-    fn std::vec::Vec::deref<T, A : Allocator>(self_: &Vec<T, A>) -> &[T]
-}
-
-extern_spec! {
-    #[creusot::extern_spec::impl_]
-    #[ensures(@*result == @*self_)]
-    #[ensures(@^result == @^self_)]
-    fn std::vec::Vec::deref_mut<T, A : Allocator>(self_: &mut Vec<T, A>) -> &mut [T]
-}
-
-extern_spec! {
-    #[ensures((@result).len() == 0)]
-    fn std::vec::Vec::with_capacity<T>(capacity: usize) -> Vec<T>
-}
-
-extern_spec! {
-    #[ensures(@^self_ == (@*self_).push(v))]
-    fn std::vec::Vec::push<T, A : Allocator>(self_: &mut Vec<T, A>, v: T)
-}
-
-extern_spec! {
-  #[ensures((@result).len() == @n)]
-  #[ensures(forall<i : Int> 0 <= i && i < @n ==> (@result)[i] == elem)]
-  fn std::vec::from_elem<T : Clone>(elem : T, n : usize) -> Vec<T>
-}
-
-extern_spec! {
-    #[ensures(match result {
-        Some(t) =>
-            (@^self_) == (@*self_).subsequence(0, (@*self_).len() - 1) &&
-            (@self_) == (@^self_).push(t),
-        None => (@self_).len() == (@^self_).len() && (@*self_).len() == 0
-    })]
-    fn std::vec::Vec::pop<T, A : Allocator>(self_ : &mut Vec<T, A>) -> Option<T>
-}
-
-// impl<T> Vec<T> {
-//     #[trusted]
-//     #[ensures(match result {
-//         Some(t) => *t == (@*self)[ix.into()],
-//         None => (@*self).len() <= ix.into(),
-//     })]
-//     pub fn get(&self, ix: usize) -> Option<&T> {
-//         self.0.get(ix)
-//     }
-
-//     #[trusted]
-//     #[ensures(match result {
-//         Some(t) => (@self) == (@^self).push(t),
-//         None => (@self).len() == (@^self).len() && (@self).len() == 0
-//     })]
-//     pub fn pop(&mut self) -> Option<T> {
-//         self.0.pop()
-//     }
-// }
-
-// impl<T: Clone> Clone for Vec<T> {
-//     #[trusted]
-//     fn clone(&self) -> Self {
-//         panic!()
-//         // Vec(self.0.iter().map(|r : &T| r.clone()).collect())
-//     }
-// }
 
 unsafe impl<T> Resolve for Vec<T> {
     #[predicate]

@@ -6,20 +6,6 @@ use creusot_contracts::*;
 mod common;
 use common::*;
 
-extern_spec! {
-    #[ensures(match result {
-        Some(r) => {
-            * r == (@**s)[0] &&
-            ^ r == (@^*s)[0] &&
-            (@**s).len() > 0 && // ^*s.len == **s.len ? (i dont think so)
-            (@^*s).len() > 0 &&
-            (@*^s).ext_eq((@**s).tail()) && (@^^s).ext_eq((@^*s).tail())
-        }
-        None => ^s == * s && (@**s).len() == 0
-    })]
-    fn <[T]>::take_first_mut<'a, T>(s: &mut &'a mut [T]) -> Option<&'a mut T>
-}
-
 struct IterMut<'a, T> {
     inner: &'a mut [T],
 }

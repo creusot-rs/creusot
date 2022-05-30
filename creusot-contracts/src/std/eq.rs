@@ -4,9 +4,16 @@ use creusot_contracts_proc::*;
 use crate::logic::*;
 
 extern_spec! {
-    #[ensures(result == (@self_ == @rhs))]
-    fn std::cmp::PartialEq::eq<Self_, Rhs>(self_: &Self_, rhs: &Rhs) -> bool
-        where Self_: PartialEq<Rhs>,
-              Self_: Model,
-              Rhs: Model<ModelTy = Self_::ModelTy>,
+    mod std {
+        mod cmp {
+            trait PartialEq<Rhs> {
+                #[ensures(result == (@self_ == @rhs))]
+                fn eq(&self, rhs: &Rhs) -> bool
+                where
+                    Self_: Model,
+                    Rhs: Model<ModelTy = Self_::ModelTy>;
+
+            }
+        }
+    }
 }

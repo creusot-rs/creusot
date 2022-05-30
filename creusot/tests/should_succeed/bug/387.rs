@@ -15,14 +15,18 @@ struct Node {
 pub fn use_tree(_: &Tree) {}
 
 extern_spec! {
-    #[ensures(@result >= @self_)]
-    #[ensures(@result >= @o)]
-    #[ensures(result == self_ || result == o)]
-    #[ensures(@self_ <= @o ==> result == o)]
-    #[ensures(@o < @self_ ==> result == self_)]
-    fn std::cmp::Ord::max<Self_>(self_: Self_, o: Self_) -> Self_ where
-        Self_: Ord + Model,
-        Self_::ModelTy: OrdLogic
+    mod std {
+        mod cmp {
+            trait Ord where Self: Model, Self::ModelTy: OrdLogic {
+                #[ensures(@result >= @self_)]
+                #[ensures(@result >= @rhs)]
+                #[ensures(result == self_ || result == rhs)]
+                #[ensures(@self_ <= @rhs ==> result == rhs)]
+                #[ensures(@rhs < @self_ ==> result == self_)]
+                fn max(self, rhs: Self) -> Self ;
+            }
+        }
+    }
 }
 
 impl Tree {
