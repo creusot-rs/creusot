@@ -44,18 +44,6 @@ module CreusotContracts_Std1_Fun_FnSpec_Postcondition
   clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
   predicate postcondition (self : self) (_2' : args) (_3' : Output0.output)
 end
-module CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce_Interface
-  type self
-  type args
-  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
-  predicate postcondition_once (self : self) (a : args) (res : Output0.output)
-end
-module CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce
-  type self
-  type args
-  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
-  predicate postcondition_once (self : self) (a : args) (res : Output0.output)
-end
 module CreusotContracts_Std1_Fun_FnMutSpec_PostconditionMut_Interface
   type self
   type args
@@ -106,6 +94,18 @@ module CreusotContracts_Std1_Fun_FnSpec_FnMut
   function fn_mut (self : borrowed self) (args : args) (res : Output0.output) : ()
   axiom fn_mut_spec : forall self : borrowed self, args : args, res : Output0.output . PostconditionMut0.postcondition_mut self args res = (Resolve0.resolve self && Postcondition0.postcondition ( * self) args res)
 end
+module CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce_Interface
+  type self
+  type args
+  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
+  predicate postcondition_once (self : self) (a : args) (res : Output0.output)
+end
+module CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce
+  type self
+  type args
+  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
+  predicate postcondition_once (self : self) (a : args) (res : Output0.output)
+end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
@@ -137,31 +137,12 @@ module CreusotContracts_Std1_Fun_FnSpec_FnOnce
   function fn_once (self : self) (args : args) (res : Output0.output) : ()
   axiom fn_once_spec : forall self : self, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = (Resolve0.resolve self && Postcondition0.postcondition self args res)
 end
-module Core_Ops_Function_FnOnce_CallOnce_Interface
-  type self
-  type args
-  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
-  clone CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce_Interface as PostconditionOnce0 with type self = self,
-  type args = args, type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Fun_FnOnceSpec_Precondition_Interface as Precondition0 with type self = self,
-  type args = args
-  val call_once [@cfg:stackify] (self : self) (args : args) : Output0.output
-    requires {Precondition0.precondition self args}
-    ensures { PostconditionOnce0.postcondition_once self args result }
-    
-end
-module Core_Ops_Function_FnOnce_CallOnce
-  type self
-  type args
-  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
-  clone CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce_Interface as PostconditionOnce0 with type self = self,
-  type args = args, type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Fun_FnOnceSpec_Precondition_Interface as Precondition0 with type self = self,
-  type args = args
-  val call_once [@cfg:stackify] (self : self) (args : args) : Output0.output
-    requires {Precondition0.precondition self args}
-    ensures { PostconditionOnce0.postcondition_once self args result }
-    
+module CreusotContracts_Logic_Resolve_Impl1
+  type t
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = borrowed t,
+  predicate resolve = Resolve0.resolve
 end
 module CreusotContracts_Std1_Fun_FnMutSpec_FnMutOnce_Interface
   type self
@@ -188,12 +169,31 @@ module CreusotContracts_Std1_Fun_FnMutSpec_FnMutOnce
   function fn_mut_once (self : self) (args : args) (res : Output0.output) : ()
   axiom fn_mut_once_spec : forall self : self, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = (exists s : (borrowed self) .  * s = self && PostconditionMut0.postcondition_mut s args res && Resolve0.resolve ( ^ s))
 end
-module CreusotContracts_Logic_Resolve_Impl1
-  type t
-  use prelude.Prelude
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = t
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = borrowed t,
-  predicate resolve = Resolve0.resolve
+module Core_Ops_Function_FnOnce_CallOnce_Interface
+  type self
+  type args
+  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
+  clone CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce_Interface as PostconditionOnce0 with type self = self,
+  type args = args, type Output0.output = Output0.output
+  clone CreusotContracts_Std1_Fun_FnOnceSpec_Precondition_Interface as Precondition0 with type self = self,
+  type args = args
+  val call_once [@cfg:stackify] (self : self) (args : args) : Output0.output
+    requires {Precondition0.precondition self args}
+    ensures { PostconditionOnce0.postcondition_once self args result }
+    
+end
+module Core_Ops_Function_FnOnce_CallOnce
+  type self
+  type args
+  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
+  clone CreusotContracts_Std1_Fun_FnOnceSpec_PostconditionOnce_Interface as PostconditionOnce0 with type self = self,
+  type args = args, type Output0.output = Output0.output
+  clone CreusotContracts_Std1_Fun_FnOnceSpec_Precondition_Interface as Precondition0 with type self = self,
+  type args = args
+  val call_once [@cfg:stackify] (self : self) (args : args) : Output0.output
+    requires {Precondition0.precondition self args}
+    ensures { PostconditionOnce0.postcondition_once self args result }
+    
 end
 module C06FnSpecs_Weaken3_Interface
   type a
