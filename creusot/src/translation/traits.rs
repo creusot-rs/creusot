@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, AssocItemContainer::*, ParamEnv, TraitRef, TyCtxt};
 use rustc_trait_selection::traits::ImplSource;
@@ -163,27 +165,29 @@ fn logic_refinement<'tcx>(
     let (impl_inps, output) = inputs_and_output(ctx.tcx, impl_item_id);
 
     let span = ctx.tcx.def_span(impl_item_id);
-    let args: Vec<_> = names.with_public_clones(|names| {
-        trait_inps
-            .zip(impl_inps)
-            .map(|((id, _), (_, ty))| (id, ty))
-            .enumerate()
-            .map(|(ix, (id, ty))| {
-                let ty = translate_ty(ctx, names, span, ty);
-                let id = if id.name.is_empty() {
-                    format!("_{}'", ix + 1).into()
-                } else {
-                    ident_of(id.name)
-                };
-                (id, ty)
-            })
-            .collect()
+    let mut args = Vec::new();
+    let mut subst = HashMap::new();
+    names.with_public_clones(|names| {
+        for (ix, ((id, _), (id2, ty))) in trait_inps.zip(impl_inps).enumerate() {
+            let ty = translate_ty(ctx, names, span, ty);
+            let id =
+                if id.name.is_empty() { format!("_{}'", ix + 1).into() } else { ident_of(id.name) };
+            let id2 = if id2.name.is_empty() {
+                format!("_{}'", ix + 1).into()
+            } else {
+                ident_of(id2.name)
+            };
+            args.push((id.clone(), ty));
+            subst.insert(id2, Exp::pure_var(id));
+        }
     });
 
-    let impl_precond = impl_contract.requires_conj();
+    let mut impl_precond = impl_contract.requires_conj();
+    impl_precond.subst(&subst);
     let trait_precond = trait_contract.requires_conj();
 
-    let impl_postcond = impl_contract.ensures_conj();
+    let mut impl_postcond = impl_contract.ensures_conj();
+    impl_postcond.subst(&subst);
     let trait_postcond = trait_contract.ensures_conj();
 
     let retty = names.with_public_clones(|names| translate_ty(ctx, names, span, output));
