@@ -15,3 +15,16 @@ impl Tr for () {
         20
     }
 }
+
+trait ReqFalse {
+    #[logic]
+    #[requires(@x >= 10)]
+    fn need_false(x: u64) -> ();
+}
+
+impl ReqFalse for () {
+    // This should not prove
+    #[logic]
+    #[requires(@x >= 15)]
+    fn need_false(x: u64) {}
+}

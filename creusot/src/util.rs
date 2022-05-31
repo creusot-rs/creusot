@@ -3,7 +3,7 @@ use crate::{ctx::*, translation};
 use rustc_ast::ast::{MacArgs, MacArgsEq};
 use rustc_ast::{AttrItem, AttrKind, Attribute};
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::subst::SubstsRef;
+use rustc_middle::ty::subst::{InternalSubsts, SubstsRef};
 use rustc_middle::ty::{self, Ty, TyKind, VariantDef};
 use rustc_middle::ty::{DefIdTree, ReErased, TyCtxt};
 use rustc_span::Symbol;
@@ -286,33 +286,27 @@ pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
     }
 }
 
-pub fn signature_of<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
+pub fn inputs_and_output<'tcx>(
+    tcx: TyCtxt<'tcx>,
     def_id: DefId,
-) -> Signature {
-    debug!("signature_of {def_id:?}");
+) -> (impl Iterator<Item = (rustc_span::symbol::Ident, Ty<'tcx>)>, Ty<'tcx>) {
     let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) =
-        match ctx.tcx.type_of(def_id).kind() {
+        match tcx.type_of(def_id).kind() {
             TyKind::FnDef(..) => {
-                let gen_sig = ctx.tcx.fn_sig(def_id);
-                let sig = ctx
-                    .tcx
-                    .normalize_erasing_late_bound_regions(ctx.tcx.param_env(def_id), gen_sig);
+                let gen_sig = tcx.fn_sig(def_id);
+                let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), gen_sig);
                 let iter =
-                    ctx.tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned());
+                    tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned());
                 (box iter, sig.output())
             }
             TyKind::Closure(_, subst) => {
                 let sig = subst.as_closure().sig();
-                let sig =
-                    ctx.tcx.normalize_erasing_late_bound_regions(ctx.tcx.param_env(def_id), sig);
+                let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), sig);
                 let env_region = ReErased;
-                let env_ty = ctx.tcx.closure_env_ty(def_id, subst, env_region).unwrap();
+                let env_ty = tcx.closure_env_ty(def_id, subst, env_region).unwrap();
 
                 let closure_env = (rustc_span::symbol::Ident::empty(), env_ty);
-                let names = ctx
-                    .tcx
+                let names = tcx
                     .fn_arg_names(def_id)
                     .iter()
                     .cloned()
@@ -324,10 +318,21 @@ pub fn signature_of<'tcx>(
             }
             _ => unreachable!(),
         };
+    (inputs, output)
+}
 
+pub fn signature_of<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    def_id: DefId,
+) -> Signature {
+    debug!("signature_of {def_id:?}");
+    let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
+
+    let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
     let mut contract = names.with_public_clones(|names| {
         let pre_contract = crate::specification::contract_of(ctx, def_id).unwrap();
-        pre_contract.check_and_lower(ctx, names, def_id)
+        pre_contract.check_and_lower(ctx, names, def_id, subst)
     });
 
     if output.is_never() {
@@ -348,6 +353,7 @@ pub fn signature_of<'tcx>(
 
     let span = ctx.tcx.def_span(def_id);
 
+    use rustc_middle::ty::subst::Subst;
     let mut args: Vec<_> = names.with_public_clones(|names| {
         inputs
             .enumerate()
@@ -374,18 +380,11 @@ pub fn signature_of<'tcx>(
     if matches!(item_type(ctx.tcx, def_id), ItemType::Program | ItemType::Closure) {
         attrs.push(declaration::Attribute::Attr("cfg:stackify".into()))
     };
-    Signature {
-        // TODO: consider using the function's actual name instead of impl so that trait methods and normal functions have same structure
-        name,
-        attrs,
-        retty: Some(
-            names.with_public_clones(|names| {
-                translation::ty::translate_ty(ctx, names, span, output)
-            }),
-        ),
-        args,
-        contract,
-    }
+
+    let retty = names.with_public_clones(|names| {
+        translation::ty::translate_ty(ctx, names, span, output.subst(ctx.tcx, subst))
+    });
+    Signature { name, attrs, retty: Some(retty), args, contract }
 }
 
 use rustc_ast::{

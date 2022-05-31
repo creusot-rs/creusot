@@ -151,8 +151,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         err.emit()
     }
 
-    let mut contract = crate::specification::contract_of(ctx, def_id.to_def_id()).unwrap();
-    contract.func_id = id;
+    let contract = crate::specification::contract_of(ctx, def_id.to_def_id()).unwrap();
 
     // Use the inverse substitution to turn predicates on the outer definition into ones on the inner definition.
 

@@ -64,6 +64,7 @@ impl Hash for usize {
     }
 
     #[logic]
+    #[ensures(result >= 0)]
     fn hash_log(self) -> Int {
         pearlite! { @self }
     }

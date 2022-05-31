@@ -234,7 +234,42 @@ impl Exp {
     }
 
     pub fn conj(l: Exp, r: Exp) -> Self {
-        Exp::BinaryOp(BinOp::And, box l, box r)
+        l.and(r)
+    }
+
+    // Construct an application from this expression and an argument
+    pub fn app_to(mut self, arg: Self) -> Self {
+        match self {
+            Exp::Call(_, ref mut args) => args.push(arg),
+            _ => self = Exp::Call(box self, vec![arg]),
+        }
+        self
+    }
+
+    pub fn and(self, other: Self) -> Self {
+        if let Exp::Const(Constant::Bool(true)) = self {
+            other
+        } else if let Exp::Const(Constant::Bool(true)) = other {
+            self
+        } else {
+            Exp::BinaryOp(BinOp::And, box self, box other)
+        }
+    }
+
+    pub fn implies(self, other: Self) -> Self {
+        if self.is_true() {
+            other
+        } else {
+            Exp::Impl(box self, box other)
+        }
+    }
+
+    pub fn is_true(&self) -> bool {
+        if let Exp::Const(Constant::Bool(true)) = self {
+            true
+        } else {
+            false
+        }
     }
 
     pub fn mk_true() -> Self {
@@ -568,19 +603,6 @@ impl Exp {
         }
         subst.visit_mut(self);
     }
-
-    // Construct an application from this expression and an argument
-    pub fn app_to(mut self, arg: Self) -> Self {
-        match self {
-            Exp::Call(_, ref mut args) => args.push(arg),
-            _ => self = Exp::Call(box self, vec![arg]),
-        }
-        self
-    }
-
-    pub fn and(self, other: Self) -> Self {
-        Exp::BinaryOp(BinOp::And, box self, box other)
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -591,13 +613,14 @@ pub enum Constant {
     // Float(f64),
     String(String),
     Other(String),
+    Bool(bool),
 }
 impl Constant {
     pub fn const_true() -> Self {
-        Constant::Other("true".to_owned())
+        Constant::Bool(true)
     }
     pub fn const_false() -> Self {
-        Constant::Other("false".to_owned())
+        Constant::Bool(false)
     }
 }
 

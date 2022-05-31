@@ -4,6 +4,8 @@ use indexmap::Equivalent;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 
+use crate::exp::Exp;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Ident(pub(crate) String);
@@ -41,6 +43,12 @@ impl From<&str> for Ident {
 impl From<String> for Ident {
     fn from(nm: String) -> Self {
         Ident::build(&nm)
+    }
+}
+
+impl From<QName> for Exp {
+    fn from(q: QName) -> Self {
+        Exp::impure_qvar(q)
     }
 }
 

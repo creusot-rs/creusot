@@ -98,6 +98,7 @@ impl Print for Decl {
             Decl::ValDecl(v) => v.pretty(alloc, env),
             Decl::UseDecl(u) => u.pretty(alloc, env),
             Decl::Axiom(a) => a.pretty(alloc, env),
+            Decl::Goal(g) => g.pretty(alloc, env),
             Decl::Let(l) => l.pretty(alloc, env),
             Decl::LetFun(l) => l.pretty(alloc, env),
         }
@@ -177,6 +178,23 @@ impl Print for Axiom {
             .append(self.name.pretty(alloc, env))
             .append(" : ")
             .append(self.axiom.pretty(alloc, env))
+    }
+}
+
+impl Print for Goal {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        alloc
+            .text("goal ")
+            .append(self.name.pretty(alloc, env))
+            .append(" : ")
+            .append(self.goal.pretty(alloc, env))
     }
 }
 
@@ -928,6 +946,13 @@ impl Print for Constant {
     {
         match self {
             Constant::Other(o) => alloc.text(o),
+            Constant::Bool(b) => {
+                if *b {
+                    alloc.text("true")
+                } else {
+                    alloc.text("false")
+                }
+            }
             Constant::Int(i, Some(t)) => {
                 alloc.as_string(i).append(" : ").append(t.pretty(alloc, env)).parens()
             }

@@ -2,9 +2,11 @@ use super::typing::{self, Literal, LogicalOp, Pattern, Term, TermKind};
 use crate::translation::traits::resolve_assoc_item_opt;
 use crate::translation::ty::translate_ty;
 use crate::translation::ty::variant_accessor_name;
+use crate::util::closure_owner;
 use crate::util::constructor_qname;
 use crate::{ctx::*, util};
 use rustc_middle::ty;
+use rustc_middle::ty::ParamEnv;
 use rustc_middle::ty::TyKind;
 use why3::exp::{BinOp, Constant, Exp, Pattern as Pat, Purity};
 use why3::QName;
@@ -15,10 +17,12 @@ pub fn lower_pure<'tcx>(
     term_id: DefId,
     term: Term<'tcx>,
 ) -> Exp {
-    let mut term = Lower { ctx, names, pure: Purity::Logic, term_id }.lower_term(term);
+    let param_env = ctx.param_env(closure_owner(ctx.tcx, term_id));
+    let span = term.span;
+    let mut term = Lower { ctx, names, pure: Purity::Logic, param_env }.lower_term(term);
     term.reassociate();
     if term_id.is_local() {
-        term = ctx.attach_span(ctx.def_span(term_id), term);
+        term = ctx.attach_span(span, term);
     }
 
     term
@@ -30,11 +34,13 @@ pub fn lower_impure<'tcx>(
     term_id: DefId,
     term: Term<'tcx>,
 ) -> Exp {
-    let mut term = Lower { ctx, names, pure: Purity::Program, term_id }.lower_term(term);
+    let param_env = ctx.param_env(closure_owner(ctx.tcx, term_id));
+    let span = term.span;
+    let mut term = Lower { ctx, names, pure: Purity::Program, param_env }.lower_term(term);
     term.reassociate();
 
     if term_id.is_local() {
-        term = ctx.attach_span(ctx.def_span(term_id), term);
+        term = ctx.attach_span(span, term);
     }
     term
 }
@@ -44,7 +50,7 @@ pub(super) struct Lower<'a, 'sess, 'tcx> {
     pub(super) names: &'a mut CloneMap<'tcx>,
     // true when we are translating a purely logical term
     pub(super) pure: Purity,
-    pub(super) term_id: DefId,
+    param_env: ParamEnv<'tcx>,
 }
 impl<'tcx> Lower<'_, '_, 'tcx> {
     pub fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
@@ -71,9 +77,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 Exp::Const(c)
             }
             TermKind::Item(id, subst) => {
-                let param_env = self.ctx.param_env(self.term_id);
-
-                let method = resolve_assoc_item_opt(self.ctx.tcx, param_env, id, subst)
+                let method = resolve_assoc_item_opt(self.ctx.tcx, self.param_env, id, subst)
                     .unwrap_or((id, subst));
                 debug!("resolved_method={:?}", method);
                 self.lookup_builtin(method, &mut Vec::new()).unwrap_or_else(|| {
@@ -88,7 +92,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                         self.ctx,
                         self.names,
                         constant,
-                        param_env,
+                        self.param_env,
                         rustc_span::DUMMY_SP,
                     )
                 })
@@ -138,9 +142,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                     args = vec![Exp::Tuple(vec![])];
                 }
 
-                let param_env = self.ctx.param_env(self.term_id);
-
-                let method = resolve_assoc_item_opt(self.ctx.tcx, param_env, id, subst)
+                let method = resolve_assoc_item_opt(self.ctx.tcx, self.param_env, id, subst)
                     .unwrap_or((id, subst));
                 debug!("resolved_method={:?}", method);
 
@@ -150,6 +152,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
 
                 self.lookup_builtin(method, &mut args).unwrap_or_else(|| {
                     self.ctx.translate(method.0);
+
                     let clone = self.names.insert(method.0, method.1);
                     if self.pure == Purity::Program {
                         mk_binders(Exp::QVar(clone.qname(self.ctx.tcx, method.0), self.pure), args)

@@ -4,7 +4,7 @@ use crate::translation::function::real_locals;
 use crate::{ctx::*, util};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::thir::{self, ExprKind, Thir};
-use rustc_middle::ty::subst::InternalSubsts;
+use rustc_middle::ty::subst::SubstsRef;
 use why3::declaration::Contract;
 use why3::exp::Exp;
 use why3::Ident;
@@ -24,37 +24,36 @@ pub use lower::*;
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct PreContract {
-    pub func_id: DefId,
     variant: Option<DefId>,
     requires: Vec<DefId>,
     ensures: Vec<DefId>,
 }
 
 impl PreContract {
-    pub fn new(func_id: DefId) -> Self {
-        Self { func_id, variant: None, requires: Vec::new(), ensures: Vec::new() }
+    pub fn new() -> Self {
+        Self { variant: None, requires: Vec::new(), ensures: Vec::new() }
     }
 
     pub fn check_and_lower<'tcx>(
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut CloneMap<'tcx>,
-        _: DefId,
+        id: DefId,
+        subst: SubstsRef<'tcx>,
     ) -> Contract {
         let mut out = Contract::new();
-        let subst = InternalSubsts::identity_for_item(ctx.tcx, self.func_id);
 
         use crate::rustc_middle::ty::subst::Subst;
         for req_id in self.requires {
             log::debug!("require clause {:?}", req_id);
             let term = ctx.term(req_id).unwrap().clone().subst(ctx.tcx, subst);
-            out.requires.push(lower_pure(ctx, names, req_id, term));
+            out.requires.push(lower_pure(ctx, names, id, term));
         }
 
         for ens_id in self.ensures {
             log::debug!("ensures clause {:?}", ens_id);
             let term = ctx.term(ens_id).unwrap().clone().subst(ctx.tcx, subst);
-            let exp = lower_pure(ctx, names, ens_id, term);
+            let exp = lower_pure(ctx, names, id, term);
 
             out.ensures.push(exp);
         }
@@ -62,10 +61,10 @@ impl PreContract {
         if let Some(var_id) = self.variant {
             log::debug!("variant clause {:?}", var_id);
             let term = ctx.term(var_id).unwrap().clone().subst(ctx.tcx, subst);
-            out.variant = vec![lower_pure(ctx, names, var_id, term)];
+            out.variant = vec![lower_pure(ctx, names, id, term)];
         };
 
-        if let Some(extern_spec) = ctx.extern_spec(self.func_id) {
+        if let Some(extern_spec) = ctx.extern_spec(id) {
             let subst = extern_spec
                 .subst
                 .iter()
@@ -76,6 +75,10 @@ impl PreContract {
             out.subst(&subst);
         }
         out
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
     }
 
     pub fn iter_ids(&self) -> impl Iterator<Item = DefId> + '_ {
@@ -140,7 +143,7 @@ pub fn contract_of(ctx: &mut TranslationCtx, def_id: DefId) -> Result<PreContrac
     }
 
     let attrs = ctx.tcx.get_attrs_unchecked(def_id);
-    let mut contract = PreContract::new(def_id);
+    let mut contract = PreContract::new();
 
     for attr in attrs {
         if !util::is_attr(attr, "spec") {
