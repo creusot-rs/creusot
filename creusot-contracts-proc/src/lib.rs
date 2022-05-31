@@ -83,6 +83,18 @@ impl ContractItem {
             ContractItem::Closure(_) => "closure".to_string(),
         }
     }
+
+    fn mark_unused(&mut self) {
+        if let ContractItem::TraitSig(sig) = self {
+            for arg in sig.sig.inputs.iter_mut() {
+                let attrs = match arg {
+                    FnArg::Receiver(r) => &mut r.attrs,
+                    FnArg::Typed(r) => &mut r.attrs,
+                };
+                attrs.push(parse_quote! { #[allow(unused)]});
+            }
+        }
+    }
 }
 
 impl Parse for ContractItem {
@@ -157,8 +169,9 @@ fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
-    let item = parse_macro_input!(tokens as ContractItem);
+    let mut item = parse_macro_input!(tokens as ContractItem);
     let term = parse_macro_input!(attr as Term);
+    item.mark_unused();
 
     let req_name = generate_unique_ident(&item.name());
 
@@ -203,8 +216,9 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
-    let item = parse_macro_input!(tokens as ContractItem);
+    let mut item = parse_macro_input!(tokens as ContractItem);
     let term = parse_macro_input!(attr as Term);
+    item.mark_unused();
 
     let ens_name = generate_unique_ident(&item.name());
     let name_tag = format!("{}", quote! { #ens_name });
