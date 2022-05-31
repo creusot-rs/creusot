@@ -1,9 +1,6 @@
-// WHY3SKIP
-
 extern crate creusot_contracts;
 
 use creusot_contracts::*;
-
 
 extern_spec! {
     impl<K: PartialOrd<K> + Ord + Model, L: PartialOrd<L> + Ord + Model> PartialOrd for (K, L)
