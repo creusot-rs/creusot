@@ -37,12 +37,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v2
-    - name: Use OCaml ${{ env.OCAML_COMPILER }}
-      uses: ocaml/setup-ocaml@v2
-      with:
-        ocaml-compiler: ${{ env.OCAML_COMPILER }}
-    - name: Install Alt-Ergo
-      run: opam install alt-ergo.2.4.1
     - name: Install Z3
       run: sudo apt-get install -y z3=4.8.12-1 cvc4=1.8-2
     - uses: actions/cache@v2
@@ -60,7 +54,9 @@ jobs:
     - run: |
         chmod -R +x ~/work/creusot/why3/bin
         chmod -R +x ~/work/creusot/why3/lib/why3/why3server
-        eval $(opam env)
+        mv ~/work/creusot/why3/alt-ergo /usr/local/bin/alt-ergo
+        chmod +x /usr/local/bin/alt-ergo
+
         ~/work/creusot/why3/bin/why3 config detect
         cat ~/.why3.conf
     - run: cargo test --test why3 "" -- --lazy --fail-obsolete
