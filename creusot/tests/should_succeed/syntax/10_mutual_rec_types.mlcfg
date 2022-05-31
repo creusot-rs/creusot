@@ -42,20 +42,25 @@ module Type
     match (self) with
       | C10MutualRecTypes_Node _ _ a -> a
       end
+  type core_cmp_ordering  =
+    | Core_Cmp_Ordering_Less
+    | Core_Cmp_Ordering_Equal
+    | Core_Cmp_Ordering_Greater
+    
 end
 module C10MutualRecTypes_UseTree_Interface
   use prelude.Prelude
   use Type
-  val use_tree [@cfg:stackify] (t : Type.c10mutualrectypes_tree) : ()
+  val use_tree [@cfg:stackify] (_1' : Type.c10mutualrectypes_tree) : ()
 end
 module C10MutualRecTypes_UseTree
   use prelude.Prelude
   use Type
-  let rec cfg use_tree [@cfg:stackify] [#"../10_mutual_rec_types.rs" 10 0 21] (t : Type.c10mutualrectypes_tree) : () =
+  let rec cfg use_tree [@cfg:stackify] [#"../10_mutual_rec_types.rs" 13 0 25] (_1' : Type.c10mutualrectypes_tree) : () =
   var _0 : ();
-  var t_1 : Type.c10mutualrectypes_tree;
+  var _1 : Type.c10mutualrectypes_tree;
   {
-    t_1 <- t;
+    _1 <- _1';
     goto BB0
   }
   BB0 {
@@ -64,17 +69,223 @@ module C10MutualRecTypes_UseTree
   }
   
 end
+module CreusotContracts_Logic_Model_Model_ModelTy
+  type self
+  type modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model_Interface
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface
+  type self
+  use Type
+  function cmp_log (self : self) (_2' : self) : Type.core_cmp_ordering
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpLog
+  type self
+  use Type
+  function cmp_log (self : self) (_2' : self) : Type.core_cmp_ordering
+end
+module CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface
+  type self
+  predicate lt_log (self : self) (o : self)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_LtLog
+  type self
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  predicate lt_log (self : self) (o : self) =
+    CmpLog0.cmp_log self o = Type.Core_Cmp_Ordering_Less
+end
+module CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface
+  type self
+  predicate le_log (self : self) (o : self)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_LeLog
+  type self
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  predicate le_log (self : self) (o : self) =
+    CmpLog0.cmp_log self o <> Type.Core_Cmp_Ordering_Greater
+end
+module CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface
+  type self
+  predicate ge_log (self : self) (o : self)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_GeLog
+  type self
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  predicate ge_log (self : self) (o : self) =
+    CmpLog0.cmp_log self o <> Type.Core_Cmp_Ordering_Less
+end
 module Core_Cmp_Ord_Max_Interface
   type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with type self = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = self,
+  type ModelTy0.modelTy = ModelTy0.modelTy
   val max [@cfg:stackify] (self : self) (other : self) : self
-    requires {false}
+    ensures { LtLog0.lt_log (Model0.model other) (Model0.model self) -> result = self }
+    ensures { LeLog0.le_log (Model0.model self) (Model0.model other) -> result = other }
+    ensures { result = self || result = other }
+    ensures { GeLog0.ge_log (Model0.model result) (Model0.model other) }
+    ensures { GeLog0.ge_log (Model0.model result) (Model0.model self) }
     
 end
 module Core_Cmp_Ord_Max
   type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with type self = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = self,
+  type ModelTy0.modelTy = ModelTy0.modelTy
   val max [@cfg:stackify] (self : self) (other : self) : self
-    requires {false}
+    ensures { LtLog0.lt_log (Model0.model other) (Model0.model self) -> result = self }
+    ensures { LeLog0.le_log (Model0.model self) (Model0.model other) -> result = other }
+    ensures { result = self || result = other }
+    ensures { GeLog0.ge_log (Model0.model result) (Model0.model other) }
+    ensures { GeLog0.ge_log (Model0.model result) (Model0.model self) }
     
+end
+module CreusotContracts_Logic_Int_Impl14_Model_Interface
+  use mach.int.Int
+  use mach.int.UInt64
+  function model (self : uint64) : int
+end
+module CreusotContracts_Logic_Int_Impl14_Model
+  use mach.int.Int
+  use mach.int.UInt64
+  function model (self : uint64) : int =
+    UInt64.to_int self
+end
+module CreusotContracts_Logic_Int_Impl14
+  
+end
+module CreusotContracts_Logic_Ord_Impl1_LtLog_Interface
+  use mach.int.Int
+  predicate lt_log (self : int) (_2' : int)
+end
+module CreusotContracts_Logic_Ord_Impl1_LtLog
+  use mach.int.Int
+  predicate lt_log (self : int) (_2' : int)
+end
+module CreusotContracts_Logic_Ord_Impl1
+  
+end
+module CreusotContracts_Logic_Ord_Impl1_LeLog_Interface
+  use mach.int.Int
+  predicate le_log (self : int) (_2' : int)
+end
+module CreusotContracts_Logic_Ord_Impl1_LeLog
+  use mach.int.Int
+  predicate le_log (self : int) (_2' : int)
+end
+module CreusotContracts_Logic_Ord_Impl1_GeLog_Interface
+  use mach.int.Int
+  predicate ge_log (self : int) (_2' : int)
+end
+module CreusotContracts_Logic_Ord_Impl1_GeLog
+  use mach.int.Int
+  predicate ge_log (self : int) (_2' : int)
+end
+module CreusotContracts_Logic_Int_Impl14_ModelTy
+  use mach.int.Int
+  type modelTy  =
+    int
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpLeLog_Interface
+  use mach.int.Int
+  function cmp_le_log (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpLeLog
+  use mach.int.Int
+  function cmp_le_log (_1' : int) (_2' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpLtLog_Interface
+  use mach.int.Int
+  function cmp_lt_log (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpLtLog
+  use mach.int.Int
+  function cmp_lt_log (_1' : int) (_2' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpGeLog_Interface
+  use mach.int.Int
+  function cmp_ge_log (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpGeLog
+  use mach.int.Int
+  function cmp_ge_log (_1' : int) (_2' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpGtLog_Interface
+  use mach.int.Int
+  function cmp_gt_log (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpGtLog
+  use mach.int.Int
+  function cmp_gt_log (_1' : int) (_2' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Refl_Interface
+  use mach.int.Int
+  function refl (_1' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Refl
+  use mach.int.Int
+  function refl (_1' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Trans_Interface
+  use mach.int.Int
+  use Type
+  function trans (_1' : int) (_2' : int) (_3' : int) (_4' : Type.core_cmp_ordering) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Trans
+  use mach.int.Int
+  use Type
+  function trans (_1' : int) (_2' : int) (_3' : int) (_4' : Type.core_cmp_ordering) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Antisym1_Interface
+  use mach.int.Int
+  function antisym1 (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Antisym1
+  use mach.int.Int
+  function antisym1 (_1' : int) (_2' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Antisym2_Interface
+  use mach.int.Int
+  function antisym2 (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Antisym2
+  use mach.int.Int
+  function antisym2 (_1' : int) (_2' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_EqCmp_Interface
+  use mach.int.Int
+  function eq_cmp (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_EqCmp
+  use mach.int.Int
+  function eq_cmp (_1' : int) (_2' : int) : () =
+    ()
 end
 module C10MutualRecTypes_Impl0_Height_Interface
   use prelude.Prelude
@@ -89,8 +300,24 @@ module C10MutualRecTypes_Impl0_Height
   use mach.int.Int
   use mach.int.UInt64
   use mach.int.Int64
-  clone Core_Cmp_Ord_Max_Interface as Max0 with type self = uint64
-  let rec cfg height [@cfg:stackify] [#"../10_mutual_rec_types.rs" 13 4 27] (self : Type.c10mutualrectypes_tree) : uint64
+  clone CreusotContracts_Logic_Ord_Impl1_EqCmp as EqCmp0
+  clone CreusotContracts_Logic_Ord_Impl1_Antisym2 as Antisym20
+  clone CreusotContracts_Logic_Ord_Impl1_Antisym1 as Antisym10
+  clone CreusotContracts_Logic_Ord_Impl1_Trans as Trans0
+  clone CreusotContracts_Logic_Ord_Impl1_Refl as Refl0
+  clone CreusotContracts_Logic_Ord_Impl1_CmpGtLog as CmpGtLog0
+  clone CreusotContracts_Logic_Ord_Impl1_CmpGeLog as CmpGeLog0
+  clone CreusotContracts_Logic_Ord_Impl1_CmpLtLog as CmpLtLog0
+  clone CreusotContracts_Logic_Ord_Impl1_CmpLeLog as CmpLeLog0
+  clone CreusotContracts_Logic_Int_Impl14_ModelTy as ModelTy0
+  clone CreusotContracts_Logic_Ord_Impl1_GeLog as GeLog0
+  clone CreusotContracts_Logic_Ord_Impl1_LeLog as LeLog0
+  clone CreusotContracts_Logic_Ord_Impl1_LtLog as LtLog0
+  clone CreusotContracts_Logic_Int_Impl14_Model as Model0
+  clone Core_Cmp_Ord_Max_Interface as Max0 with type self = uint64, function Model0.model = Model0.model,
+  predicate LtLog0.lt_log = LtLog0.lt_log, predicate LeLog0.le_log = LeLog0.le_log,
+  predicate GeLog0.ge_log = GeLog0.ge_log, type ModelTy0.modelTy = ModelTy0.modelTy
+  let rec cfg height [@cfg:stackify] [#"../10_mutual_rec_types.rs" 16 4 31] (self : Type.c10mutualrectypes_tree) : uint64
     
    =
   var _0 : uint64;
@@ -115,7 +342,7 @@ module C10MutualRecTypes_Impl0_Height
   BB1 {
     n_3 <- Type.core_option_option_Some_0 (Type.c10mutualrectypes_tree_Tree_0 self_1);
     _6 <- Type.c10mutualrectypes_node_Node_left n_3;
-    _5 <- ([#"../10_mutual_rec_types.rs" 16 29 44] height _6);
+    _5 <- ([#"../10_mutual_rec_types.rs" 19 29 44] height _6);
     goto BB4
   }
   BB2 {
@@ -127,15 +354,15 @@ module C10MutualRecTypes_Impl0_Height
   }
   BB4 {
     _8 <- Type.c10mutualrectypes_node_Node_right n_3;
-    _7 <- ([#"../10_mutual_rec_types.rs" 16 49 65] height _8);
+    _7 <- ([#"../10_mutual_rec_types.rs" 19 49 65] height _8);
     goto BB5
   }
   BB5 {
-    _4 <- ([#"../10_mutual_rec_types.rs" 16 29 66] Max0.max _5 _7);
+    _4 <- ([#"../10_mutual_rec_types.rs" 19 29 66] Max0.max _5 _7);
     goto BB6
   }
   BB6 {
-    _0 <- ([#"../10_mutual_rec_types.rs" 16 29 70] _4 + (1 : uint64));
+    _0 <- ([#"../10_mutual_rec_types.rs" 19 29 70] _4 + (1 : uint64));
     goto BB7
   }
   BB7 {

@@ -7,7 +7,7 @@ fn logic() -> bool {
 }
 
 #[ensures(logic())]
-fn use_logic() {}
+pub fn use_logic() {}
 
 // When we want to use pearlite syntax, we use pearlite! macro
 #[logic]
@@ -16,7 +16,7 @@ fn logic_pearlite() -> bool {
 }
 
 #[ensures(logic_pearlite())]
-fn use_logic_pearlite() {}
+pub fn use_logic_pearlite() {}
 
 mod nested {
     use creusot_contracts::*;

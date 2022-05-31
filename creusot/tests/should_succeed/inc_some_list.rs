@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-enum List {
+pub enum List {
     Cons(u32, Box<List>),
     Nil,
 }
@@ -59,7 +59,7 @@ impl List {
 }
 
 #[requires(l.sum() + @k <= 1_000_000)]
-fn inc_some_list(mut l: List, k: u32) {
+pub fn inc_some_list(mut l: List, k: u32) {
     let sum0 = l.sum_x();
     let ma = l.take_some();
     *ma += k;

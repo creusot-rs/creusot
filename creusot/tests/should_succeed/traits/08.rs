@@ -4,7 +4,7 @@ use creusot_contracts::*;
 
 // Ensure that different kinds of functions are translated to the
 // correct abstract symbol in Rust
-trait Tr {
+pub trait Tr {
     #[logic]
     fn logical(&self) -> Int;
     #[predicate]
@@ -12,4 +12,4 @@ trait Tr {
     fn program(&self) {}
 }
 
-fn test<T: Tr>(_: T) {}
+pub fn test<T: Tr>(_: T) {}

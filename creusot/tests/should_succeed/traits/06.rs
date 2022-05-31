@@ -1,10 +1,12 @@
-trait Ix {
+extern crate creusot_contracts;
+
+pub trait Ix {
     type Tgt;
 
     fn ix(&self, ix: usize) -> Self::Tgt;
 }
 
-fn test<T: Ix>(a: &T) -> T::Tgt
+pub fn test<T: Ix>(a: &T) -> T::Tgt
 where
     T::Tgt: Eq,
 {

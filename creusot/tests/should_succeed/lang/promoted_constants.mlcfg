@@ -40,6 +40,43 @@ module Type
     | Alloc_String_String (alloc_vec_vec uint8 (alloc_alloc_global))
     
 end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Impl0_Resolve_Interface
+  type t1
+  type t2
+  predicate resolve (self : (t1, t2))
+end
+module CreusotContracts_Logic_Resolve_Impl0_Resolve
+  type t1
+  type t2
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = t2
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t1
+  predicate resolve (self : (t1, t2)) =
+    Resolve0.resolve (let (a, _) = self in a) && Resolve1.resolve (let (_, a) = self in a)
+end
+module CreusotContracts_Logic_Resolve_Impl0
+  type t1
+  type t2
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t
+  predicate resolve (self : t)
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t
+  predicate resolve (self : t) =
+    true
+end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t
+end
 module PromotedConstants_PromotedNone_Interface
   val promoted_none [@cfg:stackify] (_ : ()) : ()
 end
@@ -53,9 +90,13 @@ module PromotedConstants_PromotedNone
   let constant promoted1  : Type.core_option_option int32 =
     let _1 = Type.Core_Option_Option_Some (42 : int32) in let _0 = _1 in _0
   use mach.int.Int64
-  let rec cfg promoted_none [@cfg:stackify] [#"../promoted_constants.rs" 1 0 18] (_ : ()) : () =
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = Type.core_option_option int32
+  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = Type.core_option_option int32,
+  type t2 = Type.core_option_option int32, predicate Resolve0.resolve = Resolve1.resolve,
+  predicate Resolve1.resolve = Resolve1.resolve
+  let rec cfg promoted_none [@cfg:stackify] [#"../promoted_constants.rs" 3 0 22] (_ : ()) : () =
   var _0 : ();
-  var ix_1 : Type.core_option_option int32;
+  var _ix_1 : Type.core_option_option int32;
   var _2 : (Type.core_option_option int32, Type.core_option_option int32);
   var _3 : Type.core_option_option int32;
   var _4 : Type.core_option_option int32;
@@ -70,7 +111,7 @@ module PromotedConstants_PromotedNone
     goto BB0
   }
   BB0 {
-    ix_1 <- Type.Core_Option_Option_Some (0 : int32);
+    _ix_1 <- Type.Core_Option_Option_Some (0 : int32);
     _11 <- promoted1;
     _3 <- _11;
     _10 <- promoted0;
@@ -82,6 +123,7 @@ module PromotedConstants_PromotedNone
       end
   }
   BB1 {
+    assume { Resolve0.resolve _2 };
     switch (let (_, a) = _2 in a)
       | Type.Core_Option_Option_None -> goto BB3
       | _ -> goto BB2
@@ -95,6 +137,7 @@ module PromotedConstants_PromotedNone
     absurd
   }
   BB5 {
+    assume { Resolve0.resolve _2 };
     goto BB2
   }
   
@@ -108,7 +151,7 @@ module PromotedConstants_PromotedInt
   use prelude.Prelude
   let constant promoted0  : int32 =
     let _2 = (1 : int32) + (5 : int32) in let _1 = _2 + (10 : int32) in let _0 = _1 in _0
-  let rec cfg promoted_int [@cfg:stackify] [#"../promoted_constants.rs" 10 0 17] (_ : ()) : () =
+  let rec cfg promoted_int [@cfg:stackify] [#"../promoted_constants.rs" 12 0 21] (_ : ()) : () =
   var _0 : ();
   var ix_1 : int32;
   var _2 : int32;
@@ -126,7 +169,7 @@ module PromotedConstants_PromotedInt
     _9 <- promoted0;
     ix_1 <- _9;
     _5 <- ix_1;
-    _4 <- ([#"../promoted_constants.rs" 13 7 16] _5 <> (16 : int32));
+    _4 <- ([#"../promoted_constants.rs" 15 7 16] _5 <> (16 : int32));
     switch (_4)
       | False -> goto BB2
       | _ -> goto BB1
@@ -143,15 +186,15 @@ module PromotedConstants_PromotedInt
 end
 module PromotedConstants_String_Interface
   use Type
-  val string [@cfg:stackify] (s : Type.alloc_string_string) : ()
+  val string [@cfg:stackify] (_s : Type.alloc_string_string) : ()
 end
 module PromotedConstants_String
   use Type
-  let rec cfg string [@cfg:stackify] [#"../promoted_constants.rs" 18 0 20] (s : Type.alloc_string_string) : () =
+  let rec cfg string [@cfg:stackify] [#"../promoted_constants.rs" 20 0 25] (_s : Type.alloc_string_string) : () =
   var _0 : ();
-  var s_1 : Type.alloc_string_string;
+  var _s_1 : Type.alloc_string_string;
   {
-    s_1 <- s;
+    _s_1 <- _s;
     goto BB0
   }
   BB0 {
@@ -168,14 +211,14 @@ module PromotedConstants_Str_Interface
 end
 module PromotedConstants_Str
   use prelude.Prelude
-  let rec cfg str [@cfg:stackify] [#"../promoted_constants.rs" 20 0 8] (_ : ()) : () =
+  let rec cfg str [@cfg:stackify] [#"../promoted_constants.rs" 22 0 12] (_ : ()) : () =
   var _0 : ();
-  var s_1 : string;
+  var _s_1 : string;
   {
     goto BB0
   }
   BB0 {
-    s_1 <- "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
+    _s_1 <- "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
     _0 <- ();
     return _0
   }

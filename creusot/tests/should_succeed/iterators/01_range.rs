@@ -57,7 +57,7 @@ impl Iterator for Range {
 
 #[requires(@n >= 0)]
 #[ensures(result == n)]
-fn sum_range(n: isize) -> isize {
+pub fn sum_range(n: isize) -> isize {
     let mut i = 0;
     {
         // the for loop

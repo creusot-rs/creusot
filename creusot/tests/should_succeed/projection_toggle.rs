@@ -10,7 +10,7 @@ fn proj_toggle<'a, T: PartialEq>(toggle: bool, a: &'a mut T, b: &'a mut T) -> &'
     }
 }
 
-fn main() {
+pub fn f() {
     let mut a = 10;
     let mut b = 5;
 

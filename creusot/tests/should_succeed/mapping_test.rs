@@ -31,7 +31,7 @@ fn incr(t: &mut T) {
     proof_assert!( @^t == (@*old_t).set(@old_t.a,1) );
 }
 
-fn main() {
+pub fn f() {
     let mut x = T { a: 42 };
     proof_assert!( (@x).get(13) == 1 );
     proof_assert!( (@x).get(42) == 0 );

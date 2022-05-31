@@ -1,4 +1,6 @@
+extern crate creusot_contracts;
+
 // Simple check that unary operators can be translated
-fn main() {
+pub fn f() {
     assert!(!false);
 }

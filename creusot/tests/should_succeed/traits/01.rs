@@ -1,10 +1,10 @@
+extern crate creusot_contracts;
+
 // Broken because of trait generics
-trait A {
+pub trait A {
     fn from_b<B>(x: Self) -> B;
 }
 
-fn uses_generic<T: A>(b: T) -> u32 {
+pub fn uses_generic<T: A>(b: T) -> u32 {
     A::from_b(b)
 }
-
-fn main() {}

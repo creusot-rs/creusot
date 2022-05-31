@@ -66,8 +66,7 @@ pub trait OrdLogic {
     fn antisym2(x: Self, y: Self);
 
     #[law]
-    #[ensures(x == y ==> x.cmp_log(y) == Ordering::Equal)]
-    #[ensures(y.cmp_log(x) == Ordering::Equal ==> x == y)]
+    #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
     fn eq_cmp(x: Self, y: Self);
 }
 
@@ -168,3 +167,64 @@ ord_logic_impl!(u32);
 ord_logic_impl!(isize);
 ord_logic_impl!(i32);
 ord_logic_impl!(i64);
+
+impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
+    #[logic]
+    fn cmp_log(self, o: Self) -> Ordering {
+        pearlite! { {
+            let r = self.0.cmp_log(o.0);
+            if r == Ordering::Equal {
+                self.1.cmp_log(o.1)
+            } else {
+                r
+            }
+        } }
+    }
+
+    #[predicate]
+    fn le_log(self, o: Self) -> bool {
+        pearlite! { (self.0 == o.0 && self.1 <= o.1) || self.0 <= o.0 }
+    }
+
+    #[logic]
+    fn cmp_le_log(_: Self, _: Self) {}
+
+    #[predicate]
+    fn lt_log(self, o: Self) -> bool {
+        pearlite! { (self.0 == o.0 && self.1 < o.1) || self.0 < o.0 }
+    }
+
+    #[logic]
+    fn cmp_lt_log(_: Self, _: Self) {}
+
+    #[predicate]
+    fn ge_log(self, o: Self) -> bool {
+        pearlite! { (self.0 == o.0 && self.1 >= o.1) || self.0 >= o.0 }
+    }
+
+    #[logic]
+    fn cmp_ge_log(_: Self, _: Self) {}
+
+    #[predicate]
+    fn gt_log(self, o: Self) -> bool {
+        pearlite! { (self.0 == o.0 && self.1 > o.1) || self.0 > o.0 }
+    }
+
+    #[logic]
+    fn cmp_gt_log(_: Self, _: Self) {}
+
+    #[logic]
+    fn refl(_: Self) {}
+
+    #[logic]
+    fn trans(_: Self, _: Self, _: Self, _: Ordering) {}
+
+    #[logic]
+    fn antisym1(_: Self, _: Self) {}
+
+    #[logic]
+    fn antisym2(_: Self, _: Self) {}
+
+    #[logic]
+    fn eq_cmp(_: Self, _: Self) {}
+}

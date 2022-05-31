@@ -10,7 +10,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-enum List<T> {
+pub enum List<T> {
     Cons(T, Box<List<T>>),
     Nil,
 }
@@ -106,7 +106,7 @@ impl List<u32> {
     forall<i:usize> 0 <= @i && @i < @x ==> arr.get_default(@i, 0u32) <= elem)]
 #[ensures(forall<x:usize> result == Err(x) ==>
     forall<i:usize> @x < @i && @i < arr.len_logic() ==> elem < arr.get_default(@i, 0u32))]
-fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
+pub fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
     if arr.len() == 0 {
         return Err(0);
     }
@@ -133,5 +133,3 @@ fn binary_search(arr: &List<u32>, elem: u32) -> Result<usize, usize> {
         Err(base)
     }
 }
-
-fn main() {}

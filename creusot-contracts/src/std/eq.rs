@@ -7,7 +7,7 @@ extern_spec! {
     mod std {
         mod cmp {
             trait PartialEq<Rhs> {
-                #[ensures(result == (@self_ == @rhs))]
+                #[ensures(result == (@self == @rhs))]
                 fn eq(&self, rhs: &Rhs) -> bool
                 where
                     Self_: Model,

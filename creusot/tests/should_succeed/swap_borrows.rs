@@ -7,7 +7,7 @@ fn swap<T>(x: (T, T)) -> (T, T) {
 }
 
 //  The required permission Acc(_5.tuple_1.val_ref, read) cannot be obtained.
-fn main() {
+pub fn f() {
     let (mut a, mut b) = (0, 0);
     let p = swap((&mut a, &mut b));
     *p.0 = 10;

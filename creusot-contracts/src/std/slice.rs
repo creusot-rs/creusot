@@ -9,7 +9,7 @@ use std::slice::SliceIndex;
 impl<T> Model for [T] {
     type ModelTy = Seq<T>;
 
-    // TODO: remove the trusted attribute, and use slice_model as the definition of this.
+    // We define this as trusted because builtins and ensures are incompatible
     #[logic]
     #[trusted]
     #[ensures(result.len() <= @usize::MAX)]
@@ -90,10 +90,10 @@ extern_spec! {
         fn swap(&mut self, i: usize, j: usize);
 
         #[requires(ix.in_bounds(@*self))]
-        // #[ensures(match result {
-        //       Some(t) => *t == (@*self)[ix.into()],
-        //       None => (@*self).len() <= ix.into(),
-        // })]
+        #[ensures(match result {
+              Some(r) => ix.in_bounds(@*self_) && ix.has_value(@*self_, *r),
+              None => !ix.in_bounds(@*self_),
+        })]
         fn get<I : SliceIndexSpec<[T]>>(&self, ix: I) -> Option<&<I as SliceIndex<[T]>>::Output>;
 
         #[ensures(result == None ==> (@self).len() == 0 && ^self == *self && @*self == Seq::EMPTY)]
@@ -107,13 +107,13 @@ extern_spec! {
 
         #[ensures(match result {
             Some(r) => {
-                * r == (@**self_)[0] &&
-                ^ r == (@^*self_)[0] &&
-                (@**self_).len() > 0 && // ^*s.len == **s.len ? (i dont think so)
-                (@^*self_).len() > 0 &&
-                (@*^self_).ext_eq((@**self_).tail()) && (@^^self_).ext_eq((@^*self_).tail())
+                * r == (@**self)[0] &&
+                ^ r == (@^*self)[0] &&
+                (@**self).len() > 0 && // ^*s.len == **s.len ? (i dont think so)
+                (@^*self).len() > 0 &&
+                (@*^self).ext_eq((@**self).tail()) && (@^^self).ext_eq((@^*self).tail())
             }
-            None => ^self_ == * self_ && (@**self_).len() == 0
+            None => ^self == * self && (@**self).len() == 0
         })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
     }

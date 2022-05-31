@@ -15,18 +15,46 @@ module Type
   use seq.Seq
   use prelude.Prelude
 end
+module CreusotContracts_Std1_Fun_Impl0_Precondition_Interface
+  type args
+  type f
+  predicate precondition (self : f) (_2' : args)
+end
+module CreusotContracts_Std1_Fun_Impl0_Precondition
+  type args
+  type f
+  predicate precondition (self : f) (_2' : args)
+end
 module Core_Ops_Function_FnOnce_Output
   type self
   type args
   type output
+end
+module CreusotContracts_Std1_Fun_FnSpec_Postcondition_Interface
+  type self
+  type args
+  use prelude.Prelude
+  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
+  predicate postcondition (self : self) (_2' : args) (_3' : Output0.output)
+end
+module CreusotContracts_Std1_Fun_FnSpec_Postcondition
+  type self
+  type args
+  use prelude.Prelude
+  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
+  predicate postcondition (self : self) (_2' : args) (_3' : Output0.output)
 end
 module Core_Ops_Function_Fn_Call_Interface
   type self
   type args
   use prelude.Prelude
   clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
+  clone CreusotContracts_Std1_Fun_FnSpec_Postcondition_Interface as Postcondition0 with type self = self,
+  type args = args, type Output0.output = Output0.output
+  clone CreusotContracts_Std1_Fun_Impl0_Precondition_Interface as Precondition0 with type args = args, type f = self
   val call [@cfg:stackify] (self : self) (args : args) : Output0.output
-    requires {false}
+    requires {Precondition0.precondition self args}
+    ensures { Postcondition0.postcondition self args result }
     
 end
 module Core_Ops_Function_Fn_Call
@@ -34,9 +62,71 @@ module Core_Ops_Function_Fn_Call
   type args
   use prelude.Prelude
   clone Core_Ops_Function_FnOnce_Output as Output0 with type self = self, type args = args
+  clone CreusotContracts_Std1_Fun_FnSpec_Postcondition_Interface as Postcondition0 with type self = self,
+  type args = args, type Output0.output = Output0.output
+  clone CreusotContracts_Std1_Fun_Impl0_Precondition_Interface as Precondition0 with type args = args, type f = self
   val call [@cfg:stackify] (self : self) (args : args) : Output0.output
-    requires {false}
+    requires {Precondition0.precondition self args}
+    ensures { Postcondition0.postcondition self args result }
     
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Std1_Fun_Impl0
+  type args
+  type f
+end
+module CreusotContracts_Std1_Fun_Impl2_Postcondition_Interface
+  type args
+  type f
+  use prelude.Prelude
+  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = f, type args = args
+  predicate postcondition (self : f) (_2' : args) (_3' : Output0.output)
+end
+module CreusotContracts_Std1_Fun_Impl2_Postcondition
+  type args
+  type f
+  use prelude.Prelude
+  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = f, type args = args
+  predicate postcondition (self : f) (_2' : args) (_3' : Output0.output)
+end
+module CreusotContracts_Std1_Fun_Impl2
+  type args
+  type f
+end
+module CreusotContracts_Std1_Fun_Impl2_FnMut_Interface
+  type args
+  type f
+  use prelude.Prelude
+  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = f, type args = args
+  function fn_mut (self : borrowed f) (_2' : args) (_3' : Output0.output) : ()
+end
+module CreusotContracts_Std1_Fun_Impl2_FnMut
+  type args
+  type f
+  use prelude.Prelude
+  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = f, type args = args
+  function fn_mut (self : borrowed f) (_2' : args) (_3' : Output0.output) : () =
+    ()
+end
+module CreusotContracts_Std1_Fun_Impl2_FnOnce_Interface
+  type args
+  type f
+  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = f, type args = args
+  function fn_once (self : f) (_2' : args) (_3' : Output0.output) : ()
+end
+module CreusotContracts_Std1_Fun_Impl2_FnOnce
+  type args
+  type f
+  clone Core_Ops_Function_FnOnce_Output as Output0 with type self = f, type args = args
+  function fn_once (self : f) (_2' : args) (_3' : Output0.output) : () =
+    ()
 end
 module C03GenericBound_ClosureParam_Interface
   type f
@@ -47,8 +137,17 @@ module C03GenericBound_ClosureParam
   use mach.int.Int
   use mach.int.UInt32
   use prelude.Prelude
-  clone Core_Ops_Function_Fn_Call_Interface as Call0 with type self = f, type args = (uint32), type Output0.output = ()
-  let rec cfg closure_param [@cfg:stackify] [#"../03_generic_bound.rs" 1 0 34] (f : f) : () =
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = f
+  clone CreusotContracts_Std1_Fun_Impl2_FnOnce as FnOnce0 with type args = (uint32), type f = f,
+  type Output0.output = ()
+  clone CreusotContracts_Std1_Fun_Impl2_FnMut as FnMut0 with type args = (uint32), type f = f, type Output0.output = ()
+  clone CreusotContracts_Std1_Fun_Impl2_Postcondition as Postcondition0 with type args = (uint32), type f = f,
+  type Output0.output = ()
+  clone CreusotContracts_Std1_Fun_Impl0_Precondition as Precondition0 with type args = (uint32), type f = f
+  clone Core_Ops_Function_Fn_Call_Interface as Call0 with type self = f, type args = (uint32),
+  predicate Precondition0.precondition = Precondition0.precondition,
+  predicate Postcondition0.postcondition = Postcondition0.postcondition, type Output0.output = ()
+  let rec cfg closure_param [@cfg:stackify] [#"../03_generic_bound.rs" 3 0 34] (f : f) : () =
   var _0 : ();
   var f_1 : f;
   var _2 : f;
@@ -60,13 +159,14 @@ module C03GenericBound_ClosureParam
   BB0 {
     _2 <- f_1;
     _3 <- ((0 : uint32));
-    _0 <- ([#"../03_generic_bound.rs" 2 4 10] Call0.call _2 _3);
+    _0 <- ([#"../03_generic_bound.rs" 4 4 10] Call0.call _2 _3);
     goto BB1
   }
   BB1 {
     goto BB2
   }
   BB2 {
+    assume { Resolve0.resolve f_1 };
     return _0
   }
   
@@ -78,19 +178,19 @@ module C03GenericBound_Caller_Closure0_Interface
   type c03genericbound_caller_closure0  =
     | C03GenericBound_Caller_Closure0
     
-  predicate precondition [@cfg:stackify] (_1' : c03genericbound_caller_closure0) (x : (uint32)) =
+  predicate precondition [@cfg:stackify] (_1' : c03genericbound_caller_closure0) (_x : (uint32)) =
     true
-  predicate postcondition [@cfg:stackify] (_1' : c03genericbound_caller_closure0) (x : (uint32)) (result : ()) =
+  predicate postcondition [@cfg:stackify] (_1' : c03genericbound_caller_closure0) (_x : (uint32)) (result : ()) =
     true
-  predicate postcondition_mut [@cfg:stackify] (_1' : borrowed c03genericbound_caller_closure0) (x : (uint32)) (result : ())
+  predicate postcondition_mut [@cfg:stackify] (_1' : borrowed c03genericbound_caller_closure0) (_x : (uint32)) (result : ())
     
    =
     true
-  predicate postcondition_once [@cfg:stackify] (_1' : c03genericbound_caller_closure0) (x : (uint32)) (result : ()) =
+  predicate postcondition_once [@cfg:stackify] (_1' : c03genericbound_caller_closure0) (_x : (uint32)) (result : ()) =
     true
   predicate resolve (_1' : c03genericbound_caller_closure0) =
     true
-  val c03GenericBound_Caller_Closure0 [@cfg:stackify] (_1' : c03genericbound_caller_closure0) (x : (uint32)) : ()
+  val c03GenericBound_Caller_Closure0 [@cfg:stackify] (_1' : c03genericbound_caller_closure0) (_x : (uint32)) : ()
 end
 module C03GenericBound_Caller_Closure0
   type c03genericbound_caller_closure0  =
@@ -99,15 +199,15 @@ module C03GenericBound_Caller_Closure0
   use prelude.Prelude
   use mach.int.Int
   use mach.int.UInt32
-  let rec cfg c03GenericBound_Caller_Closure0 [@cfg:stackify] [#"../03_generic_bound.rs" 6 18 29] (_1' : c03genericbound_caller_closure0) (x : (uint32)) : ()
+  let rec cfg c03GenericBound_Caller_Closure0 [@cfg:stackify] [#"../03_generic_bound.rs" 8 18 30] (_1' : c03genericbound_caller_closure0) (_x : (uint32)) : ()
     
    =
   var _0 : ();
   var _1 : c03genericbound_caller_closure0;
-  var x_2 : uint32;
+  var _x_2 : uint32;
   {
     _1 <- _1';
-    x_2 <- x;
+    _x_2 <- _x;
     goto BB0
   }
   BB0 {
@@ -122,7 +222,7 @@ end
 module C03GenericBound_Caller
   clone C03GenericBound_Caller_Closure0_Interface as Closure00 with axiom .
   clone C03GenericBound_ClosureParam_Interface as ClosureParam0 with type f = Closure00.c03genericbound_caller_closure0
-  let rec cfg caller [@cfg:stackify] [#"../03_generic_bound.rs" 5 0 11] (_ : ()) : () =
+  let rec cfg caller [@cfg:stackify] [#"../03_generic_bound.rs" 7 0 15] (_ : ()) : () =
   var _0 : ();
   var _1 : Closure00.c03genericbound_caller_closure0;
   {
@@ -130,7 +230,7 @@ module C03GenericBound_Caller
   }
   BB0 {
     _1 <- Closure00.C03GenericBound_Caller_Closure0;
-    _0 <- ([#"../03_generic_bound.rs" 6 4 30] ClosureParam0.closure_param _1);
+    _0 <- ([#"../03_generic_bound.rs" 8 4 31] ClosureParam0.closure_param _1);
     goto BB1
   }
   BB1 {

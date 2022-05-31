@@ -1,3 +1,5 @@
+extern crate creusot_contracts;
+
 // Check that module paths are properly printed in MLCFG.
 
 mod a {
@@ -11,10 +13,10 @@ mod b {
 
     pub mod c {
         pub struct T(::a::T);
+
+        #[allow(dead_code)]
         pub struct U(super::O);
     }
 }
 
-fn test(a: a::T, b: S, c: b::O, d: b::c::T) {}
-
-fn main() {}
+pub fn test(_a: a::T, _b: S, _c: b::O, _d: b::c::T) {}

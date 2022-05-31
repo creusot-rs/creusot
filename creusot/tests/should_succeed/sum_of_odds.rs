@@ -50,7 +50,7 @@ fn compute_sum_of_odd(x: u32) -> u32 {
 }
 
 #[requires(@x < 0x10000)]
-fn test(x: u32) {
+pub fn test(x: u32) {
     let y = compute_sum_of_odd(x);
     proof_assert! {
         sum_of_odd_is_sqr(@x);

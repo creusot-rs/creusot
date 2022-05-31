@@ -1,7 +1,5 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
-
 pub trait Model {
     type ModelTy;
 
@@ -11,6 +9,7 @@ pub trait Model {
 impl<T: Model> Model for &T {
     type ModelTy = T::ModelTy;
 
+    #[allow(unconditional_recursion)]
     fn model(self) -> Self::ModelTy {
         (self).model()
     }

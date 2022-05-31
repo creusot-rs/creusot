@@ -18,4 +18,4 @@ fn c(x: u32) -> bool {
 }
 
 #[requires(c(x))]
-fn f(x: u32) {}
+pub fn f(x: u32) {}

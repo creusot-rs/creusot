@@ -10,7 +10,7 @@ fn rand_in_range(l: usize, u: usize) -> usize {
 }
 
 #[ensures((@^v).permutation_of(@v))]
-fn knuth_shuffle<T>(v: &mut Vec<T>) {
+pub fn knuth_shuffle<T>(v: &mut Vec<T>) {
     let old_v = ghost! { v };
     let mut n = 0;
 

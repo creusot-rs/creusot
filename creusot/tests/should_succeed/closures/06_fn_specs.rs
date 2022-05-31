@@ -5,7 +5,7 @@ use creusot_contracts::*;
 
 #[requires(f.precondition(a))]
 #[ensures(f.postcondition(a, result))]
-fn weaken<A, F: FnSpec<A> + Resolve>(f: F, a: A) -> F::Output {
+pub fn weaken<A, F: FnSpec<A> + Resolve>(f: F, a: A) -> F::Output {
     weaken_2(f, a)
 }
 

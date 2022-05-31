@@ -14,26 +14,403 @@ module Type
   use floating_point.Double
   use seq.Seq
   use prelude.Prelude
+  type core_cmp_ordering  =
+    | Core_Cmp_Ordering_Less
+    | Core_Cmp_Ordering_Equal
+    | Core_Cmp_Ordering_Greater
+    
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Impl0_Resolve_Interface
+  type t1
+  type t2
+  predicate resolve (self : (t1, t2))
+end
+module CreusotContracts_Logic_Resolve_Impl0_Resolve
+  type t1
+  type t2
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = t2
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t1
+  predicate resolve (self : (t1, t2)) =
+    Resolve0.resolve (let (a, _) = self in a) && Resolve1.resolve (let (_, a) = self in a)
+end
+module CreusotContracts_Logic_Model_Model_ModelTy
+  type self
+  type modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model_Interface
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl0_Model_Interface
+  type t
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  function model (self : t) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl0_Model
+  type t
+  use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  function model (self : t) : ModelTy0.modelTy =
+    Model0.model self
+end
+module CreusotContracts_Logic_Model_Impl3_Model_Interface
+  type a
+  type b
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = b
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = a
+  function model (self : (a, b)) : (ModelTy0.modelTy, ModelTy1.modelTy)
+end
+module CreusotContracts_Logic_Model_Impl3_Model
+  type a
+  type b
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = b
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = a
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = b,
+  type ModelTy0.modelTy = ModelTy1.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = a,
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  function model (self : (a, b)) : (ModelTy0.modelTy, ModelTy1.modelTy) =
+    (Model0.model (let (a, _) = self in a), Model1.model (let (_, a) = self in a))
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface
+  type self
+  use Type
+  function cmp_log (self : self) (_2' : self) : Type.core_cmp_ordering
+end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpLog
+  type self
+  use Type
+  function cmp_log (self : self) (_2' : self) : Type.core_cmp_ordering
+end
+module CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface
+  type self
+  predicate lt_log (self : self) (o : self)
+end
+module CreusotContracts_Logic_Ord_OrdLogic_LtLog
+  type self
+  use Type
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  predicate lt_log (self : self) (o : self) =
+    CmpLog0.cmp_log self o = Type.Core_Cmp_Ordering_Less
+end
+module CreusotContracts_Logic_Ord_Impl0_LtLog_Interface
+  type a
+  type b
+  predicate lt_log (self : (a, b)) (o : (a, b))
+end
+module CreusotContracts_Logic_Ord_Impl0_LtLog
+  type a
+  type b
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog1 with type self = a
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = b
+  predicate lt_log (self : (a, b)) (o : (a, b)) =
+    (let (a, _) = self in a) = (let (a, _) = o in a) && LtLog0.lt_log (let (_, a) = self in a) (let (_, a) = o in a) || LtLog1.lt_log (let (a, _) = self in a) (let (a, _) = o in a)
+end
+module CreusotContracts_Logic_Model_Impl3_ModelTy
+  type a
+  type b
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = b
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = a
+  type modelTy  =
+    (ModelTy0.modelTy, ModelTy1.modelTy)
 end
 module Core_Tuple_Impl7_Lt_Interface
   type k
   type l
   use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = l
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = k
+  clone CreusotContracts_Logic_Model_Impl3_ModelTy as ModelTy0 with type a = k, type b = l,
+  type ModelTy0.modelTy = ModelTy1.modelTy, type ModelTy1.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = (k, l),
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Ord_Impl0_LtLog_Interface as LtLog0 with type a = ModelTy1.modelTy,
+  type b = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl3_Model_Interface as Model1 with type a = k, type b = l,
+  type ModelTy0.modelTy = ModelTy1.modelTy, type ModelTy1.modelTy = ModelTy2.modelTy
   val lt [@cfg:stackify] (self : (k, l)) (other : (k, l)) : bool
-    requires {false}
+    ensures { result = LtLog0.lt_log (Model0.model self) (Model1.model other) }
     
 end
 module Core_Tuple_Impl7_Lt
   type k
   type l
   use prelude.Prelude
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy2 with type self = l
+  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy1 with type self = k
+  clone CreusotContracts_Logic_Model_Impl3_ModelTy as ModelTy0 with type a = k, type b = l,
+  type ModelTy0.modelTy = ModelTy1.modelTy, type ModelTy1.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = (k, l),
+  type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Ord_Impl0_LtLog_Interface as LtLog0 with type a = ModelTy1.modelTy,
+  type b = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl3_Model_Interface as Model1 with type a = k, type b = l,
+  type ModelTy0.modelTy = ModelTy1.modelTy, type ModelTy1.modelTy = ModelTy2.modelTy
   val lt [@cfg:stackify] (self : (k, l)) (other : (k, l)) : bool
-    requires {false}
+    ensures { result = LtLog0.lt_log (Model0.model self) (Model1.model other) }
     
+end
+module CreusotContracts_Logic_Resolve_Impl0
+  type t1
+  type t2
 end
 module Core_Tuple_Impl7
   type k
   type l
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
+  type t
+  predicate resolve (self : t)
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve
+  type t
+  predicate resolve (self : t) =
+    true
+end
+module CreusotContracts_Logic_Resolve_Impl2
+  type t
+end
+module CreusotContracts_Logic_Model_Impl0
+  type t
+end
+module CreusotContracts_Logic_Model_Impl3
+  type a
+  type b
+end
+module CreusotContracts_Logic_Ord_Impl0
+  type a
+  type b
+end
+module CreusotContracts_Logic_Int_Impl12_ModelTy
+  use mach.int.Int
+  type modelTy  =
+    int
+end
+module CreusotContracts_Logic_Int_Impl12
+  
+end
+module CreusotContracts_Logic_Int_Impl12_Model_Interface
+  use mach.int.Int
+  use mach.int.UInt32
+  function model (self : uint32) : int
+end
+module CreusotContracts_Logic_Int_Impl12_Model
+  use mach.int.Int
+  use mach.int.UInt32
+  function model (self : uint32) : int =
+    UInt32.to_int self
+end
+module CreusotContracts_Logic_Ord_Impl0_CmpLeLog_Interface
+  type a
+  type b
+  function cmp_le_log (_1' : (a, b)) (_2' : (a, b)) : ()
+end
+module CreusotContracts_Logic_Ord_Impl0_CmpLeLog
+  type a
+  type b
+  function cmp_le_log (_1' : (a, b)) (_2' : (a, b)) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl0_CmpLtLog_Interface
+  type a
+  type b
+  function cmp_lt_log (_1' : (a, b)) (_2' : (a, b)) : ()
+end
+module CreusotContracts_Logic_Ord_Impl0_CmpLtLog
+  type a
+  type b
+  function cmp_lt_log (_1' : (a, b)) (_2' : (a, b)) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl0_CmpGeLog_Interface
+  type a
+  type b
+  function cmp_ge_log (_1' : (a, b)) (_2' : (a, b)) : ()
+end
+module CreusotContracts_Logic_Ord_Impl0_CmpGeLog
+  type a
+  type b
+  function cmp_ge_log (_1' : (a, b)) (_2' : (a, b)) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl0_CmpGtLog_Interface
+  type a
+  type b
+  function cmp_gt_log (_1' : (a, b)) (_2' : (a, b)) : ()
+end
+module CreusotContracts_Logic_Ord_Impl0_CmpGtLog
+  type a
+  type b
+  function cmp_gt_log (_1' : (a, b)) (_2' : (a, b)) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl0_Refl_Interface
+  type a
+  type b
+  function refl (_1' : (a, b)) : ()
+end
+module CreusotContracts_Logic_Ord_Impl0_Refl
+  type a
+  type b
+  function refl (_1' : (a, b)) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl0_Trans_Interface
+  type a
+  type b
+  use Type
+  function trans (_1' : (a, b)) (_2' : (a, b)) (_3' : (a, b)) (_4' : Type.core_cmp_ordering) : ()
+end
+module CreusotContracts_Logic_Ord_Impl0_Trans
+  type a
+  type b
+  use Type
+  function trans (_1' : (a, b)) (_2' : (a, b)) (_3' : (a, b)) (_4' : Type.core_cmp_ordering) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl0_Antisym1_Interface
+  type a
+  type b
+  function antisym1 (_1' : (a, b)) (_2' : (a, b)) : ()
+end
+module CreusotContracts_Logic_Ord_Impl0_Antisym1
+  type a
+  type b
+  function antisym1 (_1' : (a, b)) (_2' : (a, b)) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl0_Antisym2_Interface
+  type a
+  type b
+  function antisym2 (_1' : (a, b)) (_2' : (a, b)) : ()
+end
+module CreusotContracts_Logic_Ord_Impl0_Antisym2
+  type a
+  type b
+  function antisym2 (_1' : (a, b)) (_2' : (a, b)) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl0_EqCmp_Interface
+  type a
+  type b
+  function eq_cmp (_1' : (a, b)) (_2' : (a, b)) : ()
+end
+module CreusotContracts_Logic_Ord_Impl0_EqCmp
+  type a
+  type b
+  function eq_cmp (_1' : (a, b)) (_2' : (a, b)) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_LtLog_Interface
+  use mach.int.Int
+  predicate lt_log (self : int) (_2' : int)
+end
+module CreusotContracts_Logic_Ord_Impl1_LtLog
+  use mach.int.Int
+  predicate lt_log (self : int) (_2' : int)
+end
+module CreusotContracts_Logic_Ord_Impl1
+  
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpLeLog_Interface
+  use mach.int.Int
+  function cmp_le_log (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpLeLog
+  use mach.int.Int
+  function cmp_le_log (_1' : int) (_2' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpLtLog_Interface
+  use mach.int.Int
+  function cmp_lt_log (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpLtLog
+  use mach.int.Int
+  function cmp_lt_log (_1' : int) (_2' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpGeLog_Interface
+  use mach.int.Int
+  function cmp_ge_log (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpGeLog
+  use mach.int.Int
+  function cmp_ge_log (_1' : int) (_2' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpGtLog_Interface
+  use mach.int.Int
+  function cmp_gt_log (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_CmpGtLog
+  use mach.int.Int
+  function cmp_gt_log (_1' : int) (_2' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Refl_Interface
+  use mach.int.Int
+  function refl (_1' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Refl
+  use mach.int.Int
+  function refl (_1' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Trans_Interface
+  use mach.int.Int
+  use Type
+  function trans (_1' : int) (_2' : int) (_3' : int) (_4' : Type.core_cmp_ordering) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Trans
+  use mach.int.Int
+  use Type
+  function trans (_1' : int) (_2' : int) (_3' : int) (_4' : Type.core_cmp_ordering) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Antisym1_Interface
+  use mach.int.Int
+  function antisym1 (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Antisym1
+  use mach.int.Int
+  function antisym1 (_1' : int) (_2' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Antisym2_Interface
+  use mach.int.Int
+  function antisym2 (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_Antisym2
+  use mach.int.Int
+  function antisym2 (_1' : int) (_2' : int) : () =
+    ()
+end
+module CreusotContracts_Logic_Ord_Impl1_EqCmp_Interface
+  use mach.int.Int
+  function eq_cmp (_1' : int) (_2' : int) : ()
+end
+module CreusotContracts_Logic_Ord_Impl1_EqCmp
+  use mach.int.Int
+  function eq_cmp (_1' : int) (_2' : int) : () =
+    ()
 end
 module ConstrainedTypes_UsesConcreteInstance_Interface
   use mach.int.Int
@@ -44,8 +421,43 @@ module ConstrainedTypes_UsesConcreteInstance
   use mach.int.Int
   use mach.int.UInt32
   use prelude.Prelude
-  clone Core_Tuple_Impl7_Lt_Interface as Lt0 with type k = uint32, type l = uint32
-  let rec cfg uses_concrete_instance [@cfg:stackify] [#"../constrained_types.rs" 1 0 63] (x : (uint32, uint32)) (y : (uint32, uint32)) : bool
+  clone CreusotContracts_Logic_Ord_Impl1_EqCmp as EqCmp1
+  clone CreusotContracts_Logic_Ord_Impl1_Antisym2 as Antisym21
+  clone CreusotContracts_Logic_Ord_Impl1_Antisym1 as Antisym11
+  clone CreusotContracts_Logic_Ord_Impl1_Trans as Trans1
+  clone CreusotContracts_Logic_Ord_Impl1_Refl as Refl1
+  clone CreusotContracts_Logic_Ord_Impl1_CmpGtLog as CmpGtLog1
+  clone CreusotContracts_Logic_Ord_Impl1_CmpGeLog as CmpGeLog1
+  clone CreusotContracts_Logic_Ord_Impl1_CmpLtLog as CmpLtLog1
+  clone CreusotContracts_Logic_Ord_Impl1_CmpLeLog as CmpLeLog1
+  clone CreusotContracts_Logic_Ord_Impl0_EqCmp as EqCmp0 with type a = int, type b = int
+  clone CreusotContracts_Logic_Ord_Impl0_Antisym2 as Antisym20 with type a = int, type b = int
+  clone CreusotContracts_Logic_Ord_Impl0_Antisym1 as Antisym10 with type a = int, type b = int
+  clone CreusotContracts_Logic_Ord_Impl0_Trans as Trans0 with type a = int, type b = int
+  clone CreusotContracts_Logic_Ord_Impl0_Refl as Refl0 with type a = int, type b = int
+  clone CreusotContracts_Logic_Ord_Impl0_CmpGtLog as CmpGtLog0 with type a = int, type b = int
+  clone CreusotContracts_Logic_Ord_Impl0_CmpGeLog as CmpGeLog0 with type a = int, type b = int
+  clone CreusotContracts_Logic_Ord_Impl0_CmpLtLog as CmpLtLog0 with type a = int, type b = int
+  clone CreusotContracts_Logic_Ord_Impl0_CmpLeLog as CmpLeLog0 with type a = int, type b = int
+  clone CreusotContracts_Logic_Ord_Impl1_LtLog as LtLog1
+  clone CreusotContracts_Logic_Ord_Impl0_LtLog as LtLog0 with type a = int, type b = int,
+  predicate LtLog0.lt_log = LtLog1.lt_log, predicate LtLog1.lt_log = LtLog1.lt_log
+  clone CreusotContracts_Logic_Int_Impl12_Model as Model2
+  clone CreusotContracts_Logic_Int_Impl12_ModelTy as ModelTy1
+  clone CreusotContracts_Logic_Model_Impl3_ModelTy as ModelTy0 with type a = uint32, type b = uint32,
+  type ModelTy0.modelTy = ModelTy1.modelTy, type ModelTy1.modelTy = ModelTy1.modelTy
+  clone CreusotContracts_Logic_Model_Impl3_Model as Model1 with type a = uint32, type b = uint32,
+  type ModelTy0.modelTy = ModelTy1.modelTy, type ModelTy1.modelTy = ModelTy1.modelTy,
+  function Model0.model = Model2.model, function Model1.model = Model2.model
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = (uint32, uint32),
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+  clone Core_Tuple_Impl7_Lt_Interface as Lt0 with type k = uint32, type l = uint32,
+  function Model0.model = Model0.model, function Model1.model = Model1.model, predicate LtLog0.lt_log = LtLog0.lt_log,
+  type ModelTy1.modelTy = ModelTy1.modelTy, type ModelTy2.modelTy = ModelTy1.modelTy
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = uint32
+  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint32, type t2 = uint32,
+  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve1.resolve
+  let rec cfg uses_concrete_instance [@cfg:stackify] [#"../constrained_types.rs" 14 0 67] (x : (uint32, uint32)) (y : (uint32, uint32)) : bool
     
    =
   var _0 : bool;
@@ -60,26 +472,13 @@ module ConstrainedTypes_UsesConcreteInstance
   }
   BB0 {
     _3 <- x_1;
+    assume { Resolve0.resolve x_1 };
     _4 <- y_2;
-    _0 <- ([#"../constrained_types.rs" 2 4 9] Lt0.lt _3 _4);
+    assume { Resolve0.resolve y_2 };
+    _0 <- ([#"../constrained_types.rs" 15 4 9] Lt0.lt _3 _4);
     goto BB1
   }
   BB1 {
-    return _0
-  }
-  
-end
-module ConstrainedTypes_Main_Interface
-  val main [@cfg:stackify] (_ : ()) : ()
-end
-module ConstrainedTypes_Main
-  let rec cfg main [@cfg:stackify] [#"../constrained_types.rs" 5 0 9] (_ : ()) : () =
-  var _0 : ();
-  {
-    goto BB0
-  }
-  BB0 {
-    _0 <- ();
     return _0
   }
   

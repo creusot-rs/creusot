@@ -1,10 +1,8 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
-
-fn u8_safe(u: u8) {
-    u + 0;
+pub fn u8_safe(u: u8) {
+    let _ = u + 0;
 }
 // `String` includes `u8` internally.
 //
-fn bug_256(x: String) {}
+pub fn bug_256(_x: String) {}

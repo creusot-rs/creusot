@@ -5,7 +5,7 @@ use creusot_contracts::*;
 // the interfaces of functions. Also ensures that we don't attempt
 // refine associated types of instances.
 
-trait Tr {
+pub trait Tr {
     type A;
 }
 
@@ -15,12 +15,12 @@ impl Tr for () {
 
 #[trusted]
 #[logic]
-fn x<T: Tr>(x: T) -> T::A {
+fn x<T: Tr>(_x: T) -> T::A {
     absurd
 }
 
 #[requires(x(a) == ())]
-fn calls(a: ()) -> <() as Tr>::A {}
+pub fn calls(a: ()) -> <() as Tr>::A {}
 
 // // This call used to break
 // #[ensures(x(a) == ())]

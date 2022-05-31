@@ -1,7 +1,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-enum Tree {
+pub enum Tree {
     Node(Box<Tree>, u32, Box<Tree>),
     Leaf,
 }
@@ -77,7 +77,7 @@ impl Tree {
 }
 
 #[requires(t.sum() + @j + @k <= 1_000_000)]
-fn inc_some_2_tree(mut t: Tree, j: u32, k: u32) {
+pub fn inc_some_2_tree(mut t: Tree, j: u32, k: u32) {
     let sum0 = t.sum_x();
     let (ma, mt) = t.take_some_rest();
     let (mb, _) = mt.take_some_rest();

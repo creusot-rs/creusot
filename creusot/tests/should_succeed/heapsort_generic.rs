@@ -1,7 +1,7 @@
 #![feature(type_ascription)]
 extern crate creusot_contracts;
 
-use creusot_contracts::std::*;
+use creusot_contracts::std::cmp::Ord;
 use creusot_contracts::*;
 
 #[logic]
@@ -86,7 +86,7 @@ fn sorted<T: Ord>(s: Seq<T>) -> bool {
 #[requires((@v).len() < @std::usize::MAX/2)]
 #[ensures(sorted(@^v))]
 #[ensures((@^v).permutation_of(@v))]
-fn heap_sort<T: Ord>(v: &mut Vec<T>) {
+pub fn heap_sort<T: Ord>(v: &mut Vec<T>) {
     let old_v = ghost! { v };
 
     let mut start = v.len() / 2;

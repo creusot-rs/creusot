@@ -1,5 +1,4 @@
 extern crate creusot_contracts;
-use creusot_contracts::std::*;
 use creusot_contracts::*;
 
 #[predicate]
@@ -21,7 +20,7 @@ fn sorted(s: Seq<u32>) -> bool {
     forall<i:usize>  i < x ==> (@arr)[@i] <= elem)]
 #[ensures(forall<x:usize> result == Err(x) ==>
     forall<i:usize> x < i && @i < (@arr).len() ==> elem < (@arr)[@i])]
-fn binary_search(arr: &Vec<u32>, elem: u32) -> Result<usize, usize> {
+pub fn binary_search(arr: &Vec<u32>, elem: u32) -> Result<usize, usize> {
     if arr.len() == 0 {
         return Err(0);
     }

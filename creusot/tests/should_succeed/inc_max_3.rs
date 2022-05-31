@@ -24,7 +24,7 @@ fn inc_max_3<'a>(mut ma: &'a mut u32, mut mb: &'a mut u32, mut mc: &'a mut u32) 
 }
 
 #[requires(a <= 1_000_000u32 && b <= 1_000_000u32 && c <= 1_000_000u32)]
-fn test_inc_max_3(mut a: u32, mut b: u32, mut c: u32) {
+pub fn test_inc_max_3(mut a: u32, mut b: u32, mut c: u32) {
     inc_max_3(&mut a, &mut b, &mut c);
     assert!(a != b && b != c && c != a);
 }

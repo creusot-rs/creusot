@@ -1,11 +1,11 @@
+extern crate creusot_contracts;
+
 // make sure that local translation handles variable shadowing well
-fn multiple_scopes() {
-    let mut x = 1;
-    let y = 2;
+pub fn multiple_scopes() {
+    let mut _x = 1;
+    let _y = 2;
     {
-        let y = 3;
-        x = y;
+        let _y = 3;
+        _x = _y;
     }
 }
-
-fn main() {}

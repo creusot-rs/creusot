@@ -17,7 +17,7 @@ pub mod nested {
 
     #[ensures(result == true)]
     pub fn inner_func() -> bool {
-        Nested::Test;
+        let _ = Nested::Test;
         true
     }
 
@@ -28,7 +28,7 @@ pub mod nested {
     }
 }
 
-fn main() {
+pub fn f() {
     nested::inner_func();
     use nested::further::*;
     another();

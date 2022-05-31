@@ -1,3 +1,5 @@
+// UNSTABLE
+
 extern crate creusot_contracts;
 use creusot_contracts::std::*;
 use creusot_contracts::*;
@@ -21,9 +23,9 @@ impl Point {
     }
 }
 
-struct Board {
-    size: usize,
-    field: Vec<Vec<usize>>,
+pub struct Board {
+    pub size: usize,
+    pub field: Vec<Vec<usize>>,
 }
 
 impl Board {
@@ -115,9 +117,13 @@ fn moves() -> Vec<(isize, isize)> {
     v
 }
 
+#[ensures(forall<r: &(usize, Point)> result == Some(r) ==>
+          exists<i:Int> 0 <= i && i < (@v).len() && (@v)[i] == *r)]
 fn min(v: &Vec<(usize, Point)>) -> Option<&(usize, Point)> {
     let mut i = 0;
     let mut min = None;
+    #[invariant(post, forall<r: &(usize, Point)> min == Some(r) ==>
+                      exists<i:Int> 0 <= i && i < (@v).len() && (@v)[i] == *r)]
     while i < v.len() {
         match min {
             None => min = Some(&v[i]),
@@ -140,7 +146,7 @@ fn dumb_nonlinear_arith(a: usize) {}
 #[requires(0 < @size && @size <= 1000)]
 #[requires(x < size)]
 #[requires(y < size)]
-fn knights_tour(size: usize, x: usize, y: usize) -> Option<Board> {
+pub fn knights_tour(size: usize, x: usize, y: usize) -> Option<Board> {
     let mut board = Board::new(size);
     let mut p = Point { x: x as isize, y: y as isize };
     let mut step = 1;
@@ -156,15 +162,17 @@ fn knights_tour(size: usize, x: usize, y: usize) -> Option<Board> {
     // due to a why3 bug / limitation in mlcfg
     while step <= (size * size) {
         // choose next square by Warnsdorf's rule
-        let mut candidates = Vec::new();
+        let mut candidates: Vec<(usize, Point)> = Vec::new();
         let mut i = 0;
+        #[invariant(c, forall<i: Int> 0 <= i && i < (@candidates).len() ==>
+                    board.in_bounds((@candidates)[i].1))]
         while i < moves().len() {
-            proof_assert! { board.in_bounds(p) };
             let adj = p.mov(&moves()[i]);
             if board.available(adj) {
                 let degree = board.count_degree(adj);
                 candidates.push((degree, adj));
             }
+            i += 1;
         }
         match min(&candidates) {
             Some(&(_, adj)) => p = adj,

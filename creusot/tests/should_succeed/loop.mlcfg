@@ -15,14 +15,29 @@ module Type
   use seq.Seq
   use prelude.Prelude
 end
-module Loop_Main_Interface
-  val main [@cfg:stackify] (_ : ()) : ()
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Prelude
+  predicate resolve (self : borrowed t)
 end
-module Loop_Main
+module CreusotContracts_Logic_Resolve_Impl1_Resolve
+  type t
+  use prelude.Prelude
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+end
+module CreusotContracts_Logic_Resolve_Impl1
+  type t
+end
+module Loop_F_Interface
+  val f [@cfg:stackify] (_ : ()) : ()
+end
+module Loop_F
   use mach.int.Int
   use mach.int.Int32
   use prelude.Prelude
-  let rec cfg main [@cfg:stackify] [#"../loop.rs" 1 0 9] (_ : ()) : () =
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = int32
+  let rec cfg f [@cfg:stackify] [#"../loop.rs" 3 0 10] (_ : ()) : () =
   var _0 : ();
   var a_1 : int32;
   var b_2 : borrowed int32;
@@ -40,6 +55,7 @@ module Loop_Main
     b_2 <- borrow_mut a_1;
     a_1 <-  ^ b_2;
     b_2 <- { b_2 with current = (5 : int32) };
+    assume { Resolve0.resolve b_2 };
     goto BB1
   }
   BB1 {
@@ -52,7 +68,7 @@ module Loop_Main
   BB2 {
     _3 <- ();
     _8 <- a_1;
-    _7 <- ([#"../loop.rs" 10 4 11] _8 = (15 : int32));
+    _7 <- ([#"../loop.rs" 12 12 19] _8 = (15 : int32));
     _0 <- ();
     return _0
   }

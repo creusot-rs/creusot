@@ -1,5 +1,6 @@
+#![allow(unused_variables)]
+
 extern crate creusot_contracts;
-use creusot_contracts::*;
 
 trait Omg {
     fn test(self);
@@ -17,7 +18,6 @@ impl<T> GenericMethod for [T] {
     fn meth<F>(&self, f: F) {}
 }
 
-use std::ops::IndexMut;
-fn omg(x: &mut [u32]) {
-    x.len();
+pub fn omg(x: &mut [u32]) {
+    let _ = x.len();
 }

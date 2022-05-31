@@ -15,7 +15,7 @@
 extern crate creusot_contracts;
 use creusot_contracts::*;
 
-fn main() {
+pub fn f() {
     let mut door_open: Vec<bool> = Vec::with_capacity(100);
     let mut i: usize = 1;
     #[invariant(loop_bounds,1 <= @i && @i <= 101)]

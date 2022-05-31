@@ -3,7 +3,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 #[logic]
-fn omg<T>(x: T) -> bool {
+fn omg<T>(_x: T) -> bool {
     true
 }
 
@@ -11,9 +11,9 @@ fn omg<T>(x: T) -> bool {
 fn prog<T>(x: T) {}
 
 #[ensures(omg(0))]
-fn prog2() {
+pub fn prog2() {
     prog(0);
 }
 
 #[ensures(omg((0, 0)))]
-fn prog3() {}
+pub fn prog3() {}

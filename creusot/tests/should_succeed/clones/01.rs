@@ -8,6 +8,6 @@ fn func2() {
     func1()
 }
 
-fn func3() {
+pub fn func3() {
     func2()
 }

@@ -2,10 +2,10 @@ extern crate creusot_contracts;
 use creusot_contracts::std::*;
 use creusot_contracts::*;
 
-fn multi_use<T>(x: &T) {
+pub fn multi_use<T>(x: &T) {
     let c = #[requires(x == x)]
     || {
-        x;
+        let _ = x;
         0
     };
 

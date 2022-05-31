@@ -1,4 +1,7 @@
+extern crate creusot_contracts;
+
 mod mod1 {
+    #[allow(dead_code)]
     pub enum T {
         A,
         B,
@@ -9,13 +12,13 @@ mod mod1 {
 mod mod2 {
     use mod1;
 
-    pub fn x(t: mod1::T) -> bool {
+    pub fn x(_t: mod1::T) -> bool {
         true
     }
 }
 
 use mod1::T::*;
 
-fn main() {
+pub fn f() {
     mod2::x(B);
 }

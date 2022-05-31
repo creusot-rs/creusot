@@ -75,7 +75,7 @@ pub fn write(l: &mut List, ix: usize, v: u32) {
     *index_mut(l, ix) = v;
 }
 
-fn main() {
+pub fn f() {
     let mut l = List(1, Some(Box::new(List(10, None))));
     write(&mut l, 0, 2);
 

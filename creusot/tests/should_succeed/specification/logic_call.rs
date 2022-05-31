@@ -8,6 +8,6 @@ fn reflexive<T: PartialEq>(x: T) -> bool {
 }
 
 #[ensures(reflexive(result))]
-fn dummy() -> u32 {
+pub fn dummy() -> u32 {
     0
 }

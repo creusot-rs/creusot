@@ -1,3 +1,5 @@
+extern crate creusot_contracts;
+
 trait FakeIterator {
     type Item;
 

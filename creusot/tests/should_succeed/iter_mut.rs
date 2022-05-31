@@ -6,7 +6,7 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 // We don't yet use the standard vec because we provide the non-standard `iter_mut` method.
-struct Vec<T>(std::vec::Vec<T>);
+pub struct Vec<T>(std::vec::Vec<T>);
 
 impl<T> Model for Vec<T> {
     type ModelTy = Seq<T>;
@@ -23,18 +23,18 @@ impl<T> Vec<T> {
     #[ensures((@*self).len() == (@result).len() && (@*self).len() == (@^self).len())]
     #[ensures(forall<i : Int> 0 <= i && i <= (@*self).len() ==> (@*self)[i] == *(@result)[i])]
     #[ensures(forall<i : Int> 0 <= i && i <= (@^self).len() ==> (@^self)[i] == ^(@result)[i])]
-    fn iter_mut(&mut self) -> IterMut<'_, T> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
         IterMut(self.0.iter_mut())
     }
 
     #[trusted]
     #[ensures(result.into() == (@*self).len())]
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.len()
     }
 }
 
-struct IterMut<'a, T>(std::slice::IterMut<'a, T>);
+pub struct IterMut<'a, T>(std::slice::IterMut<'a, T>);
 
 impl<'a, T> Model for IterMut<'a, T> {
     type ModelTy = Seq<&'a mut T>;
@@ -57,7 +57,7 @@ impl<'a, T> IterMut<'a, T> {
 
 #[ensures((@^v).len() == (@v).len())]
 #[ensures(forall<i : Int> 0 <= i && i < (@^v).len() ==> @(@^v)[i] == @(@v)[i] + 5)]
-fn inc_vec(v: &mut Vec<u32>) {
+pub fn inc_vec(v: &mut Vec<u32>) {
     let old_v = ghost! { v };
 
     let mut it = v.iter_mut();

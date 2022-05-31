@@ -19,6 +19,14 @@ module C06_Ix_Tgt
   type self
   type tgt
 end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+end
 module C06_Ix_Ix_Interface
   type self
   use prelude.Prelude
@@ -47,8 +55,9 @@ module C06_Test
   clone C06_Ix_Tgt as Tgt0 with type self = t
   use mach.int.Int
   use mach.int.UInt64
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = t
   clone C06_Ix_Ix_Interface as Ix0 with type self = t, type Tgt0.tgt = Tgt0.tgt
-  let rec cfg test [@cfg:stackify] [#"../06.rs" 7 0 15] (a : t) : Tgt0.tgt =
+  let rec cfg test [@cfg:stackify] [#"../06.rs" 9 0 15] (a : t) : Tgt0.tgt =
   var _0 : Tgt0.tgt;
   var a_1 : t;
   var _2 : t;
@@ -58,7 +67,8 @@ module C06_Test
   }
   BB0 {
     _2 <- a_1;
-    _0 <- ([#"../06.rs" 11 4 11] Ix0.ix _2 (0 : usize));
+    assume { Resolve0.resolve a_1 };
+    _0 <- ([#"../06.rs" 13 4 11] Ix0.ix _2 (0 : usize));
     goto BB1
   }
   BB1 {

@@ -1,11 +1,16 @@
-fn ex() {
+#![allow(unreachable_patterns)]
+
+extern crate creusot_contracts;
+
+pub fn ex() {
     let a = 0;
     match a {
         _ => {}
         0 => {}
     }
 }
-fn ex2() {
+
+pub fn ex2() {
     let a = 0;
     match a {
         0 | 1 => {}
@@ -13,7 +18,8 @@ fn ex2() {
         _ => {}
     }
 }
-fn ex3() {
+
+pub fn ex3() {
     let a = 0;
     match a {
         0 | 1 => {}

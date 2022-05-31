@@ -1,10 +1,12 @@
-fn main() {
+extern crate creusot_contracts;
+
+pub fn f() {
     let mut a = 10;
     let mut b = 10;
 
-    let mut x = &mut a;
-    let mut y = &mut b;
-    let mut w;
+    let x = &mut a;
+    let y = &mut b;
+    let w;
     if true {
         *x = 5;
         w = x;
@@ -15,7 +17,7 @@ fn main() {
         // z = y;
     }
 
-    *w;
+    let _ = *w;
     // assume { *z = ^z };
     // assume { ? = ? };
     // assume { ? = ? };

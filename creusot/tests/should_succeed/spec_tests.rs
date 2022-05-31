@@ -8,13 +8,11 @@ enum T {
 
 struct S<A, B>(A, B);
 
-enum List<A> {
+pub enum List<A> {
     Cons(A, Box<List<A>>),
     Nil,
 }
-use List::*;
+
 #[ensures(T::A == T::B)]
 #[ensures(S(0u32, true) == S(1u32, false))]
-fn test_specs() {}
-
-fn main() {}
+pub fn test_specs() {}

@@ -3,10 +3,10 @@
 extern crate creusot_contracts;
 use creusot_contracts::{std::*, *};
 
-struct Item<Name> {
-    name: Name,
-    weight: usize,
-    value: usize,
+pub struct Item<Name> {
+    pub name: Name,
+    pub weight: usize,
+    pub value: usize,
 }
 
 #[logic]
@@ -89,7 +89,7 @@ fn m<Name>(items: Seq<Item<Name>>, i: Int, w: Int) -> Int {
 #[ensures(forall<s: Seq<&Item<Name>>> subseq_rev(s, 0, @items, (@items).len()) && sum_weights(s, s.len()) <= @max_weight ==>
     sum_values(s, s.len()) <= sum_values(@result, (@result).len())
 )]
-fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&Item<Name>> {
+pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&Item<Name>> {
     let mut best_value: Vec<Vec<usize>> =
         vec::from_elem(vec::from_elem(0, max_weight + 1), items.len() + 1);
     let mut i = 0;

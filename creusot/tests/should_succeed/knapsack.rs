@@ -3,10 +3,10 @@
 extern crate creusot_contracts;
 use creusot_contracts::{std::*, *};
 
-struct Item<Name> {
-    name: Name,
-    weight: usize,
-    value: usize,
+pub struct Item<Name> {
+    pub name: Name,
+    pub weight: usize,
+    pub value: usize,
 }
 
 // TODO: factorize these two functions
@@ -54,7 +54,7 @@ fn m<Name>(items: Seq<Item<Name>>, i: Int, w: Int) -> Int {
 #[requires((@items).len() < 10000000)]
 #[requires(@max_weight < 10000000)]
 #[requires(forall<i: Int> 0 <= i && i < (@items).len() ==> @(@items)[i].value <= 10000000)]
-fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&Item<Name>> {
+pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&Item<Name>> {
     let mut best_value: Vec<Vec<usize>> =
         vec::from_elem(vec::from_elem(0, max_weight + 1), items.len() + 1);
     let mut i = 0;

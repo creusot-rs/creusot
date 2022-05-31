@@ -2,22 +2,22 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-trait Assoc {
+pub trait Assoc {
     type Ty;
 }
 
 #[logic]
 #[trusted]
-fn from_ty<T: Assoc>(x: T::Ty) -> T {
+fn from_ty<T: Assoc>(_x: T::Ty) -> T {
     absurd
 }
 
 #[logic]
 #[trusted]
-fn to_ty<T: Assoc>(x: T) -> T::Ty {
+fn to_ty<T: Assoc>(_x: T) -> T::Ty {
     absurd
 }
 
 #[trusted]
-#[ensures(a == from_ty(to_ty(a)))]
-fn test<T: Assoc>(a: T) {}
+#[ensures(_a == from_ty(to_ty(_a)))]
+pub fn test<T: Assoc>(_a: T) {}
