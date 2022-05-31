@@ -37,7 +37,7 @@ pub fn default_decl<'tcx>(
             ValKind::Predicate { sig }
         }
         ItemType::Program => {
-            if !ctx.externs.verified(def_id) && ctx.extern_spec(def_id).is_none() {
+            if !ctx.externs.verified(def_id) && sig.contract.is_empty() {
                 sig.contract.requires.push(why3::exp::Exp::mk_false());
             }
             Val { sig }

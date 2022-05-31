@@ -188,8 +188,9 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                 self.ctx.translate(method.0);
 
                 if !method.0.is_local()
-                    && !(self.ctx.extern_spec(method.0).is_some()
-                        || self.ctx.externs.verified(method.0))
+                    && !self.ctx.externs.verified(method.0)
+                    && self.ctx.extern_spec(method.0).is_none()
+                    && self.ctx.extern_spec(def_id).is_none()
                 {
                     self.ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
                 }
