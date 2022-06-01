@@ -1,7 +1,11 @@
 use std::collections::HashMap;
 
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, AssocItemContainer::*, ParamEnv, TraitRef, TyCtxt};
+use rustc_middle::ty::{
+    subst::{Subst, SubstsRef},
+    AssocItemContainer::*,
+    ParamEnv, TraitRef, TyCtxt,
+};
 use rustc_trait_selection::traits::ImplSource;
 
 use why3::declaration::{Decl, Module};
@@ -88,8 +92,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                     item_type(self.tcx, trait_item_id),
                     ItemType::Logic | ItemType::Predicate
                 ) {
-                    let contract =
-                        contract_of(self, trait_item_id).expect("trait should have valid contract");
+                    let contract = contract_of(self, trait_item_id);
 
                     if !contract.is_empty() {
                         let axiom = logic_refinement(
@@ -151,14 +154,13 @@ fn logic_refinement<'tcx>(
 ) -> Goal {
     // Get the contract of the trait version
     let trait_contract = names.with_public_clones(|names| {
-        let pre_contract = crate::specification::contract_of(ctx, trait_item_id).unwrap();
-        pre_contract.check_and_lower(ctx, names, impl_item_id, refn_subst)
+        let pre_contract = crate::specification::contract_of(ctx, trait_item_id);
+        pre_contract.subst(ctx.tcx, refn_subst).to_exp(ctx, names, impl_item_id)
     });
 
     let impl_contract = names.with_public_clones(|names| {
-        let pre_contract = crate::specification::contract_of(ctx, impl_item_id).unwrap();
-        let subst = InternalSubsts::identity_for_item(ctx.tcx, impl_item_id);
-        pre_contract.check_and_lower(ctx, names, impl_item_id, subst)
+        let pre_contract = crate::specification::contract_of(ctx, impl_item_id);
+        pre_contract.to_exp(ctx, names, impl_item_id)
     });
 
     let (trait_inps, _) = inputs_and_output(ctx.tcx, trait_item_id);

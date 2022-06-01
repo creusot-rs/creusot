@@ -12,7 +12,7 @@ use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::ty::{
-    subst::{GenericArg, InternalSubsts, SubstsRef},
+    subst::{GenericArg, SubstsRef},
     TypeFoldable,
 };
 use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
@@ -468,10 +468,8 @@ pub fn closure_contract<'tcx>(
     let mut clos_sig = signature_of(ctx, names, def_id);
 
     // Get the raw contracts
-    let contract = names.with_public_clones(|names| {
-        let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
-        contract_of(ctx, def_id).unwrap().check_and_lower(ctx, names, def_id, subst)
-    });
+    let contract =
+        names.with_public_clones(|names| contract_of(ctx, def_id).to_exp(ctx, names, def_id));
 
     let postcondition = contract.ensures_conj();
     let precondition = contract.requires_conj();

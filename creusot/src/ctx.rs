@@ -9,10 +9,10 @@ use crate::options::SpanMode;
 use crate::translation::external::{extract_extern_specs_from_item, ExternSpec};
 use crate::translation::interface::interface_for;
 use crate::translation::specification::typing::Term;
-use crate::translation::specification::PreContract;
+use crate::translation::specification::ContractClauses;
 use crate::translation::ty;
 use crate::translation::{external, specification};
-use crate::util::{closure_owner, item_type};
+use crate::util::item_type;
 use crate::{options::Options, util};
 use indexmap::{IndexMap, IndexSet};
 use rustc_data_structures::captures::Captures;
@@ -191,19 +191,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             let t = self.terms.entry(def_id).or_insert_with(|| {
                 let term = specification::typing::typecheck(self.tcx, def_id.expect_local())
                     .unwrap_or_else(|e| e.emit(self.tcx.sess));
-
-                let parent = closure_owner(self.tcx, def_id);
-                if let Some(_) = self
-                    .extern_spec_items
-                    .get(&parent.expect_local())
-                    .and_then(|id| self.extern_specs.get(&id))
-                {
-                    let i = InternalSubsts::identity_for_item(self.tcx, def_id);
-                    use rustc_middle::ty::subst::Subst;
-                    term.subst(self.tcx, i)
-                } else {
-                    term
-                }
+                term
             });
             Some(t)
         } else {
@@ -265,6 +253,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.functions.get(&def_id)
     }
 
+    // TODO Make private
     pub(crate) fn extern_spec(&self, def_id: DefId) -> Option<&ExternSpec<'tcx>> {
         self.extern_specs.get(&def_id).or_else(|| self.externs.extern_spec(def_id))
     }
@@ -300,13 +289,14 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {
-        match self.extern_spec(def_id) {
+        let id =
+            crate::specification::inherited_extern_spec(self, def_id).map_or(def_id, |e| (e.0));
+        match self.extern_spec(id) {
             Some(es) => {
-                use rustc_middle::ty;
                 let mut additional_predicates = Vec::new();
-                let impl_subst = ty::subst::InternalSubsts::identity_for_item(self.tcx, def_id);
+                let subst = InternalSubsts::identity_for_item(self.tcx, def_id);
 
-                additional_predicates.extend(es.predicates_for(self.tcx, impl_subst));
+                additional_predicates.extend(es.predicates_for(self.tcx, subst));
                 additional_predicates.extend(self.tcx.param_env(def_id).caller_bounds());
                 ParamEnv::new(
                     self.mk_predicates(additional_predicates.into_iter()),
@@ -404,7 +394,11 @@ pub fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
 
         ctx.extern_specs.insert(
             def_id,
-            ExternSpec { contract: PreContract::new(), subst: Vec::new(), additional_predicates },
+            ExternSpec {
+                contract: ContractClauses::new(),
+                subst: Vec::new(),
+                additional_predicates,
+            },
         );
     }
 

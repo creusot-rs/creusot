@@ -14,7 +14,7 @@ use rustc_span::Symbol;
 use why3::declaration::ValKind;
 use why3::declaration::{Decl, Module, ValKind::Val};
 
-use super::specification::PreContract;
+use super::specification::ContractClauses;
 
 pub fn default_decl<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
@@ -79,7 +79,7 @@ pub fn extern_module<'tcx>(
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
-    pub contract: PreContract,
+    pub contract: ContractClauses,
     pub subst: Vec<(Symbol, Symbol)>,
     // Additional predicates we must verify to call this function
     pub additional_predicates: Vec<Predicate<'tcx>>,
@@ -151,7 +151,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         err.emit()
     }
 
-    let contract = crate::specification::contract_of(ctx, def_id.to_def_id()).unwrap();
+    let contract = crate::specification::contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
 
     // Use the inverse substitution to turn predicates on the outer definition into ones on the inner definition.
 

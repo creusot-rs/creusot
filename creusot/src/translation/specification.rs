@@ -1,15 +1,16 @@
 use std::collections::HashMap;
 
 use crate::translation::function::real_locals;
+use crate::util::closure_owner;
 use crate::{ctx::*, util};
-use rustc_macros::{TyDecodable, TyEncodable};
+use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable};
 use rustc_middle::thir::{self, ExprKind, Thir};
-use rustc_middle::ty::subst::SubstsRef;
+use rustc_middle::ty::subst::{InternalSubsts, Subst, SubstsRef};
 use why3::declaration::Contract;
 use why3::exp::Exp;
 use why3::Ident;
 
-use self::typing::pearlite_stub;
+use self::typing::{pearlite_stub, Term};
 
 use super::LocalIdent;
 use rustc_hir::def_id::DefId;
@@ -22,47 +23,33 @@ pub mod typing;
 
 pub use lower::*;
 
-#[derive(Clone, Debug, TyEncodable, TyDecodable)]
-pub struct PreContract {
-    variant: Option<DefId>,
-    requires: Vec<DefId>,
-    ensures: Vec<DefId>,
+#[derive(Clone, Debug, Default, TypeFoldable)]
+pub struct PreContract<'tcx> {
+    variant: Option<Term<'tcx>>,
+    requires: Vec<Term<'tcx>>,
+    ensures: Vec<Term<'tcx>>,
 }
 
-impl PreContract {
-    pub fn new() -> Self {
-        Self { variant: None, requires: Vec::new(), ensures: Vec::new() }
-    }
-
-    pub fn check_and_lower<'tcx>(
+impl<'tcx> PreContract<'tcx> {
+    pub fn to_exp(
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut CloneMap<'tcx>,
         id: DefId,
-        subst: SubstsRef<'tcx>,
     ) -> Contract {
         let mut out = Contract::new();
+        let param_env = ctx.param_env(closure_owner(ctx.tcx, id));
 
-        use crate::rustc_middle::ty::subst::Subst;
-        for req_id in self.requires {
-            log::debug!("require clause {:?}", req_id);
-            let term = ctx.term(req_id).unwrap().clone().subst(ctx.tcx, subst);
-            out.requires.push(lower_pure(ctx, names, id, term));
+        for term in self.requires {
+            out.requires.push(lower_pure(ctx, names, id, param_env, term));
+        }
+        for term in self.ensures {
+            out.ensures.push(lower_pure(ctx, names, id, param_env, term));
         }
 
-        for ens_id in self.ensures {
-            log::debug!("ensures clause {:?}", ens_id);
-            let term = ctx.term(ens_id).unwrap().clone().subst(ctx.tcx, subst);
-            let exp = lower_pure(ctx, names, id, term);
-
-            out.ensures.push(exp);
+        if let Some(term) = self.variant {
+            out.variant = vec![lower_pure(ctx, names, id, param_env, term)];
         }
-
-        if let Some(var_id) = self.variant {
-            log::debug!("variant clause {:?}", var_id);
-            let term = ctx.term(var_id).unwrap().clone().subst(ctx.tcx, subst);
-            out.variant = vec![lower_pure(ctx, names, id, term)];
-        };
 
         if let Some(extern_spec) = ctx.extern_spec(id) {
             let subst = extern_spec
@@ -79,6 +66,41 @@ impl PreContract {
 
     pub fn is_empty(&self) -> bool {
         self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
+    }
+}
+
+#[derive(Clone, Debug, TyEncodable, TyDecodable)]
+pub struct ContractClauses {
+    variant: Option<DefId>,
+    requires: Vec<DefId>,
+    ensures: Vec<DefId>,
+}
+
+impl ContractClauses {
+    pub fn new() -> Self {
+        Self { variant: None, requires: Vec::new(), ensures: Vec::new() }
+    }
+
+    fn get_pre<'tcx>(self, ctx: &mut TranslationCtx<'_, 'tcx>) -> PreContract<'tcx> {
+        let mut out = PreContract::default();
+        for req_id in self.requires {
+            log::debug!("require clause {:?}", req_id);
+            let term = ctx.term(req_id).unwrap().clone();
+            out.requires.push(term);
+        }
+
+        for ens_id in self.ensures {
+            log::debug!("ensures clause {:?}", ens_id);
+            let term = ctx.term(ens_id).unwrap().clone();
+            out.ensures.push(term);
+        }
+
+        if let Some(var_id) = self.variant {
+            log::debug!("variant clause {:?}", var_id);
+            let term = ctx.term(var_id).unwrap().clone();
+            out.variant = Some(term);
+        };
+        out
     }
 
     pub fn iter_ids(&self) -> impl Iterator<Item = DefId> + '_ {
@@ -135,15 +157,14 @@ pub enum SpecAttrError {
     InvalidTerm { id: DefId },
 }
 
-pub fn contract_of(ctx: &mut TranslationCtx, def_id: DefId) -> Result<PreContract, SpecAttrError> {
+pub(crate) fn contract_clauses_of(
+    ctx: &TranslationCtx,
+    def_id: DefId,
+) -> Result<ContractClauses, SpecAttrError> {
     use SpecAttrError::*;
 
-    if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
-        return Ok(extern_spec.contract);
-    }
-
-    let attrs = ctx.tcx.get_attrs_unchecked(def_id);
-    let mut contract = PreContract::new();
+    let attrs = ctx.get_attrs_unchecked(def_id);
+    let mut contract = ContractClauses::new();
 
     for attr in attrs {
         if !util::is_attr(attr, "spec") {
@@ -185,6 +206,37 @@ pub fn contract_of(ctx: &mut TranslationCtx, def_id: DefId) -> Result<PreContrac
     }
 
     Ok(contract)
+}
+
+pub fn inherited_extern_spec<'tcx>(
+    ctx: &TranslationCtx<'_, 'tcx>,
+    def_id: DefId,
+) -> Option<(DefId, SubstsRef<'tcx>)> {
+    let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
+    try {
+        if def_id.is_local() || ctx.extern_spec(def_id).is_some() {
+            return None;
+        }
+
+        let assoc = ctx.opt_associated_item(def_id)?;
+        let trait_ref = ctx.impl_trait_ref(assoc.container.id())?;
+        let id = assoc.trait_item_def_id?;
+
+        if ctx.extern_spec(id).is_none() {
+            return None;
+        }
+        (id, trait_ref.substs.subst(ctx.tcx, subst))
+    }
+}
+
+pub fn contract_of<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, def_id: DefId) -> PreContract<'tcx> {
+    let (def_id, subst) = inherited_extern_spec(ctx, def_id)
+        .unwrap_or_else(|| (def_id, InternalSubsts::identity_for_item(ctx.tcx, def_id)));
+    if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
+        extern_spec.contract.get_pre(ctx).subst(ctx.tcx, subst)
+    } else {
+        contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst)
+    }
 }
 
 struct PurityVisitor<'a, 'tcx> {

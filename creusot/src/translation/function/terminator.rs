@@ -115,10 +115,9 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     func_args.remove(0)
                 } else {
                     let fname = self.get_func_name(fun_def_id, subst, terminator.source_info.span);
-                    self.ctx.attach_span(
-                        terminator.source_info.span,
-                        Exp::Call(box Exp::impure_qvar(fname), func_args),
-                    )
+                    let exp = Exp::Call(box Exp::impure_qvar(fname), func_args);
+                    let span = terminator.source_info.span.source_callsite();
+                    self.ctx.attach_span(span, exp)
                 };
 
                 let (loc, bb) = destination.unwrap();
