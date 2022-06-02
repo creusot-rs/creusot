@@ -26,20 +26,21 @@ pub fn corrected_invariant_names_and_locations<'tcx>(
     let mut assertions: IndexMap<_, _> = Default::default();
     // let mut ghosts: IndexMap<_, _> = Default::default();
     let mut invariants: IndexMap<_, _> = Default::default();
+    let param_env = ctx.param_env(def_id);
     for clos in visitor.closures.into_iter() {
         if let Some(name) = util::invariant_name(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-            let exp = lower_pure(ctx, names, clos, term);
+            let exp = lower_pure(ctx, names, clos, param_env, term);
 
             invariants.insert(clos, (name, exp));
         } else if util::is_assertion(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-            let exp = lower_pure(ctx, names, clos, term);
+            let exp = lower_pure(ctx, names, clos, param_env, term);
 
             assertions.insert(clos, exp);
         } else if util::is_ghost(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-            let exp = lower_pure(ctx, names, clos, term);
+            let exp = lower_pure(ctx, names, clos, param_env, term);
 
             // A hack should probably be separately tracked
             assertions.insert(clos, exp);

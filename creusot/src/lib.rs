@@ -1,6 +1,6 @@
 #![feature(rustc_private, register_tool)]
 #![feature(box_syntax, box_patterns, control_flow_enum, drain_filter)]
-#![feature(let_else, let_chains, never_type)]
+#![feature(let_else, let_chains, never_type, try_blocks)]
 
 extern crate rustc_ast;
 extern crate rustc_borrowck;

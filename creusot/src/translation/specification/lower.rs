@@ -2,7 +2,6 @@ use super::typing::{self, Literal, LogicalOp, Pattern, Term, TermKind};
 use crate::translation::traits::resolve_assoc_item_opt;
 use crate::translation::ty::translate_ty;
 use crate::translation::ty::variant_accessor_name;
-use crate::util::closure_owner;
 use crate::util::constructor_qname;
 use crate::{ctx::*, util};
 use rustc_middle::ty;
@@ -15,9 +14,9 @@ pub fn lower_pure<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     term_id: DefId,
+    param_env: ParamEnv<'tcx>,
     term: Term<'tcx>,
 ) -> Exp {
-    let param_env = ctx.param_env(closure_owner(ctx.tcx, term_id));
     let span = term.span;
     let mut term = Lower { ctx, names, pure: Purity::Logic, param_env }.lower_term(term);
     term.reassociate();
@@ -32,9 +31,10 @@ pub fn lower_impure<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     term_id: DefId,
+    param_env: ParamEnv<'tcx>,
+
     term: Term<'tcx>,
 ) -> Exp {
-    let param_env = ctx.param_env(closure_owner(ctx.tcx, term_id));
     let span = term.span;
     let mut term = Lower { ctx, names, pure: Purity::Program, param_env }.lower_term(term);
     term.reassociate();

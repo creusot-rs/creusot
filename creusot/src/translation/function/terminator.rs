@@ -115,10 +115,9 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     func_args.remove(0)
                 } else {
                     let fname = self.get_func_name(fun_def_id, subst, terminator.source_info.span);
-                    self.ctx.attach_span(
-                        terminator.source_info.span,
-                        Exp::Call(box Exp::impure_qvar(fname), func_args),
-                    )
+                    let exp = Exp::Call(box Exp::impure_qvar(fname), func_args);
+                    let span = terminator.source_info.span.source_callsite();
+                    self.ctx.attach_span(span, exp)
                 };
 
                 let (loc, bb) = destination.unwrap();
@@ -188,8 +187,9 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                 self.ctx.translate(method.0);
 
                 if !method.0.is_local()
-                    && !(self.ctx.extern_spec(method.0).is_some()
-                        || self.ctx.externs.verified(method.0))
+                    && !self.ctx.externs.verified(method.0)
+                    && self.ctx.extern_spec(method.0).is_none()
+                    && self.ctx.extern_spec(def_id).is_none()
                 {
                     self.ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
                 }

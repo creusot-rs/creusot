@@ -329,11 +329,21 @@ pub fn signature_of<'tcx>(
     debug!("signature_of {def_id:?}");
     let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
 
-    let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
+    let id = if !def_id.is_local() &&
+        let Some(assoc) = ctx.opt_associated_item(def_id) &&
+        let Some(id) = assoc.trait_item_def_id &&
+        ctx.extern_spec(id).is_some() {
+        id
+    } else {
+        def_id
+    };
+
     let mut contract = names.with_public_clones(|names| {
-        let pre_contract = crate::specification::contract_of(ctx, def_id).unwrap();
-        pre_contract.check_and_lower(ctx, names, def_id, subst)
+        let pre_contract = crate::specification::contract_of(ctx, def_id);
+        pre_contract.to_exp(ctx, names, id)
     });
+
+    let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
 
     if output.is_never() {
         contract.ensures.push(Exp::Const(Constant::const_false()));
