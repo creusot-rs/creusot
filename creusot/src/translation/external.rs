@@ -111,7 +111,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let (id, subst) = visit.items.pop().unwrap();
 
     // Do we need a marker for this? can we not just always do it?
-    let (id, _) = if ctx.trait_of_item(id).is_some() {
+    let (id, s) = if ctx.trait_of_item(id).is_some() {
         let resolved = traits::resolve_opt(ctx.tcx, ctx.param_env(def_id.to_def_id()), id, subst);
 
         if let None = resolved {
@@ -131,14 +131,20 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let inner_subst = InternalSubsts::identity_for_item(ctx.tcx, id);
     let outer_subst = InternalSubsts::identity_for_item(ctx.tcx, def_id.to_def_id());
 
+    // Note: we only compare consts and types here, which may cause problems down the line
+    // If `extern_substs` lead to panics related to substitutions being out of bound, revisit this code
+    // The reason for doing this is to handle 'late bound regions' which sometimes appear and can't be substituted?
     let valid_subst = if ctx.generics_of(id).count() > 0
         && ctx.generics_of(def_id).count() > 0
         && ctx.trait_of_item(id).is_some()
     {
         ctx.generics_of(def_id).param_at(0, ctx.tcx).name.as_str().starts_with("Self")
-            && inner_subst[1..] == outer_subst[1..]
+            && inner_subst
+                .non_erasable_generics()
+                .skip(1)
+                .eq(outer_subst.non_erasable_generics().skip(1))
     } else {
-        inner_subst == outer_subst
+        inner_subst.non_erasable_generics().eq(outer_subst.non_erasable_generics())
     };
 
     if !valid_subst {
@@ -155,13 +161,8 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     // Use the inverse substitution to turn predicates on the outer definition into ones on the inner definition.
 
-    let additional_predicates = ctx
-        .tcx
-        .predicates_of(def_id)
-        .instantiate(ctx.tcx, inner_subst)
-        .predicates
-        .into_iter()
-        .collect();
+    let additional_predicates =
+        ctx.tcx.predicates_of(def_id).instantiate(ctx.tcx, s).predicates.into_iter().collect();
     let subst = ctx
         .tcx
         .fn_arg_names(def_id)

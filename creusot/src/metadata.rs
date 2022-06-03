@@ -40,7 +40,7 @@ impl<'tcx> Metadata<'tcx> {
     /// Determines whether a DefId has been verified by Creusot or not.
     /// We consider that if we don't have metadata about a crate then it must be unverified
     pub fn verified(&self, def_id: DefId) -> bool {
-        self.crates.contains_key(&def_id.krate)
+        self.crates.get(&def_id.krate).map_or(false, |meta| meta.dependencies.contains_key(&def_id))
     }
 
     pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
