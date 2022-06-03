@@ -104,14 +104,14 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
 
+                use typing::BinOp::*;
+                if matches!(op, Add | Sub | Mul | Div | Rem) {
+                    self.names.import_prelude_module(PreludeModule::Int);
+                }
+
                 match op {
-                    typing::BinOp::Div => {
-                        Exp::Call(box Exp::pure_var("div".into()), vec![lhs, rhs])
-                    }
-                    typing::BinOp::Rem => {
-                        self.names.import_prelude_module(PreludeModule::Int);
-                        Exp::Call(box Exp::pure_var("mod".into()), vec![lhs, rhs])
-                    }
+                    Div => Exp::Call(box Exp::pure_var("div".into()), vec![lhs, rhs]),
+                    Rem => Exp::Call(box Exp::pure_var("mod".into()), vec![lhs, rhs]),
                     _ => Exp::BinaryOp(binop_to_binop(op), box lhs, box rhs),
                 }
             }

@@ -1,5 +1,6 @@
 use super::lower::mk_binders;
 use super::lower::Lower;
+use crate::ctx::PreludeModule;
 use crate::translation::traits::resolve_opt;
 use crate::translation::ty::translate_ty;
 use crate::util::get_builtin;
@@ -37,30 +38,36 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
         if builtin_attr == Some(Symbol::intern("add_int")) {
             let l = args.remove(0);
             let r = args.remove(0);
+            self.names.import_prelude_module(PreludeModule::Int);
 
             return Some(Exp::BinaryOp(BinOp::Add, box l, box r));
         } else if builtin_attr == Some(Symbol::intern("sub_int")) {
             let l = args.remove(0);
             let r = args.remove(0);
+            self.names.import_prelude_module(PreludeModule::Int);
 
             return Some(Exp::BinaryOp(BinOp::Sub, box l, box r));
         } else if builtin_attr == Some(Symbol::intern("mul_int")) {
             let l = args.remove(0);
             let r = args.remove(0);
+            self.names.import_prelude_module(PreludeModule::Int);
 
             return Some(Exp::BinaryOp(BinOp::Mul, box l, box r));
         } else if builtin_attr == Some(Symbol::intern("div_int")) {
             let l = args.remove(0);
             let r = args.remove(0);
+            self.names.import_prelude_module(PreludeModule::Int);
 
             return Some(Exp::Call(box Exp::pure_var("div".into()), vec![l, r]));
         } else if builtin_attr == Some(Symbol::intern("rem_int")) {
             let l = args.remove(0);
             let r = args.remove(0);
+            self.names.import_prelude_module(PreludeModule::Int);
 
             return Some(Exp::Call(box Exp::pure_var("Int.mod".into()), vec![l, r]));
         } else if builtin_attr == Some(Symbol::intern("neg_int")) {
             let a = args.remove(0);
+            self.names.import_prelude_module(PreludeModule::Int);
 
             return Some(Exp::UnaryOp(UnOp::Neg, box a));
         } else if builtin_attr == Some(Symbol::intern("<=")) {
