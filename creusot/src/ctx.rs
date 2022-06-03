@@ -289,22 +289,19 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn param_env(&self, def_id: DefId) -> ParamEnv<'tcx> {
-        let id =
-            crate::specification::inherited_extern_spec(self, def_id).map_or(def_id, |e| (e.0));
-        match self.extern_spec(id) {
-            Some(es) => {
-                let mut additional_predicates = Vec::new();
-                let subst = InternalSubsts::identity_for_item(self.tcx, def_id);
-
-                additional_predicates.extend(es.predicates_for(self.tcx, subst));
-                additional_predicates.extend(self.tcx.param_env(def_id).caller_bounds());
-                ParamEnv::new(
-                    self.mk_predicates(additional_predicates.into_iter()),
-                    rustc_infer::traits::Reveal::UserFacing,
-                    rustc_hir::Constness::NotConst,
-                )
-            }
-            None => self.tcx.param_env(def_id),
+        let (id, subst) = crate::specification::inherited_extern_spec(self, def_id)
+            .unwrap_or_else(|| (def_id, InternalSubsts::identity_for_item(self.tcx, def_id)));
+        if let Some(es) = self.extern_spec(id) {
+            let mut additional_predicates = Vec::new();
+            additional_predicates.extend(es.predicates_for(self.tcx, subst));
+            additional_predicates.extend(self.tcx.param_env(def_id).caller_bounds());
+            ParamEnv::new(
+                self.mk_predicates(additional_predicates.into_iter()),
+                rustc_infer::traits::Reveal::UserFacing,
+                rustc_hir::Constness::NotConst,
+            )
+        } else {
+            self.tcx.param_env(def_id)
         }
     }
 
