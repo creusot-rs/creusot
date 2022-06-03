@@ -1,8 +1,10 @@
 use pearlite_syn::term::*;
+use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
     parse::Parse,
     punctuated::{Pair, Punctuated},
+    spanned::Spanned,
     token::{Add, Brace, Colon, Comma, For, Impl, Paren, Semi, Trait, Unsafe},
     *,
 };
@@ -69,6 +71,7 @@ struct ImplData {
 }
 
 pub struct FlatSpec {
+    span: Span,
     attrs: Vec<Attribute>,
     path: ExprPath,
     generics: Generics,
@@ -107,7 +110,7 @@ impl TraitOrImpl {
 }
 
 impl FlatSpec {
-    pub fn to_tokens(mut self) -> ItemFn {
+    pub fn to_tokens(mut self) -> TokenStream {
         escape_self_in_contracts(&mut self.attrs).unwrap();
         let args: Punctuated<Expr, Comma> = self
             .inputs
@@ -164,11 +167,11 @@ impl FlatSpec {
                         ty: Box::new(self_ty),
                     });
                 }
-                FnArg::Typed(PatType { ty, .. }) => escape_self_in_type(ty),
+                FnArg::Typed(PatType { ty, .. }) => escape_self_in_type(ty, self_ty.clone()),
             });
 
             if let ReturnType::Type(_, ty) = &mut self.output {
-                escape_self_in_type(ty);
+                escape_self_in_type(ty, self_ty.clone());
             }
 
             match data.self_ty {
@@ -179,7 +182,7 @@ impl FlatSpec {
                     if let Some(where_clause) = &mut self.generics.where_clause {
                         where_clause.predicates.iter_mut().for_each(|pred| match pred {
                             WherePredicate::Type(PredicateType { bounded_ty, .. }) => {
-                                escape_self_in_type(bounded_ty);
+                                escape_self_in_type(bounded_ty, self_ty.clone());
                             }
                             _ => (),
                         });
@@ -194,7 +197,7 @@ impl FlatSpec {
             asyncness: None,
             unsafety: None,
             abi: None,
-            fn_token: Default::default(),
+            fn_token: Token![fn](self.span),
             ident,
             generics: self.generics,
             paren_token: Paren::default(),
@@ -203,7 +206,7 @@ impl FlatSpec {
             output: self.output,
         };
 
-        ItemFn {
+        let f = ItemFn {
             attrs: self.attrs,
             vis: Visibility::Inherited,
             sig,
@@ -211,16 +214,36 @@ impl FlatSpec {
                 brace_token: Brace::default(),
                 stmts: vec![Stmt::Expr(Expr::Call(call))],
             }),
-        }
+        };
+
+        quote! { #f }
     }
 }
 
-fn escape_self_in_type(t: &mut Type) {
+fn escape_self_in_type(t: &mut Type, self_ty: Type) {
     match t {
-        Type::Reference(TypeReference { elem, .. }) => escape_self_in_type(elem),
-        Type::Path(TypePath { path, .. }) => {
+        Type::Reference(TypeReference { elem, .. }) => escape_self_in_type(elem, self_ty),
+        Type::Path(TypePath { path, qself }) => {
             if path.segments[0].ident == "Self" {
-                path.segments[0].ident = parse_quote! { Self_ }
+                if self_ty == parse_quote! { Self_ } {
+                    let mut ident: Ident = parse_quote! { Self_ };
+                    ident.set_span(path.segments[0].ident.span());
+                    path.segments[0].ident = ident;
+                } else {
+                    if path.segments.len() > 1 {
+                        let segments = std::mem::take(&mut path.segments);
+                        path.segments = segments.into_iter().skip(1).collect();
+                        *qself = Some(QSelf {
+                            lt_token: Default::default(),
+                            ty: Box::new(self_ty),
+                            position: 0,
+                            as_token: Default::default(),
+                            gt_token: Default::default(),
+                        });
+                    } else {
+                        *t = self_ty;
+                    }
+                }
             }
         }
 
@@ -437,8 +460,9 @@ fn flatten(
             prefix
                 .path
                 .segments
-                .push(PathSegment { ident: fun.sig.ident, arguments: PathArguments::None });
+                .push(PathSegment { ident: fun.sig.ident.clone(), arguments: PathArguments::None });
             flat.push(FlatSpec {
+                span: fun.sig.span(),
                 attrs: fun.attrs,
                 path: prefix,
                 impl_data,
