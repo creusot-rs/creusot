@@ -22,7 +22,7 @@ fn main() {
     let mut metadata_file = Command::cargo_bin("cargo-creusot").unwrap();
     metadata_file.current_dir(base_path);
     metadata_file
-        .args(&["creusot", "--package", "creusot-contracts", "--features=contracts"])
+        .args(&["creusot", "--package", "creusot-contracts", "--features=contracts,num_bigint"])
         .env("CREUSOT_METADATA_PATH", &temp_file)
         .env("CREUSOT_OUTPUT_FILE", "/dev/null")
         .env("RUST_BACKTRACE", "1")
@@ -62,7 +62,6 @@ fn run_creusot(file: &Path, contracts: &str) -> Option<std::process::Command> {
     cmd.env("CREUSOT_STDOUT_OUTPUT", "1");
     cmd.env("CREUSOT_SPAN", "relative");
     cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path)]);
-
     let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
 
     if header_line.contains("UNBOUNDED") {
