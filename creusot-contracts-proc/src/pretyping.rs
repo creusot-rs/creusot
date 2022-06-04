@@ -158,7 +158,7 @@ pub fn encode_term(term: RT) -> Result<TokenStream, EncodeError> {
         RT::Model(TermModel { term, .. }) => {
             let term = encode_term(*term)?;
             Ok(quote! {
-                creusot_contracts::logic::Model::model(#term)
+                (#term).model()
             })
         }
         RT::Verbatim(_) => todo!(),

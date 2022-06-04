@@ -84,7 +84,7 @@ impl<K: Hash + Model, V> Model for MyHashMap<K, V> {
 
     #[logic]
     #[trusted]
-    #[ensures(forall<k : _> result.get(@k) == self.bucket(k).get(@k))]
+    #[ensures(forall<k : K> result.get(@k) == self.bucket(k).get(@k))]
     fn model(self) -> Self::ModelTy {
         absurd
     }
@@ -210,7 +210,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[predicate]
     fn good_bucket(self, l: List<(K, V)>, h: Int) -> bool {
         pearlite! {
-            forall<k : _, v: _> l.get(@k) == Some(v) ==> self.bucket_ix(k) == h
+            forall<k : K, v: _> l.get(@k) == Some(v) ==> self.bucket_ix(k) == h
         }
     }
 
