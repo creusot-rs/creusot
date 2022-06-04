@@ -30,6 +30,7 @@ use why3::{
 };
 
 pub fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
+    let start = Instant::now();
     ctx.load_metadata();
     load_extern_specs(ctx).map_err(|_| Box::new(CrErr))?;
 
@@ -46,15 +47,18 @@ pub fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     // Check that all trait laws are well-formed
     validate_traits(ctx);
 
+    debug!("before_analysis: {:?}", start.elapsed());
     Ok(())
 }
 
+use std::time::Instant;
 // TODO: Move the main loop out of `translation.rs`
 pub fn after_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
         ctx.translate_trait(*tr);
     }
 
+    let start = Instant::now();
     for def_id in ctx.tcx.hir().body_owners() {
         let def_id = def_id.to_def_id();
 
@@ -76,6 +80,9 @@ pub fn after_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
             ctx.translate_impl(impl_id.to_def_id());
         }
     }
+
+    debug!("after_analysis_translate: {:?}", start.elapsed());
+    let start = Instant::now();
 
     if ctx.tcx.sess.has_errors().is_some() {
         return Err(Box::new(CrErr));
@@ -116,6 +123,7 @@ pub fn after_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
             ctx.modules(),
         )?;
     }
+    debug!("after_analysis_dump: {:?}", start.elapsed());
 
     Ok(())
 }
