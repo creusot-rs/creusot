@@ -237,6 +237,14 @@ impl Exp {
         l.and(r)
     }
 
+    pub fn eq(self, rhs: Self) -> Self {
+        Exp::BinaryOp(BinOp::Eq, box self, box rhs)
+    }
+
+    pub fn neq(self, rhs: Self) -> Self {
+        Exp::BinaryOp(BinOp::Ne, box self, box rhs)
+    }
+
     // Construct an application from this expression and an argument
     pub fn app_to(mut self, arg: Self) -> Self {
         match self {
