@@ -13,14 +13,14 @@ pub enum Expr {
 
 use std::alloc::Allocator;
 extern_spec! {
-  mod std {
-    mod boxed {
-      impl<T : Clone, A : Allocator + Clone> Clone for Box<T, A> {
-        #[ensures(result == *self)]
-        fn clone(&self) -> Self;
-      }
+    mod std {
+        mod boxed {
+            impl<T : Clone, A : Allocator + Clone> Clone for Box<T, A> {
+                #[ensures(result == *self)]
+                fn clone(&self) -> Self;
+            }
+        }
     }
-  }
 }
 
 impl Clone for Expr {
