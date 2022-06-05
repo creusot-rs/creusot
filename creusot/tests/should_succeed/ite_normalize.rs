@@ -2,7 +2,54 @@
 
 extern crate creusot_contracts;
 
-use creusot_contracts::{ensures, extern_spec, invariant, logic, predicate, requires};
+use creusot_contracts::{ensures, extern_spec, trusted, Model, logic, predicate, requires, pearlite};
+
+// use std::collections::BTreeMap;
+#[trusted]
+struct BTreeMap<K, V>(std::collections::BTreeMap<K, V>);
+
+impl<K : Model, V: Model> BTreeMap<K, V> {
+    #[trusted]
+    fn new() -> Self {
+        Self(std::collections::BTreeMap::new())
+    }
+
+    #[trusted]
+    #[ensures(@result == (@self).get(@key))]
+    fn get<'a>(&'a self, key: &'a K) -> Option<&'a V>
+    where
+        K: Ord,
+    {
+        self.0.get(key)
+    }
+
+    #[trusted]
+    #[ensures(forall<i: K> (@^self).get(@i) == (if @i == @key { Some(@value) } else { (@self).get(@i) }))]
+    fn insert(&mut self, key: K, value: V) -> Option<V>
+    where
+        K: Ord
+    {
+        self.0.insert(key, value)
+    }
+}
+
+impl<K: Clone + Model, V: Clone + Model> Clone for BTreeMap<K, V> {
+    #[trusted]
+    #[ensures(@self == @result)]
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl<K : Model, V: Model> Model for BTreeMap<K, V> {
+  type ModelTy = creusot_contracts::Mapping<K::ModelTy, Option<V::ModelTy>>;
+
+  #[logic]
+  #[trusted]
+  fn model(self) -> Self::ModelTy {
+      pearlite! { absurd }
+  }
+}
 
 pub enum Expr {
     IfThenElse { c: Box<Expr>, t: Box<Expr>, e: Box<Expr> },
@@ -74,7 +121,7 @@ impl Expr {
                 t: Box::new(t.transpose(a.clone(), b.clone())),
                 e: Box::new(e.transpose(a, b)),
             },
-            Self::Var { v } => {
+            Self::Var { .. } => {
                 Self::IfThenElse { c: Box::new(self), t: Box::new(a), e: Box::new(b) }
             }
             Self::True => a,
@@ -105,6 +152,83 @@ impl Expr {
                 cp.transpose(tp, ep)
             }
             e => e.clone(),
+        }
+    }
+
+    #[predicate]
+    fn is_simplified(self) -> bool {
+        match self {
+            Expr::IfThenElse { c, t, e } => {
+                match *c {
+                    Expr::Var { v } => t.does_not_contain_variable(v) && e.does_not_contain_variable(v),
+                    c => c.is_simplified() && t.is_simplified() && e.is_simplified(),
+                }
+            }
+            _ => true,
+        }
+    }
+
+    #[predicate]
+    fn does_not_contain_variable(self, vp: usize) -> bool {
+        match self {
+            Expr::IfThenElse { c, t, e } => {
+                c.does_not_contain_variable(vp) && t.does_not_contain_variable(vp) && e.does_not_contain_variable(vp)
+            }
+            Expr::Var { v } => v != vp,
+            _ => true,
+        }
+    }
+
+    #[requires(self.is_normalized())]
+    #[ensures(result.is_simplified())]
+    pub fn simplify(self) -> Self {
+        self.simplify_helper(BTreeMap::new())
+    }
+
+    #[requires(self.is_normalized())]
+    #[ensures(forall<i: usize> (exists<v: bool> (@state).get(@i) == Some(@v)) ==> result.does_not_contain_variable(i))]
+    #[ensures(result.is_simplified())]
+    fn simplify_helper(self, state: BTreeMap<usize, bool>) -> Self {
+        match self {
+            Expr::IfThenElse { c, t, e } => {
+                match *c {
+                    Expr::Var { v } => {
+                        if let Some(b) = state.get(&v) {
+                            if *b {
+                                t.simplify_helper(state)
+                            } else {
+                                e.simplify_helper(state)
+                            }
+                        } else {
+                            // Then
+                            let mut state_t = state.clone();
+                            state_t.insert(v, true);
+                            let tp = t.simplify_helper(state_t);
+
+                            // Else
+                            let mut state_e = state.clone();
+                            state_e.insert(v, false);
+                            let ep = e.simplify_helper(state_e);
+
+                            // Composite
+                            Self::IfThenElse { c, t: Box::new(tp), e: Box::new(ep) }
+                        }
+                    }
+                    c => c.simplify_helper(state)
+                }
+            }
+            Expr::Var { v } => {
+                if let Some(b) = state.get(&v) {
+                    if *b {
+                        Self::True
+                    } else {
+                        Self::False
+                    }
+                } else {
+                    Expr::Var { v }
+                }
+            }
+            c => c,
         }
     }
 }
