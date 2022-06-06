@@ -159,7 +159,7 @@ pub fn item_name(tcx: TyCtxt, def_id: DefId) -> Ident {
 
     match tcx.def_kind(def_id) {
         AssocTy => ident_of_ty(tcx.item_name(def_id)),
-        Ctor(_, _) | Variant | Struct | Enum => ident_path(tcx, def_id),
+        Ctor(_, _) | Variant | Struct | Enum | Union => ident_path(tcx, def_id),
         Closure => {
             let mut id = ident_path(tcx, def_id);
             id.decapitalize();
