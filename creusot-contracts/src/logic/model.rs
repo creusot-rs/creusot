@@ -41,3 +41,24 @@ impl<T: Model, U: Model> Model for (T, U) {
         pearlite! { (@self.0, @self.1) }
     }
 }
+
+impl Model for bool {
+    type ModelTy = bool;
+
+    #[logic]
+    fn model(self) -> Self::ModelTy {
+        self
+    }
+}
+
+impl<T: Model> Model for Option<T> {
+    type ModelTy = Option<T::ModelTy>;
+
+    #[logic]
+    fn model(self) -> Self::ModelTy {
+        match self {
+            Some(t) => Some(t.model()),
+            None => None,
+        }
+    }
+}
