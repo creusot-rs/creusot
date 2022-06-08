@@ -2,13 +2,12 @@
 
 extern crate creusot_contracts;
 
-use creusot_contracts::{ensures, extern_spec, trusted, Model, logic, predicate, requires, pearlite};
+use creusot_contracts::*;
 
-// use std::collections::BTreeMap;
 #[trusted]
 struct BTreeMap<K, V>(std::collections::BTreeMap<K, V>);
 
-impl<K : Model, V: Model> BTreeMap<K, V> {
+impl<K: Model, V: Model> BTreeMap<K, V> {
     #[trusted]
     fn new() -> Self {
         Self(std::collections::BTreeMap::new())
@@ -27,7 +26,7 @@ impl<K : Model, V: Model> BTreeMap<K, V> {
     #[ensures(forall<i: K> (@^self).get(@i) == (if @i == @key { Some(@value) } else { (@self).get(@i) }))]
     fn insert(&mut self, key: K, value: V) -> Option<V>
     where
-        K: Ord
+        K: Ord,
     {
         self.0.insert(key, value)
     }
@@ -41,14 +40,14 @@ impl<K: Clone + Model, V: Clone + Model> Clone for BTreeMap<K, V> {
     }
 }
 
-impl<K : Model, V: Model> Model for BTreeMap<K, V> {
-  type ModelTy = creusot_contracts::Mapping<K::ModelTy, Option<V::ModelTy>>;
+impl<K: Model, V: Model> Model for BTreeMap<K, V> {
+    type ModelTy = creusot_contracts::Mapping<K::ModelTy, Option<V::ModelTy>>;
 
-  #[logic]
-  #[trusted]
-  fn model(self) -> Self::ModelTy {
-      pearlite! { absurd }
-  }
+    #[logic]
+    #[trusted]
+    fn model(self) -> Self::ModelTy {
+        pearlite! { absurd }
+    }
 }
 
 pub enum Expr {
@@ -57,6 +56,8 @@ pub enum Expr {
     True,
     False,
 }
+
+impl WellFounded for Expr {}
 
 use std::alloc::Allocator;
 extern_spec! {
@@ -114,6 +115,7 @@ impl Expr {
     #[requires(a.is_normalized())]
     #[requires(b.is_normalized())]
     #[ensures(result.is_normalized())]
+    #[variant(self)]
     pub fn transpose(self, a: Self, b: Self) -> Self {
         match self {
             Self::IfThenElse { c, t, e } => Self::IfThenElse {
@@ -132,10 +134,15 @@ impl Expr {
     #[predicate]
     fn is_normalized(self) -> bool {
         match self {
-            Expr::IfThenElse { c, t, e } => match *c {
-                Expr::IfThenElse { .. } => false,
-                _ => t.is_normalized() && e.is_normalized(),
-            },
+            Expr::IfThenElse { c, t, e } => {
+                c.is_normalized()
+                    && t.is_normalized()
+                    && e.is_normalized()
+                    && match *c {
+                        Expr::IfThenElse { .. } => false,
+                        _ => true,
+                    }
+            }
             Expr::Var { .. } => true,
             Expr::True => true,
             Expr::False => true,
@@ -143,6 +150,7 @@ impl Expr {
     }
 
     #[ensures(result.is_normalized())]
+    #[variant(self)]
     pub fn normalize(&self) -> Self {
         match self {
             Expr::IfThenElse { c, t, e } => {
@@ -158,21 +166,19 @@ impl Expr {
     #[predicate]
     fn is_simplified(self) -> bool {
         match self {
-            Expr::IfThenElse { c, t, e } => {
-                match *c {
-                    Expr::Var { v } => t.does_not_contain_variable(v) && e.does_not_contain_variable(v),
-                    c => c.is_simplified() && t.is_simplified() && e.is_simplified(),
-                }
-            }
+            Expr::IfThenElse { c, t, e } => match *c {
+                Expr::Var { v } => t.does_not_contain(v) && e.does_not_contain(v),
+                c => c.is_simplified() && t.is_simplified() && e.is_simplified(),
+            },
             _ => true,
         }
     }
 
     #[predicate]
-    fn does_not_contain_variable(self, vp: usize) -> bool {
+    fn does_not_contain(self, vp: usize) -> bool {
         match self {
             Expr::IfThenElse { c, t, e } => {
-                c.does_not_contain_variable(vp) && t.does_not_contain_variable(vp) && e.does_not_contain_variable(vp)
+                c.does_not_contain(vp) && t.does_not_contain(vp) && e.does_not_contain(vp)
             }
             Expr::Var { v } => v != vp,
             _ => true,
@@ -186,8 +192,9 @@ impl Expr {
     }
 
     #[requires(self.is_normalized())]
-    #[ensures(forall<i: usize> (exists<v: bool> (@state).get(@i) == Some(@v)) ==> result.does_not_contain_variable(i))]
+    #[ensures(forall<i: usize> (exists<v: bool> (@state).get(@i) == Some(@v)) ==> result.does_not_contain(i))]
     #[ensures(result.is_simplified())]
+    #[variant(self)]
     fn simplify_helper(self, state: BTreeMap<usize, bool>) -> Self {
         match self {
             Expr::IfThenElse { c, t, e } => {
@@ -214,7 +221,7 @@ impl Expr {
                             Self::IfThenElse { c, t: Box::new(tp), e: Box::new(ep) }
                         }
                     }
-                    c => c.simplify_helper(state)
+                    c => c.simplify_helper(state),
                 }
             }
             Expr::Var { v } => {
