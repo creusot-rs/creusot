@@ -189,8 +189,12 @@ fn should_succeed_case(
             let gotten = &output.stdout;
 
             let success = compare_str(&mut buf, from_utf8(gotten)?, from_utf8(expect)?);
-            write!(std::io::stderr(), "{}", from_utf8(&output.stderr)?)?;
-            Ok((success, buf))
+            if output.stderr.len() != 0 {
+                write!(&mut buf, "{}", from_utf8(&output.stderr)?)?;
+                Ok((false, buf))
+            } else {
+                Ok((success, buf))
+            }
         }
         Err(err) => {
             let output = err.as_output().unwrap();
