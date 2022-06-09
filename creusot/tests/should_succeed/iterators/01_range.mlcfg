@@ -213,6 +213,30 @@ module C01Range_Impl0_Next
   }
   
 end
+module C01Range_Impl1_IntoIter_Interface
+  use Type
+  val into_iter [@cfg:stackify] (self : Type.c01range_range) : Type.c01range_range
+    ensures { [#"../01_range.rs" 59 14 28] result = self }
+    
+end
+module C01Range_Impl1_IntoIter
+  use Type
+  let rec cfg into_iter [@cfg:stackify] [#"../01_range.rs" 60 4 34] (self : Type.c01range_range) : Type.c01range_range
+    ensures { [#"../01_range.rs" 59 14 28] result = self }
+    
+   =
+  var _0 : Type.c01range_range;
+  var self_1 : Type.c01range_range;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    _0 <- self_1;
+    return _0
+  }
+  
+end
 module C01Range_Impl0_Item
   use mach.int.Int
   use prelude.Prelude
@@ -342,8 +366,8 @@ module C01Range_SumRange_Interface
   use mach.int.Int32
   use prelude.Prelude
   val sum_range [@cfg:stackify] (n : isize) : isize
-    requires {[#"../01_range.rs" 58 11 18] Int64.to_int n >= 0}
-    ensures { [#"../01_range.rs" 59 10 21] result = n }
+    requires {[#"../01_range.rs" 65 11 18] Int64.to_int n >= 0}
+    ensures { [#"../01_range.rs" 66 10 21] result = n }
     
 end
 module C01Range_SumRange
@@ -358,84 +382,90 @@ module C01Range_SumRange
   use Type
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.c01range_range
   clone C01Range_Impl0_Completed as Completed0
+  clone C01Range_Impl1_IntoIter_Interface as IntoIter0
   clone C01Range_Impl0_Next_Interface as Next0 with predicate Completed0.completed = Completed0.completed,
   predicate Resolve0.resolve = Resolve0.resolve, predicate Produces0.produces = Produces0.produces
-  let rec cfg sum_range [@cfg:stackify] [#"../01_range.rs" 60 0 35] (n : isize) : isize
-    requires {[#"../01_range.rs" 58 11 18] Int64.to_int n >= 0}
-    ensures { [#"../01_range.rs" 59 10 21] result = n }
+  let rec cfg sum_range [@cfg:stackify] [#"../01_range.rs" 67 0 35] (n : isize) : isize
+    requires {[#"../01_range.rs" 65 11 18] Int64.to_int n >= 0}
+    ensures { [#"../01_range.rs" 66 10 21] result = n }
     
    =
   var _0 : isize;
   var n_1 : isize;
   var i_2 : isize;
   var _3 : ();
-  var it_4 : Type.c01range_range;
-  var _5 : isize;
-  ghost var it_old_6 : Type.c01range_range;
-  var _7 : ();
-  ghost var produced_8 : Seq.seq isize;
-  var _9 : ();
+  var iter_4 : Type.c01range_range;
+  var _5 : Type.c01range_range;
+  var _6 : isize;
+  ghost var iter_old_7 : Type.c01range_range;
+  var _8 : ();
+  ghost var produced_9 : Seq.seq isize;
   var _10 : ();
-  var _11 : Type.core_option_option isize;
-  var _12 : borrowed (Type.c01range_range);
-  var _13 : isize;
-  var j_14 : isize;
-  ghost var _15 : Seq.seq isize;
-  var _16 : ();
+  var _11 : ();
+  var _12 : Type.core_option_option isize;
+  var _13 : borrowed (Type.c01range_range);
+  var _14 : isize;
+  var i_15 : isize;
+  ghost var _16 : Seq.seq isize;
   var _17 : ();
+  var _18 : ();
   {
     n_1 <- n;
     goto BB0
   }
   BB0 {
     i_2 <- (0 : isize);
-    _5 <- n_1;
-    it_4 <- Type.C01Range_Range (0 : isize) _5;
-    _7 <- ();
-    it_old_6 <- ghost ([#"../01_range.rs" 65 21 35] it_4);
+    _6 <- n_1;
+    _5 <- Type.C01Range_Range (0 : isize) _6;
+    iter_4 <- ([#"../01_range.rs" 69 4 54] IntoIter0.into_iter _5);
     goto BB1
   }
   BB1 {
-    _9 <- ();
-    produced_8 <- ghost ([#"../01_range.rs" 66 27 48] Seq.empty );
+    _8 <- ();
+    iter_old_7 <- ghost ([#"../01_range.rs" 69 4 54] iter_4);
     goto BB2
   }
   BB2 {
+    _10 <- ();
+    produced_9 <- ghost ([#"../01_range.rs" 69 4 54] Seq.empty );
     goto BB3
   }
   BB3 {
-    invariant free { [#"../01_range.rs" 67 26 65] Produces0.produces it_old_6 produced_8 it_4 };
-    invariant user { [#"../01_range.rs" 69 26 56] Int64.to_int i_2 = Seq.length produced_8 && i_2 <= n_1 };
-    _12 <- borrow_mut it_4;
-    it_4 <-  ^ _12;
-    _11 <- ([#"../01_range.rs" 71 18 27] Next0.next _12);
     goto BB4
   }
   BB4 {
-    switch (_11)
-      | Type.Core_Option_Option_None -> goto BB5
-      | Type.Core_Option_Option_Some _ -> goto BB7
-      end
+    invariant structural { [#"../01_range.rs" 69 4 54] Produces0.produces iter_old_7 produced_9 iter_4 };
+    invariant user { [#"../01_range.rs" 69 22 52] Int64.to_int i_2 = Seq.length produced_9 && i_2 <= n_1 };
+    _13 <- borrow_mut iter_4;
+    iter_4 <-  ^ _13;
+    _12 <- ([#"../01_range.rs" 69 4 54] Next0.next _13);
+    goto BB5
   }
   BB5 {
+    switch (_12)
+      | Type.Core_Option_Option_None -> goto BB6
+      | Type.Core_Option_Option_Some _ -> goto BB8
+      end
+  }
+  BB6 {
     _3 <- ();
     _0 <- i_2;
     return _0
   }
-  BB6 {
+  BB7 {
     absurd
   }
-  BB7 {
-    j_14 <- Type.core_option_option_Some_0 _11;
-    _16 <- ();
-    _15 <- ghost ([#"../01_range.rs" 73 31 58] Seq.snoc produced_8 j_14);
-    goto BB8
-  }
   BB8 {
-    produced_8 <- _15;
-    i_2 <- ([#"../01_range.rs" 74 20 26] i_2 + (1 : isize));
-    _10 <- ();
-    goto BB3
+    i_15 <- Type.core_option_option_Some_0 _12;
+    _17 <- ();
+    _16 <- ghost ([#"../01_range.rs" 69 4 54] Seq.snoc produced_9 i_15);
+    goto BB9
+  }
+  BB9 {
+    produced_9 <- _16;
+    i_2 <- ([#"../01_range.rs" 71 8 14] i_2 + (1 : isize));
+    _11 <- ();
+    goto BB4
   }
   
 end

@@ -9,7 +9,7 @@ pub fn sum_first_n(n: u32) -> u32 {
     let mut sum = 0;
     let mut i = 0;
     #[invariant(bound, i <= n)]
-    #[invariant(sum_value, @sum == @i * (@i + 1) / 2)]
+    #[invariant(sum_value, true == false)]
     while i < n {
         i += 1;
         sum += i;

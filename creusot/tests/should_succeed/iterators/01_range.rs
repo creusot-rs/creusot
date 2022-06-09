@@ -55,27 +55,20 @@ impl Iterator for Range {
     }
 }
 
+impl Range {
+    #[ensures(result == self)]
+    pub fn into_iter(self) -> Self {
+        self
+    }
+}
+
 #[requires(@n >= 0)]
 #[ensures(result == n)]
 pub fn sum_range(n: isize) -> isize {
     let mut i = 0;
-    {
-        // the for loop
-        let mut it = Range { start: 0, end: n };
-        let it_old = ghost! { &it };
-        let mut produced = ghost! { Seq::EMPTY };
-        #[invariant(free, (it_old).produces(produced.inner(), it))]
-        // user invariant
-        #[invariant(user, @i == produced.len() && i <= n)]
-        loop {
-            match it.next() {
-                Some(j) => {
-                    produced = ghost! { produced.push(j) };
-                    i += 1;
-                }
-                None => break,
-            }
-        }
+    #[invariant(user, @i == produced.len() && i <= n)]
+    for _ in (Range { start: 0, end: n }) {
+        i += 1;
     }
     i
 }

@@ -1,4 +1,4 @@
-#![feature(let_chains, box_patterns)]
+#![feature(let_chains, box_patterns, drain_filter, proc_macro_def_site)]
 extern crate proc_macro;
 use extern_spec::ExternSpecs;
 use pearlite_syn::*;
@@ -14,6 +14,7 @@ use syn::{
 };
 
 mod extern_spec;
+mod invariant;
 mod maintains;
 mod pretyping;
 
@@ -315,45 +316,6 @@ fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
     }))
 }
 
-struct Invariant {
-    name: syn::Ident,
-    invariant: pearlite_syn::Term,
-}
-
-impl syn::parse::Parse for Invariant {
-    fn parse(tokens: syn::parse::ParseStream) -> Result<Self> {
-        let name = tokens.parse()?;
-        let _: Token![,] = tokens.parse()?;
-        let invariant = tokens.parse()?;
-
-        Ok(Invariant { name, invariant })
-    }
-}
-#[proc_macro_attribute]
-pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
-    let inv: Invariant = parse_macro_input!(invariant);
-    let term = inv.invariant;
-
-    let inv_body = pretyping::encode_term(&term).unwrap();
-
-    let loopb = proc_macro2::TokenStream::from(loopb);
-    let invariant_name = inv.name;
-    let invariant_name = format!("{}", quote! { #invariant_name });
-
-    TS1::from(quote! {
-        {
-            #[allow(unused_must_use)]
-            let _ = {
-                #[creusot::no_translate]
-                #[creusot::decl::spec]
-                #[creusot::spec::invariant=#invariant_name]
-                ||{ #inv_body }
-            };
-            #loopb
-        }
-    })
-}
-
 struct Assertion(TBlock);
 
 impl Parse for Assertion {
@@ -561,4 +523,14 @@ pub fn maintains(attr: TS1, body: TS1) -> TS1 {
         Ok(tokens) => tokens.into(),
         Err(err) => err.to_compile_error().into(),
     }
+}
+
+#[proc_macro_attribute]
+pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
+    let loop_ = match invariant::parse(invariant.into(), loopb.into()) {
+        Ok(l) => l,
+        Err(e) => return e.to_compile_error().into(),
+    };
+
+    invariant::lower(loop_).into()
 }

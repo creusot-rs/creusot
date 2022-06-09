@@ -32,19 +32,23 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
     match term {
         RT::Array(_) => Err(EncodeError::Unsupported(term.span(), "Array".into())),
         RT::Binary(TermBinary { left, op, right }) => {
-            let left  = match &**left {
+            let left = match &**left {
                 RT::Paren(TermParen { expr, .. }) => &expr,
-                _ => &*left
+                _ => &*left,
             };
-            let right   = match &**right {
+            let right = match &**right {
                 RT::Paren(TermParen { expr, .. }) => &expr,
-                _ => &*right
+                _ => &*right,
             };
             let left = encode_term(left)?;
             let right = encode_term(right)?;
             match op {
-                syn::BinOp::Eq(_) => Ok(quote_spanned! {sp=> creusot_contracts::stubs::equal(#left, #right) }),
-                syn::BinOp::Ne(_) => Ok(quote_spanned! {sp=> creusot_contracts::stubs::neq(#left, #right) }),
+                syn::BinOp::Eq(_) => {
+                    Ok(quote_spanned! {sp=> creusot_contracts::stubs::equal(#left, #right) })
+                }
+                syn::BinOp::Ne(_) => {
+                    Ok(quote_spanned! {sp=> creusot_contracts::stubs::neq(#left, #right) })
+                }
                 syn::BinOp::Lt(_) => Ok(quote_spanned! {sp=> (#left).lt_log(#right) }),
                 syn::BinOp::Le(_) => Ok(quote_spanned! {sp=> (#left).le_log(#right) }),
                 syn::BinOp::Ge(_) => Ok(quote_spanned! {sp=> (#left).ge_log(#right) }),
@@ -57,7 +61,9 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let args: Vec<_> = args.into_iter().map(encode_term).collect::<Result<_, _>>()?;
             if let RT::Path(p) = &**func {
                 if p.inner.path.is_ident("old") {
-                    return Ok(quote_spanned! {sp=> creusot_contracts :: stubs :: old ( #(#args),* ) });
+                    return Ok(
+                        quote_spanned! {sp=> creusot_contracts :: stubs :: old ( #(#args),* ) },
+                    );
                 }
             }
 
@@ -180,14 +186,12 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         }
         RT::Impl(TermImpl { hyp, cons, .. }) => {
             let hyp = match &**hyp {
-                Term::Paren(TermParen { expr, .. }) => {
-                    match &**expr {
-                        Term::Exists(_) => expr,
-                        Term::Forall(_) => expr,
-                        _ => hyp,
-                    }
-                }
-                _ => hyp
+                Term::Paren(TermParen { expr, .. }) => match &**expr {
+                    Term::Exists(_) => expr,
+                    Term::Forall(_) => expr,
+                    _ => hyp,
+                },
+                _ => hyp,
             };
             let hyp = encode_term(hyp)?;
             let cons = encode_term(cons)?;
