@@ -179,6 +179,16 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             })
         }
         RT::Impl(TermImpl { hyp, cons, .. }) => {
+            let hyp = match &**hyp {
+                Term::Paren(TermParen { expr, .. }) => {
+                    match &**expr {
+                        Term::Exists(_) => expr,
+                        Term::Forall(_) => expr,
+                        _ => hyp,
+                    }
+                }
+                _ => hyp
+            };
             let hyp = encode_term(hyp)?;
             let cons = encode_term(cons)?;
             Ok(quote! {
