@@ -41,8 +41,8 @@ extern_spec! {
 
                 #[ensures(match result {
                     Some(t) =>
-                        (@^self) == (@*self).subsequence(0, (@*self).len() - 1) &&
-                        (@*self) == (@^self).push(t),
+                        @^self == (@*self).subsequence(0, (@*self).len() - 1) &&
+                        @*self == (@^self).push(t),
                     None => *self == ^self && (@*self).len() == 0
                 })]
                 fn pop(&mut self) -> Option<T>;
