@@ -135,7 +135,7 @@ impl Parse for ContractItem {
 // Generate a token stream for the item representing a specific
 // `requires` or `ensures`
 fn fn_spec_item(tag: Ident, result: Option<FnArg>, p: Term) -> TokenStream {
-    let req_body = pretyping::encode_term(p).unwrap_or_else(|e| {
+    let req_body = pretyping::encode_term(&p).unwrap_or_else(|e| {
         return e.into_tokens();
     });
     let name_tag = format!("{}", quote! { #tag });
@@ -152,7 +152,7 @@ fn fn_spec_item(tag: Ident, result: Option<FnArg>, p: Term) -> TokenStream {
 }
 
 fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
-    let req_body = pretyping::encode_term(p).unwrap_or_else(|e| {
+    let req_body = pretyping::encode_term(&p).unwrap_or_else(|e| {
         return e.into_tokens();
     });
     let name_tag = format!("{}", quote! { #tag });
@@ -196,7 +196,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             })
         }
         ContractItem::Closure(clos) => {
-            let req_body = pretyping::encode_term(term).unwrap();
+            let req_body = pretyping::encode_term(&term).unwrap();
             TS1::from(quote! {
                 {
                     #[allow(unused_must_use)]
@@ -253,7 +253,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             })
         }
         ContractItem::Closure(clos) => {
-            let req_body = pretyping::encode_term(term).unwrap();
+            let req_body = pretyping::encode_term(&term).unwrap();
             let clos_name = Ident::new("closure", Span::mixed_site());
             TS1::from(quote! {
                 {
@@ -291,7 +291,7 @@ fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
     let mut var_sig = f.sig.clone();
     var_sig.ident = var_name.clone();
     // var_sig.output = parse_quote! { -> impl creusot_contracts::logic::WellFounded };
-    let var_body = pretyping::encode_term(p).unwrap_or_else(|e| {
+    let var_body = pretyping::encode_term(&p).unwrap_or_else(|e| {
         return e.into_tokens();
     });
     let name_tag = format!("{}", quote! { #var_name });
@@ -334,7 +334,7 @@ pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
     let inv: Invariant = parse_macro_input!(invariant);
     let term = inv.invariant;
 
-    let inv_body = pretyping::encode_term(term).unwrap();
+    let inv_body = pretyping::encode_term(&term).unwrap();
 
     let loopb = proc_macro2::TokenStream::from(loopb);
     let invariant_name = inv.name;
@@ -367,7 +367,7 @@ impl Parse for Assertion {
 pub fn proof_assert(assertion: TS1) -> TS1 {
     let assert = parse_macro_input!(assertion as Assertion);
 
-    let assert_body = pretyping::encode_block(assert.0).unwrap();
+    let assert_body = pretyping::encode_block(&assert.0).unwrap();
 
     TS1::from(quote! {
         {
@@ -459,7 +459,7 @@ fn logic_item(log: LogicItem) -> TS1 {
     let sig = log.sig;
     let attrs = log.attrs;
 
-    let req_body = pretyping::encode_block(*term).unwrap();
+    let req_body = pretyping::encode_block(&term).unwrap();
 
     TS1::from(quote! {
         #[creusot::decl::logic]
@@ -504,7 +504,7 @@ fn predicate_item(log: LogicItem) -> TS1 {
     let sig = log.sig;
     let attrs = log.attrs;
 
-    let req_body = pretyping::encode_block(*term).unwrap();
+    let req_body = pretyping::encode_block(&term).unwrap();
 
     TS1::from(quote! {
         #[creusot::decl::predicate]
@@ -528,7 +528,7 @@ pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
 #[proc_macro]
 pub fn pearlite(tokens: TS1) -> TS1 {
     let term: Term = parse_macro_input!(tokens);
-    TS1::from(pretyping::encode_term(term).unwrap())
+    TS1::from(pretyping::encode_term(&term).unwrap())
 }
 
 #[proc_macro]
