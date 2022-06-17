@@ -21,9 +21,9 @@ One of the keys to Creusot's translation is its representation of *mutable borro
 In this model, each borrow is represented by a pair of a current and a final value, which is *prophecised*.
 When the borrow ends, we *resolve* the prophecy, linking it to the value stored in the borrow at the moment of ending.
 For a more complete explanation of how this aspect works, you can read the following papers:
-- TODO: RustHorn
+- RustHorn ([10.1145/3462205](https://dl.acm.org/doi/full/10.1145/3462205))
+- RustHornBelt ([10.1145/3519939.3523704](https://dl.acm.org/doi/abs/10.1145/3519939.3523704))
 - TODO: JFLA
-- TODO: RustHornBelt
 
 The key takeaway is that:
 
