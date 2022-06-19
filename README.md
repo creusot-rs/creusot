@@ -66,8 +66,6 @@ Later we show how to write Rust programs with specs for Creusot.
 
 ## Proving in Why3
 
-First, in order to process MLCFG outputs by Creusot, you need the [`stackify` branch](https://gitlab.inria.fr/why3/why3/-/tree/stackify) version of Why3, as mentioned in the Installing section. We hope to have this branch integrated and released by 1.5.0 (or ideally earlier).
-
 Now, let's have Why3 process verification conditions of your MLCFG.
 
 You can run the following to call Why3 with the SMT solver Z3 (assuming that you are at the repo dir).
