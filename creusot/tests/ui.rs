@@ -47,16 +47,21 @@ fn run_creusot(file: &Path, contracts: &str) -> Option<std::process::Command> {
     base_path.push("target");
     base_path.push("debug");
 
-    let mut creusot_contract_path = base_path.clone();
-    creusot_contract_path.push("libcreusot_contracts.rlib");
+    let creusot_contract_path = base_path.join("libcreusot_contracts.rlib");
+    let creusot_contract_path =
+        creusot_contract_path.to_str().expect("invalid utf-8 in contract path");
+    let creusot_contract_path = normalize_file_path(creusot_contract_path);
+
+    let creusot_externs_json =
+        serde_json::json!({ "creusot_contracts": normalize_file_path(contracts) });
 
     cmd.arg("-Zno-codegen");
     cmd.envs(env::vars());
     cmd.env("CREUSOT_EXPORT_METADATA", "false");
-    cmd.env("CREUSOT_EXTERNS", format!("{{ \"creusot_contracts\": \"{}\" }}", contracts));
+    cmd.env("CREUSOT_EXTERNS", creusot_externs_json.to_string());
     cmd.env("CREUSOT_STDOUT_OUTPUT", "1");
     cmd.env("CREUSOT_SPAN", "relative");
-    cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path.display())]);
+    cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path)]);
 
     let header_line = BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
 
@@ -162,10 +167,15 @@ where
 fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
     use similar::Algorithm;
     use std::time::Duration;
+
+    let got = normalize_newlines(got);
+    let expect = normalize_newlines(expect);
+
     let result = TextDiff::configure()
+        .newline_terminated(false)
         .timeout(Duration::from_millis(200))
         .algorithm(Algorithm::Patience)
-        .diff_lines(expect, got);
+        .diff_lines(&expect, &got);
 
     // let result = TextDiff::from_lines(expect, got);
     if result.ratio() == 1.0 {
@@ -174,6 +184,24 @@ fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
         print_diff(buf, result);
         false
     }
+}
+
+/// Normalize new lines between linux/windows for consistency
+///
+/// Remove \r (for Windows)
+fn normalize_newlines(input: impl Into<String>) -> String {
+    let input: String = input.into();
+    let input = input.replace("\r", "");
+    input
+}
+
+/// Normalize file path between linux/windows for consistency
+///
+/// Replace \ by /  (for Windows)
+fn normalize_file_path(input: impl Into<String>) -> String {
+    let input: String = input.into();
+    let input = input.replace("\\", "/");
+    input
 }
 
 fn should_succeed_case(
