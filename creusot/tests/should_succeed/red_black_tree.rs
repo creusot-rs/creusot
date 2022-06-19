@@ -4,7 +4,6 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 use std::cmp::Ord;
 use std::cmp::Ordering::*;
-use std::mem::{swap, take};
 
 #[derive(Clone, Copy)]
 enum Color {
@@ -100,8 +99,8 @@ impl<K: Model, V> Tree<K, V> {
 
     #[logic]
     #[requires(self.bst_invariant())]
-    #[ensures(self.has_mapping(k, v) == ((@self).get(k) == Some(v)))]
-    fn has_mapping_model(self, k: K::ModelTy, v: V)
+    #[ensures(forall<v: V> self.has_mapping(k, v) == ((@self).get(k) == Some(v)))]
+    fn has_mapping_model(self, k: K::ModelTy)
     where
         K::ModelTy: OrdLogic,
     {
@@ -109,6 +108,23 @@ impl<K: Model, V> Tree<K, V> {
             self.model_acc_has_mapping(Mapping::cst(None), k);
             self.has_mapping_model_acc(Mapping::cst(None), k)
         } }
+    }
+
+    #[logic]
+    #[requires(self.bst_invariant())]
+    #[requires(self.has_mapping(k, v1))]
+    #[requires(self.has_mapping(k, v2))]
+    #[ensures(v1 == v2)]
+    fn has_mapping_inj(self, k: K::ModelTy, v1: V, v2: V)
+    where
+        K::ModelTy: OrdLogic,
+    {
+        pearlite! {
+            if (@self).get(k) == Some(v1) && (@self).get(k) == Some(v2) {}
+            else {
+                self.has_mapping_model(k)
+            }
+        }
     }
 }
 
@@ -304,6 +320,7 @@ where
               (*self).left.node == Some(l) && (^self).right.node == Some(r) &&
               ((^self).left, r.left, r.right) == (l.left, l.right, (*self).right))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
+    #[ensures(@(^self).key < @(*self).key)]
     fn rotate_right(&mut self) {
         let old_self = ghost! { self };
 
@@ -313,7 +330,7 @@ where
         //  / \
         // a   b
         // Rip out the left subtree
-        let mut x: Box<_> = match take(&mut self.left.node) {
+        let mut x: Box<_> = match std::mem::take(&mut self.left.node) {
             Some(x) => x,
             None => panic!(),
         };
@@ -323,13 +340,13 @@ where
         //   x      c
         //  / \
         // a   b
-        swap(&mut self.left, &mut x.right);
+        std::mem::swap(&mut self.left, &mut x.right);
         //        self
         //       /    \
         //   x  b      c
         //  /
         // a
-        swap(self, &mut x);
+        std::mem::swap(self, &mut x);
         self.color = x.color;
         x.color = Red;
         //   self
@@ -357,15 +374,16 @@ where
               (*self).right.node == Some(r) && (^self).left.node == Some(l) &&
               (l.left, l.right, (^self).right) == ((*self).left, r.left, r.right))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
+    #[ensures(@(*self).key < @(^self).key)]
     fn rotate_left(&mut self) {
         let old_self = ghost! { self };
 
-        let mut x: Box<_> = match take(&mut self.right.node) {
+        let mut x: Box<_> = match std::mem::take(&mut self.right.node) {
             Some(x) => x,
             None => panic!(),
         };
-        swap(&mut self.right, &mut x.left);
-        swap(self, &mut x);
+        std::mem::swap(&mut self.right, &mut x.left);
+        std::mem::swap(self, &mut x);
         self.color = x.color;
         x.color = Red;
         proof_assert! { old_self.right.has_mapping(@(*self).key, (*self).val) }
@@ -386,12 +404,13 @@ where
     #[ensures(exists<r1: Box<Self>, r2: Box<Self>> (*self).right.node == Some(r1) && (^self).right.node == Some(r2) &&
               r1.left == r2.left && r1.right == r2.right &&
               (*self).color == r2.color && (^self).color == r1.color)]
+    #[ensures((*self).key == (^self).key)]
     fn flip_colors(&mut self) {
         self.left.node.as_mut().unwrap().color = self.color;
-        swap(&mut self.color, &mut self.right.node.as_mut().unwrap().color);
-        proof_assert!((*self).left.same_mappings((^self).left));
-        proof_assert!((*self).right.same_mappings((^self).right));
-        proof_assert!((*self).bst_invariant_here());
+        std::mem::swap(&mut self.color, &mut self.right.node.as_mut().unwrap().color);
+        proof_assert! {(*self).left.same_mappings((^self).left)}
+        proof_assert! {(*self).right.same_mappings((^self).right)}
+        proof_assert! {(*self).bst_invariant_here()}
     }
 
     #[requires((*self).bst_invariant())]
@@ -439,8 +458,8 @@ where
     #[requires((*self).bst_invariant())]
     #[requires((*self).color_invariant())]
     #[requires((*self).color == Red)]
-    #[requires(exists<l: Box<Self>> (*self).left.node == Some(l) && l.color == Black && l.left.color() == Black)]
-    #[requires(exists<r: Box<Self>> (*self).right.node == Some(r) && r.color == Black)]
+    #[requires(exists<l: Box<Self>> (*self).left.node == Some(l) && l.left.color() == Black)]
+    #[requires((*self).right.node != None)]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     #[ensures((^self).bst_invariant())]
     #[ensures((*self).same_mappings(^self))]
@@ -450,15 +469,54 @@ where
     #[ensures((^self).color == Black ==>
               (^self).left.color() == Red && (^self).left.color_invariant() &&
               (^self).right.color() == Red && (^self).right.color_invariant())]
+    #[ensures(@(*self).key <= @(^self).key)]
+    // R(B(B, B), B)  =>  B(R, R)
+    //                 |  R(B(R, B), B(B, B))
     fn move_red_left(&mut self) {
         let old_self = ghost! { self };
         self.flip_colors();
         if self.right.node.as_mut().unwrap().left.is_red() {
             self.right.node.as_mut().unwrap().rotate_right();
-            proof_assert!(old_self.same_mappings(*self));
+            proof_assert! { old_self.same_mappings(*self) }
+            proof_assert! { forall<h: Int>  old_self.has_height(h) ==> (*self).has_height(h) }
             self.rotate_left();
             self.flip_colors();
         }
+    }
+
+    #[requires((*self).bst_invariant())]
+    #[requires((*self).color_invariant())]
+    #[requires((*self).color == Red)]
+    #[requires((*self).left.node != None)]
+    #[requires(exists<r: Box<Self>> (*self).right.node == Some(r) && r.left.color() == Black)]
+    #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
+    #[ensures((^self).bst_invariant())]
+    #[ensures((*self).same_mappings(^self))]
+    #[ensures((^self).left.color_invariant())]
+    #[ensures((^self).right.color_invariant())]
+    #[ensures(!result ==> @(^self).key < @(*self).key && (^self).color == Red &&
+              (^self).left.color() == Black && (^self).right.color() == Black &&
+              exists<r: Box<Self>> (^self).right.node == Some(r) && r.left.color() == Red)]
+    #[ensures(result ==> (^self).key == (*self).key && (^self).color == Black &&
+              (^self).left.color() == Red && (^self).right.color() == Red)]
+    // R(B, B(B, B))  =>  B(R, R)              (true)
+    //                 |  R(B(B, B), B(R, B))  (false)
+    fn move_red_right(&mut self) -> bool {
+        self.flip_colors();
+        // B(R, R)
+        // B(R(R, B), R)
+        if self.left.node.as_mut().unwrap().left.is_red() {
+            // B(R(R, B), R)
+            self.rotate_right();
+            // B(R, R(B, R))
+            self.flip_colors();
+            // R(B(B, B), B(B, R))
+            self.right.node.as_mut().unwrap().rotate_left();
+            // R(B(B, B), B(R, B))
+            return false
+        }
+        // B(R, R)
+        return true
     }
 }
 
@@ -516,7 +574,7 @@ where
         self.node.as_mut().unwrap().color = Black;
         proof_assert! { forall<h: Int> old_self.has_height(h) ==>
         (*self).has_height(h) || (*self).has_height(h+1) }
-        proof_assert! { (*self).has_mapping_model(@key /* dummy */, val /* dummy */); true }
+        proof_assert! { (*self).has_mapping_model(@key /* dummy */); true }
     }
 
     #[requires((*self).bst_invariant())]
@@ -538,15 +596,15 @@ where
         let old_self = ghost! { self };
         let node = self.node.as_mut().unwrap();
         if let None = node.left.node {
-            let node = take(&mut self.node).unwrap();
+            let node = std::mem::take(&mut self.node).unwrap();
             return (node.key, node.val)
         }
         if !node.left.is_red() && !node.left.node.as_ref().unwrap().left.is_red() {
             node.move_red_left();
         }
-        proof_assert!(forall<h: Int> old_self.has_height(h) ==> (*node).has_height(h));
+        proof_assert! {forall<h: Int> old_self.has_height(h) ==> (*node).has_height(h)}
         let r = node.left.delete_min_rec();
-        proof_assert!(forall<h: Int> old_self.has_height(h) ==> (*node).has_height(h));
+        proof_assert! {forall<h: Int> old_self.has_height(h) ==> (*node).has_height(h)}
         node.balance();
         r
     }
@@ -569,19 +627,107 @@ where
         }
         proof_assert! { forall<h: Int> old_self.has_height(h) ==>
                         (*self).color() == Black || (*self).has_height(h-1) }
+        proof_assert! { old_self.same_mappings(*self) }
         let r = self.delete_min_rec();
         if self.is_red() { self.node.as_mut().unwrap().color = Black; }
         proof_assert! { forall<h: Int> old_self.has_height(h) ==>
                         (*self).has_height(h) || (*self).has_height(h-1) }
-        proof_assert! { (*self).has_mapping_model(@r.0 /* dummy */, r.1 /* dummy */); true }
+        proof_assert! { (*self).has_mapping_model(@r.0 /* dummy */); true }
         Some(r)
+    }
+
+    #[requires((*self).bst_invariant())]
+    #[requires((*self).color_invariant())]
+    #[requires((*self).color() == Red ||
+               exists<n: Box<Node<K, V>>> (*self).node == Some(n) && n.left.color() == Red)]
+    #[requires(exists<h: Int> (*self).has_height(h))]
+    #[ensures((^self).bst_invariant())]
+    #[ensures(forall<v: V> result == None ==> !(*self).has_mapping(@*key, v))]
+    #[ensures(forall<k: K, v: V> result == Some((k, v)) ==>
+              @*key == @k && (*self).has_mapping(@k, v))]
+    #[ensures(forall<k: K::ModelTy, v: V> (*self).has_mapping(k, v) ==>
+              @*key == k || (^self).has_mapping(k, v))]
+    #[ensures(forall<k: K::ModelTy, v: V> (^self).has_mapping(k, v) ==>
+              @*key != k && (*self).has_mapping(k, v))]
+    #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
+    #[ensures((^self).color_invariant())]
+    #[ensures((*self).color() == Black ==> (^self).color() == Black)]
+    fn delete_rec(&mut self, key: &K) -> Option<(K, V)> {
+        let r;
+        let node = &mut **self.node.as_mut().unwrap();
+        let old_node = ghost! { *node };
+        match key.cmp(&node.key) {
+            Less => {
+                if node.left.node.is_none() { return None }
+                if !node.left.is_red() && !node.left.node.as_ref().unwrap().left.is_red() {
+                    node.move_red_left();
+                }
+                r = node.left.delete_rec(key)
+            },
+            mut ord => {
+                // R
+                if node.left.is_red() {
+                    node.rotate_right();
+                    ord = Greater
+                } else if node.right.node.is_none() {
+                    if let Greater = ord { return None }
+                    let node = std::mem::take(&mut self.node).unwrap();
+                    return Some((node.key, node.val))
+                }
+                if !node.right.is_red() && !node.right.node.as_ref().unwrap().left.is_red() {
+                    if !node.move_red_right() {
+                        ord = Greater
+                    }
+                }
+                if let Equal = ord {
+                    let mut kv = node.right.delete_min_rec();
+                    proof_assert! { /* dummy parameters */ old_node.right.has_mapping_inj(@kv.0, kv.1, kv.1); true }
+                    std::mem::swap(&mut node.key, &mut kv.0);
+                    std::mem::swap(&mut node.val, &mut kv.1);
+                    r = Some(kv)
+                } else {
+                    r = node.right.delete_rec(key)
+                }
+            }
+        }
+        node.balance();
+        r
+    }
+
+    #[requires((*self).invariant())]
+    #[ensures((^self).invariant())]
+    #[ensures((result == None) == ((@*self).get(@*key) == None))]
+    #[ensures(forall<k: K, v: V> result == Some((k, v)) && @k == @*key ==>
+              (@*self).get(@*key) == Some(v))]
+    #[ensures(@^self == (@*self).set(@*key, None))]
+    pub fn delete(&mut self, key: &K) -> Option<(K, V)> {
+        let old_self = ghost! { self };
+        match &mut self.node {
+            None => return None,
+            Some(node) =>
+                if !node.left.is_red() && !node.right.is_red() {
+                    node.color = Red;
+                }
+        }
+
+        proof_assert! { forall<h: Int> old_self.has_height(h) ==>
+                        (*self).color() == Black || (*self).has_height(h-1) }
+        proof_assert! { old_self.same_mappings(*self) }
+        let r = self.delete_rec(key);
+        proof_assert! { @*self == (@old_self).set(@*key, None) }
+        if self.is_red() { self.node.as_mut().unwrap().color = Black; }
+        proof_assert! { forall<h: Int> old_self.has_height(h) ==>
+                        (*self).has_height(h) || (*self).has_height(h-1) }
+        ghost! { match r { None => (), Some(_) => () }};
+        proof_assert! { (*self).has_mapping_model(@*key /* dummy */); true }
+        r
     }
 
     #[requires((*self).invariant())]
     #[ensures(forall<v: &V> result == Some(v) ==> (@*self).get(@*key) == Some(*v))]
     #[ensures(result == None ==> (@*self).get(@*key) == None)]
     pub fn get(&self, key: &K) -> Option<&V> {
-        proof_assert! { forall<v:V> { self.has_mapping_model(@*key, v); true } }
+        proof_assert! { self.has_mapping_model(@*key); true }
 
         let mut tree = self;
         #[invariant(bst_inv, (*tree).bst_invariant())]
@@ -602,7 +748,7 @@ where
               (@*self).get(@*key) == Some(*v) && @^self == (@*self).set(@key, Some(^v)))]
     #[ensures(result == None ==> (@*self).get(@*key) == None && (@^self).get(@*key) == None)]
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
-        proof_assert! { forall<v:V> { self.has_mapping_model(@*key, v); true } }
+        proof_assert! { self.has_mapping_model(@*key); true }
 
         let mut tree = self;
 

@@ -6,6 +6,9 @@ extern_spec! {
     mod std {
         mod option {
             impl<T> Option<T> {
+                #[ensures(result == (*self == None))]
+                fn is_none(&self) -> bool;
+
                 #[requires(self != None)]
                 #[ensures(Some(result) == self)]
                 fn unwrap(self) -> T;
