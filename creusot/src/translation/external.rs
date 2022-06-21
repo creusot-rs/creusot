@@ -9,7 +9,7 @@ use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::thir::visit::Visitor;
 use rustc_middle::thir::{self, Expr, ExprKind, Thir};
 use rustc_middle::ty::subst::{InternalSubsts, Subst, SubstsRef};
-use rustc_middle::ty::{Predicate, TyCtxt, TyKind, WithOptConstParam};
+use rustc_middle::ty::{EarlyBinder, Predicate, TyCtxt, TyKind, WithOptConstParam};
 use rustc_span::Symbol;
 use why3::declaration::ValKind;
 use why3::declaration::{Decl, Module, ValKind::Val};
@@ -91,7 +91,7 @@ impl<'tcx> ExternSpec<'tcx> {
         tcx: TyCtxt<'tcx>,
         sub: SubstsRef<'tcx>,
     ) -> Vec<Predicate<'tcx>> {
-        self.additional_predicates.clone().subst(tcx, sub)
+        EarlyBinder(self.additional_predicates.clone()).subst(tcx, sub)
     }
 }
 

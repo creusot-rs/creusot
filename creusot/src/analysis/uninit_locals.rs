@@ -1,5 +1,5 @@
 // use crate::dataflow::{self, GenKill};
-use rustc_index::bit_set::BitSet;
+use rustc_index::bit_set::ChunkedBitSet;
 use rustc_middle::mir::visit::{PlaceContext, Visitor};
 use rustc_middle::mir::{self, BasicBlock, Local, Location};
 use rustc_mir_dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis};
@@ -7,13 +7,13 @@ use rustc_mir_dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis};
 pub struct MaybeUninitializedLocals;
 
 impl<'tcx> AnalysisDomain<'tcx> for MaybeUninitializedLocals {
-    type Domain = BitSet<Local>;
+    type Domain = ChunkedBitSet<Local>;
 
     const NAME: &'static str = "maybe_uninit_locals";
 
     fn bottom_value(&self, body: &mir::Body<'tcx>) -> Self::Domain {
         // bottom = init
-        BitSet::new_empty(body.local_decls.len())
+        ChunkedBitSet::new_empty(body.local_decls.len())
     }
 
     fn initialize_start_block(&self, body: &mir::Body<'tcx>, entry_set: &mut Self::Domain) {

@@ -60,8 +60,8 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
             Abort => self.emit_terminator(MlT::Absurd),
             Return => self.emit_terminator(MlT::Return),
             Unreachable => self.emit_terminator(MlT::Absurd),
-            Call { func, args, destination, .. } => {
-                if destination.is_none() {
+            Call { func, args, destination, target, .. } => {
+                if target.is_none() {
                     // If we have no target block after the call, then we cannot move past it.
                     self.emit_terminator(MlT::Absurd);
                     return;
@@ -73,7 +73,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     let GenericArgKind::Type(ty) = param.unpack() &&
                     let Some(def_id) = is_ghost_closure(self.tcx, ty) {
                     let assertion = self.assertions.remove(&def_id).unwrap();
-                    let (loc, bb) = destination.unwrap();
+                    let (loc, bb) = (destination, target.unwrap());
 
                     self.emit_assignment(&loc, Exp::Ghost(Box::new(assertion)));
                     self.emit_terminator(MlT::Goto(BlockId(bb.into())));
@@ -120,7 +120,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     self.ctx.attach_span(span, exp)
                 };
 
-                let (loc, bb) = destination.unwrap();
+                let (loc, bb) = (destination, target.unwrap());
                 self.emit_assignment(&loc, call_exp);
                 self.emit_terminator(MlT::Goto(BlockId(bb.into())));
             }
@@ -272,7 +272,7 @@ pub fn make_switch<'tcx>(
     targets: &SwitchTargets,
     discr: Exp,
 ) -> MlT {
-    use rustc_middle::ty::TyKind::*;
+    use rustc_type_ir::sty::TyKind::*;
     use Pattern::*;
     match switch_ty.kind() {
         Adt(def, _) => {

@@ -4,8 +4,8 @@ use rustc_ast::ast::{MacArgs, MacArgsEq};
 use rustc_ast::{AttrItem, AttrKind, Attribute};
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::subst::{InternalSubsts, SubstsRef};
-use rustc_middle::ty::{self, Ty, TyKind, VariantDef};
-use rustc_middle::ty::{DefIdTree, ReErased, TyCtxt};
+use rustc_middle::ty::{self, Ty, TyKind, VariantDef, Subst};
+use rustc_middle::ty::{DefIdTree, ReErased, TyCtxt, EarlyBinder};
 use rustc_span::Symbol;
 use std::collections::HashMap;
 use std::iter;
@@ -363,7 +363,6 @@ pub fn signature_of<'tcx>(
 
     let span = ctx.tcx.def_span(def_id);
 
-    use rustc_middle::ty::subst::Subst;
     let mut args: Vec<_> = names.with_public_clones(|names| {
         inputs
             .enumerate()
@@ -392,7 +391,7 @@ pub fn signature_of<'tcx>(
     };
 
     let retty = names.with_public_clones(|names| {
-        translation::ty::translate_ty(ctx, names, span, output.subst(ctx.tcx, subst))
+        translation::ty::translate_ty(ctx, names, span, EarlyBinder(output).subst(ctx.tcx, subst))
     });
     Signature { name, attrs, retty: Some(retty), args, contract }
 }

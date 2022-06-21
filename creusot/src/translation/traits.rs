@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{
-    subst::{Subst, SubstsRef},
+    subst::SubstsRef,
     AssocItemContainer::*,
-    ParamEnv, TraitRef, TyCtxt,
+    ParamEnv, TraitRef, TyCtxt, EarlyBinder, Subst,
 };
 use rustc_trait_selection::traits::ImplSource;
 
@@ -155,7 +155,7 @@ fn logic_refinement<'tcx>(
     // Get the contract of the trait version
     let trait_contract = names.with_public_clones(|names| {
         let pre_contract = crate::specification::contract_of(ctx, trait_item_id);
-        pre_contract.subst(ctx.tcx, refn_subst).to_exp(ctx, names, impl_item_id)
+        EarlyBinder(pre_contract).subst(ctx.tcx, refn_subst).to_exp(ctx, names, impl_item_id)
     });
 
     let impl_contract = names.with_public_clones(|names| {

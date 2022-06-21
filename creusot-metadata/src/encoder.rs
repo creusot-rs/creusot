@@ -26,6 +26,10 @@ impl<'tcx> MetadataEncoder<'tcx> {
             interpret_allocs: Default::default(),
         }
     }
+
+    pub fn finish(self) -> Vec<u8> {
+        self.opaque.finish()
+    }
 }
 
 macro_rules! encoder_methods {

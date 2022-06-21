@@ -9,7 +9,7 @@ use crate::{
 };
 use rustc_borrowck::borrow_set::BorrowSet;
 use rustc_hir::def_id::DefId;
-use rustc_index::bit_set::BitSet;
+use rustc_index::bit_set::{BitSet, ChunkedBitSet};
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::ty::{
     subst::{GenericArg, SubstsRef},
@@ -364,7 +364,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             let dying = self.resolver.locals_resolved_between_blocks(*pred, bb);
 
             // If no deaths occured in block transition then skip entirely
-            if dying.is_empty() {
+            if dying.count() == 0 {
                 continue;
             };
 
@@ -398,8 +398,8 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         self.freeze_locals(dying);
     }
 
-    fn freeze_locals(&mut self, mut dying: BitSet<Local>) {
-        dying.subtract(&self.erased_locals);
+    fn freeze_locals(&mut self, mut dying: ChunkedBitSet<Local>) {
+        dying.subtract(&self.erased_locals.to_hybrid());
         let param_env = self.param_env();
 
         for local in dying.iter() {

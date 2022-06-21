@@ -16,31 +16,20 @@ pub struct CreusotItems {
 }
 
 pub fn local_creusot_items(tcx: TyCtxt) -> CreusotItems {
-    let mut visitor = CreusotItemCollector { tcx, creusot_items: Default::default() };
 
-    tcx.hir().walk_attributes(&mut visitor);
+    let mut items : CreusotItems = Default::default();
+    // let mut visitor = CreusotItemCollector { tcx, creusot_items: Default::default() };
+    // tcx.hir().walk_attributes(&mut visitor);
 
-    visitor.creusot_items
-}
+    for owner in tcx.hir().body_owners() {
+        for attr in tcx.item_attrs(owner) {
+            if util::is_attr(attr, "item") {
+                let def_id = owner.to_def_id();
 
-struct CreusotItemCollector<'tcx> {
-    tcx: TyCtxt<'tcx>,
-    creusot_items: CreusotItems,
-}
-
-impl<'tcx> rustc_hir::intravisit::Visitor<'tcx> for CreusotItemCollector<'tcx> {
-    type Map = Map<'tcx>;
-    type NestedFilter = OnlyBodies;
-
-    fn nested_visit_map(&mut self) -> Map<'tcx> {
-        self.tcx.hir()
-    }
-
-    fn visit_attribute(&mut self, id: HirId, attr: &Attribute) {
-        if util::is_attr(attr, "item") {
-            let def_id = self.tcx.hir().local_def_id(id).to_def_id();
-
-            self.creusot_items.symbol_to_id.insert(attr.value_str().unwrap(), def_id);
+                items.symbol_to_id.insert(attr.value_str().unwrap(), def_id);
+            }
         }
     }
+
+    items
 }

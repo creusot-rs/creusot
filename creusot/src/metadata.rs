@@ -229,9 +229,9 @@ fn dump_binary_metadata<'tcx>(
     dep_info: BinaryMetadata<'tcx>,
 ) -> Result<(), std::io::Error> {
     let mut encoder = MetadataEncoder::new(tcx);
-    dep_info.encode(&mut encoder).unwrap();
+    dep_info.encode(&mut encoder);
 
-    File::create(path).and_then(|mut file| file.write(&encoder.into_inner())).map_err(|err| {
+    File::create(path).and_then(|mut file| file.write(&encoder.finish())).map_err(|err| {
         warn!("could not encode metadata for crate `{:?}`, error: {:?}", "LOCAL_CRATE", err);
         err
     })?;
