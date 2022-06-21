@@ -101,8 +101,8 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
     span: Span,
     c: C,
 ) -> Exp {
-    use rustc_type_ir::sty::TyKind::{Bool, Int, Uint};
     use rustc_middle::ty::{IntTy::*, UintTy::*};
+    use rustc_type_ir::sty::TyKind::{Bool, Int, Uint};
     let why3_ty = ty::translate_ty(ctx, names, span, ty);
 
     match ty.kind() {

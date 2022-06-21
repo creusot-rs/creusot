@@ -2,9 +2,7 @@ use std::collections::HashMap;
 
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{
-    subst::SubstsRef,
-    AssocItemContainer::*,
-    ParamEnv, TraitRef, TyCtxt, EarlyBinder, Subst,
+    subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, Subst, TraitRef, TyCtxt,
 };
 use rustc_trait_selection::traits::ImplSource;
 

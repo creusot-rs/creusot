@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::analysis::uninit_locals::MaybeUninitializedLocals;
 use rustc_borrowck::borrow_set::{BorrowSet, TwoPhaseActivation};
-use rustc_index::bit_set::{ChunkedBitSet, BitSet};
+use rustc_index::bit_set::BitSet;
 use rustc_middle::{
     mir::{BasicBlock, Body, Local, Location},
     ty::TyCtxt,
@@ -85,7 +85,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         bits
     }
 
-    pub fn locals_resolved_at_loc(&mut self, loc: Location) -> ChunkedBitSet<Local> {
+    pub fn locals_resolved_at_loc(&mut self, loc: Location) -> BitSet<Local> {
         self.locals_resolved_between(
             ExtendedLocation::Start(loc),
             ExtendedLocation::Mid(loc),
@@ -98,7 +98,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         &mut self,
         from: BasicBlock,
         to: BasicBlock,
-    ) -> ChunkedBitSet<Local> {
+    ) -> BitSet<Local> {
         let term = self.body.terminator_loc(from);
         let start = to.start_location();
 
@@ -116,9 +116,10 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         end: ExtendedLocation,
         two_phase_start: Location,
         two_phase_end: Location,
-    ) -> ChunkedBitSet<Local> {
+    ) -> BitSet<Local> {
         start.seek_to(&mut self.local_live);
-        let mut live_at_start = self.local_live.get().clone();
+        let mut live_at_start: BitSet<_> = BitSet::new_empty(self.local_live.get().domain_size());
+        live_at_start.union(self.local_live.get());
         if start.is_entry_loc() {
             // Count arguments that were never live as live here
             live_at_start.union(&self.never_live.to_hybrid());
@@ -127,7 +128,8 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         live_at_start.union(&self.unactivated_borrows(two_phase_start).to_hybrid());
 
         end.seek_to(&mut self.local_live);
-        let mut live_at_end = self.local_live.get().clone();
+        let mut live_at_end: BitSet<_> = BitSet::new_empty(self.local_live.get().domain_size());
+        live_at_end.union(self.local_live.get());
         live_at_end.union(&self.unactivated_borrows(two_phase_end).to_hybrid());
 
         start.seek_to(&mut self.local_init);
@@ -137,10 +139,13 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         let init_at_end = self.local_init.get().clone();
 
         start.seek_to(&mut self.local_uninit);
-        let uninit_at_start = self.local_uninit.get().clone();
+        let mut uninit_at_start: BitSet<_> =
+            BitSet::new_empty(self.local_uninit.get().domain_size());
+        uninit_at_start.union(self.local_uninit.get());
 
         end.seek_to(&mut self.local_uninit);
-        let uninit_at_end = self.local_uninit.get().clone();
+        let mut uninit_at_end: BitSet<_> = BitSet::new_empty(self.local_uninit.get().domain_size());
+        uninit_at_end.union(self.local_uninit.get());
 
         trace!("location: {:?}-{:?}", start, end);
         trace!("live_at_start: {:?}", live_at_start);
@@ -154,7 +159,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         def_init_at_start.subtract(&uninit_at_start);
         trace!("def_init_at_start: {:?}", def_init_at_start);
 
-        let mut def_init_at_end = init_at_end.clone();
+        let mut def_init_at_end: BitSet<_> = init_at_end.clone();
         def_init_at_end.subtract(&uninit_at_end);
         trace!("def_init_at_end: {:?}", def_init_at_end);
         // Locals that were just now initialized

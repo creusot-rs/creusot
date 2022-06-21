@@ -99,10 +99,7 @@ impl<'tcx> TyEncoder for MetadataEncoder<'tcx> {
         &mut self.predicate_shorthands
     }
 
-    fn encode_alloc_id(
-        &mut self,
-        alloc_id: &rustc_middle::mir::interpret::AllocId,
-    ) -> () {
+    fn encode_alloc_id(&mut self, alloc_id: &rustc_middle::mir::interpret::AllocId) -> () {
         let (index, _) = self.interpret_allocs.insert_full(*alloc_id);
 
         index.encode(self)

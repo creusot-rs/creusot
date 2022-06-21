@@ -5,9 +5,9 @@ use petgraph::graphmap::DiGraphMap;
 use petgraph::EdgeDirection::Incoming;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{
-    self, EarlyBinder,
+    self,
     subst::{InternalSubsts, Subst, SubstsRef},
-    TyCtxt, TypeFoldable, TypeVisitor, TypeSuperFoldable,
+    EarlyBinder, TyCtxt, TypeFoldable, TypeSuperFoldable, TypeVisitor,
 };
 use rustc_middle::ty::{DefIdTree, ProjectionTy, Ty, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};

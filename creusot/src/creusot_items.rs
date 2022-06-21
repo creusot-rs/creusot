@@ -1,7 +1,3 @@
-use rustc_ast::ast::Attribute;
-use rustc_hir::hir_id::HirId;
-use rustc_middle::hir::map::Map;
-use rustc_middle::hir::nested_filter::OnlyBodies; // use rustc_hir::intravisit::NestedVisitorMap;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::{def_id::DefId, symbol::Symbol};
 use std::collections::HashMap;
@@ -16,13 +12,10 @@ pub struct CreusotItems {
 }
 
 pub fn local_creusot_items(tcx: TyCtxt) -> CreusotItems {
-
-    let mut items : CreusotItems = Default::default();
-    // let mut visitor = CreusotItemCollector { tcx, creusot_items: Default::default() };
-    // tcx.hir().walk_attributes(&mut visitor);
+    let mut items: CreusotItems = Default::default();
 
     for owner in tcx.hir().body_owners() {
-        for attr in tcx.item_attrs(owner) {
+        for attr in tcx.get_attrs_unchecked(owner.to_def_id()) {
             if util::is_attr(attr, "item") {
                 let def_id = owner.to_def_id();
 
