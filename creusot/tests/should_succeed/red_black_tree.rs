@@ -665,17 +665,16 @@ where
                 r = node.left.delete_rec(key)
             },
             mut ord => {
-                // R
                 if node.left.is_red() {
                     node.rotate_right();
                     ord = Greater
-                } else if node.right.node.is_none() {
-                    if let Greater = ord { return None }
-                    let node = std::mem::take(&mut self.node).unwrap();
-                    return Some((node.key, node.val))
-                }
-                if !node.right.is_red() && !node.right.node.as_ref().unwrap().left.is_red() {
-                    if !node.move_red_right() {
+                } else {
+                    if node.right.node.is_none() {
+                        if let Greater = ord { return None }
+                        let node = std::mem::take(&mut self.node).unwrap();
+                        return Some((node.key, node.val))
+                    }
+                    if !node.right.node.as_ref().unwrap().left.is_red() && !node.move_red_right() {
                         ord = Greater
                     }
                 }
@@ -712,7 +711,6 @@ where
 
         proof_assert! { forall<h: Int> old_self.has_height(h) ==>
                         (*self).color() == Black || (*self).has_height(h-1) }
-        proof_assert! { old_self.same_mappings(*self) }
         let r = self.delete_rec(key);
         proof_assert! { @*self == (@old_self).set(@*key, None) }
         if self.is_red() { self.node.as_mut().unwrap().color = Black; }
