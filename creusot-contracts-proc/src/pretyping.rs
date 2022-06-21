@@ -32,27 +32,30 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
     match term {
         RT::Array(_) => Err(EncodeError::Unsupported(term.span(), "Array".into())),
         RT::Binary(TermBinary { left, op, right }) => {
-            let left = match &**left {
-                RT::Paren(TermParen { expr, .. }) => &expr,
-                _ => &*left,
-            };
-            let right = match &**right {
-                RT::Paren(TermParen { expr, .. }) => &expr,
-                _ => &*right,
-            };
+            let mut left = left;
+            let mut right = right;
+
+            use syn::BinOp::*;
+            if matches!(op, Eq(_) | Ne(_) | Ge(_) | Le(_) | Gt(_) | Lt(_)) {
+                left = match &**left {
+                    RT::Paren(TermParen { expr, .. }) => &expr,
+                    _ => &*left,
+                };
+                right = match &**right {
+                    RT::Paren(TermParen { expr, .. }) => &expr,
+                    _ => &*right,
+                };
+            }
+
             let left = encode_term(left)?;
             let right = encode_term(right)?;
             match op {
-                syn::BinOp::Eq(_) => {
-                    Ok(quote_spanned! {sp=> creusot_contracts::stubs::equal(#left, #right) })
-                }
-                syn::BinOp::Ne(_) => {
-                    Ok(quote_spanned! {sp=> creusot_contracts::stubs::neq(#left, #right) })
-                }
-                syn::BinOp::Lt(_) => Ok(quote_spanned! {sp=> (#left).lt_log(#right) }),
-                syn::BinOp::Le(_) => Ok(quote_spanned! {sp=> (#left).le_log(#right) }),
-                syn::BinOp::Ge(_) => Ok(quote_spanned! {sp=> (#left).ge_log(#right) }),
-                syn::BinOp::Gt(_) => Ok(quote_spanned! {sp=> (#left).gt_log(#right) }),
+                Eq(_) => Ok(quote_spanned! {sp=> creusot_contracts::stubs::equal(#left, #right) }),
+                Ne(_) => Ok(quote_spanned! {sp=> creusot_contracts::stubs::neq(#left, #right) }),
+                Lt(_) => Ok(quote_spanned! {sp=> (#left).lt_log(#right) }),
+                Le(_) => Ok(quote_spanned! {sp=> (#left).le_log(#right) }),
+                Ge(_) => Ok(quote_spanned! {sp=> (#left).ge_log(#right) }),
+                Gt(_) => Ok(quote_spanned! {sp=> (#left).gt_log(#right) }),
                 _ => Ok(quote_spanned! {sp=> #left #op #right }),
             }
         }
