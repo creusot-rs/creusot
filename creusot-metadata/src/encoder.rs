@@ -10,7 +10,7 @@ use rustc_middle::ty::TyCtxt;
 
 pub struct MetadataEncoder<'tcx> {
     tcx: TyCtxt<'tcx>,
-    opaque: opaque::Encoder,
+    opaque: opaque::MemEncoder,
     type_shorthands: FxHashMap<Ty<'tcx>, usize>,
     predicate_shorthands: FxHashMap<PredicateKind<'tcx>, usize>,
     interpret_allocs: FxIndexSet<AllocId>,
@@ -20,33 +20,22 @@ impl<'tcx> MetadataEncoder<'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>) -> Self {
         MetadataEncoder {
             tcx,
-            opaque: opaque::Encoder::new(vec![]),
+            opaque: opaque::MemEncoder::new(),
             type_shorthands: Default::default(),
             predicate_shorthands: Default::default(),
             interpret_allocs: Default::default(),
         }
     }
-
-    pub fn into_inner(self) -> Vec<u8> {
-        self.opaque.into_inner()
-    }
 }
 
 macro_rules! encoder_methods {
     ($($name:ident($ty:ty);)*) => {
-        $(fn $name(&mut self, value: $ty) -> Result<(), Self::Error> {
+        $(fn $name(&mut self, value: $ty) -> () {
             self.opaque.$name(value)
         })*
     }
 }
 impl<'tcx> Encoder for MetadataEncoder<'tcx> {
-    type Error = <opaque::Encoder as Encoder>::Error;
-
-    #[inline]
-    fn emit_unit(&mut self) -> Result<(), Self::Error> {
-        Ok(())
-    }
-
     encoder_methods! {
         emit_usize(usize);
         emit_u128(u128);
@@ -72,24 +61,25 @@ impl<'tcx> Encoder for MetadataEncoder<'tcx> {
 }
 
 impl<'a, 'tcx> Encodable<MetadataEncoder<'tcx>> for DefId {
-    fn encode(&self, s: &mut MetadataEncoder<'tcx>) -> opaque::EncodeResult {
+    fn encode(&self, s: &mut MetadataEncoder<'tcx>) -> () {
         s.tcx.def_path_hash(*self).encode(s)
     }
 }
 
 impl<'a, 'tcx> Encodable<MetadataEncoder<'tcx>> for DefIndex {
-    fn encode(&self, _: &mut MetadataEncoder<'tcx>) -> opaque::EncodeResult {
+    fn encode(&self, _: &mut MetadataEncoder<'tcx>) -> () {
         panic!("encoding `DefIndex` without context");
     }
 }
 
 impl<'tcx> Encodable<MetadataEncoder<'tcx>> for CrateNum {
-    fn encode(&self, s: &mut MetadataEncoder<'tcx>) -> opaque::EncodeResult {
+    fn encode(&self, s: &mut MetadataEncoder<'tcx>) -> () {
         s.tcx.stable_crate_id(*self).encode(s)
     }
 }
 
-impl<'tcx> TyEncoder<'tcx> for MetadataEncoder<'tcx> {
+impl<'tcx> TyEncoder for MetadataEncoder<'tcx> {
+    type I = TyCtxt<'tcx>;
     // What the fuck does this mean?
     const CLEAR_CROSS_CRATE: bool = true;
 
@@ -108,7 +98,7 @@ impl<'tcx> TyEncoder<'tcx> for MetadataEncoder<'tcx> {
     fn encode_alloc_id(
         &mut self,
         alloc_id: &rustc_middle::mir::interpret::AllocId,
-    ) -> Result<(), Self::Error> {
+    ) -> () {
         let (index, _) = self.interpret_allocs.insert_full(*alloc_id);
 
         index.encode(self)
