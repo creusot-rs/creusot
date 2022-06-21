@@ -513,16 +513,16 @@ where
             // R(B(B, B), B(B, R))
             self.right.node.as_mut().unwrap().rotate_left();
             // R(B(B, B), B(R, B))
-            return false
+            return false;
         }
         // B(R, R)
-        return true
+        return true;
     }
 }
 
 impl<K: Model + Ord, V> Tree<K, V>
 where
-    K::ModelTy: OrdLogic
+    K::ModelTy: OrdLogic,
 {
     #[ensures(@result == Mapping::cst(None))]
     #[ensures(result.invariant())]
@@ -597,7 +597,7 @@ where
         let node = self.node.as_mut().unwrap();
         if let None = node.left.node {
             let node = std::mem::take(&mut self.node).unwrap();
-            return (node.key, node.val)
+            return (node.key, node.val);
         }
         if !node.left.is_red() && !node.left.node.as_ref().unwrap().left.is_red() {
             node.move_red_left();
@@ -620,18 +620,21 @@ where
         let old_self = ghost! { self };
         match &mut self.node {
             None => return None,
-            Some(node) =>
+            Some(node) => {
                 if !node.left.is_red() && !node.right.is_red() {
                     node.color = Red;
                 }
+            }
         }
         proof_assert! { forall<h: Int> old_self.has_height(h) ==>
-                        (*self).color() == Black || (*self).has_height(h-1) }
+        (*self).color() == Black || (*self).has_height(h-1) }
         proof_assert! { old_self.same_mappings(*self) }
         let r = self.delete_min_rec();
-        if self.is_red() { self.node.as_mut().unwrap().color = Black; }
+        if self.is_red() {
+            self.node.as_mut().unwrap().color = Black;
+        }
         proof_assert! { forall<h: Int> old_self.has_height(h) ==>
-                        (*self).has_height(h) || (*self).has_height(h-1) }
+        (*self).has_height(h) || (*self).has_height(h-1) }
         proof_assert! { (*self).has_mapping_model(@r.0 /* dummy */); true }
         Some(r)
     }
@@ -658,21 +661,25 @@ where
         let old_node = ghost! { *node };
         match key.cmp(&node.key) {
             Less => {
-                if node.left.node.is_none() { return None }
+                if node.left.node.is_none() {
+                    return None;
+                }
                 if !node.left.is_red() && !node.left.node.as_ref().unwrap().left.is_red() {
                     node.move_red_left();
                 }
                 r = node.left.delete_rec(key)
-            },
+            }
             mut ord => {
                 if node.left.is_red() {
                     node.rotate_right();
                     ord = Greater
                 } else {
                     if node.right.node.is_none() {
-                        if let Greater = ord { return None }
+                        if let Greater = ord {
+                            return None;
+                        }
                         let node = std::mem::take(&mut self.node).unwrap();
-                        return Some((node.key, node.val))
+                        return Some((node.key, node.val));
                     }
                     if !node.right.node.as_ref().unwrap().left.is_red() && !node.move_red_right() {
                         ord = Greater
@@ -703,19 +710,22 @@ where
         let old_self = ghost! { self };
         match &mut self.node {
             None => return None,
-            Some(node) =>
+            Some(node) => {
                 if !node.left.is_red() && !node.right.is_red() {
                     node.color = Red;
                 }
+            }
         }
 
         proof_assert! { forall<h: Int> old_self.has_height(h) ==>
-                        (*self).color() == Black || (*self).has_height(h-1) }
+        (*self).color() == Black || (*self).has_height(h-1) }
         let r = self.delete_rec(key);
         proof_assert! { @*self == (@old_self).set(@*key, None) }
-        if self.is_red() { self.node.as_mut().unwrap().color = Black; }
+        if self.is_red() {
+            self.node.as_mut().unwrap().color = Black;
+        }
         proof_assert! { forall<h: Int> old_self.has_height(h) ==>
-                        (*self).has_height(h) || (*self).has_height(h-1) }
+        (*self).has_height(h) || (*self).has_height(h-1) }
         ghost! { match r { None => (), Some(_) => () }};
         proof_assert! { (*self).has_mapping_model(@*key /* dummy */); true }
         r
@@ -734,10 +744,10 @@ where
             match key.cmp(&node.key) {
                 Less => tree = &node.left,
                 Equal => return Some(&node.val),
-                Greater => tree = &node.right
+                Greater => tree = &node.right,
             }
         }
-        return None
+        return None;
     }
 
     #[requires((*self).invariant())]
@@ -767,9 +777,9 @@ where
             match key.cmp(&node.key) {
                 Less => tree = &mut node.left,
                 Equal => return Some(&mut node.val),
-                Greater => tree = &mut node.right
+                Greater => tree = &mut node.right,
             }
         }
-        return None
+        return None;
     }
 }
