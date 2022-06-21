@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::translation::function::real_locals;
 use crate::util::closure_owner;
@@ -7,6 +7,7 @@ use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable};
 use rustc_middle::thir::{self, ExprKind, Thir};
 use rustc_middle::ty::subst::{InternalSubsts, SubstsRef};
 use rustc_middle::ty::{EarlyBinder, Subst};
+use rustc_span::Symbol;
 use why3::declaration::Contract;
 use why3::exp::Exp;
 use why3::Ident;
@@ -109,44 +110,81 @@ impl ContractClauses {
     }
 }
 
+use rustc_middle::mir::{Local, SourceScope, OUTERMOST_SOURCE_SCOPE};
+
+struct ScopeTree(HashMap<SourceScope, (HashSet<(Symbol, Local)>, Option<SourceScope>)>);
+
+impl ScopeTree {
+    fn build<'tcx>(body: &Body<'tcx>) -> Self {
+        use rustc_middle::mir::VarDebugInfoContents::Place;
+        let mut scope_tree: HashMap<SourceScope, (HashSet<_>, Option<_>)> = Default::default();
+
+        for var_info in &body.var_debug_info {
+            // All variables in the DebugVarInfo should be user variables and thus be just locals
+            let loc = match var_info.value {
+                Place(p) => p.as_local().unwrap(),
+                _ => panic!(),
+            };
+            let info = var_info.source_info;
+
+            let scope = info.scope;
+            let scope_data = &body.source_scopes[scope];
+
+            let entry = scope_tree.entry(scope).or_default();
+
+            let name = var_info.name;
+            entry.0.insert((name, loc));
+
+            if let Some(parent) = scope_data.parent_scope {
+                entry.1 = Some(parent);
+            } else {
+                // Only the argument scope has no parent, because it's the root.
+                assert_eq!(scope, OUTERMOST_SOURCE_SCOPE);
+            }
+        }
+
+        for (scope, scope_data) in body.source_scopes.iter_enumerated() {
+            if let Some(parent) = scope_data.parent_scope {
+                scope_tree.entry(scope).or_default().1 = Some(parent);
+                scope_tree.entry(parent).or_default();
+            } else {
+                // Only the argument scope has no parent, because it's the root.
+                assert_eq!(scope, OUTERMOST_SOURCE_SCOPE);
+            }
+        }
+        ScopeTree(scope_tree)
+    }
+
+    fn visible_locals(&self, scope: SourceScope) -> HashMap<Symbol, Local> {
+        let mut locals = HashMap::new();
+        let mut to_visit = Some(scope);
+
+        while let Some(s) = to_visit.take() {
+            self.0[&s].0.iter().for_each(|(id, loc)| {
+                locals.entry(*id).or_insert(*loc);
+            });
+            to_visit = self.0[&s].1.clone();
+        }
+
+        locals
+    }
+}
+
 // Turn a typing context into a substition.
 pub fn inv_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
     loc: Location,
 ) -> HashMap<why3::Ident, Exp> {
-    use rustc_middle::mir::VarDebugInfoContents::Place;
     let local_map = real_locals(tcx, body);
     let info = body.source_info(loc);
     let mut args = HashMap::new();
-    let mut name_to_scope = HashMap::new();
 
-    for var_info in &body.var_debug_info {
-        // All variables in the DebugVarInfo should be user variables and thus be just locals
-        let loc = match var_info.value {
-            Place(p) => p.as_local().unwrap(),
-            _ => panic!(),
-        };
-        let source_info = var_info.source_info;
-        // let source_info = body.local_decls[loc].source_info;
-        let scope_info = &body.source_scopes[source_info.scope];
+    let tree = ScopeTree::build(body);
 
-        // Skip all variables that straight up do not include the current location in their span
-        if !scope_info.span.contains(info.span) {
-            continue;
-        }
-
-        if let Some(scope) = name_to_scope.get(&var_info.name) &&
-            // If we already found a mapping for this local with a tighter scope, lets skip
-            scope_info.span.contains(body.source_scopes[*scope].span) {
-            continue
-        }
-
-        name_to_scope.insert(var_info.name, source_info.scope);
-
-        let loc = local_map[&loc];
-        let source_name = var_info.name.to_string();
-        args.insert(source_name.into(), Exp::pure_var(LocalIdent::dbg(loc, var_info).ident()));
+    for (k, v) in tree.visible_locals(info.scope) {
+        let loc = local_map[&v];
+        args.insert(k.to_string().into(), Exp::pure_var(LocalIdent::dbg_raw(loc, k).ident()));
     }
 
     return args;

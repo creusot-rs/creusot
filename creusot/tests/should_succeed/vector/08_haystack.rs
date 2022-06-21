@@ -15,9 +15,9 @@ fn match_at(needle: &Vec<u8>, haystack: &Vec<u8>, pos: Int, len: Int) -> bool {
 #[requires((@needle).len() >= 1 && (@needle).len() <= (@haystack).len())]
 #[ensures(@result == (@haystack).len() || @result < (@haystack).len() - (@needle).len() + 1)]
 #[ensures(@result < (@haystack).len() ==>
-            (match_at(needle, haystack, @result, (@needle).len())
-             && (forall <i: Int> 0 <= i && i < @result ==> ! match_at(needle, haystack, i, (@needle).len()))))]
-#[ensures(@result == (@haystack).len() ==> (forall <i: Int> 0 <= i && i < (@haystack).len() ==> ! match_at(needle, haystack, i, (@needle).len())))]
+            match_at(needle, haystack, @result, (@needle).len())
+             && (forall <i: Int> 0 <= i && i < @result ==> ! match_at(needle, haystack, i, (@needle).len())))]
+#[ensures(@result == (@haystack).len() ==> forall <i: Int> 0 <= i && i < (@haystack).len() ==> ! match_at(needle, haystack, i, (@needle).len()))]
 pub fn search(needle: &Vec<u8>, haystack: &Vec<u8>) -> usize {
     let mut i: usize = 0;
     #[invariant(no_match,forall<k: Int> 0 <= k && k < @i ==> ! match_at(needle, haystack, k, (@needle).len()))]

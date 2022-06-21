@@ -49,6 +49,13 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     }
 }
 
+impl<'a, T> IterMut<'a, T> {
+    #[ensures(result == self)]
+    fn into_iter(self) -> Self {
+        self
+    }
+}
+
 #[trusted]
 #[ensures(@*result.inner == @*v)]
 #[ensures(@^result.inner == @^v)]
@@ -61,20 +68,8 @@ fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
 #[ensures((@^v).len() == (@v).len())]
 #[ensures(forall<i : _> 0 <= i && i < (@v).len() ==> @(@^v)[i] == 0)]
 pub fn all_zero(v: &mut Vec<usize>) {
-    let mut it = iter_mut(v);
-    let it_old = ghost! { it };
-
-    let mut produced = ghost! { Seq::EMPTY };
-
-    #[invariant(structural, it_old.produces(produced.inner(), it))]
-    #[invariant(user, forall<i : Int> 0 <= i && i < produced.len() ==> @^ produced[i] == 0)]
-    loop {
-        match it.next() {
-            Some(x) => {
-                produced = ghost! { produced.inner().push(x) };
-                *x = 0;
-            }
-            None => break,
-        }
+    #[invariant(user, forall<i : Int> 0 <= i && i < produced.len() ==> @^produced[i] == 0)]
+    for x in iter_mut(v) {
+        *x = 0;
     }
 }

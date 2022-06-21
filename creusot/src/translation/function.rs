@@ -434,6 +434,10 @@ impl LocalIdent {
         LocalIdent(loc, None)
     }
 
+    pub fn dbg_raw(loc: Local, name: Symbol) -> Self {
+        LocalIdent(loc, Some(name))
+    }
+
     pub fn dbg(loc: Local, dbg: &VarDebugInfo) -> Self {
         LocalIdent(loc, Some(dbg.name))
     }
