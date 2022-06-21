@@ -5,8 +5,7 @@ use crate::translation::ty::variant_accessor_name;
 use crate::util::constructor_qname;
 use crate::{ctx::*, util};
 use rustc_middle::ty;
-use rustc_middle::ty::ParamEnv;
-use rustc_middle::ty::TyKind;
+use rustc_middle::ty::{EarlyBinder, ParamEnv, Subst, TyKind};
 use why3::exp::{BinOp, Constant, Exp, Pattern as Pat, Purity};
 use why3::QName;
 
@@ -84,7 +83,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                     let uneval = ty::Unevaluated::new(ty::WithOptConstParam::unknown(id), subst);
 
                     let constant = self.ctx.tcx.mk_const(ty::ConstS {
-                        val: ty::ConstKind::Unevaluated(uneval),
+                        kind: ty::ConstKind::Unevaluated(uneval),
                         ty: term.ty,
                     });
 
@@ -303,10 +302,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
 }
 
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{
-    subst::{Subst, SubstsRef},
-    TyCtxt,
-};
+use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 
 fn binop_to_binop(op: typing::BinOp) -> why3::exp::BinOp {
     match op {
@@ -348,7 +344,7 @@ pub(super) fn mk_binders(func: Exp, args: Vec<Exp>) -> Exp {
 fn is_identity_from<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, subst: SubstsRef<'tcx>) -> bool {
     if tcx.def_path_str(id) == "std::convert::From::from" && subst.len() == 1 {
         let out_ty = tcx.fn_sig(id).no_bound_vars().unwrap().output();
-        return subst[0].expect_ty() == out_ty.subst(tcx, subst);
+        return subst[0].expect_ty() == EarlyBinder(out_ty).subst(tcx, subst);
     }
     false
 }

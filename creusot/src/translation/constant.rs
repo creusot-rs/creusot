@@ -54,7 +54,7 @@ pub fn from_mir_constant_kind<'tcx>(
     }
 
     if ck.ty().peel_refs().is_str() {
-        if let Some(ConstValue::Slice { data, start, end }) = ck.try_val() {
+        if let Some(ConstValue::Slice { data, start, end }) = ck.try_to_value(ctx.tcx) {
             let start = Size::from_bytes(start);
             let size = Size::from_bytes(end);
             let bytes = data.inner().get_bytes(&ctx.tcx, AllocRange { start, size }).unwrap();
@@ -75,18 +75,18 @@ pub fn from_ty_const<'tcx>(
 ) -> Exp {
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
-    if let ConstKind::Unevaluated(u) = c.val() &&
+    if let ConstKind::Unevaluated(u) = c.kind() &&
        let Some(builtin_nm) = get_builtin(ctx.tcx, u.def.did) &&
        let Some(nm) = QName::from_string(builtin_nm.as_str()) {
             names.import_builtin_module(nm.clone().module_qname());
             return Exp::pure_qvar(nm.without_search_path());
     };
 
-    if let ConstKind::Unevaluated(Unevaluated { promoted: Some(p), .. }) = c.val() {
+    if let ConstKind::Unevaluated(Unevaluated { promoted: Some(p), .. }) = c.kind() {
         return Exp::impure_var(format!("promoted{:?}", p.as_usize()).into());
     }
 
-    if let ConstKind::Param(_) = c.val() {
+    if let ConstKind::Param(_) = c.kind() {
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
 
@@ -101,8 +101,8 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
     span: Span,
     c: C,
 ) -> Exp {
-    use rustc_middle::ty::TyKind::{Bool, Int, Uint};
     use rustc_middle::ty::{IntTy::*, UintTy::*};
+    use rustc_type_ir::sty::TyKind::{Bool, Int, Uint};
     let why3_ty = ty::translate_ty(ctx, names, span, ty);
 
     match ty.kind() {

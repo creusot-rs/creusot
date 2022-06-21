@@ -30,7 +30,7 @@ impl MetadataBlob {
 
 // This is only safe to decode the metadata of a single crate or the `ty_rcache` might confuse shorthands (see #360)
 pub struct MetadataDecoder<'a, 'tcx> {
-    opaque: opaque::Decoder<'a>,
+    opaque: opaque::MemDecoder<'a>,
     tcx: TyCtxt<'tcx>,
     ty_rcache: FxHashMap<usize, Ty<'tcx>>,
 }
@@ -38,7 +38,7 @@ pub struct MetadataDecoder<'a, 'tcx> {
 impl<'a, 'tcx> MetadataDecoder<'a, 'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, blob: &'a MetadataBlob) -> Self {
         MetadataDecoder {
-            opaque: opaque::Decoder::new(&blob.0, 0),
+            opaque: opaque::MemDecoder::new(&blob.0, 0),
             tcx,
             ty_rcache: Default::default(),
         }
@@ -80,11 +80,12 @@ impl<'a, 'tcx> Decodable<MetadataDecoder<'a, 'tcx>> for CrateNum {
 
 implement_ty_decoder!(MetadataDecoder<'a, 'tcx>);
 
-impl<'a, 'tcx> TyDecoder<'tcx> for MetadataDecoder<'a, 'tcx> {
+impl<'a, 'tcx> TyDecoder for MetadataDecoder<'a, 'tcx> {
     const CLEAR_CROSS_CRATE: bool = true;
 
-    #[inline]
-    fn tcx(&self) -> TyCtxt<'tcx> {
+    type I = TyCtxt<'tcx>;
+
+    fn interner(&self) -> Self::I {
         self.tcx
     }
 
@@ -115,7 +116,7 @@ impl<'a, 'tcx> TyDecoder<'tcx> for MetadataDecoder<'a, 'tcx> {
     where
         F: FnOnce(&mut Self) -> R,
     {
-        let new_opaque = opaque::Decoder::new(self.opaque.data, pos);
+        let new_opaque = opaque::MemDecoder::new(self.opaque.data, pos);
         let old_opaque = std::mem::replace(&mut self.opaque, new_opaque);
         let r = f(self);
         self.opaque = old_opaque;

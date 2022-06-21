@@ -82,14 +82,14 @@ pub enum TermKind<'tcx> {
 
 use rustc_middle::ty::fold::TypeFoldable;
 impl<'tcx> TypeFoldable<'tcx> for Literal {
-    fn try_super_fold_with<F: rustc_middle::ty::FallibleTypeFolder<'tcx>>(
+    fn try_fold_with<F: rustc_middle::ty::FallibleTypeFolder<'tcx>>(
         self,
         _: &mut F,
     ) -> Result<Self, F::Error> {
         Ok(self)
     }
 
-    fn super_visit_with<V: rustc_middle::ty::TypeVisitor<'tcx>>(
+    fn visit_with<V: rustc_middle::ty::TypeVisitor<'tcx>>(
         &self,
         _: &mut V,
     ) -> std::ops::ControlFlow<V::BreakTy> {
@@ -209,13 +209,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             ExprKind::VarRef { id } => {
                 let map = self.tcx.hir();
-                let name = map.name(id);
+                let name = map.name(id.0);
                 Ok(Term { ty, span, kind: TermKind::Var(name) })
             }
             // TODO: confirm this works
             ExprKind::UpvarRef { var_hir_id: id, .. } => {
                 let map = self.tcx.hir();
-                let name = map.name(id);
+                let name = map.name(id.0);
 
                 Ok(Term { ty, span, kind: TermKind::Var(name) })
             }
@@ -364,7 +364,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     },
                 })
             }
-            ExprKind::Field { lhs, name } => {
+            ExprKind::Field { lhs, name, .. } => {
                 let pat =
                     field_pattern(self.thir[lhs].ty, name).expect("expr_term: no term for field");
 
@@ -492,7 +492,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         "non-boolean constant patterns are unsupported",
                     ));
                 }
-                Ok(Pattern::Boolean(value.val().try_to_bool().unwrap()))
+                Ok(Pattern::Boolean(value.try_to_bool().unwrap()))
             }
             ref pk => todo!("lower_pattern: unsupported pattern kind {:?}", pk),
         }

@@ -7,7 +7,7 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{
     self,
     subst::{InternalSubsts, Subst, SubstsRef},
-    TyCtxt, TypeFoldable, TypeVisitor,
+    EarlyBinder, TyCtxt, TypeFoldable, TypeSuperFoldable, TypeVisitor,
 };
 use rustc_middle::ty::{DefIdTree, ProjectionTy, Ty, TyKind};
 use rustc_span::{Symbol, DUMMY_SP};
@@ -393,7 +393,7 @@ impl<'tcx> CloneMap<'tcx> {
             trace!("adding dependency {:?} {:?}", dep, info.public);
 
             let orig = dep;
-            let dep = self.resolve_dep(ctx, dep.subst(self.tcx, key.1));
+            let dep = self.resolve_dep(ctx, (dep.0, EarlyBinder(dep.1).subst(self.tcx, key.1)));
 
             if let DepNode::Dep((defid, subst)) = dep {
                 trace!("inserting dependency {:?}", dep);

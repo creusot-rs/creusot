@@ -217,9 +217,13 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     }
                 }
             }
-            Rvalue::Cast(CastKind::Pointer(_), _, _) => {
-                self.ctx.crash_and_error(si.span, "Pointer casts are currently unsupported")
-            }
+            Rvalue::Cast(
+                CastKind::Pointer(_)
+                | CastKind::PointerExposeAddress
+                | CastKind::PointerFromExposedAddress,
+                _,
+                _,
+            ) => self.ctx.crash_and_error(si.span, "Pointer casts are currently unsupported"),
             Rvalue::ShallowInitBox(_, _)
             | Rvalue::NullaryOp(_, _)
             | Rvalue::Repeat(_, _)

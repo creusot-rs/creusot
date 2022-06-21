@@ -364,7 +364,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             let dying = self.resolver.locals_resolved_between_blocks(*pred, bb);
 
             // If no deaths occured in block transition then skip entirely
-            if dying.is_empty() {
+            if dying.count() == 0 {
                 continue;
             };
 
@@ -399,7 +399,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     }
 
     fn freeze_locals(&mut self, mut dying: BitSet<Local>) {
-        dying.subtract(&self.erased_locals);
+        dying.subtract(&self.erased_locals.to_hybrid());
         let param_env = self.param_env();
 
         for local in dying.iter() {

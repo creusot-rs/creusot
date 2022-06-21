@@ -118,17 +118,19 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         two_phase_end: Location,
     ) -> BitSet<Local> {
         start.seek_to(&mut self.local_live);
-        let mut live_at_start = self.local_live.get().clone();
+        let mut live_at_start: BitSet<_> = BitSet::new_empty(self.local_live.get().domain_size());
+        live_at_start.union(self.local_live.get());
         if start.is_entry_loc() {
             // Count arguments that were never live as live here
-            live_at_start.union(&self.never_live);
+            live_at_start.union(&self.never_live.to_hybrid());
         }
 
-        live_at_start.union(&self.unactivated_borrows(two_phase_start));
+        live_at_start.union(&self.unactivated_borrows(two_phase_start).to_hybrid());
 
         end.seek_to(&mut self.local_live);
-        let mut live_at_end = self.local_live.get().clone();
-        live_at_end.union(&self.unactivated_borrows(two_phase_end));
+        let mut live_at_end: BitSet<_> = BitSet::new_empty(self.local_live.get().domain_size());
+        live_at_end.union(self.local_live.get());
+        live_at_end.union(&self.unactivated_borrows(two_phase_end).to_hybrid());
 
         start.seek_to(&mut self.local_init);
         let init_at_start = self.local_init.get().clone();
@@ -137,10 +139,13 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         let init_at_end = self.local_init.get().clone();
 
         start.seek_to(&mut self.local_uninit);
-        let uninit_at_start = self.local_uninit.get().clone();
+        let mut uninit_at_start: BitSet<_> =
+            BitSet::new_empty(self.local_uninit.get().domain_size());
+        uninit_at_start.union(self.local_uninit.get());
 
         end.seek_to(&mut self.local_uninit);
-        let uninit_at_end = self.local_uninit.get().clone();
+        let mut uninit_at_end: BitSet<_> = BitSet::new_empty(self.local_uninit.get().domain_size());
+        uninit_at_end.union(self.local_uninit.get());
 
         trace!("location: {:?}-{:?}", start, end);
         trace!("live_at_start: {:?}", live_at_start);
@@ -154,7 +159,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         def_init_at_start.subtract(&uninit_at_start);
         trace!("def_init_at_start: {:?}", def_init_at_start);
 
-        let mut def_init_at_end = init_at_end.clone();
+        let mut def_init_at_end: BitSet<_> = init_at_end.clone();
         def_init_at_end.subtract(&uninit_at_end);
         trace!("def_init_at_end: {:?}", def_init_at_end);
         // Locals that were just now initialized
@@ -181,18 +186,18 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         // And were initialized
         let mut init = def_init_at_start;
         init.intersect(&def_init_at_end);
-        dying.intersect(&init);
+        dying.intersect(&init.to_hybrid());
 
         // dying.subtract(&unactivated);
 
         let same_point = start.same_block(end);
         trace!("same_block: {:?}", same_point);
         // But if we created a new value or brought one back to life
-        if (!just_init.is_empty() && same_point) || !born.is_empty() {
+        if (!just_init.is_empty() && same_point) || !born.count() == 0 {
             // Exclude values that were moved
-            dying.intersect(&init_at_end);
+            dying.intersect(&init_at_end.to_hybrid());
             // And include the values that never made it past their creation
-            dying.union(&zombies);
+            dying.union(&zombies.to_hybrid());
         }
 
         trace!("dying: {:?}", dying);

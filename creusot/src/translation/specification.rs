@@ -5,7 +5,8 @@ use crate::util::closure_owner;
 use crate::{ctx::*, util};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable};
 use rustc_middle::thir::{self, ExprKind, Thir};
-use rustc_middle::ty::subst::{InternalSubsts, Subst, SubstsRef};
+use rustc_middle::ty::subst::{InternalSubsts, SubstsRef};
+use rustc_middle::ty::{EarlyBinder, Subst};
 use why3::declaration::Contract;
 use why3::exp::Exp;
 use why3::Ident;
@@ -81,7 +82,7 @@ impl ContractClauses {
         Self { variant: None, requires: Vec::new(), ensures: Vec::new() }
     }
 
-    fn get_pre<'tcx>(self, ctx: &mut TranslationCtx<'_, 'tcx>) -> PreContract<'tcx> {
+    fn get_pre<'tcx>(self, ctx: &mut TranslationCtx<'_, 'tcx>) -> EarlyBinder<PreContract<'tcx>> {
         let mut out = PreContract::default();
         for req_id in self.requires {
             log::debug!("require clause {:?}", req_id);
@@ -100,7 +101,7 @@ impl ContractClauses {
             let term = ctx.term(var_id).unwrap().clone();
             out.variant = Some(term);
         };
-        out
+        EarlyBinder(out)
     }
 
     pub fn iter_ids(&self) -> impl Iterator<Item = DefId> + '_ {
@@ -225,7 +226,7 @@ pub fn inherited_extern_spec<'tcx>(
         if ctx.extern_spec(id).is_none() {
             return None;
         }
-        (id, trait_ref.substs.subst(ctx.tcx, subst))
+        (id, EarlyBinder(trait_ref.substs).subst(ctx.tcx, subst))
     }
 }
 
