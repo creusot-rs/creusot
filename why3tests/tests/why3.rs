@@ -64,15 +64,16 @@ fn main() {
             output = command.ok();
             if output.is_ok() {
                 let outputstring = std::str::from_utf8(&output.as_ref().unwrap().stderr).unwrap();
-                if outputstring.contains("[Warning] session is obsolete")
-                {
+                if outputstring.contains("[Warning] session is obsolete") {
                     out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
                     writeln!(&mut out, "obsolete").unwrap();
                     obsolete = true;
                     if lazy && fail_obsoleate {
                         break;
                     }
-                } else if outputstring.contains("[Warning] found detached goals or theories or transformations") {
+                } else if outputstring
+                    .contains("[Warning] found detached goals or theories or transformations")
+                {
                     out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
                     writeln!(&mut out, "detached goals").unwrap();
                     obsolete = true;
