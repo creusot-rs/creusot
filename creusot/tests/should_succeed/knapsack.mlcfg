@@ -50,8 +50,8 @@ module Knapsack_MaxLog_Interface
 end
 module Knapsack_MaxLog
   use mach.int.Int
-  function max_log [#"../knapsack.rs" 14 0 33] (a : int) (b : int) : int =
-    [#"../knapsack.rs" 13 0 8] if a < b then b else a
+  function max_log [#"../knapsack.rs" 12 0 33] (a : int) (b : int) : int =
+    [#"../knapsack.rs" 11 0 8] if a < b then b else a
 end
 module Knapsack_Max_Interface
   use mach.int.UInt64
@@ -59,8 +59,8 @@ module Knapsack_Max_Interface
   use prelude.Prelude
   clone Knapsack_MaxLog_Interface as MaxLog0
   val max [@cfg:stackify] (a : usize) (b : usize) : usize
-    requires {[#"../knapsack.rs" 22 11 15] true}
-    ensures { [#"../knapsack.rs" 23 10 36] UInt64.to_int result = MaxLog0.max_log (UInt64.to_int a) (UInt64.to_int b) }
+    requires {[#"../knapsack.rs" 20 11 15] true}
+    ensures { [#"../knapsack.rs" 21 10 36] UInt64.to_int result = MaxLog0.max_log (UInt64.to_int a) (UInt64.to_int b) }
     
 end
 module Knapsack_Max
@@ -68,9 +68,9 @@ module Knapsack_Max
   use mach.int.Int
   use prelude.Prelude
   clone Knapsack_MaxLog as MaxLog0
-  let rec cfg max [@cfg:stackify] [#"../knapsack.rs" 24 0 35] (a : usize) (b : usize) : usize
-    requires {[#"../knapsack.rs" 22 11 15] true}
-    ensures { [#"../knapsack.rs" 23 10 36] UInt64.to_int result = MaxLog0.max_log (UInt64.to_int a) (UInt64.to_int b) }
+  let rec cfg max [@cfg:stackify] [#"../knapsack.rs" 22 0 35] (a : usize) (b : usize) : usize
+    requires {[#"../knapsack.rs" 20 11 15] true}
+    ensures { [#"../knapsack.rs" 21 10 36] UInt64.to_int result = MaxLog0.max_log (UInt64.to_int a) (UInt64.to_int b) }
     
    =
   var _0 : usize;
@@ -87,7 +87,7 @@ module Knapsack_Max
   BB0 {
     _4 <- a_1;
     _5 <- b_2;
-    _3 <- ([#"../knapsack.rs" 25 7 12] _4 < _5);
+    _3 <- ([#"../knapsack.rs" 23 7 12] _4 < _5);
     switch (_3)
       | False -> goto BB2
       | _ -> goto BB1
@@ -122,8 +122,8 @@ module Knapsack_M
   use Type
   use mach.int.UInt64
   clone Knapsack_MaxLog_Interface as MaxLog0
-  function m [#"../knapsack.rs" 43 0 57] (items : Seq.seq (Type.knapsack_item name)) (i : int) (w : int) : int
-  axiom def : forall items : Seq.seq (Type.knapsack_item name), i : int, w : int . m items i w = ([#"../knapsack.rs" 44 4 5] if i = 0 then
+  function m [#"../knapsack.rs" 41 0 57] (items : Seq.seq (Type.knapsack_item name)) (i : int) (w : int) : int
+  axiom def : forall items : Seq.seq (Type.knapsack_item name), i : int, w : int . m items i w = ([#"../knapsack.rs" 42 4 5] if i = 0 then
     0
   else
     if UInt64.to_int (Type.knapsack_item_Item_weight (Seq.get items (i - 1))) > w then
@@ -132,7 +132,7 @@ module Knapsack_M
       MaxLog0.max_log (m items (i - 1) w) (m items (i - 1) (w - UInt64.to_int (Type.knapsack_item_Item_weight (Seq.get items (i - 1)))) + UInt64.to_int (Type.knapsack_item_Item_value (Seq.get items (i - 1))))
     
   )
-  axiom m_spec : forall items : Seq.seq (Type.knapsack_item name), i : int, w : int . ([#"../knapsack.rs" 41 11 17] 0 <= w) -> ([#"../knapsack.rs" 40 11 37] 0 <= i && i <= Seq.length items) -> ([#"../knapsack.rs" 42 10 21] m items i w >= 0)
+  axiom m_spec : forall items : Seq.seq (Type.knapsack_item name), i : int, w : int . ([#"../knapsack.rs" 39 11 17] 0 <= w) -> ([#"../knapsack.rs" 38 11 37] 0 <= i && i <= Seq.length items) -> ([#"../knapsack.rs" 40 10 21] m items i w >= 0)
 end
 module Knapsack_M_Impl
   type name
@@ -143,13 +143,13 @@ module Knapsack_M_Impl
   use mach.int.UInt64
   clone Knapsack_MaxLog as MaxLog0
   let rec ghost function m (items : Seq.seq (Type.knapsack_item name)) (i : int) (w : int) : int
-    requires {[#"../knapsack.rs" 41 11 17] 0 <= w}
-    requires {[#"../knapsack.rs" 40 11 37] 0 <= i && i <= Seq.length items}
-    ensures { [#"../knapsack.rs" 42 10 21] result >= 0 }
-    variant {[#"../knapsack.rs" 39 10 11] i}
+    requires {[#"../knapsack.rs" 39 11 17] 0 <= w}
+    requires {[#"../knapsack.rs" 38 11 37] 0 <= i && i <= Seq.length items}
+    ensures { [#"../knapsack.rs" 40 10 21] result >= 0 }
+    variant {[#"../knapsack.rs" 37 10 11] i}
     
    =
-    [#"../knapsack.rs" 44 4 5] if pure {i = 0} then
+    [#"../knapsack.rs" 42 4 5] if pure {i = 0} then
       0
     else
       if (let a' = Type.knapsack_item_Item_weight (Seq.get items (i - 1)) in UInt64.to_int a') > w then
@@ -607,9 +607,9 @@ module Knapsack_Knapsack01Dyn_Interface
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.alloc_vec_vec (Type.knapsack_item name) (Type.alloc_alloc_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
   val knapsack01_dyn [@cfg:stackify] (items : Type.alloc_vec_vec (Type.knapsack_item name) (Type.alloc_alloc_global)) (max_weight : usize) : Type.alloc_vec_vec (Type.knapsack_item name) (Type.alloc_alloc_global)
-    requires {[#"../knapsack.rs" 56 0 91] forall i : (int) . 0 <= i && i < Seq.length (Model0.model items) -> UInt64.to_int (Type.knapsack_item_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
-    requires {[#"../knapsack.rs" 55 11 33] UInt64.to_int max_weight < 10000000}
-    requires {[#"../knapsack.rs" 54 11 36] Seq.length (Model0.model items) < 10000000}
+    requires {[#"../knapsack.rs" 54 0 91] forall i : (int) . 0 <= i && i < Seq.length (Model0.model items) -> UInt64.to_int (Type.knapsack_item_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
+    requires {[#"../knapsack.rs" 53 11 33] UInt64.to_int max_weight < 10000000}
+    requires {[#"../knapsack.rs" 52 11 36] Seq.length (Model0.model items) < 10000000}
     
 end
 module Knapsack_Knapsack01Dyn
@@ -690,10 +690,10 @@ module Knapsack_Knapsack01Dyn
   type Output0.output = Output0.output
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = Type.knapsack_item name, type a = Type.alloc_alloc_global,
   function Model0.model = Model3.model
-  let rec cfg knapsack01_dyn [@cfg:stackify] [#"../knapsack.rs" 57 0 91] (items : Type.alloc_vec_vec (Type.knapsack_item name) (Type.alloc_alloc_global)) (max_weight : usize) : Type.alloc_vec_vec (Type.knapsack_item name) (Type.alloc_alloc_global)
-    requires {[#"../knapsack.rs" 56 0 91] forall i : (int) . 0 <= i && i < Seq.length (Model0.model items) -> UInt64.to_int (Type.knapsack_item_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
-    requires {[#"../knapsack.rs" 55 11 33] UInt64.to_int max_weight < 10000000}
-    requires {[#"../knapsack.rs" 54 11 36] Seq.length (Model0.model items) < 10000000}
+  let rec cfg knapsack01_dyn [@cfg:stackify] [#"../knapsack.rs" 55 0 91] (items : Type.alloc_vec_vec (Type.knapsack_item name) (Type.alloc_alloc_global)) (max_weight : usize) : Type.alloc_vec_vec (Type.knapsack_item name) (Type.alloc_alloc_global)
+    requires {[#"../knapsack.rs" 54 0 91] forall i : (int) . 0 <= i && i < Seq.length (Model0.model items) -> UInt64.to_int (Type.knapsack_item_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
+    requires {[#"../knapsack.rs" 53 11 33] UInt64.to_int max_weight < 10000000}
+    requires {[#"../knapsack.rs" 52 11 36] Seq.length (Model0.model items) < 10000000}
     
    =
   var _0 : Type.alloc_vec_vec (Type.knapsack_item name) (Type.alloc_alloc_global);
@@ -806,18 +806,18 @@ module Knapsack_Knapsack01Dyn
   }
   BB0 {
     _6 <- max_weight_2;
-    _5 <- ([#"../knapsack.rs" 59 41 55] _6 + (1 : usize));
-    _4 <- ([#"../knapsack.rs" 59 23 56] FromElem0.from_elem (0 : usize) _5);
+    _5 <- ([#"../knapsack.rs" 57 41 55] _6 + (1 : usize));
+    _4 <- ([#"../knapsack.rs" 57 23 56] FromElem0.from_elem (0 : usize) _5);
     goto BB1
   }
   BB1 {
     _9 <- items_1;
-    _8 <- ([#"../knapsack.rs" 59 58 69] Len0.len _9);
+    _8 <- ([#"../knapsack.rs" 57 58 69] Len0.len _9);
     goto BB2
   }
   BB2 {
-    _7 <- ([#"../knapsack.rs" 59 58 73] _8 + (1 : usize));
-    best_value_3 <- ([#"../knapsack.rs" 59 8 74] FromElem1.from_elem _4 _7);
+    _7 <- ([#"../knapsack.rs" 57 58 73] _8 + (1 : usize));
+    best_value_3 <- ([#"../knapsack.rs" 57 8 74] FromElem1.from_elem _4 _7);
     goto BB3
   }
   BB3 {
@@ -837,17 +837,17 @@ module Knapsack_Knapsack01Dyn
     goto BB8
   }
   BB8 {
-    invariant items_len { [#"../knapsack.rs" 62 27 68] Seq.length (Model0.model items_1) + 1 = Seq.length (Model1.model best_value_3) };
-    invariant weight_len { [#"../knapsack.rs" 62 4 70] forall i : (int) . 0 <= i && i < Seq.length (Model1.model best_value_3) -> UInt64.to_int max_weight_2 + 1 = Seq.length (Model2.model (Seq.get (Model1.model best_value_3) i)) };
-    invariant best_value { [#"../knapsack.rs" 62 4 70] forall ww : (int) . forall ii : (int) . 0 <= ii && ii <= UInt64.to_int i_10 && 0 <= ww && ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model2.model (Seq.get (Model1.model best_value_3) ii)) ww) = M0.m (Model0.model items_1) ii ww };
-    invariant best_value_bounds { [#"../knapsack.rs" 62 4 70] forall ww : (int) . forall ii : (int) . 0 <= ii && ii <= Seq.length (Model0.model items_1) && 0 <= ww && ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model2.model (Seq.get (Model1.model best_value_3) ii)) ww) <= 10000000 * ii };
+    invariant items_len { [#"../knapsack.rs" 60 27 68] Seq.length (Model0.model items_1) + 1 = Seq.length (Model1.model best_value_3) };
+    invariant weight_len { [#"../knapsack.rs" 60 4 70] forall i : (int) . 0 <= i && i < Seq.length (Model1.model best_value_3) -> UInt64.to_int max_weight_2 + 1 = Seq.length (Model2.model (Seq.get (Model1.model best_value_3) i)) };
+    invariant best_value { [#"../knapsack.rs" 60 4 70] forall ww : (int) . forall ii : (int) . 0 <= ii && ii <= UInt64.to_int i_10 && 0 <= ww && ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model2.model (Seq.get (Model1.model best_value_3) ii)) ww) = M0.m (Model0.model items_1) ii ww };
+    invariant best_value_bounds { [#"../knapsack.rs" 60 4 70] forall ww : (int) . forall ii : (int) . 0 <= ii && ii <= Seq.length (Model0.model items_1) && 0 <= ww && ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model2.model (Seq.get (Model1.model best_value_3) ii)) ww) <= 10000000 * ii };
     _14 <- i_10;
     _16 <- items_1;
-    _15 <- ([#"../knapsack.rs" 69 14 25] Len0.len _16);
+    _15 <- ([#"../knapsack.rs" 67 14 25] Len0.len _16);
     goto BB9
   }
   BB9 {
-    _13 <- ([#"../knapsack.rs" 69 10 25] _14 < _15);
+    _13 <- ([#"../knapsack.rs" 67 10 25] _14 < _15);
     switch (_13)
       | False -> goto BB32
       | _ -> goto BB10
@@ -856,7 +856,7 @@ module Knapsack_Knapsack01Dyn
   BB10 {
     _19 <- items_1;
     _20 <- i_10;
-    _18 <- ([#"../knapsack.rs" 70 18 26] Index0.index _19 _20);
+    _18 <- ([#"../knapsack.rs" 68 18 26] Index0.index _19 _20);
     goto BB11
   }
   BB11 {
@@ -881,14 +881,14 @@ module Knapsack_Knapsack01Dyn
     goto BB17
   }
   BB17 {
-    invariant items_len2 { [#"../knapsack.rs" 76 32 73] Seq.length (Model0.model items_1) + 1 = Seq.length (Model1.model best_value_3) };
-    invariant weight_len2 { [#"../knapsack.rs" 76 8 75] forall i : (int) . 0 <= i && i < Seq.length (Model1.model best_value_3) -> UInt64.to_int max_weight_2 + 1 = Seq.length (Model2.model (Seq.get (Model1.model best_value_3) i)) };
-    invariant best_value2 { [#"../knapsack.rs" 76 8 75] forall ww : (int) . forall ii : (int) . 0 <= ii && ii <= UInt64.to_int i_10 && 0 <= ww && ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model2.model (Seq.get (Model1.model best_value_3) ii)) ww) = M0.m (Model0.model items_1) ii ww };
-    invariant best_value2 { [#"../knapsack.rs" 76 8 75] forall ww : (int) . 0 <= ww && ww <= UInt64.to_int w_21 - 1 -> UInt64.to_int (Seq.get (Model2.model (Seq.get (Model1.model best_value_3) (UInt64.to_int i_10 + 1))) ww) = M0.m (Model0.model items_1) (UInt64.to_int i_10 + 1) ww };
-    invariant best_value_bounds { [#"../knapsack.rs" 76 8 75] forall ww : (int) . forall ii : (int) . 0 <= ii && ii <= Seq.length (Model0.model items_1) && 0 <= ww && ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model2.model (Seq.get (Model1.model best_value_3) ii)) ww) <= 10000000 * ii };
+    invariant items_len2 { [#"../knapsack.rs" 74 32 73] Seq.length (Model0.model items_1) + 1 = Seq.length (Model1.model best_value_3) };
+    invariant weight_len2 { [#"../knapsack.rs" 74 8 75] forall i : (int) . 0 <= i && i < Seq.length (Model1.model best_value_3) -> UInt64.to_int max_weight_2 + 1 = Seq.length (Model2.model (Seq.get (Model1.model best_value_3) i)) };
+    invariant best_value2 { [#"../knapsack.rs" 74 8 75] forall ww : (int) . forall ii : (int) . 0 <= ii && ii <= UInt64.to_int i_10 && 0 <= ww && ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model2.model (Seq.get (Model1.model best_value_3) ii)) ww) = M0.m (Model0.model items_1) ii ww };
+    invariant best_value2 { [#"../knapsack.rs" 74 8 75] forall ww : (int) . 0 <= ww && ww <= UInt64.to_int w_21 - 1 -> UInt64.to_int (Seq.get (Model2.model (Seq.get (Model1.model best_value_3) (UInt64.to_int i_10 + 1))) ww) = M0.m (Model0.model items_1) (UInt64.to_int i_10 + 1) ww };
+    invariant best_value_bounds { [#"../knapsack.rs" 74 8 75] forall ww : (int) . forall ii : (int) . 0 <= ii && ii <= Seq.length (Model0.model items_1) && 0 <= ww && ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model2.model (Seq.get (Model1.model best_value_3) ii)) ww) <= 10000000 * ii };
     _24 <- w_21;
     _25 <- max_weight_2;
-    _23 <- ([#"../knapsack.rs" 86 14 29] _24 <= _25);
+    _23 <- ([#"../knapsack.rs" 84 14 29] _24 <= _25);
     switch (_23)
       | False -> goto BB31
       | _ -> goto BB18
@@ -897,7 +897,7 @@ module Knapsack_Knapsack01Dyn
   BB18 {
     _28 <- Type.knapsack_item_Item_weight it_17;
     _29 <- w_21;
-    _27 <- ([#"../knapsack.rs" 87 38 51] _28 > _29);
+    _27 <- ([#"../knapsack.rs" 85 38 51] _28 > _29);
     switch (_27)
       | False -> goto BB22
       | _ -> goto BB19
@@ -906,13 +906,13 @@ module Knapsack_Knapsack01Dyn
   BB19 {
     _33 <- best_value_3;
     _34 <- i_10;
-    _32 <- ([#"../knapsack.rs" 88 16 29] Index1.index _33 _34);
+    _32 <- ([#"../knapsack.rs" 86 16 29] Index1.index _33 _34);
     goto BB20
   }
   BB20 {
     _31 <- _32;
     _35 <- w_21;
-    _30 <- ([#"../knapsack.rs" 88 16 32] Index2.index _31 _35);
+    _30 <- ([#"../knapsack.rs" 86 16 32] Index2.index _31 _35);
     goto BB21
   }
   BB21 {
@@ -922,35 +922,35 @@ module Knapsack_Knapsack01Dyn
   BB22 {
     _40 <- best_value_3;
     _41 <- i_10;
-    _39 <- ([#"../knapsack.rs" 90 20 33] Index1.index _40 _41);
+    _39 <- ([#"../knapsack.rs" 88 20 33] Index1.index _40 _41);
     goto BB23
   }
   BB23 {
     _38 <- _39;
     _42 <- w_21;
-    _37 <- ([#"../knapsack.rs" 90 20 36] Index2.index _38 _42);
+    _37 <- ([#"../knapsack.rs" 88 20 36] Index2.index _38 _42);
     goto BB24
   }
   BB24 {
     _36 <- _37;
     _48 <- best_value_3;
     _49 <- i_10;
-    _47 <- ([#"../knapsack.rs" 90 38 51] Index1.index _48 _49);
+    _47 <- ([#"../knapsack.rs" 88 38 51] Index1.index _48 _49);
     goto BB25
   }
   BB25 {
     _46 <- _47;
     _51 <- w_21;
     _52 <- Type.knapsack_item_Item_weight it_17;
-    _50 <- ([#"../knapsack.rs" 90 52 65] _51 - _52);
-    _45 <- ([#"../knapsack.rs" 90 38 66] Index2.index _46 _50);
+    _50 <- ([#"../knapsack.rs" 88 52 65] _51 - _52);
+    _45 <- ([#"../knapsack.rs" 88 38 66] Index2.index _46 _50);
     goto BB26
   }
   BB26 {
     _44 <- _45;
     _53 <- Type.knapsack_item_Item_value it_17;
-    _43 <- ([#"../knapsack.rs" 90 38 77] _44 + _53);
-    _26 <- ([#"../knapsack.rs" 90 16 78] Max0.max _36 _43);
+    _43 <- ([#"../knapsack.rs" 88 38 77] _44 + _53);
+    _26 <- ([#"../knapsack.rs" 88 16 78] Max0.max _36 _43);
     goto BB27
   }
   BB27 {
@@ -960,8 +960,8 @@ module Knapsack_Knapsack01Dyn
     _57 <- borrow_mut best_value_3;
     best_value_3 <-  ^ _57;
     _59 <- i_10;
-    _58 <- ([#"../knapsack.rs" 87 23 28] _59 + (1 : usize));
-    _56 <- ([#"../knapsack.rs" 87 12 29] IndexMut0.index_mut _57 _58);
+    _58 <- ([#"../knapsack.rs" 85 23 28] _59 + (1 : usize));
+    _56 <- ([#"../knapsack.rs" 85 12 29] IndexMut0.index_mut _57 _58);
     goto BB29
   }
   BB29 {
@@ -969,57 +969,57 @@ module Knapsack_Knapsack01Dyn
     _56 <- { _56 with current = ( ^ _55) };
     assume { Resolve1.resolve _56 };
     _60 <- w_21;
-    _54 <- ([#"../knapsack.rs" 87 12 32] IndexMut1.index_mut _55 _60);
+    _54 <- ([#"../knapsack.rs" 85 12 32] IndexMut1.index_mut _55 _60);
     goto BB30
   }
   BB30 {
     _54 <- { _54 with current = _26 };
     assume { Resolve2.resolve _54 };
-    w_21 <- ([#"../knapsack.rs" 92 12 18] w_21 + (1 : usize));
+    w_21 <- ([#"../knapsack.rs" 90 12 18] w_21 + (1 : usize));
     _12 <- ();
     goto BB17
   }
   BB31 {
     assume { Resolve0.resolve it_17 };
     _22 <- ();
-    i_10 <- ([#"../knapsack.rs" 94 8 14] i_10 + (1 : usize));
+    i_10 <- ([#"../knapsack.rs" 92 8 14] i_10 + (1 : usize));
     _12 <- ();
     goto BB8
   }
   BB32 {
     _11 <- ();
     _69 <- items_1;
-    _68 <- ([#"../knapsack.rs" 97 40 51] Len0.len _69);
+    _68 <- ([#"../knapsack.rs" 95 40 51] Len0.len _69);
     goto BB33
   }
   BB33 {
-    result_67 <- ([#"../knapsack.rs" 97 21 52] WithCapacity0.with_capacity _68);
+    result_67 <- ([#"../knapsack.rs" 95 21 52] WithCapacity0.with_capacity _68);
     goto BB34
   }
   BB34 {
     left_weight_70 <- max_weight_2;
     _72 <- items_1;
-    j_71 <- ([#"../knapsack.rs" 100 16 27] Len0.len _72);
+    j_71 <- ([#"../knapsack.rs" 98 16 27] Len0.len _72);
     goto BB35
   }
   BB35 {
     goto BB36
   }
   BB36 {
-    invariant j_items_len { [#"../knapsack.rs" 101 29 49] UInt64.to_int j_71 <= Seq.length (Model0.model items_1) };
-    invariant left_weight_le_max { [#"../knapsack.rs" 102 36 63] UInt64.to_int left_weight_70 <= UInt64.to_int max_weight_2 };
+    invariant j_items_len { [#"../knapsack.rs" 99 29 49] UInt64.to_int j_71 <= Seq.length (Model0.model items_1) };
+    invariant left_weight_le_max { [#"../knapsack.rs" 100 36 63] UInt64.to_int left_weight_70 <= UInt64.to_int max_weight_2 };
     _75 <- j_71;
-    _74 <- ([#"../knapsack.rs" 103 10 15] (0 : usize) < _75);
+    _74 <- ([#"../knapsack.rs" 101 10 15] (0 : usize) < _75);
     switch (_74)
       | False -> goto BB47
       | _ -> goto BB37
       end
   }
   BB37 {
-    j_71 <- ([#"../knapsack.rs" 104 8 14] j_71 - (1 : usize));
+    j_71 <- ([#"../knapsack.rs" 102 8 14] j_71 - (1 : usize));
     _78 <- items_1;
     _79 <- j_71;
-    _77 <- ([#"../knapsack.rs" 105 18 26] Index0.index _78 _79);
+    _77 <- ([#"../knapsack.rs" 103 18 26] Index0.index _78 _79);
     goto BB38
   }
   BB38 {
@@ -1027,32 +1027,32 @@ module Knapsack_Knapsack01Dyn
     assume { Resolve0.resolve _77 };
     _85 <- best_value_3;
     _87 <- j_71;
-    _86 <- ([#"../knapsack.rs" 106 22 27] _87 + (1 : usize));
-    _84 <- ([#"../knapsack.rs" 106 11 28] Index1.index _85 _86);
+    _86 <- ([#"../knapsack.rs" 104 22 27] _87 + (1 : usize));
+    _84 <- ([#"../knapsack.rs" 104 11 28] Index1.index _85 _86);
     goto BB39
   }
   BB39 {
     _83 <- _84;
     _88 <- left_weight_70;
-    _82 <- ([#"../knapsack.rs" 106 11 41] Index2.index _83 _88);
+    _82 <- ([#"../knapsack.rs" 104 11 41] Index2.index _83 _88);
     goto BB40
   }
   BB40 {
     _81 <- _82;
     _93 <- best_value_3;
     _94 <- j_71;
-    _92 <- ([#"../knapsack.rs" 106 45 58] Index1.index _93 _94);
+    _92 <- ([#"../knapsack.rs" 104 45 58] Index1.index _93 _94);
     goto BB41
   }
   BB41 {
     _91 <- _92;
     _95 <- left_weight_70;
-    _90 <- ([#"../knapsack.rs" 106 45 71] Index2.index _91 _95);
+    _90 <- ([#"../knapsack.rs" 104 45 71] Index2.index _91 _95);
     goto BB42
   }
   BB42 {
     _89 <- _90;
-    _80 <- ([#"../knapsack.rs" 106 11 71] _81 <> _89);
+    _80 <- ([#"../knapsack.rs" 104 11 71] _81 <> _89);
     switch (_80)
       | False -> goto BB45
       | _ -> goto BB43
@@ -1063,13 +1063,13 @@ module Knapsack_Knapsack01Dyn
     result_67 <-  ^ _97;
     assume { Resolve0.resolve _98 };
     _98 <- it_76;
-    _96 <- ([#"../knapsack.rs" 107 12 27] Push0.push _97 _98);
+    _96 <- ([#"../knapsack.rs" 105 12 27] Push0.push _97 _98);
     goto BB44
   }
   BB44 {
     _99 <- Type.knapsack_item_Item_weight it_76;
     assume { Resolve0.resolve it_76 };
-    left_weight_70 <- ([#"../knapsack.rs" 108 12 36] left_weight_70 - _99);
+    left_weight_70 <- ([#"../knapsack.rs" 106 12 36] left_weight_70 - _99);
     _12 <- ();
     goto BB46
   }
