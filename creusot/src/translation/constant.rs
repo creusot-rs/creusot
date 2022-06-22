@@ -15,6 +15,7 @@ use why3::{
 use crate::{
     clone_map::CloneMap,
     ctx::{module_name, CloneSummary, TranslationCtx},
+    traits::resolve_assoc_item_opt,
     translation::ty,
     util::get_builtin,
 };
@@ -102,7 +103,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
     c: C,
 ) -> Exp {
     use rustc_middle::ty::{IntTy::*, UintTy::*};
-    use rustc_type_ir::sty::TyKind::{Bool, Int, Uint};
+    use rustc_type_ir::sty::TyKind::{Bool, FnDef, Int, Uint};
     let why3_ty = ty::translate_ty(ctx, names, span, ty);
 
     match ty.kind() {
@@ -162,6 +163,12 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             }
         }
         _ if ty.is_unit() => Exp::Tuple(Vec::new()),
+        FnDef(def_id, subst) => {
+            let method =
+                resolve_assoc_item_opt(ctx.tcx, env, *def_id, subst).unwrap_or((*def_id, subst));
+            names.insert(method.0, method.1);
+            Exp::Tuple(Vec::new())
+        }
         _ => {
             ctx.crash_and_error(
                 span,
