@@ -146,8 +146,12 @@ fn translate_ty_inner<'tcx>(
 
             cons
         }
+        FnDef(_, _) =>
+        /* FnDef types are effectively singleton types, so it is sound to translate to unit. */
+        {
+            MlT::Tuple(vec![])
+        }
         // Foreign(_) => todo!(),
-        // FnDef(_, _) => todo!(),
         // // FnPtr(_) => todo!(),
         // FnPtr(_) => MlT::Tuple(vec![]),
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),

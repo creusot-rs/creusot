@@ -574,7 +574,7 @@ where
         self.node.as_mut().unwrap().color = Black;
         proof_assert! { forall<h: Int> old_self.has_height(h) ==>
         (*self).has_height(h) || (*self).has_height(h+1) }
-        proof_assert! { (*self).has_mapping_model(@key /* dummy */); true }
+        ghost! { Self::has_mapping_model };
     }
 
     #[requires((*self).bst_invariant())]
@@ -635,7 +635,7 @@ where
         }
         proof_assert! { forall<h: Int> old_self.has_height(h) ==>
         (*self).has_height(h) || (*self).has_height(h-1) }
-        proof_assert! { (*self).has_mapping_model(@r.0 /* dummy */); true }
+        ghost! { Self::has_mapping_model };
         Some(r)
     }
 
@@ -658,7 +658,6 @@ where
     fn delete_rec(&mut self, key: &K) -> Option<(K, V)> {
         let r;
         let node = &mut **self.node.as_mut().unwrap();
-        let old_node = ghost! { *node };
         match key.cmp(&node.key) {
             Less => {
                 if node.left.node.is_none() {
@@ -687,7 +686,7 @@ where
                 }
                 if let Equal = ord {
                     let mut kv = node.right.delete_min_rec();
-                    proof_assert! { /* dummy parameters */ old_node.right.has_mapping_inj(@kv.0, kv.1, kv.1); true }
+                    ghost! { Self::has_mapping_inj };
                     std::mem::swap(&mut node.key, &mut kv.0);
                     std::mem::swap(&mut node.val, &mut kv.1);
                     r = Some(kv)
@@ -727,7 +726,7 @@ where
         proof_assert! { forall<h: Int> old_self.has_height(h) ==>
         (*self).has_height(h) || (*self).has_height(h-1) }
         ghost! { match r { None => (), Some(_) => () }};
-        proof_assert! { (*self).has_mapping_model(@*key /* dummy */); true }
+        ghost! { Self::has_mapping_model };
         r
     }
 
@@ -735,7 +734,7 @@ where
     #[ensures(forall<v: &V> result == Some(v) ==> (@*self).get(@*key) == Some(*v))]
     #[ensures(result == None ==> (@*self).get(@*key) == None)]
     pub fn get(&self, key: &K) -> Option<&V> {
-        proof_assert! { self.has_mapping_model(@*key); true }
+        ghost! { Self::has_mapping_model };
 
         let mut tree = self;
         #[invariant(bst_inv, (*tree).bst_invariant())]
@@ -756,7 +755,7 @@ where
               (@*self).get(@*key) == Some(*v) && @^self == (@*self).set(@key, Some(^v)))]
     #[ensures(result == None ==> (@*self).get(@*key) == None && (@^self).get(@*key) == None)]
     pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
-        proof_assert! { self.has_mapping_model(@*key); true }
+        ghost! { Self::has_mapping_model };
 
         let mut tree = self;
 

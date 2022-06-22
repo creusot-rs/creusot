@@ -152,7 +152,7 @@ pub fn knights_tour(size: usize, x: usize, y: usize) -> Option<Board> {
     board.set(p, step);
     step += 1;
 
-    proof_assert! { dumb_nonlinear_arith(size); true }
+    ghost! { dumb_nonlinear_arith(size) };
     #[invariant(b, board.size == size)]
     #[invariant(b, board.wf())]
     #[invariant(p, board.in_bounds(p))]
