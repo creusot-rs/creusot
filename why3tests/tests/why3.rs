@@ -48,9 +48,10 @@ fn main() {
         sessionfile.push("why3session.xml");
 
         let output;
+        let mut command = Command::new(why3_path.clone());
+        command.arg("--debug=ignore_unused_vars");
         if sessionfile.is_file() {
             // There is a session directory. Try to replay the session.
-            let mut command = Command::new(why3_path.clone());
             command.arg("replay");
             command.args(&["-L", "../prelude"]);
             if lazy {
@@ -88,7 +89,6 @@ fn main() {
             }
         } else {
             // No session directory. Simply parse the file using "why3 prove".
-            let mut command = Command::new(why3_path.clone());
             command.arg("prove");
             command.args(&["-L", "../prelude", "-F", "mlcfg"]);
             command.arg(file);
