@@ -45,8 +45,8 @@ module IncSomeList_Impl1_Sum
   use mach.int.Int
   use mach.int.UInt32
   use mach.int.Int32
-  function sum [#"../inc_some_list.rs" 18 4 23] (self : Type.incsomelist_list) : int =
-    [#"../inc_some_list.rs" 19 8 9] match (self) with
+  function sum [#"../inc_some_list.rs" 18 4 18 23] (self : Type.incsomelist_list) : int =
+    [#"../inc_some_list.rs" 19 8 22 9] match (self) with
       | Type.IncSomeList_List_Cons a l -> UInt32.to_int a + sum l
       | Type.IncSomeList_List_Nil -> 0
       end
@@ -65,12 +65,12 @@ module IncSomeList_Impl1_LemmaSumNonneg
   use prelude.Prelude
   use Type
   clone IncSomeList_Impl1_Sum_Interface as Sum0
-  function lemma_sum_nonneg [#"../inc_some_list.rs" 28 4 30] (self : Type.incsomelist_list) : ()
-  axiom def : forall self : Type.incsomelist_list . lemma_sum_nonneg self = ([#"../inc_some_list.rs" 29 8 9] match (self) with
+  function lemma_sum_nonneg [#"../inc_some_list.rs" 28 4 28 30] (self : Type.incsomelist_list) : ()
+  axiom def : forall self : Type.incsomelist_list . lemma_sum_nonneg self = ([#"../inc_some_list.rs" 29 8 32 9] match (self) with
     | Type.IncSomeList_List_Cons _ l -> lemma_sum_nonneg l
     | Type.IncSomeList_List_Nil -> ()
     end)
-  axiom lemma_sum_nonneg_spec : forall self : Type.incsomelist_list . [#"../inc_some_list.rs" 27 14 29] Sum0.sum self >= 0
+  axiom lemma_sum_nonneg_spec : forall self : Type.incsomelist_list . [#"../inc_some_list.rs" 27 14 27 29] Sum0.sum self >= 0
 end
 module IncSomeList_Impl1_LemmaSumNonneg_Impl
   use mach.int.Int
@@ -79,11 +79,11 @@ module IncSomeList_Impl1_LemmaSumNonneg_Impl
   use Type
   clone IncSomeList_Impl1_Sum as Sum0
   let rec ghost function lemma_sum_nonneg (self : Type.incsomelist_list) : ()
-    ensures { [#"../inc_some_list.rs" 27 14 29] Sum0.sum self >= 0 }
-    variant {[#"../inc_some_list.rs" 26 15 19] self}
+    ensures { [#"../inc_some_list.rs" 27 14 27 29] Sum0.sum self >= 0 }
+    variant {[#"../inc_some_list.rs" 26 15 26 19] self}
     
    =
-    [#"../inc_some_list.rs" 29 8 9] match (self) with
+    [#"../inc_some_list.rs" 29 8 32 9] match (self) with
       | Type.IncSomeList_List_Cons _ l -> lemma_sum_nonneg l
       | Type.IncSomeList_List_Nil -> ()
       end
@@ -96,8 +96,8 @@ module IncSomeList_Impl1_SumX_Interface
   use Type
   clone IncSomeList_Impl1_Sum_Interface as Sum0
   val sum_x [@cfg:stackify] (self : Type.incsomelist_list) : uint32
-    requires {[#"../inc_some_list.rs" 35 15 38] Sum0.sum self <= 1000000}
-    ensures { [#"../inc_some_list.rs" 36 14 35] UInt32.to_int result = Sum0.sum self }
+    requires {[#"../inc_some_list.rs" 35 15 35 38] Sum0.sum self <= 1000000}
+    ensures { [#"../inc_some_list.rs" 36 14 36 35] UInt32.to_int result = Sum0.sum self }
     
 end
 module IncSomeList_Impl1_SumX
@@ -108,9 +108,9 @@ module IncSomeList_Impl1_SumX
   use Type
   clone IncSomeList_Impl1_Sum as Sum0
   use mach.int.Int64
-  let rec cfg sum_x [@cfg:stackify] [#"../inc_some_list.rs" 37 4 26] (self : Type.incsomelist_list) : uint32
-    requires {[#"../inc_some_list.rs" 35 15 38] Sum0.sum self <= 1000000}
-    ensures { [#"../inc_some_list.rs" 36 14 35] UInt32.to_int result = Sum0.sum self }
+  let rec cfg sum_x [@cfg:stackify] [#"../inc_some_list.rs" 37 4 37 26] (self : Type.incsomelist_list) : uint32
+    requires {[#"../inc_some_list.rs" 35 15 35 38] Sum0.sum self <= 1000000}
+    ensures { [#"../inc_some_list.rs" 36 14 36 35] UInt32.to_int result = Sum0.sum self }
     
    =
   var _0 : uint32;
@@ -143,11 +143,11 @@ module IncSomeList_Impl1_SumX
     l_4 <- Type.incsomelist_list_Cons_1 self_1;
     _5 <- a_3;
     _7 <- l_4;
-    _6 <- ([#"../inc_some_list.rs" 39 31 40] sum_x _7);
+    _6 <- ([#"../inc_some_list.rs" 39 31 39 40] sum_x _7);
     goto BB4
   }
   BB4 {
-    _0 <- ([#"../inc_some_list.rs" 39 26 40] _5 + _6);
+    _0 <- ([#"../inc_some_list.rs" 39 26 39 40] _5 + _6);
     goto BB5
   }
   BB5 {
@@ -230,8 +230,8 @@ module IncSomeList_Impl1_TakeSome_Interface
   clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = uint32,
   type ModelTy0.modelTy = ModelTy0.modelTy
   val take_some [@cfg:stackify] (self : borrowed (Type.incsomelist_list)) : borrowed uint32
-    ensures { [#"../inc_some_list.rs" 45 14 35] Model0.model result <= Sum0.sum ( * self) }
-    ensures { [#"../inc_some_list.rs" 44 14 62] Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ result) - Model0.model result }
+    ensures { [#"../inc_some_list.rs" 45 14 45 35] Model0.model result <= Sum0.sum ( * self) }
+    ensures { [#"../inc_some_list.rs" 44 14 44 62] Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ result) - Model0.model result }
     
 end
 module IncSomeList_Impl1_TakeSome
@@ -250,9 +250,9 @@ module IncSomeList_Impl1_TakeSome
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Type.incsomelist_list
   clone IncSomeList_Random_Interface as Random0
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.incsomelist_list
-  let rec cfg take_some [@cfg:stackify] [#"../inc_some_list.rs" 46 4 39] (self : borrowed (Type.incsomelist_list)) : borrowed uint32
-    ensures { [#"../inc_some_list.rs" 45 14 35] Model0.model result <= Sum0.sum ( * self) }
-    ensures { [#"../inc_some_list.rs" 44 14 62] Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ result) - Model0.model result }
+  let rec cfg take_some [@cfg:stackify] [#"../inc_some_list.rs" 46 4 46 39] (self : borrowed (Type.incsomelist_list)) : borrowed uint32
+    ensures { [#"../inc_some_list.rs" 45 14 45 35] Model0.model result <= Sum0.sum ( * self) }
+    ensures { [#"../inc_some_list.rs" 44 14 44 62] Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ result) - Model0.model result }
     
    =
   var _0 : borrowed uint32;
@@ -297,11 +297,11 @@ module IncSomeList_Impl1_TakeSome
     self_1 <- { self_1 with current = (let Type.IncSomeList_List_Cons a b =  * self_1 in Type.IncSomeList_List_Cons a ( ^ ml_6)) };
     assume { Resolve0.resolve self_1 };
     _9 <- ();
-    _8 <- ghost ([#"../inc_some_list.rs" 49 16 48] LemmaSumNonneg0.lemma_sum_nonneg ( * ml_6));
+    _8 <- ghost ([#"../inc_some_list.rs" 49 16 49 48] LemmaSumNonneg0.lemma_sum_nonneg ( * ml_6));
     goto BB4
   }
   BB4 {
-    _11 <- ([#"../inc_some_list.rs" 50 19 27] Random0.random ());
+    _11 <- ([#"../inc_some_list.rs" 50 19 50 27] Random0.random ());
     goto BB5
   }
   BB5 {
@@ -324,7 +324,7 @@ module IncSomeList_Impl1_TakeSome
     assume { Resolve2.resolve ma_5 };
     _14 <- borrow_mut ( * ml_6);
     ml_6 <- { ml_6 with current = ( ^ _14) };
-    _13 <- ([#"../inc_some_list.rs" 53 20 34] take_some _14);
+    _13 <- ([#"../inc_some_list.rs" 53 20 53 34] take_some _14);
     goto BB8
   }
   BB8 {
@@ -362,7 +362,7 @@ module IncSomeList_IncSomeList_Interface
   use Type
   clone IncSomeList_Impl1_Sum_Interface as Sum0
   val inc_some_list [@cfg:stackify] (l : Type.incsomelist_list) (k : uint32) : ()
-    requires {[#"../inc_some_list.rs" 61 11 36] Sum0.sum l + UInt32.to_int k <= 1000000}
+    requires {[#"../inc_some_list.rs" 61 11 61 36] Sum0.sum l + UInt32.to_int k <= 1000000}
     
 end
 module IncSomeList_IncSomeList
@@ -380,8 +380,8 @@ module IncSomeList_IncSomeList
   clone IncSomeList_Impl1_TakeSome_Interface as TakeSome0 with function Model0.model = Model0.model,
   function Sum0.sum = Sum0.sum
   clone IncSomeList_Impl1_SumX_Interface as SumX0 with function Sum0.sum = Sum0.sum
-  let rec cfg inc_some_list [@cfg:stackify] [#"../inc_some_list.rs" 62 0 41] (l : Type.incsomelist_list) (k : uint32) : ()
-    requires {[#"../inc_some_list.rs" 61 11 36] Sum0.sum l + UInt32.to_int k <= 1000000}
+  let rec cfg inc_some_list [@cfg:stackify] [#"../inc_some_list.rs" 62 0 62 41] (l : Type.incsomelist_list) (k : uint32) : ()
+    requires {[#"../inc_some_list.rs" 61 11 61 36] Sum0.sum l + UInt32.to_int k <= 1000000}
     
    =
   var _0 : ();
@@ -411,28 +411,28 @@ module IncSomeList_IncSomeList
   }
   BB1 {
     _4 <- l_1;
-    sum0_3 <- ([#"../inc_some_list.rs" 63 15 24] SumX0.sum_x _4);
+    sum0_3 <- ([#"../inc_some_list.rs" 63 15 63 24] SumX0.sum_x _4);
     goto BB2
   }
   BB2 {
     _6 <- borrow_mut l_1;
     l_1 <-  ^ _6;
-    ma_5 <- ([#"../inc_some_list.rs" 64 13 26] TakeSome0.take_some _6);
+    ma_5 <- ([#"../inc_some_list.rs" 64 13 64 26] TakeSome0.take_some _6);
     goto BB3
   }
   BB3 {
     _7 <- k_2;
-    ma_5 <- { ma_5 with current = ([#"../inc_some_list.rs" 65 4 12]  * ma_5 + _7) };
+    ma_5 <- { ma_5 with current = ([#"../inc_some_list.rs" 65 4 65 12]  * ma_5 + _7) };
     assume { Resolve0.resolve ma_5 };
     _12 <- l_1;
-    _11 <- ([#"../inc_some_list.rs" 66 12 21] SumX0.sum_x _12);
+    _11 <- ([#"../inc_some_list.rs" 66 12 66 21] SumX0.sum_x _12);
     goto BB4
   }
   BB4 {
     _14 <- sum0_3;
     _15 <- k_2;
-    _13 <- ([#"../inc_some_list.rs" 66 25 33] _14 + _15);
-    _10 <- ([#"../inc_some_list.rs" 66 12 33] _11 = _13);
+    _13 <- ([#"../inc_some_list.rs" 66 25 66 33] _14 + _15);
+    _10 <- ([#"../inc_some_list.rs" 66 12 66 33] _11 = _13);
     _9 <- not _10;
     switch (_9)
       | False -> goto BB6

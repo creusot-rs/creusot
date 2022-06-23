@@ -268,15 +268,17 @@ impl Print for Attribute {
     {
         match &self {
             Attribute::Attr(s) => alloc.text("@").append(s),
-            Attribute::Span(f, l, s, e) => alloc
+            Attribute::Span(f, ls, cs, le, ce) => alloc
                 .text("#")
                 .append(alloc.text(f).double_quotes())
                 .append(alloc.space())
-                .append(alloc.as_string(l))
+                .append(alloc.as_string(ls))
                 .append(alloc.space())
-                .append(alloc.as_string(s))
+                .append(alloc.as_string(cs))
                 .append(alloc.space())
-                .append(alloc.as_string(e)),
+                .append(alloc.as_string(le))
+                .append(alloc.space())
+                .append(alloc.as_string(ce)),
         }
         .brackets()
     }

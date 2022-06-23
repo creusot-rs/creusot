@@ -334,7 +334,13 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             _ => panic!(),
         };
 
-        Some(why3::declaration::Attribute::Span(filename, lo.line, lo.col_display, hi.col_display))
+        Some(why3::declaration::Attribute::Span(
+            filename,
+            lo.line,
+            lo.col_display,
+            hi.line,
+            hi.col_display,
+        ))
     }
 
     pub fn attach_span(&self, span: Span, exp: Exp) -> Exp {
