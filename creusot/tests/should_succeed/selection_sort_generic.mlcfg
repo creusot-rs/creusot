@@ -297,7 +297,7 @@ module CreusotContracts_Logic_Ord_OrdLogic_Trans
   use Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function trans (x : self) (y : self) (z : self) (o : Type.core_cmp_ordering) : ()
-  axiom trans_spec : forall x : self, y : self, z : self, o : Type.core_cmp_ordering . CmpLog0.cmp_log y z = o -> CmpLog0.cmp_log x y = o -> CmpLog0.cmp_log x z = o
+  axiom trans_spec : forall x : self, y : self, z : self, o : Type.core_cmp_ordering . CmpLog0.cmp_log x y = o -> CmpLog0.cmp_log y z = o -> CmpLog0.cmp_log x z = o
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym1_Interface
   type self
@@ -465,20 +465,20 @@ module CreusotContracts_Std1_Cmp_Ord_Lt
 end
 module CreusotContracts_Std1_Slice_Impl0_Model_Interface
   type t
-  use prelude.Prelude
   use seq.Seq
   use mach.int.Int
+  use prelude.Prelude
   use mach.int.UInt64
   function model (self : seq t) : Seq.seq t
 end
 module CreusotContracts_Std1_Slice_Impl0_Model
   type t
-  use prelude.Prelude
   use seq.Seq
   use mach.int.Int
+  use prelude.Prelude
   use mach.int.UInt64
   function model (self : seq t) : Seq.seq t
-  axiom model_spec : forall self : seq t . Seq.length (model self) <= 18446744073709551615 && model self = Prelude.id self
+  axiom model_spec : forall self : seq t . model self = Prelude.id self && Seq.length (model self) <= 18446744073709551615
 end
 module Alloc_Vec_Impl11_DerefMut_Interface
   type t
@@ -489,8 +489,8 @@ module Alloc_Vec_Impl11_DerefMut_Interface
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t, type a = a, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
   val deref_mut [@cfg:stackify] (self : borrowed (Type.alloc_vec_vec t a)) : borrowed (seq t)
-    ensures { Model0.model ( ^ result) = Model1.model ( ^ self) }
     ensures { Model0.model ( * result) = Model1.model ( * self) }
+    ensures { Model0.model ( ^ result) = Model1.model ( ^ self) }
     
 end
 module Alloc_Vec_Impl11_DerefMut
@@ -502,8 +502,8 @@ module Alloc_Vec_Impl11_DerefMut
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t, type a = a, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
   val deref_mut [@cfg:stackify] (self : borrowed (Type.alloc_vec_vec t a)) : borrowed (seq t)
-    ensures { Model0.model ( ^ result) = Model1.model ( ^ self) }
     ensures { Model0.model ( * result) = Model1.model ( * self) }
+    ensures { Model0.model ( ^ result) = Model1.model ( ^ self) }
     
 end
 module Core_Slice_Impl0_Swap_Interface
@@ -518,8 +518,8 @@ module Core_Slice_Impl0_Swap_Interface
   clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   val swap [@cfg:stackify] (self : borrowed (seq t)) (a : usize) (b : usize) : ()
-    requires {UInt64.to_int b < Seq.length (Model0.model self)}
     requires {UInt64.to_int a < Seq.length (Model0.model self)}
+    requires {UInt64.to_int b < Seq.length (Model0.model self)}
     ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int a) (UInt64.to_int b) }
     
 end
@@ -535,8 +535,8 @@ module Core_Slice_Impl0_Swap
   clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   val swap [@cfg:stackify] (self : borrowed (seq t)) (a : usize) (b : usize) : ()
-    requires {UInt64.to_int b < Seq.length (Model0.model self)}
     requires {UInt64.to_int a < Seq.length (Model0.model self)}
+    requires {UInt64.to_int b < Seq.length (Model0.model self)}
     ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int a) (UInt64.to_int b) }
     
 end
@@ -615,16 +615,16 @@ module SelectionSortGeneric_SelectionSort_Interface
   type t
   use prelude.Prelude
   use Type
-  clone SelectionSortGeneric_Sorted_Interface as Sorted0 with type t = t
   clone CreusotContracts_Logic_Seq_Impl2_PermutationOf_Interface as PermutationOf0 with type t = t
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = Type.alloc_alloc_global
   clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
+  clone SelectionSortGeneric_Sorted_Interface as Sorted0 with type t = t
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global,
   axiom .
   val selection_sort [@cfg:stackify] (v : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))) : ()
-    ensures { [#"../selection_sort_generic.rs" 27 10 27 34] PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
     ensures { [#"../selection_sort_generic.rs" 26 10 26 21] Sorted0.sorted (Model0.model ( ^ v)) }
+    ensures { [#"../selection_sort_generic.rs" 27 10 27 34] PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
     
 end
 module SelectionSortGeneric_SelectionSort
@@ -693,8 +693,8 @@ module SelectionSortGeneric_SelectionSort
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Type.alloc_alloc_global,
   function Model0.model = Model0.model
   let rec cfg selection_sort [@cfg:stackify] [#"../selection_sort_generic.rs" 28 0 28 45] (v : borrowed (Type.alloc_vec_vec t (Type.alloc_alloc_global))) : ()
-    ensures { [#"../selection_sort_generic.rs" 27 10 27 34] PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
     ensures { [#"../selection_sort_generic.rs" 26 10 26 21] Sorted0.sorted (Model0.model ( ^ v)) }
+    ensures { [#"../selection_sort_generic.rs" 27 10 27 34] PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
     
    =
   var _0 : ();

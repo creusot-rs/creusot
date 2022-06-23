@@ -408,9 +408,9 @@ where
     fn flip_colors(&mut self) {
         self.left.node.as_mut().unwrap().color = self.color;
         std::mem::swap(&mut self.color, &mut self.right.node.as_mut().unwrap().color);
+        proof_assert! {(*self).bst_invariant_here()}
         proof_assert! {(*self).left.same_mappings((^self).left)}
         proof_assert! {(*self).right.same_mappings((^self).right)}
-        proof_assert! {(*self).bst_invariant_here()}
     }
 
     #[requires((*self).bst_invariant())]
@@ -455,11 +455,11 @@ where
         }
     }
 
+    #[requires((*self).right.node != None)]
     #[requires((*self).bst_invariant())]
     #[requires((*self).color_invariant())]
     #[requires((*self).color == Red)]
     #[requires(exists<l: Box<Self>> (*self).left.node == Some(l) && l.left.color() == Black)]
-    #[requires((*self).right.node != None)]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     #[ensures((^self).bst_invariant())]
     #[ensures((*self).same_mappings(^self))]
@@ -484,10 +484,10 @@ where
         }
     }
 
+    #[requires((*self).left.node != None)]
     #[requires((*self).bst_invariant())]
     #[requires((*self).color_invariant())]
     #[requires((*self).color == Red)]
-    #[requires((*self).left.node != None)]
     #[requires(exists<r: Box<Self>> (*self).right.node == Some(r) && r.left.color() == Black)]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     #[ensures((^self).bst_invariant())]

@@ -213,7 +213,7 @@ module KnapsackFull_SubseqRev
   else
     i1 < Seq.length s1 && Seq.get s1 i1 = Seq.get s2 (i2 - 1) && subseq_rev s1 (i1 + 1) s2 (i2 - 1) || subseq_rev s1 i1 s2 (i2 - 1)
   )
-  axiom subseq_rev_spec : forall s1 : Seq.seq t, i1 : int, s2 : Seq.seq t, i2 : int . ([#"../knapsack_full.rs" 52 11 52 36] 0 <= i2 && i2 <= Seq.length s2) -> ([#"../knapsack_full.rs" 51 11 51 36] 0 <= i1 && i1 <= Seq.length s1) -> true
+  axiom subseq_rev_spec : forall s1 : Seq.seq t, i1 : int, s2 : Seq.seq t, i2 : int . ([#"../knapsack_full.rs" 51 11 51 36] 0 <= i1 && i1 <= Seq.length s1) -> ([#"../knapsack_full.rs" 52 11 52 36] 0 <= i2 && i2 <= Seq.length s2) -> true
 end
 module KnapsackFull_SubseqRev_Impl
   type t
@@ -222,8 +222,8 @@ module KnapsackFull_SubseqRev_Impl
   use seq.Seq
   use prelude.Prelude
   let rec ghost function subseq_rev (s1 : Seq.seq t) (i1 : int) (s2 : Seq.seq t) (i2 : int) : bool
-    requires {[#"../knapsack_full.rs" 52 11 52 36] 0 <= i2 && i2 <= Seq.length s2}
     requires {[#"../knapsack_full.rs" 51 11 51 36] 0 <= i1 && i1 <= Seq.length s1}
+    requires {[#"../knapsack_full.rs" 52 11 52 36] 0 <= i2 && i2 <= Seq.length s2}
     variant {[#"../knapsack_full.rs" 50 10 50 12] i2}
     
    =
@@ -268,7 +268,7 @@ module KnapsackFull_M
       MaxLog0.max_log (m items (i - 1) w) (m items (i - 1) (w - UInt64.to_int (Type.knapsackfull_item_Item_weight (Seq.get items (i - 1)))) + UInt64.to_int (Type.knapsackfull_item_Item_value (Seq.get items (i - 1))))
     
   )
-  axiom m_spec : forall items : Seq.seq (Type.knapsackfull_item name), i : int, w : int . ([#"../knapsack_full.rs" 66 11 66 17] 0 <= w) -> ([#"../knapsack_full.rs" 65 11 65 37] 0 <= i && i <= Seq.length items) -> ([#"../knapsack_full.rs" 67 10 67 21] m items i w >= 0) && ([#"../knapsack_full.rs" 68 0 70 2] forall j : (int) . forall s : (Seq.seq (Type.knapsackfull_item name)) . 0 <= j && j <= Seq.length s && SubseqRev0.subseq_rev s j items i && SumWeights0.sum_weights s j <= w -> SumValues0.sum_values s j <= m items i w)
+  axiom m_spec : forall items : Seq.seq (Type.knapsackfull_item name), i : int, w : int . ([#"../knapsack_full.rs" 65 11 65 37] 0 <= i && i <= Seq.length items) -> ([#"../knapsack_full.rs" 66 11 66 17] 0 <= w) -> ([#"../knapsack_full.rs" 68 0 70 2] forall j : (int) . forall s : (Seq.seq (Type.knapsackfull_item name)) . 0 <= j && j <= Seq.length s && SubseqRev0.subseq_rev s j items i && SumWeights0.sum_weights s j <= w -> SumValues0.sum_values s j <= m items i w) && ([#"../knapsack_full.rs" 67 10 67 21] m items i w >= 0)
 end
 module KnapsackFull_M_Impl
   type name
@@ -283,10 +283,10 @@ module KnapsackFull_M_Impl
   clone KnapsackFull_SumWeights as SumWeights0 with type name = name, axiom .
   clone KnapsackFull_SubseqRev as SubseqRev0 with type t = Type.knapsackfull_item name, axiom .
   let rec ghost function m (items : Seq.seq (Type.knapsackfull_item name)) (i : int) (w : int) : int
-    requires {[#"../knapsack_full.rs" 66 11 66 17] 0 <= w}
     requires {[#"../knapsack_full.rs" 65 11 65 37] 0 <= i && i <= Seq.length items}
-    ensures { [#"../knapsack_full.rs" 68 0 70 2] forall j : (int) . forall s : (Seq.seq (Type.knapsackfull_item name)) . 0 <= j && j <= Seq.length s && SubseqRev0.subseq_rev s j items i && SumWeights0.sum_weights s j <= w -> SumValues0.sum_values s j <= result }
+    requires {[#"../knapsack_full.rs" 66 11 66 17] 0 <= w}
     ensures { [#"../knapsack_full.rs" 67 10 67 21] result >= 0 }
+    ensures { [#"../knapsack_full.rs" 68 0 70 2] forall j : (int) . forall s : (Seq.seq (Type.knapsackfull_item name)) . 0 <= j && j <= Seq.length s && SubseqRev0.subseq_rev s j items i && SumWeights0.sum_weights s j <= w -> SumValues0.sum_values s j <= result }
     variant {[#"../knapsack_full.rs" 64 10 64 11] i}
     
    =
@@ -366,32 +366,32 @@ module CreusotContracts_Std1_Vec_Impl0
 end
 module Alloc_Vec_FromElem_Interface
   type t
+  use seq.Seq
+  use mach.int.UInt64
   use mach.int.Int
   use mach.int.Int32
-  use mach.int.UInt64
-  use seq.Seq
   use prelude.Prelude
   use Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global,
   axiom .
   val from_elem [@cfg:stackify] (elem : t) (n : usize) : Type.alloc_vec_vec t (Type.alloc_alloc_global)
-    ensures { forall i : (int) . 0 <= i && i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
+    ensures { forall i : (int) . 0 <= i && i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
 end
 module Alloc_Vec_FromElem
   type t
+  use seq.Seq
+  use mach.int.UInt64
   use mach.int.Int
   use mach.int.Int32
-  use mach.int.UInt64
-  use seq.Seq
   use prelude.Prelude
   use Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global,
   axiom .
   val from_elem [@cfg:stackify] (elem : t) (n : usize) : Type.alloc_vec_vec t (Type.alloc_alloc_global)
-    ensures { forall i : (int) . 0 <= i && i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
+    ensures { forall i : (int) . 0 <= i && i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
 end
 module Alloc_Vec_Impl1_Len_Interface
@@ -524,19 +524,19 @@ module Alloc_Vec_Impl17_IndexMut_Interface
   use Type
   clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = i, type t = seq t
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
-  type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere0 with type self = i,
   type t = seq t, type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
   val index_mut [@cfg:stackify] (self : borrowed (Type.alloc_vec_vec t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (Model0.model ( * self))}
-    ensures { Seq.length (Model0.model ( ^ self)) = Seq.length (Model0.model ( * self)) }
-    ensures { ResolveElswhere0.resolve_elswhere index (Model0.model ( * self)) (Model0.model ( ^ self)) }
-    ensures { HasValue0.has_value index (Model0.model ( ^ self)) ( ^ result) }
     ensures { HasValue0.has_value index (Model0.model ( * self)) ( * result) }
+    ensures { HasValue0.has_value index (Model0.model ( ^ self)) ( ^ result) }
+    ensures { ResolveElswhere0.resolve_elswhere index (Model0.model ( * self)) (Model0.model ( ^ self)) }
+    ensures { Seq.length (Model0.model ( ^ self)) = Seq.length (Model0.model ( * self)) }
     
 end
 module Alloc_Vec_Impl17_IndexMut
@@ -548,19 +548,19 @@ module Alloc_Vec_Impl17_IndexMut
   use Type
   clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = i, type t = seq t
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
-  type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere0 with type self = i,
   type t = seq t, type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
+  type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
   val index_mut [@cfg:stackify] (self : borrowed (Type.alloc_vec_vec t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (Model0.model ( * self))}
-    ensures { Seq.length (Model0.model ( ^ self)) = Seq.length (Model0.model ( * self)) }
-    ensures { ResolveElswhere0.resolve_elswhere index (Model0.model ( * self)) (Model0.model ( ^ self)) }
-    ensures { HasValue0.has_value index (Model0.model ( ^ self)) ( ^ result) }
     ensures { HasValue0.has_value index (Model0.model ( * self)) ( * result) }
+    ensures { HasValue0.has_value index (Model0.model ( ^ self)) ( ^ result) }
+    ensures { ResolveElswhere0.resolve_elswhere index (Model0.model ( * self)) (Model0.model ( ^ self)) }
+    ensures { Seq.length (Model0.model ( ^ self)) = Seq.length (Model0.model ( * self)) }
     
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
@@ -737,35 +737,35 @@ module CreusotContracts_Logic_Resolve_Impl2
 end
 module KnapsackFull_Knapsack01Dyn_Interface
   type name
+  use seq.Seq
   use mach.int.Int
   use mach.int.Int32
-  use seq.Seq
   use mach.int.UInt64
   use prelude.Prelude
   use Type
+  clone KnapsackFull_SumValues_Interface as SumValues0 with type name = name, axiom .
+  clone KnapsackFull_SubseqRev_Interface as SubseqRev0 with type t = Type.knapsackfull_item name, axiom .
+  clone KnapsackFull_SumWeights_Interface as SumWeights0 with type name = name, axiom .
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = Type.knapsackfull_item name,
   type a = Type.alloc_alloc_global, axiom .
-  clone KnapsackFull_SumValues_Interface as SumValues0 with type name = name, axiom .
-  clone KnapsackFull_SumWeights_Interface as SumWeights0 with type name = name, axiom .
-  clone KnapsackFull_SubseqRev_Interface as SubseqRev0 with type t = Type.knapsackfull_item name, axiom .
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = Type.knapsackfull_item name,
   type a = Type.alloc_alloc_global
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.alloc_vec_vec (Type.knapsackfull_item name) (Type.alloc_alloc_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
   val knapsack01_dyn [@cfg:stackify] (items : Type.alloc_vec_vec (Type.knapsackfull_item name) (Type.alloc_alloc_global)) (max_weight : usize) : Type.alloc_vec_vec (Type.knapsackfull_item name) (Type.alloc_alloc_global)
-    requires {[#"../knapsack_full.rs" 84 0 84 91] forall i : (int) . 0 <= i && i < Seq.length (Model0.model items) -> UInt64.to_int (Type.knapsackfull_item_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
-    requires {[#"../knapsack_full.rs" 83 11 83 33] UInt64.to_int max_weight < 10000000}
     requires {[#"../knapsack_full.rs" 82 11 82 36] Seq.length (Model0.model items) < 10000000}
-    ensures { [#"../knapsack_full.rs" 87 0 89 2] forall s : (Seq.seq (Type.knapsackfull_item name)) . SubseqRev0.subseq_rev s 0 (Model0.model items) (Seq.length (Model0.model items)) && SumWeights0.sum_weights s (Seq.length s) <= UInt64.to_int max_weight -> SumValues0.sum_values s (Seq.length s) <= SumValues0.sum_values (Model1.model result) (Seq.length (Model1.model result)) }
-    ensures { [#"../knapsack_full.rs" 86 10 86 56] SubseqRev0.subseq_rev (Model1.model result) 0 (Model0.model items) (Seq.length (Model0.model items)) }
+    requires {[#"../knapsack_full.rs" 83 11 83 33] UInt64.to_int max_weight < 10000000}
+    requires {[#"../knapsack_full.rs" 84 0 84 91] forall i : (int) . 0 <= i && i < Seq.length (Model0.model items) -> UInt64.to_int (Type.knapsackfull_item_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
     ensures { [#"../knapsack_full.rs" 85 10 85 62] SumWeights0.sum_weights (Model1.model result) (Seq.length (Model1.model result)) <= UInt64.to_int max_weight }
+    ensures { [#"../knapsack_full.rs" 86 10 86 56] SubseqRev0.subseq_rev (Model1.model result) 0 (Model0.model items) (Seq.length (Model0.model items)) }
+    ensures { [#"../knapsack_full.rs" 87 0 89 2] forall s : (Seq.seq (Type.knapsackfull_item name)) . SubseqRev0.subseq_rev s 0 (Model0.model items) (Seq.length (Model0.model items)) && SumWeights0.sum_weights s (Seq.length s) <= UInt64.to_int max_weight -> SumValues0.sum_values s (Seq.length s) <= SumValues0.sum_values (Model1.model result) (Seq.length (Model1.model result)) }
     
 end
 module KnapsackFull_Knapsack01Dyn
   type name
+  use seq.Seq
   use mach.int.Int
   use mach.int.Int32
-  use seq.Seq
   use mach.int.UInt64
   use prelude.Prelude
   use Type
@@ -773,14 +773,14 @@ module KnapsackFull_Knapsack01Dyn
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = usize, type a = Type.alloc_alloc_global, axiom .
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = Type.alloc_vec_vec usize (Type.alloc_alloc_global),
   type a = Type.alloc_alloc_global, axiom .
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Type.knapsackfull_item name,
-  type a = Type.alloc_alloc_global, axiom .
   clone KnapsackFull_SumValues as SumValues0 with type name = name, axiom .
-  clone KnapsackFull_SumWeights as SumWeights0 with type name = name, axiom .
   clone KnapsackFull_SubseqRev as SubseqRev0 with type t = Type.knapsackfull_item name, axiom .
+  clone KnapsackFull_SumWeights as SumWeights0 with type name = name, axiom .
   clone KnapsackFull_M as M0 with type name = name, predicate SubseqRev0.subseq_rev = SubseqRev0.subseq_rev,
   function SumWeights0.sum_weights = SumWeights0.sum_weights, function SumValues0.sum_values = SumValues0.sum_values,
   function MaxLog0.max_log = MaxLog0.max_log, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Type.knapsackfull_item name,
+  type a = Type.alloc_alloc_global, axiom .
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model4 with type t = Type.knapsackfull_item name,
   type a = Type.alloc_alloc_global, axiom .
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = Type.knapsackfull_item name,
@@ -811,9 +811,8 @@ module KnapsackFull_Knapsack01Dyn
   predicate Resolve0.resolve = Resolve7.resolve
   clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut1 with type t = usize, type i = usize,
   type a = Type.alloc_alloc_global, function Model0.model = Model3.model,
-  predicate InBounds0.in_bounds = InBounds2.in_bounds,
-  predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere1.resolve_elswhere,
-  predicate HasValue0.has_value = HasValue2.has_value, type Output0.output = Output2.output
+  predicate InBounds0.in_bounds = InBounds2.in_bounds, predicate HasValue0.has_value = HasValue2.has_value,
+  predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere1.resolve_elswhere, type Output0.output = Output2.output
   clone Alloc_Vec_Impl16_Index_Interface as Index2 with type t = usize, type i = usize,
   type a = Type.alloc_alloc_global, function Model0.model = Model3.model,
   predicate InBounds0.in_bounds = InBounds2.in_bounds, predicate HasValue0.has_value = HasValue2.has_value,
@@ -823,9 +822,8 @@ module KnapsackFull_Knapsack01Dyn
   function Model0.model = Model2.model, predicate Resolve0.resolve = Resolve6.resolve
   clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = Type.alloc_vec_vec usize (Type.alloc_alloc_global),
   type i = usize, type a = Type.alloc_alloc_global, function Model0.model = Model2.model,
-  predicate InBounds0.in_bounds = InBounds1.in_bounds,
-  predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere,
-  predicate HasValue0.has_value = HasValue1.has_value, type Output0.output = Output1.output
+  predicate InBounds0.in_bounds = InBounds1.in_bounds, predicate HasValue0.has_value = HasValue1.has_value,
+  predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere, type Output0.output = Output1.output
   clone Alloc_Vec_Impl16_Index_Interface as Index1 with type t = Type.alloc_vec_vec usize (Type.alloc_alloc_global),
   type i = usize, type a = Type.alloc_alloc_global, function Model0.model = Model2.model,
   predicate InBounds0.in_bounds = InBounds1.in_bounds, predicate HasValue0.has_value = HasValue1.has_value,
@@ -845,12 +843,12 @@ module KnapsackFull_Knapsack01Dyn
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = Type.knapsackfull_item name,
   type a = Type.alloc_alloc_global, function Model0.model = Model4.model
   let rec cfg knapsack01_dyn [@cfg:stackify] [#"../knapsack_full.rs" 90 0 90 91] (items : Type.alloc_vec_vec (Type.knapsackfull_item name) (Type.alloc_alloc_global)) (max_weight : usize) : Type.alloc_vec_vec (Type.knapsackfull_item name) (Type.alloc_alloc_global)
-    requires {[#"../knapsack_full.rs" 84 0 84 91] forall i : (int) . 0 <= i && i < Seq.length (Model0.model items) -> UInt64.to_int (Type.knapsackfull_item_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
-    requires {[#"../knapsack_full.rs" 83 11 83 33] UInt64.to_int max_weight < 10000000}
     requires {[#"../knapsack_full.rs" 82 11 82 36] Seq.length (Model0.model items) < 10000000}
-    ensures { [#"../knapsack_full.rs" 87 0 89 2] forall s : (Seq.seq (Type.knapsackfull_item name)) . SubseqRev0.subseq_rev s 0 (Model0.model items) (Seq.length (Model0.model items)) && SumWeights0.sum_weights s (Seq.length s) <= UInt64.to_int max_weight -> SumValues0.sum_values s (Seq.length s) <= SumValues0.sum_values (Model1.model result) (Seq.length (Model1.model result)) }
-    ensures { [#"../knapsack_full.rs" 86 10 86 56] SubseqRev0.subseq_rev (Model1.model result) 0 (Model0.model items) (Seq.length (Model0.model items)) }
+    requires {[#"../knapsack_full.rs" 83 11 83 33] UInt64.to_int max_weight < 10000000}
+    requires {[#"../knapsack_full.rs" 84 0 84 91] forall i : (int) . 0 <= i && i < Seq.length (Model0.model items) -> UInt64.to_int (Type.knapsackfull_item_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
     ensures { [#"../knapsack_full.rs" 85 10 85 62] SumWeights0.sum_weights (Model1.model result) (Seq.length (Model1.model result)) <= UInt64.to_int max_weight }
+    ensures { [#"../knapsack_full.rs" 86 10 86 56] SubseqRev0.subseq_rev (Model1.model result) 0 (Model0.model items) (Seq.length (Model0.model items)) }
+    ensures { [#"../knapsack_full.rs" 87 0 89 2] forall s : (Seq.seq (Type.knapsackfull_item name)) . SubseqRev0.subseq_rev s 0 (Model0.model items) (Seq.length (Model0.model items)) && SumWeights0.sum_weights s (Seq.length s) <= UInt64.to_int max_weight -> SumValues0.sum_values s (Seq.length s) <= SumValues0.sum_values (Model1.model result) (Seq.length (Model1.model result)) }
     
    =
   var _0 : Type.alloc_vec_vec (Type.knapsackfull_item name) (Type.alloc_alloc_global);
