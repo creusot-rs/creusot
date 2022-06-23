@@ -79,30 +79,30 @@ module IterMut_Impl2_Model
 end
 module IterMut_Impl1_IterMut_Interface
   type t
-  use mach.int.Int
   use seq.Seq
+  use mach.int.Int
   use prelude.Prelude
   use Type
   clone IterMut_Impl2_Model_Interface as Model1 with type t = t
   clone IterMut_Impl0_Model_Interface as Model0 with type t = t
   val iter_mut [@cfg:stackify] (self : borrowed (Type.itermut_vec t)) : Type.itermut_itermut t
-    ensures { [#"../iter_mut.rs" 25 4 25 94] forall i : (int) . 0 <= i && i <= Seq.length (Model0.model ( ^ self)) -> Seq.get (Model0.model ( ^ self)) i =  ^ Seq.get (Model1.model result) i }
-    ensures { [#"../iter_mut.rs" 24 4 24 94] forall i : (int) . 0 <= i && i <= Seq.length (Model0.model ( * self)) -> Seq.get (Model0.model ( * self)) i =  * Seq.get (Model1.model result) i }
     ensures { [#"../iter_mut.rs" 23 14 23 83] Seq.length (Model0.model ( * self)) = Seq.length (Model1.model result) && Seq.length (Model0.model ( * self)) = Seq.length (Model0.model ( ^ self)) }
+    ensures { [#"../iter_mut.rs" 24 4 24 94] forall i : (int) . 0 <= i && i <= Seq.length (Model0.model ( * self)) -> Seq.get (Model0.model ( * self)) i =  * Seq.get (Model1.model result) i }
+    ensures { [#"../iter_mut.rs" 25 4 25 94] forall i : (int) . 0 <= i && i <= Seq.length (Model0.model ( ^ self)) -> Seq.get (Model0.model ( ^ self)) i =  ^ Seq.get (Model1.model result) i }
     
 end
 module IterMut_Impl1_IterMut
   type t
-  use mach.int.Int
   use seq.Seq
+  use mach.int.Int
   use prelude.Prelude
   use Type
   clone IterMut_Impl2_Model as Model1 with type t = t
   clone IterMut_Impl0_Model as Model0 with type t = t
   val iter_mut [@cfg:stackify] (self : borrowed (Type.itermut_vec t)) : Type.itermut_itermut t
-    ensures { [#"../iter_mut.rs" 25 4 25 94] forall i : (int) . 0 <= i && i <= Seq.length (Model0.model ( ^ self)) -> Seq.get (Model0.model ( ^ self)) i =  ^ Seq.get (Model1.model result) i }
-    ensures { [#"../iter_mut.rs" 24 4 24 94] forall i : (int) . 0 <= i && i <= Seq.length (Model0.model ( * self)) -> Seq.get (Model0.model ( * self)) i =  * Seq.get (Model1.model result) i }
     ensures { [#"../iter_mut.rs" 23 14 23 83] Seq.length (Model0.model ( * self)) = Seq.length (Model1.model result) && Seq.length (Model0.model ( * self)) = Seq.length (Model0.model ( ^ self)) }
+    ensures { [#"../iter_mut.rs" 24 4 24 94] forall i : (int) . 0 <= i && i <= Seq.length (Model0.model ( * self)) -> Seq.get (Model0.model ( * self)) i =  * Seq.get (Model1.model result) i }
+    ensures { [#"../iter_mut.rs" 25 4 25 94] forall i : (int) . 0 <= i && i <= Seq.length (Model0.model ( ^ self)) -> Seq.get (Model0.model ( ^ self)) i =  ^ Seq.get (Model1.model result) i }
     
 end
 module IterMut_Impl1_Len_Interface
@@ -127,19 +127,6 @@ module IterMut_Impl1_Len
     ensures { [#"../iter_mut.rs" 31 14 31 45] result = Seq.length (Model0.model self) }
     
 end
-module CreusotContracts_Logic_Seq_Impl2_Tail_Interface
-  type t
-  use seq.Seq
-  function tail (self : Seq.seq t) : Seq.seq t
-end
-module CreusotContracts_Logic_Seq_Impl2_Tail
-  type t
-  use seq.Seq
-  use mach.int.Int
-  use seq_ext.SeqExt
-  function tail (self : Seq.seq t) : Seq.seq t =
-    SeqExt.subsequence self 1 (Seq.length self)
-end
 module CreusotContracts_Logic_Seq_Impl2_Get_Interface
   type t
   use seq.Seq
@@ -155,17 +142,30 @@ module CreusotContracts_Logic_Seq_Impl2_Get
   function get (self : Seq.seq t) (ix : int) : Type.core_option_option t =
     if ix < Seq.length self then Type.Core_Option_Option_Some (Seq.get self ix) else Type.Core_Option_Option_None
 end
+module CreusotContracts_Logic_Seq_Impl2_Tail_Interface
+  type t
+  use seq.Seq
+  function tail (self : Seq.seq t) : Seq.seq t
+end
+module CreusotContracts_Logic_Seq_Impl2_Tail
+  type t
+  use seq.Seq
+  use mach.int.Int
+  use seq_ext.SeqExt
+  function tail (self : Seq.seq t) : Seq.seq t =
+    SeqExt.subsequence self 1 (Seq.length self)
+end
 module IterMut_Impl3_Next_Interface
   type t
   use mach.int.Int
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Logic_Seq_Impl2_Get_Interface as Get0 with type t = borrowed t
   clone CreusotContracts_Logic_Seq_Impl2_Tail_Interface as Tail0 with type t = borrowed t
+  clone CreusotContracts_Logic_Seq_Impl2_Get_Interface as Get0 with type t = borrowed t
   clone IterMut_Impl2_Model_Interface as Model0 with type t = t
   val next [@cfg:stackify] (self : borrowed (Type.itermut_itermut t)) : Type.core_option_option (borrowed t)
-    ensures { [#"../iter_mut.rs" 52 14 52 39] Model0.model ( ^ self) = Tail0.tail (Model0.model ( * self)) }
     ensures { [#"../iter_mut.rs" 51 14 51 39] result = Get0.get (Model0.model ( * self)) 0 }
+    ensures { [#"../iter_mut.rs" 52 14 52 39] Model0.model ( ^ self) = Tail0.tail (Model0.model ( * self)) }
     
 end
 module IterMut_Impl3_Next
@@ -173,12 +173,12 @@ module IterMut_Impl3_Next
   use mach.int.Int
   use prelude.Prelude
   use Type
-  clone CreusotContracts_Logic_Seq_Impl2_Get as Get0 with type t = borrowed t
   clone CreusotContracts_Logic_Seq_Impl2_Tail as Tail0 with type t = borrowed t
+  clone CreusotContracts_Logic_Seq_Impl2_Get as Get0 with type t = borrowed t
   clone IterMut_Impl2_Model as Model0 with type t = t
   val next [@cfg:stackify] (self : borrowed (Type.itermut_itermut t)) : Type.core_option_option (borrowed t)
-    ensures { [#"../iter_mut.rs" 52 14 52 39] Model0.model ( ^ self) = Tail0.tail (Model0.model ( * self)) }
     ensures { [#"../iter_mut.rs" 51 14 51 39] result = Get0.get (Model0.model ( * self)) 0 }
+    ensures { [#"../iter_mut.rs" 52 14 52 39] Model0.model ( ^ self) = Tail0.tail (Model0.model ( * self)) }
     
 end
 module CreusotContracts_Logic_Model_Model_ModelTy
@@ -261,8 +261,8 @@ module CreusotContracts_Logic_Resolve_Impl1
   type t
 end
 module IterMut_IncVec_Interface
-  use mach.int.Int
   use seq.Seq
+  use mach.int.Int
   use prelude.Prelude
   use Type
   clone IterMut_Impl0_ModelTy as ModelTy0 with type t = int
@@ -270,13 +270,13 @@ module IterMut_IncVec_Interface
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone IterMut_Impl0_Model_Interface as Model0 with type t = int
   val inc_vec [@cfg:stackify] (v : borrowed (Type.itermut_vec int)) : ()
-    ensures { [#"../iter_mut.rs" 59 0 59 83] forall i : (int) . 0 <= i && i < Seq.length (Model0.model ( ^ v)) -> Seq.get (Model0.model ( ^ v)) i = Seq.get (Model1.model v) i + 5 }
     ensures { [#"../iter_mut.rs" 58 10 58 35] Seq.length (Model0.model ( ^ v)) = Seq.length (Model1.model v) }
+    ensures { [#"../iter_mut.rs" 59 0 59 83] forall i : (int) . 0 <= i && i < Seq.length (Model0.model ( ^ v)) -> Seq.get (Model0.model ( ^ v)) i = Seq.get (Model1.model v) i + 5 }
     
 end
 module IterMut_IncVec
-  use mach.int.Int
   use seq.Seq
+  use mach.int.Int
   use prelude.Prelude
   use Type
   clone IterMut_Impl2_Model as Model2 with type t = int
@@ -285,16 +285,16 @@ module IterMut_IncVec
   clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Type.itermut_vec int,
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = int
-  clone CreusotContracts_Logic_Seq_Impl2_Get as Get0 with type t = borrowed int
   clone CreusotContracts_Logic_Seq_Impl2_Tail as Tail0 with type t = borrowed int
+  clone CreusotContracts_Logic_Seq_Impl2_Get as Get0 with type t = borrowed int
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.itermut_vec int
   clone IterMut_Impl3_Next_Interface as Next0 with type t = int, function Model0.model = Model2.model,
-  function Tail0.tail = Tail0.tail, function Get0.get = Get0.get
+  function Get0.get = Get0.get, function Tail0.tail = Tail0.tail
   clone IterMut_Impl1_IterMut_Interface as IterMut0 with type t = int, function Model0.model = Model0.model,
   function Model1.model = Model2.model
   let rec cfg inc_vec [@cfg:stackify] [#"../iter_mut.rs" 60 0 60 32] (v : borrowed (Type.itermut_vec int)) : ()
-    ensures { [#"../iter_mut.rs" 59 0 59 83] forall i : (int) . 0 <= i && i < Seq.length (Model0.model ( ^ v)) -> Seq.get (Model0.model ( ^ v)) i = Seq.get (Model1.model v) i + 5 }
     ensures { [#"../iter_mut.rs" 58 10 58 35] Seq.length (Model0.model ( ^ v)) = Seq.length (Model1.model v) }
+    ensures { [#"../iter_mut.rs" 59 0 59 83] forall i : (int) . 0 <= i && i < Seq.length (Model0.model ( ^ v)) -> Seq.get (Model0.model ( ^ v)) i = Seq.get (Model1.model v) i + 5 }
     
    =
   var _0 : ();

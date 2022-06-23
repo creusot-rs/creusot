@@ -205,7 +205,10 @@ pub(crate) fn contract_clauses_of(
     let attrs = ctx.get_attrs_unchecked(def_id);
     let mut contract = ContractClauses::new();
 
-    for attr in attrs {
+    // Attributes are given in reverse order. So we need to rever the list of
+    // attributes to make sure requires/ensures clauses appear in the same
+    // order in WhyML code as they appear in Rust code.
+    for attr in attrs.iter().rev() {
         if !util::is_attr(attr, "spec") {
             continue;
         }

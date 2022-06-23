@@ -272,7 +272,7 @@ module CreusotContracts_Logic_Ord_OrdLogic_Trans
   use Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function trans (x : self) (y : self) (z : self) (o : Type.core_cmp_ordering) : ()
-  axiom trans_spec : forall x : self, y : self, z : self, o : Type.core_cmp_ordering . CmpLog0.cmp_log y z = o -> CmpLog0.cmp_log x y = o -> CmpLog0.cmp_log x z = o
+  axiom trans_spec : forall x : self, y : self, z : self, o : Type.core_cmp_ordering . CmpLog0.cmp_log x y = o -> CmpLog0.cmp_log y z = o -> CmpLog0.cmp_log x z = o
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym1_Interface
   type self
@@ -516,18 +516,18 @@ module C05BinarySearchGeneric_BinarySearch_Interface
   use prelude.Prelude
   use mach.int.UInt64
   use Type
-  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = t
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
   clone C05BinarySearchGeneric_Sorted_Interface as Sorted0 with type t = t
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = Type.alloc_alloc_global
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
   val binary_search [@cfg:stackify] (arr : Type.alloc_vec_vec t (Type.alloc_alloc_global)) (elem : t) : Type.core_result_result usize usize
-    requires {[#"../05_binary_search_generic.rs" 19 11 19 23] Sorted0.sorted (Model0.model arr)}
     requires {[#"../05_binary_search_generic.rs" 18 11 18 38] Seq.length (Model0.model arr) <= 18446744073709551615}
-    ensures { [#"../05_binary_search_generic.rs" 23 0 24 71] forall x : (usize) . result = Type.Core_Result_Result_Err x -> (forall i : (usize) . x <= i && UInt64.to_int i < Seq.length (Model0.model arr) -> LtLog0.lt_log elem (Seq.get (Model0.model arr) (UInt64.to_int i))) }
-    ensures { [#"../05_binary_search_generic.rs" 21 0 22 51] forall x : (usize) . result = Type.Core_Result_Result_Err x -> (forall i : (usize) . i < x -> LeLog0.le_log (Seq.get (Model0.model arr) (UInt64.to_int i)) elem) }
+    requires {[#"../05_binary_search_generic.rs" 19 11 19 23] Sorted0.sorted (Model0.model arr)}
     ensures { [#"../05_binary_search_generic.rs" 20 0 20 66] forall x : (usize) . result = Type.Core_Result_Result_Ok x -> Seq.get (Model0.model arr) (UInt64.to_int x) = elem }
+    ensures { [#"../05_binary_search_generic.rs" 21 0 22 51] forall x : (usize) . result = Type.Core_Result_Result_Err x -> (forall i : (usize) . i < x -> LeLog0.le_log (Seq.get (Model0.model arr) (UInt64.to_int i)) elem) }
+    ensures { [#"../05_binary_search_generic.rs" 23 0 24 71] forall x : (usize) . result = Type.Core_Result_Result_Err x -> (forall i : (usize) . x <= i && UInt64.to_int i < Seq.length (Model0.model arr) -> LtLog0.lt_log elem (Seq.get (Model0.model arr) (UInt64.to_int i))) }
     
 end
 module C05BinarySearchGeneric_BinarySearch
@@ -557,6 +557,10 @@ module C05BinarySearchGeneric_BinarySearch
   function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Refl as Refl0 with type self = t,
   function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog as LtLog0 with type self = t,
+  function CmpLog0.cmp_log = CmpLog0.cmp_log
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog as CmpLtLog0 with type self = t,
+  predicate LtLog0.lt_log = LtLog0.lt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog as LeLog0 with type self = t,
   function CmpLog0.cmp_log = CmpLog0.cmp_log
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t,
@@ -564,10 +568,6 @@ module C05BinarySearchGeneric_BinarySearch
   clone C05BinarySearchGeneric_SortedRange as SortedRange0 with type t = t, predicate LeLog0.le_log = LeLog0.le_log
   clone C05BinarySearchGeneric_Sorted as Sorted0 with type t = t,
   predicate SortedRange0.sorted_range = SortedRange0.sorted_range
-  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog as LtLog0 with type self = t,
-  function CmpLog0.cmp_log = CmpLog0.cmp_log
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog as CmpLtLog0 with type self = t,
-  predicate LtLog0.lt_log = LtLog0.lt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t, type a = Type.alloc_alloc_global, axiom .
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy as ModelTy0 with type t = t, type a = Type.alloc_alloc_global
   clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Type.alloc_vec_vec t (Type.alloc_alloc_global),
@@ -589,11 +589,11 @@ module C05BinarySearchGeneric_BinarySearch
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Type.alloc_alloc_global,
   function Model0.model = Model1.model
   let rec cfg binary_search [@cfg:stackify] [#"../05_binary_search_generic.rs" 25 0 25 86] (arr : Type.alloc_vec_vec t (Type.alloc_alloc_global)) (elem : t) : Type.core_result_result usize usize
-    requires {[#"../05_binary_search_generic.rs" 19 11 19 23] Sorted0.sorted (Model0.model arr)}
     requires {[#"../05_binary_search_generic.rs" 18 11 18 38] Seq.length (Model0.model arr) <= 18446744073709551615}
-    ensures { [#"../05_binary_search_generic.rs" 23 0 24 71] forall x : (usize) . result = Type.Core_Result_Result_Err x -> (forall i : (usize) . x <= i && UInt64.to_int i < Seq.length (Model0.model arr) -> LtLog0.lt_log elem (Seq.get (Model0.model arr) (UInt64.to_int i))) }
-    ensures { [#"../05_binary_search_generic.rs" 21 0 22 51] forall x : (usize) . result = Type.Core_Result_Result_Err x -> (forall i : (usize) . i < x -> LeLog0.le_log (Seq.get (Model0.model arr) (UInt64.to_int i)) elem) }
+    requires {[#"../05_binary_search_generic.rs" 19 11 19 23] Sorted0.sorted (Model0.model arr)}
     ensures { [#"../05_binary_search_generic.rs" 20 0 20 66] forall x : (usize) . result = Type.Core_Result_Result_Ok x -> Seq.get (Model0.model arr) (UInt64.to_int x) = elem }
+    ensures { [#"../05_binary_search_generic.rs" 21 0 22 51] forall x : (usize) . result = Type.Core_Result_Result_Err x -> (forall i : (usize) . i < x -> LeLog0.le_log (Seq.get (Model0.model arr) (UInt64.to_int i)) elem) }
+    ensures { [#"../05_binary_search_generic.rs" 23 0 24 71] forall x : (usize) . result = Type.Core_Result_Result_Err x -> (forall i : (usize) . x <= i && UInt64.to_int i < Seq.length (Model0.model arr) -> LtLog0.lt_log elem (Seq.get (Model0.model arr) (UInt64.to_int i))) }
     
    =
   var _0 : Type.core_result_result usize usize;
