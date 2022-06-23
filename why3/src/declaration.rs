@@ -135,7 +135,7 @@ impl Contract {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Attribute {
     Attr(String),
-    Span(String, usize, usize, usize), // file, line, start col, end col
+    Span(String, usize, usize, usize, usize), // file, start line, start col, end line, end col
 }
 
 #[derive(Debug, Clone)]
