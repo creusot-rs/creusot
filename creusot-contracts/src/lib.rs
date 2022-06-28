@@ -133,6 +133,9 @@ pub mod logic;
 #[cfg(feature = "contracts")]
 pub mod std;
 
+#[cfg(all(feature = "contracts", feature = "num_bigint"))]
+pub mod bigint;
+
 #[cfg(not(feature = "contracts"))]
 pub mod std {
     pub use std::vec;
