@@ -1,10 +1,10 @@
-use rustc_hir::def_id::DefId;
-use rustc_middle::ty::subst::SubstsRef;
-use rustc_middle::ty::{self, subst::InternalSubsts, ProjectionTy, Ty, TyCtxt};
-use rustc_middle::ty::{ClosureSubsts, FieldDef, VariantDef};
-use rustc_span::Symbol;
-use rustc_span::{Span, DUMMY_SP};
-use rustc_type_ir::sty::TyKind::*;
+use creusot_rustc::hir::def_id::DefId;
+use creusot_rustc::middle::ty::subst::SubstsRef;
+use creusot_rustc::middle::ty::{self, subst::InternalSubsts, ProjectionTy, Ty, TyCtxt};
+use creusot_rustc::middle::ty::{ClosureSubsts, FieldDef, VariantDef};
+use creusot_rustc::span::Symbol;
+use creusot_rustc::span::{Span, DUMMY_SP};
+use creusot_rustc::type_ir::sty::TyKind::*;
 use std::collections::VecDeque;
 use why3::declaration::{AdtDecl, ConstructorDecl, LetFun};
 use why3::declaration::{Contract, Decl, Signature};
@@ -106,7 +106,7 @@ fn translate_ty_inner<'tcx>(
             }
         }
         Ref(_, ty, borkind) => {
-            use rustc_ast::Mutability::*;
+            use creusot_rustc::ast::Mutability::*;
             names.import_prelude_module(PreludeModule::Prelude);
             match borkind {
                 Mut => MlT::MutableBorrow(box translate_ty_inner(trans, ctx, names, span, *ty)),
@@ -188,7 +188,7 @@ pub fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> Vec<DefId> {
             for field in &variant.fields {
                 for ty in field.ty(tcx, substs).walk() {
                     let k = match ty.unpack() {
-                        rustc_middle::ty::subst::GenericArgKind::Type(ty) => ty,
+                        creusot_rustc::middle::ty::subst::GenericArgKind::Type(ty) => ty,
                         _ => continue,
                     };
                     if let Adt(def, _) = k.kind() {
@@ -472,9 +472,9 @@ pub fn variant_accessor_name(tcx: TyCtxt, def: DefId, variant: &VariantDef, fiel
 fn intty_to_ty(
     ctx: &TranslationCtx<'_, '_>,
     names: &mut CloneMap<'_>,
-    ity: &rustc_middle::ty::IntTy,
+    ity: &creusot_rustc::middle::ty::IntTy,
 ) -> MlT {
-    use rustc_middle::ty::IntTy::*;
+    use creusot_rustc::middle::ty::IntTy::*;
     names.import_prelude_module(PreludeModule::Int);
 
     if !ctx.opts.bounds_check {
@@ -515,9 +515,9 @@ fn intty_to_ty(
 fn uintty_to_ty(
     ctx: &TranslationCtx<'_, '_>,
     names: &mut CloneMap<'_>,
-    ity: &rustc_middle::ty::UintTy,
+    ity: &creusot_rustc::middle::ty::UintTy,
 ) -> MlT {
-    use rustc_middle::ty::UintTy::*;
+    use creusot_rustc::middle::ty::UintTy::*;
     names.import_prelude_module(PreludeModule::Int);
 
     if !ctx.opts.bounds_check {
@@ -555,8 +555,8 @@ fn uintty_to_ty(
     }
 }
 
-fn floatty_to_ty(_: &mut CloneMap<'_>, fty: &rustc_middle::ty::FloatTy) -> MlT {
-    use rustc_middle::ty::FloatTy::*;
+fn floatty_to_ty(_: &mut CloneMap<'_>, fty: &creusot_rustc::middle::ty::FloatTy) -> MlT {
+    use creusot_rustc::middle::ty::FloatTy::*;
 
     match fty {
         F32 => single_ty(),

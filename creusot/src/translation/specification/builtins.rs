@@ -4,9 +4,9 @@ use crate::ctx::PreludeModule;
 use crate::translation::traits::resolve_opt;
 use crate::translation::ty::translate_ty;
 use crate::util::get_builtin;
-use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
-use rustc_span::{symbol::sym, Symbol};
+use creusot_rustc::hir::def_id::DefId;
+use creusot_rustc::middle::ty::{subst::SubstsRef, TyCtxt};
+use creusot_rustc::span::{symbol::sym, Symbol};
 use why3::exp::{BinOp, Constant, Exp, Purity, UnOp};
 use why3::QName;
 
@@ -72,7 +72,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             return Some(Exp::UnaryOp(UnOp::Neg, box a));
         } else if builtin_attr == Some(Symbol::intern("<=")) {
             let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
-            translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty);
+            translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
 
             let l = args.remove(0);
             let r = args.remove(0);
@@ -80,7 +80,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             return Some(Exp::BinaryOp(BinOp::Le, box l, box r));
         } else if builtin_attr == Some(Symbol::intern("<")) {
             let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
-            translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty);
+            translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
 
             let l = args.remove(0);
             let r = args.remove(0);
@@ -88,7 +88,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             return Some(Exp::BinaryOp(BinOp::Lt, box l, box r));
         } else if builtin_attr == Some(Symbol::intern(">=")) {
             let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
-            translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty);
+            translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
 
             let l = args.remove(0);
             let r = args.remove(0);
@@ -96,7 +96,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             return Some(Exp::BinaryOp(BinOp::Ge, box l, box r));
         } else if builtin_attr == Some(Symbol::intern(">")) {
             let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
-            translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty);
+            translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
 
             let l = args.remove(0);
             let r = args.remove(0);
@@ -104,7 +104,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             return Some(Exp::BinaryOp(BinOp::Gt, box l, box r));
         } else if builtin_attr == Some(Symbol::intern("==")) {
             let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
-            translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty);
+            translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
 
             let l = args.remove(0);
             let r = args.remove(0);
@@ -112,7 +112,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             return Some(Exp::BinaryOp(BinOp::Eq, box l, box r));
         } else if builtin_attr == Some(Symbol::intern("!=")) {
             let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
-            translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty);
+            translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
 
             let l = args.remove(0);
             let r = args.remove(0);

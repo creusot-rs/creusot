@@ -1,10 +1,8 @@
-use rustc_borrowck::borrow_set::TwoPhaseActivation;
-use rustc_middle::{
-    mir::{
-        BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
-        StatementKind,
-    },
-    ty::{IntTy, TyKind, UintTy},
+use creusot_rustc::borrowck::borrow_set::TwoPhaseActivation;
+use creusot_rustc::middle::ty::{IntTy, TyKind, UintTy};
+use creusot_rustc::smir::mir::{
+    BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
+    StatementKind,
 };
 
 use why3::{
@@ -149,7 +147,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
             }
             Rvalue::UnaryOp(op, v) => UnaryOp(unop_to_unop(*op), box self.translate_operand(v)),
             Rvalue::Aggregate(box kind, ops) => {
-                use rustc_middle::mir::AggregateKind::*;
+                use creusot_rustc::smir::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
 
                 match kind {

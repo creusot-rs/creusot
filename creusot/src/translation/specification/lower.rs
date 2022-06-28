@@ -4,8 +4,8 @@ use crate::translation::ty::translate_ty;
 use crate::translation::ty::variant_accessor_name;
 use crate::util::constructor_qname;
 use crate::{ctx::*, util};
-use rustc_middle::ty;
-use rustc_middle::ty::{EarlyBinder, ParamEnv, Subst, TyKind};
+use creusot_rustc::middle::ty;
+use creusot_rustc::middle::ty::{EarlyBinder, ParamEnv, Subst, TyKind};
 use why3::exp::{BinOp, Constant, Exp, Pattern as Pat, Purity};
 use why3::QName;
 
@@ -57,7 +57,12 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             TermKind::Lit(l) => {
                 let c = match l {
                     Literal::Int(u, _) => {
-                        let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, term.ty);
+                        let ty = translate_ty(
+                            self.ctx,
+                            self.names,
+                            creusot_rustc::span::DUMMY_SP,
+                            term.ty,
+                        );
 
                         match term.ty.kind() {
                             TyKind::Int(_) => Constant::Int(u as i128, Some(ty)),
@@ -92,13 +97,13 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                         self.names,
                         constant,
                         self.param_env,
-                        rustc_span::DUMMY_SP,
+                        creusot_rustc::span::DUMMY_SP,
                     )
                 })
             }
             TermKind::Var(v) => Exp::pure_var(util::ident_of(v)),
             TermKind::Binary { op, operand_ty, box lhs, box rhs } => {
-                translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, operand_ty);
+                translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, operand_ty);
 
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
@@ -164,11 +169,13 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 })
             }
             TermKind::Forall { binder, box body } => {
-                let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
+                let ty =
+                    translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, binder.1);
                 Exp::Forall(vec![(binder.0.into(), ty)], box self.lower_term(body))
             }
             TermKind::Exists { binder, box body } => {
-                let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
+                let ty =
+                    translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, binder.1);
                 Exp::Exists(vec![(binder.0.into(), ty)], box self.lower_term(body))
             }
             TermKind::Constructor { adt, variant, fields } => {
@@ -239,7 +246,12 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                         box self.lower_term(false_br),
                     )
                 } else {
-                    let _ = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, scrutinee.ty);
+                    let _ = translate_ty(
+                        self.ctx,
+                        self.names,
+                        creusot_rustc::span::DUMMY_SP,
+                        scrutinee.ty,
+                    );
                     let arms = arms
                         .into_iter()
                         .map(|(pat, body)| (self.lower_pat(pat), self.lower_term(body)))
@@ -301,8 +313,8 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
     }
 }
 
-use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
+use creusot_rustc::hir::def_id::DefId;
+use creusot_rustc::middle::ty::{subst::SubstsRef, TyCtxt};
 
 fn binop_to_binop(op: typing::BinOp) -> why3::exp::BinOp {
     match op {

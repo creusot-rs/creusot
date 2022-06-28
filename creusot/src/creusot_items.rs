@@ -1,10 +1,10 @@
-use rustc_middle::ty::TyCtxt;
-use rustc_span::{def_id::DefId, symbol::Symbol};
+use creusot_rustc::middle::ty::TyCtxt;
+use creusot_rustc::span::{def_id::DefId, symbol::Symbol};
 use std::collections::HashMap;
 
 use crate::util;
 
-use rustc_macros::{TyDecodable, TyEncodable};
+use creusot_rustc::macros::{TyDecodable, TyEncodable};
 
 #[derive(Debug, Default, Clone, TyDecodable, TyEncodable)]
 pub struct CreusotItems {

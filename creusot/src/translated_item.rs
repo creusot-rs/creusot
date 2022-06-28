@@ -1,8 +1,8 @@
 pub use crate::clone_map::*;
 use crate::metadata::Metadata;
 use crate::util;
+use creusot_rustc::hir::def_id::DefId;
 use indexmap::IndexMap;
-use rustc_hir::def_id::DefId;
 pub use util::{item_name, module_name, ItemType};
 use why3::declaration::{Decl, Module, TyDecl};
 

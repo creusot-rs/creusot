@@ -1,21 +1,25 @@
-use rustc_errors::DiagnosticId;
-use rustc_hir::def_id::DefId;
-use rustc_infer::{
+use creusot_rustc::errors::DiagnosticId;
+use creusot_rustc::hir::def_id::DefId;
+use creusot_rustc::infer::{
     infer::{InferCtxt, TyCtxtInferExt},
     traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
 };
-use rustc_middle::{
-    mir::{Location, Operand, SourceInfo, SwitchTargets, Terminator, TerminatorKind::*},
+use creusot_rustc::middle::ty::{Ty, TyCtxt};
+use creusot_rustc::middle::{
+    mir::{SwitchTargets, Terminator, TerminatorKind, TerminatorKind::*},
     ty::{
         self,
         subst::{GenericArgKind, SubstsRef},
         AdtDef, ParamEnv, Predicate,
     },
 };
-use rustc_session::Session;
-use rustc_span::Span;
-use rustc_target::abi::VariantIdx;
-use rustc_trait_selection::traits::FulfillmentContext;
+use creusot_rustc::session::Session;
+use creusot_rustc::smir::mir::{
+    BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo, StatementKind,
+};
+use creusot_rustc::span::Span;
+use creusot_rustc::target::abi::VariantIdx;
+use creusot_rustc::trait_selection::traits::FulfillmentContext;
 
 use std::collections::HashMap;
 use why3::exp::{BinOp, Constant, Exp, Pattern};
@@ -86,7 +90,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     .map(|p| p.predicates_for(self.tcx, subst))
                     .unwrap_or_else(Vec::new);
 
-                use rustc_trait_selection::traits::error_reporting::InferCtxtExt;
+                use creusot_rustc::trait_selection::traits::error_reporting::InferCtxtExt;
                 self.tcx.infer_ctxt().enter(|infcx| {
                     let res = evaluate_additional_predicates(
                         &infcx,
@@ -175,7 +179,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
         &mut self,
         def_id: DefId,
         subst: SubstsRef<'tcx>,
-        sp: rustc_span::Span,
+        sp: creusot_rustc::span::Span,
     ) -> QName {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(id) = it.container {
@@ -240,9 +244,6 @@ fn evaluate_additional_predicates<'tcx>(
     }
 }
 
-use rustc_middle::mir::{BasicBlockData, Place, Rvalue, StatementKind, TerminatorKind};
-use rustc_middle::ty::{Ty, TyCtxt};
-
 // Find the place being discriminated, if there is one
 pub fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Place<'tcx>> {
     let discr = if let TerminatorKind::SwitchInt { discr, .. } = &bbd.terminator().kind {
@@ -272,7 +273,7 @@ pub fn make_switch<'tcx>(
     targets: &SwitchTargets,
     discr: Exp,
 ) -> MlT {
-    use rustc_type_ir::sty::TyKind::*;
+    use creusot_rustc::type_ir::sty::TyKind::*;
     use Pattern::*;
     match switch_ty.kind() {
         Adt(def, _) => {
@@ -331,7 +332,7 @@ pub fn make_switch<'tcx>(
     }
 }
 
-fn mk_goto(bb: rustc_middle::mir::BasicBlock) -> MlT {
+fn mk_goto(bb: creusot_rustc::middle::mir::BasicBlock) -> MlT {
     MlT::Goto(BlockId(bb.into()))
 }
 

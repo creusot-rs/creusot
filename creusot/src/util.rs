@@ -1,12 +1,12 @@
 use crate::translation::ty::closure_accessor_name;
 use crate::{ctx::*, translation};
-use rustc_ast::ast::{MacArgs, MacArgsEq};
-use rustc_ast::{AttrItem, AttrKind, Attribute};
-use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::subst::{InternalSubsts, SubstsRef};
-use rustc_middle::ty::{self, Subst, Ty, TyKind, VariantDef};
-use rustc_middle::ty::{DefIdTree, EarlyBinder, ReErased, TyCtxt};
-use rustc_span::Symbol;
+use creusot_rustc::ast::ast::{MacArgs, MacArgsEq};
+use creusot_rustc::ast::{AttrItem, AttrKind, Attribute};
+use creusot_rustc::hir::{def::DefKind, def_id::DefId};
+use creusot_rustc::middle::ty::subst::{InternalSubsts, SubstsRef};
+use creusot_rustc::middle::ty::{self, Subst, Ty, TyKind, VariantDef};
+use creusot_rustc::middle::ty::{DefIdTree, EarlyBinder, ReErased, TyCtxt};
+use creusot_rustc::span::Symbol;
 use std::collections::HashMap;
 use std::iter;
 use why3::exp::ExpMutVisitor;
@@ -155,7 +155,7 @@ pub fn item_qname(tcx: TyCtxt, def_id: DefId) -> QName {
 // The reason for this that we cannot distinguish a struct being used in a type
 // from a struct being used as a constructor! (very annoying).
 pub fn item_name(tcx: TyCtxt, def_id: DefId) -> Ident {
-    use rustc_hir::def::DefKind::*;
+    use creusot_rustc::hir::def::DefKind::*;
 
     match tcx.def_kind(def_id) {
         AssocTy => ident_of_ty(tcx.item_name(def_id)),
@@ -192,7 +192,7 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
 
 pub fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
     let kind = tcx.def_kind(def_id);
-    use rustc_hir::def::DefKind::*;
+    use creusot_rustc::hir::def::DefKind::*;
 
     match kind {
         Ctor(_, _) | Variant | Struct | Enum => "Type".into(),
@@ -289,8 +289,8 @@ pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
 pub fn inputs_and_output<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
-) -> (impl Iterator<Item = (rustc_span::symbol::Ident, Ty<'tcx>)>, Ty<'tcx>) {
-    let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) =
+) -> (impl Iterator<Item = (creusot_rustc::span::symbol::Ident, Ty<'tcx>)>, Ty<'tcx>) {
+    let (inputs, output): (Box<dyn Iterator<Item = (creusot_rustc::span::symbol::Ident, _)>>, _) =
         match tcx.type_of(def_id).kind() {
             TyKind::FnDef(..) => {
                 let gen_sig = tcx.fn_sig(def_id);
@@ -305,12 +305,12 @@ pub fn inputs_and_output<'tcx>(
                 let env_region = ReErased;
                 let env_ty = tcx.closure_env_ty(def_id, subst, env_region).unwrap();
 
-                let closure_env = (rustc_span::symbol::Ident::empty(), env_ty);
+                let closure_env = (creusot_rustc::span::symbol::Ident::empty(), env_ty);
                 let names = tcx
                     .fn_arg_names(def_id)
                     .iter()
                     .cloned()
-                    .chain(iter::repeat(rustc_span::symbol::Ident::empty()));
+                    .chain(iter::repeat(creusot_rustc::span::symbol::Ident::empty()));
                 (
                     box iter::once(closure_env).chain(names.zip(sig.inputs().iter().cloned())),
                     sig.output(),
@@ -396,7 +396,7 @@ pub fn signature_of<'tcx>(
     Signature { name, attrs, retty: Some(retty), args, contract }
 }
 
-use rustc_ast::{
+use creusot_rustc::ast::{
     token::TokenKind::Literal,
     tokenstream::{TokenStream, TokenTree::*},
 };

@@ -12,10 +12,8 @@ use crate::{
     },
     util::{self, constructor_qname},
 };
-use rustc_middle::{
-    mir::{Body, BorrowKind, Operand, Promoted, StatementKind, TerminatorKind},
-    ty::ParamEnv,
-};
+use creusot_rustc::middle::{mir::TerminatorKind, ty::ParamEnv};
+use creusot_rustc::smir::mir::{Body, BorrowKind, Operand, Promoted, StatementKind};
 use why3::{
     declaration::{Contract, Decl, LetDecl, Signature},
     exp::{Exp, Pattern},
@@ -77,8 +75,8 @@ pub fn translate_promoted<'tcx>(
             _ => {}
         }
         previous_block = Some(id);
-        use rustc_middle::mir::Rvalue::*;
-        use rustc_middle::ty::UintTy;
+        use creusot_rustc::middle::ty::UintTy;
+        use creusot_rustc::smir::mir::Rvalue::*;
         for stmt in bbd.statements.iter().rev() {
             match &stmt.kind {
                 StatementKind::Assign(box (tgt, val)) => {
@@ -111,7 +109,7 @@ pub fn translate_promoted<'tcx>(
                             box translate_operand(ctx, names, body, param_env, v),
                         ),
                         Aggregate(box kind, ops) => {
-                            use rustc_middle::mir::AggregateKind::*;
+                            use creusot_rustc::smir::mir::AggregateKind::*;
                             let fields = ops
                                 .iter()
                                 .map(|op| translate_operand(ctx, names, body, param_env, op))
@@ -190,7 +188,7 @@ fn translate_operand<'tcx>(
     param_env: ParamEnv<'tcx>,
     operand: &Operand<'tcx>,
 ) -> Exp {
-    use rustc_middle::mir::Operand::*;
+    use creusot_rustc::smir::mir::Operand::*;
 
     match operand {
         Move(pl) | Copy(pl) => {

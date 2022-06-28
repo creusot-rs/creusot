@@ -1,8 +1,8 @@
-use rustc_index::bit_set::BitSet;
-use rustc_middle::mir::visit::{
+use creusot_rustc::index::bit_set::BitSet;
+use creusot_rustc::middle::mir::visit::{
     MutatingUseContext, NonMutatingUseContext, NonUseContext, PlaceContext, Visitor,
 };
-use rustc_middle::mir::{self, Local, Location};
+use creusot_rustc::smir::mir::{self, Local, Location};
 
 pub mod uninit_locals;
 

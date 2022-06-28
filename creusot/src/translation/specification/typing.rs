@@ -1,23 +1,24 @@
 use crate::error::{CrErr, CreusotResult, Error};
 use crate::util;
-use itertools::Itertools;
-use log::*;
-use rustc_ast::{LitIntType, LitKind};
-use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_hir::HirId;
-use rustc_macros::{Decodable, Encodable, TyDecodable, TyEncodable, TypeFoldable};
-pub use rustc_middle::mir::Field;
-pub use rustc_middle::thir;
-use rustc_middle::thir::{
+use creusot_rustc::ast::{LitIntType, LitKind};
+use creusot_rustc::hir::def_id::{DefId, LocalDefId};
+use creusot_rustc::hir::HirId;
+use creusot_rustc::macros::{Decodable, Encodable, TyDecodable, TyEncodable, TypeFoldable};
+pub use creusot_rustc::middle::thir;
+use creusot_rustc::middle::thir::{
     visit, Adt, ArmId, Block, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
 };
-use rustc_middle::ty::{AdtDef, Ty, TyKind, UpvarSubsts};
-use rustc_middle::{
-    mir::{BorrowKind, Mutability::*},
+use creusot_rustc::middle::ty::{AdtDef, Ty, TyKind, UpvarSubsts};
+use creusot_rustc::middle::{
+    mir::Mutability::*,
     ty::{subst::SubstsRef, TyCtxt, WithOptConstParam},
 };
-use rustc_span::{Span, Symbol};
-use rustc_target::abi::VariantIdx;
+use creusot_rustc::smir::mir::BorrowKind;
+pub use creusot_rustc::smir::mir::Field;
+use creusot_rustc::span::{Span, Symbol};
+use creusot_rustc::target::abi::VariantIdx;
+use itertools::Itertools;
+use log::*;
 
 use super::PurityVisitor;
 
@@ -80,16 +81,16 @@ pub enum TermKind<'tcx> {
     Absurd,
 }
 
-use rustc_middle::ty::fold::TypeFoldable;
+use creusot_rustc::middle::ty::fold::TypeFoldable;
 impl<'tcx> TypeFoldable<'tcx> for Literal {
-    fn try_fold_with<F: rustc_middle::ty::FallibleTypeFolder<'tcx>>(
+    fn try_fold_with<F: creusot_rustc::middle::ty::FallibleTypeFolder<'tcx>>(
         self,
         _: &mut F,
     ) -> Result<Self, F::Error> {
         Ok(self)
     }
 
-    fn visit_with<V: rustc_middle::ty::TypeVisitor<'tcx>>(
+    fn visit_with<V: creusot_rustc::middle::ty::TypeVisitor<'tcx>>(
         &self,
         _: &mut V,
     ) -> std::ops::ControlFlow<V::BreakTy> {
@@ -156,33 +157,33 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let rhs = self.expr_term(rhs)?;
 
                 let op = match op {
-                    rustc_middle::mir::BinOp::Add => BinOp::Add,
-                    rustc_middle::mir::BinOp::Sub => BinOp::Sub,
-                    rustc_middle::mir::BinOp::Mul => BinOp::Mul,
-                    rustc_middle::mir::BinOp::Div => BinOp::Div,
-                    rustc_middle::mir::BinOp::Rem => BinOp::Rem,
-                    rustc_middle::mir::BinOp::BitXor => {
+                    creusot_rustc::middle::mir::BinOp::Add => BinOp::Add,
+                    creusot_rustc::middle::mir::BinOp::Sub => BinOp::Sub,
+                    creusot_rustc::middle::mir::BinOp::Mul => BinOp::Mul,
+                    creusot_rustc::middle::mir::BinOp::Div => BinOp::Div,
+                    creusot_rustc::middle::mir::BinOp::Rem => BinOp::Rem,
+                    creusot_rustc::middle::mir::BinOp::BitXor => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    rustc_middle::mir::BinOp::BitAnd => {
+                    creusot_rustc::middle::mir::BinOp::BitAnd => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    rustc_middle::mir::BinOp::BitOr => {
+                    creusot_rustc::middle::mir::BinOp::BitOr => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    rustc_middle::mir::BinOp::Shl => {
+                    creusot_rustc::middle::mir::BinOp::Shl => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    rustc_middle::mir::BinOp::Shr => {
+                    creusot_rustc::middle::mir::BinOp::Shr => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    rustc_middle::mir::BinOp::Eq => BinOp::Eq,
-                    rustc_middle::mir::BinOp::Lt => BinOp::Lt,
-                    rustc_middle::mir::BinOp::Le => BinOp::Le,
-                    rustc_middle::mir::BinOp::Ne => BinOp::Ne,
-                    rustc_middle::mir::BinOp::Ge => BinOp::Ge,
-                    rustc_middle::mir::BinOp::Gt => BinOp::Gt,
-                    rustc_middle::mir::BinOp::Offset => todo!(),
+                    creusot_rustc::middle::mir::BinOp::Eq => BinOp::Eq,
+                    creusot_rustc::middle::mir::BinOp::Lt => BinOp::Lt,
+                    creusot_rustc::middle::mir::BinOp::Le => BinOp::Le,
+                    creusot_rustc::middle::mir::BinOp::Ne => BinOp::Ne,
+                    creusot_rustc::middle::mir::BinOp::Ge => BinOp::Ge,
+                    creusot_rustc::middle::mir::BinOp::Gt => BinOp::Gt,
+                    creusot_rustc::middle::mir::BinOp::Offset => todo!(),
                 };
                 Ok(Term {
                     ty,
@@ -202,8 +203,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Unary { op, arg } => {
                 let arg = self.expr_term(arg)?;
                 let op = match op {
-                    rustc_middle::mir::UnOp::Not => UnOp::Not,
-                    rustc_middle::mir::UnOp::Neg => UnOp::Neg,
+                    creusot_rustc::middle::mir::UnOp::Not => UnOp::Not,
+                    creusot_rustc::middle::mir::UnOp::Neg => UnOp::Neg,
                 };
                 Ok(Term { ty, span, kind: TermKind::Unary { op, arg: box arg } })
             }
@@ -387,7 +388,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                                 // this is the wrong type
                                 body: box Term {
                                     ty: lhs.ty,
-                                    span: rustc_span::DUMMY_SP,
+                                    span: creusot_rustc::span::DUMMY_SP,
                                     kind: TermKind::Var(Symbol::intern("a")),
                                 },
                                 arg: box lhs,

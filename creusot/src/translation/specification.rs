@@ -1,23 +1,20 @@
-use std::collections::{HashMap, HashSet};
-
+use self::typing::{pearlite_stub, Term};
+use super::LocalIdent;
 use crate::translation::function::real_locals;
 use crate::util::closure_owner;
 use crate::{ctx::*, util};
-use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable};
-use rustc_middle::thir::{self, ExprKind, Thir};
-use rustc_middle::ty::subst::{InternalSubsts, SubstsRef};
-use rustc_middle::ty::{EarlyBinder, Subst};
-use rustc_span::Symbol;
+use creusot_rustc::hir::def_id::DefId;
+use creusot_rustc::macros::{TyDecodable, TyEncodable, TypeFoldable};
+use creusot_rustc::middle::mir::OUTERMOST_SOURCE_SCOPE;
+use creusot_rustc::middle::thir::{self, ExprKind, Thir};
+use creusot_rustc::middle::ty::subst::{InternalSubsts, SubstsRef};
+use creusot_rustc::middle::ty::{self, EarlyBinder, Subst, TyCtxt};
+use creusot_rustc::smir::mir::{Body, Local, Location, SourceScope};
+use creusot_rustc::span::Symbol;
+use std::collections::{HashMap, HashSet};
 use why3::declaration::Contract;
 use why3::exp::Exp;
 use why3::Ident;
-
-use self::typing::{pearlite_stub, Term};
-
-use super::LocalIdent;
-use rustc_hir::def_id::DefId;
-use rustc_middle::mir::{Body, Location};
-use rustc_middle::ty::{self, TyCtxt};
 
 mod builtins;
 mod lower;
@@ -110,13 +107,11 @@ impl ContractClauses {
     }
 }
 
-use rustc_middle::mir::{Local, SourceScope, OUTERMOST_SOURCE_SCOPE};
-
 struct ScopeTree(HashMap<SourceScope, (HashSet<(Symbol, Local)>, Option<SourceScope>)>);
 
 impl ScopeTree {
     fn build<'tcx>(body: &Body<'tcx>) -> Self {
-        use rustc_middle::mir::VarDebugInfoContents::Place;
+        use creusot_rustc::smir::mir::VarDebugInfoContents::Place;
         let mut scope_tree: HashMap<SourceScope, (HashSet<_>, Option<_>)> = Default::default();
 
         for var_info in &body.var_debug_info {
@@ -214,7 +209,7 @@ pub(crate) fn contract_clauses_of(
         }
 
         let attr = attr.get_normal_item();
-        use rustc_ast::ast::{MacArgs, MacArgsEq};
+        use creusot_rustc::ast::ast::{MacArgs, MacArgsEq};
 
         // Stop using diagnostic item.
         // Use a custom HIR visitor which walks the attributes
@@ -325,14 +320,14 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 "called impure program function in logical context {:?}",
                                 self.tcx.def_path_str(func_did)
                             ),
-                            rustc_errors::DiagnosticId::Error(String::from("creusot")),
+                            creusot_rustc::errors::DiagnosticId::Error(String::from("creusot")),
                         );
                     }
                 } else {
                     self.tcx.sess.span_fatal_with_code(
                         expr.span,
                         "non function call in logical context",
-                        rustc_errors::DiagnosticId::Error(String::from("creusot")),
+                        creusot_rustc::errors::DiagnosticId::Error(String::from("creusot")),
                     )
                 }
             }
