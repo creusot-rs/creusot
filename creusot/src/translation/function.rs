@@ -146,7 +146,7 @@ pub struct BodyTranslator<'body, 'sess, 'tcx> {
 
     // Spec / Ghost variables
     erased_locals: BitSet<Local>,
-    local_map: HashMap<Local, Local>,
+    // local_map: HashMap<Local, Local>,
 
     // Current block being generated
     current_block: (Vec<mlcfg::Statement>, Option<mlcfg::Terminator>),
@@ -202,7 +202,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         let resolver = EagerResolver::new(tcx, body, borrows.clone());
 
         // TODO: Remove?
-        let local_map = real_locals(tcx, body);
+        // let local_map = real_locals(tcx, body);
 
         BodyTranslator {
             tcx,
@@ -211,7 +211,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             def_id,
             resolver,
             erased_locals,
-            local_map,
+            // local_map,
             current_block: (Vec::new(), None),
             past_blocks: BTreeMap::new(),
             ctx,
@@ -423,7 +423,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     }
 
     fn translate_local(&self, loc: Local) -> LocalIdent {
-        place::translate_local(&self.body, &self.local_map, loc)
+        place::translate_local(&self.body, &HashMap::new(), loc)
     }
 }
 

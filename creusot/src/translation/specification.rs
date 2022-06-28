@@ -1,6 +1,6 @@
 use self::typing::{pearlite_stub, Term};
 use super::LocalIdent;
-use crate::{ctx::*, translation::function::real_locals, util, util::closure_owner};
+use crate::{ctx::*, util, util::closure_owner};
 use creusot_rustc::{
     hir::def_id::DefId,
     macros::{TyDecodable, TyEncodable, TypeFoldable},
@@ -174,14 +174,14 @@ pub fn inv_subst<'tcx>(
     body: &Body<'tcx>,
     loc: Location,
 ) -> HashMap<why3::Ident, Exp> {
-    let local_map = real_locals(tcx, body);
+    // let local_map = real_locals(tcx, body);
     let info = body.source_info(loc);
     let mut args = HashMap::new();
 
     let tree = ScopeTree::build(body);
 
     for (k, v) in tree.visible_locals(info.scope) {
-        let loc = local_map[&v];
+        let loc = v;
         args.insert(k.to_string().into(), Exp::pure_var(LocalIdent::dbg_raw(loc, k).ident()));
     }
 
