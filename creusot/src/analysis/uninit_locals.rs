@@ -1,8 +1,10 @@
-// use crate::dataflow::{self, GenKill};
-use rustc_index::bit_set::ChunkedBitSet;
-use rustc_middle::mir::visit::{PlaceContext, Visitor};
-use rustc_middle::mir::{self, BasicBlock, Local, Location};
-use rustc_mir_dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis};
+use creusot_rustc::dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis};
+use creusot_rustc::index::bit_set::ChunkedBitSet;
+use creusot_rustc::middle::mir::{
+    visit::{PlaceContext, Visitor},
+    Terminator,
+};
+use creusot_rustc::smir::mir::{self, BasicBlock, Local, Location};
 
 pub struct MaybeUninitializedLocals;
 
@@ -40,7 +42,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
     fn terminator_effect(
         &self,
         trans: &mut impl GenKill<Self::Idx>,
-        terminator: &mir::Terminator<'tcx>,
+        terminator: &Terminator<'tcx>,
         loc: Location,
     ) {
         TransferFunction { trans }.visit_terminator(terminator, loc)
@@ -50,7 +52,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
         &self,
         trans: &mut impl GenKill<Self::Idx>,
         _block: BasicBlock,
-        return_places: rustc_mir_dataflow::CallReturnPlaces<'_, 'tcx>,
+        return_places: dataflow::CallReturnPlaces<'_, 'tcx>,
     ) {
         return_places.for_each(|place| {
             if let Some(local) = place.as_local() {
@@ -79,7 +81,9 @@ where
     T: GenKill<Local>,
 {
     fn visit_local(&mut self, &local: &Local, context: PlaceContext, _: Location) {
-        use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, NonUseContext};
+        use creusot_rustc::middle::mir::visit::{
+            MutatingUseContext, NonMutatingUseContext, NonUseContext,
+        };
         match context {
             // These are handled specially in `call_return_effect` and `yield_resume_effect`.
             PlaceContext::MutatingUse(MutatingUseContext::Call | MutatingUseContext::Yield) => {}

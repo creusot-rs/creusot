@@ -1,11 +1,11 @@
 use indexmap::{IndexMap, IndexSet};
 
-use rustc_data_structures::graph::WithSuccessors;
-use rustc_hir::def_id::DefId;
-use rustc_middle::mir::Operand;
-use rustc_middle::mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Rvalue};
-use rustc_middle::ty::{TyCtxt, TyKind};
-use rustc_span::Symbol;
+use creusot_rustc::data_structures::graph::WithSuccessors;
+use creusot_rustc::hir::def_id::DefId;
+use creusot_rustc::middle::mir::visit::Visitor;
+use creusot_rustc::middle::ty::{TyCtxt, TyKind};
+use creusot_rustc::smir::mir::{AggregateKind, BasicBlock, Body, Location, Operand, Rvalue};
+use creusot_rustc::span::Symbol;
 
 use why3::exp::Exp;
 

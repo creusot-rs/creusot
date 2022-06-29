@@ -1,16 +1,3 @@
-use std::collections::HashMap;
-
-use rustc_middle::{
-    mir::{Body, Local, Place},
-    ty::{TyKind, UintTy},
-};
-use why3::exp::{
-    Exp::{self, *},
-    Pattern::*,
-};
-use why3::mlcfg::{self, Statement::*};
-use why3::QName;
-
 use super::{BodyTranslator, LocalIdent};
 use crate::{
     ctx::{CloneMap, TranslationCtx},
@@ -18,6 +5,15 @@ use crate::{
     translation::ty::{closure_accessor_name, variant_accessor_name},
     util::{constructor_qname, item_qname},
 };
+use creusot_rustc::middle::ty::{TyKind, UintTy};
+use creusot_rustc::smir::mir::{Body, Local, Place};
+use std::collections::HashMap;
+use why3::exp::{
+    Exp::{self, *},
+    Pattern::*,
+};
+use why3::mlcfg::{self, Statement::*};
+use why3::QName;
 
 impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     pub fn translate_rplace(&mut self, rhs: &Place<'tcx>) -> Exp {
@@ -53,7 +49,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         // So we track the path from the root as we traverse, which we call the stump.
         let mut stump: &[_] = lhs.projection;
 
-        use rustc_middle::mir::ProjectionElem::*;
+        use creusot_rustc::smir::mir::ProjectionElem::*;
 
         for (proj, elem) in lhs.iter_projections().rev() {
             // twisted stuff
@@ -62,7 +58,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
             match elem {
                 Deref => {
-                    use rustc_hir::Mutability::*;
+                    use creusot_rustc::hir::Mutability::*;
 
                     let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
                     if mutability == Mut {
@@ -205,16 +201,16 @@ pub(super) fn translate_rplace_inner<'tcx>(
     body: &Body<'tcx>,
     map: &HashMap<Local, Local>,
     loc: Local,
-    proj: &[rustc_middle::mir::PlaceElem<'tcx>],
+    proj: &[creusot_rustc::middle::mir::PlaceElem<'tcx>],
 ) -> Exp {
     let mut inner = Exp::impure_var(translate_local(body, map, loc).ident());
-    use rustc_middle::mir::ProjectionElem::*;
+    use creusot_rustc::smir::mir::ProjectionElem::*;
     let mut place_ty = Place::ty_from(loc, &[], body, ctx.tcx);
 
     for elem in proj {
         match elem {
             Deref => {
-                use rustc_hir::Mutability::*;
+                use creusot_rustc::hir::Mutability::*;
                 let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
                 if mutability == Mut {
                     inner = Current(box inner)
@@ -275,7 +271,7 @@ pub(super) fn translate_rplace_inner<'tcx>(
 }
 
 pub(super) fn translate_local(body: &Body, map: &HashMap<Local, Local>, loc: Local) -> LocalIdent {
-    use rustc_middle::mir::VarDebugInfoContents::Place;
+    use creusot_rustc::smir::mir::VarDebugInfoContents::Place;
     let debug_info: Vec<_> = body
         .var_debug_info
         .iter()

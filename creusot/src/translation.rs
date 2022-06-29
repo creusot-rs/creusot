@@ -14,13 +14,13 @@ use crate::error::CrErr;
 use crate::metadata;
 use crate::options::OutputFile;
 use crate::validate::validate_traits;
+use creusot_rustc::hir::def::DefKind;
+use creusot_rustc::hir::def_id::LOCAL_CRATE;
 use ctx::TranslationCtx;
 pub use function::translate_function;
 pub use function::LocalIdent;
 use heck::CamelCase;
 pub use logic::*;
-use rustc_hir::def::DefKind;
-use rustc_hir::def_id::LOCAL_CRATE;
 use std::error::Error;
 use std::io::Write;
 use why3::mlcfg;
@@ -128,8 +128,8 @@ pub fn after_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::exp::BinOp {
-    use rustc_middle::mir;
+pub fn binop_to_binop(op: creusot_rustc::middle::mir::BinOp) -> why3::exp::BinOp {
+    use creusot_rustc::smir::mir;
     use why3::exp::BinOp;
     match op {
         mir::BinOp::Add => BinOp::Add,
@@ -147,10 +147,10 @@ pub fn binop_to_binop(op: rustc_middle::mir::BinOp) -> why3::exp::BinOp {
     }
 }
 
-fn unop_to_unop(op: rustc_middle::mir::UnOp) -> why3::exp::UnOp {
+fn unop_to_unop(op: creusot_rustc::middle::mir::UnOp) -> why3::exp::UnOp {
     match op {
-        rustc_middle::mir::UnOp::Not => why3::exp::UnOp::Not,
-        rustc_middle::mir::UnOp::Neg => why3::exp::UnOp::Neg,
+        creusot_rustc::middle::mir::UnOp::Not => why3::exp::UnOp::Not,
+        creusot_rustc::middle::mir::UnOp::Neg => why3::exp::UnOp::Neg,
     }
 }
 

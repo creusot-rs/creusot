@@ -1,11 +1,9 @@
-use rustc_hir::def_id::DefId;
-use rustc_middle::mir::interpret::{AllocRange, ConstValue};
-use rustc_middle::{
-    mir::ConstantKind,
-    ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt, Unevaluated},
-};
-use rustc_span::Span;
-use rustc_target::abi::Size;
+use creusot_rustc::hir::def_id::DefId;
+use creusot_rustc::middle::mir::interpret::{AllocRange, ConstValue};
+use creusot_rustc::middle::ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt, Unevaluated};
+use creusot_rustc::smir::mir::ConstantKind;
+use creusot_rustc::span::Span;
+use creusot_rustc::target::abi::Size;
 use why3::{
     declaration::Module,
     exp::{Constant, Exp},
@@ -34,7 +32,7 @@ pub fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
-    c: &rustc_middle::mir::Constant<'tcx>,
+    c: &creusot_rustc::smir::mir::Constant<'tcx>,
 ) -> Exp {
     from_mir_constant_kind(ctx, names, c.literal, env, c.span)
 }
@@ -42,7 +40,7 @@ pub fn from_mir_constant<'tcx>(
 pub fn from_mir_constant_kind<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
-    ck: rustc_middle::mir::ConstantKind<'tcx>,
+    ck: creusot_rustc::smir::mir::ConstantKind<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
 ) -> Exp {
@@ -102,8 +100,8 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
     span: Span,
     c: C,
 ) -> Exp {
-    use rustc_middle::ty::{IntTy::*, UintTy::*};
-    use rustc_type_ir::sty::TyKind::{Bool, FnDef, Int, Uint};
+    use creusot_rustc::middle::ty::{IntTy::*, UintTy::*};
+    use creusot_rustc::type_ir::sty::TyKind::{Bool, FnDef, Int, Uint};
     let why3_ty = ty::translate_ty(ctx, names, span, ty);
 
     match ty.kind() {

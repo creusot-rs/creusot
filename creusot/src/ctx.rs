@@ -14,14 +14,14 @@ use crate::translation::ty;
 use crate::translation::{external, specification};
 use crate::util::item_type;
 use crate::{options::Options, util};
+use creusot_rustc::data_structures::captures::Captures;
+use creusot_rustc::errors::{DiagnosticBuilder, DiagnosticId};
+use creusot_rustc::hir::def::DefKind;
+use creusot_rustc::hir::def_id::{DefId, LocalDefId};
+use creusot_rustc::middle::ty::subst::InternalSubsts;
+use creusot_rustc::middle::ty::{ParamEnv, TyCtxt};
+use creusot_rustc::span::{Span, Symbol, DUMMY_SP};
 use indexmap::{IndexMap, IndexSet};
-use rustc_data_structures::captures::Captures;
-use rustc_errors::{DiagnosticBuilder, DiagnosticId};
-use rustc_hir::def::DefKind;
-use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_middle::ty::subst::InternalSubsts;
-use rustc_middle::ty::{ParamEnv, TyCtxt};
-use rustc_span::{Span, Symbol, DUMMY_SP};
 pub use util::{item_name, module_name, ItemType};
 use why3::declaration::{Module, TyDecl};
 use why3::exp::Exp;
@@ -162,7 +162,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn translate_accessor(&mut self, field_id: DefId) {
-        use rustc_middle::ty::DefIdTree;
+        use creusot_rustc::middle::ty::DefIdTree;
 
         if !self.translated_items.insert(field_id) {
             return;
@@ -297,8 +297,8 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             additional_predicates.extend(self.tcx.param_env(def_id).caller_bounds());
             ParamEnv::new(
                 self.mk_predicates(additional_predicates.into_iter()),
-                rustc_infer::traits::Reveal::UserFacing,
-                rustc_hir::Constness::NotConst,
+                creusot_rustc::infer::traits::Reveal::UserFacing,
+                creusot_rustc::hir::Constness::NotConst,
             )
         } else {
             self.tcx.param_env(def_id)
@@ -311,7 +311,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
         let filename = match self.opts.span_mode {
             Some(SpanMode::Absolute) if lo.file.name.is_real() => {
-                if let rustc_span::FileName::Real(path) = &lo.file.name {
+                if let creusot_rustc::span::FileName::Real(path) = &lo.file.name {
                     let path = path.local_path_if_available();
                     let mut buf;
                     let path = if path.is_relative() {
@@ -393,7 +393,7 @@ pub fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
                 .extend(ctx.extern_spec(item.def_id).unwrap().additional_predicates.clone());
         }
         // let additional_predicates = ctx.arena.alloc_slice(&additional_predicates);
-        // let additional_predicates = rustc_middle::ty::GenericPredicates { parent: None, predicates: additional_predicates };
+        // let additional_predicates = creusot_rustc::middle::ty::GenericPredicates { parent: None, predicates: additional_predicates };
 
         ctx.extern_specs.insert(
             def_id,

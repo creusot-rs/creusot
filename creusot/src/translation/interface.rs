@@ -7,8 +7,8 @@ use why3::{
 
 use crate::{clone_map::CloneMap, ctx::*, util};
 
-use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{ClosureKind, TyCtxt, TyKind};
+use creusot_rustc::hir::def_id::DefId;
+use creusot_rustc::middle::ty::{ClosureKind, TyCtxt, TyKind};
 
 use super::{
     function::{closure_contract, closure_generic_decls, closure_unnest},

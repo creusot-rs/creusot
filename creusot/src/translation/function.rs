@@ -1,3 +1,6 @@
+use crate::ctx::*;
+use crate::resolve::EagerResolver;
+use crate::translation::{traits, ty};
 use crate::{
     gather_spec_closures::corrected_invariant_names_and_locations,
     rustc_extensions::renumber,
@@ -7,26 +10,21 @@ use crate::{
     },
     util::{self, ident_of, is_ghost_closure, signature_of},
 };
-use rustc_borrowck::borrow_set::BorrowSet;
-use rustc_hir::def_id::DefId;
-use rustc_index::bit_set::BitSet;
-use rustc_infer::infer::TyCtxtInferExt;
-use rustc_middle::ty::{
+use creusot_rustc::borrowck::borrow_set::BorrowSet;
+use creusot_rustc::dataflow::move_paths::MoveData;
+use creusot_rustc::hir::def_id::DefId;
+use creusot_rustc::index::bit_set::BitSet;
+use creusot_rustc::infer::infer::TyCtxtInferExt;
+use creusot_rustc::middle::mir::{traversal::preorder, MirPass};
+use creusot_rustc::middle::ty::{
     subst::{GenericArg, SubstsRef},
-    TypeFoldable,
+    DefIdTree, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
+    WithOptConstParam,
 };
-use rustc_middle::ty::{GenericParamDef, GenericParamDefKind};
-use rustc_middle::ty::{ParamEnv, Ty};
-use rustc_middle::{
-    mir::traversal::preorder,
-    mir::{BasicBlock, Body, Local, Location, MirPass, Operand, VarDebugInfo},
-    ty::TyCtxt,
-    ty::{TyKind, WithOptConstParam},
-};
-use rustc_middle::{mir::Place, ty::DefIdTree};
-use rustc_mir_dataflow::move_paths::MoveData;
-use rustc_mir_transform::{remove_false_edges::*, simplify::*};
-use rustc_span::{Symbol, DUMMY_SP};
+use creusot_rustc::smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo};
+use creusot_rustc::span::{Symbol, DUMMY_SP};
+use creusot_rustc::transform::{remove_false_edges::*, simplify::*};
+use indexmap::IndexMap;
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 use why3::{declaration::*, Ident};
@@ -36,15 +34,10 @@ use why3::{
     ty::Type,
 };
 
-use indexmap::IndexMap;
-
 mod place;
 mod promoted;
 mod statement;
 mod terminator;
-
-use crate::ctx::*;
-use crate::translation::{traits, ty};
 
 pub fn translate_function<'tcx, 'sess>(
     ctx: &mut TranslationCtx<'sess, 'tcx>,
@@ -125,8 +118,6 @@ pub fn translate_trusted<'tcx>(
     decls.push(Decl::ValDecl(ValKind::Val { sig }));
     return Module { name, decls };
 }
-
-use crate::resolve::EagerResolver;
 
 // Split this into several sub-contexts: Core, Analysis, Results?
 pub struct BodyTranslator<'body, 'sess, 'tcx> {
@@ -462,7 +453,7 @@ pub fn closure_contract<'tcx>(
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Vec<Decl> {
-    use rustc_middle::ty::{self, ClosureKind::*};
+    use creusot_rustc::middle::ty::{self, ClosureKind::*};
     let subst = match ctx.tcx.type_of(def_id).kind() {
         TyKind::Closure(_, substs) => substs,
         _ => return Vec::new(),
@@ -639,7 +630,7 @@ fn resolve_predicate_of<'tcx>(
 ) -> ResolveStmt {
     if !resolve_trait_loaded(ctx.tcx) {
         ctx.warn(
-            rustc_span::DUMMY_SP,
+            creusot_rustc::span::DUMMY_SP,
             "load the `creusot_contract` crate to enable resolution of mutable borrows.",
         );
         return ResolveStmt { exp: None };

@@ -1,16 +1,16 @@
+use creusot_rustc::hir::def_id::DefId;
+use creusot_rustc::middle::ty::{
+    self,
+    subst::{InternalSubsts, Subst, SubstsRef},
+    EarlyBinder, TyCtxt, TypeFoldable, TypeSuperFoldable, TypeVisitor,
+};
+use creusot_rustc::middle::ty::{DefIdTree, ProjectionTy, Ty, TyKind};
+use creusot_rustc::span::{Symbol, DUMMY_SP};
 use heck::CamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::algo::is_cyclic_directed;
 use petgraph::graphmap::DiGraphMap;
 use petgraph::EdgeDirection::Incoming;
-use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{
-    self,
-    subst::{InternalSubsts, Subst, SubstsRef},
-    EarlyBinder, TyCtxt, TypeFoldable, TypeSuperFoldable, TypeVisitor,
-};
-use rustc_middle::ty::{DefIdTree, ProjectionTy, Ty, TyKind};
-use rustc_span::{Symbol, DUMMY_SP};
 use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
 use why3::{Ident, QName};
 
@@ -120,7 +120,7 @@ impl Kind {
     }
 }
 
-use rustc_macros::{TyDecodable, TyEncodable};
+use creusot_rustc::macros::{TyDecodable, TyEncodable};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
 enum CloneOpacity {
@@ -194,7 +194,7 @@ impl<'tcx> CloneInfo<'tcx> {
         })
     }
 
-    pub fn qname_sym(&self, sym: rustc_span::symbol::Symbol) -> QName {
+    pub fn qname_sym(&self, sym: creusot_rustc::span::symbol::Symbol) -> QName {
         self.qname_ident(sym.to_string().into())
     }
 
@@ -612,8 +612,8 @@ pub fn base_subst<'tcx>(
     mut def_id: DefId,
     subst: SubstsRef<'tcx>,
 ) -> Vec<CloneSubst> {
+    use creusot_rustc::middle::ty::GenericParamDefKind;
     use heck::SnakeCase;
-    use rustc_middle::ty::GenericParamDefKind;
     loop {
         if ctx.tcx.is_closure(def_id) {
             def_id = ctx.tcx.parent(def_id);
@@ -632,7 +632,8 @@ pub fn base_subst<'tcx>(
         let p = trait_params.param_at(ix, ctx.tcx);
         let ty = subst[ix];
         if let GenericParamDefKind::Type { .. } = p.kind {
-            let ty = super::ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, ty.expect_ty());
+            let ty =
+                super::ty::translate_ty(ctx, names, creusot_rustc::span::DUMMY_SP, ty.expect_ty());
             clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
         }
     }
