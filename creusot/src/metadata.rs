@@ -220,7 +220,9 @@ pub fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
     let out_filename = export_file(ctx, out);
     debug!("dump_exports={:?}", out_filename);
 
-    dump_binary_metadata(ctx.tcx, &out_filename, ctx.metadata()).unwrap();
+    dump_binary_metadata(ctx.tcx, &out_filename, ctx.metadata()).unwrap_or_else(|err| {
+        panic!("could not save metadata path=`{:?}` error={}", out_filename, err)
+    });
 }
 
 fn dump_binary_metadata<'tcx>(
