@@ -2,7 +2,6 @@
 #![feature(box_syntax, box_patterns, control_flow_enum, drain_filter)]
 #![feature(let_else, let_chains, never_type, try_blocks)]
 
-extern crate smallvec;
 #[macro_use]
 extern crate log;
 extern crate rustc_middle;

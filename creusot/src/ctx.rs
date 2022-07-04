@@ -331,7 +331,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                 // Should really be relative to the source file the location is in
                 format!("../{}", self.sess.source_map().filename_for_diagnostics(&lo.file.name))
             }
-            _ => panic!(),
+            _ => return None,
         };
 
         Some(why3::declaration::Attribute::Span(
