@@ -124,11 +124,13 @@ mod macros {
 
 #[cfg(feature = "contracts")]
 pub mod derive {
+    pub use creusot_contracts_proc::Clone;
     pub use creusot_contracts_proc::PartialEq;
 }
 
 #[cfg(not(feature = "contracts"))]
 pub mod derive {
+    pub use ::std::clone::Clone;
     pub use ::std::cmp::PartialEq;
 }
 

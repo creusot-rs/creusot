@@ -542,3 +542,8 @@ pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
 pub fn derive_partial_eq(tokens: TS1) -> TS1 {
     derive::derive_partial_eq(tokens)
 }
+
+#[proc_macro_derive(Clone)]
+pub fn derive_clone(tokens: TS1) -> TS1 {
+    derive::derive_clone(tokens)
+}

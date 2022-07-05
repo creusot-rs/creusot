@@ -2,8 +2,7 @@ use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, quote_spanned};
 use syn::spanned::Spanned;
 use syn::{
-    parse_macro_input, parse_quote, Data, DeriveInput, Fields,
-    GenericParam, Generics, Index,
+    parse_macro_input, parse_quote, Data, DeriveInput, Fields, GenericParam, Generics, Index,
 };
 
 pub fn derive_partial_eq(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -88,7 +87,7 @@ fn partial_eq(base_ident: &Ident, data: &Data) -> TokenStream {
                 }
             });
 
-            quote!{
+            quote! {
                 match (self, rhs) {
                     #(#arms),*
                 }
@@ -120,7 +119,7 @@ fn gen_match_arm<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmAcc {
         let cmp_expr = quote!(#name_1.eq(#name_2));
 
         let body = acc.body;
-        acc.body = quote!{ #cmp_expr && #body };
+        acc.body = quote! { #cmp_expr && #body };
         if named {
             acc.pattern_left.push(quote!(#name_base: #name_1));
             acc.pattern_right.push(quote!(#name_base: #name_2));
