@@ -1,7 +1,6 @@
 use crate as creusot_contracts;
 use crate::*;
 use ::std::ops::*;
-use creusot_contracts_proc::*;
 use num_bigint::BigInt;
 
 impl crate::Model for num_bigint::BigInt {

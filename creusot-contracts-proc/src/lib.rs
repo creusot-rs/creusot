@@ -18,6 +18,8 @@ mod invariant;
 mod maintains;
 mod pretyping;
 
+mod derive;
+
 trait FilterAttrs<'a> {
     type Ret: Iterator<Item = &'a Attribute>;
 
@@ -533,4 +535,15 @@ pub fn invariant(invariant: TS1, loopb: TS1) -> TS1 {
     };
 
     invariant::lower(loop_).into()
+}
+
+// Derive Macros
+#[proc_macro_derive(PartialEq)]
+pub fn derive_partial_eq(tokens: TS1) -> TS1 {
+    derive::derive_partial_eq(tokens)
+}
+
+#[proc_macro_derive(Clone)]
+pub fn derive_clone(tokens: TS1) -> TS1 {
+    derive::derive_clone(tokens)
 }

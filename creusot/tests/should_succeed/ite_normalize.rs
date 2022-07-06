@@ -2,7 +2,7 @@
 
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{derive::Clone, *};
 
 #[trusted]
 struct BTreeMap<K, V>(std::collections::BTreeMap<K, V>);
@@ -32,9 +32,9 @@ impl<K: Model, V: Model> BTreeMap<K, V> {
     }
 }
 
-impl<K: Clone + Model, V: Clone + Model> Clone for BTreeMap<K, V> {
+impl<K: Clone, V: Clone> Clone for BTreeMap<K, V> {
     #[trusted]
-    #[ensures(@self == @result)]
+    #[ensures(*self == result)]
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
@@ -50,6 +50,7 @@ impl<K: Model, V: Model> Model for BTreeMap<K, V> {
     }
 }
 
+#[derive(Clone)]
 pub enum Expr {
     IfThenElse { c: Box<Expr>, t: Box<Expr>, e: Box<Expr> },
     Var { v: usize },
@@ -67,20 +68,6 @@ extern_spec! {
                 #[ensures(result == *self)]
                 fn clone(&self) -> Self;
             }
-        }
-    }
-}
-
-impl Clone for Expr {
-    #[ensures(*self == result)]
-    fn clone(&self) -> Self {
-        match self {
-            Expr::IfThenElse { c, t, e } => {
-                Expr::IfThenElse { c: c.clone(), t: t.clone(), e: e.clone() }
-            }
-            Expr::Var { v } => Expr::Var { v: *v },
-            Expr::True => Expr::True,
-            Expr::False => Expr::False,
         }
     }
 }
