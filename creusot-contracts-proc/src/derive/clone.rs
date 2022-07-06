@@ -17,7 +17,7 @@ pub fn derive_clone(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let expanded = quote! {
         impl #impl_generics ::std::clone::Clone for #name #ty_generics #where_clause {
-            #[ensures(@result == @rhs)]
+            #[ensures(result == *self)]
             fn clone(&self) -> Self {
                 #eq
             }
@@ -31,6 +31,7 @@ fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
             type_param.bounds.push(parse_quote!(std::clone::Clone));
+            // type_param.bounds.push(parse_quote!(creusot_contracts::Model));
         }
     }
     generics
@@ -40,14 +41,26 @@ fn clone(base_ident: &Ident, data: &Data) -> TokenStream {
     match *data {
         Data::Struct(ref data) => match data.fields {
             Fields::Named(ref fields) => {
-                let arm = gen_match_arm(fields.named.iter());
-                let fields1 = arm.fields;
-                quote! {  #base_ident{#(#fields1),* }}
+                let recurse = fields.named.iter().map(|f| {
+                    let name = &f.ident;
+                    quote_spanned! {f.span()=>
+                        #name: self.#name.clone()
+                    }
+                });
+                quote! {
+                    #base_ident { #(#recurse),*}
+                }
             }
             Fields::Unnamed(ref fields) => {
-                let arm = gen_match_arm(fields.unnamed.iter());
-                let fields1 = arm.fields;
-                quote! {  #base_ident(#(#fields1),* )}
+                let recurse = fields.unnamed.iter().enumerate().map(|(i, f)| {
+                    let index = Index::from(i);
+                    quote_spanned! {f.span()=>
+                        self.#index.clone()
+                    }
+                });
+                quote! {
+                    #base_ident (#(#recurse),*)
+                }
             }
             Fields::Unit => quote! {
                 #base_ident
@@ -60,12 +73,14 @@ fn clone(base_ident: &Ident, data: &Data) -> TokenStream {
                     Fields::Named(fields) => {
                         let arm = gen_match_arm(fields.named.iter());
                         let fields1 = arm.fields;
-                        quote! { #base_ident::#ident{#(#fields1),* } => #base_ident::#ident{#(#fields1),* }}
+                        let body = arm.body;
+                        quote! { #base_ident::#ident{#(#fields1),* } => #base_ident::#ident{#(#body),* }}
                     }
                     Fields::Unnamed(fields) => {
                         let arm = gen_match_arm(fields.unnamed.iter());
                         let fields1 = arm.fields;
-                        quote! { #base_ident::#ident(#(#fields1),*) => #base_ident::#ident{#(#fields1),* } }
+                        let body = arm.body;
+                        quote! { #base_ident::#ident(#(#fields1),*) => #base_ident::#ident(#(#body),* ) }
                     }
                     Fields::Unit => quote! {#base_ident::#ident => #base_ident::#ident},
                 }
@@ -83,10 +98,11 @@ fn clone(base_ident: &Ident, data: &Data) -> TokenStream {
 
 struct ArmAcc {
     fields: Vec<TokenStream>,
+    body: Vec<TokenStream>,
 }
 
 fn gen_match_arm<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmAcc {
-    let mut acc = ArmAcc { fields: Vec::new() };
+    let mut acc = ArmAcc { fields: Vec::new(), body: Vec::new() };
 
     for (i, field) in fields.enumerate() {
         let named = field.ident.is_some();
@@ -98,9 +114,11 @@ fn gen_match_arm<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmAcc {
 
         let call = quote!(#name_1.clone());
         if named {
-            acc.fields.push(quote!(#name_base: #call));
+            acc.fields.push(quote!(#name_base: #name_1));
+            acc.body.push(quote!(#name_base: #call));
         } else {
-            acc.fields.push(call);
+            acc.fields.push(quote!(#name_1));
+            acc.body.push(quote!(#call));
         }
     }
 

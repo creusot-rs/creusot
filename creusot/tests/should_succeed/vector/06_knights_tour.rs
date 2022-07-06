@@ -1,6 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::std::*;
-use creusot_contracts::*;
+use creusot_contracts::{derive::Clone, *};
 
 #[derive(Copy, Clone)]
 struct Point {
@@ -47,7 +46,7 @@ impl Board {
             forall<j : Int> 0 <= j && j < @i ==> (@((@rows)[j])).len() == @size)]
         #[invariant(row_len, (@rows).len() == @i )]
         while i < size {
-            rows.push(vec::from_elem(0, size));
+            rows.push(std::vec::from_elem(0, size));
             i += 1;
         }
 
