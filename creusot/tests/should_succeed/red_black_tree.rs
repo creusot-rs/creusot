@@ -119,12 +119,13 @@ impl<K: Model, V> Tree<K, V> {
     where
         K::ModelTy: OrdLogic,
     {
-        pearlite! {
-            if (@self).get(k) == Some(v1) && (@self).get(k) == Some(v2) {}
-            else {
-                self.has_mapping_model(k)
+        pearlite! { {
+            self.has_mapping_model(k);
+            match (@self).get(k) {
+                None => (),
+                Some(_v) => ()
             }
-        }
+        } }
     }
 }
 

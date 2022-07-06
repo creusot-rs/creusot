@@ -50,6 +50,7 @@ fn main() {
         let output;
         let mut command = Command::new(why3_path.clone());
         command.arg("--debug=ignore_unused_vars");
+        command.arg("--debug=vc:do_not_keep_trace");
         if sessionfile.is_file() {
             // There is a session directory. Try to replay the session.
             command.arg("replay");
