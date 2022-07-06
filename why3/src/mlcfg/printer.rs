@@ -527,7 +527,7 @@ impl Print for CfgFunction {
             .append(if self.rec { "rec " } else { "" })
             .append("cfg ")
             .append(if self.constant { "constant " } else { "" })
-            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" =")))
+            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" = [@vc:sp]")))
             .group()
             .append(alloc.line())
             .append(sep_end_by(
