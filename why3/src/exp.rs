@@ -47,6 +47,18 @@ impl BinOp {
             BinOp::Gt => Infix1,
         }
     }
+
+    fn associative(&self) -> bool {
+        match self {
+            BinOp::LogAnd => true,
+            BinOp::LazyAnd => true,
+            BinOp::LogOr => true,
+            BinOp::LazyOr => true,
+            BinOp::Add => true,
+            BinOp::Mul => true,
+            _ => false
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -332,10 +344,10 @@ impl Exp {
         impl ExpMutVisitor for Reassociate {
             fn visit_mut(&mut self, exp: &mut Exp) {
                 match exp {
-                    Exp::BinaryOp(op, l, r) => {
+                    Exp::BinaryOp(op, l, r) if op.associative() => {
                         let mut reordered = false;
-                        match op.precedence().associativity() {
-                            Some(AssocDir::Left) => {
+                        match op.precedence().associativity().unwrap() {
+                            AssocDir::Left => {
                                 //     self                self
                                 //   /       \            /    \
                                 //   l        r    =>    r     rr
@@ -355,7 +367,7 @@ impl Exp {
                                     }
                                 }
                             }
-                            Some(AssocDir::Right) => {
+                            AssocDir::Right => {
                                 // ll -> l, r -> lr, lr -> ll, l -> r;
                                 if let box Exp::BinaryOp(iop, ll, lr) = l {
                                     if *iop == *op {
@@ -366,7 +378,6 @@ impl Exp {
                                     }
                                 }
                             }
-                            None => {}
                         }
                         if reordered {
                             self.visit_mut(exp);
