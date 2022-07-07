@@ -56,7 +56,7 @@ impl BinOp {
             BinOp::LazyOr => true,
             BinOp::Add => true,
             BinOp::Mul => true,
-            _ => false
+            _ => false,
         }
     }
 }
