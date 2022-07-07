@@ -120,9 +120,11 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 }
             }
             TermKind::Logical { op, box lhs, box rhs } => Exp::BinaryOp(
-                match op {
-                    LogicalOp::And => BinOp::And,
-                    LogicalOp::Or => BinOp::Or,
+                match (op, self.pure) {
+                    (LogicalOp::And, Purity::Logic) => BinOp::LogAnd,
+                    (LogicalOp::And, Purity::Program) => BinOp::LazyAnd,
+                    (LogicalOp::Or, Purity::Logic) => BinOp::LogOr,
+                    (LogicalOp::Or, Purity::Program) => BinOp::LazyOr,
                 },
                 box self.lower_term(lhs),
                 box self.lower_term(rhs),

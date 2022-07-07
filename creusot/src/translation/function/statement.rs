@@ -127,7 +127,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
             },
             Rvalue::Discriminant(_) => return,
             Rvalue::BinaryOp(BinOp::BitAnd, box (l, r)) if l.ty(self.body, self.tcx).is_bool() => {
-                self.translate_operand(l).and(self.translate_operand(r))
+                self.translate_operand(l).lazy_and(self.translate_operand(r))
             }
             Rvalue::BinaryOp(BinOp::Eq, box (l, r)) if l.ty(self.body, self.tcx).is_bool() => {
                 self.names.import_prelude_module(PreludeModule::Prelude);

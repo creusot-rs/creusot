@@ -142,7 +142,7 @@ module RedBlackTree_Impl0_HasMapping
    =
     [#"../red_black_tree.rs" 33 12 37 13] match (self) with
       | Type.RedBlackTree_Tree (Type.Core_Option_Option_None) -> false
-      | Type.RedBlackTree_Tree (Type.Core_Option_Option_Some (Type.RedBlackTree_Node left _ key val' right)) -> has_mapping left k v || has_mapping right k v || k = Model0.model key && v = val'
+      | Type.RedBlackTree_Tree (Type.Core_Option_Option_Some (Type.RedBlackTree_Node left _ key val' right)) -> has_mapping left k v \/ has_mapping right k v \/ k = Model0.model key /\ v = val'
       end
 end
 module RedBlackTree_Impl0_SameMappings_Interface
@@ -220,7 +220,7 @@ module RedBlackTree_Impl0_ModelAccHasMapping
       | Type.RedBlackTree_Tree (Type.Core_Option_Option_None) -> ()
       | Type.RedBlackTree_Tree (Type.Core_Option_Option_Some (Type.RedBlackTree_Node left _ key val' right)) -> let _ = model_acc_has_mapping left accu k in let accu1 = ModelAcc0.model_acc left accu in let accu2 = Map.set accu1 (Model0.model key) (Type.Core_Option_Option_Some val') in model_acc_has_mapping right accu2 k
       end
-  axiom model_acc_has_mapping_spec : forall self : Type.redblacktree_tree k v, accu : Map.map ModelTy0.modelTy (Type.core_option_option v), k : ModelTy0.modelTy . [#"../red_black_tree.rs" 63 4 64 93] Map.get (ModelAcc0.model_acc self accu) k = Map.get accu k || (exists v : (v) . Map.get (ModelAcc0.model_acc self accu) k = Type.Core_Option_Option_Some v && HasMapping0.has_mapping self k v)
+  axiom model_acc_has_mapping_spec : forall self : Type.redblacktree_tree k v, accu : Map.map ModelTy0.modelTy (Type.core_option_option v), k : ModelTy0.modelTy . [#"../red_black_tree.rs" 63 4 64 93] Map.get (ModelAcc0.model_acc self accu) k = Map.get accu k \/ (exists v : (v) . Map.get (ModelAcc0.model_acc self accu) k = Type.Core_Option_Option_Some v /\ HasMapping0.has_mapping self k v)
 end
 module RedBlackTree_Impl0_ModelAccHasMapping_Impl
   type k
@@ -234,7 +234,7 @@ module RedBlackTree_Impl0_ModelAccHasMapping_Impl
   clone RedBlackTree_Impl0_ModelAcc as ModelAcc0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy0.modelTy,
   function Model0.model = Model0.model
   let rec ghost function model_acc_has_mapping (self : Type.redblacktree_tree k v) (accu : Map.map ModelTy0.modelTy (Type.core_option_option v)) (k : ModelTy0.modelTy) : ()
-    ensures { [#"../red_black_tree.rs" 63 4 64 93] Map.get (ModelAcc0.model_acc self accu) k = Map.get accu k || (exists v : (v) . Map.get (ModelAcc0.model_acc self accu) k = Type.Core_Option_Option_Some v && HasMapping0.has_mapping self k v) }
+    ensures { [#"../red_black_tree.rs" 63 4 64 93] Map.get (ModelAcc0.model_acc self accu) k = Map.get accu k \/ (exists v : (v) . Map.get (ModelAcc0.model_acc self accu) k = Type.Core_Option_Option_Some v /\ HasMapping0.has_mapping self k v) }
     
    =
     [#"../red_black_tree.rs" 67 12 75 13] match (self) with
@@ -280,7 +280,7 @@ module RedBlackTree_Impl4_BstInvariantHere
   clone RedBlackTree_Impl0_HasMapping_Interface as HasMapping0 with type k = k, type v = v,
   type ModelTy0.modelTy = ModelTy0.modelTy
   predicate bst_invariant_here [#"../red_black_tree.rs" 170 4 170 39] (self : Type.redblacktree_node k v) =
-    [#"../red_black_tree.rs" 172 12 173 88] (forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping (Type.redblacktree_node_Node_left self) k v -> LtLog0.lt_log k (Model0.model (Type.redblacktree_node_Node_key self))) && (forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping (Type.redblacktree_node_Node_right self) k v -> LtLog0.lt_log (Model0.model (Type.redblacktree_node_Node_key self)) k)
+    [#"../red_black_tree.rs" 172 12 173 88] (forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping (Type.redblacktree_node_Node_left self) k v -> LtLog0.lt_log k (Model0.model (Type.redblacktree_node_Node_key self))) /\ (forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping (Type.redblacktree_node_Node_right self) k v -> LtLog0.lt_log (Model0.model (Type.redblacktree_node_Node_key self)) k)
 end
 module RedBlackTree_Impl5_BstInvariant_Interface
   type k
@@ -296,7 +296,7 @@ module RedBlackTree_Impl5_BstInvariant
   predicate bst_invariant [#"../red_black_tree.rs" 190 4 190 34] (self : Type.redblacktree_tree k v) =
     [#"../red_black_tree.rs" 192 12 198 13] match (self) with
       | Type.RedBlackTree_Tree (Type.Core_Option_Option_None) -> true
-      | Type.RedBlackTree_Tree (Type.Core_Option_Option_Some node) -> let Type.RedBlackTree_Node left _ _ _ right = node in BstInvariantHere0.bst_invariant_here node && bst_invariant left && bst_invariant right
+      | Type.RedBlackTree_Tree (Type.Core_Option_Option_Some node) -> let Type.RedBlackTree_Node left _ _ _ right = node in BstInvariantHere0.bst_invariant_here node /\ bst_invariant left /\ bst_invariant right
       end
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface
@@ -728,7 +728,7 @@ module RedBlackTree_Impl0_HasMappingInj
   function has_mapping_inj [#"../red_black_tree.rs" 118 4 120 29] (self : Type.redblacktree_tree k v) (k : ModelTy0.modelTy) (v1 : v) (v2 : v) : ()
     
    =
-    [#"../red_black_tree.rs" 122 8 127 9] if Map.get (Model0.model self) k = Type.Core_Option_Option_Some v1 && Map.get (Model0.model self) k = Type.Core_Option_Option_Some v2 then
+    [#"../red_black_tree.rs" 122 8 127 9] if Map.get (Model0.model self) k = Type.Core_Option_Option_Some v1 /\ Map.get (Model0.model self) k = Type.Core_Option_Option_Some v2 then
       ()
     else
       HasMappingModel0.has_mapping_model self k
@@ -825,7 +825,7 @@ module RedBlackTree_Impl1_SameMappings
     [#"../red_black_tree.rs" 134 8 139 9] forall ot : (Type.redblacktree_tree k v) . forall st : (Type.redblacktree_tree k v) . match (st) with
       | Type.RedBlackTree_Tree (Type.Core_Option_Option_Some x) -> self = x
       | _ -> false
-      end && match (ot) with
+      end /\ match (ot) with
       | Type.RedBlackTree_Tree (Type.Core_Option_Option_Some x) -> o = x
       | _ -> false
       end -> SameMappings0.same_mappings st ot
@@ -868,7 +868,7 @@ module RedBlackTree_Impl4_BstInvariant
   clone RedBlackTree_Impl5_BstInvariant_Interface as BstInvariant0 with type k = k, type v = v
   clone RedBlackTree_Impl4_BstInvariantHere_Interface as BstInvariantHere0 with type k = k, type v = v
   predicate bst_invariant [#"../red_black_tree.rs" 178 4 178 34] (self : Type.redblacktree_node k v) =
-    [#"../red_black_tree.rs" 179 8 181 9] BstInvariantHere0.bst_invariant_here self && BstInvariant0.bst_invariant (Type.redblacktree_node_Node_left self) && BstInvariant0.bst_invariant (Type.redblacktree_node_Node_right self)
+    [#"../red_black_tree.rs" 179 8 181 9] BstInvariantHere0.bst_invariant_here self /\ BstInvariant0.bst_invariant (Type.redblacktree_node_Node_left self) /\ BstInvariant0.bst_invariant (Type.redblacktree_node_Node_right self)
 end
 module RedBlackTree_Impl6_Color_Interface
   type k
@@ -898,7 +898,7 @@ module RedBlackTree_Impl7_ColorInvariantHere
   use Type
   clone RedBlackTree_Impl6_Color_Interface as Color0 with type k = k, type v = v
   predicate color_invariant_here [#"../red_black_tree.rs" 230 4 230 41] (self : Type.redblacktree_node k v) =
-    [#"../red_black_tree.rs" 231 20 231 101] Color0.color (Type.redblacktree_node_Node_right self) = Type.RedBlackTree_Color_Black && (Type.redblacktree_node_Node_color self = Type.RedBlackTree_Color_Red -> Color0.color (Type.redblacktree_node_Node_left self) = Type.RedBlackTree_Color_Black)
+    [#"../red_black_tree.rs" 231 20 231 101] Color0.color (Type.redblacktree_node_Node_right self) = Type.RedBlackTree_Color_Black /\ (Type.redblacktree_node_Node_color self = Type.RedBlackTree_Color_Red -> Color0.color (Type.redblacktree_node_Node_left self) = Type.RedBlackTree_Color_Black)
 end
 module RedBlackTree_Impl6_ColorInvariant_Interface
   type k
@@ -914,7 +914,7 @@ module RedBlackTree_Impl6_ColorInvariant
   predicate color_invariant [#"../red_black_tree.rs" 215 4 215 36] (self : Type.redblacktree_tree k v) =
     [#"../red_black_tree.rs" 217 12 223 13] match (self) with
       | Type.RedBlackTree_Tree (Type.Core_Option_Option_None) -> true
-      | Type.RedBlackTree_Tree (Type.Core_Option_Option_Some node) -> let Type.RedBlackTree_Node left _ _ _ right = node in ColorInvariantHere0.color_invariant_here node && color_invariant left && color_invariant right
+      | Type.RedBlackTree_Tree (Type.Core_Option_Option_Some node) -> let Type.RedBlackTree_Node left _ _ _ right = node in ColorInvariantHere0.color_invariant_here node /\ color_invariant left /\ color_invariant right
       end
 end
 module RedBlackTree_Impl7_ColorInvariant_Interface
@@ -930,7 +930,7 @@ module RedBlackTree_Impl7_ColorInvariant
   clone RedBlackTree_Impl6_ColorInvariant_Interface as ColorInvariant0 with type k = k, type v = v
   clone RedBlackTree_Impl7_ColorInvariantHere_Interface as ColorInvariantHere0 with type k = k, type v = v
   predicate color_invariant [#"../red_black_tree.rs" 235 4 235 36] (self : Type.redblacktree_node k v) =
-    [#"../red_black_tree.rs" 234 4 234 16] ColorInvariantHere0.color_invariant_here self && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left self) && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right self)
+    [#"../red_black_tree.rs" 234 4 234 16] ColorInvariantHere0.color_invariant_here self /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left self) /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right self)
 end
 module RedBlackTree_Impl9_HasHeightRec_Interface
   type k
@@ -953,7 +953,7 @@ module RedBlackTree_Impl9_HasHeightRec
         h
       else
         h - 1
-       in has_height_rec left h && has_height_rec right h
+       in has_height_rec left h /\ has_height_rec right h
       end
   axiom has_height_rec_spec : forall self : Type.redblacktree_tree k v, h : int . [#"../red_black_tree.rs" 261 4 261 33] has_height_rec self h -> h >= 0
 end
@@ -997,9 +997,9 @@ module RedBlackTree_Impl8_HasHeight
         h
       else
         h - 1
-       in HasHeightRec0.has_height_rec left h && HasHeightRec0.has_height_rec right h
+       in HasHeightRec0.has_height_rec left h /\ HasHeightRec0.has_height_rec right h
       end
-  axiom has_height_spec : forall self : Type.redblacktree_node k v, h : int . [#"../red_black_tree.rs" 244 4 246 48] forall node : (Type.redblacktree_node k v) . forall tree : (Type.redblacktree_tree k v) . Type.redblacktree_tree_Tree_node tree = Type.Core_Option_Option_Some node && self = node -> has_height self h = HasHeightRec0.has_height_rec tree h
+  axiom has_height_spec : forall self : Type.redblacktree_node k v, h : int . [#"../red_black_tree.rs" 244 4 246 48] forall node : (Type.redblacktree_node k v) . forall tree : (Type.redblacktree_tree k v) . Type.redblacktree_tree_Tree_node tree = Type.Core_Option_Option_Some node /\ self = node -> has_height self h = HasHeightRec0.has_height_rec tree h
 end
 module RedBlackTree_Impl8_HasHeight_Impl
   type k
@@ -1009,7 +1009,7 @@ module RedBlackTree_Impl8_HasHeight_Impl
   use mach.int.Int32
   clone RedBlackTree_Impl9_HasHeightRec as HasHeightRec0 with type k = k, type v = v, axiom .
   let rec ghost function has_height (self : Type.redblacktree_node k v) (h : int) : bool
-    ensures { [#"../red_black_tree.rs" 244 4 246 48] forall node : (Type.redblacktree_node k v) . forall tree : (Type.redblacktree_tree k v) . Type.redblacktree_tree_Tree_node tree = Type.Core_Option_Option_Some node && self = node -> result = HasHeightRec0.has_height_rec tree h }
+    ensures { [#"../red_black_tree.rs" 244 4 246 48] forall node : (Type.redblacktree_node k v) . forall tree : (Type.redblacktree_tree k v) . Type.redblacktree_tree_Tree_node tree = Type.Core_Option_Option_Some node /\ self = node -> result = HasHeightRec0.has_height_rec tree h }
     
    =
     [#"../red_black_tree.rs" 249 12 254 13] match (self) with
@@ -1081,7 +1081,7 @@ module RedBlackTree_Impl10_Invariant
   clone RedBlackTree_Impl6_ColorInvariant_Interface as ColorInvariant0 with type k = k, type v = v
   clone RedBlackTree_Impl5_BstInvariant_Interface as BstInvariant0 with type k = k, type v = v
   predicate invariant' [#"../red_black_tree.rs" 289 4 289 34] (self : Type.redblacktree_tree k v) =
-    [#"../red_black_tree.rs" 290 8 293 9] BstInvariant0.bst_invariant self && ColorInvariant0.color_invariant self && Color0.color self = Type.RedBlackTree_Color_Black && (exists h : (int) . HasHeight0.has_height self h)
+    [#"../red_black_tree.rs" 290 8 293 9] BstInvariant0.bst_invariant self /\ ColorInvariant0.color_invariant self /\ Color0.color self = Type.RedBlackTree_Color_Black /\ (exists h : (int) . HasHeight0.has_height self h)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
@@ -1245,7 +1245,7 @@ module RedBlackTree_Impl12_RotateRight_Interface
     ensures { [#"../red_black_tree.rs" 316 14 316 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 317 14 317 42] Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Red }
     ensures { [#"../red_black_tree.rs" 318 14 318 44] Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color ( * self) }
-    ensures { [#"../red_black_tree.rs" 319 4 321 83] exists r : (Type.redblacktree_node k v) . exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l && Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r && (Type.redblacktree_node_Node_left ( ^ self), Type.redblacktree_node_Node_left r, Type.redblacktree_node_Node_right r) = (Type.redblacktree_node_Node_left l, Type.redblacktree_node_Node_right l, Type.redblacktree_node_Node_right ( * self)) }
+    ensures { [#"../red_black_tree.rs" 319 4 321 83] exists r : (Type.redblacktree_node k v) . exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l /\ Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r /\ (Type.redblacktree_node_Node_left ( ^ self), Type.redblacktree_node_Node_left r, Type.redblacktree_node_Node_right r) = (Type.redblacktree_node_Node_left l, Type.redblacktree_node_Node_right l, Type.redblacktree_node_Node_right ( * self)) }
     ensures { [#"../red_black_tree.rs" 322 4 322 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 323 14 323 41] LtLog0.lt_log (Model0.model (Type.redblacktree_node_Node_key ( ^ self))) (Model0.model (Type.redblacktree_node_Node_key ( * self))) }
     
@@ -1324,7 +1324,7 @@ module RedBlackTree_Impl12_RotateRight
     ensures { [#"../red_black_tree.rs" 316 14 316 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 317 14 317 42] Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Red }
     ensures { [#"../red_black_tree.rs" 318 14 318 44] Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color ( * self) }
-    ensures { [#"../red_black_tree.rs" 319 4 321 83] exists r : (Type.redblacktree_node k v) . exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l && Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r && (Type.redblacktree_node_Node_left ( ^ self), Type.redblacktree_node_Node_left r, Type.redblacktree_node_Node_right r) = (Type.redblacktree_node_Node_left l, Type.redblacktree_node_Node_right l, Type.redblacktree_node_Node_right ( * self)) }
+    ensures { [#"../red_black_tree.rs" 319 4 321 83] exists r : (Type.redblacktree_node k v) . exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l /\ Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r /\ (Type.redblacktree_node_Node_left ( ^ self), Type.redblacktree_node_Node_left r, Type.redblacktree_node_Node_right r) = (Type.redblacktree_node_Node_left l, Type.redblacktree_node_Node_right l, Type.redblacktree_node_Node_right ( * self)) }
     ensures { [#"../red_black_tree.rs" 322 4 322 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 323 14 323 41] LtLog0.lt_log (Model0.model (Type.redblacktree_node_Node_key ( ^ self))) (Model0.model (Type.redblacktree_node_Node_key ( * self))) }
     
@@ -1488,7 +1488,7 @@ module RedBlackTree_Impl12_RotateLeft_Interface
     ensures { [#"../red_black_tree.rs" 370 14 370 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 371 14 371 41] Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red }
     ensures { [#"../red_black_tree.rs" 372 14 372 44] Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color ( * self) }
-    ensures { [#"../red_black_tree.rs" 373 4 375 83] exists r : (Type.redblacktree_node k v) . exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r && Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l && (Type.redblacktree_node_Node_left l, Type.redblacktree_node_Node_right l, Type.redblacktree_node_Node_right ( ^ self)) = (Type.redblacktree_node_Node_left ( * self), Type.redblacktree_node_Node_left r, Type.redblacktree_node_Node_right r) }
+    ensures { [#"../red_black_tree.rs" 373 4 375 83] exists r : (Type.redblacktree_node k v) . exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r /\ Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l /\ (Type.redblacktree_node_Node_left l, Type.redblacktree_node_Node_right l, Type.redblacktree_node_Node_right ( ^ self)) = (Type.redblacktree_node_Node_left ( * self), Type.redblacktree_node_Node_left r, Type.redblacktree_node_Node_right r) }
     ensures { [#"../red_black_tree.rs" 376 4 376 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 377 14 377 41] LtLog0.lt_log (Model0.model (Type.redblacktree_node_Node_key ( * self))) (Model0.model (Type.redblacktree_node_Node_key ( ^ self))) }
     
@@ -1567,7 +1567,7 @@ module RedBlackTree_Impl12_RotateLeft
     ensures { [#"../red_black_tree.rs" 370 14 370 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 371 14 371 41] Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red }
     ensures { [#"../red_black_tree.rs" 372 14 372 44] Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color ( * self) }
-    ensures { [#"../red_black_tree.rs" 373 4 375 83] exists r : (Type.redblacktree_node k v) . exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r && Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l && (Type.redblacktree_node_Node_left l, Type.redblacktree_node_Node_right l, Type.redblacktree_node_Node_right ( ^ self)) = (Type.redblacktree_node_Node_left ( * self), Type.redblacktree_node_Node_left r, Type.redblacktree_node_Node_right r) }
+    ensures { [#"../red_black_tree.rs" 373 4 375 83] exists r : (Type.redblacktree_node k v) . exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r /\ Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l /\ (Type.redblacktree_node_Node_left l, Type.redblacktree_node_Node_right l, Type.redblacktree_node_Node_right ( ^ self)) = (Type.redblacktree_node_Node_left ( * self), Type.redblacktree_node_Node_left r, Type.redblacktree_node_Node_right r) }
     ensures { [#"../red_black_tree.rs" 376 4 376 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 377 14 377 41] LtLog0.lt_log (Model0.model (Type.redblacktree_node_Node_key ( * self))) (Model0.model (Type.redblacktree_node_Node_key ( ^ self))) }
     
@@ -1713,8 +1713,8 @@ module Core_Option_Impl0_AsMut_Interface
   use Type
   use prelude.Prelude
   val as_mut [@cfg:stackify] (self : borrowed (Type.core_option_option t)) : Type.core_option_option (borrowed t)
-    ensures {  * self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None &&  ^ self = Type.Core_Option_Option_None }
-    ensures {  * self = Type.Core_Option_Option_None || (exists r : (borrowed t) . result = Type.Core_Option_Option_Some r &&  * self = Type.Core_Option_Option_Some ( * r) &&  ^ self = Type.Core_Option_Option_Some ( ^ r)) }
+    ensures {  * self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None /\  ^ self = Type.Core_Option_Option_None }
+    ensures {  * self = Type.Core_Option_Option_None \/ (exists r : (borrowed t) . result = Type.Core_Option_Option_Some r /\  * self = Type.Core_Option_Option_Some ( * r) /\  ^ self = Type.Core_Option_Option_Some ( ^ r)) }
     
 end
 module Core_Option_Impl0_AsMut
@@ -1722,8 +1722,8 @@ module Core_Option_Impl0_AsMut
   use Type
   use prelude.Prelude
   val as_mut [@cfg:stackify] (self : borrowed (Type.core_option_option t)) : Type.core_option_option (borrowed t)
-    ensures {  * self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None &&  ^ self = Type.Core_Option_Option_None }
-    ensures {  * self = Type.Core_Option_Option_None || (exists r : (borrowed t) . result = Type.Core_Option_Option_Some r &&  * self = Type.Core_Option_Option_Some ( * r) &&  ^ self = Type.Core_Option_Option_Some ( ^ r)) }
+    ensures {  * self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None /\  ^ self = Type.Core_Option_Option_None }
+    ensures {  * self = Type.Core_Option_Option_None \/ (exists r : (borrowed t) . result = Type.Core_Option_Option_Some r /\  * self = Type.Core_Option_Option_Some ( * r) /\  ^ self = Type.Core_Option_Option_Some ( ^ r)) }
     
 end
 module Core_Option_Impl0_Unwrap_Interface
@@ -1762,8 +1762,8 @@ module RedBlackTree_Impl12_FlipColors_Interface
     ensures { [#"../red_black_tree.rs" 398 4 398 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 399 14 399 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 400 14 400 42] SameMappings0.same_mappings ( * self) ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 401 4 403 70] exists l2 : (Type.redblacktree_node k v) . exists l1 : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l1 && Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l2 && Type.redblacktree_node_Node_left l1 = Type.redblacktree_node_Node_left l2 && Type.redblacktree_node_Node_right l1 = Type.redblacktree_node_Node_right l2 && Type.redblacktree_node_Node_color ( * self) = Type.redblacktree_node_Node_color l2 && Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color l1 }
-    ensures { [#"../red_black_tree.rs" 404 4 406 70] exists r2 : (Type.redblacktree_node k v) . exists r1 : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r1 && Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r2 && Type.redblacktree_node_Node_left r1 = Type.redblacktree_node_Node_left r2 && Type.redblacktree_node_Node_right r1 = Type.redblacktree_node_Node_right r2 && Type.redblacktree_node_Node_color ( * self) = Type.redblacktree_node_Node_color r2 && Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color r1 }
+    ensures { [#"../red_black_tree.rs" 401 4 403 70] exists l2 : (Type.redblacktree_node k v) . exists l1 : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l1 /\ Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l2 /\ Type.redblacktree_node_Node_left l1 = Type.redblacktree_node_Node_left l2 /\ Type.redblacktree_node_Node_right l1 = Type.redblacktree_node_Node_right l2 /\ Type.redblacktree_node_Node_color ( * self) = Type.redblacktree_node_Node_color l2 /\ Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color l1 }
+    ensures { [#"../red_black_tree.rs" 404 4 406 70] exists r2 : (Type.redblacktree_node k v) . exists r1 : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r1 /\ Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r2 /\ Type.redblacktree_node_Node_left r1 = Type.redblacktree_node_Node_left r2 /\ Type.redblacktree_node_Node_right r1 = Type.redblacktree_node_Node_right r2 /\ Type.redblacktree_node_Node_color ( * self) = Type.redblacktree_node_Node_color r2 /\ Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color r1 }
     ensures { [#"../red_black_tree.rs" 407 14 407 40] Type.redblacktree_node_Node_key ( * self) = Type.redblacktree_node_Node_key ( ^ self) }
     
 end
@@ -1834,8 +1834,8 @@ module RedBlackTree_Impl12_FlipColors
     ensures { [#"../red_black_tree.rs" 398 4 398 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 399 14 399 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 400 14 400 42] SameMappings0.same_mappings ( * self) ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 401 4 403 70] exists l2 : (Type.redblacktree_node k v) . exists l1 : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l1 && Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l2 && Type.redblacktree_node_Node_left l1 = Type.redblacktree_node_Node_left l2 && Type.redblacktree_node_Node_right l1 = Type.redblacktree_node_Node_right l2 && Type.redblacktree_node_Node_color ( * self) = Type.redblacktree_node_Node_color l2 && Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color l1 }
-    ensures { [#"../red_black_tree.rs" 404 4 406 70] exists r2 : (Type.redblacktree_node k v) . exists r1 : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r1 && Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r2 && Type.redblacktree_node_Node_left r1 = Type.redblacktree_node_Node_left r2 && Type.redblacktree_node_Node_right r1 = Type.redblacktree_node_Node_right r2 && Type.redblacktree_node_Node_color ( * self) = Type.redblacktree_node_Node_color r2 && Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color r1 }
+    ensures { [#"../red_black_tree.rs" 401 4 403 70] exists l2 : (Type.redblacktree_node k v) . exists l1 : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l1 /\ Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l2 /\ Type.redblacktree_node_Node_left l1 = Type.redblacktree_node_Node_left l2 /\ Type.redblacktree_node_Node_right l1 = Type.redblacktree_node_Node_right l2 /\ Type.redblacktree_node_Node_color ( * self) = Type.redblacktree_node_Node_color l2 /\ Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color l1 }
+    ensures { [#"../red_black_tree.rs" 404 4 406 70] exists r2 : (Type.redblacktree_node k v) . exists r1 : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r1 /\ Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r2 /\ Type.redblacktree_node_Node_left r1 = Type.redblacktree_node_Node_left r2 /\ Type.redblacktree_node_Node_right r1 = Type.redblacktree_node_Node_right r2 /\ Type.redblacktree_node_Node_color ( * self) = Type.redblacktree_node_Node_color r2 /\ Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color r1 }
     ensures { [#"../red_black_tree.rs" 407 14 407 40] Type.redblacktree_node_Node_key ( * self) = Type.redblacktree_node_Node_key ( ^ self) }
     
    =
@@ -1915,7 +1915,7 @@ module Core_Option_Impl0_AsRef_Interface
   use prelude.Prelude
   val as_ref [@cfg:stackify] (self : Type.core_option_option t) : Type.core_option_option t
     ensures { self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None }
-    ensures { self = Type.Core_Option_Option_None || (exists r : (borrowed t) . result = Type.Core_Option_Option_Some ( * r) && self = Type.Core_Option_Option_Some ( * r)) }
+    ensures { self = Type.Core_Option_Option_None \/ (exists r : (borrowed t) . result = Type.Core_Option_Option_Some ( * r) /\ self = Type.Core_Option_Option_Some ( * r)) }
     
 end
 module Core_Option_Impl0_AsRef
@@ -1924,7 +1924,7 @@ module Core_Option_Impl0_AsRef
   use prelude.Prelude
   val as_ref [@cfg:stackify] (self : Type.core_option_option t) : Type.core_option_option t
     ensures { self = Type.Core_Option_Option_None -> result = Type.Core_Option_Option_None }
-    ensures { self = Type.Core_Option_Option_None || (exists r : (borrowed t) . result = Type.Core_Option_Option_Some ( * r) && self = Type.Core_Option_Option_Some ( * r)) }
+    ensures { self = Type.Core_Option_Option_None \/ (exists r : (borrowed t) . result = Type.Core_Option_Option_Some ( * r) /\ self = Type.Core_Option_Option_Some ( * r)) }
     
 end
 module RedBlackTree_Impl12_Balance_Interface
@@ -1943,15 +1943,15 @@ module RedBlackTree_Impl12_Balance_Interface
   clone RedBlackTree_Impl4_BstInvariant_Interface as BstInvariant0 with type k = k, type v = v
   val balance [@cfg:stackify] (self : borrowed (Type.redblacktree_node k v)) : ()
     requires {[#"../red_black_tree.rs" 416 15 416 38] BstInvariant0.bst_invariant ( * self)}
-    requires {[#"../red_black_tree.rs" 417 4 418 47] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Red -> ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self))}
-    requires {[#"../red_black_tree.rs" 419 4 420 48] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red -> ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self))}
-    requires {[#"../red_black_tree.rs" 421 4 421 110] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Red -> false}
+    requires {[#"../red_black_tree.rs" 417 4 418 47] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Red -> ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self))}
+    requires {[#"../red_black_tree.rs" 419 4 420 48] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red -> ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self))}
+    requires {[#"../red_black_tree.rs" 421 4 421 110] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Red -> false}
     ensures { [#"../red_black_tree.rs" 422 14 422 42] SameMappings0.same_mappings ( * self) ( ^ self) }
     ensures { [#"../red_black_tree.rs" 423 14 423 37] BstInvariant0.bst_invariant ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 424 4 425 34] ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self)) && Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Black ->  * self =  ^ self }
-    ensures { [#"../red_black_tree.rs" 426 4 431 65] forall l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l && Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Black && Type.redblacktree_node_Node_color l = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_left l) = Type.RedBlackTree_Color_Red && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left l) && Color0.color (Type.redblacktree_node_Node_right l) = Type.RedBlackTree_Color_Black && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right l) && Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Black && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self)) -> Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red && ColorInvariant1.color_invariant ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 432 4 436 46] Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Black && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self)) && Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self)) -> Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( ^ self)) && Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Black && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( ^ self)) && Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color ( * self) }
-    ensures { [#"../red_black_tree.rs" 437 4 440 65] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Black && Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Red && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self)) && Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self)) -> Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red && ColorInvariant1.color_invariant ( ^ self) }
+    ensures { [#"../red_black_tree.rs" 424 4 425 34] ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self)) /\ Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Black ->  * self =  ^ self }
+    ensures { [#"../red_black_tree.rs" 426 4 431 65] forall l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l /\ Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Black /\ Type.redblacktree_node_Node_color l = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_left l) = Type.RedBlackTree_Color_Red /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left l) /\ Color0.color (Type.redblacktree_node_Node_right l) = Type.RedBlackTree_Color_Black /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right l) /\ Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Black /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self)) -> Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red /\ ColorInvariant1.color_invariant ( ^ self) }
+    ensures { [#"../red_black_tree.rs" 432 4 436 46] Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Black /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self)) /\ Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self)) -> Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( ^ self)) /\ Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Black /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( ^ self)) /\ Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color ( * self) }
+    ensures { [#"../red_black_tree.rs" 437 4 440 65] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Black /\ Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Red /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self)) /\ Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self)) -> Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red /\ ColorInvariant1.color_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 441 4 441 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     
 end
@@ -2039,15 +2039,15 @@ module RedBlackTree_Impl12_Balance
   clone RedBlackTree_Impl11_IsRed_Interface as IsRed0 with type k = k, type v = v, function Color0.color = Color0.color
   let rec cfg balance [@cfg:stackify] [#"../red_black_tree.rs" 442 4 442 25] (self : borrowed (Type.redblacktree_node k v)) : ()
     requires {[#"../red_black_tree.rs" 416 15 416 38] BstInvariant0.bst_invariant ( * self)}
-    requires {[#"../red_black_tree.rs" 417 4 418 47] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Red -> ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self))}
-    requires {[#"../red_black_tree.rs" 419 4 420 48] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red -> ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self))}
-    requires {[#"../red_black_tree.rs" 421 4 421 110] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Red -> false}
+    requires {[#"../red_black_tree.rs" 417 4 418 47] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Red -> ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self))}
+    requires {[#"../red_black_tree.rs" 419 4 420 48] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red -> ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self))}
+    requires {[#"../red_black_tree.rs" 421 4 421 110] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Red -> false}
     ensures { [#"../red_black_tree.rs" 422 14 422 42] SameMappings0.same_mappings ( * self) ( ^ self) }
     ensures { [#"../red_black_tree.rs" 423 14 423 37] BstInvariant0.bst_invariant ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 424 4 425 34] ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self)) && Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Black ->  * self =  ^ self }
-    ensures { [#"../red_black_tree.rs" 426 4 431 65] forall l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l && Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Black && Type.redblacktree_node_Node_color l = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_left l) = Type.RedBlackTree_Color_Red && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left l) && Color0.color (Type.redblacktree_node_Node_right l) = Type.RedBlackTree_Color_Black && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right l) && Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Black && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self)) -> Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red && ColorInvariant1.color_invariant ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 432 4 436 46] Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Black && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self)) && Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self)) -> Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( ^ self)) && Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Black && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( ^ self)) && Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color ( * self) }
-    ensures { [#"../red_black_tree.rs" 437 4 440 65] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Black && Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Red && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self)) && Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self)) -> Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red && ColorInvariant1.color_invariant ( ^ self) }
+    ensures { [#"../red_black_tree.rs" 424 4 425 34] ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self)) /\ Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Black ->  * self =  ^ self }
+    ensures { [#"../red_black_tree.rs" 426 4 431 65] forall l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l /\ Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Black /\ Type.redblacktree_node_Node_color l = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_left l) = Type.RedBlackTree_Color_Red /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left l) /\ Color0.color (Type.redblacktree_node_Node_right l) = Type.RedBlackTree_Color_Black /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right l) /\ Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Black /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self)) -> Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red /\ ColorInvariant1.color_invariant ( ^ self) }
+    ensures { [#"../red_black_tree.rs" 432 4 436 46] Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Black /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self)) /\ Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self)) -> Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( ^ self)) /\ Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Black /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( ^ self)) /\ Type.redblacktree_node_Node_color ( ^ self) = Type.redblacktree_node_Node_color ( * self) }
+    ensures { [#"../red_black_tree.rs" 437 4 440 65] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Black /\ Color0.color (Type.redblacktree_node_Node_left ( * self)) = Type.RedBlackTree_Color_Red /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left ( * self)) /\ Color0.color (Type.redblacktree_node_Node_right ( * self)) = Type.RedBlackTree_Color_Red /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right ( * self)) -> Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red /\ ColorInvariant1.color_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 441 4 441 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     
    =
@@ -2257,12 +2257,12 @@ module RedBlackTree_Impl12_MoveRedLeft_Interface
     requires {[#"../red_black_tree.rs" 459 15 459 38] BstInvariant0.bst_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 460 15 460 40] ColorInvariant0.color_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 461 15 461 35] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red}
-    requires {[#"../red_black_tree.rs" 462 4 462 93] exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l && Color0.color (Type.redblacktree_node_Node_left l) = Type.RedBlackTree_Color_Black}
+    requires {[#"../red_black_tree.rs" 462 4 462 93] exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l /\ Color0.color (Type.redblacktree_node_Node_left l) = Type.RedBlackTree_Color_Black}
     ensures { [#"../red_black_tree.rs" 463 4 463 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 464 14 464 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 465 14 465 42] SameMappings0.same_mappings ( * self) ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 466 4 468 90] Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red -> ColorInvariant0.color_invariant ( ^ self) && (exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l && Color0.color (Type.redblacktree_node_Node_left l) = Type.RedBlackTree_Color_Red) }
-    ensures { [#"../red_black_tree.rs" 469 4 471 79] Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Black -> Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red && ColorInvariant1.color_invariant (Type.redblacktree_node_Node_left ( ^ self)) && Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Red && ColorInvariant1.color_invariant (Type.redblacktree_node_Node_right ( ^ self)) }
+    ensures { [#"../red_black_tree.rs" 466 4 468 90] Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red -> ColorInvariant0.color_invariant ( ^ self) /\ (exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l /\ Color0.color (Type.redblacktree_node_Node_left l) = Type.RedBlackTree_Color_Red) }
+    ensures { [#"../red_black_tree.rs" 469 4 471 79] Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Black -> Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red /\ ColorInvariant1.color_invariant (Type.redblacktree_node_Node_left ( ^ self)) /\ Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Red /\ ColorInvariant1.color_invariant (Type.redblacktree_node_Node_right ( ^ self)) }
     ensures { [#"../red_black_tree.rs" 472 14 472 42] LeLog0.le_log (Model0.model (Type.redblacktree_node_Node_key ( * self))) (Model0.model (Type.redblacktree_node_Node_key ( ^ self))) }
     
 end
@@ -2354,12 +2354,12 @@ module RedBlackTree_Impl12_MoveRedLeft
     requires {[#"../red_black_tree.rs" 459 15 459 38] BstInvariant0.bst_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 460 15 460 40] ColorInvariant0.color_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 461 15 461 35] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red}
-    requires {[#"../red_black_tree.rs" 462 4 462 93] exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l && Color0.color (Type.redblacktree_node_Node_left l) = Type.RedBlackTree_Color_Black}
+    requires {[#"../red_black_tree.rs" 462 4 462 93] exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( * self)) = Type.Core_Option_Option_Some l /\ Color0.color (Type.redblacktree_node_Node_left l) = Type.RedBlackTree_Color_Black}
     ensures { [#"../red_black_tree.rs" 463 4 463 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 464 14 464 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 465 14 465 42] SameMappings0.same_mappings ( * self) ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 466 4 468 90] Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red -> ColorInvariant0.color_invariant ( ^ self) && (exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l && Color0.color (Type.redblacktree_node_Node_left l) = Type.RedBlackTree_Color_Red) }
-    ensures { [#"../red_black_tree.rs" 469 4 471 79] Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Black -> Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red && ColorInvariant1.color_invariant (Type.redblacktree_node_Node_left ( ^ self)) && Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Red && ColorInvariant1.color_invariant (Type.redblacktree_node_Node_right ( ^ self)) }
+    ensures { [#"../red_black_tree.rs" 466 4 468 90] Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red -> ColorInvariant0.color_invariant ( ^ self) /\ (exists l : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_left ( ^ self)) = Type.Core_Option_Option_Some l /\ Color0.color (Type.redblacktree_node_Node_left l) = Type.RedBlackTree_Color_Red) }
+    ensures { [#"../red_black_tree.rs" 469 4 471 79] Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Black -> Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red /\ ColorInvariant1.color_invariant (Type.redblacktree_node_Node_left ( ^ self)) /\ Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Red /\ ColorInvariant1.color_invariant (Type.redblacktree_node_Node_right ( ^ self)) }
     ensures { [#"../red_black_tree.rs" 472 14 472 42] LeLog0.le_log (Model0.model (Type.redblacktree_node_Node_key ( * self))) (Model0.model (Type.redblacktree_node_Node_key ( ^ self))) }
     
    =
@@ -2494,14 +2494,14 @@ module RedBlackTree_Impl12_MoveRedRight_Interface
     requires {[#"../red_black_tree.rs" 488 15 488 38] BstInvariant0.bst_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 489 15 489 40] ColorInvariant0.color_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 490 15 490 35] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red}
-    requires {[#"../red_black_tree.rs" 491 4 491 94] exists r : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r && Color0.color (Type.redblacktree_node_Node_left r) = Type.RedBlackTree_Color_Black}
+    requires {[#"../red_black_tree.rs" 491 4 491 94] exists r : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r /\ Color0.color (Type.redblacktree_node_Node_left r) = Type.RedBlackTree_Color_Black}
     ensures { [#"../red_black_tree.rs" 492 4 492 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 493 14 493 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 494 14 494 42] SameMappings0.same_mappings ( * self) ( ^ self) }
     ensures { [#"../red_black_tree.rs" 495 4 495 46] ColorInvariant1.color_invariant (Type.redblacktree_node_Node_left ( ^ self)) }
     ensures { [#"../red_black_tree.rs" 496 4 496 47] ColorInvariant1.color_invariant (Type.redblacktree_node_Node_right ( ^ self)) }
-    ensures { [#"../red_black_tree.rs" 497 4 499 91] not result -> LtLog0.lt_log (Model0.model (Type.redblacktree_node_Node_key ( ^ self))) (Model0.model (Type.redblacktree_node_Node_key ( * self))) && Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Black && Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Black && (exists r : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r && Color0.color (Type.redblacktree_node_Node_left r) = Type.RedBlackTree_Color_Red) }
-    ensures { [#"../red_black_tree.rs" 500 4 501 75] result -> Type.redblacktree_node_Node_key ( ^ self) = Type.redblacktree_node_Node_key ( * self) && Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Black && Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Red }
+    ensures { [#"../red_black_tree.rs" 497 4 499 91] not result -> LtLog0.lt_log (Model0.model (Type.redblacktree_node_Node_key ( ^ self))) (Model0.model (Type.redblacktree_node_Node_key ( * self))) /\ Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Black /\ Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Black /\ (exists r : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r /\ Color0.color (Type.redblacktree_node_Node_left r) = Type.RedBlackTree_Color_Red) }
+    ensures { [#"../red_black_tree.rs" 500 4 501 75] result -> Type.redblacktree_node_Node_key ( ^ self) = Type.redblacktree_node_Node_key ( * self) /\ Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Black /\ Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Red }
     
 end
 module RedBlackTree_Impl12_MoveRedRight
@@ -2591,14 +2591,14 @@ module RedBlackTree_Impl12_MoveRedRight
     requires {[#"../red_black_tree.rs" 488 15 488 38] BstInvariant0.bst_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 489 15 489 40] ColorInvariant0.color_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 490 15 490 35] Type.redblacktree_node_Node_color ( * self) = Type.RedBlackTree_Color_Red}
-    requires {[#"../red_black_tree.rs" 491 4 491 94] exists r : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r && Color0.color (Type.redblacktree_node_Node_left r) = Type.RedBlackTree_Color_Black}
+    requires {[#"../red_black_tree.rs" 491 4 491 94] exists r : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( * self)) = Type.Core_Option_Option_Some r /\ Color0.color (Type.redblacktree_node_Node_left r) = Type.RedBlackTree_Color_Black}
     ensures { [#"../red_black_tree.rs" 492 4 492 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 493 14 493 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 494 14 494 42] SameMappings0.same_mappings ( * self) ( ^ self) }
     ensures { [#"../red_black_tree.rs" 495 4 495 46] ColorInvariant1.color_invariant (Type.redblacktree_node_Node_left ( ^ self)) }
     ensures { [#"../red_black_tree.rs" 496 4 496 47] ColorInvariant1.color_invariant (Type.redblacktree_node_Node_right ( ^ self)) }
-    ensures { [#"../red_black_tree.rs" 497 4 499 91] not result -> LtLog0.lt_log (Model0.model (Type.redblacktree_node_Node_key ( ^ self))) (Model0.model (Type.redblacktree_node_Node_key ( * self))) && Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Black && Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Black && (exists r : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r && Color0.color (Type.redblacktree_node_Node_left r) = Type.RedBlackTree_Color_Red) }
-    ensures { [#"../red_black_tree.rs" 500 4 501 75] result -> Type.redblacktree_node_Node_key ( ^ self) = Type.redblacktree_node_Node_key ( * self) && Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Black && Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red && Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Red }
+    ensures { [#"../red_black_tree.rs" 497 4 499 91] not result -> LtLog0.lt_log (Model0.model (Type.redblacktree_node_Node_key ( ^ self))) (Model0.model (Type.redblacktree_node_Node_key ( * self))) /\ Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Black /\ Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Black /\ (exists r : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node (Type.redblacktree_node_Node_right ( ^ self)) = Type.Core_Option_Option_Some r /\ Color0.color (Type.redblacktree_node_Node_left r) = Type.RedBlackTree_Color_Red) }
+    ensures { [#"../red_black_tree.rs" 500 4 501 75] result -> Type.redblacktree_node_Node_key ( ^ self) = Type.redblacktree_node_Node_key ( * self) /\ Type.redblacktree_node_Node_color ( ^ self) = Type.RedBlackTree_Color_Black /\ Color0.color (Type.redblacktree_node_Node_left ( ^ self)) = Type.RedBlackTree_Color_Red /\ Color0.color (Type.redblacktree_node_Node_right ( ^ self)) = Type.RedBlackTree_Color_Red }
     
    =
   var _0 : bool;
@@ -2864,10 +2864,10 @@ module RedBlackTree_Impl13_InsertRec_Interface
     requires {[#"../red_black_tree.rs" 533 15 533 38] BstInvariant0.bst_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 534 15 534 40] ColorInvariant0.color_invariant ( * self)}
     ensures { [#"../red_black_tree.rs" 535 14 535 37] BstInvariant0.bst_invariant ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 536 4 537 75] exists node : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node ( ^ self) = Type.Core_Option_Option_Some node && Color0.color (Type.redblacktree_node_Node_right node) = Type.RedBlackTree_Color_Black && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left node) && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right node) }
+    ensures { [#"../red_black_tree.rs" 536 4 537 75] exists node : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node ( ^ self) = Type.Core_Option_Option_Some node /\ Color0.color (Type.redblacktree_node_Node_right node) = Type.RedBlackTree_Color_Black /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left node) /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right node) }
     ensures { [#"../red_black_tree.rs" 538 4 538 70] Color0.color ( * self) = Type.RedBlackTree_Color_Black -> ColorInvariant0.color_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 539 14 539 44] HasMapping0.has_mapping ( ^ self) (Model0.model key) val' }
-    ensures { [#"../red_black_tree.rs" 540 4 540 111] forall v : (v) . forall k : (ModelTy0.modelTy) . k = Model0.model key || HasMapping0.has_mapping ( * self) k v = HasMapping0.has_mapping ( ^ self) k v }
+    ensures { [#"../red_black_tree.rs" 540 4 540 111] forall v : (v) . forall k : (ModelTy0.modelTy) . k = Model0.model key \/ HasMapping0.has_mapping ( * self) k v = HasMapping0.has_mapping ( ^ self) k v }
     ensures { [#"../red_black_tree.rs" 541 4 541 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     
 end
@@ -2959,10 +2959,10 @@ module RedBlackTree_Impl13_InsertRec
     requires {[#"../red_black_tree.rs" 533 15 533 38] BstInvariant0.bst_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 534 15 534 40] ColorInvariant0.color_invariant ( * self)}
     ensures { [#"../red_black_tree.rs" 535 14 535 37] BstInvariant0.bst_invariant ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 536 4 537 75] exists node : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node ( ^ self) = Type.Core_Option_Option_Some node && Color0.color (Type.redblacktree_node_Node_right node) = Type.RedBlackTree_Color_Black && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left node) && ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right node) }
+    ensures { [#"../red_black_tree.rs" 536 4 537 75] exists node : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node ( ^ self) = Type.Core_Option_Option_Some node /\ Color0.color (Type.redblacktree_node_Node_right node) = Type.RedBlackTree_Color_Black /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_left node) /\ ColorInvariant0.color_invariant (Type.redblacktree_node_Node_right node) }
     ensures { [#"../red_black_tree.rs" 538 4 538 70] Color0.color ( * self) = Type.RedBlackTree_Color_Black -> ColorInvariant0.color_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 539 14 539 44] HasMapping0.has_mapping ( ^ self) (Model0.model key) val' }
-    ensures { [#"../red_black_tree.rs" 540 4 540 111] forall v : (v) . forall k : (ModelTy0.modelTy) . k = Model0.model key || HasMapping0.has_mapping ( * self) k v = HasMapping0.has_mapping ( ^ self) k v }
+    ensures { [#"../red_black_tree.rs" 540 4 540 111] forall v : (v) . forall k : (ModelTy0.modelTy) . k = Model0.model key \/ HasMapping0.has_mapping ( * self) k v = HasMapping0.has_mapping ( ^ self) k v }
     ensures { [#"../red_black_tree.rs" 541 4 541 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     
    =
@@ -3342,7 +3342,7 @@ module RedBlackTree_Impl13_Insert
   BB5 {
     _11 <- { _11 with current = (let Type.RedBlackTree_Node a b c d e =  * _11 in Type.RedBlackTree_Node a _10 c d e) };
     assume { Resolve4.resolve _11 };
-    assert { [#"../red_black_tree.rs" 575 8 576 58] forall h : (int) . HasHeight0.has_height ( * old_self_4) h -> HasHeight0.has_height ( * self_1) h || HasHeight0.has_height ( * self_1) (h + 1) };
+    assert { [#"../red_black_tree.rs" 575 8 576 58] forall h : (int) . HasHeight0.has_height ( * old_self_4) h -> HasHeight0.has_height ( * self_1) h \/ HasHeight0.has_height ( * self_1) (h + 1) };
     _14 <- ();
     _16 <- ();
     _15 <- ghost ([#"../red_black_tree.rs" 577 8 577 42] ());
@@ -3371,7 +3371,7 @@ module CreusotContracts_Logic_Resolve_Impl0_Resolve
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t1
   predicate resolve (self : (t1, t2)) =
-    Resolve0.resolve (let (a, _) = self in a) && Resolve1.resolve (let (_, a) = self in a)
+    Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
 end
 module CreusotContracts_Logic_Resolve_Impl0
   type t1
@@ -3401,13 +3401,13 @@ module RedBlackTree_Impl13_DeleteMinRec_Interface
   val delete_min_rec [@cfg:stackify] (self : borrowed (Type.redblacktree_tree k v)) : (k, v)
     requires {[#"../red_black_tree.rs" 580 15 580 38] BstInvariant0.bst_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 581 15 581 40] ColorInvariant0.color_invariant ( * self)}
-    requires {[#"../red_black_tree.rs" 582 4 583 64] exists node : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node ( * self) = Type.Core_Option_Option_Some node && (Type.redblacktree_node_Node_color node = Type.RedBlackTree_Color_Red || Color0.color (Type.redblacktree_node_Node_left node) = Type.RedBlackTree_Color_Red)}
+    requires {[#"../red_black_tree.rs" 582 4 583 64] exists node : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node ( * self) = Type.Core_Option_Option_Some node /\ (Type.redblacktree_node_Node_color node = Type.RedBlackTree_Color_Red \/ Color0.color (Type.redblacktree_node_Node_left node) = Type.RedBlackTree_Color_Red)}
     requires {[#"../red_black_tree.rs" 584 4 584 53] exists h : (int) . HasHeight0.has_height ( * self) h}
     ensures { [#"../red_black_tree.rs" 585 14 585 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 586 14 586 54] HasMapping0.has_mapping ( * self) (Model0.model (let (a, _) = result in a)) (let (_, a) = result in a) }
     ensures { [#"../red_black_tree.rs" 587 4 587 88] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( * self) k v -> LeLog0.le_log (Model0.model (let (a, _) = result in a)) k }
-    ensures { [#"../red_black_tree.rs" 588 4 589 59] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( * self) k v -> Model0.model (let (a, _) = result in a) = k || HasMapping0.has_mapping ( ^ self) k v }
-    ensures { [#"../red_black_tree.rs" 590 4 591 59] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( ^ self) k v -> Model0.model (let (a, _) = result in a) <> k && HasMapping0.has_mapping ( * self) k v }
+    ensures { [#"../red_black_tree.rs" 588 4 589 59] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( * self) k v -> Model0.model (let (a, _) = result in a) = k \/ HasMapping0.has_mapping ( ^ self) k v }
+    ensures { [#"../red_black_tree.rs" 590 4 591 59] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( ^ self) k v -> Model0.model (let (a, _) = result in a) <> k /\ HasMapping0.has_mapping ( * self) k v }
     ensures { [#"../red_black_tree.rs" 592 4 592 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 593 14 593 39] ColorInvariant0.color_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 594 4 594 69] Color0.color ( * self) = Type.RedBlackTree_Color_Black -> Color0.color ( ^ self) = Type.RedBlackTree_Color_Black }
@@ -3514,13 +3514,13 @@ module RedBlackTree_Impl13_DeleteMinRec
   let rec cfg delete_min_rec [@cfg:stackify] [#"../red_black_tree.rs" 595 4 595 42] (self : borrowed (Type.redblacktree_tree k v)) : (k, v)
     requires {[#"../red_black_tree.rs" 580 15 580 38] BstInvariant0.bst_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 581 15 581 40] ColorInvariant0.color_invariant ( * self)}
-    requires {[#"../red_black_tree.rs" 582 4 583 64] exists node : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node ( * self) = Type.Core_Option_Option_Some node && (Type.redblacktree_node_Node_color node = Type.RedBlackTree_Color_Red || Color0.color (Type.redblacktree_node_Node_left node) = Type.RedBlackTree_Color_Red)}
+    requires {[#"../red_black_tree.rs" 582 4 583 64] exists node : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node ( * self) = Type.Core_Option_Option_Some node /\ (Type.redblacktree_node_Node_color node = Type.RedBlackTree_Color_Red \/ Color0.color (Type.redblacktree_node_Node_left node) = Type.RedBlackTree_Color_Red)}
     requires {[#"../red_black_tree.rs" 584 4 584 53] exists h : (int) . HasHeight0.has_height ( * self) h}
     ensures { [#"../red_black_tree.rs" 585 14 585 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 586 14 586 54] HasMapping0.has_mapping ( * self) (Model0.model (let (a, _) = result in a)) (let (_, a) = result in a) }
     ensures { [#"../red_black_tree.rs" 587 4 587 88] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( * self) k v -> LeLog0.le_log (Model0.model (let (a, _) = result in a)) k }
-    ensures { [#"../red_black_tree.rs" 588 4 589 59] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( * self) k v -> Model0.model (let (a, _) = result in a) = k || HasMapping0.has_mapping ( ^ self) k v }
-    ensures { [#"../red_black_tree.rs" 590 4 591 59] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( ^ self) k v -> Model0.model (let (a, _) = result in a) <> k && HasMapping0.has_mapping ( * self) k v }
+    ensures { [#"../red_black_tree.rs" 588 4 589 59] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( * self) k v -> Model0.model (let (a, _) = result in a) = k \/ HasMapping0.has_mapping ( ^ self) k v }
+    ensures { [#"../red_black_tree.rs" 590 4 591 59] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( ^ self) k v -> Model0.model (let (a, _) = result in a) <> k /\ HasMapping0.has_mapping ( * self) k v }
     ensures { [#"../red_black_tree.rs" 592 4 592 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 593 14 593 39] ColorInvariant0.color_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 594 4 594 69] Color0.color ( * self) = Type.RedBlackTree_Color_Black -> Color0.color ( ^ self) = Type.RedBlackTree_Color_Black }
@@ -3725,8 +3725,8 @@ module RedBlackTree_Impl13_DeleteMin_Interface
   val delete_min [@cfg:stackify] (self : borrowed (Type.redblacktree_tree k v)) : Type.core_option_option (k, v)
     requires {[#"../red_black_tree.rs" 612 15 612 34] Invariant0.invariant' ( * self)}
     ensures { [#"../red_black_tree.rs" 613 14 613 33] Invariant0.invariant' ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 614 4 614 83] result = Type.Core_Option_Option_None -> Model0.model ( ^ self) = Model0.model ( * self) && Model0.model ( * self) = Const.const (Type.Core_Option_Option_None) }
-    ensures { [#"../red_black_tree.rs" 615 4 618 48] forall v : (v) . forall k : (k) . result = Type.Core_Option_Option_Some (k, v) -> Map.get (Model0.model ( * self)) (Model1.model k) = Type.Core_Option_Option_Some v && (forall k2 : (ModelTy0.modelTy) . Map.get (Model0.model ( * self)) k2 = Type.Core_Option_Option_None || LeLog0.le_log (Model1.model k) k2) && Model0.model ( ^ self) = Map.set (Model0.model ( * self)) (Model1.model k) (Type.Core_Option_Option_None) }
+    ensures { [#"../red_black_tree.rs" 614 4 614 83] result = Type.Core_Option_Option_None -> Model0.model ( ^ self) = Model0.model ( * self) /\ Model0.model ( * self) = Const.const (Type.Core_Option_Option_None) }
+    ensures { [#"../red_black_tree.rs" 615 4 618 48] forall v : (v) . forall k : (k) . result = Type.Core_Option_Option_Some (k, v) -> Map.get (Model0.model ( * self)) (Model1.model k) = Type.Core_Option_Option_Some v /\ (forall k2 : (ModelTy0.modelTy) . Map.get (Model0.model ( * self)) k2 = Type.Core_Option_Option_None \/ LeLog0.le_log (Model1.model k) k2) /\ Model0.model ( ^ self) = Map.set (Model0.model ( * self)) (Model1.model k) (Type.Core_Option_Option_None) }
     
 end
 module RedBlackTree_Impl13_DeleteMin
@@ -3833,8 +3833,8 @@ module RedBlackTree_Impl13_DeleteMin
   let rec cfg delete_min [@cfg:stackify] [#"../red_black_tree.rs" 619 4 619 50] (self : borrowed (Type.redblacktree_tree k v)) : Type.core_option_option (k, v)
     requires {[#"../red_black_tree.rs" 612 15 612 34] Invariant0.invariant' ( * self)}
     ensures { [#"../red_black_tree.rs" 613 14 613 33] Invariant0.invariant' ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 614 4 614 83] result = Type.Core_Option_Option_None -> Model0.model ( ^ self) = Model0.model ( * self) && Model0.model ( * self) = Const.const (Type.Core_Option_Option_None) }
-    ensures { [#"../red_black_tree.rs" 615 4 618 48] forall v : (v) . forall k : (k) . result = Type.Core_Option_Option_Some (k, v) -> Map.get (Model0.model ( * self)) (Model1.model k) = Type.Core_Option_Option_Some v && (forall k2 : (ModelTy0.modelTy) . Map.get (Model0.model ( * self)) k2 = Type.Core_Option_Option_None || LeLog0.le_log (Model1.model k) k2) && Model0.model ( ^ self) = Map.set (Model0.model ( * self)) (Model1.model k) (Type.Core_Option_Option_None) }
+    ensures { [#"../red_black_tree.rs" 614 4 614 83] result = Type.Core_Option_Option_None -> Model0.model ( ^ self) = Model0.model ( * self) /\ Model0.model ( * self) = Const.const (Type.Core_Option_Option_None) }
+    ensures { [#"../red_black_tree.rs" 615 4 618 48] forall v : (v) . forall k : (k) . result = Type.Core_Option_Option_Some (k, v) -> Map.get (Model0.model ( * self)) (Model1.model k) = Type.Core_Option_Option_Some v /\ (forall k2 : (ModelTy0.modelTy) . Map.get (Model0.model ( * self)) k2 = Type.Core_Option_Option_None \/ LeLog0.le_log (Model1.model k) k2) /\ Model0.model ( ^ self) = Map.set (Model0.model ( * self)) (Model1.model k) (Type.Core_Option_Option_None) }
     
    =
   var _0 : Type.core_option_option (k, v);
@@ -3946,7 +3946,7 @@ module RedBlackTree_Impl13_DeleteMin
     goto BB12
   }
   BB12 {
-    assert { [#"../red_black_tree.rs" 629 8 630 61] forall h : (int) . HasHeight0.has_height ( * old_self_2) h -> Color0.color ( * self_1) = Type.RedBlackTree_Color_Black || HasHeight0.has_height ( * self_1) (h - 1) };
+    assert { [#"../red_black_tree.rs" 629 8 630 61] forall h : (int) . HasHeight0.has_height ( * old_self_2) h -> Color0.color ( * self_1) = Type.RedBlackTree_Color_Black \/ HasHeight0.has_height ( * self_1) (h - 1) };
     _17 <- ();
     assert { [#"../red_black_tree.rs" 631 24 631 53] SameMappings0.same_mappings ( * old_self_2) ( * self_1) };
     _18 <- ();
@@ -3990,7 +3990,7 @@ module RedBlackTree_Impl13_DeleteMin
     goto BB19
   }
   BB19 {
-    assert { [#"../red_black_tree.rs" 636 8 637 58] forall h : (int) . HasHeight0.has_height ( * old_self_2) h -> HasHeight0.has_height ( * self_1) h || HasHeight0.has_height ( * self_1) (h - 1) };
+    assert { [#"../red_black_tree.rs" 636 8 637 58] forall h : (int) . HasHeight0.has_height ( * old_self_2) h -> HasHeight0.has_height ( * self_1) h \/ HasHeight0.has_height ( * self_1) (h - 1) };
     _28 <- ();
     _30 <- ();
     _29 <- ghost ([#"../red_black_tree.rs" 638 8 638 42] ());
@@ -4052,13 +4052,13 @@ module RedBlackTree_Impl13_DeleteRec_Interface
   val delete_rec [@cfg:stackify] (self : borrowed (Type.redblacktree_tree k v)) (key : k) : Type.core_option_option (k, v)
     requires {[#"../red_black_tree.rs" 642 15 642 38] BstInvariant0.bst_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 643 15 643 40] ColorInvariant0.color_invariant ( * self)}
-    requires {[#"../red_black_tree.rs" 644 4 645 92] Color0.color ( * self) = Type.RedBlackTree_Color_Red || (exists n : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node ( * self) = Type.Core_Option_Option_Some n && Color0.color (Type.redblacktree_node_Node_left n) = Type.RedBlackTree_Color_Red)}
+    requires {[#"../red_black_tree.rs" 644 4 645 92] Color0.color ( * self) = Type.RedBlackTree_Color_Red \/ (exists n : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node ( * self) = Type.Core_Option_Option_Some n /\ Color0.color (Type.redblacktree_node_Node_left n) = Type.RedBlackTree_Color_Red)}
     requires {[#"../red_black_tree.rs" 646 4 646 53] exists h : (int) . HasHeight0.has_height ( * self) h}
     ensures { [#"../red_black_tree.rs" 647 14 647 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 648 4 648 78] forall v : (v) . result = Type.Core_Option_Option_None -> not HasMapping0.has_mapping ( * self) (Model0.model key) v }
-    ensures { [#"../red_black_tree.rs" 649 4 650 57] forall v : (v) . forall k : (k) . result = Type.Core_Option_Option_Some (k, v) -> Model0.model key = Model0.model k && HasMapping0.has_mapping ( * self) (Model0.model k) v }
-    ensures { [#"../red_black_tree.rs" 651 4 652 55] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( * self) k v -> Model0.model key = k || HasMapping0.has_mapping ( ^ self) k v }
-    ensures { [#"../red_black_tree.rs" 653 4 654 55] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( ^ self) k v -> Model0.model key <> k && HasMapping0.has_mapping ( * self) k v }
+    ensures { [#"../red_black_tree.rs" 649 4 650 57] forall v : (v) . forall k : (k) . result = Type.Core_Option_Option_Some (k, v) -> Model0.model key = Model0.model k /\ HasMapping0.has_mapping ( * self) (Model0.model k) v }
+    ensures { [#"../red_black_tree.rs" 651 4 652 55] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( * self) k v -> Model0.model key = k \/ HasMapping0.has_mapping ( ^ self) k v }
+    ensures { [#"../red_black_tree.rs" 653 4 654 55] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( ^ self) k v -> Model0.model key <> k /\ HasMapping0.has_mapping ( * self) k v }
     ensures { [#"../red_black_tree.rs" 655 4 655 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 656 14 656 39] ColorInvariant0.color_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 657 4 657 69] Color0.color ( * self) = Type.RedBlackTree_Color_Black -> Color0.color ( ^ self) = Type.RedBlackTree_Color_Black }
@@ -4222,13 +4222,13 @@ module RedBlackTree_Impl13_DeleteRec
   let rec cfg delete_rec [@cfg:stackify] [#"../red_black_tree.rs" 658 4 658 55] (self : borrowed (Type.redblacktree_tree k v)) (key : k) : Type.core_option_option (k, v)
     requires {[#"../red_black_tree.rs" 642 15 642 38] BstInvariant0.bst_invariant ( * self)}
     requires {[#"../red_black_tree.rs" 643 15 643 40] ColorInvariant0.color_invariant ( * self)}
-    requires {[#"../red_black_tree.rs" 644 4 645 92] Color0.color ( * self) = Type.RedBlackTree_Color_Red || (exists n : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node ( * self) = Type.Core_Option_Option_Some n && Color0.color (Type.redblacktree_node_Node_left n) = Type.RedBlackTree_Color_Red)}
+    requires {[#"../red_black_tree.rs" 644 4 645 92] Color0.color ( * self) = Type.RedBlackTree_Color_Red \/ (exists n : (Type.redblacktree_node k v) . Type.redblacktree_tree_Tree_node ( * self) = Type.Core_Option_Option_Some n /\ Color0.color (Type.redblacktree_node_Node_left n) = Type.RedBlackTree_Color_Red)}
     requires {[#"../red_black_tree.rs" 646 4 646 53] exists h : (int) . HasHeight0.has_height ( * self) h}
     ensures { [#"../red_black_tree.rs" 647 14 647 37] BstInvariant0.bst_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 648 4 648 78] forall v : (v) . result = Type.Core_Option_Option_None -> not HasMapping0.has_mapping ( * self) (Model0.model key) v }
-    ensures { [#"../red_black_tree.rs" 649 4 650 57] forall v : (v) . forall k : (k) . result = Type.Core_Option_Option_Some (k, v) -> Model0.model key = Model0.model k && HasMapping0.has_mapping ( * self) (Model0.model k) v }
-    ensures { [#"../red_black_tree.rs" 651 4 652 55] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( * self) k v -> Model0.model key = k || HasMapping0.has_mapping ( ^ self) k v }
-    ensures { [#"../red_black_tree.rs" 653 4 654 55] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( ^ self) k v -> Model0.model key <> k && HasMapping0.has_mapping ( * self) k v }
+    ensures { [#"../red_black_tree.rs" 649 4 650 57] forall v : (v) . forall k : (k) . result = Type.Core_Option_Option_Some (k, v) -> Model0.model key = Model0.model k /\ HasMapping0.has_mapping ( * self) (Model0.model k) v }
+    ensures { [#"../red_black_tree.rs" 651 4 652 55] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( * self) k v -> Model0.model key = k \/ HasMapping0.has_mapping ( ^ self) k v }
+    ensures { [#"../red_black_tree.rs" 653 4 654 55] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( ^ self) k v -> Model0.model key <> k /\ HasMapping0.has_mapping ( * self) k v }
     ensures { [#"../red_black_tree.rs" 655 4 655 78] forall h : (int) . HasHeight0.has_height ( * self) h -> HasHeight0.has_height ( ^ self) h }
     ensures { [#"../red_black_tree.rs" 656 14 656 39] ColorInvariant0.color_invariant ( ^ self) }
     ensures { [#"../red_black_tree.rs" 657 4 657 69] Color0.color ( * self) = Type.RedBlackTree_Color_Black -> Color0.color ( ^ self) = Type.RedBlackTree_Color_Black }
@@ -4746,7 +4746,7 @@ module RedBlackTree_Impl13_Delete_Interface
     requires {[#"../red_black_tree.rs" 702 15 702 34] Invariant0.invariant' ( * self)}
     ensures { [#"../red_black_tree.rs" 703 14 703 33] Invariant0.invariant' ( ^ self) }
     ensures { [#"../red_black_tree.rs" 704 14 704 63] (result = Type.Core_Option_Option_None) = (Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_None) }
-    ensures { [#"../red_black_tree.rs" 705 4 706 46] forall v : (v) . forall k : (k) . result = Type.Core_Option_Option_Some (k, v) && Model1.model k = Model1.model key -> Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_Some v }
+    ensures { [#"../red_black_tree.rs" 705 4 706 46] forall v : (v) . forall k : (k) . result = Type.Core_Option_Option_Some (k, v) /\ Model1.model k = Model1.model key -> Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_Some v }
     ensures { [#"../red_black_tree.rs" 707 14 707 49] Model0.model ( ^ self) = Map.set (Model0.model ( * self)) (Model1.model key) (Type.Core_Option_Option_None) }
     
 end
@@ -4853,7 +4853,7 @@ module RedBlackTree_Impl13_Delete
     requires {[#"../red_black_tree.rs" 702 15 702 34] Invariant0.invariant' ( * self)}
     ensures { [#"../red_black_tree.rs" 703 14 703 33] Invariant0.invariant' ( ^ self) }
     ensures { [#"../red_black_tree.rs" 704 14 704 63] (result = Type.Core_Option_Option_None) = (Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_None) }
-    ensures { [#"../red_black_tree.rs" 705 4 706 46] forall v : (v) . forall k : (k) . result = Type.Core_Option_Option_Some (k, v) && Model1.model k = Model1.model key -> Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_Some v }
+    ensures { [#"../red_black_tree.rs" 705 4 706 46] forall v : (v) . forall k : (k) . result = Type.Core_Option_Option_Some (k, v) /\ Model1.model k = Model1.model key -> Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_Some v }
     ensures { [#"../red_black_tree.rs" 707 14 707 49] Model0.model ( ^ self) = Map.set (Model0.model ( * self)) (Model1.model key) (Type.Core_Option_Option_None) }
     
    =
@@ -4972,7 +4972,7 @@ module RedBlackTree_Impl13_Delete
     goto BB12
   }
   BB12 {
-    assert { [#"../red_black_tree.rs" 719 8 720 61] forall h : (int) . HasHeight0.has_height ( * old_self_3) h -> Color0.color ( * self_1) = Type.RedBlackTree_Color_Black || HasHeight0.has_height ( * self_1) (h - 1) };
+    assert { [#"../red_black_tree.rs" 719 8 720 61] forall h : (int) . HasHeight0.has_height ( * old_self_3) h -> Color0.color ( * self_1) = Type.RedBlackTree_Color_Black \/ HasHeight0.has_height ( * self_1) (h - 1) };
     _18 <- ();
     _20 <- borrow_mut ( * self_1);
     self_1 <- { self_1 with current = ( ^ _20) };
@@ -5018,7 +5018,7 @@ module RedBlackTree_Impl13_Delete
     goto BB19
   }
   BB19 {
-    assert { [#"../red_black_tree.rs" 726 8 727 58] forall h : (int) . HasHeight0.has_height ( * old_self_3) h -> HasHeight0.has_height ( * self_1) h || HasHeight0.has_height ( * self_1) (h - 1) };
+    assert { [#"../red_black_tree.rs" 726 8 727 58] forall h : (int) . HasHeight0.has_height ( * old_self_3) h -> HasHeight0.has_height ( * self_1) h \/ HasHeight0.has_height ( * self_1) (h - 1) };
     _30 <- ();
     _32 <- ();
     _31 <- ghost ([#"../red_black_tree.rs" 728 8 728 55] match (r_19) with
@@ -5295,8 +5295,8 @@ module RedBlackTree_Impl13_GetMut_Interface
   val get_mut [@cfg:stackify] (self : borrowed (Type.redblacktree_tree k v)) (key : k) : Type.core_option_option (borrowed v)
     requires {[#"../red_black_tree.rs" 752 15 752 34] Invariant0.invariant' ( * self)}
     ensures { [#"../red_black_tree.rs" 753 14 753 33] Invariant0.invariant' ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 754 4 755 89] forall v : (borrowed v) . result = Type.Core_Option_Option_Some v -> Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_Some ( * v) && Model0.model ( ^ self) = Map.set (Model0.model ( * self)) (Model2.model key) (Type.Core_Option_Option_Some ( ^ v)) }
-    ensures { [#"../red_black_tree.rs" 756 4 756 93] result = Type.Core_Option_Option_None -> Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_None && Map.get (Model0.model ( ^ self)) (Model1.model key) = Type.Core_Option_Option_None }
+    ensures { [#"../red_black_tree.rs" 754 4 755 89] forall v : (borrowed v) . result = Type.Core_Option_Option_Some v -> Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_Some ( * v) /\ Model0.model ( ^ self) = Map.set (Model0.model ( * self)) (Model2.model key) (Type.Core_Option_Option_Some ( ^ v)) }
+    ensures { [#"../red_black_tree.rs" 756 4 756 93] result = Type.Core_Option_Option_None -> Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_None /\ Map.get (Model0.model ( ^ self)) (Model1.model key) = Type.Core_Option_Option_None }
     
 end
 module RedBlackTree_Impl13_GetMut
@@ -5392,8 +5392,8 @@ module RedBlackTree_Impl13_GetMut
   let rec cfg get_mut [@cfg:stackify] [#"../red_black_tree.rs" 757 4 757 56] (self : borrowed (Type.redblacktree_tree k v)) (key : k) : Type.core_option_option (borrowed v)
     requires {[#"../red_black_tree.rs" 752 15 752 34] Invariant0.invariant' ( * self)}
     ensures { [#"../red_black_tree.rs" 753 14 753 33] Invariant0.invariant' ( ^ self) }
-    ensures { [#"../red_black_tree.rs" 754 4 755 89] forall v : (borrowed v) . result = Type.Core_Option_Option_Some v -> Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_Some ( * v) && Model0.model ( ^ self) = Map.set (Model0.model ( * self)) (Model2.model key) (Type.Core_Option_Option_Some ( ^ v)) }
-    ensures { [#"../red_black_tree.rs" 756 4 756 93] result = Type.Core_Option_Option_None -> Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_None && Map.get (Model0.model ( ^ self)) (Model1.model key) = Type.Core_Option_Option_None }
+    ensures { [#"../red_black_tree.rs" 754 4 755 89] forall v : (borrowed v) . result = Type.Core_Option_Option_Some v -> Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_Some ( * v) /\ Model0.model ( ^ self) = Map.set (Model0.model ( * self)) (Model2.model key) (Type.Core_Option_Option_Some ( ^ v)) }
+    ensures { [#"../red_black_tree.rs" 756 4 756 93] result = Type.Core_Option_Option_None -> Map.get (Model0.model ( * self)) (Model1.model key) = Type.Core_Option_Option_None /\ Map.get (Model0.model ( ^ self)) (Model1.model key) = Type.Core_Option_Option_None }
     
    =
   var _0 : Type.core_option_option (borrowed v);
@@ -5443,11 +5443,11 @@ module RedBlackTree_Impl13_GetMut
     invariant color_inv { [#"../red_black_tree.rs" 763 31 763 56] ColorInvariant0.color_invariant ( * tree_6) };
     invariant mapping_prof_key { [#"../red_black_tree.rs" 762 8 762 54] forall v : (v) . HasMapping0.has_mapping ( ^ tree_6) (Model2.model key_2) v = HasMapping0.has_mapping ( ^ self_1) (Model2.model key_2) v };
     invariant mapping_cur_key { [#"../red_black_tree.rs" 762 8 762 54] forall v : (v) . HasMapping0.has_mapping ( * tree_6) (Model2.model key_2) v = HasMapping0.has_mapping ( * self_1) (Model2.model key_2) v };
-    invariant bst_inv_proph { [#"../red_black_tree.rs" 762 8 762 54] (forall v : (v) . forall k : (ModelTy0.modelTy) . k = Model2.model key_2 || HasMapping0.has_mapping ( * tree_6) k v = HasMapping0.has_mapping ( ^ tree_6) k v) -> BstInvariant0.bst_invariant ( ^ tree_6) -> BstInvariant0.bst_invariant ( ^ self_1) };
-    invariant color_inv_proph { [#"../red_black_tree.rs" 762 8 762 54] ColorInvariant0.color_invariant ( ^ tree_6) && Color0.color ( ^ tree_6) = Color0.color ( * tree_6) -> ColorInvariant0.color_invariant ( ^ self_1) };
+    invariant bst_inv_proph { [#"../red_black_tree.rs" 762 8 762 54] (forall v : (v) . forall k : (ModelTy0.modelTy) . k = Model2.model key_2 \/ HasMapping0.has_mapping ( * tree_6) k v = HasMapping0.has_mapping ( ^ tree_6) k v) -> BstInvariant0.bst_invariant ( ^ tree_6) -> BstInvariant0.bst_invariant ( ^ self_1) };
+    invariant color_inv_proph { [#"../red_black_tree.rs" 762 8 762 54] ColorInvariant0.color_invariant ( ^ tree_6) /\ Color0.color ( ^ tree_6) = Color0.color ( * tree_6) -> ColorInvariant0.color_invariant ( ^ self_1) };
     invariant color_proph { [#"../red_black_tree.rs" 762 8 762 54] Color0.color ( ^ tree_6) = Color0.color ( * tree_6) -> Color0.color ( ^ self_1) = Color0.color ( * self_1) };
     invariant mapping_proph { [#"../red_black_tree.rs" 762 8 762 54] forall v : (v) . forall k : (ModelTy0.modelTy) . HasMapping0.has_mapping ( * tree_6) k v = HasMapping0.has_mapping ( ^ tree_6) k v -> HasMapping0.has_mapping ( * self_1) k v = HasMapping0.has_mapping ( ^ self_1) k v };
-    invariant height { [#"../red_black_tree.rs" 762 8 762 54] Color0.color ( ^ tree_6) = Color0.color ( * tree_6) && (forall h : (int) . HasHeight0.has_height ( * tree_6) h -> HasHeight0.has_height ( ^ tree_6) h) -> (forall h : (int) . HasHeight0.has_height ( * self_1) h -> HasHeight0.has_height ( ^ self_1) h) };
+    invariant height { [#"../red_black_tree.rs" 762 8 762 54] Color0.color ( ^ tree_6) = Color0.color ( * tree_6) /\ (forall h : (int) . HasHeight0.has_height ( * tree_6) h -> HasHeight0.has_height ( ^ tree_6) h) -> (forall h : (int) . HasHeight0.has_height ( * self_1) h -> HasHeight0.has_height ( ^ self_1) h) };
     _9 <- borrow_mut (Type.redblacktree_tree_Tree_node ( * tree_6));
     tree_6 <- { tree_6 with current = (let Type.RedBlackTree_Tree a =  * tree_6 in Type.RedBlackTree_Tree ( ^ _9)) };
     assume { Resolve0.resolve tree_6 };

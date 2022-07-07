@@ -86,9 +86,9 @@ module IterMut_Impl1_IterMut_Interface
   clone IterMut_Impl2_Model_Interface as Model1 with type t = t
   clone IterMut_Impl0_Model_Interface as Model0 with type t = t
   val iter_mut [@cfg:stackify] (self : borrowed (Type.itermut_vec t)) : Type.itermut_itermut t
-    ensures { [#"../iter_mut.rs" 23 14 23 83] Seq.length (Model0.model ( * self)) = Seq.length (Model1.model result) && Seq.length (Model0.model ( * self)) = Seq.length (Model0.model ( ^ self)) }
-    ensures { [#"../iter_mut.rs" 24 4 24 94] forall i : (int) . 0 <= i && i <= Seq.length (Model0.model ( * self)) -> Seq.get (Model0.model ( * self)) i =  * Seq.get (Model1.model result) i }
-    ensures { [#"../iter_mut.rs" 25 4 25 94] forall i : (int) . 0 <= i && i <= Seq.length (Model0.model ( ^ self)) -> Seq.get (Model0.model ( ^ self)) i =  ^ Seq.get (Model1.model result) i }
+    ensures { [#"../iter_mut.rs" 23 14 23 83] Seq.length (Model0.model ( * self)) = Seq.length (Model1.model result) /\ Seq.length (Model0.model ( * self)) = Seq.length (Model0.model ( ^ self)) }
+    ensures { [#"../iter_mut.rs" 24 4 24 94] forall i : (int) . 0 <= i /\ i <= Seq.length (Model0.model ( * self)) -> Seq.get (Model0.model ( * self)) i =  * Seq.get (Model1.model result) i }
+    ensures { [#"../iter_mut.rs" 25 4 25 94] forall i : (int) . 0 <= i /\ i <= Seq.length (Model0.model ( ^ self)) -> Seq.get (Model0.model ( ^ self)) i =  ^ Seq.get (Model1.model result) i }
     
 end
 module IterMut_Impl1_IterMut
@@ -100,9 +100,9 @@ module IterMut_Impl1_IterMut
   clone IterMut_Impl2_Model as Model1 with type t = t
   clone IterMut_Impl0_Model as Model0 with type t = t
   val iter_mut [@cfg:stackify] (self : borrowed (Type.itermut_vec t)) : Type.itermut_itermut t
-    ensures { [#"../iter_mut.rs" 23 14 23 83] Seq.length (Model0.model ( * self)) = Seq.length (Model1.model result) && Seq.length (Model0.model ( * self)) = Seq.length (Model0.model ( ^ self)) }
-    ensures { [#"../iter_mut.rs" 24 4 24 94] forall i : (int) . 0 <= i && i <= Seq.length (Model0.model ( * self)) -> Seq.get (Model0.model ( * self)) i =  * Seq.get (Model1.model result) i }
-    ensures { [#"../iter_mut.rs" 25 4 25 94] forall i : (int) . 0 <= i && i <= Seq.length (Model0.model ( ^ self)) -> Seq.get (Model0.model ( ^ self)) i =  ^ Seq.get (Model1.model result) i }
+    ensures { [#"../iter_mut.rs" 23 14 23 83] Seq.length (Model0.model ( * self)) = Seq.length (Model1.model result) /\ Seq.length (Model0.model ( * self)) = Seq.length (Model0.model ( ^ self)) }
+    ensures { [#"../iter_mut.rs" 24 4 24 94] forall i : (int) . 0 <= i /\ i <= Seq.length (Model0.model ( * self)) -> Seq.get (Model0.model ( * self)) i =  * Seq.get (Model1.model result) i }
+    ensures { [#"../iter_mut.rs" 25 4 25 94] forall i : (int) . 0 <= i /\ i <= Seq.length (Model0.model ( ^ self)) -> Seq.get (Model0.model ( ^ self)) i =  ^ Seq.get (Model1.model result) i }
     
 end
 module IterMut_Impl1_Len_Interface
@@ -271,7 +271,7 @@ module IterMut_IncVec_Interface
   clone IterMut_Impl0_Model_Interface as Model0 with type t = int
   val inc_vec [@cfg:stackify] (v : borrowed (Type.itermut_vec int)) : ()
     ensures { [#"../iter_mut.rs" 58 10 58 35] Seq.length (Model0.model ( ^ v)) = Seq.length (Model1.model v) }
-    ensures { [#"../iter_mut.rs" 59 0 59 83] forall i : (int) . 0 <= i && i < Seq.length (Model0.model ( ^ v)) -> Seq.get (Model0.model ( ^ v)) i = Seq.get (Model1.model v) i + 5 }
+    ensures { [#"../iter_mut.rs" 59 0 59 83] forall i : (int) . 0 <= i /\ i < Seq.length (Model0.model ( ^ v)) -> Seq.get (Model0.model ( ^ v)) i = Seq.get (Model1.model v) i + 5 }
     
 end
 module IterMut_IncVec
@@ -294,7 +294,7 @@ module IterMut_IncVec
   function Model1.model = Model2.model
   let rec cfg inc_vec [@cfg:stackify] [#"../iter_mut.rs" 60 0 60 32] (v : borrowed (Type.itermut_vec int)) : ()
     ensures { [#"../iter_mut.rs" 58 10 58 35] Seq.length (Model0.model ( ^ v)) = Seq.length (Model1.model v) }
-    ensures { [#"../iter_mut.rs" 59 0 59 83] forall i : (int) . 0 <= i && i < Seq.length (Model0.model ( ^ v)) -> Seq.get (Model0.model ( ^ v)) i = Seq.get (Model1.model v) i + 5 }
+    ensures { [#"../iter_mut.rs" 59 0 59 83] forall i : (int) . 0 <= i /\ i < Seq.length (Model0.model ( ^ v)) -> Seq.get (Model0.model ( ^ v)) i = Seq.get (Model1.model v) i + 5 }
     
    =
   var _0 : ();
@@ -333,8 +333,8 @@ module IterMut_IncVec
     goto BB3
   }
   BB3 {
-    invariant incremented { [#"../iter_mut.rs" 65 4 68 6] forall i : (int) . 0 <= i && i < _ghost_seen_6 -> Seq.get (Model0.model ( ^ old_v_2)) i = Seq.get (Model1.model old_v_2) i + 5 };
-    invariant to_come { [#"../iter_mut.rs" 65 4 68 6] forall i : (int) . 0 <= i && i < Seq.length (Model2.model it_4) ->  * Seq.get (Model2.model it_4) i = Seq.get (Model1.model old_v_2) (i + _ghost_seen_6) &&  ^ Seq.get (Model2.model it_4) i = Seq.get (Model0.model ( ^ old_v_2)) (i + _ghost_seen_6) };
+    invariant incremented { [#"../iter_mut.rs" 65 4 68 6] forall i : (int) . 0 <= i /\ i < _ghost_seen_6 -> Seq.get (Model0.model ( ^ old_v_2)) i = Seq.get (Model1.model old_v_2) i + 5 };
+    invariant to_come { [#"../iter_mut.rs" 65 4 68 6] forall i : (int) . 0 <= i /\ i < Seq.length (Model2.model it_4) ->  * Seq.get (Model2.model it_4) i = Seq.get (Model1.model old_v_2) (i + _ghost_seen_6) /\  ^ Seq.get (Model2.model it_4) i = Seq.get (Model0.model ( ^ old_v_2)) (i + _ghost_seen_6) };
     invariant _ghost_seen { [#"../iter_mut.rs" 72 29 72 81] _ghost_seen_6 + Seq.length (Model2.model it_4) = Seq.length (Model1.model old_v_2) };
     _9 <- borrow_mut it_4;
     it_4 <-  ^ _9;
