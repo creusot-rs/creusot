@@ -192,7 +192,7 @@ module Hashmap_Impl1_NoDoubleBinding
   predicate no_double_binding [#"../hashmap.rs" 33 4 33 38] (self : Type.hashmap_list (k, v)) =
     [#"../hashmap.rs" 35 12 38 13] match (self) with
       | Type.Hashmap_List_Nil -> true
-      | Type.Hashmap_List_Cons (k, _) tl -> Get0.get tl (Model0.model k) = Type.Core_Option_Option_None && no_double_binding tl
+      | Type.Hashmap_List_Cons (k, _) tl -> Get0.get tl (Model0.model k) = Type.Core_Option_Option_None /\ no_double_binding tl
       end
 end
 module Hashmap_Impl5_HashmapInv_Interface
@@ -215,7 +215,7 @@ module Hashmap_Impl5_HashmapInv
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Type.hashmap_list (k, v),
   type a = Type.alloc_alloc_global, axiom .
   predicate hashmap_inv [#"../hashmap.rs" 218 4 218 33] (self : Type.hashmap_myhashmap k v) =
-    [#"../hashmap.rs" 219 8 222 9] 0 < Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self)) && (forall i : (int) . 0 <= i && i < Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self)) -> GoodBucket0.good_bucket self (Seq.get (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self)) i) i && NoDoubleBinding0.no_double_binding (Seq.get (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self)) i))
+    [#"../hashmap.rs" 219 8 222 9] 0 < Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self)) /\ (forall i : (int) . 0 <= i /\ i < Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self)) -> GoodBucket0.good_bucket self (Seq.get (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self)) i) i /\ NoDoubleBinding0.no_double_binding (Seq.get (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets self)) i))
 end
 module Hashmap_Impl4_Bucket_Interface
   type k
@@ -326,7 +326,7 @@ module Alloc_Vec_FromElem_Interface
   axiom .
   val from_elem [@cfg:stackify] (elem : t) (n : usize) : Type.alloc_vec_vec t (Type.alloc_alloc_global)
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
-    ensures { forall i : (int) . 0 <= i && i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
+    ensures { forall i : (int) . 0 <= i /\ i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
 end
 module Alloc_Vec_FromElem
@@ -341,7 +341,7 @@ module Alloc_Vec_FromElem
   axiom .
   val from_elem [@cfg:stackify] (elem : t) (n : usize) : Type.alloc_vec_vec t (Type.alloc_alloc_global)
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
-    ensures { forall i : (int) . 0 <= i && i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
+    ensures { forall i : (int) . 0 <= i /\ i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
@@ -969,7 +969,7 @@ module CreusotContracts_Std1_Slice_Impl3_ResolveElswhere
   use seq.Seq
   use mach.int.Int32
   predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) =
-    forall i : (int) . 0 <= i && i <> UInt64.to_int self && i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+    forall i : (int) . 0 <= i /\ i <> UInt64.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
 end
 module Hashmap_Impl5_Add_Interface
   type k
@@ -1172,7 +1172,7 @@ module Hashmap_Impl5_Add
     invariant get_key { [#"../hashmap.rs" 122 8 122 51] Get0.get ( ^ l_14) (Model1.model key_2) = Type.Core_Option_Option_Some val'_3 -> Get0.get ( ^ old_l_19) (Model1.model key_2) = Type.Core_Option_Option_Some val'_3 };
     invariant get_rest { [#"../hashmap.rs" 122 8 122 51] forall i : (ModelTy0.modelTy) . Get0.get ( ^ l_14) i = Get0.get ( * l_14) i -> Get0.get ( ^ old_l_19) i = Get0.get ( * old_l_19) i };
     invariant no_double_binding { [#"../hashmap.rs" 127 39 127 63] NoDoubleBinding0.no_double_binding ( * l_14) };
-    invariant no_double_binding_magic { [#"../hashmap.rs" 122 8 122 51] (forall i : (ModelTy0.modelTy) . Get0.get ( * l_14) i = Get0.get ( ^ l_14) i || i = Model1.model key_2) && NoDoubleBinding0.no_double_binding ( ^ l_14) -> NoDoubleBinding0.no_double_binding ( ^ old_l_19) };
+    invariant no_double_binding_magic { [#"../hashmap.rs" 122 8 122 51] (forall i : (ModelTy0.modelTy) . Get0.get ( * l_14) i = Get0.get ( ^ l_14) i \/ i = Model1.model key_2) /\ NoDoubleBinding0.no_double_binding ( ^ l_14) -> NoDoubleBinding0.no_double_binding ( ^ old_l_19) };
     switch ( * l_14)
       | Type.Hashmap_List_Cons _ _ -> goto BB8
       | _ -> goto BB12
@@ -1391,7 +1391,7 @@ module Hashmap_Impl2
   clone Hashmap_Hash_HashLogEqModel_Interface as HashLogEqModel1 with type self = usize,
   function hash_log_eq_model = HashLogEqModel0.hash_log_eq_model, function Model0.model = Model0.model,
   function HashLog0.hash_log = HashLog0.hash_log, type ModelTy0.modelTy = ModelTy0.modelTy, axiom .
-  goal hash_log_eq_model_spec : forall x : usize, y : usize . (([#"../hashmap.rs" 53 15 53 23] UInt64.to_int x = UInt64.to_int y) -> ([#"../hashmap.rs" 71 15 71 23] UInt64.to_int x = UInt64.to_int y)) && (forall result : () . ([#"../hashmap.rs" 72 14 72 42] HashLog0.hash_log x = HashLog0.hash_log y) -> ([#"../hashmap.rs" 54 14 54 42] HashLog0.hash_log x = HashLog0.hash_log y))
+  goal hash_log_eq_model_spec : forall x : usize, y : usize . (([#"../hashmap.rs" 53 15 53 23] UInt64.to_int x = UInt64.to_int y) -> ([#"../hashmap.rs" 71 15 71 23] UInt64.to_int x = UInt64.to_int y)) /\ (forall result : () . ([#"../hashmap.rs" 72 14 72 42] HashLog0.hash_log x = HashLog0.hash_log y) -> ([#"../hashmap.rs" 54 14 54 42] HashLog0.hash_log x = HashLog0.hash_log y))
 end
 module Hashmap_Main_Interface
   val main [@cfg:stackify] (_ : ()) : ()
@@ -1796,8 +1796,8 @@ module Hashmap_Impl5_Resize
   }
   BB6 {
     invariant seen { [#"../hashmap.rs" 175 8 175 111] forall k : (k) . BucketIx0.bucket_ix ( * old_self_2) k < UInt64.to_int i_8 -> Map.get (Model3.model old_self_2) (Model2.model k) = Map.get (Model1.model new_4) (Model2.model k) };
-    invariant unseen { [#"../hashmap.rs" 175 8 175 111] forall k : (k) . UInt64.to_int i_8 <= BucketIx0.bucket_ix ( * old_self_2) k && BucketIx0.bucket_ix ( * old_self_2) k <= Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * old_self_2))) -> Map.get (Model1.model new_4) (Model2.model k) = Type.Core_Option_Option_None };
-    invariant rest { [#"../hashmap.rs" 175 8 175 111] forall j : (int) . UInt64.to_int i_8 <= j && j < Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * old_self_2))) -> Seq.get (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * self_1))) j = Seq.get (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * old_self_2))) j };
+    invariant unseen { [#"../hashmap.rs" 175 8 175 111] forall k : (k) . UInt64.to_int i_8 <= BucketIx0.bucket_ix ( * old_self_2) k /\ BucketIx0.bucket_ix ( * old_self_2) k <= Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * old_self_2))) -> Map.get (Model1.model new_4) (Model2.model k) = Type.Core_Option_Option_None };
+    invariant rest { [#"../hashmap.rs" 175 8 175 111] forall j : (int) . UInt64.to_int i_8 <= j /\ j < Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * old_self_2))) -> Seq.get (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * self_1))) j = Seq.get (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * old_self_2))) j };
     invariant a { [#"../hashmap.rs" 181 23 181 40] HashmapInv0.hashmap_inv new_4 };
     invariant p { [#"../hashmap.rs" 182 23 182 49]  ^ old_self_2 =  ^ self_1 };
     invariant l { [#"../hashmap.rs" 183 23 183 73] Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * old_self_2))) = Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * self_1))) };
@@ -1853,7 +1853,7 @@ module Hashmap_Impl5_Resize
   BB16 {
     invariant a { [#"../hashmap.rs" 188 27 188 44] HashmapInv0.hashmap_inv new_4 };
     invariant x { [#"../hashmap.rs" 188 12 188 46] forall k : (k) . BucketIx0.bucket_ix ( * old_self_2) k < UInt64.to_int i_8 -> Map.get (Model3.model old_self_2) (Model2.model k) = Map.get (Model1.model new_4) (Model2.model k) };
-    invariant x { [#"../hashmap.rs" 188 12 188 46] forall k : (k) . UInt64.to_int i_8 < BucketIx0.bucket_ix ( * old_self_2) k && BucketIx0.bucket_ix ( * old_self_2) k <= Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * old_self_2))) -> Map.get (Model1.model new_4) (Model2.model k) = Type.Core_Option_Option_None };
+    invariant x { [#"../hashmap.rs" 188 12 188 46] forall k : (k) . UInt64.to_int i_8 < BucketIx0.bucket_ix ( * old_self_2) k /\ BucketIx0.bucket_ix ( * old_self_2) k <= Seq.length (Model0.model (Type.hashmap_myhashmap_MyHashMap_buckets ( * old_self_2))) -> Map.get (Model1.model new_4) (Model2.model k) = Type.Core_Option_Option_None };
     invariant zzz { [#"../hashmap.rs" 188 12 188 46] forall k : (k) . BucketIx0.bucket_ix ( * old_self_2) k = UInt64.to_int i_8 -> Map.get (Model3.model old_self_2) (Model2.model k) = match (Get0.get l_15 (Model2.model k)) with
       | Type.Core_Option_Option_None -> Map.get (Model1.model new_4) (Model2.model k)
       | Type.Core_Option_Option_Some v -> Type.Core_Option_Option_Some v

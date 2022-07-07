@@ -101,7 +101,7 @@ module FilterPositive_LemmaNumOfPosStrictlyIncreasing
   function lemma_num_of_pos_strictly_increasing [#"../filter_positive.rs" 76 0 76 60] (i : int) (t : Seq.seq int32) : ()
    =
     [#"../filter_positive.rs" 72 0 72 8] ()
-  axiom lemma_num_of_pos_strictly_increasing_spec : forall i : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 73 11 73 32] 0 <= i && i < Seq.length t) -> ([#"../filter_positive.rs" 74 11 74 20] Int32.to_int (Seq.get t i) > 0) -> ([#"../filter_positive.rs" 75 10 75 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t)
+  axiom lemma_num_of_pos_strictly_increasing_spec : forall i : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 73 11 73 32] 0 <= i /\ i < Seq.length t) -> ([#"../filter_positive.rs" 74 11 74 20] Int32.to_int (Seq.get t i) > 0) -> ([#"../filter_positive.rs" 75 10 75 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t)
 end
 module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Impl
   use mach.int.Int
@@ -109,7 +109,7 @@ module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Impl
   use seq.Seq
   clone FilterPositive_NumOfPos as NumOfPos0 with axiom .
   let rec ghost function lemma_num_of_pos_strictly_increasing (i : int) (t : Seq.seq int32) : ()
-    requires {[#"../filter_positive.rs" 73 11 73 32] 0 <= i && i < Seq.length t}
+    requires {[#"../filter_positive.rs" 73 11 73 32] 0 <= i /\ i < Seq.length t}
     requires {[#"../filter_positive.rs" 74 11 74 20] Int32.to_int (Seq.get t i) > 0}
     ensures { [#"../filter_positive.rs" 75 10 75 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t }
     
@@ -271,7 +271,7 @@ module Alloc_Vec_FromElem_Interface
   axiom .
   val from_elem [@cfg:stackify] (elem : t) (n : usize) : Type.alloc_vec_vec t (Type.alloc_alloc_global)
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
-    ensures { forall i : (int) . 0 <= i && i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
+    ensures { forall i : (int) . 0 <= i /\ i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
 end
 module Alloc_Vec_FromElem
@@ -286,7 +286,7 @@ module Alloc_Vec_FromElem
   axiom .
   val from_elem [@cfg:stackify] (elem : t) (n : usize) : Type.alloc_vec_vec t (Type.alloc_alloc_global)
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
-    ensures { forall i : (int) . 0 <= i && i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
+    ensures { forall i : (int) . 0 <= i /\ i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface
@@ -383,7 +383,7 @@ module CreusotContracts_Std1_Vec_Impl1_Resolve
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global,
   axiom .
   predicate resolve (self : Type.alloc_vec_vec t (Type.alloc_alloc_global)) =
-    forall i : (int) . 0 <= i && i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
+    forall i : (int) . 0 <= i /\ i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
 end
 module Alloc_Vec_Impl16
   type t
@@ -465,7 +465,7 @@ module CreusotContracts_Std1_Slice_Impl3_ResolveElswhere
   use seq.Seq
   use mach.int.Int32
   predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) =
-    forall i : (int) . 0 <= i && i <> UInt64.to_int self && i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+    forall i : (int) . 0 <= i /\ i <> UInt64.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
   type t

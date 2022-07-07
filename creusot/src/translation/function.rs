@@ -518,7 +518,7 @@ pub fn closure_contract<'tcx>(
         let mut csubst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, FnMut, true);
 
         let mut postcondition = postcondition.clone();
-        postcondition = postcondition.and(closure_unnest(ctx.tcx, names, def_id, subst));
+        postcondition = postcondition.lazy_and(closure_unnest(ctx.tcx, names, def_id, subst));
 
         csubst.visit_mut(&mut postcondition);
         contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
@@ -557,7 +557,7 @@ fn closure_resolve<'tcx>(
 
         let param_env = ctx.param_env(def_id);
         let resolve_one = resolve_predicate_of(ctx, names, param_env, ty).exp(acc.app_to(self_));
-        resolve = resolve_one.and(resolve);
+        resolve = resolve_one.log_and(resolve);
     }
 
     let sig = Signature {
@@ -596,7 +596,7 @@ pub fn closure_unnest<'tcx>(
                 box Exp::Final(box acc.app_to(Exp::Current(box self_))),
             );
 
-            unnest = unnest_one.and(unnest);
+            unnest = unnest_one.log_and(unnest);
         }
     }
 

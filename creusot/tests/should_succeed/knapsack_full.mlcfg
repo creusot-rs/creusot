@@ -127,7 +127,7 @@ module KnapsackFull_SumWeights
   else
     UInt64.to_int (Type.knapsackfull_item_Item_weight (Seq.get s i)) + sum_weights s (i + 1)
   )
-  axiom sum_weights_spec : forall s : Seq.seq (Type.knapsackfull_item name), i : int . ([#"../knapsack_full.rs" 30 11 30 33] 0 <= i && i <= Seq.length s) -> ([#"../knapsack_full.rs" 31 10 31 21] sum_weights s i >= 0)
+  axiom sum_weights_spec : forall s : Seq.seq (Type.knapsackfull_item name), i : int . ([#"../knapsack_full.rs" 30 11 30 33] 0 <= i /\ i <= Seq.length s) -> ([#"../knapsack_full.rs" 31 10 31 21] sum_weights s i >= 0)
 end
 module KnapsackFull_SumWeights_Impl
   type name
@@ -138,7 +138,7 @@ module KnapsackFull_SumWeights_Impl
   use Type
   use mach.int.UInt64
   let rec ghost function sum_weights (s : Seq.seq (Type.knapsackfull_item name)) (i : int) : int
-    requires {[#"../knapsack_full.rs" 30 11 30 33] 0 <= i && i <= Seq.length s}
+    requires {[#"../knapsack_full.rs" 30 11 30 33] 0 <= i /\ i <= Seq.length s}
     ensures { [#"../knapsack_full.rs" 31 10 31 21] result >= 0 }
     variant {[#"../knapsack_full.rs" 29 10 29 19] Seq.length s - i}
     
@@ -172,7 +172,7 @@ module KnapsackFull_SumValues
   else
     UInt64.to_int (Type.knapsackfull_item_Item_value (Seq.get s i)) + sum_values s (i + 1)
   )
-  axiom sum_values_spec : forall s : Seq.seq (Type.knapsackfull_item name), i : int . ([#"../knapsack_full.rs" 41 11 41 33] i >= 0 && i <= Seq.length s) -> true
+  axiom sum_values_spec : forall s : Seq.seq (Type.knapsackfull_item name), i : int . ([#"../knapsack_full.rs" 41 11 41 33] i >= 0 /\ i <= Seq.length s) -> true
 end
 module KnapsackFull_SumValues_Impl
   type name
@@ -183,7 +183,7 @@ module KnapsackFull_SumValues_Impl
   use Type
   use mach.int.UInt64
   let rec ghost function sum_values (s : Seq.seq (Type.knapsackfull_item name)) (i : int) : int
-    requires {[#"../knapsack_full.rs" 41 11 41 33] i >= 0 && i <= Seq.length s}
+    requires {[#"../knapsack_full.rs" 41 11 41 33] i >= 0 /\ i <= Seq.length s}
     variant {[#"../knapsack_full.rs" 40 10 40 19] Seq.length s - i}
     
    =
@@ -211,9 +211,9 @@ module KnapsackFull_SubseqRev
   axiom def : forall s1 : Seq.seq t, i1 : int, s2 : Seq.seq t, i2 : int . subseq_rev s1 i1 s2 i2 = ([#"../knapsack_full.rs" 54 4 60 5] if i2 = 0 then
     i1 = Seq.length s1
   else
-    i1 < Seq.length s1 && Seq.get s1 i1 = Seq.get s2 (i2 - 1) && subseq_rev s1 (i1 + 1) s2 (i2 - 1) || subseq_rev s1 i1 s2 (i2 - 1)
+    i1 < Seq.length s1 /\ Seq.get s1 i1 = Seq.get s2 (i2 - 1) /\ subseq_rev s1 (i1 + 1) s2 (i2 - 1) \/ subseq_rev s1 i1 s2 (i2 - 1)
   )
-  axiom subseq_rev_spec : forall s1 : Seq.seq t, i1 : int, s2 : Seq.seq t, i2 : int . ([#"../knapsack_full.rs" 51 11 51 36] 0 <= i1 && i1 <= Seq.length s1) -> ([#"../knapsack_full.rs" 52 11 52 36] 0 <= i2 && i2 <= Seq.length s2) -> true
+  axiom subseq_rev_spec : forall s1 : Seq.seq t, i1 : int, s2 : Seq.seq t, i2 : int . ([#"../knapsack_full.rs" 51 11 51 36] 0 <= i1 /\ i1 <= Seq.length s1) -> ([#"../knapsack_full.rs" 52 11 52 36] 0 <= i2 /\ i2 <= Seq.length s2) -> true
 end
 module KnapsackFull_SubseqRev_Impl
   type t
@@ -222,8 +222,8 @@ module KnapsackFull_SubseqRev_Impl
   use seq.Seq
   use prelude.Prelude
   let rec ghost function subseq_rev (s1 : Seq.seq t) (i1 : int) (s2 : Seq.seq t) (i2 : int) : bool
-    requires {[#"../knapsack_full.rs" 51 11 51 36] 0 <= i1 && i1 <= Seq.length s1}
-    requires {[#"../knapsack_full.rs" 52 11 52 36] 0 <= i2 && i2 <= Seq.length s2}
+    requires {[#"../knapsack_full.rs" 51 11 51 36] 0 <= i1 /\ i1 <= Seq.length s1}
+    requires {[#"../knapsack_full.rs" 52 11 52 36] 0 <= i2 /\ i2 <= Seq.length s2}
     variant {[#"../knapsack_full.rs" 50 10 50 12] i2}
     
    =
@@ -268,7 +268,7 @@ module KnapsackFull_M
       MaxLog0.max_log (m items (i - 1) w) (m items (i - 1) (w - UInt64.to_int (Type.knapsackfull_item_Item_weight (Seq.get items (i - 1)))) + UInt64.to_int (Type.knapsackfull_item_Item_value (Seq.get items (i - 1))))
     
   )
-  axiom m_spec : forall items : Seq.seq (Type.knapsackfull_item name), i : int, w : int . ([#"../knapsack_full.rs" 65 11 65 37] 0 <= i && i <= Seq.length items) -> ([#"../knapsack_full.rs" 66 11 66 17] 0 <= w) -> ([#"../knapsack_full.rs" 68 0 70 2] forall j : (int) . forall s : (Seq.seq (Type.knapsackfull_item name)) . 0 <= j && j <= Seq.length s && SubseqRev0.subseq_rev s j items i && SumWeights0.sum_weights s j <= w -> SumValues0.sum_values s j <= m items i w) && ([#"../knapsack_full.rs" 67 10 67 21] m items i w >= 0)
+  axiom m_spec : forall items : Seq.seq (Type.knapsackfull_item name), i : int, w : int . ([#"../knapsack_full.rs" 65 11 65 37] 0 <= i /\ i <= Seq.length items) -> ([#"../knapsack_full.rs" 66 11 66 17] 0 <= w) -> ([#"../knapsack_full.rs" 68 0 70 2] forall j : (int) . forall s : (Seq.seq (Type.knapsackfull_item name)) . 0 <= j /\ j <= Seq.length s /\ SubseqRev0.subseq_rev s j items i /\ SumWeights0.sum_weights s j <= w -> SumValues0.sum_values s j <= m items i w) && ([#"../knapsack_full.rs" 67 10 67 21] m items i w >= 0)
 end
 module KnapsackFull_M_Impl
   type name
@@ -283,10 +283,10 @@ module KnapsackFull_M_Impl
   clone KnapsackFull_SumWeights as SumWeights0 with type name = name, axiom .
   clone KnapsackFull_SubseqRev as SubseqRev0 with type t = Type.knapsackfull_item name, axiom .
   let rec ghost function m (items : Seq.seq (Type.knapsackfull_item name)) (i : int) (w : int) : int
-    requires {[#"../knapsack_full.rs" 65 11 65 37] 0 <= i && i <= Seq.length items}
+    requires {[#"../knapsack_full.rs" 65 11 65 37] 0 <= i /\ i <= Seq.length items}
     requires {[#"../knapsack_full.rs" 66 11 66 17] 0 <= w}
     ensures { [#"../knapsack_full.rs" 67 10 67 21] result >= 0 }
-    ensures { [#"../knapsack_full.rs" 68 0 70 2] forall j : (int) . forall s : (Seq.seq (Type.knapsackfull_item name)) . 0 <= j && j <= Seq.length s && SubseqRev0.subseq_rev s j items i && SumWeights0.sum_weights s j <= w -> SumValues0.sum_values s j <= result }
+    ensures { [#"../knapsack_full.rs" 68 0 70 2] forall j : (int) . forall s : (Seq.seq (Type.knapsackfull_item name)) . 0 <= j /\ j <= Seq.length s /\ SubseqRev0.subseq_rev s j items i /\ SumWeights0.sum_weights s j <= w -> SumValues0.sum_values s j <= result }
     variant {[#"../knapsack_full.rs" 64 10 64 11] i}
     
    =
@@ -376,7 +376,7 @@ module Alloc_Vec_FromElem_Interface
   axiom .
   val from_elem [@cfg:stackify] (elem : t) (n : usize) : Type.alloc_vec_vec t (Type.alloc_alloc_global)
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
-    ensures { forall i : (int) . 0 <= i && i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
+    ensures { forall i : (int) . 0 <= i /\ i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
 end
 module Alloc_Vec_FromElem
@@ -391,7 +391,7 @@ module Alloc_Vec_FromElem
   axiom .
   val from_elem [@cfg:stackify] (elem : t) (n : usize) : Type.alloc_vec_vec t (Type.alloc_alloc_global)
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
-    ensures { forall i : (int) . 0 <= i && i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
+    ensures { forall i : (int) . 0 <= i /\ i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
 end
 module Alloc_Vec_Impl1_Len_Interface
@@ -639,7 +639,7 @@ module CreusotContracts_Std1_Vec_Impl1_Resolve
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global,
   axiom .
   predicate resolve (self : Type.alloc_vec_vec t (Type.alloc_alloc_global)) =
-    forall i : (int) . 0 <= i && i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
+    forall i : (int) . 0 <= i /\ i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
 end
 module Alloc_Vec_Impl16
   type t
@@ -721,7 +721,7 @@ module CreusotContracts_Std1_Slice_Impl3_ResolveElswhere
   use seq.Seq
   use mach.int.Int32
   predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) =
-    forall i : (int) . 0 <= i && i <> UInt64.to_int self && i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+    forall i : (int) . 0 <= i /\ i <> UInt64.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
   type t
@@ -755,10 +755,10 @@ module KnapsackFull_Knapsack01Dyn_Interface
   val knapsack01_dyn [@cfg:stackify] (items : Type.alloc_vec_vec (Type.knapsackfull_item name) (Type.alloc_alloc_global)) (max_weight : usize) : Type.alloc_vec_vec (Type.knapsackfull_item name) (Type.alloc_alloc_global)
     requires {[#"../knapsack_full.rs" 82 11 82 36] Seq.length (Model0.model items) < 10000000}
     requires {[#"../knapsack_full.rs" 83 11 83 33] UInt64.to_int max_weight < 10000000}
-    requires {[#"../knapsack_full.rs" 84 0 84 91] forall i : (int) . 0 <= i && i < Seq.length (Model0.model items) -> UInt64.to_int (Type.knapsackfull_item_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
+    requires {[#"../knapsack_full.rs" 84 0 84 91] forall i : (int) . 0 <= i /\ i < Seq.length (Model0.model items) -> UInt64.to_int (Type.knapsackfull_item_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
     ensures { [#"../knapsack_full.rs" 85 10 85 62] SumWeights0.sum_weights (Model1.model result) (Seq.length (Model1.model result)) <= UInt64.to_int max_weight }
     ensures { [#"../knapsack_full.rs" 86 10 86 56] SubseqRev0.subseq_rev (Model1.model result) 0 (Model0.model items) (Seq.length (Model0.model items)) }
-    ensures { [#"../knapsack_full.rs" 87 0 89 2] forall s : (Seq.seq (Type.knapsackfull_item name)) . SubseqRev0.subseq_rev s 0 (Model0.model items) (Seq.length (Model0.model items)) && SumWeights0.sum_weights s (Seq.length s) <= UInt64.to_int max_weight -> SumValues0.sum_values s (Seq.length s) <= SumValues0.sum_values (Model1.model result) (Seq.length (Model1.model result)) }
+    ensures { [#"../knapsack_full.rs" 87 0 89 2] forall s : (Seq.seq (Type.knapsackfull_item name)) . SubseqRev0.subseq_rev s 0 (Model0.model items) (Seq.length (Model0.model items)) /\ SumWeights0.sum_weights s (Seq.length s) <= UInt64.to_int max_weight -> SumValues0.sum_values s (Seq.length s) <= SumValues0.sum_values (Model1.model result) (Seq.length (Model1.model result)) }
     
 end
 module KnapsackFull_Knapsack01Dyn
@@ -845,10 +845,10 @@ module KnapsackFull_Knapsack01Dyn
   let rec cfg knapsack01_dyn [@cfg:stackify] [#"../knapsack_full.rs" 90 0 90 91] (items : Type.alloc_vec_vec (Type.knapsackfull_item name) (Type.alloc_alloc_global)) (max_weight : usize) : Type.alloc_vec_vec (Type.knapsackfull_item name) (Type.alloc_alloc_global)
     requires {[#"../knapsack_full.rs" 82 11 82 36] Seq.length (Model0.model items) < 10000000}
     requires {[#"../knapsack_full.rs" 83 11 83 33] UInt64.to_int max_weight < 10000000}
-    requires {[#"../knapsack_full.rs" 84 0 84 91] forall i : (int) . 0 <= i && i < Seq.length (Model0.model items) -> UInt64.to_int (Type.knapsackfull_item_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
+    requires {[#"../knapsack_full.rs" 84 0 84 91] forall i : (int) . 0 <= i /\ i < Seq.length (Model0.model items) -> UInt64.to_int (Type.knapsackfull_item_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
     ensures { [#"../knapsack_full.rs" 85 10 85 62] SumWeights0.sum_weights (Model1.model result) (Seq.length (Model1.model result)) <= UInt64.to_int max_weight }
     ensures { [#"../knapsack_full.rs" 86 10 86 56] SubseqRev0.subseq_rev (Model1.model result) 0 (Model0.model items) (Seq.length (Model0.model items)) }
-    ensures { [#"../knapsack_full.rs" 87 0 89 2] forall s : (Seq.seq (Type.knapsackfull_item name)) . SubseqRev0.subseq_rev s 0 (Model0.model items) (Seq.length (Model0.model items)) && SumWeights0.sum_weights s (Seq.length s) <= UInt64.to_int max_weight -> SumValues0.sum_values s (Seq.length s) <= SumValues0.sum_values (Model1.model result) (Seq.length (Model1.model result)) }
+    ensures { [#"../knapsack_full.rs" 87 0 89 2] forall s : (Seq.seq (Type.knapsackfull_item name)) . SubseqRev0.subseq_rev s 0 (Model0.model items) (Seq.length (Model0.model items)) /\ SumWeights0.sum_weights s (Seq.length s) <= UInt64.to_int max_weight -> SumValues0.sum_values s (Seq.length s) <= SumValues0.sum_values (Model1.model result) (Seq.length (Model1.model result)) }
     
    =
   var _0 : Type.alloc_vec_vec (Type.knapsackfull_item name) (Type.alloc_alloc_global);
@@ -993,9 +993,9 @@ module KnapsackFull_Knapsack01Dyn
   }
   BB8 {
     invariant items_len { [#"../knapsack_full.rs" 95 27 95 68] Seq.length (Model0.model items_1) + 1 = Seq.length (Model2.model best_value_3) };
-    invariant weight_len { [#"../knapsack_full.rs" 95 4 95 70] forall i : (int) . 0 <= i && i < Seq.length (Model2.model best_value_3) -> UInt64.to_int max_weight_2 + 1 = Seq.length (Model3.model (Seq.get (Model2.model best_value_3) i)) };
-    invariant best_value { [#"../knapsack_full.rs" 95 4 95 70] forall ww : (int) . forall ii : (int) . 0 <= ii && ii <= UInt64.to_int i_10 && 0 <= ww && ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model3.model (Seq.get (Model2.model best_value_3) ii)) ww) = M0.m (Model0.model items_1) ii ww };
-    invariant best_value_bounds { [#"../knapsack_full.rs" 95 4 95 70] forall ww : (int) . forall ii : (int) . 0 <= ii && ii <= Seq.length (Model0.model items_1) && 0 <= ww && ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model3.model (Seq.get (Model2.model best_value_3) ii)) ww) <= 10000000 * ii };
+    invariant weight_len { [#"../knapsack_full.rs" 95 4 95 70] forall i : (int) . 0 <= i /\ i < Seq.length (Model2.model best_value_3) -> UInt64.to_int max_weight_2 + 1 = Seq.length (Model3.model (Seq.get (Model2.model best_value_3) i)) };
+    invariant best_value { [#"../knapsack_full.rs" 95 4 95 70] forall ww : (int) . forall ii : (int) . 0 <= ii /\ ii <= UInt64.to_int i_10 /\ 0 <= ww /\ ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model3.model (Seq.get (Model2.model best_value_3) ii)) ww) = M0.m (Model0.model items_1) ii ww };
+    invariant best_value_bounds { [#"../knapsack_full.rs" 95 4 95 70] forall ww : (int) . forall ii : (int) . 0 <= ii /\ ii <= Seq.length (Model0.model items_1) /\ 0 <= ww /\ ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model3.model (Seq.get (Model2.model best_value_3) ii)) ww) <= 10000000 * ii };
     _14 <- i_10;
     _16 <- items_1;
     _15 <- ([#"../knapsack_full.rs" 102 14 102 25] Len0.len _16);
@@ -1037,10 +1037,10 @@ module KnapsackFull_Knapsack01Dyn
   }
   BB17 {
     invariant items_len2 { [#"../knapsack_full.rs" 109 32 109 73] Seq.length (Model0.model items_1) + 1 = Seq.length (Model2.model best_value_3) };
-    invariant weight_len2 { [#"../knapsack_full.rs" 109 8 109 75] forall i : (int) . 0 <= i && i < Seq.length (Model2.model best_value_3) -> UInt64.to_int max_weight_2 + 1 = Seq.length (Model3.model (Seq.get (Model2.model best_value_3) i)) };
-    invariant best_value2 { [#"../knapsack_full.rs" 109 8 109 75] forall ww : (int) . forall ii : (int) . 0 <= ii && ii <= UInt64.to_int i_10 && 0 <= ww && ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model3.model (Seq.get (Model2.model best_value_3) ii)) ww) = M0.m (Model0.model items_1) ii ww };
-    invariant best_value2 { [#"../knapsack_full.rs" 109 8 109 75] forall ww : (int) . 0 <= ww && ww <= UInt64.to_int w_21 - 1 -> UInt64.to_int (Seq.get (Model3.model (Seq.get (Model2.model best_value_3) (UInt64.to_int i_10 + 1))) ww) = M0.m (Model0.model items_1) (UInt64.to_int i_10 + 1) ww };
-    invariant best_value_bounds { [#"../knapsack_full.rs" 109 8 109 75] forall ww : (int) . forall ii : (int) . 0 <= ii && ii <= Seq.length (Model0.model items_1) && 0 <= ww && ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model3.model (Seq.get (Model2.model best_value_3) ii)) ww) <= 10000000 * ii };
+    invariant weight_len2 { [#"../knapsack_full.rs" 109 8 109 75] forall i : (int) . 0 <= i /\ i < Seq.length (Model2.model best_value_3) -> UInt64.to_int max_weight_2 + 1 = Seq.length (Model3.model (Seq.get (Model2.model best_value_3) i)) };
+    invariant best_value2 { [#"../knapsack_full.rs" 109 8 109 75] forall ww : (int) . forall ii : (int) . 0 <= ii /\ ii <= UInt64.to_int i_10 /\ 0 <= ww /\ ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model3.model (Seq.get (Model2.model best_value_3) ii)) ww) = M0.m (Model0.model items_1) ii ww };
+    invariant best_value2 { [#"../knapsack_full.rs" 109 8 109 75] forall ww : (int) . 0 <= ww /\ ww <= UInt64.to_int w_21 - 1 -> UInt64.to_int (Seq.get (Model3.model (Seq.get (Model2.model best_value_3) (UInt64.to_int i_10 + 1))) ww) = M0.m (Model0.model items_1) (UInt64.to_int i_10 + 1) ww };
+    invariant best_value_bounds { [#"../knapsack_full.rs" 109 8 109 75] forall ww : (int) . forall ii : (int) . 0 <= ii /\ ii <= Seq.length (Model0.model items_1) /\ 0 <= ww /\ ww <= UInt64.to_int max_weight_2 -> UInt64.to_int (Seq.get (Model3.model (Seq.get (Model2.model best_value_3) ii)) ww) <= 10000000 * ii };
     _24 <- w_21;
     _25 <- max_weight_2;
     _23 <- ([#"../knapsack_full.rs" 119 14 119 29] _24 <= _25);
@@ -1172,9 +1172,9 @@ module KnapsackFull_Knapsack01Dyn
   BB39 {
     invariant j_items_len { [#"../knapsack_full.rs" 134 29 134 49] UInt64.to_int j_71 <= Seq.length (Model0.model items_1) };
     invariant left_weight_le_max { [#"../knapsack_full.rs" 135 36 135 63] UInt64.to_int left_weight_70 <= UInt64.to_int max_weight_2 };
-    invariant result_weight { [#"../knapsack_full.rs" 134 4 134 51] forall r : (Seq.seq (Type.knapsackfull_item name)) . Seq.length (Model1.model result_67) <= Seq.length r && (forall i : (int) . 0 <= i && i < Seq.length (Model1.model result_67) -> Seq.get (Model1.model result_67) i = Seq.get r i) && SumWeights0.sum_weights r (Seq.length (Model1.model result_67)) <= UInt64.to_int left_weight_70 -> SumWeights0.sum_weights r 0 <= UInt64.to_int max_weight_2 };
-    invariant result_value { [#"../knapsack_full.rs" 134 4 134 51] forall r : (Seq.seq (Type.knapsackfull_item name)) . Seq.length (Model1.model result_67) <= Seq.length r && (forall i : (int) . 0 <= i && i < Seq.length (Model1.model result_67) -> Seq.get (Model1.model result_67) i = Seq.get r i) && SumValues0.sum_values r (Seq.length (Model1.model result_67)) = M0.m (Model0.model items_1) (UInt64.to_int j_71) (UInt64.to_int left_weight_70) -> SumValues0.sum_values r 0 = M0.m (Model0.model items_1) (Seq.length (Model0.model items_1)) (UInt64.to_int max_weight_2) };
-    invariant result_subseq { [#"../knapsack_full.rs" 134 4 134 51] forall r : (Seq.seq (Type.knapsackfull_item name)) . Seq.length (Model1.model result_67) <= Seq.length r && (forall i : (int) . 0 <= i && i < Seq.length (Model1.model result_67) -> Seq.get (Model1.model result_67) i = Seq.get r i) && SubseqRev0.subseq_rev r (Seq.length (Model1.model result_67)) (Model0.model items_1) (UInt64.to_int j_71) -> SubseqRev0.subseq_rev r 0 (Model0.model items_1) (Seq.length (Model0.model items_1)) };
+    invariant result_weight { [#"../knapsack_full.rs" 134 4 134 51] forall r : (Seq.seq (Type.knapsackfull_item name)) . Seq.length (Model1.model result_67) <= Seq.length r /\ (forall i : (int) . 0 <= i /\ i < Seq.length (Model1.model result_67) -> Seq.get (Model1.model result_67) i = Seq.get r i) /\ SumWeights0.sum_weights r (Seq.length (Model1.model result_67)) <= UInt64.to_int left_weight_70 -> SumWeights0.sum_weights r 0 <= UInt64.to_int max_weight_2 };
+    invariant result_value { [#"../knapsack_full.rs" 134 4 134 51] forall r : (Seq.seq (Type.knapsackfull_item name)) . Seq.length (Model1.model result_67) <= Seq.length r /\ (forall i : (int) . 0 <= i /\ i < Seq.length (Model1.model result_67) -> Seq.get (Model1.model result_67) i = Seq.get r i) /\ SumValues0.sum_values r (Seq.length (Model1.model result_67)) = M0.m (Model0.model items_1) (UInt64.to_int j_71) (UInt64.to_int left_weight_70) -> SumValues0.sum_values r 0 = M0.m (Model0.model items_1) (Seq.length (Model0.model items_1)) (UInt64.to_int max_weight_2) };
+    invariant result_subseq { [#"../knapsack_full.rs" 134 4 134 51] forall r : (Seq.seq (Type.knapsackfull_item name)) . Seq.length (Model1.model result_67) <= Seq.length r /\ (forall i : (int) . 0 <= i /\ i < Seq.length (Model1.model result_67) -> Seq.get (Model1.model result_67) i = Seq.get r i) /\ SubseqRev0.subseq_rev r (Seq.length (Model1.model result_67)) (Model0.model items_1) (UInt64.to_int j_71) -> SubseqRev0.subseq_rev r 0 (Model0.model items_1) (Seq.length (Model0.model items_1)) };
     _75 <- j_71;
     _74 <- ([#"../knapsack_full.rs" 151 10 151 15] (0 : usize) < _75);
     switch (_74)

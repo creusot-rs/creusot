@@ -601,7 +601,7 @@ module IteNormalize_Impl6_IsNormalized
   use Type
   predicate is_normalized [#"../ite_normalize.rs" 122 4 122 34] (self : Type.itenormalize_expr) =
     [#"../ite_normalize.rs" 123 8 136 9] match (self) with
-      | Type.IteNormalize_Expr_IfThenElse c t e -> is_normalized c && is_normalized t && is_normalized e && match (c) with
+      | Type.IteNormalize_Expr_IfThenElse c t e -> is_normalized c /\ is_normalized t /\ is_normalized e /\ match (c) with
         | Type.IteNormalize_Expr_IfThenElse _ _ _ -> false
         | _ -> true
         end
@@ -944,7 +944,7 @@ module IteNormalize_Impl6_DoesNotContain
   use mach.int.UInt64
   predicate does_not_contain [#"../ite_normalize.rs" 165 4 165 48] (self : Type.itenormalize_expr) (vp : usize) =
     [#"../ite_normalize.rs" 166 8 172 9] match (self) with
-      | Type.IteNormalize_Expr_IfThenElse c t e -> does_not_contain c vp && does_not_contain t vp && does_not_contain e vp
+      | Type.IteNormalize_Expr_IfThenElse c t e -> does_not_contain c vp /\ does_not_contain t vp /\ does_not_contain e vp
       | Type.IteNormalize_Expr_Var v -> v <> vp
       | _ -> true
       end
@@ -959,8 +959,8 @@ module IteNormalize_Impl6_IsSimplified
   predicate is_simplified [#"../ite_normalize.rs" 154 4 154 34] (self : Type.itenormalize_expr) =
     [#"../ite_normalize.rs" 155 8 161 9] match (self) with
       | Type.IteNormalize_Expr_IfThenElse c t e -> match (c) with
-        | Type.IteNormalize_Expr_Var v -> DoesNotContain0.does_not_contain t v && DoesNotContain0.does_not_contain e v
-        | c -> is_simplified c && is_simplified t && is_simplified e
+        | Type.IteNormalize_Expr_Var v -> DoesNotContain0.does_not_contain t v /\ DoesNotContain0.does_not_contain e v
+        | c -> is_simplified c /\ is_simplified t /\ is_simplified e
         end
       | _ -> true
       end

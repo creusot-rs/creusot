@@ -102,7 +102,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     let mut ensures = sig.contract.ensures.clone();
     let postcondition: Exp = ensures.pop().unwrap_or(Exp::mk_true());
 
-    let mut postcondition = ensures.into_iter().rfold(postcondition, Exp::conj);
+    let mut postcondition = ensures.into_iter().rfold(postcondition, Exp::lazy_conj);
     postcondition.reassociate();
 
     let preconditions = sig.contract.requires.iter().cloned();

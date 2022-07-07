@@ -194,7 +194,7 @@ fn logic_refinement<'tcx>(
     let post_refn =
         Exp::Forall(vec![("result".into(), retty)], box impl_postcond.implies(trait_postcond));
 
-    let mut refn = trait_precond.implies(impl_precond).and(post_refn);
+    let mut refn = trait_precond.implies(impl_precond).log_and(post_refn);
     refn = if args.is_empty() { refn } else { Exp::Forall(args, box refn) };
 
     let name = item_name(ctx.tcx, impl_item_id);

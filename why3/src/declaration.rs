@@ -75,7 +75,7 @@ impl Contract {
         let mut ensures = self.ensures.clone();
 
         let postcond = ensures.pop().unwrap_or(Exp::mk_true());
-        let mut postcond = ensures.into_iter().rfold(postcond, Exp::conj);
+        let mut postcond = ensures.into_iter().rfold(postcond, Exp::lazy_conj);
         postcond.reassociate();
         postcond
     }
@@ -84,7 +84,7 @@ impl Contract {
         let mut requires = self.requires.clone();
 
         let precond = requires.pop().unwrap_or(Exp::mk_true());
-        let mut precond = requires.into_iter().rfold(precond, Exp::conj);
+        let mut precond = requires.into_iter().rfold(precond, Exp::lazy_conj);
         precond.reassociate();
         precond
     }

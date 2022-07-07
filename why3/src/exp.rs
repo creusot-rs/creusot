@@ -9,8 +9,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum BinOp {
-    And,
-    Or,
+    LogAnd,  // i.e., /\
+    LogOr,   // i.e., \/
+    LazyAnd, // i.e., &&
+    LazyOr,  // i.e., ||
     Add,
     Sub,
     Mul,
@@ -28,8 +30,10 @@ impl BinOp {
     pub(crate) fn precedence(&self) -> Precedence {
         use Precedence::*;
         match self {
-            BinOp::And => Conj,
-            BinOp::Or => Disj,
+            BinOp::LogAnd => Conj,
+            BinOp::LazyAnd => Conj,
+            BinOp::LogOr => Disj,
+            BinOp::LazyOr => Disj,
             BinOp::Add => Infix2,
             BinOp::Sub => Infix2,
             BinOp::Mul => Infix3,
@@ -233,8 +237,8 @@ impl Exp {
         Exp::Var(v, Purity::Logic)
     }
 
-    pub fn conj(l: Exp, r: Exp) -> Self {
-        l.and(r)
+    pub fn lazy_conj(l: Exp, r: Exp) -> Self {
+        l.lazy_and(r)
     }
 
     pub fn eq(self, rhs: Self) -> Self {
@@ -254,13 +258,23 @@ impl Exp {
         self
     }
 
-    pub fn and(self, other: Self) -> Self {
+    pub fn lazy_and(self, other: Self) -> Self {
         if let Exp::Const(Constant::Bool(true)) = self {
             other
         } else if let Exp::Const(Constant::Bool(true)) = other {
             self
         } else {
-            Exp::BinaryOp(BinOp::And, box self, box other)
+            Exp::BinaryOp(BinOp::LazyAnd, box self, box other)
+        }
+    }
+
+    pub fn log_and(self, other: Self) -> Self {
+        if let Exp::Const(Constant::Bool(true)) = self {
+            other
+        } else if let Exp::Const(Constant::Bool(true)) = other {
+            self
+        } else {
+            Exp::BinaryOp(BinOp::LogAnd, box self, box other)
         }
     }
 

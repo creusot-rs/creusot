@@ -921,8 +921,10 @@ impl Print for Block {
 fn bin_op_to_string(op: &BinOp) -> &str {
     use BinOp::*;
     match op {
-        And => "&&",
-        Or => "||",
+        LogAnd => "/\\",
+        LazyAnd => "&&",
+        LogOr => "\\/",
+        LazyOr => "||",
         Add => "+",
         Sub => "-",
         Mul => "*",
