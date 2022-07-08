@@ -393,6 +393,13 @@ impl<'tcx> CloneMap<'tcx> {
             trace!("adding dependency {:?} {:?}", dep, info.public);
 
             let orig = dep;
+
+            // let subst = if let Some(tr) = self.tcx.trait_of_item(key.0) {
+            //     InternalSubsts::identity_for_item(self.tcx, key.0).rebase_onto(self.tcx, tr, key.1)
+            // } else {
+            //     key.1
+            // };
+
             let dep = self.resolve_dep(ctx, (dep.0, EarlyBinder(dep.1).subst(self.tcx, key.1)));
 
             if let DepNode::Dep((defid, subst)) = dep {
