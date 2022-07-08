@@ -15,7 +15,7 @@ use creusot_rustc::dataflow::move_paths::MoveData;
 use creusot_rustc::hir::def_id::DefId;
 use creusot_rustc::index::bit_set::BitSet;
 use creusot_rustc::infer::infer::TyCtxtInferExt;
-use creusot_rustc::middle::mir::{traversal::preorder, MirPass};
+use creusot_rustc::middle::mir::{traversal::reverse_postorder, MirPass};
 use creusot_rustc::middle::ty::{
     subst::{GenericArg, SubstsRef},
     DefIdTree, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
@@ -249,7 +249,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     }
 
     fn translate_body(&mut self) {
-        for (bb, bbd) in preorder(self.body) {
+        for (bb, bbd) in reverse_postorder(self.body) {
             self.current_block = (vec![], None);
             if bbd.is_cleanup {
                 continue;
@@ -366,6 +366,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             let pred_id = BlockId(pred.index());
 
             // Otherwise, we emit the deaths and move them to a stand-alone block.
+
             self.past_blocks
                 .get_mut(&pred_id)
                 .unwrap()
