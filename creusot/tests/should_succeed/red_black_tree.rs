@@ -681,7 +681,7 @@ where
                         let node = std::mem::take(&mut self.node).unwrap();
                         return Some((node.key, node.val));
                     }
-                    proof_assert!{ exists<h: Int> node.left.has_height(h) && node.right.has_height(h) };
+                    proof_assert! { exists<h: Int> node.left.has_height(h) && node.right.has_height(h) };
                     if !node.right.node.as_ref().unwrap().left.is_red() && !node.move_red_right() {
                         r = node.right.delete_rec(key)
                     } else if let Equal = ord {
