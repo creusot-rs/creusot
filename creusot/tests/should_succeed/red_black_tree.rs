@@ -669,10 +669,10 @@ where
                 }
                 r = node.left.delete_rec(key)
             }
-            mut ord => {
+            ord => {
                 if node.left.is_red() {
                     node.rotate_right();
-                    ord = Greater
+                    r = node.right.delete_rec(key)
                 } else {
                     if node.right.node.is_none() {
                         if let Greater = ord {
@@ -681,18 +681,18 @@ where
                         let node = std::mem::take(&mut self.node).unwrap();
                         return Some((node.key, node.val));
                     }
+                    proof_assert!{ exists<h: Int> node.left.has_height(h) && node.right.has_height(h) };
                     if !node.right.node.as_ref().unwrap().left.is_red() && !node.move_red_right() {
-                        ord = Greater
+                        r = node.right.delete_rec(key)
+                    } else if let Equal = ord {
+                        let mut kv = node.right.delete_min_rec();
+                        ghost! { Self::has_mapping_inj };
+                        std::mem::swap(&mut node.key, &mut kv.0);
+                        std::mem::swap(&mut node.val, &mut kv.1);
+                        r = Some(kv)
+                    } else {
+                        r = node.right.delete_rec(key)
                     }
-                }
-                if let Equal = ord {
-                    let mut kv = node.right.delete_min_rec();
-                    ghost! { Self::has_mapping_inj };
-                    std::mem::swap(&mut node.key, &mut kv.0);
-                    std::mem::swap(&mut node.val, &mut kv.1);
-                    r = Some(kv)
-                } else {
-                    r = node.right.delete_rec(key)
                 }
             }
         }
