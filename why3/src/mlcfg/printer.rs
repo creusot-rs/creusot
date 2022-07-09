@@ -218,7 +218,12 @@ impl Print for LetDecl {
         }
 
         doc = doc
-            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" =")))
+            .append(
+                self.sig
+                    .pretty(alloc, env)
+                    .append(alloc.line_())
+                    .append(alloc.text(" = [@vc:do_not_keep_trace] [@vc:sp]")),
+            )
             .group()
             .append(alloc.line())
             .append(self.body.pretty(alloc, env).indent(2));
@@ -248,7 +253,12 @@ impl Print for LetFun {
 
         doc = doc
             .append("function ")
-            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" =")))
+            .append(
+                self.sig
+                    .pretty(alloc, env)
+                    .append(alloc.line_())
+                    .append(alloc.text(" = [@vc:do_not_keep_trace] [@vc:sp]")),
+            )
             .group()
             .append(alloc.line())
             .append(self.body.pretty(alloc, env).indent(2));
@@ -527,7 +537,12 @@ impl Print for CfgFunction {
             .append(if self.rec { "rec " } else { "" })
             .append("cfg ")
             .append(if self.constant { "constant " } else { "" })
-            .append(self.sig.pretty(alloc, env).append(alloc.line_()).append(alloc.text(" =")))
+            .append(
+                self.sig
+                    .pretty(alloc, env)
+                    .append(alloc.line_())
+                    .append(alloc.text(" = [@vc:do_not_keep_trace] [@vc:sp]")),
+            )
             .group()
             .append(alloc.line())
             .append(sep_end_by(
