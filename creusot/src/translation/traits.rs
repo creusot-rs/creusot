@@ -54,6 +54,12 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             let trait_item_id = trait_item.def_id;
             let &impl_item_id = implementor_map.get(&trait_item.def_id).unwrap_or(&trait_item_id);
 
+            let parent_id = if implementor_map.contains_key(&trait_item.def_id) {
+                impl_id
+            } else {
+                trait_ref.def_id
+            };
+
             if is_law(self.tcx, trait_item_id) {
                 laws.push(impl_item_id);
             }
@@ -73,7 +79,8 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
             decls.extend(own_generic_decls_for(self.tcx, impl_item_id));
 
-            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
+            let refn_subst = subst.rebase_onto(self.tcx, parent_id, trait_ref.substs);
+
             let refinement = names.insert(trait_item_id, refn_subst);
 
             if implementor_map.get(&trait_item_id).is_some() {
