@@ -12,6 +12,71 @@ enum Color {
 }
 use Color::*;
 
+trait CP<K, V> {
+    #[predicate]
+    fn match_t(self, tree: Tree<K, V>) -> bool;
+
+    #[predicate]
+    fn match_n(self, node: Node<K, V>) -> bool;
+}
+
+struct CPL(Color);
+impl<K, V> CP<K, V> for CPL {
+    #[predicate]
+    #[why3::attr = "inline:trivial"]
+    #[ensures(self.0 == Red ==>
+              result ==
+              exists<node: Box<Node<K, V>>> tree.node == Some(node) &&
+                CPL(Red).match_n(*node))]
+    #[ensures(self.0 == Red ==>
+              result ==
+              (tree.node != None &&
+               forall<node: Box<Node<K, V>>> tree.node == Some(node) ==>
+               CPL(Red).match_n(*node)))]
+    #[ensures(self.0 == Black ==>
+              result ==
+              (tree.node == None ||
+               exists<node: Box<Node<K, V>>> tree.node == Some(node) &&
+                CPL(Black).match_n(*node)))]
+    #[ensures(self.0 == Black ==>
+              result ==
+              (forall<node: Box<Node<K, V>>> tree.node == Some(node) ==>
+               CPL(Black).match_n(*node)))]
+    fn match_t(self, tree: Tree<K, V>) -> bool {
+        pearlite! {
+            tree.color() == self.0 && tree.color_invariant()
+        }
+    }
+
+    #[predicate]
+    #[why3::attr = "inline:trivial"]
+    fn match_n(self, node: Node<K, V>) -> bool {
+        pearlite! {
+            node.color == self.0 && node.color_invariant()
+        }
+    }
+}
+
+struct CPN<L, R>(Color, L, R);
+impl<K, V, L: CP<K, V>, R: CP<K, V>> CP<K, V> for CPN<L, R> {
+    #[predicate]
+    #[why3::attr = "inline:trivial"]
+    fn match_t(self, tree: Tree<K, V>) -> bool {
+        pearlite! {
+            exists<node: Box<Node<K, V>>> tree.node == Some(node) &&
+                self.match_n(*node)
+        }
+    }
+
+    #[predicate]
+    #[why3::attr = "inline:trivial"]
+    fn match_n(self, node: Node<K, V>) -> bool {
+        pearlite! {
+            node.color == self.0 && self.1.match_t(node.left) && self.2.match_t(node.right)
+        }
+    }
+}
+
 struct Node<K, V> {
     left: Tree<K, V>,
     color: Color,
@@ -206,9 +271,11 @@ where
 impl<K, V> Tree<K, V> {
     #[logic]
     fn color(self) -> Color {
-        match self.node {
-            Some(box Node { color, .. }) => color,
-            _ => Black,
+        pearlite! {
+            match self.node {
+                Some(box Node { color, .. }) => color,
+                _ => Black,
+            }
         }
     }
 
@@ -228,13 +295,15 @@ impl<K, V> Tree<K, V> {
 
 impl<K, V> Node<K, V> {
     #[predicate]
+    #[why3::attr = "inline:trivial"]
     fn color_invariant_here(self) -> bool {
-        pearlite! { self.right.color() == Black && (self.color == Red ==> self.left.color() == Black) }
+        pearlite! { self.right.color() == Black && (self.color == Black || self.left.color() == Black) }
     }
 
     #[predicate]
+    #[why3::attr = "inline:trivial"]
     fn color_invariant(self) -> bool {
-        self.color_invariant_here() && self.left.color_invariant() && self.right.color_invariant()
+        pearlite! { self.color_invariant_here() && self.left.color_invariant() && self.right.color_invariant() }
     }
 }
 
@@ -424,27 +493,18 @@ where
     #[ensures((^self).bst_invariant())]
     #[ensures((*self).left.color_invariant() && (*self).right.color() == Black ==>
               (*self) == (^self))]
-    #[ensures(forall<l: Box<Self>> (*self).left.node == Some(l) &&
-              (*self).color == Black && l.color == Red &&
-              l.left.color() == Red && l.left.color_invariant() &&
-              l.right.color() == Black && l.right.color_invariant() &&
-              (*self).right.color() == Black && (*self).right.color_invariant() ==>
-              (^self).color == Red && (^self).color_invariant())]
-    #[ensures((*self).left.color() == Black && (*self).left.color_invariant() &&
-              (*self).right.color() == Red && (*self).right.color_invariant() ==>
-              (^self).left.color() == Red && (^self).left.color_invariant() &&
-              (^self).right.color() == Black && (^self).right.color_invariant() &&
-              (^self).color == (*self).color)]
-    #[ensures((*self).color == Black &&
-              (*self).left.color() == Red && (*self).left.color_invariant() &&
-              (*self).right.color() == Red && (*self).right.color_invariant() ==>
-              (^self).color == Red && (^self).color_invariant())]
+    #[ensures(CPN(Black, CPN(Red, CPL(Red), CPL(Black)), CPL(Black)).match_n(*self) ==>
+              CPL(Red).match_n(^self))]
+    #[ensures(CPN(Black, CPL(Black), CPL(Red)).match_n(*self) ==>
+              CPN(Black, CPL(Red), CPL(Black)).match_n(^self))]
+    #[ensures(CPN(Red, CPL(Black), CPL(Red)).match_n(*self) ==>
+              CPN(Red, CPL(Red), CPL(Black)).match_n(^self))]
+    #[ensures(CPN(Black, CPL(Red), CPL(Red)).match_n(*self) ==>
+              CPL(Red).match_n(^self))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     fn balance(&mut self) {
         if self.right.is_red() && !self.left.is_red() {
-            // B(B, R)
             self.rotate_left();
-            // B(R, B)
         }
 
         if self.left.is_red() && self.left.node.as_ref().unwrap().left.is_red() {
@@ -458,23 +518,15 @@ where
 
     #[requires((*self).right.node != None)]
     #[requires((*self).bst_invariant())]
-    #[requires((*self).color_invariant())]
-    #[requires((*self).color == Red)]
-    #[requires(exists<l: Box<Self>> (*self).left.node == Some(l) && l.left.color() == Black)]
+    #[requires(CPN(Red, CPN(Black, CPL(Black), CPL(Black)), CPL(Black)).match_n(*self))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     #[ensures((^self).bst_invariant())]
     #[ensures((*self).same_mappings(^self))]
-    #[ensures((^self).color == Red ==>
-              (^self).color_invariant() &&
-              exists<l: Box<Self>> (^self).left.node == Some(l) && l.left.color() == Red)]
-    #[ensures((^self).color == Black ==>
-              (^self).left.color() == Red && (^self).left.color_invariant() &&
-              (^self).right.color() == Red && (^self).right.color_invariant())]
+    #[ensures(CPN(Red, CPN(Black, CPL(Red), CPL(Black)), CPL(Black)).match_n(^self) ||
+              CPN(Black, CPL(Red), CPL(Red)).match_n(^self))]
     #[ensures(@(*self).key <= @(^self).key)]
-    // R(B(B, B), B)  =>  B(R, R)
-    //                 |  R(B(R, B), B(B, B))
     fn move_red_left(&mut self) {
-        let old_self = ghost! { self };
+        let old_self = ghost! { *self };
         self.flip_colors();
         if self.right.node.as_mut().unwrap().left.is_red() {
             self.right.node.as_mut().unwrap().rotate_right();
@@ -487,36 +539,22 @@ where
 
     #[requires((*self).left.node != None)]
     #[requires((*self).bst_invariant())]
-    #[requires((*self).color_invariant())]
-    #[requires((*self).color == Red)]
-    #[requires(exists<r: Box<Self>> (*self).right.node == Some(r) && r.left.color() == Black)]
+    #[requires(CPN(Red, CPL(Black), CPN(Black, CPL(Black), CPL(Black))).match_n(*self))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     #[ensures((^self).bst_invariant())]
     #[ensures((*self).same_mappings(^self))]
-    #[ensures((^self).left.color_invariant())]
-    #[ensures((^self).right.color_invariant())]
-    #[ensures(!result ==> @(^self).key < @(*self).key && (^self).color == Red &&
-              (^self).left.color() == Black && (^self).right.color() == Black &&
-              exists<r: Box<Self>> (^self).right.node == Some(r) && r.left.color() == Red)]
-    #[ensures(result ==> (^self).key == (*self).key && (^self).color == Black &&
-              (^self).left.color() == Red && (^self).right.color() == Red)]
-    // R(B, B(B, B))  =>  B(R, R)              (true)
-    //                 |  R(B(B, B), B(R, B))  (false)
+    #[ensures(!result ==> @(^self).key < @(*self).key &&
+              CPN(Red, CPL(Black), CPN(Black, CPL(Red), CPL(Black))).match_n(^self))]
+    #[ensures(result ==> (^self).key == (*self).key &&
+              CPN(Black, CPL(Red), CPL(Red)).match_n(^self))]
     fn move_red_right(&mut self) -> bool {
         self.flip_colors();
-        // B(R, R)
-        // B(R(R, B), R)
         if self.left.node.as_mut().unwrap().left.is_red() {
-            // B(R(R, B), R)
             self.rotate_right();
-            // B(R, R(B, R))
             self.flip_colors();
-            // R(B(B, B), B(B, R))
             self.right.node.as_mut().unwrap().rotate_left();
-            // R(B(B, B), B(R, B))
             return false;
         }
-        // B(R, R)
         return true;
     }
 }
@@ -534,9 +572,8 @@ where
     #[requires((*self).bst_invariant())]
     #[requires((*self).color_invariant())]
     #[ensures((^self).bst_invariant())]
-    #[ensures(exists<node: Box<Node<K, V>>> (^self).node == Some(node) && node.right.color() == Black &&
-              node.left.color_invariant() && node.right.color_invariant())]
-    #[ensures((*self).color() == Black ==> (^self).color_invariant())]
+    #[ensures(CPN(Red, CPL(Red), CPL(Black)).match_t(^self) && (*self).color() == Red ||
+              (^self).color_invariant())]
     #[ensures((^self).has_mapping(@key, val))]
     #[ensures(forall<k: K::ModelTy, v: V> k == @key || (*self).has_mapping(k, v) == (^self).has_mapping(k, v))]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
@@ -579,9 +616,8 @@ where
     }
 
     #[requires((*self).bst_invariant())]
-    #[requires((*self).color_invariant())]
-    #[requires(exists<node: Box<Node<K, V>>> (*self).node == Some(node) &&
-               (node.color == Red || node.left.color() == Red))]
+    #[requires(CPL(Red).match_t(*self) ||
+               CPN(Black, CPL(Red), CPL(Black)).match_t(*self))]
     #[requires(exists<h: Int> (*self).has_height(h))]
     #[ensures((^self).bst_invariant())]
     #[ensures((*self).has_mapping(@result.0, result.1))]
@@ -597,6 +633,7 @@ where
         let old_self = ghost! { self };
         let node = self.node.as_mut().unwrap();
         if let None = node.left.node {
+            proof_assert!{ node.right.node == None };
             let node = std::mem::take(&mut self.node).unwrap();
             return (node.key, node.val);
         }
@@ -641,9 +678,8 @@ where
     }
 
     #[requires((*self).bst_invariant())]
-    #[requires((*self).color_invariant())]
-    #[requires((*self).color() == Red ||
-               exists<n: Box<Node<K, V>>> (*self).node == Some(n) && n.left.color() == Red)]
+    #[requires(CPL(Red).match_t(*self) ||
+               CPN(Black, CPL(Red), CPL(Black)).match_t(*self))]
     #[requires(exists<h: Int> (*self).has_height(h))]
     #[ensures((^self).bst_invariant())]
     #[ensures(forall<v: V> result == None ==> !(*self).has_mapping(@*key, v))]
@@ -766,12 +802,11 @@ where
         #[invariant(mapping_cur_key, forall<v: V> (*tree).has_mapping(@key, v) == (*self).has_mapping(@key, v))]
         #[invariant(bst_inv_proph, (forall<k: K::ModelTy, v: V> k == @key || (*tree).has_mapping(k, v) == (^tree).has_mapping(k, v))
                     ==> (^tree).bst_invariant() ==> (^self).bst_invariant())]
-        #[invariant(color_inv_proph, (^tree).color_invariant() && (^tree).color() == (*tree).color() ==> (^self).color_invariant())]
-        #[invariant(color_proph, (^tree).color() == (*tree).color() ==> (^self).color() == (*self).color())]
+        #[invariant(color_inv, CPL((*tree).color()).match_t(^tree) ==> CPL(Black).match_t(^self))]
         #[invariant(mapping_proph, forall<k: K::ModelTy, v: V> (*tree).has_mapping(k, v) == (^tree).has_mapping(k, v) ==>
                     (*self).has_mapping(k, v) == (^self).has_mapping(k, v))]
-        #[invariant(height, (^tree).color() == (*tree).color() &&
-                    (forall<h: Int> (*tree).has_height(h) ==> (^tree).has_height(h)) ==>
+        #[invariant(height,
+                    (^tree).color() == (*tree).color() && (forall<h: Int> (*tree).has_height(h) ==> (^tree).has_height(h)) ==>
                      forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
         while let Some(node) = &mut tree.node {
             match key.cmp(&node.key) {
