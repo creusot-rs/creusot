@@ -15,7 +15,6 @@ pub fn translate_logic_or_predicate<'tcx>(
     def_id: DefId,
 ) -> (Module, Option<Module>, bool, CloneMap<'tcx>) {
     let mut names = CloneMap::new(ctx.tcx, def_id, false);
-    names.clone_self(def_id);
 
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
     if util::is_predicate(ctx.tcx, def_id) {
@@ -84,18 +83,24 @@ fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, def_id, false);
-    names.clone_self(def_id);
+    let mut names = CloneMap::new(ctx.tcx, def_id, true);
 
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
 
     if sig.contract.is_empty() {
+        let _ = names.to_clones(ctx);
         return None;
     }
     let term = ctx.term(def_id).unwrap().clone();
     let body = specification::lower_impure(ctx, &mut names, def_id, ctx.param_env(def_id), term);
 
-    Some(implementation_module(ctx, def_id, &names, sig, body))
+    let mut decls: Vec<_> = Vec::new();
+    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
+    decls.extend(names.to_clones(ctx));
+    decls.push(Decl::LetFun(LetFun { sig, rec: true, ghost: true, body }));
+
+    let name = impl_name(ctx.tcx, def_id);
+    Some(Module { name, decls })
 }
 
 pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
@@ -145,26 +150,6 @@ fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
     let axiom = if args.is_empty() { condition } else { Exp::Forall(args, box condition) };
 
     Axiom { name: "def".into(), axiom }
-}
-
-fn implementation_module<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
-    def_id: DefId,
-    names: &CloneMap<'tcx>,
-    sig: Signature,
-    body: Exp,
-) -> Module {
-    let mut names = names.clone();
-    names.clear_graph();
-    names.use_full_clones = true;
-
-    let mut decls: Vec<_> = Vec::new();
-    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-    decls.extend(names.to_clones(ctx));
-    decls.push(Decl::LetFun(LetFun { sig, rec: true, ghost: true, body }));
-
-    let name = impl_name(ctx.tcx, def_id);
-    Module { name, decls }
 }
 
 pub fn impl_name(tcx: TyCtxt, def_id: DefId) -> Ident {

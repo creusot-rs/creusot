@@ -21,7 +21,6 @@ pub fn interface_for<'tcx>(
 ) -> (Module, CloneMap<'tcx>) {
     debug!("interface_for: {def_id:?}");
     let mut names = CloneMap::new(ctx.tcx, def_id, false);
-    names.clone_self(def_id);
     let mut sig = util::signature_of(ctx, &mut names, def_id);
 
     sig.contract.variant = Vec::new();

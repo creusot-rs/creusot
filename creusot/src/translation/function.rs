@@ -45,11 +45,11 @@ pub fn translate_function<'tcx, 'sess>(
 ) -> Module {
     let tcx = ctx.tcx;
     let mut names = CloneMap::new(tcx, def_id, true);
-    names.clone_self(def_id);
 
     assert!(def_id.is_local(), "translate_function: expected local DefId");
 
     if util::is_trusted(tcx, def_id) || !util::has_body(ctx, def_id) {
+        let _ = names.to_clones(ctx);
         return translate_trusted(tcx, ctx, def_id);
     }
 
@@ -80,9 +80,10 @@ pub fn translate_function<'tcx, 'sess>(
             continue;
         }
 
-        let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p)
-            .unwrap_or_else(|e| e.emit(ctx.tcx.sess));
+        let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p);
         decls.extend(names.to_clones(ctx));
+        let promoted = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
+
         decls.push(promoted);
     }
     let mut sig = signature_of(ctx, &mut names, def_id);
@@ -106,7 +107,6 @@ pub fn translate_trusted<'tcx>(
     def_id: DefId,
 ) -> Module {
     let mut names = CloneMap::new(tcx, def_id, true);
-    names.clone_self(def_id);
     let mut decls = Vec::new();
     decls.extend(all_generic_decls_for(tcx, def_id));
 

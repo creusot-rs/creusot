@@ -1,0 +1,100 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use seq.Seq
+  use prelude.Prelude
+  type c464_assocstruct  =
+    | C464_AssocStruct
+    
+  type c464_struct  =
+    | C464_Struct
+    
+end
+module C464_Impl0_Invariant_Interface
+  use Type
+  predicate invariant' (self : Type.c464_assocstruct)
+end
+module C464_Impl0_Invariant
+  use Type
+  predicate invariant' [#"../464.rs" 22 4 22 30] (self : Type.c464_assocstruct) =
+    [#"../464.rs" 23 8 23 12] true
+end
+module C464_AssocTrait_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+end
+module C464_AssocTrait_Invariant
+  type self
+  predicate invariant' [#"../464.rs" 6 4 6 31] (self : self)
+end
+module C464_Impl0
+  use Type
+  clone C464_Impl0_Invariant as Invariant0
+  clone C464_AssocTrait_Invariant_Interface as Invariant1 with type self = Type.c464_assocstruct,
+  predicate invariant' = Invariant0.invariant'
+end
+module C464_Impl1_Invariant_Interface
+  use Type
+  clone C464_Impl0_Invariant_Interface as Invariant0
+  predicate invariant' (self : Type.c464_struct) (assoc : Type.c464_assocstruct)
+end
+module C464_Impl1_Invariant
+  use Type
+  clone C464_Impl0_Invariant_Interface as Invariant0
+  predicate invariant' [#"../464.rs" 32 4 32 50] (self : Type.c464_struct) (assoc : Type.c464_assocstruct) =
+    [#"../464.rs" 33 8 33 12] true
+  axiom invariant'_spec : forall self : Type.c464_struct, assoc : Type.c464_assocstruct . [#"../464.rs" 31 4 31 44] invariant' self assoc -> Invariant0.invariant' assoc
+end
+module C464_Impl1_Invariant_Impl
+  use Type
+  clone C464_Impl0_Invariant as Invariant0
+  let rec ghost function invariant' (self : Type.c464_struct) (assoc : Type.c464_assocstruct) : bool
+    ensures { [#"../464.rs" 31 4 31 44] result -> Invariant0.invariant' assoc }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../464.rs" 33 8 33 12] true
+end
+module C464_Impl1_Assoc
+  use Type
+  type assoc  =
+    Type.c464_assocstruct
+end
+module C464_Trait_Assoc
+  type self
+  type assoc
+end
+module C464_Trait_Invariant_Interface
+  type self
+  clone C464_Trait_Assoc as Assoc0 with type self = self
+  clone C464_AssocTrait_Invariant_Interface as Invariant0 with type self = Assoc0.assoc
+  predicate invariant' (self : self) (assoc : Assoc0.assoc)
+end
+module C464_Trait_Invariant
+  type self
+  clone C464_Trait_Assoc as Assoc0 with type self = self
+  clone C464_AssocTrait_Invariant_Interface as Invariant0 with type self = Assoc0.assoc
+  predicate invariant' [#"../464.rs" 14 4 14 51] (self : self) (assoc : Assoc0.assoc)
+  axiom invariant'_spec : forall self : self, assoc : Assoc0.assoc . [#"../464.rs" 13 4 13 44] invariant' self assoc -> Invariant0.invariant' assoc
+end
+module C464_Impl1
+  use Type
+  clone C464_Impl0_Invariant as Invariant2
+  clone C464_Impl1_Assoc as Assoc0
+  clone C464_Impl1_Invariant as Invariant0 with predicate Invariant0.invariant' = Invariant2.invariant', axiom .
+  clone C464_Trait_Invariant_Interface as Invariant1 with type self = Type.c464_struct,
+  predicate invariant' = Invariant0.invariant', predicate Invariant0.invariant' = Invariant2.invariant',
+  type Assoc0.assoc = Assoc0.assoc, axiom .
+  clone C464_Trait_Assoc as Assoc1 with type self = Type.c464_struct, type assoc = Assoc0.assoc
+  goal invariant'_spec : forall self : Type.c464_struct, assoc : Type.c464_assocstruct . forall result : bool . ([#"../464.rs" 31 4 31 44] result -> Invariant2.invariant' assoc) -> ([#"../464.rs" 13 4 13 44] result -> Invariant2.invariant' assoc)
+end

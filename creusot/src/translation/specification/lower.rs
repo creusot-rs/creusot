@@ -1,5 +1,6 @@
 use super::typing::{self, Literal, LogicalOp, Pattern, Term, TermKind};
 use crate::translation::traits::resolve_assoc_item_opt;
+use crate::translation::traits::resolve_opt;
 use crate::translation::ty::translate_ty;
 use crate::translation::ty::variant_accessor_name;
 use crate::util::constructor_qname;
@@ -148,8 +149,12 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                     args = vec![Exp::Tuple(vec![])];
                 }
 
-                let method = resolve_assoc_item_opt(self.ctx.tcx, self.param_env, id, subst)
-                    .unwrap_or((id, subst));
+                debug!(
+                    "resolved_methodb={:?}",
+                    resolve_opt(self.ctx.tcx, self.param_env, id, subst)
+                );
+                let method =
+                    resolve_opt(self.ctx.tcx, self.param_env, id, subst).unwrap_or((id, subst));
                 debug!("resolved_method={:?}", method);
 
                 if is_identity_from(self.ctx.tcx, id, method.1) {
