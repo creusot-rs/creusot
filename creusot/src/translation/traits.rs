@@ -74,6 +74,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             let subst = InternalSubsts::identity_for_item(self.tcx, impl_item_id);
 
             if implementor_map.get(&trait_item_id).is_some() {
+                // let (id, subst) = resolve_opt(self.tcx, self.param_env(impl_item_id), impl_item_id, subst).unwrap_or((impl_item_id, subst));
                 names.insert(impl_item_id, subst);
             }
 
@@ -225,6 +226,9 @@ fn resolve_impl_source_opt<'tcx>(
     def_id: DefId,
     substs: SubstsRef<'tcx>,
 ) -> Option<ImplSource<'tcx, ()>> {
+    trace!("resolve_impl_source_opt={def_id:?} {substs:?}");
+    let substs = tcx.normalize_erasing_regions(param_env, substs);
+
     let trait_ref = if let Some(assoc) = tcx.opt_associated_item(def_id) {
         match assoc.container {
             ImplContainer(def_id) => tcx.impl_trait_ref(def_id)?,
@@ -244,7 +248,8 @@ fn resolve_impl_source_opt<'tcx>(
     match source {
         Ok(src) => Some(src),
         Err(err) => {
-            err.cancel();
+            trace!("resolve_impl_source_opt error");
+            // err.cancel();
 
             return None;
         }
@@ -257,6 +262,7 @@ pub fn resolve_opt<'tcx>(
     def_id: DefId,
     substs: SubstsRef<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
+    trace!("resolve_opt={def_id:?} {substs:?}");
     if tcx.is_trait(def_id) {
         resolve_trait_opt(tcx, param_env, def_id, substs)
     } else {
@@ -270,8 +276,8 @@ pub fn resolve_trait_opt<'tcx>(
     def_id: DefId,
     substs: SubstsRef<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
+    trace!("resolve_trait_opt={def_id:?} {substs:?}");
     if tcx.is_trait(def_id) {
-        debug!("wtf: {:?}, {:?}, {:?}", param_env, def_id, substs);
         let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs);
         debug!("impl_source={:?}", impl_source);
         match resolve_impl_source_opt(tcx, param_env, def_id, substs)? {
@@ -294,6 +300,7 @@ pub fn resolve_assoc_item_opt<'tcx>(
     def_id: DefId,
     substs: SubstsRef<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
+    trace!("resolve_assoc_item_opt {:?} {:?}", def_id, substs);
     let assoc = tcx.opt_associated_item(def_id)?;
 
     // If we're given an associated item that is already on an instance,
@@ -305,6 +312,7 @@ pub fn resolve_assoc_item_opt<'tcx>(
     let trait_ref = TraitRef::from_method(tcx, tcx.trait_of_item(def_id).unwrap(), substs);
     use creusot_rustc::middle::ty::TypeFoldable;
     let source = resolve_impl_source_opt(tcx, param_env, def_id, substs)?;
+    trace!("resolve_assoc_item_opt {source:?}",);
 
     match source {
         ImplSource::UserDefined(impl_data) => {

@@ -83,7 +83,7 @@ pub fn translate_function<'tcx, 'sess>(
         let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p);
         decls.extend(names.to_clones(ctx));
         let promoted = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
-        
+
         decls.push(promoted);
     }
     let mut sig = signature_of(ctx, &mut names, def_id);

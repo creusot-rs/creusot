@@ -9,8 +9,8 @@ use creusot_rustc::span::{Symbol, DUMMY_SP};
 use heck::CamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::graphmap::DiGraphMap;
-use petgraph::visit::{DfsPostOrder, Topo};
-use petgraph::EdgeDirection::{Incoming, Outgoing};
+use petgraph::visit::DfsPostOrder;
+use petgraph::EdgeDirection::Outgoing;
 use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
 use why3::{Ident, QName};
 
@@ -99,12 +99,14 @@ pub struct CloneMap<'tcx> {
 impl<'tcx> Drop for CloneMap<'tcx> {
     fn drop(&mut self) {
         if self.last_cloned != self.names.len() {
-            panic!(
+            debug!(
                 "Dropping clone map with un-emitted clones. {:?} clones emitted of {:?} total {:?}",
                 self.last_cloned,
                 self.names.len(),
                 self.self_id,
-            )
+            );
+
+            debug_assert!(false);
         }
     }
 }
@@ -371,7 +373,12 @@ impl<'tcx> CloneMap<'tcx> {
 
             ctx.translate(key.0);
 
-            debug!("{:?} has {:?} dependencies", key, ctx.dependencies(key.0).map(|d| d.len()));
+            debug!(
+                "{:?} {:?} has {:?} dependencies",
+                self.names[&key].kind,
+                key,
+                ctx.dependencies(key.0).map(|d| d.len())
+            );
             self.clone_laws(ctx, key);
             self.clone_additional_deps(key);
             self.clone_dependencies(ctx, key);
@@ -414,12 +421,6 @@ impl<'tcx> CloneMap<'tcx> {
 
             let orig = dep;
 
-            // let subst = if let Some(tr) = self.tcx.trait_of_item(key.0) {
-            //     InternalSubsts::identity_for_item(self.tcx, key.0).rebase_onto(self.tcx, tr, key.1)
-            // } else {
-            //     key.1
-            // };
-
             let dep = self.resolve_dep(ctx, (dep.0, EarlyBinder(dep.1).subst(self.tcx, key.1)));
 
             if let DepNode::Dep((defid, subst)) = dep {
@@ -445,7 +446,9 @@ impl<'tcx> CloneMap<'tcx> {
         user: DepNode<'tcx>,
         prov: DepNode<'tcx>,
     ) -> &mut IndexSet<(Kind, SymbolKind)> {
-        trace!("{:?} -> {:?}", user, prov);
+        let k1 = if let DepNode::Dep(d1) = user { Some(&self.names[&d1].kind) } else { None };
+        let k2 = if let DepNode::Dep(d2) = prov { Some(&self.names[&d2].kind) } else { None };
+        debug!("{k1:?} = {:?} --> {k2:?} = {:?}", user, prov);
 
         if let None = self.clone_graph.edge_weight_mut(user, prov) {
             self.clone_graph.add_edge(user, prov, IndexSet::new());
@@ -530,6 +533,7 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     pub fn to_clones(&mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) -> Vec<Decl> {
+        debug!("emitting clones for {:?}", self.self_id);
         let mut decls = Vec::new();
 
         use petgraph::visit::Walker;
@@ -546,13 +550,13 @@ impl<'tcx> CloneMap<'tcx> {
 
         self.last_cloned = self.names.len();
 
-        // There should only be a reflexive cycle on the `self_id` node, but I'm not sure how to enforce that property here
-        // if there is one, then the Why3 code will fail to load but we should catch that error earlier.
-        // let mut topo = DfsPostOrder::new(&self.clone_graph, DepNode::Dep(self.self_key()));
-        let mut topo = Topo::new(&self.clone_graph);
+        // Broken because of closures which share a defid for the type *and* function
+        // debug_assert!(!is_cyclic_directed(&self.clone_graph), "clone graph for {:?} is cyclic", self.self_id );
+
+        let mut topo = DfsPostOrder::new(&self.clone_graph, DepNode::Dep(self.self_key()));
         while let Some(node) = topo.walk_next(&self.clone_graph) {
-            debug!("processing node={:?}", node);
             let DepNode::Dep(node @ (def_id, subst)) = node else { continue };
+            debug!("processing node {:?}", self.names[&node].kind);
 
             // Though we pass in a &mut ref, it shouldn't actually be possible to add any new entries..
             let mut clone_subst = base_subst(ctx, self, def_id, subst);
@@ -608,8 +612,9 @@ impl<'tcx> CloneMap<'tcx> {
             };
 
             debug!(
-                "emit clone node={node:?} name={:?}",
-                cloneable_name(ctx.tcx, def_id, interface)
+                "emit clone node={node:?} name={:?} as={:?}",
+                cloneable_name(ctx.tcx, def_id, interface),
+                self.names[&node].kind.clone()
             );
 
             decls.push(Decl::Clone(DeclClone {
@@ -619,6 +624,8 @@ impl<'tcx> CloneMap<'tcx> {
             }));
         }
 
+        // debug_assert!(topo.finished.len() >= self.names.len(), "missed a clone in {:?}", self.self_id);
+
         self.prelude
             .iter_mut()
             .filter(|(_, v)| !(**v))
@@ -627,7 +634,7 @@ impl<'tcx> CloneMap<'tcx> {
                 p
             })
             .map(|q| Decl::UseDecl(Use { name: q.clone() }))
-            .chain(decls.into_iter().rev())
+            .chain(decls.into_iter())
             .collect()
     }
 }
@@ -750,7 +757,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
 }
 
 // Walk all the projections in a substitution so we can add dependencies on them
-fn walk_projections<'tcx, F: FnMut(&ProjectionTy<'tcx>)>(s: SubstsRef<'tcx>, f: F) {
+fn walk_projections<'tcx, T: TypeFoldable<'tcx>, F: FnMut(&ProjectionTy<'tcx>)>(s: T, f: F) {
     s.visit_with(&mut ProjectionTyVisitor { f, p: std::marker::PhantomData });
 }
 
