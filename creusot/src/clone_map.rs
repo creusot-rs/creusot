@@ -9,7 +9,7 @@ use creusot_rustc::span::{Symbol, DUMMY_SP};
 use heck::CamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::graphmap::DiGraphMap;
-use petgraph::visit::DfsPostOrder;
+use petgraph::visit::{DfsPostOrder, Topo};
 use petgraph::EdgeDirection::{Incoming, Outgoing};
 use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
 use why3::{Ident, QName};
@@ -361,7 +361,9 @@ impl<'tcx> CloneMap<'tcx> {
             i += 1;
             trace!("{:?} is public={:?}", key, self.names[&key].public);
 
-            self.add_graph_edge(DepNode::Dep(self.self_key()), DepNode::Dep(key));
+            if key != self.self_key() {
+                self.add_graph_edge(DepNode::Dep(self.self_key()), DepNode::Dep(key));
+            }
 
             if self.names[&key].kind == Kind::Hidden {
                 continue;
@@ -546,7 +548,8 @@ impl<'tcx> CloneMap<'tcx> {
 
         // There should only be a reflexive cycle on the `self_id` node, but I'm not sure how to enforce that property here
         // if there is one, then the Why3 code will fail to load but we should catch that error earlier.
-        let mut topo = DfsPostOrder::new(&self.clone_graph, DepNode::Dep(self.self_key()));
+        // let mut topo = DfsPostOrder::new(&self.clone_graph, DepNode::Dep(self.self_key()));
+        let mut topo = Topo::new(&self.clone_graph);
         while let Some(node) = topo.walk_next(&self.clone_graph) {
             debug!("processing node={:?}", node);
             let DepNode::Dep(node @ (def_id, subst)) = node else { continue };
@@ -624,7 +627,7 @@ impl<'tcx> CloneMap<'tcx> {
                 p
             })
             .map(|q| Decl::UseDecl(Use { name: q.clone() }))
-            .chain(decls.into_iter())
+            .chain(decls.into_iter().rev())
             .collect()
     }
 }
