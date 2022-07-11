@@ -1,11 +1,11 @@
 use assert_cmd::prelude::*;
+use clap::Parser;
+use git2::Repository;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
+use std::path::PathBuf;
 use std::process::{exit, Command};
 use termcolor::*;
-use git2::Repository;
-use std::path::PathBuf;
-use clap::Parser;
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -22,19 +22,13 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-
-    eprintln!("{args:?}");
-
     let why3_path = std::env::var("WHY3_PATH").unwrap_or_else(|_| "why3".into());
     let config_path = std::env::var("WHY3_CONFIG");
     let mut out = StandardStream::stdout(ColorChoice::Always);
     let orange = Color::Ansi256(214);
 
-    let changed = if let Some(diff) = args.diff_from {
-        Some(changed_mlcfgs(&diff).unwrap())
-    } else {
-        None
-    };
+    let changed =
+        if let Some(diff) = args.diff_from { Some(changed_mlcfgs(&diff).unwrap()) } else { None };
 
     let mut success = true;
     let mut obsolete = false;
@@ -47,10 +41,9 @@ fn main() {
             }
         }
 
-        file.set_extension("mlcfg");
-
         if let Some(changed_list) = &changed {
-            let file = file.strip_prefix("../").unwrap().to_owned();
+            let mut file = file.strip_prefix("../").unwrap().to_owned();
+            file.set_extension("mlcfg");
 
             if !changed_list.contains(&file) {
                 continue;
@@ -60,10 +53,14 @@ fn main() {
         let header_line =
             BufReader::new(File::open(&file).unwrap()).lines().nth(0).unwrap().unwrap();
 
+        file.set_extension("mlcfg");
+
         write!(&mut out, "Testing {} ... ", file.display()).unwrap();
         out.flush().unwrap();
 
-        if header_line.contains("WHY3SKIP") || (args.skip_unstable && header_line.contains("UNSTABLE")) {
+        if header_line.contains("WHY3SKIP")
+            || (args.skip_unstable && header_line.contains("UNSTABLE"))
+        {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
             writeln!(&mut out, "skipped").unwrap();
             out.reset().unwrap();
@@ -175,7 +172,6 @@ fn main() {
     }
 }
 
-
 fn changed_mlcfgs(from: &str) -> Result<Vec<PathBuf>, git2::Error> {
     let repo = Repository::open("..")?;
     let rev = repo.revparse_single(from)?.id();
@@ -188,7 +184,7 @@ fn changed_mlcfgs(from: &str) -> Result<Vec<PathBuf>, git2::Error> {
             if path.extension().map(|e| e == "mlcfg").unwrap_or(false) {
                 paths.push(path.to_owned());
             }
-         }
+        }
     }
     Ok(paths)
 }
