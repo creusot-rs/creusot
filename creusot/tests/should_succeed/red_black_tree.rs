@@ -384,13 +384,14 @@ where
     #[requires((*self).left.color() == Red)]
     #[ensures((*self).same_mappings(^self))]
     #[ensures((^self).bst_invariant())]
+    #[ensures(@(^self).key < @(*self).key)]
     #[ensures((^self).right.color() == Red)]
     #[ensures((^self).color == (*self).color)]
     #[ensures(exists<l: Box<Self>, r: Box<Self>>
               (*self).left.node == Some(l) && (^self).right.node == Some(r) &&
-              ((^self).left, r.left, r.right) == (l.left, l.right, (*self).right))]
+              ((^self).left, r.left, r.right) == (l.left, l.right, (*self).right) &&
+              r.key == (*self).key)]
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
-    #[ensures(@(^self).key < @(*self).key)]
     fn rotate_right(&mut self) {
         let old_self = ghost! { self };
 
@@ -468,13 +469,13 @@ where
     #[ensures(forall<h: Int> (*self).has_height(h) ==> (^self).has_height(h))]
     #[ensures((^self).bst_invariant())]
     #[ensures((*self).same_mappings(^self))]
+    #[ensures((*self).key == (^self).key)]
     #[ensures(exists<l1: Box<Self>, l2: Box<Self>> (*self).left.node == Some(l1) && (^self).left.node == Some(l2) &&
               l1.left == l2.left && l1.right == l2.right &&
               (*self).color == l2.color && (^self).color == l1.color)]
     #[ensures(exists<r1: Box<Self>, r2: Box<Self>> (*self).right.node == Some(r1) && (^self).right.node == Some(r2) &&
               r1.left == r2.left && r1.right == r2.right &&
-              (*self).color == r2.color && (^self).color == r1.color)]
-    #[ensures((*self).key == (^self).key)]
+              (*self).color == r2.color && (^self).color == r1.color && r1.key == r2.key)]
     fn flip_colors(&mut self) {
         self.left.node.as_mut().unwrap().color = self.color;
         std::mem::swap(&mut self.color, &mut self.right.node.as_mut().unwrap().color);
@@ -544,7 +545,8 @@ where
     #[ensures((^self).bst_invariant())]
     #[ensures((*self).same_mappings(^self))]
     #[ensures(!result ==> @(^self).key < @(*self).key &&
-              CPN(Red, CPL(Black), CPN(Black, CPL(Red), CPL(Black))).match_n(^self))]
+              CPN(Red, CPL(Black), CPN(Black, CPL(Black), CPL(Red))).match_n(^self) &&
+              exists<r: Box<Node<K, V>>> (^self).right.node == Some(r) && r.key == (*self).key)]
     #[ensures(result ==> (^self).key == (*self).key &&
               CPN(Black, CPL(Red), CPL(Red)).match_n(^self))]
     fn move_red_right(&mut self) -> bool {
@@ -552,7 +554,6 @@ where
         if self.left.node.as_mut().unwrap().left.is_red() {
             self.rotate_right();
             self.flip_colors();
-            self.right.node.as_mut().unwrap().rotate_left();
             return false;
         }
         return true;
@@ -679,7 +680,9 @@ where
 
     #[requires((*self).bst_invariant())]
     #[requires(CPL(Red).match_t(*self) ||
-               CPN(Black, CPL(Red), CPL(Black)).match_t(*self))]
+               CPN(Black, CPL(Red), CPL(Black)).match_t(*self) ||
+               CPN(Black, CPL(Black), CPL(Red)).match_t(*self) &&
+                 exists<node: Box<Node<K, V>>> (*self).node == Some(node) && @node.key <= @*key)]
     #[requires(exists<h: Int> (*self).has_height(h))]
     #[ensures((^self).bst_invariant())]
     #[ensures(forall<v: V> result == None ==> !(*self).has_mapping(@*key, v))]
@@ -718,7 +721,8 @@ where
                         return Some((node.key, node.val));
                     }
                     proof_assert! { exists<h: Int> node.left.has_height(h) && node.right.has_height(h) };
-                    if !node.right.node.as_ref().unwrap().left.is_red() && !node.move_red_right() {
+                    if !node.right.is_red() && !node.right.node.as_ref().unwrap().left.is_red() &&
+                        !node.move_red_right() {
                         r = node.right.delete_rec(key)
                     } else if let Equal = ord {
                         let mut kv = node.right.delete_min_rec();
