@@ -8,9 +8,9 @@ use creusot_rustc::middle::ty::{DefIdTree, ProjectionTy, Ty, TyKind};
 use creusot_rustc::span::{Symbol, DUMMY_SP};
 use heck::CamelCase;
 use indexmap::{IndexMap, IndexSet};
-use petgraph::algo::is_cyclic_directed;
 use petgraph::graphmap::DiGraphMap;
-use petgraph::EdgeDirection::Incoming;
+use petgraph::visit::DfsPostOrder;
+use petgraph::EdgeDirection::{Incoming, Outgoing};
 use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
 use why3::{Ident, QName};
 
@@ -94,6 +94,19 @@ pub struct CloneMap<'tcx> {
 
     // Internal state to determine whether clones should be public or not
     public: bool,
+}
+
+impl<'tcx> Drop for CloneMap<'tcx> {
+    fn drop(&mut self) {
+        if self.last_cloned != self.names.len() {
+            panic!(
+                "Dropping clone map with un-emitted clones. {:?} clones emitted of {:?} total {:?}",
+                self.last_cloned,
+                self.names.len(),
+                self.self_id,
+            )
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -206,7 +219,7 @@ impl<'tcx> CloneInfo<'tcx> {
 impl<'tcx> CloneMap<'tcx> {
     pub fn new(tcx: TyCtxt<'tcx>, self_id: DefId, use_full_clones: bool) -> Self {
         let names = IndexMap::new();
-        CloneMap {
+        let mut c = CloneMap {
             tcx,
             self_id,
             names,
@@ -216,7 +229,9 @@ impl<'tcx> CloneMap<'tcx> {
             clone_graph: DiGraphMap::new(),
             last_cloned: 0,
             public: false,
-        }
+        };
+        c.names.insert(c.self_key(), CloneInfo::hidden());
+        c
     }
 
     pub fn summary(&self) -> CloneSummary<'tcx> {
@@ -264,16 +279,18 @@ impl<'tcx> CloneMap<'tcx> {
         })
     }
 
-    pub fn clone_self(&mut self, self_id: DefId) {
-        let subst = match self.tcx.type_of(self_id).kind() {
-            TyKind::Closure(_, subst) => subst,
-            _ => InternalSubsts::identity_for_item(self.tcx, self_id),
+    fn self_key(&self) -> (DefId, SubstsRef<'tcx>) {
+        use creusot_rustc::hir::def::DefKind;
+        let subst = match self.tcx.def_kind(self.self_id) {
+            DefKind::Closure => match self.tcx.type_of(self.self_id).kind() {
+                TyKind::Closure(_, subst) => subst,
+                _ => unreachable!(),
+            },
+            _ => InternalSubsts::identity_for_item(self.tcx, self.self_id),
         };
 
         let subst = self.tcx.erase_regions(subst);
-
-        debug!("cloning self: {:?}", (self_id, subst));
-        self.names.insert((self_id, subst), CloneInfo::hidden());
+        (self.self_id, subst)
     }
 
     pub fn import_prelude_module(&mut self, module: PreludeModule) {
@@ -344,11 +361,12 @@ impl<'tcx> CloneMap<'tcx> {
             i += 1;
             trace!("{:?} is public={:?}", key, self.names[&key].public);
 
+            self.add_graph_edge(DepNode::Dep(self.self_key()), DepNode::Dep(key));
+
             if self.names[&key].kind == Kind::Hidden {
                 continue;
             }
 
-            self.clone_graph.add_node(DepNode::Dep(key));
             ctx.translate(key.0);
 
             debug!("{:?} has {:?} dependencies", key, ctx.dependencies(key.0).map(|d| d.len()));
@@ -425,13 +443,13 @@ impl<'tcx> CloneMap<'tcx> {
         user: DepNode<'tcx>,
         prov: DepNode<'tcx>,
     ) -> &mut IndexSet<(Kind, SymbolKind)> {
-        trace!("{:?} -> {:?}", prov, user);
+        trace!("{:?} -> {:?}", user, prov);
 
-        if let None = self.clone_graph.edge_weight_mut(prov, user) {
-            self.clone_graph.add_edge(prov, user, IndexSet::new());
+        if let None = self.clone_graph.edge_weight_mut(user, prov) {
+            self.clone_graph.add_edge(user, prov, IndexSet::new());
         };
 
-        self.clone_graph.edge_weight_mut(prov, user).unwrap()
+        self.clone_graph.edge_weight_mut(user, prov).unwrap()
     }
 
     // Given an initial substitution, find out the substituted and resolved version of the dependency `dep`.
@@ -512,31 +530,25 @@ impl<'tcx> CloneMap<'tcx> {
     pub fn to_clones(&mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) -> Vec<Decl> {
         let mut decls = Vec::new();
 
-        use petgraph::visit::{Topo, Walker};
+        use petgraph::visit::Walker;
 
         // Update the clone graph with any new entries.
         self.update_graph(ctx);
 
-        self.last_cloned = self.names.len();
-
         debug!(
-            "dep_graph nodes={} edges={}",
+            "dep_graph processed={} nodes={} edges={}",
+            self.last_cloned,
             self.clone_graph.node_count(),
             self.clone_graph.edge_count()
         );
 
-        // Traverse the dependency graph in topological order to create the minimal amount of
-        // clones that are needed. This allows us to share all the nodes that are higher up in
-        // the dependency graph.
-        // TODO: Ensure that if there is a cycle we emit a nice error.
+        self.last_cloned = self.names.len();
 
-        debug_assert!(!is_cyclic_directed(&self.clone_graph));
-
-        let mut topo = Topo::new(&self.clone_graph);
-
+        // There should only be a reflexive cycle on the `self_id` node, but I'm not sure how to enforce that property here
+        // if there is one, then the Why3 code will fail to load but we should catch that error earlier.
+        let mut topo = DfsPostOrder::new(&self.clone_graph, DepNode::Dep(self.self_key()));
         while let Some(node) = topo.walk_next(&self.clone_graph) {
             debug!("processing node={:?}", node);
-
             let DepNode::Dep(node @ (def_id, subst)) = node else { continue };
 
             // Though we pass in a &mut ref, it shouldn't actually be possible to add any new entries..
@@ -551,12 +563,12 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            let inbound_nodes: Vec<_> =
-                self.clone_graph.neighbors_directed(DepNode::Dep(node), Incoming).collect();
+            let outbound: Vec<_> =
+                self.clone_graph.neighbors_directed(DepNode::Dep(node), Outgoing).collect();
 
             // Grab definitions from all of our dependencies
-            for dep in inbound_nodes {
-                let syms = &self.clone_graph[(dep, DepNode::Dep(node))];
+            for dep in outbound {
+                let syms = &self.clone_graph[(DepNode::Dep(node), dep)];
                 trace!("s={:?} t={:?} e={:?}", dep, node, syms);
 
                 match dep {
@@ -591,6 +603,11 @@ impl<'tcx> CloneMap<'tcx> {
                 CloneOpacity::Default => !self.use_full_clones,
                 CloneOpacity::Transparent => false,
             };
+
+            debug!(
+                "emit clone node={node:?} name={:?}",
+                cloneable_name(ctx.tcx, def_id, interface)
+            );
 
             decls.push(Decl::Clone(DeclClone {
                 name: cloneable_name(ctx.tcx, def_id, interface),

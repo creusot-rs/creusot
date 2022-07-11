@@ -261,6 +261,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
 
         let ty_params: Vec<_> = ty_param_names(ctx.tcx, did).collect();
         ctx.add_type(&bg, TyDecl::Opaque { ty_name, ty_params });
+        let _ = names.to_clones(ctx);
         return;
     }
 
@@ -268,6 +269,9 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     for did in &bg {
         decls.push(build_ty_decl(ctx, &mut names, *did));
     }
+
+    // Drain the clones
+    let _ = names.to_clones(ctx);
     ctx.add_type(&bg, TyDecl::Adt { tys: decls });
 }
 
@@ -381,6 +385,8 @@ pub fn translate_accessor(
         box MlT::TConstructor(ty_name.clone().into()),
         ty_param_names(ctx.tcx, adt_did).map(MlT::TVar).collect(),
     );
+
+    let _ = names.to_clones(ctx);
 
     build_accessor(
         this,
