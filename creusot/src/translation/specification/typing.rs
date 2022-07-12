@@ -286,6 +286,9 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Some(ResultCheck) => {
                         Ok(Term { ty, span, kind: TermKind::Tuple { fields: vec![] } })
                     }
+                    Some(DummyCall) => {
+                        Ok(Term { ty, span, kind: TermKind::Tuple { fields: vec![] } })
+                    }
                     Some(Absurd) => Ok(Term { ty, span, kind: TermKind::Absurd }),
                     None => {
                         let fun = self.expr_term(fun)?;
@@ -572,6 +575,7 @@ pub(crate) enum Stub {
     Old,
     ResultCheck,
     Absurd,
+    DummyCall,
 }
 
 pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stub> {
@@ -608,6 +612,9 @@ pub(crate) fn pearlite_stub<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Stu
         }
         if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("closure_result_constraint")) {
             return Some(Stub::ResultCheck);
+        }
+        if Some(*id) == tcx.get_diagnostic_item(Symbol::intern("closure_dummy_call")) {
+            return Some(Stub::DummyCall);
         }
         None
     } else {

@@ -7,6 +7,7 @@ use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens, TokenStreamExt};
 use std::iter;
+use syn::token::Comma;
 use syn::{
     parse::{Parse, Result},
     token::Brace,
@@ -200,17 +201,37 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
         }
         ContractItem::Closure(clos) => {
             let req_body = pretyping::encode_term(&term).unwrap();
+
+            let inputs = clos.inputs.clone();
+            let clos_name = Ident::new("closure", Span::mixed_site());
+
+            let mut args = inputs.clone();
+            // Remove any type ascriptions
+            args.iter_mut().for_each(|p| match p {
+                Pat::Type(PatType { pat, .. }) => {
+                    let child = (**pat).clone();
+                    *p = child
+                }
+                _ => (),
+            });
+
+            if !args.trailing_punct() && !args.is_empty() {
+                args.push_punct(Comma::default())
+            }
+
             TS1::from(quote! {
                 {
+                    let #clos_name = #[creusot::spec::requires=#name_tag] #clos;
                     #[allow(unused_must_use)]
                     let _ =
                         #[creusot::no_translate]
                         #[creusot::item=#name_tag]
                         #[creusot::decl::spec]
-                        || {
+                        |#inputs| {
+                            creusot_contracts::stubs::dummy_call(#clos_name, (#args));
                             #req_body
                         };
-                    #[creusot::spec::requires=#name_tag] #clos
+                    #clos_name
                 }
             })
         }
@@ -258,6 +279,23 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
         ContractItem::Closure(clos) => {
             let req_body = pretyping::encode_term(&term).unwrap();
             let clos_name = Ident::new("closure", Span::mixed_site());
+            let mut inputs = clos.inputs.clone();
+            let mut args = inputs.clone();
+            // Remove any type ascriptions
+            args.iter_mut().for_each(|p| match p {
+                Pat::Type(PatType { pat, .. }) => {
+                    let child = (**pat).clone();
+                    *p = child
+                }
+                _ => (),
+            });
+
+            inputs.push(parse_quote! { result });
+
+            if !args.trailing_punct() && !args.is_empty() {
+                args.push_punct(Comma::default())
+            }
+
             TS1::from(quote! {
                 {
                     let #clos_name = #[creusot::spec::ensures=#name_tag] #clos;
@@ -266,7 +304,8 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                         #[creusot::no_translate]
                         #[creusot::item=#name_tag]
                         #[creusot::decl::spec]
-                        |result| {
+                        |#inputs| {
+                            creusot_contracts::stubs::dummy_call(#clos_name, (#args));
                             creusot_contracts::stubs::closure_result(#clos_name, result);
                             #req_body
                         };

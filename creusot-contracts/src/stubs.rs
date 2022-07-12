@@ -66,3 +66,7 @@ pub fn variant_check<R: crate::WellFounded>(r: R) -> R {
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "closure_result_constraint"]
 pub fn closure_result<Args, R, F: FnOnce<Args, Output = R>>(_: F, _: R) {}
+
+#[creusot::no_translate]
+#[rustc_diagnostic_item = "closure_dummy_call"]
+pub fn dummy_call<Args, R, F: FnOnce<Args, Output = R>>(_: F, _: Args) {}
