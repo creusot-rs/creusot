@@ -253,7 +253,7 @@ fn resolve_impl_source_opt<'tcx>(
         Ok(src) => Some(src),
         Err(err) => {
             trace!("resolve_impl_source_opt error");
-            // err.cancel();
+            err.cancel();
 
             return None;
         }
