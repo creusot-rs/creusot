@@ -12,71 +12,6 @@ enum Color {
 }
 use Color::*;
 
-trait CP<K, V> {
-    #[predicate]
-    fn match_t(self, tree: Tree<K, V>) -> bool;
-
-    #[predicate]
-    fn match_n(self, node: Node<K, V>) -> bool;
-}
-
-struct CPL(Color);
-impl<K, V> CP<K, V> for CPL {
-    #[predicate]
-    #[why3::attr = "inline:trivial"]
-    #[ensures(self.0 == Red ==>
-              result ==
-              exists<node: Box<Node<K, V>>> tree.node == Some(node) &&
-                CPL(Red).match_n(*node))]
-    #[ensures(self.0 == Red ==>
-              result ==
-              (tree.node != None &&
-               forall<node: Box<Node<K, V>>> tree.node == Some(node) ==>
-               CPL(Red).match_n(*node)))]
-    #[ensures(self.0 == Black ==>
-              result ==
-              (tree.node == None ||
-               exists<node: Box<Node<K, V>>> tree.node == Some(node) &&
-                CPL(Black).match_n(*node)))]
-    #[ensures(self.0 == Black ==>
-              result ==
-              (forall<node: Box<Node<K, V>>> tree.node == Some(node) ==>
-               CPL(Black).match_n(*node)))]
-    fn match_t(self, tree: Tree<K, V>) -> bool {
-        pearlite! {
-            tree.color() == self.0 && tree.color_invariant()
-        }
-    }
-
-    #[predicate]
-    #[why3::attr = "inline:trivial"]
-    fn match_n(self, node: Node<K, V>) -> bool {
-        pearlite! {
-            node.color == self.0 && node.color_invariant()
-        }
-    }
-}
-
-struct CPN<L, R>(Color, L, R);
-impl<K, V, L: CP<K, V>, R: CP<K, V>> CP<K, V> for CPN<L, R> {
-    #[predicate]
-    #[why3::attr = "inline:trivial"]
-    fn match_t(self, tree: Tree<K, V>) -> bool {
-        pearlite! {
-            exists<node: Box<Node<K, V>>> tree.node == Some(node) &&
-                self.match_n(*node)
-        }
-    }
-
-    #[predicate]
-    #[why3::attr = "inline:trivial"]
-    fn match_n(self, node: Node<K, V>) -> bool {
-        pearlite! {
-            node.color == self.0 && self.1.match_t(node.left) && self.2.match_t(node.right)
-        }
-    }
-}
-
 struct Node<K, V> {
     left: Tree<K, V>,
     color: Color,
@@ -263,7 +198,73 @@ where
     }
 }
 
-/******************************  The color invariant **************************/
+/******************  The color invariant, and color patterns ****************/
+
+
+trait CP<K, V> {
+    #[predicate]
+    fn match_t(self, tree: Tree<K, V>) -> bool;
+
+    #[predicate]
+    fn match_n(self, node: Node<K, V>) -> bool;
+}
+
+struct CPL(Color);
+impl<K, V> CP<K, V> for CPL {
+    #[predicate]
+    #[why3::attr = "inline:trivial"]
+    #[ensures(self.0 == Red ==>
+              result ==
+              exists<node: Box<Node<K, V>>> tree.node == Some(node) &&
+                CPL(Red).match_n(*node))]
+    #[ensures(self.0 == Red ==>
+              result ==
+              (tree.node != None &&
+               forall<node: Box<Node<K, V>>> tree.node == Some(node) ==>
+               CPL(Red).match_n(*node)))]
+    #[ensures(self.0 == Black ==>
+              result ==
+              (tree.node == None ||
+               exists<node: Box<Node<K, V>>> tree.node == Some(node) &&
+                CPL(Black).match_n(*node)))]
+    #[ensures(self.0 == Black ==>
+              result ==
+              (forall<node: Box<Node<K, V>>> tree.node == Some(node) ==>
+               CPL(Black).match_n(*node)))]
+    fn match_t(self, tree: Tree<K, V>) -> bool {
+        pearlite! {
+            tree.color() == self.0 && tree.color_invariant()
+        }
+    }
+
+    #[predicate]
+    #[why3::attr = "inline:trivial"]
+    fn match_n(self, node: Node<K, V>) -> bool {
+        pearlite! {
+            node.color == self.0 && node.color_invariant()
+        }
+    }
+}
+
+struct CPN<L, R>(Color, L, R);
+impl<K, V, L: CP<K, V>, R: CP<K, V>> CP<K, V> for CPN<L, R> {
+    #[predicate]
+    #[why3::attr = "inline:trivial"]
+    fn match_t(self, tree: Tree<K, V>) -> bool {
+        pearlite! {
+            exists<node: Box<Node<K, V>>> tree.node == Some(node) &&
+                self.match_n(*node)
+        }
+    }
+
+    #[predicate]
+    #[why3::attr = "inline:trivial"]
+    fn match_n(self, node: Node<K, V>) -> bool {
+        pearlite! {
+            node.color == self.0 && self.1.match_t(node.left) && self.2.match_t(node.right)
+        }
+    }
+}
 
 impl<K, V> Tree<K, V> {
     #[logic]
