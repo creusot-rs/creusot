@@ -6,10 +6,9 @@ use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens, TokenStreamExt};
 use std::iter;
-use syn::token::Comma;
 use syn::{
     parse::{Parse, Result},
-    token::Brace,
+    token::{Brace, Comma},
     *,
 };
 
