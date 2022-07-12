@@ -8,12 +8,10 @@ extern crate rustc_interface;
 #[macro_use]
 extern crate log;
 
-use creusot::callbacks::*;
-use creusot::options::Options;
+use creusot::{callbacks::*, options::Options};
 use rustc_driver::RunCompiler;
 use rustc_interface::interface::try_print_query_stack;
-use std::panic::PanicInfo;
-use std::{env, panic, process::Command};
+use std::{env, panic, panic::PanicInfo, process::Command};
 
 const BUG_REPORT_URL: &'static str = &"https://github.com/xldenis/creusot/issues/new";
 

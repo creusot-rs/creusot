@@ -1,12 +1,10 @@
 use crate::pretyping;
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned, ToTokens};
-use syn::spanned::Spanned;
 use syn::{
-    parenthesized, parse_quote, AttrStyle, Attribute, Error, Expr, ExprForLoop, ExprLoop,
-    ExprWhile, Ident,
+    parenthesized, parse_quote, spanned::Spanned, AttrStyle, Attribute, Error, Expr, ExprForLoop,
+    ExprLoop, ExprWhile, Ident, Result, Token,
 };
-use syn::{Result, Token};
 
 #[derive(Debug)]
 struct Invariant {

@@ -1,5 +1,7 @@
-use creusot_rustc::middle::ty::TyCtxt;
-use creusot_rustc::span::{def_id::DefId, symbol::Symbol};
+use creusot_rustc::{
+    middle::ty::TyCtxt,
+    span::{def_id::DefId, symbol::Symbol},
+};
 use std::collections::HashMap;
 
 use crate::util;

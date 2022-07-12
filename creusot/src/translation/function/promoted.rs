@@ -12,8 +12,10 @@ use crate::{
     },
     util::{self, constructor_qname},
 };
-use creusot_rustc::middle::{mir::TerminatorKind, ty::ParamEnv};
-use creusot_rustc::smir::mir::{Body, BorrowKind, Operand, Promoted, StatementKind};
+use creusot_rustc::{
+    middle::{mir::TerminatorKind, ty::ParamEnv},
+    smir::mir::{Body, BorrowKind, Operand, Promoted, StatementKind},
+};
 use why3::{
     declaration::{Contract, Decl, LetDecl, Signature},
     exp::{Exp, Pattern},
@@ -75,8 +77,7 @@ pub fn translate_promoted<'tcx>(
             _ => {}
         }
         previous_block = Some(id);
-        use creusot_rustc::middle::ty::UintTy;
-        use creusot_rustc::smir::mir::Rvalue::*;
+        use creusot_rustc::{middle::ty::UintTy, smir::mir::Rvalue::*};
         for stmt in bbd.statements.iter().rev() {
             match &stmt.kind {
                 StatementKind::Assign(box (tgt, val)) => {

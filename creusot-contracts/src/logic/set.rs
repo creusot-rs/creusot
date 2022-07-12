@@ -1,8 +1,7 @@
 use crate as creusot_contracts;
 use creusot_contracts_proc::*;
 
-use crate::logic::*;
-use crate::Int;
+use crate::{logic::*, Int};
 use std::ops::Index;
 
 #[creusot::builtins = "set.Set.set"]

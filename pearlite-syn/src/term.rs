@@ -1,5 +1,4 @@
-use syn::punctuated::Punctuated;
-use syn::*;
+use syn::{punctuated::Punctuated, *};
 // use crate::macros::*;
 
 use proc_macro2::{Span, TokenStream};

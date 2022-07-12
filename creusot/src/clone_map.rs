@@ -1,22 +1,26 @@
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::middle::ty::{
-    self,
-    subst::{InternalSubsts, Subst, SubstsRef},
-    EarlyBinder, TyCtxt, TypeFoldable, TypeSuperFoldable, TypeVisitor,
+use creusot_rustc::{
+    hir::def_id::DefId,
+    middle::ty::{
+        self,
+        subst::{InternalSubsts, Subst, SubstsRef},
+        DefIdTree, EarlyBinder, ProjectionTy, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperFoldable,
+        TypeVisitor,
+    },
+    span::{Symbol, DUMMY_SP},
 };
-use creusot_rustc::middle::ty::{DefIdTree, ProjectionTy, Ty, TyKind};
-use creusot_rustc::span::{Symbol, DUMMY_SP};
 use heck::CamelCase;
 use indexmap::{IndexMap, IndexSet};
-use petgraph::graphmap::DiGraphMap;
-use petgraph::visit::DfsPostOrder;
-use petgraph::EdgeDirection::Outgoing;
-use why3::declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use};
-use why3::{Ident, QName};
+use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
+use why3::{
+    declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
+    Ident, QName,
+};
 
-use crate::ctx::{self, *};
-use crate::translation::{interface, traits};
-use crate::util::{self, ident_of, ident_of_ty, item_name};
+use crate::{
+    ctx::{self, *},
+    translation::{interface, traits},
+    util::{self, ident_of, ident_of_ty, item_name},
+};
 
 // Prelude modules
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

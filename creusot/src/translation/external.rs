@@ -1,17 +1,24 @@
-use crate::ctx::*;
-use crate::error::{CrErr, CreusotResult};
-use crate::function::all_generic_decls_for;
-use crate::translation::{traits, translate_logic_or_predicate};
-use crate::util::item_type;
-use creusot_rustc::hir::def_id::{DefId, LocalDefId};
-use creusot_rustc::macros::{TyDecodable, TyEncodable};
-use creusot_rustc::middle::thir::{self, visit::Visitor, Expr, ExprKind, Thir};
-use creusot_rustc::middle::ty::subst::{InternalSubsts, Subst, SubstsRef};
-use creusot_rustc::middle::ty::{EarlyBinder, Predicate, TyCtxt, TyKind, WithOptConstParam};
-use creusot_rustc::span::Symbol;
+use crate::{
+    ctx::*,
+    error::{CrErr, CreusotResult},
+    function::all_generic_decls_for,
+    translation::{traits, translate_logic_or_predicate},
+    util::item_type,
+};
+use creusot_rustc::{
+    hir::def_id::{DefId, LocalDefId},
+    macros::{TyDecodable, TyEncodable},
+    middle::{
+        thir::{self, visit::Visitor, Expr, ExprKind, Thir},
+        ty::{
+            subst::{InternalSubsts, Subst, SubstsRef},
+            EarlyBinder, Predicate, TyCtxt, TyKind, WithOptConstParam,
+        },
+    },
+    span::Symbol,
+};
 use indexmap::IndexSet;
-use why3::declaration::ValKind;
-use why3::declaration::{Decl, Module, ValKind::Val};
+use why3::declaration::{Decl, Module, ValKind, ValKind::Val};
 
 use super::specification::ContractClauses;
 

@@ -1,6 +1,7 @@
-use rustc_middle::mir::interpret::AllocId;
-use rustc_middle::ty::codec::TyEncoder;
-use rustc_middle::ty::{self, PredicateKind, Ty};
+use rustc_middle::{
+    mir::interpret::AllocId,
+    ty::{self, codec::TyEncoder, PredicateKind, Ty},
+};
 use rustc_serialize::opaque;
 pub use rustc_serialize::{Encodable, Encoder};
 

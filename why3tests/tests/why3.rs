@@ -1,10 +1,12 @@
 use assert_cmd::prelude::*;
 use clap::Parser;
 use git2::Repository;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
-use std::path::PathBuf;
-use std::process::{exit, Command};
+use std::{
+    fs::File,
+    io::{BufRead, BufReader, Write},
+    path::PathBuf,
+    process::{exit, Command},
+};
 use termcolor::*;
 
 #[derive(Parser, Debug)]

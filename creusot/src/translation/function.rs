@@ -1,37 +1,44 @@
-use crate::ctx::*;
-use crate::resolve::EagerResolver;
-use crate::translation::{traits, ty};
 use crate::{
+    ctx::*,
     gather_spec_closures::corrected_invariant_names_and_locations,
+    resolve::EagerResolver,
     rustc_extensions::renumber,
     translation::{
         specification::contract_of,
+        traits, ty,
         ty::{closure_accessors, translate_closure_ty, translate_ty},
     },
     util::{self, ident_of, is_ghost_closure, signature_of},
 };
-use creusot_rustc::borrowck::borrow_set::BorrowSet;
-use creusot_rustc::dataflow::move_paths::MoveData;
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::index::bit_set::BitSet;
-use creusot_rustc::infer::infer::TyCtxtInferExt;
-use creusot_rustc::middle::mir::{traversal::reverse_postorder, MirPass};
-use creusot_rustc::middle::ty::{
-    subst::{GenericArg, SubstsRef},
-    DefIdTree, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
-    WithOptConstParam,
+use creusot_rustc::{
+    borrowck::borrow_set::BorrowSet,
+    dataflow::move_paths::MoveData,
+    hir::def_id::DefId,
+    index::bit_set::BitSet,
+    infer::infer::TyCtxtInferExt,
+    middle::{
+        mir::{traversal::reverse_postorder, MirPass},
+        ty::{
+            subst::{GenericArg, SubstsRef},
+            DefIdTree, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind,
+            TypeFoldable, WithOptConstParam,
+        },
+    },
+    smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo},
+    span::{Symbol, DUMMY_SP},
+    transform::{remove_false_edges::*, simplify::*},
 };
-use creusot_rustc::smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo};
-use creusot_rustc::span::{Symbol, DUMMY_SP};
-use creusot_rustc::transform::{remove_false_edges::*, simplify::*};
 use indexmap::IndexMap;
-use std::collections::{BTreeMap, HashMap};
-use std::rc::Rc;
-use why3::{declaration::*, Ident};
+use std::{
+    collections::{BTreeMap, HashMap},
+    rc::Rc,
+};
 use why3::{
+    declaration::*,
     exp::*,
     mlcfg::{self, Statement::*, *},
     ty::Type,
+    Ident,
 };
 
 mod place;

@@ -1,7 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::std::cmp::Ord;
-use creusot_contracts::*;
+use creusot_contracts::{std::cmp::Ord, *};
 
 #[predicate]
 fn sorted_range<T: Ord>(s: Seq<T>, l: Int, u: Int) -> bool {

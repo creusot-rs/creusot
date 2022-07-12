@@ -1,6 +1,5 @@
 pub use crate::clone_map::*;
-use crate::metadata::Metadata;
-use crate::util;
+use crate::{metadata::Metadata, util};
 use creusot_rustc::hir::def_id::DefId;
 use indexmap::IndexMap;
 pub use util::{item_name, module_name, ItemType};

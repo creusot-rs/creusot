@@ -1,6 +1,5 @@
 use crate as creusot_contracts;
-use crate::logic::*;
-use crate::{Int, Model, Seq};
+use crate::{logic::*, Int, Model, Seq};
 use creusot_contracts_proc::*;
 
 use std::alloc::Allocator;

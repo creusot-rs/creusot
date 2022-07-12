@@ -1,8 +1,9 @@
-use creusot_rustc::driver::{Callbacks, Compilation};
-use creusot_rustc::interface::{interface::Compiler, Config, Queries};
+use creusot_rustc::{
+    driver::{Callbacks, Compilation},
+    interface::{interface::Compiler, Config, Queries},
+};
 
-use crate::cleanup_spec_closures::*;
-use crate::options::Options;
+use crate::{cleanup_spec_closures::*, options::Options};
 
 pub struct ToWhy {
     opts: Options,

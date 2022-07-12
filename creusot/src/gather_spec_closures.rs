@@ -1,18 +1,24 @@
 use indexmap::{IndexMap, IndexSet};
 
-use creusot_rustc::data_structures::graph::WithSuccessors;
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::middle::mir::visit::Visitor;
-use creusot_rustc::middle::ty::{TyCtxt, TyKind};
-use creusot_rustc::smir::mir::{AggregateKind, BasicBlock, Body, Location, Operand, Rvalue};
-use creusot_rustc::span::Symbol;
+use creusot_rustc::{
+    data_structures::graph::WithSuccessors,
+    hir::def_id::DefId,
+    middle::{
+        mir::visit::Visitor,
+        ty::{TyCtxt, TyKind},
+    },
+    smir::mir::{AggregateKind, BasicBlock, Body, Location, Operand, Rvalue},
+    span::Symbol,
+};
 
 use why3::exp::Exp;
 
-use crate::clone_map::CloneMap;
-use crate::ctx::TranslationCtx;
-use crate::translation::specification::{inv_subst, lower_pure};
-use crate::util::{self, is_ghost_closure};
+use crate::{
+    clone_map::CloneMap,
+    ctx::TranslationCtx,
+    translation::specification::{inv_subst, lower_pure},
+    util::{self, is_ghost_closure},
+};
 
 pub fn corrected_invariant_names_and_locations<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,

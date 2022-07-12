@@ -1,9 +1,12 @@
-use creusot_rustc::index::vec::IndexVec;
-use creusot_rustc::infer::infer::{InferCtxt, NllRegionVariableOrigin};
-use creusot_rustc::middle::mir::visit::TyContext;
-use creusot_rustc::middle::ty::subst::SubstsRef;
-use creusot_rustc::middle::ty::{self, Ty, TyCtxt, TypeFoldable};
-use creusot_rustc::smir::mir::{Body, Location, MutVisitor, Promoted};
+use creusot_rustc::{
+    index::vec::IndexVec,
+    infer::infer::{InferCtxt, NllRegionVariableOrigin},
+    middle::{
+        mir::visit::TyContext,
+        ty::{self, subst::SubstsRef, Ty, TyCtxt, TypeFoldable},
+    },
+    smir::mir::{Body, Location, MutVisitor, Promoted},
+};
 
 /// Replaces all free regions appearing in the MIR with fresh
 /// inference variables, returning the number of variables created.

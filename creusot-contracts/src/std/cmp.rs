@@ -44,8 +44,7 @@ pub trait Ord: OrdLogic + Eq {
 // The new spec, but peacefully coexisting with the previous approach
 mod real_ord {
     use crate as creusot_contracts;
-    use crate::logic::ord::*;
-    use crate::Model;
+    use crate::{logic::ord::*, Model};
     use creusot_contracts_proc::*;
     pub use std::cmp::Ordering;
 

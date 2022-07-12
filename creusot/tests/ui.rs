@@ -1,10 +1,12 @@
 use assert_cmd::prelude::*;
-use std::env;
-use std::error::Error;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::{
+    env,
+    error::Error,
+    fs::File,
+    io::{BufRead, BufReader, Write},
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 use similar::{ChangeTag, TextDiff};
 

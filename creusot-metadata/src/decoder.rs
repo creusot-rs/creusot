@@ -1,16 +1,17 @@
-use rustc_data_structures::fx::FxHashMap;
-use rustc_data_structures::owning_ref::OwningRef;
-use rustc_data_structures::rustc_erase_owner;
-use rustc_data_structures::sync::{Lrc, MetadataRef};
+use rustc_data_structures::{
+    fx::FxHashMap,
+    owning_ref::OwningRef,
+    rustc_erase_owner,
+    sync::{Lrc, MetadataRef},
+};
 use rustc_hir::def_id::{CrateNum, DefId, DefIndex, DefPathHash, StableCrateId};
-use rustc_middle::implement_ty_decoder;
-use rustc_middle::ty::codec::TyDecoder;
-use rustc_middle::ty::{Ty, TyCtxt};
+use rustc_middle::{
+    implement_ty_decoder,
+    ty::{codec::TyDecoder, Ty, TyCtxt},
+};
 use rustc_serialize::opaque;
 pub use rustc_serialize::{Decodable, Decoder};
-use std::fs::File;
-use std::io::Read;
-use std::path::Path;
+use std::{fs::File, io::Read, path::Path};
 
 // copied from rustc
 #[derive(Clone)]
