@@ -212,7 +212,6 @@ trait CP<K, V> {
 struct CPL(Color);
 impl<K, V> CP<K, V> for CPL {
     #[predicate]
-    #[why3::attr = "inline:trivial"]
     #[ensures(self.0 == Red ==>
               result ==
               exists<node: Box<Node<K, V>>> tree.node == Some(node) &&
@@ -238,7 +237,6 @@ impl<K, V> CP<K, V> for CPL {
     }
 
     #[predicate]
-    #[why3::attr = "inline:trivial"]
     fn match_n(self, node: Node<K, V>) -> bool {
         pearlite! {
             node.color == self.0 && node.color_invariant()
@@ -249,7 +247,6 @@ impl<K, V> CP<K, V> for CPL {
 struct CPN<L, R>(Color, L, R);
 impl<K, V, L: CP<K, V>, R: CP<K, V>> CP<K, V> for CPN<L, R> {
     #[predicate]
-    #[why3::attr = "inline:trivial"]
     fn match_t(self, tree: Tree<K, V>) -> bool {
         pearlite! {
             exists<node: Box<Node<K, V>>> tree.node == Some(node) &&
@@ -258,7 +255,6 @@ impl<K, V, L: CP<K, V>, R: CP<K, V>> CP<K, V> for CPN<L, R> {
     }
 
     #[predicate]
-    #[why3::attr = "inline:trivial"]
     fn match_n(self, node: Node<K, V>) -> bool {
         pearlite! {
             node.color == self.0 && self.1.match_t(node.left) && self.2.match_t(node.right)
@@ -293,13 +289,11 @@ impl<K, V> Tree<K, V> {
 
 impl<K, V> Node<K, V> {
     #[predicate]
-    #[why3::attr = "inline:trivial"]
     fn color_invariant_here(self) -> bool {
         pearlite! { self.right.color() == Black && (self.color == Black || self.left.color() == Black) }
     }
 
     #[predicate]
-    #[why3::attr = "inline:trivial"]
     fn color_invariant(self) -> bool {
         pearlite! { self.color_invariant_here() && self.left.color_invariant() && self.right.color_invariant() }
     }
@@ -325,7 +319,6 @@ impl<K, V> Tree<K, V> {
     }
 
     #[predicate]
-    #[why3::attr = "inline:trivial"]
     fn height_invariant(self) -> bool {
         pearlite! {
             match self {
@@ -343,7 +336,6 @@ impl<K, V> Node<K, V> {
     #[logic]
     #[ensures(forall<node: Box<Node<K, V>>>
               self == *node ==> result == Tree{ node: Some(node) }.height())]
-    #[why3::attr = "inline:trivial"]
     fn height(self) -> Int {
         pearlite! {
             match self.color {
@@ -354,13 +346,11 @@ impl<K, V> Node<K, V> {
     }
 
     #[predicate]
-    #[why3::attr = "inline:trivial"]
     fn height_invariant_here(self) -> bool {
         pearlite! { self.left.height() == self.right.height() }
     }
 
     #[predicate]
-    #[why3::attr = "inline:trivial"]
     fn height_invariant(self) -> bool {
         pearlite! { self.height_invariant_here() && self.left.height_invariant() && self.right.height_invariant() }
     }
@@ -637,10 +627,8 @@ where
     #[ensures((*self).height() == (^self).height())]
     #[ensures((*self).has_mapping(@result.0, result.1))]
     #[ensures(forall<k: K::ModelTy, v: V> (*self).has_mapping(k, v) ==> @result.0 <= k)]
-    #[ensures(forall<k: K::ModelTy, v: V> (*self).has_mapping(k, v) ==>
-              @result.0 == k || (^self).has_mapping(k, v))]
-    #[ensures(forall<k: K::ModelTy, v: V> (^self).has_mapping(k, v) ==>
-              @result.0 != k && (*self).has_mapping(k, v))]
+    #[ensures(forall<k: K::ModelTy, v: V> (^self).has_mapping(k, v) ==
+              (@result.0 != k && (*self).has_mapping(k, v)))]
     #[ensures((^self).color_invariant())]
     #[ensures((*self).color() == Black ==> (^self).color() == Black)]
     fn delete_min_rec(&mut self) -> (K, V) {
@@ -692,10 +680,7 @@ where
     #[ensures(forall<v: V> result == None ==> !(*self).has_mapping(@*key, v))]
     #[ensures(forall<k: K, v: V> result == Some((k, v)) ==>
               @*key == @k && (*self).has_mapping(@k, v))]
-    #[ensures(forall<k: K::ModelTy, v: V> (*self).has_mapping(k, v) ==>
-              @*key == k || (^self).has_mapping(k, v))]
-    #[ensures(forall<k: K::ModelTy, v: V> (^self).has_mapping(k, v) ==>
-              @*key != k && (*self).has_mapping(k, v))]
+    #[ensures(forall<k: K::ModelTy, v: V> (^self).has_mapping(k, v) == (@*key != k && (*self).has_mapping(k, v)))]
     #[ensures((^self).color_invariant())]
     #[ensures((*self).color() == Black ==> (^self).color() == Black)]
     fn delete_rec(&mut self, key: &K) -> Option<(K, V)> {
