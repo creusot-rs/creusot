@@ -1,5 +1,4 @@
-use crate::ctx::TranslationCtx;
-use crate::util::is_law;
+use crate::{ctx::TranslationCtx, util::is_law};
 
 pub fn validate_traits(ctx: &mut TranslationCtx) {
     let mut law_violations = Vec::new();

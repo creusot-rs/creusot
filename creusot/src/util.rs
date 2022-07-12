@@ -1,21 +1,24 @@
-use crate::translation::ty::closure_accessor_name;
-use crate::{ctx::*, translation};
-use creusot_rustc::ast::ast::{MacArgs, MacArgsEq};
-use creusot_rustc::ast::{AttrItem, AttrKind, Attribute};
-use creusot_rustc::hir::{def::DefKind, def_id::DefId};
-use creusot_rustc::middle::ty::subst::{InternalSubsts, SubstsRef};
-use creusot_rustc::middle::ty::{self, Subst, Ty, TyKind, VariantDef};
-use creusot_rustc::middle::ty::{DefIdTree, EarlyBinder, ReErased, TyCtxt};
-use creusot_rustc::span::Symbol;
-use std::collections::HashMap;
-use std::iter;
-use why3::exp::ExpMutVisitor;
-use why3::{declaration, QName};
+use crate::{ctx::*, translation, translation::ty::closure_accessor_name};
+use creusot_rustc::{
+    ast::{
+        ast::{MacArgs, MacArgsEq},
+        AttrItem, AttrKind, Attribute,
+    },
+    hir::{def::DefKind, def_id::DefId},
+    middle::ty::{
+        self,
+        subst::{InternalSubsts, SubstsRef},
+        DefIdTree, EarlyBinder, ReErased, Subst, Ty, TyCtxt, TyKind, VariantDef,
+    },
+    span::Symbol,
+};
+use std::{collections::HashMap, iter};
 use why3::{
+    declaration,
     declaration::{Signature, ValKind},
-    exp::{super_visit_mut, Constant, Exp},
+    exp::{super_visit_mut, Constant, Exp, ExpMutVisitor},
     ty::Type,
-    Ident,
+    Ident, QName,
 };
 
 pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {

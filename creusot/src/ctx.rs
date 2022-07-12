@@ -1,30 +1,38 @@
-use std::collections::HashMap;
-use std::ops::Deref;
+use std::{collections::HashMap, ops::Deref};
 
 pub use crate::clone_map::*;
-use crate::creusot_items::{self, CreusotItems};
-use crate::error::CreusotResult;
-use crate::metadata::{BinaryMetadata, Metadata};
-use crate::options::SpanMode;
-use crate::translation::external::{extract_extern_specs_from_item, ExternSpec};
-use crate::translation::interface::interface_for;
-use crate::translation::specification::typing::Term;
-use crate::translation::specification::ContractClauses;
-use crate::translation::ty;
-use crate::translation::{external, specification};
-use crate::util::item_type;
-use crate::{options::Options, util};
-use creusot_rustc::data_structures::captures::Captures;
-use creusot_rustc::errors::{DiagnosticBuilder, DiagnosticId};
-use creusot_rustc::hir::def::DefKind;
-use creusot_rustc::hir::def_id::{DefId, LocalDefId};
-use creusot_rustc::middle::ty::subst::InternalSubsts;
-use creusot_rustc::middle::ty::{ParamEnv, TyCtxt};
-use creusot_rustc::span::{Span, Symbol, DUMMY_SP};
+use crate::{
+    creusot_items::{self, CreusotItems},
+    error::CreusotResult,
+    metadata::{BinaryMetadata, Metadata},
+    options::{Options, SpanMode},
+    translation::{
+        external,
+        external::{extract_extern_specs_from_item, ExternSpec},
+        interface::interface_for,
+        specification,
+        specification::{typing::Term, ContractClauses},
+        ty,
+    },
+    util,
+    util::item_type,
+};
+use creusot_rustc::{
+    data_structures::captures::Captures,
+    errors::{DiagnosticBuilder, DiagnosticId},
+    hir::{
+        def::DefKind,
+        def_id::{DefId, LocalDefId},
+    },
+    middle::ty::{subst::InternalSubsts, ParamEnv, TyCtxt},
+    span::{Span, Symbol, DUMMY_SP},
+};
 use indexmap::{IndexMap, IndexSet};
 pub use util::{item_name, module_name, ItemType};
-use why3::declaration::{Module, TyDecl};
-use why3::exp::Exp;
+use why3::{
+    declaration::{Module, TyDecl},
+    exp::Exp,
+};
 
 pub use crate::translated_item::*;
 

@@ -9,14 +9,17 @@
 
 use creusot_rustc::errors::DiagnosticBuilder;
 // use creusot_rustc::errors::ErrorReported;
-use creusot_rustc::errors::ErrorGuaranteed;
-use creusot_rustc::trait_selection::infer::{InferCtxt, TyCtxtInferExt};
-use creusot_rustc::trait_selection::traits::{
-    FulfillmentContext, ImplSource, Obligation, ObligationCause, SelectionContext, TraitEngine,
-    Unimplemented,
+use creusot_rustc::{
+    errors::ErrorGuaranteed,
+    trait_selection::{
+        infer::{InferCtxt, TyCtxtInferExt},
+        traits::{
+            FulfillmentContext, ImplSource, Obligation, ObligationCause, SelectionContext,
+            TraitEngine, Unimplemented,
+        },
+    },
 };
-use rustc_smir::very_unstable::middle::ty::fold::TypeFoldable;
-use rustc_smir::very_unstable::middle::ty::{self, TyCtxt};
+use rustc_smir::very_unstable::middle::ty::{self, fold::TypeFoldable, TyCtxt};
 
 /// Attempts to resolve an obligation to a `ImplSource`. The result is
 /// a shallow `ImplSource` resolution, meaning that we do not

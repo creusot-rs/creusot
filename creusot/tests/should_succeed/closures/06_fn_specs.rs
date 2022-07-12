@@ -1,7 +1,6 @@
 #![feature(unboxed_closures, fn_traits)]
 extern crate creusot_contracts;
-use creusot_contracts::std::*;
-use creusot_contracts::*;
+use creusot_contracts::{std::*, *};
 
 #[requires(f.precondition(a))]
 #[ensures(f.postcondition(a, result))]

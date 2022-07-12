@@ -1,19 +1,25 @@
 use super::{BodyTranslator, LocalIdent};
 use crate::{
     ctx::{CloneMap, TranslationCtx},
-    translation::function::statement::uint_to_int,
-    translation::ty::{closure_accessor_name, variant_accessor_name},
+    translation::{
+        function::statement::uint_to_int,
+        ty::{closure_accessor_name, variant_accessor_name},
+    },
     util::{constructor_qname, item_qname},
 };
-use creusot_rustc::middle::ty::{TyKind, UintTy};
-use creusot_rustc::smir::mir::{Body, Local, Place};
-use std::collections::HashMap;
-use why3::exp::{
-    Exp::{self, *},
-    Pattern::*,
+use creusot_rustc::{
+    middle::ty::{TyKind, UintTy},
+    smir::mir::{Body, Local, Place},
 };
-use why3::mlcfg::{self, Statement::*};
-use why3::QName;
+use std::collections::HashMap;
+use why3::{
+    exp::{
+        Exp::{self, *},
+        Pattern::*,
+    },
+    mlcfg::{self, Statement::*},
+    QName,
+};
 
 impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     pub fn translate_rplace(&mut self, rhs: &Place<'tcx>) -> Exp {

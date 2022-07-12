@@ -1,20 +1,25 @@
 use std::collections::HashMap;
 
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::middle::ty::{
-    subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, Subst, TraitRef, TyCtxt,
+use creusot_rustc::{
+    hir::def_id::DefId,
+    middle::ty::{
+        subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, Subst, TraitRef, TyCtxt,
+    },
+    trait_selection::traits::ImplSource,
 };
-use creusot_rustc::trait_selection::traits::ImplSource;
 
-use why3::declaration::{Decl, Module};
-use why3::declaration::{Goal, TyDecl};
-use why3::exp::Exp;
+use why3::{
+    declaration::{Decl, Goal, Module, TyDecl},
+    exp::Exp,
+};
 
 use crate::{rustc_extensions, util};
 
-use crate::ctx::*;
-use crate::translation::ty::{self, translate_ty};
-use crate::util::{ident_of, inputs_and_output, is_law, is_spec, item_type};
+use crate::{
+    ctx::*,
+    translation::ty::{self, translate_ty},
+    util::{ident_of, inputs_and_output, is_law, is_spec, item_type},
+};
 
 impl<'tcx> TranslationCtx<'_, 'tcx> {
     // Translate a trait declaration
@@ -217,8 +222,7 @@ pub fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &Ass
 }
 
 use crate::function::{all_generic_decls_for, own_generic_decls_for};
-use creusot_rustc::middle::ty::subst::InternalSubsts;
-use creusot_rustc::middle::ty::{AssocItem, Binder};
+use creusot_rustc::middle::ty::{subst::InternalSubsts, AssocItem, Binder};
 
 fn resolve_impl_source_opt<'tcx>(
     tcx: TyCtxt<'tcx>,

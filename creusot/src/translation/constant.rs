@@ -1,9 +1,13 @@
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::middle::mir::interpret::{AllocRange, ConstValue};
-use creusot_rustc::middle::ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt, Unevaluated};
-use creusot_rustc::smir::mir::ConstantKind;
-use creusot_rustc::span::Span;
-use creusot_rustc::target::abi::Size;
+use creusot_rustc::{
+    hir::def_id::DefId,
+    middle::{
+        mir::interpret::{AllocRange, ConstValue},
+        ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt, Unevaluated},
+    },
+    smir::mir::ConstantKind,
+    span::Span,
+    target::abi::Size,
+};
 use why3::{
     declaration::Module,
     exp::{Constant, Exp},
@@ -100,8 +104,10 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
     span: Span,
     c: C,
 ) -> Exp {
-    use creusot_rustc::middle::ty::{IntTy::*, UintTy::*};
-    use creusot_rustc::type_ir::sty::TyKind::{Bool, FnDef, Int, Uint};
+    use creusot_rustc::{
+        middle::ty::{IntTy::*, UintTy::*},
+        type_ir::sty::TyKind::{Bool, FnDef, Int, Uint},
+    };
     let why3_ty = ty::translate_ty(ctx, names, span, ty);
 
     match ty.kind() {

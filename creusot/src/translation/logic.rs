@@ -1,14 +1,14 @@
 use std::borrow::Cow;
 
-use crate::function::all_generic_decls_for;
-use crate::translation::specification;
-use crate::util::get_builtin;
-use crate::{ctx::*, util};
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::middle::ty::TyCtxt;
-use why3::declaration::*;
-use why3::exp::{BinOp, Exp};
-use why3::Ident;
+use crate::{
+    ctx::*, function::all_generic_decls_for, translation::specification, util, util::get_builtin,
+};
+use creusot_rustc::{hir::def_id::DefId, middle::ty::TyCtxt};
+use why3::{
+    declaration::*,
+    exp::{BinOp, Exp},
+    Ident,
+};
 
 pub fn translate_logic_or_predicate<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,

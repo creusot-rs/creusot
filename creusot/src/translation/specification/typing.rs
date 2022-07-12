@@ -1,22 +1,24 @@
-use crate::error::{CrErr, CreusotResult, Error};
-use crate::util;
-use creusot_rustc::ast::{LitIntType, LitKind};
-use creusot_rustc::hir::def_id::{DefId, LocalDefId};
-use creusot_rustc::hir::HirId;
-use creusot_rustc::macros::{Decodable, Encodable, TyDecodable, TyEncodable, TypeFoldable};
-pub use creusot_rustc::middle::thir;
-use creusot_rustc::middle::thir::{
-    visit, Adt, ArmId, Block, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir,
+use crate::{
+    error::{CrErr, CreusotResult, Error},
+    util,
 };
-use creusot_rustc::middle::ty::{AdtDef, Ty, TyKind, UpvarSubsts};
-use creusot_rustc::middle::{
-    mir::Mutability::*,
-    ty::{subst::SubstsRef, TyCtxt, WithOptConstParam},
+use creusot_rustc::{
+    ast::{LitIntType, LitKind},
+    hir::{
+        def_id::{DefId, LocalDefId},
+        HirId,
+    },
+    macros::{Decodable, Encodable, TyDecodable, TyEncodable, TypeFoldable},
+    middle::{
+        mir::Mutability::*,
+        thir::{visit, Adt, ArmId, Block, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir},
+        ty::{subst::SubstsRef, AdtDef, Ty, TyCtxt, TyKind, UpvarSubsts, WithOptConstParam},
+    },
+    smir::mir::BorrowKind,
+    span::{Span, Symbol},
+    target::abi::VariantIdx,
 };
-use creusot_rustc::smir::mir::BorrowKind;
-pub use creusot_rustc::smir::mir::Field;
-use creusot_rustc::span::{Span, Symbol};
-use creusot_rustc::target::abi::VariantIdx;
+pub use creusot_rustc::{middle::thir, smir::mir::Field};
 use itertools::Itertools;
 use log::*;
 

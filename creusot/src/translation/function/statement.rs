@@ -1,8 +1,10 @@
-use creusot_rustc::borrowck::borrow_set::TwoPhaseActivation;
-use creusot_rustc::middle::ty::{IntTy, TyKind, UintTy};
-use creusot_rustc::smir::mir::{
-    BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
-    StatementKind,
+use creusot_rustc::{
+    borrowck::borrow_set::TwoPhaseActivation,
+    middle::ty::{IntTy, TyKind, UintTy},
+    smir::mir::{
+        BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
+        StatementKind,
+    },
 };
 
 use why3::{

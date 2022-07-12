@@ -1,21 +1,27 @@
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::middle::ty::subst::SubstsRef;
-use creusot_rustc::middle::ty::{self, subst::InternalSubsts, ProjectionTy, Ty, TyCtxt};
-use creusot_rustc::middle::ty::{ClosureSubsts, FieldDef, VariantDef};
-use creusot_rustc::span::Symbol;
-use creusot_rustc::span::{Span, DUMMY_SP};
-use creusot_rustc::type_ir::sty::TyKind::*;
+use creusot_rustc::{
+    hir::def_id::DefId,
+    middle::ty::{
+        self,
+        subst::{InternalSubsts, SubstsRef},
+        ClosureSubsts, FieldDef, ProjectionTy, Ty, TyCtxt, VariantDef,
+    },
+    span::{Span, Symbol, DUMMY_SP},
+    type_ir::sty::TyKind::*,
+};
 use std::collections::VecDeque;
-use why3::declaration::{AdtDecl, ConstructorDecl, LetFun};
-use why3::declaration::{Contract, Decl, Signature};
-use why3::exp::{Exp, Pattern};
-use why3::Ident;
+use why3::{
+    declaration::{AdtDecl, ConstructorDecl, Contract, Decl, LetFun, Signature},
+    exp::{Exp, Pattern},
+    Ident,
+};
 
-use why3::declaration::TyDecl;
-use why3::{ty::Type as MlT, QName};
+use why3::{declaration::TyDecl, ty::Type as MlT, QName};
 
-use crate::util::{get_builtin, item_name, item_qname};
-use crate::{ctx::*, util};
+use crate::{
+    ctx::*,
+    util,
+    util::{get_builtin, item_name, item_qname},
+};
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:
 ///
@@ -168,8 +174,7 @@ pub fn translate_projection_ty<'tcx>(
     MlT::TConstructor(name)
 }
 
-use petgraph::algo::tarjan_scc;
-use petgraph::graphmap::DiGraphMap;
+use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
 
 pub fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> Vec<DefId> {
     let mut graph = DiGraphMap::<_, ()>::new();

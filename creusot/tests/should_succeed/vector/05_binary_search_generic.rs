@@ -1,6 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::std::cmp::Ord;
-use creusot_contracts::*;
+use creusot_contracts::{std::cmp::Ord, *};
 use std::cmp::Ordering;
 
 #[predicate]
