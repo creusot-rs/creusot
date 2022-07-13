@@ -13,7 +13,7 @@ use crate::{
     error::CrErr,
     metadata,
     options::OutputFile,
-    validate::validate_traits,
+    validate::{validate_impls, validate_traits},
 };
 use creusot_rustc::hir::{def::DefKind, def_id::LOCAL_CRATE};
 use ctx::TranslationCtx;
@@ -43,6 +43,7 @@ pub fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
 
     // Check that all trait laws are well-formed
     validate_traits(ctx);
+    validate_impls(ctx);
 
     debug!("before_analysis: {:?}", start.elapsed());
     Ok(())
