@@ -2,8 +2,7 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::{derive::Clone, *};
-use std::cmp::Ord;
-use std::cmp::Ordering::*;
+use std::cmp::{Ord, Ordering::*};
 
 #[derive(Clone, Copy)]
 enum Color {

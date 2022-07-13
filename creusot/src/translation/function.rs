@@ -1,37 +1,44 @@
-use crate::ctx::*;
-use crate::resolve::EagerResolver;
-use crate::translation::{traits, ty};
 use crate::{
+    ctx::*,
     gather_spec_closures::corrected_invariant_names_and_locations,
+    resolve::EagerResolver,
     rustc_extensions::renumber,
     translation::{
         specification::contract_of,
+        traits, ty,
         ty::{closure_accessors, translate_closure_ty, translate_ty},
     },
     util::{self, ident_of, is_ghost_closure, signature_of},
 };
-use creusot_rustc::borrowck::borrow_set::BorrowSet;
-use creusot_rustc::dataflow::move_paths::MoveData;
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::index::bit_set::BitSet;
-use creusot_rustc::infer::infer::TyCtxtInferExt;
-use creusot_rustc::middle::mir::{traversal::preorder, MirPass};
-use creusot_rustc::middle::ty::{
-    subst::{GenericArg, SubstsRef},
-    DefIdTree, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
-    WithOptConstParam,
+use creusot_rustc::{
+    borrowck::borrow_set::BorrowSet,
+    dataflow::move_paths::MoveData,
+    hir::def_id::DefId,
+    index::bit_set::BitSet,
+    infer::infer::TyCtxtInferExt,
+    middle::{
+        mir::{traversal::reverse_postorder, MirPass},
+        ty::{
+            subst::{GenericArg, SubstsRef},
+            DefIdTree, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind,
+            TypeFoldable, WithOptConstParam,
+        },
+    },
+    smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo},
+    span::{Symbol, DUMMY_SP},
+    transform::{remove_false_edges::*, simplify::*},
 };
-use creusot_rustc::smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo};
-use creusot_rustc::span::{Symbol, DUMMY_SP};
-use creusot_rustc::transform::{remove_false_edges::*, simplify::*};
 use indexmap::IndexMap;
-use std::collections::{BTreeMap, HashMap};
-use std::rc::Rc;
-use why3::{declaration::*, Ident};
+use std::{
+    collections::{BTreeMap, HashMap},
+    rc::Rc,
+};
 use why3::{
+    declaration::*,
     exp::*,
     mlcfg::{self, Statement::*, *},
     ty::Type,
+    Ident,
 };
 
 mod place;
@@ -45,11 +52,11 @@ pub fn translate_function<'tcx, 'sess>(
 ) -> Module {
     let tcx = ctx.tcx;
     let mut names = CloneMap::new(tcx, def_id, true);
-    names.clone_self(def_id);
 
     assert!(def_id.is_local(), "translate_function: expected local DefId");
 
     if util::is_trusted(tcx, def_id) || !util::has_body(ctx, def_id) {
+        let _ = names.to_clones(ctx);
         return translate_trusted(tcx, ctx, def_id);
     }
 
@@ -80,9 +87,10 @@ pub fn translate_function<'tcx, 'sess>(
             continue;
         }
 
-        let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p)
-            .unwrap_or_else(|e| e.emit(ctx.tcx.sess));
+        let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p);
         decls.extend(names.to_clones(ctx));
+        let promoted = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
+
         decls.push(promoted);
     }
     let mut sig = signature_of(ctx, &mut names, def_id);
@@ -106,7 +114,6 @@ pub fn translate_trusted<'tcx>(
     def_id: DefId,
 ) -> Module {
     let mut names = CloneMap::new(tcx, def_id, true);
-    names.clone_self(def_id);
     let mut decls = Vec::new();
     decls.extend(all_generic_decls_for(tcx, def_id));
 
@@ -249,7 +256,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     }
 
     fn translate_body(&mut self) {
-        for (bb, bbd) in preorder(self.body) {
+        for (bb, bbd) in reverse_postorder(self.body) {
             self.current_block = (vec![], None);
             if bbd.is_cleanup {
                 continue;
@@ -366,6 +373,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             let pred_id = BlockId(pred.index());
 
             // Otherwise, we emit the deaths and move them to a stand-alone block.
+
             self.past_blocks
                 .get_mut(&pred_id)
                 .unwrap()

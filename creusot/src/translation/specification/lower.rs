@@ -1,13 +1,21 @@
 use super::typing::{self, Literal, LogicalOp, Pattern, Term, TermKind};
-use crate::translation::traits::resolve_assoc_item_opt;
-use crate::translation::ty::translate_ty;
-use crate::translation::ty::variant_accessor_name;
-use crate::util::constructor_qname;
-use crate::{ctx::*, util};
-use creusot_rustc::middle::ty;
-use creusot_rustc::middle::ty::{EarlyBinder, ParamEnv, Subst, TyKind};
-use why3::exp::{BinOp, Constant, Exp, Pattern as Pat, Purity};
-use why3::QName;
+use crate::{
+    ctx::*,
+    translation::{
+        traits::{resolve_assoc_item_opt, resolve_opt},
+        ty::{translate_ty, variant_accessor_name},
+    },
+    util,
+    util::constructor_qname,
+};
+use creusot_rustc::middle::{
+    ty,
+    ty::{EarlyBinder, ParamEnv, Subst, TyKind},
+};
+use why3::{
+    exp::{BinOp, Constant, Exp, Pattern as Pat, Purity},
+    QName,
+};
 
 pub fn lower_pure<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
@@ -148,8 +156,12 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                     args = vec![Exp::Tuple(vec![])];
                 }
 
-                let method = resolve_assoc_item_opt(self.ctx.tcx, self.param_env, id, subst)
-                    .unwrap_or((id, subst));
+                debug!(
+                    "resolved_methodb={:?}",
+                    resolve_opt(self.ctx.tcx, self.param_env, id, subst)
+                );
+                let method =
+                    resolve_opt(self.ctx.tcx, self.param_env, id, subst).unwrap_or((id, subst));
                 debug!("resolved_method={:?}", method);
 
                 if is_identity_from(self.ctx.tcx, id, method.1) {
@@ -173,12 +185,26 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             TermKind::Forall { binder, box body } => {
                 let ty =
                     translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, binder.1);
-                Exp::Forall(vec![(binder.0.into(), ty)], box self.lower_term(body))
+                let old = std::mem::replace(&mut self.pure, Purity::Logic);
+                let f = Exp::Forall(vec![(binder.0.into(), ty)], box self.lower_term(body));
+                let _ = std::mem::replace(&mut self.pure, old);
+                if Purity::Program == self.pure {
+                    Exp::Pure(box f)
+                } else {
+                    f
+                }
             }
             TermKind::Exists { binder, box body } => {
                 let ty =
                     translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, binder.1);
-                Exp::Exists(vec![(binder.0.into(), ty)], box self.lower_term(body))
+                let old = std::mem::replace(&mut self.pure, Purity::Logic);
+                let f = Exp::Exists(vec![(binder.0.into(), ty)], box self.lower_term(body));
+                let _ = std::mem::replace(&mut self.pure, old);
+                if Purity::Program == self.pure {
+                    Exp::Pure(box f)
+                } else {
+                    f
+                }
             }
             TermKind::Constructor { adt, variant, fields } => {
                 self.names.import_prelude_module(PreludeModule::Type);
@@ -315,8 +341,10 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
     }
 }
 
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::middle::ty::{subst::SubstsRef, TyCtxt};
+use creusot_rustc::{
+    hir::def_id::DefId,
+    middle::ty::{subst::SubstsRef, TyCtxt},
+};
 
 fn binop_to_binop(op: typing::BinOp) -> why3::exp::BinOp {
     match op {

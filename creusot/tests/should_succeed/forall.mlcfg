@@ -13,6 +13,7 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use seq.Seq
+  use set.Set
   use prelude.Prelude
 end
 module Forall_F_Interface
@@ -38,4 +39,23 @@ module Forall_F
     return _0
   }
   
+end
+module Forall_Omg_Interface
+  use mach.int.Int
+  predicate omg (a : int) (b : int)
+end
+module Forall_Omg
+  use mach.int.Int
+  predicate omg [#"../forall.rs" 11 0 11 30] (a : int) (b : int) =
+    [#"../forall.rs" 12 4 14 7] exists c : (int) . a + c = b
+  axiom omg_spec : forall a : int, b : int . ([#"../forall.rs" 9 11 9 17] a <= b) -> ([#"../forall.rs" 10 10 10 14] true)
+end
+module Forall_Omg_Impl
+  use mach.int.Int
+  let rec ghost function omg (a : int) (b : int) : bool
+    requires {[#"../forall.rs" 9 11 9 17] a <= b}
+    ensures { [#"../forall.rs" 10 10 10 14] true }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../forall.rs" 12 4 14 7] pure {exists c : (int) . a + c = b}
 end

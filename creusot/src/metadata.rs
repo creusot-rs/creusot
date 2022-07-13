@@ -1,21 +1,24 @@
 use super::specification::typing::Term;
-use crate::creusot_items::CreusotItems;
-use crate::ctx::*;
-use crate::external::ExternSpec;
-use creusot_metadata::decoder::{Decodable, MetadataBlob, MetadataDecoder};
-use creusot_metadata::encoder::{Encodable, MetadataEncoder};
-use creusot_rustc::hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
-use creusot_rustc::macros::{TyDecodable, TyEncodable};
-use creusot_rustc::metadata::creader::CStore;
-use creusot_rustc::session::cstore::CrateStore;
-use creusot_rustc::span::Symbol;
+use crate::{creusot_items::CreusotItems, ctx::*, external::ExternSpec};
+use creusot_metadata::{
+    decoder::{Decodable, MetadataBlob, MetadataDecoder},
+    encoder::{Encodable, MetadataEncoder},
+};
+use creusot_rustc::{
+    hir::def_id::{CrateNum, DefId, LOCAL_CRATE},
+    macros::{TyDecodable, TyEncodable},
+    metadata::creader::CStore,
+    session::cstore::CrateStore,
+    span::Symbol,
+};
 use indexmap::IndexMap;
-use rustc_smir::very_unstable::middle::ty::subst::SubstsRef;
-use rustc_smir::very_unstable::middle::ty::{TyCtxt, Visibility};
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use rustc_smir::very_unstable::middle::ty::{subst::SubstsRef, TyCtxt, Visibility};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 use why3::declaration::Module;
 
 type CloneMetadata<'tcx> = HashMap<DefId, CloneSummary<'tcx>>;

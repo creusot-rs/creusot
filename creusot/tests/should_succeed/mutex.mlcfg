@@ -13,6 +13,7 @@ module Type
   use floating_point.Single
   use floating_point.Double
   use seq.Seq
+  use set.Set
   use prelude.Prelude
   type mutex_mutexinner 't
   type mutex_mutex 't 'i =
@@ -393,17 +394,17 @@ module Mutex_FakeFnOnce_Call
 end
 module Mutex_Impl3
   use Type
-  clone Mutex_Impl3_Call_Interface as Call0
+  clone Mutex_Impl3_Return as Return0
   clone Mutex_Impl3_Postcondition as Postcondition0
   clone Mutex_Impl3_Precondition as Precondition0
-  clone Mutex_FakeFnOnce_Precondition_Interface as Precondition1 with type self = Type.mutex_addstwo,
-  predicate precondition = Precondition0.precondition
-  clone Mutex_Impl3_Return as Return0
+  clone Mutex_Impl3_Call_Interface as Call0
   clone Mutex_FakeFnOnce_Call_Interface as Call1 with type self = Type.mutex_addstwo, val call = Call0.call,
   predicate Precondition0.precondition = Precondition0.precondition,
   predicate Postcondition0.postcondition = Postcondition0.postcondition, type Return0.return' = Return0.return'
   clone Mutex_FakeFnOnce_Postcondition_Interface as Postcondition1 with type self = Type.mutex_addstwo,
   predicate postcondition = Postcondition0.postcondition, type Return0.return' = Return0.return'
+  clone Mutex_FakeFnOnce_Precondition_Interface as Precondition1 with type self = Type.mutex_addstwo,
+  predicate precondition = Precondition0.precondition
   clone Mutex_FakeFnOnce_Return as Return1 with type self = Type.mutex_addstwo, type return' = Return0.return'
 end
 module Mutex_Impl5_Inv_Interface
@@ -445,14 +446,14 @@ module Mutex_Concurrent
   clone Mutex_Impl3_Return as Return0
   clone Mutex_Impl5_Inv as Inv1 with type f = Type.mutex_addstwo, type Return0.return' = Return0.return',
   predicate Postcondition0.postcondition = Postcondition0.postcondition
+  clone Mutex_Impl3_Precondition as Precondition0
+  clone Mutex_Impl2_Inv as Inv0
   clone Mutex_Impl4_Join_Interface as Join0 with type t = (), type i = Type.mutex_spawnpostcond (Type.mutex_addstwo),
   predicate Inv0.inv = Inv1.inv
-  clone Mutex_Impl3_Precondition as Precondition0
   clone Mutex_Spawn_Interface as Spawn0 with type t = (), type f = Type.mutex_addstwo,
   predicate Precondition0.precondition = Precondition0.precondition
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Type.mutex_mutex uint32 (Type.mutex_even)
   clone Mutex_Leak_Interface as Leak0 with type t = Type.mutex_mutex uint32 (Type.mutex_even)
-  clone Mutex_Impl2_Inv as Inv0
   clone Mutex_Impl0_New_Interface as New0 with type t = uint32, type i = Type.mutex_even, predicate Inv0.inv = Inv0.inv
   let rec cfg concurrent [@cfg:stackify] [#"../mutex.rs" 161 0 161 19] (_ : ()) : () = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();

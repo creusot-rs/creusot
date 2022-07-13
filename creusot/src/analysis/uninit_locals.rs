@@ -1,10 +1,12 @@
-use creusot_rustc::dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis};
-use creusot_rustc::index::bit_set::ChunkedBitSet;
-use creusot_rustc::middle::mir::{
-    visit::{PlaceContext, Visitor},
-    Terminator,
+use creusot_rustc::{
+    dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis},
+    index::bit_set::ChunkedBitSet,
+    middle::mir::{
+        visit::{PlaceContext, Visitor},
+        Terminator,
+    },
+    smir::mir::{self, BasicBlock, Local, Location},
 };
-use creusot_rustc::smir::mir::{self, BasicBlock, Local, Location};
 
 pub struct MaybeUninitializedLocals;
 

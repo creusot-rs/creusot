@@ -1,10 +1,10 @@
 use crate as creusot_contracts;
-use crate::logic::OrdLogic;
-use crate::std::default::DefaultSpec;
-use crate::{Int, Model, Seq};
+use crate::{logic::OrdLogic, std::default::DefaultSpec, Int, Model, Seq};
 use creusot_contracts_proc::*;
-use std::ops::{Index, IndexMut};
-use std::slice::SliceIndex;
+use std::{
+    ops::{Index, IndexMut},
+    slice::SliceIndex,
+};
 
 impl<T> Model for [T] {
     type ModelTy = Seq<T>;

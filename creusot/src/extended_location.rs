@@ -1,5 +1,7 @@
-use creusot_rustc::dataflow::{self, Analysis, Results, ResultsCursor};
-use creusot_rustc::smir::mir::Location;
+use creusot_rustc::{
+    dataflow::{self, Analysis, Results, ResultsCursor},
+    smir::mir::Location,
+};
 use std::borrow::Borrow;
 
 // Dataflow locations

@@ -1,10 +1,14 @@
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::index::vec::IndexVec;
-use creusot_rustc::middle::mir::{Terminator, TerminatorKind};
-use creusot_rustc::middle::ty::TyCtxt;
-use creusot_rustc::smir::mir::{
-    AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location, MutVisitor, Rvalue,
-    SourceInfo,
+use creusot_rustc::{
+    hir::def_id::DefId,
+    index::vec::IndexVec,
+    middle::{
+        mir::{Terminator, TerminatorKind},
+        ty::TyCtxt,
+    },
+    smir::mir::{
+        AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location, MutVisitor, Rvalue,
+        SourceInfo,
+    },
 };
 use indexmap::IndexSet;
 

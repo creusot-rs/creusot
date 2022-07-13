@@ -1,14 +1,20 @@
 use std::rc::Rc;
 
 use crate::analysis::uninit_locals::MaybeUninitializedLocals;
-use creusot_rustc::borrowck::borrow_set::{BorrowSet, TwoPhaseActivation};
-use creusot_rustc::index::bit_set::BitSet;
-use rustc_smir::mir::{BasicBlock, Body, Local, Location};
-use rustc_smir::very_unstable::dataflow::{
-    impls::{MaybeInitializedLocals, MaybeLiveLocals},
-    Analysis, ResultsCursor,
+use creusot_rustc::{
+    borrowck::borrow_set::{BorrowSet, TwoPhaseActivation},
+    index::bit_set::BitSet,
 };
-use rustc_smir::very_unstable::middle::ty::TyCtxt;
+use rustc_smir::{
+    mir::{BasicBlock, Body, Local, Location},
+    very_unstable::{
+        dataflow::{
+            impls::{MaybeInitializedLocals, MaybeLiveLocals},
+            Analysis, ResultsCursor,
+        },
+        middle::ty::TyCtxt,
+    },
+};
 
 use crate::extended_location::ExtendedLocation;
 

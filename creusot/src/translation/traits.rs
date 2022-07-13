@@ -1,20 +1,25 @@
 use std::collections::HashMap;
 
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::middle::ty::{
-    subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, Subst, TraitRef, TyCtxt,
+use creusot_rustc::{
+    hir::def_id::DefId,
+    middle::ty::{
+        subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, Subst, TraitRef, TyCtxt,
+    },
+    trait_selection::traits::ImplSource,
 };
-use creusot_rustc::trait_selection::traits::ImplSource;
 
-use why3::declaration::{Decl, Module};
-use why3::declaration::{Goal, TyDecl};
-use why3::exp::Exp;
+use why3::{
+    declaration::{Decl, Goal, Module, TyDecl},
+    exp::Exp,
+};
 
 use crate::{rustc_extensions, util};
 
-use crate::ctx::*;
-use crate::translation::ty::{self, translate_ty};
-use crate::util::{ident_of, inputs_and_output, is_law, is_spec, item_type};
+use crate::{
+    ctx::*,
+    translation::ty::{self, translate_ty},
+    util::{ident_of, inputs_and_output, is_law, is_spec, item_type},
+};
 
 impl<'tcx> TranslationCtx<'_, 'tcx> {
     // Translate a trait declaration
@@ -54,6 +59,12 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             let trait_item_id = trait_item.def_id;
             let &impl_item_id = implementor_map.get(&trait_item.def_id).unwrap_or(&trait_item_id);
 
+            let parent_id = if implementor_map.contains_key(&trait_item.def_id) {
+                impl_id
+            } else {
+                trait_ref.def_id
+            };
+
             if is_law(self.tcx, trait_item_id) {
                 laws.push(impl_item_id);
             }
@@ -68,12 +79,14 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             let subst = InternalSubsts::identity_for_item(self.tcx, impl_item_id);
 
             if implementor_map.get(&trait_item_id).is_some() {
+                // let (id, subst) = resolve_opt(self.tcx, self.param_env(impl_item_id), impl_item_id, subst).unwrap_or((impl_item_id, subst));
                 names.insert(impl_item_id, subst);
             }
 
             decls.extend(own_generic_decls_for(self.tcx, impl_item_id));
 
-            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
+            let refn_subst = subst.rebase_onto(self.tcx, parent_id, trait_ref.substs);
+
             let refinement = names.insert(trait_item_id, refn_subst);
 
             if implementor_map.get(&trait_item_id).is_some() {
@@ -209,8 +222,7 @@ pub fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &Ass
 }
 
 use crate::function::{all_generic_decls_for, own_generic_decls_for};
-use creusot_rustc::middle::ty::subst::InternalSubsts;
-use creusot_rustc::middle::ty::{AssocItem, Binder};
+use creusot_rustc::middle::ty::{subst::InternalSubsts, AssocItem, Binder};
 
 fn resolve_impl_source_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -218,6 +230,9 @@ fn resolve_impl_source_opt<'tcx>(
     def_id: DefId,
     substs: SubstsRef<'tcx>,
 ) -> Option<ImplSource<'tcx, ()>> {
+    trace!("resolve_impl_source_opt={def_id:?} {substs:?}");
+    let substs = tcx.normalize_erasing_regions(param_env, substs);
+
     let trait_ref = if let Some(assoc) = tcx.opt_associated_item(def_id) {
         match assoc.container {
             ImplContainer(def_id) => tcx.impl_trait_ref(def_id)?,
@@ -237,6 +252,7 @@ fn resolve_impl_source_opt<'tcx>(
     match source {
         Ok(src) => Some(src),
         Err(err) => {
+            trace!("resolve_impl_source_opt error");
             err.cancel();
 
             return None;
@@ -250,6 +266,7 @@ pub fn resolve_opt<'tcx>(
     def_id: DefId,
     substs: SubstsRef<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
+    trace!("resolve_opt={def_id:?} {substs:?}");
     if tcx.is_trait(def_id) {
         resolve_trait_opt(tcx, param_env, def_id, substs)
     } else {
@@ -263,8 +280,8 @@ pub fn resolve_trait_opt<'tcx>(
     def_id: DefId,
     substs: SubstsRef<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
+    trace!("resolve_trait_opt={def_id:?} {substs:?}");
     if tcx.is_trait(def_id) {
-        debug!("wtf: {:?}, {:?}, {:?}", param_env, def_id, substs);
         let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs);
         debug!("impl_source={:?}", impl_source);
         match resolve_impl_source_opt(tcx, param_env, def_id, substs)? {
@@ -287,6 +304,7 @@ pub fn resolve_assoc_item_opt<'tcx>(
     def_id: DefId,
     substs: SubstsRef<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
+    trace!("resolve_assoc_item_opt {:?} {:?}", def_id, substs);
     let assoc = tcx.opt_associated_item(def_id)?;
 
     // If we're given an associated item that is already on an instance,
@@ -298,6 +316,7 @@ pub fn resolve_assoc_item_opt<'tcx>(
     let trait_ref = TraitRef::from_method(tcx, tcx.trait_of_item(def_id).unwrap(), substs);
     use creusot_rustc::middle::ty::TypeFoldable;
     let source = resolve_impl_source_opt(tcx, param_env, def_id, substs)?;
+    trace!("resolve_assoc_item_opt {source:?}",);
 
     match source {
         ImplSource::UserDefined(impl_data) => {

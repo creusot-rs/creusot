@@ -1,20 +1,23 @@
 use self::typing::{pearlite_stub, Term};
 use super::LocalIdent;
-use crate::translation::function::real_locals;
-use crate::util::closure_owner;
-use crate::{ctx::*, util};
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::macros::{TyDecodable, TyEncodable, TypeFoldable};
-use creusot_rustc::middle::mir::OUTERMOST_SOURCE_SCOPE;
-use creusot_rustc::middle::thir::{self, ExprKind, Thir};
-use creusot_rustc::middle::ty::subst::{InternalSubsts, SubstsRef};
-use creusot_rustc::middle::ty::{self, EarlyBinder, Subst, TyCtxt};
-use creusot_rustc::smir::mir::{Body, Local, Location, SourceScope};
-use creusot_rustc::span::Symbol;
+use crate::{ctx::*, translation::function::real_locals, util, util::closure_owner};
+use creusot_rustc::{
+    hir::def_id::DefId,
+    macros::{TyDecodable, TyEncodable, TypeFoldable},
+    middle::{
+        mir::OUTERMOST_SOURCE_SCOPE,
+        thir::{self, ExprKind, Thir},
+        ty::{
+            self,
+            subst::{InternalSubsts, SubstsRef},
+            EarlyBinder, Subst, TyCtxt,
+        },
+    },
+    smir::mir::{Body, Local, Location, SourceScope},
+    span::Symbol,
+};
 use std::collections::{HashMap, HashSet};
-use why3::declaration::Contract;
-use why3::exp::Exp;
-use why3::Ident;
+use why3::{declaration::Contract, exp::Exp, Ident};
 
 mod builtins;
 mod lower;

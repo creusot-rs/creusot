@@ -1,30 +1,31 @@
-use creusot_rustc::errors::DiagnosticId;
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::infer::{
-    infer::{InferCtxt, TyCtxtInferExt},
-    traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
-};
-use creusot_rustc::middle::ty::{Ty, TyCtxt};
-use creusot_rustc::middle::{
-    mir::{SwitchTargets, Terminator, TerminatorKind, TerminatorKind::*},
-    ty::{
-        self,
-        subst::{GenericArgKind, SubstsRef},
-        AdtDef, ParamEnv, Predicate,
+use creusot_rustc::{
+    errors::DiagnosticId,
+    hir::def_id::DefId,
+    infer::{
+        infer::{InferCtxt, TyCtxtInferExt},
+        traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
     },
+    middle::{
+        mir::{SwitchTargets, Terminator, TerminatorKind, TerminatorKind::*},
+        ty::{
+            self,
+            subst::{GenericArgKind, SubstsRef},
+            AdtDef, ParamEnv, Predicate, Ty, TyCtxt,
+        },
+    },
+    session::Session,
+    smir::mir::{BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo, StatementKind},
+    span::Span,
+    target::abi::VariantIdx,
+    trait_selection::traits::FulfillmentContext,
 };
-use creusot_rustc::session::Session;
-use creusot_rustc::smir::mir::{
-    BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo, StatementKind,
-};
-use creusot_rustc::span::Span;
-use creusot_rustc::target::abi::VariantIdx;
-use creusot_rustc::trait_selection::traits::FulfillmentContext;
 
 use std::collections::HashMap;
-use why3::exp::{BinOp, Constant, Exp, Pattern};
-use why3::mlcfg::{BlockId, Statement, Terminator as MlT};
-use why3::QName;
+use why3::{
+    exp::{BinOp, Constant, Exp, Pattern},
+    mlcfg::{BlockId, Statement, Terminator as MlT},
+    QName,
+};
 
 use crate::{
     translation::traits,

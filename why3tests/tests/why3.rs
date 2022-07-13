@@ -1,27 +1,53 @@
 use assert_cmd::prelude::*;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
-use std::process::{exit, Command};
+use clap::Parser;
+use git2::Repository;
+use std::{
+    fs::File,
+    io::{BufRead, BufReader, Write},
+    path::PathBuf,
+    process::{exit, Command},
+};
 use termcolor::*;
 
+#[derive(Parser, Debug)]
+struct Args {
+    #[clap(long = "lazy")]
+    lazy: bool,
+    #[clap(long = "diff-from")]
+    diff_from: Option<String>,
+    #[clap(long = "fail-obsolete")]
+    fail_obsolete: bool,
+    #[clap(long = "skip-unstable")]
+    skip_unstable: bool,
+    filter: Option<String>,
+}
+
 fn main() {
+    let args = Args::parse();
     let why3_path = std::env::var("WHY3_PATH").unwrap_or_else(|_| "why3".into());
     let config_path = std::env::var("WHY3_CONFIG");
     let mut out = StandardStream::stdout(ColorChoice::Always);
     let orange = Color::Ansi256(214);
-    let lazy = std::env::args().any(|arg| arg == "--lazy");
-    let fail_obsoleate = std::env::args().any(|arg| arg == "--fail-obsolete");
-    let skip_unstable = std::env::args().any(|arg| arg == "--skip-unstable");
 
-    let filter = std::env::args().nth(1);
+    let changed =
+        if let Some(diff) = args.diff_from { Some(changed_mlcfgs(&diff).unwrap()) } else { None };
 
     let mut success = true;
     let mut obsolete = false;
     for file in glob::glob("../creusot/tests/should_succeed/**/*.rs").unwrap() {
         let mut file = file.unwrap();
 
-        if let Some(ref filter) = filter {
+        if let Some(ref filter) = args.filter {
             if !file.to_str().map(|file| file.contains(filter)).unwrap_or(false) {
+                continue;
+            }
+        }
+
+        if let Some(changed_list) = &changed {
+            let mut file = file.strip_prefix("../").unwrap().to_owned();
+            file.set_extension("mlcfg");
+
+            if !changed_list.contains(&file) {
                 continue;
             }
         }
@@ -34,7 +60,9 @@ fn main() {
         write!(&mut out, "Testing {} ... ", file.display()).unwrap();
         out.flush().unwrap();
 
-        if header_line.contains("WHY3SKIP") || (skip_unstable && header_line.contains("UNSTABLE")) {
+        if header_line.contains("WHY3SKIP")
+            || (args.skip_unstable && header_line.contains("UNSTABLE"))
+        {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
             writeln!(&mut out, "skipped").unwrap();
             out.reset().unwrap();
@@ -54,7 +82,7 @@ fn main() {
             // There is a session directory. Try to replay the session.
             command.arg("replay");
             command.args(&["-L", "../prelude"]);
-            if lazy {
+            if args.lazy {
                 command.arg("--obsolete-only");
             }
             if let Ok(ref config) = config_path {
@@ -69,7 +97,7 @@ fn main() {
                     out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
                     writeln!(&mut out, "obsolete").unwrap();
                     obsolete = true;
-                    if lazy && fail_obsoleate {
+                    if args.lazy && args.fail_obsolete {
                         break;
                     }
                 } else if outputstring
@@ -78,7 +106,7 @@ fn main() {
                     out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
                     writeln!(&mut out, "detached goals").unwrap();
                     obsolete = true;
-                    if lazy && fail_obsoleate {
+                    if args.lazy && args.fail_obsolete {
                         break;
                     }
                 } else {
@@ -115,7 +143,7 @@ fn main() {
             writeln!(&mut out, "************************").unwrap();
 
             success = false;
-            if lazy {
+            if args.lazy {
                 break;
             }
         }
@@ -128,7 +156,7 @@ fn main() {
             write!(&mut out, "obsolete").unwrap();
             out.reset().unwrap();
             writeln!(&mut out, ".").unwrap();
-            if fail_obsoleate {
+            if args.fail_obsolete {
                 exit(1)
             }
         } else {
@@ -144,4 +172,21 @@ fn main() {
         writeln!(&mut out, "!").unwrap();
         exit(1)
     }
+}
+
+fn changed_mlcfgs(from: &str) -> Result<Vec<PathBuf>, git2::Error> {
+    let repo = Repository::open("..")?;
+    let rev = repo.revparse_single(from)?.id();
+    let commit = repo.find_commit(rev)?;
+    let diff = repo.diff_tree_to_workdir_with_index(Some(&commit.tree()?), None)?;
+
+    let mut paths = Vec::new();
+    for d in diff.deltas() {
+        if let Some(path) = d.new_file().path() {
+            if path.extension().map(|e| e == "mlcfg").unwrap_or(false) {
+                paths.push(path.to_owned());
+            }
+        }
+    }
+    Ok(paths)
 }

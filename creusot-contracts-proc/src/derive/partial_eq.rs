@@ -1,8 +1,8 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, quote_spanned};
-use syn::spanned::Spanned;
 use syn::{
-    parse_macro_input, parse_quote, Data, DeriveInput, Fields, GenericParam, Generics, Index,
+    parse_macro_input, parse_quote, spanned::Spanned, Data, DeriveInput, Fields, GenericParam,
+    Generics, Index,
 };
 
 pub fn derive_partial_eq(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

@@ -1,14 +1,18 @@
-use super::lower::mk_binders;
-use super::lower::Lower;
-use crate::ctx::PreludeModule;
-use crate::translation::traits::resolve_opt;
-use crate::translation::ty::translate_ty;
-use crate::util::get_builtin;
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::middle::ty::{subst::SubstsRef, TyCtxt};
-use creusot_rustc::span::{symbol::sym, Symbol};
-use why3::exp::{BinOp, Constant, Exp, Purity, UnOp};
-use why3::QName;
+use super::lower::{mk_binders, Lower};
+use crate::{
+    ctx::PreludeModule,
+    translation::{traits::resolve_opt, ty::translate_ty},
+    util::get_builtin,
+};
+use creusot_rustc::{
+    hir::def_id::DefId,
+    middle::ty::{subst::SubstsRef, TyCtxt},
+    span::{symbol::sym, Symbol},
+};
+use why3::{
+    exp::{BinOp, Constant, Exp, Purity, UnOp},
+    QName,
+};
 
 impl<'tcx> Lower<'_, '_, 'tcx> {
     pub fn lookup_builtin(

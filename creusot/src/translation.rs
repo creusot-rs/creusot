@@ -7,26 +7,23 @@ pub mod specification;
 pub mod traits;
 pub mod ty;
 
-use crate::ctx;
-use crate::ctx::load_extern_specs;
-use crate::ctx::TypeDeclaration;
-use crate::error::CrErr;
-use crate::metadata;
-use crate::options::OutputFile;
-use crate::validate::validate_traits;
-use creusot_rustc::hir::def::DefKind;
-use creusot_rustc::hir::def_id::LOCAL_CRATE;
+use crate::{
+    ctx,
+    ctx::{load_extern_specs, TypeDeclaration},
+    error::CrErr,
+    metadata,
+    options::OutputFile,
+    validate::validate_traits,
+};
+use creusot_rustc::hir::{def::DefKind, def_id::LOCAL_CRATE};
 use ctx::TranslationCtx;
-pub use function::translate_function;
-pub use function::LocalIdent;
+pub use function::{translate_function, LocalIdent};
 use heck::CamelCase;
 pub use logic::*;
-use std::error::Error;
-use std::io::Write;
-use why3::mlcfg;
+use std::{error::Error, io::Write};
 use why3::{
     declaration::{Decl, Module, Use},
-    Print, QName,
+    mlcfg, Print, QName,
 };
 
 pub fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
@@ -170,6 +167,7 @@ pub fn prelude_imports(type_import: bool) -> Vec<Decl> {
         Decl::UseDecl(Use { name: QName::from_string("floating_point.Single").unwrap() }),
         Decl::UseDecl(Use { name: QName::from_string("floating_point.Double").unwrap() }),
         Decl::UseDecl(Use { name: QName::from_string("seq.Seq").unwrap() }),
+        Decl::UseDecl(Use { name: QName::from_string("set.Set").unwrap() }),
         Decl::UseDecl(Use { name: QName::from_string("prelude.Prelude").unwrap() }),
     ];
 

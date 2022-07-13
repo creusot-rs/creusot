@@ -7,8 +7,10 @@ use why3::{
 
 use crate::{clone_map::CloneMap, ctx::*, util};
 
-use creusot_rustc::hir::def_id::DefId;
-use creusot_rustc::middle::ty::{ClosureKind, TyCtxt, TyKind};
+use creusot_rustc::{
+    hir::def_id::DefId,
+    middle::ty::{ClosureKind, TyCtxt, TyKind},
+};
 
 use super::{
     function::{closure_contract, closure_generic_decls, closure_unnest},
@@ -21,7 +23,6 @@ pub fn interface_for<'tcx>(
 ) -> (Module, CloneMap<'tcx>) {
     debug!("interface_for: {def_id:?}");
     let mut names = CloneMap::new(ctx.tcx, def_id, false);
-    names.clone_self(def_id);
     let mut sig = util::signature_of(ctx, &mut names, def_id);
 
     sig.contract.variant = Vec::new();

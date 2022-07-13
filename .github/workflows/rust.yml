@@ -37,6 +37,11 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: ${{ github.event.pull_request.commits }}
+    - name: Fetch target branch
+      if: github.base_ref
+      run: git fetch --no-tags --prune --depth=1 origin +refs/heads/${{github.base_ref}}:refs/remotes/origin/${{github.base_ref}}
     - name: Install Z3
       run: sudo apt-get install -y z3=4.8.12-1 cvc4=1.8-2
     - uses: actions/cache@v2
@@ -61,7 +66,7 @@ jobs:
 
         ~/work/creusot/why3/bin/why3 config detect
         cat ~/.why3.conf
-    - run: cargo test --test why3 "" -- --lazy --fail-obsolete
+    - run: cargo test --test why3 "" -- --lazy --fail-obsolete --diff-from=origin/master
       env:
         WHY3_CONFIG: ${{ github.workspace }}/ci/why.conf
         WHY3_PATH: ${{ github.workspace }}/../why3/bin/why3
