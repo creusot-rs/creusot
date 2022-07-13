@@ -1,23 +1,63 @@
-use serde_json::from_str;
-use std::collections::HashMap;
+use clap::*;
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, error::Error};
 
-pub struct Options {
-    pub extern_paths: HashMap<String, String>,
-    pub metadata_path: Option<String>,
-    pub continue_compilation: bool,
-    pub has_contracts: bool,
-    pub be_rustc: bool,
-    pub export_metadata: bool,
-    pub should_output: bool,
-    pub output_file: Option<OutputFile>,
-    pub bounds_check: bool,
-    pub in_cargo: bool,
-    pub span_mode: Option<SpanMode>,
+#[derive(Parser, Serialize, Deserialize)]
+pub struct CreusotArgs {
+    #[clap(long)]
+    unbounded: bool,
+    #[clap(long, value_enum)]
+    span_mode: Option<SpanMode>,
+    #[clap(long)]
+    focus_on: Option<String>,
+    #[clap(long)]
+    metadata_path: Option<String>,
+    #[clap(long, default_value_t = true)]
+    export_metadata: bool,
+    #[clap(group = "output", long)]
+    stdout: bool,
+    #[clap(group = "output", long)]
+    output_file: Option<String>,
+    #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, String>, required=false)]
+    extern_paths: Vec<(String, String)>,
 }
 
+/// Parse a single key-value pair
+fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error + Send + Sync + 'static>>
+where
+    T: std::str::FromStr,
+    T::Err: Error + Send + Sync + 'static,
+    U: std::str::FromStr,
+    U::Err: Error + Send + Sync + 'static,
+{
+    let pos = s.find('=').ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
+    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
+}
+
+#[derive(Parser)]
+pub struct Args {
+    #[clap(flatten)]
+    pub creusot: CreusotArgs,
+    #[clap(last = true)]
+    pub rust_flags: Vec<String>,
+}
+
+#[derive(clap::ValueEnum, Clone, Deserialize, Serialize)]
 pub enum SpanMode {
     Relative,
     Absolute,
+}
+
+pub struct Options {
+    pub(crate) extern_paths: HashMap<String, String>,
+    pub(crate) metadata_path: Option<String>,
+    pub(crate) export_metadata: bool,
+    pub(crate) should_output: bool,
+    pub(crate) output_file: Option<OutputFile>,
+    pub(crate) bounds_check: bool,
+    pub(crate) in_cargo: bool,
+    pub(crate) span_mode: Option<SpanMode>,
+    pub(crate) match_str: Option<String>,
 }
 
 #[derive(Debug)]
@@ -27,95 +67,29 @@ pub enum OutputFile {
 }
 
 impl Options {
-    pub fn from_args_and_env(args: &[String]) -> Self {
-        // Check if the crate we are compiling has a dependency on contracts, or if it is the contract crate itself.
-        // We use this to disable creusot for dependencies if they don't depend on contracts (since that means they will have no real specification)
-        let has_contracts =
-            args.iter().any(|arg| arg == "creusot_contracts" || arg.contains("creusot_contracts="));
-
-        let be_rustc = args.iter().any(|arg| arg.contains("--print"));
+    pub fn from_args(args: CreusotArgs) -> Self {
+        let metadata_path = args.metadata_path;
+        let extern_paths = args.extern_paths.into_iter().collect();
 
         let cargo_creusot = std::env::var("CARGO_CREUSOT").is_ok();
-        // If we're compiling an upstream dependency or we're compiling `creusot_contracts_proc` lets be silent.
-        let export_metadata = export_metadata() && cargo_creusot;
-
-        // Either we're not running under `cargo-creusot` (aka `creusot-rustc`) or we are but we're compiling a 'primary' package
         let should_output = !cargo_creusot || std::env::var("CARGO_PRIMARY_PACKAGE").is_ok();
 
-        // All options shoudl be parsed before we get here.
-        let stdout: bool = args.iter().position(|a| a == "--stdout").is_some() || stdout_output();
-        let output_file =
-            args.iter().position(|a| a == "-o").map(|ix| args[ix + 1].clone()).or_else(output_file);
-
-        let output_file = match (stdout, output_file) {
-            (true, Some(_)) => panic!("cannot set --stdout and output file at the same time"),
-            (true, None) => Some(OutputFile::Stdout),
-            (false, Some(p)) => Some(OutputFile::File(p)),
-            (false, None) => None,
+        let output_file = match (args.stdout, args.output_file) {
+            (true, _) => Some(OutputFile::Stdout),
+            (_, Some(f)) => Some(OutputFile::File(f)),
+            _ => None,
         };
-
-        let extern_paths = match creusot_externs() {
-            Some(val) => from_str(&val).expect("could not parse CREUSOT_EXTERNS"),
-            None => HashMap::new(),
-        };
-
-        let bounds_check = !creusot_unbounded();
-        let span_mode = creusot_spans();
 
         Options {
-            has_contracts,
-            be_rustc,
-            export_metadata,
+            extern_paths,
+            metadata_path,
+            export_metadata: args.export_metadata,
             should_output,
             output_file,
-            continue_compilation: continue_compiler(),
-            metadata_path: creusot_metadata_path(),
-            extern_paths,
-            bounds_check,
+            bounds_check: !args.unbounded,
             in_cargo: cargo_creusot,
-            span_mode,
+            span_mode: args.span_mode,
+            match_str: args.focus_on,
         }
     }
-}
-
-fn creusot_spans() -> Option<SpanMode> {
-    match std::env::var_os("CREUSOT_SPAN") {
-        None => Some(SpanMode::Absolute),
-        Some(opt) => {
-            if opt == "relative" {
-                Some(SpanMode::Relative)
-            } else if opt == "none" {
-                None
-            } else {
-                Some(SpanMode::Absolute)
-            }
-        }
-    }
-}
-
-fn stdout_output() -> bool {
-    std::env::var_os("CREUSOT_STDOUT_OUTPUT").is_some()
-}
-
-fn output_file() -> Option<String> {
-    std::env::var_os("CREUSOT_OUTPUT_FILE").map(|m| m.to_string_lossy().to_string())
-}
-
-fn creusot_externs() -> Option<String> {
-    std::env::var_os("CREUSOT_EXTERNS").map(|m| m.to_string_lossy().to_string())
-}
-fn continue_compiler() -> bool {
-    std::env::var_os("CREUSOT_CONTINUE").is_some()
-}
-
-fn creusot_metadata_path() -> Option<String> {
-    std::env::var_os("CREUSOT_METADATA_PATH").map(|m| m.to_string_lossy().to_string())
-}
-
-fn export_metadata() -> bool {
-    std::env::var_os("CREUSOT_EXPORT_METADATA").map(|f| f != "false").unwrap_or(true)
-}
-
-fn creusot_unbounded() -> bool {
-    std::env::var_os("CREUSOT_UNBOUNDED").is_some()
 }
