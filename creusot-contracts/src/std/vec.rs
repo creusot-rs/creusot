@@ -81,7 +81,8 @@ extern_spec! {
     }
 }
 
-unsafe impl<T> Resolve for Vec<T> {
+#[trusted]
+impl<T> Resolve for Vec<T> {
     #[predicate]
     fn resolve(self) -> bool {
         pearlite! { forall<i : Int> 0 <= i && i < (@self).len() ==> (@self)[i].resolve() }

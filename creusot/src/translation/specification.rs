@@ -279,27 +279,27 @@ pub fn contract_of<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, def_id: DefId) -> P
     }
 }
 
+// These methods are allowed to cheat the purity restrictions because they are lang items we cannot redefine
+pub fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
+    let def_path = tcx.def_path_str(def_id);
+
+    def_path == "std::ops::Index::index"
+        || def_path == "std::convert::Into::into"
+        || def_path == "std::convert::From::from"
+        || def_path == "std::ops::Mul::mul"
+        || def_path == "std::ops::Add::add"
+        || def_path == "std::ops::Sub::sub"
+        || def_path == "std::ops::Div::div"
+        || def_path == "std::ops::Rem::rem"
+        || def_path == "std::ops::Neg::neg"
+        || def_path == "std::boxed::Box::<T>::new"
+        || def_path == "std::ops::Deref::deref"
+        || def_path == "std::clone::Clone::clone"
+}
+
 struct PurityVisitor<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     thir: &'a Thir<'tcx>,
-}
-
-impl PurityVisitor<'_, '_> {
-    fn is_overloaded_item(&self, def_id: DefId) -> bool {
-        let def_path = self.tcx.def_path_str(def_id);
-
-        def_path == "std::ops::Index::index"
-            || def_path == "std::convert::Into::into"
-            || def_path == "std::convert::From::from"
-            || def_path == "std::ops::Mul::mul"
-            || def_path == "std::ops::Add::add"
-            || def_path == "std::ops::Sub::sub"
-            || def_path == "std::ops::Div::div"
-            || def_path == "std::ops::Rem::rem"
-            || def_path == "std::ops::Neg::neg"
-            || def_path == "std::boxed::Box::<T>::new"
-            || def_path == "std::ops::Deref::deref"
-    }
 }
 
 impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
@@ -315,7 +315,7 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                         && !util::is_logic(self.tcx, func_did)
                         && !util::get_builtin(self.tcx, func_did).is_some()
                         && !pearlite_stub(self.tcx, self.thir[fun].ty).is_some()
-                        && !self.is_overloaded_item(func_did)
+                        && !is_overloaded_item(self.tcx, func_did)
                     {
                         self.tcx.sess.span_err_with_code(
                             self.thir[fun].span,

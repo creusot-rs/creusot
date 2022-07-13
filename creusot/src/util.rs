@@ -265,6 +265,22 @@ impl ItemType {
             _ => unreachable!(),
         }
     }
+
+    pub fn to_str(&self) -> &str {
+        match self {
+            ItemType::Logic => "logic function",
+            ItemType::Predicate => "predicate",
+            ItemType::Program => "program function",
+            ItemType::Closure => "closure",
+            ItemType::Trait => "trait declaration",
+            ItemType::Impl => "trait implementation",
+            ItemType::Type => "type declaration",
+            ItemType::AssocTy => "associated type",
+            ItemType::Interface => "[INTERFACE]",
+            ItemType::Constant => "constant",
+            ItemType::Unsupported(_) => "[OTHER]",
+        }
+    }
 }
 
 pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {

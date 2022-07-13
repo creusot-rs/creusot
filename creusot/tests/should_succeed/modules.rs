@@ -8,7 +8,8 @@ pub mod nested {
         Test,
     }
 
-    unsafe impl Resolve for Nested {
+    #[trusted]
+    impl Resolve for Nested {
         #[predicate]
         fn resolve(self) -> bool {
             true
