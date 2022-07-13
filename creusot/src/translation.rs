@@ -19,7 +19,6 @@ use creusot_rustc::hir::{def::DefKind, def_id::LOCAL_CRATE};
 use ctx::TranslationCtx;
 pub use function::{translate_function, LocalIdent};
 use heck::CamelCase;
-use itertools::Itertools;
 pub use logic::*;
 use std::{error::Error, io::Write};
 use why3::{

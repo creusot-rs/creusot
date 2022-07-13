@@ -8,7 +8,11 @@ extern crate rustc_interface;
 #[macro_use]
 extern crate log;
 
-use creusot::{callbacks::*, options::Options};
+use clap::*;
+use creusot::{
+    callbacks::*,
+    options::{Args, CreusotArgs, Options},
+};
 use rustc_driver::RunCompiler;
 use rustc_interface::interface::try_print_query_stack;
 use std::{env, panic, panic::PanicInfo, process::Command};
@@ -63,36 +67,59 @@ impl rustc_driver::Callbacks for DefaultCallbacks {}
 fn main() {
     rustc_driver::init_rustc_env_logger();
     env_logger::init();
-
-    let mut args = env::args().skip(1).collect::<Vec<_>>();
-
-    let sysroot = sysroot_path();
-
-    let opts = Options::from_args_and_env(&args);
-
-    args.push(format!("--sysroot={}", sysroot));
-
-    if !opts.has_contracts || opts.be_rustc {
-        return RunCompiler::new(&args, &mut DefaultCallbacks {}).run().unwrap();
-    }
-
     lazy_static::initialize(&ICE_HOOK);
 
-    args.push("-Cpanic=abort".to_owned());
-    args.push("-Coverflow-checks=off".to_owned());
-    args.push("-Zcrate-attr=feature(register_tool)".to_owned());
-    args.push("-Zcrate-attr=register_tool(creusot)".to_owned());
-    args.push("-Zcrate-attr=register_tool(why3)".to_owned());
-    args.push("-Zcrate-attr=feature(stmt_expr_attributes)".to_owned());
-    args.push("-Zcrate-attr=feature(proc_macro_hygiene)".to_owned());
-    args.push("-Zcrate-attr=feature(rustc_attrs)".to_owned());
-    args.push("-Zcrate-attr=feature(unsized_fn_params)".to_owned());
+    setup_plugin();
+}
 
-    debug!("creusot args={:?}", args);
+fn setup_plugin() {
+    let mut args = env::args().collect::<Vec<_>>();
 
-    let mut callbacks = ToWhy::new(opts);
+    let is_wrapper = args.get(1).map(|s| s.contains("rustc")).unwrap_or(false);
 
-    RunCompiler::new(&args, &mut callbacks).run().unwrap();
+    if is_wrapper {
+        args.remove(1);
+    }
+
+    let creusot: CreusotArgs = if is_wrapper {
+        serde_json::from_str(&std::env::var("CREUSOT_ARGS").unwrap()).unwrap()
+    } else {
+        let all_args = Args::parse_from(&args);
+        args = all_args.rust_flags;
+        all_args.creusot
+    };
+
+    let sysroot = sysroot_path();
+    args.push(format!("--sysroot={}", sysroot));
+
+    let normal_rustc = args.iter().any(|arg| arg.starts_with("--print"));
+    let primary_package = std::env::var("CARGO_PRIMARY_PACKAGE").is_ok();
+    let has_contracts =
+        args.iter().any(|arg| arg == "creusot_contracts" || arg.contains("creusot_contracts="));
+
+    // Did the user ask to compile this crate? Either they explicitly invoked `creusot-rustc` or this is a primary package.
+    let user_asked_for = !is_wrapper || primary_package;
+
+    if normal_rustc || !(user_asked_for || has_contracts) {
+        return RunCompiler::new(&args, &mut DefaultCallbacks {}).run().unwrap();
+    } else {
+        args.push("-Cpanic=abort".to_owned());
+        args.push("-Coverflow-checks=off".to_owned());
+        args.push("-Zcrate-attr=feature(register_tool)".to_owned());
+        args.push("-Zcrate-attr=register_tool(creusot)".to_owned());
+        args.push("-Zcrate-attr=register_tool(why3)".to_owned());
+        args.push("-Zcrate-attr=feature(stmt_expr_attributes)".to_owned());
+        args.push("-Zcrate-attr=feature(proc_macro_hygiene)".to_owned());
+        args.push("-Zcrate-attr=feature(rustc_attrs)".to_owned());
+        args.push("-Zcrate-attr=feature(unsized_fn_params)".to_owned());
+
+        debug!("creusot args={:?}", args);
+
+        let opts = Options::from_args(creusot);
+        let mut callbacks = ToWhy::new(opts);
+
+        RunCompiler::new(&args, &mut callbacks).run().unwrap();
+    }
 }
 
 fn sysroot_path() -> String {
@@ -107,8 +134,6 @@ fn sysroot_path() -> String {
         .arg("sysroot")
         .output()
         .unwrap();
-
-    print!("{}", String::from_utf8(output.stderr).ok().unwrap());
 
     String::from_utf8(output.stdout).unwrap().trim().to_owned()
 }

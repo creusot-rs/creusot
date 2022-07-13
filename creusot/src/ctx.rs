@@ -45,7 +45,7 @@ pub struct TranslationCtx<'sess, 'tcx> {
     functions: IndexMap<DefId, TranslatedItem<'tcx>>,
     terms: IndexMap<DefId, Term<'tcx>>,
     pub externs: Metadata<'tcx>,
-    pub opts: &'sess Options,
+    pub(crate) opts: &'sess Options,
     creusot_items: CreusotItems,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
@@ -60,7 +60,7 @@ impl<'tcx> Deref for TranslationCtx<'_, 'tcx> {
 }
 
 impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, opts: &'sess Options) -> Self {
+    pub(crate) fn new(tcx: TyCtxt<'tcx>, opts: &'sess Options) -> Self {
         let creusot_items = creusot_items::local_creusot_items(tcx);
 
         Self {

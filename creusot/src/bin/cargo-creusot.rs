@@ -1,43 +1,26 @@
+use clap::*;
+use creusot::options::Args;
 use std::{
     env,
     process::{exit, Command},
 };
 
-use clap::clap_app;
-
 fn main() {
+    let args = Args::parse_from(std::env::args().skip(1));
+
     let creusot_rustc_path = std::env::current_exe()
         .expect("current executable path invalid")
         .with_file_name("creusot-rustc");
+
     let cargo_path = env::var("CARGO_PATH").unwrap_or_else(|_| "cargo".to_string());
-
-    let matches = clap_app!(app =>
-        (version: "0.1")
-        (author: "Xavier Denis <xldenis@lri.fr>")
-        (@setting TrailingVarArg)
-        (@setting AllowLeadingHyphen)
-        (@arg PACKAGE: -p --package [PKG] "package to verify")
-        (@arg unbounded: --unbounded "disable arithmetic bounds checking")
-        (@arg flags: ... "cargo flags")
-    )
-    .get_matches_from(std::env::args().skip(2));
-
     let cargo_cmd = if std::env::var_os("CREUSOT_CONTINUE").is_some() { "build" } else { "check" };
-
     let mut cmd = Command::new(cargo_path);
     cmd.arg(&cargo_cmd)
-        // .arg("-v")
-        .args(std::env::args().skip(2))
+        .args(args.rust_flags)
         .env("RUSTC_WRAPPER", creusot_rustc_path)
         .env("CARGO_CREUSOT", "1");
 
-    if matches.is_present("unbounded") {
-        cmd.env("CREUSOT_UNBOUNDED", "1");
-    };
-
-    if let Some(tgt) = matches.value_of("pkg") {
-        cmd.env("CREUSOT_TARGET", tgt);
-    };
+    cmd.env("CREUSOT_ARGS", serde_json::to_string(&args.creusot).unwrap());
 
     let exit_status = cmd.status().expect("could not run cargo");
     if !exit_status.success() {
