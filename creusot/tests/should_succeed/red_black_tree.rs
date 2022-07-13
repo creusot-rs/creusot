@@ -650,6 +650,59 @@ where
     #[ensures((^self).internal_invariant())]
     #[ensures((*self).height() == (^self).height())]
     #[ensures((*self).has_mapping(@result.0, result.1))]
+    #[ensures(forall<k: K::ModelTy, v: V> (*self).has_mapping(k, v) ==> k <= @result.0)]
+    #[ensures(forall<k: K::ModelTy, v: V> (^self).has_mapping(k, v) ==
+              (@result.0 != k && (*self).has_mapping(k, v)))]
+    #[ensures((^self).color_invariant())]
+    #[ensures((*self).color() == Black ==> (^self).color() == Black)]
+    fn delete_max_rec(&mut self) -> (K, V) {
+        let mut node = self.node.as_mut().unwrap().as_mut();
+        if node.left.is_red() {
+            node.rotate_right()
+        }
+        if let None = node.right.node {
+            let node = std::mem::take(&mut self.node).unwrap();
+            return (node.key, node.val);
+        }
+        if !node.right.is_red() && !node.right.node.as_ref().unwrap().left.is_red() {
+            node = node.move_red_right();
+        }
+        let r = node.right.delete_max_rec();
+        node.balance();
+        r
+    }
+
+    #[requires((*self).invariant())]
+    #[ensures((^self).invariant())]
+    #[ensures(result == None ==> @^self == @*self && @*self == Mapping::cst(None))]
+    #[ensures(forall<k: K, v: V> result == Some((k, v)) ==>
+              (@*self).get(@k) == Some(v) &&
+              (forall<k2: K::ModelTy> (@*self).get(k2) == None || k2 <= @k) &&
+              @^self == (@*self).set(@k, None))]
+    pub fn delete_max(&mut self) -> Option<(K, V)> {
+        let old_self = ghost! { self };
+        if let Some(node) = &mut self.node {
+            if !node.left.is_red() {
+                node.color = Red;
+            }
+        } else {
+            return None;
+        }
+        proof_assert! { old_self.same_mappings(*self) }
+        let r = self.delete_max_rec();
+        if self.is_red() {
+            self.node.as_mut().unwrap().color = Black;
+        }
+        ghost! { Self::has_mapping_model };
+        Some(r)
+    }
+
+    #[requires((*self).internal_invariant())]
+    #[requires(CPL(Red).match_t(*self) ||
+               CPN(Black, CPL(Red), CPL(Black)).match_t(*self))]
+    #[ensures((^self).internal_invariant())]
+    #[ensures((*self).height() == (^self).height())]
+    #[ensures((*self).has_mapping(@result.0, result.1))]
     #[ensures(forall<k: K::ModelTy, v: V> (*self).has_mapping(k, v) ==> @result.0 <= k)]
     #[ensures(forall<k: K::ModelTy, v: V> (^self).has_mapping(k, v) ==
               (@result.0 != k && (*self).has_mapping(k, v)))]
