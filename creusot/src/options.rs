@@ -13,6 +13,7 @@ pub struct Options {
     pub bounds_check: bool,
     pub in_cargo: bool,
     pub span_mode: Option<SpanMode>,
+    pub match_str: Option<String>,
 }
 
 pub enum SpanMode {
@@ -62,6 +63,8 @@ impl Options {
         let bounds_check = !creusot_unbounded();
         let span_mode = creusot_spans();
 
+        let match_str = match_str();
+
         Options {
             has_contracts,
             be_rustc,
@@ -74,8 +77,13 @@ impl Options {
             bounds_check,
             in_cargo: cargo_creusot,
             span_mode,
+            match_str,
         }
     }
+}
+
+fn match_str() -> Option<String> {
+    std::env::var_os("CREUSOT_MATCH_STR").map(|m| m.to_string_lossy().to_string())
 }
 
 fn creusot_spans() -> Option<SpanMode> {

@@ -19,6 +19,7 @@ use creusot_rustc::hir::{def::DefKind, def_id::LOCAL_CRATE};
 use ctx::TranslationCtx;
 pub use function::{translate_function, LocalIdent};
 use heck::CamelCase;
+use itertools::Itertools;
 pub use logic::*;
 use std::{error::Error, io::Write};
 use why3::{
@@ -113,12 +114,17 @@ pub fn after_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
             }
         };
 
-        print_crate(
-            &mut out,
-            ctx.tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case(),
-            ctx.types.values(),
-            ctx.modules(),
-        )?;
+        let matcher: &str = ctx.opts.match_str.as_ref().map(|s| &s[..]).unwrap_or("");
+        let modules = ctx.modules().flat_map(|(id, item)| {
+            if ctx.def_path_str(*id).contains(matcher) {
+                item.modules()
+            } else {
+                item.interface()
+            }
+        });
+
+        let crate_name = ctx.tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case();
+        print_crate(&mut out, crate_name, ctx.types.values(), modules)?;
     }
     debug!("after_analysis_dump: {:?}", start.elapsed());
 

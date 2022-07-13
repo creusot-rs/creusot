@@ -114,4 +114,18 @@ impl<'a, 'tcx> TranslatedItem<'tcx> {
             Extern { interface, body, .. } => box iter::once(interface).chain(iter::once(body)),
         }
     }
+
+    pub fn interface(&'a self) -> Box<dyn Iterator<Item = &Module> + 'a> {
+        match &self {
+            TranslatedItem::Logic { interface, modl, .. } => {
+                box std::iter::once(interface).chain(std::iter::once(modl))
+            }
+            TranslatedItem::Program { interface, .. } => box std::iter::once(interface),
+            TranslatedItem::Trait { .. } => box std::iter::empty(),
+            TranslatedItem::Impl { modl, .. } => box std::iter::once(modl),
+            TranslatedItem::AssocTy { modl, .. } => box std::iter::once(modl),
+            TranslatedItem::Extern { interface, .. } => box std::iter::once(interface),
+            TranslatedItem::Constant { modl, .. } => box std::iter::once(modl),
+        }
+    }
 }

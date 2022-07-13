@@ -274,8 +274,10 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.opts.should_output
     }
 
-    pub fn modules(&self) -> impl Iterator<Item = &Module> + Captures<'tcx> {
-        self.functions.values().flat_map(|m| m.modules())
+    pub fn modules(
+        &self,
+    ) -> impl Iterator<Item = (&DefId, &TranslatedItem<'tcx>)> + Captures<'tcx> {
+        self.functions.iter()
     }
 
     pub(crate) fn metadata(&self) -> BinaryMetadata<'tcx> {
