@@ -128,12 +128,19 @@ impl<K: Model, V> Tree<K, V> {
 
 impl<K: Model, V> Node<K, V> {
     #[predicate]
+    #[ensures(forall<node: Box<Node<K, V>>>
+              self == *node ==> result == Tree{ node: Some(node) }.has_mapping(k, v))]
+    fn has_mapping(self, k: K::ModelTy, v: V) -> bool {
+        pearlite! {
+            self.left.has_mapping(k, v) || self.right.has_mapping(k, v) ||
+                k == @self.key && v == self.val
+        }
+    }
+
+    #[predicate]
     fn same_mappings(self, o: Self) -> bool {
         pearlite! {
-            forall<st: Tree<K, V>, ot: Tree<K, V>>
-                (match st { Tree { node: Some(x) } => self == *x, _ => false }) &&
-                (match ot { Tree { node: Some(x) } => o == *x, _ => false }) ==>
-                st.same_mappings(ot)
+            forall<k: K::ModelTy, v: V> self.has_mapping(k, v) == o.has_mapping(k, v)
         }
     }
 }
@@ -199,7 +206,6 @@ where
 }
 
 /******************  The color invariant, and color patterns ****************/
-
 
 trait CP<K, V> {
     #[predicate]
@@ -461,12 +467,13 @@ where
     #[ensures((*self).same_mappings(^self))]
     #[ensures((^self).internal_invariant())]
     #[ensures((*self).height() == (^self).height())]
+    #[ensures(@(*self).key < @(^self).key)]
     #[ensures((^self).left.color() == Red)]
     #[ensures((^self).color == (*self).color)]
     #[ensures(exists<l: Box<Self>, r: Box<Self>>
               (*self).right.node == Some(r) && (^self).left.node == Some(l) &&
-              (l.left, l.right, (^self).right) == ((*self).left, r.left, r.right))]
-    #[ensures(@(*self).key < @(^self).key)]
+              (l.left, l.right, (^self).right) == ((*self).left, r.left, r.right) &&
+              l.key == (*self).key)]
     fn rotate_left(&mut self) {
         let old_self = ghost! { self };
         let mut x = std::mem::take(&mut self.right.node).unwrap();
@@ -487,10 +494,10 @@ where
     #[ensures((*self).same_mappings(^self))]
     #[ensures((*self).key == (^self).key)]
     #[ensures(exists<l1: Box<Self>, l2: Box<Self>> (*self).left.node == Some(l1) && (^self).left.node == Some(l2) &&
-              l1.left == l2.left && l1.right == l2.right &&
+              l1.left == l2.left && l1.right == l2.right && l1.key == l2.key &&
               (*self).color == l2.color && (^self).color == l1.color)]
     #[ensures(exists<r1: Box<Self>, r2: Box<Self>> (*self).right.node == Some(r1) && (^self).right.node == Some(r2) &&
-              r1.left == r2.left && r1.right == r2.right &&
+              r1.left == r2.left && r1.right == r2.right && r1.key == r2.key &&
               (*self).color == r2.color && (^self).color == r1.color && r1.key == r2.key)]
     fn flip_colors(&mut self) {
         self.left.node.as_mut().unwrap().color = self.color;
@@ -533,40 +540,58 @@ where
     #[requires((*self).right.node != None)]
     #[requires((*self).internal_invariant())]
     #[requires(CPN(Red, CPN(Black, CPL(Black), CPL(Black)), CPL(Black)).match_n(*self))]
-    #[ensures((^self).internal_invariant())]
-    #[ensures((*self).height() == (^self).height())]
-    #[ensures((*self).same_mappings(^self))]
-    #[ensures(CPN(Red, CPN(Black, CPL(Red), CPL(Black)), CPL(Black)).match_n(^self) ||
-              CPN(Black, CPL(Red), CPL(Red)).match_n(^self))]
-    #[ensures(@(*self).key <= @(^self).key)]
-    fn move_red_left(&mut self) {
+    #[ensures((*result).internal_invariant())]
+    #[ensures((^result).internal_invariant() && (*result).height() == (^result).height() 
+              && (forall<k: K::ModelTy, v: V> (^result).has_mapping(k, v) ==> (*result).has_mapping(k, v))
+              ==> (^self).internal_invariant())]
+    #[ensures((*result).height() == (^result).height() ==> (*self).height() == (^self).height())]
+    #[ensures((*self).key == (*result).key)]
+    #[ensures(forall<k: K::ModelTy, v: V> (*result).has_mapping(k, v) ==> (*self).has_mapping(k, v))]
+    #[ensures(forall<k: K::ModelTy, v: V> (*self).has_mapping(k, v) && k <= @(*self).key
+              ==> (*result).has_mapping(k, v))]
+    #[ensures(forall<k: K::ModelTy, v: V> (^self).has_mapping(k, v) ==
+              ((^result).has_mapping(k, v) || ((*self).has_mapping(k, v) && !(*result).has_mapping(k, v))))]
+    #[ensures(CPN(Black, CPL(Red), CPL(Black)).match_n(*result) ||
+              CPN(Black, CPL(Red), CPL(Red)).match_n(*result))]
+    #[ensures((^result).color_invariant() && ((*result).right.color() == Black ==> (^result).color == Black)
+              ==> (^self).color_invariant())]
+    fn move_red_left(&mut self) -> &mut Self {
         self.flip_colors();
         if self.right.node.as_mut().unwrap().left.is_red() {
             self.right.node.as_mut().unwrap().rotate_right();
             self.rotate_left();
             self.flip_colors();
+            return self.left.node.as_mut().unwrap()
         }
+        return self
     }
 
     #[requires((*self).left.node != None)]
     #[requires((*self).internal_invariant())]
     #[requires(CPN(Red, CPL(Black), CPN(Black, CPL(Black), CPL(Black))).match_n(*self))]
-    #[ensures((^self).internal_invariant())]
-    #[ensures((*self).height() == (^self).height())]
-    #[ensures((*self).same_mappings(^self))]
-    #[ensures(!result ==> @(^self).key < @(*self).key &&
-              CPN(Red, CPL(Black), CPN(Black, CPL(Black), CPL(Red))).match_n(^self) &&
-              exists<r: Box<Node<K, V>>> (^self).right.node == Some(r) && r.key == (*self).key)]
-    #[ensures(result ==> (^self).key == (*self).key &&
-              CPN(Black, CPL(Red), CPL(Red)).match_n(^self))]
-    fn move_red_right(&mut self) -> bool {
+    #[ensures((*result).internal_invariant())]
+    #[ensures((^result).internal_invariant() && (*result).height() == (^result).height() 
+              && (forall<k: K::ModelTy, v: V> (^result).has_mapping(k, v) ==> (*result).has_mapping(k, v))
+              ==> (^self).internal_invariant())]
+    #[ensures((*result).height() == (^result).height() ==> (*self).height() == (^self).height())]
+    #[ensures((*result).key == (*self).key)]
+    #[ensures(forall<k: K::ModelTy, v: V> (*result).has_mapping(k, v) ==> (*self).has_mapping(k, v))]
+    #[ensures(forall<k: K::ModelTy, v: V> (*self).has_mapping(k, v) && @(*self).key <= k
+              ==> (*result).has_mapping(k, v))]
+    #[ensures(forall<k: K::ModelTy, v: V> (^self).has_mapping(k, v) ==
+              ((^result).has_mapping(k, v) || ((*self).has_mapping(k, v) && !(*result).has_mapping(k, v))))]
+    #[ensures(CPN(Black, CPL(Black), CPL(Red)).match_n(*result) ||
+              CPN(Black, CPL(Red), CPL(Red)).match_n(*result))]
+    #[ensures((^result).color_invariant() && ((*result).left.color() == Black ==> (^result).color == Black)
+              ==> (^self).color_invariant())]
+    fn move_red_right(&mut self) -> &mut Self {
         self.flip_colors();
         if self.left.node.as_mut().unwrap().left.is_red() {
             self.rotate_right();
             self.flip_colors();
-            return false;
+            return self.right.node.as_mut().unwrap();
         }
-        return true;
+        return self
     }
 }
 
@@ -632,13 +657,13 @@ where
     #[ensures((^self).color_invariant())]
     #[ensures((*self).color() == Black ==> (^self).color() == Black)]
     fn delete_min_rec(&mut self) -> (K, V) {
-        let node = self.node.as_mut().unwrap();
+        let mut node = self.node.as_mut().unwrap().as_mut();
         if let None = node.left.node {
             let node = std::mem::take(&mut self.node).unwrap();
             return (node.key, node.val);
         }
         if !node.left.is_red() && !node.left.node.as_ref().unwrap().left.is_red() {
-            node.move_red_left();
+            node = node.move_red_left();
         }
         let r = node.left.delete_min_rec();
         node.balance();
@@ -672,9 +697,7 @@ where
 
     #[requires((*self).internal_invariant())]
     #[requires(CPL(Red).match_t(*self) ||
-               CPN(Black, CPL(Red), CPL(Black)).match_t(*self) ||
-               CPN(Black, CPL(Black), CPL(Red)).match_t(*self) &&
-                 exists<node: Box<Node<K, V>>> (*self).node == Some(node) && @node.key <= @*key)]
+               CPN(Black, CPL(Red), CPL(Black)).match_t(*self))]
     #[ensures((^self).internal_invariant())]
     #[ensures((*self).height() == (^self).height())]
     #[ensures(forall<v: V> result == None ==> !(*self).has_mapping(@*key, v))]
@@ -685,14 +708,14 @@ where
     #[ensures((*self).color() == Black ==> (^self).color() == Black)]
     fn delete_rec(&mut self, key: &K) -> Option<(K, V)> {
         let r;
-        let node = &mut **self.node.as_mut().unwrap();
+        let mut node = self.node.as_mut().unwrap().as_mut();
         match key.cmp(&node.key) {
             Less => {
                 if node.left.node.is_none() {
                     return None;
                 }
                 if !node.left.is_red() && !node.left.node.as_ref().unwrap().left.is_red() {
-                    node.move_red_left();
+                    node = node.move_red_left();
                 }
                 r = node.left.delete_rec(key)
             }
@@ -708,12 +731,10 @@ where
                         let node = std::mem::take(&mut self.node).unwrap();
                         return Some((node.key, node.val));
                     }
-                    if !node.right.is_red()
-                        && !node.right.node.as_ref().unwrap().left.is_red()
-                        && !node.move_red_right()
-                    {
-                        r = node.right.delete_rec(key)
-                    } else if let Equal = ord {
+                    if !node.right.node.as_ref().unwrap().left.is_red() {
+                        node = node.move_red_right();
+                    }
+                    if let Equal = ord {
                         let mut kv = node.right.delete_min_rec();
                         ghost! { Self::has_mapping_inj };
                         std::mem::swap(&mut node.key, &mut kv.0);

@@ -7,8 +7,10 @@ pub mod mem;
 pub mod option;
 mod slice;
 pub mod vec;
+pub mod boxed;
 
 pub use clone::*;
 pub use eq::*;
 pub use fun::*;
 pub use vec::*;
+pub use boxed::*;
