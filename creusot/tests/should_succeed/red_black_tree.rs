@@ -540,7 +540,7 @@ where
     #[requires((*self).internal_invariant())]
     #[requires(CPN(Red, CPN(Black, CPL(Black), CPL(Black)), CPL(Black)).match_n(*self))]
     #[ensures((*result).internal_invariant())]
-    #[ensures((^result).internal_invariant() && (*result).height() == (^result).height() 
+    #[ensures((^result).internal_invariant() && (*result).height() == (^result).height()
               && (forall<k: K::ModelTy, v: V> (^result).has_mapping(k, v) ==> (*result).has_mapping(k, v))
               ==> (^self).internal_invariant())]
     #[ensures((*result).height() == (^result).height() ==> (*self).height() == (^self).height())]
@@ -560,16 +560,16 @@ where
             self.right.node.as_mut().unwrap().rotate_right();
             self.rotate_left();
             self.flip_colors();
-            return self.left.node.as_mut().unwrap()
+            return self.left.node.as_mut().unwrap();
         }
-        return self
+        return self;
     }
 
     #[requires((*self).left.node != None)]
     #[requires((*self).internal_invariant())]
     #[requires(CPN(Red, CPL(Black), CPN(Black, CPL(Black), CPL(Black))).match_n(*self))]
     #[ensures((*result).internal_invariant())]
-    #[ensures((^result).internal_invariant() && (*result).height() == (^result).height() 
+    #[ensures((^result).internal_invariant() && (*result).height() == (^result).height()
               && (forall<k: K::ModelTy, v: V> (^result).has_mapping(k, v) ==> (*result).has_mapping(k, v))
               ==> (^self).internal_invariant())]
     #[ensures((*result).height() == (^result).height() ==> (*self).height() == (^self).height())]
@@ -590,7 +590,7 @@ where
             self.flip_colors();
             return self.right.node.as_mut().unwrap();
         }
-        return self
+        return self;
     }
 }
 
