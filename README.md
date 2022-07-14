@@ -10,7 +10,7 @@
 
 # About
 
-**Creusot** is a tool for *deductive verification* of Rust code. It allows you to annotate your code with specifications, invariants and assertions and then *verify* them formally and automatically, returning a *proof* that your code satisfies the specs.
+**Creusot** is a tool for *deductive verification* of Rust code. It allows you to annotate your code with specifications, invariants and assertions and then *verify* them formally and automatically, *proving*, mathematically, that your code satisfies your specifications.
 
 Creusot works by translating Rust code to WhyML, the verification and specification language of [Why3](https://why3.lri.fr). Users can then leverage the full power of Why3 to (semi)-automatically discharge the verification conditions!
 
@@ -20,6 +20,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
 
 # Examples of Verification
 
+To get an idea of what verifying a program with Creusot looks like, we encourage you to take a look at some of our test suite:
+
 - [Zeroing out a vector](creusot/tests/should_succeed/vector/01.rs)
 - [Binary search on Vectors](creusot/tests/should_succeed/vector/04_binary_search.rs)
 - [Sorting a vector](creusot/tests/should_succeed/vector/02_gnome.rs)
@@ -28,14 +30,19 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
 
 More examples are found in [creusot/tests/should_succeed](creusot/tests/should_succeed).
 
-# Installing
+## Projects built with Creusot
+
+- [CreuSAT](https://github.com/sarsko/creusat) is a verified SAT solver written in Rust and verified with Creusot. It really pushes the tool to its limits and gives an idea of what 'use in anger' looks like.
+- Another big project is in the works :)
+
+# Installing Creusot as a user
 
 0. Clone the [creusot](https://github.com/xldenis/creusot/) repo at any directory you like
     - Below, we write `REPO` for the (relative or absolute) path to the directory of the repo
 1. Set up **Rust**
     - [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
 2. Build **Creusot**
-    - Run `$ REPO/build`
+    - Run `$ cargo install --path creusot`, this will build the `cargo-creusot` and `creusot-rustc` executables and place them in `~/.cargo/bin`.
 3. Set up **Why3**
     - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
     - Pin `why3` to `master` : `$ opam pin add why3 https://gitlab.inria.fr/why3/why3.git`
@@ -48,54 +55,42 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 
 # Verifying with Creusot and Why3
 
-## Producing MLCFG files
+The recommended way for users to verify programs with Creusot is to use `cargo-creusot`.
+All you need to do is enter your project and run `cargo creusot`!
+This will generate MLCFG files in `target/debug/` which can then be loaded into Why3.
 
-Creusot can translate the Rust programs into a language supported by Why3, called MLCFG (a call flow graph for ML, more specifically WhyML).
 
-By running the following, you can have Creusot turn a Rust program to an MLCFG.
+To add contracts to your programs you will need to use the `creusot-contracts` crate, and enable the `contracts` feature.
+When that feature is enabled `rustc` cannot successfully compile your programs, so we recommend adding a feature to your program which conditionally enables the `contracts` feature like so:
+
+```toml
+# Cargo.toml
+
+[features]
+contracts = ["creusot-contracts/contracts"]
 ```
-REPO/mlcfg PATH/TO/PROGRAM.rs
-```
-This will produce a file named `PROGRAM-rlib.mlcfg` in the `REPO` directory. This file can in turn be loaded in Why3 using the `ide` or `prove` scripts. 
-
-
-You can play with examples in [creusot/tests/should_succeed](creusot/tests/should_succeed).
-(There we have `*.mlcfg` files for the MLCFG outputs.)
-
-Later we show how to write Rust programs with specs for Creusot.
 
 ## Proving in Why3
 
-Now, let's have Why3 process verification conditions of your MLCFG.
+To load your files in Why3, we recommend using the [`ide`](./ide) script provided in the Creusot repository.
+You may also copy both this script and the `prelude` directory in your project to have a fully self contained proof environment.
 
-You can run the following to call Why3 with the SMT solver Z3 (assuming that you are at the repo dir).
-```
-REPO/prove -P z3 PATH/TO/OUTPUT.mlcfg
-```
-You can also change `z3` to `cvc4` or `alt-ergo`.
-(`REPO/prove` is a thin wrapper of `why3 prove`.)
+To load your proofs in Why3, run:
 
-You can also run Why3 IDE to view more information or do interactive proofs. You can run the following (assuming that you are at the repo dir).
 ```
 REPO/ide PATH/TO/OUTPUT.mlcfg
 ```
-From there standard proof strategies of Why3 work.
+
+From there standard proof strategies of Why3 work. We recommend section 2.3 of this [thesis](https://sarsko.github.io/_pages/SarekSkot%C3%A5m_thesis.pdf) for a brief overview of Why3 and Creusot proofs.
 
 We plan to improve this part of the user experience, but that will have to wait until Creusot gets more stable and complete.
+If you'd like to help, a prototype VSCode plugin for Why3 is [in development](https://github.com/xldenis/whycode), it should make the experience much smoother when complete.
 
 # Writing specs in Rust programs
 
 ## Using Creusot for your Rust code
 
-First, you will need to depend on the `creusot-contracts` crate. However, since this crate is not published currently.
-To use `creusot-contracts` for your own Rust code, the basic way is to load the crate as an `extern crate`.
-You can do that by adding the following declaration to your Rust code:
-```rust
-extern crate creusot_contracts;
-use creusot_contracts::*;
-```
-
-:warning: Currently `creusot-contracts` is very unfinished. Using the macros included in this crate may prevent your Rust code from compiling normally. (TODO: implement a pass-through mode for normal compilation) :warning:
+First, you will need to depend on the `creusot-contracts` crate, add it to your `Cargo.toml` and enable the `contracts` feature to turn on contracts.
 
 ## Kinds of contract expressions
 
@@ -116,6 +111,8 @@ while ... { ... }
 ```
 Invariants must have names (for now).
 
+A `variant` clause can be attached either to a function like `ensures`, or `requires` or to a loop like `invariant`, it should contain a strictly decreasing expression which can prove the termination of the item it is attached to.
+
 ## Controlling verification
 
 We also have features for controlling verification.
@@ -130,13 +127,12 @@ fn the_answer() -> u32 {
 }
 ```
 
-Also, we have the *unbounded* mode.
-This lets Creusot model integer types in Rust as unbounded integers in Why3, suppressing integer overflow checks in Why3.
-Currently, this option works only globally, and is enabled by setting the environment variable `CREUSOT_UNBOUNDED` to `1`.
-For example, run `REPO/mlcfg` like the following to use the unbounded mode.
-```
-CREUSOT_UNBOUNDED=1 REPO/mlcfg PATH/TO/PROGRAM.rs > PATH/TO/OUTPUT.mlcfg
-```
+Causing Creusot to assume the contracts are true.
+
+### Unbounded integers
+
+By default in Creusot, integers are represented with bounds-checking. This can be tedious or difficult to prove in certain cases, so we can disable bounds checking by passing the `--unbounded` flag to Creusot.
+
 
 ## Pearlite
 
