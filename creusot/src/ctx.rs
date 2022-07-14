@@ -320,7 +320,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         let hi = self.sess.source_map().lookup_char_pos(span.hi());
 
         let filename = match self.opts.span_mode {
-            Some(SpanMode::Absolute) if lo.file.name.is_real() => {
+            SpanMode::Absolute if lo.file.name.is_real() => {
                 if let creusot_rustc::span::FileName::Real(path) = &lo.file.name {
                     let path = path.local_path_if_available();
                     let mut buf;
@@ -337,7 +337,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                     return None;
                 }
             }
-            Some(SpanMode::Relative) => {
+            SpanMode::Relative => {
                 // Should really be relative to the source file the location is in
                 format!("../{}", self.sess.source_map().filename_for_diagnostics(&lo.file.name))
             }
@@ -354,10 +354,10 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn attach_span(&self, span: Span, exp: Exp) -> Exp {
-        if let Some(_) = self.opts.span_mode {
-            Exp::Attr(self.span_attr(span).unwrap(), box exp)
-        } else {
+        if let SpanMode::Off = self.opts.span_mode {
             exp
+        } else {
+            Exp::Attr(self.span_attr(span).unwrap(), box exp)
         }
     }
 }
