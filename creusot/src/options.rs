@@ -6,8 +6,8 @@ use std::{collections::HashMap, error::Error};
 pub struct CreusotArgs {
     #[clap(long)]
     unbounded: bool,
-    #[clap(long, value_enum)]
-    span_mode: Option<SpanMode>,
+    #[clap(long, value_enum, default_value_t=SpanMode::Relative)]
+    span_mode: SpanMode,
     #[clap(long)]
     focus_on: Option<String>,
     #[clap(long)]
@@ -46,6 +46,7 @@ pub struct Args {
 pub enum SpanMode {
     Relative,
     Absolute,
+    Off,
 }
 
 pub struct Options {
@@ -56,7 +57,7 @@ pub struct Options {
     pub(crate) output_file: Option<OutputFile>,
     pub(crate) bounds_check: bool,
     pub(crate) in_cargo: bool,
-    pub(crate) span_mode: Option<SpanMode>,
+    pub(crate) span_mode: SpanMode,
     pub(crate) match_str: Option<String>,
 }
 
