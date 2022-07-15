@@ -259,13 +259,21 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         let lhs = self.expr_term(args[0])?;
                         let rhs = self.expr_term(args[1])?;
 
-                        Ok(Term { ty, span, kind: TermKind::EqualsOrNot { lhs: box lhs, rhs: box rhs, not: false } })
+                        Ok(Term {
+                            ty,
+                            span,
+                            kind: TermKind::EqualsOrNot { lhs: box lhs, rhs: box rhs, not: false },
+                        })
                     }
                     Some(Neq) => {
                         let lhs = self.expr_term(args[0])?;
                         let rhs = self.expr_term(args[1])?;
 
-                        Ok(Term { ty, span, kind: TermKind::EqualsOrNot { lhs: box lhs, rhs: box rhs, not: true } })
+                        Ok(Term {
+                            ty,
+                            span,
+                            kind: TermKind::EqualsOrNot { lhs: box lhs, rhs: box rhs, not: true },
+                        })
                     }
                     Some(VariantCheck) => self.expr_term(args[0]),
                     Some(Old) => {
