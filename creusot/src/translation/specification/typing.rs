@@ -37,10 +37,8 @@ pub enum BinOp {
     Mul,
     Div,
     Rem,
-    Eq,
     Lt,
     Le,
-    Ne,
     Ge,
     Gt,
 }
@@ -75,7 +73,7 @@ pub enum TermKind<'tcx> {
     Cur { term: Box<Term<'tcx>> },
     Fin { term: Box<Term<'tcx>> },
     Impl { lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
-    Equals { lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
+    EqualsOrNot { lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>>, not: bool },
     Match { scrutinee: Box<Term<'tcx>>, arms: Vec<(Pattern<'tcx>, Term<'tcx>)> },
     Let { pattern: Pattern<'tcx>, arg: Box<Term<'tcx>>, body: Box<Term<'tcx>> },
     Projection { lhs: Box<Term<'tcx>>, name: Field, def: DefId },
@@ -179,12 +177,12 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     creusot_rustc::middle::mir::BinOp::Shr => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    creusot_rustc::middle::mir::BinOp::Eq => BinOp::Eq,
                     creusot_rustc::middle::mir::BinOp::Lt => BinOp::Lt,
                     creusot_rustc::middle::mir::BinOp::Le => BinOp::Le,
-                    creusot_rustc::middle::mir::BinOp::Ne => BinOp::Ne,
                     creusot_rustc::middle::mir::BinOp::Ge => BinOp::Ge,
                     creusot_rustc::middle::mir::BinOp::Gt => BinOp::Gt,
+                    creusot_rustc::middle::mir::BinOp::Ne => unreachable!(),
+                    creusot_rustc::middle::mir::BinOp::Eq => unreachable!(),
                     creusot_rustc::middle::mir::BinOp::Offset => todo!(),
                 };
                 Ok(Term {
@@ -261,23 +259,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         let lhs = self.expr_term(args[0])?;
                         let rhs = self.expr_term(args[1])?;
 
-                        Ok(Term { ty, span, kind: TermKind::Equals { lhs: box lhs, rhs: box rhs } })
+                        Ok(Term { ty, span, kind: TermKind::EqualsOrNot { lhs: box lhs, rhs: box rhs, not: false } })
                     }
                     Some(Neq) => {
-                        let operand_ty = self.thir[args[0]].ty;
                         let lhs = self.expr_term(args[0])?;
                         let rhs = self.expr_term(args[1])?;
 
-                        Ok(Term {
-                            ty,
-                            span,
-                            kind: TermKind::Binary {
-                                op: BinOp::Ne,
-                                operand_ty,
-                                lhs: box lhs,
-                                rhs: box rhs,
-                            },
-                        })
+                        Ok(Term { ty, span, kind: TermKind::EqualsOrNot { lhs: box lhs, rhs: box rhs, not: true } })
                     }
                     Some(VariantCheck) => self.expr_term(args[0]),
                     Some(Old) => {

@@ -1,0 +1,43 @@
+module Type
+  use Ref
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Int16
+  use mach.int.Int32
+  use mach.int.Int64
+  use prelude.UInt8
+  use prelude.UInt16
+  use mach.int.UInt32
+  use mach.int.UInt64
+  use string.Char
+  use floating_point.Single
+  use floating_point.Double
+  use seq.Seq
+  use set.Set
+  use prelude.Prelude
+  type core_option_option 't =
+    | Core_Option_Option_None
+    | Core_Option_Option_Some 't
+    
+end
+module PureNeq_F_Interface
+  use Type
+  use mach.int.Int
+  function f (x : Type.core_option_option int) (y : Type.core_option_option int) : bool
+end
+module PureNeq_F
+  use Type
+  use mach.int.Int
+  function f [#"../pure_neq.rs" 6 0 6 48] (x : Type.core_option_option int) (y : Type.core_option_option int) : bool =
+    [#"../pure_neq.rs" 7 16 7 22] x <> y
+  axiom f_spec : forall x : Type.core_option_option int, y : Type.core_option_option int . [#"../pure_neq.rs" 5 10 5 29] f x y = (not x = y)
+end
+module PureNeq_F_Impl
+  use Type
+  use mach.int.Int
+  let rec ghost function f (x : Type.core_option_option int) (y : Type.core_option_option int) : bool
+    ensures { [#"../pure_neq.rs" 5 10 5 29] result = (not x = y) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../pure_neq.rs" 7 16 7 22] x <> y
+end
