@@ -1,9 +1,6 @@
 use crate as creusot_contracts;
 use creusot_contracts_proc::*;
 
-use crate::{logic::*, Int};
-use std::ops::Index;
-
 #[creusot::builtins = "set.Set.set"]
 pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);
 
@@ -19,7 +16,7 @@ impl<T: ?Sized> Set<T> {
     }
 
     #[creusot::builtins = "set.Set.mem"]
-    fn mem(e: T, set: Self) -> bool {
+    fn mem(_: T, _: Self) -> bool {
         pearlite! { absurd }
     }
 
@@ -31,7 +28,7 @@ impl<T: ?Sized> Set<T> {
 
     #[logic]
     #[creusot::builtins = "set.Set.add"]
-    fn add(e: T, set: Self) -> Self {
+    fn add(_: T, _: Self) -> Self {
         pearlite! { absurd }
     }
 
@@ -49,13 +46,13 @@ impl<T: ?Sized> Set<T> {
 
     #[logic]
     #[creusot::builtins = "set.Set.remove"]
-    pub fn rem(a: T, s: Self) -> Self {
+    pub fn rem(_: T, _: Self) -> Self {
         pearlite! { absurd}
     }
 
     #[logic]
     #[creusot::builtins = "set.Set.union"]
-    pub fn union(self, a: Self) -> Self {
+    pub fn union(self, _: Self) -> Self {
         pearlite! { absurd}
     }
 }
