@@ -226,12 +226,13 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 Exp::Impl(box self.lower_term(lhs), box self.lower_term(rhs))
             }
             TermKind::Old { box term } => Exp::Old(box self.lower_term(term)),
-            TermKind::Equals { box lhs, box rhs } => {
+            TermKind::EqualsOrNot { box lhs, box rhs, not } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
+                let op = if not { BinOp::Ne } else { BinOp::Eq };
 
                 if let Purity::Logic = self.pure {
-                    Exp::BinaryOp(BinOp::Eq, box lhs, box rhs)
+                    Exp::BinaryOp(op, box lhs, box rhs)
                 } else {
                     let (a, lhs) = if lhs.is_pure() {
                         (lhs, None)
@@ -245,7 +246,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                         (Exp::Var("b".into(), self.pure), Some(rhs))
                     };
 
-                    let mut inner = Exp::Pure(box Exp::BinaryOp(BinOp::Eq, box a, box b));
+                    let mut inner = Exp::Pure(box Exp::BinaryOp(op, box a, box b));
 
                     if let Some(lhs) = lhs {
                         inner = Exp::Let {
@@ -358,12 +359,10 @@ fn binop_to_binop(op: typing::BinOp) -> why3::exp::BinOp {
         typing::BinOp::Sub => BinOp::Sub,
         typing::BinOp::Mul => BinOp::Mul,
         typing::BinOp::Div => BinOp::Div,
-        typing::BinOp::Eq => BinOp::Eq,
         typing::BinOp::Lt => BinOp::Lt,
         typing::BinOp::Le => BinOp::Le,
         typing::BinOp::Gt => BinOp::Gt,
         typing::BinOp::Ge => BinOp::Ge,
-        typing::BinOp::Ne => BinOp::Ne,
         typing::BinOp::Rem => BinOp::Mod,
     }
 }
