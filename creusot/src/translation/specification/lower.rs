@@ -214,8 +214,14 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 crate::ty::translate_tydecl(self.ctx, self.ctx.def_span(adt.did()), adt.did());
                 Exp::Constructor { ctor, args }
             }
-            TermKind::Cur { box term } => Exp::Current(box self.lower_term(term)),
-            TermKind::Fin { box term } => Exp::Final(box self.lower_term(term)),
+            TermKind::Cur { box term } => {
+                self.names.import_prelude_module(PreludeModule::Prelude);
+                Exp::Current(box self.lower_term(term))
+            }
+            TermKind::Fin { box term } => {
+                self.names.import_prelude_module(PreludeModule::Prelude);
+                Exp::Final(box self.lower_term(term))
+            }
             TermKind::Impl { box lhs, box rhs } => {
                 Exp::Impl(box self.lower_term(lhs), box self.lower_term(rhs))
             }
