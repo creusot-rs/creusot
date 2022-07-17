@@ -105,6 +105,11 @@ impl<T> Seq<T> {
     pub fn exchange(self, _: Self, _: Int, _: Int) -> bool {
         absurd
     }
+
+    #[predicate]
+    pub fn contains(self, e: T) -> bool {
+        pearlite! { exists<i : Int> 0 <= i &&  i <self.len() && self[i] == e }
+    }
 }
 
 // A hack which allows us to use [..] notation for sequences.
