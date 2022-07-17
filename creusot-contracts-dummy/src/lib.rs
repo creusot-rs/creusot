@@ -29,7 +29,7 @@ pub fn proof_assert(_: TS1) -> TS1 {
 
 #[proc_macro]
 pub fn ghost(_: TS1) -> TS1 {
-    quote::quote! { creusot_contracts::Ghost::new(()) }.into()
+    quote::quote! { creusot_contracts::Ghost::new() }.into()
 }
 
 #[proc_macro]

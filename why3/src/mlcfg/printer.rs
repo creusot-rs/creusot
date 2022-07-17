@@ -1077,13 +1077,7 @@ impl Print for ConstructorDecl {
 
         if !self.fields.is_empty() {
             cons_doc = cons_doc.append(alloc.space()).append(alloc.intersperse(
-                self.fields.iter().map(|ty_arg| {
-                    if !ty_arg.complex() {
-                        ty_arg.pretty(alloc, env)
-                    } else {
-                        ty_arg.pretty(alloc, env).parens()
-                    }
-                }),
+                self.fields.iter().map(|ty_arg| ty_arg.pretty(alloc, env)),
                 alloc.text(" "),
             ));
         }
@@ -1092,45 +1086,26 @@ impl Print for ConstructorDecl {
     }
 }
 
-// impl Print for TyDeclKind {
-//     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
-//         &'a self,
-//         alloc: &'a A,
-//         env: &mut PrintEnv,
-//     ) -> DocBuilder<'a, A>
-//     where
-//         A::Doc: Clone,
-//     {
-//         match self {
-//             TyDeclKind::Adt(cons) => {
-//                 let mut inner_doc = alloc.nil();
-//                 for (cons, args) in cons {
-//                     let mut ty_cons = alloc.text("| ").append(alloc.text(cons));
+impl Print for Field {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        let parens = self.ghost || self.ty.complex();
+        let doc = if self.ghost { alloc.text("ghost ") } else { alloc.nil() }
+            .append(self.ty.pretty(alloc, env));
 
-//                     if !args.is_empty() {
-//                         ty_cons = ty_cons.append(alloc.space()).append(alloc.intersperse(
-//                             args.iter().map(|ty_arg| {
-//                                 if !ty_arg.complex() {
-//                                     ty_arg.pretty(alloc, env)
-//                                 } else {
-//                                     ty_arg.pretty(alloc, env).parens()
-//                                 }
-//                             }),
-//                             alloc.text(" "),
-//                         ))
-//                     }
-
-//                     inner_doc = inner_doc.append(ty_cons.append(alloc.hardline()))
-//                 }
-
-//                 inner_doc
-//             }
-//             TyDeclKind::Alias(t) => t.pretty(alloc, env),
-//             TyDeclKind::Opaque => alloc.nil(),
-//         }
-//     }
-// }
-
+        if parens {
+            doc.parens()
+        } else {
+            doc
+        }
+    }
+}
 impl Print for Ident {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,

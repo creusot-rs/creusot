@@ -1,3 +1,4 @@
+mod fset;
 mod ghost;
 mod int;
 mod mapping;
@@ -8,6 +9,7 @@ mod seq;
 mod set;
 pub mod well_founded;
 
+pub use fset::*;
 pub use ghost::*;
 pub use int::*;
 pub use mapping::*;
