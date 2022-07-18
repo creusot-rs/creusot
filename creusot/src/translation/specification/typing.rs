@@ -179,11 +179,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     creusot_rustc::middle::mir::BinOp::Eq => unreachable!(),
                     creusot_rustc::middle::mir::BinOp::Offset => todo!(),
                 };
-                Ok(Term {
-                    ty,
-                    span,
-                    kind: TermKind::Binary { op, lhs: box lhs, rhs: box rhs },
-                })
+                Ok(Term { ty, span, kind: TermKind::Binary { op, lhs: box lhs, rhs: box rhs } })
             }
             ExprKind::LogicalOp { op, lhs, rhs } => {
                 let lhs = self.expr_term(lhs)?;
