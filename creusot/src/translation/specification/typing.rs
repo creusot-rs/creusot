@@ -24,13 +24,7 @@ use log::*;
 
 use super::PurityVisitor;
 
-#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
-pub enum LogicalOp {
-    And,
-    Or,
-}
-
-#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
+#[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
 pub enum BinOp {
     Add,
     Sub,
@@ -41,6 +35,10 @@ pub enum BinOp {
     Le,
     Ge,
     Gt,
+    Eq,
+    Ne,
+    And,
+    Or,
 }
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
@@ -61,9 +59,7 @@ pub enum TermKind<'tcx> {
     Var(Symbol),
     Lit(Literal),
     Item(DefId, SubstsRef<'tcx>),
-    // TODO Remove "operand_ty"
-    Binary { op: BinOp, operand_ty: Ty<'tcx>, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
-    Logical { op: LogicalOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
+    Binary { op: BinOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Unary { op: UnOp, arg: Box<Term<'tcx>> },
     Forall { binder: (String, Ty<'tcx>), body: Box<Term<'tcx>> },
     Exists { binder: (String, Ty<'tcx>), body: Box<Term<'tcx>> },
@@ -73,7 +69,6 @@ pub enum TermKind<'tcx> {
     Cur { term: Box<Term<'tcx>> },
     Fin { term: Box<Term<'tcx>> },
     Impl { lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
-    EqualsOrNot { lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>>, not: bool },
     Match { scrutinee: Box<Term<'tcx>>, arms: Vec<(Pattern<'tcx>, Term<'tcx>)> },
     Let { pattern: Pattern<'tcx>, arg: Box<Term<'tcx>>, body: Box<Term<'tcx>> },
     Projection { lhs: Box<Term<'tcx>>, name: Field, def: DefId },
@@ -152,7 +147,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(inner)
             }
             ExprKind::Binary { op, lhs, rhs } => {
-                let operand_ty = self.thir[lhs].ty;
                 let lhs = self.expr_term(lhs)?;
                 let rhs = self.expr_term(rhs)?;
 
@@ -188,17 +182,17 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(Term {
                     ty,
                     span,
-                    kind: TermKind::Binary { op, operand_ty, lhs: box lhs, rhs: box rhs },
+                    kind: TermKind::Binary { op, lhs: box lhs, rhs: box rhs },
                 })
             }
             ExprKind::LogicalOp { op, lhs, rhs } => {
                 let lhs = self.expr_term(lhs)?;
                 let rhs = self.expr_term(rhs)?;
                 let op = match op {
-                    thir::LogicalOp::And => LogicalOp::And,
-                    thir::LogicalOp::Or => LogicalOp::Or,
+                    thir::LogicalOp::And => BinOp::And,
+                    thir::LogicalOp::Or => BinOp::Or,
                 };
-                Ok(Term { ty, span, kind: TermKind::Logical { op, lhs: box lhs, rhs: box rhs } })
+                Ok(Term { ty, span, kind: TermKind::Binary { op, lhs: box lhs, rhs: box rhs } })
             }
             ExprKind::Unary { op, arg } => {
                 let arg = self.expr_term(arg)?;
@@ -262,7 +256,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         Ok(Term {
                             ty,
                             span,
-                            kind: TermKind::EqualsOrNot { lhs: box lhs, rhs: box rhs, not: false },
+                            kind: TermKind::Binary { op: BinOp::Eq, lhs: box lhs, rhs: box rhs },
                         })
                     }
                     Some(Neq) => {
@@ -272,7 +266,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         Ok(Term {
                             ty,
                             span,
-                            kind: TermKind::EqualsOrNot { lhs: box lhs, rhs: box rhs, not: true },
+                            kind: TermKind::Binary { op: BinOp::Ne, lhs: box lhs, rhs: box rhs },
                         })
                     }
                     Some(VariantCheck) => self.expr_term(args[0]),
