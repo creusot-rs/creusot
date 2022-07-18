@@ -3,7 +3,7 @@ use crate::{logic::OrdLogic, std::default::DefaultSpec, Int, Model, Seq};
 use creusot_contracts_proc::*;
 use std::{
     ops::{Index, IndexMut},
-    slice::SliceIndex,
+    slice::{Iter, SliceIndex},
 };
 
 impl<T> Model for [T] {
@@ -116,6 +116,9 @@ extern_spec! {
             None => ^self == * self && (@**self).len() == 0
         })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
+
+        #[ensures(@result == @self)]
+        fn iter(&self) -> Iter<'_, T>;
     }
 
     impl<T, I> IndexMut<I> for [T]
@@ -136,3 +139,15 @@ extern_spec! {
     }
 
 }
+
+impl<T> Model for std::slice::Iter<'_, T> {
+    type ModelTy = Seq<T>;
+
+    #[logic]
+    #[trusted]
+    fn model(self) -> Self::ModelTy {
+        absurd
+    }
+}
+
+

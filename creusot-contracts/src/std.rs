@@ -1,9 +1,10 @@
-pub mod boxed;
+mod boxed;
 pub mod clone;
-pub mod cmp;
-pub mod default;
-pub mod eq;
+mod cmp;
+mod default;
+mod eq;
 mod fun;
+mod iter;
 pub mod mem;
 pub mod option;
 mod slice;
