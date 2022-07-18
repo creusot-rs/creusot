@@ -409,7 +409,8 @@ pub fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
             def_id,
             ExternSpec {
                 contract: ContractClauses::new(),
-                subst: Vec::new(),
+                subst: InternalSubsts::identity_for_item(ctx.tcx, def_id),
+                arg_subst: Vec::new(),
                 additional_predicates,
             },
         );
