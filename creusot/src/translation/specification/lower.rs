@@ -1,4 +1,4 @@
-use super::typing::{self, Literal, LogicalOp, Pattern, Term, TermKind};
+use super::typing::{self, Literal, Pattern, Term, TermKind};
 use crate::{
     ctx::*,
     translation::{
@@ -110,9 +110,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 })
             }
             TermKind::Var(v) => Exp::pure_var(util::ident_of(v)),
-            TermKind::Binary { op, operand_ty, box lhs, box rhs } => {
-                translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, operand_ty);
-
+            TermKind::Binary { op, box lhs, box rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
 
@@ -121,22 +119,46 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                     self.names.import_prelude_module(PreludeModule::Int);
                 }
 
-                match op {
-                    Div => Exp::Call(box Exp::pure_var("div".into()), vec![lhs, rhs]),
-                    Rem => Exp::Call(box Exp::pure_var("mod".into()), vec![lhs, rhs]),
-                    _ => Exp::BinaryOp(binop_to_binop(op), box lhs, box rhs),
+                match (op, self.pure) {
+                    (Div, _) => Exp::Call(box Exp::pure_var("div".into()), vec![lhs, rhs]),
+                    (Rem, _) => Exp::Call(box Exp::pure_var("mod".into()), vec![lhs, rhs]),
+                    (Eq | Ne, Purity::Program) => {
+                        let (a, lhs) = if lhs.is_pure() {
+                            (lhs, None)
+                        } else {
+                            (Exp::Var("a".into(), self.pure), Some(lhs))
+                        };
+
+                        let (b, rhs) = if rhs.is_pure() {
+                            (rhs, None)
+                        } else {
+                            (Exp::Var("b".into(), self.pure), Some(rhs))
+                        };
+
+                        let op = if let typing::BinOp::Eq = op { BinOp::Eq } else { BinOp::Ne };
+                        let mut inner = Exp::Pure(box Exp::BinaryOp(op, box a, box b));
+
+                        if let Some(lhs) = lhs {
+                            inner = Exp::Let {
+                                pattern: Pat::VarP("a".into()),
+                                arg: box lhs,
+                                body: box inner,
+                            }
+                        };
+
+                        if let Some(rhs) = rhs {
+                            inner = Exp::Let {
+                                pattern: Pat::VarP("b".into()),
+                                arg: box rhs,
+                                body: box inner,
+                            }
+                        };
+
+                        inner
+                    }
+                    _ => Exp::BinaryOp(binop_to_binop(op, self.pure), box lhs, box rhs),
                 }
             }
-            TermKind::Logical { op, box lhs, box rhs } => Exp::BinaryOp(
-                match (op, self.pure) {
-                    (LogicalOp::And, Purity::Logic) => BinOp::LogAnd,
-                    (LogicalOp::And, Purity::Program) => BinOp::LazyAnd,
-                    (LogicalOp::Or, Purity::Logic) => BinOp::LogOr,
-                    (LogicalOp::Or, Purity::Program) => BinOp::LazyOr,
-                },
-                box self.lower_term(lhs),
-                box self.lower_term(rhs),
-            ),
             TermKind::Unary { op, box arg } => {
                 let op = match op {
                     typing::UnOp::Not => why3::exp::UnOp::Not,
@@ -226,47 +248,6 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 Exp::Impl(box self.lower_term(lhs), box self.lower_term(rhs))
             }
             TermKind::Old { box term } => Exp::Old(box self.lower_term(term)),
-            TermKind::EqualsOrNot { box lhs, box rhs, not } => {
-                let lhs = self.lower_term(lhs);
-                let rhs = self.lower_term(rhs);
-                let op = if not { BinOp::Ne } else { BinOp::Eq };
-
-                if let Purity::Logic = self.pure {
-                    Exp::BinaryOp(op, box lhs, box rhs)
-                } else {
-                    let (a, lhs) = if lhs.is_pure() {
-                        (lhs, None)
-                    } else {
-                        (Exp::Var("a".into(), self.pure), Some(lhs))
-                    };
-
-                    let (b, rhs) = if rhs.is_pure() {
-                        (rhs, None)
-                    } else {
-                        (Exp::Var("b".into(), self.pure), Some(rhs))
-                    };
-
-                    let mut inner = Exp::Pure(box Exp::BinaryOp(op, box a, box b));
-
-                    if let Some(lhs) = lhs {
-                        inner = Exp::Let {
-                            pattern: Pat::VarP("a".into()),
-                            arg: box lhs,
-                            body: box inner,
-                        }
-                    };
-
-                    if let Some(rhs) = rhs {
-                        inner = Exp::Let {
-                            pattern: Pat::VarP("b".into()),
-                            arg: box rhs,
-                            body: box inner,
-                        }
-                    };
-
-                    inner
-                }
-            }
             TermKind::Match { box scrutinee, mut arms } => {
                 if scrutinee.ty.peel_refs().is_bool() {
                     let true_br = if let Pattern::Boolean(true) = arms[0].0 {
@@ -353,17 +334,22 @@ use creusot_rustc::{
     middle::ty::{subst::SubstsRef, TyCtxt},
 };
 
-fn binop_to_binop(op: typing::BinOp) -> why3::exp::BinOp {
-    match op {
-        typing::BinOp::Add => BinOp::Add,
-        typing::BinOp::Sub => BinOp::Sub,
-        typing::BinOp::Mul => BinOp::Mul,
-        typing::BinOp::Div => BinOp::Div,
-        typing::BinOp::Lt => BinOp::Lt,
-        typing::BinOp::Le => BinOp::Le,
-        typing::BinOp::Gt => BinOp::Gt,
-        typing::BinOp::Ge => BinOp::Ge,
-        typing::BinOp::Rem => BinOp::Mod,
+fn binop_to_binop(op: typing::BinOp, purity: Purity) -> why3::exp::BinOp {
+    match (op, purity) {
+        (typing::BinOp::Add, _) => BinOp::Add,
+        (typing::BinOp::Sub, _) => BinOp::Sub,
+        (typing::BinOp::Mul, _) => BinOp::Mul,
+        (typing::BinOp::Lt, _) => BinOp::Lt,
+        (typing::BinOp::Le, _) => BinOp::Le,
+        (typing::BinOp::Gt, _) => BinOp::Gt,
+        (typing::BinOp::Ge, _) => BinOp::Ge,
+        (typing::BinOp::Eq, Purity::Logic) => BinOp::Eq,
+        (typing::BinOp::Ne, Purity::Logic) => BinOp::Ne,
+        (typing::BinOp::And, Purity::Logic) => BinOp::LogAnd,
+        (typing::BinOp::And, Purity::Program) => BinOp::LazyAnd,
+        (typing::BinOp::Or, Purity::Logic) => BinOp::LogOr,
+        (typing::BinOp::Or, Purity::Program) => BinOp::LazyOr,
+        _ => unreachable!(),
     }
 }
 
