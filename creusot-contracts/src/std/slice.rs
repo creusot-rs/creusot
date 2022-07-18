@@ -1,5 +1,9 @@
 use crate as creusot_contracts;
-use crate::{logic::OrdLogic, std::default::DefaultSpec, Int, Model, Seq};
+use crate::{
+    logic::OrdLogic,
+    std::{default::DefaultSpec, iter::IteratorSpec},
+    Int, Model, Seq,
+};
 use creusot_contracts_proc::*;
 use std::{
     ops::{Index, IndexMut},
@@ -140,7 +144,7 @@ extern_spec! {
 
 }
 
-impl<T> Model for std::slice::Iter<'_, T> {
+impl<T> Model for Iter<'_, T> {
     type ModelTy = Seq<T>;
 
     #[logic]
@@ -150,4 +154,43 @@ impl<T> Model for std::slice::Iter<'_, T> {
     }
 }
 
+impl<T> IteratorSpec for Iter<'_, T> {
+    #[predicate]
+    fn completed(self) -> bool {
+        pearlite! { @self == Seq::EMPTY }
+    }
 
+    #[predicate]
+    fn produces(self, visited: Seq<Self::Item>, rhs: Self) -> bool {
+        pearlite! {
+            (@self).len() == visited.len() + (@rhs).len() &&
+            (@self).subsequence(visited.len(), (@self).len()).ext_eq(@rhs) &&
+            (forall<i : Int> 0 <= i && i < visited.len() ==>
+                (@self)[i] == *visited[i])
+        }
+    }
+
+    #[law]
+    #[ensures(a.produces(Seq::EMPTY, a))]
+    fn produces_refl(a: Self) {}
+
+    #[law]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+extern_spec! {
+    mod std {
+        mod slice {
+            impl<'a, T> Iterator for Iter<'a, T> {
+                #[ensures(match result {
+                    None => (*self).completed(),
+                    Some(v) => (*self).produces(Seq::singleton(v), ^self) && !(*self).completed()
+                })]
+                fn next(&mut self) -> Option<&'a T>;
+            }
+        }
+    }
+}

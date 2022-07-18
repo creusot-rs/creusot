@@ -4,7 +4,7 @@ mod cmp;
 mod default;
 mod eq;
 mod fun;
-mod iter;
+pub mod iter;
 pub mod mem;
 pub mod option;
 mod slice;

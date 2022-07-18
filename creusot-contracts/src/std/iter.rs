@@ -1,5 +1,5 @@
 use crate as creusot_contracts;
-use crate::{Int, Model, Seq};
+use crate::Seq;
 use creusot_contracts_proc::*;
 
 pub trait IteratorSpec: Iterator {
@@ -21,17 +21,24 @@ pub trait IteratorSpec: Iterator {
 }
 
 extern_spec! {
-  mod std {
-    mod iter {
-      trait Iterator
-        where Self : IteratorSpec {
+    mod std {
+        mod iter {
+            trait Iterator
+                where Self : IteratorSpec {
 
-         #[ensures(match result {
-            None => (*self).completed(),
-            Some(v) => (*self).produces(Seq::singleton(v), ^self) && !(*self).completed()
-          })]
-          fn next(&mut self) -> Option<Self_::Item>;
-      }
+                #[ensures(match result {
+                    None => (*self).completed(),
+                    Some(v) => (*self).produces(Seq::singleton(v), ^self) && !(*self).completed()
+                })]
+                fn next(&mut self) -> Option<Self_::Item>;
+            }
+        }
     }
-  }
+}
+
+extern_spec! {
+    impl<I : Iterator> IntoIterator for I {
+        #[ensures(result == self)]
+        fn into_iter(self) -> I;
+    }
 }

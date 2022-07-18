@@ -1,13 +1,16 @@
 use crate as creusot_contracts;
-use crate::{logic::*, Int, Model, Seq};
-use creusot_contracts_proc::*;
-
-use std::alloc::Allocator;
-
-use crate::std::slice::SliceIndexSpec;
-use std::ops::{Deref, DerefMut, Index, IndexMut};
-
+use crate::{
+    logic::*,
+    std::{iter::IteratorSpec, slice::SliceIndexSpec},
+    Int, Model, Seq,
+};
 pub use ::std::vec::from_elem;
+use creusot_contracts_proc::*;
+use std::{
+    alloc::Allocator,
+    ops::{Deref, DerefMut, Index, IndexMut},
+    vec::IntoIter,
+};
 
 impl<T, A: Allocator> Model for Vec<T, A> {
     type ModelTy = Seq<T>;
@@ -45,6 +48,15 @@ extern_spec! {
                     None => *self == ^self && (@*self).len() == 0
                 })]
                 fn pop(&mut self) -> Option<T>;
+
+                #[requires(@ix < (@self).len())]
+                #[ensures(result == (@self)[@ix])]
+                #[ensures(@^self == (@self).subsequence(0, @ix).concat((@self).subsequence(@ix + 1, (@self).len())))]
+                #[ensures((@^self).len() == (@self).len() - 1)]
+                fn remove(&mut self, ix: usize) -> T;
+
+                #[ensures(@result == @self)]
+                fn into_iter(self) -> IntoIter<T, A>;
             }
 
             impl<T, I : SliceIndexSpec<[T]>, A : Allocator> IndexMut<I> for Vec<T, A> {
@@ -89,9 +101,53 @@ impl<T> Resolve for Vec<T> {
     }
 }
 
-// #[trusted]
-// #[ensures((@result).len() == @n)]
-// #[ensures(forall<i : Int> 0 <= i && i < @n ==> (@result)[i] == elem)]
-// pub fn from_elem<T: Clone>(elem: T, n: usize) -> Vec<T> {
-//     panic!()
-// }
+impl<T, A: Allocator> IteratorSpec for std::vec::IntoIter<T, A> {
+    #[predicate]
+    fn completed(self) -> bool {
+        pearlite! { @self == Seq::EMPTY }
+    }
+
+    #[predicate]
+    fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
+        pearlite! {
+            (@self).len() == visited.len() + (@rhs).len() &&
+            (@self).subsequence(visited.len(), (@self).len()).ext_eq(@rhs) &&
+            (forall<i : Int> 0 <= i && i < visited.len() ==>
+                (@self)[i] == visited[i])
+        }
+    }
+
+    #[law]
+    #[ensures(a.produces(Seq::EMPTY, a))]
+    fn produces_refl(a: Self) {}
+
+    #[law]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
+}
+
+impl<T, A: Allocator> Model for std::vec::IntoIter<T, A> {
+    type ModelTy = Seq<T>;
+
+    #[logic]
+    #[trusted]
+    fn model(self) -> Self::ModelTy {
+        absurd
+    }
+}
+
+extern_spec! {
+    mod std {
+        mod vec {
+            impl<T, A : Allocator> Iterator for IntoIter<T, A> {
+                #[ensures(match result {
+                    None => (*self).completed() && self.resolve(),
+                    Some(v) => (*self).produces(Seq::singleton(v), ^self) && !(*self).completed()
+                })]
+                fn next(&mut self) -> Option<T>;
+            }
+        }
+    }
+}
