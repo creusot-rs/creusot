@@ -29,6 +29,13 @@ impl<T> Ghost<T> {
     #[trusted]
     #[logic]
     #[creusot::builtins = "ghost_inner"]
+    pub fn unwrap(self) -> T {
+        pearlite! { absurd }
+    }
+
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "ghost_inner"]
     pub fn inner(&self) -> T {
         pearlite! { absurd }
     }
