@@ -1,6 +1,6 @@
 mod boxed;
 pub mod clone;
-mod cmp;
+pub mod cmp;
 mod default;
 mod eq;
 mod fun;

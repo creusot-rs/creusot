@@ -125,6 +125,11 @@ extern_spec! {
         fn iter(&self) -> Iter<'_, T>;
     }
 
+    impl<'a, T> IntoIterator for &'a [T] {
+        #[ensures(@result == @self)]
+        fn into_iter(self) -> Iter<'a, T>;
+    }
+
     impl<T, I> IndexMut<I> for [T]
         where I : SliceIndexSpec<[T]> {
        #[requires(ix.in_bounds(@*self))]

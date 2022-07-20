@@ -93,6 +93,15 @@ extern_spec! {
     }
 }
 
+// Has to be placed outside because of limitations in the proc macro for extern spec
+// that cannot properly prefix `Vec` with `std::vec::` inside `&'a Vec`
+extern_spec! {
+    impl<'a, T, A : Allocator> IntoIterator for &'a std::vec::Vec<T, A> {
+        #[ensures(@result == @self)]
+        fn into_iter(self) -> std::slice::Iter<'a, T>;
+    }
+}
+
 #[trusted]
 impl<T> Resolve for Vec<T> {
     #[predicate]
