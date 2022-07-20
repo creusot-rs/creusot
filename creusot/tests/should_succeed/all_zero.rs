@@ -31,12 +31,13 @@ fn get(l: List, ix: Int) -> Option<u32> {
 #[ensures(len(*l) == len(^l))]
 pub fn all_zero(l: &mut List) {
     use List::*;
+    let old_l = ghost! { l };
     let mut loop_l = l;
 
     #[invariant(zeroed,
-        (forall<i:Int> 0 <= i && i < len(*loop_l) ==> get(^loop_l, i) == Some(0u32)) ==>
+        (forall<i:Int> 0 <= i && i < len(**old_l) ==> get(^*old_l, i) == Some(0u32)) ==>
             forall<i:Int> 0 <= i && i < len(*l) ==> get(^l, i) == Some(0u32))]
-    #[invariant(in_len, len(^loop_l) == len(*loop_l) ==> len(^l) == len(*l))]
+    #[invariant(in_len, len(^*old_l) == len(**old_l) ==> len(^l) == len(*l))]
     while let Cons(value, next) = loop_l {
         *value = 0;
         loop_l = next;
