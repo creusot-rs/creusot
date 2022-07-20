@@ -57,12 +57,25 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
     ) {
         let rval = match rvalue {
             Rvalue::Use(rval) => match rval {
-                Move(pl) | Copy(pl) => {
+                Move(pl) => {
                     // TODO: should this be done for *any* form of assignment?
                     let ty = place.ty(self.body, self.tcx).ty;
                     let pl_exp = self.translate_rplace(place);
                     self.resolve_ty(ty).emit(pl_exp, self);
-                    self.translate_rplace(pl)
+                    let rhs = self.translate_rplace(pl);
+                    self.emit_assignment(place, rhs);
+                    let any = Exp::Any(super::ty::translate_ty(self.ctx, self.names, si.span, ty));
+                    self.emit_assignment(pl, any);
+                    return;
+                }
+                Copy(pl) => {
+                    // TODO: should this be done for *any* form of assignment?
+                    let ty = place.ty(self.body, self.tcx).ty;
+                    let pl_exp = self.translate_rplace(place);
+                    self.resolve_ty(ty).emit(pl_exp, self);
+                    let rhs = self.translate_rplace(pl);
+                    self.emit_assignment(place, rhs);
+                    return;
                 }
                 Constant(box c) => {
                     if let Some(c) = c.literal.const_for_ty() {
