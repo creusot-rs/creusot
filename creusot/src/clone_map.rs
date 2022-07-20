@@ -236,6 +236,7 @@ impl<'tcx> CloneMap<'tcx> {
             last_cloned: 0,
             public: false,
         };
+        debug!("cloning self: {:?}", c.self_key());
         c.names.insert(c.self_key(), CloneInfo::hidden());
         c
     }

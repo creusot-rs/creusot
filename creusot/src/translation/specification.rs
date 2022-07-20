@@ -55,7 +55,7 @@ impl<'tcx> PreContract<'tcx> {
 
         if let Some(extern_spec) = ctx.extern_spec(id) {
             let subst = extern_spec
-                .subst
+                .arg_subst
                 .iter()
                 .map(|(i, i2)| {
                     (Ident::build(i.as_str()), Exp::impure_var(Ident::build(i2.as_str())))
@@ -273,7 +273,7 @@ pub fn contract_of<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, def_id: DefId) -> P
     let (def_id, subst) = inherited_extern_spec(ctx, def_id)
         .unwrap_or_else(|| (def_id, InternalSubsts::identity_for_item(ctx.tcx, def_id)));
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
-        extern_spec.contract.get_pre(ctx).subst(ctx.tcx, subst)
+        extern_spec.contract.get_pre(ctx).subst(ctx.tcx, extern_spec.subst)
     } else {
         contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst)
     }

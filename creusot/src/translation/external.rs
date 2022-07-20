@@ -11,7 +11,7 @@ use creusot_rustc::{
     middle::{
         thir::{self, visit::Visitor, Expr, ExprKind, Thir},
         ty::{
-            subst::{InternalSubsts, Subst, SubstsRef},
+            subst::{GenericArgKind, InternalSubsts, Subst, SubstsRef},
             EarlyBinder, Predicate, TyCtxt, TyKind, WithOptConstParam,
         },
     },
@@ -86,7 +86,8 @@ pub fn extern_module<'tcx>(
 pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
     pub contract: ContractClauses,
-    pub subst: Vec<(Symbol, Symbol)>,
+    pub subst: SubstsRef<'tcx>,
+    pub arg_subst: Vec<(Symbol, Symbol)>,
     // Additional predicates we must verify to call this function
     pub additional_predicates: Vec<Predicate<'tcx>>,
 }
@@ -116,8 +117,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     let (id, subst) = visit.items.pop().unwrap();
 
-    // Do we need a marker for this? can we not just always do it?
-    let (id, s) = if ctx.trait_of_item(id).is_some() {
+    let (id, _) = if ctx.trait_of_item(id).is_some() {
         let resolved = traits::resolve_opt(ctx.tcx, ctx.param_env(def_id.to_def_id()), id, subst);
 
         if let None = resolved {
@@ -137,46 +137,54 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let inner_subst = InternalSubsts::identity_for_item(ctx.tcx, id);
     let outer_subst = InternalSubsts::identity_for_item(ctx.tcx, def_id.to_def_id());
 
-    // Note: we only compare consts and types here, which may cause problems down the line
-    // If `extern_substs` lead to panics related to substitutions being out of bound, revisit this code
-    // The reason for doing this is to handle 'late bound regions' which sometimes appear and can't be substituted?
-    let valid_subst = if ctx.generics_of(id).count() > 0
-        && ctx.generics_of(def_id).count() > 0
-        && ctx.trait_of_item(id).is_some()
-    {
-        ctx.generics_of(def_id).param_at(0, ctx.tcx).name.as_str().starts_with("Self")
-            && inner_subst
-                .non_erasable_generics()
-                .skip(1)
-                .eq(outer_subst.non_erasable_generics().skip(1))
-    } else {
-        inner_subst.non_erasable_generics().eq(outer_subst.non_erasable_generics())
-    };
+    let extra_parameters = inner_subst.len() - outer_subst.len();
 
-    if !valid_subst {
-        let mut err = ctx.fatal_error(
-            ctx.def_span(def_id.to_def_id()),
-            "extern specification generics must be the same as the original declaration",
-        );
-        // Why wont this print?
-        err.warn(&format!("found {:?} but expected {:?}", outer_subst, inner_subst));
-        err.emit()
+    let mut subst = Vec::new();
+    let mut errors = Vec::new();
+    for i in 0..outer_subst.len() {
+        let span = ctx.def_span(def_id.to_def_id());
+        match (inner_subst[i + extra_parameters].unpack(), outer_subst[i].unpack()) {
+            (GenericArgKind::Type(t1), GenericArgKind::Type(t2)) => match (t1.kind(), t2.kind()) {
+                (TyKind::Param(param1), TyKind::Param(param2))
+                    if param1.name == param2.name || param1.name.as_str().starts_with("Self") =>
+                {
+                    subst.push(inner_subst[i + extra_parameters]);
+                }
+                _ => {
+                    let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
+                    err.warn(&format!("expected parameter `{:?}` to be called `{:?}`", t2, t1));
+                    errors.push(err);
+                }
+            },
+            (GenericArgKind::Const(c1), GenericArgKind::Const(c2)) => {
+                if c1 == c2 {
+                    subst.push(inner_subst[i + extra_parameters]);
+                } else {
+                    let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
+                    err.warn(&format!("expected parameter `{:?}` to be called `{:?}`", c2, c1));
+                    errors.push(err);
+                }
+            }
+            _ => {}
+        }
     }
+
+    errors.into_iter().for_each(|mut e| e.emit());
+
+    let subst = ctx.mk_substs(subst.into_iter());
 
     let contract = crate::specification::contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
 
-    // Use the inverse substitution to turn predicates on the outer definition into ones on the inner definition.
-
     let additional_predicates =
-        ctx.tcx.predicates_of(def_id).instantiate(ctx.tcx, s).predicates.into_iter().collect();
-    let subst = ctx
+        ctx.tcx.predicates_of(def_id).instantiate(ctx.tcx, subst).predicates.into_iter().collect();
+    let arg_subst = ctx
         .tcx
         .fn_arg_names(def_id)
         .iter()
         .zip(ctx.tcx.fn_arg_names(id).iter())
         .map(|(i, i2)| (i.name, i2.name))
         .collect();
-    Ok((id, ExternSpec { contract, additional_predicates, subst }))
+    Ok((id, ExternSpec { contract, additional_predicates, subst, arg_subst }))
 }
 
 // We shouldn't need a full visitor... or an index set, there should be a single item per extern spec method.

@@ -6,7 +6,7 @@ use std::alloc::Allocator;
 extern_spec! {
     mod std {
         mod boxed {
-            impl<T, A: Allocator> Box<T> {
+            impl<T, A: Allocator> Box<T, A> {
                 #[ensures(**self == *result)]
                 #[ensures(*^self == ^result)]
                 fn as_mut(&mut self) -> &mut T;
