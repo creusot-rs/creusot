@@ -14,6 +14,8 @@ module Type
   use floating_point.Double
   use seq.Seq
   use set.Set
+  use set.Fset
+  use map.Map
   use prelude.Prelude
   type core_ptr_nonnull_nonnull 't =
     | Core_Ptr_NonNull_NonNull opaque_ptr
@@ -33,6 +35,14 @@ module Type
   type alloc_alloc_global  =
     | Alloc_Alloc_Global
     
+  type c12ghostcode_mystruct  =
+    | C12GhostCode_MyStruct uint32 (ghost uint32)
+    
+  let ghost function c12ghostcode_mystruct_MyStruct_g (self : c12ghostcode_mystruct) : uint32
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C12GhostCode_MyStruct _ a -> a
+      end
 end
 module C12GhostCode_GhostArg_Interface
   use mach.int.Int
@@ -265,12 +275,13 @@ module Alloc_Vec_Impl1_Len_Interface
   type a
   use mach.int.UInt64
   use seq.Seq
+  use mach.int.Int
   use prelude.Prelude
   use Type
-  use mach.int.Int
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
   val len [@cfg:stackify] (self : Type.alloc_vec_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
+    ensures { UInt64.to_int result <= 18446744073709551615 }
     
 end
 module Alloc_Vec_Impl1_Len
@@ -278,12 +289,13 @@ module Alloc_Vec_Impl1_Len
   type a
   use mach.int.UInt64
   use seq.Seq
+  use mach.int.Int
   use prelude.Prelude
   use Type
-  use mach.int.Int
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
   val len [@cfg:stackify] (self : Type.alloc_vec_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
+    ensures { UInt64.to_int result <= 18446744073709551615 }
     
 end
 module C12GhostCode_GhostCheck_Interface
@@ -370,4 +382,42 @@ end
 module C12GhostCode_Omg
   function omg [#"../12_ghost_code.rs" 14 0 14 8] (_ : ()) : () =
     [#"../12_ghost_code.rs" 13 0 13 8] ()
+end
+module C12GhostCode_TakesStruct_Interface
+  use mach.int.UInt32
+  use mach.int.Int
+  use mach.int.Int32
+  use Type
+  val takes_struct [@cfg:stackify] (x : Type.c12ghostcode_mystruct) : ()
+    requires {[#"../12_ghost_code.rs" 41 11 41 20] UInt32.to_int (Type.c12ghostcode_mystruct_MyStruct_g x) = 0}
+    
+end
+module C12GhostCode_TakesStruct
+  use mach.int.UInt32
+  use mach.int.Int
+  use mach.int.Int32
+  use Type
+  let rec cfg takes_struct [@cfg:stackify] [#"../12_ghost_code.rs" 42 0 42 37] (x : Type.c12ghostcode_mystruct) : ()
+    requires {[#"../12_ghost_code.rs" 41 11 41 20] UInt32.to_int (Type.c12ghostcode_mystruct_MyStruct_g x) = 0}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var x_1 : Type.c12ghostcode_mystruct;
+  ghost var _2 : uint32;
+  var _3 : ();
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _3 <- ();
+    _2 <- ghost ([#"../12_ghost_code.rs" 43 10 43 23] (10 : uint32));
+    goto BB1
+  }
+  BB1 {
+    x_1 <- (let Type.C12GhostCode_MyStruct a b = x_1 in Type.C12GhostCode_MyStruct a _2);
+    _0 <- ();
+    return _0
+  }
+  
 end
