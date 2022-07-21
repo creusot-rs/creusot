@@ -41,6 +41,8 @@ use why3::{
     Ident,
 };
 
+use super::ty::is_ghost_ty;
+
 mod place;
 mod promoted;
 mod statement;
@@ -296,11 +298,8 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
                 continue;
             }
             let ident = self.translate_local(loc);
-            let ghost = if let TyKind::Adt(def, _) = decl.ty.kind() {
-                self.ctx.is_diagnostic_item(Symbol::intern("creusot_ghost"), def.did())
-            } else {
-                false
-            };
+            let ghost = is_ghost_ty(self.tcx, decl.ty);
+
             vars.push((
                 ghost,
                 ident,

@@ -8,9 +8,10 @@ use creusot_rustc::{
     span::{Span, Symbol, DUMMY_SP},
     type_ir::sty::TyKind::*,
 };
+use rustc_middle::ty::TyKind;
 use std::collections::VecDeque;
 use why3::{
-    declaration::{AdtDecl, ConstructorDecl, Contract, Decl, LetFun, Signature},
+    declaration::{AdtDecl, ConstructorDecl, Contract, Decl, Field, LetFun, Signature},
     exp::{Exp, Pattern},
     Ident,
 };
@@ -69,7 +70,7 @@ fn translate_ty_inner<'tcx>(
                 return translate_ty_inner(trans, ctx, names, span, s[0].expect_ty());
             }
 
-            if ctx.is_diagnostic_item(Symbol::intern("creusot_ghost"), def.did()) {
+            if is_ghost_ty(ctx.tcx, ty) {
                 return translate_ty_inner(trans, ctx, names, span, s[0].expect_ty());
             }
 
@@ -298,8 +299,14 @@ fn build_ty_decl<'tcx>(
         let mut ml_ty_def = Vec::new();
 
         for var_def in adt.variants().iter() {
-            let field_tys: Vec<_> =
-                var_def.fields.iter().map(|f| field_ty(ctx, names, f, substs)).collect();
+            let field_tys: Vec<_> = var_def
+                .fields
+                .iter()
+                .map(|f| {
+                    let (ty, ghost) = field_ty(ctx, names, f, substs);
+                    Field { ty, ghost }
+                })
+                .collect();
             let var_name = item_name(ctx.tcx, var_def.def_id);
 
             ml_ty_def.push(ConstructorDecl { name: var_name, fields: field_tys });
@@ -321,7 +328,10 @@ pub fn translate_closure_ty<'tcx>(
     let closure_subst = subst.as_closure();
     let fields: Vec<_> = closure_subst
         .upvar_tys()
-        .map(|uv| translate_ty_inner(TyTranslation::Usage, ctx, names, DUMMY_SP, uv))
+        .map(|uv| Field {
+            ty: translate_ty_inner(TyTranslation::Usage, ctx, names, DUMMY_SP, uv),
+            ghost: false,
+        })
         .collect();
 
     let mut cons_name = item_name(ctx.tcx, did);
@@ -351,13 +361,16 @@ fn field_ty<'tcx>(
     names: &mut CloneMap<'tcx>,
     field: &FieldDef,
     substs: SubstsRef<'tcx>,
-) -> MlT {
-    translate_ty_inner(
-        TyTranslation::Declaration,
-        ctx,
-        names,
-        ctx.def_span(field.did),
-        field.ty(ctx.tcx, substs),
+) -> (MlT, bool) {
+    (
+        translate_ty_inner(
+            TyTranslation::Declaration,
+            ctx,
+            names,
+            ctx.def_span(field.did),
+            field.ty(ctx.tcx, substs),
+        ),
+        is_ghost_ty(ctx.tcx, field.ty(ctx.tcx, substs)),
     )
 }
 
@@ -378,7 +391,7 @@ pub fn translate_accessor(
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let mut names = CloneMap::new(ctx.tcx, adt_did, false);
-    let target_ty = field_ty(ctx, &mut names, &variant.fields[ix], substs);
+    let (target_ty, ghost) = field_ty(ctx, &mut names, &variant.fields[ix], substs);
 
     let variant_arities: Vec<_> = adt_def
         .variants()
@@ -398,7 +411,7 @@ pub fn translate_accessor(
         Ident::build(&acc_name),
         variant_ix.into(),
         &variant_arities,
-        (ix, target_ty),
+        (ix, target_ty, ghost),
     )
 }
 
@@ -407,7 +420,7 @@ pub fn build_accessor(
     acc_name: Ident,
     variant_ix: usize,
     variant_arities: &[(QName, usize)],
-    target_field: (usize, MlT),
+    target_field: (usize, MlT, bool),
 ) -> Decl {
     let field_ty = target_field.1;
     let field_ix = target_field.0;
@@ -436,7 +449,7 @@ pub fn build_accessor(
 
     let discr_exp = Exp::Match(box Exp::pure_var("self".into()), branches);
 
-    Decl::LetFun(LetFun { sig, rec: false, ghost: false, body: discr_exp })
+    Decl::LetFun(LetFun { sig, rec: false, ghost: target_field.2, body: discr_exp })
 }
 
 pub fn closure_accessors<'tcx>(
@@ -463,7 +476,13 @@ pub fn closure_accessors<'tcx>(
 
     for tgt in fields.drain(..).enumerate() {
         let nm = closure_accessor_name(ctx.tcx, ty_id, tgt.0);
-        accessors.push(build_accessor(this.clone(), nm, tgt.0, &variant_arity, tgt));
+        accessors.push(build_accessor(
+            this.clone(),
+            nm,
+            tgt.0,
+            &variant_arity,
+            (tgt.0, tgt.1, false),
+        ));
     }
     accessors
 }
@@ -478,6 +497,13 @@ pub fn variant_accessor_name(tcx: TyCtxt, def: DefId, variant: &VariantDef, fiel
     let ty_name = item_name(tcx, def).to_string().to_lowercase();
 
     format!("{}_{}_{}", &*ty_name, variant.name, variant.fields[field].name).into()
+}
+
+pub fn is_ghost_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    match ty.kind() {
+        TyKind::Adt(def, _) => tcx.is_diagnostic_item(Symbol::intern("creusot_ghost"), def.did()),
+        _ => false,
+    }
 }
 
 fn intty_to_ty(

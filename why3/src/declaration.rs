@@ -195,7 +195,14 @@ pub struct AdtDecl {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct ConstructorDecl {
     pub name: Ident,
-    pub fields: Vec<Type>,
+    pub fields: Vec<Field>,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct Field {
+    pub ghost: bool,
+    pub ty: Type,
 }
 
 impl TyDecl {
@@ -206,7 +213,7 @@ impl TyDecl {
                 for AdtDecl { constrs, .. } in tys {
                     for cons in constrs {
                         for ty in &cons.fields {
-                            ty.find_used_types(&mut used);
+                            ty.ty.find_used_types(&mut used);
                         }
                     }
                 }

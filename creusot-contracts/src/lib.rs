@@ -158,7 +158,7 @@ pub mod logic {
         T: ?Sized;
 
     impl<T> Ghost<T> {
-        pub fn new(_: T) -> Ghost<T> {
+        pub fn new() -> Ghost<T> {
             Ghost(std::marker::PhantomData)
         }
     }

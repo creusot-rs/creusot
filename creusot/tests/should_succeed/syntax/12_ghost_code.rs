@@ -32,3 +32,13 @@ pub fn ghost_check() {
 
     assert!(x.len() == 1);
 }
+
+pub struct MyStruct {
+    f: u32,
+    g: Ghost<u32>,
+}
+
+#[requires(@x.g == 0)]
+pub fn takes_struct(mut x: MyStruct) {
+    x.g = ghost! { x.f };
+}
