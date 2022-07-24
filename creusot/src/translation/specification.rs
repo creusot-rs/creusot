@@ -270,12 +270,15 @@ pub fn inherited_extern_spec<'tcx>(
 }
 
 pub fn contract_of<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, def_id: DefId) -> PreContract<'tcx> {
-    let (def_id, subst) = inherited_extern_spec(ctx, def_id)
-        .unwrap_or_else(|| (def_id, InternalSubsts::identity_for_item(ctx.tcx, def_id)));
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
         extern_spec.contract.get_pre(ctx).subst(ctx.tcx, extern_spec.subst)
     } else {
-        contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst)
+        if let Some((def_id, subst)) = inherited_extern_spec(ctx, def_id) {
+            ctx.extern_spec(def_id).cloned().unwrap().contract.get_pre(ctx).subst(ctx.tcx, subst)
+        } else {
+            let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
+            contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst)
+        }
     }
 }
 
