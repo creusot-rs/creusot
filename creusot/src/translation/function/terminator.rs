@@ -1,38 +1,35 @@
+use super::BodyTranslator;
+use crate::{
+    ctx::TranslationCtx,
+    translation::{
+        fmir::{self, Branches, Expr, RValue, Terminator},
+        specification::typing::{Term, TermKind, UnOp},
+        traits,
+    },
+    util::is_ghost_closure,
+};
 use creusot_rustc::{
-    errors::DiagnosticId,
-    hir::{def_id::DefId, Unsafety},
+    hir::def_id::DefId,
     infer::{
         infer::{InferCtxt, TyCtxtInferExt},
         traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
     },
     middle::{
-        mir::{SwitchTargets, Terminator, TerminatorKind, TerminatorKind::*},
+        mir::{self, SwitchTargets, TerminatorKind, TerminatorKind::*},
         ty::{
             self,
             subst::{GenericArgKind, SubstsRef},
-            AdtDef, ParamEnv, Predicate, Ty,
+            ParamEnv, Predicate, Ty, TyKind,
         },
     },
-    session::Session,
-    smir::mir::{BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo, StatementKind},
+    smir::mir::{
+        BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo, StatementKind,
+    },
     span::Span,
-    target::abi::VariantIdx,
     trait_selection::traits::FulfillmentContext,
 };
-
+use itertools::Itertools;
 use std::collections::HashMap;
-use why3::{
-    exp::{BinOp, Constant, Exp, Pattern},
-    mlcfg::{BlockId, Statement, Terminator as MlT},
-};
-
-use crate::{
-    ctx::TranslationCtx,
-    translation::traits,
-    util::{constructor_qname, is_ghost_closure},
-};
-
-use super::BodyTranslator;
 
 // Translate the terminator of a basic block.
 // There isn't much that's special about this. The only subtlety is in how
@@ -41,7 +38,8 @@ use super::BodyTranslator;
 // patterns in match expressions.
 
 impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
-    pub fn translate_terminator(&mut self, terminator: &Terminator<'tcx>, location: Location) {
+    pub fn translate_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: Location) {
+        let span = terminator.source_info.span;
         match &terminator.kind {
             Goto { target } => self.emit_terminator(mk_goto(*target)),
             SwitchInt { discr, targets, .. } => {
@@ -52,7 +50,6 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
 
                 let discriminant = self.translate_operand(&real_discr);
                 let switch = make_switch(
-                    self.ctx.tcx.sess,
                     self.ctx,
                     terminator.source_info,
                     real_discr.ty(self.body, self.tcx),
@@ -62,13 +59,13 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
 
                 self.emit_terminator(switch);
             }
-            Abort => self.emit_terminator(MlT::Absurd),
-            Return => self.emit_terminator(MlT::Return),
-            Unreachable => self.emit_terminator(MlT::Absurd),
+            Abort => self.emit_terminator(Terminator::Abort),
+            Return => self.emit_terminator(Terminator::Return),
+            Unreachable => self.emit_terminator(Terminator::Abort),
             Call { func, args, destination, target, .. } => {
                 if target.is_none() {
                     // If we have no target block after the call, then we cannot move past it.
-                    self.emit_terminator(MlT::Absurd);
+                    self.emit_terminator(Terminator::Abort);
                     return;
                 }
 
@@ -80,8 +77,8 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     let assertion = self.assertions.remove(&def_id).unwrap();
                     let (loc, bb) = (destination, target.unwrap());
 
-                    self.emit_assignment(&loc, Exp::Ghost(Box::new(assertion)));
-                    self.emit_terminator(MlT::Goto(BlockId(bb.into())));
+                    self.emit_ghost_assign(*loc, assertion);
+                    self.emit_terminator(Terminator::Goto(bb));
                     return;
                 }
 
@@ -93,12 +90,8 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
 
                 use creusot_rustc::trait_selection::traits::error_reporting::InferCtxtExt;
                 self.tcx.infer_ctxt().enter(|infcx| {
-                    let res = evaluate_additional_predicates(
-                        &infcx,
-                        predicates,
-                        self.param_env(),
-                        terminator.source_info.span,
-                    );
+                    let res =
+                        evaluate_additional_predicates(&infcx, predicates, self.param_env(), span);
                     if let Err(errs) = res {
                         let hir_id =
                             self.tcx.hir().local_def_id_to_hir_id(self.def_id.expect_local());
@@ -112,57 +105,48 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
 
                 if func_args.is_empty() {
                     // We use tuple as a dummy argument for 0-ary functions
-                    func_args.push(Exp::Tuple(vec![]))
+                    func_args.push(Expr::Tuple(vec![]))
                 }
                 let call_exp = if self.is_box_new(fun_def_id) {
                     assert_eq!(func_args.len(), 1);
 
                     func_args.remove(0)
                 } else {
-                    let resolved =
-                        self.get_func_name(fun_def_id, subst, terminator.source_info.span);
-                    let fname =
-                        self.names.insert(resolved.0, resolved.1).qname(self.tcx, resolved.0);
-                    let exp = if self.ctx.is_closure(resolved.0) {
-                        assert!(
-                            func_args.len() == 2,
-                            "closures should only have two arguments (env, args)"
-                        );
+                    let (fun_def_id, subst) =
+                        resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
 
-                        let real_sig = self
-                            .ctx
-                            .signature_unclosure(resolved.1.as_closure().sig(), Unsafety::Normal);
-                        let closure_arg_count = real_sig.inputs().skip_binder().len();
-                        let names = ('a'..).take(closure_arg_count);
-
-                        let mut args = vec![func_args.remove(0)];
-
-                        args.extend(names.clone().map(|nm| Exp::impure_var(nm.to_string().into())));
-
-                        Exp::Let {
-                            pattern: Pattern::TupleP(
-                                names.map(|nm| Pattern::VarP(nm.to_string().into())).collect(),
-                            ),
-                            arg: box func_args.remove(0),
-                            body: box Exp::Call(box Exp::impure_qvar(fname), args),
-                        }
-                    } else {
-                        Exp::Call(box Exp::impure_qvar(fname), func_args)
-                    };
-                    let span = terminator.source_info.span.source_callsite();
-                    self.ctx.attach_span(span, exp)
+                    let exp = Expr::Call(fun_def_id, subst, func_args);
+                    let span = span.source_callsite();
+                    Expr::Span(span, box exp)
                 };
 
                 let (loc, bb) = (destination, target.unwrap());
-                self.emit_assignment(&loc, call_exp);
-                self.emit_terminator(MlT::Goto(BlockId(bb.into())));
+                self.emit_assignment(&loc, RValue::Expr(call_exp));
+                self.emit_terminator(Terminator::Goto(bb));
             }
             Assert { cond, expected, msg: _, target, cleanup: _ } => {
-                let mut ass = self.translate_operand(cond);
+                let mut ass = match cond {
+                    Operand::Copy(pl) | Operand::Move(pl) => {
+                        if let Some(locl) = pl.as_local() {
+                            Term {
+                                kind: TermKind::Var(self.translate_local(locl).symbol()),
+                                span,
+                                ty: cond.ty(self.body, self.tcx),
+                            }
+                        } else {
+                            unreachable!("assertion contains something other than local")
+                        }
+                    }
+                    Operand::Constant(_) => todo!(),
+                };
                 if !expected {
-                    ass = Exp::UnaryOp(why3::exp::UnOp::Not, box ass);
+                    ass = Term {
+                        ty: ass.ty,
+                        span: ass.span,
+                        kind: TermKind::Unary { op: UnOp::Not, arg: box ass },
+                    };
                 }
-                self.emit_statement(Statement::Assert(ass));
+                self.emit_statementf(fmir::Statement::Assertion(ass));
                 self.emit_terminator(mk_goto(*target))
             }
 
@@ -174,23 +158,13 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                 self.emit_terminator(mk_goto(*real_target));
             }
             DropAndReplace { target, place, value, .. } => {
-                // Drop
-                let ty = place.ty(self.body, self.tcx).ty;
-                let pl_exp = self.translate_rplace(place);
-                self.resolve_ty(ty).emit(pl_exp, self);
+                // Resolve
+                self.emit_statementf(fmir::Statement::Resolve(*place));
 
                 // Assign
-                let rhs = match value {
-                    Operand::Move(pl) | Operand::Copy(pl) => self.translate_rplace(pl),
-                    Operand::Constant(box c) => crate::constant::from_mir_constant(
-                        self.param_env(),
-                        self.ctx,
-                        self.names,
-                        c,
-                    ),
-                };
+                let rhs = self.translate_operand(value);
 
-                self.emit_assignment(place, rhs);
+                self.emit_assignment(place, RValue::Expr(rhs));
 
                 self.emit_terminator(mk_goto(*target))
             }
@@ -203,43 +177,44 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
     fn is_box_new(&self, def_id: DefId) -> bool {
         self.tcx.def_path_str(def_id) == "std::boxed::Box::<T>::new"
     }
+}
 
-    fn get_func_name(
-        &mut self,
-        def_id: DefId,
-        subst: SubstsRef<'tcx>,
-        sp: creusot_rustc::span::Span,
-    ) -> (DefId, SubstsRef<'tcx>) {
-        if let Some(it) = self.tcx.opt_associated_item(def_id) {
-            if let ty::TraitContainer(id) = it.container {
-                let params = self.param_env();
-                let method = traits::resolve_assoc_item_opt(self.tcx, params, def_id, subst)
-                    .expect("could not find instance");
+pub fn resolve_function<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    param_env: ParamEnv<'tcx>,
+    def_id: DefId,
+    subst: SubstsRef<'tcx>,
+    sp: Span,
+) -> (DefId, SubstsRef<'tcx>) {
+    if let Some(it) = ctx.opt_associated_item(def_id) {
+        if let ty::TraitContainer(id) = it.container {
+            let method = traits::resolve_assoc_item_opt(ctx.tcx, param_env, def_id, subst)
+                .expect("could not find instance");
 
-                self.ctx.translate(id);
-                self.ctx.translate(method.0);
+            ctx.translate(id);
+            ctx.translate(method.0);
 
-                if !method.0.is_local()
-                    && !self.ctx.externs.verified(method.0)
-                    && self.ctx.extern_spec(method.0).is_none()
-                    && self.ctx.extern_spec(def_id).is_none()
-                {
-                    self.ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
-                }
-
-                return method;
+            if !method.0.is_local()
+                && !ctx.externs.verified(method.0)
+                && ctx.extern_spec(method.0).is_none()
+                && ctx.extern_spec(def_id).is_none()
+            {
+                ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
             }
-        }
 
-        if !def_id.is_local()
-            && !(self.ctx.extern_spec(def_id).is_some() || self.ctx.externs.verified(def_id))
-        {
-            self.ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
+            return method;
         }
-        self.ctx.translate(def_id);
-
-        (def_id, subst)
     }
+
+    if !def_id.is_local() && !(ctx.extern_spec(def_id).is_some() || ctx.externs.verified(def_id)) {
+        ctx.warn(
+            sp,
+            "calling an external function with no contract will yield an impossible precondition",
+        );
+    }
+    ctx.translate(def_id);
+
+    (def_id, subst)
 }
 
 // Try to extract a function defid from an operand
@@ -295,92 +270,52 @@ pub fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Plac
 }
 
 pub fn make_switch<'tcx>(
-    sess: &Session,
     ctx: &TranslationCtx<'_, 'tcx>,
     si: SourceInfo,
     switch_ty: Ty<'tcx>,
     targets: &SwitchTargets,
-    discr: Exp,
-) -> MlT {
-    use creusot_rustc::type_ir::sty::TyKind::*;
-    use Pattern::*;
+    discr: Expr<'tcx>,
+) -> Terminator<'tcx> {
     match switch_ty.kind() {
-        Adt(def, _) => {
+        TyKind::Adt(def, _) => {
             let d_to_var: HashMap<_, _> =
                 def.discriminants(ctx.tcx).map(|(idx, d)| (d.val, idx)).collect();
 
-            let branches: Vec<_> = targets
-                .iter()
-                .map(|(disc, tgt)| (variant_pattern(ctx, def, d_to_var[&disc]), mk_goto(tgt)))
-                .chain(std::iter::once((Wildcard, mk_goto(targets.otherwise()))))
-                .take(def.variants().len())
-                .collect();
+            let branches: Vec<_> =
+                targets.iter().map(|(disc, tgt)| (d_to_var[&disc], (tgt))).collect();
 
-            MlT::Switch(discr, branches)
+            Terminator::Switch(discr, Branches::Constructor(*def, branches, targets.otherwise()))
         }
-        Bool => {
-            let branches: Vec<_> = targets
+        TyKind::Bool => {
+            let branches: (_, _) = targets
                 .iter()
-                .map(|tgt| {
-                    if tgt.0 == 0 {
-                        (Pattern::mk_false(), mk_goto(tgt.1))
-                    } else {
-                        (Pattern::mk_true(), mk_goto(tgt.1))
-                    }
-                })
-                .chain(std::iter::once((Wildcard, mk_goto(targets.otherwise()))))
+                .sorted()
+                .map(|tgt| tgt.1)
+                .chain(std::iter::once(targets.otherwise()))
                 .take(2)
-                .collect();
+                .collect_tuple()
+                .unwrap();
 
-            MlT::Switch(discr, branches)
+            Terminator::Switch(discr, Branches::Bool(branches.0, branches.1))
         }
-        Uint(_) => {
-            let annoying: Vec<(Constant, MlT)> = targets
-                .iter()
-                .map(|(val, tgt)| (Constant::Uint(val, None), mk_goto(tgt)))
-                .collect();
+        TyKind::Float(_) => {
+            ctx.crash_and_error(si.span, "Float patterns are currently unsupported")
+        }
+        TyKind::Uint(_) => {
+            let branches: Vec<(_, BasicBlock)> =
+                targets.iter().map(|(val, tgt)| (val, tgt)).collect();
+            Terminator::Switch(discr, Branches::Uint(branches, targets.otherwise()))
+        }
+        TyKind::Int(_) => {
+            let branches: Vec<(_, BasicBlock)> =
+                targets.iter().map(|(val, tgt)| (val as i128, tgt)).collect();
 
-            let default = mk_goto(targets.otherwise());
-            build_constant_switch(discr, annoying.into_iter(), default)
+            Terminator::Switch(discr, Branches::Int(branches, targets.otherwise()))
         }
-        Int(_) => {
-            let annoying: Vec<(Constant, MlT)> = targets
-                .iter()
-                .map(|(val, tgt)| (Constant::Int(val as i128, None), mk_goto(tgt)))
-                .collect();
-
-            let default = mk_goto(targets.otherwise());
-            build_constant_switch(discr, annoying.into_iter(), default)
-        }
-        Float(_) => sess.span_fatal_with_code(
-            si.span,
-            "Float patterns are currently unsupported",
-            DiagnosticId::Error(String::from("creusot")),
-        ),
         _ => unimplemented!(),
     }
 }
 
-fn mk_goto(bb: creusot_rustc::middle::mir::BasicBlock) -> MlT {
-    MlT::Goto(BlockId(bb.into()))
-}
-
-fn build_constant_switch<T>(discr: Exp, targets: T, default: MlT) -> MlT
-where
-    T: Iterator<Item = (Constant, MlT)> + DoubleEndedIterator,
-{
-    targets.rfold(default, |acc, (val, term)| {
-        MlT::Switch(
-            Exp::BinaryOp(BinOp::Eq, box discr.clone(), box Exp::Const(val)),
-            vec![(Pattern::mk_true(), term), (Pattern::mk_false(), acc)],
-        )
-    })
-}
-
-pub fn variant_pattern(ctx: &TranslationCtx, def: &AdtDef, vid: VariantIdx) -> Pattern {
-    let variant = &def.variants()[vid];
-    let wilds = variant.fields.iter().map(|_| Pattern::Wildcard).collect();
-    let cons_name = constructor_qname(ctx, variant);
-
-    Pattern::ConsP(cons_name, wilds)
+fn mk_goto<'tcx>(bb: BasicBlock) -> Terminator<'tcx> {
+    Terminator::Goto(bb)
 }

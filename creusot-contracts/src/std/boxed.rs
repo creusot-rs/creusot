@@ -6,6 +6,11 @@ use std::alloc::Allocator;
 extern_spec! {
     mod std {
         mod boxed {
+            impl<T> Box<T> {
+                #[ensures(*result == val)]
+                fn new(val: T) -> Self;
+            }
+
             impl<T, A: Allocator> Box<T, A> {
                 #[ensures(**self == *result)]
                 #[ensures(*^self == ^result)]

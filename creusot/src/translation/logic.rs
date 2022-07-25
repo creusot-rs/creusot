@@ -48,7 +48,7 @@ pub fn translate_logic_or_predicate<'tcx>(
         decls.push(Decl::ValDecl(val));
     } else {
         let term = ctx.term(def_id).unwrap().clone();
-        let body = specification::lower_pure(ctx, &mut names, def_id, ctx.param_env(def_id), term);
+        let body = specification::lower_pure(ctx, &mut names, ctx.param_env(def_id), term);
         decls.extend(names.to_clones(ctx));
 
         if sig_contract.contract.variant.is_empty() {
