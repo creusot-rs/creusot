@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use crate::{
     ctx::*, function::all_generic_decls_for, translation::specification, util, util::get_builtin,
 };
-use creusot_rustc::{hir::def_id::DefId, middle::ty::TyCtxt};
+use creusot_rustc::hir::def_id::DefId;
 use why3::{
     declaration::*,
     exp::{BinOp, Exp},
@@ -74,7 +74,7 @@ pub fn translate_logic_or_predicate<'tcx>(
         decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
     }
 
-    let name = module_name(ctx.tcx, def_id);
+    let name = module_name(ctx, def_id);
     (Module { name, decls }, proof_modl, has_axioms, names)
 }
 
@@ -99,7 +99,7 @@ fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
     decls.extend(names.to_clones(ctx));
     decls.push(Decl::LetFun(LetFun { sig, rec: true, ghost: true, body }));
 
-    let name = impl_name(ctx.tcx, def_id);
+    let name = impl_name(ctx, def_id);
     Some(Module { name, decls })
 }
 
@@ -152,6 +152,6 @@ fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
     Axiom { name: "def".into(), axiom }
 }
 
-pub fn impl_name(tcx: TyCtxt, def_id: DefId) -> Ident {
-    format!("{}_Impl", Cow::from(&*module_name(tcx, def_id))).into()
+pub fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
+    format!("{}_Impl", Cow::from(&*module_name(ctx, def_id))).into()
 }

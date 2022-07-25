@@ -13,6 +13,7 @@ use crate::{
         specification,
         specification::{typing::Term, ContractClauses},
         ty,
+        ty::translate_tydecl,
     },
     util,
     util::item_type,
@@ -29,10 +30,7 @@ use creusot_rustc::{
 };
 use indexmap::{IndexMap, IndexSet};
 pub use util::{item_name, module_name, ItemType};
-use why3::{
-    declaration::{Module, TyDecl},
-    exp::Exp,
-};
+use why3::{declaration::Module, exp::Exp};
 
 pub use crate::translated_item::*;
 
@@ -40,7 +38,6 @@ pub use crate::translated_item::*;
 pub struct TranslationCtx<'sess, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     pub translated_items: IndexSet<DefId>,
-    pub types: IndexMap<DefId, TypeDeclaration>,
     ty_binding_groups: HashMap<DefId, DefId>, // maps type ids to their 'representative type'
     functions: IndexMap<DefId, TranslatedItem<'tcx>>,
     terms: IndexMap<DefId, Term<'tcx>>,
@@ -66,7 +63,6 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         Self {
             tcx,
             translated_items: Default::default(),
-            types: Default::default(),
             functions: Default::default(),
             externs: Metadata::new(tcx),
             terms: Default::default(),
@@ -109,7 +105,9 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                 self.translated_items.insert(def_id);
                 self.functions.insert(def_id, TranslatedItem::Constant { modl, dependencies });
             }
-            ItemType::Type => unreachable!("ty"),
+            ItemType::Type => {
+                translate_tydecl(self, DUMMY_SP, def_id);
+            }
             ItemType::Interface => unreachable!(),
             ItemType::Closure => self.translate_function(def_id),
             ItemType::Unsupported(dk) => self.crash_and_error(
@@ -184,10 +182,14 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             }
             _ => unreachable!(),
         };
+        self.translate(adt_did);
 
         let accessor = ty::translate_accessor(self, adt_did, variant_did, field_id);
         let repr_id = self.ty_binding_groups[&adt_did];
-        self.types[&repr_id].accessors.entry(variant_did).or_default().insert(field_id, accessor);
+        if let TranslatedItem::Type { ref mut accessors, .. } = &mut self.functions[&repr_id] {
+            accessors.entry(variant_did).or_default().insert(field_id, accessor);
+        }
+        // self.types[&repr_id].accessors;
     }
 
     pub fn term(&mut self, def_id: DefId) -> Option<&Term<'tcx>> {
@@ -235,12 +237,16 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         )
     }
 
-    pub fn add_type(&mut self, def_ids: &[DefId], decl: TyDecl) {
-        self.types
-            .insert(def_ids[0], TypeDeclaration { ty_decl: decl, accessors: Default::default() });
+    pub fn add_binding_group(&mut self, def_ids: &IndexSet<DefId>) {
+        let repr = *def_ids.first().unwrap();
         for i in def_ids {
-            self.ty_binding_groups.insert(*i, def_ids[0]);
+            self.ty_binding_groups.insert(*i, repr);
         }
+    }
+
+    pub fn add_type(&mut self, def_id: DefId, modl: Module) {
+        let repr = self.representative_type(def_id);
+        self.functions.insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
     }
 
     pub fn add_trait(&mut self, def_id: DefId, laws: Vec<DefId>) {
@@ -254,11 +260,18 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
-        self.item(def_id).map(|f| f.dependencies(&self.externs))
+        self.item(def_id).and_then(|f| f.dependencies(&self.externs))
     }
 
     pub fn item(&self, def_id: DefId) -> Option<&TranslatedItem<'tcx>> {
-        self.functions.get(&def_id)
+        let def_id = self.ty_binding_groups.get(&def_id).unwrap_or(&def_id);
+        self.functions.get(def_id)
+    }
+
+    // Get the id of the type which represents a binding groups
+    // Panics a type hasn't yet been translated
+    pub fn representative_type(&self, def_id: DefId) -> DefId {
+        self.ty_binding_groups[&def_id]
     }
 
     // TODO Make private
@@ -274,10 +287,8 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.opts.should_output
     }
 
-    pub fn modules(
-        &self,
-    ) -> impl Iterator<Item = (&DefId, &TranslatedItem<'tcx>)> + Captures<'tcx> {
-        self.functions.iter()
+    pub fn modules(self) -> impl Iterator<Item = (DefId, TranslatedItem<'tcx>)> + Captures<'tcx> {
+        self.functions.into_iter()
     }
 
     pub(crate) fn metadata(&self) -> BinaryMetadata<'tcx> {

@@ -8,10 +8,11 @@ use creusot_rustc::{
     span::{Span, Symbol, DUMMY_SP},
     type_ir::sty::TyKind::*,
 };
+use indexmap::IndexSet;
 use rustc_middle::ty::TyKind;
 use std::collections::VecDeque;
 use why3::{
-    declaration::{AdtDecl, ConstructorDecl, Contract, Decl, Field, LetFun, Signature},
+    declaration::{AdtDecl, ConstructorDecl, Contract, Decl, Field, LetFun, Module, Signature},
     exp::{Exp, Pattern},
     Ident,
 };
@@ -85,7 +86,7 @@ fn translate_ty_inner<'tcx>(
                 names.import_builtin_module(builtin.clone().module_qname());
                 MlT::TConstructor(builtin.without_search_path())
             } else {
-                names.import_prelude_module(PreludeModule::Type);
+                names.insert(def.did(), s);
                 MlT::TConstructor(translate_ty_name(ctx, def.did()))
             };
 
@@ -177,7 +178,7 @@ pub fn translate_projection_ty<'tcx>(
 
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
 
-pub fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> Vec<DefId> {
+pub fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSet<DefId> {
     let mut graph = DiGraphMap::<_, ()>::new();
     graph.add_node(ty_id);
 
@@ -210,10 +211,10 @@ pub fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> Vec<DefId> {
 
     // Calculate SCCs
     let sccs = tarjan_scc(&graph);
-    let group = sccs.last().unwrap();
+    let group: IndexSet<DefId> = sccs.last().unwrap().into_iter().cloned().collect();
     assert!(group.contains(&ty_id));
 
-    group.clone()
+    group
 }
 
 fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
@@ -224,7 +225,7 @@ fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
 
     let name = item_name(ctx.tcx, did).to_string().to_lowercase();
 
-    QName { module: vec![module_name(ctx.tcx, did)], name: name.into() }
+    QName { module: vec![module_name(ctx, did)], name: name.into() }
 }
 
 fn translate_ty_param(p: Symbol) -> Ident {
@@ -245,8 +246,6 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
         return;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, did, false);
-
     let bg = ty_binding_group(ctx.tcx, did);
 
     for did in &bg {
@@ -257,28 +256,42 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
             );
         }
     }
+    ctx.add_binding_group(&bg);
+
+    let did = *bg.first().unwrap();
+    let mut names = CloneMap::new(ctx.tcx, did, false);
+
+    let name = module_name(ctx, did);
 
     // Trusted types (opaque)
-    if util::is_trusted(ctx.tcx, bg[0]) {
+    if util::is_trusted(ctx.tcx, did) {
         if bg.len() > 1 {
             ctx.crash_and_error(span, "cannot mark mutually recursive types as trusted");
         }
         let ty_name = translate_ty_name(ctx, did).name;
 
         let ty_params: Vec<_> = ty_param_names(ctx.tcx, did).collect();
-        ctx.add_type(&bg, TyDecl::Opaque { ty_name, ty_params });
+        let modl = Module {
+            name,
+            decls: vec![Decl::TyDecl(TyDecl::Opaque {
+                ty_name: ty_name.clone(),
+                ty_params: ty_params.clone(),
+            })],
+        };
+        ctx.add_type(did, modl);
         let _ = names.to_clones(ctx);
         return;
     }
 
-    let mut decls = Vec::new();
-    for did in &bg {
-        decls.push(build_ty_decl(ctx, &mut names, *did));
+    let mut tys = Vec::new();
+    for did in bg.iter() {
+        tys.push(build_ty_decl(ctx, &mut names, *did));
     }
 
-    // Drain the clones
-    let _ = names.to_clones(ctx);
-    ctx.add_type(&bg, TyDecl::Adt { tys: decls });
+    let mut decls = names.to_clones(ctx);
+    decls.push(Decl::TyDecl(TyDecl::Adt { tys: tys.clone() }));
+    let modl = Module { name, decls };
+    ctx.add_type(did, modl);
 }
 
 fn build_ty_decl<'tcx>(
@@ -390,13 +403,14 @@ pub fn translate_accessor(
     let acc_name = format!("{}_{}_{}", &*ty_name.name(), variant.name, field.name);
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
-    let mut names = CloneMap::new(ctx.tcx, adt_did, false);
+    let repr = ctx.representative_type(adt_did);
+    let mut names = CloneMap::new(ctx.tcx, repr, false);
     let (target_ty, ghost) = field_ty(ctx, &mut names, &variant.fields[ix], substs);
 
     let variant_arities: Vec<_> = adt_def
         .variants()
         .iter()
-        .map(|var| (item_qname(ctx.tcx, var.def_id), var.fields.len()))
+        .map(|var| (item_qname(ctx, var.def_id), var.fields.len()))
         .collect();
 
     let this = MlT::TApp(
@@ -463,7 +477,7 @@ pub fn closure_accessors<'tcx>(
     let mut fields: Vec<_> =
         subst.upvar_tys().map(|ty| translate_ty(ctx, names, DUMMY_SP, ty)).collect();
 
-    let mut cons_name = item_qname(ctx.tcx, ty_id);
+    let mut cons_name = item_qname(ctx, ty_id);
     cons_name.name.capitalize();
     cons_name.module = vec![]; // ugly hack to fix printer
 
@@ -493,10 +507,20 @@ pub fn closure_accessor_name(tcx: TyCtxt, def: DefId, ix: usize) -> Ident {
     format!("{}_{}", &*ty_name, ix).into()
 }
 
-pub fn variant_accessor_name(tcx: TyCtxt, def: DefId, variant: &VariantDef, field: usize) -> Ident {
-    let ty_name = item_name(tcx, def).to_string().to_lowercase();
+pub fn variant_accessor_name(
+    ctx: &TranslationCtx,
+    def: DefId,
+    variant: &VariantDef,
+    field: usize,
+) -> QName {
+    let qname = item_qname(ctx, def);
 
-    format!("{}_{}_{}", &*ty_name, variant.name, variant.fields[field].name).into()
+    let ident = qname.name.to_string().to_lowercase();
+
+    QName {
+        module: qname.module,
+        name: format!("{}_{}_{}", &*ident, variant.name, variant.fields[field].name).into(),
+    }
 }
 
 pub fn is_ghost_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {

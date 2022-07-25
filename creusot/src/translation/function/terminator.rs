@@ -10,7 +10,7 @@ use creusot_rustc::{
         ty::{
             self,
             subst::{GenericArgKind, SubstsRef},
-            AdtDef, ParamEnv, Predicate, Ty, TyCtxt,
+            AdtDef, ParamEnv, Predicate, Ty,
         },
     },
     session::Session,
@@ -28,6 +28,7 @@ use why3::{
 };
 
 use crate::{
+    ctx::TranslationCtx,
     translation::traits,
     util::{constructor_qname, is_ghost_closure},
 };
@@ -53,7 +54,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                 let discriminant = self.translate_operand(&real_discr);
                 let switch = make_switch(
                     self.ctx.tcx.sess,
-                    self.tcx,
+                    self.ctx,
                     terminator.source_info,
                     real_discr.ty(self.body, self.tcx),
                     targets,
@@ -268,7 +269,7 @@ pub fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Plac
 
 pub fn make_switch<'tcx>(
     sess: &Session,
-    tcx: TyCtxt<'tcx>,
+    ctx: &TranslationCtx<'_, 'tcx>,
     si: SourceInfo,
     switch_ty: Ty<'tcx>,
     targets: &SwitchTargets,
@@ -279,11 +280,11 @@ pub fn make_switch<'tcx>(
     match switch_ty.kind() {
         Adt(def, _) => {
             let d_to_var: HashMap<_, _> =
-                def.discriminants(tcx).map(|(idx, d)| (d.val, idx)).collect();
+                def.discriminants(ctx.tcx).map(|(idx, d)| (d.val, idx)).collect();
 
             let branches: Vec<_> = targets
                 .iter()
-                .map(|(disc, tgt)| (variant_pattern(tcx, def, d_to_var[&disc]), mk_goto(tgt)))
+                .map(|(disc, tgt)| (variant_pattern(ctx, def, d_to_var[&disc]), mk_goto(tgt)))
                 .chain(std::iter::once((Wildcard, mk_goto(targets.otherwise()))))
                 .take(def.variants().len())
                 .collect();
@@ -349,10 +350,10 @@ where
     })
 }
 
-pub fn variant_pattern(tcx: TyCtxt<'_>, def: &AdtDef, vid: VariantIdx) -> Pattern {
+pub fn variant_pattern(ctx: &TranslationCtx, def: &AdtDef, vid: VariantIdx) -> Pattern {
     let variant = &def.variants()[vid];
     let wilds = variant.fields.iter().map(|_| Pattern::Wildcard).collect();
-    let cons_name = constructor_qname(tcx, variant);
+    let cons_name = constructor_qname(ctx, variant);
 
     Pattern::ConsP(cons_name, wilds)
 }

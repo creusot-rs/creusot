@@ -9,7 +9,7 @@ use crate::{clone_map::CloneMap, ctx::*, util};
 
 use creusot_rustc::{
     hir::def_id::DefId,
-    middle::ty::{ClosureKind, TyCtxt, TyKind},
+    middle::ty::{ClosureKind, TyKind},
 };
 
 use super::{
@@ -70,11 +70,11 @@ pub fn interface_for<'tcx>(
         }
     }
 
-    let name = interface_name(ctx.tcx, def_id);
+    let name = interface_name(ctx, def_id);
 
     (Module { name, decls }, names)
 }
 
-pub fn interface_name(tcx: TyCtxt, def_id: DefId) -> Ident {
-    format!("{}_Interface", Cow::from(&*module_name(tcx, def_id))).into()
+pub fn interface_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
+    format!("{}_Interface", Cow::from(&*module_name(ctx, def_id))).into()
 }

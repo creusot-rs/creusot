@@ -106,7 +106,7 @@ pub fn translate_function<'tcx, 'sess>(
     let func_translator = BodyTranslator::build_context(tcx, ctx, &body, &mut names, sig, def_id);
 
     decls.extend(func_translator.translate());
-    let name = module_name(ctx.tcx, def_id);
+    let name = module_name(ctx, def_id);
     Module { name, decls }
 }
 
@@ -120,7 +120,7 @@ pub fn translate_trusted<'tcx>(
     decls.extend(all_generic_decls_for(tcx, def_id));
 
     let sig = signature_of(ctx, &mut names, def_id);
-    let name = module_name(tcx, def_id);
+    let name = module_name(ctx, def_id);
 
     decls.extend(names.to_clones(ctx));
 
