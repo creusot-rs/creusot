@@ -4,20 +4,32 @@ use std::{collections::HashMap, error::Error};
 
 #[derive(Parser, Serialize, Deserialize)]
 pub struct CreusotArgs {
+    /// Treat all integer values as unbounded mathematical integers
     #[clap(long)]
     unbounded: bool,
+    /// Determines how to format the spans in generated code to loading in Why3.
+    /// [Relative] is better if the generated code is meant to be checked into VCS.
+    /// [Absolute] means the files can easily be moved around your system and still work.
+    /// [None] provides the clearest diffs.
     #[clap(long, value_enum, default_value_t=SpanMode::Relative)]
     span_mode: SpanMode,
     #[clap(long)]
+    /// Only generate proofs for items matching the provided string. The string is treated
+    /// as a Rust qualified path.
     focus_on: Option<String>,
     #[clap(long)]
+    /// Location that Creusot metadata for this crate should be emitted to.
     metadata_path: Option<String>,
+    /// Tell creusot to disable metadata exports.
     #[clap(long, default_value_t = true)]
     export_metadata: bool,
+    /// Print to stdout.
     #[clap(group = "output", long)]
     stdout: bool,
+    /// Print to a file.
     #[clap(group = "output", long)]
     output_file: Option<String>,
+    /// Specify locations of metadata for external crates. The format is the same as rustc's `--extern` flag.
     #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, String>, required=false)]
     extern_paths: Vec<(String, String)>,
 }
