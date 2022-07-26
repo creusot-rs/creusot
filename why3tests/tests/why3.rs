@@ -9,16 +9,29 @@ use std::{
 };
 use termcolor::*;
 
+#[derive(clap::ValueEnum, Debug, Clone)]
+enum ReplayLevel {
+    None,
+    Obsolete,
+    All,
+}
+
 #[derive(Parser, Debug)]
 struct Args {
-    #[clap(long = "lazy")]
-    lazy: bool,
+    /// Only check that a session merges and contains no obsolete goals
+    #[clap(long = "replay", value_enum, default_value_t=ReplayLevel::All)]
+    replay: ReplayLevel,
+    /// Only check mlcfg files that differ from the provided source in the git history (useful for small PRs)
     #[clap(long = "diff-from")]
     diff_from: Option<String>,
-    #[clap(long = "fail-obsolete")]
-    fail_obsolete: bool,
+    /// Fail as soon as a single test fails
+    #[clap(long = "fail-early")]
+    fail_early: bool,
+
+    /// Skip any files which are marked with `UNSTABLE` on the first line
     #[clap(long = "skip-unstable")]
     skip_unstable: bool,
+    /// Only run tests which contain this string
     filter: Option<String>,
 }
 
@@ -78,13 +91,23 @@ fn main() {
         let output;
         let mut command = Command::new(why3_path.clone());
         command.arg("--debug=ignore_unused_vars");
+
         if sessionfile.is_file() {
             // There is a session directory. Try to replay the session.
             command.arg("replay");
             command.args(&["-L", "../prelude"]);
-            if args.lazy {
-                command.arg("--obsolete-only");
-            }
+
+            match args.replay {
+                ReplayLevel::None => {
+                    command.arg("--merging-only");
+                }
+
+                ReplayLevel::Obsolete => {
+                    command.arg("--obsolete-only");
+                }
+                ReplayLevel::All => {}
+            };
+
             if let Ok(ref config) = config_path {
                 command.args(&["-C", config]);
                 // command.arg(&format!("--extra-config={config}"));
@@ -93,25 +116,22 @@ fn main() {
             output = command.ok();
             if output.is_ok() {
                 let outputstring = std::str::from_utf8(&output.as_ref().unwrap().stderr).unwrap();
-                if outputstring.contains("[Warning] session is obsolete") {
-                    out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
-                    writeln!(&mut out, "obsolete").unwrap();
-                    obsolete = true;
-                    if args.lazy && args.fail_obsolete {
-                        break;
+
+                match session_obsolete(outputstring) {
+                    Obsolete::Obsolete => {
+                        obsolete = true;
+                        out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
+                        writeln!(&mut out, "obsolete").unwrap();
                     }
-                } else if outputstring
-                    .contains("[Warning] found detached goals or theories or transformations")
-                {
-                    out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
-                    writeln!(&mut out, "detached goals").unwrap();
-                    obsolete = true;
-                    if args.lazy && args.fail_obsolete {
-                        break;
+                    Obsolete::Detached => {
+                        obsolete = true;
+                        out.set_color(ColorSpec::new().set_fg(Some(orange))).unwrap();
+                        writeln!(&mut out, "detached goals").unwrap();
                     }
-                } else {
-                    out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
-                    writeln!(&mut out, "replayed").unwrap();
+                    Obsolete::Good => {
+                        out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
+                        writeln!(&mut out, "replayed").unwrap();
+                    }
                 }
                 out.reset().unwrap();
             }
@@ -143,9 +163,11 @@ fn main() {
             writeln!(&mut out, "************************").unwrap();
 
             success = false;
-            if args.lazy {
-                break;
-            }
+        }
+
+        // Check for early abort
+        if args.fail_early && (!success || obsolete) {
+            break;
         }
     }
 
@@ -156,9 +178,7 @@ fn main() {
             write!(&mut out, "obsolete").unwrap();
             out.reset().unwrap();
             writeln!(&mut out, ".").unwrap();
-            if args.fail_obsolete {
-                exit(1)
-            }
+            exit(1)
         } else {
             out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
             write!(&mut out, "Success").unwrap();
@@ -189,4 +209,21 @@ fn changed_mlcfgs(from: &str) -> Result<Vec<PathBuf>, git2::Error> {
         }
     }
     Ok(paths)
+}
+
+enum Obsolete {
+    Obsolete,
+    Detached,
+    Good,
+}
+
+fn session_obsolete(outputstring: &str) -> Obsolete {
+    if outputstring.contains("[Warning] session is obsolete") {
+        Obsolete::Obsolete
+    } else if outputstring.contains("[Warning] found detached goals or theories or transformations")
+    {
+        Obsolete::Detached
+    } else {
+        Obsolete::Good
+    }
 }
