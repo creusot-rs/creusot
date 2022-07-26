@@ -183,7 +183,6 @@ extern_spec! {
         #[ensures((@^self).exchange(@*self, @i, @j))]
         fn swap(&mut self, i: usize, j: usize);
 
-        #[requires(ix.in_bounds(@*self))]
         #[ensures(match result {
               Some(r) => ix.in_bounds(@*self_) && ix.has_value(@*self_, *r),
               None => !ix.in_bounds(@*self_),
