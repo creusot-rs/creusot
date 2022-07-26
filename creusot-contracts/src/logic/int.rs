@@ -18,6 +18,20 @@ impl Int {
     pub fn pow(self, _: Int) -> Int {
         absurd
     }
+
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "int.MinMax.max"]
+    pub fn max(self, _: Int) -> Int {
+        absurd
+    }
+
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "int.MinMax.min"]
+    pub fn min(self, _: Int) -> Int {
+        absurd
+    }
 }
 
 macro_rules! mach_int {

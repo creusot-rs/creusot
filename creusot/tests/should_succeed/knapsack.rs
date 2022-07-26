@@ -7,18 +7,8 @@ pub struct Item<Name> {
     pub value: usize,
 }
 
-// TODO: factorize these two functions
-#[logic]
-fn max_log(a: Int, b: Int) -> Int {
-    if a < b {
-        b
-    } else {
-        a
-    }
-}
-
 #[requires(true)]
-#[ensures(@result == max_log(@a, @b))]
+#[ensures(@result == (@a).max(@b))]
 fn max(a: usize, b: usize) -> usize {
     if a < b {
         b
@@ -44,7 +34,7 @@ fn m<Name>(items: Seq<Item<Name>>, i: Int, w: Int) -> Int {
         else if @items[i-1].weight > w {
             m(items, i-1, w)
         } else {
-            max_log(m(items, i-1, w), m(items, i-1, w - @items[i-1].weight) + @items[i-1].value)
+            m(items, i-1, w).max(m(items, i-1, w - @items[i-1].weight) + @items[i-1].value)
         }
     }
 }
