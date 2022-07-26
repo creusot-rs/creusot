@@ -162,6 +162,20 @@ pub mod logic {
             Ghost(std::marker::PhantomData)
         }
     }
+
+    pub struct Mapping<A: ?Sized, B: ?Sized>(std::marker::PhantomData<A>, std::marker::PhantomData<B>);
+
+    pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
+
+    pub struct FSet<T: ?Sized>(std::marker::PhantomData<T>);
+
+    pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);
+
+    pub struct Int;
+
+    pub trait Model {
+        type ModelTy;
+    }
 }
 
 pub use logic::*;
