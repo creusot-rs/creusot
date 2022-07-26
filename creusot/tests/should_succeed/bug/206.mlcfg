@@ -1,46 +1,59 @@
-module Type
-  use Ref
-  use mach.int.Int
-  use prelude.Int8
-  use prelude.Int16
-  use mach.int.Int32
-  use mach.int.Int64
-  use prelude.UInt8
-  use prelude.UInt16
-  use mach.int.UInt32
-  use mach.int.UInt64
-  use string.Char
-  use floating_point.Single
-  use floating_point.Double
-  use seq.Seq
-  use set.Set
-  use set.Fset
-  use map.Map
+
+module Core_Ptr_NonNull_NonNull_Type
   use prelude.Prelude
-  type core_ptr_nonnull_nonnull 't =
-    | Core_Ptr_NonNull_NonNull opaque_ptr
+  type core_ptr_nonnull_nonnull_type 't =
+    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
     
-  type core_marker_phantomdata 't =
-    | Core_Marker_PhantomData
+end
+module Core_Marker_PhantomData_Type
+  type core_marker_phantomdata_type 't =
+    | Core_Marker_PhantomData_Type
     
-  type core_ptr_unique_unique 't =
-    | Core_Ptr_Unique_Unique (core_ptr_nonnull_nonnull 't) (core_marker_phantomdata 't)
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type
+  type core_ptr_unique_unique_type 't =
+    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
     
-  type alloc_rawvec_rawvec 't 'a =
-    | Alloc_RawVec_RawVec (core_ptr_unique_unique 't) usize 'a
+end
+module Alloc_RawVec_RawVec_Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use Core_Ptr_Unique_Unique_Type
+  type alloc_rawvec_rawvec_type 't 'a =
+    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
     
-  type alloc_vec_vec 't 'a =
-    | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) usize
+end
+module Alloc_Vec_Vec_Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use Alloc_RawVec_RawVec_Type
+  type alloc_vec_vec_type 't 'a =
+    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
     
-  type alloc_alloc_global  =
-    | Alloc_Alloc_Global
+end
+module Alloc_Alloc_Global_Type
+  type alloc_alloc_global_type  =
+    | Alloc_Alloc_Global_Type
     
-  type c206_a  =
-    | C206_A (alloc_vec_vec usize (alloc_alloc_global))
+end
+module C206_A_Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type
+  type c206_a_type  =
+    | C206_A_Type (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type))
     
-  let function c206_a_A_0 (self : c206_a) : alloc_vec_vec usize (alloc_alloc_global) = [@vc:do_not_keep_trace] [@vc:sp]
+  let function c206_a_type_A_0 (self : c206_a_type) : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | C206_A a -> a
+      | C206_A_Type a -> a
       end
 end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
@@ -50,8 +63,8 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
-  use Type
-  function model (self : Type.alloc_vec_vec t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -60,83 +73,95 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
-  use Type
-  function model (self : Type.alloc_vec_vec t a) : Seq.seq t
-  axiom model_spec : forall self : Type.alloc_vec_vec t a . Seq.length (model self) <= 18446744073709551615
+  use Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
 end
 module CreusotContracts_Std1_Vec_Impl0
   type t
   type a
 end
 module C206_U2_Interface
-  use Type
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = usize, type a = Type.alloc_alloc_global,
-  axiom .
-  function u2 (a : Type.c206_a) : ()
+  use Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type
+  use C206_A_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = usize,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  function u2 (a : C206_A_Type.c206_a_type) : ()
 end
 module C206_U2
-  use Type
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = usize, type a = Type.alloc_alloc_global,
-  axiom .
-  function u2 [#"../206.rs" 9 0 9 11] (a : Type.c206_a) : () =
+  use Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type
+  use C206_A_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = usize,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  function u2 [#"../206.rs" 9 0 9 11] (a : C206_A_Type.c206_a_type) : () =
     [#"../206.rs" 7 0 7 8] ()
-  axiom u2_spec : forall a : Type.c206_a . [#"../206.rs" 8 10 8 22] Model0.model (Type.c206_a_A_0 a) = Model0.model (Type.c206_a_A_0 a)
+  axiom u2_spec : forall a : C206_A_Type.c206_a_type . [#"../206.rs" 8 10 8 22] Model0.model (C206_A_Type.c206_a_type_A_0 a) = Model0.model (C206_A_Type.c206_a_type_A_0 a)
 end
 module C206_U2_Impl
-  use Type
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = usize, type a = Type.alloc_alloc_global, axiom .
-  let rec ghost function u2 (a : Type.c206_a) : ()
-    ensures { [#"../206.rs" 8 10 8 22] Model0.model (Type.c206_a_A_0 a) = Model0.model (Type.c206_a_A_0 a) }
+  use Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type
+  use C206_A_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = usize,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  let rec ghost function u2 (a : C206_A_Type.c206_a_type) : ()
+    ensures { [#"../206.rs" 8 10 8 22] Model0.model (C206_A_Type.c206_a_type_A_0 a) = Model0.model (C206_A_Type.c206_a_type_A_0 a) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../206.rs" 7 0 7 8] ()
 end
 module C206_U_Interface
-  use Type
-  function u (a : Type.c206_a) : ()
+  use C206_A_Type
+  function u (a : C206_A_Type.c206_a_type) : ()
 end
 module C206_U
-  use Type
+  use C206_A_Type
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = usize, type a = Type.alloc_alloc_global,
-  axiom .
+  use Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = usize,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
   clone C206_U2_Interface as U20 with function Model0.model = Model0.model, axiom .
-  function u [#"../206.rs" 12 0 12 14] (a : Type.c206_a) : () =
+  function u [#"../206.rs" 12 0 12 14] (a : C206_A_Type.c206_a_type) : () =
     [#"../206.rs" 14 8 14 13] U20.u2 a
 end
 module C206_Ex_Interface
   use prelude.Prelude
-  use Type
+  use C206_A_Type
   clone C206_U_Interface as U0
-  val ex [@cfg:stackify] (a : Type.c206_a) : ()
+  val ex [@cfg:stackify] (a : C206_A_Type.c206_a_type) : ()
     ensures { [#"../206.rs" 18 10 18 26] U0.u a = U0.u a }
     
 end
 module C206_Ex
   use prelude.Prelude
-  use Type
   use mach.int.Int
   use mach.int.UInt64
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = usize, type a = Type.alloc_alloc_global, axiom .
+  use Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = usize,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use C206_A_Type
   clone C206_U2 as U20 with function Model0.model = Model0.model, axiom .
   clone C206_U as U0 with function U20.u2 = U20.u2, function Model0.model = Model0.model
-  let rec cfg ex [@cfg:stackify] [#"../206.rs" 19 0 19 16] (a : Type.c206_a) : ()
+  let rec cfg ex [@cfg:stackify] [#"../206.rs" 19 0 19 16] (a : C206_A_Type.c206_a_type) : ()
     ensures { [#"../206.rs" 18 10 18 26] U0.u a = U0.u a }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var a_1 : Type.c206_a;
+  var a_1 : C206_A_Type.c206_a_type;
   {
     a_1 <- a;
     goto BB0

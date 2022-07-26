@@ -1,43 +1,63 @@
-module Type
-  use Ref
-  use mach.int.Int
-  use prelude.Int8
-  use prelude.Int16
-  use mach.int.Int32
-  use mach.int.Int64
-  use prelude.UInt8
-  use prelude.UInt16
-  use mach.int.UInt32
-  use mach.int.UInt64
-  use string.Char
-  use floating_point.Single
-  use floating_point.Double
-  use seq.Seq
-  use set.Set
-  use set.Fset
-  use map.Map
-  use prelude.Prelude
-  type core_option_option 't =
-    | Core_Option_Option_None
-    | Core_Option_Option_Some 't
+
+module Core_Option_Option_Type
+  type core_option_option_type 't =
+    | Core_Option_Option_None_Type
+    | Core_Option_Option_Some_Type 't
     
-  type replace_something  =
-    | Replace_Something uint32 (core_option_option (replace_something))
+end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Prelude
+  type core_ptr_nonnull_nonnull_type 't =
+    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
+    
+end
+module Core_Marker_PhantomData_Type
+  type core_marker_phantomdata_type 't =
+    | Core_Marker_PhantomData_Type
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type
+  type core_ptr_unique_unique_type 't =
+    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
+    
+end
+module Alloc_Boxed_Box_Type
+  use Core_Ptr_Unique_Unique_Type
+  type alloc_boxed_box_type 't 'a =
+    | Alloc_Boxed_Box_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) 'a
+    
+end
+module Alloc_Alloc_Global_Type
+  type alloc_alloc_global_type  =
+    | Alloc_Alloc_Global_Type
+    
+end
+module Replace_Something_Type
+  use mach.int.Int
+  use mach.int.UInt32
+  use Alloc_Alloc_Global_Type
+  use Alloc_Boxed_Box_Type
+  use Core_Option_Option_Type
+  type replace_something_type  =
+    | Replace_Something_Type uint32 (Core_Option_Option_Type.core_option_option_type (replace_something_type))
     
 end
 module Replace_Test_Interface
-  use Type
-  val test [@cfg:stackify] (_a : Type.replace_something) (b : Type.replace_something) : ()
+  use Replace_Something_Type
+  val test [@cfg:stackify] (_a : Replace_Something_Type.replace_something_type) (b : Replace_Something_Type.replace_something_type) : ()
+    
 end
 module Replace_Test
-  use Type
-  let rec cfg test [@cfg:stackify] [#"../replace.rs" 8 0 8 44] (_a : Type.replace_something) (b : Type.replace_something) : ()
+  use Replace_Something_Type
+  let rec cfg test [@cfg:stackify] [#"../replace.rs" 8 0 8 44] (_a : Replace_Something_Type.replace_something_type) (b : Replace_Something_Type.replace_something_type) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var _a_1 : Type.replace_something;
-  var b_2 : Type.replace_something;
-  var _3 : Type.replace_something;
+  var _a_1 : Replace_Something_Type.replace_something_type;
+  var b_2 : Replace_Something_Type.replace_something_type;
+  var _3 : Replace_Something_Type.replace_something_type;
   {
     _a_1 <- _a;
     b_2 <- b;
@@ -45,7 +65,7 @@ module Replace_Test
   }
   BB0 {
     _3 <- b_2;
-    b_2 <- any Type.replace_something;
+    b_2 <- any Replace_Something_Type.replace_something_type;
     _a_1 <- _3;
     goto BB1
   }

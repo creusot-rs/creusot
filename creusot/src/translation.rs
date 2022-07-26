@@ -9,7 +9,7 @@ pub mod ty;
 
 use crate::{
     ctx,
-    ctx::{load_extern_specs, TypeDeclaration},
+    ctx::load_extern_specs,
     error::CrErr,
     metadata,
     options::OutputFile,
@@ -21,10 +21,7 @@ pub use function::{translate_function, LocalIdent};
 use heck::CamelCase;
 pub use logic::*;
 use std::{error::Error, io::Write};
-use why3::{
-    declaration::{Decl, Module, Use},
-    mlcfg, Print, QName,
-};
+use why3::{declaration::Module, mlcfg, Print};
 
 pub fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
@@ -51,7 +48,7 @@ pub fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
 
 use std::time::Instant;
 // TODO: Move the main loop out of `translation.rs`
-pub fn after_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
+pub fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
     for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
         ctx.translate_trait(*tr);
     }
@@ -115,16 +112,17 @@ pub fn after_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
         };
 
         let matcher: &str = ctx.opts.match_str.as_ref().map(|s| &s[..]).unwrap_or("");
+        let tcx = ctx.tcx;
         let modules = ctx.modules().flat_map(|(id, item)| {
-            if ctx.def_path_str(*id).contains(matcher) {
+            if tcx.def_path_str(id).contains(matcher) {
                 item.modules()
             } else {
                 item.interface()
             }
         });
 
-        let crate_name = ctx.tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case();
-        print_crate(&mut out, crate_name, ctx.types.values(), modules)?;
+        let crate_name = tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case();
+        print_crate(&mut out, crate_name, modules)?;
     }
     debug!("after_analysis_dump: {:?}", start.elapsed());
 
@@ -157,38 +155,9 @@ fn unop_to_unop(op: creusot_rustc::middle::mir::UnOp) -> why3::exp::UnOp {
     }
 }
 
-pub fn prelude_imports(type_import: bool) -> Vec<Decl> {
-    let mut imports = vec![
-        Decl::UseDecl(Use { name: QName::from_string("Ref").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("mach.int.Int").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("prelude.Int8").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("prelude.Int16").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("mach.int.Int32").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("mach.int.Int64").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("prelude.UInt8").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("prelude.UInt16").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("mach.int.UInt32").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("mach.int.UInt64").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("string.Char").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("floating_point.Single").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("floating_point.Double").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("seq.Seq").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("set.Set").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("set.Fset").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("map.Map").unwrap() }),
-        Decl::UseDecl(Use { name: QName::from_string("prelude.Prelude").unwrap() }),
-    ];
-
-    if type_import {
-        imports.push(Decl::UseDecl(Use { name: QName::from_string("Type").unwrap() }));
-    }
-    imports
-}
-
-fn print_crate<'a, W, I: Iterator<Item = &'a Module>>(
+fn print_crate<W, I: Iterator<Item = Module>>(
     out: &mut W,
     _name: String,
-    types: impl Iterator<Item = &'a TypeDeclaration>,
     functions: I,
 ) -> std::io::Result<()>
 where
@@ -196,17 +165,6 @@ where
 {
     let (alloc, mut pe) = mlcfg::printer::PrintEnv::new();
 
-    let type_mod = Module {
-        name: "Type".into(),
-        decls: prelude_imports(false)
-            .into_iter()
-            .chain(types.flat_map(|ty| {
-                std::iter::once(Decl::TyDecl(ty.ty_decl.clone())).chain(ty.accessors().cloned())
-            }))
-            .collect(),
-    };
-
-    type_mod.pretty(&alloc, &mut pe).1.render(120, out)?;
     writeln!(out)?;
 
     for modl in functions {

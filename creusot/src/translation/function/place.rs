@@ -97,7 +97,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
                         varexps[ix.as_usize()] = inner;
 
-                        let tyname = constructor_qname(self.tcx, variant);
+                        let tyname = constructor_qname(self.ctx, variant);
 
                         inner = Let {
                             pattern: ConsP(tyname.clone(), field_pats),
@@ -148,7 +148,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
                             .collect();
 
                         varexps[ix.as_usize()] = inner;
-                        let mut cons = item_qname(self.tcx, *id);
+                        let mut cons = item_qname(self.ctx, *id);
                         cons.name.capitalize();
 
                         inner = Let {
@@ -229,14 +229,8 @@ pub(super) fn translate_rplace_inner<'tcx>(
 
                     ctx.translate_accessor(def.variants()[variant_id].fields[ix.as_usize()].did);
                     let accessor_name =
-                        variant_accessor_name(ctx.tcx, def.did(), variant, ix.as_usize());
-                    inner = Call(
-                        box Exp::impure_qvar(QName {
-                            module: vec!["Type".into()],
-                            name: accessor_name,
-                        }),
-                        vec![inner],
-                    );
+                        variant_accessor_name(ctx, def.did(), variant, ix.as_usize());
+                    inner = Call(box Exp::impure_qvar(accessor_name), vec![inner]);
                 }
                 TyKind::Tuple(fields) => {
                     let mut pat = vec![Wildcard; fields.len()];

@@ -167,10 +167,13 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
 
                 match kind {
                     Tuple => Exp::Tuple(fields),
-                    Adt(adt, varix, _, _, _) => {
+                    Adt(adt, varix, subst, _, _) => {
+                        self.ctx.translate(*adt);
                         let adt = self.tcx.adt_def(*adt);
                         let variant_def = &adt.variants()[*varix];
-                        let qname = constructor_qname(self.tcx, variant_def);
+                        let qname = constructor_qname(self.ctx, variant_def);
+
+                        self.names.insert(adt.did(), subst);
 
                         Constructor { ctor: qname, args: fields }
                     }

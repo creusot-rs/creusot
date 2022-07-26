@@ -190,7 +190,16 @@ impl<'tcx> BinaryMetadata<'tcx> {
             .filter(|(def_id, _)| {
                 tcx.visibility(**def_id) == Visibility::Public && def_id.is_local()
             })
-            .map(|(def_id, v)| (*def_id, v.local_dependencies().clone().into_iter().collect()))
+            .map(|(def_id, v)| {
+                (
+                    *def_id,
+                    v.local_dependencies()
+                        .map(Clone::clone)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .collect(),
+                )
+            })
             .collect();
 
         let terms = terms

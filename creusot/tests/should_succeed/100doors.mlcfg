@@ -1,39 +1,38 @@
-module Type
-  use Ref
-  use mach.int.Int
-  use prelude.Int8
-  use prelude.Int16
-  use mach.int.Int32
-  use mach.int.Int64
-  use prelude.UInt8
-  use prelude.UInt16
-  use mach.int.UInt32
-  use mach.int.UInt64
-  use string.Char
-  use floating_point.Single
-  use floating_point.Double
-  use seq.Seq
-  use set.Set
-  use set.Fset
-  use map.Map
+
+module Core_Ptr_NonNull_NonNull_Type
   use prelude.Prelude
-  type core_ptr_nonnull_nonnull 't =
-    | Core_Ptr_NonNull_NonNull opaque_ptr
+  type core_ptr_nonnull_nonnull_type 't =
+    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
     
-  type core_marker_phantomdata 't =
-    | Core_Marker_PhantomData
+end
+module Core_Marker_PhantomData_Type
+  type core_marker_phantomdata_type 't =
+    | Core_Marker_PhantomData_Type
     
-  type core_ptr_unique_unique 't =
-    | Core_Ptr_Unique_Unique (core_ptr_nonnull_nonnull 't) (core_marker_phantomdata 't)
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type
+  type core_ptr_unique_unique_type 't =
+    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
     
-  type alloc_rawvec_rawvec 't 'a =
-    | Alloc_RawVec_RawVec (core_ptr_unique_unique 't) usize 'a
+end
+module Alloc_RawVec_RawVec_Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use Core_Ptr_Unique_Unique_Type
+  type alloc_rawvec_rawvec_type 't 'a =
+    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
     
-  type alloc_vec_vec 't 'a =
-    | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) usize
-    
-  type alloc_alloc_global  =
-    | Alloc_Alloc_Global
+end
+module Alloc_Vec_Vec_Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use Alloc_RawVec_RawVec_Type
+  type alloc_vec_vec_type 't 'a =
+    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
     
 end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
@@ -43,8 +42,8 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
-  use Type
-  function model (self : Type.alloc_vec_vec t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -53,13 +52,18 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use mach.int.Int
   use prelude.Prelude
   use mach.int.UInt64
-  use Type
-  function model (self : Type.alloc_vec_vec t a) : Seq.seq t
-  axiom model_spec : forall self : Type.alloc_vec_vec t a . Seq.length (model self) <= 18446744073709551615
+  use Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
 end
 module CreusotContracts_Std1_Vec_Impl0
   type t
   type a
+end
+module Alloc_Alloc_Global_Type
+  type alloc_alloc_global_type  =
+    | Alloc_Alloc_Global_Type
+    
 end
 module Alloc_Vec_Impl0_WithCapacity_Interface
   type t
@@ -68,10 +72,11 @@ module Alloc_Vec_Impl0_WithCapacity_Interface
   use mach.int.Int32
   use prelude.Prelude
   use mach.int.UInt64
-  use Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global,
-  axiom .
-  val with_capacity [@cfg:stackify] (capacity : usize) : Type.alloc_vec_vec t (Type.alloc_alloc_global)
+  use Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  val with_capacity [@cfg:stackify] (capacity : usize) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
     ensures { Seq.length (Model0.model result) = 0 }
     
 end
@@ -82,10 +87,11 @@ module Alloc_Vec_Impl0_WithCapacity
   use mach.int.Int32
   use prelude.Prelude
   use mach.int.UInt64
-  use Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global,
-  axiom .
-  val with_capacity [@cfg:stackify] (capacity : usize) : Type.alloc_vec_vec t (Type.alloc_alloc_global)
+  use Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  val with_capacity [@cfg:stackify] (capacity : usize) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
     ensures { Seq.length (Model0.model result) = 0 }
     
 end
@@ -94,9 +100,9 @@ module Alloc_Vec_Impl1_Push_Interface
   type a
   use prelude.Prelude
   use seq.Seq
-  use Type
+  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val push [@cfg:stackify] (self : borrowed (Type.alloc_vec_vec t a)) (value : t) : ()
+  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (value : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
@@ -105,9 +111,9 @@ module Alloc_Vec_Impl1_Push
   type a
   use prelude.Prelude
   use seq.Seq
-  use Type
+  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val push [@cfg:stackify] (self : borrowed (Type.alloc_vec_vec t a)) (value : t) : ()
+  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (value : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
@@ -117,10 +123,10 @@ module Alloc_Vec_Impl1_Len_Interface
   use mach.int.UInt64
   use seq.Seq
   use prelude.Prelude
-  use Type
   use mach.int.Int
+  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Type.alloc_vec_vec t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -130,30 +136,30 @@ module Alloc_Vec_Impl1_Len
   use mach.int.UInt64
   use seq.Seq
   use prelude.Prelude
-  use Type
   use mach.int.Int
+  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Type.alloc_vec_vec t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
-module CreusotContracts_Logic_Model_Model_ModelTy
+module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
   type modelTy
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface
   type self
   type t
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds
   type self
   type t
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
 end
-module Core_Slice_Index_SliceIndex_Output
+module Core_Slice_Index_SliceIndex_Output_Type
   type self
   type t
   type output
@@ -161,18 +167,18 @@ end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface
   type self
   type t
-  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = self, type t = t
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = self, type t = t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue
   type self
   type t
-  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = self, type t = t
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = self, type t = t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
 end
-module CreusotContracts_Std1_Slice_Impl0_ModelTy
+module CreusotContracts_Std1_Slice_Impl0_ModelTy_Type
   type t
   use seq.Seq
   type modelTy  =
@@ -183,16 +189,16 @@ module Alloc_Vec_Impl16_Index_Interface
   type i
   type a
   use prelude.Prelude
-  use Type
   use seq.Seq
-  clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
-  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = i, type t = seq t
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
+  clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Type.alloc_vec_vec t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -202,16 +208,16 @@ module Alloc_Vec_Impl16_Index
   type i
   type a
   use prelude.Prelude
-  use Type
   use seq.Seq
-  clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
-  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = i, type t = seq t
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
+  clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Type.alloc_vec_vec t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -219,13 +225,13 @@ end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface
   type self
   type t
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   predicate resolve_elswhere (self : self) (old' : ModelTy0.modelTy) (fin : ModelTy0.modelTy)
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere
   type self
   type t
-  clone CreusotContracts_Logic_Model_Model_ModelTy as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   predicate resolve_elswhere (self : self) (old' : ModelTy0.modelTy) (fin : ModelTy0.modelTy)
 end
 module Alloc_Vec_Impl17_IndexMut_Interface
@@ -234,9 +240,9 @@ module Alloc_Vec_Impl17_IndexMut_Interface
   type a
   use prelude.Prelude
   use seq.Seq
-  use Type
-  clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
-  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = i, type t = seq t
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
+  clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere0 with type self = i,
   type t = seq t, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
@@ -244,7 +250,7 @@ module Alloc_Vec_Impl17_IndexMut_Interface
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index_mut [@cfg:stackify] (self : borrowed (Type.alloc_vec_vec t a)) (index : i) : borrowed Output0.output
+  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (Model0.model ( * self))}
     ensures { HasValue0.has_value index (Model0.model ( * self)) ( * result) }
     ensures { HasValue0.has_value index (Model0.model ( ^ self)) ( ^ result) }
@@ -258,9 +264,9 @@ module Alloc_Vec_Impl17_IndexMut
   type a
   use prelude.Prelude
   use seq.Seq
-  use Type
-  clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = t
-  clone Core_Slice_Index_SliceIndex_Output as Output0 with type self = i, type t = seq t
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
+  clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere0 with type self = i,
   type t = seq t, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
@@ -268,7 +274,7 @@ module Alloc_Vec_Impl17_IndexMut
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index_mut [@cfg:stackify] (self : borrowed (Type.alloc_vec_vec t a)) (index : i) : borrowed Output0.output
+  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (Model0.model ( * self))}
     ensures { HasValue0.has_value index (Model0.model ( * self)) ( * result) }
     ensures { HasValue0.has_value index (Model0.model ( ^ self)) ( ^ result) }
@@ -297,19 +303,21 @@ module CreusotContracts_Logic_Resolve_Resolve_Resolve
 end
 module CreusotContracts_Std1_Vec_Impl3_Resolve_Interface
   type t
-  use Type
-  predicate resolve (self : Type.alloc_vec_vec t (Type.alloc_alloc_global))
+  use Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type
+  predicate resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))
 end
 module CreusotContracts_Std1_Vec_Impl3_Resolve
   type t
-  use Type
+  use Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = Type.alloc_alloc_global,
-  axiom .
-  predicate resolve (self : Type.alloc_vec_vec t (Type.alloc_alloc_global)) =
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  predicate resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) =
     forall i : (int) . 0 <= i /\ i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
 end
 module Alloc_Vec_Impl16
@@ -365,7 +373,7 @@ module CreusotContracts_Std1_Slice_Impl3_HasValue
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
     Seq.get seq (UInt64.to_int self) = out
 end
-module Core_Slice_Index_Impl2_Output
+module Core_Slice_Index_Impl2_Output_Type
   type t
   type output  =
     t
@@ -414,40 +422,43 @@ module C100doors_F
   use mach.int.Int32
   use mach.int.UInt64
   use seq.Seq
-  use Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = bool, type a = Type.alloc_alloc_global, axiom .
+  use Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = bool,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
   use prelude.Prelude
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
   clone CreusotContracts_Std1_Slice_Impl3_ResolveElswhere as ResolveElswhere0 with type t = bool
-  clone CreusotContracts_Std1_Slice_Impl0_ModelTy as ModelTy0 with type t = bool
-  clone Core_Slice_Index_Impl2_Output as Output0 with type t = bool
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = bool
+  clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = bool
   clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = bool
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = bool
   clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve1 with type t = bool, function Model0.model = Model0.model,
   predicate Resolve0.resolve = Resolve2.resolve
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = bool
   clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = bool, type i = usize,
-  type a = Type.alloc_alloc_global, function Model0.model = Model0.model,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
   predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
   predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere, type Output0.output = Output0.output
-  clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = bool, type i = usize, type a = Type.alloc_alloc_global,
-  function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
-  predicate HasValue0.has_value = HasValue0.has_value, type Output0.output = Output0.output
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = bool, type a = Type.alloc_alloc_global,
-  function Model0.model = Model0.model
-  clone Alloc_Vec_Impl1_Push_Interface as Push0 with type t = bool, type a = Type.alloc_alloc_global,
-  function Model0.model = Model0.model
+  clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = bool, type i = usize,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
+  predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
+  type Output0.output = Output0.output
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = bool,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model
+  clone Alloc_Vec_Impl1_Push_Interface as Push0 with type t = bool,
+  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model
   clone Alloc_Vec_Impl0_WithCapacity_Interface as WithCapacity0 with type t = bool, function Model0.model = Model0.model
   let rec cfg f [@cfg:stackify] [#"../100doors.rs" 18 0 18 10] (_ : ()) : () = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var door_open_1 : Type.alloc_vec_vec bool (Type.alloc_alloc_global);
+  var door_open_1 : Alloc_Vec_Vec_Type.alloc_vec_vec_type bool (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
   var i_2 : usize;
   var _3 : ();
   var _4 : ();
   var _5 : bool;
   var _6 : usize;
   var _7 : ();
-  var _8 : borrowed (Type.alloc_vec_vec bool (Type.alloc_alloc_global));
+  var _8 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type bool (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
   var _9 : ();
   var _10 : ();
   var _11 : ();
@@ -455,7 +466,7 @@ module C100doors_F
   var _13 : bool;
   var _14 : bool;
   var _15 : usize;
-  var _16 : Type.alloc_vec_vec bool (Type.alloc_alloc_global);
+  var _16 : Alloc_Vec_Vec_Type.alloc_vec_vec_type bool (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
   var _17 : ();
   var pass_18 : usize;
   var _19 : bool;
@@ -466,11 +477,11 @@ module C100doors_F
   var _24 : usize;
   var _25 : bool;
   var _26 : bool;
-  var _27 : Type.alloc_vec_vec bool (Type.alloc_alloc_global);
+  var _27 : Alloc_Vec_Vec_Type.alloc_vec_vec_type bool (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
   var _28 : usize;
   var _29 : usize;
   var _30 : borrowed bool;
-  var _31 : borrowed (Type.alloc_vec_vec bool (Type.alloc_alloc_global));
+  var _31 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type bool (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
   var _32 : usize;
   var _33 : usize;
   var _34 : usize;

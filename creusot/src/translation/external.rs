@@ -33,7 +33,7 @@ pub fn default_decl<'tcx>(
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
 
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
-    let name = module_name(ctx.tcx, def_id);
+    let name = module_name(ctx, def_id);
 
     decls.extend(names.to_clones(ctx));
     let decl = match item_type(ctx.tcx, def_id) {

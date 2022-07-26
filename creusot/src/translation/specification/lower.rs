@@ -12,10 +12,7 @@ use creusot_rustc::middle::{
     ty,
     ty::{EarlyBinder, ParamEnv, Subst, TyKind},
 };
-use why3::{
-    exp::{BinOp, Constant, Exp, Pattern as Pat, Purity},
-    QName,
-};
+use why3::exp::{BinOp, Constant, Exp, Pattern as Pat, Purity};
 
 pub fn lower_pure<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
@@ -229,10 +226,13 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 }
             }
             TermKind::Constructor { adt, variant, fields } => {
-                self.names.import_prelude_module(PreludeModule::Type);
+                self.ctx.translate(adt.did());
+                if let TyKind::Adt(_, subst) = term.ty.kind() {
+                    self.names.insert(adt.did(), subst);
+                };
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
-                let ctor = constructor_qname(self.ctx.tcx, &adt.variants()[variant]);
+                let ctor = constructor_qname(self.ctx, &adt.variants()[variant]);
                 crate::ty::translate_tydecl(self.ctx, self.ctx.def_span(adt.did()), adt.did());
                 Exp::Constructor { ctor, args }
             }
@@ -289,15 +289,12 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 self.ctx
                     .translate_accessor(def.variants()[0u32.into()].fields[name.as_usize()].did);
                 let accessor = variant_accessor_name(
-                    self.ctx.tcx,
+                    self.ctx,
                     did,
                     &def.variants()[0u32.into()],
                     name.as_usize(),
                 );
-                Exp::Call(
-                    box Exp::QVar(QName { module: vec!["Type".into()], name: accessor }, self.pure),
-                    vec![lhs],
-                )
+                Exp::Call(box Exp::pure_qvar(accessor), vec![lhs])
             }
             TermKind::Absurd => Exp::Absurd,
             t => {
@@ -311,7 +308,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             Pattern::Constructor { adt, variant, fields } => {
                 let variant = &adt.variants()[variant];
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
-                Pat::ConsP(constructor_qname(self.ctx.tcx, variant), fields)
+                Pat::ConsP(constructor_qname(self.ctx, variant), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => Pat::VarP(name.into()),

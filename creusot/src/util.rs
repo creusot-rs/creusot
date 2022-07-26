@@ -10,6 +10,7 @@ use creusot_rustc::{
         subst::{InternalSubsts, SubstsRef},
         DefIdTree, EarlyBinder, ReErased, Subst, Ty, TyCtxt, TyKind, VariantDef,
     },
+    resolve::Namespace,
     span::Symbol,
 };
 use std::{collections::HashMap, iter};
@@ -145,12 +146,12 @@ pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     })
 }
 
-pub fn constructor_qname(tcx: TyCtxt, var: &VariantDef) -> QName {
-    item_qname(tcx, var.def_id)
+pub fn constructor_qname(ctx: &TranslationCtx, var: &VariantDef) -> QName {
+    item_qname(ctx, var.def_id)
 }
 
-pub fn item_qname(tcx: TyCtxt, def_id: DefId) -> QName {
-    QName { module: vec![module_name(tcx, def_id)], name: item_name(tcx, def_id) }
+pub fn item_qname(ctx: &TranslationCtx, def_id: DefId) -> QName {
+    QName { module: vec![module_name(ctx, def_id)], name: item_name(ctx.tcx, def_id) }
 }
 
 // This function will produce an invalid identifier for types.
@@ -193,13 +194,14 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
     Ident::build(&id)
 }
 
-pub fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
-    let kind = tcx.def_kind(def_id);
+pub fn module_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
+    let kind = ctx.def_kind(def_id);
     use creusot_rustc::hir::def::DefKind::*;
 
     match kind {
-        Ctor(_, _) | Variant | Struct | Enum => "Type".into(),
-        _ => ident_path(tcx, def_id),
+        Ctor(_, _) | Variant => module_name(ctx, ctx.parent(def_id)),
+        Struct | Enum => ident_path(ctx.tcx, ctx.representative_type(def_id)),
+        _ => ident_path(ctx.tcx, def_id),
     }
 }
 
@@ -221,6 +223,10 @@ fn ident_path(tcx: TyCtxt, def_id: DefId) -> Ident {
         match seg.data {
             _ => segments.push(format!("{}", seg).to_camel_case()),
         }
+    }
+
+    if let Some(Namespace::TypeNS) = tcx.def_kind(def_id).ns() {
+        segments.push("Type".into());
     }
 
     segments.join("_").into()

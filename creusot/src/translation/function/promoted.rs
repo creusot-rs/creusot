@@ -119,9 +119,10 @@ pub fn translate_promoted<'tcx>(
                             match kind {
                                 Tuple => Exp::Tuple(fields),
                                 Adt(adt, varix, _, _, _) => {
+                                    ctx.translate(*adt);
                                     let adt = ctx.adt_def(*adt);
                                     let variant_def = &adt.variants()[*varix];
-                                    let qname = constructor_qname(ctx.tcx, variant_def);
+                                    let qname = constructor_qname(ctx, variant_def);
 
                                     Exp::Constructor { ctor: qname, args: fields }
                                 }

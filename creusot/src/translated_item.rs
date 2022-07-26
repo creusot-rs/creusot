@@ -42,6 +42,11 @@ pub enum TranslatedItem<'tcx> {
         modl: Module,
         dependencies: CloneSummary<'tcx>,
     },
+    // Types can not have dependencies yet, as Why3 does not yet have applicative clones
+    Type {
+        modl: Module,
+        accessors: IndexMap<DefId, IndexMap<DefId, Decl>>,
+    },
 }
 
 pub struct TypeDeclaration {
@@ -56,12 +61,12 @@ impl TypeDeclaration {
 }
 
 impl<'a, 'tcx> TranslatedItem<'tcx> {
-    pub fn dependencies(&'a self, metadata: &'a Metadata<'tcx>) -> &'a CloneSummary<'tcx> {
+    pub fn dependencies(&'a self, metadata: &'a Metadata<'tcx>) -> Option<&'a CloneSummary<'tcx>> {
         use TranslatedItem::*;
         match self {
             Extern { dependencies, .. } => match dependencies {
-                Ok(deps) => deps,
-                Err(id) => metadata.dependencies(*id).unwrap(),
+                Ok(deps) => Some(deps),
+                Err(id) => Some(metadata.dependencies(*id).unwrap()),
             },
             _ => self.local_dependencies(),
         }
@@ -69,17 +74,18 @@ impl<'a, 'tcx> TranslatedItem<'tcx> {
 
     // Get the dependencies of a locally defined function
     // Panics if `self` is not local
-    pub fn local_dependencies(&self) -> &CloneSummary<'tcx> {
+    pub fn local_dependencies(&self) -> Option<&CloneSummary<'tcx>> {
         use TranslatedItem::*;
 
         match self {
-            Logic { dependencies, .. } => dependencies,
-            Program { dependencies, .. } => dependencies,
-            Trait { dependencies, .. } => dependencies,
-            Impl { dependencies, .. } => dependencies,
-            AssocTy { dependencies, .. } => dependencies,
-            Constant { dependencies, .. } => dependencies,
+            Logic { dependencies, .. } => Some(dependencies),
+            Program { dependencies, .. } => Some(dependencies),
+            Trait { dependencies, .. } => Some(dependencies),
+            Impl { dependencies, .. } => Some(dependencies),
+            AssocTy { dependencies, .. } => Some(dependencies),
+            Constant { dependencies, .. } => Some(dependencies),
             Extern { .. } => unreachable!("local_dependencies: called on a non-local item"),
+            Type { .. } => None,
         }
     }
 
@@ -99,12 +105,12 @@ impl<'a, 'tcx> TranslatedItem<'tcx> {
         }
     }
 
-    pub fn modules(&'a self) -> Box<dyn Iterator<Item = &Module> + 'a> {
+    pub fn modules(self) -> Box<dyn Iterator<Item = Module>> {
         use std::iter;
         use TranslatedItem::*;
         match self {
             Logic { interface, modl, proof_modl, .. } => {
-                box iter::once(interface).chain(iter::once(modl)).chain(proof_modl.iter())
+                box iter::once(interface).chain(iter::once(modl)).chain(proof_modl.into_iter())
             }
             Program { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
             Trait { .. } => box iter::empty(),
@@ -112,11 +118,16 @@ impl<'a, 'tcx> TranslatedItem<'tcx> {
             AssocTy { modl, .. } => box iter::once(modl),
             Constant { modl, .. } => box iter::once(modl),
             Extern { interface, body, .. } => box iter::once(interface).chain(iter::once(body)),
+            Type { mut modl, accessors, .. } => {
+                modl.decls.extend(accessors.values().flat_map(|v| v.values()).cloned());
+
+                box iter::once(modl)
+            }
         }
     }
 
-    pub fn interface(&'a self) -> Box<dyn Iterator<Item = &Module> + 'a> {
-        match &self {
+    pub fn interface(self) -> Box<dyn Iterator<Item = Module>> {
+        match self {
             TranslatedItem::Logic { interface, modl, .. } => {
                 box std::iter::once(interface).chain(std::iter::once(modl))
             }
@@ -126,6 +137,7 @@ impl<'a, 'tcx> TranslatedItem<'tcx> {
             TranslatedItem::AssocTy { modl, .. } => box std::iter::once(modl),
             TranslatedItem::Extern { interface, .. } => box std::iter::once(interface),
             TranslatedItem::Constant { modl, .. } => box std::iter::once(modl),
+            TranslatedItem::Type { .. } => box std::iter::empty(),
         }
     }
 }

@@ -1,44 +1,4 @@
-module Type
-  use Ref
-  use mach.int.Int
-  use prelude.Int8
-  use prelude.Int16
-  use mach.int.Int32
-  use mach.int.Int64
-  use prelude.UInt8
-  use prelude.UInt16
-  use mach.int.UInt32
-  use mach.int.UInt64
-  use string.Char
-  use floating_point.Single
-  use floating_point.Double
-  use seq.Seq
-  use set.Set
-  use set.Fset
-  use map.Map
-  use prelude.Prelude
-  type core_ptr_nonnull_nonnull 't =
-    | Core_Ptr_NonNull_NonNull opaque_ptr
-    
-  type core_marker_phantomdata 't =
-    | Core_Marker_PhantomData
-    
-  type core_ptr_unique_unique 't =
-    | Core_Ptr_Unique_Unique (core_ptr_nonnull_nonnull 't) (core_marker_phantomdata 't)
-    
-  type alloc_rawvec_rawvec 't 'a =
-    | Alloc_RawVec_RawVec (core_ptr_unique_unique 't) usize 'a
-    
-  type alloc_vec_vec 't 'a =
-    | Alloc_Vec_Vec (alloc_rawvec_rawvec 't 'a) usize
-    
-  type alloc_alloc_global  =
-    | Alloc_Alloc_Global
-    
-  type alloc_string_string  =
-    | Alloc_String_String (alloc_vec_vec uint8 (alloc_alloc_global))
-    
-end
+
 module C256_U8Safe_Interface
   use mach.int.Int
   use prelude.Prelude
@@ -66,16 +26,68 @@ module C256_U8Safe
   }
   
 end
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Prelude
+  type core_ptr_nonnull_nonnull_type 't =
+    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
+    
+end
+module Core_Marker_PhantomData_Type
+  type core_marker_phantomdata_type 't =
+    | Core_Marker_PhantomData_Type
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type
+  type core_ptr_unique_unique_type 't =
+    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use Core_Ptr_Unique_Unique_Type
+  type alloc_rawvec_rawvec_type 't 'a =
+    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
+    
+end
+module Alloc_Vec_Vec_Type
+  use mach.int.Int
+  use prelude.Prelude
+  use mach.int.UInt64
+  use Alloc_RawVec_RawVec_Type
+  type alloc_vec_vec_type 't 'a =
+    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
+    
+end
+module Alloc_Alloc_Global_Type
+  type alloc_alloc_global_type  =
+    | Alloc_Alloc_Global_Type
+    
+end
+module Alloc_String_String_Type
+  use mach.int.Int
+  use prelude.Prelude
+  use prelude.UInt8
+  use Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type
+  type alloc_string_string_type  =
+    | Alloc_String_String_Type (Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type))
+    
+end
 module C256_Bug256_Interface
-  use Type
-  val bug_256 [@cfg:stackify] (_x : Type.alloc_string_string) : ()
+  use Alloc_String_String_Type
+  val bug_256 [@cfg:stackify] (_x : Alloc_String_String_Type.alloc_string_string_type) : ()
 end
 module C256_Bug256
-  use Type
-  let rec cfg bug_256 [@cfg:stackify] [#"../256.rs" 8 0 8 26] (_x : Type.alloc_string_string) : ()
+  use Alloc_String_String_Type
+  let rec cfg bug_256 [@cfg:stackify] [#"../256.rs" 8 0 8 26] (_x : Alloc_String_String_Type.alloc_string_string_type) : ()
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var _x_1 : Type.alloc_string_string;
+  var _x_1 : Alloc_String_String_Type.alloc_string_string_type;
   {
     _x_1 <- _x;
     goto BB0

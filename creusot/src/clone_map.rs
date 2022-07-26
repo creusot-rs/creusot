@@ -11,6 +11,7 @@ use creusot_rustc::{
 use heck::CamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
+use rustc_middle::ty::subst::GenericArgKind;
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
     Ident, QName,
@@ -98,6 +99,9 @@ pub struct CloneMap<'tcx> {
 
     // Internal state to determine whether clones should be public or not
     public: bool,
+
+    // Used to ensure we only have a single `use` per type.
+    used_types: IndexSet<DefId>,
 }
 
 impl<'tcx> Drop for CloneMap<'tcx> {
@@ -109,8 +113,6 @@ impl<'tcx> Drop for CloneMap<'tcx> {
                 self.names.len(),
                 self.self_id,
             );
-
-            debug_assert!(false);
         }
     }
 }
@@ -235,6 +237,7 @@ impl<'tcx> CloneMap<'tcx> {
             clone_graph: DiGraphMap::new(),
             last_cloned: 0,
             public: false,
+            used_types: Default::default(),
         };
         debug!("cloning self: {:?}", c.self_key());
         c.names.insert(c.self_key(), CloneInfo::hidden());
@@ -322,6 +325,7 @@ impl<'tcx> CloneMap<'tcx> {
         }
         self.last_cloned = 0;
         self.clone_graph = DiGraphMap::new();
+        self.used_types = Default::default();
     }
 
     fn closure_hack(&self, def_id: DefId, subst: SubstsRef<'tcx>) -> (DefId, SubstsRef<'tcx>) {
@@ -396,11 +400,22 @@ impl<'tcx> CloneMap<'tcx> {
         key: (DefId, SubstsRef<'tcx>),
     ) {
         // Check the substitution for dependencies on closures
-        for ty in key.1.types() {
-            if let TyKind::Closure(id, subst) = ty.kind() {
-                self.insert(*id, subst);
-                // Sketchy... shouldn't we need to do something to subst?
-                self.add_graph_edge(DepNode::Dep(key), DepNode::Dep((*id, subst)));
+        for ty in key.1.types().flat_map(|t| t.walk()) {
+            let ty = match ty.unpack() {
+                GenericArgKind::Type(ty) => ty,
+                _ => continue,
+            };
+            match ty.kind() {
+                TyKind::Closure(id, subst) => {
+                    self.insert(*id, subst);
+                    // Sketchy... shouldn't we need to do something to subst?
+                    self.add_graph_edge(DepNode::Dep(key), DepNode::Dep((*id, subst)));
+                }
+                TyKind::Adt(def, subst) => {
+                    self.insert(def.did(), subst);
+                    self.add_graph_edge(DepNode::Dep(key), DepNode::Dep((def.did(), subst)));
+                }
+                _ => {}
             }
         }
 
@@ -575,6 +590,19 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
+            // Types can't be cloned, but are used (for now).
+            if util::item_type(ctx.tcx, def_id) == ItemType::Type {
+                let repr = ctx.representative_type(def_id);
+                let hidden = self
+                    .names
+                    .iter()
+                    .any(|((id, _), info)| *id == repr && info.kind == Kind::Hidden);
+                if self.used_types.insert(ctx.representative_type(def_id)) && !hidden {
+                    decls.push(Decl::UseDecl(Use { name: cloneable_name(ctx, def_id, false) }));
+                }
+                continue;
+            }
+
             let outbound: Vec<_> =
                 self.clone_graph.neighbors_directed(DepNode::Dep(node), Outgoing).collect();
 
@@ -618,12 +646,12 @@ impl<'tcx> CloneMap<'tcx> {
 
             debug!(
                 "emit clone node={node:?} name={:?} as={:?}",
-                cloneable_name(ctx.tcx, def_id, interface),
+                cloneable_name(ctx, def_id, interface),
                 self.names[&node].kind.clone()
             );
 
             decls.push(Decl::Clone(DeclClone {
-                name: cloneable_name(ctx.tcx, def_id, interface),
+                name: cloneable_name(ctx, def_id, interface),
                 subst: clone_subst,
                 kind: self.names[&node].kind.clone().into(),
             }));
@@ -680,23 +708,23 @@ pub fn base_subst<'tcx>(
     clone_subst
 }
 
-fn cloneable_name(tcx: TyCtxt, def_id: DefId, interface: bool) -> QName {
+fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: bool) -> QName {
     use util::ItemType::*;
 
     // TODO: Refactor.
-    match util::item_type(tcx, def_id) {
+    match util::item_type(ctx.tcx, def_id) {
         Logic | Predicate | Impl => {
             if interface {
                 // TODO: this should directly be a function...
-                QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
+                QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
             } else {
-                module_name(tcx, def_id).into()
+                module_name(ctx, def_id).into()
             }
         }
         Interface | Program | Closure => {
-            QName { module: Vec::new(), name: interface::interface_name(tcx, def_id) }
+            QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
         }
-        Constant | Trait | Type | AssocTy => module_name(tcx, def_id).into(),
+        Constant | Trait | Type | AssocTy => module_name(ctx, def_id).into(),
         Unsupported(_) => unreachable!(),
     }
 }
@@ -756,7 +784,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
             ty::ImplContainer(_) => None,
         },
         Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
-        Type => unreachable!("types have no refinable symbols"),
+        Type => None,
         _ => unreachable!(),
     }
 }
