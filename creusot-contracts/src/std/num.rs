@@ -26,6 +26,9 @@ macro_rules! spec_op {
     ) => {
         extern_spec! {
             impl $type {
+                // Checked: performs the operation on `Int`, returns `Some` if the result is between
+                // `$type::MIN` and `$type::MAX`, or `None` if the result cannot be represented by
+                // `$type`
                 #[allow(dead_code)]
                 #[ensures(
                     (result == None)
@@ -34,12 +37,15 @@ macro_rules! spec_op {
                 #[ensures(forall<r: $type> result == Some(r) ==> @r == (@self $op @rhs))]
                 fn $checked(self, rhs: $type) -> Option<$type>;
 
+                // Wrapping: performs the operation on `Int` and converts back to `$type`
                 #[allow(dead_code)]
                 #[ensures(
                     @result == (@self $op @rhs).rem_euclid(2.pow(@$type::BITS)) + @$type::MIN
                 )]
                 fn $wrapping(self, rhs: $type) -> $type;
 
+                // Saturating: performs the operation on `Int` and clamps the result between
+                // `$type::MIN` and `$type::MAX`
                 #[allow(dead_code)]
                 #[ensures(
                     (@self $op @rhs) >= @$type::MIN && (@self $op @rhs) <= @$type::MAX
@@ -49,6 +55,8 @@ macro_rules! spec_op {
                 #[ensures((@self $op @rhs) > @$type::MAX ==> @result == @$type::MAX)]
                 fn $saturating(self, rhs: $type) -> $type;
 
+                // Overflowing: performs the operation on `Int` and converts back to `$type`, and
+                // indicates whether an overflow occurred
                 #[allow(dead_code)]
                 #[ensures(
                     @result.0 == (@self $op @rhs).rem_euclid(2.pow(@$type::BITS)) + @$type::MIN
