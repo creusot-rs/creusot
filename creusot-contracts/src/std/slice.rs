@@ -25,7 +25,7 @@ impl<T> Model for [T] {
 
 #[logic]
 #[trusted]
-#[creusot::builtins = "prelude.Prelude.id"]
+#[creusot::builtins = "prelude.Slice.id"]
 fn slice_model<T>(_: [T]) -> Seq<T> {
     pearlite! { absurd }
 }

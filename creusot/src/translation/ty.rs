@@ -115,14 +115,14 @@ fn translate_ty_inner<'tcx>(
         }
         Ref(_, ty, borkind) => {
             use creusot_rustc::ast::Mutability::*;
-            names.import_prelude_module(PreludeModule::Prelude);
+            names.import_prelude_module(PreludeModule::Borrow);
             match borkind {
                 Mut => MlT::MutableBorrow(box translate_ty_inner(trans, ctx, names, span, *ty)),
                 Not => translate_ty_inner(trans, ctx, names, span, *ty),
             }
         }
         Slice(ty) => {
-            names.import_prelude_module(PreludeModule::Prelude);
+            names.import_prelude_module(PreludeModule::Slice);
             names.import_prelude_module(PreludeModule::Seq);
             // names.import_prelude_module(PreludeModule:);
             MlT::TApp(
@@ -131,7 +131,7 @@ fn translate_ty_inner<'tcx>(
             )
         }
         Array(ty, _) => {
-            names.import_prelude_module(PreludeModule::Prelude);
+            names.import_prelude_module(PreludeModule::Slice);
             names.import_prelude_module(PreludeModule::Seq);
 
             MlT::TApp(
@@ -143,7 +143,7 @@ fn translate_ty_inner<'tcx>(
         // Slice()
         Never => MlT::Tuple(vec![]),
         RawPtr(_) => {
-            names.import_prelude_module(PreludeModule::Prelude);
+            names.import_prelude_module(PreludeModule::Opaque);
             MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
         }
         Closure(id, subst) => {
@@ -544,17 +544,14 @@ fn intty_to_ty(
 
     match ity {
         Isize => {
-            names.import_prelude_module(PreludeModule::Prelude);
-            names.import_prelude_module(PreludeModule::Int64);
+            names.import_prelude_module(PreludeModule::Isize);
             isize_ty()
         }
         I8 => {
-            names.import_prelude_module(PreludeModule::Prelude);
             names.import_prelude_module(PreludeModule::Int8);
             i8_ty()
         }
         I16 => {
-            names.import_prelude_module(PreludeModule::Prelude);
             names.import_prelude_module(PreludeModule::Int16);
             i16_ty()
         }
@@ -587,17 +584,14 @@ fn uintty_to_ty(
 
     match ity {
         Usize => {
-            names.import_prelude_module(PreludeModule::Prelude);
-            names.import_prelude_module(PreludeModule::UInt64);
+            names.import_prelude_module(PreludeModule::Usize);
             usize_ty()
         }
         U8 => {
-            names.import_prelude_module(PreludeModule::Prelude);
             names.import_prelude_module(PreludeModule::UInt8);
             u8_ty()
         }
         U16 => {
-            names.import_prelude_module(PreludeModule::Prelude);
             names.import_prelude_module(PreludeModule::UInt16);
             u16_ty()
         }

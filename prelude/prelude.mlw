@@ -1,28 +1,7 @@
-module Prelude
-  use Ref
-  use mach.int.Int
-  use mach.int.Int32
-  use mach.int.Int64
-  use mach.int.UInt32
-  use mach.int.UInt64
-  use string.Char
-  use floating_point.Single
-  use floating_point.Double
-
-  type usize = uint64
-  type isize = int64
+module Opaque
   type opaque_ptr
-  use seq.Seq
-  type rust_array 'a = seq 'a
-
-  type borrowed 'a = { current : 'a ; final : 'a; }
-  let function ( *_ ) x = x.current
-  let function ( ^_ ) x = x.final
-  val borrow_mut (a : 'a) : borrowed 'a
-  ensures { *result = a }
-
-  let function id (x: 'a) : 'a = x
-
+end
+module Bool
   let eqb (a : bool) (b : bool) : bool =
     ensures { result <-> a = b  }
     match a, b with
@@ -30,6 +9,26 @@ module Prelude
     | False, False -> True
     | _ -> False
     end
+end
+module Borrow
+  type borrowed 'a = { current : 'a ; final : 'a; }
+  let function ( *_ ) x = x.current
+  let function ( ^_ ) x = x.final
+  val borrow_mut (a : 'a) : borrowed 'a
+  ensures { *result = a }
+end
+module Slice
+  use seq.Seq
+  type rust_array 'a = seq 'a
+  function id (s : seq 'a) : seq 'a = s
+end
+module IntSize
+  use export mach.int.Int64
+  type isize = int64
+end
+module UIntSize
+  use export mach.int.UInt64
+  type usize = uint64
 end
 module Int8
   use int.Int

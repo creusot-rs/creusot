@@ -237,11 +237,11 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 Exp::Constructor { ctor, args }
             }
             TermKind::Cur { box term } => {
-                self.names.import_prelude_module(PreludeModule::Prelude);
+                self.names.import_prelude_module(PreludeModule::Borrow);
                 Exp::Current(box self.lower_term(term))
             }
             TermKind::Fin { box term } => {
-                self.names.import_prelude_module(PreludeModule::Prelude);
+                self.names.import_prelude_module(PreludeModule::Borrow);
                 Exp::Final(box self.lower_term(term))
             }
             TermKind::Impl { box lhs, box rhs } => {

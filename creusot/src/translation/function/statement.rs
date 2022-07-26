@@ -145,9 +145,9 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                 self.translate_operand(l).lazy_and(self.translate_operand(r))
             }
             Rvalue::BinaryOp(BinOp::Eq, box (l, r)) if l.ty(self.body, self.tcx).is_bool() => {
-                self.names.import_prelude_module(PreludeModule::Prelude);
+                self.names.import_prelude_module(PreludeModule::Bool);
                 Call(
-                    box Exp::impure_qvar(QName::from_string("Prelude.eqb").unwrap()),
+                    box Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap()),
                     vec![self.translate_operand(l), self.translate_operand(r)],
                 )
             }
@@ -256,7 +256,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
 
 fn int_from_int(ity: &IntTy) -> Exp {
     match ity {
-        IntTy::Isize => Exp::impure_qvar(QName::from_string("Int64.of_int").unwrap()),
+        IntTy::Isize => Exp::impure_qvar(QName::from_string("IntSize.of_int").unwrap()),
         IntTy::I8 => unimplemented!(),
         IntTy::I16 => unimplemented!(),
         IntTy::I32 => Exp::impure_qvar(QName::from_string("Int32.of_int").unwrap()),
@@ -267,7 +267,7 @@ fn int_from_int(ity: &IntTy) -> Exp {
 
 pub fn uint_from_int(uty: &UintTy) -> Exp {
     match uty {
-        UintTy::Usize => Exp::impure_qvar(QName::from_string("UInt64.of_int").unwrap()),
+        UintTy::Usize => Exp::impure_qvar(QName::from_string("UIntSize.of_int").unwrap()),
         UintTy::U8 => unimplemented!(),
         UintTy::U16 => unimplemented!(),
         UintTy::U32 => Exp::impure_qvar(QName::from_string("UInt32.of_int").unwrap()),
@@ -278,7 +278,7 @@ pub fn uint_from_int(uty: &UintTy) -> Exp {
 
 fn int_to_int(ity: &IntTy) -> Exp {
     match ity {
-        IntTy::Isize => Exp::impure_qvar(QName::from_string("Int64.to_int").unwrap()),
+        IntTy::Isize => Exp::impure_qvar(QName::from_string("IntSize.to_int").unwrap()),
         IntTy::I8 => unimplemented!(),
         IntTy::I16 => unimplemented!(),
         IntTy::I32 => Exp::impure_qvar(QName::from_string("Int32.to_int").unwrap()),
@@ -289,7 +289,7 @@ fn int_to_int(ity: &IntTy) -> Exp {
 
 pub fn uint_to_int(uty: &UintTy) -> Exp {
     match uty {
-        UintTy::Usize => Exp::impure_qvar(QName::from_string("UInt64.to_int").unwrap()),
+        UintTy::Usize => Exp::impure_qvar(QName::from_string("UIntSize.to_int").unwrap()),
         UintTy::U8 => unimplemented!(),
         UintTy::U16 => unimplemented!(),
         UintTy::U32 => Exp::impure_qvar(QName::from_string("UInt32.to_int").unwrap()),
