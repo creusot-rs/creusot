@@ -104,12 +104,10 @@ extern_spec! {
         #[ensures({
             let (l,r) = result;  let sl = (@self).len();
             ((@^self).len() == sl) &&
-            ((@l).len() == @mid && (@r).len() == sl - @mid) &&
-            ((@^l).len() == @mid && (@^r).len() == sl - @mid) &&
-            (forall<i:usize> @i < @mid
-                ==> (@l)[@i] == (@self)[@i] && (@^l)[@i] == (@^self)[@i]) &&
-            (forall<i:usize> @i >= @mid && @i < sl
-                ==> (@r)[@i] == (@self)[@mid-@i] && (@^r)[@i] == (@^self)[@mid-@i])
+            (@self).subsequence(0, @mid).ext_eq(@l) &&
+            (@self).subsequence(@mid, sl).ext_eq(@r) &&
+            (@^self).subsequence(0, @mid).ext_eq(@^l) &&
+            (@^self).subsequence(@mid, sl).ext_eq(@^r)
         })]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 
