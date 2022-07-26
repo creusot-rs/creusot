@@ -32,6 +32,20 @@ impl Int {
     pub fn min(self, _: Int) -> Int {
         absurd
     }
+
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "int.EuclideanDivision.div"]
+    pub fn div_euclid(self, _: Int) -> Int {
+        absurd
+    }
+
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "int.EuclideanDivision.mod"]
+    pub fn rem_euclid(self, _: Int) -> Int {
+        absurd
+    }
 }
 
 macro_rules! mach_int {
