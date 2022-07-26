@@ -1,6 +1,6 @@
 
 module Core_Ptr_NonNull_NonNull_Type
-  use prelude.Prelude
+  use prelude.Opaque
   type core_ptr_nonnull_nonnull_type 't =
     | Core_Ptr_NonNull_NonNull_Type opaque_ptr
     
@@ -19,8 +19,7 @@ module Core_Ptr_Unique_Unique_Type
 end
 module Alloc_RawVec_RawVec_Type
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use Core_Ptr_Unique_Unique_Type
   type alloc_rawvec_rawvec_type 't 'a =
     | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
@@ -28,8 +27,7 @@ module Alloc_RawVec_RawVec_Type
 end
 module Alloc_Vec_Vec_Type
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use Alloc_RawVec_RawVec_Type
   type alloc_vec_vec_type 't 'a =
     | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
@@ -76,8 +74,7 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   type a
   use seq.Seq
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use Alloc_Vec_Vec_Type
   function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
 end
@@ -86,8 +83,7 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   type a
   use seq.Seq
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use Alloc_Vec_Vec_Type
   function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
   axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
@@ -228,14 +224,14 @@ end
 module Hashmap_Impl5_HashmapInv_Interface
   type k
   type v
-  use prelude.Prelude
+  use prelude.Borrow
   use Hashmap_MyHashMap_Type
   predicate hashmap_inv (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v)
 end
 module Hashmap_Impl5_HashmapInv
   type k
   type v
-  use prelude.Prelude
+  use prelude.Borrow
   use Hashmap_MyHashMap_Type
   use mach.int.Int
   use mach.int.Int32
@@ -369,7 +365,7 @@ module Alloc_Vec_FromElem_Interface
   use mach.int.UInt64
   use mach.int.Int
   use mach.int.Int32
-  use prelude.Prelude
+  use prelude.UIntSize
   use Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
@@ -385,7 +381,7 @@ module Alloc_Vec_FromElem
   use mach.int.UInt64
   use mach.int.Int
   use mach.int.Int32
-  use prelude.Prelude
+  use prelude.UIntSize
   use Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
@@ -410,7 +406,7 @@ module Hashmap_Impl5_New_Interface
   use mach.int.Int32
   use mach.int.UInt64
   use map.Map
-  use prelude.Prelude
+  use prelude.UIntSize
   use Hashmap_List_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
   use Core_Option_Option_Type
@@ -436,7 +432,7 @@ module Hashmap_Impl5_New
   use mach.int.Int32
   use mach.int.UInt64
   use map.Map
-  use prelude.Prelude
+  use prelude.UIntSize
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
   clone Hashmap_Hash_HashLog as HashLog0 with type self = k, axiom .
   clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = k, type ModelTy0.modelTy = ModelTy0.modelTy
@@ -508,13 +504,13 @@ module Hashmap_Impl5_New
 end
 module CreusotContracts_Logic_Model_Impl0_Model_Interface
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   function model (self : t) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Impl0_Model
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
   type ModelTy0.modelTy = ModelTy0.modelTy
@@ -527,7 +523,7 @@ end
 module Hashmap_Hash_Hash_Interface
   type self
   use mach.int.UInt64
-  use prelude.Prelude
+  use prelude.Borrow
   use mach.int.Int
   clone Hashmap_Hash_HashLog_Interface as HashLog0 with type self = self, axiom .
   val hash [@cfg:stackify] (self : self) : uint64
@@ -537,7 +533,7 @@ end
 module Hashmap_Hash_Hash
   type self
   use mach.int.UInt64
-  use prelude.Prelude
+  use prelude.Borrow
   use mach.int.Int
   clone Hashmap_Hash_HashLog as HashLog0 with type self = self, axiom .
   val hash [@cfg:stackify] (self : self) : uint64
@@ -549,8 +545,9 @@ module Alloc_Vec_Impl1_Len_Interface
   type a
   use mach.int.UInt64
   use seq.Seq
-  use prelude.Prelude
+  use prelude.Borrow
   use mach.int.Int
+  use prelude.UIntSize
   use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
   val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
@@ -562,8 +559,9 @@ module Alloc_Vec_Impl1_Len
   type a
   use mach.int.UInt64
   use seq.Seq
-  use prelude.Prelude
+  use prelude.Borrow
   use mach.int.Int
+  use prelude.UIntSize
   use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
   val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
@@ -611,7 +609,8 @@ module Alloc_Vec_Impl16_Index_Interface
   type t
   type i
   type a
-  use prelude.Prelude
+  use prelude.Borrow
+  use prelude.Slice
   use seq.Seq
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
@@ -630,7 +629,8 @@ module Alloc_Vec_Impl16_Index
   type t
   type i
   type a
-  use prelude.Prelude
+  use prelude.Borrow
+  use prelude.Slice
   use seq.Seq
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
@@ -648,7 +648,7 @@ end
 module Core_Cmp_PartialEq_Eq_Interface
   type self
   type rhs
-  use prelude.Prelude
+  use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model1 with type t = rhs,
   type ModelTy0.modelTy = ModelTy0.modelTy
@@ -661,7 +661,7 @@ end
 module Core_Cmp_PartialEq_Eq
   type self
   type rhs
-  use prelude.Prelude
+  use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model1 with type t = rhs,
   type ModelTy0.modelTy = ModelTy0.modelTy
@@ -679,17 +679,16 @@ end
 module CreusotContracts_Std1_Slice_Impl3_InBounds_Interface
   type t
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl3_InBounds
   type t
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
+  use mach.int.UInt64
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
     UInt64.to_int self < Seq.length seq
 end
@@ -699,17 +698,16 @@ end
 module CreusotContracts_Std1_Slice_Impl3_HasValue_Interface
   type t
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
 end
 module CreusotContracts_Std1_Slice_Impl3_HasValue
   type t
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
+  use mach.int.UInt64
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
     Seq.get seq (UInt64.to_int self) = out
 end
@@ -733,7 +731,7 @@ end
 module Hashmap_Impl5_Get_Interface
   type k
   type v
-  use prelude.Prelude
+  use prelude.Borrow
   use map.Map
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = k
   use Core_Option_Option_Type
@@ -755,7 +753,7 @@ end
 module Hashmap_Impl5_Get
   type k
   type v
-  use prelude.Prelude
+  use prelude.Borrow
   use map.Map
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = k
   clone Hashmap_Hash_HashLog as HashLog0 with type self = k, axiom .
@@ -790,8 +788,9 @@ module Hashmap_Impl5_Get
   predicate GoodBucket0.good_bucket = GoodBucket0.good_bucket,
   predicate NoDoubleBinding0.no_double_binding = NoDoubleBinding0.no_double_binding
   use mach.int.Int
+  use prelude.UIntSize
   use mach.int.UInt64
-  use mach.int.Int64
+  use prelude.IntSize
   use Alloc_Boxed_Box_Type
   clone CreusotContracts_Logic_Model_Impl0_Model as Model4 with type t = k, type ModelTy0.modelTy = ModelTy1.modelTy,
   function Model0.model = Model1.model
@@ -865,7 +864,7 @@ module Hashmap_Impl5_Get
     goto BB1
   }
   BB1 {
-    _5 <- UInt64.of_int (UInt64.to_int _6);
+    _5 <- UIntSize.of_int (UInt64.to_int _6);
     _9 <- Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets self_1;
     _8 <- ([#"../hashmap.rs" 151 49 151 67] Len0.len _9);
     goto BB2
@@ -947,12 +946,12 @@ module Hashmap_Impl5_Get
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   predicate resolve (self : borrowed t) =
      ^ self =  * self
 end
@@ -972,8 +971,9 @@ module Alloc_Vec_Impl17_IndexMut_Interface
   type t
   type i
   type a
-  use prelude.Prelude
+  use prelude.Borrow
   use seq.Seq
+  use prelude.Slice
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
   use Alloc_Vec_Vec_Type
@@ -996,8 +996,9 @@ module Alloc_Vec_Impl17_IndexMut
   type t
   type i
   type a
-  use prelude.Prelude
+  use prelude.Borrow
   use seq.Seq
+  use prelude.Slice
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
   use Alloc_Vec_Vec_Type
@@ -1025,7 +1026,7 @@ module Alloc_Vec_Impl17
   type a
 end
 module CreusotContracts_Logic_Ghost_Ghost_Type
-  use prelude.Prelude
+  use prelude.Opaque
   type creusotcontracts_logic_ghost_ghost_type 't =
     | CreusotContracts_Logic_Ghost_Ghost_Type opaque_ptr
     
@@ -1033,25 +1034,24 @@ end
 module CreusotContracts_Std1_Slice_Impl3_ResolveElswhere_Interface
   type t
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
   predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl3_ResolveElswhere
   type t
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
   use mach.int.Int32
+  use mach.int.UInt64
   predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) =
     forall i : (int) . 0 <= i /\ i <> UInt64.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
 end
 module Hashmap_Impl5_Add_Interface
   type k
   type v
-  use prelude.Prelude
+  use prelude.Borrow
   use map.Map
   use Hashmap_List_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
@@ -1078,7 +1078,7 @@ end
 module Hashmap_Impl5_Add
   type k
   type v
-  use prelude.Prelude
+  use prelude.Borrow
   use map.Map
   use mach.int.UInt64
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
@@ -1111,7 +1111,8 @@ module Hashmap_Impl5_Add
   predicate GoodBucket0.good_bucket = GoodBucket0.good_bucket,
   predicate NoDoubleBinding0.no_double_binding = NoDoubleBinding0.no_double_binding
   use mach.int.Int
-  use mach.int.Int64
+  use prelude.UIntSize
+  use prelude.IntSize
   clone CreusotContracts_Logic_Model_Impl0_Model as Model3 with type t = k, type ModelTy0.modelTy = ModelTy0.modelTy,
   function Model0.model = Model1.model
   use Alloc_Boxed_Box_Type
@@ -1220,7 +1221,7 @@ module Hashmap_Impl5_Add
     goto BB3
   }
   BB3 {
-    _9 <- UInt64.of_int (UInt64.to_int _10);
+    _9 <- UIntSize.of_int (UInt64.to_int _10);
     _12 <- length_6;
     _13 <- ([#"../hashmap.rs" 118 27 118 55] _12 = (0 : usize));
     assert { not _13 };
@@ -1355,13 +1356,12 @@ module Hashmap_Impl5_Add
 end
 module CreusotContracts_Logic_Int_Impl20_Model_Interface
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   function model (self : usize) : int
 end
 module CreusotContracts_Logic_Int_Impl20_Model
   use mach.int.Int
-  use prelude.Prelude
+  use prelude.UIntSize
   use mach.int.UInt64
   function model (self : usize) : int =
     UInt64.to_int self
@@ -1377,14 +1377,13 @@ end
 module Hashmap_Impl2_HashLog_Interface
   use mach.int.Int
   use mach.int.Int32
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   function hash_log (self : usize) : int
 end
 module Hashmap_Impl2_HashLog
   use mach.int.Int
   use mach.int.Int32
-  use prelude.Prelude
+  use prelude.UIntSize
   use mach.int.UInt64
   function hash_log [#"../hashmap.rs" 66 4 66 28] (self : usize) : int =
     [#"../hashmap.rs" 67 8 67 27] UInt64.to_int self
@@ -1393,7 +1392,7 @@ end
 module Hashmap_Impl2_HashLog_Impl
   use mach.int.Int
   use mach.int.Int32
-  use prelude.Prelude
+  use prelude.UIntSize
   use mach.int.UInt64
   let rec ghost function hash_log (self : usize) : int
     ensures { [#"../hashmap.rs" 65 14 65 25] result >= 0 }
@@ -1403,8 +1402,9 @@ module Hashmap_Impl2_HashLog_Impl
 end
 module Hashmap_Impl2_Hash_Interface
   use mach.int.UInt64
-  use prelude.Prelude
+  use prelude.Borrow
   use mach.int.Int
+  use prelude.UIntSize
   clone Hashmap_Impl2_HashLog_Interface as HashLog0 with axiom .
   val hash [@cfg:stackify] (self : usize) : uint64
     ensures { [#"../hashmap.rs" 59 14 59 40] UInt64.to_int result = HashLog0.hash_log self }
@@ -1412,8 +1412,9 @@ module Hashmap_Impl2_Hash_Interface
 end
 module Hashmap_Impl2_Hash
   use mach.int.UInt64
-  use prelude.Prelude
+  use prelude.Borrow
   use mach.int.Int
+  use prelude.UIntSize
   clone Hashmap_Impl2_HashLog as HashLog0 with axiom .
   let rec cfg hash [@cfg:stackify] [#"../hashmap.rs" 60 4 60 25] (self : usize) : uint64
     ensures { [#"../hashmap.rs" 59 14 59 40] UInt64.to_int result = HashLog0.hash_log self }
@@ -1428,7 +1429,7 @@ module Hashmap_Impl2_Hash
   }
   BB0 {
     _2 <- self_1;
-    _0 <- UInt64.of_int (UInt64.to_int _2);
+    _0 <- UInt64.of_int (UIntSize.to_int _2);
     return _0
   }
   
@@ -1436,14 +1437,14 @@ end
 module Hashmap_Impl2_HashLogEqModel_Interface
   use mach.int.UInt64
   use mach.int.Int
-  use prelude.Prelude
+  use prelude.UIntSize
   clone Hashmap_Impl2_HashLog_Interface as HashLog0 with axiom .
   function hash_log_eq_model (x : usize) (y : usize) : ()
 end
 module Hashmap_Impl2_HashLogEqModel
   use mach.int.UInt64
   use mach.int.Int
-  use prelude.Prelude
+  use prelude.UIntSize
   clone Hashmap_Impl2_HashLog_Interface as HashLog0 with axiom .
   function hash_log_eq_model [#"../hashmap.rs" 73 4 73 42] (x : usize) (y : usize) : () =
     [#"../hashmap.rs" 70 4 70 12] ()
@@ -1452,7 +1453,7 @@ end
 module Hashmap_Impl2_HashLogEqModel_Impl
   use mach.int.UInt64
   use mach.int.Int
-  use prelude.Prelude
+  use prelude.UIntSize
   clone Hashmap_Impl2_HashLog as HashLog0 with axiom .
   let rec ghost function hash_log_eq_model (x : usize) (y : usize) : ()
     requires {[#"../hashmap.rs" 71 15 71 23] UInt64.to_int x = UInt64.to_int y}
@@ -1464,8 +1465,7 @@ end
 module Hashmap_Impl2
   use mach.int.Int
   use mach.int.Int32
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   clone Hashmap_Impl2_HashLog as HashLog0 with axiom .
   clone Hashmap_Hash_HashLog_Interface as HashLog1 with type self = usize, function hash_log = HashLog0.hash_log,
   axiom .
@@ -1473,6 +1473,7 @@ module Hashmap_Impl2
   clone Hashmap_Hash_Hash_Interface as Hash1 with type self = usize, val hash = Hash0.hash,
   function HashLog0.hash_log = HashLog0.hash_log
   goal hash_log_spec : forall self : usize . forall result : int . ([#"../hashmap.rs" 65 14 65 25] result >= 0) -> ([#"../hashmap.rs" 49 14 49 25] result >= 0)
+  use mach.int.UInt64
   clone CreusotContracts_Logic_Int_Impl20_ModelTy_Type as ModelTy0
   clone CreusotContracts_Logic_Int_Impl20_Model as Model0
   clone Hashmap_Impl2_HashLogEqModel as HashLogEqModel0 with function HashLog0.hash_log = HashLog0.hash_log, axiom .
@@ -1486,9 +1487,9 @@ module Hashmap_Main_Interface
 end
 module Hashmap_Main
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
-  use mach.int.Int64
+  use prelude.UIntSize
+  use prelude.IntSize
+  use prelude.Borrow
   clone Hashmap_Impl2_HashLog as HashLog0 with axiom .
   clone Hashmap_Impl2_HashLogEqModel as HashLogEqModel0 with function HashLog0.hash_log = HashLog0.hash_log, axiom .
   use Alloc_Alloc_Global_Type
@@ -1677,7 +1678,7 @@ module Hashmap_Main
 end
 module Hashmap_Impl0_Clone_Interface
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   use Hashmap_List_Type
   val clone' [@cfg:stackify] (self : Hashmap_List_Type.hashmap_list_type t) : Hashmap_List_Type.hashmap_list_type t
     ensures { [#"../hashmap.rs" 11 14 11 29] result = self }
@@ -1685,7 +1686,7 @@ module Hashmap_Impl0_Clone_Interface
 end
 module Hashmap_Impl0_Clone
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   use Hashmap_List_Type
   val clone' [@cfg:stackify] (self : Hashmap_List_Type.hashmap_list_type t) : Hashmap_List_Type.hashmap_list_type t
     ensures { [#"../hashmap.rs" 11 14 11 29] result = self }
@@ -1693,13 +1694,13 @@ module Hashmap_Impl0_Clone
 end
 module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   function model (self : borrowed t) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Impl1_Model
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
   type ModelTy0.modelTy = ModelTy0.modelTy
@@ -1711,7 +1712,7 @@ module CreusotContracts_Logic_Model_Impl1
 end
 module Core_Mem_Replace_Interface
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   val replace [@cfg:stackify] (dest : borrowed t) (src : t) : t
     ensures {  ^ dest = src }
     ensures { result =  * dest }
@@ -1719,7 +1720,7 @@ module Core_Mem_Replace_Interface
 end
 module Core_Mem_Replace
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   val replace [@cfg:stackify] (dest : borrowed t) (src : t) : t
     ensures {  ^ dest = src }
     ensures { result =  * dest }
@@ -1728,7 +1729,7 @@ end
 module Hashmap_Impl5_Resize_Interface
   type k
   type v
-  use prelude.Prelude
+  use prelude.Borrow
   use seq.Seq
   use mach.int.Int
   use mach.int.Int32
@@ -1759,7 +1760,7 @@ end
 module Hashmap_Impl5_Resize
   type k
   type v
-  use prelude.Prelude
+  use prelude.Borrow
   use seq.Seq
   use mach.int.Int
   use mach.int.Int32
@@ -1797,7 +1798,8 @@ module Hashmap_Impl5_Resize
   clone Hashmap_Impl5_HashmapInv as HashmapInv0 with type k = k, type v = v, function Model0.model = Model0.model,
   predicate GoodBucket0.good_bucket = GoodBucket0.good_bucket,
   predicate NoDoubleBinding0.no_double_binding = NoDoubleBinding0.no_double_binding
-  use mach.int.Int64
+  use prelude.UIntSize
+  use prelude.IntSize
   use Alloc_Boxed_Box_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy2 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
   clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
@@ -2053,28 +2055,28 @@ module Hashmap_Impl5_Resize
 end
 module Core_Clone_Clone_CloneFrom_Interface
   type self
-  use prelude.Prelude
+  use prelude.Borrow
   val clone_from [@cfg:stackify] (self : borrowed self) (source : self) : ()
     requires {false}
     
 end
 module Core_Clone_Clone_CloneFrom
   type self
-  use prelude.Prelude
+  use prelude.Borrow
   val clone_from [@cfg:stackify] (self : borrowed self) (source : self) : ()
     requires {false}
     
 end
 module Core_Clone_Clone_Clone_Interface
   type self
-  use prelude.Prelude
+  use prelude.Borrow
   val clone' [@cfg:stackify] (self : self) : self
     ensures { result = self }
     
 end
 module Core_Clone_Clone_Clone
   type self
-  use prelude.Prelude
+  use prelude.Borrow
   val clone' [@cfg:stackify] (self : self) : self
     ensures { result = self }
     

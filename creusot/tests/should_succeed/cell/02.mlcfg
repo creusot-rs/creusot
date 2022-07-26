@@ -23,19 +23,19 @@ end
 module C02_Inv_Inv_Interface
   type self
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   predicate inv (self : self) (x : t)
 end
 module C02_Inv_Inv
   type self
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   predicate inv [#"../02.rs" 7 4 7 32] (self : self) (x : t)
 end
 module C02_Impl0_Get_Interface
   type t
   type i
-  use prelude.Prelude
+  use prelude.Borrow
   use C02_Cell_Type
   clone C02_Inv_Inv_Interface as Inv0 with type self = i, type t = t
   val get [@cfg:stackify] (self : C02_Cell_Type.c02_cell_type t i) : t
@@ -45,7 +45,7 @@ end
 module C02_Impl0_Get
   type t
   type i
-  use prelude.Prelude
+  use prelude.Borrow
   use C02_Cell_Type
   clone C02_Inv_Inv as Inv0 with type self = i, type t = t
   val get [@cfg:stackify] (self : C02_Cell_Type.c02_cell_type t i) : t
@@ -55,7 +55,7 @@ end
 module C02_Impl0_Set_Interface
   type t
   type i
-  use prelude.Prelude
+  use prelude.Borrow
   use C02_Cell_Type
   clone C02_Inv_Inv_Interface as Inv0 with type self = i, type t = t
   val set [@cfg:stackify] (self : C02_Cell_Type.c02_cell_type t i) (v : t) : ()
@@ -65,7 +65,7 @@ end
 module C02_Impl0_Set
   type t
   type i
-  use prelude.Prelude
+  use prelude.Borrow
   use C02_Cell_Type
   clone C02_Inv_Inv as Inv0 with type self = i, type t = t
   val set [@cfg:stackify] (self : C02_Cell_Type.c02_cell_type t i) (v : t) : ()
@@ -137,23 +137,20 @@ module C02_LemmaMaxInt_Interface
   use mach.int.Int
   use mach.int.Int32
   use int.Power
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   function lemma_max_int (_ : ()) : ()
 end
 module C02_LemmaMaxInt
   use mach.int.Int
   use mach.int.Int32
   use int.Power
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   function lemma_max_int [#"../02.rs" 60 0 60 22] (_ : ()) : ()
   axiom lemma_max_int_spec : [#"../02.rs" 59 10 59 49] Power.power 2 63 < 18446744073709551615
 end
 module C02_Fib_Type
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   type c02_fib_type  =
     | C02_Fib_Type usize
     
@@ -175,19 +172,20 @@ module Core_Option_Option_Type
       end
 end
 module C02_Impl1_Inv_Interface
-  use prelude.Prelude
+  use prelude.Borrow
   use mach.int.Int
-  use mach.int.UInt64
+  use prelude.UIntSize
   use Core_Option_Option_Type
   use C02_Fib_Type
   predicate inv (self : C02_Fib_Type.c02_fib_type) (v : Core_Option_Option_Type.core_option_option_type usize)
 end
 module C02_Impl1_Inv
-  use prelude.Prelude
+  use prelude.Borrow
   use mach.int.Int
-  use mach.int.UInt64
+  use prelude.UIntSize
   use Core_Option_Option_Type
   use C02_Fib_Type
+  use mach.int.UInt64
   clone C02_Fib_Interface as Fib1 with axiom .
   predicate inv [#"../02.rs" 67 4 67 43] (self : C02_Fib_Type.c02_fib_type) (v : Core_Option_Option_Type.core_option_option_type usize)
     
@@ -198,7 +196,7 @@ module C02_Impl1_Inv
       end
 end
 module Core_Ptr_NonNull_NonNull_Type
-  use prelude.Prelude
+  use prelude.Opaque
   type core_ptr_nonnull_nonnull_type 't =
     | Core_Ptr_NonNull_NonNull_Type opaque_ptr
     
@@ -217,8 +215,7 @@ module Core_Ptr_Unique_Unique_Type
 end
 module Alloc_RawVec_RawVec_Type
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use Core_Ptr_Unique_Unique_Type
   type alloc_rawvec_rawvec_type 't 'a =
     | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
@@ -226,8 +223,7 @@ module Alloc_RawVec_RawVec_Type
 end
 module Alloc_Vec_Vec_Type
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use Alloc_RawVec_RawVec_Type
   type alloc_vec_vec_type 't 'a =
     | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
@@ -243,8 +239,7 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   type a
   use seq.Seq
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use Alloc_Vec_Vec_Type
   function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
 end
@@ -253,16 +248,14 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   type a
   use seq.Seq
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use Alloc_Vec_Vec_Type
   function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
   axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
 end
 module C02_FibCell_Interface
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use Alloc_Alloc_Global_Type
   use C02_Fib_Type
   use Core_Option_Option_Type
@@ -273,14 +266,14 @@ module C02_FibCell_Interface
 end
 module C02_FibCell
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use Alloc_Alloc_Global_Type
   use C02_Fib_Type
   use Core_Option_Option_Type
   use C02_Cell_Type
   use Alloc_Vec_Vec_Type
   use seq.Seq
+  use mach.int.UInt64
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type),
   type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
   predicate fib_cell [#"../02.rs" 80 0 80 32] (v : Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type))
@@ -304,13 +297,13 @@ module CreusotContracts_Logic_Model_Model_Model
 end
 module CreusotContracts_Logic_Model_Impl0_Model_Interface
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   function model (self : t) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Impl0_Model
   type t
-  use prelude.Prelude
+  use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
   type ModelTy0.modelTy = ModelTy0.modelTy
@@ -372,7 +365,8 @@ module Alloc_Vec_Impl16_Index_Interface
   type t
   type i
   type a
-  use prelude.Prelude
+  use prelude.Borrow
+  use prelude.Slice
   use seq.Seq
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
@@ -391,7 +385,8 @@ module Alloc_Vec_Impl16_Index
   type t
   type i
   type a
-  use prelude.Prelude
+  use prelude.Borrow
+  use prelude.Slice
   use seq.Seq
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
@@ -414,17 +409,16 @@ end
 module CreusotContracts_Std1_Slice_Impl3_InBounds_Interface
   type t
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl3_InBounds
   type t
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
+  use mach.int.UInt64
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
     UInt64.to_int self < Seq.length seq
 end
@@ -434,17 +428,16 @@ end
 module CreusotContracts_Std1_Slice_Impl3_HasValue_Interface
   type t
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
 end
 module CreusotContracts_Std1_Slice_Impl3_HasValue
   type t
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
+  use mach.int.UInt64
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
     Seq.get seq (UInt64.to_int self) = out
 end
@@ -461,8 +454,7 @@ module CreusotContracts_Std1_Slice_Impl0
 end
 module C02_Impl1
   use mach.int.Int
-  use prelude.Prelude
-  use mach.int.UInt64
+  use prelude.UIntSize
   clone C02_Fib as Fib1 with axiom .
   use Core_Option_Option_Type
   use C02_Fib_Type
@@ -475,7 +467,8 @@ module C02_FibMemo_Interface
   use seq.Seq
   use mach.int.Int
   use mach.int.Int32
-  use prelude.Prelude
+  use prelude.Borrow
+  use prelude.UIntSize
   use Alloc_Alloc_Global_Type
   use C02_Fib_Type
   use Core_Option_Option_Type
@@ -499,7 +492,8 @@ module C02_FibMemo
   use seq.Seq
   use mach.int.Int
   use mach.int.Int32
-  use prelude.Prelude
+  use prelude.Borrow
+  use prelude.UIntSize
   use Alloc_Alloc_Global_Type
   use C02_Fib_Type
   use Core_Option_Option_Type
@@ -515,7 +509,7 @@ module C02_FibMemo
   clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
   clone C02_FibCell as FibCell0 with function Model0.model = Model1.model
-  use mach.int.Int64
+  use prelude.IntSize
   clone C02_Impl1_Inv as Inv0 with function Fib1.fib = Fib0.fib
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)
   clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)

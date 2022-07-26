@@ -36,7 +36,7 @@ impl<T, const N: usize> Model for [T; N] {
     type ModelTy = crate::Seq<T>;
 
     #[logic]
-    #[creusot::builtins = "prelude.Prelude.id"]
+    #[creusot::builtins = "prelude.Slice.id"]
     fn model(self) -> Self::ModelTy {
         pearlite! { absurd }
     }
