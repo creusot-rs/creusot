@@ -1,7 +1,7 @@
 use crate as creusot_contracts;
-use creusot_contracts_proc::*;
+use creusot_contracts::macros::*;
 
-#[creusot::builtins = "map.Map.map"]
+#[cfg_attr(feature="contracts", creusot::builtins = "map.Map.map")]
 pub struct Mapping<A, B>(std::marker::PhantomData<(A, B)>);
 
 impl<A, B> Mapping<A, B> {

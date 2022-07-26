@@ -1,7 +1,7 @@
 use crate as creusot_contracts;
-use creusot_contracts_proc::*;
+use creusot_contracts::macros::*;
 
-#[rustc_diagnostic_item = "creusot_resolve"]
+#[cfg_attr(feature="contracts", rustc_diagnostic_item = "creusot_resolve")]
 #[trusted]
 pub trait Resolve {
     #[predicate]
@@ -25,6 +25,7 @@ impl<T: ?Sized> Resolve for &mut T {
     }
 }
 
+#[cfg(feature = "contracts")]
 #[trusted]
 impl<T> Resolve for T {
     #[predicate]

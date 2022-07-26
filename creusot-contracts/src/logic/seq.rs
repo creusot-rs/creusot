@@ -1,20 +1,20 @@
 use crate as creusot_contracts;
-use creusot_contracts_proc::*;
+use creusot_contracts::macros::*;
 
 use crate::{logic::*, Int};
 use std::ops::Index;
 
 impl<T: ?Sized> Copy for Seq<T> {}
 impl<T: ?Sized> Clone for Seq<T> {
-    #[logic]
     fn clone(&self) -> Self {
-        pearlite! {  * self }
+        *self
     }
 }
-#[creusot::builtins = "seq.Seq.seq"]
+#[cfg_attr(feature="contracts", creusot::builtins = "seq.Seq.seq")]
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T> Seq<T> {
+    #[cfg(feature = "contracts")]
     #[trusted]
     #[creusot::builtins = "seq.Seq.empty"]
     pub const EMPTY: Self = { Seq(std::marker::PhantomData) };
@@ -116,6 +116,7 @@ impl<T> Seq<T> {
 // Relies on the fact we don't enforce that implementations of traits are of
 // the same function type as the trait signature.. When this is addressed
 // the following instance will error.
+#[cfg(feature = "contracts")]
 impl<T> std::ops::Index<Int> for Seq<T> {
     type Output = T;
 
