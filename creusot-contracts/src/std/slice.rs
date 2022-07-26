@@ -100,6 +100,19 @@ extern_spec! {
         })]
         fn get<I : SliceIndexSpec<[T]>>(&self, ix: I) -> Option<&<I as SliceIndex<[T]>>::Output>;
 
+        #[requires(@mid <= (@self).len())]
+        #[ensures({
+            let (l,r) = result;  let sl = (@self).len();
+            ((@^self).len() == sl) &&
+            ((@l).len() == @mid && (@r).len() == sl - @mid) &&
+            ((@^l).len() == @mid && (@^r).len() == sl - @mid) &&
+            (forall<i:usize> @i < @mid
+                ==> (@l)[@i] == (@self)[@i] && (@^l)[@i] == (@^self)[@i]) &&
+            (forall<i:usize> @i >= @mid && @i < sl
+                ==> (@r)[@i] == (@self)[@mid-@i] && (@^r)[@i] == (@^self)[@mid-@i])
+        })]
+        fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
+
         #[ensures(result == None ==> (@self).len() == 0 && ^self == *self && @*self == Seq::EMPTY)]
         #[ensures(forall<first: &mut T, tail: &mut [T]>
                   result == Some((first, tail))
