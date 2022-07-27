@@ -1,12 +1,13 @@
 use crate as creusot_contracts;
-use creusot_contracts_proc::*;
+use crate::macros::*;
 
 use crate::Int;
 
-#[creusot::builtins = "set.Fset.fset"]
+#[cfg_attr(feature = "contracts", creusot::builtins = "set.Fset.fset")]
 pub struct FSet<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T: ?Sized> FSet<T> {
+    #[cfg(feature = "contracts")]
     #[trusted]
     #[creusot::builtins = "set.Fset.empty"]
     pub const EMPTY: Self = { FSet(std::marker::PhantomData) };
@@ -17,6 +18,7 @@ impl<T: ?Sized> FSet<T> {
         Self::mem(e, self)
     }
 
+    #[logic]
     #[creusot::builtins = "set.Fset.mem"]
     fn mem(_: T, _: Self) -> bool {
         pearlite! { absurd }
