@@ -1,7 +1,7 @@
 use crate as creusot_contracts;
-use creusot_contracts::macros::*;
+use crate::macros::*;
 
-#[cfg_attr(feature="contracts", creusot::builtins = "set.Set.set")]
+#[cfg_attr(feature = "contracts", creusot::builtins = "set.Set.set")]
 pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T: ?Sized> Set<T> {

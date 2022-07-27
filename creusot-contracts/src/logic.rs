@@ -14,8 +14,8 @@ pub mod well_founded;
 #[cfg(not(feature = "contracts"))]
 pub mod ghost {
     pub struct Ghost<T>(std::marker::PhantomData<T>)
-        where
-            T: ?Sized;
+    where
+        T: ?Sized;
 
     impl<T> Ghost<T> {
         pub fn new() -> Ghost<T> {

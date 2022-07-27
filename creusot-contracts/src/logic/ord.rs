@@ -1,7 +1,6 @@
 use crate as creusot_contracts;
 // use crate::logic::EqLogic;
-use crate::logic::Int;
-use creusot_contracts::macros::*;
+use crate::{logic::Int, macros::*};
 pub use std::cmp::Ordering;
 
 #[allow(unused)]

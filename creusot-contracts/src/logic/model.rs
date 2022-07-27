@@ -1,14 +1,13 @@
+use crate as creusot_contracts;
+use crate::macros::*;
 #[cfg(feature = "contracts")]
 use std::alloc::Allocator;
-use crate as creusot_contracts;
-use creusot_contracts::macros::*;
 
 pub trait Model {
     type ModelTy;
     #[logic]
     fn model(self) -> Self::ModelTy;
 }
-
 
 impl<T: Model + ?Sized> Model for &T {
     type ModelTy = T::ModelTy;

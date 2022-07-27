@@ -1,9 +1,9 @@
 use crate as creusot_contracts;
-use creusot_contracts::macros::*;
+use crate::macros::*;
 
 use crate::Int;
 
-#[cfg_attr(feature="contracts", creusot::builtins = "set.Fset.fset")]
+#[cfg_attr(feature = "contracts", creusot::builtins = "set.Fset.fset")]
 pub struct FSet<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T: ?Sized> FSet<T> {

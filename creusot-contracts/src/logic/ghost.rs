@@ -1,6 +1,6 @@
 use crate as creusot_contracts;
+use crate::macros::*;
 use core::ops::Deref;
-use creusot_contracts::macros::*;
 
 #[rustc_diagnostic_item = "creusot_ghost"]
 pub struct Ghost<T>(*mut T)
