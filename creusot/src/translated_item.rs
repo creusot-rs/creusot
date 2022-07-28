@@ -137,7 +137,7 @@ impl<'a, 'tcx> TranslatedItem<'tcx> {
             TranslatedItem::AssocTy { modl, .. } => box std::iter::once(modl),
             TranslatedItem::Extern { interface, .. } => box std::iter::once(interface),
             TranslatedItem::Constant { modl, .. } => box std::iter::once(modl),
-            TranslatedItem::Type { .. } => box std::iter::empty(),
+            TranslatedItem::Type { .. } => self.modules(),
         }
     }
 }
