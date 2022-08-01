@@ -151,8 +151,8 @@ impl<T> SliceIndexSpec<[T]> for RangeFull {
     }
 
     #[predicate]
-    fn resolve_elswhere(self, old: Seq<T>, fin: Seq<T>) -> bool {
-        pearlite! { old == fin }
+    fn resolve_elswhere(self, _old: Seq<T>, _fin: Seq<T>) -> bool {
+        pearlite! { true }
     }
 }
 
