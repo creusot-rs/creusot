@@ -6,6 +6,7 @@ mod eq;
 mod fun;
 pub mod iter;
 pub mod mem;
+mod num;
 pub mod option;
 mod slice;
 pub mod vec;
