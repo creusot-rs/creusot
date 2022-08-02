@@ -60,6 +60,11 @@ pub fn test_range() {
     assert!(s.len() == 3);
     s[0] = -1;
     s[1] = -1;
+    // Assert that the remaining slice elements are not changed, to guide the solver. The solver
+    // knows that all elements except `s[0]` and `s[1]` are unchanged, but when trying to prove that
+    // `arr[3]` is unchanged it does not generate the correct index 2 to instantiate the quantifier
+    // and figure out that element `s[2]` is unchanged.
+    assert!(s[2] == 3);
     // Verify the modification
     assert!(arr.len() == 5);
     assert!(arr[0] == 0);
@@ -95,6 +100,8 @@ pub fn test_range_to() {
     assert!(s.len() == 3);
     s[0] = -1;
     s[2] = -1;
+    // Assert that the remaining slice elements are not changed, to guide the solver
+    assert!(s[1] == 1);
     // Verify the modification
     assert!(arr.len() == 5);
     assert!(arr[0] == -1);
@@ -132,6 +139,8 @@ pub fn test_range_from() {
     assert!(s.len() == 3);
     s[0] = -1;
     s[1] = -1;
+    // Assert that the remaining slice elements are not changed, to guide the solver
+    assert!(s[2] == 4);
     // Verify the modification
     assert!(arr.len() == 5);
     assert!(arr[0] == 0);
@@ -187,6 +196,8 @@ pub fn test_range_to_inclusive() {
     assert!(s.len() == 3);
     s[0] = -1;
     s[2] = -1;
+    // Assert that the remaining slice elements are not changed, to guide the solver
+    assert!(s[1] == 1);
     // Verify the modification
     assert!(arr.len() == 5);
     assert!(arr[0] == -1);
