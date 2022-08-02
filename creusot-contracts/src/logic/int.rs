@@ -1,11 +1,10 @@
 use super::model::*;
 use crate as creusot_contracts;
-use crate::logic::*;
-use creusot_contracts_proc::*;
+use crate::{logic::*, macros::*};
 
 use std::ops::*;
 
-#[rustc_diagnostic_item = "creusot_int"]
+#[cfg_attr(feature = "contracts", rustc_diagnostic_item = "creusot_int")]
 #[derive(std::clone::Clone, Copy)]
 pub struct Int(*mut ());
 
@@ -59,6 +58,7 @@ macro_rules! mach_int {
             }
         }
 
+        #[cfg(feature = "contracts")]
         impl From<$t> for Int {
             #[logic]
             #[trusted]
@@ -84,6 +84,7 @@ mach_int!(i64, "mach.int.Int64");
 mach_int!(i128, "prelude.Int128");
 mach_int!(isize, "mach.int.Int64");
 
+#[cfg(feature = "contracts")]
 impl Add<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -93,6 +94,7 @@ impl Add<Int> for Int {
     }
 }
 
+#[cfg(feature = "contracts")]
 impl Sub<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -102,6 +104,7 @@ impl Sub<Int> for Int {
     }
 }
 
+#[cfg(feature = "contracts")]
 impl Mul<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -111,6 +114,7 @@ impl Mul<Int> for Int {
     }
 }
 
+#[cfg(feature = "contracts")]
 impl Div<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -120,6 +124,7 @@ impl Div<Int> for Int {
     }
 }
 
+#[cfg(feature = "contracts")]
 impl Rem<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -129,6 +134,7 @@ impl Rem<Int> for Int {
     }
 }
 
+#[cfg(feature = "contracts")]
 impl Neg for Int {
     type Output = Int;
     #[creusot::no_translate]
