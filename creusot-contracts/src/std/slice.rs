@@ -183,10 +183,12 @@ extern_spec! {
         #[ensures((@^self).exchange(@*self, @i, @j))]
         fn swap(&mut self, i: usize, j: usize);
 
-        #[ensures(match result {
-              Some(r) => ix.in_bounds(@*self_) && ix.has_value(@*self_, *r),
-              None => !ix.in_bounds(@*self_),
-        })]
+        #[ensures(
+            ix.in_bounds(@*self)
+            ==> exists<r: &<I as SliceIndex<[T]>>::Output> result == Some(r)
+                && ix.has_value(@*self_, *r)
+        )]
+        #[ensures(ix.in_bounds(@*self) || result == None)]
         fn get<I : SliceIndexSpec<[T]>>(&self, ix: I) -> Option<&<I as SliceIndex<[T]>>::Output>;
 
         #[requires(@mid <= (@self).len())]
