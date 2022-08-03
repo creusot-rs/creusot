@@ -1,10 +1,11 @@
 use crate as creusot_contracts;
-use creusot_contracts_proc::*;
+use crate::macros::*;
 
-#[creusot::builtins = "set.Set.set"]
+#[cfg_attr(feature = "contracts", creusot::builtins = "set.Set.set")]
 pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T: ?Sized> Set<T> {
+    #[cfg(feature = "contracts")]
     #[trusted]
     #[creusot::builtins = "set.Set.empty"]
     pub const EMPTY: Self = { Set(std::marker::PhantomData) };
@@ -15,6 +16,7 @@ impl<T: ?Sized> Set<T> {
         Self::mem(e, self)
     }
 
+    #[logic]
     #[creusot::builtins = "set.Set.mem"]
     fn mem(_: T, _: Self) -> bool {
         pearlite! { absurd }

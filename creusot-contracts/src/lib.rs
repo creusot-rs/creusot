@@ -137,7 +137,6 @@ pub use macros::*;
 #[cfg(feature = "contracts")]
 pub mod stubs;
 
-#[cfg(feature = "contracts")]
 pub mod logic;
 
 #[cfg(feature = "contracts")]
@@ -149,19 +148,6 @@ pub mod bigint;
 #[cfg(not(feature = "contracts"))]
 pub mod std {
     pub use std::vec;
-}
-
-#[cfg(not(feature = "contracts"))]
-pub mod logic {
-    pub struct Ghost<T>(std::marker::PhantomData<T>)
-    where
-        T: ?Sized;
-
-    impl<T> Ghost<T> {
-        pub fn new() -> Ghost<T> {
-            Ghost(std::marker::PhantomData)
-        }
-    }
 }
 
 pub use logic::*;
