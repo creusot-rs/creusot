@@ -73,3 +73,15 @@ impl<T: Model> Model for Option<T> {
         }
     }
 }
+
+impl<T: Model, E: Model> Model for Result<T, E> {
+    type ModelTy = Result<T::ModelTy, E::ModelTy>;
+
+    #[logic]
+    fn model(self) -> Self::ModelTy {
+        match self {
+            Ok(t) => Ok(t.model()),
+            Err(e) => Err(e.model()),
+        }
+    }
+}
