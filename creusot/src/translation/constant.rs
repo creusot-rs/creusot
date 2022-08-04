@@ -168,11 +168,21 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
         }
         Float(F32) => {
             let bits = c.get_bits(ctx.tcx, env, ty);
-            Exp::Const(Constant::Float(f32::from_bits(bits.unwrap() as u32)))
+            let float = f32::from_bits(bits.unwrap() as u32);
+            if float.is_nan() {
+                ctx.crash_and_error(span, "NaN is not yet supported")
+            } else {
+                Exp::Const(Constant::Float(float))
+            }
         }
         Float(F64) => {
             let bits = c.get_bits(ctx.tcx, env, ty);
-            Exp::Const(Constant::Double(f64::from_bits(bits.unwrap() as u64)))
+            let float = f64::from_bits(bits.unwrap() as u64);
+            if float.is_nan() {
+                ctx.crash_and_error(span, "NaN is not yet supported")
+            } else {
+                Exp::Const(Constant::Double(float))
+            }
         }
         _ if ty.is_unit() => Exp::Tuple(Vec::new()),
         FnDef(def_id, subst) => {

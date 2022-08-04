@@ -162,7 +162,13 @@ pub fn binop_to_binop(ty: Ty, op: creusot_rustc::middle::mir::BinOp) -> why3::ex
                 BinOp::Div
             }
         }
-        mir::BinOp::Eq => BinOp::Eq,
+        mir::BinOp::Eq => {
+            if ty.is_floating_point() {
+                BinOp::FloatEq
+            } else {
+                BinOp::Eq
+            }
+        }
         mir::BinOp::Lt => BinOp::Lt,
         mir::BinOp::Le => BinOp::Le,
         mir::BinOp::Gt => BinOp::Gt,

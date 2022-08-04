@@ -955,6 +955,7 @@ fn bin_op_to_string(op: &BinOp) -> &str {
         FloatSub => ".-",
         FloatMul => ".*",
         FloatDiv => "./",
+        FloatEq => ".=",
     }
 }
 

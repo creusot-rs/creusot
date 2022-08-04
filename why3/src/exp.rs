@@ -23,6 +23,7 @@ pub enum BinOp {
     FloatDiv,
     Mod,
     Eq,
+    FloatEq,
     Lt,
     Le,
     Gt,
@@ -53,6 +54,7 @@ impl BinOp {
             BinOp::FloatSub => Infix4,
             BinOp::FloatMul => Infix4,
             BinOp::FloatDiv => Infix4,
+            BinOp::FloatEq => Infix4,
         }
     }
 
