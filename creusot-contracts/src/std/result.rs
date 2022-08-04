@@ -1,8 +1,5 @@
 use crate as creusot_contracts;
-use crate::{
-    std::{default::DefaultSpec, fun::FnOnceSpec},
-    Resolve,
-};
+use crate::{std::default::DefaultSpec, Resolve};
 use creusot_contracts_proc::*;
 use std::fmt::Debug;
 
@@ -68,70 +65,13 @@ extern_spec! {
                 where
                     T: DefaultSpec;
 
-                #[requires(forall<e: E> self == Err(e) ==> op.precondition((e,)))]
-                #[ensures(forall<t: T> self == Ok(t) ==> result == t)]
-                #[ensures(forall<e: E> self == Err(e) ==> op.postcondition_once((e,), result))]
-                fn unwrap_or_else<F>(self, op: F) -> T
-                where
-                    F: FnOnce(E) -> T;
-
-                #[requires(forall<t: T> self == Ok(t) ==> op.precondition((t,)))]
-                #[ensures(
-                    forall<t: T> self == Ok(t)
-                    ==> exists<u: U> op.postcondition_once((t,), u) && result == Ok(u)
-                )]
-                #[ensures(forall<e: E> self == Err(e) ==> result == Err(e))]
-                fn map<U, F>(self, op: F) -> Result<U, E>
-                where
-                    F: FnOnce(T) -> U;
-
-                #[requires(forall<t: T> self == Ok(t) ==> op.precondition((t,)))]
-                #[ensures(forall<t: T> self == Ok(t) ==> op.postcondition_once((t,), result))]
-                #[ensures((exists<e: E> self == Err(e)) ==> result == default)]
-                fn map_or<U, F>(self, default: U, op: F) -> U
-                where
-                    F: FnOnce(T) -> U;
-
-                #[requires(forall<t: T> self == Ok(t) ==> op.precondition((t,)))]
-                #[requires(forall<e: E> self == Err(e) ==> default.precondition((e,)))]
-                #[ensures(forall<t: T> self == Ok(t) ==> op.postcondition_once((t,), result))]
-                #[ensures(forall<e: E> self == Err(e) ==> default.postcondition_once((e,), result))]
-                fn map_or_else<U, D, F>(self, default: D, op: F) -> U
-                where
-                    D: FnOnce(E) -> U,
-                    F: FnOnce(T) -> U;
-
-                #[requires(forall<e: E> self == Err(e) ==> op.precondition((e,)))]
-                #[ensures(
-                    forall<e: E> self == Err(e)
-                    ==> exists<f: F> op.postcondition_once((e,), f) && result == Err(f)
-                )]
-                #[ensures(forall<t: T> self == Ok(t) ==> result == Ok(t))]
-                fn map_err<F, O>(self, op: O) -> Result<T, F>
-                where
-                    O: FnOnce(E) -> F;
-
                 #[ensures((exists<t: T> self == Ok(t)) ==> result == res)]
                 #[ensures(forall<e: E> self == Err(e) ==> result == Err(e))]
                 fn and<U>(self, res: Result<U, E>) -> Result<U, E>;
 
-                #[requires(forall<t: T> self == Ok(t) ==> op.precondition((t,)))]
-                #[ensures(forall<t: T> self == Ok(t) ==> op.postcondition_once((t,), result))]
-                #[ensures(forall<e: E> self == Err(e) ==> result == Err(e))]
-                fn and_then<U, F>(self, op: F) -> Result<U, E>
-                where
-                    F: FnOnce(T) -> Result<U, E>;
-
                 #[ensures(forall<t: T> self == Ok(t) ==> result == Ok(t))]
                 #[ensures((exists<e: E> self == Err(e)) ==> result == res)]
                 fn or<F>(self, res: Result<T, F>) -> Result<T, F>;
-
-                #[requires(forall<e: E> self == Err(e) ==> op.precondition((e,)))]
-                #[ensures(forall<t: T> self == Ok(t) ==> result == Ok(t))]
-                #[ensures(forall<e: E> self == Err(e) ==> op.postcondition_once((e,), result))]
-                fn or_else<F, O>(self, op: O) -> Result<T, F>
-                where
-                    O: FnOnce(E) -> Result<T, F>;
             }
 
             impl<T, E> Result<&T, E> {
