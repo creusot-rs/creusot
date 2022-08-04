@@ -8,6 +8,7 @@ pub mod iter;
 pub mod mem;
 mod num;
 pub mod option;
+mod result;
 mod slice;
 pub mod vec;
 
