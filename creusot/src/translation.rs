@@ -20,6 +20,7 @@ use ctx::TranslationCtx;
 pub use function::{translate_function, LocalIdent};
 use heck::CamelCase;
 pub use logic::*;
+use rustc_middle::ty::Ty;
 use std::{error::Error, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
 
@@ -129,14 +130,38 @@ pub fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn binop_to_binop(op: creusot_rustc::middle::mir::BinOp) -> why3::exp::BinOp {
+pub fn binop_to_binop(ty: Ty, op: creusot_rustc::middle::mir::BinOp) -> why3::exp::BinOp {
     use creusot_rustc::smir::mir;
     use why3::exp::BinOp;
     match op {
-        mir::BinOp::Add => BinOp::Add,
-        mir::BinOp::Sub => BinOp::Sub,
-        mir::BinOp::Mul => BinOp::Mul,
-        mir::BinOp::Div => BinOp::Div,
+        mir::BinOp::Add => {
+            if ty.is_floating_point() {
+                BinOp::FloatAdd
+            } else {
+                BinOp::Add
+            }
+        }
+        mir::BinOp::Sub => {
+            if ty.is_floating_point() {
+                BinOp::FloatSub
+            } else {
+                BinOp::Sub
+            }
+        }
+        mir::BinOp::Mul => {
+            if ty.is_floating_point() {
+                BinOp::FloatMul
+            } else {
+                BinOp::Mul
+            }
+        }
+        mir::BinOp::Div => {
+            if ty.is_floating_point() {
+                BinOp::FloatDiv
+            } else {
+                BinOp::Div
+            }
+        }
         mir::BinOp::Eq => BinOp::Eq,
         mir::BinOp::Lt => BinOp::Lt,
         mir::BinOp::Le => BinOp::Le,

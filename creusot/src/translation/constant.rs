@@ -105,8 +105,8 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
     c: C,
 ) -> Exp {
     use creusot_rustc::{
-        middle::ty::{IntTy::*, UintTy::*},
-        type_ir::sty::TyKind::{Bool, FnDef, Int, Uint},
+        middle::ty::{FloatTy::*, IntTy::*, UintTy::*},
+        type_ir::sty::TyKind::{Bool, Float, FnDef, Int, Uint},
     };
     let why3_ty = ty::translate_ty(ctx, names, span, ty);
 
@@ -166,6 +166,14 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
                 Exp::mk_false()
             }
         }
+        Float(F32) => {
+            let bits = c.get_bits(ctx.tcx, env, ty);
+            Exp::Const(Constant::Float(f32::from_bits(bits.unwrap() as u32)))
+        }
+        Float(F64) => {
+            let bits = c.get_bits(ctx.tcx, env, ty);
+            Exp::Const(Constant::Double(f64::from_bits(bits.unwrap() as u64)))
+        }
         _ if ty.is_unit() => Exp::Tuple(Vec::new()),
         FnDef(def_id, subst) => {
             let method =
@@ -174,10 +182,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             Exp::Tuple(Vec::new())
         }
         _ => {
-            ctx.crash_and_error(
-                span,
-                &format!("unsupported constant expression, try binding this to a variable. See issue #163"),
-            );
+            ctx.crash_and_error(span, &format!("unsupported constant expression"));
         }
     }
 }

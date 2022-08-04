@@ -26,6 +26,8 @@ use crate::{
 // Prelude modules
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PreludeModule {
+    Float32,
+    Float64,
     Int,
     Int8,
     Int16,
@@ -54,6 +56,8 @@ pub enum PreludeModule {
 impl PreludeModule {
     fn qname(&self) -> QName {
         match self {
+            PreludeModule::Float32 => QName::from_string("ieee_float.Float32").unwrap(),
+            PreludeModule::Float64 => QName::from_string("ieee_float.Float64").unwrap(),
             PreludeModule::Int => QName::from_string("mach.int.Int").unwrap(),
             PreludeModule::Int8 => QName::from_string("prelude.Int8").unwrap(),
             PreludeModule::Int16 => QName::from_string("prelude.Int16").unwrap(),
