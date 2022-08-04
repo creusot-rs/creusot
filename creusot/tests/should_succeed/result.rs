@@ -42,44 +42,18 @@ pub fn test_result() {
     // Test `unwrap_or_default`
     assert!(ok.unwrap_or_default() == 1);
     assert!(err.unwrap_or_default() == 0);
-    // // Test `unwrap_or_else`
-    // assert!(ok.unwrap_or_else(|x| x - 1) == 1);
-    // assert!(err.unwrap_or_else(|x| x - 1) == -2);
-
-    // // Test `map`
-    // assert!(ok.map(|x| x + 1).unwrap() == 2);
-    // assert!(err.map(|x| x + 1).unwrap_err() == -1);
-    // // Test `map_or`
-    // assert!(ok.map_or(0, |x| x + 1) == 2);
-    // assert!(err.map_or(0, |x| x + 1) == 0);
-    // // Test `map_or_else`
-    // assert!(ok.map_or_else(|x| x - 1, |x| x + 1) == 2);
-    // assert!(err.map_or_else(|x| x - 1, |x| x + 1) == -2);
-    // // Test `map_err`
-    // assert!(ok.map_err(|x| x - 1).unwrap() == 1);
-    // assert!(err.map_err(|x| x - 1).unwrap_err() == -2);
 
     // Test `and`
     assert!(ok.and::<i32>(Err(-2)).unwrap_err() == -2);
     assert!(ok.and(Ok(2)).unwrap() == 2);
     assert!(err.and::<i32>(Err(-2)).unwrap_err() == -1);
     assert!(err.and(Ok(2)).unwrap_err() == -1);
-    // // Test `and_then`
-    // assert!(ok.and_then(|x| Err::<i32, i32>(x + 1)).unwrap_err() == 2);
-    // assert!(ok.and_then(|x| Ok(x + 1)).unwrap() == 2);
-    // assert!(err.and_then(|x| Err::<i32, i32>(x - 1)).unwrap_err() == -1);
-    // assert!(err.and_then(|x| Ok(x - 1)).unwrap_err() == -1);
 
     // Test `or`
     assert!(ok.or(Err(-2)).unwrap() == 1);
     assert!(ok.or::<i32>(Ok(2)).unwrap() == 1);
     assert!(err.or(Err(-2)).unwrap_err() == -2);
     assert!(err.or::<i32>(Ok(2)).unwrap() == 2);
-    // // Test `or_else`
-    // assert!(ok.or_else(|x| Err(x + 1)).unwrap() == 1);
-    // assert!(ok.or_else(|x| Ok::<i32, i32>(x + 1)).unwrap() == 1);
-    // assert!(err.or_else(|x| Err(x - 1)).unwrap_err() == -2);
-    // assert!(err.or_else(|x| Ok::<i32, i32>(x - 1)).unwrap() == -2);
 
     // Test `copied`
     assert!(ok.as_ref().copied().unwrap() == 1);
