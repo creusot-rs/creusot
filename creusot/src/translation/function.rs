@@ -80,6 +80,10 @@ pub fn translate_function<'tcx, 'sess>(
             decls.extend(names.to_clones(ctx));
             decls.push(env_ty);
             decls.extend(accessors);
+
+            let contracts = closure_contract(ctx, &mut names, def_id);
+            decls.extend(names.to_clones(ctx));
+            decls.extend(contracts);
         }
     }
 
