@@ -5,6 +5,11 @@ pub fn uses_closure() {
     let _x = (|| y)();
 }
 
+pub fn multi_arg() {
+    let x = (|a, b| a + b);
+    let a = (x)(0, 3);
+}
+
 // fn generic_closure<T>(x: T) -> T{
 //   (|| { x })()
 // }
