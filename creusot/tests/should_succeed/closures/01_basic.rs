@@ -6,8 +6,8 @@ pub fn uses_closure() {
 }
 
 pub fn multi_arg() {
-    let x = (|a, b| a + b);
-    let a = (x)(0, 3);
+    let x = |a, b| a + b;
+    let _a = (x)(0, 3);
 }
 
 // fn generic_closure<T>(x: T) -> T{
