@@ -153,7 +153,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
             }
             Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => {
                 let exp = BinaryOp(
-                    binop_to_binop(*op),
+                    binop_to_binop(l.ty(self.body, self.tcx), *op),
                     box self.translate_operand(l),
                     box self.translate_operand(r),
                 );

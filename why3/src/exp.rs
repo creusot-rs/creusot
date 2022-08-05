@@ -14,11 +14,16 @@ pub enum BinOp {
     LazyAnd, // i.e., &&
     LazyOr,  // i.e., ||
     Add,
+    FloatAdd,
     Sub,
+    FloatSub,
     Mul,
+    FloatMul,
     Div,
+    FloatDiv,
     Mod,
     Eq,
+    FloatEq,
     Lt,
     Le,
     Gt,
@@ -45,6 +50,11 @@ impl BinOp {
             BinOp::Ne => Infix1,
             BinOp::Ge => Infix1,
             BinOp::Gt => Infix1,
+            BinOp::FloatAdd => Infix4,
+            BinOp::FloatSub => Infix4,
+            BinOp::FloatMul => Infix4,
+            BinOp::FloatDiv => Infix4,
+            BinOp::FloatEq => Infix4,
         }
     }
 
@@ -643,7 +653,8 @@ impl Exp {
 pub enum Constant {
     Int(i128, Option<Type>),
     Uint(u128, Option<Type>),
-    // Float(f64),
+    Float(f32),
+    Double(f64),
     String(String),
     Other(String),
     Bool(bool),

@@ -610,21 +610,27 @@ fn uintty_to_ty(
     }
 }
 
-fn floatty_to_ty(_: &mut CloneMap<'_>, fty: &creusot_rustc::middle::ty::FloatTy) -> MlT {
+fn floatty_to_ty(names: &mut CloneMap<'_>, fty: &creusot_rustc::middle::ty::FloatTy) -> MlT {
     use creusot_rustc::middle::ty::FloatTy::*;
 
     match fty {
-        F32 => single_ty(),
-        F64 => double_ty(),
+        F32 => {
+            names.import_prelude_module(PreludeModule::Float32);
+            single_ty()
+        }
+        F64 => {
+            names.import_prelude_module(PreludeModule::Float64);
+            double_ty()
+        }
     }
 }
 
 pub fn double_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("double").unwrap())
+    MlT::TConstructor(QName::from_string("Float64.t").unwrap())
 }
 
 pub fn single_ty() -> MlT {
-    MlT::TConstructor(QName::from_string("single").unwrap())
+    MlT::TConstructor(QName::from_string("Float32.t").unwrap())
 }
 
 pub fn u8_ty() -> MlT {
