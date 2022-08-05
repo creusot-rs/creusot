@@ -1,6 +1,6 @@
 use creusot_rustc::{
     errors::DiagnosticId,
-    hir::def_id::DefId,
+    hir::{def_id::DefId, Unsafety},
     infer::{
         infer::{InferCtxt, TyCtxtInferExt},
         traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
@@ -24,7 +24,6 @@ use std::collections::HashMap;
 use why3::{
     exp::{BinOp, Constant, Exp, Pattern},
     mlcfg::{BlockId, Statement, Terminator as MlT},
-    QName,
 };
 
 use crate::{
@@ -120,8 +119,36 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
 
                     func_args.remove(0)
                 } else {
-                    let fname = self.get_func_name(fun_def_id, subst, terminator.source_info.span);
-                    let exp = Exp::Call(box Exp::impure_qvar(fname), func_args);
+                    let resolved =
+                        self.get_func_name(fun_def_id, subst, terminator.source_info.span);
+                    let fname =
+                        self.names.insert(resolved.0, resolved.1).qname(self.tcx, resolved.0);
+                    let exp = if self.ctx.is_closure(resolved.0) {
+                        assert!(
+                            func_args.len() == 2,
+                            "closures should only have two arguments (env, args)"
+                        );
+
+                        let real_sig = self
+                            .ctx
+                            .signature_unclosure(resolved.1.as_closure().sig(), Unsafety::Normal);
+                        let closure_arg_count = real_sig.inputs().skip_binder().len();
+                        let names = ('a'..).take(closure_arg_count);
+
+                        let mut args = vec![func_args.remove(0)];
+
+                        args.extend(names.clone().map(|nm| Exp::impure_var(nm.to_string().into())));
+
+                        Exp::Let {
+                            pattern: Pattern::TupleP(
+                                names.map(|nm| Pattern::VarP(nm.to_string().into())).collect(),
+                            ),
+                            arg: box func_args.remove(0),
+                            body: box Exp::Call(box Exp::impure_qvar(fname), args),
+                        }
+                    } else {
+                        Exp::Call(box Exp::impure_qvar(fname), func_args)
+                    };
                     let span = terminator.source_info.span.source_callsite();
                     self.ctx.attach_span(span, exp)
                 };
@@ -182,7 +209,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
         def_id: DefId,
         subst: SubstsRef<'tcx>,
         sp: creusot_rustc::span::Span,
-    ) -> QName {
+    ) -> (DefId, SubstsRef<'tcx>) {
         if let Some(it) = self.tcx.opt_associated_item(def_id) {
             if let ty::TraitContainer(id) = it.container {
                 let params = self.param_env();
@@ -200,7 +227,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     self.ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
                 }
 
-                return self.names.insert(method.0, method.1).qname(self.tcx, method.0);
+                return method;
             }
         }
 
@@ -211,7 +238,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
         }
         self.ctx.translate(def_id);
 
-        self.names.insert(def_id, subst).qname(self.tcx, def_id)
+        (def_id, subst)
     }
 }
 

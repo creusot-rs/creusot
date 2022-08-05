@@ -4,7 +4,7 @@ use creusot_rustc::{
         ast::{MacArgs, MacArgsEq},
         AttrItem, AttrKind, Attribute,
     },
-    hir::{def::DefKind, def_id::DefId},
+    hir::{def::DefKind, def_id::DefId, Unsafety},
     middle::ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
@@ -325,7 +325,7 @@ pub fn inputs_and_output<'tcx>(
                 (box iter, sig.output())
             }
             TyKind::Closure(_, subst) => {
-                let sig = subst.as_closure().sig();
+                let sig = tcx.signature_unclosure(subst.as_closure().sig(), Unsafety::Normal);
                 let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), sig);
                 let env_region = ReErased;
                 let env_ty = tcx.closure_env_ty(def_id, subst, env_region).unwrap();

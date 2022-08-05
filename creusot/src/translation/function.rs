@@ -486,8 +486,14 @@ pub fn closure_contract<'tcx>(
 
     // Build the signatures for the pre and post conditions
     let mut post_sig = clos_sig.clone();
+    if post_sig.args.len() == 1 {
+        post_sig.args.push((Ident::build("_"), Type::Tuple(Vec::new())));
+    }
     post_sig.args.push((Ident::build("result"), result_ty.unwrap_or(Type::Tuple(vec![]))));
-    let pre_sig = clos_sig;
+    let mut pre_sig = clos_sig;
+    if pre_sig.args.len() == 1 {
+        pre_sig.args.push((Ident::build("_"), Type::Tuple(Vec::new())));
+    }
 
     let mut contracts = Vec::new();
     let env_ty =
