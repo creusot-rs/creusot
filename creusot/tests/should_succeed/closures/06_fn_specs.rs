@@ -19,3 +19,13 @@ fn weaken_2<A, F: FnMutSpec<A> + Resolve>(f: F, a: A) -> F::Output {
 fn weaken_3<A, F: FnOnceSpec<A> + Resolve>(f: F, a: A) -> F::Output {
     FnOnce::call_once(f, a)
 }
+
+// Tests that we can actually call a closure, in particular that resolve is correctly compiled
+#[requires(f.precondition((0usize,)))]
+pub fn fn_once_user<F: FnOnce(usize)>(f: F) {
+    f(0)
+}
+
+pub fn caller() {
+    fn_once_user(|_| ())
+}
