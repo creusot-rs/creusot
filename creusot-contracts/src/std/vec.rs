@@ -55,6 +55,12 @@ extern_spec! {
                 #[ensures((@^self).len() == (@self).len() - 1)]
                 fn remove(&mut self, ix: usize) -> T;
 
+                #[ensures((@^self).len() == (@self).len() + 1)]
+                #[ensures(forall<i: Int> 0 <= i && i < @index ==> (@^self)[i] == (@self)[i])]
+                #[ensures((@^self)[@index] == element)]
+                #[ensures(forall<i: Int> @index < i && i < (@^self).len() ==> (@^self)[i] == (@self)[i - 1])]
+                fn insert(&mut self, index: usize, element: T);
+
                 #[ensures(@result == @self)]
                 fn into_iter(self) -> IntoIter<T, A>;
             }
