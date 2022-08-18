@@ -50,7 +50,7 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
     $ opam pin add why3 https://gitlab.inria.fr/why3/why3.git
     $ opam pin add why3-ide https://gitlab.inria.fr/why3/why3.git
     ```
-    - Install `why3` and `why3-ide`: `$ opam install lablgtk3 lablgtk3-sourceview ocamlgraph why3 why3-ide`
+    - Install `why3` and `why3-ide`: `$ opam install lablgtk3 lablgtk3-sourceview3 ocamlgraph why3 why3-ide`
     - Get some SMT solvers: [Z3](https://github.com/Z3Prover/z3) (available by `brew`, `apt`, etc.), [CVC4](https://cvc4.github.io/) (`brew`, `apt`, etc.), [Alt-Ergo](https://alt-ergo.ocamlpro.com/) (`opam`, `apt`, etc.)
     - Configure Why3: `$ why3 config detect`
       * Troubleshoot:
