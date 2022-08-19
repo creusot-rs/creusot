@@ -157,15 +157,6 @@ macro_rules! spec_op_common {
     };
 }
 
-#[logic]
-fn abs_diff(a: Int, b: Int) -> Int {
-    if a < b {
-        b - a
-    } else {
-        a - b
-    }
-}
-
 /// Adds specifications for the abs_diff operation on the given pair of signed
 /// and unsigned integer types
 macro_rules! spec_abs_diff {
@@ -173,13 +164,13 @@ macro_rules! spec_abs_diff {
         extern_spec! {
             impl $unsigned {
                 #[allow(dead_code)]
-                #[ensures(@result == abs_diff(@self, @other))]
+                #[ensures(@result == (@self).abs_diff(@other))]
                 fn abs_diff(self, other: $unsigned) -> $unsigned;
             }
 
             impl $signed {
                 #[allow(dead_code)]
-                #[ensures(@result == abs_diff(@self, @other))]
+                #[ensures(@result == (@self).abs_diff(@other))]
                 fn abs_diff(self, other: $signed) -> $unsigned;
             }
         }

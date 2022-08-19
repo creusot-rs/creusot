@@ -45,6 +45,15 @@ impl Int {
     pub fn rem_euclid(self, _: Int) -> Int {
         absurd
     }
+
+    #[logic]
+    pub fn abs_diff(self, other: Int) -> Int {
+        if self < other {
+            other - self
+        } else {
+            self - other
+        }
+    }
 }
 
 macro_rules! mach_int {

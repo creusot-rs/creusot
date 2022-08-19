@@ -521,7 +521,7 @@ module Hillel_Contains
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  predicate contains [#"../hillel.rs" 56 0 56 56] (seq : Seq.seq t) (elem : t) =
+  predicate contains [#"../hillel.rs" 56 0 56 51] (seq : Seq.seq t) (elem : t) =
     [#"../hillel.rs" 57 4 59 5] exists i : (int) . 0 <= i /\ i < Seq.length seq /\ Model0.model (Seq.get seq i) = Model0.model elem
 end
 module Hillel_IsSubset_Interface
@@ -535,7 +535,7 @@ module Hillel_IsSubset
   use mach.int.Int
   use mach.int.Int32
   clone Hillel_Contains_Interface as Contains0 with type t = t
-  predicate is_subset [#"../hillel.rs" 63 0 63 61] (sub : Seq.seq t) (sup : Seq.seq t) =
+  predicate is_subset [#"../hillel.rs" 63 0 63 56] (sub : Seq.seq t) (sup : Seq.seq t) =
     [#"../hillel.rs" 64 4 66 5] forall i : (int) . 0 <= i /\ i < Seq.length sub -> Contains0.contains sup (Seq.get sub i)
 end
 module Hillel_SubsetPush_Interface
@@ -1254,27 +1254,6 @@ module Hillel_Unique
   }
   
 end
-module Hillel_AbsDiff_Interface
-  use mach.int.Int
-  use mach.int.Int32
-  function abs_diff (a : int) (b : int) : int
-end
-module Hillel_AbsDiff
-  use mach.int.Int
-  use mach.int.Int32
-  function abs_diff [#"../hillel.rs" 124 0 124 34] (a : int) (b : int) : int =
-    [#"../hillel.rs" 122 0 122 8] if a < b then b - a else a - b
-  axiom abs_diff_spec : forall a : int, b : int . [#"../hillel.rs" 123 10 123 21] abs_diff a b >= 0
-end
-module Hillel_AbsDiff_Impl
-  use mach.int.Int
-  use mach.int.Int32
-  let rec ghost function abs_diff (a : int) (b : int) : int
-    ensures { [#"../hillel.rs" 123 10 123 21] result >= 0 }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../hillel.rs" 122 0 122 8] if a < b then b - a else a - b
-end
 module Hillel_SumRange_Interface
   use mach.int.Int
   use mach.int.Int32
@@ -1287,13 +1266,13 @@ module Hillel_SumRange
   use mach.int.Int32
   use seq.Seq
   use mach.int.UInt32
-  function sum_range [#"../hillel.rs" 136 0 136 54] (seq : Seq.seq uint32) (from : int) (to' : int) : int
-  axiom def : forall seq : Seq.seq uint32, from : int, to' : int . sum_range seq from to' = ([#"../hillel.rs" 132 0 132 8] if to' - from > 0 then
+  function sum_range [#"../hillel.rs" 126 0 126 54] (seq : Seq.seq uint32) (from : int) (to' : int) : int
+  axiom def : forall seq : Seq.seq uint32, from : int, to' : int . sum_range seq from to' = ([#"../hillel.rs" 122 0 122 8] if to' - from > 0 then
     UInt32.to_int (Seq.get seq from) + sum_range seq (from + 1) to'
   else
     0
   )
-  axiom sum_range_spec : forall seq : Seq.seq uint32, from : int, to' : int . ([#"../hillel.rs" 134 11 134 53] 0 <= from /\ from <= to' /\ to' <= Seq.length seq) -> ([#"../hillel.rs" 135 10 135 21] sum_range seq from to' >= 0)
+  axiom sum_range_spec : forall seq : Seq.seq uint32, from : int, to' : int . ([#"../hillel.rs" 124 11 124 53] 0 <= from /\ from <= to' /\ to' <= Seq.length seq) -> ([#"../hillel.rs" 125 10 125 21] sum_range seq from to' >= 0)
 end
 module Hillel_SumRange_Impl
   use mach.int.Int
@@ -1301,12 +1280,12 @@ module Hillel_SumRange_Impl
   use seq.Seq
   use mach.int.UInt32
   let rec ghost function sum_range (seq : Seq.seq uint32) (from : int) (to' : int) : int
-    requires {[#"../hillel.rs" 134 11 134 53] 0 <= from /\ from <= to' /\ to' <= Seq.length seq}
-    ensures { [#"../hillel.rs" 135 10 135 21] result >= 0 }
-    variant {[#"../hillel.rs" 133 10 133 19] to' - from}
+    requires {[#"../hillel.rs" 124 11 124 53] 0 <= from /\ from <= to' /\ to' <= Seq.length seq}
+    ensures { [#"../hillel.rs" 125 10 125 21] result >= 0 }
+    variant {[#"../hillel.rs" 123 10 123 19] to' - from}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../hillel.rs" 132 0 132 8] if to' - from > 0 then
+    [#"../hillel.rs" 122 0 122 8] if to' - from > 0 then
       UInt32.to_int (Seq.get seq from) + sum_range seq (from + 1) to'
     else
       0
@@ -1326,13 +1305,13 @@ module Hillel_SumRangeSplit
   use seq.Seq
   use mach.int.UInt32
   clone Hillel_SumRange_Interface as SumRange0 with axiom .
-  function sum_range_split [#"../hillel.rs" 148 0 148 61] (seq : Seq.seq uint32) (from : int) (to' : int) (i : int) : ()
-  axiom def : forall seq : Seq.seq uint32, from : int, to' : int, i : int . sum_range_split seq from to' i = ([#"../hillel.rs" 149 4 151 5] if i > from then
+  function sum_range_split [#"../hillel.rs" 138 0 138 61] (seq : Seq.seq uint32) (from : int) (to' : int) (i : int) : ()
+  axiom def : forall seq : Seq.seq uint32, from : int, to' : int, i : int . sum_range_split seq from to' i = ([#"../hillel.rs" 139 4 141 5] if i > from then
     let _ = sum_range_split seq (from + 1) to' i in ()
   else
     ()
   )
-  axiom sum_range_split_spec : forall seq : Seq.seq uint32, from : int, to' : int, i : int . ([#"../hillel.rs" 146 11 146 63] 0 <= from /\ from <= i /\ i <= to' /\ to' <= Seq.length seq) -> ([#"../hillel.rs" 147 10 147 85] SumRange0.sum_range seq from to' = SumRange0.sum_range seq from i + SumRange0.sum_range seq i to')
+  axiom sum_range_split_spec : forall seq : Seq.seq uint32, from : int, to' : int, i : int . ([#"../hillel.rs" 136 11 136 63] 0 <= from /\ from <= i /\ i <= to' /\ to' <= Seq.length seq) -> ([#"../hillel.rs" 137 10 137 85] SumRange0.sum_range seq from to' = SumRange0.sum_range seq from i + SumRange0.sum_range seq i to')
 end
 module Hillel_SumRangeSplit_Impl
   use mach.int.Int
@@ -1341,12 +1320,21 @@ module Hillel_SumRangeSplit_Impl
   use mach.int.UInt32
   clone Hillel_SumRange as SumRange0 with axiom .
   let rec ghost function sum_range_split (seq : Seq.seq uint32) (from : int) (to' : int) (i : int) : ()
-    requires {[#"../hillel.rs" 146 11 146 63] 0 <= from /\ from <= i /\ i <= to' /\ to' <= Seq.length seq}
-    ensures { [#"../hillel.rs" 147 10 147 85] SumRange0.sum_range seq from to' = SumRange0.sum_range seq from i + SumRange0.sum_range seq i to' }
-    variant {[#"../hillel.rs" 145 10 145 18] i - from}
+    requires {[#"../hillel.rs" 136 11 136 63] 0 <= from /\ from <= i /\ i <= to' /\ to' <= Seq.length seq}
+    ensures { [#"../hillel.rs" 137 10 137 85] SumRange0.sum_range seq from to' = SumRange0.sum_range seq from i + SumRange0.sum_range seq i to' }
+    variant {[#"../hillel.rs" 135 10 135 18] i - from}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../hillel.rs" 149 4 151 5] if i > from then let _ = sum_range_split seq (from + 1) to' i in () else ()
+    [#"../hillel.rs" 139 4 141 5] if i > from then let _ = sum_range_split seq (from + 1) to' i in () else ()
+end
+module CreusotContracts_Logic_Int_Impl1_AbsDiff_Interface
+  use mach.int.Int
+  function abs_diff (self : int) (other : int) : int
+end
+module CreusotContracts_Logic_Int_Impl1_AbsDiff
+  use mach.int.Int
+  function abs_diff (self : int) (other : int) : int =
+    if self < other then other - self else self - other
 end
 module Hillel_Score_Interface
   use mach.int.Int
@@ -1362,42 +1350,33 @@ module Hillel_Score
   use seq.Seq
   use mach.int.UInt32
   clone Hillel_SumRange_Interface as SumRange0 with axiom .
-  clone Hillel_AbsDiff_Interface as AbsDiff0 with axiom .
+  clone CreusotContracts_Logic_Int_Impl1_AbsDiff_Interface as AbsDiff0
   clone Hillel_SumRangeSplit_Interface as SumRangeSplit0 with function SumRange0.sum_range = SumRange0.sum_range,
   axiom .
-  function score [#"../hillel.rs" 158 0 158 38] (seq : Seq.seq uint32) (i : int) : int =
-    [#"../hillel.rs" 159 4 159 41] let _ = SumRangeSplit0.sum_range_split seq 0 (Seq.length seq) i in AbsDiff0.abs_diff (SumRange0.sum_range seq 0 i) (SumRange0.sum_range seq i (Seq.length seq))
-  axiom score_spec : forall seq : Seq.seq uint32, i : int . ([#"../hillel.rs" 155 11 155 35] 0 <= i /\ i <= Seq.length seq) -> ([#"../hillel.rs" 157 0 157 79] 0 = i \/ i = Seq.length seq -> score seq i = SumRange0.sum_range seq 0 (Seq.length seq)) && ([#"../hillel.rs" 156 10 156 64] 0 <= score seq i /\ score seq i <= SumRange0.sum_range seq 0 (Seq.length seq))
+  function score [#"../hillel.rs" 148 0 148 38] (seq : Seq.seq uint32) (i : int) : int =
+    [#"../hillel.rs" 149 4 149 41] let _ = SumRangeSplit0.sum_range_split seq 0 (Seq.length seq) i in AbsDiff0.abs_diff (SumRange0.sum_range seq 0 i) (SumRange0.sum_range seq i (Seq.length seq))
+  axiom score_spec : forall seq : Seq.seq uint32, i : int . ([#"../hillel.rs" 145 11 145 35] 0 <= i /\ i <= Seq.length seq) -> ([#"../hillel.rs" 147 0 147 79] 0 = i \/ i = Seq.length seq -> score seq i = SumRange0.sum_range seq 0 (Seq.length seq)) && ([#"../hillel.rs" 146 10 146 64] 0 <= score seq i /\ score seq i <= SumRange0.sum_range seq 0 (Seq.length seq))
 end
 module Hillel_Score_Impl
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
   use mach.int.UInt32
-  clone Hillel_AbsDiff as AbsDiff0 with axiom .
+  clone CreusotContracts_Logic_Int_Impl1_AbsDiff as AbsDiff0
   clone Hillel_SumRange as SumRange0 with axiom .
   clone Hillel_SumRangeSplit as SumRangeSplit0 with function SumRange0.sum_range = SumRange0.sum_range, axiom .
   let rec ghost function score (seq : Seq.seq uint32) (i : int) : int
-    requires {[#"../hillel.rs" 155 11 155 35] 0 <= i /\ i <= Seq.length seq}
-    ensures { [#"../hillel.rs" 156 10 156 64] 0 <= result /\ result <= SumRange0.sum_range seq 0 (Seq.length seq) }
-    ensures { [#"../hillel.rs" 157 0 157 79] 0 = i \/ i = Seq.length seq -> result = SumRange0.sum_range seq 0 (Seq.length seq) }
+    requires {[#"../hillel.rs" 145 11 145 35] 0 <= i /\ i <= Seq.length seq}
+    ensures { [#"../hillel.rs" 146 10 146 64] 0 <= result /\ result <= SumRange0.sum_range seq 0 (Seq.length seq) }
+    ensures { [#"../hillel.rs" 147 0 147 79] 0 = i \/ i = Seq.length seq -> result = SumRange0.sum_range seq 0 (Seq.length seq) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../hillel.rs" 159 4 159 41] let _ = SumRangeSplit0.sum_range_split seq 0 (Seq.length seq) i in let a' = SumRange0.sum_range seq 0 i in let b' = SumRange0.sum_range seq i (Seq.length seq) in AbsDiff0.abs_diff a' b'
-end
-module CreusotContracts_Std1_Num_AbsDiff_Interface
-  use mach.int.Int
-  function abs_diff (a : int) (b : int) : int
-end
-module CreusotContracts_Std1_Num_AbsDiff
-  use mach.int.Int
-  function abs_diff (a : int) (b : int) : int =
-    if a < b then b - a else a - b
+    [#"../hillel.rs" 149 4 149 41] let _ = SumRangeSplit0.sum_range_split seq 0 (Seq.length seq) i in let a' = SumRange0.sum_range seq 0 i in let b' = SumRange0.sum_range seq i (Seq.length seq) in AbsDiff0.abs_diff a' b'
 end
 module Core_Num_Impl8_AbsDiff_Interface
   use mach.int.UInt32
   use mach.int.Int
-  clone CreusotContracts_Std1_Num_AbsDiff_Interface as AbsDiff0
+  clone CreusotContracts_Logic_Int_Impl1_AbsDiff_Interface as AbsDiff0
   val abs_diff [@cfg:stackify] (self : uint32) (other : uint32) : uint32
     ensures { UInt32.to_int result = AbsDiff0.abs_diff (UInt32.to_int self) (UInt32.to_int other) }
     
@@ -1405,7 +1384,7 @@ end
 module Core_Num_Impl8_AbsDiff
   use mach.int.UInt32
   use mach.int.Int
-  clone CreusotContracts_Std1_Num_AbsDiff_Interface as AbsDiff0
+  clone CreusotContracts_Logic_Int_Impl1_AbsDiff_Interface as AbsDiff0
   val abs_diff [@cfg:stackify] (self : uint32) (other : uint32) : uint32
     ensures { UInt32.to_int result = AbsDiff0.abs_diff (UInt32.to_int self) (UInt32.to_int other) }
     
@@ -1425,10 +1404,10 @@ module Hillel_Fulcrum_Interface
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = seq uint32,
   type ModelTy0.modelTy = ModelTy0.modelTy
   val fulcrum [@cfg:stackify] (s : seq uint32) : usize
-    requires {[#"../hillel.rs" 166 11 166 47] SumRange0.sum_range (Model0.model s) 0 (Seq.length (Model0.model s)) <= 1000}
-    requires {[#"../hillel.rs" 167 11 167 25] Seq.length (Model0.model s) > 0}
-    ensures { [#"../hillel.rs" 168 10 168 46] 0 <= UInt64.to_int result /\ UInt64.to_int result < Seq.length (Model0.model s) }
-    ensures { [#"../hillel.rs" 169 0 169 90] forall i : (int) . 0 <= i /\ i < Seq.length (Model0.model s) -> Score0.score (Model0.model s) (UInt64.to_int result) <= Score0.score (Model0.model s) i }
+    requires {[#"../hillel.rs" 156 11 156 47] SumRange0.sum_range (Model0.model s) 0 (Seq.length (Model0.model s)) <= 1000}
+    requires {[#"../hillel.rs" 157 11 157 25] Seq.length (Model0.model s) > 0}
+    ensures { [#"../hillel.rs" 158 10 158 46] 0 <= UInt64.to_int result /\ UInt64.to_int result < Seq.length (Model0.model s) }
+    ensures { [#"../hillel.rs" 159 0 159 90] forall i : (int) . 0 <= i /\ i < Seq.length (Model0.model s) -> Score0.score (Model0.model s) (UInt64.to_int result) <= Score0.score (Model0.model s) i }
     
 end
 module Hillel_Fulcrum
@@ -1440,7 +1419,7 @@ module Hillel_Fulcrum
   use prelude.Slice
   use mach.int.UInt32
   use prelude.UIntSize
-  clone Hillel_AbsDiff as AbsDiff0 with axiom .
+  clone CreusotContracts_Logic_Int_Impl1_AbsDiff as AbsDiff0
   clone Hillel_SumRange as SumRange0 with axiom .
   clone Hillel_SumRangeSplit as SumRangeSplit0 with function SumRange0.sum_range = SumRange0.sum_range, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model1 with type t = uint32, axiom .
@@ -1450,14 +1429,13 @@ module Hillel_Fulcrum
   function AbsDiff0.abs_diff = AbsDiff0.abs_diff, axiom .
   clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = seq uint32,
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
-  clone CreusotContracts_Std1_Num_AbsDiff as AbsDiff2
-  clone Core_Num_Impl8_AbsDiff_Interface as AbsDiff1 with function AbsDiff0.abs_diff = AbsDiff2.abs_diff
+  clone Core_Num_Impl8_AbsDiff_Interface as AbsDiff1 with function AbsDiff0.abs_diff = AbsDiff0.abs_diff
   clone Core_Slice_Impl0_Len_Interface as Len0 with type t = uint32, function Model0.model = Model0.model
-  let rec cfg fulcrum [@cfg:stackify] [#"../hillel.rs" 170 0 170 30] (s : seq uint32) : usize
-    requires {[#"../hillel.rs" 166 11 166 47] SumRange0.sum_range (Model0.model s) 0 (Seq.length (Model0.model s)) <= 1000}
-    requires {[#"../hillel.rs" 167 11 167 25] Seq.length (Model0.model s) > 0}
-    ensures { [#"../hillel.rs" 168 10 168 46] 0 <= UInt64.to_int result /\ UInt64.to_int result < Seq.length (Model0.model s) }
-    ensures { [#"../hillel.rs" 169 0 169 90] forall i : (int) . 0 <= i /\ i < Seq.length (Model0.model s) -> Score0.score (Model0.model s) (UInt64.to_int result) <= Score0.score (Model0.model s) i }
+  let rec cfg fulcrum [@cfg:stackify] [#"../hillel.rs" 160 0 160 30] (s : seq uint32) : usize
+    requires {[#"../hillel.rs" 156 11 156 47] SumRange0.sum_range (Model0.model s) 0 (Seq.length (Model0.model s)) <= 1000}
+    requires {[#"../hillel.rs" 157 11 157 25] Seq.length (Model0.model s) > 0}
+    ensures { [#"../hillel.rs" 158 10 158 46] 0 <= UInt64.to_int result /\ UInt64.to_int result < Seq.length (Model0.model s) }
+    ensures { [#"../hillel.rs" 159 0 159 90] forall i : (int) . 0 <= i /\ i < Seq.length (Model0.model s) -> Score0.score (Model0.model s) (UInt64.to_int result) <= Score0.score (Model0.model s) i }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : usize;
@@ -1515,16 +1493,16 @@ module Hillel_Fulcrum
     goto BB1
   }
   BB1 {
-    invariant i_bound { [#"../hillel.rs" 173 25 173 41] UInt64.to_int i_3 <= Seq.length (Model0.model s_1) };
-    invariant total { [#"../hillel.rs" 174 23 174 53] UInt32.to_int total_2 = SumRange0.sum_range (Model0.model s_1) 0 (UInt64.to_int i_3) };
-    invariant total_bound { [#"../hillel.rs" 175 29 175 67] UInt32.to_int total_2 <= SumRange0.sum_range (Model0.model s_1) 0 (Seq.length (Model0.model s_1)) };
+    invariant i_bound { [#"../hillel.rs" 163 25 163 41] UInt64.to_int i_3 <= Seq.length (Model0.model s_1) };
+    invariant total { [#"../hillel.rs" 164 23 164 53] UInt32.to_int total_2 = SumRange0.sum_range (Model0.model s_1) 0 (UInt64.to_int i_3) };
+    invariant total_bound { [#"../hillel.rs" 165 29 165 67] UInt32.to_int total_2 <= SumRange0.sum_range (Model0.model s_1) 0 (Seq.length (Model0.model s_1)) };
     _7 <- i_3;
     _9 <- s_1;
-    _8 <- ([#"../hillel.rs" 176 14 176 21] Len0.len _9);
+    _8 <- ([#"../hillel.rs" 166 14 166 21] Len0.len _9);
     goto BB2
   }
   BB2 {
-    _6 <- ([#"../hillel.rs" 176 10 176 21] _7 < _8);
+    _6 <- ([#"../hillel.rs" 166 10 166 21] _7 < _8);
     switch (_6)
       | False -> goto BB5
       | _ -> goto BB3
@@ -1533,20 +1511,20 @@ module Hillel_Fulcrum
   BB3 {
     _11 <- i_3;
     _12 <- UIntSize.of_int (Seq.length s_1);
-    _13 <- ([#"../hillel.rs" 177 17 177 21] _11 < _12);
+    _13 <- ([#"../hillel.rs" 167 17 167 21] _11 < _12);
     assert { _13 };
     goto BB4
   }
   BB4 {
     _10 <- Seq.get s_1 (UIntSize.to_int _11);
-    total_2 <- ([#"../hillel.rs" 177 8 177 21] total_2 + _10);
-    i_3 <- ([#"../hillel.rs" 178 8 178 14] i_3 + (1 : usize));
+    total_2 <- ([#"../hillel.rs" 167 8 167 21] total_2 + _10);
+    i_3 <- ([#"../hillel.rs" 168 8 168 14] i_3 + (1 : usize));
     _5 <- ();
     goto BB1
   }
   BB5 {
     _4 <- ();
-    assert { [#"../hillel.rs" 181 20 181 58] UInt32.to_int total_2 = SumRange0.sum_range (Model0.model s_1) 0 (Seq.length (Model0.model s_1)) };
+    assert { [#"../hillel.rs" 171 20 171 58] UInt32.to_int total_2 = SumRange0.sum_range (Model0.model s_1) 0 (Seq.length (Model0.model s_1)) };
     _17 <- ();
     min_i_18 <- (0 : usize);
     min_dist_19 <- total_2;
@@ -1555,19 +1533,19 @@ module Hillel_Fulcrum
     goto BB6
   }
   BB6 {
-    invariant i_bound { [#"../hillel.rs" 188 25 188 41] UInt64.to_int i_21 <= Seq.length (Model0.model s_1) };
-    invariant sum { [#"../hillel.rs" 189 21 189 49] UInt32.to_int sum_20 = SumRange0.sum_range (Model0.model s_1) 0 (UInt64.to_int i_21) };
-    invariant sum_bound { [#"../hillel.rs" 190 27 190 41] UInt32.to_int sum_20 <= UInt32.to_int total_2 };
-    invariant min_i_bound { [#"../hillel.rs" 191 29 191 64] UInt64.to_int min_i_18 <= UInt64.to_int i_21 /\ UInt64.to_int min_i_18 < Seq.length (Model0.model s_1) };
-    invariant min_dist { [#"../hillel.rs" 192 26 192 56] UInt32.to_int min_dist_19 = Score0.score (Model0.model s_1) (UInt64.to_int min_i_18) };
-    invariant min_i_min { [#"../hillel.rs" 188 4 188 43] forall j : (int) . 0 <= j /\ j < UInt64.to_int i_21 -> Score0.score (Model0.model s_1) (UInt64.to_int min_i_18) <= Score0.score (Model0.model s_1) j };
+    invariant i_bound { [#"../hillel.rs" 178 25 178 41] UInt64.to_int i_21 <= Seq.length (Model0.model s_1) };
+    invariant sum { [#"../hillel.rs" 179 21 179 49] UInt32.to_int sum_20 = SumRange0.sum_range (Model0.model s_1) 0 (UInt64.to_int i_21) };
+    invariant sum_bound { [#"../hillel.rs" 180 27 180 41] UInt32.to_int sum_20 <= UInt32.to_int total_2 };
+    invariant min_i_bound { [#"../hillel.rs" 181 29 181 64] UInt64.to_int min_i_18 <= UInt64.to_int i_21 /\ UInt64.to_int min_i_18 < Seq.length (Model0.model s_1) };
+    invariant min_dist { [#"../hillel.rs" 182 26 182 56] UInt32.to_int min_dist_19 = Score0.score (Model0.model s_1) (UInt64.to_int min_i_18) };
+    invariant min_i_min { [#"../hillel.rs" 178 4 178 43] forall j : (int) . 0 <= j /\ j < UInt64.to_int i_21 -> Score0.score (Model0.model s_1) (UInt64.to_int min_i_18) <= Score0.score (Model0.model s_1) j };
     _24 <- i_21;
     _26 <- s_1;
-    _25 <- ([#"../hillel.rs" 194 14 194 21] Len0.len _26);
+    _25 <- ([#"../hillel.rs" 184 14 184 21] Len0.len _26);
     goto BB7
   }
   BB7 {
-    _23 <- ([#"../hillel.rs" 194 10 194 21] _24 < _25);
+    _23 <- ([#"../hillel.rs" 184 10 184 21] _24 < _25);
     switch (_23)
       | False -> goto BB14
       | _ -> goto BB8
@@ -1577,14 +1555,14 @@ module Hillel_Fulcrum
     _28 <- sum_20;
     _30 <- total_2;
     _31 <- sum_20;
-    _29 <- ([#"../hillel.rs" 195 32 195 43] _30 - _31);
-    dist_27 <- ([#"../hillel.rs" 195 19 195 44] AbsDiff1.abs_diff _28 _29);
+    _29 <- ([#"../hillel.rs" 185 32 185 43] _30 - _31);
+    dist_27 <- ([#"../hillel.rs" 185 19 185 44] AbsDiff1.abs_diff _28 _29);
     goto BB9
   }
   BB9 {
     _34 <- dist_27;
     _35 <- min_dist_19;
-    _33 <- ([#"../hillel.rs" 196 11 196 26] _34 < _35);
+    _33 <- ([#"../hillel.rs" 186 11 186 26] _34 < _35);
     switch (_33)
       | False -> goto BB11
       | _ -> goto BB10
@@ -1607,14 +1585,14 @@ module Hillel_Fulcrum
   BB12 {
     _39 <- i_21;
     _40 <- UIntSize.of_int (Seq.length s_1);
-    _41 <- ([#"../hillel.rs" 201 15 201 19] _39 < _40);
+    _41 <- ([#"../hillel.rs" 191 15 191 19] _39 < _40);
     assert { _41 };
     goto BB13
   }
   BB13 {
     _38 <- Seq.get s_1 (UIntSize.to_int _39);
-    sum_20 <- ([#"../hillel.rs" 201 8 201 19] sum_20 + _38);
-    i_21 <- ([#"../hillel.rs" 202 8 202 14] i_21 + (1 : usize));
+    sum_20 <- ([#"../hillel.rs" 191 8 191 19] sum_20 + _38);
+    i_21 <- ([#"../hillel.rs" 192 8 192 14] i_21 + (1 : usize));
     _5 <- ();
     goto BB6
   }

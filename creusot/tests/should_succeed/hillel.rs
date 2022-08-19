@@ -53,14 +53,14 @@ fn is_unique<T: Eq + Model>(s: Seq<T>) -> bool {
 }
 
 #[predicate]
-fn contains<T: Eq + Model>(seq: Seq<T>, elem: T) -> bool {
+fn contains<T: Model>(seq: Seq<T>, elem: T) -> bool {
     pearlite! {
         exists<i: Int> 0 <= i && i < seq.len() && @(seq[i]) == @elem
     }
 }
 
 #[predicate]
-fn is_subset<T: Eq + Model>(sub: Seq<T>, sup: Seq<T>) -> bool {
+fn is_subset<T: Model>(sub: Seq<T>, sup: Seq<T>) -> bool {
     pearlite! {
         forall<i: Int> 0 <= i && i < sub.len() ==> contains(sup, sub[i])
     }
@@ -120,16 +120,6 @@ fn unique<T: Eq + Model + Copy>(str: &[T]) -> Vec<T> {
 }
 
 #[logic]
-#[ensures(result >= 0)]
-fn abs_diff(a: Int, b: Int) -> Int {
-    if a < b {
-        b - a
-    } else {
-        a - b
-    }
-}
-
-#[logic]
 #[variant(to - from)]
 #[requires(0 <= from && from <= to && to <= seq.len())]
 #[ensures(result >= 0)]
@@ -157,7 +147,7 @@ fn sum_range_split(seq: Seq<u32>, from: Int, to: Int, i: Int) {
 #[ensures(0 == i || i == seq.len() ==> result == sum_range(seq, 0, seq.len()))]
 fn score(seq: Seq<u32>, i: Int) -> Int {
     sum_range_split(seq, 0, seq.len(), i);
-    abs_diff(sum_range(seq, 0, i), sum_range(seq, i, seq.len()))
+    sum_range(seq, 0, i).abs_diff(sum_range(seq, i, seq.len()))
 }
 
 // Fulcrum. Given a sequence of integers, returns the index i that minimizes
