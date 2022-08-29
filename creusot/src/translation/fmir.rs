@@ -75,7 +75,7 @@ impl<'tcx> Expr<'tcx> {
             Expr::Copy(pl) => {
                 translate_rplace_inner(ctx, names, body.unwrap(), pl.local, pl.projection)
             }
-            Expr::BinOp(BinOp::BitAnd, _, l, r) => Exp::BinaryOp(
+            Expr::BinOp(BinOp::BitAnd, ty, l, r) if ty.is_bool() => Exp::BinaryOp(
                 why3::exp::BinOp::LazyAnd,
                 box l.to_why(ctx, names, body),
                 box r.to_why(ctx, names, body),
@@ -87,8 +87,15 @@ impl<'tcx> Expr<'tcx> {
                     vec![l.to_why(ctx, names, body), r.to_why(ctx, names, body)],
                 )
             }
+            Expr::BinOp(BinOp::Ne, ty, l, r) if ty.is_bool() => {
+                names.import_prelude_module(PreludeModule::Bool);
+                Exp::Call(
+                    box Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap()),
+                    vec![l.to_why(ctx, names, body), r.to_why(ctx, names, body)],
+                )
+            }
             Expr::BinOp(op, ty, l, r) => Exp::BinaryOp(
-                binop_to_binop(ty, op),
+                binop_to_binop(ctx, ty, op),
                 box l.to_why(ctx, names, body),
                 box r.to_why(ctx, names, body),
             ),
