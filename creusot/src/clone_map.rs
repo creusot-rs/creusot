@@ -69,7 +69,7 @@ impl PreludeModule {
             PreludeModule::UInt32 => QName::from_string("mach.int.UInt32").unwrap(),
             PreludeModule::UInt64 => QName::from_string("mach.int.UInt64").unwrap(),
             PreludeModule::UInt128 => QName::from_string("prelude.UInt128").unwrap(),
-            PreludeModule::Char => QName::from_string("string.Char").unwrap(),
+            PreludeModule::Char => QName::from_string("prelude.Char").unwrap(),
             PreludeModule::Single => QName::from_string("floating_point.Single").unwrap(),
             PreludeModule::Double => QName::from_string("floating_point.Double").unwrap(),
             PreludeModule::Opaque => QName::from_string("prelude.Opaque").unwrap(),
