@@ -268,6 +268,7 @@ fn escape_self_in_contracts(attrs: &mut Vec<Attribute>) -> Result<()> {
 
 fn escape_self_in_term(t: &mut Term) {
     match t {
+        Term::Macro(_) => {}
         Term::Array(TermArray { elems, .. }) => {
             for elem in elems {
                 escape_self_in_term(elem)
@@ -368,7 +369,7 @@ fn escape_self_in_term(t: &mut Term) {
         Term::Forall(TermForall { term, .. }) => escape_self_in_term(term),
         Term::Exists(TermExists { term, .. }) => escape_self_in_term(term),
         Term::Absurd(TermAbsurd { .. }) => {}
-        Term::Pearlite(TermPearlite { term, .. }) => escape_self_in_term(term),
+        Term::Pearlite(TermPearlite { block, .. }) => escape_self_in_tblock(block),
         Term::Lit(TermLit { .. }) => {}
         Term::Verbatim(_) => {}
         Term::__Nonexhaustive => {}

@@ -528,8 +528,14 @@ pub fn trusted(_: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro]
 pub fn pearlite(tokens: TS1) -> TS1 {
-    let term: Term = parse_macro_input!(tokens);
-    TS1::from(pretyping::encode_term(&term).unwrap())
+    let block = parse_macro_input!(tokens with TBlock::parse_within);
+    TS1::from(
+        block
+            .iter()
+            .map(pretyping::encode_stmt)
+            .collect::<std::result::Result<TokenStream, _>>()
+            .unwrap(),
+    )
 }
 
 #[proc_macro]

@@ -30,6 +30,8 @@ impl EncodeError {
 pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
     let sp = term.span();
     match term {
+        // Macros could contain further pearlite expressions..
+        RT::Macro(m) => Ok(quote_spanned! {sp=> #m}),
         RT::Array(_) => Err(EncodeError::Unsupported(term.span(), "Array".into())),
         RT::Binary(TermBinary { left, op, right }) => {
             let mut left = left;
@@ -237,7 +239,7 @@ pub fn encode_block(block: &TBlock) -> Result<TokenStream, EncodeError> {
     Ok(quote! { { #(#stmts)* } })
 }
 
-fn encode_stmt(stmt: &TermStmt) -> Result<TokenStream, EncodeError> {
+pub fn encode_stmt(stmt: &TermStmt) -> Result<TokenStream, EncodeError> {
     match stmt {
         TermStmt::Local(TLocal { pat, init, .. }) => {
             if let Some((_, init)) = init {
@@ -253,6 +255,7 @@ fn encode_stmt(stmt: &TermStmt) -> Result<TokenStream, EncodeError> {
             let term = encode_term(t)?;
             Ok(quote! { #term #s })
         }
+        TermStmt::Item(i) => Ok(quote! { #i }),
     }
 }
 
