@@ -427,43 +427,43 @@ fn resolve_predicate_of<'tcx>(
 pub fn int_from_int(ity: &IntTy) -> Exp {
     match ity {
         IntTy::Isize => Exp::impure_qvar(QName::from_string("IntSize.of_int").unwrap()),
-        IntTy::I8 => unimplemented!(),
-        IntTy::I16 => unimplemented!(),
+        IntTy::I8 => Exp::impure_qvar(QName::from_string("Int8.of_int").unwrap()),
+        IntTy::I16 => Exp::impure_qvar(QName::from_string("Int16.of_int").unwrap()),
         IntTy::I32 => Exp::impure_qvar(QName::from_string("Int32.of_int").unwrap()),
         IntTy::I64 => Exp::impure_qvar(QName::from_string("Int64.of_int").unwrap()),
-        IntTy::I128 => unimplemented!(),
+        IntTy::I128 => Exp::impure_qvar(QName::from_string("Int128.of_int").unwrap()),
     }
 }
 
 pub fn uint_from_int(uty: &UintTy) -> Exp {
     match uty {
         UintTy::Usize => Exp::impure_qvar(QName::from_string("UIntSize.of_int").unwrap()),
-        UintTy::U8 => unimplemented!(),
-        UintTy::U16 => unimplemented!(),
+        UintTy::U8 => Exp::impure_qvar(QName::from_string("UInt8.of_int").unwrap()),
+        UintTy::U16 => Exp::impure_qvar(QName::from_string("UInt16.of_int").unwrap()),
         UintTy::U32 => Exp::impure_qvar(QName::from_string("UInt32.of_int").unwrap()),
         UintTy::U64 => Exp::impure_qvar(QName::from_string("UInt64.of_int").unwrap()),
-        UintTy::U128 => unimplemented!(),
+        UintTy::U128 => Exp::impure_qvar(QName::from_string("UInt128.of_int").unwrap()),
     }
 }
 
 pub fn int_to_int(ity: &IntTy) -> Exp {
     match ity {
         IntTy::Isize => Exp::impure_qvar(QName::from_string("IntSize.to_int").unwrap()),
-        IntTy::I8 => unimplemented!(),
-        IntTy::I16 => unimplemented!(),
+        IntTy::I8 => Exp::impure_qvar(QName::from_string("Int8.to_int").unwrap()),
+        IntTy::I16 => Exp::impure_qvar(QName::from_string("Int16.to_int").unwrap()),
         IntTy::I32 => Exp::impure_qvar(QName::from_string("Int32.to_int").unwrap()),
         IntTy::I64 => Exp::impure_qvar(QName::from_string("Int64.to_int").unwrap()),
-        IntTy::I128 => unimplemented!(),
+        IntTy::I128 => Exp::impure_qvar(QName::from_string("Int128.to_int").unwrap()),
     }
 }
 
 pub fn uint_to_int(uty: &UintTy) -> Exp {
     match uty {
         UintTy::Usize => Exp::impure_qvar(QName::from_string("UIntSize.to_int").unwrap()),
-        UintTy::U8 => unimplemented!(),
-        UintTy::U16 => unimplemented!(),
+        UintTy::U8 => Exp::impure_qvar(QName::from_string("UInt8.to_int").unwrap()),
+        UintTy::U16 => Exp::impure_qvar(QName::from_string("UInt16.to_int").unwrap()),
         UintTy::U32 => Exp::impure_qvar(QName::from_string("UInt32.to_int").unwrap()),
         UintTy::U64 => Exp::impure_qvar(QName::from_string("UInt64.to_int").unwrap()),
-        UintTy::U128 => unimplemented!(),
+        UintTy::U128 => Exp::impure_qvar(QName::from_string("UInt128.to_int").unwrap()),
     }
 }
