@@ -131,9 +131,9 @@ pub fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+use creusot_rustc::smir::mir;
 
-pub fn binop_to_binop(ty: Ty, op: creusot_rustc::middle::mir::BinOp) -> why3::exp::BinOp {
-    use creusot_rustc::smir::mir;
+pub fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -> why3::exp::BinOp {
     use why3::exp::BinOp;
     match op {
         mir::BinOp::Add => {
@@ -177,7 +177,10 @@ pub fn binop_to_binop(ty: Ty, op: creusot_rustc::middle::mir::BinOp) -> why3::ex
         mir::BinOp::Ge => BinOp::Ge,
         mir::BinOp::Ne => BinOp::Ne,
         mir::BinOp::Rem => BinOp::Mod,
-        _ => unimplemented!("unsupported binary operation: {:?}", op),
+        _ => ctx.crash_and_error(
+            creusot_rustc::span::DUMMY_SP,
+            &format!("unsupported binary operation: {:?}", op),
+        ),
     }
 }
 

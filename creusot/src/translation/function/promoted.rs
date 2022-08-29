@@ -80,7 +80,7 @@ pub fn translate_promoted<'tcx>(
                         Use(op) => translate_operand(ctx, names, body, param_env, op),
                         BinaryOp(op, box (l, r)) | CheckedBinaryOp(op, box (l, r)) => {
                             Exp::BinaryOp(
-                                binop_to_binop(l.ty(body, ctx.tcx), *op),
+                                binop_to_binop(ctx, l.ty(body, ctx.tcx), *op),
                                 box translate_operand(ctx, names, body, param_env, l),
                                 box translate_operand(ctx, names, body, param_env, r),
                             )
