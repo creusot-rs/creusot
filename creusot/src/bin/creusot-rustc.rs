@@ -112,7 +112,7 @@ fn setup_plugin() {
         args.push("-Zcrate-attr=feature(proc_macro_hygiene)".to_owned());
         args.push("-Zcrate-attr=feature(rustc_attrs)".to_owned());
         args.push("-Zcrate-attr=feature(unsized_fn_params)".to_owned());
-
+        args.extend(["--cfg", "creusot"].into_iter().map(str::to_owned));
         debug!("creusot args={:?}", args);
 
         let opts = Options::from_args(creusot);
