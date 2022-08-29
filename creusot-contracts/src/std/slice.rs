@@ -7,7 +7,7 @@ use crate::{
 use creusot_contracts_proc::*;
 use std::{
     ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
-    slice::{Iter, SliceIndex},
+    slice::{Iter, IterMut, SliceIndex},
 };
 
 impl<T> Model for [T] {
@@ -225,6 +225,11 @@ extern_spec! {
 
         #[ensures(@result == @self)]
         fn iter(&self) -> Iter<'_, T>;
+
+        #[ensures(*@result == @self)]
+        #[ensures(^@result == @^self)]
+        #[ensures((^@result).len() == (@self).len())]
+        fn iter_mut(&mut self) -> IterMut<'_, T>;
     }
 
     impl<'a, T> IntoIterator for &'a [T] {
@@ -261,6 +266,17 @@ impl<T> Model for Iter<'_, T> {
     }
 }
 
+impl<'a, T> Model for IterMut<'a, T> {
+    type ModelTy = &'a mut Seq<T>;
+
+    #[logic]
+    #[trusted]
+    #[ensures((^result).len() == result.len())]
+    fn model(self) -> Self::ModelTy {
+        absurd
+    }
+}
+
 impl<T> IteratorSpec for Iter<'_, T> {
     #[predicate]
     fn completed(self) -> bool {
@@ -288,6 +304,35 @@ impl<T> IteratorSpec for Iter<'_, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
+impl<'a, T> IteratorSpec for IterMut<'a, T> {
+    #[predicate]
+    fn completed(self) -> bool {
+        pearlite! { (@self).ext_eq(Seq::EMPTY) }
+    }
+
+    #[predicate]
+    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
+        pearlite! {
+            (@self).len() == visited.len() + (@tl).len() &&
+            (^@self).len() == visited.len() + (^@tl).len() &&
+            (@self).subsequence(visited.len(), (@self).len()).ext_eq(*@tl) &&
+            (^@self).subsequence(visited.len(), (^@self).len()).ext_eq(^@tl)&&
+            (forall<i : Int> 0 <= i && i < visited.len() ==>
+                (@self)[i] == *visited[i] && (^@self)[i] == ^visited[i])
+        }
+    }
+
+    #[law]
+    #[ensures(a.produces(Seq::EMPTY, a))]
+    fn produces_refl(a: Self) {}
+
+    #[law]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
 extern_spec! {
     mod std {
         mod slice {
@@ -297,6 +342,14 @@ extern_spec! {
                     Some(v) => (*self).produces(Seq::singleton(v), ^self) && !(*self).completed()
                 })]
                 fn next(&mut self) -> Option<&'a T>;
+            }
+
+            impl<'a, T> Iterator for IterMut<'a, T> {
+                #[ensures(match result {
+                    None => (*self).completed(),
+                    Some(v) => (*self).produces(Seq::singleton(v), ^self) && !(*self).completed()
+                })]
+                fn next(&mut self) -> Option<&'a mut T>;
             }
         }
     }
