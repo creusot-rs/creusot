@@ -1,5 +1,10 @@
 use indexmap::{IndexMap, IndexSet};
 
+use crate::{
+    ctx::TranslationCtx,
+    translation::specification::{inv_subst, typing::Term},
+    util::{self, is_ghost_closure},
+};
 use creusot_rustc::{
     data_structures::graph::WithSuccessors,
     hir::def_id::DefId,
@@ -11,45 +16,32 @@ use creusot_rustc::{
     span::Symbol,
 };
 
-use why3::exp::Exp;
-
-use crate::{
-    clone_map::CloneMap,
-    ctx::TranslationCtx,
-    translation::specification::{inv_subst, lower_pure},
-    util::{self, is_ghost_closure},
-};
-
 pub fn corrected_invariant_names_and_locations<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
     def_id: DefId,
     body: &Body<'tcx>,
-) -> (IndexMap<BasicBlock, Vec<(Symbol, Exp)>>, IndexMap<DefId, Exp>) {
+) -> (IndexMap<BasicBlock, Vec<(Symbol, Term<'tcx>)>>, IndexMap<DefId, Term<'tcx>>) {
     let mut visitor = InvariantClosures::new(ctx.tcx, def_id);
     visitor.visit_body(&body);
 
     let mut assertions: IndexMap<_, _> = Default::default();
     // let mut ghosts: IndexMap<_, _> = Default::default();
     let mut invariants: IndexMap<_, _> = Default::default();
-    let param_env = ctx.param_env(def_id);
+
     for clos in visitor.closures.into_iter() {
         if let Some(name) = util::invariant_name(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-            let exp = lower_pure(ctx, names, clos, param_env, term);
 
-            invariants.insert(clos, (name, exp));
+            invariants.insert(clos, (name, term));
         } else if util::is_assertion(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-            let exp = lower_pure(ctx, names, clos, param_env, term);
 
-            assertions.insert(clos, exp);
+            assertions.insert(clos, term);
         } else if util::is_ghost(ctx.tcx, clos) {
             let term = ctx.term(clos).unwrap().clone();
-            let exp = lower_pure(ctx, names, clos, param_env, term);
 
             // A hack should probably be separately tracked
-            assertions.insert(clos, exp);
+            assertions.insert(clos, term);
         }
     }
 
@@ -62,7 +54,7 @@ pub fn corrected_invariant_names_and_locations<'tcx>(
                 .into_iter()
                 .map(|id| {
                     let mut inv = invariants.remove(&id.1).unwrap();
-                    let inv_subst = inv_subst(ctx.tcx, body, id.0);
+                    let inv_subst = inv_subst(body, id.0);
                     inv.1.subst(&inv_subst);
                     inv
                 })
@@ -79,7 +71,7 @@ pub fn corrected_invariant_names_and_locations<'tcx>(
     let assertions = assertions
         .into_iter()
         .map(|mut ass| {
-            let inv_subst = inv_subst(ctx.tcx, body, locations[&ass.0]);
+            let inv_subst = inv_subst(body, locations[&ass.0]);
 
             ass.1.subst(&inv_subst);
             ass

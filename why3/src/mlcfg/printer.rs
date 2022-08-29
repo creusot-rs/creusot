@@ -986,8 +986,7 @@ impl Print for Constant {
             }
             Constant::String(s) => alloc.text(s).double_quotes(),
             Constant::Uint(i, None) => alloc.as_string(i),
-            Constant::Float(f) => alloc.text(format!("{f:.32}")),
-            Constant::Double(d) => alloc.text(format!("{d:.64}")),
+            Constant::Float(f) => alloc.text(format!("{f:.64}")),
         }
     }
 }

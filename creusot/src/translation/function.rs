@@ -1,5 +1,7 @@
+use super::{fmir::RValue, ty::is_ghost_ty};
 use crate::{
     ctx::*,
+    fmir::{self, Expr},
     gather_spec_closures::corrected_invariant_names_and_locations,
     resolve::EagerResolver,
     rustc_extensions::renumber,
@@ -29,10 +31,7 @@ use creusot_rustc::{
     transform::{remove_false_edges::*, simplify::*},
 };
 use indexmap::IndexMap;
-use std::{
-    collections::{BTreeMap, HashMap},
-    rc::Rc,
-};
+use std::{collections::BTreeMap, rc::Rc};
 use why3::{
     declaration::*,
     exp::*,
@@ -41,12 +40,12 @@ use why3::{
     Ident,
 };
 
-use super::ty::is_ghost_ty;
+use super::specification::typing::Term;
 
-mod place;
+pub mod place;
 mod promoted;
 mod statement;
-mod terminator;
+pub mod terminator;
 
 pub fn translate_function<'tcx, 'sess>(
     ctx: &mut TranslationCtx<'sess, 'tcx>,
@@ -146,7 +145,7 @@ pub struct BodyTranslator<'body, 'sess, 'tcx> {
 
     // Spec / Ghost variables
     erased_locals: BitSet<Local>,
-    local_map: HashMap<Local, Local>,
+    // local_map: HashMap<Local, Local>,
 
     // Current block being generated
     current_block: (Vec<mlcfg::Statement>, Option<mlcfg::Terminator>),
@@ -162,9 +161,9 @@ pub struct BodyTranslator<'body, 'sess, 'tcx> {
     // Gives a fresh name to every mono-morphization of a function or trait
     names: &'body mut CloneMap<'tcx>,
 
-    invariants: IndexMap<BasicBlock, Vec<(Symbol, Exp)>>,
+    invariants: IndexMap<BasicBlock, Vec<(Symbol, Term<'tcx>)>>,
 
-    assertions: IndexMap<DefId, Exp>,
+    assertions: IndexMap<DefId, Term<'tcx>>,
 
     borrows: Rc<BorrowSet<'tcx>>,
 }
@@ -178,8 +177,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         sig: Signature,
         def_id: DefId,
     ) -> Self {
-        let (invariants, assertions) =
-            corrected_invariant_names_and_locations(ctx, names, def_id, &body);
+        let (invariants, assertions) = corrected_invariant_names_and_locations(ctx, def_id, &body);
         let mut erased_locals = BitSet::new_empty(body.local_decls.len());
 
         body.local_decls.iter_enumerated().for_each(|(local, decl)| {
@@ -202,7 +200,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         let resolver = EagerResolver::new(tcx, body, borrows.clone());
 
         // TODO: Remove?
-        let local_map = real_locals(tcx, body);
+        // let local_map = real_locals(tcx, body);
 
         BodyTranslator {
             tcx,
@@ -211,7 +209,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             def_id,
             resolver,
             erased_locals,
-            local_map,
+            // local_map,
             current_block: (Vec::new(), None),
             past_blocks: BTreeMap::new(),
             ctx,
@@ -269,7 +267,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             }
 
             for (name, body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
-                self.emit_statement(Invariant(name.to_string().into(), body));
+                self.emit_statementf(fmir::Statement::Invariant(name, body));
             }
 
             self.freeze_locals_between_blocks(bb);
@@ -322,20 +320,30 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         self.current_block.0.push(s);
     }
 
-    fn emit_terminator(&mut self, t: mlcfg::Terminator) {
+    fn emit_statementf(&mut self, s: fmir::Statement<'tcx>) {
+        let stmts = s.to_why(self.ctx, self.names, self.body, self.param_env());
+
+        for s in stmts {
+            self.emit_statement(s)
+        }
+    }
+
+    fn emit_terminator(&mut self, t: fmir::Terminator<'tcx>) {
         assert!(self.current_block.1.is_none());
 
-        self.current_block.1 = Some(t);
+        self.current_block.1 = Some(t.to_why(self.ctx, self.names, Some(self.body)));
     }
 
-    fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: Exp) {
-        let assign = self.create_assign(lhs, rhs);
-        self.emit_statement(assign);
+    fn emit_borrow(&mut self, lhs: &Place<'tcx>, rhs: &Place<'tcx>) {
+        self.emit_assignment(lhs, fmir::RValue::Borrow(*rhs));
     }
 
-    fn resolve_ty(&mut self, ty: Ty<'tcx>) -> ResolveStmt {
-        let param_env = self.param_env();
-        resolve_predicate_of(&mut self.ctx, &mut self.names, param_env, ty)
+    fn emit_ghost_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>) {
+        self.emit_assignment(&lhs, fmir::RValue::Ghost(rhs))
+    }
+
+    fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>) {
+        self.emit_statementf(fmir::Statement::Assignment(*lhs, rhs));
     }
 
     // Inserts drop statements for variables which died over the course of a goto or switch
@@ -402,20 +410,16 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
     fn freeze_locals(&mut self, mut dying: BitSet<Local>) {
         dying.subtract(&self.erased_locals.to_hybrid());
-        let param_env = self.param_env();
 
         for local in dying.iter() {
-            let local_ty = self.body.local_decls[local].ty;
-            let ident = self.translate_local(local).ident();
-            resolve_predicate_of(&mut self.ctx, &mut self.names, param_env, local_ty)
-                .emit(Exp::impure_var(ident), self);
+            self.emit_statementf(fmir::Statement::Resolve(local.into()));
         }
     }
 
     // Useful helper to translate an operand
-    pub fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Exp {
+    pub fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Expr<'tcx> {
         match operand {
-            Operand::Copy(pl) | Operand::Move(pl) => self.translate_rplace(pl),
+            Operand::Copy(pl) | Operand::Move(pl) => Expr::Place(*pl),
             Operand::Constant(c) => {
                 crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
             }
@@ -423,7 +427,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     }
 
     fn translate_local(&self, loc: Local) -> LocalIdent {
-        place::translate_local(&self.body, &self.local_map, loc)
+        place::translate_local(&self.body, loc)
     }
 }
 
@@ -448,6 +452,13 @@ impl LocalIdent {
         match &self.1 {
             None => format!("{:?}'", self.0).into(),
             Some(h) => ident_of(*h),
+        }
+    }
+
+    pub fn symbol(&self) -> Symbol {
+        match &self.1 {
+            Some(id) => Symbol::intern(&format!("{}_{}", &*ident_of(*id), self.0.index())),
+            None => Symbol::intern(&format!("_{}", self.0.index())),
         }
     }
 
@@ -631,12 +642,6 @@ impl ResolveStmt {
             Some(e) => e.app_to(to),
         }
     }
-    fn emit(self, to: Exp, fctx: &mut BodyTranslator) {
-        match self.exp {
-            None => {}
-            Some(e) => fctx.emit_statement(mlcfg::Statement::Assume(e.app_to(to))),
-        }
-    }
 }
 
 fn resolve_predicate_of<'tcx>(
@@ -686,7 +691,7 @@ fn resolve_predicate_of<'tcx>(
     }
 }
 
-fn resolve_trait_loaded(tcx: TyCtxt) -> bool {
+pub fn resolve_trait_loaded(tcx: TyCtxt) -> bool {
     tcx.get_diagnostic_item(Symbol::intern("creusot_resolve")).is_some()
 }
 
@@ -732,20 +737,4 @@ fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
             None
         }
     })
-}
-
-pub fn real_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> HashMap<Local, Local> {
-    let mut spec_local = 0;
-    body.local_decls
-        .iter_enumerated()
-        .filter_map(|(local, decl)| {
-            if let TyKind::Closure(def_id, _) = decl.ty.peel_refs().kind() {
-                if crate::util::is_spec(tcx, *def_id) {
-                    spec_local += 1;
-                    return None;
-                }
-            }
-            Some((local, (local.index() - spec_local).into()))
-        })
-        .collect()
 }

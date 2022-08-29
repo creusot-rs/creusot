@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     error::{CrErr, CreusotResult, Error},
     util,
@@ -21,6 +23,8 @@ use creusot_rustc::{
 pub use creusot_rustc::{middle::thir, smir::mir::Field};
 use itertools::Itertools;
 use log::*;
+use rustc_middle::ty::{int_ty, uint_ty, TypeFoldable};
+use rustc_type_ir::{IntTy, UintTy};
 
 use super::PurityVisitor;
 
@@ -61,8 +65,8 @@ pub enum TermKind<'tcx> {
     Item(DefId, SubstsRef<'tcx>),
     Binary { op: BinOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Unary { op: UnOp, arg: Box<Term<'tcx>> },
-    Forall { binder: (String, Ty<'tcx>), body: Box<Term<'tcx>> },
-    Exists { binder: (String, Ty<'tcx>), body: Box<Term<'tcx>> },
+    Forall { binder: (Symbol, Ty<'tcx>), body: Box<Term<'tcx>> },
+    Exists { binder: (Symbol, Ty<'tcx>), body: Box<Term<'tcx>> },
     Call { id: DefId, subst: SubstsRef<'tcx>, fun: Box<Term<'tcx>>, args: Vec<Term<'tcx>> },
     Constructor { adt: AdtDef<'tcx>, variant: VariantIdx, fields: Vec<Term<'tcx>> },
     Tuple { fields: Vec<Term<'tcx>> },
@@ -75,8 +79,6 @@ pub enum TermKind<'tcx> {
     Old { term: Box<Term<'tcx>> },
     Absurd,
 }
-
-use creusot_rustc::middle::ty::fold::TypeFoldable;
 impl<'tcx> TypeFoldable<'tcx> for Literal {
     fn try_fold_with<F: creusot_rustc::middle::ty::FallibleTypeFolder<'tcx>>(
         self,
@@ -96,7 +98,12 @@ impl<'tcx> TypeFoldable<'tcx> for Literal {
 #[derive(Clone, Debug, Decodable, Encodable)]
 pub enum Literal {
     Bool(bool),
-    Int(u128, LitIntType),
+    Int(i128, IntTy),
+    Uint(u128, UintTy),
+    Float(f64),
+    String(String),
+    ZST,
+    Function,
 }
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
@@ -104,7 +111,7 @@ pub enum Pattern<'tcx> {
     Constructor { adt: AdtDef<'tcx>, variant: VariantIdx, fields: Vec<Pattern<'tcx>> },
     Tuple(Vec<Pattern<'tcx>>),
     Wildcard,
-    Binder(String),
+    Binder(Symbol),
     Boolean(bool),
 }
 
@@ -213,7 +220,15 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Literal { lit, .. } => {
                 let lit = match lit.node {
                     LitKind::Bool(b) => Literal::Bool(b),
-                    LitKind::Int(u, s) => Literal::Int(u, s),
+                    LitKind::Int(u, lty) => match lty {
+                        LitIntType::Signed(ity) => Literal::Int(u as i128, int_ty(ity)),
+                        LitIntType::Unsigned(uty) => Literal::Uint(u, uint_ty(uty)),
+                        LitIntType::Unsuffixed => match ty.kind() {
+                            TyKind::Int(ity) => Literal::Int(u as i128, *ity),
+                            TyKind::Uint(uty) => Literal::Uint(u, *uty),
+                            _ => unreachable!(),
+                        },
+                    },
                     _ => unimplemented!("Unsupported literal"),
                 };
                 Ok(Term { ty, span, kind: TermKind::Lit(lit) })
@@ -429,7 +444,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         trace!("{:?}", pat);
         match &*pat.kind {
             PatKind::Wild => Ok(Pattern::Wildcard),
-            PatKind::Binding { name, .. } => Ok(Pattern::Binder(name.to_string())),
+            PatKind::Binding { name, .. } => Ok(Pattern::Binder(*name)),
             PatKind::Variant { subpatterns, adt_def, variant_index, .. } => {
                 let mut fields: Vec<_> = subpatterns
                     .iter()
@@ -530,7 +545,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         }
     }
 
-    fn quant_term(&self, body: ExprId) -> Result<((String, Ty<'tcx>), Term<'tcx>), Error> {
+    fn quant_term(&self, body: ExprId) -> Result<((Symbol, Ty<'tcx>), Term<'tcx>), Error> {
         trace!("{:?}", self.thir[body].kind);
         match self.thir[body].kind {
             ExprKind::Scope { value, .. } => self.quant_term(value),
@@ -543,7 +558,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let name = self.tcx.fn_arg_names(closure_id)[0];
                 let ty = sig.input(0).skip_binder();
 
-                Ok(((name.to_string(), ty), typecheck(self.tcx, closure_id.expect_local())?))
+                Ok(((name.name, ty), typecheck(self.tcx, closure_id.expect_local())?))
             }
             _ => Err(Error::new(self.thir[body].span, "unexpected error in quantifier")),
         }
@@ -614,7 +629,7 @@ fn field_pattern(ty: Ty, field: Field) -> Option<Pattern> {
     match ty.kind() {
         TyKind::Tuple(fields) => {
             let mut fields: Vec<_> = (0..fields.len()).map(|_| Pattern::Wildcard).collect();
-            fields[field.as_usize()] = Pattern::Binder("a".into());
+            fields[field.as_usize()] = Pattern::Binder(Symbol::intern("a"));
 
             Some(Pattern::Tuple(fields))
         }
@@ -624,7 +639,7 @@ fn field_pattern(ty: Ty, field: Field) -> Option<Pattern> {
             let variant = &adt.variants()[0u32.into()];
 
             let mut fields: Vec<_> = (0..variant.fields.len()).map(|_| Pattern::Wildcard).collect();
-            fields[field.as_usize()] = Pattern::Binder("a".into());
+            fields[field.as_usize()] = Pattern::Binder(Symbol::intern("a"));
 
             Some(Pattern::Constructor { adt: *adt, variant: 0usize.into(), fields })
         }
@@ -650,5 +665,95 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
         ExprKind::Scope { value, .. } => not_spec_expr(tcx, thir, value),
         ExprKind::Closure { closure_id, .. } => !util::is_spec(tcx, closure_id),
         _ => true,
+    }
+}
+
+impl<'tcx> Pattern<'tcx> {
+    fn binds(&self, binders: &mut HashSet<Symbol>) {
+        match self {
+            Pattern::Constructor { fields, .. } => fields.iter().for_each(|f| f.binds(binders)),
+            Pattern::Tuple(fields) => fields.iter().for_each(|f| f.binds(binders)),
+            Pattern::Wildcard => {}
+            Pattern::Binder(s) => {
+                binders.insert(*s);
+            }
+            Pattern::Boolean(_) => {}
+        }
+    }
+}
+
+impl<'tcx> Term<'tcx> {
+    pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<Symbol, Term<'tcx>>) {
+        self.subst_inner(&mut HashSet::new(), inv_subst);
+    }
+    fn subst_inner(
+        &mut self,
+        bound: &HashSet<Symbol>,
+        inv_subst: &std::collections::HashMap<Symbol, Term<'tcx>>,
+    ) {
+        match &mut self.kind {
+            TermKind::Var(v) => {
+                if bound.contains(v) {
+                    return;
+                }
+                match inv_subst.get(v) {
+                    Some(t) => self.kind = t.kind.clone(),
+                    None => (),
+                }
+            }
+            TermKind::Lit(_) => {}
+            TermKind::Item(_, _) => {}
+            TermKind::Binary { lhs, rhs, .. } => {
+                lhs.subst_inner(bound, inv_subst);
+                rhs.subst_inner(bound, inv_subst)
+            }
+            TermKind::Unary { arg, .. } => arg.subst_inner(bound, inv_subst),
+            TermKind::Forall { binder, body } => {
+                let mut bound = bound.clone();
+                bound.insert(binder.0);
+
+                body.subst_inner(&bound, inv_subst);
+            }
+            TermKind::Exists { binder, body } => {
+                let mut bound = bound.clone();
+                bound.insert(binder.0);
+
+                body.subst_inner(&bound, inv_subst);
+            }
+            TermKind::Call { fun, args, .. } => {
+                fun.subst_inner(bound, inv_subst);
+                args.iter_mut().for_each(|f| f.subst_inner(bound, inv_subst))
+            }
+            TermKind::Constructor { fields, .. } => {
+                fields.iter_mut().for_each(|f| f.subst_inner(bound, inv_subst))
+            }
+            TermKind::Tuple { fields } => {
+                fields.iter_mut().for_each(|f| f.subst_inner(bound, inv_subst))
+            }
+            TermKind::Cur { term } => term.subst_inner(bound, inv_subst),
+            TermKind::Fin { term } => term.subst_inner(bound, inv_subst),
+            TermKind::Impl { lhs, rhs } => {
+                lhs.subst_inner(bound, inv_subst);
+                rhs.subst_inner(bound, inv_subst)
+            }
+            TermKind::Match { scrutinee, arms } => {
+                scrutinee.subst_inner(bound, inv_subst);
+                let mut bound = bound.clone();
+
+                arms.iter_mut().for_each(|(pat, arm)| {
+                    pat.binds(&mut bound);
+                    arm.subst_inner(&bound, inv_subst)
+                })
+            }
+            TermKind::Let { pattern, arg, body } => {
+                arg.subst_inner(bound, inv_subst);
+                let mut bound = bound.clone();
+                pattern.binds(&mut bound);
+                body.subst_inner(&bound, inv_subst);
+            }
+            TermKind::Projection { lhs, .. } => lhs.subst_inner(bound, inv_subst),
+            TermKind::Old { term } => term.subst_inner(bound, inv_subst),
+            TermKind::Absurd => {}
+        }
     }
 }

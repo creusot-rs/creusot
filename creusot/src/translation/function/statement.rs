@@ -1,23 +1,15 @@
 use creusot_rustc::{
     borrowck::borrow_set::TwoPhaseActivation,
-    middle::ty::{IntTy, TyKind, UintTy},
     smir::mir::{
         BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
         StatementKind,
     },
 };
 
-use why3::{
-    exp::Exp::{self, *},
-    mlcfg::Statement::*,
-    QName,
-};
-
 use super::BodyTranslator;
 use crate::{
-    clone_map::PreludeModule,
-    translation::{binop_to_binop, unop_to_unop},
-    util::{self, constructor_qname, is_ghost_closure, item_name},
+    translation::fmir::{self, Expr, RValue},
+    util::{self, is_ghost_closure, item_name},
 };
 
 impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
@@ -55,27 +47,15 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
         rvalue: &'_ Rvalue<'tcx>,
         loc: Location,
     ) {
-        let rval = match rvalue {
+        let rval: Expr<'tcx> = match rvalue {
             Rvalue::Use(rval) => match rval {
                 Move(pl) => {
-                    // TODO: should this be done for *any* form of assignment?
-                    let ty = place.ty(self.body, self.tcx).ty;
-                    let pl_exp = self.translate_rplace(place);
-                    self.resolve_ty(ty).emit(pl_exp, self);
-                    let rhs = self.translate_rplace(pl);
-                    self.emit_assignment(place, rhs);
-                    let any = Exp::Any(super::ty::translate_ty(self.ctx, self.names, si.span, ty));
-                    self.emit_assignment(pl, any);
-                    return;
+                    self.emit_statementf(fmir::Statement::Resolve(*place));
+                    Expr::Move(*pl)
                 }
                 Copy(pl) => {
-                    // TODO: should this be done for *any* form of assignment?
-                    let ty = place.ty(self.body, self.tcx).ty;
-                    let pl_exp = self.translate_rplace(place);
-                    self.resolve_ty(ty).emit(pl_exp, self);
-                    let rhs = self.translate_rplace(pl);
-                    self.emit_assignment(place, rhs);
-                    return;
+                    self.emit_statementf(fmir::Statement::Resolve(*place));
+                    Expr::Copy(*pl)
                 }
                 Constant(box c) => {
                     if let Some(c) = c.literal.const_for_ty() {
@@ -123,9 +103,9 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                         .nth(0);
                     if let Some(two_phase) = two_phase {
                         let place = self.borrows[*two_phase].assigned_place.clone();
-                        Exp::Current(box self.translate_rplace(&place))
+                        Expr::Place(self.ctx.mk_place_deref(place))
                     } else {
-                        self.translate_rplace(pl)
+                        Expr::Place(*pl)
                     }
                 }
                 Mut { .. } => {
@@ -133,49 +113,35 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                         return;
                     }
 
-                    let borrow = BorrowMut(box self.translate_rplace(pl));
-                    self.emit_assignment(place, borrow);
-                    let reassign = Final(box self.translate_rplace(place));
-                    self.emit_assignment(pl, reassign);
+                    self.emit_borrow(place, pl);
                     return;
                 }
             },
             Rvalue::Discriminant(_) => return,
-            Rvalue::BinaryOp(BinOp::BitAnd, box (l, r)) if l.ty(self.body, self.tcx).is_bool() => {
-                self.translate_operand(l).lazy_and(self.translate_operand(r))
-            }
-            Rvalue::BinaryOp(BinOp::Eq, box (l, r)) if l.ty(self.body, self.tcx).is_bool() => {
-                self.names.import_prelude_module(PreludeModule::Bool);
-                Call(
-                    box Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap()),
-                    vec![self.translate_operand(l), self.translate_operand(r)],
-                )
+            Rvalue::BinaryOp(BinOp::BitAnd, box (l, _)) if !l.ty(self.body, self.tcx).is_bool() => {
+                self.ctx.crash_and_error(si.span, "bitwise operations are currently unsupported")
             }
             Rvalue::BinaryOp(op, box (l, r)) | Rvalue::CheckedBinaryOp(op, box (l, r)) => {
-                let exp = BinaryOp(
-                    binop_to_binop(l.ty(self.body, self.tcx), *op),
+                let exp = Expr::BinOp(
+                    *op,
+                    l.ty(self.body, self.tcx),
                     box self.translate_operand(l),
                     box self.translate_operand(r),
                 );
-
-                self.ctx.attach_span(si.span, exp)
+                Expr::Span(si.span, box exp)
             }
-            Rvalue::UnaryOp(op, v) => UnaryOp(unop_to_unop(*op), box self.translate_operand(v)),
+            Rvalue::UnaryOp(op, v) => Expr::UnaryOp(*op, box self.translate_operand(v)),
             Rvalue::Aggregate(box kind, ops) => {
                 use creusot_rustc::smir::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
 
                 match kind {
-                    Tuple => Exp::Tuple(fields),
+                    Tuple => Expr::Tuple(fields),
                     Adt(adt, varix, subst, _, _) => {
                         self.ctx.translate(*adt);
-                        let adt = self.tcx.adt_def(*adt);
-                        let variant_def = &adt.variants()[*varix];
-                        let qname = constructor_qname(self.ctx, variant_def);
+                        let adt = self.tcx.adt_def(*adt).variant(*varix).def_id;
 
-                        self.names.insert(adt.did(), subst);
-
-                        Constructor { ctor: qname, args: fields }
+                        Expr::Constructor(adt, subst, fields)
                     }
                     Closure(def_id, subst) => {
                         if util::is_invariant(self.tcx, *def_id) {
@@ -185,7 +151,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                                 .assertions
                                 .remove(def_id)
                                 .expect("Could not find body of assertion");
-                            self.emit_statement(Assert(assertion));
+                            self.emit_statementf(fmir::Statement::Assertion(assertion));
                             return;
                         } else if util::is_ghost(self.tcx, *def_id) {
                             return;
@@ -194,9 +160,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                         } else {
                             let mut cons_name = item_name(self.tcx, *def_id);
                             cons_name.capitalize();
-                            let cons = self.names.insert(*def_id, subst).qname_ident(cons_name);
-
-                            Constructor { ctor: cons, args: fields }
+                            Expr::Constructor(*def_id, subst, fields)
                         }
                     }
                     _ => self.ctx.crash_and_error(
@@ -205,33 +169,10 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     ),
                 }
             }
-            Rvalue::Len(pl) => {
-                let int_conversion = uint_from_int(&UintTy::Usize);
-                let len_call = Exp::impure_qvar(QName::from_string("Seq.length").unwrap())
-                    .app_to(self.translate_rplace(pl));
-                int_conversion.app_to(len_call)
-            }
+            Rvalue::Len(pl) => Expr::Len(box Expr::Place(*pl)),
             Rvalue::Cast(CastKind::Misc, op, ty) => {
                 let op_ty = op.ty(self.body, self.tcx);
-                if !op_ty.is_integral() {
-                    self.ctx
-                        .crash_and_error(si.span, "Non integral casts are currently unsupported")
-                } else {
-                    let op_to_int = match op_ty.kind() {
-                        TyKind::Int(ity) => int_to_int(ity),
-                        TyKind::Uint(uty) => uint_to_int(uty),
-                        _ => unreachable!(),
-                    };
-                    match ty.kind() {
-                        TyKind::Int(ity) => {
-                            int_from_int(ity).app_to(op_to_int.app_to(self.translate_operand(op)))
-                        }
-                        TyKind::Uint(uty) => {
-                            uint_from_int(uty).app_to(op_to_int.app_to(self.translate_operand(op)))
-                        }
-                        _ => unreachable!(),
-                    }
-                }
+                Expr::Cast(box self.translate_operand(op), op_ty, *ty)
             }
             Rvalue::Cast(
                 CastKind::Pointer(_)
@@ -249,51 +190,6 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                 &format!("MIR code used an unsupported Rvalue {:?}", rvalue),
             ),
         };
-
-        self.emit_assignment(place, rval);
-    }
-}
-
-fn int_from_int(ity: &IntTy) -> Exp {
-    match ity {
-        IntTy::Isize => Exp::impure_qvar(QName::from_string("IntSize.of_int").unwrap()),
-        IntTy::I8 => unimplemented!(),
-        IntTy::I16 => unimplemented!(),
-        IntTy::I32 => Exp::impure_qvar(QName::from_string("Int32.of_int").unwrap()),
-        IntTy::I64 => Exp::impure_qvar(QName::from_string("Int64.of_int").unwrap()),
-        IntTy::I128 => unimplemented!(),
-    }
-}
-
-pub fn uint_from_int(uty: &UintTy) -> Exp {
-    match uty {
-        UintTy::Usize => Exp::impure_qvar(QName::from_string("UIntSize.of_int").unwrap()),
-        UintTy::U8 => unimplemented!(),
-        UintTy::U16 => unimplemented!(),
-        UintTy::U32 => Exp::impure_qvar(QName::from_string("UInt32.of_int").unwrap()),
-        UintTy::U64 => Exp::impure_qvar(QName::from_string("UInt64.of_int").unwrap()),
-        UintTy::U128 => unimplemented!(),
-    }
-}
-
-fn int_to_int(ity: &IntTy) -> Exp {
-    match ity {
-        IntTy::Isize => Exp::impure_qvar(QName::from_string("IntSize.to_int").unwrap()),
-        IntTy::I8 => unimplemented!(),
-        IntTy::I16 => unimplemented!(),
-        IntTy::I32 => Exp::impure_qvar(QName::from_string("Int32.to_int").unwrap()),
-        IntTy::I64 => Exp::impure_qvar(QName::from_string("Int64.to_int").unwrap()),
-        IntTy::I128 => unimplemented!(),
-    }
-}
-
-pub fn uint_to_int(uty: &UintTy) -> Exp {
-    match uty {
-        UintTy::Usize => Exp::impure_qvar(QName::from_string("UIntSize.to_int").unwrap()),
-        UintTy::U8 => unimplemented!(),
-        UintTy::U16 => unimplemented!(),
-        UintTy::U32 => Exp::impure_qvar(QName::from_string("UInt32.to_int").unwrap()),
-        UintTy::U64 => Exp::impure_qvar(QName::from_string("UInt64.to_int").unwrap()),
-        UintTy::U128 => unimplemented!(),
+        self.emit_assignment(place, RValue::Expr(rval));
     }
 }

@@ -1,6 +1,6 @@
-use self::typing::{pearlite_stub, Term};
+use self::typing::{pearlite_stub, Term, TermKind};
 use super::LocalIdent;
-use crate::{ctx::*, translation::function::real_locals, util, util::closure_owner};
+use crate::{ctx::*, util, util::closure_owner};
 use creusot_rustc::{
     hir::def_id::DefId,
     macros::{TyDecodable, TyEncodable, TypeFoldable},
@@ -43,14 +43,14 @@ impl<'tcx> PreContract<'tcx> {
         let param_env = ctx.param_env(closure_owner(ctx.tcx, id));
 
         for term in self.requires {
-            out.requires.push(lower_pure(ctx, names, id, param_env, term));
+            out.requires.push(lower_pure(ctx, names, param_env, term));
         }
         for term in self.ensures {
-            out.ensures.push(lower_pure(ctx, names, id, param_env, term));
+            out.ensures.push(lower_pure(ctx, names, param_env, term));
         }
 
         if let Some(term) = self.variant {
-            out.variant = vec![lower_pure(ctx, names, id, param_env, term)];
+            out.variant = vec![lower_pure(ctx, names, param_env, term)];
         }
 
         if let Some(extern_spec) = ctx.extern_spec(id) {
@@ -169,20 +169,21 @@ impl ScopeTree {
 }
 
 // Turn a typing context into a substition.
-pub fn inv_subst<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    body: &Body<'tcx>,
-    loc: Location,
-) -> HashMap<why3::Ident, Exp> {
-    let local_map = real_locals(tcx, body);
+pub fn inv_subst<'tcx>(body: &Body<'tcx>, loc: Location) -> HashMap<Symbol, Term<'tcx>> {
+    // let local_map = real_locals(tcx, body);
     let info = body.source_info(loc);
     let mut args = HashMap::new();
 
     let tree = ScopeTree::build(body);
 
     for (k, v) in tree.visible_locals(info.scope) {
-        let loc = local_map[&v];
-        args.insert(k.to_string().into(), Exp::pure_var(LocalIdent::dbg_raw(loc, k).ident()));
+        let loc = v;
+        let ty = body.local_decls[loc].ty;
+        let span = body.local_decls[loc].source_info.span;
+        args.insert(
+            k,
+            Term { ty, span, kind: TermKind::Var(LocalIdent::dbg_raw(loc, k).symbol()) },
+        );
     }
 
     return args;

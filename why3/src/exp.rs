@@ -653,12 +653,18 @@ impl Exp {
 pub enum Constant {
     Int(i128, Option<Type>),
     Uint(u128, Option<Type>),
-    Float(f32),
-    Double(f64),
+    Float(f64),
     String(String),
     Other(String),
     Bool(bool),
 }
+
+impl Into<Exp> for Constant {
+    fn into(self) -> Exp {
+        Exp::Const(self)
+    }
+}
+
 impl Constant {
     pub fn const_true() -> Self {
         Constant::Bool(true)

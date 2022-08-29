@@ -3,28 +3,29 @@ use crate::{
     ctx::*,
     translation::{
         traits::{resolve_assoc_item_opt, resolve_opt},
-        ty::{translate_ty, variant_accessor_name},
+        ty::{intty_to_ty, translate_ty, uintty_to_ty, variant_accessor_name},
     },
     util,
     util::constructor_qname,
 };
 use creusot_rustc::middle::{
     ty,
-    ty::{EarlyBinder, ParamEnv, Subst, TyKind},
+    ty::{EarlyBinder, ParamEnv, Subst},
 };
+use rustc_middle::ty::TyKind;
 use why3::exp::{BinOp, Constant, Exp, Pattern as Pat, Purity};
 
 pub fn lower_pure<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
-    term_id: DefId,
+    // term_id: DefId,
     param_env: ParamEnv<'tcx>,
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
     let mut term = Lower { ctx, names, pure: Purity::Logic, param_env }.lower_term(term);
     term.reassociate();
-    if term_id.is_local() {
+    if ctx.sess.source_map().is_local_span(span) {
         term = ctx.attach_span(span, term);
     }
 
@@ -60,30 +61,8 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
     pub fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
         match term.kind {
             TermKind::Lit(l) => {
-                let c = match l {
-                    Literal::Int(u, _) => {
-                        let ty = translate_ty(
-                            self.ctx,
-                            self.names,
-                            creusot_rustc::span::DUMMY_SP,
-                            term.ty,
-                        );
-
-                        match term.ty.kind() {
-                            TyKind::Int(_) => Constant::Int(u as i128, Some(ty)),
-                            TyKind::Uint(_) => Constant::Uint(u, Some(ty)),
-                            _ => unreachable!(),
-                        }
-                    }
-                    Literal::Bool(b) => {
-                        if b {
-                            Constant::const_true()
-                        } else {
-                            Constant::const_false()
-                        }
-                    }
-                };
-                Exp::Const(c)
+                let c = lower_literal(self.ctx, self.names, l);
+                c
             }
             TermKind::Item(id, subst) => {
                 let method = resolve_assoc_item_opt(self.ctx.tcx, self.param_env, id, subst)
@@ -104,6 +83,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                         self.param_env,
                         creusot_rustc::span::DUMMY_SP,
                     )
+                    .to_why(self.ctx, self.names, None)
                 })
             }
             TermKind::Var(v) => Exp::pure_var(util::ident_of(v)),
@@ -205,7 +185,8 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 let ty =
                     translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, binder.1);
                 let old = std::mem::replace(&mut self.pure, Purity::Logic);
-                let f = Exp::Forall(vec![(binder.0.into(), ty)], box self.lower_term(body));
+                let f =
+                    Exp::Forall(vec![(binder.0.to_string().into(), ty)], box self.lower_term(body));
                 let _ = std::mem::replace(&mut self.pure, old);
                 if Purity::Program == self.pure {
                     Exp::Pure(box f)
@@ -217,7 +198,8 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 let ty =
                     translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, binder.1);
                 let old = std::mem::replace(&mut self.pure, Purity::Logic);
-                let f = Exp::Exists(vec![(binder.0.into(), ty)], box self.lower_term(body));
+                let f =
+                    Exp::Exists(vec![(binder.0.to_string().into(), ty)], box self.lower_term(body));
                 let _ = std::mem::replace(&mut self.pure, old);
                 if Purity::Program == self.pure {
                     Exp::Pure(box f)
@@ -311,7 +293,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 Pat::ConsP(constructor_qname(self.ctx, variant), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
-            Pattern::Binder(name) => Pat::VarP(name.into()),
+            Pattern::Binder(name) => Pat::VarP(name.to_string().into()),
             Pattern::Boolean(b) => {
                 if b {
                     Pat::mk_true()
@@ -330,6 +312,35 @@ use creusot_rustc::{
     hir::def_id::DefId,
     middle::ty::{subst::SubstsRef, TyCtxt},
 };
+
+pub fn lower_literal<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    names: &mut CloneMap<'tcx>,
+    lit: Literal,
+) -> Exp {
+    match lit {
+        Literal::Int(u, intty) => {
+            let why_ty = intty_to_ty(ctx, names, &intty);
+
+            Constant::Int(u, Some(why_ty)).into()
+        }
+        Literal::Uint(u, uty) => {
+            let why_ty = uintty_to_ty(ctx, names, &uty);
+
+            Constant::Uint(u, Some(why_ty)).into()
+        }
+        Literal::Bool(b) => {
+            if b {
+                Constant::const_true().into()
+            } else {
+                Constant::const_false().into()
+            }
+        }
+        Literal::Function => Exp::Tuple(Vec::new()),
+        Literal::Float(f) => Constant::Float(f).into(),
+        _ => unimplemented!("literal: {lit:?}"),
+    }
+}
 
 fn binop_to_binop(op: typing::BinOp, purity: Purity) -> why3::exp::BinOp {
     match (op, purity) {

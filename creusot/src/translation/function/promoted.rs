@@ -1,14 +1,9 @@
-use std::collections::HashMap;
-
 use crate::{
     ctx::{CloneMap, TranslationCtx},
     error::Error,
     translation::{
-        binop_to_binop,
-        constant::from_mir_constant,
-        function::{statement::uint_from_int, LocalIdent},
-        ty::translate_ty,
-        unop_to_unop,
+        binop_to_binop, constant::from_mir_constant, fmir::uint_from_int, function::LocalIdent,
+        ty::translate_ty, unop_to_unop,
     },
     util::{self, constructor_qname},
 };
@@ -99,7 +94,6 @@ pub fn translate_promoted<'tcx>(
                                 ctx,
                                 names,
                                 body,
-                                &HashMap::new(),
                                 pl.local,
                                 pl.projection,
                             ));
@@ -137,14 +131,9 @@ pub fn translate_promoted<'tcx>(
                                 ),
                             }
                         }
-                        Ref(_, BorrowKind::Shared, pl) => translate_rplace_inner(
-                            ctx,
-                            names,
-                            body,
-                            &HashMap::new(),
-                            pl.local,
-                            pl.projection,
-                        ),
+                        Ref(_, BorrowKind::Shared, pl) => {
+                            translate_rplace_inner(ctx, names, body, pl.local, pl.projection)
+                        }
 
                         Ref(_, _, _) => Err(Error::new(
                             stmt.source_info.span,
@@ -193,9 +182,7 @@ fn translate_operand<'tcx>(
     use creusot_rustc::smir::mir::Operand::*;
 
     match operand {
-        Move(pl) | Copy(pl) => {
-            translate_rplace_inner(ctx, names, body, &HashMap::new(), pl.local, pl.projection)
-        }
-        Constant(c) => from_mir_constant(param_env, ctx, names, c),
+        Move(pl) | Copy(pl) => translate_rplace_inner(ctx, names, body, pl.local, pl.projection),
+        Constant(c) => from_mir_constant(param_env, ctx, names, c).to_why(ctx, names, Some(body)),
     }
 }
