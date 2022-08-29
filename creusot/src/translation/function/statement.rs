@@ -9,7 +9,7 @@ use creusot_rustc::{
 use super::BodyTranslator;
 use crate::{
     translation::fmir::{self, Expr, RValue},
-    util::{self, is_ghost_closure, item_name},
+    util::{self, is_ghost_closure},
 };
 
 impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
@@ -139,9 +139,9 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     Tuple => Expr::Tuple(fields),
                     Adt(adt, varix, subst, _, _) => {
                         self.ctx.translate(*adt);
-                        let adt = self.tcx.adt_def(*adt).variant(*varix).def_id;
+                        let variant = self.tcx.adt_def(*adt).variant(*varix).def_id;
 
-                        Expr::Constructor(adt, subst, fields)
+                        Expr::Constructor(variant, subst, fields)
                     }
                     Closure(def_id, subst) => {
                         let def_id = def_id.to_def_id();
@@ -159,8 +159,6 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                         } else if util::is_spec(self.tcx, def_id) {
                             return;
                         } else {
-                            let mut cons_name = item_name(self.tcx, def_id);
-                            cons_name.capitalize();
                             Expr::Constructor(def_id, subst, fields)
                         }
                     }

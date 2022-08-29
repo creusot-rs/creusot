@@ -5,6 +5,7 @@ use creusot_rustc::{
         subst::{InternalSubsts, SubstsRef},
         ClosureSubsts, FieldDef, ProjectionTy, Ty, TyCtxt, VariantDef,
     },
+    resolve::Namespace,
     span::{Span, Symbol, DUMMY_SP},
     type_ir::sty::TyKind::*,
 };
@@ -20,8 +21,7 @@ use why3::{declaration::TyDecl, ty::Type as MlT, QName};
 
 use crate::{
     ctx::*,
-    util,
-    util::{get_builtin, item_name, item_qname},
+    util::{self, constructor_qname, get_builtin, item_name, item_qname},
 };
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:
@@ -154,7 +154,7 @@ fn translate_ty_inner<'tcx>(
                 return MlT::Tuple(Vec::new());
             }
 
-            let name = item_name(ctx.tcx, *id).to_string().to_lowercase();
+            let name = item_name(ctx.tcx, *id, Namespace::TypeNS).to_string().to_lowercase();
             let cons = MlT::TConstructor(names.insert(*id, subst).qname_ident(name.into()));
 
             cons
@@ -228,9 +228,7 @@ fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
         translate_tydecl(ctx, ctx.def_span(did), did);
     };
 
-    let name = item_name(ctx.tcx, did).to_string().to_lowercase();
-
-    QName { module: vec![module_name(ctx, did)], name: name.into() }
+    item_qname(ctx, did, Namespace::TypeNS)
 }
 
 fn translate_ty_param(p: Symbol) -> Ident {
@@ -329,7 +327,7 @@ fn build_ty_decl<'tcx>(
                     Field { ty, ghost }
                 })
                 .collect();
-            let var_name = item_name(ctx.tcx, var_def.def_id);
+            let var_name = constructor_qname(ctx, var_def).name;
 
             ml_ty_def.push(ConstructorDecl { name: var_name, fields: field_tys });
         }
@@ -356,7 +354,7 @@ pub fn translate_closure_ty<'tcx>(
         })
         .collect();
 
-    let mut cons_name = item_name(ctx.tcx, did);
+    let mut cons_name = item_name(ctx.tcx, did, Namespace::ValueNS);
     cons_name.capitalize();
     let kind = AdtDecl {
         ty_name,
@@ -409,7 +407,7 @@ pub fn translate_accessor(
     let field = &variant.fields[ix];
 
     let ty_name = translate_ty_name(ctx, adt_did);
-    let acc_name = format!("{}_{}_{}", &*ty_name.name(), variant.name, field.name);
+    let acc_name = format!("{}_{}", variant.name.as_str().to_ascii_lowercase(), field.name);
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let repr = ctx.representative_type(adt_did);
@@ -419,7 +417,7 @@ pub fn translate_accessor(
     let variant_arities: Vec<_> = adt_def
         .variants()
         .iter()
-        .map(|var| (item_qname(ctx, var.def_id), var.fields.len()))
+        .map(|var| (item_qname(ctx, var.def_id, Namespace::ValueNS), var.fields.len()))
         .collect();
 
     let this = MlT::TApp(
@@ -486,7 +484,7 @@ pub fn closure_accessors<'tcx>(
     let mut fields: Vec<_> =
         subst.upvar_tys().map(|ty| translate_ty(ctx, names, DUMMY_SP, ty)).collect();
 
-    let mut cons_name = item_qname(ctx, ty_id);
+    let mut cons_name = item_qname(ctx, ty_id, Namespace::ValueNS);
     cons_name.name.capitalize();
     cons_name.module = vec![]; // ugly hack to fix printer
 
@@ -511,7 +509,7 @@ pub fn closure_accessors<'tcx>(
 }
 
 pub fn closure_accessor_name(tcx: TyCtxt, def: DefId, ix: usize) -> Ident {
-    let ty_name = item_name(tcx, def).to_string().to_lowercase();
+    let ty_name = item_name(tcx, def, Namespace::TypeNS).to_string().to_lowercase();
 
     format!("{}_{}", &*ty_name, ix).into()
 }
@@ -522,13 +520,15 @@ pub fn variant_accessor_name(
     variant: &VariantDef,
     field: usize,
 ) -> QName {
-    let qname = item_qname(ctx, def);
-
-    let ident = qname.name.to_string().to_lowercase();
-
+    let qname = item_qname(ctx, def, Namespace::ValueNS);
     QName {
         module: qname.module,
-        name: format!("{}_{}_{}", &*ident, variant.name, variant.fields[field].name).into(),
+        name: format!(
+            "{}_{}",
+            variant.name.as_str().to_ascii_lowercase(),
+            variant.fields[field].name
+        )
+        .into(),
     }
 }
 

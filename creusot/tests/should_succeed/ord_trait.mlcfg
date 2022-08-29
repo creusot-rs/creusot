@@ -11,22 +11,22 @@ module CreusotContracts_Logic_Resolve_Resolve_Resolve
     
 end
 module Core_Cmp_Ordering_Type
-  type core_cmp_ordering_type  =
-    | Core_Cmp_Ordering_Less_Type
-    | Core_Cmp_Ordering_Equal_Type
-    | Core_Cmp_Ordering_Greater_Type
+  type t_ordering  =
+    | C_Less
+    | C_Equal
+    | C_Greater
     
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface
   type self
-  use Core_Cmp_Ordering_Type
-  function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.core_cmp_ordering_type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
+  function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog
   type self
-  use Core_Cmp_Ordering_Type
-  function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.core_cmp_ordering_type
-  val cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.core_cmp_ordering_type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
+  function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
+  val cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
     ensures { result = cmp_log self _2' }
     
 end
@@ -36,10 +36,10 @@ module CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LeLog
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   predicate le_log (self : self) (o : self) =
-    CmpLog0.cmp_log self o <> Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Greater_Type
+    CmpLog0.cmp_log self o <> Core_Cmp_Ordering_Type.C_Greater
   val le_log (self : self) (o : self) : bool
     ensures { result = le_log self o }
     
@@ -62,21 +62,21 @@ module CreusotContracts_Std1_Cmp_Ord_Le
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Interface
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = self
   function cmp_le_log (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = self
   function cmp_le_log (x : self) (y : self) : ()
   val cmp_le_log (x : self) (y : self) : ()
     ensures { result = cmp_le_log x y }
     
-  axiom cmp_le_log_spec : forall x : self, y : self . LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Greater_Type)
+  axiom cmp_le_log_spec : forall x : self, y : self . LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface
   type self
@@ -84,31 +84,31 @@ module CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LtLog
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   predicate lt_log (self : self) (o : self) =
-    CmpLog0.cmp_log self o = Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Less_Type
+    CmpLog0.cmp_log self o = Core_Cmp_Ordering_Type.C_Less
   val lt_log (self : self) (o : self) : bool
     ensures { result = lt_log self o }
     
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog_Interface
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = self
   function cmp_lt_log (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = self
   function cmp_lt_log (x : self) (y : self) : ()
   val cmp_lt_log (x : self) (y : self) : ()
     ensures { result = cmp_lt_log x y }
     
-  axiom cmp_lt_log_spec : forall x : self, y : self . LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Less_Type)
+  axiom cmp_lt_log_spec : forall x : self, y : self . LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface
   type self
@@ -116,31 +116,31 @@ module CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface
 end
 module CreusotContracts_Logic_Ord_OrdLogic_GeLog
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   predicate ge_log (self : self) (o : self) =
-    CmpLog0.cmp_log self o <> Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Less_Type
+    CmpLog0.cmp_log self o <> Core_Cmp_Ordering_Type.C_Less
   val ge_log (self : self) (o : self) : bool
     ensures { result = ge_log self o }
     
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog_Interface
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with type self = self
   function cmp_ge_log (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with type self = self
   function cmp_ge_log (x : self) (y : self) : ()
   val cmp_ge_log (x : self) (y : self) : ()
     ensures { result = cmp_ge_log x y }
     
-  axiom cmp_ge_log_spec : forall x : self, y : self . GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Less_Type)
+  axiom cmp_ge_log_spec : forall x : self, y : self . GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface
   type self
@@ -148,115 +148,115 @@ module CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface
 end
 module CreusotContracts_Logic_Ord_OrdLogic_GtLog
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   predicate gt_log (self : self) (o : self) =
-    CmpLog0.cmp_log self o = Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Greater_Type
+    CmpLog0.cmp_log self o = Core_Cmp_Ordering_Type.C_Greater
   val gt_log (self : self) (o : self) : bool
     ensures { result = gt_log self o }
     
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog_Interface
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface as GtLog0 with type self = self
   function cmp_gt_log (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface as GtLog0 with type self = self
   function cmp_gt_log (x : self) (y : self) : ()
   val cmp_gt_log (x : self) (y : self) : ()
     ensures { result = cmp_gt_log x y }
     
-  axiom cmp_gt_log_spec : forall x : self, y : self . GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Greater_Type)
+  axiom cmp_gt_log_spec : forall x : self, y : self . GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Refl_Interface
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function refl (x : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Refl
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function refl (x : self) : ()
   val refl (x : self) : ()
     ensures { result = refl x }
     
-  axiom refl_spec : forall x : self . CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Equal_Type
+  axiom refl_spec : forall x : self . CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Trans_Interface
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
-  function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.core_cmp_ordering_type) : ()
+  function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Trans
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
-  function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.core_cmp_ordering_type) : ()
-  val trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.core_cmp_ordering_type) : ()
+  function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
+  val trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
     requires {CmpLog0.cmp_log x y = o}
     requires {CmpLog0.cmp_log y z = o}
     ensures { result = trans x y z o }
     
-  axiom trans_spec : forall x : self, y : self, z : self, o : Core_Cmp_Ordering_Type.core_cmp_ordering_type . CmpLog0.cmp_log x y = o -> CmpLog0.cmp_log y z = o -> CmpLog0.cmp_log x z = o
+  axiom trans_spec : forall x : self, y : self, z : self, o : Core_Cmp_Ordering_Type.t_ordering . CmpLog0.cmp_log x y = o -> CmpLog0.cmp_log y z = o -> CmpLog0.cmp_log x z = o
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym1_Interface
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function antisym1 (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym1
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function antisym1 (x : self) (y : self) : ()
   val antisym1 (x : self) (y : self) : ()
-    requires {CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Less_Type}
+    requires {CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less}
     ensures { result = antisym1 x y }
     
-  axiom antisym1_spec : forall x : self, y : self . CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Less_Type -> CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Greater_Type
+  axiom antisym1_spec : forall x : self, y : self . CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less -> CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym2_Interface
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function antisym2 (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym2
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function antisym2 (x : self) (y : self) : ()
   val antisym2 (x : self) (y : self) : ()
-    requires {CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Greater_Type}
+    requires {CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater}
     ensures { result = antisym2 x y }
     
-  axiom antisym2_spec : forall x : self, y : self . CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Greater_Type -> CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Less_Type
+  axiom antisym2_spec : forall x : self, y : self . CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater -> CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less
 end
 module CreusotContracts_Logic_Ord_OrdLogic_EqCmp_Interface
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function eq_cmp (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_EqCmp
   type self
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
   function eq_cmp (x : self) (y : self) : ()
   val eq_cmp (x : self) (y : self) : ()
     ensures { result = eq_cmp x y }
     
-  axiom eq_cmp_spec : forall x : self, y : self . (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.Core_Cmp_Ordering_Equal_Type)
+  axiom eq_cmp_spec : forall x : self, y : self . (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal)
 end
 module OrdTrait_X_Interface
   type t
@@ -268,7 +268,7 @@ end
 module OrdTrait_X
   type t
   use prelude.Borrow
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog as CmpLog0 with type self = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog as GtLog0 with type self = t,
   function CmpLog0.cmp_log = CmpLog0.cmp_log
@@ -349,7 +349,7 @@ end
 module OrdTrait_GtOrLe
   type t
   use prelude.Borrow
-  use Core_Cmp_Ordering_Type
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog as CmpLog0 with type self = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog as GtLog0 with type self = t,
   function CmpLog0.cmp_log = CmpLog0.cmp_log

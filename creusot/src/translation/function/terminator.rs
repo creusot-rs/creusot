@@ -275,14 +275,17 @@ pub fn make_switch<'tcx>(
     discr: Expr<'tcx>,
 ) -> Terminator<'tcx> {
     match switch_ty.kind() {
-        TyKind::Adt(def, _) => {
+        TyKind::Adt(def, substs) => {
             let d_to_var: HashMap<_, _> =
                 def.discriminants(ctx.tcx).map(|(idx, d)| (d.val, idx)).collect();
 
             let branches: Vec<_> =
                 targets.iter().map(|(disc, tgt)| (d_to_var[&disc], (tgt))).collect();
 
-            Terminator::Switch(discr, Branches::Constructor(*def, branches, targets.otherwise()))
+            Terminator::Switch(
+                discr,
+                Branches::Constructor(*def, substs, branches, targets.otherwise()),
+            )
         }
         TyKind::Bool => {
             let branches: (_, _) = targets

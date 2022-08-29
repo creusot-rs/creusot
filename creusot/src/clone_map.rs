@@ -6,6 +6,7 @@ use creusot_rustc::{
         DefIdTree, EarlyBinder, ProjectionTy, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable,
         TypeVisitor,
     },
+    resolve::Namespace,
     span::{Symbol, DUMMY_SP},
 };
 use heck::CamelCase;
@@ -225,7 +226,7 @@ impl<'tcx> CloneInfo<'tcx> {
     pub fn qname(&self, tcx: TyCtxt, def_id: DefId) -> QName {
         self.qname_ident(match tcx.def_kind(def_id) {
             // DefKind::Closure => Ident::build("closure"),
-            _ => item_name(tcx, def_id),
+            _ => item_name(tcx, def_id, Namespace::ValueNS),
         })
     }
 
@@ -432,7 +433,6 @@ impl<'tcx> CloneMap<'tcx> {
                 _ => {}
             }
         }
-
         walk_projections(key.1, |pty: &ProjectionTy<'tcx>| {
             let dep = self.resolve_dep(ctx, (pty.item_def_id, pty.substs));
 
@@ -613,12 +613,15 @@ impl<'tcx> CloneMap<'tcx> {
                     .any(|((id, _), info)| *id == repr && info.kind == Kind::Hidden);
                 if self.used_types.insert(ctx.representative_type(def_id)) && !hidden {
                     let name = if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
-                        QName::from_string(&builtin.as_str()).unwrap().module_qname()
+                        let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
+
+                        Decl::UseDecl(Use { name: name.clone(), as_: None })
                     } else {
-                        cloneable_name(ctx, def_id, false)
+                        let name = cloneable_name(ctx, def_id, false);
+                        Decl::UseDecl(Use { name: name.clone(), as_: Some(name) })
                     };
-                    // decls.push(Decl::UseDecl(Use { name }));
-                    self.import_builtin_module(name);
+                    // self.import_builtin_module(name.clone());
+                    decls.push(name);
                 }
                 continue;
             }
@@ -686,7 +689,7 @@ impl<'tcx> CloneMap<'tcx> {
                 *v = true;
                 p
             })
-            .map(|q| Decl::UseDecl(Use { name: q.clone() }))
+            .map(|q| Decl::UseDecl(Use { name: q.clone(), as_: None }))
             .chain(decls.into_iter())
             .collect()
     }

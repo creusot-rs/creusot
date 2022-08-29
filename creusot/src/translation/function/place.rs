@@ -9,6 +9,7 @@ use crate::{
 };
 use creusot_rustc::{
     middle::ty::{TyKind, UintTy},
+    resolve::Namespace,
     smir::mir::{Body, Local, Place},
 };
 use why3::{
@@ -120,7 +121,7 @@ pub fn create_assign_inner<'tcx>(
                         .collect();
 
                     varexps[ix.as_usize()] = inner;
-                    let mut cons = item_qname(ctx, *id);
+                    let mut cons = item_qname(ctx, *id, Namespace::ValueNS);
                     cons.name.capitalize();
 
                     inner = Let {

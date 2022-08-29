@@ -1,36 +1,36 @@
 
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
-  type core_ptr_nonnull_nonnull_type 't =
-    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
     
 end
 module Core_Marker_PhantomData_Type
-  type core_marker_phantomdata_type 't =
-    | Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
     
 end
 module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type
-  type core_ptr_unique_unique_type 't =
-    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
 module Alloc_RawVec_RawVec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Ptr_Unique_Unique_Type
-  type alloc_rawvec_rawvec_type 't 'a =
-    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
     
 end
 module Alloc_Vec_Vec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_RawVec_RawVec_Type
-  type alloc_vec_vec_type 't 'a =
-    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
 end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
@@ -39,8 +39,8 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -48,12 +48,12 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
-  val model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     ensures { result = model self }
     
-  axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
@@ -91,8 +91,8 @@ module CreusotContracts_Logic_Model_Impl1_Model
     
 end
 module Alloc_Alloc_Global_Type
-  type alloc_alloc_global_type  =
-    | Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
     
 end
 module CreusotContracts_Std1_Vec_Impl0_ModelTy_Type
@@ -117,9 +117,9 @@ module Alloc_Vec_Impl1_Len_Interface
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -131,9 +131,9 @@ module Alloc_Vec_Impl1_Len
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -142,9 +142,9 @@ module Alloc_Vec_Impl1_Push_Interface
   type a
   use prelude.Borrow
   use seq.Seq
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (value : t) : ()
+  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
@@ -153,9 +153,9 @@ module Alloc_Vec_Impl1_Push
   type a
   use prelude.Borrow
   use seq.Seq
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (value : t) : ()
+  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
@@ -182,15 +182,15 @@ module TwoPhase_Test_Interface
   use mach.int.UInt64
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val test [@cfg:stackify] (v : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type))) : ()
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val test [@cfg:stackify] (v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : ()
     ensures { [#"../two_phase.rs" 5 10 5 42] UInt64.to_int (Seq.get (Model0.model ( ^ v)) (Seq.length (Model1.model v))) = Seq.length (Model1.model v) }
     
 end
@@ -200,29 +200,29 @@ module TwoPhase_Test
   use mach.int.UInt64
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = usize, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
-  clone Alloc_Vec_Impl1_Push_Interface as Push0 with type t = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model
-  let rec cfg test [@cfg:stackify] [#"../two_phase.rs" 6 0 6 31] (v : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type))) : ()
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone Alloc_Vec_Impl1_Push_Interface as Push0 with type t = usize, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = usize, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model
+  let rec cfg test [@cfg:stackify] [#"../two_phase.rs" 6 0 6 31] (v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : ()
     ensures { [#"../two_phase.rs" 5 10 5 42] UInt64.to_int (Seq.get (Model0.model ( ^ v)) (Seq.length (Model1.model v))) = Seq.length (Model1.model v) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var v_1 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var v_1 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
   var _3 : ();
-  var _4 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _4 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
   var _5 : usize;
-  var _6 : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _6 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
   {
     v_1 <- v;
     goto BB0

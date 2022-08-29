@@ -55,18 +55,16 @@ end
 module Knapsack_Item_Type
   use mach.int.Int
   use prelude.UIntSize
-  type knapsack_item_type 'name =
-    | Knapsack_Item_Type 'name usize usize
+  type t_item 'name =
+    | C_Item 'name usize usize
     
-  let function knapsack_item_type_Item_weight (self : knapsack_item_type 'name) : usize
-   = [@vc:do_not_keep_trace] [@vc:sp]
+  let function item_weight (self : t_item 'name) : usize = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | Knapsack_Item_Type _ a _ -> a
+      | C_Item _ a _ -> a
       end
-  let function knapsack_item_type_Item_value (self : knapsack_item_type 'name) : usize
-   = [@vc:do_not_keep_trace] [@vc:sp]
+  let function item_value (self : t_item 'name) : usize = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | Knapsack_Item_Type _ _ a -> a
+      | C_Item _ _ a -> a
       end
 end
 module Knapsack_M_Interface
@@ -74,34 +72,33 @@ module Knapsack_M_Interface
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
-  use Knapsack_Item_Type
-  function m (items : Seq.seq (Knapsack_Item_Type.knapsack_item_type name)) (i : int) (w : int) : int
+  use Knapsack_Item_Type as Knapsack_Item_Type
+  function m (items : Seq.seq (Knapsack_Item_Type.t_item name)) (i : int) (w : int) : int
 end
 module Knapsack_M
   type name
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
-  use Knapsack_Item_Type
+  use Knapsack_Item_Type as Knapsack_Item_Type
   use mach.int.UInt64
   use int.MinMax
-  function m [#"../knapsack.rs" 31 0 31 57] (items : Seq.seq (Knapsack_Item_Type.knapsack_item_type name)) (i : int) (w : int) : int
-    
-  val m (items : Seq.seq (Knapsack_Item_Type.knapsack_item_type name)) (i : int) (w : int) : int
+  function m [#"../knapsack.rs" 31 0 31 57] (items : Seq.seq (Knapsack_Item_Type.t_item name)) (i : int) (w : int) : int
+  val m (items : Seq.seq (Knapsack_Item_Type.t_item name)) (i : int) (w : int) : int
     requires {[#"../knapsack.rs" 28 11 28 37] 0 <= i /\ i <= Seq.length items}
     requires {[#"../knapsack.rs" 29 11 29 17] 0 <= w}
     ensures { result = m items i w }
     
-  axiom def : forall items : Seq.seq (Knapsack_Item_Type.knapsack_item_type name), i : int, w : int . m items i w = ([#"../knapsack.rs" 32 4 39 5] if i = 0 then
+  axiom def : forall items : Seq.seq (Knapsack_Item_Type.t_item name), i : int, w : int . m items i w = ([#"../knapsack.rs" 32 4 39 5] if i = 0 then
     0
   else
-    if UInt64.to_int (Knapsack_Item_Type.knapsack_item_type_Item_weight (Seq.get items (i - 1))) > w then
+    if UInt64.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1))) > w then
       m items (i - 1) w
     else
-      MinMax.max (m items (i - 1) w) (m items (i - 1) (w - UInt64.to_int (Knapsack_Item_Type.knapsack_item_type_Item_weight (Seq.get items (i - 1)))) + UInt64.to_int (Knapsack_Item_Type.knapsack_item_type_Item_value (Seq.get items (i - 1))))
+      MinMax.max (m items (i - 1) w) (m items (i - 1) (w - UInt64.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1)))) + UInt64.to_int (Knapsack_Item_Type.item_value (Seq.get items (i - 1))))
     
   )
-  axiom m_spec : forall items : Seq.seq (Knapsack_Item_Type.knapsack_item_type name), i : int, w : int . ([#"../knapsack.rs" 28 11 28 37] 0 <= i /\ i <= Seq.length items) -> ([#"../knapsack.rs" 29 11 29 17] 0 <= w) -> ([#"../knapsack.rs" 30 10 30 21] m items i w >= 0)
+  axiom m_spec : forall items : Seq.seq (Knapsack_Item_Type.t_item name), i : int, w : int . ([#"../knapsack.rs" 28 11 28 37] 0 <= i /\ i <= Seq.length items) -> ([#"../knapsack.rs" 29 11 29 17] 0 <= w) -> ([#"../knapsack.rs" 30 10 30 21] m items i w >= 0)
 end
 module Knapsack_M_Impl
   type name
@@ -110,8 +107,8 @@ module Knapsack_M_Impl
   use seq.Seq
   use mach.int.UInt64
   use int.MinMax
-  use Knapsack_Item_Type
-  let rec ghost function m (items : Seq.seq (Knapsack_Item_Type.knapsack_item_type name)) (i : int) (w : int) : int
+  use Knapsack_Item_Type as Knapsack_Item_Type
+  let rec ghost function m (items : Seq.seq (Knapsack_Item_Type.t_item name)) (i : int) (w : int) : int
     requires {[#"../knapsack.rs" 28 11 28 37] 0 <= i /\ i <= Seq.length items}
     requires {[#"../knapsack.rs" 29 11 29 17] 0 <= w}
     ensures { [#"../knapsack.rs" 30 10 30 21] result >= 0 }
@@ -121,10 +118,10 @@ module Knapsack_M_Impl
     [#"../knapsack.rs" 32 4 39 5] if pure {i = 0} then
       0
     else
-      if UInt64.to_int (Knapsack_Item_Type.knapsack_item_type_Item_weight (Seq.get items (i - 1))) > w then
+      if UInt64.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1))) > w then
         m items (i - 1) w
       else
-        let a' = m items (i - 1) w in let b' = m items (i - 1) (w - UInt64.to_int (Knapsack_Item_Type.knapsack_item_type_Item_weight (Seq.get items (i - 1)))) + UInt64.to_int (Knapsack_Item_Type.knapsack_item_type_Item_value (Seq.get items (i - 1))) in MinMax.max a' b'
+        let a' = m items (i - 1) w in let b' = m items (i - 1) (w - UInt64.to_int (Knapsack_Item_Type.item_weight (Seq.get items (i - 1)))) + UInt64.to_int (Knapsack_Item_Type.item_value (Seq.get items (i - 1))) in MinMax.max a' b'
       
     
 end
@@ -165,41 +162,41 @@ module CreusotContracts_Logic_Model_Impl0_Model
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
-  type core_ptr_nonnull_nonnull_type 't =
-    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
     
 end
 module Core_Marker_PhantomData_Type
-  type core_marker_phantomdata_type 't =
-    | Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
     
 end
 module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type
-  type core_ptr_unique_unique_type 't =
-    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
 module Alloc_RawVec_RawVec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Ptr_Unique_Unique_Type
-  type alloc_rawvec_rawvec_type 't 'a =
-    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
     
 end
 module Alloc_Vec_Vec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_RawVec_RawVec_Type
-  type alloc_vec_vec_type 't 'a =
-    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
 end
 module Alloc_Alloc_Global_Type
-  type alloc_alloc_global_type  =
-    | Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
     
 end
 module CreusotContracts_Std1_Vec_Impl0_ModelTy_Type
@@ -222,8 +219,8 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -231,12 +228,12 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
-  val model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     ensures { result = model self }
     
-  axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module Alloc_Vec_FromElem_Interface
   type t
@@ -245,11 +242,11 @@ module Alloc_Vec_FromElem_Interface
   use mach.int.Int
   use mach.int.Int32
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val from_elem [@cfg:stackify] (elem : t) (n : usize) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val from_elem [@cfg:stackify] (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
     ensures { forall i : int . 0 <= i /\ i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
@@ -261,11 +258,11 @@ module Alloc_Vec_FromElem
   use mach.int.Int
   use mach.int.Int32
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val from_elem [@cfg:stackify] (elem : t) (n : usize) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val from_elem [@cfg:stackify] (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
     ensures { forall i : int . 0 <= i /\ i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
@@ -278,9 +275,9 @@ module Alloc_Vec_Impl1_Len_Interface
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -292,9 +289,9 @@ module Alloc_Vec_Impl1_Len
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -348,15 +345,15 @@ module Alloc_Vec_Impl16_Index_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -368,15 +365,15 @@ module Alloc_Vec_Impl16_Index
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -414,9 +411,9 @@ module Alloc_Vec_Impl17_IndexMut_Interface
   use prelude.Borrow
   use seq.Seq
   use prelude.Slice
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere0 with type self = i,
   type t = seq t, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
@@ -424,7 +421,7 @@ module Alloc_Vec_Impl17_IndexMut_Interface
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (index : i) : borrowed Output0.output
+  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (Model0.model ( * self))}
     ensures { HasValue0.has_value index (Model0.model ( * self)) ( * result) }
     ensures { HasValue0.has_value index (Model0.model ( ^ self)) ( ^ result) }
@@ -439,9 +436,9 @@ module Alloc_Vec_Impl17_IndexMut
   use prelude.Borrow
   use seq.Seq
   use prelude.Slice
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere0 with type self = i,
   type t = seq t, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
@@ -449,7 +446,7 @@ module Alloc_Vec_Impl17_IndexMut
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (index : i) : borrowed Output0.output
+  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (Model0.model ( * self))}
     ensures { HasValue0.has_value index (Model0.model ( * self)) ( * result) }
     ensures { HasValue0.has_value index (Model0.model ( ^ self)) ( ^ result) }
@@ -477,11 +474,11 @@ module Alloc_Vec_Impl0_WithCapacity_Interface
   use mach.int.Int
   use mach.int.Int32
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val with_capacity [@cfg:stackify] (capacity : usize) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val with_capacity [@cfg:stackify] (capacity : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (Model0.model result) = 0 }
     
 end
@@ -491,11 +488,11 @@ module Alloc_Vec_Impl0_WithCapacity
   use mach.int.Int
   use mach.int.Int32
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val with_capacity [@cfg:stackify] (capacity : usize) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val with_capacity [@cfg:stackify] (capacity : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (Model0.model result) = 0 }
     
 end
@@ -504,9 +501,9 @@ module Alloc_Vec_Impl1_Push_Interface
   type a
   use prelude.Borrow
   use seq.Seq
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (value : t) : ()
+  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
@@ -515,31 +512,31 @@ module Alloc_Vec_Impl1_Push
   type a
   use prelude.Borrow
   use seq.Seq
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (value : t) : ()
+  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
 module CreusotContracts_Std1_Vec_Impl3_Resolve_Interface
   type t
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  predicate resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
 end
 module CreusotContracts_Std1_Vec_Impl3_Resolve
   type t
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  predicate resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) =
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
     forall i : int . 0 <= i /\ i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
-  val resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) : bool
+  val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve self }
     
 end
@@ -654,17 +651,17 @@ module Knapsack_Knapsack01Dyn_Interface
   use mach.int.UInt64
   use prelude.Borrow
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Knapsack_Item_Type
-  use Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = Knapsack_Item_Type.knapsack_item_type name,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Knapsack_Item_Type as Knapsack_Item_Type
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = Knapsack_Item_Type.t_item name,
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
-  val knapsack01_dyn [@cfg:stackify] (items : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (max_weight : usize) : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  val knapsack01_dyn [@cfg:stackify] (items : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (max_weight : usize) : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
     requires {[#"../knapsack.rs" 42 11 42 36] Seq.length (Model0.model items) < 10000000}
     requires {[#"../knapsack.rs" 43 11 43 33] UInt64.to_int max_weight < 10000000}
-    requires {[#"../knapsack.rs" 44 0 44 91] forall i : int . 0 <= i /\ i < Seq.length (Model0.model items) -> UInt64.to_int (Knapsack_Item_Type.knapsack_item_type_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
+    requires {[#"../knapsack.rs" 44 0 44 91] forall i : int . 0 <= i /\ i < Seq.length (Model0.model items) -> UInt64.to_int (Knapsack_Item_Type.item_value (Seq.get (Model0.model items) i)) <= 10000000}
     
 end
 module Knapsack_Knapsack01Dyn
@@ -675,103 +672,103 @@ module Knapsack_Knapsack01Dyn
   use mach.int.UInt64
   use prelude.Borrow
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Knapsack_Item_Type
-  use Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Knapsack_Item_Type.knapsack_item_type name,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = Knapsack_Item_Type.knapsack_item_type name,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Knapsack_Item_Type as Knapsack_Item_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = Knapsack_Item_Type.t_item name,
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = Knapsack_Item_Type.t_item name,
+  type a = Alloc_Alloc_Global_Type.t_global
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve7 with type t = usize
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = usize, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
   clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve6 with type t = usize, function Model0.model = Model3.model,
   predicate Resolve0.resolve = Resolve7.resolve
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model4 with type t = Knapsack_Item_Type.knapsack_item_type name,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model4 with type t = Knapsack_Item_Type.t_item name,
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
   clone CreusotContracts_Std1_Slice_Impl3_ResolveElswhere as ResolveElswhere1 with type t = usize
-  clone CreusotContracts_Std1_Slice_Impl3_ResolveElswhere as ResolveElswhere0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  clone CreusotContracts_Std1_Slice_Impl3_ResolveElswhere as ResolveElswhere0 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy3 with type t = usize
   clone Core_Slice_Index_Impl2_Output_Type as Output2 with type t = usize
   clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue2 with type t = usize
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds2 with type t = usize
-  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy2 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
-  clone Core_Slice_Index_Impl2_Output_Type as Output1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
-  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
-  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
-  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = Knapsack_Item_Type.knapsack_item_type name
-  clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = Knapsack_Item_Type.knapsack_item_type name
-  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = Knapsack_Item_Type.knapsack_item_type name
-  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = Knapsack_Item_Type.knapsack_item_type name
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve5 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy2 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone Core_Slice_Index_Impl2_Output_Type as Output1 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue1 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds1 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = Knapsack_Item_Type.t_item name
+  clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = Knapsack_Item_Type.t_item name
+  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = Knapsack_Item_Type.t_item name
+  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = Knapsack_Item_Type.t_item name
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve5 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
   function Model0.model = Model2.model, predicate Resolve0.resolve = Resolve6.resolve
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = Knapsack_Item_Type.knapsack_item_type name
-  clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve4 with type t = Knapsack_Item_Type.knapsack_item_type name,
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = Knapsack_Item_Type.t_item name
+  clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve4 with type t = Knapsack_Item_Type.t_item name,
   function Model0.model = Model4.model, predicate Resolve0.resolve = Resolve0.resolve
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
-  clone Alloc_Vec_Impl1_Push_Interface as Push0 with type t = Knapsack_Item_Type.knapsack_item_type name,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model4.model
-  clone Alloc_Vec_Impl0_WithCapacity_Interface as WithCapacity0 with type t = Knapsack_Item_Type.knapsack_item_type name,
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
+  clone Alloc_Vec_Impl1_Push_Interface as Push0 with type t = Knapsack_Item_Type.t_item name,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model4.model
+  clone Alloc_Vec_Impl0_WithCapacity_Interface as WithCapacity0 with type t = Knapsack_Item_Type.t_item name,
   function Model0.model = Model4.model
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = usize
   clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut1 with type t = usize, type i = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model3.model,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model3.model,
   predicate InBounds0.in_bounds = InBounds2.in_bounds, predicate HasValue0.has_value = HasValue2.has_value,
   predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere1.resolve_elswhere, type Output0.output = Output2.output
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
-  clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
-  type i = usize, type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model2.model,
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
+  clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+  type i = usize, type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model2.model,
   predicate InBounds0.in_bounds = InBounds1.in_bounds, predicate HasValue0.has_value = HasValue1.has_value,
   predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere, type Output0.output = Output1.output
   clone Knapsack_Max_Interface as Max0
   clone Alloc_Vec_Impl16_Index_Interface as Index2 with type t = usize, type i = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model3.model,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model3.model,
   predicate InBounds0.in_bounds = InBounds2.in_bounds, predicate HasValue0.has_value = HasValue2.has_value,
   type Output0.output = Output2.output
-  clone Alloc_Vec_Impl16_Index_Interface as Index1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
-  type i = usize, type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model2.model,
+  clone Alloc_Vec_Impl16_Index_Interface as Index1 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
+  type i = usize, type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model2.model,
   predicate InBounds0.in_bounds = InBounds1.in_bounds, predicate HasValue0.has_value = HasValue1.has_value,
   type Output0.output = Output1.output
-  clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = Knapsack_Item_Type.knapsack_item_type name,
-  type i = usize, type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model1.model,
+  clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = Knapsack_Item_Type.t_item name, type i = usize,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model1.model,
   predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
   type Output0.output = Output0.output
   clone Knapsack_M as M0 with type name = name, axiom .
-  clone Alloc_Vec_FromElem_Interface as FromElem1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  clone Alloc_Vec_FromElem_Interface as FromElem1 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global),
   function Model0.model = Model2.model
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = Knapsack_Item_Type.knapsack_item_type name,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model1.model
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = Knapsack_Item_Type.t_item name,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model1.model
   clone Alloc_Vec_FromElem_Interface as FromElem0 with type t = usize, function Model0.model = Model3.model
-  let rec cfg knapsack01_dyn [@cfg:stackify] [#"../knapsack.rs" 45 0 45 91] (items : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (max_weight : usize) : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  let rec cfg knapsack01_dyn [@cfg:stackify] [#"../knapsack.rs" 45 0 45 91] (items : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (max_weight : usize) : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
     requires {[#"../knapsack.rs" 42 11 42 36] Seq.length (Model0.model items) < 10000000}
     requires {[#"../knapsack.rs" 43 11 43 33] UInt64.to_int max_weight < 10000000}
-    requires {[#"../knapsack.rs" 44 0 44 91] forall i : int . 0 <= i /\ i < Seq.length (Model0.model items) -> UInt64.to_int (Knapsack_Item_Type.knapsack_item_type_Item_value (Seq.get (Model0.model items) i)) <= 10000000}
+    requires {[#"../knapsack.rs" 44 0 44 91] forall i : int . 0 <= i /\ i < Seq.length (Model0.model items) -> UInt64.to_int (Knapsack_Item_Type.item_value (Seq.get (Model0.model items) i)) <= 10000000}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var items_1 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _0 : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global);
+  var items_1 : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global);
   var max_weight_2 : usize;
-  var best_value_6 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _7 : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var best_value_6 : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global);
+  var _7 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
   var _8 : usize;
   var _9 : usize;
   var _10 : usize;
   var _11 : usize;
-  var _12 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _12 : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global);
   var i_13 : usize;
   var _14 : ();
   var _19 : ();
   var _20 : bool;
   var _21 : usize;
   var _22 : usize;
-  var _23 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var it_24 : Knapsack_Item_Type.knapsack_item_type name;
-  var _25 : Knapsack_Item_Type.knapsack_item_type name;
-  var _26 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _23 : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global);
+  var it_24 : Knapsack_Item_Type.t_item name;
+  var _25 : Knapsack_Item_Type.t_item name;
+  var _26 : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global);
   var _27 : usize;
   var w_28 : usize;
   var _29 : ();
@@ -783,33 +780,33 @@ module Knapsack_Knapsack01Dyn
   var _40 : usize;
   var _41 : usize;
   var _42 : usize;
-  var _43 : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _44 : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _45 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _43 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
+  var _44 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
+  var _45 : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global);
   var _46 : usize;
   var _47 : usize;
   var _48 : usize;
   var _49 : usize;
-  var _50 : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _51 : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _52 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _50 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
+  var _51 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
+  var _52 : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global);
   var _53 : usize;
   var _54 : usize;
   var _55 : usize;
   var _56 : usize;
   var _57 : usize;
-  var _58 : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _59 : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _60 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _58 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
+  var _59 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
+  var _60 : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global);
   var _61 : usize;
   var _62 : usize;
   var _63 : usize;
   var _64 : usize;
   var _65 : usize;
   var _66 : borrowed usize;
-  var _67 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
-  var _68 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
-  var _69 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _67 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
+  var _68 : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global));
+  var _69 : borrowed (Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global));
   var _70 : usize;
   var _71 : usize;
   var _72 : usize;
@@ -819,38 +816,38 @@ module Knapsack_Knapsack01Dyn
   var _76 : ();
   var _77 : ();
   var _78 : ();
-  var result_79 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var result_79 : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global);
   var _80 : usize;
-  var _81 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _81 : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global);
   var left_weight_82 : usize;
   var j_83 : usize;
-  var _84 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _84 : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global);
   var _85 : ();
   var _88 : bool;
   var _89 : usize;
-  var it_90 : Knapsack_Item_Type.knapsack_item_type name;
-  var _91 : Knapsack_Item_Type.knapsack_item_type name;
-  var _92 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var it_90 : Knapsack_Item_Type.t_item name;
+  var _91 : Knapsack_Item_Type.t_item name;
+  var _92 : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global);
   var _93 : usize;
   var _94 : bool;
   var _95 : usize;
   var _96 : usize;
-  var _97 : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _98 : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _99 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _97 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
+  var _98 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
+  var _99 : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global);
   var _100 : usize;
   var _101 : usize;
   var _102 : usize;
   var _103 : usize;
   var _104 : usize;
-  var _105 : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _106 : Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _107 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Alloc_Vec_Vec_Type.alloc_vec_vec_type usize (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _105 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
+  var _106 : Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global);
+  var _107 : Alloc_Vec_Vec_Type.t_vec (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)) (Alloc_Alloc_Global_Type.t_global);
   var _108 : usize;
   var _109 : usize;
   var _110 : ();
-  var _111 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
-  var _112 : Knapsack_Item_Type.knapsack_item_type name;
+  var _111 : borrowed (Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global));
+  var _112 : Knapsack_Item_Type.t_item name;
   var _113 : usize;
   var _114 : ();
   var _115 : ();
@@ -951,7 +948,7 @@ module Knapsack_Knapsack01Dyn
       end
   }
   BB18 {
-    _40 <- Knapsack_Item_Type.knapsack_item_type_Item_weight it_24;
+    _40 <- Knapsack_Item_Type.item_weight it_24;
     _41 <- w_28;
     _39 <- ([#"../knapsack.rs" 75 38 75 51] _40 > _41);
     switch (_39)
@@ -997,14 +994,14 @@ module Knapsack_Knapsack01Dyn
   BB25 {
     _58 <- _59;
     _63 <- w_28;
-    _64 <- Knapsack_Item_Type.knapsack_item_type_Item_weight it_24;
+    _64 <- Knapsack_Item_Type.item_weight it_24;
     _62 <- ([#"../knapsack.rs" 78 52 78 65] _63 - _64);
     _57 <- ([#"../knapsack.rs" 78 38 78 66] Index2.index _58 _62);
     goto BB26
   }
   BB26 {
     _56 <- _57;
-    _65 <- Knapsack_Item_Type.knapsack_item_type_Item_value it_24;
+    _65 <- Knapsack_Item_Type.item_value it_24;
     _55 <- ([#"../knapsack.rs" 78 38 78 77] _56 + _65);
     _38 <- ([#"../knapsack.rs" 78 16 78 78] Max0.max _48 _55);
     goto BB27
@@ -1124,7 +1121,7 @@ module Knapsack_Knapsack01Dyn
     goto BB44
   }
   BB44 {
-    _113 <- Knapsack_Item_Type.knapsack_item_type_Item_weight it_90;
+    _113 <- Knapsack_Item_Type.item_weight it_90;
     assume { Resolve0.resolve it_90 };
     left_weight_82 <- ([#"../knapsack.rs" 96 12 96 36] left_weight_82 - _113);
     _19 <- ();
@@ -1143,7 +1140,7 @@ module Knapsack_Knapsack01Dyn
     _85 <- ();
     assume { Resolve4.resolve _0 };
     _0 <- result_79;
-    result_79 <- any Alloc_Vec_Vec_Type.alloc_vec_vec_type (Knapsack_Item_Type.knapsack_item_type name) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+    result_79 <- any Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global);
     goto BB48
   }
   BB48 {

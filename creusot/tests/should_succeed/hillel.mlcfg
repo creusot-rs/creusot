@@ -1,36 +1,36 @@
 
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
-  type core_ptr_nonnull_nonnull_type 't =
-    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
     
 end
 module Core_Marker_PhantomData_Type
-  type core_marker_phantomdata_type 't =
-    | Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
     
 end
 module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type
-  type core_ptr_unique_unique_type 't =
-    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
 module Alloc_RawVec_RawVec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Ptr_Unique_Unique_Type
-  type alloc_rawvec_rawvec_type 't 'a =
-    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
     
 end
 module Alloc_Vec_Vec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_RawVec_RawVec_Type
-  type alloc_vec_vec_type 't 'a =
-    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
 end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
@@ -39,8 +39,8 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -48,12 +48,12 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
-  val model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     ensures { result = model self }
     
-  axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
@@ -91,8 +91,8 @@ module CreusotContracts_Logic_Model_Impl1_Model
     
 end
 module Alloc_Alloc_Global_Type
-  type alloc_alloc_global_type  =
-    | Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
     
 end
 module CreusotContracts_Std1_Vec_Impl0_ModelTy_Type
@@ -110,13 +110,12 @@ module CreusotContracts_Logic_Model_Impl1
   type t
 end
 module CreusotContracts_Logic_Ghost_Ghost_Type
-  type creusotcontracts_logic_ghost_ghost_type 't =
-    | CreusotContracts_Logic_Ghost_Ghost_Type 't
+  type t_ghost 't =
+    | C_Ghost 't
     
-  let function creusotcontracts_logic_ghost_ghost_type_Ghost_0 (self : creusotcontracts_logic_ghost_ghost_type 't) : 't
-   = [@vc:do_not_keep_trace] [@vc:sp]
+  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | CreusotContracts_Logic_Ghost_Ghost_Type a -> a
+      | C_Ghost a -> a
       end
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
@@ -133,18 +132,18 @@ end
 module CreusotContracts_Logic_Ghost_Impl0_Deref_Interface
   type t
   use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
 end
 module CreusotContracts_Logic_Ghost_Impl0_Deref
   type t
   use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
-  val deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
+  val deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
     ensures { result = deref self }
     
-  axiom deref_spec : forall self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t . deref self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type_Ghost_0 self
+  axiom deref_spec : forall self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t . deref self = CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
 end
 module Alloc_Vec_Impl1_Len_Interface
   type t
@@ -154,9 +153,9 @@ module Alloc_Vec_Impl1_Len_Interface
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -168,9 +167,9 @@ module Alloc_Vec_Impl1_Len
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -179,9 +178,9 @@ module Alloc_Vec_Impl1_Push_Interface
   type a
   use prelude.Borrow
   use seq.Seq
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (value : t) : ()
+  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
@@ -190,9 +189,9 @@ module Alloc_Vec_Impl1_Push
   type a
   use prelude.Borrow
   use seq.Seq
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (value : t) : ()
+  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
@@ -224,15 +223,15 @@ module Hillel_RightPad_Interface
   use mach.int.Int
   use mach.int.Int32
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val right_pad [@cfg:stackify] (str : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))) (len : usize) (pad : t) : ()
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val right_pad [@cfg:stackify] (str : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (len : usize) (pad : t) : ()
     ensures { [#"../hillel.rs" 7 10 7 64] Seq.length (Model0.model ( ^ str)) >= UInt64.to_int len /\ Seq.length (Model0.model ( ^ str)) >= Seq.length (Model1.model str) }
     ensures { [#"../hillel.rs" 8 10 8 64] Seq.length (Model0.model ( ^ str)) = UInt64.to_int len \/ Seq.length (Model0.model ( ^ str)) = Seq.length (Model1.model str) }
     ensures { [#"../hillel.rs" 9 0 9 66] UInt64.to_int len <= Seq.length (Model1.model str) -> Seq.length (Model0.model ( ^ str)) = Seq.length (Model1.model str) }
@@ -249,25 +248,25 @@ module Hillel_RightPad
   use mach.int.Int
   use mach.int.Int32
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
-  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
-  clone Alloc_Vec_Impl1_Push_Interface as Push0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type,
-  function Model0.model = Model0.model
-  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)),
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
   axiom .
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)))
-  let rec cfg right_pad [@cfg:stackify] [#"../hillel.rs" 13 0 13 59] (str : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))) (len : usize) (pad : t) : ()
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+  type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  clone Alloc_Vec_Impl1_Push_Interface as Push0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
+  axiom .
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  let rec cfg right_pad [@cfg:stackify] [#"../hillel.rs" 13 0 13 59] (str : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (len : usize) (pad : t) : ()
     ensures { [#"../hillel.rs" 7 10 7 64] Seq.length (Model0.model ( ^ str)) >= UInt64.to_int len /\ Seq.length (Model0.model ( ^ str)) >= Seq.length (Model1.model str) }
     ensures { [#"../hillel.rs" 8 10 8 64] Seq.length (Model0.model ( ^ str)) = UInt64.to_int len \/ Seq.length (Model0.model ( ^ str)) = Seq.length (Model1.model str) }
     ensures { [#"../hillel.rs" 9 0 9 66] UInt64.to_int len <= Seq.length (Model1.model str) -> Seq.length (Model0.model ( ^ str)) = Seq.length (Model1.model str) }
@@ -277,18 +276,18 @@ module Hillel_RightPad
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var str_1 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var str_1 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var len_2 : usize;
   var pad_3 : t;
-  var old_str_10 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)));
+  var old_str_10 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)));
   var _12 : ();
   var _19 : ();
   var _20 : bool;
   var _21 : usize;
-  var _22 : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _22 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
   var _23 : usize;
   var _24 : ();
-  var _25 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _25 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var _26 : t;
   var _27 : ();
   var _28 : ();
@@ -301,7 +300,7 @@ module Hillel_RightPad
   }
   BB0 {
     _12 <- ();
-    old_str_10 <- ([#"../hillel.rs" 14 18 14 32] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type str_1);
+    old_str_10 <- ([#"../hillel.rs" 14 18 14 32] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost str_1);
     goto BB1
   }
   BB1 {
@@ -356,12 +355,12 @@ module Alloc_Vec_Impl1_Insert_Interface
   use mach.int.Int32
   use mach.int.UInt64
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = t, type a = a
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t a,
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Alloc_Vec_Vec_Type.t_vec t a,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val insert [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (index : usize) (element : t) : ()
+  val insert [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : usize) (element : t) : ()
     ensures { Seq.length (Model0.model ( ^ self)) = Seq.length (Model1.model self) + 1 }
     ensures { forall i : int . 0 <= i /\ i < UInt64.to_int index -> Seq.get (Model0.model ( ^ self)) i = Seq.get (Model1.model self) i }
     ensures { Seq.get (Model0.model ( ^ self)) (UInt64.to_int index) = element }
@@ -377,12 +376,12 @@ module Alloc_Vec_Impl1_Insert
   use mach.int.Int32
   use mach.int.UInt64
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = t, type a = a
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t a,
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Alloc_Vec_Vec_Type.t_vec t a,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val insert [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (index : usize) (element : t) : ()
+  val insert [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : usize) (element : t) : ()
     ensures { Seq.length (Model0.model ( ^ self)) = Seq.length (Model1.model self) + 1 }
     ensures { forall i : int . 0 <= i /\ i < UInt64.to_int index -> Seq.get (Model0.model ( ^ self)) i = Seq.get (Model1.model self) i }
     ensures { Seq.get (Model0.model ( ^ self)) (UInt64.to_int index) = element }
@@ -392,16 +391,16 @@ end
 module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
   type t
   use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
 end
 module CreusotContracts_Logic_Ghost_Impl1_Inner
   type t
   use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t =
-    CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type_Ghost_0 self
-  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t =
+    CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
+  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
     ensures { result = inner self }
     
 end
@@ -413,15 +412,15 @@ module Hillel_LeftPad_Interface
   use mach.int.Int
   use mach.int.Int32
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val left_pad [@cfg:stackify] (str : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))) (len : usize) (pad : t) : ()
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val left_pad [@cfg:stackify] (str : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (len : usize) (pad : t) : ()
     ensures { [#"../hillel.rs" 27 10 27 64] Seq.length (Model0.model ( ^ str)) >= UInt64.to_int len /\ Seq.length (Model0.model ( ^ str)) >= Seq.length (Model1.model str) }
     ensures { [#"../hillel.rs" 28 10 28 64] Seq.length (Model0.model ( ^ str)) = UInt64.to_int len \/ Seq.length (Model0.model ( ^ str)) = Seq.length (Model1.model str) }
     ensures { [#"../hillel.rs" 29 0 29 93] forall i : int . 0 <= i /\ i < Seq.length (Model0.model ( ^ str)) - Seq.length (Model1.model str) -> Seq.get (Model0.model ( ^ str)) i = pad }
@@ -436,28 +435,27 @@ module Hillel_LeftPad
   use mach.int.Int
   use mach.int.Int32
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = usize
-  clone Alloc_Vec_Impl1_Insert_Interface as Insert0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
-  function Model1.model = Model1.model
+  clone Alloc_Vec_Impl1_Insert_Interface as Insert0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model, function Model1.model = Model1.model
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type,
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
   function Model0.model = Model0.model
   clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref1 with type t = usize, axiom .
-  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)),
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
   axiom .
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)))
-  let rec cfg left_pad [@cfg:stackify] [#"../hillel.rs" 31 0 31 58] (str : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))) (len : usize) (pad : t) : ()
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  let rec cfg left_pad [@cfg:stackify] [#"../hillel.rs" 31 0 31 58] (str : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (len : usize) (pad : t) : ()
     ensures { [#"../hillel.rs" 27 10 27 64] Seq.length (Model0.model ( ^ str)) >= UInt64.to_int len /\ Seq.length (Model0.model ( ^ str)) >= Seq.length (Model1.model str) }
     ensures { [#"../hillel.rs" 28 10 28 64] Seq.length (Model0.model ( ^ str)) = UInt64.to_int len \/ Seq.length (Model0.model ( ^ str)) = Seq.length (Model1.model str) }
     ensures { [#"../hillel.rs" 29 0 29 93] forall i : int . 0 <= i /\ i < Seq.length (Model0.model ( ^ str)) - Seq.length (Model1.model str) -> Seq.get (Model0.model ( ^ str)) i = pad }
@@ -465,22 +463,22 @@ module Hillel_LeftPad
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var str_1 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var str_1 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var len_2 : usize;
   var pad_3 : t;
-  var old_str_8 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)));
+  var old_str_8 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)));
   var _10 : ();
-  var c_11 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type usize;
+  var c_11 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost usize;
   var _14 : ();
   var _22 : ();
   var _23 : bool;
   var _24 : usize;
-  var _25 : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _25 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
   var _26 : usize;
   var _27 : ();
-  var _28 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _28 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var _29 : t;
-  var _30 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type usize;
+  var _30 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost usize;
   var _33 : ();
   var _34 : ();
   var _35 : ();
@@ -493,13 +491,13 @@ module Hillel_LeftPad
   }
   BB0 {
     _10 <- ();
-    old_str_8 <- ([#"../hillel.rs" 32 18 32 32] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type str_1);
+    old_str_8 <- ([#"../hillel.rs" 32 18 32 32] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost str_1);
     goto BB1
   }
   BB1 {
     assume { Resolve0.resolve old_str_8 };
     _14 <- ();
-    c_11 <- ([#"../hillel.rs" 33 30 33 42] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type (0 : usize));
+    c_11 <- ([#"../hillel.rs" 33 30 33 42] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (0 : usize));
     goto BB2
   }
   BB2 {
@@ -535,12 +533,12 @@ module Hillel_LeftPad
   }
   BB6 {
     _33 <- ();
-    _30 <- ([#"../hillel.rs" 44 12 44 38] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type ((1 : usize) + Inner0.inner c_11));
+    _30 <- ([#"../hillel.rs" 44 12 44 38] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost ((1 : usize) + Inner0.inner c_11));
     goto BB7
   }
   BB7 {
     c_11 <- _30;
-    _30 <- any CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type usize;
+    _30 <- any CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost usize;
     _22 <- ();
     goto BB3
   }
@@ -688,15 +686,15 @@ module Alloc_Vec_Impl16_Index_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -708,15 +706,15 @@ module Alloc_Vec_Impl16_Index
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -829,18 +827,18 @@ module Hillel_InsertUnique_Interface
   type t
   use prelude.Borrow
   use seq.Seq
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Hillel_Contains_Interface as Contains0 with type t = t
   clone Hillel_IsSubset_Interface as IsSubset0 with type t = t
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
   clone Hillel_IsUnique_Interface as IsUnique0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
-  val insert_unique [@cfg:stackify] (vec : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))) (elem : t) : ()
+  val insert_unique [@cfg:stackify] (vec : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (elem : t) : ()
     requires {[#"../hillel.rs" 73 11 73 26] IsUnique0.is_unique (Model0.model vec)}
     ensures { [#"../hillel.rs" 74 10 74 26] IsUnique0.is_unique (Model1.model ( ^ vec)) }
     ensures { [#"../hillel.rs" 75 10 75 32] IsSubset0.is_subset (Model0.model vec) (Model1.model ( ^ vec)) }
@@ -852,47 +850,47 @@ module Hillel_InsertUnique
   type t
   use prelude.Borrow
   use seq.Seq
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy1.modelTy
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Hillel_Contains as Contains0 with type t = t, function Model0.model = Model2.model,
   type ModelTy0.modelTy = ModelTy1.modelTy
   clone Hillel_IsSubset as IsSubset0 with type t = t, predicate Contains0.contains = Contains0.contains
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
   clone Hillel_IsUnique as IsUnique0 with type t = t, function Model0.model = Model2.model,
   type ModelTy0.modelTy = ModelTy1.modelTy
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
   use mach.int.Int
   use prelude.UIntSize
   use mach.int.Int32
   use mach.int.UInt64
-  use CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Logic_Model_Impl0_Model as Model3 with type t = t, type ModelTy0.modelTy = ModelTy1.modelTy,
   function Model0.model = Model2.model
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy2 with type t = t
   clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = t
   clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = t
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = t
-  clone Alloc_Vec_Impl1_Push_Interface as Push0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model1.model
+  clone Alloc_Vec_Impl1_Push_Interface as Push0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model1.model
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = t
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone Core_Cmp_PartialEq_Eq_Interface as Eq0 with type self = t, type rhs = t, function Model0.model = Model3.model,
   function Model1.model = Model3.model, type ModelTy0.modelTy = ModelTy1.modelTy
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = t
   clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = t, type i = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model1.model,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model1.model,
   predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
   type Output0.output = Output0.output
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type,
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
   function Model0.model = Model1.model
   clone Hillel_SubsetPush as SubsetPush0 with type t = t, predicate IsSubset0.is_subset = IsSubset0.is_subset, axiom .
-  let rec cfg insert_unique [@cfg:stackify] [#"../hillel.rs" 78 0 78 58] (vec : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))) (elem : t) : ()
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  let rec cfg insert_unique [@cfg:stackify] [#"../hillel.rs" 78 0 78 58] (vec : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (elem : t) : ()
     requires {[#"../hillel.rs" 73 11 73 26] IsUnique0.is_unique (Model0.model vec)}
     ensures { [#"../hillel.rs" 74 10 74 26] IsUnique0.is_unique (Model1.model ( ^ vec)) }
     ensures { [#"../hillel.rs" 75 10 75 32] IsSubset0.is_subset (Model0.model vec) (Model1.model ( ^ vec)) }
@@ -901,9 +899,9 @@ module Hillel_InsertUnique
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var vec_1 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var vec_1 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var elem_2 : t;
-  var _8 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type ();
+  var _8 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost ();
   var _10 : ();
   var _11 : ();
   var i_13 : usize;
@@ -912,12 +910,12 @@ module Hillel_InsertUnique
   var _17 : bool;
   var _18 : usize;
   var _19 : usize;
-  var _20 : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _20 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
   var _21 : ();
   var _22 : bool;
   var _23 : t;
   var _24 : t;
-  var _25 : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _25 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
   var _26 : usize;
   var _27 : t;
   var _28 : ();
@@ -927,7 +925,7 @@ module Hillel_InsertUnique
   var _33 : ();
   var _34 : ();
   var _36 : ();
-  var _37 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _37 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var _38 : t;
   {
     vec_1 <- vec;
@@ -942,7 +940,7 @@ module Hillel_InsertUnique
   }
   BB2 {
     _10 <- ();
-    _8 <- ([#"../hillel.rs" 79 4 79 52] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type (SubsetPush0.subset_push (Model0.model vec_1) elem_2));
+    _8 <- ([#"../hillel.rs" 79 4 79 52] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (SubsetPush0.subset_push (Model0.model vec_1) elem_2));
     goto BB3
   }
   BB3 {
@@ -1060,11 +1058,11 @@ module Alloc_Vec_Impl0_New_Interface
   use seq.Seq
   use mach.int.Int
   use mach.int.Int32
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val new [@cfg:stackify] (_ : ()) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val new [@cfg:stackify] (_ : ()) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (Model0.model result) = 0 }
     
 end
@@ -1073,11 +1071,11 @@ module Alloc_Vec_Impl0_New
   use seq.Seq
   use mach.int.Int
   use mach.int.Int32
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val new [@cfg:stackify] (_ : ()) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val new [@cfg:stackify] (_ : ()) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (Model0.model result) = 0 }
     
 end
@@ -1127,23 +1125,23 @@ module Core_Slice_Impl0_Len
 end
 module CreusotContracts_Std1_Vec_Impl3_Resolve_Interface
   type t
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  predicate resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
 end
 module CreusotContracts_Std1_Vec_Impl3_Resolve
   type t
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  predicate resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) =
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
     forall i : int . 0 <= i /\ i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
-  val resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) : bool
+  val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve self }
     
 end
@@ -1155,16 +1153,16 @@ module Hillel_Unique_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Hillel_IsSubset_Interface as IsSubset0 with type t = t
   clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model1 with type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone Hillel_IsUnique_Interface as IsUnique0 with type t = t
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val unique [@cfg:stackify] (str : seq t) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val unique [@cfg:stackify] (str : seq t) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../hillel.rs" 97 10 97 28] IsUnique0.is_unique (Model0.model result) }
     ensures { [#"../hillel.rs" 98 10 98 34] IsSubset0.is_subset (Model0.model result) (Model1.model str) }
     ensures { [#"../hillel.rs" 99 10 99 34] IsSubset0.is_subset (Model1.model str) (Model0.model result) }
@@ -1175,54 +1173,55 @@ module Hillel_Unique
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = t, type ModelTy0.modelTy = ModelTy0.modelTy
   clone Hillel_Contains as Contains0 with type t = t, function Model0.model = Model2.model,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model3 with type t = t, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Hillel_IsSubset as IsSubset0 with type t = t, predicate Contains0.contains = Contains0.contains
   clone CreusotContracts_Logic_Model_Impl0_Model as Model1 with type t = seq t,
   type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model3.model
   clone Hillel_IsUnique as IsUnique0 with type t = t, function Model0.model = Model2.model,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
   use mach.int.Int
   use prelude.UIntSize
   use mach.int.UInt64
   use mach.int.Int32
   use seq_ext.SeqExt
-  use CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy2 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model4 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  type a = Alloc_Alloc_Global_Type.t_global
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model4 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy2.modelTy, function Model0.model = Model0.model
+  use seq.Seq
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t
   clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve4 with type t = t, function Model0.model = Model0.model,
   predicate Resolve0.resolve = Resolve1.resolve
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = seq t
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone Hillel_InsertUnique_Interface as InsertUnique0 with type t = t, function Model0.model = Model4.model,
   predicate IsUnique0.is_unique = IsUnique0.is_unique, function Model1.model = Model0.model,
   predicate IsSubset0.is_subset = IsSubset0.is_subset, predicate Contains0.contains = Contains0.contains
   clone Core_Slice_Impl0_Len_Interface as Len0 with type t = t, function Model0.model = Model1.model
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = Seq.seq t, axiom .
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (Seq.seq t)
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq t)
   clone CreusotContracts_Logic_Seq_Impl2_New as New1 with type t = t
   clone Alloc_Vec_Impl0_New_Interface as New0 with type t = t, function Model0.model = Model0.model
-  let rec cfg unique [@cfg:stackify] [#"../hillel.rs" 100 0 100 52] (str : seq t) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  let rec cfg unique [@cfg:stackify] [#"../hillel.rs" 100 0 100 52] (str : seq t) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../hillel.rs" 97 10 97 28] IsUnique0.is_unique (Model0.model result) }
     ensures { [#"../hillel.rs" 98 10 98 34] IsSubset0.is_subset (Model0.model result) (Model1.model str) }
     ensures { [#"../hillel.rs" 99 10 99 34] IsSubset0.is_subset (Model1.model str) (Model0.model result) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _0 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
   var str_1 : seq t;
-  var unique_5 : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var sub_str_6 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (Seq.seq t);
+  var unique_5 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
+  var sub_str_6 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq t);
   var _9 : ();
   var i_10 : usize;
   var _11 : ();
@@ -1236,10 +1235,10 @@ module Hillel_Unique
   var _24 : usize;
   var _25 : bool;
   var _26 : ();
-  var _27 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
-  var _28 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _27 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
+  var _28 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var _29 : t;
-  var _30 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (Seq.seq t);
+  var _30 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq t);
   var _33 : ();
   var _34 : ();
   var _35 : ();
@@ -1256,7 +1255,7 @@ module Hillel_Unique
   }
   BB1 {
     _9 <- ();
-    sub_str_6 <- ([#"../hillel.rs" 102 37 102 58] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type (New1.new ()));
+    sub_str_6 <- ([#"../hillel.rs" 102 37 102 58] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (New1.new ()));
     goto BB2
   }
   BB2 {
@@ -1314,13 +1313,13 @@ module Hillel_Unique
   BB10 {
     assume { Resolve2.resolve _28 };
     _33 <- ();
-    _30 <- ([#"../hillel.rs" 113 18 113 47] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type (Seq.snoc (Deref0.deref sub_str_6) elem_22));
+    _30 <- ([#"../hillel.rs" 113 18 113 47] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (Seq.snoc (Deref0.deref sub_str_6) elem_22));
     goto BB11
   }
   BB11 {
     assume { Resolve0.resolve sub_str_6 };
     sub_str_6 <- _30;
-    _30 <- any CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (Seq.seq t);
+    _30 <- any CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq t);
     i_10 <- ([#"../hillel.rs" 114 8 114 14] i_10 + (1 : usize));
     _17 <- ();
     goto BB6
@@ -1337,7 +1336,7 @@ module Hillel_Unique
     _39 <- ();
     assume { Resolve4.resolve _0 };
     _0 <- unique_5;
-    unique_5 <- any Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+    unique_5 <- any Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
     goto BB14
   }
   BB14 {

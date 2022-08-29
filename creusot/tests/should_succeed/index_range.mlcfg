@@ -1,36 +1,36 @@
 
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
-  type core_ptr_nonnull_nonnull_type 't =
-    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
     
 end
 module Core_Marker_PhantomData_Type
-  type core_marker_phantomdata_type 't =
-    | Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
     
 end
 module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type
-  type core_ptr_unique_unique_type 't =
-    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
 module Alloc_RawVec_RawVec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Ptr_Unique_Unique_Type
-  type alloc_rawvec_rawvec_type 't 'a =
-    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
     
 end
 module Alloc_Vec_Vec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_RawVec_RawVec_Type
-  type alloc_vec_vec_type 't 'a =
-    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
 end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
@@ -39,8 +39,8 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -48,16 +48,16 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
-  val model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     ensures { result = model self }
     
-  axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module Alloc_Alloc_Global_Type
-  type alloc_alloc_global_type  =
-    | Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
     
 end
 module CreusotContracts_Std1_Vec_Impl0
@@ -69,11 +69,11 @@ module Alloc_Vec_Impl0_New_Interface
   use seq.Seq
   use mach.int.Int
   use mach.int.Int32
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val new [@cfg:stackify] (_ : ()) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val new [@cfg:stackify] (_ : ()) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (Model0.model result) = 0 }
     
 end
@@ -82,11 +82,11 @@ module Alloc_Vec_Impl0_New
   use seq.Seq
   use mach.int.Int
   use mach.int.Int32
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val new [@cfg:stackify] (_ : ()) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val new [@cfg:stackify] (_ : ()) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (Model0.model result) = 0 }
     
 end
@@ -95,9 +95,9 @@ module Alloc_Vec_Impl1_Push_Interface
   type a
   use prelude.Borrow
   use seq.Seq
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (value : t) : ()
+  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
@@ -106,9 +106,9 @@ module Alloc_Vec_Impl1_Push
   type a
   use prelude.Borrow
   use seq.Seq
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (value : t) : ()
+  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
@@ -125,23 +125,23 @@ module CreusotContracts_Logic_Resolve_Resolve_Resolve
 end
 module CreusotContracts_Std1_Vec_Impl3_Resolve_Interface
   type t
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  predicate resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
 end
 module CreusotContracts_Std1_Vec_Impl3_Resolve
   type t
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  predicate resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) =
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
     forall i : int . 0 <= i /\ i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
-  val resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) : bool
+  val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve self }
     
 end
@@ -167,11 +167,11 @@ module IndexRange_CreateArr_Interface
   use seq.Seq
   use mach.int.Int
   use mach.int.Int32
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val create_arr [@cfg:stackify] (_ : ()) : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val create_arr [@cfg:stackify] (_ : ()) : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../index_range.rs" 7 4 12 25] Seq.length (Model0.model result) = 5 /\ Int32.to_int (Seq.get (Model0.model result) 0) = 0 /\ Int32.to_int (Seq.get (Model0.model result) 1) = 1 /\ Int32.to_int (Seq.get (Model0.model result) 2) = 2 /\ Int32.to_int (Seq.get (Model0.model result) 3) = 3 /\ Int32.to_int (Seq.get (Model0.model result) 4) = 4 }
     
 end
@@ -179,33 +179,33 @@ module IndexRange_CreateArr
   use seq.Seq
   use mach.int.Int
   use mach.int.Int32
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
   use prelude.Borrow
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = int32
   clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve0 with type t = int32, function Model0.model = Model0.model,
   predicate Resolve0.resolve = Resolve1.resolve
-  clone Alloc_Vec_Impl1_Push_Interface as Push0 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model
+  clone Alloc_Vec_Impl1_Push_Interface as Push0 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model
   clone Alloc_Vec_Impl0_New_Interface as New0 with type t = int32, function Model0.model = Model0.model
-  let rec cfg create_arr [@cfg:stackify] [#"../index_range.rs" 14 0 14 27] (_ : ()) : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  let rec cfg create_arr [@cfg:stackify] [#"../index_range.rs" 14 0 14 27] (_ : ()) : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../index_range.rs" 7 4 12 25] Seq.length (Model0.model result) = 5 /\ Int32.to_int (Seq.get (Model0.model result) 0) = 0 /\ Int32.to_int (Seq.get (Model0.model result) 1) = 1 /\ Int32.to_int (Seq.get (Model0.model result) 2) = 2 /\ Int32.to_int (Seq.get (Model0.model result) 3) = 3 /\ Int32.to_int (Seq.get (Model0.model result) 4) = 4 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var arr_2 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _0 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var arr_2 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _3 : ();
-  var _4 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _4 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
   var _5 : ();
-  var _6 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _6 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
   var _7 : ();
-  var _8 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _8 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
   var _9 : ();
-  var _10 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _10 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
   var _11 : ();
-  var _12 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _12 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
   {
     goto BB0
   }
@@ -246,7 +246,7 @@ module IndexRange_CreateArr
   BB6 {
     assume { Resolve0.resolve _0 };
     _0 <- arr_2;
-    arr_2 <- any Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+    arr_2 <- any Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
     goto BB7
   }
   BB7 {
@@ -255,18 +255,16 @@ module IndexRange_CreateArr
   
 end
 module Core_Ops_Range_Range_Type
-  type core_ops_range_range_type 'idx =
-    | Core_Ops_Range_Range_Type 'idx 'idx
+  type t_range 'idx =
+    | C_Range 'idx 'idx
     
-  let function core_ops_range_range_type_Range_start (self : core_ops_range_range_type 'idx) : 'idx
-   = [@vc:do_not_keep_trace] [@vc:sp]
+  let function range_start (self : t_range 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | Core_Ops_Range_Range_Type a _ -> a
+      | C_Range a _ -> a
       end
-  let function core_ops_range_range_type_Range_end (self : core_ops_range_range_type 'idx) : 'idx
-   = [@vc:do_not_keep_trace] [@vc:sp]
+  let function range_end (self : t_range 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | Core_Ops_Range_Range_Type _ a -> a
+      | C_Range _ a -> a
       end
 end
 module CreusotContracts_Logic_Model_Model_ModelTy_Type
@@ -323,15 +321,15 @@ module Alloc_Vec_Impl16_Index_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -343,15 +341,15 @@ module Alloc_Vec_Impl16_Index
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -443,10 +441,10 @@ module Alloc_Vec_Impl10_Deref_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t, type a = a, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
-  val deref [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : seq t
+  val deref [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : seq t
     ensures { Model0.model result = Model1.model self }
     
 end
@@ -456,17 +454,17 @@ module Alloc_Vec_Impl10_Deref
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t, type a = a, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
-  val deref [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : seq t
+  val deref [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : seq t
     ensures { Model0.model result = Model1.model self }
     
 end
 module Core_Option_Option_Type
-  type core_option_option_type 't =
-    | Core_Option_Option_None_Type
-    | Core_Option_Option_Some_Type 't
+  type t_option 't =
+    | C_None
+    | C_Some 't
     
 end
 module Core_Slice_Impl0_Get_Interface
@@ -475,17 +473,17 @@ module Core_Slice_Impl0_Get_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Core_Option_Option_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
-  val get [@cfg:stackify] (self : seq t) (index : i) : Core_Option_Option_Type.core_option_option_type Output0.output
-    ensures { InBounds0.in_bounds index (Model0.model self) -> (exists r : Output0.output . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r /\ HasValue0.has_value index (Model0.model self) r) }
-    ensures { InBounds0.in_bounds index (Model0.model self) \/ result = Core_Option_Option_Type.Core_Option_Option_None_Type }
+  val get [@cfg:stackify] (self : seq t) (index : i) : Core_Option_Option_Type.t_option Output0.output
+    ensures { InBounds0.in_bounds index (Model0.model self) -> (exists r : Output0.output . result = Core_Option_Option_Type.C_Some r /\ HasValue0.has_value index (Model0.model self) r) }
+    ensures { InBounds0.in_bounds index (Model0.model self) \/ result = Core_Option_Option_Type.C_None }
     
 end
 module Core_Slice_Impl0_Get
@@ -494,33 +492,33 @@ module Core_Slice_Impl0_Get
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Core_Option_Option_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
-  val get [@cfg:stackify] (self : seq t) (index : i) : Core_Option_Option_Type.core_option_option_type Output0.output
-    ensures { InBounds0.in_bounds index (Model0.model self) -> (exists r : Output0.output . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r /\ HasValue0.has_value index (Model0.model self) r) }
-    ensures { InBounds0.in_bounds index (Model0.model self) \/ result = Core_Option_Option_Type.Core_Option_Option_None_Type }
+  val get [@cfg:stackify] (self : seq t) (index : i) : Core_Option_Option_Type.t_option Output0.output
+    ensures { InBounds0.in_bounds index (Model0.model self) -> (exists r : Output0.output . result = Core_Option_Option_Type.C_Some r /\ HasValue0.has_value index (Model0.model self) r) }
+    ensures { InBounds0.in_bounds index (Model0.model self) \/ result = Core_Option_Option_Type.C_None }
     
 end
 module Core_Option_Impl0_IsNone_Interface
   type t
   use prelude.Borrow
-  use Core_Option_Option_Type
-  val is_none [@cfg:stackify] (self : Core_Option_Option_Type.core_option_option_type t) : bool
-    ensures { result = (self = Core_Option_Option_Type.Core_Option_Option_None_Type) }
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  val is_none [@cfg:stackify] (self : Core_Option_Option_Type.t_option t) : bool
+    ensures { result = (self = Core_Option_Option_Type.C_None) }
     
 end
 module Core_Option_Impl0_IsNone
   type t
   use prelude.Borrow
-  use Core_Option_Option_Type
-  val is_none [@cfg:stackify] (self : Core_Option_Option_Type.core_option_option_type t) : bool
-    ensures { result = (self = Core_Option_Option_Type.Core_Option_Option_None_Type) }
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  val is_none [@cfg:stackify] (self : Core_Option_Option_Type.t_option t) : bool
+    ensures { result = (self = Core_Option_Option_Type.C_None) }
     
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface
@@ -545,9 +543,9 @@ module Alloc_Vec_Impl17_IndexMut_Interface
   use prelude.Borrow
   use seq.Seq
   use prelude.Slice
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere0 with type self = i,
   type t = seq t, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
@@ -555,7 +553,7 @@ module Alloc_Vec_Impl17_IndexMut_Interface
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (index : i) : borrowed Output0.output
+  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (Model0.model ( * self))}
     ensures { HasValue0.has_value index (Model0.model ( * self)) ( * result) }
     ensures { HasValue0.has_value index (Model0.model ( ^ self)) ( ^ result) }
@@ -570,9 +568,9 @@ module Alloc_Vec_Impl17_IndexMut
   use prelude.Borrow
   use seq.Seq
   use prelude.Slice
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere0 with type self = i,
   type t = seq t, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
@@ -580,7 +578,7 @@ module Alloc_Vec_Impl17_IndexMut
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (index : i) : borrowed Output0.output
+  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (Model0.model ( * self))}
     ensures { HasValue0.has_value index (Model0.model ( * self)) ( * result) }
     ensures { HasValue0.has_value index (Model0.model ( ^ self)) ( ^ result) }
@@ -610,9 +608,9 @@ module Alloc_Vec_Impl1_Len_Interface
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -624,9 +622,9 @@ module Alloc_Vec_Impl1_Len
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -652,19 +650,19 @@ module CreusotContracts_Std1_Slice_Impl4_InBounds_Interface
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_Range_Type
-  predicate in_bounds (self : Core_Ops_Range_Range_Type.core_ops_range_range_type usize) (seq : Seq.seq t)
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate in_bounds (self : Core_Ops_Range_Range_Type.t_range usize) (seq : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl4_InBounds
   type t
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_Range_Type
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   use mach.int.UInt64
-  predicate in_bounds (self : Core_Ops_Range_Range_Type.core_ops_range_range_type usize) (seq : Seq.seq t) =
-    UInt64.to_int (Core_Ops_Range_Range_Type.core_ops_range_range_type_Range_start self) <= UInt64.to_int (Core_Ops_Range_Range_Type.core_ops_range_range_type_Range_end self) /\ UInt64.to_int (Core_Ops_Range_Range_Type.core_ops_range_range_type_Range_end self) <= Seq.length seq
-  val in_bounds (self : Core_Ops_Range_Range_Type.core_ops_range_range_type usize) (seq : Seq.seq t) : bool
+  predicate in_bounds (self : Core_Ops_Range_Range_Type.t_range usize) (seq : Seq.seq t) =
+    UInt64.to_int (Core_Ops_Range_Range_Type.range_start self) <= UInt64.to_int (Core_Ops_Range_Range_Type.range_end self) /\ UInt64.to_int (Core_Ops_Range_Range_Type.range_end self) <= Seq.length seq
+  val in_bounds (self : Core_Ops_Range_Range_Type.t_range usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
 end
@@ -677,8 +675,8 @@ module CreusotContracts_Std1_Slice_Impl4_HasValue_Interface
   use prelude.UIntSize
   use seq.Seq
   use prelude.Slice
-  use Core_Ops_Range_Range_Type
-  predicate has_value (self : Core_Ops_Range_Range_Type.core_ops_range_range_type usize) (seq : Seq.seq t) (out : seq t)
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate has_value (self : Core_Ops_Range_Range_Type.t_range usize) (seq : Seq.seq t) (out : seq t)
 end
 module CreusotContracts_Std1_Slice_Impl4_HasValue
   type t
@@ -686,14 +684,13 @@ module CreusotContracts_Std1_Slice_Impl4_HasValue
   use prelude.UIntSize
   use seq.Seq
   use prelude.Slice
-  use Core_Ops_Range_Range_Type
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   use mach.int.UInt64
   use seq_ext.SeqExt
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
-  predicate has_value (self : Core_Ops_Range_Range_Type.core_ops_range_range_type usize) (seq : Seq.seq t) (out : seq t)
-   =
-    SeqExt.subsequence seq (UInt64.to_int (Core_Ops_Range_Range_Type.core_ops_range_range_type_Range_start self)) (UInt64.to_int (Core_Ops_Range_Range_Type.core_ops_range_range_type_Range_end self)) = Model0.model out
-  val has_value (self : Core_Ops_Range_Range_Type.core_ops_range_range_type usize) (seq : Seq.seq t) (out : seq t) : bool
+  predicate has_value (self : Core_Ops_Range_Range_Type.t_range usize) (seq : Seq.seq t) (out : seq t) =
+    SeqExt.subsequence seq (UInt64.to_int (Core_Ops_Range_Range_Type.range_start self)) (UInt64.to_int (Core_Ops_Range_Range_Type.range_end self)) = Model0.model out
+  val has_value (self : Core_Ops_Range_Range_Type.t_range usize) (seq : Seq.seq t) (out : seq t) : bool
     ensures { result = has_value self seq out }
     
 end
@@ -718,23 +715,20 @@ module CreusotContracts_Std1_Slice_Impl4_ResolveElswhere_Interface
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_Range_Type
-  predicate resolve_elswhere (self : Core_Ops_Range_Range_Type.core_ops_range_range_type usize) (old' : Seq.seq t) (fin : Seq.seq t)
-    
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate resolve_elswhere (self : Core_Ops_Range_Range_Type.t_range usize) (old' : Seq.seq t) (fin : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl4_ResolveElswhere
   type t
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_Range_Type
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   use mach.int.Int32
   use mach.int.UInt64
-  predicate resolve_elswhere (self : Core_Ops_Range_Range_Type.core_ops_range_range_type usize) (old' : Seq.seq t) (fin : Seq.seq t)
-    
-   =
-    forall i : int . 0 <= i /\ (i < UInt64.to_int (Core_Ops_Range_Range_Type.core_ops_range_range_type_Range_start self) \/ UInt64.to_int (Core_Ops_Range_Range_Type.core_ops_range_range_type_Range_end self) <= i) /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
-  val resolve_elswhere (self : Core_Ops_Range_Range_Type.core_ops_range_range_type usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
+  predicate resolve_elswhere (self : Core_Ops_Range_Range_Type.t_range usize) (old' : Seq.seq t) (fin : Seq.seq t) =
+    forall i : int . 0 <= i /\ (i < UInt64.to_int (Core_Ops_Range_Range_Type.range_start self) \/ UInt64.to_int (Core_Ops_Range_Range_Type.range_end self) <= i) /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+  val resolve_elswhere (self : Core_Ops_Range_Range_Type.t_range usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
     ensures { result = resolve_elswhere self old' fin }
     
 end
@@ -797,14 +791,11 @@ module IndexRange_TestRange
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Core_Ops_Range_Range_Type
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  use Core_Option_Option_Type
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = int32
   clone Core_Slice_Index_Impl2_Output_Type as Output1 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue1 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds1 with type t = int32
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   clone CreusotContracts_Std1_Slice_Impl4_ResolveElswhere as ResolveElswhere0 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model2 with type t = int32, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = int32
@@ -814,45 +805,45 @@ module IndexRange_TestRange
   clone CreusotContracts_Std1_Slice_Impl4_HasValue as HasValue0 with type t = int32,
   function Model0.model = Model2.model
   clone CreusotContracts_Std1_Slice_Impl4_InBounds as InBounds0 with type t = int32
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve1 with type t = int32, function Model0.model = Model0.model,
   predicate Resolve0.resolve = Resolve2.resolve
   clone Alloc_Vec_Impl16_Index_Interface as Index1 with type t = int32, type i = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model0.model,
   predicate InBounds0.in_bounds = InBounds1.in_bounds, predicate HasValue0.has_value = HasValue1.has_value,
   type Output0.output = Output1.output
-  clone Alloc_Vec_Impl1_Len_Interface as Len1 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model
+  clone Alloc_Vec_Impl1_Len_Interface as Len1 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = seq int32
   clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = int32,
-  type i = Core_Ops_Range_Range_Type.core_ops_range_range_type usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
-  predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
+  type i = Core_Ops_Range_Range_Type.t_range usize, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
+  predicate HasValue0.has_value = HasValue0.has_value,
   predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere, type Output0.output = Output0.output
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = seq int32
-  clone Core_Slice_Impl0_Get_Interface as Get0 with type t = int32,
-  type i = Core_Ops_Range_Range_Type.core_ops_range_range_type usize, function Model0.model = Model2.model,
-  predicate InBounds0.in_bounds = InBounds0.in_bounds, type Output0.output = Output0.output,
-  predicate HasValue0.has_value = HasValue0.has_value
-  clone Alloc_Vec_Impl10_Deref_Interface as Deref0 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model2.model,
-  function Model1.model = Model0.model
+  clone Core_Slice_Impl0_Get_Interface as Get0 with type t = int32, type i = Core_Ops_Range_Range_Type.t_range usize,
+  function Model0.model = Model2.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
+  type Output0.output = Output0.output, predicate HasValue0.has_value = HasValue0.has_value
+  clone Alloc_Vec_Impl10_Deref_Interface as Deref0 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model2.model, function Model1.model = Model0.model
   clone Core_Slice_Impl0_Len_Interface as Len0 with type t = int32, function Model0.model = Model1.model
   clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = int32,
-  type i = Core_Ops_Range_Range_Type.core_ops_range_range_type usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
-  predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
-  type Output0.output = Output0.output
+  type i = Core_Ops_Range_Range_Type.t_range usize, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
+  predicate HasValue0.has_value = HasValue0.has_value, type Output0.output = Output0.output
   clone IndexRange_CreateArr_Interface as CreateArr0 with function Model0.model = Model0.model
   let rec cfg test_range [@cfg:stackify] [#"../index_range.rs" 27 0 27 19] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var arr_1 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var arr_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var s_2 : seq int32;
   var _3 : seq int32;
-  var _4 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _5 : Core_Ops_Range_Range_Type.core_ops_range_range_type usize;
+  var _4 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _5 : Core_Ops_Range_Range_Type.t_range usize;
   var _6 : ();
   var _7 : bool;
   var _8 : bool;
@@ -873,8 +864,8 @@ module IndexRange_TestRange
   var _23 : ();
   var s_24 : seq int32;
   var _25 : seq int32;
-  var _26 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _27 : Core_Ops_Range_Range_Type.core_ops_range_range_type usize;
+  var _26 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _27 : Core_Ops_Range_Range_Type.t_range usize;
   var _28 : ();
   var _29 : bool;
   var _30 : bool;
@@ -899,8 +890,8 @@ module IndexRange_TestRange
   var _49 : usize;
   var _50 : seq int32;
   var _51 : seq int32;
-  var _52 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _53 : Core_Ops_Range_Range_Type.core_ops_range_range_type usize;
+  var _52 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _53 : Core_Ops_Range_Range_Type.t_range usize;
   var _54 : ();
   var _55 : ();
   var _56 : bool;
@@ -908,53 +899,53 @@ module IndexRange_TestRange
   var _58 : usize;
   var _59 : seq int32;
   var _60 : seq int32;
-  var _61 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _62 : Core_Ops_Range_Range_Type.core_ops_range_range_type usize;
+  var _61 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _62 : Core_Ops_Range_Range_Type.t_range usize;
   var _63 : ();
   var _64 : ();
   var _65 : bool;
   var _66 : bool;
-  var _67 : Core_Option_Option_Type.core_option_option_type (seq int32);
-  var _68 : Core_Option_Option_Type.core_option_option_type (seq int32);
+  var _67 : Core_Option_Option_Type.t_option (seq int32);
+  var _68 : Core_Option_Option_Type.t_option (seq int32);
   var _69 : seq int32;
   var _70 : seq int32;
-  var _71 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _72 : Core_Ops_Range_Range_Type.core_ops_range_range_type usize;
+  var _71 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _72 : Core_Ops_Range_Range_Type.t_range usize;
   var _73 : ();
   var _74 : ();
   var _75 : bool;
   var _76 : bool;
-  var _77 : Core_Option_Option_Type.core_option_option_type (seq int32);
-  var _78 : Core_Option_Option_Type.core_option_option_type (seq int32);
+  var _77 : Core_Option_Option_Type.t_option (seq int32);
+  var _78 : Core_Option_Option_Type.t_option (seq int32);
   var _79 : seq int32;
   var _80 : seq int32;
-  var _81 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _82 : Core_Ops_Range_Range_Type.core_ops_range_range_type usize;
+  var _81 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _82 : Core_Ops_Range_Range_Type.t_range usize;
   var _83 : ();
   var _84 : ();
   var _85 : bool;
   var _86 : bool;
-  var _87 : Core_Option_Option_Type.core_option_option_type (seq int32);
-  var _88 : Core_Option_Option_Type.core_option_option_type (seq int32);
+  var _87 : Core_Option_Option_Type.t_option (seq int32);
+  var _88 : Core_Option_Option_Type.t_option (seq int32);
   var _89 : seq int32;
   var _90 : seq int32;
-  var _91 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _92 : Core_Ops_Range_Range_Type.core_ops_range_range_type usize;
+  var _91 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _92 : Core_Ops_Range_Range_Type.t_range usize;
   var _93 : ();
   var _94 : ();
   var _95 : bool;
   var _96 : bool;
-  var _97 : Core_Option_Option_Type.core_option_option_type (seq int32);
-  var _98 : Core_Option_Option_Type.core_option_option_type (seq int32);
+  var _97 : Core_Option_Option_Type.t_option (seq int32);
+  var _98 : Core_Option_Option_Type.t_option (seq int32);
   var _99 : seq int32;
   var _100 : seq int32;
-  var _101 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _102 : Core_Ops_Range_Range_Type.core_ops_range_range_type usize;
+  var _101 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _102 : Core_Ops_Range_Range_Type.t_range usize;
   var _103 : ();
   var s_104 : borrowed (seq int32);
   var _105 : borrowed (seq int32);
-  var _106 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
-  var _107 : Core_Ops_Range_Range_Type.core_ops_range_range_type usize;
+  var _106 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
+  var _107 : Core_Ops_Range_Range_Type.t_range usize;
   var _108 : ();
   var _109 : bool;
   var _110 : bool;
@@ -979,42 +970,42 @@ module IndexRange_TestRange
   var _129 : bool;
   var _130 : bool;
   var _131 : usize;
-  var _132 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _132 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _133 : ();
   var _134 : ();
   var _135 : bool;
   var _136 : bool;
   var _137 : int32;
   var _138 : int32;
-  var _139 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _139 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _140 : ();
   var _141 : ();
   var _142 : bool;
   var _143 : bool;
   var _144 : int32;
   var _145 : int32;
-  var _146 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _146 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _147 : ();
   var _148 : ();
   var _149 : bool;
   var _150 : bool;
   var _151 : int32;
   var _152 : int32;
-  var _153 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _153 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _154 : ();
   var _155 : ();
   var _156 : bool;
   var _157 : bool;
   var _158 : int32;
   var _159 : int32;
-  var _160 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _160 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _161 : ();
   var _162 : ();
   var _163 : bool;
   var _164 : bool;
   var _165 : int32;
   var _166 : int32;
-  var _167 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _167 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _168 : ();
   {
     goto BB0
@@ -1025,7 +1016,7 @@ module IndexRange_TestRange
   }
   BB1 {
     _4 <- arr_1;
-    _5 <- Core_Ops_Range_Range_Type.Core_Ops_Range_Range_Type (0 : usize) (2 : usize);
+    _5 <- Core_Ops_Range_Range_Type.C_Range (0 : usize) (2 : usize);
     _3 <- ([#"../index_range.rs" 34 13 34 22] Index0.index _4 _5);
     goto BB2
   }
@@ -1097,7 +1088,7 @@ module IndexRange_TestRange
   BB13 {
     _6 <- ();
     _26 <- arr_1;
-    _27 <- Core_Ops_Range_Range_Type.Core_Ops_Range_Range_Type (3 : usize) (5 : usize);
+    _27 <- Core_Ops_Range_Range_Type.C_Range (3 : usize) (5 : usize);
     _25 <- ([#"../index_range.rs" 37 13 37 22] Index0.index _26 _27);
     goto BB14
   }
@@ -1169,7 +1160,7 @@ module IndexRange_TestRange
   BB25 {
     _28 <- ();
     _52 <- arr_1;
-    _53 <- Core_Ops_Range_Range_Type.Core_Ops_Range_Range_Type (2 : usize) (2 : usize);
+    _53 <- Core_Ops_Range_Range_Type.C_Range (2 : usize) (2 : usize);
     _51 <- ([#"../index_range.rs" 43 12 43 21] Index0.index _52 _53);
     goto BB26
   }
@@ -1192,7 +1183,7 @@ module IndexRange_TestRange
   BB29 {
     _46 <- ();
     _61 <- arr_1;
-    _62 <- Core_Ops_Range_Range_Type.Core_Ops_Range_Range_Type (5 : usize) (5 : usize);
+    _62 <- Core_Ops_Range_Range_Type.C_Range (5 : usize) (5 : usize);
     _60 <- ([#"../index_range.rs" 45 12 45 21] Index0.index _61 _62);
     goto BB30
   }
@@ -1220,7 +1211,7 @@ module IndexRange_TestRange
   }
   BB34 {
     _69 <- _70;
-    _72 <- Core_Ops_Range_Range_Type.Core_Ops_Range_Range_Type (2 : usize) (6 : usize);
+    _72 <- Core_Ops_Range_Range_Type.C_Range (2 : usize) (6 : usize);
     _68 <- ([#"../index_range.rs" 50 12 50 25] Get0.get _69 _72);
     goto BB35
   }
@@ -1247,7 +1238,7 @@ module IndexRange_TestRange
   }
   BB39 {
     _79 <- _80;
-    _82 <- Core_Ops_Range_Range_Type.Core_Ops_Range_Range_Type (2 : usize) (1 : usize);
+    _82 <- Core_Ops_Range_Range_Type.C_Range (2 : usize) (1 : usize);
     _78 <- ([#"../index_range.rs" 52 12 52 25] Get0.get _79 _82);
     goto BB40
   }
@@ -1274,7 +1265,7 @@ module IndexRange_TestRange
   }
   BB44 {
     _89 <- _90;
-    _92 <- Core_Ops_Range_Range_Type.Core_Ops_Range_Range_Type (6 : usize) (6 : usize);
+    _92 <- Core_Ops_Range_Range_Type.C_Range (6 : usize) (6 : usize);
     _88 <- ([#"../index_range.rs" 54 12 54 25] Get0.get _89 _92);
     goto BB45
   }
@@ -1301,7 +1292,7 @@ module IndexRange_TestRange
   }
   BB49 {
     _99 <- _100;
-    _102 <- Core_Ops_Range_Range_Type.Core_Ops_Range_Range_Type (10 : usize) (10 : usize);
+    _102 <- Core_Ops_Range_Range_Type.C_Range (10 : usize) (10 : usize);
     _98 <- ([#"../index_range.rs" 56 12 56 27] Get0.get _99 _102);
     goto BB50
   }
@@ -1324,7 +1315,7 @@ module IndexRange_TestRange
     _94 <- ();
     _106 <- borrow_mut arr_1;
     arr_1 <-  ^ _106;
-    _107 <- Core_Ops_Range_Range_Type.Core_Ops_Range_Range_Type (1 : usize) (4 : usize);
+    _107 <- Core_Ops_Range_Range_Type.C_Range (1 : usize) (4 : usize);
     _105 <- ([#"../index_range.rs" 59 17 59 26] IndexMut0.index_mut _106 _107);
     goto BB54
   }
@@ -1504,13 +1495,12 @@ module IndexRange_TestRange
   
 end
 module Core_Ops_Range_RangeTo_Type
-  type core_ops_range_rangeto_type 'idx =
-    | Core_Ops_Range_RangeTo_Type 'idx
+  type t_rangeto 'idx =
+    | C_RangeTo 'idx
     
-  let function core_ops_range_rangeto_type_RangeTo_end (self : core_ops_range_rangeto_type 'idx) : 'idx
-   = [@vc:do_not_keep_trace] [@vc:sp]
+  let function rangeto_end (self : t_rangeto 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | Core_Ops_Range_RangeTo_Type a -> a
+      | C_RangeTo a -> a
       end
 end
 module CreusotContracts_Std1_Slice_Impl5_InBounds_Interface
@@ -1518,19 +1508,19 @@ module CreusotContracts_Std1_Slice_Impl5_InBounds_Interface
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_RangeTo_Type
-  predicate in_bounds (self : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize) (seq : Seq.seq t)
+  use Core_Ops_Range_RangeTo_Type as Core_Ops_Range_RangeTo_Type
+  predicate in_bounds (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (seq : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl5_InBounds
   type t
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_RangeTo_Type
+  use Core_Ops_Range_RangeTo_Type as Core_Ops_Range_RangeTo_Type
   use mach.int.UInt64
-  predicate in_bounds (self : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize) (seq : Seq.seq t) =
-    UInt64.to_int (Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type_RangeTo_end self) <= Seq.length seq
-  val in_bounds (self : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize) (seq : Seq.seq t) : bool
+  predicate in_bounds (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (seq : Seq.seq t) =
+    UInt64.to_int (Core_Ops_Range_RangeTo_Type.rangeto_end self) <= Seq.length seq
+  val in_bounds (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
 end
@@ -1543,9 +1533,8 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue_Interface
   use prelude.UIntSize
   use seq.Seq
   use prelude.Slice
-  use Core_Ops_Range_RangeTo_Type
-  predicate has_value (self : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize) (seq : Seq.seq t) (out : seq t)
-    
+  use Core_Ops_Range_RangeTo_Type as Core_Ops_Range_RangeTo_Type
+  predicate has_value (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (seq : Seq.seq t) (out : seq t)
 end
 module CreusotContracts_Std1_Slice_Impl5_HasValue
   type t
@@ -1553,16 +1542,14 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue
   use prelude.UIntSize
   use seq.Seq
   use prelude.Slice
-  use Core_Ops_Range_RangeTo_Type
+  use Core_Ops_Range_RangeTo_Type as Core_Ops_Range_RangeTo_Type
   use mach.int.Int32
   use mach.int.UInt64
   use seq_ext.SeqExt
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
-  predicate has_value (self : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize) (seq : Seq.seq t) (out : seq t)
-    
-   =
-    SeqExt.subsequence seq 0 (UInt64.to_int (Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type_RangeTo_end self)) = Model0.model out
-  val has_value (self : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize) (seq : Seq.seq t) (out : seq t) : bool
+  predicate has_value (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (seq : Seq.seq t) (out : seq t) =
+    SeqExt.subsequence seq 0 (UInt64.to_int (Core_Ops_Range_RangeTo_Type.rangeto_end self)) = Model0.model out
+  val has_value (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (seq : Seq.seq t) (out : seq t) : bool
     ensures { result = has_value self seq out }
     
 end
@@ -1581,22 +1568,19 @@ module CreusotContracts_Std1_Slice_Impl5_ResolveElswhere_Interface
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_RangeTo_Type
-  predicate resolve_elswhere (self : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize) (old' : Seq.seq t) (fin : Seq.seq t)
-    
+  use Core_Ops_Range_RangeTo_Type as Core_Ops_Range_RangeTo_Type
+  predicate resolve_elswhere (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (old' : Seq.seq t) (fin : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl5_ResolveElswhere
   type t
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_RangeTo_Type
+  use Core_Ops_Range_RangeTo_Type as Core_Ops_Range_RangeTo_Type
   use mach.int.UInt64
-  predicate resolve_elswhere (self : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize) (old' : Seq.seq t) (fin : Seq.seq t)
-    
-   =
-    forall i : int . UInt64.to_int (Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type_RangeTo_end self) <= i /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
-  val resolve_elswhere (self : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
+  predicate resolve_elswhere (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (old' : Seq.seq t) (fin : Seq.seq t) =
+    forall i : int . UInt64.to_int (Core_Ops_Range_RangeTo_Type.rangeto_end self) <= i /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+  val resolve_elswhere (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
     ensures { result = resolve_elswhere self old' fin }
     
 end
@@ -1610,14 +1594,11 @@ module IndexRange_TestRangeTo
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Core_Ops_Range_RangeTo_Type
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  use Core_Option_Option_Type
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = int32
   clone Core_Slice_Index_Impl2_Output_Type as Output1 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue1 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds1 with type t = int32
+  use Core_Ops_Range_RangeTo_Type as Core_Ops_Range_RangeTo_Type
   clone CreusotContracts_Std1_Slice_Impl5_ResolveElswhere as ResolveElswhere0 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model2 with type t = int32, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = int32
@@ -1627,45 +1608,46 @@ module IndexRange_TestRangeTo
   clone CreusotContracts_Std1_Slice_Impl5_HasValue as HasValue0 with type t = int32,
   function Model0.model = Model2.model
   clone CreusotContracts_Std1_Slice_Impl5_InBounds as InBounds0 with type t = int32
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve1 with type t = int32, function Model0.model = Model0.model,
   predicate Resolve0.resolve = Resolve2.resolve
   clone Alloc_Vec_Impl16_Index_Interface as Index1 with type t = int32, type i = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model0.model,
   predicate InBounds0.in_bounds = InBounds1.in_bounds, predicate HasValue0.has_value = HasValue1.has_value,
   type Output0.output = Output1.output
-  clone Alloc_Vec_Impl1_Len_Interface as Len1 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model
+  clone Alloc_Vec_Impl1_Len_Interface as Len1 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = seq int32
   clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = int32,
-  type i = Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
-  predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
+  type i = Core_Ops_Range_RangeTo_Type.t_rangeto usize, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
+  predicate HasValue0.has_value = HasValue0.has_value,
   predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere, type Output0.output = Output0.output
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = seq int32
   clone Core_Slice_Impl0_Get_Interface as Get0 with type t = int32,
-  type i = Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize, function Model0.model = Model2.model,
+  type i = Core_Ops_Range_RangeTo_Type.t_rangeto usize, function Model0.model = Model2.model,
   predicate InBounds0.in_bounds = InBounds0.in_bounds, type Output0.output = Output0.output,
   predicate HasValue0.has_value = HasValue0.has_value
-  clone Alloc_Vec_Impl10_Deref_Interface as Deref0 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model2.model,
-  function Model1.model = Model0.model
+  clone Alloc_Vec_Impl10_Deref_Interface as Deref0 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model2.model, function Model1.model = Model0.model
   clone Core_Slice_Impl0_Len_Interface as Len0 with type t = int32, function Model0.model = Model1.model
   clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = int32,
-  type i = Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
-  predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
-  type Output0.output = Output0.output
+  type i = Core_Ops_Range_RangeTo_Type.t_rangeto usize, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
+  predicate HasValue0.has_value = HasValue0.has_value, type Output0.output = Output0.output
   clone IndexRange_CreateArr_Interface as CreateArr0 with function Model0.model = Model0.model
   let rec cfg test_range_to [@cfg:stackify] [#"../index_range.rs" 78 0 78 22] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var arr_1 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var arr_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var s_2 : seq int32;
   var _3 : seq int32;
-  var _4 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _5 : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize;
+  var _4 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _5 : Core_Ops_Range_RangeTo_Type.t_rangeto usize;
   var _6 : ();
   var _7 : bool;
   var _8 : bool;
@@ -1690,23 +1672,23 @@ module IndexRange_TestRangeTo
   var _27 : usize;
   var _28 : seq int32;
   var _29 : seq int32;
-  var _30 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _31 : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize;
+  var _30 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _31 : Core_Ops_Range_RangeTo_Type.t_rangeto usize;
   var _32 : ();
   var _33 : ();
   var _34 : bool;
   var _35 : bool;
-  var _36 : Core_Option_Option_Type.core_option_option_type (seq int32);
-  var _37 : Core_Option_Option_Type.core_option_option_type (seq int32);
+  var _36 : Core_Option_Option_Type.t_option (seq int32);
+  var _37 : Core_Option_Option_Type.t_option (seq int32);
   var _38 : seq int32;
   var _39 : seq int32;
-  var _40 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _41 : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize;
+  var _40 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _41 : Core_Ops_Range_RangeTo_Type.t_rangeto usize;
   var _42 : ();
   var s_43 : borrowed (seq int32);
   var _44 : borrowed (seq int32);
-  var _45 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
-  var _46 : Core_Ops_Range_RangeTo_Type.core_ops_range_rangeto_type usize;
+  var _45 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
+  var _46 : Core_Ops_Range_RangeTo_Type.t_rangeto usize;
   var _47 : ();
   var _48 : bool;
   var _49 : bool;
@@ -1731,42 +1713,42 @@ module IndexRange_TestRangeTo
   var _68 : bool;
   var _69 : bool;
   var _70 : usize;
-  var _71 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _71 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _72 : ();
   var _73 : ();
   var _74 : bool;
   var _75 : bool;
   var _76 : int32;
   var _77 : int32;
-  var _78 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _78 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _79 : ();
   var _80 : ();
   var _81 : bool;
   var _82 : bool;
   var _83 : int32;
   var _84 : int32;
-  var _85 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _85 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _86 : ();
   var _87 : ();
   var _88 : bool;
   var _89 : bool;
   var _90 : int32;
   var _91 : int32;
-  var _92 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _92 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _93 : ();
   var _94 : ();
   var _95 : bool;
   var _96 : bool;
   var _97 : int32;
   var _98 : int32;
-  var _99 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _99 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _100 : ();
   var _101 : ();
   var _102 : bool;
   var _103 : bool;
   var _104 : int32;
   var _105 : int32;
-  var _106 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _106 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _107 : ();
   {
     goto BB0
@@ -1777,7 +1759,7 @@ module IndexRange_TestRangeTo
   }
   BB1 {
     _4 <- arr_1;
-    _5 <- Core_Ops_Range_RangeTo_Type.Core_Ops_Range_RangeTo_Type (2 : usize);
+    _5 <- Core_Ops_Range_RangeTo_Type.C_RangeTo (2 : usize);
     _3 <- ([#"../index_range.rs" 85 13 85 21] Index0.index _4 _5);
     goto BB2
   }
@@ -1849,7 +1831,7 @@ module IndexRange_TestRangeTo
   BB13 {
     _6 <- ();
     _30 <- arr_1;
-    _31 <- Core_Ops_Range_RangeTo_Type.Core_Ops_Range_RangeTo_Type (0 : usize);
+    _31 <- Core_Ops_Range_RangeTo_Type.C_RangeTo (0 : usize);
     _29 <- ([#"../index_range.rs" 91 12 91 20] Index0.index _30 _31);
     goto BB14
   }
@@ -1877,7 +1859,7 @@ module IndexRange_TestRangeTo
   }
   BB18 {
     _38 <- _39;
-    _41 <- Core_Ops_Range_RangeTo_Type.Core_Ops_Range_RangeTo_Type (6 : usize);
+    _41 <- Core_Ops_Range_RangeTo_Type.C_RangeTo (6 : usize);
     _37 <- ([#"../index_range.rs" 96 12 96 24] Get0.get _38 _41);
     goto BB19
   }
@@ -1900,7 +1882,7 @@ module IndexRange_TestRangeTo
     _33 <- ();
     _45 <- borrow_mut arr_1;
     arr_1 <-  ^ _45;
-    _46 <- Core_Ops_Range_RangeTo_Type.Core_Ops_Range_RangeTo_Type (3 : usize);
+    _46 <- Core_Ops_Range_RangeTo_Type.C_RangeTo (3 : usize);
     _44 <- ([#"../index_range.rs" 99 17 99 25] IndexMut0.index_mut _45 _46);
     goto BB23
   }
@@ -2080,13 +2062,12 @@ module IndexRange_TestRangeTo
   
 end
 module Core_Ops_Range_RangeFrom_Type
-  type core_ops_range_rangefrom_type 'idx =
-    | Core_Ops_Range_RangeFrom_Type 'idx
+  type t_rangefrom 'idx =
+    | C_RangeFrom 'idx
     
-  let function core_ops_range_rangefrom_type_RangeFrom_start (self : core_ops_range_rangefrom_type 'idx) : 'idx
-   = [@vc:do_not_keep_trace] [@vc:sp]
+  let function rangefrom_start (self : t_rangefrom 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | Core_Ops_Range_RangeFrom_Type a -> a
+      | C_RangeFrom a -> a
       end
 end
 module CreusotContracts_Std1_Slice_Impl6_InBounds_Interface
@@ -2094,19 +2075,19 @@ module CreusotContracts_Std1_Slice_Impl6_InBounds_Interface
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_RangeFrom_Type
-  predicate in_bounds (self : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize) (seq : Seq.seq t)
+  use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
+  predicate in_bounds (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (seq : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl6_InBounds
   type t
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_RangeFrom_Type
+  use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
   use mach.int.UInt64
-  predicate in_bounds (self : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize) (seq : Seq.seq t) =
-    UInt64.to_int (Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type_RangeFrom_start self) <= Seq.length seq
-  val in_bounds (self : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize) (seq : Seq.seq t) : bool
+  predicate in_bounds (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (seq : Seq.seq t) =
+    UInt64.to_int (Core_Ops_Range_RangeFrom_Type.rangefrom_start self) <= Seq.length seq
+  val in_bounds (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
 end
@@ -2119,9 +2100,8 @@ module CreusotContracts_Std1_Slice_Impl6_HasValue_Interface
   use prelude.UIntSize
   use seq.Seq
   use prelude.Slice
-  use Core_Ops_Range_RangeFrom_Type
-  predicate has_value (self : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize) (seq : Seq.seq t) (out : seq t)
-    
+  use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
+  predicate has_value (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (seq : Seq.seq t) (out : seq t)
 end
 module CreusotContracts_Std1_Slice_Impl6_HasValue
   type t
@@ -2129,15 +2109,13 @@ module CreusotContracts_Std1_Slice_Impl6_HasValue
   use prelude.UIntSize
   use seq.Seq
   use prelude.Slice
-  use Core_Ops_Range_RangeFrom_Type
+  use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
   use mach.int.UInt64
   use seq_ext.SeqExt
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
-  predicate has_value (self : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize) (seq : Seq.seq t) (out : seq t)
-    
-   =
-    SeqExt.subsequence seq (UInt64.to_int (Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type_RangeFrom_start self)) (Seq.length seq) = Model0.model out
-  val has_value (self : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize) (seq : Seq.seq t) (out : seq t) : bool
+  predicate has_value (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (seq : Seq.seq t) (out : seq t) =
+    SeqExt.subsequence seq (UInt64.to_int (Core_Ops_Range_RangeFrom_Type.rangefrom_start self)) (Seq.length seq) = Model0.model out
+  val has_value (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (seq : Seq.seq t) (out : seq t) : bool
     ensures { result = has_value self seq out }
     
 end
@@ -2156,8 +2134,8 @@ module CreusotContracts_Std1_Slice_Impl6_ResolveElswhere_Interface
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_RangeFrom_Type
-  predicate resolve_elswhere (self : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize) (old' : Seq.seq t) (fin : Seq.seq t)
+  use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
+  predicate resolve_elswhere (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (old' : Seq.seq t) (fin : Seq.seq t)
     
 end
 module CreusotContracts_Std1_Slice_Impl6_ResolveElswhere
@@ -2165,14 +2143,14 @@ module CreusotContracts_Std1_Slice_Impl6_ResolveElswhere
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_RangeFrom_Type
+  use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
   use mach.int.Int32
   use mach.int.UInt64
-  predicate resolve_elswhere (self : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize) (old' : Seq.seq t) (fin : Seq.seq t)
+  predicate resolve_elswhere (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (old' : Seq.seq t) (fin : Seq.seq t)
     
    =
-    forall i : int . 0 <= i /\ i < UInt64.to_int (Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type_RangeFrom_start self) /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
-  val resolve_elswhere (self : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
+    forall i : int . 0 <= i /\ i < UInt64.to_int (Core_Ops_Range_RangeFrom_Type.rangefrom_start self) /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+  val resolve_elswhere (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
     ensures { result = resolve_elswhere self old' fin }
     
 end
@@ -2186,14 +2164,11 @@ module IndexRange_TestRangeFrom
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Core_Ops_Range_RangeFrom_Type
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  use Core_Option_Option_Type
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = int32
   clone Core_Slice_Index_Impl2_Output_Type as Output1 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue1 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds1 with type t = int32
+  use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
   clone CreusotContracts_Std1_Slice_Impl6_ResolveElswhere as ResolveElswhere0 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model2 with type t = int32, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = int32
@@ -2203,45 +2178,46 @@ module IndexRange_TestRangeFrom
   clone CreusotContracts_Std1_Slice_Impl6_HasValue as HasValue0 with type t = int32,
   function Model0.model = Model2.model
   clone CreusotContracts_Std1_Slice_Impl6_InBounds as InBounds0 with type t = int32
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve1 with type t = int32, function Model0.model = Model0.model,
   predicate Resolve0.resolve = Resolve2.resolve
   clone Alloc_Vec_Impl16_Index_Interface as Index1 with type t = int32, type i = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model0.model,
   predicate InBounds0.in_bounds = InBounds1.in_bounds, predicate HasValue0.has_value = HasValue1.has_value,
   type Output0.output = Output1.output
-  clone Alloc_Vec_Impl1_Len_Interface as Len1 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model
+  clone Alloc_Vec_Impl1_Len_Interface as Len1 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = seq int32
   clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = int32,
-  type i = Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
-  predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
+  type i = Core_Ops_Range_RangeFrom_Type.t_rangefrom usize, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
+  predicate HasValue0.has_value = HasValue0.has_value,
   predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere, type Output0.output = Output0.output
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = seq int32
   clone Core_Slice_Impl0_Get_Interface as Get0 with type t = int32,
-  type i = Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize, function Model0.model = Model2.model,
+  type i = Core_Ops_Range_RangeFrom_Type.t_rangefrom usize, function Model0.model = Model2.model,
   predicate InBounds0.in_bounds = InBounds0.in_bounds, type Output0.output = Output0.output,
   predicate HasValue0.has_value = HasValue0.has_value
-  clone Alloc_Vec_Impl10_Deref_Interface as Deref0 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model2.model,
-  function Model1.model = Model0.model
+  clone Alloc_Vec_Impl10_Deref_Interface as Deref0 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model2.model, function Model1.model = Model0.model
   clone Core_Slice_Impl0_Len_Interface as Len0 with type t = int32, function Model0.model = Model1.model
   clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = int32,
-  type i = Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
-  predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
-  type Output0.output = Output0.output
+  type i = Core_Ops_Range_RangeFrom_Type.t_rangefrom usize, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
+  predicate HasValue0.has_value = HasValue0.has_value, type Output0.output = Output0.output
   clone IndexRange_CreateArr_Interface as CreateArr0 with function Model0.model = Model0.model
   let rec cfg test_range_from [@cfg:stackify] [#"../index_range.rs" 115 0 115 24] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var arr_1 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var arr_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var s_2 : seq int32;
   var _3 : seq int32;
-  var _4 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _5 : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize;
+  var _4 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _5 : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize;
   var _6 : ();
   var _7 : bool;
   var _8 : bool;
@@ -2266,33 +2242,33 @@ module IndexRange_TestRangeFrom
   var _27 : usize;
   var _28 : seq int32;
   var _29 : seq int32;
-  var _30 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _31 : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize;
+  var _30 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _31 : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize;
   var _32 : ();
   var _33 : ();
   var _34 : bool;
   var _35 : bool;
-  var _36 : Core_Option_Option_Type.core_option_option_type (seq int32);
-  var _37 : Core_Option_Option_Type.core_option_option_type (seq int32);
+  var _36 : Core_Option_Option_Type.t_option (seq int32);
+  var _37 : Core_Option_Option_Type.t_option (seq int32);
   var _38 : seq int32;
   var _39 : seq int32;
-  var _40 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _41 : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize;
+  var _40 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _41 : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize;
   var _42 : ();
   var _43 : ();
   var _44 : bool;
   var _45 : bool;
-  var _46 : Core_Option_Option_Type.core_option_option_type (seq int32);
-  var _47 : Core_Option_Option_Type.core_option_option_type (seq int32);
+  var _46 : Core_Option_Option_Type.t_option (seq int32);
+  var _47 : Core_Option_Option_Type.t_option (seq int32);
   var _48 : seq int32;
   var _49 : seq int32;
-  var _50 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _51 : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize;
+  var _50 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _51 : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize;
   var _52 : ();
   var s_53 : borrowed (seq int32);
   var _54 : borrowed (seq int32);
-  var _55 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
-  var _56 : Core_Ops_Range_RangeFrom_Type.core_ops_range_rangefrom_type usize;
+  var _55 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
+  var _56 : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize;
   var _57 : ();
   var _58 : bool;
   var _59 : bool;
@@ -2317,42 +2293,42 @@ module IndexRange_TestRangeFrom
   var _78 : bool;
   var _79 : bool;
   var _80 : usize;
-  var _81 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _81 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _82 : ();
   var _83 : ();
   var _84 : bool;
   var _85 : bool;
   var _86 : int32;
   var _87 : int32;
-  var _88 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _88 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _89 : ();
   var _90 : ();
   var _91 : bool;
   var _92 : bool;
   var _93 : int32;
   var _94 : int32;
-  var _95 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _95 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _96 : ();
   var _97 : ();
   var _98 : bool;
   var _99 : bool;
   var _100 : int32;
   var _101 : int32;
-  var _102 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _102 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _103 : ();
   var _104 : ();
   var _105 : bool;
   var _106 : bool;
   var _107 : int32;
   var _108 : int32;
-  var _109 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _109 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _110 : ();
   var _111 : ();
   var _112 : bool;
   var _113 : bool;
   var _114 : int32;
   var _115 : int32;
-  var _116 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _116 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _117 : ();
   {
     goto BB0
@@ -2363,7 +2339,7 @@ module IndexRange_TestRangeFrom
   }
   BB1 {
     _4 <- arr_1;
-    _5 <- Core_Ops_Range_RangeFrom_Type.Core_Ops_Range_RangeFrom_Type (3 : usize);
+    _5 <- Core_Ops_Range_RangeFrom_Type.C_RangeFrom (3 : usize);
     _3 <- ([#"../index_range.rs" 122 13 122 21] Index0.index _4 _5);
     goto BB2
   }
@@ -2435,7 +2411,7 @@ module IndexRange_TestRangeFrom
   BB13 {
     _6 <- ();
     _30 <- arr_1;
-    _31 <- Core_Ops_Range_RangeFrom_Type.Core_Ops_Range_RangeFrom_Type (5 : usize);
+    _31 <- Core_Ops_Range_RangeFrom_Type.C_RangeFrom (5 : usize);
     _29 <- ([#"../index_range.rs" 128 12 128 20] Index0.index _30 _31);
     goto BB14
   }
@@ -2463,7 +2439,7 @@ module IndexRange_TestRangeFrom
   }
   BB18 {
     _38 <- _39;
-    _41 <- Core_Ops_Range_RangeFrom_Type.Core_Ops_Range_RangeFrom_Type (6 : usize);
+    _41 <- Core_Ops_Range_RangeFrom_Type.C_RangeFrom (6 : usize);
     _37 <- ([#"../index_range.rs" 133 12 133 24] Get0.get _38 _41);
     goto BB19
   }
@@ -2490,7 +2466,7 @@ module IndexRange_TestRangeFrom
   }
   BB23 {
     _48 <- _49;
-    _51 <- Core_Ops_Range_RangeFrom_Type.Core_Ops_Range_RangeFrom_Type (10 : usize);
+    _51 <- Core_Ops_Range_RangeFrom_Type.C_RangeFrom (10 : usize);
     _47 <- ([#"../index_range.rs" 135 12 135 25] Get0.get _48 _51);
     goto BB24
   }
@@ -2513,7 +2489,7 @@ module IndexRange_TestRangeFrom
     _43 <- ();
     _55 <- borrow_mut arr_1;
     arr_1 <-  ^ _55;
-    _56 <- Core_Ops_Range_RangeFrom_Type.Core_Ops_Range_RangeFrom_Type (2 : usize);
+    _56 <- Core_Ops_Range_RangeFrom_Type.C_RangeFrom (2 : usize);
     _54 <- ([#"../index_range.rs" 138 17 138 25] IndexMut0.index_mut _55 _56);
     goto BB28
   }
@@ -2693,23 +2669,23 @@ module IndexRange_TestRangeFrom
   
 end
 module Core_Ops_Range_RangeFull_Type
-  type core_ops_range_rangefull_type  =
-    | Core_Ops_Range_RangeFull_Type
+  type t_rangefull  =
+    | C_RangeFull
     
 end
 module CreusotContracts_Std1_Slice_Impl7_InBounds_Interface
   type t
   use seq.Seq
-  use Core_Ops_Range_RangeFull_Type
-  predicate in_bounds (self : Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type) (_seq : Seq.seq t)
+  use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
+  predicate in_bounds (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (_seq : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl7_InBounds
   type t
   use seq.Seq
-  use Core_Ops_Range_RangeFull_Type
-  predicate in_bounds (self : Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type) (_seq : Seq.seq t) =
+  use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
+  predicate in_bounds (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (_seq : Seq.seq t) =
     true
-  val in_bounds (self : Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type) (_seq : Seq.seq t) : bool
+  val in_bounds (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (_seq : Seq.seq t) : bool
     ensures { result = in_bounds self _seq }
     
 end
@@ -2720,21 +2696,18 @@ module CreusotContracts_Std1_Slice_Impl7_HasValue_Interface
   type t
   use seq.Seq
   use prelude.Slice
-  use Core_Ops_Range_RangeFull_Type
-  predicate has_value (self : Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type) (seq : Seq.seq t) (out : seq t)
-    
+  use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
+  predicate has_value (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (seq : Seq.seq t) (out : seq t)
 end
 module CreusotContracts_Std1_Slice_Impl7_HasValue
   type t
   use seq.Seq
   use prelude.Slice
-  use Core_Ops_Range_RangeFull_Type
+  use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
-  predicate has_value (self : Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type) (seq : Seq.seq t) (out : seq t)
-    
-   =
+  predicate has_value (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (seq : Seq.seq t) (out : seq t) =
     seq = Model0.model out
-  val has_value (self : Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type) (seq : Seq.seq t) (out : seq t) : bool
+  val has_value (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (seq : Seq.seq t) (out : seq t) : bool
     ensures { result = has_value self seq out }
     
 end
@@ -2751,19 +2724,16 @@ end
 module CreusotContracts_Std1_Slice_Impl7_ResolveElswhere_Interface
   type t
   use seq.Seq
-  use Core_Ops_Range_RangeFull_Type
-  predicate resolve_elswhere (self : Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type) (_old : Seq.seq t) (_fin : Seq.seq t)
-    
+  use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
+  predicate resolve_elswhere (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (_old : Seq.seq t) (_fin : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl7_ResolveElswhere
   type t
   use seq.Seq
-  use Core_Ops_Range_RangeFull_Type
-  predicate resolve_elswhere (self : Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type) (_old : Seq.seq t) (_fin : Seq.seq t)
-    
-   =
+  use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
+  predicate resolve_elswhere (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (_old : Seq.seq t) (_fin : Seq.seq t) =
     true
-  val resolve_elswhere (self : Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type) (_old : Seq.seq t) (_fin : Seq.seq t) : bool
+  val resolve_elswhere (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (_old : Seq.seq t) (_fin : Seq.seq t) : bool
     ensures { result = resolve_elswhere self _old _fin }
     
 end
@@ -2777,14 +2747,12 @@ module IndexRange_TestRangeFull
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Core_Ops_Range_RangeFull_Type
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model2 with type t = int32, axiom .
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = int32
   clone Core_Slice_Index_Impl2_Output_Type as Output1 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue1 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds1 with type t = int32
+  use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
   clone CreusotContracts_Std1_Slice_Impl7_ResolveElswhere as ResolveElswhere0 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = int32
   clone CreusotContracts_Logic_Model_Impl0_Model as Model1 with type t = seq int32,
@@ -2793,37 +2761,38 @@ module IndexRange_TestRangeFull
   clone CreusotContracts_Std1_Slice_Impl7_HasValue as HasValue0 with type t = int32,
   function Model0.model = Model2.model
   clone CreusotContracts_Std1_Slice_Impl7_InBounds as InBounds0 with type t = int32
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
   clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve1 with type t = int32, function Model0.model = Model0.model,
   predicate Resolve0.resolve = Resolve2.resolve
   clone Alloc_Vec_Impl16_Index_Interface as Index1 with type t = int32, type i = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model0.model,
   predicate InBounds0.in_bounds = InBounds1.in_bounds, predicate HasValue0.has_value = HasValue1.has_value,
   type Output0.output = Output1.output
-  clone Alloc_Vec_Impl1_Len_Interface as Len1 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model
+  clone Alloc_Vec_Impl1_Len_Interface as Len1 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = seq int32
   clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = int32,
-  type i = Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
-  predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
+  type i = Core_Ops_Range_RangeFull_Type.t_rangefull, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
+  predicate HasValue0.has_value = HasValue0.has_value,
   predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere, type Output0.output = Output0.output
   clone Core_Slice_Impl0_Len_Interface as Len0 with type t = int32, function Model0.model = Model1.model
   clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = int32,
-  type i = Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
-  predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
-  type Output0.output = Output0.output
+  type i = Core_Ops_Range_RangeFull_Type.t_rangefull, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
+  predicate HasValue0.has_value = HasValue0.has_value, type Output0.output = Output0.output
   clone IndexRange_CreateArr_Interface as CreateArr0 with function Model0.model = Model0.model
   let rec cfg test_range_full [@cfg:stackify] [#"../index_range.rs" 154 0 154 24] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var arr_1 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var arr_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var s_2 : seq int32;
   var _3 : seq int32;
-  var _4 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _5 : Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type;
+  var _4 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _5 : Core_Ops_Range_RangeFull_Type.t_rangefull;
   var _6 : ();
   var _7 : bool;
   var _8 : bool;
@@ -2862,8 +2831,8 @@ module IndexRange_TestRangeFull
   var _41 : ();
   var s_42 : borrowed (seq int32);
   var _43 : borrowed (seq int32);
-  var _44 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
-  var _45 : Core_Ops_Range_RangeFull_Type.core_ops_range_rangefull_type;
+  var _44 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
+  var _45 : Core_Ops_Range_RangeFull_Type.t_rangefull;
   var _46 : ();
   var _47 : bool;
   var _48 : bool;
@@ -2880,42 +2849,42 @@ module IndexRange_TestRangeFull
   var _59 : bool;
   var _60 : bool;
   var _61 : usize;
-  var _62 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _62 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _63 : ();
   var _64 : ();
   var _65 : bool;
   var _66 : bool;
   var _67 : int32;
   var _68 : int32;
-  var _69 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _69 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _70 : ();
   var _71 : ();
   var _72 : bool;
   var _73 : bool;
   var _74 : int32;
   var _75 : int32;
-  var _76 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _76 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _77 : ();
   var _78 : ();
   var _79 : bool;
   var _80 : bool;
   var _81 : int32;
   var _82 : int32;
-  var _83 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _83 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _84 : ();
   var _85 : ();
   var _86 : bool;
   var _87 : bool;
   var _88 : int32;
   var _89 : int32;
-  var _90 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _90 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _91 : ();
   var _92 : ();
   var _93 : bool;
   var _94 : bool;
   var _95 : int32;
   var _96 : int32;
-  var _97 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _97 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _98 : ();
   {
     goto BB0
@@ -2926,7 +2895,7 @@ module IndexRange_TestRangeFull
   }
   BB1 {
     _4 <- arr_1;
-    _5 <- Core_Ops_Range_RangeFull_Type.Core_Ops_Range_RangeFull_Type;
+    _5 <- Core_Ops_Range_RangeFull_Type.C_RangeFull;
     _3 <- ([#"../index_range.rs" 161 13 161 20] Index0.index _4 _5);
     goto BB2
   }
@@ -3071,7 +3040,7 @@ module IndexRange_TestRangeFull
     _6 <- ();
     _44 <- borrow_mut arr_1;
     arr_1 <-  ^ _44;
-    _45 <- Core_Ops_Range_RangeFull_Type.Core_Ops_Range_RangeFull_Type;
+    _45 <- Core_Ops_Range_RangeFull_Type.C_RangeFull;
     _43 <- ([#"../index_range.rs" 165 17 165 24] IndexMut0.index_mut _44 _45);
     goto BB26
   }
@@ -3231,14 +3200,12 @@ module IndexRange_TestRangeFull
   
 end
 module Core_Ops_Range_RangeToInclusive_Type
-  type core_ops_range_rangetoinclusive_type 'idx =
-    | Core_Ops_Range_RangeToInclusive_Type 'idx
+  type t_rangetoinclusive 'idx =
+    | C_RangeToInclusive 'idx
     
-  let function core_ops_range_rangetoinclusive_type_RangeToInclusive_end (self : core_ops_range_rangetoinclusive_type 'idx) : 'idx
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
+  let function rangetoinclusive_end (self : t_rangetoinclusive 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | Core_Ops_Range_RangeToInclusive_Type a -> a
+      | C_RangeToInclusive a -> a
       end
 end
 module CreusotContracts_Std1_Slice_Impl8_InBounds_Interface
@@ -3246,22 +3213,19 @@ module CreusotContracts_Std1_Slice_Impl8_InBounds_Interface
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_RangeToInclusive_Type
-  predicate in_bounds (self : Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize) (seq : Seq.seq t)
-    
+  use Core_Ops_Range_RangeToInclusive_Type as Core_Ops_Range_RangeToInclusive_Type
+  predicate in_bounds (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (seq : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl8_InBounds
   type t
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_RangeToInclusive_Type
+  use Core_Ops_Range_RangeToInclusive_Type as Core_Ops_Range_RangeToInclusive_Type
   use mach.int.UInt64
-  predicate in_bounds (self : Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize) (seq : Seq.seq t)
-    
-   =
-    UInt64.to_int (Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type_RangeToInclusive_end self) < Seq.length seq
-  val in_bounds (self : Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize) (seq : Seq.seq t) : bool
+  predicate in_bounds (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (seq : Seq.seq t) =
+    UInt64.to_int (Core_Ops_Range_RangeToInclusive_Type.rangetoinclusive_end self) < Seq.length seq
+  val in_bounds (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
 end
@@ -3274,8 +3238,8 @@ module CreusotContracts_Std1_Slice_Impl8_HasValue_Interface
   use prelude.UIntSize
   use seq.Seq
   use prelude.Slice
-  use Core_Ops_Range_RangeToInclusive_Type
-  predicate has_value (self : Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize) (seq : Seq.seq t) (out : seq t)
+  use Core_Ops_Range_RangeToInclusive_Type as Core_Ops_Range_RangeToInclusive_Type
+  predicate has_value (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (seq : Seq.seq t) (out : seq t)
     
 end
 module CreusotContracts_Std1_Slice_Impl8_HasValue
@@ -3284,16 +3248,16 @@ module CreusotContracts_Std1_Slice_Impl8_HasValue
   use prelude.UIntSize
   use seq.Seq
   use prelude.Slice
-  use Core_Ops_Range_RangeToInclusive_Type
+  use Core_Ops_Range_RangeToInclusive_Type as Core_Ops_Range_RangeToInclusive_Type
   use mach.int.Int32
   use mach.int.UInt64
   use seq_ext.SeqExt
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
-  predicate has_value (self : Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize) (seq : Seq.seq t) (out : seq t)
+  predicate has_value (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (seq : Seq.seq t) (out : seq t)
     
    =
-    SeqExt.subsequence seq 0 (UInt64.to_int (Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type_RangeToInclusive_end self) + 1) = Model0.model out
-  val has_value (self : Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize) (seq : Seq.seq t) (out : seq t) : bool
+    SeqExt.subsequence seq 0 (UInt64.to_int (Core_Ops_Range_RangeToInclusive_Type.rangetoinclusive_end self) + 1) = Model0.model out
+  val has_value (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (seq : Seq.seq t) (out : seq t) : bool
     ensures { result = has_value self seq out }
     
 end
@@ -3312,8 +3276,8 @@ module CreusotContracts_Std1_Slice_Impl8_ResolveElswhere_Interface
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_RangeToInclusive_Type
-  predicate resolve_elswhere (self : Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize) (old' : Seq.seq t) (fin : Seq.seq t)
+  use Core_Ops_Range_RangeToInclusive_Type as Core_Ops_Range_RangeToInclusive_Type
+  predicate resolve_elswhere (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (old' : Seq.seq t) (fin : Seq.seq t)
     
 end
 module CreusotContracts_Std1_Slice_Impl8_ResolveElswhere
@@ -3321,13 +3285,13 @@ module CreusotContracts_Std1_Slice_Impl8_ResolveElswhere
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  use Core_Ops_Range_RangeToInclusive_Type
+  use Core_Ops_Range_RangeToInclusive_Type as Core_Ops_Range_RangeToInclusive_Type
   use mach.int.UInt64
-  predicate resolve_elswhere (self : Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize) (old' : Seq.seq t) (fin : Seq.seq t)
+  predicate resolve_elswhere (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (old' : Seq.seq t) (fin : Seq.seq t)
     
    =
-    forall i : int . UInt64.to_int (Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type_RangeToInclusive_end self) < i /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
-  val resolve_elswhere (self : Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
+    forall i : int . UInt64.to_int (Core_Ops_Range_RangeToInclusive_Type.rangetoinclusive_end self) < i /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+  val resolve_elswhere (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
     ensures { result = resolve_elswhere self old' fin }
     
 end
@@ -3341,14 +3305,11 @@ module IndexRange_TestRangeToInclusive
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Core_Ops_Range_RangeToInclusive_Type
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  use Core_Option_Option_Type
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = int32
   clone Core_Slice_Index_Impl2_Output_Type as Output1 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue1 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds1 with type t = int32
+  use Core_Ops_Range_RangeToInclusive_Type as Core_Ops_Range_RangeToInclusive_Type
   clone CreusotContracts_Std1_Slice_Impl8_ResolveElswhere as ResolveElswhere0 with type t = int32
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model2 with type t = int32, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = int32
@@ -3358,45 +3319,46 @@ module IndexRange_TestRangeToInclusive
   clone CreusotContracts_Std1_Slice_Impl8_HasValue as HasValue0 with type t = int32,
   function Model0.model = Model2.model
   clone CreusotContracts_Std1_Slice_Impl8_InBounds as InBounds0 with type t = int32
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve1 with type t = int32, function Model0.model = Model0.model,
   predicate Resolve0.resolve = Resolve2.resolve
   clone Alloc_Vec_Impl16_Index_Interface as Index1 with type t = int32, type i = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model0.model,
   predicate InBounds0.in_bounds = InBounds1.in_bounds, predicate HasValue0.has_value = HasValue1.has_value,
   type Output0.output = Output1.output
-  clone Alloc_Vec_Impl1_Len_Interface as Len1 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model
+  clone Alloc_Vec_Impl1_Len_Interface as Len1 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = seq int32
   clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = int32,
-  type i = Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
-  predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
+  type i = Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
+  predicate HasValue0.has_value = HasValue0.has_value,
   predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere, type Output0.output = Output0.output
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = seq int32
   clone Core_Slice_Impl0_Get_Interface as Get0 with type t = int32,
-  type i = Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize,
-  function Model0.model = Model2.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
-  type Output0.output = Output0.output, predicate HasValue0.has_value = HasValue0.has_value
-  clone Alloc_Vec_Impl10_Deref_Interface as Deref0 with type t = int32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model2.model,
-  function Model1.model = Model0.model
+  type i = Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize, function Model0.model = Model2.model,
+  predicate InBounds0.in_bounds = InBounds0.in_bounds, type Output0.output = Output0.output,
+  predicate HasValue0.has_value = HasValue0.has_value
+  clone Alloc_Vec_Impl10_Deref_Interface as Deref0 with type t = int32, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model2.model, function Model1.model = Model0.model
   clone Core_Slice_Impl0_Len_Interface as Len0 with type t = int32, function Model0.model = Model1.model
   clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = int32,
-  type i = Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
-  predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
-  type Output0.output = Output0.output
+  type i = Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model0.model, predicate InBounds0.in_bounds = InBounds0.in_bounds,
+  predicate HasValue0.has_value = HasValue0.has_value, type Output0.output = Output0.output
   clone IndexRange_CreateArr_Interface as CreateArr0 with function Model0.model = Model0.model
   let rec cfg test_range_to_inclusive [@cfg:stackify] [#"../index_range.rs" 179 0 179 32] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var arr_1 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var arr_1 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var s_2 : seq int32;
   var _3 : seq int32;
-  var _4 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _5 : Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize;
+  var _4 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _5 : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize;
   var _6 : ();
   var _7 : bool;
   var _8 : bool;
@@ -3418,17 +3380,17 @@ module IndexRange_TestRangeToInclusive
   var _24 : ();
   var _25 : bool;
   var _26 : bool;
-  var _27 : Core_Option_Option_Type.core_option_option_type (seq int32);
-  var _28 : Core_Option_Option_Type.core_option_option_type (seq int32);
+  var _27 : Core_Option_Option_Type.t_option (seq int32);
+  var _28 : Core_Option_Option_Type.t_option (seq int32);
   var _29 : seq int32;
   var _30 : seq int32;
-  var _31 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _32 : Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize;
+  var _31 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _32 : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize;
   var _33 : ();
   var s_34 : borrowed (seq int32);
   var _35 : borrowed (seq int32);
-  var _36 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
-  var _37 : Core_Ops_Range_RangeToInclusive_Type.core_ops_range_rangetoinclusive_type usize;
+  var _36 : borrowed (Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global));
+  var _37 : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize;
   var _38 : ();
   var _39 : bool;
   var _40 : bool;
@@ -3453,42 +3415,42 @@ module IndexRange_TestRangeToInclusive
   var _59 : bool;
   var _60 : bool;
   var _61 : usize;
-  var _62 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _62 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _63 : ();
   var _64 : ();
   var _65 : bool;
   var _66 : bool;
   var _67 : int32;
   var _68 : int32;
-  var _69 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _69 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _70 : ();
   var _71 : ();
   var _72 : bool;
   var _73 : bool;
   var _74 : int32;
   var _75 : int32;
-  var _76 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _76 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _77 : ();
   var _78 : ();
   var _79 : bool;
   var _80 : bool;
   var _81 : int32;
   var _82 : int32;
-  var _83 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _83 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _84 : ();
   var _85 : ();
   var _86 : bool;
   var _87 : bool;
   var _88 : int32;
   var _89 : int32;
-  var _90 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _90 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _91 : ();
   var _92 : ();
   var _93 : bool;
   var _94 : bool;
   var _95 : int32;
   var _96 : int32;
-  var _97 : Alloc_Vec_Vec_Type.alloc_vec_vec_type int32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _97 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
   var _98 : ();
   {
     goto BB0
@@ -3499,7 +3461,7 @@ module IndexRange_TestRangeToInclusive
   }
   BB1 {
     _4 <- arr_1;
-    _5 <- Core_Ops_Range_RangeToInclusive_Type.Core_Ops_Range_RangeToInclusive_Type (1 : usize);
+    _5 <- Core_Ops_Range_RangeToInclusive_Type.C_RangeToInclusive (1 : usize);
     _3 <- ([#"../index_range.rs" 186 13 186 22] Index0.index _4 _5);
     goto BB2
   }
@@ -3576,7 +3538,7 @@ module IndexRange_TestRangeToInclusive
   }
   BB14 {
     _29 <- _30;
-    _32 <- Core_Ops_Range_RangeToInclusive_Type.Core_Ops_Range_RangeToInclusive_Type (5 : usize);
+    _32 <- Core_Ops_Range_RangeToInclusive_Type.C_RangeToInclusive (5 : usize);
     _28 <- ([#"../index_range.rs" 192 12 192 25] Get0.get _29 _32);
     goto BB15
   }
@@ -3599,7 +3561,7 @@ module IndexRange_TestRangeToInclusive
     _24 <- ();
     _36 <- borrow_mut arr_1;
     arr_1 <-  ^ _36;
-    _37 <- Core_Ops_Range_RangeToInclusive_Type.Core_Ops_Range_RangeToInclusive_Type (2 : usize);
+    _37 <- Core_Ops_Range_RangeToInclusive_Type.C_RangeToInclusive (2 : usize);
     _35 <- ([#"../index_range.rs" 195 17 195 26] IndexMut0.index_mut _36 _37);
     goto BB19
   }
