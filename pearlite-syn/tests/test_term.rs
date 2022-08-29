@@ -178,23 +178,29 @@ fn test_pearlite() {
     TermPearlite {
         pearlite_token: Keyword [pearlite],
         bang_token: Bang,
-        brace_token: Brace,
-        term: TermPath {
-            inner: ExprPath {
-                attrs: [],
-                qself: None,
-                path: Path {
-                    leading_colon: None,
-                    segments: [
-                        PathSegment {
-                            ident: Ident(
-                                x,
-                            ),
-                            arguments: None,
+        block: TBlock {
+            brace_token: Brace,
+            stmts: [
+                Expr(
+                    TermPath {
+                        inner: ExprPath {
+                            attrs: [],
+                            qself: None,
+                            path: Path {
+                                leading_colon: None,
+                                segments: [
+                                    PathSegment {
+                                        ident: Ident(
+                                            x,
+                                        ),
+                                        arguments: None,
+                                    },
+                                ],
+                            },
                         },
-                    ],
-                },
-            },
+                    },
+                ),
+            ],
         },
     }
     "###);

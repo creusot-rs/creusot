@@ -130,6 +130,9 @@ ast_enum_of_structs! {
         /// Pearlite macro `pearlite!{ ... }`.
         Pearlite(TermPearlite),
 
+        /// A macro invocation expression: `format!("{}", q)`.
+        Macro(ExprMacro),
+
         #[doc(hidden)]
         __Nonexhaustive,
     }
@@ -150,6 +153,9 @@ ast_enum! {
     pub enum TermStmt {
         /// A local (let) binding.
         Local(TLocal),
+
+        /// An item definition.
+        Item(Item),
 
         /// Expr without trailing semicolon.
         Expr(Term),
@@ -446,8 +452,7 @@ ast_struct! {
     pub struct TermPearlite {
         pub pearlite_token: kw::pearlite,
         pub bang_token: Token![!],
-        pub brace_token: token::Brace,
-        pub term: Box<Term>
+        pub block: TBlock,
     }
 }
 
@@ -682,6 +687,9 @@ pub(crate) mod parsing {
     fn parse_stmt(input: ParseStream, allow_nosemi: bool) -> Result<TermStmt> {
         if input.peek(Token![let]) {
             stmt_local(input).map(TermStmt::Local)
+        } else if input.peek(Token![use]) {
+            let item: Item = input.parse()?;
+            Ok(TermStmt::Item(item))
         } else {
             stmt_expr(input, allow_nosemi)
         }
@@ -1075,7 +1083,7 @@ pub(crate) mod parsing {
             || input.peek(Token![super])
             || input.peek(Token![crate])
         {
-            path_or_struct(input, allow_struct)
+            path_or_macro_or_struct(input, allow_struct)
         } else if input.peek(token::Paren) {
             paren_or_tuple(input)
         } else if input.peek(token::Bracket) {
@@ -1115,10 +1123,25 @@ pub(crate) mod parsing {
         }
     }
 
-    fn path_or_struct(input: ParseStream, allow_struct: AllowStruct) -> Result<Term> {
+    fn path_or_macro_or_struct(input: ParseStream, allow_struct: AllowStruct) -> Result<Term> {
+        let begin = input.fork();
         let expr: TermPath = input.parse()?;
-        if expr.inner.qself.is_some() {
-            return Ok(Term::Path(expr));
+
+        if expr.inner.qself.is_none() && input.peek(Token![!]) && !input.peek(Token![!=]) {
+            let mut contains_arguments = false;
+            for segment in &expr.inner.path.segments {
+                match segment.arguments {
+                    PathArguments::None => {}
+                    PathArguments::AngleBracketed(_) | PathArguments::Parenthesized(_) => {
+                        contains_arguments = true;
+                    }
+                }
+            }
+
+            if !contains_arguments {
+                let _bang_token: Token![!] = input.parse()?;
+                return Ok(Term::Macro(begin.parse()?));
+            }
         }
 
         if allow_struct.0 && input.peek(token::Brace) {
@@ -1368,12 +1391,10 @@ pub(crate) mod parsing {
 
     impl Parse for TermPearlite {
         fn parse(input: ParseStream) -> Result<Self> {
-            let content;
             Ok(TermPearlite {
                 pearlite_token: input.parse()?,
                 bang_token: input.parse()?,
-                brace_token: braced!(content in input),
-                term: Box::new(content.parse()?),
+                block: input.parse()?,
             })
         }
     }
@@ -1617,6 +1638,7 @@ pub(crate) mod printing {
                     expr.to_tokens(tokens);
                     semi.to_tokens(tokens);
                 }
+                TermStmt::Item(i) => i.to_tokens(tokens),
             }
         }
     }
@@ -1804,7 +1826,7 @@ pub(crate) mod printing {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.pearlite_token.to_tokens(tokens);
             self.bang_token.to_tokens(tokens);
-            self.brace_token.surround(tokens, |tokens| self.term.to_tokens(tokens));
+            self.block.to_tokens(tokens);
         }
     }
 
