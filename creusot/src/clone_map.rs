@@ -20,7 +20,7 @@ use why3::{
 use crate::{
     ctx::{self, *},
     translation::{interface, traits},
-    util::{self, ident_of, ident_of_ty, item_name},
+    util::{self, get_builtin, ident_of, ident_of_ty, item_name},
 };
 
 // Prelude modules
@@ -612,7 +612,13 @@ impl<'tcx> CloneMap<'tcx> {
                     .iter()
                     .any(|((id, _), info)| *id == repr && info.kind == Kind::Hidden);
                 if self.used_types.insert(ctx.representative_type(def_id)) && !hidden {
-                    decls.push(Decl::UseDecl(Use { name: cloneable_name(ctx, def_id, false) }));
+                    let name = if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
+                        QName::from_string(&builtin.as_str()).unwrap().module_qname()
+                    } else {
+                        cloneable_name(ctx, def_id, false)
+                    };
+                    // decls.push(Decl::UseDecl(Use { name }));
+                    self.import_builtin_module(name);
                 }
                 continue;
             }
