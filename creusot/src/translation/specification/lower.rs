@@ -25,7 +25,7 @@ pub fn lower_pure<'tcx>(
     let span = term.span;
     let mut term = Lower { ctx, names, pure: Purity::Logic, param_env }.lower_term(term);
     term.reassociate();
-    if ctx.sess.source_map().is_local_span(span) {
+    if !ctx.sess.source_map().is_imported(span) {
         term = ctx.attach_span(span, term);
     }
 
@@ -146,8 +146,9 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             TermKind::Call {
                 id,
                 subst,
-                fun: box Term { kind: TermKind::Item(_, _), .. },
+                // fun: box Term { kind: TermKind::Item(_, _), .. },
                 args,
+                ..
             } => {
                 let mut args: Vec<_> = args.into_iter().map(|arg| self.lower_term(arg)).collect();
 
@@ -279,9 +280,6 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 Exp::Call(box Exp::pure_qvar(accessor), vec![lhs])
             }
             TermKind::Absurd => Exp::Absurd,
-            t => {
-                todo!("{:?}", t)
-            }
         }
     }
 
@@ -338,6 +336,7 @@ pub fn lower_literal<'tcx>(
         }
         Literal::Function => Exp::Tuple(Vec::new()),
         Literal::Float(f) => Constant::Float(f).into(),
+        Literal::ZST => Exp::Tuple(Vec::new()),
         _ => unimplemented!("literal: {lit:?}"),
     }
 }

@@ -1,4 +1,4 @@
-#![feature(let_chains, box_patterns, drain_filter, proc_macro_def_site)]
+#![feature(box_patterns, drain_filter, proc_macro_def_site)]
 extern crate proc_macro;
 use extern_spec::ExternSpecs;
 use pearlite_syn::*;

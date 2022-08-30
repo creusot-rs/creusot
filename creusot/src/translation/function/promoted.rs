@@ -77,6 +77,7 @@ pub fn translate_promoted<'tcx>(
             match &stmt.kind {
                 StatementKind::Assign(box (tgt, val)) => {
                     let rhs = match val {
+                        CopyForDeref(_) => panic!(),
                         Use(op) => translate_operand(ctx, names, body, param_env, op),
                         BinaryOp(op, box (l, r)) | CheckedBinaryOp(op, box (l, r)) => {
                             Exp::BinaryOp(
@@ -120,11 +121,14 @@ pub fn translate_promoted<'tcx>(
 
                                     Exp::Constructor { ctor: qname, args: fields }
                                 }
-                                Closure(def_id, _) if util::is_ghost(ctx.tcx, *def_id) => ctx
-                                    .crash_and_error(
+                                Closure(def_id, _)
+                                    if util::is_ghost(ctx.tcx, def_id.to_def_id()) =>
+                                {
+                                    ctx.crash_and_error(
                                         body.span,
                                         "should not have translated ghost closure",
-                                    ),
+                                    )
+                                }
                                 _ => ctx.crash_and_error(
                                     stmt.source_info.span,
                                     "unsupported aggregate kind",

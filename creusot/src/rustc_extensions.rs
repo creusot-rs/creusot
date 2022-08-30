@@ -1,2 +1,2 @@
-pub mod codegen;
-pub mod renumber;
+pub(crate) mod codegen;
+pub(crate) mod renumber;

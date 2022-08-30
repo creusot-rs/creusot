@@ -93,9 +93,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                     let res =
                         evaluate_additional_predicates(&infcx, predicates, self.param_env(), span);
                     if let Err(errs) = res {
-                        let hir_id =
-                            self.tcx.hir().local_def_id_to_hir_id(self.def_id.expect_local());
-                        let body_id = self.tcx.hir().body_owned_by(hir_id);
+                        let body_id = self.tcx.hir().body_owned_by(self.def_id.expect_local());
                         infcx.report_fulfillment_errors(&errs, Some(body_id), false);
                     }
                 });
@@ -187,11 +185,11 @@ pub fn resolve_function<'tcx>(
     sp: Span,
 ) -> (DefId, SubstsRef<'tcx>) {
     if let Some(it) = ctx.opt_associated_item(def_id) {
-        if let ty::TraitContainer(id) = it.container {
+        if let ty::TraitContainer = it.container {
             let method = traits::resolve_assoc_item_opt(ctx.tcx, param_env, def_id, subst)
                 .expect("could not find instance");
 
-            ctx.translate(id);
+            ctx.translate(it.container_id(ctx.tcx));
             ctx.translate(method.0);
 
             if !method.0.is_local()

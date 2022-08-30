@@ -13,7 +13,7 @@ use crate::{
 };
 use creusot_rustc::{
     hir::{def::DefKind, def_id::DefId, Unsafety},
-    middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyKind, TypeFoldable},
+    middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyKind, TypeVisitable},
     smir::mir::{BasicBlock, BinOp, Body, Place, UnOp},
     span::{Span, Symbol, DUMMY_SP},
     target::abi::VariantIdx,

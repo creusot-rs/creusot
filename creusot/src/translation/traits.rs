@@ -136,7 +136,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         let name = item_name(self.tcx, def_id);
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
-            creusot_rustc::middle::ty::ImplContainer(_) => names.with_public_clones(|names| {
+            creusot_rustc::middle::ty::ImplContainer => names.with_public_clones(|names| {
                 let assoc_ty = self.tcx.type_of(def_id);
                 TyDecl::Alias {
                     ty_name: name.clone(),
@@ -144,7 +144,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
                     alias: ty::translate_ty(self, names, creusot_rustc::span::DUMMY_SP, assoc_ty),
                 }
             }),
-            creusot_rustc::middle::ty::TraitContainer(_) => {
+            creusot_rustc::middle::ty::TraitContainer => {
                 TyDecl::Opaque { ty_name: name.clone(), ty_params: vec![] }
             }
         };
@@ -235,8 +235,8 @@ fn resolve_impl_source_opt<'tcx>(
 
     let trait_ref = if let Some(assoc) = tcx.opt_associated_item(def_id) {
         match assoc.container {
-            ImplContainer(def_id) => tcx.impl_trait_ref(def_id)?,
-            TraitContainer(def_id) => TraitRef { def_id, substs },
+            ImplContainer => tcx.impl_trait_ref(assoc.container_id(tcx))?,
+            TraitContainer => TraitRef { def_id: assoc.container_id(tcx), substs },
         }
     } else {
         if tcx.is_trait(def_id) {
@@ -309,12 +309,12 @@ pub fn resolve_assoc_item_opt<'tcx>(
 
     // If we're given an associated item that is already on an instance,
     // we don't need to resolve at all!
-    if let AssocItemContainer::ImplContainer(_) = assoc.container {
+    if let AssocItemContainer::ImplContainer = assoc.container {
         return None;
     }
 
     let trait_ref = TraitRef::from_method(tcx, tcx.trait_of_item(def_id).unwrap(), substs);
-    use creusot_rustc::middle::ty::TypeFoldable;
+    use creusot_rustc::middle::ty::TypeVisitable;
     let source = resolve_impl_source_opt(tcx, param_env, def_id, substs)?;
     trace!("resolve_assoc_item_opt {source:?}",);
 

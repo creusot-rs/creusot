@@ -20,6 +20,6 @@ pub fn victim_of_lie() -> u32 {
 
 #[predicate]
 #[trusted]
-fn trusted_pred(_x: u32) -> bool {
+pub fn trusted_pred(_x: u32) -> bool {
     true
 }

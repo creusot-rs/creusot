@@ -72,7 +72,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                         return;
                     }
 
-                    let dom = self.body.dominators();
+                    let dom = self.body.basic_blocks.dominators();
                     let two_phase = self
                         .borrows
                         .local_map
@@ -144,23 +144,24 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                         Expr::Constructor(adt, subst, fields)
                     }
                     Closure(def_id, subst) => {
-                        if util::is_invariant(self.tcx, *def_id) {
+                        let def_id = def_id.to_def_id();
+                        if util::is_invariant(self.tcx, def_id) {
                             return;
-                        } else if util::is_assertion(self.tcx, *def_id) {
+                        } else if util::is_assertion(self.tcx, def_id) {
                             let assertion = self
                                 .assertions
-                                .remove(def_id)
+                                .remove(&def_id)
                                 .expect("Could not find body of assertion");
                             self.emit_statementf(fmir::Statement::Assertion(assertion));
                             return;
-                        } else if util::is_ghost(self.tcx, *def_id) {
+                        } else if util::is_ghost(self.tcx, def_id) {
                             return;
-                        } else if util::is_spec(self.tcx, *def_id) {
+                        } else if util::is_spec(self.tcx, def_id) {
                             return;
                         } else {
-                            let mut cons_name = item_name(self.tcx, *def_id);
+                            let mut cons_name = item_name(self.tcx, def_id);
                             cons_name.capitalize();
-                            Expr::Constructor(*def_id, subst, fields)
+                            Expr::Constructor(def_id, subst, fields)
                         }
                     }
                     _ => self.ctx.crash_and_error(
@@ -181,6 +182,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                 _,
                 _,
             ) => self.ctx.crash_and_error(si.span, "Pointer casts are currently unsupported"),
+            Rvalue::CopyForDeref(_) => panic!(),
             Rvalue::ShallowInitBox(_, _)
             | Rvalue::NullaryOp(_, _)
             | Rvalue::Repeat(_, _)

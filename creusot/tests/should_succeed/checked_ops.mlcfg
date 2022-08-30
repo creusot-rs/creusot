@@ -5,7 +5,7 @@ module Core_Option_Option_Type
     | Core_Option_Option_Some_Type 't
     
 end
-module Core_Num_Impl6_CheckedAdd_Interface
+module Core_Num_Impl7_CheckedAdd_Interface
   use prelude.UInt8
   use mach.int.Int
   use Core_Option_Option_Type
@@ -14,7 +14,7 @@ module Core_Num_Impl6_CheckedAdd_Interface
     ensures { forall r : (uint8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> UInt8.to_int r = UInt8.to_int self + UInt8.to_int rhs }
     
 end
-module Core_Num_Impl6_CheckedAdd
+module Core_Num_Impl7_CheckedAdd
   use prelude.UInt8
   use mach.int.Int
   use Core_Option_Option_Type
@@ -55,7 +55,7 @@ module Core_Option_Impl0_IsNone
     ensures { result = (self = Core_Option_Option_Type.Core_Option_Option_None_Type) }
     
 end
-module Core_Num_Impl6_WrappingAdd_Interface
+module Core_Num_Impl7_WrappingAdd_Interface
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -69,7 +69,7 @@ module Core_Num_Impl6_WrappingAdd_Interface
     ensures { UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int (255 : uint8) -> (exists k : (int) . k > 0 /\ UInt8.to_int result = UInt8.to_int self + UInt8.to_int rhs - k * (UInt8.to_int (255 : uint8) - UInt8.to_int (0 : uint8) + 1)) }
     
 end
-module Core_Num_Impl6_WrappingAdd
+module Core_Num_Impl7_WrappingAdd
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -83,7 +83,7 @@ module Core_Num_Impl6_WrappingAdd
     ensures { UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int (255 : uint8) -> (exists k : (int) . k > 0 /\ UInt8.to_int result = UInt8.to_int self + UInt8.to_int rhs - k * (UInt8.to_int (255 : uint8) - UInt8.to_int (0 : uint8) + 1)) }
     
 end
-module Core_Num_Impl6_SaturatingAdd_Interface
+module Core_Num_Impl7_SaturatingAdd_Interface
   use prelude.UInt8
   use mach.int.Int
   val saturating_add [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
@@ -92,7 +92,7 @@ module Core_Num_Impl6_SaturatingAdd_Interface
     ensures { UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int (255 : uint8) -> UInt8.to_int result = UInt8.to_int (255 : uint8) }
     
 end
-module Core_Num_Impl6_SaturatingAdd
+module Core_Num_Impl7_SaturatingAdd
   use prelude.UInt8
   use mach.int.Int
   val saturating_add [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
@@ -108,7 +108,7 @@ module CreusotContracts_Logic_Model_Impl5_Model
   function model (self : bool) : bool =
     self
 end
-module Core_Num_Impl6_OverflowingAdd_Interface
+module Core_Num_Impl7_OverflowingAdd_Interface
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -124,7 +124,7 @@ module Core_Num_Impl6_OverflowingAdd_Interface
     ensures { Model0.model (let (_, a) = result in a) = (UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int (0 : uint8) \/ UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int (255 : uint8)) }
     
 end
-module Core_Num_Impl6_OverflowingAdd
+module Core_Num_Impl7_OverflowingAdd
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -194,12 +194,12 @@ module CheckedOps_TestU8AddExample
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl6_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
-  clone Core_Num_Impl6_SaturatingAdd_Interface as SaturatingAdd0
-  clone Core_Num_Impl6_WrappingAdd_Interface as WrappingAdd0
+  clone Core_Num_Impl7_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
+  clone Core_Num_Impl7_SaturatingAdd_Interface as SaturatingAdd0
+  clone Core_Num_Impl7_WrappingAdd_Interface as WrappingAdd0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = uint8
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = uint8
-  clone Core_Num_Impl6_CheckedAdd_Interface as CheckedAdd0
+  clone Core_Num_Impl7_CheckedAdd_Interface as CheckedAdd0
   let rec cfg test_u8_add_example [@cfg:stackify] [#"../checked_ops.rs" 5 0 5 28] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -438,6 +438,214 @@ module CheckedOps_TestU8AddExample
   }
   
 end
+module CheckedOps_TestU8AddOverflow_Interface
+  use prelude.UInt8
+  use mach.int.Int
+  use mach.int.Int32
+  val test_u8_add_overflow [@cfg:stackify] (a : uint8) : ()
+    requires {[#"../checked_ops.rs" 22 11 22 18] UInt8.to_int a <> 0}
+    
+end
+module CheckedOps_TestU8AddOverflow
+  use prelude.UInt8
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = uint8
+  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
+  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
+  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
+  clone Core_Num_Impl7_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
+  clone Core_Num_Impl7_SaturatingAdd_Interface as SaturatingAdd0
+  clone Core_Num_Impl7_WrappingAdd_Interface as WrappingAdd0
+  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = uint8
+  clone Core_Num_Impl7_CheckedAdd_Interface as CheckedAdd0
+  let rec cfg test_u8_add_overflow [@cfg:stackify] [#"../checked_ops.rs" 23 0 23 34] (a : uint8) : ()
+    requires {[#"../checked_ops.rs" 22 11 22 18] UInt8.to_int a <> 0}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var a_1 : uint8;
+  var _3 : ();
+  var _4 : bool;
+  var _5 : bool;
+  var _6 : Core_Option_Option_Type.core_option_option_type uint8;
+  var _7 : Core_Option_Option_Type.core_option_option_type uint8;
+  var _8 : uint8;
+  var _9 : ();
+  var _10 : ();
+  var _11 : bool;
+  var _12 : bool;
+  var _13 : uint8;
+  var _14 : uint8;
+  var _15 : uint8;
+  var _16 : uint8;
+  var _17 : ();
+  var _18 : ();
+  var _19 : bool;
+  var _20 : bool;
+  var _21 : uint8;
+  var _22 : uint8;
+  var _23 : ();
+  var res_24 : (uint8, bool);
+  var _25 : uint8;
+  var _26 : ();
+  var _27 : bool;
+  var _28 : bool;
+  var _29 : bool;
+  var _30 : uint8;
+  var _31 : uint8;
+  var _32 : uint8;
+  var _33 : bool;
+  var _34 : bool;
+  var _35 : ();
+  {
+    a_1 <- a;
+    goto BB0
+  }
+  BB0 {
+    _8 <- a_1;
+    _7 <- ([#"../checked_ops.rs" 24 12 24 32] CheckedAdd0.checked_add (255 : uint8) _8);
+    goto BB1
+  }
+  BB1 {
+    _6 <- _7;
+    _5 <- ([#"../checked_ops.rs" 24 12 24 42] IsNone0.is_none _6);
+    goto BB2
+  }
+  BB2 {
+    _4 <- not _5;
+    switch (_4)
+      | False -> goto BB4
+      | True -> goto BB3
+      end
+  }
+  BB3 {
+    absurd
+  }
+  BB4 {
+    _3 <- ();
+    _14 <- a_1;
+    _13 <- ([#"../checked_ops.rs" 25 12 25 33] WrappingAdd0.wrapping_add (255 : uint8) _14);
+    goto BB5
+  }
+  BB5 {
+    _16 <- a_1;
+    _15 <- ([#"../checked_ops.rs" 25 37 25 42] _16 - (1 : uint8));
+    _12 <- ([#"../checked_ops.rs" 25 12 25 42] _13 = _15);
+    _11 <- not _12;
+    switch (_11)
+      | False -> goto BB7
+      | True -> goto BB6
+      end
+  }
+  BB6 {
+    absurd
+  }
+  BB7 {
+    _10 <- ();
+    _22 <- a_1;
+    _21 <- ([#"../checked_ops.rs" 26 12 26 35] SaturatingAdd0.saturating_add (255 : uint8) _22);
+    goto BB8
+  }
+  BB8 {
+    _20 <- ([#"../checked_ops.rs" 26 12 26 42] _21 = (255 : uint8));
+    _19 <- not _20;
+    switch (_19)
+      | False -> goto BB10
+      | True -> goto BB9
+      end
+  }
+  BB9 {
+    absurd
+  }
+  BB10 {
+    _18 <- ();
+    _25 <- a_1;
+    res_24 <- ([#"../checked_ops.rs" 27 14 27 38] OverflowingAdd0.overflowing_add (255 : uint8) _25);
+    goto BB11
+  }
+  BB11 {
+    _30 <- (let (a, _) = res_24 in a);
+    _32 <- a_1;
+    _31 <- ([#"../checked_ops.rs" 28 21 28 26] _32 - (1 : uint8));
+    _29 <- ([#"../checked_ops.rs" 28 12 28 26] _30 = _31);
+    switch (_29)
+      | False -> goto BB12
+      | True -> goto BB13
+      end
+  }
+  BB12 {
+    assume { Resolve0.resolve res_24 };
+    _28 <- false;
+    goto BB14
+  }
+  BB13 {
+    _34 <- (let (_, a) = res_24 in a);
+    assume { Resolve0.resolve res_24 };
+    _33 <- ([#"../checked_ops.rs" 28 30 28 43] Bool.eqb _34 true);
+    _28 <- _33;
+    _33 <- any bool;
+    goto BB14
+  }
+  BB14 {
+    _27 <- not _28;
+    switch (_27)
+      | False -> goto BB16
+      | True -> goto BB15
+      end
+  }
+  BB15 {
+    absurd
+  }
+  BB16 {
+    _26 <- ();
+    _0 <- ();
+    return _0
+  }
+  
+end
+module CheckedOps_TestU8WrappingAdd_Interface
+  use prelude.UInt8
+  use mach.int.Int
+  use mach.int.Int32
+  val test_u8_wrapping_add [@cfg:stackify] (a : uint8) (b : uint8) : uint8
+    ensures { [#"../checked_ops.rs" 33 10 33 56] UInt8.to_int result = UInt8.to_int a + UInt8.to_int b \/ UInt8.to_int result = UInt8.to_int a + UInt8.to_int b - 256 }
+    
+end
+module CheckedOps_TestU8WrappingAdd
+  use prelude.UInt8
+  use mach.int.Int
+  use mach.int.Int32
+  clone Core_Num_Impl7_WrappingAdd_Interface as WrappingAdd0
+  let rec cfg test_u8_wrapping_add [@cfg:stackify] [#"../checked_ops.rs" 34 0 34 47] (a : uint8) (b : uint8) : uint8
+    ensures { [#"../checked_ops.rs" 33 10 33 56] UInt8.to_int result = UInt8.to_int a + UInt8.to_int b \/ UInt8.to_int result = UInt8.to_int a + UInt8.to_int b - 256 }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint8;
+  var a_1 : uint8;
+  var b_2 : uint8;
+  var _4 : uint8;
+  var _5 : uint8;
+  {
+    a_1 <- a;
+    b_2 <- b;
+    goto BB0
+  }
+  BB0 {
+    _4 <- a_1;
+    _5 <- b_2;
+    _0 <- ([#"../checked_ops.rs" 35 4 35 21] WrappingAdd0.wrapping_add _4 _5);
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end
 module CheckedOps_TestU8OverflowingAdd_Interface
   use mach.int.Int
   use prelude.UInt8
@@ -453,11 +661,11 @@ module CheckedOps_TestU8OverflowingAdd
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = uint8
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = uint8
-  clone Core_Num_Impl6_CheckedAdd_Interface as CheckedAdd0
-  clone Core_Num_Impl6_WrappingAdd_Interface as WrappingAdd0
+  clone Core_Num_Impl7_CheckedAdd_Interface as CheckedAdd0
+  clone Core_Num_Impl7_WrappingAdd_Interface as WrappingAdd0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl6_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
+  clone Core_Num_Impl7_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
   let rec cfg test_u8_overflowing_add [@cfg:stackify] [#"../checked_ops.rs" 39 0 39 44] (a : uint8) (b : uint8) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -555,7 +763,7 @@ module CheckedOps_TestU8OverflowingAdd
   }
   
 end
-module Core_Num_Impl6_CheckedSub_Interface
+module Core_Num_Impl7_CheckedSub_Interface
   use prelude.UInt8
   use mach.int.Int
   use Core_Option_Option_Type
@@ -564,7 +772,7 @@ module Core_Num_Impl6_CheckedSub_Interface
     ensures { forall r : (uint8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> UInt8.to_int r = UInt8.to_int self - UInt8.to_int rhs }
     
 end
-module Core_Num_Impl6_CheckedSub
+module Core_Num_Impl7_CheckedSub
   use prelude.UInt8
   use mach.int.Int
   use Core_Option_Option_Type
@@ -573,7 +781,7 @@ module Core_Num_Impl6_CheckedSub
     ensures { forall r : (uint8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> UInt8.to_int r = UInt8.to_int self - UInt8.to_int rhs }
     
 end
-module Core_Num_Impl6_WrappingSub_Interface
+module Core_Num_Impl7_WrappingSub_Interface
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -587,7 +795,7 @@ module Core_Num_Impl6_WrappingSub_Interface
     ensures { UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int (255 : uint8) -> (exists k : (int) . k > 0 /\ UInt8.to_int result = UInt8.to_int self - UInt8.to_int rhs - k * (UInt8.to_int (255 : uint8) - UInt8.to_int (0 : uint8) + 1)) }
     
 end
-module Core_Num_Impl6_WrappingSub
+module Core_Num_Impl7_WrappingSub
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -601,7 +809,7 @@ module Core_Num_Impl6_WrappingSub
     ensures { UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int (255 : uint8) -> (exists k : (int) . k > 0 /\ UInt8.to_int result = UInt8.to_int self - UInt8.to_int rhs - k * (UInt8.to_int (255 : uint8) - UInt8.to_int (0 : uint8) + 1)) }
     
 end
-module Core_Num_Impl6_SaturatingSub_Interface
+module Core_Num_Impl7_SaturatingSub_Interface
   use prelude.UInt8
   use mach.int.Int
   val saturating_sub [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
@@ -610,7 +818,7 @@ module Core_Num_Impl6_SaturatingSub_Interface
     ensures { UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int (255 : uint8) -> UInt8.to_int result = UInt8.to_int (255 : uint8) }
     
 end
-module Core_Num_Impl6_SaturatingSub
+module Core_Num_Impl7_SaturatingSub
   use prelude.UInt8
   use mach.int.Int
   val saturating_sub [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
@@ -619,7 +827,7 @@ module Core_Num_Impl6_SaturatingSub
     ensures { UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int (255 : uint8) -> UInt8.to_int result = UInt8.to_int (255 : uint8) }
     
 end
-module Core_Num_Impl6_OverflowingSub_Interface
+module Core_Num_Impl7_OverflowingSub_Interface
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -635,7 +843,7 @@ module Core_Num_Impl6_OverflowingSub_Interface
     ensures { Model0.model (let (_, a) = result in a) = (UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int (0 : uint8) \/ UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int (255 : uint8)) }
     
 end
-module Core_Num_Impl6_OverflowingSub
+module Core_Num_Impl7_OverflowingSub
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -665,12 +873,12 @@ module CheckedOps_TestU8SubExample
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl6_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
-  clone Core_Num_Impl6_SaturatingSub_Interface as SaturatingSub0
-  clone Core_Num_Impl6_WrappingSub_Interface as WrappingSub0
+  clone Core_Num_Impl7_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
+  clone Core_Num_Impl7_SaturatingSub_Interface as SaturatingSub0
+  clone Core_Num_Impl7_WrappingSub_Interface as WrappingSub0
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = uint8
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = uint8
-  clone Core_Num_Impl6_CheckedSub_Interface as CheckedSub0
+  clone Core_Num_Impl7_CheckedSub_Interface as CheckedSub0
   let rec cfg test_u8_sub_example [@cfg:stackify] [#"../checked_ops.rs" 45 0 45 28] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -909,6 +1117,218 @@ module CheckedOps_TestU8SubExample
   }
   
 end
+module CheckedOps_TestU8SubOverflow_Interface
+  use prelude.UInt8
+  use mach.int.Int
+  use mach.int.Int32
+  val test_u8_sub_overflow [@cfg:stackify] (a : uint8) : ()
+    requires {[#"../checked_ops.rs" 62 11 62 18] UInt8.to_int a <> 0}
+    
+end
+module CheckedOps_TestU8SubOverflow
+  use prelude.UInt8
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = uint8
+  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
+  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
+  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
+  clone Core_Num_Impl7_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
+  clone Core_Num_Impl7_SaturatingSub_Interface as SaturatingSub0
+  clone Core_Num_Impl7_WrappingSub_Interface as WrappingSub0
+  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = uint8
+  clone Core_Num_Impl7_CheckedSub_Interface as CheckedSub0
+  let rec cfg test_u8_sub_overflow [@cfg:stackify] [#"../checked_ops.rs" 63 0 63 34] (a : uint8) : ()
+    requires {[#"../checked_ops.rs" 62 11 62 18] UInt8.to_int a <> 0}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var a_1 : uint8;
+  var _3 : ();
+  var _4 : bool;
+  var _5 : bool;
+  var _6 : Core_Option_Option_Type.core_option_option_type uint8;
+  var _7 : Core_Option_Option_Type.core_option_option_type uint8;
+  var _8 : uint8;
+  var _9 : ();
+  var _10 : ();
+  var _11 : bool;
+  var _12 : bool;
+  var _13 : uint8;
+  var _14 : uint8;
+  var _15 : uint8;
+  var _16 : uint8;
+  var _17 : uint8;
+  var _18 : ();
+  var _19 : ();
+  var _20 : bool;
+  var _21 : bool;
+  var _22 : uint8;
+  var _23 : uint8;
+  var _24 : ();
+  var res_25 : (uint8, bool);
+  var _26 : uint8;
+  var _27 : ();
+  var _28 : bool;
+  var _29 : bool;
+  var _30 : bool;
+  var _31 : uint8;
+  var _32 : uint8;
+  var _33 : uint8;
+  var _34 : uint8;
+  var _35 : bool;
+  var _36 : bool;
+  var _37 : ();
+  {
+    a_1 <- a;
+    goto BB0
+  }
+  BB0 {
+    _8 <- a_1;
+    _7 <- ([#"../checked_ops.rs" 64 12 64 30] CheckedSub0.checked_sub (0 : uint8) _8);
+    goto BB1
+  }
+  BB1 {
+    _6 <- _7;
+    _5 <- ([#"../checked_ops.rs" 64 12 64 40] IsNone0.is_none _6);
+    goto BB2
+  }
+  BB2 {
+    _4 <- not _5;
+    switch (_4)
+      | False -> goto BB4
+      | True -> goto BB3
+      end
+  }
+  BB3 {
+    absurd
+  }
+  BB4 {
+    _3 <- ();
+    _14 <- a_1;
+    _13 <- ([#"../checked_ops.rs" 65 12 65 31] WrappingSub0.wrapping_sub (0 : uint8) _14);
+    goto BB5
+  }
+  BB5 {
+    _17 <- a_1;
+    _16 <- ([#"../checked_ops.rs" 65 35 65 42] (255 : uint8) - _17);
+    _15 <- ([#"../checked_ops.rs" 65 35 65 46] _16 + (1 : uint8));
+    _12 <- ([#"../checked_ops.rs" 65 12 65 46] _13 = _15);
+    _11 <- not _12;
+    switch (_11)
+      | False -> goto BB7
+      | True -> goto BB6
+      end
+  }
+  BB6 {
+    absurd
+  }
+  BB7 {
+    _10 <- ();
+    _23 <- a_1;
+    _22 <- ([#"../checked_ops.rs" 66 12 66 33] SaturatingSub0.saturating_sub (0 : uint8) _23);
+    goto BB8
+  }
+  BB8 {
+    _21 <- ([#"../checked_ops.rs" 66 12 66 38] _22 = (0 : uint8));
+    _20 <- not _21;
+    switch (_20)
+      | False -> goto BB10
+      | True -> goto BB9
+      end
+  }
+  BB9 {
+    absurd
+  }
+  BB10 {
+    _19 <- ();
+    _26 <- a_1;
+    res_25 <- ([#"../checked_ops.rs" 67 14 67 36] OverflowingSub0.overflowing_sub (0 : uint8) _26);
+    goto BB11
+  }
+  BB11 {
+    _31 <- (let (a, _) = res_25 in a);
+    _34 <- a_1;
+    _33 <- ([#"../checked_ops.rs" 68 21 68 28] (255 : uint8) - _34);
+    _32 <- ([#"../checked_ops.rs" 68 21 68 32] _33 + (1 : uint8));
+    _30 <- ([#"../checked_ops.rs" 68 12 68 32] _31 = _32);
+    switch (_30)
+      | False -> goto BB12
+      | True -> goto BB13
+      end
+  }
+  BB12 {
+    assume { Resolve0.resolve res_25 };
+    _29 <- false;
+    goto BB14
+  }
+  BB13 {
+    _36 <- (let (_, a) = res_25 in a);
+    assume { Resolve0.resolve res_25 };
+    _35 <- ([#"../checked_ops.rs" 68 36 68 49] Bool.eqb _36 true);
+    _29 <- _35;
+    _35 <- any bool;
+    goto BB14
+  }
+  BB14 {
+    _28 <- not _29;
+    switch (_28)
+      | False -> goto BB16
+      | True -> goto BB15
+      end
+  }
+  BB15 {
+    absurd
+  }
+  BB16 {
+    _27 <- ();
+    _0 <- ();
+    return _0
+  }
+  
+end
+module CheckedOps_TestU8WrappingSub_Interface
+  use prelude.UInt8
+  use mach.int.Int
+  use mach.int.Int32
+  val test_u8_wrapping_sub [@cfg:stackify] (a : uint8) (b : uint8) : uint8
+    ensures { [#"../checked_ops.rs" 73 10 73 56] UInt8.to_int result = UInt8.to_int a - UInt8.to_int b \/ UInt8.to_int result = UInt8.to_int a - UInt8.to_int b + 256 }
+    
+end
+module CheckedOps_TestU8WrappingSub
+  use prelude.UInt8
+  use mach.int.Int
+  use mach.int.Int32
+  clone Core_Num_Impl7_WrappingSub_Interface as WrappingSub0
+  let rec cfg test_u8_wrapping_sub [@cfg:stackify] [#"../checked_ops.rs" 74 0 74 47] (a : uint8) (b : uint8) : uint8
+    ensures { [#"../checked_ops.rs" 73 10 73 56] UInt8.to_int result = UInt8.to_int a - UInt8.to_int b \/ UInt8.to_int result = UInt8.to_int a - UInt8.to_int b + 256 }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint8;
+  var a_1 : uint8;
+  var b_2 : uint8;
+  var _4 : uint8;
+  var _5 : uint8;
+  {
+    a_1 <- a;
+    b_2 <- b;
+    goto BB0
+  }
+  BB0 {
+    _4 <- a_1;
+    _5 <- b_2;
+    _0 <- ([#"../checked_ops.rs" 75 4 75 21] WrappingSub0.wrapping_sub _4 _5);
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end
 module CheckedOps_TestU8OverflowingSub_Interface
   use mach.int.Int
   use prelude.UInt8
@@ -924,11 +1344,11 @@ module CheckedOps_TestU8OverflowingSub
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = uint8
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = uint8
-  clone Core_Num_Impl6_CheckedSub_Interface as CheckedSub0
-  clone Core_Num_Impl6_WrappingSub_Interface as WrappingSub0
+  clone Core_Num_Impl7_CheckedSub_Interface as CheckedSub0
+  clone Core_Num_Impl7_WrappingSub_Interface as WrappingSub0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl6_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
+  clone Core_Num_Impl7_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
   let rec cfg test_u8_overflowing_sub [@cfg:stackify] [#"../checked_ops.rs" 79 0 79 44] (a : uint8) (b : uint8) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1026,7 +1446,7 @@ module CheckedOps_TestU8OverflowingSub
   }
   
 end
-module Core_Num_Impl6_CheckedMul_Interface
+module Core_Num_Impl7_CheckedMul_Interface
   use prelude.UInt8
   use mach.int.Int
   use Core_Option_Option_Type
@@ -1035,7 +1455,7 @@ module Core_Num_Impl6_CheckedMul_Interface
     ensures { forall r : (uint8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> UInt8.to_int r = UInt8.to_int self * UInt8.to_int rhs }
     
 end
-module Core_Num_Impl6_CheckedMul
+module Core_Num_Impl7_CheckedMul
   use prelude.UInt8
   use mach.int.Int
   use Core_Option_Option_Type
@@ -1044,7 +1464,7 @@ module Core_Num_Impl6_CheckedMul
     ensures { forall r : (uint8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> UInt8.to_int r = UInt8.to_int self * UInt8.to_int rhs }
     
 end
-module Core_Num_Impl6_WrappingMul_Interface
+module Core_Num_Impl7_WrappingMul_Interface
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -1058,7 +1478,7 @@ module Core_Num_Impl6_WrappingMul_Interface
     ensures { UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int (255 : uint8) -> (exists k : (int) . k > 0 /\ UInt8.to_int result = UInt8.to_int self * UInt8.to_int rhs - k * (UInt8.to_int (255 : uint8) - UInt8.to_int (0 : uint8) + 1)) }
     
 end
-module Core_Num_Impl6_WrappingMul
+module Core_Num_Impl7_WrappingMul
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -1072,7 +1492,7 @@ module Core_Num_Impl6_WrappingMul
     ensures { UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int (255 : uint8) -> (exists k : (int) . k > 0 /\ UInt8.to_int result = UInt8.to_int self * UInt8.to_int rhs - k * (UInt8.to_int (255 : uint8) - UInt8.to_int (0 : uint8) + 1)) }
     
 end
-module Core_Num_Impl6_SaturatingMul_Interface
+module Core_Num_Impl7_SaturatingMul_Interface
   use prelude.UInt8
   use mach.int.Int
   val saturating_mul [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
@@ -1081,7 +1501,7 @@ module Core_Num_Impl6_SaturatingMul_Interface
     ensures { UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int (255 : uint8) -> UInt8.to_int result = UInt8.to_int (255 : uint8) }
     
 end
-module Core_Num_Impl6_SaturatingMul
+module Core_Num_Impl7_SaturatingMul
   use prelude.UInt8
   use mach.int.Int
   val saturating_mul [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
@@ -1090,7 +1510,7 @@ module Core_Num_Impl6_SaturatingMul
     ensures { UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int (255 : uint8) -> UInt8.to_int result = UInt8.to_int (255 : uint8) }
     
 end
-module Core_Num_Impl6_OverflowingMul_Interface
+module Core_Num_Impl7_OverflowingMul_Interface
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -1106,7 +1526,7 @@ module Core_Num_Impl6_OverflowingMul_Interface
     ensures { Model0.model (let (_, a) = result in a) = (UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int (0 : uint8) \/ UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int (255 : uint8)) }
     
 end
-module Core_Num_Impl6_OverflowingMul
+module Core_Num_Impl7_OverflowingMul
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -1136,12 +1556,12 @@ module CheckedOps_TestU8MulExample
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl6_OverflowingMul_Interface as OverflowingMul0 with function Model0.model = Model0.model
-  clone Core_Num_Impl6_SaturatingMul_Interface as SaturatingMul0
-  clone Core_Num_Impl6_WrappingMul_Interface as WrappingMul0
+  clone Core_Num_Impl7_OverflowingMul_Interface as OverflowingMul0 with function Model0.model = Model0.model
+  clone Core_Num_Impl7_SaturatingMul_Interface as SaturatingMul0
+  clone Core_Num_Impl7_WrappingMul_Interface as WrappingMul0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = uint8
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = uint8
-  clone Core_Num_Impl6_CheckedMul_Interface as CheckedMul0
+  clone Core_Num_Impl7_CheckedMul_Interface as CheckedMul0
   let rec cfg test_u8_mul_example [@cfg:stackify] [#"../checked_ops.rs" 85 0 85 28] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1395,11 +1815,11 @@ module CheckedOps_TestU8MulZero
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl6_OverflowingMul_Interface as OverflowingMul0 with function Model0.model = Model0.model
-  clone Core_Num_Impl6_SaturatingMul_Interface as SaturatingMul0
-  clone Core_Num_Impl6_WrappingMul_Interface as WrappingMul0
+  clone Core_Num_Impl7_OverflowingMul_Interface as OverflowingMul0 with function Model0.model = Model0.model
+  clone Core_Num_Impl7_SaturatingMul_Interface as SaturatingMul0
+  clone Core_Num_Impl7_WrappingMul_Interface as WrappingMul0
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = uint8
-  clone Core_Num_Impl6_CheckedMul_Interface as CheckedMul0
+  clone Core_Num_Impl7_CheckedMul_Interface as CheckedMul0
   let rec cfg test_u8_mul_zero [@cfg:stackify] [#"../checked_ops.rs" 102 0 102 30] (a : uint8) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1550,11 +1970,11 @@ module CheckedOps_TestU8OverflowingMul
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = uint8
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = uint8
-  clone Core_Num_Impl6_CheckedMul_Interface as CheckedMul0
-  clone Core_Num_Impl6_WrappingMul_Interface as WrappingMul0
+  clone Core_Num_Impl7_CheckedMul_Interface as CheckedMul0
+  clone Core_Num_Impl7_WrappingMul_Interface as WrappingMul0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl6_OverflowingMul_Interface as OverflowingMul0 with function Model0.model = Model0.model
+  clone Core_Num_Impl7_OverflowingMul_Interface as OverflowingMul0 with function Model0.model = Model0.model
   let rec cfg test_u8_overflowing_mul [@cfg:stackify] [#"../checked_ops.rs" 111 0 111 44] (a : uint8) (b : uint8) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1652,7 +2072,7 @@ module CheckedOps_TestU8OverflowingMul
   }
   
 end
-module Core_Num_Impl6_CheckedDiv_Interface
+module Core_Num_Impl7_CheckedDiv_Interface
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -1662,7 +2082,7 @@ module Core_Num_Impl6_CheckedDiv_Interface
     ensures { forall r : (uint8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> UInt8.to_int r = div (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
-module Core_Num_Impl6_CheckedDiv
+module Core_Num_Impl7_CheckedDiv
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -1672,7 +2092,7 @@ module Core_Num_Impl6_CheckedDiv
     ensures { forall r : (uint8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> UInt8.to_int r = div (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
-module Core_Num_Impl6_WrappingDiv_Interface
+module Core_Num_Impl7_WrappingDiv_Interface
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -1682,7 +2102,7 @@ module Core_Num_Impl6_WrappingDiv_Interface
     ensures { UInt8.to_int self = UInt8.to_int (0 : uint8) /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
-module Core_Num_Impl6_WrappingDiv
+module Core_Num_Impl7_WrappingDiv
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -1692,7 +2112,7 @@ module Core_Num_Impl6_WrappingDiv
     ensures { UInt8.to_int self = UInt8.to_int (0 : uint8) /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
-module Core_Num_Impl6_SaturatingDiv_Interface
+module Core_Num_Impl7_SaturatingDiv_Interface
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -1702,7 +2122,7 @@ module Core_Num_Impl6_SaturatingDiv_Interface
     ensures { UInt8.to_int self = UInt8.to_int (0 : uint8) /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
-module Core_Num_Impl6_SaturatingDiv
+module Core_Num_Impl7_SaturatingDiv
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -1712,7 +2132,7 @@ module Core_Num_Impl6_SaturatingDiv
     ensures { UInt8.to_int self = UInt8.to_int (0 : uint8) /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
-module Core_Num_Impl6_OverflowingDiv_Interface
+module Core_Num_Impl7_OverflowingDiv_Interface
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -1724,7 +2144,7 @@ module Core_Num_Impl6_OverflowingDiv_Interface
     ensures { Model0.model (let (_, a) = result in a) = (UInt8.to_int self = UInt8.to_int (0 : uint8) /\ UInt8.to_int rhs = - 1) }
     
 end
-module Core_Num_Impl6_OverflowingDiv
+module Core_Num_Impl7_OverflowingDiv
   use prelude.UInt8
   use mach.int.Int
   use mach.int.Int32
@@ -1750,12 +2170,12 @@ module CheckedOps_TestU8DivExample
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl6_OverflowingDiv_Interface as OverflowingDiv0 with function Model0.model = Model0.model
-  clone Core_Num_Impl6_SaturatingDiv_Interface as SaturatingDiv0
-  clone Core_Num_Impl6_WrappingDiv_Interface as WrappingDiv0
+  clone Core_Num_Impl7_OverflowingDiv_Interface as OverflowingDiv0 with function Model0.model = Model0.model
+  clone Core_Num_Impl7_SaturatingDiv_Interface as SaturatingDiv0
+  clone Core_Num_Impl7_WrappingDiv_Interface as WrappingDiv0
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = uint8
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = uint8
-  clone Core_Num_Impl6_CheckedDiv_Interface as CheckedDiv0
+  clone Core_Num_Impl7_CheckedDiv_Interface as CheckedDiv0
   let rec cfg test_u8_div_example [@cfg:stackify] [#"../checked_ops.rs" 117 0 117 28] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1907,6 +2327,225 @@ module CheckedOps_TestU8DivExample
   }
   
 end
+module CheckedOps_TestU8DivNoOverflow_Interface
+  use prelude.UInt8
+  use mach.int.Int
+  use mach.int.Int32
+  val test_u8_div_no_overflow [@cfg:stackify] (a : uint8) (b : uint8) : ()
+    requires {[#"../checked_ops.rs" 127 11 127 18] UInt8.to_int b <> 0}
+    
+end
+module CheckedOps_TestU8DivNoOverflow
+  use prelude.UInt8
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Bool
+  use Core_Option_Option_Type
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = uint8
+  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
+  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
+  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
+  clone Core_Num_Impl7_OverflowingDiv_Interface as OverflowingDiv0 with function Model0.model = Model0.model
+  clone Core_Num_Impl7_SaturatingDiv_Interface as SaturatingDiv0
+  clone Core_Num_Impl7_WrappingDiv_Interface as WrappingDiv0
+  clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = uint8
+  clone Core_Num_Impl7_CheckedDiv_Interface as CheckedDiv0
+  let rec cfg test_u8_div_no_overflow [@cfg:stackify] [#"../checked_ops.rs" 128 0 128 44] (a : uint8) (b : uint8) : ()
+    requires {[#"../checked_ops.rs" 127 11 127 18] UInt8.to_int b <> 0}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var a_1 : uint8;
+  var b_2 : uint8;
+  var _4 : ();
+  var _5 : bool;
+  var _6 : bool;
+  var _7 : uint8;
+  var _8 : Core_Option_Option_Type.core_option_option_type uint8;
+  var _9 : uint8;
+  var _10 : uint8;
+  var _11 : uint8;
+  var _12 : uint8;
+  var _13 : uint8;
+  var _14 : bool;
+  var _15 : ();
+  var _16 : ();
+  var _17 : bool;
+  var _18 : bool;
+  var _19 : uint8;
+  var _20 : uint8;
+  var _21 : uint8;
+  var _22 : uint8;
+  var _23 : uint8;
+  var _24 : uint8;
+  var _25 : bool;
+  var _26 : ();
+  var _27 : ();
+  var _28 : bool;
+  var _29 : bool;
+  var _30 : uint8;
+  var _31 : uint8;
+  var _32 : uint8;
+  var _33 : uint8;
+  var _34 : uint8;
+  var _35 : uint8;
+  var _36 : bool;
+  var _37 : ();
+  var res_38 : (uint8, bool);
+  var _39 : uint8;
+  var _40 : uint8;
+  var _41 : ();
+  var _42 : bool;
+  var _43 : bool;
+  var _44 : bool;
+  var _45 : uint8;
+  var _46 : uint8;
+  var _47 : uint8;
+  var _48 : uint8;
+  var _49 : bool;
+  var _50 : bool;
+  var _51 : bool;
+  var _52 : ();
+  {
+    a_1 <- a;
+    b_2 <- b;
+    goto BB0
+  }
+  BB0 {
+    _9 <- a_1;
+    _10 <- b_2;
+    _8 <- ([#"../checked_ops.rs" 129 12 129 28] CheckedDiv0.checked_div _9 _10);
+    goto BB1
+  }
+  BB1 {
+    _7 <- ([#"../checked_ops.rs" 129 12 129 37] Unwrap0.unwrap _8);
+    goto BB2
+  }
+  BB2 {
+    _12 <- a_1;
+    _13 <- b_2;
+    _14 <- ([#"../checked_ops.rs" 129 41 129 46] _13 = (0 : uint8));
+    assert { [#"../checked_ops.rs" 129 41 129 46] not _14 };
+    goto BB3
+  }
+  BB3 {
+    _11 <- ([#"../checked_ops.rs" 129 41 129 46] _12 / _13);
+    _6 <- ([#"../checked_ops.rs" 129 12 129 46] _7 = _11);
+    _5 <- not _6;
+    switch (_5)
+      | False -> goto BB5
+      | True -> goto BB4
+      end
+  }
+  BB4 {
+    absurd
+  }
+  BB5 {
+    _4 <- ();
+    _20 <- a_1;
+    _21 <- b_2;
+    _19 <- ([#"../checked_ops.rs" 130 12 130 29] WrappingDiv0.wrapping_div _20 _21);
+    goto BB6
+  }
+  BB6 {
+    _23 <- a_1;
+    _24 <- b_2;
+    _25 <- ([#"../checked_ops.rs" 130 33 130 38] _24 = (0 : uint8));
+    assert { [#"../checked_ops.rs" 130 33 130 38] not _25 };
+    goto BB7
+  }
+  BB7 {
+    _22 <- ([#"../checked_ops.rs" 130 33 130 38] _23 / _24);
+    _18 <- ([#"../checked_ops.rs" 130 12 130 38] _19 = _22);
+    _17 <- not _18;
+    switch (_17)
+      | False -> goto BB9
+      | True -> goto BB8
+      end
+  }
+  BB8 {
+    absurd
+  }
+  BB9 {
+    _16 <- ();
+    _31 <- a_1;
+    _32 <- b_2;
+    _30 <- ([#"../checked_ops.rs" 131 12 131 31] SaturatingDiv0.saturating_div _31 _32);
+    goto BB10
+  }
+  BB10 {
+    _34 <- a_1;
+    _35 <- b_2;
+    _36 <- ([#"../checked_ops.rs" 131 35 131 40] _35 = (0 : uint8));
+    assert { [#"../checked_ops.rs" 131 35 131 40] not _36 };
+    goto BB11
+  }
+  BB11 {
+    _33 <- ([#"../checked_ops.rs" 131 35 131 40] _34 / _35);
+    _29 <- ([#"../checked_ops.rs" 131 12 131 40] _30 = _33);
+    _28 <- not _29;
+    switch (_28)
+      | False -> goto BB13
+      | True -> goto BB12
+      end
+  }
+  BB12 {
+    absurd
+  }
+  BB13 {
+    _27 <- ();
+    _39 <- a_1;
+    _40 <- b_2;
+    res_38 <- ([#"../checked_ops.rs" 132 14 132 34] OverflowingDiv0.overflowing_div _39 _40);
+    goto BB14
+  }
+  BB14 {
+    _45 <- (let (a, _) = res_38 in a);
+    _47 <- a_1;
+    _48 <- b_2;
+    _49 <- ([#"../checked_ops.rs" 133 21 133 26] _48 = (0 : uint8));
+    assert { [#"../checked_ops.rs" 133 21 133 26] not _49 };
+    goto BB18
+  }
+  BB15 {
+    assume { Resolve0.resolve res_38 };
+    _43 <- false;
+    goto BB17
+  }
+  BB16 {
+    _51 <- (let (_, a) = res_38 in a);
+    assume { Resolve0.resolve res_38 };
+    _50 <- ([#"../checked_ops.rs" 133 30 133 44] Bool.eqb _51 false);
+    _43 <- _50;
+    _50 <- any bool;
+    goto BB17
+  }
+  BB17 {
+    _42 <- not _43;
+    switch (_42)
+      | False -> goto BB20
+      | True -> goto BB19
+      end
+  }
+  BB18 {
+    _46 <- ([#"../checked_ops.rs" 133 21 133 26] _47 / _48);
+    _44 <- ([#"../checked_ops.rs" 133 12 133 26] _45 = _46);
+    switch (_44)
+      | False -> goto BB15
+      | True -> goto BB16
+      end
+  }
+  BB19 {
+    absurd
+  }
+  BB20 {
+    _41 <- ();
+    _0 <- ();
+    return _0
+  }
+  
+end
 module CheckedOps_TestU8DivZero_Interface
   use mach.int.Int
   use prelude.UInt8
@@ -1918,7 +2557,7 @@ module CheckedOps_TestU8DivZero
   use prelude.Borrow
   use Core_Option_Option_Type
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = uint8
-  clone Core_Num_Impl6_CheckedDiv_Interface as CheckedDiv0
+  clone Core_Num_Impl7_CheckedDiv_Interface as CheckedDiv0
   let rec cfg test_u8_div_zero [@cfg:stackify] [#"../checked_ops.rs" 137 0 137 30] (a : uint8) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1961,7 +2600,7 @@ module CheckedOps_TestU8DivZero
   }
   
 end
-module Core_Num_Impl0_CheckedAdd_Interface
+module Core_Num_Impl1_CheckedAdd_Interface
   use prelude.Int8
   use mach.int.Int
   use Core_Option_Option_Type
@@ -1970,7 +2609,7 @@ module Core_Num_Impl0_CheckedAdd_Interface
     ensures { forall r : (int8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> Int8.to_int r = Int8.to_int self + Int8.to_int rhs }
     
 end
-module Core_Num_Impl0_CheckedAdd
+module Core_Num_Impl1_CheckedAdd
   use prelude.Int8
   use mach.int.Int
   use Core_Option_Option_Type
@@ -1979,7 +2618,7 @@ module Core_Num_Impl0_CheckedAdd
     ensures { forall r : (int8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> Int8.to_int r = Int8.to_int self + Int8.to_int rhs }
     
 end
-module Core_Num_Impl0_WrappingAdd_Interface
+module Core_Num_Impl1_WrappingAdd_Interface
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -1993,7 +2632,7 @@ module Core_Num_Impl0_WrappingAdd_Interface
     ensures { Int8.to_int self + Int8.to_int rhs > Int8.to_int (127 : int8) -> (exists k : (int) . k > 0 /\ Int8.to_int result = Int8.to_int self + Int8.to_int rhs - k * (Int8.to_int (127 : int8) - Int8.to_int (-128 : int8) + 1)) }
     
 end
-module Core_Num_Impl0_WrappingAdd
+module Core_Num_Impl1_WrappingAdd
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -2007,7 +2646,7 @@ module Core_Num_Impl0_WrappingAdd
     ensures { Int8.to_int self + Int8.to_int rhs > Int8.to_int (127 : int8) -> (exists k : (int) . k > 0 /\ Int8.to_int result = Int8.to_int self + Int8.to_int rhs - k * (Int8.to_int (127 : int8) - Int8.to_int (-128 : int8) + 1)) }
     
 end
-module Core_Num_Impl0_SaturatingAdd_Interface
+module Core_Num_Impl1_SaturatingAdd_Interface
   use prelude.Int8
   use mach.int.Int
   val saturating_add [@cfg:stackify] (self : int8) (rhs : int8) : int8
@@ -2016,7 +2655,7 @@ module Core_Num_Impl0_SaturatingAdd_Interface
     ensures { Int8.to_int self + Int8.to_int rhs > Int8.to_int (127 : int8) -> Int8.to_int result = Int8.to_int (127 : int8) }
     
 end
-module Core_Num_Impl0_SaturatingAdd
+module Core_Num_Impl1_SaturatingAdd
   use prelude.Int8
   use mach.int.Int
   val saturating_add [@cfg:stackify] (self : int8) (rhs : int8) : int8
@@ -2025,7 +2664,7 @@ module Core_Num_Impl0_SaturatingAdd
     ensures { Int8.to_int self + Int8.to_int rhs > Int8.to_int (127 : int8) -> Int8.to_int result = Int8.to_int (127 : int8) }
     
 end
-module Core_Num_Impl0_OverflowingAdd_Interface
+module Core_Num_Impl1_OverflowingAdd_Interface
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -2041,7 +2680,7 @@ module Core_Num_Impl0_OverflowingAdd_Interface
     ensures { Model0.model (let (_, a) = result in a) = (Int8.to_int self + Int8.to_int rhs < Int8.to_int (-128 : int8) \/ Int8.to_int self + Int8.to_int rhs > Int8.to_int (127 : int8)) }
     
 end
-module Core_Num_Impl0_OverflowingAdd
+module Core_Num_Impl1_OverflowingAdd
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -2071,12 +2710,12 @@ module CheckedOps_TestI8AddExample
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
-  clone Core_Num_Impl0_SaturatingAdd_Interface as SaturatingAdd0
-  clone Core_Num_Impl0_WrappingAdd_Interface as WrappingAdd0
+  clone Core_Num_Impl1_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_SaturatingAdd_Interface as SaturatingAdd0
+  clone Core_Num_Impl1_WrappingAdd_Interface as WrappingAdd0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = int8
-  clone Core_Num_Impl0_CheckedAdd_Interface as CheckedAdd0
+  clone Core_Num_Impl1_CheckedAdd_Interface as CheckedAdd0
   let rec cfg test_i8_add_example [@cfg:stackify] [#"../checked_ops.rs" 142 0 142 28] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -2428,6 +3067,392 @@ module CheckedOps_TestI8AddExample
   }
   
 end
+module CheckedOps_TestI8AddOverflowPos_Interface
+  use prelude.Int8
+  use mach.int.Int
+  use mach.int.Int32
+  val test_i8_add_overflow_pos [@cfg:stackify] (a : int8) : ()
+    requires {[#"../checked_ops.rs" 164 11 164 17] Int8.to_int a > 0}
+    
+end
+module CheckedOps_TestI8AddOverflowPos
+  use prelude.Int8
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = int8
+  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
+  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
+  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
+  clone Core_Num_Impl1_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_SaturatingAdd_Interface as SaturatingAdd0
+  clone Core_Num_Impl1_WrappingAdd_Interface as WrappingAdd0
+  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
+  clone Core_Num_Impl1_CheckedAdd_Interface as CheckedAdd0
+  let rec cfg test_i8_add_overflow_pos [@cfg:stackify] [#"../checked_ops.rs" 165 0 165 38] (a : int8) : ()
+    requires {[#"../checked_ops.rs" 164 11 164 17] Int8.to_int a > 0}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var a_1 : int8;
+  var _3 : ();
+  var _4 : bool;
+  var _5 : bool;
+  var _6 : Core_Option_Option_Type.core_option_option_type int8;
+  var _7 : Core_Option_Option_Type.core_option_option_type int8;
+  var _8 : int8;
+  var _9 : ();
+  var _10 : ();
+  var _11 : bool;
+  var _12 : bool;
+  var _13 : int8;
+  var _14 : int8;
+  var _15 : int8;
+  var _16 : int8;
+  var _17 : int8;
+  var _18 : ();
+  var _19 : ();
+  var _20 : bool;
+  var _21 : bool;
+  var _22 : int8;
+  var _23 : int8;
+  var _24 : ();
+  var res_25 : (int8, bool);
+  var _26 : int8;
+  var _27 : ();
+  var _28 : bool;
+  var _29 : bool;
+  var _30 : bool;
+  var _31 : int8;
+  var _32 : int8;
+  var _33 : int8;
+  var _34 : int8;
+  var _35 : bool;
+  var _36 : bool;
+  var _37 : ();
+  {
+    a_1 <- a;
+    goto BB0
+  }
+  BB0 {
+    _8 <- a_1;
+    _7 <- ([#"../checked_ops.rs" 166 12 166 32] CheckedAdd0.checked_add (127 : int8) _8);
+    goto BB1
+  }
+  BB1 {
+    _6 <- _7;
+    _5 <- ([#"../checked_ops.rs" 166 12 166 42] IsNone0.is_none _6);
+    goto BB2
+  }
+  BB2 {
+    _4 <- not _5;
+    switch (_4)
+      | False -> goto BB4
+      | True -> goto BB3
+      end
+  }
+  BB3 {
+    absurd
+  }
+  BB4 {
+    _3 <- ();
+    _14 <- a_1;
+    _13 <- ([#"../checked_ops.rs" 167 12 167 33] WrappingAdd0.wrapping_add (127 : int8) _14);
+    goto BB5
+  }
+  BB5 {
+    _17 <- a_1;
+    _16 <- ([#"../checked_ops.rs" 167 37 167 44] _17 - (127 : int8));
+    _15 <- ([#"../checked_ops.rs" 167 37 167 48] _16 - (2 : int8));
+    _12 <- ([#"../checked_ops.rs" 167 12 167 48] _13 = _15);
+    _11 <- not _12;
+    switch (_11)
+      | False -> goto BB7
+      | True -> goto BB6
+      end
+  }
+  BB6 {
+    absurd
+  }
+  BB7 {
+    _10 <- ();
+    _23 <- a_1;
+    _22 <- ([#"../checked_ops.rs" 168 12 168 35] SaturatingAdd0.saturating_add (127 : int8) _23);
+    goto BB8
+  }
+  BB8 {
+    _21 <- ([#"../checked_ops.rs" 168 12 168 42] _22 = (127 : int8));
+    _20 <- not _21;
+    switch (_20)
+      | False -> goto BB10
+      | True -> goto BB9
+      end
+  }
+  BB9 {
+    absurd
+  }
+  BB10 {
+    _19 <- ();
+    _26 <- a_1;
+    res_25 <- ([#"../checked_ops.rs" 169 14 169 38] OverflowingAdd0.overflowing_add (127 : int8) _26);
+    goto BB11
+  }
+  BB11 {
+    _31 <- (let (a, _) = res_25 in a);
+    _34 <- a_1;
+    _33 <- ([#"../checked_ops.rs" 170 21 170 28] _34 - (127 : int8));
+    _32 <- ([#"../checked_ops.rs" 170 21 170 32] _33 - (2 : int8));
+    _30 <- ([#"../checked_ops.rs" 170 12 170 32] _31 = _32);
+    switch (_30)
+      | False -> goto BB12
+      | True -> goto BB13
+      end
+  }
+  BB12 {
+    assume { Resolve0.resolve res_25 };
+    _29 <- false;
+    goto BB14
+  }
+  BB13 {
+    _36 <- (let (_, a) = res_25 in a);
+    assume { Resolve0.resolve res_25 };
+    _35 <- ([#"../checked_ops.rs" 170 36 170 49] Bool.eqb _36 true);
+    _29 <- _35;
+    _35 <- any bool;
+    goto BB14
+  }
+  BB14 {
+    _28 <- not _29;
+    switch (_28)
+      | False -> goto BB16
+      | True -> goto BB15
+      end
+  }
+  BB15 {
+    absurd
+  }
+  BB16 {
+    _27 <- ();
+    _0 <- ();
+    return _0
+  }
+  
+end
+module CheckedOps_TestI8AddOverflowNeg_Interface
+  use prelude.Int8
+  use mach.int.Int
+  use mach.int.Int32
+  val test_i8_add_overflow_neg [@cfg:stackify] (a : int8) : ()
+    requires {[#"../checked_ops.rs" 174 11 174 17] Int8.to_int a < 0}
+    
+end
+module CheckedOps_TestI8AddOverflowNeg
+  use prelude.Int8
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = int8
+  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
+  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
+  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
+  clone Core_Num_Impl1_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_SaturatingAdd_Interface as SaturatingAdd0
+  clone Core_Num_Impl1_WrappingAdd_Interface as WrappingAdd0
+  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
+  clone Core_Num_Impl1_CheckedAdd_Interface as CheckedAdd0
+  let rec cfg test_i8_add_overflow_neg [@cfg:stackify] [#"../checked_ops.rs" 175 0 175 38] (a : int8) : ()
+    requires {[#"../checked_ops.rs" 174 11 174 17] Int8.to_int a < 0}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var a_1 : int8;
+  var _3 : ();
+  var _4 : bool;
+  var _5 : bool;
+  var _6 : Core_Option_Option_Type.core_option_option_type int8;
+  var _7 : Core_Option_Option_Type.core_option_option_type int8;
+  var _8 : int8;
+  var _9 : ();
+  var _10 : ();
+  var _11 : bool;
+  var _12 : bool;
+  var _13 : int8;
+  var _14 : int8;
+  var _15 : int8;
+  var _16 : int8;
+  var _17 : int8;
+  var _18 : ();
+  var _19 : ();
+  var _20 : bool;
+  var _21 : bool;
+  var _22 : int8;
+  var _23 : int8;
+  var _24 : ();
+  var res_25 : (int8, bool);
+  var _26 : int8;
+  var _27 : ();
+  var _28 : bool;
+  var _29 : bool;
+  var _30 : bool;
+  var _31 : int8;
+  var _32 : int8;
+  var _33 : int8;
+  var _34 : int8;
+  var _35 : bool;
+  var _36 : bool;
+  var _37 : ();
+  {
+    a_1 <- a;
+    goto BB0
+  }
+  BB0 {
+    _8 <- a_1;
+    _7 <- ([#"../checked_ops.rs" 176 12 176 35] CheckedAdd0.checked_add (-128 : int8) _8);
+    goto BB1
+  }
+  BB1 {
+    _6 <- _7;
+    _5 <- ([#"../checked_ops.rs" 176 12 176 45] IsNone0.is_none _6);
+    goto BB2
+  }
+  BB2 {
+    _4 <- not _5;
+    switch (_4)
+      | False -> goto BB4
+      | True -> goto BB3
+      end
+  }
+  BB3 {
+    absurd
+  }
+  BB4 {
+    _3 <- ();
+    _14 <- a_1;
+    _13 <- ([#"../checked_ops.rs" 177 12 177 36] WrappingAdd0.wrapping_add (-128 : int8) _14);
+    goto BB5
+  }
+  BB5 {
+    _17 <- a_1;
+    _16 <- ([#"../checked_ops.rs" 177 40 177 47] _17 + (127 : int8));
+    _15 <- ([#"../checked_ops.rs" 177 40 177 51] _16 + (1 : int8));
+    _12 <- ([#"../checked_ops.rs" 177 12 177 51] _13 = _15);
+    _11 <- not _12;
+    switch (_11)
+      | False -> goto BB7
+      | True -> goto BB6
+      end
+  }
+  BB6 {
+    absurd
+  }
+  BB7 {
+    _10 <- ();
+    _23 <- a_1;
+    _22 <- ([#"../checked_ops.rs" 178 12 178 38] SaturatingAdd0.saturating_add (-128 : int8) _23);
+    goto BB8
+  }
+  BB8 {
+    _21 <- ([#"../checked_ops.rs" 178 12 178 46] _22 = (-128 : int8));
+    _20 <- not _21;
+    switch (_20)
+      | False -> goto BB10
+      | True -> goto BB9
+      end
+  }
+  BB9 {
+    absurd
+  }
+  BB10 {
+    _19 <- ();
+    _26 <- a_1;
+    res_25 <- ([#"../checked_ops.rs" 179 14 179 41] OverflowingAdd0.overflowing_add (-128 : int8) _26);
+    goto BB11
+  }
+  BB11 {
+    _31 <- (let (a, _) = res_25 in a);
+    _34 <- a_1;
+    _33 <- ([#"../checked_ops.rs" 180 21 180 28] _34 + (127 : int8));
+    _32 <- ([#"../checked_ops.rs" 180 21 180 32] _33 + (1 : int8));
+    _30 <- ([#"../checked_ops.rs" 180 12 180 32] _31 = _32);
+    switch (_30)
+      | False -> goto BB12
+      | True -> goto BB13
+      end
+  }
+  BB12 {
+    assume { Resolve0.resolve res_25 };
+    _29 <- false;
+    goto BB14
+  }
+  BB13 {
+    _36 <- (let (_, a) = res_25 in a);
+    assume { Resolve0.resolve res_25 };
+    _35 <- ([#"../checked_ops.rs" 180 36 180 49] Bool.eqb _36 true);
+    _29 <- _35;
+    _35 <- any bool;
+    goto BB14
+  }
+  BB14 {
+    _28 <- not _29;
+    switch (_28)
+      | False -> goto BB16
+      | True -> goto BB15
+      end
+  }
+  BB15 {
+    absurd
+  }
+  BB16 {
+    _27 <- ();
+    _0 <- ();
+    return _0
+  }
+  
+end
+module CheckedOps_TestI8WrappingAdd_Interface
+  use prelude.Int8
+  use mach.int.Int
+  use mach.int.Int32
+  val test_i8_wrapping_add [@cfg:stackify] (a : int8) (b : int8) : int8
+    ensures { [#"../checked_ops.rs" 185 10 185 84] Int8.to_int result = Int8.to_int a + Int8.to_int b \/ Int8.to_int result = Int8.to_int a + Int8.to_int b - 256 \/ Int8.to_int result = Int8.to_int a + Int8.to_int b + 256 }
+    
+end
+module CheckedOps_TestI8WrappingAdd
+  use prelude.Int8
+  use mach.int.Int
+  use mach.int.Int32
+  clone Core_Num_Impl1_WrappingAdd_Interface as WrappingAdd0
+  let rec cfg test_i8_wrapping_add [@cfg:stackify] [#"../checked_ops.rs" 186 0 186 47] (a : int8) (b : int8) : int8
+    ensures { [#"../checked_ops.rs" 185 10 185 84] Int8.to_int result = Int8.to_int a + Int8.to_int b \/ Int8.to_int result = Int8.to_int a + Int8.to_int b - 256 \/ Int8.to_int result = Int8.to_int a + Int8.to_int b + 256 }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : int8;
+  var a_1 : int8;
+  var b_2 : int8;
+  var _4 : int8;
+  var _5 : int8;
+  {
+    a_1 <- a;
+    b_2 <- b;
+    goto BB0
+  }
+  BB0 {
+    _4 <- a_1;
+    _5 <- b_2;
+    _0 <- ([#"../checked_ops.rs" 187 4 187 21] WrappingAdd0.wrapping_add _4 _5);
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end
 module CheckedOps_TestI8OverflowingAdd_Interface
   use mach.int.Int
   use prelude.Int8
@@ -2443,11 +3468,11 @@ module CheckedOps_TestI8OverflowingAdd
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = int8
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
-  clone Core_Num_Impl0_CheckedAdd_Interface as CheckedAdd0
-  clone Core_Num_Impl0_WrappingAdd_Interface as WrappingAdd0
+  clone Core_Num_Impl1_CheckedAdd_Interface as CheckedAdd0
+  clone Core_Num_Impl1_WrappingAdd_Interface as WrappingAdd0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
   let rec cfg test_i8_overflowing_add [@cfg:stackify] [#"../checked_ops.rs" 191 0 191 44] (a : int8) (b : int8) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -2545,7 +3570,7 @@ module CheckedOps_TestI8OverflowingAdd
   }
   
 end
-module Core_Num_Impl0_CheckedSub_Interface
+module Core_Num_Impl1_CheckedSub_Interface
   use prelude.Int8
   use mach.int.Int
   use Core_Option_Option_Type
@@ -2554,7 +3579,7 @@ module Core_Num_Impl0_CheckedSub_Interface
     ensures { forall r : (int8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> Int8.to_int r = Int8.to_int self - Int8.to_int rhs }
     
 end
-module Core_Num_Impl0_CheckedSub
+module Core_Num_Impl1_CheckedSub
   use prelude.Int8
   use mach.int.Int
   use Core_Option_Option_Type
@@ -2563,7 +3588,7 @@ module Core_Num_Impl0_CheckedSub
     ensures { forall r : (int8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> Int8.to_int r = Int8.to_int self - Int8.to_int rhs }
     
 end
-module Core_Num_Impl0_WrappingSub_Interface
+module Core_Num_Impl1_WrappingSub_Interface
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -2577,7 +3602,7 @@ module Core_Num_Impl0_WrappingSub_Interface
     ensures { Int8.to_int self - Int8.to_int rhs > Int8.to_int (127 : int8) -> (exists k : (int) . k > 0 /\ Int8.to_int result = Int8.to_int self - Int8.to_int rhs - k * (Int8.to_int (127 : int8) - Int8.to_int (-128 : int8) + 1)) }
     
 end
-module Core_Num_Impl0_WrappingSub
+module Core_Num_Impl1_WrappingSub
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -2591,7 +3616,7 @@ module Core_Num_Impl0_WrappingSub
     ensures { Int8.to_int self - Int8.to_int rhs > Int8.to_int (127 : int8) -> (exists k : (int) . k > 0 /\ Int8.to_int result = Int8.to_int self - Int8.to_int rhs - k * (Int8.to_int (127 : int8) - Int8.to_int (-128 : int8) + 1)) }
     
 end
-module Core_Num_Impl0_SaturatingSub_Interface
+module Core_Num_Impl1_SaturatingSub_Interface
   use prelude.Int8
   use mach.int.Int
   val saturating_sub [@cfg:stackify] (self : int8) (rhs : int8) : int8
@@ -2600,7 +3625,7 @@ module Core_Num_Impl0_SaturatingSub_Interface
     ensures { Int8.to_int self - Int8.to_int rhs > Int8.to_int (127 : int8) -> Int8.to_int result = Int8.to_int (127 : int8) }
     
 end
-module Core_Num_Impl0_SaturatingSub
+module Core_Num_Impl1_SaturatingSub
   use prelude.Int8
   use mach.int.Int
   val saturating_sub [@cfg:stackify] (self : int8) (rhs : int8) : int8
@@ -2609,7 +3634,7 @@ module Core_Num_Impl0_SaturatingSub
     ensures { Int8.to_int self - Int8.to_int rhs > Int8.to_int (127 : int8) -> Int8.to_int result = Int8.to_int (127 : int8) }
     
 end
-module Core_Num_Impl0_OverflowingSub_Interface
+module Core_Num_Impl1_OverflowingSub_Interface
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -2625,7 +3650,7 @@ module Core_Num_Impl0_OverflowingSub_Interface
     ensures { Model0.model (let (_, a) = result in a) = (Int8.to_int self - Int8.to_int rhs < Int8.to_int (-128 : int8) \/ Int8.to_int self - Int8.to_int rhs > Int8.to_int (127 : int8)) }
     
 end
-module Core_Num_Impl0_OverflowingSub
+module Core_Num_Impl1_OverflowingSub
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -2655,12 +3680,12 @@ module CheckedOps_TestI8SubExample
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
-  clone Core_Num_Impl0_SaturatingSub_Interface as SaturatingSub0
-  clone Core_Num_Impl0_WrappingSub_Interface as WrappingSub0
+  clone Core_Num_Impl1_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_SaturatingSub_Interface as SaturatingSub0
+  clone Core_Num_Impl1_WrappingSub_Interface as WrappingSub0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = int8
-  clone Core_Num_Impl0_CheckedSub_Interface as CheckedSub0
+  clone Core_Num_Impl1_CheckedSub_Interface as CheckedSub0
   let rec cfg test_i8_sub_example [@cfg:stackify] [#"../checked_ops.rs" 197 0 197 28] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -3012,6 +4037,396 @@ module CheckedOps_TestI8SubExample
   }
   
 end
+module CheckedOps_TestI8SubOverflowPos_Interface
+  use prelude.Int8
+  use mach.int.Int
+  use mach.int.Int32
+  val test_i8_sub_overflow_pos [@cfg:stackify] (a : int8) : ()
+    requires {[#"../checked_ops.rs" 219 11 219 17] Int8.to_int a > 0}
+    
+end
+module CheckedOps_TestI8SubOverflowPos
+  use prelude.Int8
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = int8
+  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
+  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
+  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
+  clone Core_Num_Impl1_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_SaturatingSub_Interface as SaturatingSub0
+  clone Core_Num_Impl1_WrappingSub_Interface as WrappingSub0
+  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
+  clone Core_Num_Impl1_CheckedSub_Interface as CheckedSub0
+  let rec cfg test_i8_sub_overflow_pos [@cfg:stackify] [#"../checked_ops.rs" 220 0 220 38] (a : int8) : ()
+    requires {[#"../checked_ops.rs" 219 11 219 17] Int8.to_int a > 0}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var a_1 : int8;
+  var _3 : ();
+  var _4 : bool;
+  var _5 : bool;
+  var _6 : Core_Option_Option_Type.core_option_option_type int8;
+  var _7 : Core_Option_Option_Type.core_option_option_type int8;
+  var _8 : int8;
+  var _9 : ();
+  var _10 : ();
+  var _11 : bool;
+  var _12 : bool;
+  var _13 : int8;
+  var _14 : int8;
+  var _15 : int8;
+  var _16 : int8;
+  var _17 : int8;
+  var _18 : ();
+  var _19 : ();
+  var _20 : bool;
+  var _21 : bool;
+  var _22 : int8;
+  var _23 : int8;
+  var _24 : ();
+  var res_25 : (int8, bool);
+  var _26 : int8;
+  var _27 : ();
+  var _28 : bool;
+  var _29 : bool;
+  var _30 : bool;
+  var _31 : int8;
+  var _32 : int8;
+  var _33 : int8;
+  var _34 : int8;
+  var _35 : bool;
+  var _36 : bool;
+  var _37 : ();
+  {
+    a_1 <- a;
+    goto BB0
+  }
+  BB0 {
+    _8 <- a_1;
+    _7 <- ([#"../checked_ops.rs" 221 12 221 35] CheckedSub0.checked_sub (-128 : int8) _8);
+    goto BB1
+  }
+  BB1 {
+    _6 <- _7;
+    _5 <- ([#"../checked_ops.rs" 221 12 221 45] IsNone0.is_none _6);
+    goto BB2
+  }
+  BB2 {
+    _4 <- not _5;
+    switch (_4)
+      | False -> goto BB4
+      | True -> goto BB3
+      end
+  }
+  BB3 {
+    absurd
+  }
+  BB4 {
+    _3 <- ();
+    _14 <- a_1;
+    _13 <- ([#"../checked_ops.rs" 222 12 222 36] WrappingSub0.wrapping_sub (-128 : int8) _14);
+    goto BB5
+  }
+  BB5 {
+    _17 <- a_1;
+    _16 <- ([#"../checked_ops.rs" 222 40 222 47] (127 : int8) - _17);
+    _15 <- ([#"../checked_ops.rs" 222 40 222 51] _16 + (1 : int8));
+    _12 <- ([#"../checked_ops.rs" 222 12 222 51] _13 = _15);
+    _11 <- not _12;
+    switch (_11)
+      | False -> goto BB7
+      | True -> goto BB6
+      end
+  }
+  BB6 {
+    absurd
+  }
+  BB7 {
+    _10 <- ();
+    _23 <- a_1;
+    _22 <- ([#"../checked_ops.rs" 223 12 223 38] SaturatingSub0.saturating_sub (-128 : int8) _23);
+    goto BB8
+  }
+  BB8 {
+    _21 <- ([#"../checked_ops.rs" 223 12 223 46] _22 = (-128 : int8));
+    _20 <- not _21;
+    switch (_20)
+      | False -> goto BB10
+      | True -> goto BB9
+      end
+  }
+  BB9 {
+    absurd
+  }
+  BB10 {
+    _19 <- ();
+    _26 <- a_1;
+    res_25 <- ([#"../checked_ops.rs" 224 14 224 41] OverflowingSub0.overflowing_sub (-128 : int8) _26);
+    goto BB11
+  }
+  BB11 {
+    _31 <- (let (a, _) = res_25 in a);
+    _34 <- a_1;
+    _33 <- ([#"../checked_ops.rs" 225 21 225 28] (127 : int8) - _34);
+    _32 <- ([#"../checked_ops.rs" 225 21 225 32] _33 + (1 : int8));
+    _30 <- ([#"../checked_ops.rs" 225 12 225 32] _31 = _32);
+    switch (_30)
+      | False -> goto BB12
+      | True -> goto BB13
+      end
+  }
+  BB12 {
+    assume { Resolve0.resolve res_25 };
+    _29 <- false;
+    goto BB14
+  }
+  BB13 {
+    _36 <- (let (_, a) = res_25 in a);
+    assume { Resolve0.resolve res_25 };
+    _35 <- ([#"../checked_ops.rs" 225 36 225 49] Bool.eqb _36 true);
+    _29 <- _35;
+    _35 <- any bool;
+    goto BB14
+  }
+  BB14 {
+    _28 <- not _29;
+    switch (_28)
+      | False -> goto BB16
+      | True -> goto BB15
+      end
+  }
+  BB15 {
+    absurd
+  }
+  BB16 {
+    _27 <- ();
+    _0 <- ();
+    return _0
+  }
+  
+end
+module CheckedOps_TestI8SubOverflowNeg_Interface
+  use prelude.Int8
+  use mach.int.Int
+  use mach.int.Int32
+  val test_i8_sub_overflow_neg [@cfg:stackify] (a : int8) : ()
+    requires {[#"../checked_ops.rs" 229 11 229 17] Int8.to_int a < 0}
+    
+end
+module CheckedOps_TestI8SubOverflowNeg
+  use prelude.Int8
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Bool
+  use prelude.Borrow
+  use Core_Option_Option_Type
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
+  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = int8
+  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
+  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
+  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
+  clone Core_Num_Impl1_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_SaturatingSub_Interface as SaturatingSub0
+  clone Core_Num_Impl1_WrappingSub_Interface as WrappingSub0
+  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
+  clone Core_Num_Impl1_CheckedSub_Interface as CheckedSub0
+  let rec cfg test_i8_sub_overflow_neg [@cfg:stackify] [#"../checked_ops.rs" 230 0 230 38] (a : int8) : ()
+    requires {[#"../checked_ops.rs" 229 11 229 17] Int8.to_int a < 0}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var a_1 : int8;
+  var _3 : ();
+  var _4 : bool;
+  var _5 : bool;
+  var _6 : Core_Option_Option_Type.core_option_option_type int8;
+  var _7 : Core_Option_Option_Type.core_option_option_type int8;
+  var _8 : int8;
+  var _9 : ();
+  var _10 : ();
+  var _11 : bool;
+  var _12 : bool;
+  var _13 : int8;
+  var _14 : int8;
+  var _15 : int8;
+  var _16 : int8;
+  var _17 : int8;
+  var _18 : int8;
+  var _19 : ();
+  var _20 : ();
+  var _21 : bool;
+  var _22 : bool;
+  var _23 : int8;
+  var _24 : int8;
+  var _25 : ();
+  var res_26 : (int8, bool);
+  var _27 : int8;
+  var _28 : ();
+  var _29 : bool;
+  var _30 : bool;
+  var _31 : bool;
+  var _32 : int8;
+  var _33 : int8;
+  var _34 : int8;
+  var _35 : int8;
+  var _36 : int8;
+  var _37 : bool;
+  var _38 : bool;
+  var _39 : ();
+  {
+    a_1 <- a;
+    goto BB0
+  }
+  BB0 {
+    _8 <- a_1;
+    _7 <- ([#"../checked_ops.rs" 231 12 231 32] CheckedSub0.checked_sub (127 : int8) _8);
+    goto BB1
+  }
+  BB1 {
+    _6 <- _7;
+    _5 <- ([#"../checked_ops.rs" 231 12 231 42] IsNone0.is_none _6);
+    goto BB2
+  }
+  BB2 {
+    _4 <- not _5;
+    switch (_4)
+      | False -> goto BB4
+      | True -> goto BB3
+      end
+  }
+  BB3 {
+    absurd
+  }
+  BB4 {
+    _3 <- ();
+    _14 <- a_1;
+    _13 <- ([#"../checked_ops.rs" 232 12 232 33] WrappingSub0.wrapping_sub (127 : int8) _14);
+    goto BB5
+  }
+  BB5 {
+    _18 <- a_1;
+    _17 <- ([#"../checked_ops.rs" 232 38 232 45] (2 : int8) + _18);
+    _16 <- - _17;
+    _15 <- ([#"../checked_ops.rs" 232 37 232 51] _16 - (127 : int8));
+    _12 <- ([#"../checked_ops.rs" 232 12 232 51] _13 = _15);
+    _11 <- not _12;
+    switch (_11)
+      | False -> goto BB7
+      | True -> goto BB6
+      end
+  }
+  BB6 {
+    absurd
+  }
+  BB7 {
+    _10 <- ();
+    _24 <- a_1;
+    _23 <- ([#"../checked_ops.rs" 233 12 233 35] SaturatingSub0.saturating_sub (127 : int8) _24);
+    goto BB8
+  }
+  BB8 {
+    _22 <- ([#"../checked_ops.rs" 233 12 233 42] _23 = (127 : int8));
+    _21 <- not _22;
+    switch (_21)
+      | False -> goto BB10
+      | True -> goto BB9
+      end
+  }
+  BB9 {
+    absurd
+  }
+  BB10 {
+    _20 <- ();
+    _27 <- a_1;
+    res_26 <- ([#"../checked_ops.rs" 234 14 234 38] OverflowingSub0.overflowing_sub (127 : int8) _27);
+    goto BB11
+  }
+  BB11 {
+    _32 <- (let (a, _) = res_26 in a);
+    _36 <- a_1;
+    _35 <- ([#"../checked_ops.rs" 235 22 235 29] (2 : int8) + _36);
+    _34 <- - _35;
+    _33 <- ([#"../checked_ops.rs" 235 21 235 35] _34 - (127 : int8));
+    _31 <- ([#"../checked_ops.rs" 235 12 235 35] _32 = _33);
+    switch (_31)
+      | False -> goto BB12
+      | True -> goto BB13
+      end
+  }
+  BB12 {
+    assume { Resolve0.resolve res_26 };
+    _30 <- false;
+    goto BB14
+  }
+  BB13 {
+    _38 <- (let (_, a) = res_26 in a);
+    assume { Resolve0.resolve res_26 };
+    _37 <- ([#"../checked_ops.rs" 235 39 235 52] Bool.eqb _38 true);
+    _30 <- _37;
+    _37 <- any bool;
+    goto BB14
+  }
+  BB14 {
+    _29 <- not _30;
+    switch (_29)
+      | False -> goto BB16
+      | True -> goto BB15
+      end
+  }
+  BB15 {
+    absurd
+  }
+  BB16 {
+    _28 <- ();
+    _0 <- ();
+    return _0
+  }
+  
+end
+module CheckedOps_TestI8WrappingSub_Interface
+  use prelude.Int8
+  use mach.int.Int
+  use mach.int.Int32
+  val test_i8_wrapping_sub [@cfg:stackify] (a : int8) (b : int8) : int8
+    ensures { [#"../checked_ops.rs" 240 10 240 84] Int8.to_int result = Int8.to_int a - Int8.to_int b \/ Int8.to_int result = Int8.to_int a - Int8.to_int b + 256 \/ Int8.to_int result = Int8.to_int a - Int8.to_int b - 256 }
+    
+end
+module CheckedOps_TestI8WrappingSub
+  use prelude.Int8
+  use mach.int.Int
+  use mach.int.Int32
+  clone Core_Num_Impl1_WrappingSub_Interface as WrappingSub0
+  let rec cfg test_i8_wrapping_sub [@cfg:stackify] [#"../checked_ops.rs" 241 0 241 47] (a : int8) (b : int8) : int8
+    ensures { [#"../checked_ops.rs" 240 10 240 84] Int8.to_int result = Int8.to_int a - Int8.to_int b \/ Int8.to_int result = Int8.to_int a - Int8.to_int b + 256 \/ Int8.to_int result = Int8.to_int a - Int8.to_int b - 256 }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : int8;
+  var a_1 : int8;
+  var b_2 : int8;
+  var _4 : int8;
+  var _5 : int8;
+  {
+    a_1 <- a;
+    b_2 <- b;
+    goto BB0
+  }
+  BB0 {
+    _4 <- a_1;
+    _5 <- b_2;
+    _0 <- ([#"../checked_ops.rs" 242 4 242 21] WrappingSub0.wrapping_sub _4 _5);
+    goto BB1
+  }
+  BB1 {
+    return _0
+  }
+  
+end
 module CheckedOps_TestI8OverflowingSub_Interface
   use mach.int.Int
   use prelude.Int8
@@ -3027,11 +4442,11 @@ module CheckedOps_TestI8OverflowingSub
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = int8
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
-  clone Core_Num_Impl0_CheckedSub_Interface as CheckedSub0
-  clone Core_Num_Impl0_WrappingSub_Interface as WrappingSub0
+  clone Core_Num_Impl1_CheckedSub_Interface as CheckedSub0
+  clone Core_Num_Impl1_WrappingSub_Interface as WrappingSub0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
   let rec cfg test_i8_overflowing_sub [@cfg:stackify] [#"../checked_ops.rs" 246 0 246 44] (a : int8) (b : int8) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -3129,7 +4544,7 @@ module CheckedOps_TestI8OverflowingSub
   }
   
 end
-module Core_Num_Impl0_CheckedMul_Interface
+module Core_Num_Impl1_CheckedMul_Interface
   use prelude.Int8
   use mach.int.Int
   use Core_Option_Option_Type
@@ -3138,7 +4553,7 @@ module Core_Num_Impl0_CheckedMul_Interface
     ensures { forall r : (int8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> Int8.to_int r = Int8.to_int self * Int8.to_int rhs }
     
 end
-module Core_Num_Impl0_CheckedMul
+module Core_Num_Impl1_CheckedMul
   use prelude.Int8
   use mach.int.Int
   use Core_Option_Option_Type
@@ -3147,7 +4562,7 @@ module Core_Num_Impl0_CheckedMul
     ensures { forall r : (int8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> Int8.to_int r = Int8.to_int self * Int8.to_int rhs }
     
 end
-module Core_Num_Impl0_WrappingMul_Interface
+module Core_Num_Impl1_WrappingMul_Interface
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -3161,7 +4576,7 @@ module Core_Num_Impl0_WrappingMul_Interface
     ensures { Int8.to_int self * Int8.to_int rhs > Int8.to_int (127 : int8) -> (exists k : (int) . k > 0 /\ Int8.to_int result = Int8.to_int self * Int8.to_int rhs - k * (Int8.to_int (127 : int8) - Int8.to_int (-128 : int8) + 1)) }
     
 end
-module Core_Num_Impl0_WrappingMul
+module Core_Num_Impl1_WrappingMul
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -3175,7 +4590,7 @@ module Core_Num_Impl0_WrappingMul
     ensures { Int8.to_int self * Int8.to_int rhs > Int8.to_int (127 : int8) -> (exists k : (int) . k > 0 /\ Int8.to_int result = Int8.to_int self * Int8.to_int rhs - k * (Int8.to_int (127 : int8) - Int8.to_int (-128 : int8) + 1)) }
     
 end
-module Core_Num_Impl0_SaturatingMul_Interface
+module Core_Num_Impl1_SaturatingMul_Interface
   use prelude.Int8
   use mach.int.Int
   val saturating_mul [@cfg:stackify] (self : int8) (rhs : int8) : int8
@@ -3184,7 +4599,7 @@ module Core_Num_Impl0_SaturatingMul_Interface
     ensures { Int8.to_int self * Int8.to_int rhs > Int8.to_int (127 : int8) -> Int8.to_int result = Int8.to_int (127 : int8) }
     
 end
-module Core_Num_Impl0_SaturatingMul
+module Core_Num_Impl1_SaturatingMul
   use prelude.Int8
   use mach.int.Int
   val saturating_mul [@cfg:stackify] (self : int8) (rhs : int8) : int8
@@ -3193,7 +4608,7 @@ module Core_Num_Impl0_SaturatingMul
     ensures { Int8.to_int self * Int8.to_int rhs > Int8.to_int (127 : int8) -> Int8.to_int result = Int8.to_int (127 : int8) }
     
 end
-module Core_Num_Impl0_OverflowingMul_Interface
+module Core_Num_Impl1_OverflowingMul_Interface
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -3209,7 +4624,7 @@ module Core_Num_Impl0_OverflowingMul_Interface
     ensures { Model0.model (let (_, a) = result in a) = (Int8.to_int self * Int8.to_int rhs < Int8.to_int (-128 : int8) \/ Int8.to_int self * Int8.to_int rhs > Int8.to_int (127 : int8)) }
     
 end
-module Core_Num_Impl0_OverflowingMul
+module Core_Num_Impl1_OverflowingMul
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -3239,12 +4654,12 @@ module CheckedOps_TestI8MulExample
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingMul_Interface as OverflowingMul0 with function Model0.model = Model0.model
-  clone Core_Num_Impl0_SaturatingMul_Interface as SaturatingMul0
-  clone Core_Num_Impl0_WrappingMul_Interface as WrappingMul0
+  clone Core_Num_Impl1_OverflowingMul_Interface as OverflowingMul0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_SaturatingMul_Interface as SaturatingMul0
+  clone Core_Num_Impl1_WrappingMul_Interface as WrappingMul0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = int8
-  clone Core_Num_Impl0_CheckedMul_Interface as CheckedMul0
+  clone Core_Num_Impl1_CheckedMul_Interface as CheckedMul0
   let rec cfg test_i8_mul_example [@cfg:stackify] [#"../checked_ops.rs" 252 0 252 28] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -3611,11 +5026,11 @@ module CheckedOps_TestI8MulZero
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingMul_Interface as OverflowingMul0 with function Model0.model = Model0.model
-  clone Core_Num_Impl0_SaturatingMul_Interface as SaturatingMul0
-  clone Core_Num_Impl0_WrappingMul_Interface as WrappingMul0
+  clone Core_Num_Impl1_OverflowingMul_Interface as OverflowingMul0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_SaturatingMul_Interface as SaturatingMul0
+  clone Core_Num_Impl1_WrappingMul_Interface as WrappingMul0
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = int8
-  clone Core_Num_Impl0_CheckedMul_Interface as CheckedMul0
+  clone Core_Num_Impl1_CheckedMul_Interface as CheckedMul0
   let rec cfg test_i8_mul_zero [@cfg:stackify] [#"../checked_ops.rs" 274 0 274 30] (a : int8) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -3766,11 +5181,11 @@ module CheckedOps_TestI8OverflowingMul
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = int8
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
-  clone Core_Num_Impl0_CheckedMul_Interface as CheckedMul0
-  clone Core_Num_Impl0_WrappingMul_Interface as WrappingMul0
+  clone Core_Num_Impl1_CheckedMul_Interface as CheckedMul0
+  clone Core_Num_Impl1_WrappingMul_Interface as WrappingMul0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingMul_Interface as OverflowingMul0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_OverflowingMul_Interface as OverflowingMul0 with function Model0.model = Model0.model
   let rec cfg test_i8_overflowing_mul [@cfg:stackify] [#"../checked_ops.rs" 283 0 283 44] (a : int8) (b : int8) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -3868,7 +5283,7 @@ module CheckedOps_TestI8OverflowingMul
   }
   
 end
-module Core_Num_Impl0_CheckedDiv_Interface
+module Core_Num_Impl1_CheckedDiv_Interface
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -3878,7 +5293,7 @@ module Core_Num_Impl0_CheckedDiv_Interface
     ensures { forall r : (int8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> Int8.to_int r = div (Int8.to_int self) (Int8.to_int rhs) }
     
 end
-module Core_Num_Impl0_CheckedDiv
+module Core_Num_Impl1_CheckedDiv
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -3888,7 +5303,7 @@ module Core_Num_Impl0_CheckedDiv
     ensures { forall r : (int8) . result = Core_Option_Option_Type.Core_Option_Option_Some_Type r -> Int8.to_int r = div (Int8.to_int self) (Int8.to_int rhs) }
     
 end
-module Core_Num_Impl0_WrappingDiv_Interface
+module Core_Num_Impl1_WrappingDiv_Interface
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -3898,7 +5313,7 @@ module Core_Num_Impl0_WrappingDiv_Interface
     ensures { Int8.to_int self = Int8.to_int (-128 : int8) /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
     
 end
-module Core_Num_Impl0_WrappingDiv
+module Core_Num_Impl1_WrappingDiv
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -3908,7 +5323,7 @@ module Core_Num_Impl0_WrappingDiv
     ensures { Int8.to_int self = Int8.to_int (-128 : int8) /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
     
 end
-module Core_Num_Impl0_SaturatingDiv_Interface
+module Core_Num_Impl1_SaturatingDiv_Interface
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -3918,7 +5333,7 @@ module Core_Num_Impl0_SaturatingDiv_Interface
     ensures { Int8.to_int self = Int8.to_int (-128 : int8) /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
     
 end
-module Core_Num_Impl0_SaturatingDiv
+module Core_Num_Impl1_SaturatingDiv
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -3928,7 +5343,7 @@ module Core_Num_Impl0_SaturatingDiv
     ensures { Int8.to_int self = Int8.to_int (-128 : int8) /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
     
 end
-module Core_Num_Impl0_OverflowingDiv_Interface
+module Core_Num_Impl1_OverflowingDiv_Interface
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -3940,7 +5355,7 @@ module Core_Num_Impl0_OverflowingDiv_Interface
     ensures { Model0.model (let (_, a) = result in a) = (Int8.to_int self = Int8.to_int (-128 : int8) /\ Int8.to_int rhs = - 1) }
     
 end
-module Core_Num_Impl0_OverflowingDiv
+module Core_Num_Impl1_OverflowingDiv
   use prelude.Int8
   use mach.int.Int
   use mach.int.Int32
@@ -3966,12 +5381,12 @@ module CheckedOps_TestI8DivExample
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingDiv_Interface as OverflowingDiv0 with function Model0.model = Model0.model
-  clone Core_Num_Impl0_SaturatingDiv_Interface as SaturatingDiv0
-  clone Core_Num_Impl0_WrappingDiv_Interface as WrappingDiv0
+  clone Core_Num_Impl1_OverflowingDiv_Interface as OverflowingDiv0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_SaturatingDiv_Interface as SaturatingDiv0
+  clone Core_Num_Impl1_WrappingDiv_Interface as WrappingDiv0
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = int8
   clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
-  clone Core_Num_Impl0_CheckedDiv_Interface as CheckedDiv0
+  clone Core_Num_Impl1_CheckedDiv_Interface as CheckedDiv0
   let rec cfg test_i8_div_example [@cfg:stackify] [#"../checked_ops.rs" 289 0 289 28] (_ : ()) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -4349,1475 +5764,6 @@ module CheckedOps_TestI8DivExample
   }
   
 end
-module CheckedOps_TestI8DivZero_Interface
-  use mach.int.Int
-  use prelude.Int8
-  val test_i8_div_zero [@cfg:stackify] (a : int8) : ()
-end
-module CheckedOps_TestI8DivZero
-  use mach.int.Int
-  use prelude.Int8
-  use prelude.Borrow
-  use Core_Option_Option_Type
-  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
-  clone Core_Num_Impl0_CheckedDiv_Interface as CheckedDiv0
-  let rec cfg test_i8_div_zero [@cfg:stackify] [#"../checked_ops.rs" 322 0 322 30] (a : int8) : ()
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : ();
-  var a_1 : int8;
-  var _2 : ();
-  var _3 : bool;
-  var _4 : bool;
-  var _5 : Core_Option_Option_Type.core_option_option_type int8;
-  var _6 : Core_Option_Option_Type.core_option_option_type int8;
-  var _7 : int8;
-  var _8 : ();
-  {
-    a_1 <- a;
-    goto BB0
-  }
-  BB0 {
-    _7 <- a_1;
-    _6 <- ([#"../checked_ops.rs" 323 12 323 28] CheckedDiv0.checked_div _7 (0 : int8));
-    goto BB1
-  }
-  BB1 {
-    _5 <- _6;
-    _4 <- ([#"../checked_ops.rs" 323 12 323 38] IsNone0.is_none _5);
-    goto BB2
-  }
-  BB2 {
-    _3 <- not _4;
-    switch (_3)
-      | False -> goto BB4
-      | True -> goto BB3
-      end
-  }
-  BB3 {
-    absurd
-  }
-  BB4 {
-    _2 <- ();
-    _0 <- ();
-    return _0
-  }
-  
-end
-module CheckedOps_TestU8AddOverflow_Interface
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.Int32
-  val test_u8_add_overflow [@cfg:stackify] (a : uint8) : ()
-    requires {[#"../checked_ops.rs" 22 11 22 18] UInt8.to_int a <> 0}
-    
-end
-module CheckedOps_TestU8AddOverflow
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Bool
-  use prelude.Borrow
-  use Core_Option_Option_Type
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = uint8
-  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
-  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
-  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl6_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
-  clone Core_Num_Impl6_SaturatingAdd_Interface as SaturatingAdd0
-  clone Core_Num_Impl6_WrappingAdd_Interface as WrappingAdd0
-  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = uint8
-  clone Core_Num_Impl6_CheckedAdd_Interface as CheckedAdd0
-  let rec cfg test_u8_add_overflow [@cfg:stackify] [#"../checked_ops.rs" 23 0 23 34] (a : uint8) : ()
-    requires {[#"../checked_ops.rs" 22 11 22 18] UInt8.to_int a <> 0}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : ();
-  var a_1 : uint8;
-  var _3 : ();
-  var _4 : bool;
-  var _5 : bool;
-  var _6 : Core_Option_Option_Type.core_option_option_type uint8;
-  var _7 : Core_Option_Option_Type.core_option_option_type uint8;
-  var _8 : uint8;
-  var _9 : ();
-  var _10 : ();
-  var _11 : bool;
-  var _12 : bool;
-  var _13 : uint8;
-  var _14 : uint8;
-  var _15 : uint8;
-  var _16 : uint8;
-  var _17 : ();
-  var _18 : ();
-  var _19 : bool;
-  var _20 : bool;
-  var _21 : uint8;
-  var _22 : uint8;
-  var _23 : ();
-  var res_24 : (uint8, bool);
-  var _25 : uint8;
-  var _26 : ();
-  var _27 : bool;
-  var _28 : bool;
-  var _29 : bool;
-  var _30 : uint8;
-  var _31 : uint8;
-  var _32 : uint8;
-  var _33 : bool;
-  var _34 : bool;
-  var _35 : ();
-  {
-    a_1 <- a;
-    goto BB0
-  }
-  BB0 {
-    _8 <- a_1;
-    _7 <- ([#"../checked_ops.rs" 24 12 24 32] CheckedAdd0.checked_add (255 : uint8) _8);
-    goto BB1
-  }
-  BB1 {
-    _6 <- _7;
-    _5 <- ([#"../checked_ops.rs" 24 12 24 42] IsNone0.is_none _6);
-    goto BB2
-  }
-  BB2 {
-    _4 <- not _5;
-    switch (_4)
-      | False -> goto BB4
-      | True -> goto BB3
-      end
-  }
-  BB3 {
-    absurd
-  }
-  BB4 {
-    _3 <- ();
-    _14 <- a_1;
-    _13 <- ([#"../checked_ops.rs" 25 12 25 33] WrappingAdd0.wrapping_add (255 : uint8) _14);
-    goto BB5
-  }
-  BB5 {
-    _16 <- a_1;
-    _15 <- ([#"../checked_ops.rs" 25 37 25 42] _16 - (1 : uint8));
-    _12 <- ([#"../checked_ops.rs" 25 12 25 42] _13 = _15);
-    _11 <- not _12;
-    switch (_11)
-      | False -> goto BB7
-      | True -> goto BB6
-      end
-  }
-  BB6 {
-    absurd
-  }
-  BB7 {
-    _10 <- ();
-    _22 <- a_1;
-    _21 <- ([#"../checked_ops.rs" 26 12 26 35] SaturatingAdd0.saturating_add (255 : uint8) _22);
-    goto BB8
-  }
-  BB8 {
-    _20 <- ([#"../checked_ops.rs" 26 12 26 42] _21 = (255 : uint8));
-    _19 <- not _20;
-    switch (_19)
-      | False -> goto BB10
-      | True -> goto BB9
-      end
-  }
-  BB9 {
-    absurd
-  }
-  BB10 {
-    _18 <- ();
-    _25 <- a_1;
-    res_24 <- ([#"../checked_ops.rs" 27 14 27 38] OverflowingAdd0.overflowing_add (255 : uint8) _25);
-    goto BB11
-  }
-  BB11 {
-    _30 <- (let (a, _) = res_24 in a);
-    _32 <- a_1;
-    _31 <- ([#"../checked_ops.rs" 28 21 28 26] _32 - (1 : uint8));
-    _29 <- ([#"../checked_ops.rs" 28 12 28 26] _30 = _31);
-    switch (_29)
-      | False -> goto BB12
-      | True -> goto BB13
-      end
-  }
-  BB12 {
-    assume { Resolve0.resolve res_24 };
-    _28 <- false;
-    goto BB14
-  }
-  BB13 {
-    _34 <- (let (_, a) = res_24 in a);
-    assume { Resolve0.resolve res_24 };
-    _33 <- ([#"../checked_ops.rs" 28 30 28 43] Bool.eqb _34 true);
-    _28 <- _33;
-    _33 <- any bool;
-    goto BB14
-  }
-  BB14 {
-    _27 <- not _28;
-    switch (_27)
-      | False -> goto BB16
-      | True -> goto BB15
-      end
-  }
-  BB15 {
-    absurd
-  }
-  BB16 {
-    _26 <- ();
-    _0 <- ();
-    return _0
-  }
-  
-end
-module CheckedOps_TestU8WrappingAdd_Interface
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.Int32
-  val test_u8_wrapping_add [@cfg:stackify] (a : uint8) (b : uint8) : uint8
-    ensures { [#"../checked_ops.rs" 33 10 33 56] UInt8.to_int result = UInt8.to_int a + UInt8.to_int b \/ UInt8.to_int result = UInt8.to_int a + UInt8.to_int b - 256 }
-    
-end
-module CheckedOps_TestU8WrappingAdd
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.Int32
-  clone Core_Num_Impl6_WrappingAdd_Interface as WrappingAdd0
-  let rec cfg test_u8_wrapping_add [@cfg:stackify] [#"../checked_ops.rs" 34 0 34 47] (a : uint8) (b : uint8) : uint8
-    ensures { [#"../checked_ops.rs" 33 10 33 56] UInt8.to_int result = UInt8.to_int a + UInt8.to_int b \/ UInt8.to_int result = UInt8.to_int a + UInt8.to_int b - 256 }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : uint8;
-  var a_1 : uint8;
-  var b_2 : uint8;
-  var _4 : uint8;
-  var _5 : uint8;
-  {
-    a_1 <- a;
-    b_2 <- b;
-    goto BB0
-  }
-  BB0 {
-    _4 <- a_1;
-    _5 <- b_2;
-    _0 <- ([#"../checked_ops.rs" 35 4 35 21] WrappingAdd0.wrapping_add _4 _5);
-    goto BB1
-  }
-  BB1 {
-    return _0
-  }
-  
-end
-module CheckedOps_TestU8SubOverflow_Interface
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.Int32
-  val test_u8_sub_overflow [@cfg:stackify] (a : uint8) : ()
-    requires {[#"../checked_ops.rs" 62 11 62 18] UInt8.to_int a <> 0}
-    
-end
-module CheckedOps_TestU8SubOverflow
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Bool
-  use prelude.Borrow
-  use Core_Option_Option_Type
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = uint8
-  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
-  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
-  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl6_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
-  clone Core_Num_Impl6_SaturatingSub_Interface as SaturatingSub0
-  clone Core_Num_Impl6_WrappingSub_Interface as WrappingSub0
-  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = uint8
-  clone Core_Num_Impl6_CheckedSub_Interface as CheckedSub0
-  let rec cfg test_u8_sub_overflow [@cfg:stackify] [#"../checked_ops.rs" 63 0 63 34] (a : uint8) : ()
-    requires {[#"../checked_ops.rs" 62 11 62 18] UInt8.to_int a <> 0}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : ();
-  var a_1 : uint8;
-  var _3 : ();
-  var _4 : bool;
-  var _5 : bool;
-  var _6 : Core_Option_Option_Type.core_option_option_type uint8;
-  var _7 : Core_Option_Option_Type.core_option_option_type uint8;
-  var _8 : uint8;
-  var _9 : ();
-  var _10 : ();
-  var _11 : bool;
-  var _12 : bool;
-  var _13 : uint8;
-  var _14 : uint8;
-  var _15 : uint8;
-  var _16 : uint8;
-  var _17 : uint8;
-  var _18 : ();
-  var _19 : ();
-  var _20 : bool;
-  var _21 : bool;
-  var _22 : uint8;
-  var _23 : uint8;
-  var _24 : ();
-  var res_25 : (uint8, bool);
-  var _26 : uint8;
-  var _27 : ();
-  var _28 : bool;
-  var _29 : bool;
-  var _30 : bool;
-  var _31 : uint8;
-  var _32 : uint8;
-  var _33 : uint8;
-  var _34 : uint8;
-  var _35 : bool;
-  var _36 : bool;
-  var _37 : ();
-  {
-    a_1 <- a;
-    goto BB0
-  }
-  BB0 {
-    _8 <- a_1;
-    _7 <- ([#"../checked_ops.rs" 64 12 64 30] CheckedSub0.checked_sub (0 : uint8) _8);
-    goto BB1
-  }
-  BB1 {
-    _6 <- _7;
-    _5 <- ([#"../checked_ops.rs" 64 12 64 40] IsNone0.is_none _6);
-    goto BB2
-  }
-  BB2 {
-    _4 <- not _5;
-    switch (_4)
-      | False -> goto BB4
-      | True -> goto BB3
-      end
-  }
-  BB3 {
-    absurd
-  }
-  BB4 {
-    _3 <- ();
-    _14 <- a_1;
-    _13 <- ([#"../checked_ops.rs" 65 12 65 31] WrappingSub0.wrapping_sub (0 : uint8) _14);
-    goto BB5
-  }
-  BB5 {
-    _17 <- a_1;
-    _16 <- ([#"../checked_ops.rs" 65 35 65 42] (255 : uint8) - _17);
-    _15 <- ([#"../checked_ops.rs" 65 35 65 46] _16 + (1 : uint8));
-    _12 <- ([#"../checked_ops.rs" 65 12 65 46] _13 = _15);
-    _11 <- not _12;
-    switch (_11)
-      | False -> goto BB7
-      | True -> goto BB6
-      end
-  }
-  BB6 {
-    absurd
-  }
-  BB7 {
-    _10 <- ();
-    _23 <- a_1;
-    _22 <- ([#"../checked_ops.rs" 66 12 66 33] SaturatingSub0.saturating_sub (0 : uint8) _23);
-    goto BB8
-  }
-  BB8 {
-    _21 <- ([#"../checked_ops.rs" 66 12 66 38] _22 = (0 : uint8));
-    _20 <- not _21;
-    switch (_20)
-      | False -> goto BB10
-      | True -> goto BB9
-      end
-  }
-  BB9 {
-    absurd
-  }
-  BB10 {
-    _19 <- ();
-    _26 <- a_1;
-    res_25 <- ([#"../checked_ops.rs" 67 14 67 36] OverflowingSub0.overflowing_sub (0 : uint8) _26);
-    goto BB11
-  }
-  BB11 {
-    _31 <- (let (a, _) = res_25 in a);
-    _34 <- a_1;
-    _33 <- ([#"../checked_ops.rs" 68 21 68 28] (255 : uint8) - _34);
-    _32 <- ([#"../checked_ops.rs" 68 21 68 32] _33 + (1 : uint8));
-    _30 <- ([#"../checked_ops.rs" 68 12 68 32] _31 = _32);
-    switch (_30)
-      | False -> goto BB12
-      | True -> goto BB13
-      end
-  }
-  BB12 {
-    assume { Resolve0.resolve res_25 };
-    _29 <- false;
-    goto BB14
-  }
-  BB13 {
-    _36 <- (let (_, a) = res_25 in a);
-    assume { Resolve0.resolve res_25 };
-    _35 <- ([#"../checked_ops.rs" 68 36 68 49] Bool.eqb _36 true);
-    _29 <- _35;
-    _35 <- any bool;
-    goto BB14
-  }
-  BB14 {
-    _28 <- not _29;
-    switch (_28)
-      | False -> goto BB16
-      | True -> goto BB15
-      end
-  }
-  BB15 {
-    absurd
-  }
-  BB16 {
-    _27 <- ();
-    _0 <- ();
-    return _0
-  }
-  
-end
-module CheckedOps_TestU8WrappingSub_Interface
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.Int32
-  val test_u8_wrapping_sub [@cfg:stackify] (a : uint8) (b : uint8) : uint8
-    ensures { [#"../checked_ops.rs" 73 10 73 56] UInt8.to_int result = UInt8.to_int a - UInt8.to_int b \/ UInt8.to_int result = UInt8.to_int a - UInt8.to_int b + 256 }
-    
-end
-module CheckedOps_TestU8WrappingSub
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.Int32
-  clone Core_Num_Impl6_WrappingSub_Interface as WrappingSub0
-  let rec cfg test_u8_wrapping_sub [@cfg:stackify] [#"../checked_ops.rs" 74 0 74 47] (a : uint8) (b : uint8) : uint8
-    ensures { [#"../checked_ops.rs" 73 10 73 56] UInt8.to_int result = UInt8.to_int a - UInt8.to_int b \/ UInt8.to_int result = UInt8.to_int a - UInt8.to_int b + 256 }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : uint8;
-  var a_1 : uint8;
-  var b_2 : uint8;
-  var _4 : uint8;
-  var _5 : uint8;
-  {
-    a_1 <- a;
-    b_2 <- b;
-    goto BB0
-  }
-  BB0 {
-    _4 <- a_1;
-    _5 <- b_2;
-    _0 <- ([#"../checked_ops.rs" 75 4 75 21] WrappingSub0.wrapping_sub _4 _5);
-    goto BB1
-  }
-  BB1 {
-    return _0
-  }
-  
-end
-module CheckedOps_TestU8DivNoOverflow_Interface
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.Int32
-  val test_u8_div_no_overflow [@cfg:stackify] (a : uint8) (b : uint8) : ()
-    requires {[#"../checked_ops.rs" 127 11 127 18] UInt8.to_int b <> 0}
-    
-end
-module CheckedOps_TestU8DivNoOverflow
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Bool
-  use Core_Option_Option_Type
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = uint8
-  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
-  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = uint8, type t2 = bool,
-  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl6_OverflowingDiv_Interface as OverflowingDiv0 with function Model0.model = Model0.model
-  clone Core_Num_Impl6_SaturatingDiv_Interface as SaturatingDiv0
-  clone Core_Num_Impl6_WrappingDiv_Interface as WrappingDiv0
-  clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = uint8
-  clone Core_Num_Impl6_CheckedDiv_Interface as CheckedDiv0
-  let rec cfg test_u8_div_no_overflow [@cfg:stackify] [#"../checked_ops.rs" 128 0 128 44] (a : uint8) (b : uint8) : ()
-    requires {[#"../checked_ops.rs" 127 11 127 18] UInt8.to_int b <> 0}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : ();
-  var a_1 : uint8;
-  var b_2 : uint8;
-  var _4 : ();
-  var _5 : bool;
-  var _6 : bool;
-  var _7 : uint8;
-  var _8 : Core_Option_Option_Type.core_option_option_type uint8;
-  var _9 : uint8;
-  var _10 : uint8;
-  var _11 : uint8;
-  var _12 : uint8;
-  var _13 : uint8;
-  var _14 : bool;
-  var _15 : ();
-  var _16 : ();
-  var _17 : bool;
-  var _18 : bool;
-  var _19 : uint8;
-  var _20 : uint8;
-  var _21 : uint8;
-  var _22 : uint8;
-  var _23 : uint8;
-  var _24 : uint8;
-  var _25 : bool;
-  var _26 : ();
-  var _27 : ();
-  var _28 : bool;
-  var _29 : bool;
-  var _30 : uint8;
-  var _31 : uint8;
-  var _32 : uint8;
-  var _33 : uint8;
-  var _34 : uint8;
-  var _35 : uint8;
-  var _36 : bool;
-  var _37 : ();
-  var res_38 : (uint8, bool);
-  var _39 : uint8;
-  var _40 : uint8;
-  var _41 : ();
-  var _42 : bool;
-  var _43 : bool;
-  var _44 : bool;
-  var _45 : uint8;
-  var _46 : uint8;
-  var _47 : uint8;
-  var _48 : uint8;
-  var _49 : bool;
-  var _50 : bool;
-  var _51 : bool;
-  var _52 : ();
-  {
-    a_1 <- a;
-    b_2 <- b;
-    goto BB0
-  }
-  BB0 {
-    _9 <- a_1;
-    _10 <- b_2;
-    _8 <- ([#"../checked_ops.rs" 129 12 129 28] CheckedDiv0.checked_div _9 _10);
-    goto BB1
-  }
-  BB1 {
-    _7 <- ([#"../checked_ops.rs" 129 12 129 37] Unwrap0.unwrap _8);
-    goto BB2
-  }
-  BB2 {
-    _12 <- a_1;
-    _13 <- b_2;
-    _14 <- ([#"../checked_ops.rs" 129 41 129 46] _13 = (0 : uint8));
-    assert { [#"../checked_ops.rs" 129 41 129 46] not _14 };
-    goto BB3
-  }
-  BB3 {
-    _11 <- ([#"../checked_ops.rs" 129 41 129 46] _12 / _13);
-    _6 <- ([#"../checked_ops.rs" 129 12 129 46] _7 = _11);
-    _5 <- not _6;
-    switch (_5)
-      | False -> goto BB5
-      | True -> goto BB4
-      end
-  }
-  BB4 {
-    absurd
-  }
-  BB5 {
-    _4 <- ();
-    _20 <- a_1;
-    _21 <- b_2;
-    _19 <- ([#"../checked_ops.rs" 130 12 130 29] WrappingDiv0.wrapping_div _20 _21);
-    goto BB6
-  }
-  BB6 {
-    _23 <- a_1;
-    _24 <- b_2;
-    _25 <- ([#"../checked_ops.rs" 130 33 130 38] _24 = (0 : uint8));
-    assert { [#"../checked_ops.rs" 130 33 130 38] not _25 };
-    goto BB7
-  }
-  BB7 {
-    _22 <- ([#"../checked_ops.rs" 130 33 130 38] _23 / _24);
-    _18 <- ([#"../checked_ops.rs" 130 12 130 38] _19 = _22);
-    _17 <- not _18;
-    switch (_17)
-      | False -> goto BB9
-      | True -> goto BB8
-      end
-  }
-  BB8 {
-    absurd
-  }
-  BB9 {
-    _16 <- ();
-    _31 <- a_1;
-    _32 <- b_2;
-    _30 <- ([#"../checked_ops.rs" 131 12 131 31] SaturatingDiv0.saturating_div _31 _32);
-    goto BB10
-  }
-  BB10 {
-    _34 <- a_1;
-    _35 <- b_2;
-    _36 <- ([#"../checked_ops.rs" 131 35 131 40] _35 = (0 : uint8));
-    assert { [#"../checked_ops.rs" 131 35 131 40] not _36 };
-    goto BB11
-  }
-  BB11 {
-    _33 <- ([#"../checked_ops.rs" 131 35 131 40] _34 / _35);
-    _29 <- ([#"../checked_ops.rs" 131 12 131 40] _30 = _33);
-    _28 <- not _29;
-    switch (_28)
-      | False -> goto BB13
-      | True -> goto BB12
-      end
-  }
-  BB12 {
-    absurd
-  }
-  BB13 {
-    _27 <- ();
-    _39 <- a_1;
-    _40 <- b_2;
-    res_38 <- ([#"../checked_ops.rs" 132 14 132 34] OverflowingDiv0.overflowing_div _39 _40);
-    goto BB14
-  }
-  BB14 {
-    _45 <- (let (a, _) = res_38 in a);
-    _47 <- a_1;
-    _48 <- b_2;
-    _49 <- ([#"../checked_ops.rs" 133 21 133 26] _48 = (0 : uint8));
-    assert { [#"../checked_ops.rs" 133 21 133 26] not _49 };
-    goto BB18
-  }
-  BB15 {
-    assume { Resolve0.resolve res_38 };
-    _43 <- false;
-    goto BB17
-  }
-  BB16 {
-    _51 <- (let (_, a) = res_38 in a);
-    assume { Resolve0.resolve res_38 };
-    _50 <- ([#"../checked_ops.rs" 133 30 133 44] Bool.eqb _51 false);
-    _43 <- _50;
-    _50 <- any bool;
-    goto BB17
-  }
-  BB17 {
-    _42 <- not _43;
-    switch (_42)
-      | False -> goto BB20
-      | True -> goto BB19
-      end
-  }
-  BB18 {
-    _46 <- ([#"../checked_ops.rs" 133 21 133 26] _47 / _48);
-    _44 <- ([#"../checked_ops.rs" 133 12 133 26] _45 = _46);
-    switch (_44)
-      | False -> goto BB15
-      | True -> goto BB16
-      end
-  }
-  BB19 {
-    absurd
-  }
-  BB20 {
-    _41 <- ();
-    _0 <- ();
-    return _0
-  }
-  
-end
-module CheckedOps_TestI8AddOverflowPos_Interface
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.Int32
-  val test_i8_add_overflow_pos [@cfg:stackify] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 164 11 164 17] Int8.to_int a > 0}
-    
-end
-module CheckedOps_TestI8AddOverflowPos
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Bool
-  use prelude.Borrow
-  use Core_Option_Option_Type
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = int8
-  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
-  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
-  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
-  clone Core_Num_Impl0_SaturatingAdd_Interface as SaturatingAdd0
-  clone Core_Num_Impl0_WrappingAdd_Interface as WrappingAdd0
-  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
-  clone Core_Num_Impl0_CheckedAdd_Interface as CheckedAdd0
-  let rec cfg test_i8_add_overflow_pos [@cfg:stackify] [#"../checked_ops.rs" 165 0 165 38] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 164 11 164 17] Int8.to_int a > 0}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : ();
-  var a_1 : int8;
-  var _3 : ();
-  var _4 : bool;
-  var _5 : bool;
-  var _6 : Core_Option_Option_Type.core_option_option_type int8;
-  var _7 : Core_Option_Option_Type.core_option_option_type int8;
-  var _8 : int8;
-  var _9 : ();
-  var _10 : ();
-  var _11 : bool;
-  var _12 : bool;
-  var _13 : int8;
-  var _14 : int8;
-  var _15 : int8;
-  var _16 : int8;
-  var _17 : int8;
-  var _18 : ();
-  var _19 : ();
-  var _20 : bool;
-  var _21 : bool;
-  var _22 : int8;
-  var _23 : int8;
-  var _24 : ();
-  var res_25 : (int8, bool);
-  var _26 : int8;
-  var _27 : ();
-  var _28 : bool;
-  var _29 : bool;
-  var _30 : bool;
-  var _31 : int8;
-  var _32 : int8;
-  var _33 : int8;
-  var _34 : int8;
-  var _35 : bool;
-  var _36 : bool;
-  var _37 : ();
-  {
-    a_1 <- a;
-    goto BB0
-  }
-  BB0 {
-    _8 <- a_1;
-    _7 <- ([#"../checked_ops.rs" 166 12 166 32] CheckedAdd0.checked_add (127 : int8) _8);
-    goto BB1
-  }
-  BB1 {
-    _6 <- _7;
-    _5 <- ([#"../checked_ops.rs" 166 12 166 42] IsNone0.is_none _6);
-    goto BB2
-  }
-  BB2 {
-    _4 <- not _5;
-    switch (_4)
-      | False -> goto BB4
-      | True -> goto BB3
-      end
-  }
-  BB3 {
-    absurd
-  }
-  BB4 {
-    _3 <- ();
-    _14 <- a_1;
-    _13 <- ([#"../checked_ops.rs" 167 12 167 33] WrappingAdd0.wrapping_add (127 : int8) _14);
-    goto BB5
-  }
-  BB5 {
-    _17 <- a_1;
-    _16 <- ([#"../checked_ops.rs" 167 37 167 44] _17 - (127 : int8));
-    _15 <- ([#"../checked_ops.rs" 167 37 167 48] _16 - (2 : int8));
-    _12 <- ([#"../checked_ops.rs" 167 12 167 48] _13 = _15);
-    _11 <- not _12;
-    switch (_11)
-      | False -> goto BB7
-      | True -> goto BB6
-      end
-  }
-  BB6 {
-    absurd
-  }
-  BB7 {
-    _10 <- ();
-    _23 <- a_1;
-    _22 <- ([#"../checked_ops.rs" 168 12 168 35] SaturatingAdd0.saturating_add (127 : int8) _23);
-    goto BB8
-  }
-  BB8 {
-    _21 <- ([#"../checked_ops.rs" 168 12 168 42] _22 = (127 : int8));
-    _20 <- not _21;
-    switch (_20)
-      | False -> goto BB10
-      | True -> goto BB9
-      end
-  }
-  BB9 {
-    absurd
-  }
-  BB10 {
-    _19 <- ();
-    _26 <- a_1;
-    res_25 <- ([#"../checked_ops.rs" 169 14 169 38] OverflowingAdd0.overflowing_add (127 : int8) _26);
-    goto BB11
-  }
-  BB11 {
-    _31 <- (let (a, _) = res_25 in a);
-    _34 <- a_1;
-    _33 <- ([#"../checked_ops.rs" 170 21 170 28] _34 - (127 : int8));
-    _32 <- ([#"../checked_ops.rs" 170 21 170 32] _33 - (2 : int8));
-    _30 <- ([#"../checked_ops.rs" 170 12 170 32] _31 = _32);
-    switch (_30)
-      | False -> goto BB12
-      | True -> goto BB13
-      end
-  }
-  BB12 {
-    assume { Resolve0.resolve res_25 };
-    _29 <- false;
-    goto BB14
-  }
-  BB13 {
-    _36 <- (let (_, a) = res_25 in a);
-    assume { Resolve0.resolve res_25 };
-    _35 <- ([#"../checked_ops.rs" 170 36 170 49] Bool.eqb _36 true);
-    _29 <- _35;
-    _35 <- any bool;
-    goto BB14
-  }
-  BB14 {
-    _28 <- not _29;
-    switch (_28)
-      | False -> goto BB16
-      | True -> goto BB15
-      end
-  }
-  BB15 {
-    absurd
-  }
-  BB16 {
-    _27 <- ();
-    _0 <- ();
-    return _0
-  }
-  
-end
-module CheckedOps_TestI8AddOverflowNeg_Interface
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.Int32
-  val test_i8_add_overflow_neg [@cfg:stackify] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 174 11 174 17] Int8.to_int a < 0}
-    
-end
-module CheckedOps_TestI8AddOverflowNeg
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Bool
-  use prelude.Borrow
-  use Core_Option_Option_Type
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = int8
-  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
-  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
-  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingAdd_Interface as OverflowingAdd0 with function Model0.model = Model0.model
-  clone Core_Num_Impl0_SaturatingAdd_Interface as SaturatingAdd0
-  clone Core_Num_Impl0_WrappingAdd_Interface as WrappingAdd0
-  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
-  clone Core_Num_Impl0_CheckedAdd_Interface as CheckedAdd0
-  let rec cfg test_i8_add_overflow_neg [@cfg:stackify] [#"../checked_ops.rs" 175 0 175 38] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 174 11 174 17] Int8.to_int a < 0}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : ();
-  var a_1 : int8;
-  var _3 : ();
-  var _4 : bool;
-  var _5 : bool;
-  var _6 : Core_Option_Option_Type.core_option_option_type int8;
-  var _7 : Core_Option_Option_Type.core_option_option_type int8;
-  var _8 : int8;
-  var _9 : ();
-  var _10 : ();
-  var _11 : bool;
-  var _12 : bool;
-  var _13 : int8;
-  var _14 : int8;
-  var _15 : int8;
-  var _16 : int8;
-  var _17 : int8;
-  var _18 : ();
-  var _19 : ();
-  var _20 : bool;
-  var _21 : bool;
-  var _22 : int8;
-  var _23 : int8;
-  var _24 : ();
-  var res_25 : (int8, bool);
-  var _26 : int8;
-  var _27 : ();
-  var _28 : bool;
-  var _29 : bool;
-  var _30 : bool;
-  var _31 : int8;
-  var _32 : int8;
-  var _33 : int8;
-  var _34 : int8;
-  var _35 : bool;
-  var _36 : bool;
-  var _37 : ();
-  {
-    a_1 <- a;
-    goto BB0
-  }
-  BB0 {
-    _8 <- a_1;
-    _7 <- ([#"../checked_ops.rs" 176 12 176 35] CheckedAdd0.checked_add (-128 : int8) _8);
-    goto BB1
-  }
-  BB1 {
-    _6 <- _7;
-    _5 <- ([#"../checked_ops.rs" 176 12 176 45] IsNone0.is_none _6);
-    goto BB2
-  }
-  BB2 {
-    _4 <- not _5;
-    switch (_4)
-      | False -> goto BB4
-      | True -> goto BB3
-      end
-  }
-  BB3 {
-    absurd
-  }
-  BB4 {
-    _3 <- ();
-    _14 <- a_1;
-    _13 <- ([#"../checked_ops.rs" 177 12 177 36] WrappingAdd0.wrapping_add (-128 : int8) _14);
-    goto BB5
-  }
-  BB5 {
-    _17 <- a_1;
-    _16 <- ([#"../checked_ops.rs" 177 40 177 47] _17 + (127 : int8));
-    _15 <- ([#"../checked_ops.rs" 177 40 177 51] _16 + (1 : int8));
-    _12 <- ([#"../checked_ops.rs" 177 12 177 51] _13 = _15);
-    _11 <- not _12;
-    switch (_11)
-      | False -> goto BB7
-      | True -> goto BB6
-      end
-  }
-  BB6 {
-    absurd
-  }
-  BB7 {
-    _10 <- ();
-    _23 <- a_1;
-    _22 <- ([#"../checked_ops.rs" 178 12 178 38] SaturatingAdd0.saturating_add (-128 : int8) _23);
-    goto BB8
-  }
-  BB8 {
-    _21 <- ([#"../checked_ops.rs" 178 12 178 46] _22 = (-128 : int8));
-    _20 <- not _21;
-    switch (_20)
-      | False -> goto BB10
-      | True -> goto BB9
-      end
-  }
-  BB9 {
-    absurd
-  }
-  BB10 {
-    _19 <- ();
-    _26 <- a_1;
-    res_25 <- ([#"../checked_ops.rs" 179 14 179 41] OverflowingAdd0.overflowing_add (-128 : int8) _26);
-    goto BB11
-  }
-  BB11 {
-    _31 <- (let (a, _) = res_25 in a);
-    _34 <- a_1;
-    _33 <- ([#"../checked_ops.rs" 180 21 180 28] _34 + (127 : int8));
-    _32 <- ([#"../checked_ops.rs" 180 21 180 32] _33 + (1 : int8));
-    _30 <- ([#"../checked_ops.rs" 180 12 180 32] _31 = _32);
-    switch (_30)
-      | False -> goto BB12
-      | True -> goto BB13
-      end
-  }
-  BB12 {
-    assume { Resolve0.resolve res_25 };
-    _29 <- false;
-    goto BB14
-  }
-  BB13 {
-    _36 <- (let (_, a) = res_25 in a);
-    assume { Resolve0.resolve res_25 };
-    _35 <- ([#"../checked_ops.rs" 180 36 180 49] Bool.eqb _36 true);
-    _29 <- _35;
-    _35 <- any bool;
-    goto BB14
-  }
-  BB14 {
-    _28 <- not _29;
-    switch (_28)
-      | False -> goto BB16
-      | True -> goto BB15
-      end
-  }
-  BB15 {
-    absurd
-  }
-  BB16 {
-    _27 <- ();
-    _0 <- ();
-    return _0
-  }
-  
-end
-module CheckedOps_TestI8WrappingAdd_Interface
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.Int32
-  val test_i8_wrapping_add [@cfg:stackify] (a : int8) (b : int8) : int8
-    ensures { [#"../checked_ops.rs" 185 10 185 84] Int8.to_int result = Int8.to_int a + Int8.to_int b \/ Int8.to_int result = Int8.to_int a + Int8.to_int b - 256 \/ Int8.to_int result = Int8.to_int a + Int8.to_int b + 256 }
-    
-end
-module CheckedOps_TestI8WrappingAdd
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.Int32
-  clone Core_Num_Impl0_WrappingAdd_Interface as WrappingAdd0
-  let rec cfg test_i8_wrapping_add [@cfg:stackify] [#"../checked_ops.rs" 186 0 186 47] (a : int8) (b : int8) : int8
-    ensures { [#"../checked_ops.rs" 185 10 185 84] Int8.to_int result = Int8.to_int a + Int8.to_int b \/ Int8.to_int result = Int8.to_int a + Int8.to_int b - 256 \/ Int8.to_int result = Int8.to_int a + Int8.to_int b + 256 }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : int8;
-  var a_1 : int8;
-  var b_2 : int8;
-  var _4 : int8;
-  var _5 : int8;
-  {
-    a_1 <- a;
-    b_2 <- b;
-    goto BB0
-  }
-  BB0 {
-    _4 <- a_1;
-    _5 <- b_2;
-    _0 <- ([#"../checked_ops.rs" 187 4 187 21] WrappingAdd0.wrapping_add _4 _5);
-    goto BB1
-  }
-  BB1 {
-    return _0
-  }
-  
-end
-module CheckedOps_TestI8SubOverflowPos_Interface
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.Int32
-  val test_i8_sub_overflow_pos [@cfg:stackify] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 219 11 219 17] Int8.to_int a > 0}
-    
-end
-module CheckedOps_TestI8SubOverflowPos
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Bool
-  use prelude.Borrow
-  use Core_Option_Option_Type
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = int8
-  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
-  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
-  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
-  clone Core_Num_Impl0_SaturatingSub_Interface as SaturatingSub0
-  clone Core_Num_Impl0_WrappingSub_Interface as WrappingSub0
-  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
-  clone Core_Num_Impl0_CheckedSub_Interface as CheckedSub0
-  let rec cfg test_i8_sub_overflow_pos [@cfg:stackify] [#"../checked_ops.rs" 220 0 220 38] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 219 11 219 17] Int8.to_int a > 0}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : ();
-  var a_1 : int8;
-  var _3 : ();
-  var _4 : bool;
-  var _5 : bool;
-  var _6 : Core_Option_Option_Type.core_option_option_type int8;
-  var _7 : Core_Option_Option_Type.core_option_option_type int8;
-  var _8 : int8;
-  var _9 : ();
-  var _10 : ();
-  var _11 : bool;
-  var _12 : bool;
-  var _13 : int8;
-  var _14 : int8;
-  var _15 : int8;
-  var _16 : int8;
-  var _17 : int8;
-  var _18 : ();
-  var _19 : ();
-  var _20 : bool;
-  var _21 : bool;
-  var _22 : int8;
-  var _23 : int8;
-  var _24 : ();
-  var res_25 : (int8, bool);
-  var _26 : int8;
-  var _27 : ();
-  var _28 : bool;
-  var _29 : bool;
-  var _30 : bool;
-  var _31 : int8;
-  var _32 : int8;
-  var _33 : int8;
-  var _34 : int8;
-  var _35 : bool;
-  var _36 : bool;
-  var _37 : ();
-  {
-    a_1 <- a;
-    goto BB0
-  }
-  BB0 {
-    _8 <- a_1;
-    _7 <- ([#"../checked_ops.rs" 221 12 221 35] CheckedSub0.checked_sub (-128 : int8) _8);
-    goto BB1
-  }
-  BB1 {
-    _6 <- _7;
-    _5 <- ([#"../checked_ops.rs" 221 12 221 45] IsNone0.is_none _6);
-    goto BB2
-  }
-  BB2 {
-    _4 <- not _5;
-    switch (_4)
-      | False -> goto BB4
-      | True -> goto BB3
-      end
-  }
-  BB3 {
-    absurd
-  }
-  BB4 {
-    _3 <- ();
-    _14 <- a_1;
-    _13 <- ([#"../checked_ops.rs" 222 12 222 36] WrappingSub0.wrapping_sub (-128 : int8) _14);
-    goto BB5
-  }
-  BB5 {
-    _17 <- a_1;
-    _16 <- ([#"../checked_ops.rs" 222 40 222 47] (127 : int8) - _17);
-    _15 <- ([#"../checked_ops.rs" 222 40 222 51] _16 + (1 : int8));
-    _12 <- ([#"../checked_ops.rs" 222 12 222 51] _13 = _15);
-    _11 <- not _12;
-    switch (_11)
-      | False -> goto BB7
-      | True -> goto BB6
-      end
-  }
-  BB6 {
-    absurd
-  }
-  BB7 {
-    _10 <- ();
-    _23 <- a_1;
-    _22 <- ([#"../checked_ops.rs" 223 12 223 38] SaturatingSub0.saturating_sub (-128 : int8) _23);
-    goto BB8
-  }
-  BB8 {
-    _21 <- ([#"../checked_ops.rs" 223 12 223 46] _22 = (-128 : int8));
-    _20 <- not _21;
-    switch (_20)
-      | False -> goto BB10
-      | True -> goto BB9
-      end
-  }
-  BB9 {
-    absurd
-  }
-  BB10 {
-    _19 <- ();
-    _26 <- a_1;
-    res_25 <- ([#"../checked_ops.rs" 224 14 224 41] OverflowingSub0.overflowing_sub (-128 : int8) _26);
-    goto BB11
-  }
-  BB11 {
-    _31 <- (let (a, _) = res_25 in a);
-    _34 <- a_1;
-    _33 <- ([#"../checked_ops.rs" 225 21 225 28] (127 : int8) - _34);
-    _32 <- ([#"../checked_ops.rs" 225 21 225 32] _33 + (1 : int8));
-    _30 <- ([#"../checked_ops.rs" 225 12 225 32] _31 = _32);
-    switch (_30)
-      | False -> goto BB12
-      | True -> goto BB13
-      end
-  }
-  BB12 {
-    assume { Resolve0.resolve res_25 };
-    _29 <- false;
-    goto BB14
-  }
-  BB13 {
-    _36 <- (let (_, a) = res_25 in a);
-    assume { Resolve0.resolve res_25 };
-    _35 <- ([#"../checked_ops.rs" 225 36 225 49] Bool.eqb _36 true);
-    _29 <- _35;
-    _35 <- any bool;
-    goto BB14
-  }
-  BB14 {
-    _28 <- not _29;
-    switch (_28)
-      | False -> goto BB16
-      | True -> goto BB15
-      end
-  }
-  BB15 {
-    absurd
-  }
-  BB16 {
-    _27 <- ();
-    _0 <- ();
-    return _0
-  }
-  
-end
-module CheckedOps_TestI8SubOverflowNeg_Interface
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.Int32
-  val test_i8_sub_overflow_neg [@cfg:stackify] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 229 11 229 17] Int8.to_int a < 0}
-    
-end
-module CheckedOps_TestI8SubOverflowNeg
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.Int32
-  use prelude.Bool
-  use prelude.Borrow
-  use Core_Option_Option_Type
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = bool
-  clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = int8
-  clone CreusotContracts_Logic_Model_Impl5_Model as Model0
-  clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
-  predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingSub_Interface as OverflowingSub0 with function Model0.model = Model0.model
-  clone Core_Num_Impl0_SaturatingSub_Interface as SaturatingSub0
-  clone Core_Num_Impl0_WrappingSub_Interface as WrappingSub0
-  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
-  clone Core_Num_Impl0_CheckedSub_Interface as CheckedSub0
-  let rec cfg test_i8_sub_overflow_neg [@cfg:stackify] [#"../checked_ops.rs" 230 0 230 38] (a : int8) : ()
-    requires {[#"../checked_ops.rs" 229 11 229 17] Int8.to_int a < 0}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : ();
-  var a_1 : int8;
-  var _3 : ();
-  var _4 : bool;
-  var _5 : bool;
-  var _6 : Core_Option_Option_Type.core_option_option_type int8;
-  var _7 : Core_Option_Option_Type.core_option_option_type int8;
-  var _8 : int8;
-  var _9 : ();
-  var _10 : ();
-  var _11 : bool;
-  var _12 : bool;
-  var _13 : int8;
-  var _14 : int8;
-  var _15 : int8;
-  var _16 : int8;
-  var _17 : int8;
-  var _18 : int8;
-  var _19 : ();
-  var _20 : ();
-  var _21 : bool;
-  var _22 : bool;
-  var _23 : int8;
-  var _24 : int8;
-  var _25 : ();
-  var res_26 : (int8, bool);
-  var _27 : int8;
-  var _28 : ();
-  var _29 : bool;
-  var _30 : bool;
-  var _31 : bool;
-  var _32 : int8;
-  var _33 : int8;
-  var _34 : int8;
-  var _35 : int8;
-  var _36 : int8;
-  var _37 : bool;
-  var _38 : bool;
-  var _39 : ();
-  {
-    a_1 <- a;
-    goto BB0
-  }
-  BB0 {
-    _8 <- a_1;
-    _7 <- ([#"../checked_ops.rs" 231 12 231 32] CheckedSub0.checked_sub (127 : int8) _8);
-    goto BB1
-  }
-  BB1 {
-    _6 <- _7;
-    _5 <- ([#"../checked_ops.rs" 231 12 231 42] IsNone0.is_none _6);
-    goto BB2
-  }
-  BB2 {
-    _4 <- not _5;
-    switch (_4)
-      | False -> goto BB4
-      | True -> goto BB3
-      end
-  }
-  BB3 {
-    absurd
-  }
-  BB4 {
-    _3 <- ();
-    _14 <- a_1;
-    _13 <- ([#"../checked_ops.rs" 232 12 232 33] WrappingSub0.wrapping_sub (127 : int8) _14);
-    goto BB5
-  }
-  BB5 {
-    _18 <- a_1;
-    _17 <- ([#"../checked_ops.rs" 232 38 232 45] (2 : int8) + _18);
-    _16 <- - _17;
-    _15 <- ([#"../checked_ops.rs" 232 37 232 51] _16 - (127 : int8));
-    _12 <- ([#"../checked_ops.rs" 232 12 232 51] _13 = _15);
-    _11 <- not _12;
-    switch (_11)
-      | False -> goto BB7
-      | True -> goto BB6
-      end
-  }
-  BB6 {
-    absurd
-  }
-  BB7 {
-    _10 <- ();
-    _24 <- a_1;
-    _23 <- ([#"../checked_ops.rs" 233 12 233 35] SaturatingSub0.saturating_sub (127 : int8) _24);
-    goto BB8
-  }
-  BB8 {
-    _22 <- ([#"../checked_ops.rs" 233 12 233 42] _23 = (127 : int8));
-    _21 <- not _22;
-    switch (_21)
-      | False -> goto BB10
-      | True -> goto BB9
-      end
-  }
-  BB9 {
-    absurd
-  }
-  BB10 {
-    _20 <- ();
-    _27 <- a_1;
-    res_26 <- ([#"../checked_ops.rs" 234 14 234 38] OverflowingSub0.overflowing_sub (127 : int8) _27);
-    goto BB11
-  }
-  BB11 {
-    _32 <- (let (a, _) = res_26 in a);
-    _36 <- a_1;
-    _35 <- ([#"../checked_ops.rs" 235 22 235 29] (2 : int8) + _36);
-    _34 <- - _35;
-    _33 <- ([#"../checked_ops.rs" 235 21 235 35] _34 - (127 : int8));
-    _31 <- ([#"../checked_ops.rs" 235 12 235 35] _32 = _33);
-    switch (_31)
-      | False -> goto BB12
-      | True -> goto BB13
-      end
-  }
-  BB12 {
-    assume { Resolve0.resolve res_26 };
-    _30 <- false;
-    goto BB14
-  }
-  BB13 {
-    _38 <- (let (_, a) = res_26 in a);
-    assume { Resolve0.resolve res_26 };
-    _37 <- ([#"../checked_ops.rs" 235 39 235 52] Bool.eqb _38 true);
-    _30 <- _37;
-    _37 <- any bool;
-    goto BB14
-  }
-  BB14 {
-    _29 <- not _30;
-    switch (_29)
-      | False -> goto BB16
-      | True -> goto BB15
-      end
-  }
-  BB15 {
-    absurd
-  }
-  BB16 {
-    _28 <- ();
-    _0 <- ();
-    return _0
-  }
-  
-end
-module CheckedOps_TestI8WrappingSub_Interface
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.Int32
-  val test_i8_wrapping_sub [@cfg:stackify] (a : int8) (b : int8) : int8
-    ensures { [#"../checked_ops.rs" 240 10 240 84] Int8.to_int result = Int8.to_int a - Int8.to_int b \/ Int8.to_int result = Int8.to_int a - Int8.to_int b + 256 \/ Int8.to_int result = Int8.to_int a - Int8.to_int b - 256 }
-    
-end
-module CheckedOps_TestI8WrappingSub
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.Int32
-  clone Core_Num_Impl0_WrappingSub_Interface as WrappingSub0
-  let rec cfg test_i8_wrapping_sub [@cfg:stackify] [#"../checked_ops.rs" 241 0 241 47] (a : int8) (b : int8) : int8
-    ensures { [#"../checked_ops.rs" 240 10 240 84] Int8.to_int result = Int8.to_int a - Int8.to_int b \/ Int8.to_int result = Int8.to_int a - Int8.to_int b + 256 \/ Int8.to_int result = Int8.to_int a - Int8.to_int b - 256 }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : int8;
-  var a_1 : int8;
-  var b_2 : int8;
-  var _4 : int8;
-  var _5 : int8;
-  {
-    a_1 <- a;
-    b_2 <- b;
-    goto BB0
-  }
-  BB0 {
-    _4 <- a_1;
-    _5 <- b_2;
-    _0 <- ([#"../checked_ops.rs" 242 4 242 21] WrappingSub0.wrapping_sub _4 _5);
-    goto BB1
-  }
-  BB1 {
-    return _0
-  }
-  
-end
 module CheckedOps_TestI8DivNoOverflow_Interface
   use prelude.Int8
   use mach.int.Int
@@ -5837,11 +5783,11 @@ module CheckedOps_TestI8DivNoOverflow
   clone CreusotContracts_Logic_Model_Impl5_Model as Model0
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = int8, type t2 = bool,
   predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
-  clone Core_Num_Impl0_OverflowingDiv_Interface as OverflowingDiv0 with function Model0.model = Model0.model
-  clone Core_Num_Impl0_SaturatingDiv_Interface as SaturatingDiv0
-  clone Core_Num_Impl0_WrappingDiv_Interface as WrappingDiv0
+  clone Core_Num_Impl1_OverflowingDiv_Interface as OverflowingDiv0 with function Model0.model = Model0.model
+  clone Core_Num_Impl1_SaturatingDiv_Interface as SaturatingDiv0
+  clone Core_Num_Impl1_WrappingDiv_Interface as WrappingDiv0
   clone Core_Option_Impl0_Unwrap_Interface as Unwrap0 with type t = int8
-  clone Core_Num_Impl0_CheckedDiv_Interface as CheckedDiv0
+  clone Core_Num_Impl1_CheckedDiv_Interface as CheckedDiv0
   let rec cfg test_i8_div_no_overflow [@cfg:stackify] [#"../checked_ops.rs" 313 0 313 44] (a : int8) (b : int8) : ()
     requires {[#"../checked_ops.rs" 312 11 312 46] Int8.to_int b <> 0 /\ (Int8.to_int a <> - 128 \/ Int8.to_int b <> - 1)}
     
@@ -6072,6 +6018,60 @@ module CheckedOps_TestI8DivNoOverflow
   }
   BB24 {
     _50 <- ();
+    _0 <- ();
+    return _0
+  }
+  
+end
+module CheckedOps_TestI8DivZero_Interface
+  use mach.int.Int
+  use prelude.Int8
+  val test_i8_div_zero [@cfg:stackify] (a : int8) : ()
+end
+module CheckedOps_TestI8DivZero
+  use mach.int.Int
+  use prelude.Int8
+  use prelude.Borrow
+  use Core_Option_Option_Type
+  clone Core_Option_Impl0_IsNone_Interface as IsNone0 with type t = int8
+  clone Core_Num_Impl1_CheckedDiv_Interface as CheckedDiv0
+  let rec cfg test_i8_div_zero [@cfg:stackify] [#"../checked_ops.rs" 322 0 322 30] (a : int8) : ()
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var a_1 : int8;
+  var _2 : ();
+  var _3 : bool;
+  var _4 : bool;
+  var _5 : Core_Option_Option_Type.core_option_option_type int8;
+  var _6 : Core_Option_Option_Type.core_option_option_type int8;
+  var _7 : int8;
+  var _8 : ();
+  {
+    a_1 <- a;
+    goto BB0
+  }
+  BB0 {
+    _7 <- a_1;
+    _6 <- ([#"../checked_ops.rs" 323 12 323 28] CheckedDiv0.checked_div _7 (0 : int8));
+    goto BB1
+  }
+  BB1 {
+    _5 <- _6;
+    _4 <- ([#"../checked_ops.rs" 323 12 323 38] IsNone0.is_none _5);
+    goto BB2
+  }
+  BB2 {
+    _3 <- not _4;
+    switch (_3)
+      | False -> goto BB4
+      | True -> goto BB3
+      end
+  }
+  BB3 {
+    absurd
+  }
+  BB4 {
+    _2 <- ();
     _0 <- ();
     return _0
   }

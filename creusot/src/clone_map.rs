@@ -3,7 +3,7 @@ use creusot_rustc::{
     middle::ty::{
         self,
         subst::{InternalSubsts, Subst, SubstsRef},
-        DefIdTree, EarlyBinder, ProjectionTy, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperFoldable,
+        DefIdTree, EarlyBinder, ProjectionTy, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable,
         TypeVisitor,
     },
     span::{Symbol, DUMMY_SP},
@@ -539,7 +539,7 @@ impl<'tcx> CloneMap<'tcx> {
 
         // Dont clone laws into the trait / impl which defines them.
         if let Some(self_trait) = ctx.tcx.opt_associated_item(self.self_id) {
-            if self_trait.container.id() == item.container.id() {
+            if self_trait.container_id(ctx.tcx) == item.container_id(ctx.tcx) {
                 return;
             }
         }
@@ -554,8 +554,8 @@ impl<'tcx> CloneMap<'tcx> {
             return;
         }
 
-        ctx.translate(item.container.id());
-        let laws = ctx.item(item.container.id()).and_then(|i| i.laws()).unwrap_or(&[]);
+        ctx.translate(item.container_id(ctx.tcx));
+        let laws = ctx.item(item.container_id(ctx.tcx)).and_then(|i| i.laws()).unwrap_or(&[]);
 
         for law in laws {
             trace!("adding law {:?} in {:?}", *law, self.self_id);
@@ -800,8 +800,8 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
         Predicate => Some(SymbolKind::Predicate(tcx.item_name(def_id))),
         Interface | Program => Some(SymbolKind::Val(tcx.item_name(def_id))),
         AssocTy => match tcx.associated_item(def_id).container {
-            ty::TraitContainer(_) => Some(SymbolKind::Type(tcx.item_name(def_id))),
-            ty::ImplContainer(_) => None,
+            ty::TraitContainer => Some(SymbolKind::Type(tcx.item_name(def_id))),
+            ty::ImplContainer => None,
         },
         Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
         Type => None,

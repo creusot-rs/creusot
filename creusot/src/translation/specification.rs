@@ -3,7 +3,7 @@ use super::LocalIdent;
 use crate::{ctx::*, util, util::closure_owner};
 use creusot_rustc::{
     hir::def_id::DefId,
-    macros::{TyDecodable, TyEncodable, TypeFoldable},
+    macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
     middle::{
         mir::OUTERMOST_SOURCE_SCOPE,
         thir::{self, ExprKind, Thir},
@@ -25,7 +25,7 @@ pub mod typing;
 
 pub use lower::*;
 
-#[derive(Clone, Debug, Default, TypeFoldable)]
+#[derive(Clone, Debug, Default, TypeFoldable, TypeVisitable)]
 pub struct PreContract<'tcx> {
     variant: Option<Term<'tcx>>,
     requires: Vec<Term<'tcx>>,
@@ -220,7 +220,7 @@ pub(crate) fn contract_clauses_of(
         match attr.path.segments[2].ident.to_string().as_str() {
             "requires" => {
                 let req_name = match &attr.args {
-                    MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token.symbol,
+                    MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token_lit.symbol,
                     _ => return Err(InvalidTokens { id: def_id }),
                 };
                 let req_id = ctx.creusot_item(req_name).ok_or(InvalidTerm { id: def_id })?;
@@ -228,7 +228,7 @@ pub(crate) fn contract_clauses_of(
             }
             "ensures" => {
                 let ens_name = match &attr.args {
-                    MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token.symbol,
+                    MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token_lit.symbol,
                     _ => return Err(InvalidTokens { id: def_id }),
                 };
                 let ens_id = ctx.creusot_item(ens_name).ok_or(InvalidTerm { id: def_id })?;
@@ -236,7 +236,7 @@ pub(crate) fn contract_clauses_of(
             }
             "variant" => {
                 let var_name = match &attr.args {
-                    MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token.symbol,
+                    MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token_lit.symbol,
                     _ => return Err(InvalidTokens { id: def_id }),
                 };
                 let var_id = ctx.creusot_item(var_name).ok_or(InvalidTerm { id: def_id })?;
@@ -260,7 +260,7 @@ pub fn inherited_extern_spec<'tcx>(
         }
 
         let assoc = ctx.opt_associated_item(def_id)?;
-        let trait_ref = ctx.impl_trait_ref(assoc.container.id())?;
+        let trait_ref = ctx.impl_trait_ref(assoc.container_id(ctx.tcx))?;
         let id = assoc.trait_item_def_id?;
 
         if ctx.extern_spec(id).is_none() {

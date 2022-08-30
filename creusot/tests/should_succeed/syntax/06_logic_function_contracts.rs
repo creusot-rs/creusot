@@ -4,7 +4,7 @@ use creusot_contracts::*;
 
 #[logic]
 #[variant(seq.len())]
-fn sum(seq: Seq<Int>) -> Int {
+pub fn sum(seq: Seq<Int>) -> Int {
     pearlite! {
         if seq.len() == 0 { 0 }
         else {
@@ -15,7 +15,7 @@ fn sum(seq: Seq<Int>) -> Int {
 
 #[predicate]
 #[variant(seq.len())]
-fn all_zero(seq: Seq<Int>) -> bool {
+pub fn all_zero(seq: Seq<Int>) -> bool {
     pearlite! {
         if seq.len() == 0 { true }
         else {
@@ -26,7 +26,7 @@ fn all_zero(seq: Seq<Int>) -> bool {
 
 #[predicate]
 #[variant(i)]
-fn stupid<T>(x: T, i: Int) -> bool {
+pub fn stupid<T>(x: T, i: Int) -> bool {
     pearlite! {
         if i <= 0 {
             true
