@@ -216,7 +216,7 @@ impl FlatSpec {
             }),
         };
 
-        quote! { #f }
+        quote! { #[allow(dead_code)] #f }
     }
 }
 

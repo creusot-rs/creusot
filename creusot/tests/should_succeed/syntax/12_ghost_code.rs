@@ -11,7 +11,7 @@ pub fn ghost_vec() {
 }
 
 #[logic]
-fn omg() {}
+pub fn omg() {}
 
 pub fn ghost_copy() {
     let a = 0;

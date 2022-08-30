@@ -10,11 +10,14 @@ use creusot_rustc::{
         def_id::{DefId, LocalDefId},
         HirId,
     },
-    macros::{Decodable, Encodable, TyDecodable, TyEncodable, TypeFoldable},
+    macros::{Decodable, Encodable, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
     middle::{
         mir::Mutability::*,
         thir::{visit, Adt, ArmId, Block, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir},
-        ty::{subst::SubstsRef, AdtDef, Ty, TyCtxt, TyKind, UpvarSubsts, WithOptConstParam},
+        ty::{
+            int_ty, subst::SubstsRef, uint_ty, AdtDef, Ty, TyCtxt, TyKind, TypeFoldable,
+            TypeVisitable, UpvarSubsts, WithOptConstParam,
+        },
     },
     smir::mir::BorrowKind,
     span::{Span, Symbol},
@@ -23,12 +26,11 @@ use creusot_rustc::{
 pub use creusot_rustc::{middle::thir, smir::mir::Field};
 use itertools::Itertools;
 use log::*;
-use rustc_middle::ty::{int_ty, uint_ty, TypeFoldable};
 use rustc_type_ir::{IntTy, UintTy};
 
 use super::PurityVisitor;
 
-#[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
+#[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum BinOp {
     Add,
     Sub,
@@ -45,20 +47,20 @@ pub enum BinOp {
     Or,
 }
 
-#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum UnOp {
     Not,
     Neg,
 }
 
-#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub struct Term<'tcx> {
     pub ty: Ty<'tcx>,
     pub kind: TermKind<'tcx>,
     pub span: Span,
 }
 
-#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum TermKind<'tcx> {
     Var(Symbol),
     Lit(Literal),
@@ -86,7 +88,9 @@ impl<'tcx> TypeFoldable<'tcx> for Literal {
     ) -> Result<Self, F::Error> {
         Ok(self)
     }
+}
 
+impl<'tcx> TypeVisitable<'tcx> for Literal {
     fn visit_with<V: creusot_rustc::middle::ty::TypeVisitor<'tcx>>(
         &self,
         _: &mut V,
@@ -106,7 +110,7 @@ pub enum Literal {
     Function,
 }
 
-#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable)]
+#[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum Pattern<'tcx> {
     Constructor { adt: AdtDef<'tcx>, variant: VariantIdx, fields: Vec<Pattern<'tcx>> },
     Tuple(Vec<Pattern<'tcx>>),
@@ -423,6 +427,12 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::NamedConst { def_id, substs, .. } => {
                 Ok(Term { ty, span, kind: TermKind::Item(def_id, substs) })
             }
+            ExprKind::ZstLiteral { .. } => match ty.kind() {
+                TyKind::FnDef(def_id, subst) => {
+                    Ok(Term { ty, span, kind: TermKind::Item(*def_id, subst) })
+                }
+                _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
+            },
             ref ek => todo!("lower_expr: {:?}", ek),
         }
     }
@@ -558,7 +568,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let name = self.tcx.fn_arg_names(closure_id)[0];
                 let ty = sig.input(0).skip_binder();
 
-                Ok(((name.name, ty), typecheck(self.tcx, closure_id.expect_local())?))
+                Ok(((name.name, ty), typecheck(self.tcx, closure_id)?))
             }
             _ => Err(Error::new(self.thir[body].span, "unexpected error in quantifier")),
         }
@@ -663,7 +673,7 @@ fn not_spec(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: StmtId) -> bool {
 fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
     match thir[id].kind {
         ExprKind::Scope { value, .. } => not_spec_expr(tcx, thir, value),
-        ExprKind::Closure { closure_id, .. } => !util::is_spec(tcx, closure_id),
+        ExprKind::Closure { closure_id, .. } => !util::is_spec(tcx, closure_id.to_def_id()),
         _ => true,
     }
 }

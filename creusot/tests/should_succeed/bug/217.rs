@@ -4,7 +4,7 @@ use creusot_contracts::*;
 
 #[logic]
 #[variant(c.len())]
-fn ex(c: Seq<Int>, a: Int) -> Int {
+pub fn ex(c: Seq<Int>, a: Int) -> Int {
     if c.len() == 0 {
         0
     } else {

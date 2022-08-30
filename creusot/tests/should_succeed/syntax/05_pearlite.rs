@@ -24,7 +24,7 @@ pub fn struct_order(x: B) {}
 
 #[predicate]
 #[allow(unreachable_patterns)]
-fn field1_is_true(x: B) -> bool {
+pub fn field1_is_true(x: B) -> bool {
     pearlite! {
         use crate::B; // verify that imports work properly
         match x {

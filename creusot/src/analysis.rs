@@ -41,7 +41,7 @@ impl<'tcx> Visitor<'tcx> for NeverLive {
         }
     }
 
-    fn visit_local(&mut self, &local: &Local, context: PlaceContext, _location: Location) {
+    fn visit_local(&mut self, local: Local, context: PlaceContext, _location: Location) {
         match categorize(context) {
             Some(DefUse::Def) => {}
             Some(DefUse::Use) => {

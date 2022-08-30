@@ -1,4 +1,100 @@
 
+module FilterPositive_NumOfPos_Interface
+  use mach.int.Int
+  use seq.Seq
+  use mach.int.Int32
+  function num_of_pos (i : int) (j : int) (t : Seq.seq int32) : int
+end
+module FilterPositive_NumOfPos
+  use mach.int.Int
+  use seq.Seq
+  use mach.int.Int32
+  function num_of_pos [#"../filter_positive.rs" 34 0 34 49] (i : int) (j : int) (t : Seq.seq int32) : int
+  axiom def : forall i : int, j : int, t : Seq.seq int32 . num_of_pos i j t = ([#"../filter_positive.rs" 35 4 43 5] if i >= j then
+    0
+  else
+    if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
+  )
+  axiom num_of_pos_spec : forall i : int, j : int, t : Seq.seq int32 . true
+end
+module FilterPositive_NumOfPos_Impl
+  use mach.int.Int
+  use seq.Seq
+  use mach.int.Int32
+  let rec ghost function num_of_pos (i : int) (j : int) (t : Seq.seq int32) : int
+    variant {[#"../filter_positive.rs" 33 10 33 13] j - i}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../filter_positive.rs" 35 4 43 5] if i >= j then
+      0
+    else
+      if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
+    
+end
+module FilterPositive_LemmaNumOfPosIncreasing_Interface
+  use mach.int.Int
+  use seq.Seq
+  use mach.int.Int32
+  clone FilterPositive_NumOfPos_Interface as NumOfPos0 with axiom .
+  function lemma_num_of_pos_increasing (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
+end
+module FilterPositive_LemmaNumOfPosIncreasing
+  use mach.int.Int
+  use seq.Seq
+  use mach.int.Int32
+  clone FilterPositive_NumOfPos_Interface as NumOfPos0 with axiom .
+  function lemma_num_of_pos_increasing [#"../filter_positive.rs" 62 0 62 67] (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
+    
+  axiom def : forall i : int, j : int, k : int, t : Seq.seq int32 . lemma_num_of_pos_increasing i j k t = ([#"../filter_positive.rs" 64 8 66 9] if j < k then
+    lemma_num_of_pos_increasing i (j + 1) k t
+  else
+    ()
+  )
+  axiom lemma_num_of_pos_increasing_spec : forall i : int, j : int, k : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 59 11 59 17] j <= k) -> ([#"../filter_positive.rs" 60 10 60 48] NumOfPos0.num_of_pos i j t <= NumOfPos0.num_of_pos i k t)
+end
+module FilterPositive_LemmaNumOfPosIncreasing_Impl
+  use mach.int.Int
+  use seq.Seq
+  use mach.int.Int32
+  clone FilterPositive_NumOfPos as NumOfPos0 with axiom .
+  let rec ghost function lemma_num_of_pos_increasing (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
+    requires {[#"../filter_positive.rs" 59 11 59 17] j <= k}
+    ensures { [#"../filter_positive.rs" 60 10 60 48] NumOfPos0.num_of_pos i j t <= NumOfPos0.num_of_pos i k t }
+    variant {[#"../filter_positive.rs" 61 10 61 13] k - j}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../filter_positive.rs" 64 8 66 9] if j < k then lemma_num_of_pos_increasing i (j + 1) k t else ()
+end
+module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Interface
+  use mach.int.Int
+  use mach.int.Int32
+  use seq.Seq
+  clone FilterPositive_NumOfPos_Interface as NumOfPos0 with axiom .
+  function lemma_num_of_pos_strictly_increasing (i : int) (t : Seq.seq int32) : ()
+end
+module FilterPositive_LemmaNumOfPosStrictlyIncreasing
+  use mach.int.Int
+  use mach.int.Int32
+  use seq.Seq
+  clone FilterPositive_NumOfPos_Interface as NumOfPos0 with axiom .
+  function lemma_num_of_pos_strictly_increasing [#"../filter_positive.rs" 76 0 76 60] (i : int) (t : Seq.seq int32) : ()
+   =
+    [#"../filter_positive.rs" 72 0 72 8] ()
+  axiom lemma_num_of_pos_strictly_increasing_spec : forall i : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 73 11 73 32] 0 <= i /\ i < Seq.length t) -> ([#"../filter_positive.rs" 74 11 74 20] Int32.to_int (Seq.get t i) > 0) -> ([#"../filter_positive.rs" 75 10 75 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t)
+end
+module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Impl
+  use mach.int.Int
+  use mach.int.Int32
+  use seq.Seq
+  clone FilterPositive_NumOfPos as NumOfPos0 with axiom .
+  let rec ghost function lemma_num_of_pos_strictly_increasing (i : int) (t : Seq.seq int32) : ()
+    requires {[#"../filter_positive.rs" 73 11 73 32] 0 <= i /\ i < Seq.length t}
+    requires {[#"../filter_positive.rs" 74 11 74 20] Int32.to_int (Seq.get t i) > 0}
+    ensures { [#"../filter_positive.rs" 75 10 75 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../filter_positive.rs" 72 0 72 8] ()
+end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
   type core_ptr_nonnull_nonnull_type 't =
@@ -56,38 +152,6 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use Alloc_Vec_Vec_Type
   function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
   axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
-end
-module FilterPositive_NumOfPos_Interface
-  use mach.int.Int
-  use seq.Seq
-  use mach.int.Int32
-  function num_of_pos (i : int) (j : int) (t : Seq.seq int32) : int
-end
-module FilterPositive_NumOfPos
-  use mach.int.Int
-  use seq.Seq
-  use mach.int.Int32
-  function num_of_pos [#"../filter_positive.rs" 34 0 34 49] (i : int) (j : int) (t : Seq.seq int32) : int
-  axiom def : forall i : int, j : int, t : Seq.seq int32 . num_of_pos i j t = ([#"../filter_positive.rs" 35 4 43 5] if i >= j then
-    0
-  else
-    if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
-  )
-  axiom num_of_pos_spec : forall i : int, j : int, t : Seq.seq int32 . true
-end
-module FilterPositive_NumOfPos_Impl
-  use mach.int.Int
-  use seq.Seq
-  use mach.int.Int32
-  let rec ghost function num_of_pos (i : int) (j : int) (t : Seq.seq int32) : int
-    variant {[#"../filter_positive.rs" 33 10 33 13] j - i}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../filter_positive.rs" 35 4 43 5] if i >= j then
-      0
-    else
-      if Int32.to_int (Seq.get t (j - 1)) > 0 then num_of_pos i (j - 1) t + 1 else num_of_pos i (j - 1) t
-    
 end
 module Alloc_Vec_Impl1_Len_Interface
   type t
@@ -229,70 +293,6 @@ module Alloc_Vec_FromElem
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
     ensures { forall i : (int) . 0 <= i /\ i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
-end
-module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Interface
-  use mach.int.Int
-  use mach.int.Int32
-  use seq.Seq
-  clone FilterPositive_NumOfPos_Interface as NumOfPos0 with axiom .
-  function lemma_num_of_pos_strictly_increasing (i : int) (t : Seq.seq int32) : ()
-end
-module FilterPositive_LemmaNumOfPosStrictlyIncreasing
-  use mach.int.Int
-  use mach.int.Int32
-  use seq.Seq
-  clone FilterPositive_NumOfPos_Interface as NumOfPos0 with axiom .
-  function lemma_num_of_pos_strictly_increasing [#"../filter_positive.rs" 76 0 76 60] (i : int) (t : Seq.seq int32) : ()
-   =
-    [#"../filter_positive.rs" 72 0 72 8] ()
-  axiom lemma_num_of_pos_strictly_increasing_spec : forall i : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 73 11 73 32] 0 <= i /\ i < Seq.length t) -> ([#"../filter_positive.rs" 74 11 74 20] Int32.to_int (Seq.get t i) > 0) -> ([#"../filter_positive.rs" 75 10 75 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t)
-end
-module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Impl
-  use mach.int.Int
-  use mach.int.Int32
-  use seq.Seq
-  clone FilterPositive_NumOfPos as NumOfPos0 with axiom .
-  let rec ghost function lemma_num_of_pos_strictly_increasing (i : int) (t : Seq.seq int32) : ()
-    requires {[#"../filter_positive.rs" 73 11 73 32] 0 <= i /\ i < Seq.length t}
-    requires {[#"../filter_positive.rs" 74 11 74 20] Int32.to_int (Seq.get t i) > 0}
-    ensures { [#"../filter_positive.rs" 75 10 75 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../filter_positive.rs" 72 0 72 8] ()
-end
-module FilterPositive_LemmaNumOfPosIncreasing_Interface
-  use mach.int.Int
-  use seq.Seq
-  use mach.int.Int32
-  clone FilterPositive_NumOfPos_Interface as NumOfPos0 with axiom .
-  function lemma_num_of_pos_increasing (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
-end
-module FilterPositive_LemmaNumOfPosIncreasing
-  use mach.int.Int
-  use seq.Seq
-  use mach.int.Int32
-  clone FilterPositive_NumOfPos_Interface as NumOfPos0 with axiom .
-  function lemma_num_of_pos_increasing [#"../filter_positive.rs" 62 0 62 67] (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
-    
-  axiom def : forall i : int, j : int, k : int, t : Seq.seq int32 . lemma_num_of_pos_increasing i j k t = ([#"../filter_positive.rs" 64 8 66 9] if j < k then
-    lemma_num_of_pos_increasing i (j + 1) k t
-  else
-    ()
-  )
-  axiom lemma_num_of_pos_increasing_spec : forall i : int, j : int, k : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 59 11 59 17] j <= k) -> ([#"../filter_positive.rs" 60 10 60 48] NumOfPos0.num_of_pos i j t <= NumOfPos0.num_of_pos i k t)
-end
-module FilterPositive_LemmaNumOfPosIncreasing_Impl
-  use mach.int.Int
-  use seq.Seq
-  use mach.int.Int32
-  clone FilterPositive_NumOfPos as NumOfPos0 with axiom .
-  let rec ghost function lemma_num_of_pos_increasing (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
-    requires {[#"../filter_positive.rs" 59 11 59 17] j <= k}
-    ensures { [#"../filter_positive.rs" 60 10 60 48] NumOfPos0.num_of_pos i j t <= NumOfPos0.num_of_pos i k t }
-    variant {[#"../filter_positive.rs" 61 10 61 13] k - j}
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../filter_positive.rs" 64 8 66 9] if j < k then lemma_num_of_pos_increasing i (j + 1) k t else ()
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface
   type self

@@ -82,7 +82,7 @@ impl<'a, 'tcx, T> Visitor<'tcx> for TransferFunction<'a, T>
 where
     T: GenKill<Local>,
 {
-    fn visit_local(&mut self, &local: &Local, context: PlaceContext, _: Location) {
+    fn visit_local(&mut self, local: Local, context: PlaceContext, _: Location) {
         use creusot_rustc::middle::mir::visit::{
             MutatingUseContext, NonMutatingUseContext, NonUseContext,
         };

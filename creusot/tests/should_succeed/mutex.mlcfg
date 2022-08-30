@@ -1,4 +1,16 @@
 
+module Mutex_Inv_Inv_Interface
+  type self
+  type t
+  use prelude.Borrow
+  predicate inv (self : self) (x : t)
+end
+module Mutex_Inv_Inv
+  type self
+  type t
+  use prelude.Borrow
+  predicate inv [#"../mutex.rs" 7 4 7 32] (self : self) (x : t)
+end
 module Mutex_MutexInner_Type
   type mutex_mutexinner_type 't
 end
@@ -12,26 +24,63 @@ module Mutex_Mutex_Type
       | Mutex_Mutex_Type _ a -> a
       end
 end
-module Mutex_Even_Type
-  type mutex_even_type  =
-    | Mutex_Even_Type
+module Mutex_Impl0_New_Interface
+  type t
+  type i
+  use Mutex_Mutex_Type
+  clone Mutex_Inv_Inv_Interface as Inv0 with type self = i, type t = t
+  val new [@cfg:stackify] (val' : t) (i : i) : Mutex_Mutex_Type.mutex_mutex_type t i
+    requires {[#"../mutex.rs" 17 15 17 25] Inv0.inv i val'}
     
 end
-module Mutex_AddsTwo_Type
-  use prelude.Borrow
-  use mach.int.Int
-  use mach.int.UInt32
-  use Mutex_Even_Type
+module Mutex_Impl0_New
+  type t
+  type i
   use Mutex_Mutex_Type
-  type mutex_addstwo_type  =
-    | Mutex_AddsTwo_Type (Mutex_Mutex_Type.mutex_mutex_type uint32 (Mutex_Even_Type.mutex_even_type))
+  clone Mutex_Inv_Inv as Inv0 with type self = i, type t = t
+  val new [@cfg:stackify] (val' : t) (i : i) : Mutex_Mutex_Type.mutex_mutex_type t i
+    requires {[#"../mutex.rs" 17 15 17 25] Inv0.inv i val'}
     
-  let function mutex_addstwo_type_AddsTwo_mutex (self : mutex_addstwo_type) : Mutex_Mutex_Type.mutex_mutex_type uint32 (Mutex_Even_Type.mutex_even_type)
+end
+module Mutex_Impl0_IntoInner_Interface
+  type t
+  type i
+  use Mutex_Mutex_Type
+  clone Mutex_Inv_Inv_Interface as Inv0 with type self = i, type t = t
+  val into_inner [@cfg:stackify] (self : Mutex_Mutex_Type.mutex_mutex_type t i) : t
+    ensures { [#"../mutex.rs" 23 4 23 34] Inv0.inv (Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 self) result }
     
-   = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | Mutex_AddsTwo_Type a -> a
-      end
+end
+module Mutex_Impl0_IntoInner
+  type t
+  type i
+  use Mutex_Mutex_Type
+  clone Mutex_Inv_Inv as Inv0 with type self = i, type t = t
+  val into_inner [@cfg:stackify] (self : Mutex_Mutex_Type.mutex_mutex_type t i) : t
+    ensures { [#"../mutex.rs" 23 4 23 34] Inv0.inv (Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 self) result }
+    
+end
+module Mutex_Impl0_GetMut_Interface
+  type t
+  type i
+  use prelude.Borrow
+  use Mutex_Mutex_Type
+  clone Mutex_Inv_Inv_Interface as Inv0 with type self = i, type t = t
+  val get_mut [@cfg:stackify] (self : borrowed (Mutex_Mutex_Type.mutex_mutex_type t i)) : borrowed t
+    ensures { [#"../mutex.rs" 29 4 29 38] Inv0.inv (Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 ( * self)) ( * result) }
+    ensures { [#"../mutex.rs" 30 4 30 53] forall v : (t) . Inv0.inv (Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 ( ^ self)) v = true }
+    
+end
+module Mutex_Impl0_GetMut
+  type t
+  type i
+  use prelude.Borrow
+  use Mutex_Mutex_Type
+  clone Mutex_Inv_Inv as Inv0 with type self = i, type t = t
+  val get_mut [@cfg:stackify] (self : borrowed (Mutex_Mutex_Type.mutex_mutex_type t i)) : borrowed t
+    ensures { [#"../mutex.rs" 29 4 29 38] Inv0.inv (Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 ( * self)) ( * result) }
+    ensures { [#"../mutex.rs" 30 4 30 53] forall v : (t) . Inv0.inv (Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 ( ^ self)) v = true }
+    
 end
 module Mutex_GuardInner_Type
   type mutex_guardinner_type 't
@@ -66,18 +115,6 @@ module Mutex_Impl0_Lock
   val lock [@cfg:stackify] (self : Mutex_Mutex_Type.mutex_mutex_type t i) : Mutex_MutexGuard_Type.mutex_mutexguard_type t i
     ensures { [#"../mutex.rs" 36 14 36 33] Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 self = Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 result }
     
-end
-module Mutex_Inv_Inv_Interface
-  type self
-  type t
-  use prelude.Borrow
-  predicate inv (self : self) (x : t)
-end
-module Mutex_Inv_Inv
-  type self
-  type t
-  use prelude.Borrow
-  predicate inv [#"../mutex.rs" 7 4 7 32] (self : self) (x : t)
 end
 module Mutex_Impl1_Deref_Interface
   type t
@@ -119,6 +156,11 @@ module Mutex_Impl1_Set
     requires {[#"../mutex.rs" 55 4 55 30] Inv0.inv (Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 ( * self)) v}
     
 end
+module Mutex_Even_Type
+  type mutex_even_type  =
+    | Mutex_Even_Type
+    
+end
 module Mutex_Impl2_Inv_Interface
   use prelude.Borrow
   use mach.int.Int
@@ -133,6 +175,40 @@ module Mutex_Impl2_Inv
   use Mutex_Even_Type
   predicate inv [#"../mutex.rs" 65 4 65 33] (self : Mutex_Even_Type.mutex_even_type) (x : uint32) =
     [#"../mutex.rs" 66 8 66 24] mod x (2 : uint32) = (0 : uint32)
+end
+module Mutex_AddsTwo_Type
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use Mutex_Even_Type
+  use Mutex_Mutex_Type
+  type mutex_addstwo_type  =
+    | Mutex_AddsTwo_Type (Mutex_Mutex_Type.mutex_mutex_type uint32 (Mutex_Even_Type.mutex_even_type))
+    
+  let function mutex_addstwo_type_AddsTwo_mutex (self : mutex_addstwo_type) : Mutex_Mutex_Type.mutex_mutex_type uint32 (Mutex_Even_Type.mutex_even_type)
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | Mutex_AddsTwo_Type a -> a
+      end
+end
+module Mutex_Impl3_Precondition_Interface
+  use Mutex_AddsTwo_Type
+  predicate precondition (self : Mutex_AddsTwo_Type.mutex_addstwo_type)
+end
+module Mutex_Impl3_Precondition
+  use Mutex_AddsTwo_Type
+  predicate precondition [#"../mutex.rs" 90 4 90 33] (self : Mutex_AddsTwo_Type.mutex_addstwo_type) =
+    [#"../mutex.rs" 91 8 91 12] true
+end
+module Mutex_Impl3_Postcondition_Interface
+  use Mutex_AddsTwo_Type
+  predicate postcondition (self : Mutex_AddsTwo_Type.mutex_addstwo_type) (_2' : ())
+end
+module Mutex_Impl3_Postcondition
+  use Mutex_AddsTwo_Type
+  predicate postcondition [#"../mutex.rs" 95 4 95 41] (self : Mutex_AddsTwo_Type.mutex_addstwo_type) (_2' : ()) =
+    [#"../mutex.rs" 96 8 96 12] true
 end
 module Mutex_Impl2
   use Mutex_Even_Type
@@ -230,56 +306,11 @@ module Mutex_Impl3_Call
   }
   
 end
-module Mutex_Impl0_New_Interface
-  type t
-  type i
-  use Mutex_Mutex_Type
-  clone Mutex_Inv_Inv_Interface as Inv0 with type self = i, type t = t
-  val new [@cfg:stackify] (val' : t) (i : i) : Mutex_Mutex_Type.mutex_mutex_type t i
-    requires {[#"../mutex.rs" 17 15 17 25] Inv0.inv i val'}
+module Core_Result_Result_Type
+  type core_result_result_type 't 'e =
+    | Core_Result_Result_Ok_Type 't
+    | Core_Result_Result_Err_Type 'e
     
-end
-module Mutex_Impl0_New
-  type t
-  type i
-  use Mutex_Mutex_Type
-  clone Mutex_Inv_Inv as Inv0 with type self = i, type t = t
-  val new [@cfg:stackify] (val' : t) (i : i) : Mutex_Mutex_Type.mutex_mutex_type t i
-    requires {[#"../mutex.rs" 17 15 17 25] Inv0.inv i val'}
-    
-end
-module Mutex_Leak_Interface
-  type t
-  use prelude.Borrow
-  val leak [@cfg:stackify] (b : t) : borrowed t
-    ensures { [#"../mutex.rs" 156 10 156 23]  * result = b }
-    
-end
-module Mutex_Leak
-  type t
-  use prelude.Borrow
-  val leak [@cfg:stackify] (b : t) : borrowed t
-    ensures { [#"../mutex.rs" 156 10 156 23]  * result = b }
-    
-end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
-end
-module Mutex_FakeFnOnce_Precondition_Interface
-  type self
-  predicate precondition (self : self)
-end
-module Mutex_FakeFnOnce_Precondition
-  type self
-  predicate precondition [#"../mutex.rs" 77 4 77 34] (self : self)
 end
 module Mutex_JoinHandleInner_Type
   type mutex_joinhandleinner_type 't
@@ -294,6 +325,40 @@ module Mutex_JoinHandle_Type
     match (self) with
       | Mutex_JoinHandle_Type _ a -> a
       end
+end
+module Mutex_Impl4_Join_Interface
+  type t
+  type i
+  use Mutex_JoinHandle_Type
+  use Core_Result_Result_Type
+  clone Mutex_Inv_Inv_Interface as Inv0 with type self = i, type t = t
+  val join [@cfg:stackify] (self : Mutex_JoinHandle_Type.mutex_joinhandle_type t i) : Core_Result_Result_Type.core_result_result_type t ()
+    ensures { [#"../mutex.rs" 116 14 119 5] match (result) with
+      | Core_Result_Result_Type.Core_Result_Result_Ok_Type v -> Inv0.inv (Mutex_JoinHandle_Type.mutex_joinhandle_type_JoinHandle_1 self) v
+      | _ -> true
+      end }
+    
+end
+module Mutex_Impl4_Join
+  type t
+  type i
+  use Mutex_JoinHandle_Type
+  use Core_Result_Result_Type
+  clone Mutex_Inv_Inv as Inv0 with type self = i, type t = t
+  val join [@cfg:stackify] (self : Mutex_JoinHandle_Type.mutex_joinhandle_type t i) : Core_Result_Result_Type.core_result_result_type t ()
+    ensures { [#"../mutex.rs" 116 14 119 5] match (result) with
+      | Core_Result_Result_Type.Core_Result_Result_Ok_Type v -> Inv0.inv (Mutex_JoinHandle_Type.mutex_joinhandle_type_JoinHandle_1 self) v
+      | _ -> true
+      end }
+    
+end
+module Mutex_FakeFnOnce_Precondition_Interface
+  type self
+  predicate precondition (self : self)
+end
+module Mutex_FakeFnOnce_Precondition
+  type self
+  predicate precondition [#"../mutex.rs" 77 4 77 34] (self : self)
 end
 module Mutex_SpawnPostCond_Type
   type mutex_spawnpostcond_type 'f =
@@ -325,63 +390,6 @@ module Mutex_Spawn
     requires {[#"../mutex.rs" 129 11 129 27] Precondition0.precondition f}
     
 end
-module Core_Result_Result_Type
-  type core_result_result_type 't 'e =
-    | Core_Result_Result_Ok_Type 't
-    | Core_Result_Result_Err_Type 'e
-    
-end
-module Mutex_Impl4_Join_Interface
-  type t
-  type i
-  use Mutex_JoinHandle_Type
-  use Core_Result_Result_Type
-  clone Mutex_Inv_Inv_Interface as Inv0 with type self = i, type t = t
-  val join [@cfg:stackify] (self : Mutex_JoinHandle_Type.mutex_joinhandle_type t i) : Core_Result_Result_Type.core_result_result_type t ()
-    ensures { [#"../mutex.rs" 116 14 119 5] match (result) with
-      | Core_Result_Result_Type.Core_Result_Result_Ok_Type v -> Inv0.inv (Mutex_JoinHandle_Type.mutex_joinhandle_type_JoinHandle_1 self) v
-      | _ -> true
-      end }
-    
-end
-module Mutex_Impl4_Join
-  type t
-  type i
-  use Mutex_JoinHandle_Type
-  use Core_Result_Result_Type
-  clone Mutex_Inv_Inv as Inv0 with type self = i, type t = t
-  val join [@cfg:stackify] (self : Mutex_JoinHandle_Type.mutex_joinhandle_type t i) : Core_Result_Result_Type.core_result_result_type t ()
-    ensures { [#"../mutex.rs" 116 14 119 5] match (result) with
-      | Core_Result_Result_Type.Core_Result_Result_Ok_Type v -> Inv0.inv (Mutex_JoinHandle_Type.mutex_joinhandle_type_JoinHandle_1 self) v
-      | _ -> true
-      end }
-    
-end
-module CreusotContracts_Logic_Resolve_Impl1
-  type t
-end
-module Mutex_Impl3_Precondition_Interface
-  use Mutex_AddsTwo_Type
-  predicate precondition (self : Mutex_AddsTwo_Type.mutex_addstwo_type)
-end
-module Mutex_Impl3_Precondition
-  use Mutex_AddsTwo_Type
-  predicate precondition [#"../mutex.rs" 90 4 90 33] (self : Mutex_AddsTwo_Type.mutex_addstwo_type) =
-    [#"../mutex.rs" 91 8 91 12] true
-end
-module Mutex_Impl3_Return_Type
-  type return'  =
-    ()
-end
-module Mutex_Impl3_Postcondition_Interface
-  use Mutex_AddsTwo_Type
-  predicate postcondition (self : Mutex_AddsTwo_Type.mutex_addstwo_type) (_2' : ())
-end
-module Mutex_Impl3_Postcondition
-  use Mutex_AddsTwo_Type
-  predicate postcondition [#"../mutex.rs" 95 4 95 41] (self : Mutex_AddsTwo_Type.mutex_addstwo_type) (_2' : ()) =
-    [#"../mutex.rs" 96 8 96 12] true
-end
 module Mutex_FakeFnOnce_Return_Type
   type self
   type return'
@@ -395,6 +403,57 @@ module Mutex_FakeFnOnce_Postcondition
   type self
   clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = self
   predicate postcondition [#"../mutex.rs" 80 4 80 52] (self : self) (_2' : Return0.return')
+end
+module Mutex_Impl5_Inv_Interface
+  type f
+  use prelude.Borrow
+  use Mutex_SpawnPostCond_Type
+  clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = f
+  predicate inv (self : Mutex_SpawnPostCond_Type.mutex_spawnpostcond_type f) (v : Return0.return')
+end
+module Mutex_Impl5_Inv
+  type f
+  use prelude.Borrow
+  use Mutex_SpawnPostCond_Type
+  clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = f
+  clone Mutex_FakeFnOnce_Postcondition_Interface as Postcondition0 with type self = f,
+  type Return0.return' = Return0.return'
+  predicate inv [#"../mutex.rs" 148 4 148 39] (self : Mutex_SpawnPostCond_Type.mutex_spawnpostcond_type f) (v : Return0.return')
+    
+   =
+    [#"../mutex.rs" 147 4 147 16] Postcondition0.postcondition (Mutex_SpawnPostCond_Type.mutex_spawnpostcond_type_SpawnPostCond_f self) v
+end
+module Mutex_Leak_Interface
+  type t
+  use prelude.Borrow
+  val leak [@cfg:stackify] (b : t) : borrowed t
+    ensures { [#"../mutex.rs" 156 10 156 23]  * result = b }
+    
+end
+module Mutex_Leak
+  type t
+  use prelude.Borrow
+  val leak [@cfg:stackify] (b : t) : borrowed t
+    ensures { [#"../mutex.rs" 156 10 156 23]  * result = b }
+    
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+end
+module CreusotContracts_Logic_Resolve_Impl1
+  type t
+end
+module Mutex_Impl3_Return_Type
+  type return'  =
+    ()
 end
 module Mutex_FakeFnOnce_Call_Interface
   type self
@@ -432,25 +491,6 @@ module Mutex_Impl3
   predicate precondition = Precondition0.precondition
   clone Mutex_FakeFnOnce_Return_Type as Return1 with type self = Mutex_AddsTwo_Type.mutex_addstwo_type,
   type return' = Return0.return'
-end
-module Mutex_Impl5_Inv_Interface
-  type f
-  use prelude.Borrow
-  use Mutex_SpawnPostCond_Type
-  clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = f
-  predicate inv (self : Mutex_SpawnPostCond_Type.mutex_spawnpostcond_type f) (v : Return0.return')
-end
-module Mutex_Impl5_Inv
-  type f
-  use prelude.Borrow
-  use Mutex_SpawnPostCond_Type
-  clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = f
-  clone Mutex_FakeFnOnce_Postcondition_Interface as Postcondition0 with type self = f,
-  type Return0.return' = Return0.return'
-  predicate inv [#"../mutex.rs" 148 4 148 39] (self : Mutex_SpawnPostCond_Type.mutex_spawnpostcond_type f) (v : Return0.return')
-    
-   =
-    [#"../mutex.rs" 147 4 147 16] Postcondition0.postcondition (Mutex_SpawnPostCond_Type.mutex_spawnpostcond_type_SpawnPostCond_f self) v
 end
 module Mutex_Impl5
   type f
@@ -570,44 +610,4 @@ module Mutex_Concurrent
     return _0
   }
   
-end
-module Mutex_Impl0_IntoInner_Interface
-  type t
-  type i
-  use Mutex_Mutex_Type
-  clone Mutex_Inv_Inv_Interface as Inv0 with type self = i, type t = t
-  val into_inner [@cfg:stackify] (self : Mutex_Mutex_Type.mutex_mutex_type t i) : t
-    ensures { [#"../mutex.rs" 23 4 23 34] Inv0.inv (Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 self) result }
-    
-end
-module Mutex_Impl0_IntoInner
-  type t
-  type i
-  use Mutex_Mutex_Type
-  clone Mutex_Inv_Inv as Inv0 with type self = i, type t = t
-  val into_inner [@cfg:stackify] (self : Mutex_Mutex_Type.mutex_mutex_type t i) : t
-    ensures { [#"../mutex.rs" 23 4 23 34] Inv0.inv (Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 self) result }
-    
-end
-module Mutex_Impl0_GetMut_Interface
-  type t
-  type i
-  use prelude.Borrow
-  use Mutex_Mutex_Type
-  clone Mutex_Inv_Inv_Interface as Inv0 with type self = i, type t = t
-  val get_mut [@cfg:stackify] (self : borrowed (Mutex_Mutex_Type.mutex_mutex_type t i)) : borrowed t
-    ensures { [#"../mutex.rs" 29 4 29 38] Inv0.inv (Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 ( * self)) ( * result) }
-    ensures { [#"../mutex.rs" 30 4 30 53] forall v : (t) . Inv0.inv (Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 ( ^ self)) v = true }
-    
-end
-module Mutex_Impl0_GetMut
-  type t
-  type i
-  use prelude.Borrow
-  use Mutex_Mutex_Type
-  clone Mutex_Inv_Inv as Inv0 with type self = i, type t = t
-  val get_mut [@cfg:stackify] (self : borrowed (Mutex_Mutex_Type.mutex_mutex_type t i)) : borrowed t
-    ensures { [#"../mutex.rs" 29 4 29 38] Inv0.inv (Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 ( * self)) ( * result) }
-    ensures { [#"../mutex.rs" 30 4 30 53] forall v : (t) . Inv0.inv (Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 ( ^ self)) v = true }
-    
 end

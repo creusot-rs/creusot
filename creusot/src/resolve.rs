@@ -55,7 +55,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
     }
 
     fn unactivated_borrows(&self, loc: Location) -> BitSet<Local> {
-        let dom = self.body.dominators();
+        let dom = self.body.basic_blocks.dominators();
 
         let mut bits = BitSet::new_empty(self.body.local_decls.len());
 

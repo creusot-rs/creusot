@@ -23,7 +23,7 @@ use creusot_rustc::{
         ty::{
             subst::{GenericArg, SubstsRef},
             DefIdTree, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind,
-            TypeFoldable, WithOptConstParam,
+            TypeVisitable, WithOptConstParam,
         },
     },
     smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo},
@@ -193,7 +193,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         tcx.infer_ctxt().enter(|infcx| {
             renumber::renumber_mir(&infcx, &mut clean_body, &mut Default::default());
         });
-        let move_paths = MoveData::gather_moves(&clean_body, tcx, tcx.param_env(def_id))
+        let (_, move_paths) = MoveData::gather_moves(&clean_body, tcx, tcx.param_env(def_id))
             .unwrap_or_else(|_| ctx.crash_and_error(ctx.def_span(def_id), "illegal move"));
         let borrows = BorrowSet::build(tcx, &clean_body, true, &move_paths);
         let borrows = Rc::new(borrows);
@@ -348,7 +348,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
     // Inserts drop statements for variables which died over the course of a goto or switch
     fn freeze_locals_between_blocks(&mut self, bb: BasicBlock) {
-        let pred_blocks = &self.body.predecessors()[bb];
+        let pred_blocks = &self.body.basic_blocks.predecessors()[bb];
 
         if pred_blocks.is_empty() {
             return;

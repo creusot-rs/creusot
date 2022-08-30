@@ -1028,18 +1028,20 @@ impl Print for TyDecl {
                 let mut decl = alloc.nil();
 
                 for (hdr, ty_decl) in header.zip(tys.iter()) {
-                    decl =
-                        decl.append(hdr)
-                            .append(" ")
-                            .append(ty_decl.ty_name.pretty(alloc, env))
-                            .append(" ")
-                            .append(alloc.intersperse(
+                    decl = decl
+                        .append(hdr)
+                        .append(" ")
+                        .append(ty_decl.ty_name.pretty(alloc, env))
+                        .append(" ")
+                        .append(
+                            alloc.intersperse(
                                 ty_decl
                                     .ty_params
                                     .iter()
                                     .map(|p| alloc.text("'").append(p.pretty(alloc, env))),
                                 alloc.space(),
-                            ));
+                            ),
+                        );
 
                     let mut inner_doc = alloc.nil();
                     for cons in &ty_decl.constrs {

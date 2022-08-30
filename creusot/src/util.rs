@@ -51,7 +51,7 @@ pub(crate) fn is_spec(tcx: TyCtxt, def_id: DefId) -> bool {
 pub(crate) fn invariant_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"]).and_then(|a| {
         match &a.args {
-            MacArgs::Eq(_, MacArgsEq::Hir(l)) => Some(l.token.symbol),
+            MacArgs::Eq(_, MacArgsEq::Hir(l)) => Some(l.token_lit.symbol),
             _ => None,
         }
     })
@@ -127,8 +127,7 @@ pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
 
 pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
     if let Some(local_id) = def_id.as_local() {
-        let hir_id = ctx.tcx.hir().local_def_id_to_hir_id(local_id);
-        ctx.tcx.hir().maybe_body_owned_by(hir_id).is_some()
+        ctx.tcx.hir().maybe_body_owned_by(local_id).is_some()
     } else {
         match item_type(ctx.tcx, def_id) {
             ItemType::Logic | ItemType::Predicate => ctx.term(def_id).is_some(),
@@ -140,7 +139,7 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
 pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).and_then(|a| {
         match &a.args {
-            MacArgs::Eq(_, MacArgsEq::Hir(l)) => Some(l.token.symbol),
+            MacArgs::Eq(_, MacArgsEq::Hir(l)) => Some(l.token_lit.symbol),
             _ => None,
         }
     })
@@ -429,7 +428,7 @@ use creusot_rustc::ast::{
 pub fn ts_to_symbol(ts: TokenStream) -> Option<Symbol> {
     assert_eq!(ts.len(), 1);
 
-    if let Token(tok) = ts.trees().next().unwrap() {
+    if let Token(tok, _) = ts.trees().next().unwrap() {
         if let Literal(lit) = tok.kind {
             return Some(lit.symbol);
         }
@@ -492,10 +491,10 @@ pub fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute
 }
 
 pub fn is_attr(attr: &Attribute, str: &str) -> bool {
-    match attr.kind {
+    match &attr.kind {
         AttrKind::DocComment(..) => false,
-        AttrKind::Normal(ref i, _) => {
-            let segments = &i.path.segments;
+        AttrKind::Normal(attr) => {
+            let segments = &attr.item.path.segments;
             segments.len() >= 2
                 && segments[0].ident.as_str() == "creusot"
                 && segments[1].ident.as_str() == str
@@ -619,7 +618,8 @@ pub fn closure_capture_subst<'tcx>(
         fun_def_id = tcx.parent(fun_def_id);
     }
 
-    let capture_names = tcx.symbols_for_closure_captures((fun_def_id.expect_local(), def_id));
+    let capture_names =
+        tcx.symbols_for_closure_captures((fun_def_id.expect_local(), def_id.expect_local()));
     let captures = capture_names.iter().zip(cs.as_closure().upvar_tys());
     let subst = captures
         .into_iter()

@@ -18,17 +18,17 @@ fn logic_pearlite() -> bool {
 #[ensures(logic_pearlite())]
 pub fn use_logic_pearlite() {}
 
-mod nested {
+pub mod nested {
     use creusot_contracts::*;
 
     #[logic]
-    fn nested() -> bool {
+    pub fn nested() -> bool {
         true
     }
 }
 
 #[logic]
-fn arith(n: Int, b: bool) -> Int {
+pub fn arith(n: Int, b: bool) -> Int {
     if !b {
         -n + n - n * n
     } else {
@@ -37,7 +37,7 @@ fn arith(n: Int, b: bool) -> Int {
 }
 
 #[logic]
-fn deref_pat<'a>(o: &'a Option<Int>) -> Int {
+pub fn deref_pat<'a>(o: &'a Option<Int>) -> Int {
     match o {
         Some(a) => *a,
         None => 0,

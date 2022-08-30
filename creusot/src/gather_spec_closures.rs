@@ -100,7 +100,7 @@ impl<'tcx> Visitor<'tcx> for InvariantClosures<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) => {
-                self.closures.insert(*id);
+                self.closures.insert(id.to_def_id());
             }
             Rvalue::Use(Operand::Constant(box ck)) => {
                 if let Some(c) = ck.literal.const_for_ty() {
@@ -123,7 +123,7 @@ impl<'tcx> Visitor<'tcx> for ClosureLocations {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) => {
-                self.locations.insert(*id, loc);
+                self.locations.insert(id.to_def_id(), loc);
             }
             Rvalue::Use(Operand::Constant(box ck)) => {
                 if let Some(c) = ck.literal.const_for_ty() {
@@ -147,8 +147,8 @@ struct InvariantLocations<'tcx> {
 impl<'tcx> Visitor<'tcx> for InvariantLocations<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
-            if util::is_invariant(self.tcx, *id) {
-                self.invariants.insert(loc, *id);
+            if util::is_invariant(self.tcx, id.to_def_id()) {
+                self.invariants.insert(loc, id.to_def_id());
             }
         }
         self.super_rvalue(rvalue, loc);
@@ -169,15 +169,16 @@ fn invariant_locations<'tcx>(
         let mut target: BasicBlock = loc.block;
 
         loop {
-            let mut succs = body.successors(target);
+            let mut succs = body.basic_blocks.successors(target);
 
             target = succs.next().unwrap();
 
             // Check if `taget_block` is a loop header by testing if it dominates
             // one of its predecessors.
-            if let Some(preds) = body.predecessors().get(target) {
-                let is_loop_header =
-                    preds.iter().any(|pred| body.dominators().is_dominated_by(*pred, target));
+            if let Some(preds) = body.basic_blocks.predecessors().get(target) {
+                let is_loop_header = preds
+                    .iter()
+                    .any(|pred| body.basic_blocks.dominators().is_dominated_by(*pred, target));
 
                 if is_loop_header {
                     break;
