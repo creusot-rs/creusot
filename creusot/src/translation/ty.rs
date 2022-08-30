@@ -258,6 +258,10 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     }
     ctx.add_binding_group(&bg);
 
+    if let Some(_) = get_builtin(ctx.tcx, did) {
+        return;
+    }
+
     let did = *bg.first().unwrap();
     let mut names = CloneMap::new(ctx.tcx, did, false);
 

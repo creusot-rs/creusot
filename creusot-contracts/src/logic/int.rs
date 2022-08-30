@@ -4,7 +4,11 @@ use crate::{logic::*, macros::*};
 
 use std::ops::*;
 
-#[cfg_attr(feature = "contracts", rustc_diagnostic_item = "creusot_int")]
+#[cfg_attr(
+    feature = "contracts",
+    rustc_diagnostic_item = "creusot_int",
+    creusot::builtins = "mach.int.Int.int"
+)]
 #[derive(std::clone::Clone, Copy)]
 pub struct Int(*mut ());
 
