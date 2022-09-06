@@ -221,14 +221,20 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
                 Ok(Term { ty, span, kind: TermKind::Var(name) })
             }
-            ExprKind::Literal { lit, .. } => {
+            ExprKind::Literal { lit, neg } => {
                 let lit = match lit.node {
                     LitKind::Bool(b) => Literal::Bool(b),
                     LitKind::Int(u, lty) => match lty {
-                        LitIntType::Signed(ity) => Literal::Int(u as i128, int_ty(ity)),
+                        LitIntType::Signed(ity) => {
+                            let val = if neg { -(u as i128) } else { u as i128 };
+                            Literal::Int(val, int_ty(ity))
+                        }
                         LitIntType::Unsigned(uty) => Literal::Uint(u, uint_ty(uty)),
                         LitIntType::Unsuffixed => match ty.kind() {
-                            TyKind::Int(ity) => Literal::Int(u as i128, *ity),
+                            TyKind::Int(ity) => {
+                                let val = if neg { -(u as i128) } else { u as i128 };
+                                Literal::Int(val, *ity)
+                            }
                             TyKind::Uint(uty) => Literal::Uint(u, *uty),
                             _ => unreachable!(),
                         },
