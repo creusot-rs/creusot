@@ -287,7 +287,7 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
                 ItemType::Program
             }
         }
-        DefKind::AssocConst => ItemType::Constant,
+        DefKind::AssocConst | DefKind::Const => ItemType::Constant,
         DefKind::Closure => ItemType::Closure,
         DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,
         DefKind::AssocTy => ItemType::AssocTy,
