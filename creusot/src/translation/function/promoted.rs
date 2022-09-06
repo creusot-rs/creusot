@@ -13,7 +13,7 @@ use creusot_rustc::{
 };
 use why3::{
     declaration::{Contract, Decl, LetDecl, Signature},
-    exp::{Exp, Pattern},
+    exp::{Binder, Exp, Pattern},
     QName,
 };
 
@@ -31,7 +31,7 @@ pub fn promoted_signature<'tcx>(
         .map(|arg| {
             let info = &body.local_decls[arg];
             let ty = translate_ty(ctx, names, info.source_info.span, info.ty);
-            (LocalIdent::anon(arg).ident(), ty)
+            Binder::typed(LocalIdent::anon(arg).ident(), ty)
         })
         .collect();
     let retty =

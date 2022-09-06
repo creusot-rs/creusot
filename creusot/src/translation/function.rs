@@ -498,12 +498,14 @@ pub fn closure_contract<'tcx>(
     // Build the signatures for the pre and post conditions
     let mut post_sig = clos_sig.clone();
     if post_sig.args.len() == 1 {
-        post_sig.args.push((Ident::build("_"), Type::Tuple(Vec::new())));
+        post_sig.args.push(Binder::wild(Type::UNIT));
     }
-    post_sig.args.push((Ident::build("result"), result_ty.unwrap_or(Type::Tuple(vec![]))));
+    post_sig
+        .args
+        .push(Binder::typed(Ident::build("result"), result_ty.unwrap_or(Type::Tuple(vec![]))));
     let mut pre_sig = clos_sig;
     if pre_sig.args.len() == 1 {
-        pre_sig.args.push((Ident::build("_"), Type::Tuple(Vec::new())));
+        pre_sig.args.push(Binder::wild(Type::UNIT));
     }
 
     let mut contracts = Vec::new();
@@ -515,7 +517,7 @@ pub fn closure_contract<'tcx>(
         // Preconditions are the same for every kind of closure
         let mut pre_sig = pre_sig.clone();
         pre_sig.name = Ident::build("precondition");
-        pre_sig.args[0].1 = self_ty.clone();
+        pre_sig.args[0] = Binder::typed("_1'".into(), self_ty.clone());
         let mut subst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, FnOnce, true);
 
         let mut precondition = precondition.clone();
@@ -527,7 +529,7 @@ pub fn closure_contract<'tcx>(
     if kind <= Fn {
         let mut post_sig = post_sig.clone();
         post_sig.name = Ident::build("postcondition");
-        post_sig.args[0].1 = self_ty.clone();
+        post_sig.args[0] = Binder::typed("_1'".into(), self_ty.clone());
 
         let mut csubst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, Fn, true);
         let mut postcondition = postcondition.clone();
@@ -541,7 +543,7 @@ pub fn closure_contract<'tcx>(
         post_sig.name = Ident::build("postcondition_mut");
 
         let self_ty = Type::MutableBorrow(Box::new(self_ty.clone()));
-        post_sig.args[0].1 = self_ty;
+        post_sig.args[0] = Binder::typed("_1'".into(), self_ty);
 
         let mut csubst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, FnMut, true);
 
@@ -555,7 +557,7 @@ pub fn closure_contract<'tcx>(
     if kind <= FnOnce {
         let mut post_sig = post_sig.clone();
         post_sig.name = Ident::build("postcondition_once");
-        post_sig.args[0].1 = self_ty.clone();
+        post_sig.args[0] = Binder::typed("_1'".into(), self_ty.clone());
 
         let mut csubst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, FnOnce, true);
 
@@ -593,7 +595,7 @@ fn closure_resolve<'tcx>(
         contract: Contract::new(),
         retty: None,
         name: Ident::build("resolve"),
-        args: vec![(
+        args: vec![Binder::typed(
             Ident::build("_1'"),
             translate_ty(ctx, names, ctx.def_span(def_id), ctx.type_of(def_id)),
         )],

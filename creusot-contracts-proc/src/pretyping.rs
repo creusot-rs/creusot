@@ -230,6 +230,15 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         }
         RT::Absurd(_) => Ok(quote_spanned! {sp=> creusot_contracts::stubs::abs() }),
         RT::Pearlite(term) => Ok(quote_spanned! {sp=> #term }),
+        RT::Closure(clos) => {
+            let inputs = &clos.inputs;
+            let retty = &clos.output;
+            let clos = encode_term(&*clos.body)?;
+
+            Ok(
+                quote_spanned! {sp=> creusot_contracts :: Mapping :: from_fn (#[creusot :: decl :: logic] #[creusot::no_translate] |#inputs| #retty #clos)},
+            )
+        }
         RT::__Nonexhaustive => todo!(),
     }
 }

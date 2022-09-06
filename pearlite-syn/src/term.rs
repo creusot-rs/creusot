@@ -133,6 +133,9 @@ ast_enum_of_structs! {
         /// A macro invocation expression: `format!("{}", q)`.
         Macro(ExprMacro),
 
+        /// A closure expresion: |a, b| a + b.
+        Closure(TermClosure),
+
         #[doc(hidden)]
         __Nonexhaustive,
     }
@@ -215,6 +218,18 @@ ast_struct! {
         pub expr: Box<Term>,
         pub as_token: Token![as],
         pub ty: Box<Type>,
+    }
+}
+
+ast_struct! {
+    /// A closure expression: `|a, b| a + b`.
+    pub struct TermClosure #full {
+        pub attrs: Vec<Attribute>,
+        pub or1_token: Token![|],
+        pub inputs: Punctuated<Pat, Token![,]>,
+        pub or2_token: Token![|],
+        pub output: ReturnType,
+        pub body: Box<Term>,
     }
 }
 
@@ -1071,6 +1086,8 @@ pub(crate) mod parsing {
             input.call(term_group).map(Term::Group)
         } else if input.peek(Lit) {
             input.parse().map(Term::Lit)
+        } else if input.peek(Token![|]) {
+            term_closure(input, allow_struct).map(Term::Closure)
         } else if (input.peek(Ident)
             && !(input.peek(kw::forall)
                 || input.peek(kw::exists)
@@ -1600,6 +1617,82 @@ pub(crate) mod parsing {
         }
         Ok(!trailing_dot)
     }
+
+    fn term_closure(input: ParseStream, allow_struct: AllowStruct) -> Result<TermClosure> {
+        let or1_token: Token![|] = input.parse()?;
+
+        let mut inputs = Punctuated::new();
+        loop {
+            if input.peek(Token![|]) {
+                break;
+            }
+            let value = closure_arg(input)?;
+            inputs.push_value(value);
+            if input.peek(Token![|]) {
+                break;
+            }
+            let punct: Token![,] = input.parse()?;
+            inputs.push_punct(punct);
+        }
+
+        let or2_token: Token![|] = input.parse()?;
+
+        let (output, body) = if input.peek(Token![->]) {
+            let arrow_token: Token![->] = input.parse()?;
+            let ty: Type = input.parse()?;
+            let body: TBlock = input.parse()?;
+            let output = ReturnType::Type(arrow_token, Box::new(ty));
+            let block = Term::Block(TermBlock { label: None, block: body });
+            (output, block)
+        } else {
+            let body = ambiguous_term(input, allow_struct)?;
+            (ReturnType::Default, body)
+        };
+
+        Ok(TermClosure {
+            attrs: Vec::new(),
+            or1_token,
+            inputs,
+            or2_token,
+            output,
+            body: Box::new(body),
+        })
+    }
+
+    fn closure_arg(input: ParseStream) -> Result<Pat> {
+        let attrs = input.call(Attribute::parse_outer)?;
+        let mut pat: Pat = input.parse()?;
+
+        if input.peek(Token![:]) {
+            Ok(Pat::Type(PatType {
+                attrs,
+                pat: Box::new(pat),
+                colon_token: input.parse()?,
+                ty: input.parse()?,
+            }))
+        } else {
+            match &mut pat {
+                Pat::Box(pat) => pat.attrs = attrs,
+                Pat::Ident(pat) => pat.attrs = attrs,
+                Pat::Lit(pat) => pat.attrs = attrs,
+                Pat::Macro(pat) => pat.attrs = attrs,
+                Pat::Or(pat) => pat.attrs = attrs,
+                Pat::Path(pat) => pat.attrs = attrs,
+                Pat::Range(pat) => pat.attrs = attrs,
+                Pat::Reference(pat) => pat.attrs = attrs,
+                Pat::Rest(pat) => pat.attrs = attrs,
+                Pat::Slice(pat) => pat.attrs = attrs,
+                Pat::Struct(pat) => pat.attrs = attrs,
+                Pat::Tuple(pat) => pat.attrs = attrs,
+                Pat::TupleStruct(pat) => pat.attrs = attrs,
+                Pat::Type(_) => unreachable!(),
+                Pat::Verbatim(_) => {}
+                Pat::Wild(pat) => pat.attrs = attrs,
+                _ => unreachable!(),
+            }
+            Ok(pat)
+        }
+    }
 }
 
 #[cfg(feature = "printing")]
@@ -1681,6 +1774,17 @@ pub(crate) mod printing {
             self.paren_token.surround(tokens, |tokens| {
                 self.args.to_tokens(tokens);
             });
+        }
+    }
+
+    impl ToTokens for TermClosure {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            tokens.append_all(&self.attrs);
+            self.or1_token.to_tokens(tokens);
+            self.inputs.to_tokens(tokens);
+            self.or2_token.to_tokens(tokens);
+            self.output.to_tokens(tokens);
+            self.body.to_tokens(tokens);
         }
     }
 

@@ -188,6 +188,8 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             return Some(args.remove(0));
         } else if builtin_attr == Some(Symbol::intern("ghost_deref")) {
             return Some(args.remove(0));
+        } else if builtin_attr == Some(Symbol::intern("identity")) {
+            return Some(args.remove(0));
         } else if def_id == self.ctx.tcx.get_diagnostic_item(sym::abort) {
             // Semi-questionable: we allow abort() & unreachable() in pearlite but
             // interpret them as `absurd` (aka prove false).

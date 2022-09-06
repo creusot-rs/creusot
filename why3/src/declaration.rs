@@ -2,7 +2,7 @@ use indexmap::IndexSet;
 use std::collections::{BTreeMap, HashMap};
 
 use crate::{
-    exp::{Exp, ExpMutVisitor},
+    exp::{Binder, Exp, ExpMutVisitor},
     mlcfg::{Block, BlockId},
     ty::Type,
     *,
@@ -146,7 +146,7 @@ pub struct Signature {
     pub name: Ident,
     pub attrs: Vec<Attribute>,
     pub retty: Option<Type>,
-    pub args: Vec<(Ident, Type)>,
+    pub args: Vec<Binder>,
     pub contract: Contract,
 }
 

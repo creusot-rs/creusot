@@ -372,6 +372,7 @@ fn escape_self_in_term(t: &mut Term) {
         Term::Pearlite(TermPearlite { block, .. }) => escape_self_in_tblock(block),
         Term::Lit(TermLit { .. }) => {}
         Term::Verbatim(_) => {}
+        Term::Closure(TermClosure { body, .. }) => escape_self_in_term(body),
         Term::__Nonexhaustive => {}
     }
 }

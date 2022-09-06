@@ -1,4 +1,10 @@
-use crate::{ctx::*, translation, translation::ty::closure_accessor_name};
+use crate::{
+    ctx::*,
+    translation::{
+        self,
+        ty::{closure_accessor_name, is_ghost_ty},
+    },
+};
 use creusot_rustc::{
     ast::{
         ast::{MacArgs, MacArgsEq},
@@ -17,7 +23,7 @@ use std::{collections::HashMap, iter};
 use why3::{
     declaration,
     declaration::{Signature, ValKind},
-    exp::{super_visit_mut, Constant, Exp, ExpMutVisitor},
+    exp::{super_visit_mut, Binder, Constant, Exp, ExpMutVisitor},
     ty::Type,
     Ident, QName,
 };
@@ -387,10 +393,11 @@ pub fn signature_of<'tcx>(
 
     let span = ctx.tcx.def_span(def_id);
 
-    let mut args: Vec<_> = names.with_public_clones(|names| {
+    let mut args: Vec<Binder> = names.with_public_clones(|names| {
         inputs
             .enumerate()
             .map(|(ix, (id, ty))| {
+                let ghost = is_ghost_ty(ctx.tcx, ty);
                 let ty = translation::ty::translate_ty(ctx, names, span, ty);
                 let id = if id.name.is_empty() {
                     format!("_{}'", ix + 1).into()
@@ -399,14 +406,18 @@ pub fn signature_of<'tcx>(
                 } else {
                     ident_of(id.name)
                 };
-                (id, ty)
+                if ghost {
+                    Binder::ghost(id, ty)
+                } else {
+                    Binder::typed(id, ty)
+                }
             })
             .collect()
     });
 
     if args.is_empty() {
         // TODO: Change arguments to be patterns not identifiers
-        args.push(("_".into(), Type::UNIT));
+        args.push(Binder::wild(Type::UNIT));
     };
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);
@@ -546,9 +557,15 @@ impl<'a> ExpMutVisitor for ClosureSubst {
                     }
                 }
             }
-            Exp::Abs(ident, body) => {
+            Exp::Abs(binders, body) => {
                 let mut subst = self.0.clone();
-                subst.remove(ident);
+
+                for binder in binders {
+                    binder.fvs().into_iter().for_each(|id| {
+                        subst.remove(&id);
+                    });
+                }
+
                 std::mem::swap(&mut self.0, &mut subst);
                 self.visit_mut(body);
                 std::mem::swap(&mut self.0, &mut subst);

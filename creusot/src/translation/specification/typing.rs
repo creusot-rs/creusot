@@ -1,3 +1,10 @@
+// A poorly named module.
+//
+// Entrypoint for translation of all Pearlite specifications and code: #[logic] / #[predicate], contracts, proof_assert!
+//
+// Transforms THIR into a Term which may be serialized in Creusot metadata files for usage by dependent crates
+// The `lower` module then transforms a `Term` into a WhyML expression.
+
 use std::collections::HashSet;
 
 use crate::{
@@ -69,6 +76,7 @@ pub enum TermKind<'tcx> {
     Unary { op: UnOp, arg: Box<Term<'tcx>> },
     Forall { binder: (Symbol, Ty<'tcx>), body: Box<Term<'tcx>> },
     Exists { binder: (Symbol, Ty<'tcx>), body: Box<Term<'tcx>> },
+    // TODO: Get rid of (id, subst).
     Call { id: DefId, subst: SubstsRef<'tcx>, fun: Box<Term<'tcx>>, args: Vec<Term<'tcx>> },
     Constructor { adt: AdtDef<'tcx>, variant: VariantIdx, fields: Vec<Term<'tcx>> },
     Tuple { fields: Vec<Term<'tcx>> },
@@ -79,6 +87,7 @@ pub enum TermKind<'tcx> {
     Let { pattern: Pattern<'tcx>, arg: Box<Term<'tcx>>, body: Box<Term<'tcx>> },
     Projection { lhs: Box<Term<'tcx>>, name: Field, def: DefId },
     Old { term: Box<Term<'tcx>> },
+    Closure { args: Vec<Pattern<'tcx>>, body: Box<Term<'tcx>> },
     Absurd,
 }
 impl<'tcx> TypeFoldable<'tcx> for Literal {
@@ -161,34 +170,35 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let lhs = self.expr_term(lhs)?;
                 let rhs = self.expr_term(rhs)?;
 
+                use creusot_rustc::middle::mir;
                 let op = match op {
-                    creusot_rustc::middle::mir::BinOp::Add => BinOp::Add,
-                    creusot_rustc::middle::mir::BinOp::Sub => BinOp::Sub,
-                    creusot_rustc::middle::mir::BinOp::Mul => BinOp::Mul,
-                    creusot_rustc::middle::mir::BinOp::Div => BinOp::Div,
-                    creusot_rustc::middle::mir::BinOp::Rem => BinOp::Rem,
-                    creusot_rustc::middle::mir::BinOp::BitXor => {
+                    mir::BinOp::Add => BinOp::Add,
+                    mir::BinOp::Sub => BinOp::Sub,
+                    mir::BinOp::Mul => BinOp::Mul,
+                    mir::BinOp::Div => BinOp::Div,
+                    mir::BinOp::Rem => BinOp::Rem,
+                    mir::BinOp::BitXor => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    creusot_rustc::middle::mir::BinOp::BitAnd => {
+                    mir::BinOp::BitAnd => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    creusot_rustc::middle::mir::BinOp::BitOr => {
+                    mir::BinOp::BitOr => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    creusot_rustc::middle::mir::BinOp::Shl => {
+                    mir::BinOp::Shl => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    creusot_rustc::middle::mir::BinOp::Shr => {
+                    mir::BinOp::Shr => {
                         return Err(Error::new(self.thir[expr].span, "unsupported operation"))
                     }
-                    creusot_rustc::middle::mir::BinOp::Lt => BinOp::Lt,
-                    creusot_rustc::middle::mir::BinOp::Le => BinOp::Le,
-                    creusot_rustc::middle::mir::BinOp::Ge => BinOp::Ge,
-                    creusot_rustc::middle::mir::BinOp::Gt => BinOp::Gt,
-                    creusot_rustc::middle::mir::BinOp::Ne => unreachable!(),
-                    creusot_rustc::middle::mir::BinOp::Eq => unreachable!(),
-                    creusot_rustc::middle::mir::BinOp::Offset => todo!(),
+                    mir::BinOp::Lt => BinOp::Lt,
+                    mir::BinOp::Le => BinOp::Le,
+                    mir::BinOp::Ge => BinOp::Ge,
+                    mir::BinOp::Gt => BinOp::Gt,
+                    mir::BinOp::Ne => unreachable!(),
+                    mir::BinOp::Eq => unreachable!(),
+                    mir::BinOp::Offset => todo!(),
                 };
                 Ok(Term { ty, span, kind: TermKind::Binary { op, lhs: box lhs, rhs: box rhs } })
             }
@@ -439,6 +449,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
                 _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             },
+            ExprKind::Closure { closure_id, .. } => {
+                let term = typecheck(self.tcx, closure_id)?;
+                // eprintln!("{term:?}");
+                let pats = closure_pattern(self.tcx, closure_id)?;
+
+                Ok(Term { ty, span, kind: TermKind::Closure { args: pats, body: box term } })
+            }
             ref ek => todo!("lower_expr: {:?}", ek),
         }
     }
@@ -684,6 +701,28 @@ fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
     }
 }
 
+fn closure_pattern<'tcx>(tcx: TyCtxt<'tcx>, id: LocalDefId) -> CreusotResult<Vec<Pattern<'tcx>>> {
+    let body_id = tcx.hir().body_owned_by(id);
+    let body = tcx.hir().body(body_id);
+
+    body.params.iter().map(|p| lower_hir_pat(tcx, p.pat)).collect()
+}
+use creusot_rustc::hir;
+
+fn lower_hir_pat<'tcx>(tcx: TyCtxt<'tcx>, pat: &hir::Pat<'tcx>) -> CreusotResult<Pattern<'tcx>> {
+    use creusot_rustc::hir::PatKind;
+    match pat.kind {
+        PatKind::Tuple(pats, _) => {
+            let pats =
+                pats.into_iter().map(|p| lower_hir_pat(tcx, p)).collect::<Result<Vec<_>, _>>()?;
+            Ok(Pattern::Tuple(pats))
+        }
+        PatKind::Binding(_, _, id, _) => Ok(Pattern::Binder(id.name)),
+        PatKind::Wild => Ok(Pattern::Wildcard),
+        _ => Err(Error::new(pat.span, "unsupported pattern for Pearlite closure")),
+    }
+}
+
 impl<'tcx> Pattern<'tcx> {
     fn binds(&self, binders: &mut HashSet<Symbol>) {
         match self {
@@ -769,6 +808,11 @@ impl<'tcx> Term<'tcx> {
             }
             TermKind::Projection { lhs, .. } => lhs.subst_inner(bound, inv_subst),
             TermKind::Old { term } => term.subst_inner(bound, inv_subst),
+            TermKind::Closure { args, body } => {
+                let mut bound = bound.clone();
+                args.iter().for_each(|a| a.binds(&mut bound));
+                body.subst_inner(&bound, inv_subst);
+            }
             TermKind::Absurd => {}
         }
     }

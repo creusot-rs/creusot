@@ -8,12 +8,19 @@ use crate::{
     util,
     util::constructor_qname,
 };
-use creusot_rustc::middle::{
-    ty,
-    ty::{EarlyBinder, ParamEnv, Subst},
+use creusot_rustc::{
+    hir::Unsafety,
+    middle::{
+        ty,
+        ty::{EarlyBinder, ParamEnv, Subst},
+    },
 };
-use rustc_middle::ty::TyKind;
-use why3::exp::{BinOp, Constant, Exp, Pattern as Pat, Purity};
+use rustc_middle::ty::{Ty, TyKind};
+use why3::{
+    exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
+    ty::Type,
+    Ident,
+};
 
 pub fn lower_pure<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
@@ -279,6 +286,43 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 );
                 Exp::Call(box Exp::pure_qvar(accessor), vec![lhs])
             }
+            TermKind::Closure { args, body } => {
+                let mut fresh_vars = 0;
+
+                let substs = match term.ty.kind() {
+                    TyKind::Closure(_, subst) => subst,
+                    _ => unreachable!("closure has non closure type!"),
+                };
+                let arg_tys = self
+                    .ctx
+                    .signature_unclosure(substs.as_closure().sig(), Unsafety::Normal)
+                    .inputs();
+
+                let mut body = self.lower_term(*body);
+
+                let mut binders = Vec::new();
+
+                for (arg, ty) in args.into_iter().zip(arg_tys.skip_binder().into_iter()) {
+                    match arg {
+                        Pattern::Binder(a) => {
+                            binders.push(Binder::typed(a.to_string().into(), self.lower_ty(*ty)))
+                        }
+                        _ => {
+                            let id = Ident::build(&format!("clos'{fresh_vars}"));
+                            fresh_vars += 1;
+
+                            body = Exp::Let {
+                                pattern: self.lower_pat(arg),
+                                arg: box Exp::pure_var(id.clone()),
+                                body: box body,
+                            };
+                            binders.push(Binder::typed(id, self.lower_ty(*ty)))
+                        }
+                    }
+                }
+
+                Exp::Abs(binders, box body)
+            }
             TermKind::Absurd => Exp::Absurd,
         }
     }
@@ -303,6 +347,10 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 Pat::TupleP(pats.into_iter().map(|pat| self.lower_pat(pat)).collect())
             }
         }
+    }
+
+    fn lower_ty(&mut self, ty: Ty<'tcx>) -> Type {
+        translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty)
     }
 }
 
