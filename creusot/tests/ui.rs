@@ -138,6 +138,12 @@ where
             } else {
                 std::fs::write(stdout, &output.stdout).unwrap();
             }
+
+            if output.stderr.is_empty() {
+                let _ = std::fs::remove_file(stderr);
+            } else {
+                std::fs::write(stderr, &output.stderr).unwrap();
+            }
         } else {
             let (success, mut buf) = differ(output, &stdout, &stderr).unwrap();
 
@@ -208,27 +214,28 @@ fn normalize_file_path(input: impl Into<String>) -> String {
 fn should_succeed_case(
     output: std::process::Output,
     stdout: &Path,
-    _stderr: &Path,
+    stderr: &Path,
 ) -> Result<(bool, Buffer), Box<dyn Error>> {
     let mut buf = Buffer::ansi();
     use std::str::from_utf8;
     match output.ok() {
         Ok(output) => {
-            let expect = &std::fs::read(stdout).unwrap_or_else(|_| Vec::new());
-            let gotten = &output.stdout;
+            let expect_out = &std::fs::read(stdout).unwrap_or_else(|_| Vec::new());
+            let expect_err = &std::fs::read(stderr).unwrap_or_else(|_| Vec::new());
 
-            let success = compare_str(&mut buf, from_utf8(gotten)?, from_utf8(expect)?);
-            if output.stderr.len() != 0 {
-                write!(&mut buf, "{}", from_utf8(&output.stderr)?)?;
-                Ok((false, buf))
-            } else {
-                Ok((success, buf))
-            }
+            let success_out =
+                compare_str(&mut buf, from_utf8(&output.stdout)?, from_utf8(expect_out)?);
+            let success_err =
+                compare_str(&mut buf, from_utf8(&output.stderr)?, from_utf8(expect_err)?);
+
+            Ok((success_out && success_err, buf))
         }
         Err(err) => {
+            let expect_err = &std::fs::read(stderr).unwrap_or_else(|_| Vec::new());
+
             let output = err.as_output().unwrap();
-            let _ = compare_str(&mut buf, from_utf8(&output.stderr)?, "");
-            Ok((false, buf))
+            let success = compare_str(&mut buf, from_utf8(&output.stderr)?, from_utf8(expect_err)?);
+            Ok((success, buf))
         }
     }
 }
@@ -236,10 +243,21 @@ fn should_succeed_case(
 fn should_fail_case(
     output: std::process::Output,
     _stdout: &Path,
-    _stderr: &Path,
+    stderr: &Path,
 ) -> Result<(bool, Buffer), Box<dyn Error>> {
-    let buf = Buffer::ansi();
-    Ok((!output.status.success(), buf))
+    let mut buf = Buffer::ansi();
+    use std::str::from_utf8;
+
+    match output.ok() {
+        Ok(_) => Ok((false, buf)),
+        Err(err) => {
+            let expect_err = &std::fs::read(stderr).unwrap_or_else(|_| Vec::new());
+
+            let output = err.as_output().unwrap();
+            let success = compare_str(&mut buf, from_utf8(&output.stderr)?, from_utf8(expect_err)?);
+            Ok((success, buf))
+        }
+    }
 }
 
 fn print_diff<'a, W: WriteColor>(mut buf: W, diff: TextDiff<'a, 'a, 'a, str>) {
