@@ -226,13 +226,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     LitKind::Bool(b) => Literal::Bool(b),
                     LitKind::Int(u, lty) => match lty {
                         LitIntType::Signed(ity) => {
-                            let val = if neg { -(u as i128) } else { u as i128 };
+                            let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
                             Literal::Int(val, int_ty(ity))
                         }
                         LitIntType::Unsigned(uty) => Literal::Uint(u, uint_ty(uty)),
                         LitIntType::Unsuffixed => match ty.kind() {
                             TyKind::Int(ity) => {
-                                let val = if neg { -(u as i128) } else { u as i128 };
+                                let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
                                 Literal::Int(val, *ity)
                             }
                             TyKind::Uint(uty) => Literal::Uint(u, *uty),
