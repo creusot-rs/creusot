@@ -161,13 +161,23 @@ impl<'tcx> Expr<'tcx> {
                 let to_int = match source.kind() {
                     TyKind::Int(ity) => int_to_int(ity),
                     TyKind::Uint(uty) => uint_to_int(uty),
-                    _ => unreachable!(),
+                    TyKind::Bool => {
+                        names.import_prelude_module(PreludeModule::Bool);
+                        Exp::impure_qvar(QName::from_string("Bool.to_int").unwrap())
+                    }
+                    _ => ctx
+                        .crash_and_error(DUMMY_SP, "Non integral casts are currently unsupported"),
                 };
 
                 let from_int = match target.kind() {
                     TyKind::Int(ity) => int_from_int(ity),
                     TyKind::Uint(uty) => uint_from_int(uty),
-                    _ => unreachable!(),
+                    TyKind::Char => {
+                        names.import_prelude_module(PreludeModule::Char);
+                        Exp::impure_qvar(QName::from_string("Char.chr").unwrap())
+                    }
+                    _ => ctx
+                        .crash_and_error(DUMMY_SP, "Non integral casts are currently unsupported"),
                 };
 
                 from_int.app_to(to_int.app_to(e.to_why(ctx, names, body)))

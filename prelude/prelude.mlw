@@ -13,6 +13,14 @@ module Bool
   let neqb (a : bool) (b : bool) : bool =
     ensures { result <-> a <> b  }
     not (eqb a b)
+
+  let to_int (b : bool) : int =
+    if b then 1 else 0
+
+  use int.Int
+
+  let of_int (i : int) : bool =
+    i = 1
 end
 module Borrow
   type borrowed 'a = { current : 'a ; final : 'a; }
@@ -137,65 +145,21 @@ module UInt128
     lemma extensionality
 end
 module Char
-  (* utf8 characters (not glyphs) *)
-  use string.String
+  (* utf8 characters (not glyphs)
+      highly restricted until Why3 supports Unicode strings
+  *)
   use int.Int
 
-  type char = abstract {
-    contents: string;
-  } invariant {
-    length contents = 1
-  }
-
-  (* is this necessary?? *)
-  axiom char_eq: forall c1 c2.
-    c1.contents = c2.contents -> c1 = c2
+  type char
 
   function code char : int
 
   axiom code: forall c. 0 <= code c < 0x10FFFF
 
-  function chr (n: int) : char
+  val function chr (n: int) : char
 
   axiom code_chr: forall n. 0 <= n < 0x10FFFF -> code (chr n) = n
 
   axiom chr_code: forall c. chr (code c) = c
-
-  function get (s: string) (i: int) : char
-
-  axiom get: forall s i.
-    0 <= i < length s -> (get s i).contents = s_at s i
-
-  axiom substring_get:
-    forall s ofs len i.
-    0 <= ofs <= length s -> 0 <= len -> ofs + len <= length s -> 0 <= i < len ->
-    get (substring s ofs len) i = get s (ofs + i)
-
-  lemma concat_first: forall s1 s2.
-    let s3 = concat s1 s2 in
-    forall i. 0 <= i < length s1 ->
-      get s3 i = get s1 i
-
-  lemma concat_second: forall s1 s2.
-    let s3 = concat s1 s2 in
-    forall i. length s1 <= i < length s1 + length s2 ->
-      get s3 i = get s2 (i - length s1)
-
-  function ([]) (s: string) (i: int) : char = get s i
-
-  predicate eq_string (s1 s2: string) = length s1 = length s2 &&
-    (forall i. 0 <= i < length s1 -> get s1 i = get s2 i)
-
-  axiom extensionality [@W:non_conservative_extension:N]:
-    forall s1 s2. eq_string s1 s2 -> s1 = s2
-
-  function make (size: int) (v: char) : string
-
-  axiom make_length: forall size v. size >= 0 ->
-    length (make size v) = size
-
-  axiom make_contents: forall size v. size >= 0 ->
-    (forall i. 0 <= i < size -> get (make size v) i = v)
-
 end
 

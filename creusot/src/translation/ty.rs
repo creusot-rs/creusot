@@ -62,7 +62,10 @@ fn translate_ty_inner<'tcx>(
 ) -> MlT {
     match ty.kind() {
         Bool => MlT::Bool,
-        Char => MlT::Char,
+        Char => {
+            ctx.warn(span, "support for string types is partial and experimental, expect to encounter limitations.");
+            MlT::Char
+        }
         Int(ity) => intty_to_ty(ctx, names, ity),
         Uint(uity) => uintty_to_ty(ctx, names, uity),
         Float(flty) => floatty_to_ty(names, flty),
@@ -139,7 +142,10 @@ fn translate_ty_inner<'tcx>(
                 vec![translate_ty_inner(trans, ctx, names, span, *ty)],
             )
         }
-        Str => MlT::TConstructor("string".into()),
+        Str => {
+            ctx.warn(span, "support for string types is partial and experimental, expect to encounter limitations.");
+            MlT::TConstructor("string".into())
+        }
         // Slice()
         Never => MlT::Tuple(vec![]),
         RawPtr(_) => {

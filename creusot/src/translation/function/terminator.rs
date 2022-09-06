@@ -310,7 +310,7 @@ pub fn make_switch<'tcx>(
 
             Terminator::Switch(discr, Branches::Int(branches, targets.otherwise()))
         }
-        _ => unimplemented!(),
+        ty => unimplemented!("{ty:?}"),
     }
 }
 
