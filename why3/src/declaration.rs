@@ -2,7 +2,7 @@ use indexmap::IndexSet;
 use std::collections::{BTreeMap, HashMap};
 
 use crate::{
-    exp::{Binder, Exp, ExpMutVisitor},
+    exp::{Binder, BinOp, Exp, ExpMutVisitor},
     mlcfg::{Block, BlockId},
     ty::Type,
     *,
@@ -55,6 +55,7 @@ pub struct Contract {
     pub requires: Vec<Exp>,
     pub ensures: Vec<Exp>,
     pub variant: Vec<Exp>,
+    pub may_panic: Option<Exp>,
 }
 
 impl Contract {
@@ -63,13 +64,24 @@ impl Contract {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_empty()
+        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_empty() && self.may_panic.is_none()
     }
 
     pub fn extend(&mut self, other: Contract) {
         self.requires.extend(other.requires);
         self.ensures.extend(other.ensures);
         self.variant.extend(other.variant);
+        // You can't put multiple raises expressions in whyml, but we can
+        // merge this into "e1 or e2".
+        self.may_panic = match (self.may_panic.take(), other.may_panic) {
+            (Some(exp), None) | (None, Some(exp)) => Some(exp),
+            (None, None) => None,
+            (Some(e1), Some(e2)) => Some(Exp::BinaryOp(
+                BinOp::LogOr,
+                Box::new(e1),
+                Box::new(e2),
+            )),
+        };
     }
 
     pub fn ensures_conj(&self) -> Exp {
@@ -91,7 +103,7 @@ impl Contract {
     }
 
     pub fn subst(&mut self, subst: &HashMap<Ident, Exp>) {
-        self.visit_mut(subst, subst, subst);
+        self.visit_mut(subst, subst, subst, subst);
     }
 
     pub fn visit_mut<T: ExpMutVisitor>(
@@ -99,6 +111,7 @@ impl Contract {
         mut req_visitor: T,
         mut ens_visitor: T,
         mut var_visitor: T,
+        mut may_panic_visitor: T,
     ) {
         for req in self.requires.iter_mut() {
             req_visitor.visit_mut(req);
@@ -110,6 +123,10 @@ impl Contract {
 
         for var in self.variant.iter_mut() {
             var_visitor.visit_mut(var);
+        }
+
+        if let Some(may_panic) = &mut self.may_panic {
+            may_panic_visitor.visit_mut(may_panic);
         }
     }
 
@@ -126,6 +143,10 @@ impl Contract {
 
         for var in &self.variant {
             qfvs.extend(var.qfvs());
+        }
+
+        if let Some(may_panic) = &self.may_panic {
+            qfvs.extend(may_panic.qfvs());
         }
 
         qfvs

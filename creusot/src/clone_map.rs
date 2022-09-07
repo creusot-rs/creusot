@@ -675,6 +675,7 @@ impl<'tcx> CloneMap<'tcx> {
 
         // debug_assert!(topo.finished.len() >= self.names.len(), "missed a clone in {:?}", self.self_id);
 
+        decls.push(Decl::UseDecl(Use { name: "prelude.Panic".into(), as_: None }));
         self.prelude
             .iter_mut()
             .filter(|(_, v)| !(**v))

@@ -509,6 +509,12 @@ impl Print for Contract {
             )
         }
 
+        let may_panic = self.may_panic.as_ref().unwrap_or(&Exp::Const(Constant::Bool(false)));
+        doc = doc.append(alloc.text("raises ")
+            .append(alloc.text("Panic.Panic -> ").append(may_panic.pretty(alloc, env)).braces())
+            .append(alloc.hardline())
+        );
+
         doc
     }
 }

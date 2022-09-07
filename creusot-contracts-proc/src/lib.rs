@@ -172,6 +172,18 @@ fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
+    let spec_kind = parse_quote!{ creusot::spec::requires };
+    precondition(attr, tokens, spec_kind)
+}
+
+
+#[proc_macro_attribute]
+pub fn may_panic(attr: TS1, tokens: TS1) -> TS1 {
+    let spec_kind = parse_quote!{ creusot::spec::may_panic };
+    precondition(attr, tokens, spec_kind)
+}
+
+fn precondition(attr: TS1, tokens: TS1, spec_kind: Path) -> TS1 {
     let mut item = parse_macro_input!(tokens as ContractItem);
     let term = parse_macro_input!(attr as Term);
     item.mark_unused();
@@ -186,7 +198,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
             f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)));
             TS1::from(quote! {
-              #[creusot::spec::requires=#name_tag]
+              #[#spec_kind=#name_tag]
               #f
             })
         }
@@ -194,7 +206,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             let requires_tokens = sig_spec_item(req_name, s.sig.clone(), term);
             TS1::from(quote! {
               #requires_tokens
-              #[creusot::spec::requires=#name_tag]
+              #[#spec_kind=#name_tag]
               #s
             })
         }
@@ -227,7 +239,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
             TS1::from(quote! {
                 {
-                    let #clos_name = #[creusot::spec::requires=#name_tag] #clos;
+                    let #clos_name = #[#spec_kind=#name_tag] #clos;
                     #[allow(unused_must_use)]
                     let _ =
                         #[creusot::no_translate]
@@ -243,6 +255,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
         }
     }
 }
+
 
 #[proc_macro_attribute]
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {

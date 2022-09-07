@@ -29,12 +29,17 @@ pub struct PreContract<'tcx> {
     pub(crate) variant: Option<Term<'tcx>>,
     pub(crate) requires: Vec<Term<'tcx>>,
     pub(crate) ensures: Vec<Term<'tcx>>,
+    pub(crate) may_panic: Option<Term<'tcx>>,
 }
 
 impl<'tcx> PreContract<'tcx> {
     pub(crate) fn subst(&mut self, subst: &HashMap<Symbol, Term<'tcx>>) {
         for term in self.terms_mut() {
             term.subst(subst);
+        }
+
+        for v in &mut self.may_panic {
+            v.subst(subst);
         }
     }
 
@@ -65,20 +70,24 @@ impl<'tcx> PreContract<'tcx> {
             out.variant = vec![lower_pure(ctx, names, param_env, term)];
         }
 
+        if let Some(term) = self.may_panic {
+            out.may_panic = Some(lower_pure(ctx, names, param_env, term));
+        }
+
         out
     }
 
     pub(crate) fn is_empty(&self) -> bool {
-        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
+        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none() && self.may_panic.is_none()
     }
 
     #[allow(dead_code)]
     pub(crate) fn terms(&self) -> impl Iterator<Item = &Term<'tcx>> {
-        self.requires.iter().chain(self.ensures.iter()).chain(self.variant.iter())
+        self.requires.iter().chain(self.ensures.iter()).chain(self.variant.iter()).chain(self.may_panic.iter())
     }
 
     fn terms_mut(&mut self) -> impl Iterator<Item = &mut Term<'tcx>> {
-        self.requires.iter_mut().chain(self.ensures.iter_mut()).chain(self.variant.iter_mut())
+        self.requires.iter_mut().chain(self.ensures.iter_mut()).chain(self.variant.iter_mut()).chain(self.may_panic.iter_mut())
     }
 
     pub(crate) fn ensures_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
@@ -103,11 +112,12 @@ pub struct ContractClauses {
     variant: Option<DefId>,
     requires: Vec<DefId>,
     ensures: Vec<DefId>,
+    may_panic: Option<DefId>,
 }
 
 impl ContractClauses {
     pub(crate) fn new() -> Self {
-        Self { variant: None, requires: Vec::new(), ensures: Vec::new() }
+        Self { variant: None, requires: Vec::new(), ensures: Vec::new(), may_panic: None }
     }
 
     fn get_pre<'tcx>(self, ctx: &mut TranslationCtx<'tcx>) -> EarlyBinder<PreContract<'tcx>> {
@@ -129,11 +139,18 @@ impl ContractClauses {
             let term = ctx.term(var_id).unwrap().clone();
             out.variant = Some(term);
         };
+
+        if let Some(var_id) = self.may_panic {
+            log::debug!("may_panic clause {:?}", var_id);
+            let term = ctx.term(var_id).unwrap().clone();
+            out.may_panic = Some(term);
+        }
+
         EarlyBinder(out)
     }
 
     pub(crate) fn iter_ids(&self) -> impl Iterator<Item = DefId> + '_ {
-        self.requires.iter().chain(self.ensures.iter()).chain(self.variant.iter()).cloned()
+        self.requires.iter().chain(self.ensures.iter()).chain(self.variant.iter()).chain(self.may_panic.iter()).cloned()
     }
 }
 
@@ -258,6 +275,7 @@ pub(crate) fn contract_clauses_of(
             "requires" => contract.requires.push(get_creusot_item()?),
             "ensures" => contract.ensures.push(get_creusot_item()?),
             "variant" => contract.variant = Some(get_creusot_item()?),
+            "may_panic" => contract.may_panic = Some(get_creusot_item()?),
             _ => {}
         }
     }

@@ -22,6 +22,11 @@ pub fn invariant(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }
 
+#[proc_macro_attribute]
+pub fn may_panic(_: TS1, tokens: TS1) -> TS1 {
+    tokens
+}
+
 #[proc_macro]
 pub fn proof_assert(_: TS1) -> TS1 {
     TS1::new()

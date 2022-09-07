@@ -62,6 +62,9 @@ mod macros {
     /// Generates a `requires` and `ensures` clause in the shape of the input expression, with
     /// `mut` replaced by `*` in the `requires` and `^` in the ensures.
     pub use creusot_contracts_proc::maintains;
+
+    // TODO: Doc
+    pub use creusot_contracts_proc::may_panic;
 }
 
 #[cfg(not(feature = "contracts"))]
@@ -120,6 +123,9 @@ mod macros {
     /// Generates a `requires` and `ensures` clause in the shape of the input expression, with
     /// `mut` replaced by `*` in the `requires` and `^` in the ensures.
     pub use creusot_contracts_dummy::maintains;
+
+    // TODO: Doc
+    pub use creusot_contracts_dummy::may_panic;
 }
 
 #[cfg(feature = "contracts")]

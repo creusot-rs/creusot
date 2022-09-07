@@ -250,7 +250,7 @@ impl syn::visit_mut::VisitMut for SelfEscape {
 fn escape_self_in_contracts(attrs: &mut Vec<Attribute>) -> Result<()> {
     for attr in attrs {
         if let Some(id) = attr.path.get_ident() {
-            if id == "ensures" || id == "requires" {
+            if id == "ensures" || id == "requires" || id == "may_panic" {
                 let tokens = std::mem::take(&mut attr.tokens);
                 let mut term: Term = syn::parse2(tokens)?;
                 escape_self_in_term(&mut term);

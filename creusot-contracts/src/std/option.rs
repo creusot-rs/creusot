@@ -12,9 +12,13 @@ extern_spec! {
                 #[ensures(result == (*self == None))]
                 fn is_none(&self) -> bool;
 
+                #[ensures(Some(result) == self)]
+                #[may_panic(self == None)]
+                fn unwrap(self) -> T;
+
                 #[requires(self != None)]
                 #[ensures(Some(result) == self)]
-                fn unwrap(self) -> T;
+                unsafe fn unwrap_unchecked(self) -> T;
 
                 #[requires(self != None)]
                 #[ensures(Some(result) == self)]
