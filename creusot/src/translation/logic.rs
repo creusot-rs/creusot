@@ -115,7 +115,13 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
 
     let func_call = function_call(sig);
     condition.subst(&[("result".into(), func_call)].into_iter().collect());
-    let args: Vec<_> = sig.args.iter().cloned().filter(|arg| &*arg.0 != "_").collect();
+    let args: Vec<(_, _)> = sig
+        .args
+        .iter()
+        .cloned()
+        .flat_map(|b| b.var_type_pairs())
+        .filter(|arg| &*arg.0 != "_")
+        .collect();
 
     let axiom = if args.is_empty() { condition } else { Exp::Forall(args, box condition) };
 
@@ -127,6 +133,7 @@ fn function_call(sig: &Signature) -> Exp {
         .args
         .iter()
         .cloned()
+        .flat_map(|b| b.var_type_pairs())
         .filter(|arg| &*arg.0 != "_")
         .map(|arg| Exp::pure_var(arg.0))
         .collect();
@@ -145,7 +152,7 @@ fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
     let preconditions = sig.contract.requires.iter().cloned();
     let condition = preconditions.rfold(equation, |acc, arg| Exp::Impl(box arg, box acc));
 
-    let args = sig.args.clone();
+    let args: Vec<_> = sig.args.clone().into_iter().flat_map(|b| b.var_type_pairs()).collect();
 
     let axiom = if args.is_empty() { condition } else { Exp::Forall(args, box condition) };
 

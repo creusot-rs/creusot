@@ -13,7 +13,7 @@ use rustc_middle::ty::TyKind;
 use std::collections::VecDeque;
 use why3::{
     declaration::{AdtDecl, ConstructorDecl, Contract, Decl, Field, LetFun, Module, Signature},
-    exp::{Exp, Pattern},
+    exp::{Binder, Exp, Pattern},
     Ident,
 };
 
@@ -154,6 +154,10 @@ fn translate_ty_inner<'tcx>(
         }
         Closure(id, subst) => {
             ctx.translate(*id);
+
+            if util::is_logic(ctx.tcx, *id) {
+                return MlT::Tuple(Vec::new());
+            }
 
             let name = item_name(ctx.tcx, *id).to_string().to_lowercase();
             let cons = MlT::TConstructor(names.insert(*id, subst).qname_ident(name.into()));
@@ -452,7 +456,7 @@ pub fn build_accessor(
     let sig = Signature {
         name: acc_name.clone(),
         attrs: Vec::new(),
-        args: vec![("self".into(), this.clone())],
+        args: vec![Binder::typed("self".into(), this.clone())],
         retty: Some(field_ty.clone()),
         contract: Contract::new(),
     };

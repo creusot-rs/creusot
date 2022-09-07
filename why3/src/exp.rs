@@ -107,7 +107,7 @@ pub enum Exp {
     Verbatim(String),
     Attr(Attribute, Box<Exp>),
     Ghost(Box<Exp>),
-    Abs(Ident, Box<Exp>),
+    Abs(Vec<Binder>, Box<Exp>),
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
     IfThenElse(Box<Exp>, Box<Exp>, Box<Exp>),
     Ascribe(Box<Exp>, Type),
@@ -118,6 +118,15 @@ pub enum Exp {
     Impl(Box<Exp>, Box<Exp>),
     Forall(Vec<(Ident, Type)>, Box<Exp>),
     Exists(Vec<(Ident, Type)>, Box<Exp>),
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub enum Binder {
+    Wild,                           // let f _ = ..
+    UnNamed(Type),                  // let f int : bool = ..
+    Named(Ident),                   // let f a  = ..
+    Typed(bool, Vec<Binder>, Type), // let f (ghost? a int b : int) = ..
 }
 
 pub trait ExpMutVisitor: Sized {
@@ -593,9 +602,15 @@ impl Exp {
                             *exp = e.clone()
                         }
                     }
-                    Exp::Abs(ident, body) => {
+                    Exp::Abs(binders, body) => {
                         let mut subst = self.clone();
-                        subst.remove(ident);
+
+                        for binder in binders {
+                            binder.fvs().into_iter().for_each(|id| {
+                                subst.remove(&id);
+                            });
+                        }
+
                         let mut s = &subst;
                         s.visit_mut(body);
                     }
@@ -645,6 +660,55 @@ impl Exp {
             }
         }
         subst.visit_mut(self);
+    }
+}
+
+impl Binder {
+    pub fn typed(id: Ident, ty: Type) -> Self {
+        Binder::Typed(false, vec![Binder::Named(id)], ty)
+    }
+
+    pub fn ghost(id: Ident, ty: Type) -> Self {
+        Binder::Typed(true, vec![Binder::Named(id)], ty)
+    }
+
+    pub fn wild(ty: Type) -> Self {
+        Binder::Typed(false, vec![Binder::Wild], ty)
+    }
+
+    pub fn fvs(&self) -> Vec<Ident> {
+        match self {
+            Binder::Wild => Vec::new(),
+            Binder::UnNamed(_) => Vec::new(),
+            Binder::Named(id) => vec![id.clone()],
+            Binder::Typed(_, ids, _) => ids.into_iter().fold(Vec::new(), |mut acc, id| {
+                acc.extend(id.fvs());
+                acc
+            }),
+        }
+    }
+
+    fn flatten_inner(self, ty: &Type, out: &mut Vec<(Ident, Type)>) {
+        match self {
+            Binder::Wild => out.push(("_".into(), ty.clone())),
+            Binder::UnNamed(_) => out.push(("_".into(), ty.clone())),
+            Binder::Named(id) => out.push((id, ty.clone())),
+            Binder::Typed(_, ids, ty2) => {
+                assert!(ty == &ty2);
+                ids.into_iter().for_each(|i| i.flatten_inner(ty, out))
+            }
+        }
+    }
+
+    pub fn var_type_pairs(self) -> Vec<(Ident, Type)> {
+        if let Binder::Typed(_, _, ty) = &self {
+            let mut out = Vec::new();
+            let ty = &ty.clone();
+            self.flatten_inner(ty, &mut out);
+            out
+        } else {
+            panic!("cannot get name and type for binder")
+        }
     }
 }
 

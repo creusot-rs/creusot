@@ -10,7 +10,7 @@ module C04BinarySearch_SortedRange
   use mach.int.Int
   use mach.int.UInt32
   predicate sorted_range [#"../04_binary_search.rs" 5 0 5 52] (s : Seq.seq uint32) (l : int) (u : int) =
-    [#"../04_binary_search.rs" 6 4 8 5] forall j : (int) . forall i : (int) . l <= i /\ i < j /\ j < u -> Seq.get s i <= Seq.get s j
+    [#"../04_binary_search.rs" 6 4 8 5] forall j : int . forall i : int . l <= i /\ i < j /\ j < u -> Seq.get s i <= Seq.get s j
 end
 module C04BinarySearch_Sorted_Interface
   use seq.Seq
@@ -308,9 +308,9 @@ module C04BinarySearch_BinarySearch_Interface
   val binary_search [@cfg:stackify] (arr : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (elem : uint32) : Core_Result_Result_Type.core_result_result_type usize usize
     requires {[#"../04_binary_search.rs" 16 11 16 38] Seq.length (Model0.model arr) <= 18446744073709551615}
     requires {[#"../04_binary_search.rs" 17 11 17 23] Sorted0.sorted (Model0.model arr)}
-    ensures { [#"../04_binary_search.rs" 18 0 18 66] forall x : (usize) . result = Core_Result_Result_Type.Core_Result_Result_Ok_Type x -> Seq.get (Model0.model arr) (UInt64.to_int x) = elem }
-    ensures { [#"../04_binary_search.rs" 19 0 20 51] forall x : (usize) . result = Core_Result_Result_Type.Core_Result_Result_Err_Type x -> (forall i : (usize) . i < x -> Seq.get (Model0.model arr) (UInt64.to_int i) <= elem) }
-    ensures { [#"../04_binary_search.rs" 21 0 22 70] forall x : (usize) . result = Core_Result_Result_Type.Core_Result_Result_Err_Type x -> (forall i : (usize) . x < i /\ UInt64.to_int i < Seq.length (Model0.model arr) -> elem < Seq.get (Model0.model arr) (UInt64.to_int i)) }
+    ensures { [#"../04_binary_search.rs" 18 0 18 66] forall x : usize . result = Core_Result_Result_Type.Core_Result_Result_Ok_Type x -> Seq.get (Model0.model arr) (UInt64.to_int x) = elem }
+    ensures { [#"../04_binary_search.rs" 19 0 20 51] forall x : usize . result = Core_Result_Result_Type.Core_Result_Result_Err_Type x -> (forall i : usize . i < x -> Seq.get (Model0.model arr) (UInt64.to_int i) <= elem) }
+    ensures { [#"../04_binary_search.rs" 21 0 22 70] forall x : usize . result = Core_Result_Result_Type.Core_Result_Result_Err_Type x -> (forall i : usize . x < i /\ UInt64.to_int i < Seq.length (Model0.model arr) -> elem < Seq.get (Model0.model arr) (UInt64.to_int i)) }
     
 end
 module C04BinarySearch_BinarySearch
@@ -345,9 +345,9 @@ module C04BinarySearch_BinarySearch
   let rec cfg binary_search [@cfg:stackify] [#"../04_binary_search.rs" 23 0 23 71] (arr : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (elem : uint32) : Core_Result_Result_Type.core_result_result_type usize usize
     requires {[#"../04_binary_search.rs" 16 11 16 38] Seq.length (Model0.model arr) <= 18446744073709551615}
     requires {[#"../04_binary_search.rs" 17 11 17 23] Sorted0.sorted (Model0.model arr)}
-    ensures { [#"../04_binary_search.rs" 18 0 18 66] forall x : (usize) . result = Core_Result_Result_Type.Core_Result_Result_Ok_Type x -> Seq.get (Model0.model arr) (UInt64.to_int x) = elem }
-    ensures { [#"../04_binary_search.rs" 19 0 20 51] forall x : (usize) . result = Core_Result_Result_Type.Core_Result_Result_Err_Type x -> (forall i : (usize) . i < x -> Seq.get (Model0.model arr) (UInt64.to_int i) <= elem) }
-    ensures { [#"../04_binary_search.rs" 21 0 22 70] forall x : (usize) . result = Core_Result_Result_Type.Core_Result_Result_Err_Type x -> (forall i : (usize) . x < i /\ UInt64.to_int i < Seq.length (Model0.model arr) -> elem < Seq.get (Model0.model arr) (UInt64.to_int i)) }
+    ensures { [#"../04_binary_search.rs" 18 0 18 66] forall x : usize . result = Core_Result_Result_Type.Core_Result_Result_Ok_Type x -> Seq.get (Model0.model arr) (UInt64.to_int x) = elem }
+    ensures { [#"../04_binary_search.rs" 19 0 20 51] forall x : usize . result = Core_Result_Result_Type.Core_Result_Result_Err_Type x -> (forall i : usize . i < x -> Seq.get (Model0.model arr) (UInt64.to_int i) <= elem) }
+    ensures { [#"../04_binary_search.rs" 21 0 22 70] forall x : usize . result = Core_Result_Result_Type.Core_Result_Result_Err_Type x -> (forall i : usize . x < i /\ UInt64.to_int i < Seq.length (Model0.model arr) -> elem < Seq.get (Model0.model arr) (UInt64.to_int i)) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Result_Result_Type.core_result_result_type usize usize;
@@ -429,8 +429,8 @@ module C04BinarySearch_BinarySearch
   }
   BB5 {
     invariant size_valid { [#"../04_binary_search.rs" 30 28 30 70] 0 < UInt64.to_int size_13 /\ UInt64.to_int size_13 + UInt64.to_int base_15 <= Seq.length (Model0.model arr_1) };
-    invariant lower_b { [#"../04_binary_search.rs" 30 4 30 72] forall i : (usize) . i < base_15 -> Seq.get (Model0.model arr_1) (UInt64.to_int i) <= elem_2 };
-    invariant lower_b { [#"../04_binary_search.rs" 30 4 30 72] forall i : (usize) . UInt64.to_int base_15 + UInt64.to_int size_13 < UInt64.to_int i /\ UInt64.to_int i < Seq.length (Model0.model arr_1) -> elem_2 < Seq.get (Model0.model arr_1) (UInt64.to_int i) };
+    invariant lower_b { [#"../04_binary_search.rs" 30 4 30 72] forall i : usize . i < base_15 -> Seq.get (Model0.model arr_1) (UInt64.to_int i) <= elem_2 };
+    invariant lower_b { [#"../04_binary_search.rs" 30 4 30 72] forall i : usize . UInt64.to_int base_15 + UInt64.to_int size_13 < UInt64.to_int i /\ UInt64.to_int i < Seq.length (Model0.model arr_1) -> elem_2 < Seq.get (Model0.model arr_1) (UInt64.to_int i) };
     _22 <- size_13;
     _21 <- ([#"../04_binary_search.rs" 33 10 33 18] _22 > (1 : usize));
     switch (_21)

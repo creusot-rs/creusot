@@ -110,6 +110,7 @@ impl ContractClauses {
     }
 }
 
+#[derive(Debug)]
 struct ScopeTree(HashMap<SourceScope, (HashSet<(Symbol, Local)>, Option<SourceScope>)>);
 
 impl ScopeTree {
@@ -158,10 +159,11 @@ impl ScopeTree {
         let mut to_visit = Some(scope);
 
         while let Some(s) = to_visit.take() {
-            self.0[&s].0.iter().for_each(|(id, loc)| {
+            let d = (HashSet::new(), None);
+            self.0.get(&s).unwrap_or_else(|| &d).0.iter().for_each(|(id, loc)| {
                 locals.entry(*id).or_insert(*loc);
             });
-            to_visit = self.0[&s].1.clone();
+            to_visit = self.0.get(&s).unwrap_or_else(|| &d).1.clone();
         }
 
         locals

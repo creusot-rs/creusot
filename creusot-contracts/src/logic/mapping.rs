@@ -25,4 +25,11 @@ impl<A, B> Mapping<A, B> {
     pub fn cst(_: B) -> Self {
         absurd
     }
+
+    #[trusted]
+    #[logic]
+    #[creusot::builtins = "identity"]
+    pub fn from_fn<F: FnOnce(A) -> B>(_: F) -> Self {
+        absurd
+    }
 }

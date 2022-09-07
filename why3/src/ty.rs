@@ -4,7 +4,7 @@ use indexmap::IndexSet;
 #[cfg(feature = "serialize")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Type {
     Bool,

@@ -3,7 +3,7 @@ use std::{fmt::Display, iter::once};
 use super::*;
 use crate::{
     declaration::*,
-    exp::{AssocDir, BinOp, Constant, Precedence, UnOp},
+    exp::{AssocDir, BinOp, Binder, Constant, Precedence, UnOp},
 };
 use pretty::*;
 
@@ -346,18 +346,13 @@ impl Print for Predicate {
 fn arg_list<'b: 'a, 'a, A: DocAllocator<'a>>(
     alloc: &'a A,
     env: &mut PrintEnv,
-    args: &'a [(Ident, Type)],
+    args: &'a [Binder],
 ) -> DocBuilder<'a, A>
 where
     A::Doc: Clone,
 {
     {
-        alloc.intersperse(
-            args.iter().map(|(id, ty)| {
-                id.pretty(alloc, env).append(" : ").append(ty.pretty(alloc, env)).parens()
-            }),
-            alloc.space(),
-        )
+        alloc.intersperse(args.iter().map(|b| b.pretty(alloc, env)), alloc.space())
     }
 }
 
@@ -608,6 +603,7 @@ impl Print for Type {
                     ))
                 }
             }
+            Tuple(tys) if tys.len() == 1 => tys[0].pretty(alloc, env),
             Tuple(tys) => alloc
                 .intersperse(tys.iter().map(|ty| ty.pretty(alloc, env)), alloc.text(", "))
                 .parens(),
@@ -697,11 +693,16 @@ impl Print for Exp {
             Exp::Attr(attr, e) => {
                 attr.pretty(alloc, env).append(alloc.space()).append(e.pretty(alloc, env))
             }
-            Exp::Abs(ident, box body) => alloc
-                .text("fun ")
-                .append(ident.pretty(alloc, env))
-                .append(" -> ")
-                .append(body.pretty(alloc, env)),
+            Exp::Abs(binders, box body) => {
+                alloc
+                    .text("fun ")
+                    .append(alloc.intersperse(
+                        binders.into_iter().map(|b| b.pretty(alloc, env)),
+                        alloc.space(),
+                    ))
+                    .append(" -> ")
+                    .append(body.pretty(alloc, env))
+            }
 
             Exp::Match(box scrut, brs) => alloc
                 .text("match ")
@@ -763,6 +764,36 @@ impl Print for Exp {
             }
             Exp::Absurd => alloc.text("absurd"),
             Exp::Old(e) => alloc.text("old").append(e.pretty(alloc, env).parens()),
+        }
+    }
+}
+
+impl Print for Binder {
+    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
+        &'a self,
+        alloc: &'a A,
+        env: &mut PrintEnv,
+    ) -> DocBuilder<'a, A>
+    where
+        A::Doc: Clone,
+    {
+        match self {
+            Binder::Wild => alloc.text("_"),
+            Binder::UnNamed(ty) => ty.pretty(alloc, env),
+            Binder::Named(id) => id.pretty(alloc, env),
+            Binder::Typed(ghost, ids, ty) => {
+                (if *ghost { alloc.text("ghost ") } else { alloc.nil() })
+                    .append(
+                        alloc
+                            .intersperse(
+                                ids.into_iter().map(|id| id.pretty(alloc, env)),
+                                alloc.space(),
+                            )
+                            .append(" : ")
+                            .append(ty.pretty(alloc, env)),
+                    )
+                    .parens()
+            }
         }
     }
 }
