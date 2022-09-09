@@ -1,9 +1,6 @@
 use crate::{
     ctx::*,
-    translation::{
-        self,
-        ty::{closure_accessor_name, is_ghost_ty},
-    },
+    translation::{self, ty::closure_accessor_name},
 };
 use creusot_rustc::{
     ast::{
@@ -397,7 +394,6 @@ pub fn signature_of<'tcx>(
         inputs
             .enumerate()
             .map(|(ix, (id, ty))| {
-                let ghost = is_ghost_ty(ctx.tcx, ty);
                 let ty = translation::ty::translate_ty(ctx, names, span, ty);
                 let id = if id.name.is_empty() {
                     format!("_{}'", ix + 1).into()
@@ -406,11 +402,7 @@ pub fn signature_of<'tcx>(
                 } else {
                     ident_of(id.name)
                 };
-                if ghost {
-                    Binder::ghost(id, ty)
-                } else {
-                    Binder::typed(id, ty)
-                }
+                Binder::typed(id, ty)
             })
             .collect()
     });

@@ -354,7 +354,7 @@ impl<'tcx> Statement<'tcx> {
                 ]
             }
             Statement::Assignment(lhs, RValue::Ghost(rhs)) => {
-                let ghost = why3::exp::Exp::Ghost(box lower_pure(ctx, names, param_env, rhs));
+                let ghost = lower_pure(ctx, names, param_env, rhs);
 
                 vec![place::create_assign_inner(ctx, names, body, &lhs, ghost)]
             }

@@ -9,7 +9,6 @@ use creusot_rustc::{
     type_ir::sty::TyKind::*,
 };
 use indexmap::IndexSet;
-use rustc_middle::ty::TyKind;
 use std::collections::VecDeque;
 use why3::{
     declaration::{AdtDecl, ConstructorDecl, Contract, Decl, Field, LetFun, Module, Signature},
@@ -71,10 +70,6 @@ fn translate_ty_inner<'tcx>(
         Float(flty) => floatty_to_ty(names, flty),
         Adt(def, s) => {
             if def.is_box() {
-                return translate_ty_inner(trans, ctx, names, span, s[0].expect_ty());
-            }
-
-            if is_ghost_ty(ctx.tcx, ty) {
                 return translate_ty_inner(trans, ctx, names, span, s[0].expect_ty());
             }
 
@@ -397,7 +392,7 @@ fn field_ty<'tcx>(
             ctx.def_span(field.did),
             field.ty(ctx.tcx, substs),
         ),
-        is_ghost_ty(ctx.tcx, field.ty(ctx.tcx, substs)),
+        false,
     )
 }
 
@@ -534,13 +529,6 @@ pub fn variant_accessor_name(
     QName {
         module: qname.module,
         name: format!("{}_{}_{}", &*ident, variant.name, variant.fields[field].name).into(),
-    }
-}
-
-pub fn is_ghost_ty<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    match ty.kind() {
-        TyKind::Adt(def, _) => tcx.is_diagnostic_item(Symbol::intern("creusot_ghost"), def.did()),
-        _ => false,
     }
 }
 

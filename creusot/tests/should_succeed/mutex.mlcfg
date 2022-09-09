@@ -10,6 +10,9 @@ module Mutex_Inv_Inv
   type t
   use prelude.Borrow
   predicate inv [#"../mutex.rs" 7 4 7 32] (self : self) (x : t)
+  val inv (self : self) (x : t) : bool
+    ensures { result = inv self x }
+    
 end
 module Mutex_MutexInner_Type
   type mutex_mutexinner_type 't
@@ -85,75 +88,115 @@ end
 module Mutex_GuardInner_Type
   type mutex_guardinner_type 't
 end
+module CreusotContracts_Logic_Ghost_Ghost_Type
+  type creusotcontracts_logic_ghost_ghost_type 't =
+    | CreusotContracts_Logic_Ghost_Ghost_Type 't
+    
+  let function creusotcontracts_logic_ghost_ghost_type_Ghost_0 (self : creusotcontracts_logic_ghost_ghost_type 't) : 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | CreusotContracts_Logic_Ghost_Ghost_Type a -> a
+      end
+end
 module Mutex_MutexGuard_Type
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   use Mutex_GuardInner_Type
   type mutex_mutexguard_type 't 'i =
-    | Mutex_MutexGuard_Type (Mutex_GuardInner_Type.mutex_guardinner_type 't) (ghost 'i)
+    | Mutex_MutexGuard_Type (Mutex_GuardInner_Type.mutex_guardinner_type 't) (CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type 'i)
     
-  let ghost function mutex_mutexguard_type_MutexGuard_1 (self : mutex_mutexguard_type 't 'i) : 'i
+  let function mutex_mutexguard_type_MutexGuard_1 (self : mutex_mutexguard_type 't 'i) : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type 'i
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
       | Mutex_MutexGuard_Type _ a -> a
       end
 end
+module CreusotContracts_Logic_Ghost_Impl0_Deref_Interface
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
+  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+end
+module CreusotContracts_Logic_Ghost_Impl0_Deref
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
+  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  val deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+    ensures { result = deref self }
+    
+  axiom deref_spec : forall self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t . deref self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type_Ghost_0 self
+end
 module Mutex_Impl0_Lock_Interface
   type t
   type i
   use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   use Mutex_MutexGuard_Type
   use Mutex_Mutex_Type
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref_Interface as Deref0 with type t = i, axiom .
   val lock [@cfg:stackify] (self : Mutex_Mutex_Type.mutex_mutex_type t i) : Mutex_MutexGuard_Type.mutex_mutexguard_type t i
-    ensures { [#"../mutex.rs" 36 14 36 33] Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 self = Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 result }
+    ensures { [#"../mutex.rs" 36 14 36 33] Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 self = Deref0.deref (Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 result) }
     
 end
 module Mutex_Impl0_Lock
   type t
   type i
   use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   use Mutex_MutexGuard_Type
   use Mutex_Mutex_Type
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = i, axiom .
   val lock [@cfg:stackify] (self : Mutex_Mutex_Type.mutex_mutex_type t i) : Mutex_MutexGuard_Type.mutex_mutexguard_type t i
-    ensures { [#"../mutex.rs" 36 14 36 33] Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 self = Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 result }
+    ensures { [#"../mutex.rs" 36 14 36 33] Mutex_Mutex_Type.mutex_mutex_type_Mutex_1 self = Deref0.deref (Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 result) }
     
 end
 module Mutex_Impl1_Deref_Interface
   type t
   type i
   use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   use Mutex_MutexGuard_Type
   clone Mutex_Inv_Inv_Interface as Inv0 with type self = i, type t = t
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref_Interface as Deref0 with type t = i, axiom .
   val deref [@cfg:stackify] (self : Mutex_MutexGuard_Type.mutex_mutexguard_type t i) : t
-    ensures { [#"../mutex.rs" 49 4 49 35] Inv0.inv (Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 self) result }
+    ensures { [#"../mutex.rs" 49 4 49 35] Inv0.inv (Deref0.deref (Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 self)) result }
     
 end
 module Mutex_Impl1_Deref
   type t
   type i
   use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   use Mutex_MutexGuard_Type
   clone Mutex_Inv_Inv as Inv0 with type self = i, type t = t
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = i, axiom .
   val deref [@cfg:stackify] (self : Mutex_MutexGuard_Type.mutex_mutexguard_type t i) : t
-    ensures { [#"../mutex.rs" 49 4 49 35] Inv0.inv (Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 self) result }
+    ensures { [#"../mutex.rs" 49 4 49 35] Inv0.inv (Deref0.deref (Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 self)) result }
     
 end
 module Mutex_Impl1_Set_Interface
   type t
   type i
   use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   use Mutex_MutexGuard_Type
   clone Mutex_Inv_Inv_Interface as Inv0 with type self = i, type t = t
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref_Interface as Deref0 with type t = i, axiom .
   val set [@cfg:stackify] (self : borrowed (Mutex_MutexGuard_Type.mutex_mutexguard_type t i)) (v : t) : ()
-    requires {[#"../mutex.rs" 55 4 55 30] Inv0.inv (Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 ( * self)) v}
+    requires {[#"../mutex.rs" 55 4 55 30] Inv0.inv (Deref0.deref (Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 ( * self))) v}
     
 end
 module Mutex_Impl1_Set
   type t
   type i
   use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   use Mutex_MutexGuard_Type
   clone Mutex_Inv_Inv as Inv0 with type self = i, type t = t
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = i, axiom .
   val set [@cfg:stackify] (self : borrowed (Mutex_MutexGuard_Type.mutex_mutexguard_type t i)) (v : t) : ()
-    requires {[#"../mutex.rs" 55 4 55 30] Inv0.inv (Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 ( * self)) v}
+    requires {[#"../mutex.rs" 55 4 55 30] Inv0.inv (Deref0.deref (Mutex_MutexGuard_Type.mutex_mutexguard_type_MutexGuard_1 ( * self))) v}
     
 end
 module Mutex_Even_Type
@@ -175,6 +218,9 @@ module Mutex_Impl2_Inv
   use Mutex_Even_Type
   predicate inv [#"../mutex.rs" 65 4 65 33] (self : Mutex_Even_Type.mutex_even_type) (x : uint32) =
     [#"../mutex.rs" 66 8 66 24] mod x (2 : uint32) = (0 : uint32)
+  val inv (self : Mutex_Even_Type.mutex_even_type) (x : uint32) : bool
+    ensures { result = inv self x }
+    
 end
 module Mutex_AddsTwo_Type
   use prelude.Borrow
@@ -200,6 +246,9 @@ module Mutex_Impl3_Precondition
   use Mutex_AddsTwo_Type
   predicate precondition [#"../mutex.rs" 90 4 90 33] (self : Mutex_AddsTwo_Type.mutex_addstwo_type) =
     [#"../mutex.rs" 91 8 91 12] true
+  val precondition (self : Mutex_AddsTwo_Type.mutex_addstwo_type) : bool
+    ensures { result = precondition self }
+    
 end
 module Mutex_Impl3_Postcondition_Interface
   use Mutex_AddsTwo_Type
@@ -209,6 +258,12 @@ module Mutex_Impl3_Postcondition
   use Mutex_AddsTwo_Type
   predicate postcondition [#"../mutex.rs" 95 4 95 41] (self : Mutex_AddsTwo_Type.mutex_addstwo_type) (_2' : ()) =
     [#"../mutex.rs" 96 8 96 12] true
+  val postcondition (self : Mutex_AddsTwo_Type.mutex_addstwo_type) (_2' : ()) : bool
+    ensures { result = postcondition self _2' }
+    
+end
+module CreusotContracts_Logic_Ghost_Impl0
+  type t
 end
 module Mutex_Impl2
   use Mutex_Even_Type
@@ -228,14 +283,17 @@ module Mutex_Impl3_Call
   use mach.int.UInt32
   use prelude.Borrow
   use Mutex_Even_Type
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   use Mutex_Mutex_Type
   use Mutex_MutexGuard_Type
   clone Mutex_Impl2_Inv as Inv0
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref1 with type t = Mutex_Even_Type.mutex_even_type, axiom .
   clone Mutex_Impl1_Set_Interface as Set0 with type t = uint32, type i = Mutex_Even_Type.mutex_even_type,
-  predicate Inv0.inv = Inv0.inv
+  function Deref0.deref = Deref1.deref, predicate Inv0.inv = Inv0.inv
   clone Mutex_Impl1_Deref_Interface as Deref0 with type t = uint32, type i = Mutex_Even_Type.mutex_even_type,
-  predicate Inv0.inv = Inv0.inv
-  clone Mutex_Impl0_Lock_Interface as Lock0 with type t = uint32, type i = Mutex_Even_Type.mutex_even_type
+  function Deref0.deref = Deref1.deref, predicate Inv0.inv = Inv0.inv
+  clone Mutex_Impl0_Lock_Interface as Lock0 with type t = uint32, type i = Mutex_Even_Type.mutex_even_type,
+  function Deref0.deref = Deref1.deref
   let rec cfg call [@cfg:stackify] [#"../mutex.rs" 99 4 99 23] (self : Mutex_AddsTwo_Type.mutex_addstwo_type) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -316,11 +374,13 @@ module Mutex_JoinHandleInner_Type
   type mutex_joinhandleinner_type 't
 end
 module Mutex_JoinHandle_Type
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   use Mutex_JoinHandleInner_Type
   type mutex_joinhandle_type 't 'i =
-    | Mutex_JoinHandle_Type (Mutex_JoinHandleInner_Type.mutex_joinhandleinner_type 't) (ghost 'i)
+    | Mutex_JoinHandle_Type (Mutex_JoinHandleInner_Type.mutex_joinhandleinner_type 't) (CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type 'i)
     
-  let ghost function mutex_joinhandle_type_JoinHandle_1 (self : mutex_joinhandle_type 't 'i) : 'i
+  let function mutex_joinhandle_type_JoinHandle_1 (self : mutex_joinhandle_type 't 'i) : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type 'i
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
       | Mutex_JoinHandle_Type _ a -> a
@@ -329,12 +389,14 @@ end
 module Mutex_Impl4_Join_Interface
   type t
   type i
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   use Mutex_JoinHandle_Type
   use Core_Result_Result_Type
   clone Mutex_Inv_Inv_Interface as Inv0 with type self = i, type t = t
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref_Interface as Deref0 with type t = i, axiom .
   val join [@cfg:stackify] (self : Mutex_JoinHandle_Type.mutex_joinhandle_type t i) : Core_Result_Result_Type.core_result_result_type t ()
     ensures { [#"../mutex.rs" 116 14 119 5] match (result) with
-      | Core_Result_Result_Type.Core_Result_Result_Ok_Type v -> Inv0.inv (Mutex_JoinHandle_Type.mutex_joinhandle_type_JoinHandle_1 self) v
+      | Core_Result_Result_Type.Core_Result_Result_Ok_Type v -> Inv0.inv (Deref0.deref (Mutex_JoinHandle_Type.mutex_joinhandle_type_JoinHandle_1 self)) v
       | _ -> true
       end }
     
@@ -342,12 +404,14 @@ end
 module Mutex_Impl4_Join
   type t
   type i
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   use Mutex_JoinHandle_Type
   use Core_Result_Result_Type
   clone Mutex_Inv_Inv as Inv0 with type self = i, type t = t
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = i, axiom .
   val join [@cfg:stackify] (self : Mutex_JoinHandle_Type.mutex_joinhandle_type t i) : Core_Result_Result_Type.core_result_result_type t ()
     ensures { [#"../mutex.rs" 116 14 119 5] match (result) with
-      | Core_Result_Result_Type.Core_Result_Result_Ok_Type v -> Inv0.inv (Mutex_JoinHandle_Type.mutex_joinhandle_type_JoinHandle_1 self) v
+      | Core_Result_Result_Type.Core_Result_Result_Ok_Type v -> Inv0.inv (Deref0.deref (Mutex_JoinHandle_Type.mutex_joinhandle_type_JoinHandle_1 self)) v
       | _ -> true
       end }
     
@@ -359,6 +423,9 @@ end
 module Mutex_FakeFnOnce_Precondition
   type self
   predicate precondition [#"../mutex.rs" 77 4 77 34] (self : self)
+  val precondition (self : self) : bool
+    ensures { result = precondition self }
+    
 end
 module Mutex_SpawnPostCond_Type
   type mutex_spawnpostcond_type 'f =
@@ -403,6 +470,9 @@ module Mutex_FakeFnOnce_Postcondition
   type self
   clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = self
   predicate postcondition [#"../mutex.rs" 80 4 80 52] (self : self) (_2' : Return0.return')
+  val postcondition (self : self) (_2' : Return0.return') : bool
+    ensures { result = postcondition self _2' }
+    
 end
 module Mutex_Impl5_Inv_Interface
   type f
@@ -422,6 +492,9 @@ module Mutex_Impl5_Inv
     
    =
     [#"../mutex.rs" 147 4 147 16] Postcondition0.postcondition (Mutex_SpawnPostCond_Type.mutex_spawnpostcond_type_SpawnPostCond_f self) v
+  val inv (self : Mutex_SpawnPostCond_Type.mutex_spawnpostcond_type f) (v : Return0.return') : bool
+    ensures { result = inv self v }
+    
 end
 module Mutex_Leak_Interface
   type t
@@ -447,6 +520,9 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
      ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
@@ -511,6 +587,7 @@ module Mutex_Concurrent
   use prelude.Borrow
   use Mutex_AddsTwo_Type
   use Mutex_SpawnPostCond_Type
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   use Mutex_Even_Type
   use Core_Result_Result_Type
   use Mutex_Mutex_Type
@@ -519,11 +596,13 @@ module Mutex_Concurrent
   clone Mutex_Impl3_Return_Type as Return0
   clone Mutex_Impl5_Inv as Inv1 with type f = Mutex_AddsTwo_Type.mutex_addstwo_type,
   type Return0.return' = Return0.return', predicate Postcondition0.postcondition = Postcondition0.postcondition
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = Mutex_SpawnPostCond_Type.mutex_spawnpostcond_type (Mutex_AddsTwo_Type.mutex_addstwo_type),
+  axiom .
   clone Mutex_Impl3_Precondition as Precondition0
   clone Mutex_Impl2_Inv as Inv0
   clone Mutex_Impl4_Join_Interface as Join0 with type t = (),
   type i = Mutex_SpawnPostCond_Type.mutex_spawnpostcond_type (Mutex_AddsTwo_Type.mutex_addstwo_type),
-  predicate Inv0.inv = Inv1.inv
+  function Deref0.deref = Deref0.deref, predicate Inv0.inv = Inv1.inv
   clone Mutex_Spawn_Interface as Spawn0 with type t = (), type f = Mutex_AddsTwo_Type.mutex_addstwo_type,
   predicate Precondition0.precondition = Precondition0.precondition
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Mutex_Mutex_Type.mutex_mutex_type uint32 (Mutex_Even_Type.mutex_even_type)

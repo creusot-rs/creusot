@@ -10,6 +10,9 @@ module FilterPositive_NumOfPos
   use seq.Seq
   use mach.int.Int32
   function num_of_pos [#"../filter_positive.rs" 34 0 34 49] (i : int) (j : int) (t : Seq.seq int32) : int
+  val num_of_pos (i : int) (j : int) (t : Seq.seq int32) : int
+    ensures { result = num_of_pos i j t }
+    
   axiom def : forall i : int, j : int, t : Seq.seq int32 . num_of_pos i j t = ([#"../filter_positive.rs" 35 4 43 5] if i >= j then
     0
   else
@@ -44,6 +47,10 @@ module FilterPositive_LemmaNumOfPosIncreasing
   use mach.int.Int32
   clone FilterPositive_NumOfPos_Interface as NumOfPos0 with axiom .
   function lemma_num_of_pos_increasing [#"../filter_positive.rs" 62 0 62 67] (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
+    
+  val lemma_num_of_pos_increasing (i : int) (j : int) (k : int) (t : Seq.seq int32) : ()
+    requires {[#"../filter_positive.rs" 59 11 59 17] j <= k}
+    ensures { result = lemma_num_of_pos_increasing i j k t }
     
   axiom def : forall i : int, j : int, k : int, t : Seq.seq int32 . lemma_num_of_pos_increasing i j k t = ([#"../filter_positive.rs" 64 8 66 9] if j < k then
     lemma_num_of_pos_increasing i (j + 1) k t
@@ -80,6 +87,11 @@ module FilterPositive_LemmaNumOfPosStrictlyIncreasing
   function lemma_num_of_pos_strictly_increasing [#"../filter_positive.rs" 76 0 76 60] (i : int) (t : Seq.seq int32) : ()
    =
     [#"../filter_positive.rs" 72 0 72 8] ()
+  val lemma_num_of_pos_strictly_increasing (i : int) (t : Seq.seq int32) : ()
+    requires {[#"../filter_positive.rs" 73 11 73 32] 0 <= i /\ i < Seq.length t}
+    requires {[#"../filter_positive.rs" 74 11 74 20] Int32.to_int (Seq.get t i) > 0}
+    ensures { result = lemma_num_of_pos_strictly_increasing i t }
+    
   axiom lemma_num_of_pos_strictly_increasing_spec : forall i : int, t : Seq.seq int32 . ([#"../filter_positive.rs" 73 11 73 32] 0 <= i /\ i < Seq.length t) -> ([#"../filter_positive.rs" 74 11 74 20] Int32.to_int (Seq.get t i) > 0) -> ([#"../filter_positive.rs" 75 10 75 49] NumOfPos0.num_of_pos 0 i t < NumOfPos0.num_of_pos 0 (i + 1) t)
 end
 module FilterPositive_LemmaNumOfPosStrictlyIncreasing_Impl
@@ -151,6 +163,9 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use prelude.UIntSize
   use Alloc_Vec_Vec_Type
   function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  val model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+    ensures { result = model self }
+    
   axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
 end
 module Alloc_Vec_Impl1_Len_Interface
@@ -196,6 +211,9 @@ module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds
   type t
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
+  val in_bounds (self : self) (seq : ModelTy0.modelTy) : bool
+    ensures { result = in_bounds self seq }
+    
 end
 module Core_Slice_Index_SliceIndex_Output_Type
   type self
@@ -215,6 +233,9 @@ module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = self, type t = t
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
+  val has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output) : bool
+    ensures { result = has_value self seq out }
+    
 end
 module CreusotContracts_Std1_Slice_Impl0_ModelTy_Type
   type t
@@ -305,6 +326,9 @@ module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere
   type t
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   predicate resolve_elswhere (self : self) (old' : ModelTy0.modelTy) (fin : ModelTy0.modelTy)
+  val resolve_elswhere (self : self) (old' : ModelTy0.modelTy) (fin : ModelTy0.modelTy) : bool
+    ensures { result = resolve_elswhere self old' fin }
+    
 end
 module Alloc_Vec_Impl17_IndexMut_Interface
   type t
@@ -366,6 +390,9 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
      ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
@@ -374,6 +401,9 @@ end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
   predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Std1_Vec_Impl3_Resolve_Interface
   type t
@@ -393,6 +423,9 @@ module CreusotContracts_Std1_Vec_Impl3_Resolve
   type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
   predicate resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) =
     forall i : int . 0 <= i /\ i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
+  val resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Std1_Vec_Impl0
   type t
@@ -429,6 +462,9 @@ module CreusotContracts_Std1_Slice_Impl3_InBounds
   use mach.int.UInt64
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
     UInt64.to_int self < Seq.length seq
+  val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
+    ensures { result = in_bounds self seq }
+    
 end
 module CreusotContracts_Std1_Slice_Impl3
   type t
@@ -448,6 +484,9 @@ module CreusotContracts_Std1_Slice_Impl3_HasValue
   use mach.int.UInt64
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
     Seq.get seq (UInt64.to_int self) = out
+  val has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) : bool
+    ensures { result = has_value self seq out }
+    
 end
 module Core_Slice_Index_Impl2_Output_Type
   type t
@@ -476,6 +515,9 @@ module CreusotContracts_Std1_Slice_Impl3_ResolveElswhere
   use mach.int.UInt64
   predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) =
     forall i : int . 0 <= i /\ i <> UInt64.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+  val resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
+    ensures { result = resolve_elswhere self old' fin }
+    
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
   type t
@@ -485,6 +527,9 @@ module CreusotContracts_Logic_Resolve_Impl2_Resolve
   type t
   predicate resolve (self : t) =
     true
+  val resolve (self : t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Logic_Resolve_Impl2
   type t

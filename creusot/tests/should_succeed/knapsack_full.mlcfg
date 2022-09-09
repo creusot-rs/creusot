@@ -86,6 +86,10 @@ module KnapsackFull_SumWeights
   use mach.int.UInt64
   function sum_weights [#"../knapsack_full.rs" 23 0 23 56] (s : Seq.seq (KnapsackFull_Item_Type.knapsackfull_item_type name)) (i : int) : int
     
+  val sum_weights (s : Seq.seq (KnapsackFull_Item_Type.knapsackfull_item_type name)) (i : int) : int
+    requires {[#"../knapsack_full.rs" 21 11 21 33] 0 <= i /\ i <= Seq.length s}
+    ensures { result = sum_weights s i }
+    
   axiom def : forall s : Seq.seq (KnapsackFull_Item_Type.knapsackfull_item_type name), i : int . sum_weights s i = ([#"../knapsack_full.rs" 24 4 27 5] if i = Seq.length s then
     0
   else
@@ -132,6 +136,10 @@ module KnapsackFull_SumValues
   use mach.int.UInt64
   function sum_values [#"../knapsack_full.rs" 33 0 33 55] (s : Seq.seq (KnapsackFull_Item_Type.knapsackfull_item_type name)) (i : int) : int
     
+  val sum_values (s : Seq.seq (KnapsackFull_Item_Type.knapsackfull_item_type name)) (i : int) : int
+    requires {[#"../knapsack_full.rs" 32 11 32 33] i >= 0 /\ i <= Seq.length s}
+    ensures { result = sum_values s i }
+    
   axiom def : forall s : Seq.seq (KnapsackFull_Item_Type.knapsackfull_item_type name), i : int . sum_values s i = ([#"../knapsack_full.rs" 34 4 37 5] if i = Seq.length s then
     0
   else
@@ -173,6 +181,11 @@ module KnapsackFull_SubseqRev
   use seq.Seq
   use prelude.Borrow
   predicate subseq_rev [#"../knapsack_full.rs" 44 0 44 67] (s1 : Seq.seq t) (i1 : int) (s2 : Seq.seq t) (i2 : int)
+  val subseq_rev (s1 : Seq.seq t) (i1 : int) (s2 : Seq.seq t) (i2 : int) : bool
+    requires {[#"../knapsack_full.rs" 42 11 42 36] 0 <= i1 /\ i1 <= Seq.length s1}
+    requires {[#"../knapsack_full.rs" 43 11 43 36] 0 <= i2 /\ i2 <= Seq.length s2}
+    ensures { result = subseq_rev s1 i1 s2 i2 }
+    
   axiom def : forall s1 : Seq.seq t, i1 : int, s2 : Seq.seq t, i2 : int . subseq_rev s1 i1 s2 i2 = ([#"../knapsack_full.rs" 45 4 51 5] if i2 = 0 then
     i1 = Seq.length s1
   else
@@ -225,6 +238,11 @@ module KnapsackFull_M
   use mach.int.UInt64
   use int.MinMax
   function m [#"../knapsack_full.rs" 62 0 62 57] (items : Seq.seq (KnapsackFull_Item_Type.knapsackfull_item_type name)) (i : int) (w : int) : int
+    
+  val m (items : Seq.seq (KnapsackFull_Item_Type.knapsackfull_item_type name)) (i : int) (w : int) : int
+    requires {[#"../knapsack_full.rs" 56 11 56 37] 0 <= i /\ i <= Seq.length items}
+    requires {[#"../knapsack_full.rs" 57 11 57 17] 0 <= w}
+    ensures { result = m items i w }
     
   axiom def : forall items : Seq.seq (KnapsackFull_Item_Type.knapsackfull_item_type name), i : int, w : int . m items i w = ([#"../knapsack_full.rs" 63 4 70 5] if i = 0 then
     0
@@ -280,6 +298,9 @@ module CreusotContracts_Logic_Model_Model_Model
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
   function model (self : self) : ModelTy0.modelTy
+  val model (self : self) : ModelTy0.modelTy
+    ensures { result = model self }
+    
 end
 module CreusotContracts_Logic_Model_Impl0_Model_Interface
   type t
@@ -295,6 +316,9 @@ module CreusotContracts_Logic_Model_Impl0_Model
   type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : t) : ModelTy0.modelTy =
     Model0.model self
+  val model (self : t) : ModelTy0.modelTy
+    ensures { result = model self }
+    
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
@@ -347,6 +371,9 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use prelude.UIntSize
   use Alloc_Vec_Vec_Type
   function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  val model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+    ensures { result = model self }
+    
   axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
 end
 module Alloc_Alloc_Global_Type
@@ -439,6 +466,9 @@ module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds
   type t
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
+  val in_bounds (self : self) (seq : ModelTy0.modelTy) : bool
+    ensures { result = in_bounds self seq }
+    
 end
 module Core_Slice_Index_SliceIndex_Output_Type
   type self
@@ -458,6 +488,9 @@ module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = self, type t = t
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
+  val has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output) : bool
+    ensures { result = has_value self seq out }
+    
 end
 module CreusotContracts_Std1_Slice_Impl0_ModelTy_Type
   type t
@@ -512,6 +545,9 @@ end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
   predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface
   type self
@@ -524,6 +560,9 @@ module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere
   type t
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   predicate resolve_elswhere (self : self) (old' : ModelTy0.modelTy) (fin : ModelTy0.modelTy)
+  val resolve_elswhere (self : self) (old' : ModelTy0.modelTy) (fin : ModelTy0.modelTy) : bool
+    ensures { result = resolve_elswhere self old' fin }
+    
 end
 module Alloc_Vec_Impl17_IndexMut_Interface
   type t
@@ -585,6 +624,9 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
      ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
 end
 module Alloc_Vec_Impl0_WithCapacity_Interface
   type t
@@ -654,6 +696,9 @@ module CreusotContracts_Std1_Vec_Impl3_Resolve
   type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
   predicate resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) =
     forall i : int . 0 <= i /\ i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
+  val resolve (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) : bool
+    ensures { result = resolve self }
+    
 end
 module Alloc_Vec_Impl16
   type t
@@ -686,6 +731,9 @@ module CreusotContracts_Std1_Slice_Impl3_InBounds
   use mach.int.UInt64
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
     UInt64.to_int self < Seq.length seq
+  val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
+    ensures { result = in_bounds self seq }
+    
 end
 module CreusotContracts_Std1_Slice_Impl3
   type t
@@ -705,6 +753,9 @@ module CreusotContracts_Std1_Slice_Impl3_HasValue
   use mach.int.UInt64
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
     Seq.get seq (UInt64.to_int self) = out
+  val has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) : bool
+    ensures { result = has_value self seq out }
+    
 end
 module Core_Slice_Index_Impl2_Output_Type
   type t
@@ -733,6 +784,9 @@ module CreusotContracts_Std1_Slice_Impl3_ResolveElswhere
   use mach.int.UInt64
   predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) =
     forall i : int . 0 <= i /\ i <> UInt64.to_int self /\ i < Seq.length old' -> Seq.get old' i = Seq.get fin i
+  val resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t) : bool
+    ensures { result = resolve_elswhere self old' fin }
+    
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
   type t
@@ -742,6 +796,9 @@ module CreusotContracts_Logic_Resolve_Impl2_Resolve
   type t
   predicate resolve (self : t) =
     true
+  val resolve (self : t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Logic_Resolve_Impl2
   type t
