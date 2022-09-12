@@ -24,6 +24,9 @@ module C01Range_Impl0_Completed
   use prelude.IntSize
   predicate completed [#"../01_range.rs" 18 4 18 30] (self : C01Range_Range_Type.c01range_range_type) =
     [#"../01_range.rs" 19 20 19 42] C01Range_Range_Type.c01range_range_type_Range_start self >= C01Range_Range_Type.c01range_range_type_Range_end self
+  val completed (self : C01Range_Range_Type.c01range_range_type) : bool
+    ensures { result = completed self }
+    
 end
 module C01Range_Impl0_Produces_Interface
   use seq.Seq
@@ -44,6 +47,9 @@ module C01Range_Impl0_Produces
     
    =
     [#"../01_range.rs" 24 8 29 9] C01Range_Range_Type.c01range_range_type_Range_end self = C01Range_Range_Type.c01range_range_type_Range_end o /\ C01Range_Range_Type.c01range_range_type_Range_start self <= C01Range_Range_Type.c01range_range_type_Range_start o /\ Seq.length visited = Int64.to_int (C01Range_Range_Type.c01range_range_type_Range_start o) - Int64.to_int (C01Range_Range_Type.c01range_range_type_Range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> Int64.to_int (Seq.get visited i) = Int64.to_int (C01Range_Range_Type.c01range_range_type_Range_start self) + i)
+  val produces (self : C01Range_Range_Type.c01range_range_type) (visited : Seq.seq isize) (o : C01Range_Range_Type.c01range_range_type) : bool
+    ensures { result = produces self visited o }
+    
 end
 module C01Range_Impl0_ProducesRefl_Interface
   use seq.Seq
@@ -57,6 +63,9 @@ module C01Range_Impl0_ProducesRefl
   clone C01Range_Impl0_Produces_Interface as Produces0
   function produces_refl [#"../01_range.rs" 34 4 34 29] (a : C01Range_Range_Type.c01range_range_type) : () =
     [#"../01_range.rs" 32 4 32 10] ()
+  val produces_refl (a : C01Range_Range_Type.c01range_range_type) : ()
+    ensures { result = produces_refl a }
+    
   axiom produces_refl_spec : forall a : C01Range_Range_Type.c01range_range_type . [#"../01_range.rs" 33 14 33 39] Produces0.produces a (Seq.empty ) a
 end
 module C01Range_Impl0_ProducesRefl_Impl
@@ -88,6 +97,11 @@ module C01Range_Impl0_ProducesTrans
     
    =
     [#"../01_range.rs" 36 4 36 10] ()
+  val produces_trans (a : C01Range_Range_Type.c01range_range_type) (ab : Seq.seq isize) (b : C01Range_Range_Type.c01range_range_type) (bc : Seq.seq isize) (c : C01Range_Range_Type.c01range_range_type) : ()
+    requires {[#"../01_range.rs" 37 15 37 32] Produces0.produces a ab b}
+    requires {[#"../01_range.rs" 38 15 38 32] Produces0.produces b bc c}
+    ensures { result = produces_trans a ab b bc c }
+    
   axiom produces_trans_spec : forall a : C01Range_Range_Type.c01range_range_type, ab : Seq.seq isize, b : C01Range_Range_Type.c01range_range_type, bc : Seq.seq isize, c : C01Range_Range_Type.c01range_range_type . ([#"../01_range.rs" 37 15 37 32] Produces0.produces a ab b) -> ([#"../01_range.rs" 38 15 38 32] Produces0.produces b bc c) -> ([#"../01_range.rs" 39 14 39 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C01Range_Impl0_ProducesTrans_Impl
@@ -126,6 +140,9 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
      ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
@@ -227,6 +244,49 @@ module C01Range_Impl1_IntoIter
   }
   
 end
+module CreusotContracts_Logic_Ghost_Ghost_Type
+  type creusotcontracts_logic_ghost_ghost_type 't =
+    | CreusotContracts_Logic_Ghost_Ghost_Type 't
+    
+  let function creusotcontracts_logic_ghost_ghost_type_Ghost_0 (self : creusotcontracts_logic_ghost_ghost_type 't) : 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | CreusotContracts_Logic_Ghost_Ghost_Type a -> a
+      end
+end
+module CreusotContracts_Logic_Ghost_Impl0_Deref_Interface
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
+  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+end
+module CreusotContracts_Logic_Ghost_Impl0_Deref
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
+  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  val deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+    ensures { result = deref self }
+    
+  axiom deref_spec : forall self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t . deref self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type_Ghost_0 self
+end
+module CreusotContracts_Logic_Ghost_Impl1_Unwrap_Interface
+  type t
+  use CreusotContracts_Logic_Ghost_Ghost_Type
+  function unwrap (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+end
+module CreusotContracts_Logic_Ghost_Impl1_Unwrap
+  type t
+  use CreusotContracts_Logic_Ghost_Ghost_Type
+  function unwrap (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t =
+    CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type_Ghost_0 self
+  val unwrap (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+    ensures { result = unwrap self }
+    
+end
+module CreusotContracts_Logic_Ghost_Impl0
+  type t
+end
 module C01Range_Impl0_Item_Type
   use mach.int.Int
   use prelude.IntSize
@@ -244,6 +304,9 @@ end
 module C01Range_Common_Iterator_Completed
   type self
   predicate completed [#"../common.rs" 8 4 8 31] (self : self)
+  val completed (self : self) : bool
+    ensures { result = completed self }
+    
 end
 module C01Range_Common_Iterator_Produces_Interface
   type self
@@ -256,6 +319,9 @@ module C01Range_Common_Iterator_Produces
   use seq.Seq
   clone C01Range_Common_Iterator_Item_Type as Item0 with type self = self
   predicate produces [#"../common.rs" 11 4 11 65] (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+  val produces (self : self) (visited : Seq.seq Item0.item) (_3' : self) : bool
+    ensures { result = produces self visited _3' }
+    
 end
 module C01Range_Common_Iterator_ProducesRefl_Interface
   type self
@@ -270,6 +336,9 @@ module C01Range_Common_Iterator_ProducesRefl
   clone C01Range_Common_Iterator_Item_Type as Item0 with type self = self
   clone C01Range_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
   function produces_refl [#"../common.rs" 15 4 15 30] (a : self) : ()
+  val produces_refl (a : self) : ()
+    ensures { result = produces_refl a }
+    
   axiom produces_refl_spec : forall a : self . [#"../common.rs" 14 14 14 39] Produces0.produces a (Seq.empty ) a
 end
 module C01Range_Common_Iterator_ProducesTrans_Interface
@@ -285,6 +354,11 @@ module C01Range_Common_Iterator_ProducesTrans
   clone C01Range_Common_Iterator_Item_Type as Item0 with type self = self
   clone C01Range_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
   function produces_trans [#"../common.rs" 21 4 21 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+    
+  val produces_trans (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+    requires {[#"../common.rs" 18 15 18 32] Produces0.produces a ab b}
+    requires {[#"../common.rs" 19 15 19 32] Produces0.produces b bc c}
+    ensures { result = produces_trans a ab b bc c }
     
   axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 18 15 18 32] Produces0.produces a ab b) -> ([#"../common.rs" 19 15 19 32] Produces0.produces b bc c) -> ([#"../common.rs" 20 14 20 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
@@ -369,13 +443,18 @@ module C01Range_SumRange
   use prelude.Borrow
   use C01Range_Range_Type
   use Core_Option_Option_Type
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = C01Range_Range_Type.c01range_range_type
   clone C01Range_Impl0_Completed as Completed0
   clone C01Range_Impl0_Produces as Produces0
   clone C01Range_Impl0_ProducesTrans as ProducesTrans0 with predicate Produces0.produces = Produces0.produces, axiom .
   clone C01Range_Impl0_ProducesRefl as ProducesRefl0 with predicate Produces0.produces = Produces0.produces, axiom .
+  clone CreusotContracts_Logic_Ghost_Impl1_Unwrap as Unwrap0 with type t = Seq.seq isize
   clone C01Range_Impl0_Next_Interface as Next0 with predicate Completed0.completed = Completed0.completed,
   predicate Resolve0.resolve = Resolve0.resolve, predicate Produces0.produces = Produces0.produces
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref1 with type t = Seq.seq isize, axiom .
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = C01Range_Range_Type.c01range_range_type,
+  axiom .
   clone C01Range_Impl1_IntoIter_Interface as IntoIter0
   let rec cfg sum_range [@cfg:stackify] [#"../01_range.rs" 67 0 67 35] (n : isize) : isize
     requires {[#"../01_range.rs" 65 11 65 18] Int64.to_int n >= 0}
@@ -389,18 +468,18 @@ module C01Range_SumRange
   var iter_6 : C01Range_Range_Type.c01range_range_type;
   var _7 : C01Range_Range_Type.c01range_range_type;
   var _8 : isize;
-  ghost var iter_old_9 : C01Range_Range_Type.c01range_range_type;
-  var _12 : ();
-  ghost var produced_13 : Seq.seq isize;
-  var _16 : ();
-  var _19 : ();
-  var _20 : Core_Option_Option_Type.core_option_option_type isize;
-  var _21 : borrowed (C01Range_Range_Type.c01range_range_type);
-  var _22 : isize;
-  var i_23 : isize;
-  ghost var _24 : Seq.seq isize;
+  var iter_old_9 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (C01Range_Range_Type.c01range_range_type);
+  var _11 : ();
+  var produced_12 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (Seq.seq isize);
+  var _15 : ();
+  var _18 : ();
+  var _19 : Core_Option_Option_Type.core_option_option_type isize;
+  var _20 : borrowed (C01Range_Range_Type.c01range_range_type);
+  var _21 : isize;
+  var i_22 : isize;
+  var _23 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (Seq.seq isize);
+  var _25 : ();
   var _26 : ();
-  var _27 : ();
   {
     n_1 <- n;
     goto BB0
@@ -413,28 +492,28 @@ module C01Range_SumRange
     goto BB1
   }
   BB1 {
-    _12 <- ();
-    iter_old_9 <- ghost ([#"../01_range.rs" 69 4 69 54] iter_6);
+    _11 <- ();
+    iter_old_9 <- ([#"../01_range.rs" 69 4 69 54] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type iter_6);
     goto BB2
   }
   BB2 {
-    _16 <- ();
-    produced_13 <- ghost ([#"../01_range.rs" 69 4 69 54] Seq.empty );
+    _15 <- ();
+    produced_12 <- ([#"../01_range.rs" 69 4 69 54] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type (Seq.empty ));
     goto BB3
   }
   BB3 {
     goto BB4
   }
   BB4 {
-    invariant structural { [#"../01_range.rs" 69 4 69 54] Produces0.produces iter_old_9 produced_13 iter_6 };
-    invariant user { [#"../01_range.rs" 69 22 69 52] Int64.to_int i_4 = Seq.length produced_13 /\ i_4 <= n_1 };
-    _21 <- borrow_mut iter_6;
-    iter_6 <-  ^ _21;
-    _20 <- ([#"../01_range.rs" 69 4 69 54] Next0.next _21);
+    invariant structural { [#"../01_range.rs" 69 4 69 54] Produces0.produces (Deref0.deref iter_old_9) (Deref1.deref produced_12) iter_6 };
+    invariant user { [#"../01_range.rs" 69 22 69 52] Int64.to_int i_4 = Seq.length (Deref1.deref produced_12) /\ i_4 <= n_1 };
+    _20 <- borrow_mut iter_6;
+    iter_6 <-  ^ _20;
+    _19 <- ([#"../01_range.rs" 69 4 69 54] Next0.next _20);
     goto BB5
   }
   BB5 {
-    switch (_20)
+    switch (_19)
       | Core_Option_Option_Type.Core_Option_Option_None_Type -> goto BB6
       | Core_Option_Option_Type.Core_Option_Option_Some_Type _ -> goto BB8
       end
@@ -448,16 +527,16 @@ module C01Range_SumRange
     absurd
   }
   BB8 {
-    i_23 <- Core_Option_Option_Type.core_option_option_type_Some_0 _20;
-    _26 <- ();
-    _24 <- ghost ([#"../01_range.rs" 69 4 69 54] Seq.snoc produced_13 i_23);
+    i_22 <- Core_Option_Option_Type.core_option_option_type_Some_0 _19;
+    _25 <- ();
+    _23 <- ([#"../01_range.rs" 69 4 69 54] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type (Seq.snoc (Unwrap0.unwrap produced_12) i_22));
     goto BB9
   }
   BB9 {
-    produced_13 <- _24;
-    _24 <- any Seq.seq isize;
+    produced_12 <- _23;
+    _23 <- any CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (Seq.seq isize);
     i_4 <- ([#"../01_range.rs" 71 8 71 14] i_4 + (1 : isize));
-    _19 <- ();
+    _18 <- ();
     goto BB4
   }
   

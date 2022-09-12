@@ -14,6 +14,11 @@ use indexmap::IndexSet;
 
 use crate::util;
 
+/// Hide non-linear specification code from the borrow checker
+///
+/// Specifications in Creusot are encoded inside of special closures that are inserted throughout the code.
+/// The code inside those closures is meant to be Pearlite and is thus not subject to Rust's borrow checker, however it needs to be able to refer to normal Rust variables.
+/// To prevent the closures from intererring with the borrow checking of the surrounding environment, we replace the MIR body of the closure with an empty loop and remove all of the arguments to the closure in the surrounding MIR.
 pub fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut Body<'tcx>) {
     trace!("cleanup_spec_closures: {:?}", def_id);
     if util::no_mir(tcx, def_id) {

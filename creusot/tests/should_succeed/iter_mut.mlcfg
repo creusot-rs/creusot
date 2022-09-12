@@ -54,6 +54,9 @@ module IterMut_Impl0_Model
   use seq.Seq
   use IterMut_Vec_Type
   function model [#"../iter_mut.rs" 15 4 15 35] (self : IterMut_Vec_Type.itermut_vec_type t) : Seq.seq t
+  val model (self : IterMut_Vec_Type.itermut_vec_type t) : Seq.seq t
+    ensures { result = model self }
+    
 end
 module Core_Slice_Iter_IterMut_Type
   use prelude.Opaque
@@ -83,6 +86,9 @@ module IterMut_Impl2_Model
   use prelude.Borrow
   use IterMut_IterMut_Type
   function model [#"../iter_mut.rs" 44 4 44 35] (self : IterMut_IterMut_Type.itermut_itermut_type t) : Seq.seq (borrowed t)
+    
+  val model (self : IterMut_IterMut_Type.itermut_itermut_type t) : Seq.seq (borrowed t)
+    ensures { result = model self }
     
 end
 module IterMut_Impl1_IterMut_Interface
@@ -167,6 +173,9 @@ module CreusotContracts_Logic_Seq_Impl2_Get
     else
       Core_Option_Option_Type.Core_Option_Option_None_Type
     
+  val get (self : Seq.seq t) (ix : int) : Core_Option_Option_Type.core_option_option_type t
+    ensures { result = get self ix }
+    
 end
 module CreusotContracts_Logic_Seq_Impl2_Tail_Interface
   type t
@@ -180,6 +189,9 @@ module CreusotContracts_Logic_Seq_Impl2_Tail
   use seq_ext.SeqExt
   function tail (self : Seq.seq t) : Seq.seq t =
     SeqExt.subsequence self 1 (Seq.length self)
+  val tail (self : Seq.seq t) : Seq.seq t
+    ensures { result = tail self }
+    
 end
 module IterMut_Impl3_Next_Interface
   type t
@@ -222,6 +234,9 @@ module CreusotContracts_Logic_Model_Model_Model
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
   function model (self : self) : ModelTy0.modelTy
+  val model (self : self) : ModelTy0.modelTy
+    ensures { result = model self }
+    
 end
 module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
@@ -237,6 +252,9 @@ module CreusotContracts_Logic_Model_Impl1_Model
   type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : borrowed t) : ModelTy0.modelTy =
     Model0.model ( * self)
+  val model (self : borrowed t) : ModelTy0.modelTy
+    ensures { result = model self }
+    
 end
 module IterMut_Impl0_ModelTy_Type
   type t
@@ -257,6 +275,16 @@ end
 module CreusotContracts_Logic_Model_Impl1
   type t
 end
+module CreusotContracts_Logic_Ghost_Ghost_Type
+  type creusotcontracts_logic_ghost_ghost_type 't =
+    | CreusotContracts_Logic_Ghost_Ghost_Type 't
+    
+  let function creusotcontracts_logic_ghost_ghost_type_Ghost_0 (self : creusotcontracts_logic_ghost_ghost_type 't) : 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | CreusotContracts_Logic_Ghost_Ghost_Type a -> a
+      end
+end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
@@ -267,6 +295,25 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
      ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+end
+module CreusotContracts_Logic_Ghost_Impl1_Inner
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t =
+    CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type_Ghost_0 self
+  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+    ensures { result = inner self }
+    
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
@@ -313,12 +360,14 @@ module IterMut_IncVec
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
   use Core_Option_Option_Type
   use IterMut_IterMut_Type
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Logic_Seq_Impl2_Tail as Tail0 with type t = borrowed int
   clone CreusotContracts_Logic_Seq_Impl2_Get as Get0 with type t = borrowed int
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = int
   clone IterMut_Impl2_Model as Model2 with type t = int
   clone IterMut_Impl3_Next_Interface as Next0 with type t = int, function Model0.model = Model2.model,
   function Get0.get = Get0.get, function Tail0.tail = Tail0.tail
+  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (IterMut_Vec_Type.itermut_vec_type int)
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = IterMut_Vec_Type.itermut_vec_type int
   clone IterMut_Impl1_IterMut_Interface as IterMut0 with type t = int, function Model0.model = Model0.model,
   function Model1.model = Model2.model
@@ -329,62 +378,62 @@ module IterMut_IncVec
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var v_1 : borrowed (IterMut_Vec_Type.itermut_vec_type int);
-  ghost var old_v_4 : borrowed (IterMut_Vec_Type.itermut_vec_type int);
-  var _7 : ();
-  var it_8 : IterMut_IterMut_Type.itermut_itermut_type int;
-  var _9 : borrowed (IterMut_Vec_Type.itermut_vec_type int);
-  var _ghost_seen_10 : int;
-  var _14 : ();
-  var _15 : Core_Option_Option_Type.core_option_option_type (borrowed int);
-  var _16 : borrowed (IterMut_IterMut_Type.itermut_itermut_type int);
-  var _17 : int;
-  var r_18 : borrowed int;
+  var old_v_4 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (IterMut_Vec_Type.itermut_vec_type int));
+  var _6 : ();
+  var it_7 : IterMut_IterMut_Type.itermut_itermut_type int;
+  var _8 : borrowed (IterMut_Vec_Type.itermut_vec_type int);
+  var _ghost_seen_9 : int;
+  var _13 : ();
+  var _14 : Core_Option_Option_Type.core_option_option_type (borrowed int);
+  var _15 : borrowed (IterMut_IterMut_Type.itermut_itermut_type int);
+  var _16 : int;
+  var r_17 : borrowed int;
+  var _18 : ();
   var _19 : ();
   var _20 : ();
-  var _21 : ();
   {
     v_1 <- v;
     goto BB0
   }
   BB0 {
-    _7 <- ();
-    old_v_4 <- ghost ([#"../iter_mut.rs" 61 16 61 28] v_1);
+    _6 <- ();
+    old_v_4 <- ([#"../iter_mut.rs" 61 16 61 28] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type v_1);
     goto BB1
   }
   BB1 {
-    _9 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _9) };
-    it_8 <- ([#"../iter_mut.rs" 63 17 63 29] IterMut0.iter_mut _9);
+    _8 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _8) };
+    it_7 <- ([#"../iter_mut.rs" 63 17 63 29] IterMut0.iter_mut _8);
     goto BB2
   }
   BB2 {
     assume { Resolve0.resolve v_1 };
-    _ghost_seen_10 <- (0 : int);
+    _ghost_seen_9 <- (0 : int);
     goto BB3
   }
   BB3 {
-    invariant incremented { [#"../iter_mut.rs" 65 4 68 6] forall i : int . 0 <= i /\ i < _ghost_seen_10 -> Seq.get (Model0.model ( ^ old_v_4)) i = Seq.get (Model1.model old_v_4) i + 5 };
-    invariant to_come { [#"../iter_mut.rs" 65 4 68 6] forall i : int . 0 <= i /\ i < Seq.length (Model2.model it_8) ->  * Seq.get (Model2.model it_8) i = Seq.get (Model1.model old_v_4) (i + _ghost_seen_10) /\  ^ Seq.get (Model2.model it_8) i = Seq.get (Model0.model ( ^ old_v_4)) (i + _ghost_seen_10) };
-    invariant _ghost_seen { [#"../iter_mut.rs" 72 29 72 81] _ghost_seen_10 + Seq.length (Model2.model it_8) = Seq.length (Model1.model old_v_4) };
-    _16 <- borrow_mut it_8;
-    it_8 <-  ^ _16;
-    _15 <- ([#"../iter_mut.rs" 73 24 73 33] Next0.next _16);
+    invariant incremented { [#"../iter_mut.rs" 65 4 68 6] forall i : int . 0 <= i /\ i < _ghost_seen_9 -> Seq.get (Model0.model ( ^ Inner0.inner old_v_4)) i = Seq.get (Model1.model (Inner0.inner old_v_4)) i + 5 };
+    invariant to_come { [#"../iter_mut.rs" 65 4 68 6] forall i : int . 0 <= i /\ i < Seq.length (Model2.model it_7) ->  * Seq.get (Model2.model it_7) i = Seq.get (Model1.model (Inner0.inner old_v_4)) (i + _ghost_seen_9) /\  ^ Seq.get (Model2.model it_7) i = Seq.get (Model0.model ( ^ Inner0.inner old_v_4)) (i + _ghost_seen_9) };
+    invariant _ghost_seen { [#"../iter_mut.rs" 72 29 72 81] _ghost_seen_9 + Seq.length (Model2.model it_7) = Seq.length (Model1.model (Inner0.inner old_v_4)) };
+    _15 <- borrow_mut it_7;
+    it_7 <-  ^ _15;
+    _14 <- ([#"../iter_mut.rs" 73 24 73 33] Next0.next _15);
     goto BB4
   }
   BB4 {
-    switch (_15)
+    switch (_14)
       | Core_Option_Option_Type.Core_Option_Option_Some_Type _ -> goto BB5
       | _ -> goto BB6
       end
   }
   BB5 {
-    assume { Resolve1.resolve r_18 };
-    r_18 <- Core_Option_Option_Type.core_option_option_type_Some_0 _15;
-    _15 <- (let Core_Option_Option_Type.Core_Option_Option_Some_Type a = _15 in Core_Option_Option_Type.Core_Option_Option_Some_Type (any borrowed int));
-    r_18 <- { r_18 with current = ([#"../iter_mut.rs" 74 8 74 15]  * r_18 + (5 : int)) };
-    assume { Resolve1.resolve r_18 };
-    _ghost_seen_10 <- ([#"../iter_mut.rs" 75 8 75 24] _ghost_seen_10 + (1 : int));
-    _14 <- ();
+    assume { Resolve1.resolve r_17 };
+    r_17 <- Core_Option_Option_Type.core_option_option_type_Some_0 _14;
+    _14 <- (let Core_Option_Option_Type.Core_Option_Option_Some_Type a = _14 in Core_Option_Option_Type.Core_Option_Option_Some_Type (any borrowed int));
+    r_17 <- { r_17 with current = ([#"../iter_mut.rs" 74 8 74 15]  * r_17 + (5 : int)) };
+    assume { Resolve1.resolve r_17 };
+    _ghost_seen_9 <- ([#"../iter_mut.rs" 75 8 75 24] _ghost_seen_9 + (1 : int));
+    _13 <- ();
     goto BB3
   }
   BB6 {

@@ -500,7 +500,7 @@ impl Exp {
             Exp::Tuple(_) => Atom,
             Exp::Constructor { .. } => App,
             // Exp::Seq(_, _) => { Term }
-            Exp::Match(_, _) => Atom,
+            Exp::Match(_, _) => Abs,
             Exp::IfThenElse(_, _, _) => IfLet,
             Exp::BorrowMut(_) => App,
             Exp::Const(_) => Atom,

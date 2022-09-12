@@ -184,10 +184,10 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             }
         } else if builtin_attr == Some(Symbol::intern("ghost_new")) {
             return Some(args.remove(0));
-        } else if builtin_attr == Some(Symbol::intern("ghost_inner")) {
-            return Some(args.remove(0));
-        } else if builtin_attr == Some(Symbol::intern("ghost_deref")) {
-            return Some(args.remove(0));
+        // } else if builtin_attr == Some(Symbol::intern("ghost_inner")) {
+        //     return Some(args.remove(0));
+        // } else if builtin_attr == Some(Symbol::intern("ghost_deref")) {
+        //     return Some(args.remove(0));
         } else if builtin_attr == Some(Symbol::intern("identity")) {
             return Some(args.remove(0));
         } else if def_id == self.ctx.tcx.get_diagnostic_item(sym::abort) {

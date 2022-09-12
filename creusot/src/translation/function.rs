@@ -1,4 +1,4 @@
-use super::{fmir::RValue, ty::is_ghost_ty};
+use super::fmir::RValue;
 use crate::{
     ctx::*,
     fmir::{self, Expr},
@@ -300,10 +300,9 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
                 continue;
             }
             let ident = self.translate_local(loc);
-            let ghost = is_ghost_ty(self.tcx, decl.ty);
 
             vars.push((
-                ghost,
+                false,
                 ident,
                 ty::translate_ty(&mut self.ctx, &mut self.names, decl.source_info.span, decl.ty),
             ))

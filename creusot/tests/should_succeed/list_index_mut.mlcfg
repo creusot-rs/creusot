@@ -77,6 +77,9 @@ module ListIndexMut_Len
       | ListIndexMut_Option_Type.ListIndexMut_Option_Some_Type ls -> len ls
       | ListIndexMut_Option_Type.ListIndexMut_Option_None_Type -> 0
       end
+  val len (l : ListIndexMut_List_Type.listindexmut_list_type) : int
+    ensures { result = len l }
+    
 end
 module ListIndexMut_Get_Interface
   use mach.int.Int
@@ -105,6 +108,19 @@ module ListIndexMut_Get
     else
       ListIndexMut_Option_Type.ListIndexMut_Option_Some_Type i
     
+  val get (l : ListIndexMut_List_Type.listindexmut_list_type) (ix : int) : ListIndexMut_Option_Type.listindexmut_option_type uint32
+    ensures { result = get l ix }
+    
+end
+module CreusotContracts_Logic_Ghost_Ghost_Type
+  type creusotcontracts_logic_ghost_ghost_type 't =
+    | CreusotContracts_Logic_Ghost_Ghost_Type 't
+    
+  let function creusotcontracts_logic_ghost_ghost_type_Ghost_0 (self : creusotcontracts_logic_ghost_ghost_type 't) : 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | CreusotContracts_Logic_Ghost_Ghost_Type a -> a
+      end
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
@@ -116,8 +132,30 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
      ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Logic_Ghost_Impl0_Deref_Interface
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
+  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+end
+module CreusotContracts_Logic_Ghost_Impl0_Deref
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
+  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  val deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+    ensures { result = deref self }
+    
+  axiom deref_spec : forall self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t . deref self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type_Ghost_0 self
 end
 module CreusotContracts_Logic_Resolve_Impl1
+  type t
+end
+module CreusotContracts_Logic_Ghost_Impl0
   type t
 end
 module ListIndexMut_IndexMut_Interface
@@ -153,8 +191,11 @@ module ListIndexMut_IndexMut
   clone ListIndexMut_Get as Get0
   clone ListIndexMut_Len as Len0
   use prelude.IntSize
+  use CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = uint32
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = ListIndexMut_List_Type.listindexmut_list_type
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = borrowed (ListIndexMut_List_Type.listindexmut_list_type),
+  axiom .
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = ListIndexMut_List_Type.listindexmut_list_type
   let rec cfg index_mut [@cfg:stackify] [#"../list_index_mut.rs" 44 0 44 65] (param_l : borrowed (ListIndexMut_List_Type.listindexmut_list_type)) (param_ix : usize) : borrowed uint32
     requires {[#"../list_index_mut.rs" 39 11 39 36] UInt64.to_int param_ix < Len0.len ( * param_l)}
@@ -168,90 +209,90 @@ module ListIndexMut_IndexMut
   var param_l_1 : borrowed (ListIndexMut_List_Type.listindexmut_list_type);
   var param_ix_2 : usize;
   var _3 : borrowed uint32;
-  ghost var old_l_9 : borrowed (ListIndexMut_List_Type.listindexmut_list_type);
-  var _12 : ();
-  var l_13 : borrowed (ListIndexMut_List_Type.listindexmut_list_type);
-  var ix_14 : usize;
-  var _15 : ();
-  var _21 : ();
-  var _22 : bool;
-  var _23 : usize;
-  var _24 : ();
-  var _25 : isize;
-  var n_26 : borrowed (ListIndexMut_List_Type.listindexmut_list_type);
-  var _27 : borrowed (ListIndexMut_List_Type.listindexmut_list_type);
+  var old_l_9 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (ListIndexMut_List_Type.listindexmut_list_type));
+  var _11 : ();
+  var l_12 : borrowed (ListIndexMut_List_Type.listindexmut_list_type);
+  var ix_13 : usize;
+  var _14 : ();
+  var _20 : ();
+  var _21 : bool;
+  var _22 : usize;
+  var _23 : ();
+  var _24 : isize;
+  var n_25 : borrowed (ListIndexMut_List_Type.listindexmut_list_type);
+  var _26 : borrowed (ListIndexMut_List_Type.listindexmut_list_type);
+  var _27 : ();
   var _28 : ();
   var _29 : ();
   var _30 : ();
-  var _31 : ();
-  var _32 : borrowed uint32;
+  var _31 : borrowed uint32;
   {
     param_l_1 <- param_l;
     param_ix_2 <- param_ix;
     goto BB0
   }
   BB0 {
-    _12 <- ();
-    old_l_9 <- ghost ([#"../list_index_mut.rs" 45 16 45 34] param_l_1);
+    _11 <- ();
+    old_l_9 <- ([#"../list_index_mut.rs" 45 16 45 34] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type param_l_1);
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve l_13 };
-    l_13 <- param_l_1;
+    assume { Resolve0.resolve l_12 };
+    l_12 <- param_l_1;
     param_l_1 <- any borrowed (ListIndexMut_List_Type.listindexmut_list_type);
-    ix_14 <- param_ix_2;
+    ix_13 <- param_ix_2;
     goto BB2
   }
   BB2 {
-    invariant valid_ix { [#"../list_index_mut.rs" 48 26 48 56] (0 : usize) <= ix_14 /\ UInt64.to_int ix_14 < Len0.len ( * l_13) };
-    invariant get_target_now { [#"../list_index_mut.rs" 49 32 49 71] Get0.get ( * l_13) (UInt64.to_int ix_14) = Get0.get ( * old_l_9) (UInt64.to_int param_ix_2) };
-    invariant get_target_fin { [#"../list_index_mut.rs" 50 32 50 71] Get0.get ( ^ l_13) (UInt64.to_int ix_14) = Get0.get ( ^ old_l_9) (UInt64.to_int param_ix_2) };
-    invariant len { [#"../list_index_mut.rs" 48 4 48 58] Len0.len ( ^ l_13) = Len0.len ( * l_13) -> Len0.len ( ^ old_l_9) = Len0.len ( * old_l_9) };
-    invariant untouched { [#"../list_index_mut.rs" 48 4 48 58] (forall i : int . 0 <= i /\ i < Len0.len ( * l_13) /\ i <> UInt64.to_int ix_14 -> Get0.get ( ^ l_13) i = Get0.get ( * l_13) i) -> (forall i : int . 0 <= i /\ i < Len0.len ( * old_l_9) /\ i <> UInt64.to_int param_ix_2 -> Get0.get ( ^ old_l_9) i = Get0.get ( * old_l_9) i) };
-    _23 <- ix_14;
-    _22 <- ([#"../list_index_mut.rs" 57 10 57 16] _23 > (0 : usize));
-    switch (_22)
+    invariant valid_ix { [#"../list_index_mut.rs" 48 26 48 56] (0 : usize) <= ix_13 /\ UInt64.to_int ix_13 < Len0.len ( * l_12) };
+    invariant get_target_now { [#"../list_index_mut.rs" 49 32 49 71] Get0.get ( * l_12) (UInt64.to_int ix_13) = Get0.get ( * Deref0.deref old_l_9) (UInt64.to_int param_ix_2) };
+    invariant get_target_fin { [#"../list_index_mut.rs" 50 32 50 71] Get0.get ( ^ l_12) (UInt64.to_int ix_13) = Get0.get ( ^ Deref0.deref old_l_9) (UInt64.to_int param_ix_2) };
+    invariant len { [#"../list_index_mut.rs" 48 4 48 58] Len0.len ( ^ l_12) = Len0.len ( * l_12) -> Len0.len ( ^ Deref0.deref old_l_9) = Len0.len ( * Deref0.deref old_l_9) };
+    invariant untouched { [#"../list_index_mut.rs" 48 4 48 58] (forall i : int . 0 <= i /\ i < Len0.len ( * l_12) /\ i <> UInt64.to_int ix_13 -> Get0.get ( ^ l_12) i = Get0.get ( * l_12) i) -> (forall i : int . 0 <= i /\ i < Len0.len ( * Deref0.deref old_l_9) /\ i <> UInt64.to_int param_ix_2 -> Get0.get ( ^ Deref0.deref old_l_9) i = Get0.get ( * Deref0.deref old_l_9) i) };
+    _22 <- ix_13;
+    _21 <- ([#"../list_index_mut.rs" 57 10 57 16] _22 > (0 : usize));
+    switch (_21)
       | False -> goto BB7
       | True -> goto BB3
       end
   }
   BB3 {
-    switch (ListIndexMut_List_Type.listindexmut_list_type_List_1 ( * l_13))
+    switch (ListIndexMut_List_Type.listindexmut_list_type_List_1 ( * l_12))
       | ListIndexMut_Option_Type.ListIndexMut_Option_None_Type -> goto BB4
       | ListIndexMut_Option_Type.ListIndexMut_Option_Some_Type _ -> goto BB6
       end
   }
   BB4 {
-    assume { Resolve0.resolve l_13 };
+    assume { Resolve0.resolve l_12 };
     absurd
   }
   BB5 {
-    assume { Resolve0.resolve l_13 };
+    assume { Resolve0.resolve l_12 };
     absurd
   }
   BB6 {
-    n_26 <- borrow_mut (ListIndexMut_Option_Type.listindexmut_option_type_Some_0 (ListIndexMut_List_Type.listindexmut_list_type_List_1 ( * l_13)));
-    l_13 <- { l_13 with current = (let ListIndexMut_List_Type.ListIndexMut_List_Type a b =  * l_13 in ListIndexMut_List_Type.ListIndexMut_List_Type a (let ListIndexMut_Option_Type.ListIndexMut_Option_Some_Type a = ListIndexMut_List_Type.listindexmut_list_type_List_1 ( * l_13) in ListIndexMut_Option_Type.ListIndexMut_Option_Some_Type ( ^ n_26))) };
-    assume { Resolve0.resolve l_13 };
-    _27 <- borrow_mut ( * n_26);
-    n_26 <- { n_26 with current = ( ^ _27) };
-    assume { Resolve1.resolve n_26 };
-    assume { Resolve0.resolve l_13 };
-    l_13 <- _27;
-    _27 <- any borrowed (ListIndexMut_List_Type.listindexmut_list_type);
-    _24 <- ();
-    ix_14 <- ([#"../list_index_mut.rs" 64 8 64 15] ix_14 - (1 : usize));
-    _21 <- ();
+    n_25 <- borrow_mut (ListIndexMut_Option_Type.listindexmut_option_type_Some_0 (ListIndexMut_List_Type.listindexmut_list_type_List_1 ( * l_12)));
+    l_12 <- { l_12 with current = (let ListIndexMut_List_Type.ListIndexMut_List_Type a b =  * l_12 in ListIndexMut_List_Type.ListIndexMut_List_Type a (let ListIndexMut_Option_Type.ListIndexMut_Option_Some_Type a = ListIndexMut_List_Type.listindexmut_list_type_List_1 ( * l_12) in ListIndexMut_Option_Type.ListIndexMut_Option_Some_Type ( ^ n_25))) };
+    assume { Resolve0.resolve l_12 };
+    _26 <- borrow_mut ( * n_25);
+    n_25 <- { n_25 with current = ( ^ _26) };
+    assume { Resolve1.resolve n_25 };
+    assume { Resolve0.resolve l_12 };
+    l_12 <- _26;
+    _26 <- any borrowed (ListIndexMut_List_Type.listindexmut_list_type);
+    _23 <- ();
+    ix_13 <- ([#"../list_index_mut.rs" 64 8 64 15] ix_13 - (1 : usize));
+    _20 <- ();
     goto BB2
   }
   BB7 {
-    _15 <- ();
-    _32 <- borrow_mut (ListIndexMut_List_Type.listindexmut_list_type_List_0 ( * l_13));
-    l_13 <- { l_13 with current = (let ListIndexMut_List_Type.ListIndexMut_List_Type a b =  * l_13 in ListIndexMut_List_Type.ListIndexMut_List_Type ( ^ _32) b) };
-    assume { Resolve0.resolve l_13 };
-    _3 <- borrow_mut ( * _32);
-    _32 <- { _32 with current = ( ^ _3) };
-    assume { Resolve2.resolve _32 };
+    _14 <- ();
+    _31 <- borrow_mut (ListIndexMut_List_Type.listindexmut_list_type_List_0 ( * l_12));
+    l_12 <- { l_12 with current = (let ListIndexMut_List_Type.ListIndexMut_List_Type a b =  * l_12 in ListIndexMut_List_Type.ListIndexMut_List_Type ( ^ _31) b) };
+    assume { Resolve0.resolve l_12 };
+    _3 <- borrow_mut ( * _31);
+    _31 <- { _31 with current = ( ^ _3) };
+    assume { Resolve2.resolve _31 };
     _0 <- borrow_mut ( * _3);
     _3 <- { _3 with current = ( ^ _0) };
     assume { Resolve2.resolve _3 };

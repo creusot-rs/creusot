@@ -6,9 +6,38 @@ use crate::{
 use creusot_rustc::hir::def_id::DefId;
 use why3::{
     declaration::*,
-    exp::{BinOp, Exp},
+    exp::{BinOp, Binder, Exp},
     Ident,
 };
+
+fn binders_to_args(
+    ctx: &mut TranslationCtx,
+    binders: Vec<Binder>,
+) -> (Vec<why3::Exp>, Vec<Binder>) {
+    let mut args = Vec::new();
+    let mut out_binders = Vec::new();
+    let mut fresh = 0;
+    for b in binders {
+        match b {
+            Binder::Wild => {
+                args.push(Exp::pure_var(format!("_wild{fresh}").into()));
+                out_binders.push(Binder::Named(format!("_wild{fresh}").into()));
+                fresh += 1;
+            }
+            Binder::UnNamed(_) => unreachable!("unnamed parameter in logical function signature"),
+            Binder::Named(ref nm) => {
+                args.push(Exp::pure_var(nm.clone()));
+                out_binders.push(b);
+            }
+            Binder::Typed(ghost, binders, ty) => {
+                let (inner_args, inner_binders) = binders_to_args(ctx, binders);
+                args.extend(inner_args);
+                out_binders.push(Binder::Typed(ghost, inner_binders, ty));
+            }
+        }
+    }
+    (args, out_binders)
+}
 
 pub fn translate_logic_or_predicate<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
@@ -17,6 +46,16 @@ pub fn translate_logic_or_predicate<'tcx>(
     let mut names = CloneMap::new(ctx.tcx, def_id, false);
 
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
+    let mut val_sig = sig.clone();
+    val_sig.contract.variant = Vec::new();
+    let (val_args, val_binders) = binders_to_args(ctx, val_sig.args);
+    val_sig.contract.ensures = vec![Exp::BinaryOp(
+        BinOp::Eq,
+        box Exp::pure_var("result".into()),
+        box Exp::Call(box Exp::pure_var(sig.name.clone()), val_args),
+    )];
+    val_sig.args = val_binders;
+
     if util::is_predicate(ctx.tcx, def_id) {
         sig.retty = None;
     }
@@ -44,8 +83,9 @@ pub fn translate_logic_or_predicate<'tcx>(
 
     let proof_modl = proof_module(ctx, def_id);
     if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
-        let val = util::item_type(ctx.tcx, def_id).val(sig);
+        let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
         decls.push(Decl::ValDecl(val));
+        decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
     } else {
         let term = ctx.term(def_id).unwrap().clone();
         let body = specification::lower_pure(ctx, &mut names, ctx.param_env(def_id), term);
@@ -58,14 +98,17 @@ pub fn translate_logic_or_predicate<'tcx>(
                 _ => unreachable!(),
             };
             decls.push(decl);
+            decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
         } else if body.is_pure() {
             let def_sig = sig.clone();
-            let val = util::item_type(ctx.tcx, def_id).val(sig);
+            let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
             decls.push(Decl::ValDecl(val));
+            decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
             decls.push(Decl::Axiom(definition_axiom(&def_sig, body)));
         } else {
-            let val = util::item_type(ctx.tcx, def_id).val(sig);
+            let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
             decls.push(Decl::ValDecl(val));
+            decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
         }
     }
 

@@ -28,6 +28,19 @@ module InplaceListReversal_RevAppend
       | InplaceListReversal_List_Type.InplaceListReversal_List_Nil_Type -> o
       | InplaceListReversal_List_Type.InplaceListReversal_List_Cons_Type (hd, tl) -> rev_append tl (InplaceListReversal_List_Type.InplaceListReversal_List_Cons_Type (hd, o))
       end
+  val rev_append (n : InplaceListReversal_List_Type.inplacelistreversal_list_type t) (o : InplaceListReversal_List_Type.inplacelistreversal_list_type t) : InplaceListReversal_List_Type.inplacelistreversal_list_type t
+    ensures { result = rev_append n o }
+    
+end
+module CreusotContracts_Logic_Ghost_Ghost_Type
+  type creusotcontracts_logic_ghost_ghost_type 't =
+    | CreusotContracts_Logic_Ghost_Ghost_Type 't
+    
+  let function creusotcontracts_logic_ghost_ghost_type_Ghost_0 (self : creusotcontracts_logic_ghost_ghost_type 't) : 't
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | CreusotContracts_Logic_Ghost_Ghost_Type a -> a
+      end
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
@@ -36,6 +49,9 @@ end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
   predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
 end
 module Core_Mem_Replace_Interface
   type t
@@ -53,6 +69,22 @@ module Core_Mem_Replace
     ensures { result =  * dest }
     
 end
+module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+end
+module CreusotContracts_Logic_Ghost_Impl1_Inner
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t =
+    CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type_Ghost_0 self
+  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+    ensures { result = inner self }
+    
+end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
@@ -63,15 +95,12 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
      ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
-end
-module CreusotContracts_Logic_Ghost_Ghost_Type
-  use prelude.Opaque
-  type creusotcontracts_logic_ghost_ghost_type 't =
-    | CreusotContracts_Logic_Ghost_Ghost_Type opaque_ptr
-    
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
@@ -124,49 +153,50 @@ module InplaceListReversal_Rev
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = (t, InplaceListReversal_List_Type.inplacelistreversal_list_type t)
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = InplaceListReversal_List_Type.inplacelistreversal_list_type t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = InplaceListReversal_List_Type.inplacelistreversal_list_type t
+  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (InplaceListReversal_List_Type.inplacelistreversal_list_type t)
   clone Core_Mem_Replace_Interface as Replace0 with type t = InplaceListReversal_List_Type.inplacelistreversal_list_type t
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = borrowed (InplaceListReversal_List_Type.inplacelistreversal_list_type t)
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (InplaceListReversal_List_Type.inplacelistreversal_list_type t))
   let rec cfg rev [@cfg:stackify] [#"../inplace_list_reversal.rs" 23 0 23 30] (l : borrowed (InplaceListReversal_List_Type.inplacelistreversal_list_type t)) : ()
     ensures { [#"../inplace_list_reversal.rs" 22 10 22 35]  ^ l = RevAppend0.rev_append ( * l) (InplaceListReversal_List_Type.InplaceListReversal_List_Nil_Type) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var l_1 : borrowed (InplaceListReversal_List_Type.inplacelistreversal_list_type t);
-  ghost var old_l_3 : borrowed (InplaceListReversal_List_Type.inplacelistreversal_list_type t);
-  var _6 : ();
-  var prev_7 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
-  var head_8 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
-  var _9 : borrowed (InplaceListReversal_List_Type.inplacelistreversal_list_type t);
-  var _10 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
-  var _11 : ();
-  var _13 : ();
-  var _14 : isize;
-  var curr_15 : (t, InplaceListReversal_List_Type.inplacelistreversal_list_type t);
-  var next_16 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
+  var old_l_3 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (InplaceListReversal_List_Type.inplacelistreversal_list_type t));
+  var _5 : ();
+  var prev_6 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
+  var head_7 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
+  var _8 : borrowed (InplaceListReversal_List_Type.inplacelistreversal_list_type t);
+  var _9 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
+  var _10 : ();
+  var _12 : ();
+  var _13 : isize;
+  var curr_14 : (t, InplaceListReversal_List_Type.inplacelistreversal_list_type t);
+  var next_15 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
+  var _16 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
   var _17 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
-  var _18 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
-  var _19 : (t, InplaceListReversal_List_Type.inplacelistreversal_list_type t);
-  var _20 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
+  var _18 : (t, InplaceListReversal_List_Type.inplacelistreversal_list_type t);
+  var _19 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
+  var _20 : ();
   var _21 : ();
   var _22 : ();
-  var _23 : ();
-  var _24 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
+  var _23 : InplaceListReversal_List_Type.inplacelistreversal_list_type t;
   {
     l_1 <- l;
     goto BB0
   }
   BB0 {
-    _6 <- ();
-    old_l_3 <- ghost ([#"../inplace_list_reversal.rs" 24 16 24 28] l_1);
+    _5 <- ();
+    old_l_3 <- ([#"../inplace_list_reversal.rs" 24 16 24 28] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type l_1);
     goto BB1
   }
   BB1 {
     assume { Resolve0.resolve old_l_3 };
-    prev_7 <- InplaceListReversal_List_Type.InplaceListReversal_List_Nil_Type;
-    _9 <- borrow_mut ( * l_1);
-    l_1 <- { l_1 with current = ( ^ _9) };
-    _10 <- InplaceListReversal_List_Type.InplaceListReversal_List_Nil_Type;
-    head_8 <- ([#"../inplace_list_reversal.rs" 26 19 26 34] Replace0.replace _9 _10);
+    prev_6 <- InplaceListReversal_List_Type.InplaceListReversal_List_Nil_Type;
+    _8 <- borrow_mut ( * l_1);
+    l_1 <- { l_1 with current = ( ^ _8) };
+    _9 <- InplaceListReversal_List_Type.InplaceListReversal_List_Nil_Type;
+    head_7 <- ([#"../inplace_list_reversal.rs" 26 19 26 34] Replace0.replace _8 _9);
     goto BB2
   }
   BB2 {
@@ -176,69 +206,69 @@ module InplaceListReversal_Rev
     goto BB4
   }
   BB4 {
-    invariant x { [#"../inplace_list_reversal.rs" 27 19 27 76] RevAppend0.rev_append head_8 prev_7 = RevAppend0.rev_append ( * old_l_3) (InplaceListReversal_List_Type.InplaceListReversal_List_Nil_Type) };
-    switch (head_8)
+    invariant x { [#"../inplace_list_reversal.rs" 27 19 27 76] RevAppend0.rev_append head_7 prev_6 = RevAppend0.rev_append ( * Inner0.inner old_l_3) (InplaceListReversal_List_Type.InplaceListReversal_List_Nil_Type) };
+    switch (head_7)
       | InplaceListReversal_List_Type.InplaceListReversal_List_Cons_Type _ -> goto BB5
       | _ -> goto BB14
       end
   }
   BB5 {
-    assume { Resolve3.resolve curr_15 };
-    curr_15 <- InplaceListReversal_List_Type.inplacelistreversal_list_type_Cons_0 head_8;
-    head_8 <- (let InplaceListReversal_List_Type.InplaceListReversal_List_Cons_Type a = head_8 in InplaceListReversal_List_Type.InplaceListReversal_List_Cons_Type (any (t, InplaceListReversal_List_Type.inplacelistreversal_list_type t)));
-    assume { Resolve1.resolve next_16 };
-    next_16 <- (let (_, a) = curr_15 in a);
-    curr_15 <- (let (a, b) = curr_15 in (a, any InplaceListReversal_List_Type.inplacelistreversal_list_type t));
-    assume { Resolve1.resolve _17 };
-    _17 <- prev_7;
-    prev_7 <- any InplaceListReversal_List_Type.inplacelistreversal_list_type t;
-    assume { Resolve1.resolve (let (_, a) = curr_15 in a) };
-    curr_15 <- (let (a, b) = curr_15 in (a, _17));
+    assume { Resolve3.resolve curr_14 };
+    curr_14 <- InplaceListReversal_List_Type.inplacelistreversal_list_type_Cons_0 head_7;
+    head_7 <- (let InplaceListReversal_List_Type.InplaceListReversal_List_Cons_Type a = head_7 in InplaceListReversal_List_Type.InplaceListReversal_List_Cons_Type (any (t, InplaceListReversal_List_Type.inplacelistreversal_list_type t)));
+    assume { Resolve1.resolve next_15 };
+    next_15 <- (let (_, a) = curr_14 in a);
+    curr_14 <- (let (a, b) = curr_14 in (a, any InplaceListReversal_List_Type.inplacelistreversal_list_type t));
+    assume { Resolve1.resolve _16 };
+    _16 <- prev_6;
+    prev_6 <- any InplaceListReversal_List_Type.inplacelistreversal_list_type t;
+    assume { Resolve1.resolve (let (_, a) = curr_14 in a) };
+    curr_14 <- (let (a, b) = curr_14 in (a, _16));
     goto BB6
   }
   BB6 {
     goto BB7
   }
   BB7 {
-    assume { Resolve3.resolve _19 };
-    _19 <- curr_15;
-    curr_15 <- any (t, InplaceListReversal_List_Type.inplacelistreversal_list_type t);
-    _18 <- InplaceListReversal_List_Type.InplaceListReversal_List_Cons_Type _19;
+    assume { Resolve3.resolve _18 };
+    _18 <- curr_14;
+    curr_14 <- any (t, InplaceListReversal_List_Type.inplacelistreversal_list_type t);
+    _17 <- InplaceListReversal_List_Type.InplaceListReversal_List_Cons_Type _18;
     goto BB8
   }
   BB8 {
-    assume { Resolve1.resolve prev_7 };
-    prev_7 <- _18;
+    assume { Resolve1.resolve prev_6 };
+    prev_6 <- _17;
     goto BB9
   }
   BB9 {
     goto BB10
   }
   BB10 {
-    assume { Resolve1.resolve _20 };
-    _20 <- next_16;
-    next_16 <- any InplaceListReversal_List_Type.inplacelistreversal_list_type t;
-    assume { Resolve1.resolve head_8 };
-    head_8 <- _20;
+    assume { Resolve1.resolve _19 };
+    _19 <- next_15;
+    next_15 <- any InplaceListReversal_List_Type.inplacelistreversal_list_type t;
+    assume { Resolve1.resolve head_7 };
+    head_7 <- _19;
     goto BB11
   }
   BB11 {
     goto BB12
   }
   BB12 {
-    _13 <- ();
+    _12 <- ();
     goto BB13
   }
   BB13 {
     goto BB15
   }
   BB14 {
-    _11 <- ();
-    assume { Resolve1.resolve _24 };
-    _24 <- prev_7;
-    prev_7 <- any InplaceListReversal_List_Type.inplacelistreversal_list_type t;
+    _10 <- ();
+    assume { Resolve1.resolve _23 };
+    _23 <- prev_6;
+    prev_6 <- any InplaceListReversal_List_Type.inplacelistreversal_list_type t;
     assume { Resolve1.resolve ( * l_1) };
-    l_1 <- { l_1 with current = _24 };
+    l_1 <- { l_1 with current = _23 };
     goto BB16
   }
   BB15 {
@@ -253,7 +283,7 @@ module InplaceListReversal_Rev
     goto BB18
   }
   BB18 {
-    assume { Resolve1.resolve head_8 };
+    assume { Resolve1.resolve head_7 };
     goto BB19
   }
   BB19 {

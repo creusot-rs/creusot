@@ -389,9 +389,10 @@ pub fn ghost(assertion: TS1) -> TS1 {
     TS1::from(quote! {
         {
             (
+                #[creusot::no_translate]
                 #[creusot::decl::spec]
                 #[creusot::spec::ghost]
-                || { Ghost::new(&#assertion) }
+                || { Ghost(#assertion) }
             )()
         }
     })
