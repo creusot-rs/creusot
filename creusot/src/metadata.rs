@@ -180,20 +180,20 @@ pub(crate) struct BinaryMetadata<'tcx> {
 impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
         tcx: TyCtxt<'tcx>,
-        functions: &IndexMap<DefId, TranslatedItem<'tcx>>,
+        functions: &IndexMap<DefId, TranslatedItem>,
+        dependencies: &IndexMap<DefId, CloneSummary<'tcx>>,
         terms: &IndexMap<DefId, Term<'tcx>>,
         items: &CreusotItems,
         extern_specs: &HashMap<DefId, ExternSpec<'tcx>>,
     ) -> Self {
         let dependencies = functions
-            .iter()
-            .filter(|(def_id, _)| {
-                tcx.visibility(**def_id) == Visibility::Public && def_id.is_local()
-            })
-            .map(|(def_id, v)| {
+            .keys()
+            .filter(|def_id| tcx.visibility(**def_id) == Visibility::Public && def_id.is_local())
+            .map(|def_id| {
                 (
                     *def_id,
-                    v.local_dependencies()
+                    dependencies
+                        .get(def_id)
                         .map(Clone::clone)
                         .unwrap_or_default()
                         .into_iter()

@@ -39,7 +39,8 @@ pub struct TranslationCtx<'sess, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
     pub translated_items: IndexSet<DefId>,
     ty_binding_groups: HashMap<DefId, DefId>, // maps type ids to their 'representative type'
-    functions: IndexMap<DefId, TranslatedItem<'tcx>>,
+    functions: IndexMap<DefId, TranslatedItem>,
+    dependencies: IndexMap<DefId, CloneSummary<'tcx>>,
     terms: IndexMap<DefId, Term<'tcx>>,
     pub externs: Metadata<'tcx>,
     pub(crate) opts: &'sess Options,
@@ -64,6 +65,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             tcx,
             translated_items: Default::default(),
             functions: Default::default(),
+            dependencies: Default::default(),
             externs: Metadata::new(tcx),
             terms: Default::default(),
             creusot_items,
@@ -97,13 +99,15 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             }
             ItemType::AssocTy => {
                 let (modl, dependencies) = self.translate_assoc_ty(def_id);
+                self.dependencies.insert(def_id, dependencies);
                 self.translated_items.insert(def_id);
-                self.functions.insert(def_id, TranslatedItem::AssocTy { modl, dependencies });
+                self.functions.insert(def_id, TranslatedItem::AssocTy { modl });
             }
             ItemType::Constant => {
                 let (modl, dependencies) = self.translate_constant(def_id);
+                self.dependencies.insert(def_id, dependencies);
                 self.translated_items.insert(def_id);
-                self.functions.insert(def_id, TranslatedItem::Constant { modl, dependencies });
+                self.functions.insert(def_id, TranslatedItem::Constant { modl });
             }
             ItemType::Type => {
                 translate_tydecl(self, DUMMY_SP, def_id);
@@ -140,28 +144,23 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             debug!("translating {:?} as logical", def_id);
             let (modl, proof_modl, has_axioms, deps) =
                 crate::translation::translate_logic_or_predicate(self, def_id);
-            TranslatedItem::Logic {
-                interface,
-                modl,
-                proof_modl,
-                has_axioms,
-                dependencies: deps.summary(),
-            }
+            self.dependencies.insert(def_id, deps.summary());
+            TranslatedItem::Logic { interface, modl, proof_modl, has_axioms }
         } else if !def_id.is_local() {
             debug!("translating {:?} as extern", def_id);
 
-            let ext_modl = external::extern_module(self, def_id);
+            let (body, extern_deps) = external::extern_module(self, def_id);
 
-            TranslatedItem::Extern { interface, body: ext_modl.0, dependencies: ext_modl.1 }
+            if let Some(deps) = extern_deps {
+                self.dependencies.insert(def_id, deps);
+            }
+            TranslatedItem::Extern { interface, body }
         } else {
             debug!("translating {def_id:?} as program");
+
+            self.dependencies.insert(def_id, deps.summary());
             let modl = crate::translation::translate_function(self, def_id);
-            TranslatedItem::Program {
-                interface,
-                modl,
-                dependencies: deps.summary(),
-                has_axioms: self.tcx.is_closure(def_id),
-            }
+            TranslatedItem::Program { interface, modl, has_axioms: self.tcx.is_closure(def_id) }
         };
 
         self.functions.insert(def_id, translated);
@@ -250,20 +249,22 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     }
 
     pub fn add_trait(&mut self, def_id: DefId, laws: Vec<DefId>) {
-        self.functions
-            .insert(def_id, TranslatedItem::Trait { laws, dependencies: CloneSummary::new() });
+        self.dependencies.insert(def_id, CloneSummary::new());
+        self.functions.insert(def_id, TranslatedItem::Trait { laws });
     }
 
     pub fn add_impl(&mut self, def_id: DefId, laws: Vec<DefId>, modl: Module) {
-        self.functions
-            .insert(def_id, TranslatedItem::Impl { modl, laws, dependencies: CloneSummary::new() });
+        self.dependencies.insert(def_id, CloneSummary::new());
+        self.functions.insert(def_id, TranslatedItem::Impl { modl, laws });
     }
 
     pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
-        self.item(def_id).and_then(|f| f.dependencies(&self.externs))
+        self.dependencies.get(&def_id).or_else(|| {
+            self.item(def_id).and_then(|f| f.external_dependencies(&self.externs, def_id))
+        })
     }
 
-    pub fn item(&self, def_id: DefId) -> Option<&TranslatedItem<'tcx>> {
+    pub fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
         let def_id = self.ty_binding_groups.get(&def_id).unwrap_or(&def_id);
         self.functions.get(def_id)
     }
@@ -287,7 +288,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.opts.should_output
     }
 
-    pub fn modules(self) -> impl Iterator<Item = (DefId, TranslatedItem<'tcx>)> + Captures<'tcx> {
+    pub fn modules(self) -> impl Iterator<Item = (DefId, TranslatedItem)> + Captures<'tcx> {
         self.functions.into_iter()
     }
 
@@ -295,6 +296,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         BinaryMetadata::from_parts(
             self.tcx,
             &self.functions,
+            &self.dependencies,
             &self.terms,
             &self.creusot_items,
             &self.extern_specs,
