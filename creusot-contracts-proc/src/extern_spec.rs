@@ -111,7 +111,10 @@ impl TraitOrImpl {
 
 impl FlatSpec {
     pub fn to_tokens(mut self) -> TokenStream {
-        escape_self_in_contracts(&mut self.attrs).unwrap();
+        let err = escape_self_in_contracts(&mut self.attrs);
+        if let Err(e) = err {
+            return e.into_compile_error();
+        }
         let args: Punctuated<Expr, Comma> = self
             .inputs
             .clone()
