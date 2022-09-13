@@ -19,36 +19,36 @@ module C03KnuthShuffle_RandInRange
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
-  type core_ptr_nonnull_nonnull_type 't =
-    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
     
 end
 module Core_Marker_PhantomData_Type
-  type core_marker_phantomdata_type 't =
-    | Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
     
 end
 module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type
-  type core_ptr_unique_unique_type 't =
-    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
 module Alloc_RawVec_RawVec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Ptr_Unique_Unique_Type
-  type alloc_rawvec_rawvec_type 't 'a =
-    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
     
 end
 module Alloc_Vec_Vec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_RawVec_RawVec_Type
-  type alloc_vec_vec_type 't 'a =
-    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
 end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
@@ -57,8 +57,8 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -66,12 +66,12 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
-  val model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     ensures { result = model self }
     
-  axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
@@ -126,8 +126,8 @@ module CreusotContracts_Logic_Seq_Impl2_PermutationOf
     
 end
 module Alloc_Alloc_Global_Type
-  type alloc_alloc_global_type  =
-    | Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
     
 end
 module CreusotContracts_Std1_Vec_Impl0_ModelTy_Type
@@ -145,13 +145,12 @@ module CreusotContracts_Logic_Model_Impl1
   type t
 end
 module CreusotContracts_Logic_Ghost_Ghost_Type
-  type creusotcontracts_logic_ghost_ghost_type 't =
-    | CreusotContracts_Logic_Ghost_Ghost_Type 't
+  type t_ghost 't =
+    | C_Ghost 't
     
-  let function creusotcontracts_logic_ghost_ghost_type_Ghost_0 (self : creusotcontracts_logic_ghost_ghost_type 't) : 't
-   = [@vc:do_not_keep_trace] [@vc:sp]
+  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | CreusotContracts_Logic_Ghost_Ghost_Type a -> a
+      | C_Ghost a -> a
       end
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
@@ -168,16 +167,16 @@ end
 module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
   type t
   use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
 end
 module CreusotContracts_Logic_Ghost_Impl1_Inner
   type t
   use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t =
-    CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type_Ghost_0 self
-  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t =
+    CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
+  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
     ensures { result = inner self }
     
 end
@@ -189,9 +188,9 @@ module Alloc_Vec_Impl1_Len_Interface
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -203,9 +202,9 @@ module Alloc_Vec_Impl1_Len
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -235,10 +234,10 @@ module Alloc_Vec_Impl11_DerefMut_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t, type a = a, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
-  val deref_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) : borrowed (seq t)
+  val deref_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) : borrowed (seq t)
     ensures { Model0.model ( * result) = Model1.model ( * self) }
     ensures { Model0.model ( ^ result) = Model1.model ( ^ self) }
     
@@ -249,10 +248,10 @@ module Alloc_Vec_Impl11_DerefMut
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t, type a = a, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
-  val deref_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) : borrowed (seq t)
+  val deref_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) : borrowed (seq t)
     ensures { Model0.model ( * result) = Model1.model ( * self) }
     ensures { Model0.model ( ^ result) = Model1.model ( ^ self) }
     
@@ -328,76 +327,75 @@ end
 module C03KnuthShuffle_KnuthShuffle_Interface
   type t
   use prelude.Borrow
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Logic_Seq_Impl2_PermutationOf_Interface as PermutationOf0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model1 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val knuth_shuffle [@cfg:stackify] (v : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))) : ()
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val knuth_shuffle [@cfg:stackify] (v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : ()
     ensures { [#"../03_knuth_shuffle.rs" 12 10 12 34] PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
     
 end
 module C03KnuthShuffle_KnuthShuffle
   type t
   use prelude.Borrow
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Logic_Seq_Impl2_PermutationOf as PermutationOf0 with type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
   use mach.int.Int
   use prelude.UIntSize
   use prelude.Slice
   use seq.Seq
-  use CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = t
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model2 with type t = t, axiom .
   clone CreusotContracts_Logic_Model_Impl1_Model as Model3 with type t = seq t,
   type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model2.model
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = seq t
   clone Core_Slice_Impl0_Swap_Interface as Swap0 with type t = t, function Model0.model = Model3.model,
   function Model1.model = Model2.model
-  clone Alloc_Vec_Impl11_DerefMut_Interface as DerefMut0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model2.model,
-  function Model1.model = Model0.model
+  clone Alloc_Vec_Impl11_DerefMut_Interface as DerefMut0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model2.model, function Model1.model = Model0.model
   clone C03KnuthShuffle_RandInRange_Interface as RandInRange0
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type,
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
   function Model0.model = Model0.model
-  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)))
-  let rec cfg knuth_shuffle [@cfg:stackify] [#"../03_knuth_shuffle.rs" 13 0 13 39] (v : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type))) : ()
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+  let rec cfg knuth_shuffle [@cfg:stackify] [#"../03_knuth_shuffle.rs" 13 0 13 39] (v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : ()
     ensures { [#"../03_knuth_shuffle.rs" 12 10 12 34] PermutationOf0.permutation_of (Model0.model ( ^ v)) (Model1.model v) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var v_1 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
-  var old_v_3 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)));
+  var v_1 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
+  var old_v_3 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)));
   var _5 : ();
   var n_6 : usize;
   var _9 : ();
   var _10 : bool;
   var _11 : usize;
   var _12 : usize;
-  var _13 : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _13 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
   var upper_14 : usize;
   var _15 : usize;
-  var _16 : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _16 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
   var _17 : usize;
   var i_18 : usize;
   var _19 : usize;
   var _20 : ();
   var _21 : borrowed (seq t);
   var _22 : borrowed (seq t);
-  var _23 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _23 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var _24 : usize;
   var _25 : usize;
   var _26 : usize;
@@ -410,7 +408,7 @@ module C03KnuthShuffle_KnuthShuffle
   }
   BB0 {
     _5 <- ();
-    old_v_3 <- ([#"../03_knuth_shuffle.rs" 14 16 14 28] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type v_1);
+    old_v_3 <- ([#"../03_knuth_shuffle.rs" 14 16 14 28] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost v_1);
     goto BB1
   }
   BB1 {

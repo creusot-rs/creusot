@@ -453,7 +453,13 @@ impl Print for Use {
     where
         A::Doc: Clone,
     {
-        alloc.text("use ").append(self.name.pretty(alloc, env))
+        alloc.text("use ").append(self.name.pretty(alloc, env)).append(
+            if let Some(as_) = &self.as_ {
+                alloc.text(" as ").append(as_.pretty(alloc, env))
+            } else {
+                alloc.nil()
+            },
+        )
     }
 }
 

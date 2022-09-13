@@ -5,6 +5,7 @@ use creusot_rustc::{
     middle::ty::{
         subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, Subst, TraitRef, TyCtxt,
     },
+    resolve::Namespace,
     trait_selection::traits::ImplSource,
 };
 
@@ -133,7 +134,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         self.translated_items.insert(def_id);
 
         let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
-        let name = item_name(self.tcx, def_id);
+        let name = item_name(self.tcx, def_id, Namespace::TypeNS);
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
             creusot_rustc::middle::ty::ImplContainer => names.with_public_clones(|names| {
@@ -210,7 +211,7 @@ fn logic_refinement<'tcx>(
     let mut refn = trait_precond.implies(impl_precond).log_and(post_refn);
     refn = if args.is_empty() { refn } else { Exp::Forall(args, box refn) };
 
-    let name = item_name(ctx.tcx, impl_item_id);
+    let name = item_name(ctx.tcx, impl_item_id, Namespace::ValueNS);
 
     Goal { name: format!("{}_spec", &*name).into(), goal: refn }
 }

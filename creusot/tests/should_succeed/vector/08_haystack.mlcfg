@@ -1,41 +1,41 @@
 
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
-  type core_ptr_nonnull_nonnull_type 't =
-    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
     
 end
 module Core_Marker_PhantomData_Type
-  type core_marker_phantomdata_type 't =
-    | Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
     
 end
 module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type
-  type core_ptr_unique_unique_type 't =
-    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
 module Alloc_RawVec_RawVec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Ptr_Unique_Unique_Type
-  type alloc_rawvec_rawvec_type 't 'a =
-    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
     
 end
 module Alloc_Vec_Vec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_RawVec_RawVec_Type
-  type alloc_vec_vec_type 't 'a =
-    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
 end
 module Alloc_Alloc_Global_Type
-  type alloc_alloc_global_type  =
-    | Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
     
 end
 module CreusotContracts_Logic_Model_Model_ModelTy_Type
@@ -84,28 +84,28 @@ module C08Haystack_MatchAt_Interface
   use prelude.Borrow
   use mach.int.Int
   use prelude.UInt8
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  predicate match_at (needle : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (haystack : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (pos : int) (len : int)
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate match_at (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (pos : int) (len : int)
     
 end
 module C08Haystack_MatchAt
   use prelude.Borrow
   use mach.int.Int
   use prelude.UInt8
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use seq.Seq
   use mach.int.Int32
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = uint8,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  type a = Alloc_Alloc_Global_Type.t_global
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
-  predicate match_at [#"../08_haystack.rs" 7 0 7 77] (needle : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (haystack : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (pos : int) (len : int)
+  predicate match_at [#"../08_haystack.rs" 7 0 7 77] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (pos : int) (len : int)
     
    =
     [#"../08_haystack.rs" 8 4 12 5] len <= Seq.length (Model0.model needle) /\ pos <= Seq.length (Model0.model haystack) - len /\ (forall i : int . 0 <= i /\ i < len -> Seq.get (Model0.model needle) i = Seq.get (Model0.model haystack) (pos + i))
-  val match_at (needle : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (haystack : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (pos : int) (len : int) : bool
+  val match_at (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (pos : int) (len : int) : bool
     ensures { result = match_at needle haystack pos len }
     
 end
@@ -122,8 +122,8 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -131,12 +131,12 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
-  val model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     ensures { result = model self }
     
-  axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module Alloc_Vec_Impl1_Len_Interface
   type t
@@ -146,9 +146,9 @@ module Alloc_Vec_Impl1_Len_Interface
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -160,9 +160,9 @@ module Alloc_Vec_Impl1_Len
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -216,15 +216,15 @@ module Alloc_Vec_Impl16_Index_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -236,15 +236,15 @@ module Alloc_Vec_Impl16_Index
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -314,14 +314,14 @@ module C08Haystack_Search_Interface
   use prelude.Borrow
   use prelude.UInt8
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = uint8,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone C08Haystack_MatchAt_Interface as MatchAt0
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
-  val search [@cfg:stackify] (needle : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (haystack : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) : usize
+  val search [@cfg:stackify] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) : usize
     requires {[#"../08_haystack.rs" 15 11 15 71] Seq.length (Model0.model needle) >= 1 /\ Seq.length (Model0.model needle) <= Seq.length (Model0.model haystack)}
     ensures { [#"../08_haystack.rs" 16 10 16 91] UInt64.to_int result = Seq.length (Model0.model haystack) \/ UInt64.to_int result < Seq.length (Model0.model haystack) - Seq.length (Model0.model needle) + 1 }
     ensures { [#"../08_haystack.rs" 17 0 19 110] UInt64.to_int result < Seq.length (Model0.model haystack) -> MatchAt0.match_at needle haystack (UInt64.to_int result) (Seq.length (Model0.model needle)) /\ (forall i : int . 0 <= i /\ i < UInt64.to_int result -> not MatchAt0.match_at needle haystack i (Seq.length (Model0.model needle))) }
@@ -336,13 +336,13 @@ module C08Haystack_Search
   use prelude.Borrow
   use prelude.UInt8
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = uint8,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = uint8, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = uint8,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  type a = Alloc_Alloc_Global_Type.t_global
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
   clone C08Haystack_MatchAt as MatchAt0 with function Model0.model = Model0.model
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = uint8
@@ -350,12 +350,12 @@ module C08Haystack_Search
   clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = uint8
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = uint8
   clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = uint8, type i = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model1.model,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model1.model,
   predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
   type Output0.output = Output0.output
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = uint8,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model1.model
-  let rec cfg search [@cfg:stackify] [#"../08_haystack.rs" 21 0 21 60] (needle : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (haystack : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) : usize
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = uint8, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model1.model
+  let rec cfg search [@cfg:stackify] [#"../08_haystack.rs" 21 0 21 60] (needle : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) (haystack : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global)) : usize
     requires {[#"../08_haystack.rs" 15 11 15 71] Seq.length (Model0.model needle) >= 1 /\ Seq.length (Model0.model needle) <= Seq.length (Model0.model haystack)}
     ensures { [#"../08_haystack.rs" 16 10 16 91] UInt64.to_int result = Seq.length (Model0.model haystack) \/ UInt64.to_int result < Seq.length (Model0.model haystack) - Seq.length (Model0.model needle) + 1 }
     ensures { [#"../08_haystack.rs" 17 0 19 110] UInt64.to_int result < Seq.length (Model0.model haystack) -> MatchAt0.match_at needle haystack (UInt64.to_int result) (Seq.length (Model0.model needle)) /\ (forall i : int . 0 <= i /\ i < UInt64.to_int result -> not MatchAt0.match_at needle haystack i (Seq.length (Model0.model needle))) }
@@ -363,8 +363,8 @@ module C08Haystack_Search
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : usize;
-  var needle_1 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var haystack_2 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var needle_1 : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global);
+  var haystack_2 : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global);
   var _3 : ();
   var i_8 : usize;
   var _9 : ();
@@ -374,25 +374,25 @@ module C08Haystack_Search
   var _14 : usize;
   var _15 : usize;
   var _16 : usize;
-  var _17 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _17 : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global);
   var _18 : usize;
-  var _19 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _19 : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global);
   var j_20 : usize;
   var _21 : ();
   var _23 : bool;
   var _24 : usize;
   var _25 : usize;
-  var _26 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _26 : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global);
   var _27 : ();
   var _29 : ();
   var _30 : bool;
   var _31 : uint8;
   var _32 : uint8;
-  var _33 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _33 : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global);
   var _34 : usize;
   var _35 : uint8;
   var _36 : uint8;
-  var _37 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _37 : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global);
   var _38 : usize;
   var _39 : usize;
   var _40 : usize;
@@ -404,12 +404,12 @@ module C08Haystack_Search
   var _46 : bool;
   var _47 : usize;
   var _48 : usize;
-  var _49 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _49 : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global);
   var _50 : ();
   var _51 : ();
   var _52 : ();
   var _53 : ();
-  var _54 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint8 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _54 : Alloc_Vec_Vec_Type.t_vec uint8 (Alloc_Alloc_Global_Type.t_global);
   {
     needle_1 <- needle;
     haystack_2 <- haystack;

@@ -1,63 +1,62 @@
 
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
-  type core_ptr_nonnull_nonnull_type 't =
-    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
     
 end
 module Core_Marker_PhantomData_Type
-  type core_marker_phantomdata_type 't =
-    | Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
     
 end
 module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type
-  type core_ptr_unique_unique_type 't =
-    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
 module Alloc_RawVec_RawVec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Ptr_Unique_Unique_Type
-  type alloc_rawvec_rawvec_type 't 'a =
-    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
     
 end
 module Alloc_Vec_Vec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_RawVec_RawVec_Type
-  type alloc_vec_vec_type 't 'a =
-    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
 end
 module Alloc_Alloc_Global_Type
-  type alloc_alloc_global_type  =
-    | Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
     
 end
 module C16ImplCloning_Vec_Type
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  type c16implcloning_vec_type 't =
-    | C16ImplCloning_Vec_Type (Alloc_Vec_Vec_Type.alloc_vec_vec_type 't (Alloc_Alloc_Global_Type.alloc_alloc_global_type))
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  type t_vec 't =
+    | C_Vec (Alloc_Vec_Vec_Type.t_vec 't (Alloc_Alloc_Global_Type.t_global))
     
 end
 module C16ImplCloning_Impl0_Model_Interface
   type t
   use seq.Seq
-  use C16ImplCloning_Vec_Type
-  function model (self : C16ImplCloning_Vec_Type.c16implcloning_vec_type t) : Seq.seq t
+  use C16ImplCloning_Vec_Type as C16ImplCloning_Vec_Type
+  function model (self : C16ImplCloning_Vec_Type.t_vec t) : Seq.seq t
 end
 module C16ImplCloning_Impl0_Model
   type t
   use seq.Seq
-  use C16ImplCloning_Vec_Type
-  function model [#"../16_impl_cloning.rs" 10 4 10 35] (self : C16ImplCloning_Vec_Type.c16implcloning_vec_type t) : Seq.seq t
-    
-  val model (self : C16ImplCloning_Vec_Type.c16implcloning_vec_type t) : Seq.seq t
+  use C16ImplCloning_Vec_Type as C16ImplCloning_Vec_Type
+  function model [#"../16_impl_cloning.rs" 10 4 10 35] (self : C16ImplCloning_Vec_Type.t_vec t) : Seq.seq t
+  val model (self : C16ImplCloning_Vec_Type.t_vec t) : Seq.seq t
     ensures { result = model self }
     
 end
@@ -107,12 +106,12 @@ module CreusotContracts_Logic_Model_Impl1
 end
 module C16ImplCloning_Impl0
   type t
-  use C16ImplCloning_Vec_Type
+  use C16ImplCloning_Vec_Type as C16ImplCloning_Vec_Type
   clone C16ImplCloning_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone C16ImplCloning_Impl0_Model as Model0 with type t = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = C16ImplCloning_Vec_Type.c16implcloning_vec_type t,
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = C16ImplCloning_Vec_Type.t_vec t,
   function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = C16ImplCloning_Vec_Type.c16implcloning_vec_type t,
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = C16ImplCloning_Vec_Type.t_vec t,
   type modelTy = ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
@@ -135,30 +134,30 @@ end
 module C16ImplCloning_Test_Interface
   type t
   use prelude.Borrow
-  use C16ImplCloning_Vec_Type
   clone C16ImplCloning_Impl0_ModelTy_Type as ModelTy0 with type t = t
+  use C16ImplCloning_Vec_Type as C16ImplCloning_Vec_Type
   clone C16ImplCloning_Impl0_Model_Interface as Model1 with type t = t
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = C16ImplCloning_Vec_Type.c16implcloning_vec_type t,
+  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = C16ImplCloning_Vec_Type.t_vec t,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  val test [@cfg:stackify] (x : borrowed (C16ImplCloning_Vec_Type.c16implcloning_vec_type t)) : ()
+  val test [@cfg:stackify] (x : borrowed (C16ImplCloning_Vec_Type.t_vec t)) : ()
     ensures { [#"../16_impl_cloning.rs" 15 10 15 19] Model0.model x = Model1.model ( * x) }
     
 end
 module C16ImplCloning_Test
   type t
   use prelude.Borrow
-  use C16ImplCloning_Vec_Type
   clone C16ImplCloning_Impl0_ModelTy_Type as ModelTy0 with type t = t
+  use C16ImplCloning_Vec_Type as C16ImplCloning_Vec_Type
   clone C16ImplCloning_Impl0_Model as Model1 with type t = t
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = C16ImplCloning_Vec_Type.c16implcloning_vec_type t,
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = C16ImplCloning_Vec_Type.t_vec t,
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = C16ImplCloning_Vec_Type.c16implcloning_vec_type t
-  let rec cfg test [@cfg:stackify] [#"../16_impl_cloning.rs" 16 0 16 30] (x : borrowed (C16ImplCloning_Vec_Type.c16implcloning_vec_type t)) : ()
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = C16ImplCloning_Vec_Type.t_vec t
+  let rec cfg test [@cfg:stackify] [#"../16_impl_cloning.rs" 16 0 16 30] (x : borrowed (C16ImplCloning_Vec_Type.t_vec t)) : ()
     ensures { [#"../16_impl_cloning.rs" 15 10 15 19] Model0.model x = Model1.model ( * x) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var x_1 : borrowed (C16ImplCloning_Vec_Type.c16implcloning_vec_type t);
+  var x_1 : borrowed (C16ImplCloning_Vec_Type.t_vec t);
   {
     x_1 <- x;
     goto BB0

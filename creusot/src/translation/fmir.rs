@@ -14,6 +14,7 @@ use crate::{
 use creusot_rustc::{
     hir::{def::DefKind, def_id::DefId, Unsafety},
     middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyKind, TypeVisitable},
+    resolve::Namespace,
     smir::mir::{BasicBlock, BinOp, Body, Place, UnOp},
     span::{Span, Symbol, DUMMY_SP},
     target::abi::VariantIdx,
@@ -107,13 +108,13 @@ impl<'tcx> Expr<'tcx> {
 
                 match ctx.def_kind(id) {
                     DefKind::Closure => {
-                        let mut cons_name = item_name(ctx.tcx, id);
+                        let mut cons_name = item_name(ctx.tcx, id, Namespace::ValueNS);
                         cons_name.capitalize();
                         let ctor = names.insert(id, subst).qname_ident(cons_name);
                         Exp::Constructor { ctor, args }
                     }
                     _ => {
-                        let ctor = item_qname(ctx, id);
+                        let ctor = item_qname(ctx, id, Namespace::ValueNS);
                         Exp::Constructor { ctor, args }
                     }
                 }
@@ -223,7 +224,7 @@ pub enum Terminator<'tcx> {
 pub enum Branches<'tcx> {
     Int(Vec<(i128, BasicBlock)>, BasicBlock),
     Uint(Vec<(u128, BasicBlock)>, BasicBlock),
-    Constructor(AdtDef<'tcx>, Vec<(VariantIdx, BasicBlock)>, BasicBlock),
+    Constructor(AdtDef<'tcx>, SubstsRef<'tcx>, Vec<(VariantIdx, BasicBlock)>, BasicBlock),
     Bool(BasicBlock, BasicBlock),
 }
 
@@ -239,7 +240,7 @@ impl<'tcx> Terminator<'tcx> {
             Terminator::Goto(bb) => Goto(BlockId(bb.into())),
             Terminator::Switch(switch, branches) => {
                 let discr = switch.to_why(ctx, names, body);
-                branches.to_why(ctx, discr)
+                branches.to_why(ctx, names, discr)
             }
             Terminator::Return => Return,
             Terminator::Abort => Absurd,
@@ -248,7 +249,12 @@ impl<'tcx> Terminator<'tcx> {
 }
 
 impl<'tcx> Branches<'tcx> {
-    fn to_why(self, ctx: &mut TranslationCtx<'_, 'tcx>, discr: Exp) -> mlcfg::Terminator {
+    fn to_why(
+        self,
+        ctx: &mut TranslationCtx<'_, 'tcx>,
+        names: &mut CloneMap<'tcx>,
+        discr: Exp,
+    ) -> mlcfg::Terminator {
         use why3::mlcfg::Terminator::*;
 
         match self {
@@ -282,9 +288,10 @@ impl<'tcx> Branches<'tcx> {
                     )
                 })
             }
-            Branches::Constructor(adt, vars, def) => {
+            Branches::Constructor(adt, substs, vars, def) => {
                 use crate::util::constructor_qname;
                 let count = adt.variants().len();
+                names.insert(adt.did(), substs);
                 let brs = vars
                     .into_iter()
                     .map(|(var, bb)| {

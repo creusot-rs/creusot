@@ -149,26 +149,35 @@ pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
 }
 
 pub fn constructor_qname(ctx: &TranslationCtx, var: &VariantDef) -> QName {
-    item_qname(ctx, var.def_id)
+    QName {
+        module: vec![module_name(ctx, var.def_id)],
+        name: item_name(ctx.tcx, var.def_id, Namespace::ValueNS).to_string().into(),
+    }
 }
 
-pub fn item_qname(ctx: &TranslationCtx, def_id: DefId) -> QName {
-    QName { module: vec![module_name(ctx, def_id)], name: item_name(ctx.tcx, def_id) }
+pub fn item_qname(ctx: &TranslationCtx, def_id: DefId, ns: Namespace) -> QName {
+    QName { module: vec![module_name(ctx, def_id)], name: item_name(ctx.tcx, def_id, ns) }
 }
 
-// This function will produce an invalid identifier for types.
-// To create a valid type identifier you must used `ty::translate_ty_name`
-// The reason for this that we cannot distinguish a struct being used in a type
-// from a struct being used as a constructor! (very annoying).
-pub fn item_name(tcx: TyCtxt, def_id: DefId) -> Ident {
+pub fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
     use creusot_rustc::hir::def::DefKind::*;
 
     match tcx.def_kind(def_id) {
         AssocTy => ident_of_ty(tcx.item_name(def_id)),
-        Ctor(_, _) | Variant | Struct | Enum | Union => ident_path(tcx, def_id),
+        Ctor(_, _) => format!("C_{}", tcx.item_name(def_id)).into(),
+        Struct | Variant | Union if ns == Namespace::ValueNS => {
+            format!("C_{}", tcx.item_name(def_id)).into()
+        }
+        Variant | Struct | Enum | Union => {
+            format!("t_{}", tcx.item_name(def_id).as_str().to_ascii_lowercase()).into()
+        }
         Closure => {
             let mut id = ident_path(tcx, def_id);
-            id.decapitalize();
+            if ns == Namespace::TypeNS {
+                id = id.to_string().to_ascii_lowercase().into();
+            } else {
+                id.decapitalize();
+            }
             id
         }
 
@@ -386,7 +395,7 @@ pub fn signature_of<'tcx>(
         contract.visit_mut(pre_subst, post_subst.clone(), post_subst);
     }
 
-    let name = item_name(ctx.tcx, def_id);
+    let name = item_name(ctx.tcx, def_id, Namespace::ValueNS);
 
     let span = ctx.tcx.def_span(def_id);
 

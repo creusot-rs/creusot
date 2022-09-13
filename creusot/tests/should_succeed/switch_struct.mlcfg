@@ -2,37 +2,36 @@
 module SwitchStruct_M_Type
   use mach.int.Int
   use mach.int.UInt32
-  type switchstruct_m_type 't =
-    | SwitchStruct_M_F_Type uint32
-    | SwitchStruct_M_G_Type 't
+  type t_m 't =
+    | C_F uint32
+    | C_G 't
     
-  let function switchstruct_m_type_G_field2 (self : switchstruct_m_type 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+  let function g_field2 (self : t_m 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | SwitchStruct_M_F_Type _ -> any 't
-      | SwitchStruct_M_G_Type a -> a
+      | C_F _ -> any 't
+      | C_G a -> a
       end
-  let function switchstruct_m_type_F_field1 (self : switchstruct_m_type 't) : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
+  let function f_field1 (self : t_m 't) : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | SwitchStruct_M_F_Type a -> a
-      | SwitchStruct_M_G_Type _ -> any uint32
+      | C_F a -> a
+      | C_G _ -> any uint32
       end
 end
 module SwitchStruct_Test_Interface
   use mach.int.Int
   use mach.int.UInt32
-  use SwitchStruct_M_Type
-  val test [@cfg:stackify] (o : SwitchStruct_M_Type.switchstruct_m_type uint32) : bool
+  use SwitchStruct_M_Type as SwitchStruct_M_Type
+  val test [@cfg:stackify] (o : SwitchStruct_M_Type.t_m uint32) : bool
 end
 module SwitchStruct_Test
   use mach.int.Int
   use mach.int.UInt32
-  use SwitchStruct_M_Type
+  use SwitchStruct_M_Type as SwitchStruct_M_Type
   use prelude.IntSize
-  let rec cfg test [@cfg:stackify] [#"../switch_struct.rs" 8 0 8 30] (o : SwitchStruct_M_Type.switchstruct_m_type uint32) : bool
-    
+  let rec cfg test [@cfg:stackify] [#"../switch_struct.rs" 8 0 8 30] (o : SwitchStruct_M_Type.t_m uint32) : bool
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : bool;
-  var o_1 : SwitchStruct_M_Type.switchstruct_m_type uint32;
+  var o_1 : SwitchStruct_M_Type.t_m uint32;
   var _2 : isize;
   var field1_3 : uint32;
   var _4 : uint32;
@@ -44,12 +43,12 @@ module SwitchStruct_Test
   }
   BB0 {
     switch (o_1)
-      | SwitchStruct_M_Type.SwitchStruct_M_F_Type _ -> goto BB3
-      | SwitchStruct_M_Type.SwitchStruct_M_G_Type _ -> goto BB1
+      | SwitchStruct_M_Type.C_F _ -> goto BB3
+      | SwitchStruct_M_Type.C_G _ -> goto BB1
       end
   }
   BB1 {
-    field2_5 <- SwitchStruct_M_Type.switchstruct_m_type_G_field2 o_1;
+    field2_5 <- SwitchStruct_M_Type.g_field2 o_1;
     _6 <- field2_5;
     _0 <- ([#"../switch_struct.rs" 12 24 12 35] _6 = (0 : uint32));
     goto BB4
@@ -58,7 +57,7 @@ module SwitchStruct_Test
     absurd
   }
   BB3 {
-    field1_3 <- SwitchStruct_M_Type.switchstruct_m_type_F_field1 o_1;
+    field1_3 <- SwitchStruct_M_Type.f_field1 o_1;
     _4 <- field1_3;
     _0 <- ([#"../switch_struct.rs" 11 24 11 34] _4 > (0 : uint32));
     goto BB4

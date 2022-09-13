@@ -1,41 +1,40 @@
 
 module Hashmap_List_Type
-  type hashmap_list_type 't =
-    | Hashmap_List_Nil_Type
-    | Hashmap_List_Cons_Type 't (hashmap_list_type 't)
+  type t_list 't =
+    | C_Nil
+    | C_Cons 't (t_list 't)
     
-  let function hashmap_list_type_Cons_0 (self : hashmap_list_type 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+  let function cons_0 (self : t_list 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | Hashmap_List_Nil_Type -> any 't
-      | Hashmap_List_Cons_Type a _ -> a
+      | C_Nil -> any 't
+      | C_Cons a _ -> a
       end
-  let function hashmap_list_type_Cons_1 (self : hashmap_list_type 't) : hashmap_list_type 't
-   = [@vc:do_not_keep_trace] [@vc:sp]
+  let function cons_1 (self : t_list 't) : t_list 't = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | Hashmap_List_Nil_Type -> any hashmap_list_type 't
-      | Hashmap_List_Cons_Type _ a -> a
+      | C_Nil -> any t_list 't
+      | C_Cons _ a -> a
       end
 end
 module Hashmap_Impl0_Clone_Interface
   type t
   use prelude.Borrow
-  use Hashmap_List_Type
-  val clone' [@cfg:stackify] (self : Hashmap_List_Type.hashmap_list_type t) : Hashmap_List_Type.hashmap_list_type t
+  use Hashmap_List_Type as Hashmap_List_Type
+  val clone' [@cfg:stackify] (self : Hashmap_List_Type.t_list t) : Hashmap_List_Type.t_list t
     ensures { [#"../hashmap.rs" 11 14 11 29] result = self }
     
 end
 module Hashmap_Impl0_Clone
   type t
   use prelude.Borrow
-  use Hashmap_List_Type
-  val clone' [@cfg:stackify] (self : Hashmap_List_Type.hashmap_list_type t) : Hashmap_List_Type.hashmap_list_type t
+  use Hashmap_List_Type as Hashmap_List_Type
+  val clone' [@cfg:stackify] (self : Hashmap_List_Type.t_list t) : Hashmap_List_Type.t_list t
     ensures { [#"../hashmap.rs" 11 14 11 29] result = self }
     
 end
 module Core_Option_Option_Type
-  type core_option_option_type 't =
-    | Core_Option_Option_None_Type
-    | Core_Option_Option_Some_Type 't
+  type t_option 't =
+    | C_None
+    | C_Some 't
     
 end
 module CreusotContracts_Logic_Model_Model_ModelTy_Type
@@ -58,56 +57,55 @@ end
 module Hashmap_Impl1_Get_Interface
   type k
   type v
-  use Core_Option_Option_Type
-  use Hashmap_List_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
-  function get (self : Hashmap_List_Type.hashmap_list_type (k, v)) (index : ModelTy0.modelTy) : Core_Option_Option_Type.core_option_option_type v
-    
+  use Hashmap_List_Type as Hashmap_List_Type
+  function get (self : Hashmap_List_Type.t_list (k, v)) (index : ModelTy0.modelTy) : Core_Option_Option_Type.t_option v
 end
 module Hashmap_Impl1_Get
   type k
   type v
-  use Core_Option_Option_Type
-  use Hashmap_List_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
+  use Hashmap_List_Type as Hashmap_List_Type
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = k,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  function get [#"../hashmap.rs" 23 4 23 48] (self : Hashmap_List_Type.hashmap_list_type (k, v)) (index : ModelTy0.modelTy) : Core_Option_Option_Type.core_option_option_type v
+  function get [#"../hashmap.rs" 23 4 23 48] (self : Hashmap_List_Type.t_list (k, v)) (index : ModelTy0.modelTy) : Core_Option_Option_Type.t_option v
     
    =
     [#"../hashmap.rs" 25 12 28 13] match (self) with
-      | Hashmap_List_Type.Hashmap_List_Nil_Type -> Core_Option_Option_Type.Core_Option_Option_None_Type
-      | Hashmap_List_Type.Hashmap_List_Cons_Type (k, v) tl -> if Model0.model k = index then
-        Core_Option_Option_Type.Core_Option_Option_Some_Type v
+      | Hashmap_List_Type.C_Nil -> Core_Option_Option_Type.C_None
+      | Hashmap_List_Type.C_Cons (k, v) tl -> if Model0.model k = index then
+        Core_Option_Option_Type.C_Some v
       else
         get tl index
       
       end
-  val get (self : Hashmap_List_Type.hashmap_list_type (k, v)) (index : ModelTy0.modelTy) : Core_Option_Option_Type.core_option_option_type v
+  val get (self : Hashmap_List_Type.t_list (k, v)) (index : ModelTy0.modelTy) : Core_Option_Option_Type.t_option v
     ensures { result = get self index }
     
 end
 module Hashmap_Impl1_NoDoubleBinding_Interface
   type k
   type v
-  use Hashmap_List_Type
-  predicate no_double_binding (self : Hashmap_List_Type.hashmap_list_type (k, v))
+  use Hashmap_List_Type as Hashmap_List_Type
+  predicate no_double_binding (self : Hashmap_List_Type.t_list (k, v))
 end
 module Hashmap_Impl1_NoDoubleBinding
   type k
   type v
-  use Hashmap_List_Type
-  use Core_Option_Option_Type
+  use Hashmap_List_Type as Hashmap_List_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Hashmap_Impl1_Get_Interface as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = k,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  predicate no_double_binding [#"../hashmap.rs" 33 4 33 38] (self : Hashmap_List_Type.hashmap_list_type (k, v)) =
+  predicate no_double_binding [#"../hashmap.rs" 33 4 33 38] (self : Hashmap_List_Type.t_list (k, v)) =
     [#"../hashmap.rs" 35 12 38 13] match (self) with
-      | Hashmap_List_Type.Hashmap_List_Nil_Type -> true
-      | Hashmap_List_Type.Hashmap_List_Cons_Type (k, _) tl -> Get0.get tl (Model0.model k) = Core_Option_Option_Type.Core_Option_Option_None_Type /\ no_double_binding tl
+      | Hashmap_List_Type.C_Nil -> true
+      | Hashmap_List_Type.C_Cons (k, _) tl -> Get0.get tl (Model0.model k) = Core_Option_Option_Type.C_None /\ no_double_binding tl
       end
-  val no_double_binding (self : Hashmap_List_Type.hashmap_list_type (k, v)) : bool
+  val no_double_binding (self : Hashmap_List_Type.t_list (k, v)) : bool
     ensures { result = no_double_binding self }
     
 end
@@ -208,55 +206,55 @@ module Hashmap_Impl2_HashLogEqModel_Impl
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
-  type core_ptr_nonnull_nonnull_type 't =
-    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
     
 end
 module Core_Marker_PhantomData_Type
-  type core_marker_phantomdata_type 't =
-    | Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
     
 end
 module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type
-  type core_ptr_unique_unique_type 't =
-    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
 module Alloc_RawVec_RawVec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Ptr_Unique_Unique_Type
-  type alloc_rawvec_rawvec_type 't 'a =
-    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
     
 end
 module Alloc_Vec_Vec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_RawVec_RawVec_Type
-  type alloc_vec_vec_type 't 'a =
-    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
 end
 module Alloc_Alloc_Global_Type
-  type alloc_alloc_global_type  =
-    | Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
     
 end
 module Hashmap_MyHashMap_Type
-  use Alloc_Alloc_Global_Type
-  use Hashmap_List_Type
-  use Alloc_Vec_Vec_Type
-  type hashmap_myhashmap_type 'k 'v =
-    | Hashmap_MyHashMap_Type (Alloc_Vec_Vec_Type.alloc_vec_vec_type (Hashmap_List_Type.hashmap_list_type ('k, 'v)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type))
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  type t_myhashmap 'k 'v =
+    | C_MyHashMap (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list ('k, 'v)) (Alloc_Alloc_Global_Type.t_global))
     
-  let function hashmap_myhashmap_type_MyHashMap_buckets (self : hashmap_myhashmap_type 'k 'v) : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Hashmap_List_Type.hashmap_list_type ('k, 'v)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  let function myhashmap_buckets (self : t_myhashmap 'k 'v) : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list ('k, 'v)) (Alloc_Alloc_Global_Type.t_global)
     
    = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | Hashmap_MyHashMap_Type a -> a
+      | C_MyHashMap a -> a
       end
 end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
@@ -265,8 +263,8 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -274,12 +272,12 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
-  val model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     ensures { result = model self }
     
-  axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module Hashmap_Hash_HashLog_Interface
   type self
@@ -301,53 +299,50 @@ module Hashmap_Impl4_BucketIx_Interface
   type k
   type v
   use mach.int.Int
-  use Hashmap_MyHashMap_Type
-  function bucket_ix (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) (k : k) : int
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  function bucket_ix (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (k : k) : int
 end
 module Hashmap_Impl4_BucketIx
   type k
   type v
   use mach.int.Int
-  use Hashmap_MyHashMap_Type
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   use seq.Seq
-  use Alloc_Alloc_Global_Type
-  use Hashmap_List_Type
-  use Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Hashmap_List_Type.t_list (k, v),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
   clone Hashmap_Hash_HashLog_Interface as HashLog0 with type self = k, axiom .
-  function bucket_ix [#"../hashmap.rs" 97 4 97 35] (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) (k : k) : int
-    
-   =
-    [#"../hashmap.rs" 98 20 98 56] Int.mod (HashLog0.hash_log k) (Seq.length (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets self)))
-  val bucket_ix (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) (k : k) : int
+  function bucket_ix [#"../hashmap.rs" 97 4 97 35] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (k : k) : int =
+    [#"../hashmap.rs" 98 20 98 56] Int.mod (HashLog0.hash_log k) (Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets self)))
+  val bucket_ix (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (k : k) : int
     ensures { result = bucket_ix self k }
     
 end
 module Hashmap_Impl4_Bucket_Interface
   type k
   type v
-  use Hashmap_List_Type
-  use Hashmap_MyHashMap_Type
-  function bucket (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) (k : k) : Hashmap_List_Type.hashmap_list_type (k, v)
-    
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  function bucket (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (k : k) : Hashmap_List_Type.t_list (k, v)
 end
 module Hashmap_Impl4_Bucket
   type k
   type v
-  use Hashmap_List_Type
-  use Hashmap_MyHashMap_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   use seq.Seq
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Hashmap_Impl4_BucketIx_Interface as BucketIx0 with type k = k, type v = v
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  function bucket [#"../hashmap.rs" 92 4 92 41] (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) (k : k) : Hashmap_List_Type.hashmap_list_type (k, v)
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Hashmap_List_Type.t_list (k, v),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  function bucket [#"../hashmap.rs" 92 4 92 41] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (k : k) : Hashmap_List_Type.t_list (k, v)
     
    =
-    [#"../hashmap.rs" 93 8 93 58] Seq.get (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets self)) (BucketIx0.bucket_ix self k)
-  val bucket (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) (k : k) : Hashmap_List_Type.hashmap_list_type (k, v)
+    [#"../hashmap.rs" 93 8 93 58] Seq.get (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets self)) (BucketIx0.bucket_ix self k)
+  val bucket (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (k : k) : Hashmap_List_Type.t_list (k, v)
     ensures { result = bucket self k }
     
 end
@@ -355,62 +350,61 @@ module Hashmap_Impl3_Model_Interface
   type k
   type v
   use map.Map
-  use Hashmap_List_Type
-  use Core_Option_Option_Type
-  use Hashmap_MyHashMap_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone Hashmap_Impl1_Get_Interface as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy0.modelTy
   clone Hashmap_Impl4_Bucket_Interface as Bucket0 with type k = k, type v = v
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = k,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  function model (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) : Map.map ModelTy0.modelTy (Core_Option_Option_Type.core_option_option_type v)
+  function model (self : Hashmap_MyHashMap_Type.t_myhashmap k v) : Map.map ModelTy0.modelTy (Core_Option_Option_Type.t_option v)
     
 end
 module Hashmap_Impl3_Model
   type k
   type v
   use map.Map
-  use Hashmap_List_Type
-  use Core_Option_Option_Type
-  use Hashmap_MyHashMap_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone Hashmap_Impl1_Get_Interface as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy0.modelTy
   clone Hashmap_Impl4_Bucket_Interface as Bucket0 with type k = k, type v = v
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = k,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  function model [#"../hashmap.rs" 86 4 86 35] (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) : Map.map ModelTy0.modelTy (Core_Option_Option_Type.core_option_option_type v)
+  function model [#"../hashmap.rs" 86 4 86 35] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) : Map.map ModelTy0.modelTy (Core_Option_Option_Type.t_option v)
     
-  val model (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) : Map.map ModelTy0.modelTy (Core_Option_Option_Type.core_option_option_type v)
+  val model (self : Hashmap_MyHashMap_Type.t_myhashmap k v) : Map.map ModelTy0.modelTy (Core_Option_Option_Type.t_option v)
     ensures { result = model self }
     
-  axiom model_spec : forall self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v . [#"../hashmap.rs" 85 4 85 70] forall k : k . Map.get (model self) (Model0.model k) = Get0.get (Bucket0.bucket self k) (Model0.model k)
+  axiom model_spec : forall self : Hashmap_MyHashMap_Type.t_myhashmap k v . [#"../hashmap.rs" 85 4 85 70] forall k : k . Map.get (model self) (Model0.model k) = Get0.get (Bucket0.bucket self k) (Model0.model k)
 end
 module Hashmap_Impl5_GoodBucket_Interface
   type k
   type v
   use mach.int.Int
-  use Hashmap_List_Type
-  use Hashmap_MyHashMap_Type
-  predicate good_bucket (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) (l : Hashmap_List_Type.hashmap_list_type (k, v)) (h : int)
-    
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  predicate good_bucket (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int)
 end
 module Hashmap_Impl5_GoodBucket
   type k
   type v
   use mach.int.Int
-  use Hashmap_List_Type
-  use Hashmap_MyHashMap_Type
-  use Core_Option_Option_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
   clone Hashmap_Impl4_BucketIx_Interface as BucketIx0 with type k = k, type v = v
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Hashmap_Impl1_Get_Interface as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = k,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  predicate good_bucket [#"../hashmap.rs" 209 4 209 57] (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) (l : Hashmap_List_Type.hashmap_list_type (k, v)) (h : int)
+  predicate good_bucket [#"../hashmap.rs" 209 4 209 57] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int)
     
    =
-    [#"../hashmap.rs" 210 8 212 9] forall v : v . forall k : k . Get0.get l (Model0.model k) = Core_Option_Option_Type.Core_Option_Option_Some_Type v -> BucketIx0.bucket_ix self k = h
-  val good_bucket (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) (l : Hashmap_List_Type.hashmap_list_type (k, v)) (h : int) : bool
+    [#"../hashmap.rs" 210 8 212 9] forall v : v . forall k : k . Get0.get l (Model0.model k) = Core_Option_Option_Type.C_Some v -> BucketIx0.bucket_ix self k = h
+  val good_bucket (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (l : Hashmap_List_Type.t_list (k, v)) (h : int) : bool
     ensures { result = good_bucket self l h }
     
 end
@@ -418,27 +412,27 @@ module Hashmap_Impl5_HashmapInv_Interface
   type k
   type v
   use prelude.Borrow
-  use Hashmap_MyHashMap_Type
-  predicate hashmap_inv (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v)
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  predicate hashmap_inv (self : Hashmap_MyHashMap_Type.t_myhashmap k v)
 end
 module Hashmap_Impl5_HashmapInv
   type k
   type v
   use prelude.Borrow
-  use Hashmap_MyHashMap_Type
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
-  use Alloc_Alloc_Global_Type
-  use Hashmap_List_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Hashmap_Impl1_NoDoubleBinding_Interface as NoDoubleBinding0 with type k = k, type v = v
   clone Hashmap_Impl5_GoodBucket_Interface as GoodBucket0 with type k = k, type v = v
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  predicate hashmap_inv [#"../hashmap.rs" 218 4 218 33] (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) =
-    [#"../hashmap.rs" 219 8 222 9] 0 < Seq.length (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets self)) -> GoodBucket0.good_bucket self (Seq.get (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets self)) i) i /\ NoDoubleBinding0.no_double_binding (Seq.get (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets self)) i))
-  val hashmap_inv (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) : bool
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Hashmap_List_Type.t_list (k, v),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  predicate hashmap_inv [#"../hashmap.rs" 218 4 218 33] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) =
+    [#"../hashmap.rs" 219 8 222 9] 0 < Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets self)) /\ (forall i : int . 0 <= i /\ i < Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets self)) -> GoodBucket0.good_bucket self (Seq.get (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets self)) i) i /\ NoDoubleBinding0.no_double_binding (Seq.get (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets self)) i))
+  val hashmap_inv (self : Hashmap_MyHashMap_Type.t_myhashmap k v) : bool
     ensures { result = hashmap_inv self }
     
 end
@@ -446,26 +440,26 @@ module Hashmap_Impl3_ModelTy_Type
   type k
   type v
   use map.Map
-  use Core_Option_Option_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
   type modelTy  =
-    Map.map ModelTy0.modelTy (Core_Option_Option_Type.core_option_option_type v)
+    Map.map ModelTy0.modelTy (Core_Option_Option_Type.t_option v)
 end
 module Hashmap_Impl3
   type k
   type v
-  use Alloc_Alloc_Global_Type
-  use Hashmap_List_Type
-  use Alloc_Vec_Vec_Type
-  use Hashmap_MyHashMap_Type
-  use Core_Option_Option_Type
   clone Hashmap_Hash_HashLog as HashLog0 with type self = k, axiom .
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = Hashmap_List_Type.t_list (k, v),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone Hashmap_Impl4_BucketIx as BucketIx0 with type k = k, type v = v, function HashLog0.hash_log = HashLog0.hash_log,
   function Model0.model = Model3.model
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy2 with type self = k
   clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = k, type ModelTy0.modelTy = ModelTy2.modelTy
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Hashmap_Impl1_Get as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy2.modelTy,
   function Model0.model = Model2.model
   clone Hashmap_Impl4_Bucket as Bucket0 with type k = k, type v = v, function Model0.model = Model3.model,
@@ -474,9 +468,9 @@ module Hashmap_Impl3
   clone Hashmap_Impl3_Model as Model0 with type k = k, type v = v, function Model0.model = Model2.model,
   function Bucket0.bucket = Bucket0.bucket, function Get0.get = Get0.get, type ModelTy0.modelTy = ModelTy2.modelTy,
   axiom .
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v,
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = Hashmap_MyHashMap_Type.t_myhashmap k v,
   function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v,
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = Hashmap_MyHashMap_Type.t_myhashmap k v,
   type modelTy = ModelTy0.modelTy
 end
 module CreusotContracts_Std1_Vec_Impl0
@@ -511,11 +505,11 @@ module Alloc_Vec_FromElem_Interface
   use mach.int.Int
   use mach.int.Int32
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val from_elem [@cfg:stackify] (elem : t) (n : usize) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val from_elem [@cfg:stackify] (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
     ensures { forall i : int . 0 <= i /\ i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
@@ -527,11 +521,11 @@ module Alloc_Vec_FromElem
   use mach.int.Int
   use mach.int.Int32
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val from_elem [@cfg:stackify] (elem : t) (n : usize) : Alloc_Vec_Vec_Type.alloc_vec_vec_type t (Alloc_Alloc_Global_Type.alloc_alloc_global_type)
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val from_elem [@cfg:stackify] (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
     ensures { forall i : int . 0 <= i /\ i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
     
@@ -555,11 +549,11 @@ module Hashmap_Impl5_New_Interface
   use mach.int.UInt64
   use map.Map
   use prelude.UIntSize
-  use Hashmap_List_Type
-  use Core_Option_Option_Type
-  use Hashmap_MyHashMap_Type
+  use Hashmap_List_Type as Hashmap_List_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Hashmap_Impl1_Get_Interface as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy0.modelTy
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone Hashmap_Impl4_Bucket_Interface as Bucket0 with type k = k, type v = v
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = k,
   type ModelTy0.modelTy = ModelTy0.modelTy
@@ -567,10 +561,10 @@ module Hashmap_Impl5_New_Interface
   function Bucket0.bucket = Bucket0.bucket, function Get0.get = Get0.get, type ModelTy0.modelTy = ModelTy0.modelTy,
   axiom .
   clone Hashmap_Impl5_HashmapInv_Interface as HashmapInv0 with type k = k, type v = v
-  val new [@cfg:stackify] (size : usize) : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v
+  val new [@cfg:stackify] (size : usize) : Hashmap_MyHashMap_Type.t_myhashmap k v
     requires {[#"../hashmap.rs" 103 15 103 24] 0 < UInt64.to_int size}
     ensures { [#"../hashmap.rs" 104 14 104 34] HashmapInv0.hashmap_inv result }
-    ensures { [#"../hashmap.rs" 105 4 105 54] forall i : k . Map.get (Model0.model result) (Model1.model i) = Core_Option_Option_Type.Core_Option_Option_None_Type }
+    ensures { [#"../hashmap.rs" 105 4 105 54] forall i : k . Map.get (Model0.model result) (Model1.model i) = Core_Option_Option_Type.C_None }
     
 end
 module Hashmap_Impl5_New
@@ -581,20 +575,20 @@ module Hashmap_Impl5_New
   use mach.int.UInt64
   use map.Map
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use Hashmap_List_Type
-  use Alloc_Vec_Vec_Type
-  use Hashmap_MyHashMap_Type
-  use Core_Option_Option_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
   clone Hashmap_Hash_HashLog as HashLog0 with type self = k, axiom .
   clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = k, type ModelTy0.modelTy = ModelTy0.modelTy
   clone Hashmap_Hash_HashLogEqModel as HashLogEqModel0 with type self = k, function Model0.model = Model1.model,
   function HashLog0.hash_log = HashLog0.hash_log, type ModelTy0.modelTy = ModelTy0.modelTy, axiom .
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = Hashmap_List_Type.t_list (k, v),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone Hashmap_Impl4_BucketIx as BucketIx0 with type k = k, type v = v, function HashLog0.hash_log = HashLog0.hash_log,
   function Model0.model = Model2.model
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Hashmap_Impl1_Get as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy0.modelTy,
   function Model0.model = Model1.model
   clone Hashmap_Impl4_Bucket as Bucket0 with type k = k, type v = v, function Model0.model = Model2.model,
@@ -610,39 +604,39 @@ module Hashmap_Impl5_New
   clone Hashmap_Impl5_HashmapInv as HashmapInv0 with type k = k, type v = v, function Model0.model = Model2.model,
   predicate GoodBucket0.good_bucket = GoodBucket0.good_bucket,
   predicate NoDoubleBinding0.no_double_binding = NoDoubleBinding0.no_double_binding
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v
-  clone Alloc_Vec_FromElem_Interface as FromElem0 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = Hashmap_MyHashMap_Type.t_myhashmap k v
+  clone Alloc_Vec_FromElem_Interface as FromElem0 with type t = Hashmap_List_Type.t_list (k, v),
   function Model0.model = Model2.model
-  let rec cfg new [@cfg:stackify] [#"../hashmap.rs" 106 4 106 46] (size : usize) : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v
+  let rec cfg new [@cfg:stackify] [#"../hashmap.rs" 106 4 106 46] (size : usize) : Hashmap_MyHashMap_Type.t_myhashmap k v
     requires {[#"../hashmap.rs" 103 15 103 24] 0 < UInt64.to_int size}
     ensures { [#"../hashmap.rs" 104 14 104 34] HashmapInv0.hashmap_inv result }
-    ensures { [#"../hashmap.rs" 105 4 105 54] forall i : k . Map.get (Model0.model result) (Model1.model i) = Core_Option_Option_Type.Core_Option_Option_None_Type }
+    ensures { [#"../hashmap.rs" 105 4 105 54] forall i : k . Map.get (Model0.model result) (Model1.model i) = Core_Option_Option_Type.C_None }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v;
+  var _0 : Hashmap_MyHashMap_Type.t_myhashmap k v;
   var size_1 : usize;
-  var res_5 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v;
-  var _6 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Hashmap_List_Type.hashmap_list_type (k, v)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var _7 : Hashmap_List_Type.hashmap_list_type (k, v);
+  var res_5 : Hashmap_MyHashMap_Type.t_myhashmap k v;
+  var _6 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
+  var _7 : Hashmap_List_Type.t_list (k, v);
   var _8 : usize;
   {
     size_1 <- size;
     goto BB0
   }
   BB0 {
-    _7 <- Hashmap_List_Type.Hashmap_List_Nil_Type;
+    _7 <- Hashmap_List_Type.C_Nil;
     _8 <- size_1;
     _6 <- ([#"../hashmap.rs" 107 39 107 70] FromElem0.from_elem _7 _8);
     goto BB1
   }
   BB1 {
-    res_5 <- Hashmap_MyHashMap_Type.Hashmap_MyHashMap_Type _6;
+    res_5 <- Hashmap_MyHashMap_Type.C_MyHashMap _6;
     goto BB2
   }
   BB2 {
     assume { Resolve0.resolve _0 };
     _0 <- res_5;
-    res_5 <- any Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v;
+    res_5 <- any Hashmap_MyHashMap_Type.t_myhashmap k v;
     goto BB3
   }
   BB3 {
@@ -651,13 +645,12 @@ module Hashmap_Impl5_New
   
 end
 module CreusotContracts_Logic_Ghost_Ghost_Type
-  type creusotcontracts_logic_ghost_ghost_type 't =
-    | CreusotContracts_Logic_Ghost_Ghost_Type 't
+  type t_ghost 't =
+    | C_Ghost 't
     
-  let function creusotcontracts_logic_ghost_ghost_type_Ghost_0 (self : creusotcontracts_logic_ghost_ghost_type 't) : 't
-   = [@vc:do_not_keep_trace] [@vc:sp]
+  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | CreusotContracts_Logic_Ghost_Ghost_Type a -> a
+      | C_Ghost a -> a
       end
 end
 module Alloc_Vec_Impl1_Len_Interface
@@ -668,9 +661,9 @@ module Alloc_Vec_Impl1_Len_Interface
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -682,9 +675,9 @@ module Alloc_Vec_Impl1_Len
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -787,9 +780,9 @@ module Alloc_Vec_Impl17_IndexMut_Interface
   use prelude.Borrow
   use seq.Seq
   use prelude.Slice
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere0 with type self = i,
   type t = seq t, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
@@ -797,7 +790,7 @@ module Alloc_Vec_Impl17_IndexMut_Interface
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (index : i) : borrowed Output0.output
+  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (Model0.model ( * self))}
     ensures { HasValue0.has_value index (Model0.model ( * self)) ( * result) }
     ensures { HasValue0.has_value index (Model0.model ( ^ self)) ( ^ result) }
@@ -812,9 +805,9 @@ module Alloc_Vec_Impl17_IndexMut
   use prelude.Borrow
   use seq.Seq
   use prelude.Slice
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere0 with type self = i,
   type t = seq t, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
@@ -822,7 +815,7 @@ module Alloc_Vec_Impl17_IndexMut
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type t a)) (index : i) : borrowed Output0.output
+  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (Model0.model ( * self))}
     ensures { HasValue0.has_value index (Model0.model ( * self)) ( * result) }
     ensures { HasValue0.has_value index (Model0.model ( ^ self)) ( ^ result) }
@@ -833,34 +826,34 @@ end
 module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
   type t
   use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
 end
 module CreusotContracts_Logic_Ghost_Impl1_Inner
   type t
   use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t =
-    CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type_Ghost_0 self
-  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t =
+    CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
+  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
     ensures { result = inner self }
     
 end
 module CreusotContracts_Logic_Ghost_Impl0_Deref_Interface
   type t
   use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
 end
 module CreusotContracts_Logic_Ghost_Impl0_Deref
   type t
   use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
-  val deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t) : t
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
+  val deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
     ensures { result = deref self }
     
-  axiom deref_spec : forall self : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type t . deref self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type_Ghost_0 self
+  axiom deref_spec : forall self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t . deref self = CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
 end
 module CreusotContracts_Logic_Model_Impl0_Model_Interface
   type t
@@ -990,9 +983,9 @@ module CreusotContracts_Std1_Slice_Impl0
   type t
 end
 module Alloc_Boxed_Box_Type
-  use Core_Ptr_Unique_Unique_Type
-  type alloc_boxed_box_type 't 'a =
-    | Alloc_Boxed_Box_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) 'a
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_box 't 'a =
+    | C_Box (Core_Ptr_Unique_Unique_Type.t_unique 't) 'a
     
 end
 module CreusotContracts_Logic_Model_Impl0
@@ -1003,11 +996,11 @@ module Hashmap_Impl5_Add_Interface
   type v
   use prelude.Borrow
   use map.Map
-  use Hashmap_List_Type
-  use Core_Option_Option_Type
-  use Hashmap_MyHashMap_Type
+  use Hashmap_List_Type as Hashmap_List_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Hashmap_Impl1_Get_Interface as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy0.modelTy
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone Hashmap_Impl4_Bucket_Interface as Bucket0 with type k = k, type v = v
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = k,
   type ModelTy0.modelTy = ModelTy0.modelTy
@@ -1015,11 +1008,11 @@ module Hashmap_Impl5_Add_Interface
   function Bucket0.bucket = Bucket0.bucket, function Get0.get = Get0.get, type ModelTy0.modelTy = ModelTy0.modelTy,
   axiom .
   clone Hashmap_Impl5_HashmapInv_Interface as HashmapInv0 with type k = k, type v = v
-  val add [@cfg:stackify] (self : borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v)) (key : k) (val' : v) : ()
+  val add [@cfg:stackify] (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (key : k) (val' : v) : ()
     requires {[#"../hashmap.rs" 111 15 111 36] HashmapInv0.hashmap_inv ( * self)}
     ensures { [#"../hashmap.rs" 112 14 112 35] HashmapInv0.hashmap_inv ( ^ self) }
     ensures { [#"../hashmap.rs" 113 4 113 105] forall i : k . Map.get (Model0.model ( ^ self)) (Model1.model i) = (if Model1.model i = Model1.model key then
-      Core_Option_Option_Type.Core_Option_Option_Some_Type val'
+      Core_Option_Option_Type.C_Some val'
     else
       Map.get (Model0.model ( * self)) (Model1.model i)
     ) }
@@ -1030,20 +1023,20 @@ module Hashmap_Impl5_Add
   type v
   use prelude.Borrow
   use map.Map
-  use Alloc_Alloc_Global_Type
-  use Hashmap_List_Type
-  use Alloc_Vec_Vec_Type
-  use Hashmap_MyHashMap_Type
-  use Core_Option_Option_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
   clone Hashmap_Hash_HashLog as HashLog0 with type self = k, axiom .
   clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = k, type ModelTy0.modelTy = ModelTy0.modelTy
   clone Hashmap_Hash_HashLogEqModel as HashLogEqModel0 with type self = k, function Model0.model = Model1.model,
   function HashLog0.hash_log = HashLog0.hash_log, type ModelTy0.modelTy = ModelTy0.modelTy, axiom .
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = Hashmap_List_Type.t_list (k, v),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone Hashmap_Impl4_BucketIx as BucketIx0 with type k = k, type v = v, function HashLog0.hash_log = HashLog0.hash_log,
   function Model0.model = Model2.model
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Hashmap_Impl1_Get as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy0.modelTy,
   function Model0.model = Model1.model
   clone Hashmap_Impl4_Bucket as Bucket0 with type k = k, type v = v, function Model0.model = Model2.model,
@@ -1063,76 +1056,76 @@ module Hashmap_Impl5_Add
   use prelude.UIntSize
   use mach.int.UInt64
   use prelude.IntSize
-  use Alloc_Boxed_Box_Type
-  use CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Logic_Model_Impl0_Model as Model3 with type t = k, type ModelTy0.modelTy = ModelTy0.modelTy,
   function Model0.model = Model1.model
-  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone CreusotContracts_Std1_Slice_Impl3_ResolveElswhere as ResolveElswhere0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
+  use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = Hashmap_List_Type.t_list (k, v)
+  clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = Hashmap_List_Type.t_list (k, v)
+  clone CreusotContracts_Std1_Slice_Impl3_ResolveElswhere as ResolveElswhere0 with type t = Hashmap_List_Type.t_list (k, v)
+  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = Hashmap_List_Type.t_list (k, v)
+  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = Hashmap_List_Type.t_list (k, v)
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve9 with type t = v
   clone Core_Cmp_PartialEq_Eq_Interface as Eq0 with type self = k, type rhs = k, function Model0.model = Model3.model,
   function Model1.model = Model3.model, type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve8 with type t = k
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve7 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve6 with type self = Hashmap_List_Type.hashmap_list_type (k, v)
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve7 with type t = Hashmap_List_Type.t_list (k, v)
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve6 with type self = Hashmap_List_Type.t_list (k, v)
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve5 with type self = v
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve4 with type self = k
-  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = borrowed (Hashmap_List_Type.hashmap_list_type (k, v)),
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = borrowed (Hashmap_List_Type.t_list (k, v)),
   axiom .
-  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner1 with type t = borrowed (Hashmap_List_Type.hashmap_list_type (k, v))
-  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v)
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (Hashmap_List_Type.hashmap_list_type (k, v)))
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type i = usize, type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model2.model,
+  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner1 with type t = borrowed (Hashmap_List_Type.t_list (k, v))
+  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Hashmap_List_Type.t_list (k, v)))
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Hashmap_List_Type.t_list (k, v)
+  clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = Hashmap_List_Type.t_list (k, v), type i = usize,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model2.model,
   predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
   predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere, type Output0.output = Output0.output
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Hashmap_MyHashMap_Type.t_myhashmap k v
   clone Hashmap_Hash_Hash_Interface as Hash0 with type self = k, function HashLog0.hash_log = HashLog0.hash_log
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model2.model
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v))
-  let rec cfg add [@cfg:stackify] [#"../hashmap.rs" 114 4 114 41] (self : borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v)) (key : k) (val' : v) : ()
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = Hashmap_List_Type.t_list (k, v),
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
+  let rec cfg add [@cfg:stackify] [#"../hashmap.rs" 114 4 114 41] (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (key : k) (val' : v) : ()
     requires {[#"../hashmap.rs" 111 15 111 36] HashmapInv0.hashmap_inv ( * self)}
     ensures { [#"../hashmap.rs" 112 14 112 35] HashmapInv0.hashmap_inv ( ^ self) }
     ensures { [#"../hashmap.rs" 113 4 113 105] forall i : k . Map.get (Model0.model ( ^ self)) (Model1.model i) = (if Model1.model i = Model1.model key then
-      Core_Option_Option_Type.Core_Option_Option_Some_Type val'
+      Core_Option_Option_Type.C_Some val'
     else
       Map.get (Model0.model ( * self)) (Model1.model i)
     ) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var self_1 : borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v);
+  var self_1 : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v);
   var key_2 : k;
   var val'_3 : v;
-  var old_self_7 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v));
+  var old_self_7 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v));
   var _9 : ();
   var length_10 : usize;
-  var _11 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Hashmap_List_Type.hashmap_list_type (k, v)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _11 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
   var index_12 : usize;
   var _13 : usize;
   var _14 : uint64;
   var _15 : k;
   var _16 : usize;
   var _17 : bool;
-  var l_18 : borrowed (Hashmap_List_Type.hashmap_list_type (k, v));
-  var _19 : borrowed (Hashmap_List_Type.hashmap_list_type (k, v));
-  var _20 : borrowed (Hashmap_List_Type.hashmap_list_type (k, v));
-  var _21 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type (Hashmap_List_Type.hashmap_list_type (k, v)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var l_18 : borrowed (Hashmap_List_Type.t_list (k, v));
+  var _19 : borrowed (Hashmap_List_Type.t_list (k, v));
+  var _20 : borrowed (Hashmap_List_Type.t_list (k, v));
+  var _21 : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global));
   var _22 : usize;
-  var old_l_23 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (Hashmap_List_Type.hashmap_list_type (k, v)));
+  var old_l_23 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Hashmap_List_Type.t_list (k, v)));
   var _25 : ();
   var _26 : ();
   var _34 : ();
   var _35 : isize;
   var k_36 : borrowed k;
   var v_37 : borrowed v;
-  var tl_38 : borrowed (Hashmap_List_Type.hashmap_list_type (k, v));
-  var tl_39 : borrowed (Hashmap_List_Type.hashmap_list_type (k, v));
+  var tl_38 : borrowed (Hashmap_List_Type.t_list (k, v));
+  var tl_39 : borrowed (Hashmap_List_Type.t_list (k, v));
   var _40 : ();
   var _41 : bool;
   var _42 : k;
@@ -1140,17 +1133,17 @@ module Hashmap_Impl5_Add
   var _44 : ();
   var _45 : v;
   var _46 : ();
-  var _48 : borrowed (Hashmap_List_Type.hashmap_list_type (k, v));
-  var _49 : borrowed (Hashmap_List_Type.hashmap_list_type (k, v));
+  var _48 : borrowed (Hashmap_List_Type.t_list (k, v));
+  var _49 : borrowed (Hashmap_List_Type.t_list (k, v));
   var _50 : ();
   var _51 : ();
   var _52 : ();
-  var _53 : Hashmap_List_Type.hashmap_list_type (k, v);
+  var _53 : Hashmap_List_Type.t_list (k, v);
   var _54 : (k, v);
   var _55 : k;
   var _56 : v;
-  var _57 : Hashmap_List_Type.hashmap_list_type (k, v);
-  var _58 : Hashmap_List_Type.hashmap_list_type (k, v);
+  var _57 : Hashmap_List_Type.t_list (k, v);
+  var _58 : Hashmap_List_Type.t_list (k, v);
   var _59 : ();
   {
     self_1 <- self;
@@ -1160,12 +1153,12 @@ module Hashmap_Impl5_Add
   }
   BB0 {
     _9 <- ();
-    old_self_7 <- ([#"../hashmap.rs" 116 23 116 38] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type self_1);
+    old_self_7 <- ([#"../hashmap.rs" 116 23 116 38] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost self_1);
     goto BB1
   }
   BB1 {
     assume { Resolve0.resolve old_self_7 };
-    _11 <- Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * self_1);
+    _11 <- Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1);
     length_10 <- ([#"../hashmap.rs" 117 21 117 39] Len0.len _11);
     goto BB2
   }
@@ -1183,8 +1176,8 @@ module Hashmap_Impl5_Add
   }
   BB4 {
     index_12 <- ([#"../hashmap.rs" 118 27 118 55] _13 % _16);
-    _21 <- borrow_mut (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * self_1));
-    self_1 <- { self_1 with current = (let Hashmap_MyHashMap_Type.Hashmap_MyHashMap_Type a =  * self_1 in Hashmap_MyHashMap_Type.Hashmap_MyHashMap_Type ( ^ _21)) };
+    _21 <- borrow_mut (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1));
+    self_1 <- { self_1 with current = (let Hashmap_MyHashMap_Type.C_MyHashMap a =  * self_1 in Hashmap_MyHashMap_Type.C_MyHashMap ( ^ _21)) };
     assume { Resolve1.resolve self_1 };
     _22 <- index_12;
     _20 <- ([#"../hashmap.rs" 119 39 119 58] IndexMut0.index_mut _21 _22);
@@ -1198,7 +1191,7 @@ module Hashmap_Impl5_Add
     _19 <- { _19 with current = ( ^ l_18) };
     assume { Resolve2.resolve _19 };
     _25 <- ();
-    old_l_23 <- ([#"../hashmap.rs" 120 20 120 32] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type l_18);
+    old_l_23 <- ([#"../hashmap.rs" 120 20 120 32] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost l_18);
     goto BB6
   }
   BB6 {
@@ -1209,26 +1202,26 @@ module Hashmap_Impl5_Add
     invariant y { [#"../hashmap.rs" 122 23 122 49]  ^ Inner0.inner old_self_7 =  ^ self_1 };
     invariant xx { [#"../hashmap.rs" 123 24 123 52] GoodBucket0.good_bucket ( * self_1) ( * l_18) (UInt64.to_int index_12) };
     invariant xx { [#"../hashmap.rs" 122 8 122 51] GoodBucket0.good_bucket ( * self_1) ( ^ l_18) (UInt64.to_int index_12) -> GoodBucket0.good_bucket ( * self_1) ( ^ Inner1.inner old_l_23) (UInt64.to_int index_12) };
-    invariant get_key { [#"../hashmap.rs" 122 8 122 51] Get0.get ( ^ l_18) (Model1.model key_2) = Core_Option_Option_Type.Core_Option_Option_Some_Type val'_3 -> Get0.get ( ^ Deref0.deref old_l_23) (Model1.model key_2) = Core_Option_Option_Type.Core_Option_Option_Some_Type val'_3 };
+    invariant get_key { [#"../hashmap.rs" 122 8 122 51] Get0.get ( ^ l_18) (Model1.model key_2) = Core_Option_Option_Type.C_Some val'_3 -> Get0.get ( ^ Deref0.deref old_l_23) (Model1.model key_2) = Core_Option_Option_Type.C_Some val'_3 };
     invariant get_rest { [#"../hashmap.rs" 122 8 122 51] forall i : ModelTy0.modelTy . Get0.get ( ^ l_18) i = Get0.get ( * l_18) i -> Get0.get ( ^ Deref0.deref old_l_23) i = Get0.get ( * Deref0.deref old_l_23) i };
     invariant no_double_binding { [#"../hashmap.rs" 127 39 127 63] NoDoubleBinding0.no_double_binding ( * l_18) };
     invariant no_double_binding_magic { [#"../hashmap.rs" 122 8 122 51] (forall i : ModelTy0.modelTy . Get0.get ( * l_18) i = Get0.get ( ^ l_18) i \/ i = Model1.model key_2) /\ NoDoubleBinding0.no_double_binding ( ^ l_18) -> NoDoubleBinding0.no_double_binding ( ^ Deref0.deref old_l_23) };
     switch ( * l_18)
-      | Hashmap_List_Type.Hashmap_List_Cons_Type _ _ -> goto BB8
+      | Hashmap_List_Type.C_Cons _ _ -> goto BB8
       | _ -> goto BB12
       end
   }
   BB8 {
-    k_36 <- borrow_mut (let (a, _) = Hashmap_List_Type.hashmap_list_type_Cons_0 ( * l_18) in a);
-    l_18 <- { l_18 with current = (let Hashmap_List_Type.Hashmap_List_Cons_Type a b =  * l_18 in Hashmap_List_Type.Hashmap_List_Cons_Type (let (a, b) = Hashmap_List_Type.hashmap_list_type_Cons_0 ( * l_18) in ( ^ k_36, b)) b) };
-    v_37 <- borrow_mut (let (_, a) = Hashmap_List_Type.hashmap_list_type_Cons_0 ( * l_18) in a);
-    l_18 <- { l_18 with current = (let Hashmap_List_Type.Hashmap_List_Cons_Type a b =  * l_18 in Hashmap_List_Type.Hashmap_List_Cons_Type (let (a, b) = Hashmap_List_Type.hashmap_list_type_Cons_0 ( * l_18) in (a,  ^ v_37)) b) };
-    tl_38 <- borrow_mut (Hashmap_List_Type.hashmap_list_type_Cons_1 ( * l_18));
-    l_18 <- { l_18 with current = (let Hashmap_List_Type.Hashmap_List_Cons_Type a b =  * l_18 in Hashmap_List_Type.Hashmap_List_Cons_Type a ( ^ tl_38)) };
+    k_36 <- borrow_mut (let (a, _) = Hashmap_List_Type.cons_0 ( * l_18) in a);
+    l_18 <- { l_18 with current = (let Hashmap_List_Type.C_Cons a b =  * l_18 in Hashmap_List_Type.C_Cons (let (a, b) = Hashmap_List_Type.cons_0 ( * l_18) in ( ^ k_36, b)) b) };
+    v_37 <- borrow_mut (let (_, a) = Hashmap_List_Type.cons_0 ( * l_18) in a);
+    l_18 <- { l_18 with current = (let Hashmap_List_Type.C_Cons a b =  * l_18 in Hashmap_List_Type.C_Cons (let (a, b) = Hashmap_List_Type.cons_0 ( * l_18) in (a,  ^ v_37)) b) };
+    tl_38 <- borrow_mut (Hashmap_List_Type.cons_1 ( * l_18));
+    l_18 <- { l_18 with current = (let Hashmap_List_Type.C_Cons a b =  * l_18 in Hashmap_List_Type.C_Cons a ( ^ tl_38)) };
     assume { Resolve2.resolve l_18 };
     assume { Resolve7.resolve tl_39 };
     tl_39 <- tl_38;
-    tl_38 <- any borrowed (Hashmap_List_Type.hashmap_list_type (k, v));
+    tl_38 <- any borrowed (Hashmap_List_Type.t_list (k, v));
     _42 <-  * k_36;
     assume { Resolve8.resolve k_36 };
     _43 <- key_2;
@@ -1267,7 +1260,7 @@ module Hashmap_Impl5_Add
     assume { Resolve2.resolve _49 };
     assume { Resolve2.resolve l_18 };
     l_18 <- _48;
-    _48 <- any borrowed (Hashmap_List_Type.hashmap_list_type (k, v));
+    _48 <- any borrowed (Hashmap_List_Type.t_list (k, v));
     _34 <- ();
     goto BB7
   }
@@ -1280,12 +1273,12 @@ module Hashmap_Impl5_Add
     _56 <- val'_3;
     assume { Resolve5.resolve val'_3 };
     _54 <- (_55, _56);
-    _58 <- Hashmap_List_Type.Hashmap_List_Nil_Type;
+    _58 <- Hashmap_List_Type.C_Nil;
     _57 <- _58;
     goto BB13
   }
   BB13 {
-    _53 <- Hashmap_List_Type.Hashmap_List_Cons_Type _54 _57;
+    _53 <- Hashmap_List_Type.C_Cons _54 _57;
     goto BB14
   }
   BB14 {
@@ -1315,15 +1308,15 @@ module Alloc_Vec_Impl16_Index_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -1335,15 +1328,15 @@ module Alloc_Vec_Impl16_Index
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -1358,20 +1351,20 @@ module Hashmap_Impl5_Get_Interface
   type v
   use prelude.Borrow
   use map.Map
-  use Core_Option_Option_Type
-  use Hashmap_MyHashMap_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = k
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Hashmap_Impl3_ModelTy_Type as ModelTy0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy1.modelTy
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = k,
   type ModelTy0.modelTy = ModelTy1.modelTy
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v,
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone Hashmap_Impl5_HashmapInv_Interface as HashmapInv0 with type k = k, type v = v
-  val get [@cfg:stackify] (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) (key : k) : Core_Option_Option_Type.core_option_option_type v
+  val get [@cfg:stackify] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (key : k) : Core_Option_Option_Type.t_option v
     requires {[#"../hashmap.rs" 145 15 145 33] HashmapInv0.hashmap_inv self}
     ensures { [#"../hashmap.rs" 146 14 149 5] match (result) with
-      | Core_Option_Option_Type.Core_Option_Option_Some_Type v -> Map.get (Model0.model self) (Model1.model key) = Core_Option_Option_Type.Core_Option_Option_Some_Type v
-      | Core_Option_Option_Type.Core_Option_Option_None_Type -> Map.get (Model0.model self) (Model1.model key) = Core_Option_Option_Type.Core_Option_Option_None_Type
+      | Core_Option_Option_Type.C_Some v -> Map.get (Model0.model self) (Model1.model key) = Core_Option_Option_Type.C_Some v
+      | Core_Option_Option_Type.C_None -> Map.get (Model0.model self) (Model1.model key) = Core_Option_Option_Type.C_None
       end }
     
 end
@@ -1380,22 +1373,22 @@ module Hashmap_Impl5_Get
   type v
   use prelude.Borrow
   use map.Map
-  use Alloc_Alloc_Global_Type
-  use Hashmap_List_Type
-  use Alloc_Vec_Vec_Type
-  use Hashmap_MyHashMap_Type
-  use Core_Option_Option_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = k
   clone Hashmap_Hash_HashLog as HashLog0 with type self = k, axiom .
   clone CreusotContracts_Logic_Model_Model_Model as Model1 with type self = k, type ModelTy0.modelTy = ModelTy1.modelTy
   clone Hashmap_Hash_HashLogEqModel as HashLogEqModel0 with type self = k, function Model0.model = Model1.model,
   function HashLog0.hash_log = HashLog0.hash_log, type ModelTy0.modelTy = ModelTy1.modelTy, axiom .
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model2 with type t = Hashmap_List_Type.t_list (k, v),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone Hashmap_Impl4_BucketIx as BucketIx0 with type k = k, type v = v, function HashLog0.hash_log = HashLog0.hash_log,
   function Model0.model = Model2.model
   clone Hashmap_Impl4_Bucket as Bucket0 with type k = k, type v = v, function Model0.model = Model2.model,
   function BucketIx0.bucket_ix = BucketIx0.bucket_ix
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Hashmap_Impl1_Get as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy1.modelTy,
   function Model0.model = Model1.model
   clone Hashmap_Impl3_Model as Model3 with type k = k, type v = v, function Model0.model = Model1.model,
@@ -1407,7 +1400,7 @@ module Hashmap_Impl5_Get
   clone Hashmap_Impl5_GoodBucket as GoodBucket0 with type k = k, type v = v, function Model0.model = Model1.model,
   function Get0.get = Get0.get, function BucketIx0.bucket_ix = BucketIx0.bucket_ix,
   type ModelTy0.modelTy = ModelTy1.modelTy
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v,
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model3.model
   clone Hashmap_Impl5_HashmapInv as HashmapInv0 with type k = k, type v = v, function Model0.model = Model2.model,
   predicate GoodBucket0.good_bucket = GoodBucket0.good_bucket,
@@ -1416,38 +1409,38 @@ module Hashmap_Impl5_Get
   use prelude.UIntSize
   use mach.int.UInt64
   use prelude.IntSize
-  use Alloc_Boxed_Box_Type
+  use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
   clone CreusotContracts_Logic_Model_Impl0_Model as Model4 with type t = k, type ModelTy0.modelTy = ModelTy1.modelTy,
   function Model0.model = Model1.model
-  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy2 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy2 with type t = Hashmap_List_Type.t_list (k, v)
+  clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = Hashmap_List_Type.t_list (k, v)
+  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = Hashmap_List_Type.t_list (k, v)
+  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = Hashmap_List_Type.t_list (k, v)
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve5 with type self = v
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve4 with type self = Hashmap_List_Type.hashmap_list_type (k, v)
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve4 with type self = Hashmap_List_Type.t_list (k, v)
   clone Core_Cmp_PartialEq_Eq_Interface as Eq0 with type self = k, type rhs = k, function Model0.model = Model4.model,
   function Model1.model = Model4.model, type ModelTy0.modelTy = ModelTy1.modelTy
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = k
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = k
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type i = usize, type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model2.model,
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = Hashmap_List_Type.t_list (k, v)
+  clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = Hashmap_List_Type.t_list (k, v), type i = usize,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model2.model,
   predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
   type Output0.output = Output0.output
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model2.model
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = Hashmap_MyHashMap_Type.t_myhashmap k v
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = Hashmap_List_Type.t_list (k, v),
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model2.model
   clone Hashmap_Hash_Hash_Interface as Hash0 with type self = k, function HashLog0.hash_log = HashLog0.hash_log
-  let rec cfg get [@cfg:stackify] [#"../hashmap.rs" 150 4 150 43] (self : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v) (key : k) : Core_Option_Option_Type.core_option_option_type v
+  let rec cfg get [@cfg:stackify] [#"../hashmap.rs" 150 4 150 43] (self : Hashmap_MyHashMap_Type.t_myhashmap k v) (key : k) : Core_Option_Option_Type.t_option v
     requires {[#"../hashmap.rs" 145 15 145 33] HashmapInv0.hashmap_inv self}
     ensures { [#"../hashmap.rs" 146 14 149 5] match (result) with
-      | Core_Option_Option_Type.Core_Option_Option_Some_Type v -> Map.get (Model0.model self) (Model1.model key) = Core_Option_Option_Type.Core_Option_Option_Some_Type v
-      | Core_Option_Option_Type.Core_Option_Option_None_Type -> Map.get (Model0.model self) (Model1.model key) = Core_Option_Option_Type.Core_Option_Option_None_Type
+      | Core_Option_Option_Type.C_Some v -> Map.get (Model0.model self) (Model1.model key) = Core_Option_Option_Type.C_Some v
+      | Core_Option_Option_Type.C_None -> Map.get (Model0.model self) (Model1.model key) = Core_Option_Option_Type.C_None
       end }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : Core_Option_Option_Type.core_option_option_type v;
-  var self_1 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v;
+  var _0 : Core_Option_Option_Type.t_option v;
+  var self_1 : Hashmap_MyHashMap_Type.t_myhashmap k v;
   var key_2 : k;
   var _3 : ();
   var index_6 : usize;
@@ -1455,26 +1448,26 @@ module Hashmap_Impl5_Get
   var _8 : uint64;
   var _9 : k;
   var _10 : usize;
-  var _11 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Hashmap_List_Type.hashmap_list_type (k, v)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _11 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
   var _12 : bool;
-  var l_13 : Hashmap_List_Type.hashmap_list_type (k, v);
-  var _14 : Hashmap_List_Type.hashmap_list_type (k, v);
-  var _15 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Hashmap_List_Type.hashmap_list_type (k, v)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var l_13 : Hashmap_List_Type.t_list (k, v);
+  var _14 : Hashmap_List_Type.t_list (k, v);
+  var _15 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
   var _16 : usize;
   var _17 : ();
   var _19 : ();
   var _20 : isize;
   var k_21 : k;
   var v_22 : v;
-  var tl_23 : Hashmap_List_Type.hashmap_list_type (k, v);
+  var tl_23 : Hashmap_List_Type.t_list (k, v);
   var _24 : ();
   var _25 : bool;
   var _26 : k;
   var _27 : k;
   var _28 : ();
   var _29 : v;
-  var _30 : Hashmap_List_Type.hashmap_list_type (k, v);
-  var _31 : Hashmap_List_Type.hashmap_list_type (k, v);
+  var _30 : Hashmap_List_Type.t_list (k, v);
+  var _31 : Hashmap_List_Type.t_list (k, v);
   var _32 : ();
   var _33 : ();
   var _34 : ();
@@ -1490,7 +1483,7 @@ module Hashmap_Impl5_Get
   }
   BB1 {
     _7 <- UIntSize.of_int (UInt64.to_int _8);
-    _11 <- Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets self_1;
+    _11 <- Hashmap_MyHashMap_Type.myhashmap_buckets self_1;
     _10 <- ([#"../hashmap.rs" 151 49 151 67] Len0.len _11);
     goto BB2
   }
@@ -1501,7 +1494,7 @@ module Hashmap_Impl5_Get
   }
   BB3 {
     index_6 <- ([#"../hashmap.rs" 151 27 151 67] _7 % _10);
-    _15 <- Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets self_1;
+    _15 <- Hashmap_MyHashMap_Type.myhashmap_buckets self_1;
     assume { Resolve0.resolve self_1 };
     _16 <- index_6;
     _14 <- ([#"../hashmap.rs" 152 21 152 40] Index0.index _15 _16);
@@ -1515,14 +1508,14 @@ module Hashmap_Impl5_Get
   BB5 {
     invariant not_already_found { [#"../hashmap.rs" 154 39 154 83] Get0.get (Bucket0.bucket self_1 key_2) (Model1.model key_2) = Get0.get l_13 (Model1.model key_2) };
     switch (l_13)
-      | Hashmap_List_Type.Hashmap_List_Cons_Type _ _ -> goto BB6
+      | Hashmap_List_Type.C_Cons _ _ -> goto BB6
       | _ -> goto BB10
       end
   }
   BB6 {
-    k_21 <- (let (a, _) = Hashmap_List_Type.hashmap_list_type_Cons_0 l_13 in a);
-    v_22 <- (let (_, a) = Hashmap_List_Type.hashmap_list_type_Cons_0 l_13 in a);
-    tl_23 <- Hashmap_List_Type.hashmap_list_type_Cons_1 l_13;
+    k_21 <- (let (a, _) = Hashmap_List_Type.cons_0 l_13 in a);
+    v_22 <- (let (_, a) = Hashmap_List_Type.cons_0 l_13 in a);
+    tl_23 <- Hashmap_List_Type.cons_1 l_13;
     assume { Resolve1.resolve l_13 };
     _26 <- k_21;
     assume { Resolve3.resolve k_21 };
@@ -1541,7 +1534,7 @@ module Hashmap_Impl5_Get
     assume { Resolve4.resolve tl_23 };
     _29 <- v_22;
     assume { Resolve5.resolve v_22 };
-    _0 <- Core_Option_Option_Type.Core_Option_Option_Some_Type _29;
+    _0 <- Core_Option_Option_Type.C_Some _29;
     goto BB11
   }
   BB9 {
@@ -1553,7 +1546,7 @@ module Hashmap_Impl5_Get
     assume { Resolve1.resolve _31 };
     assume { Resolve1.resolve l_13 };
     l_13 <- _30;
-    _30 <- any Hashmap_List_Type.hashmap_list_type (k, v);
+    _30 <- any Hashmap_List_Type.t_list (k, v);
     _19 <- ();
     goto BB5
   }
@@ -1561,7 +1554,7 @@ module Hashmap_Impl5_Get
     assume { Resolve2.resolve key_2 };
     assume { Resolve1.resolve l_13 };
     _17 <- ();
-    _0 <- Core_Option_Option_Type.Core_Option_Option_None_Type;
+    _0 <- Core_Option_Option_Type.C_None;
     goto BB11
   }
   BB11 {
@@ -1614,24 +1607,24 @@ module Hashmap_Impl5_Resize_Interface
   use mach.int.Int
   use mach.int.Int32
   use map.Map
-  use Core_Option_Option_Type
-  use Hashmap_List_Type
-  use Hashmap_MyHashMap_Type
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
+  use Hashmap_List_Type as Hashmap_List_Type
   clone Hashmap_Impl1_Get_Interface as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy0.modelTy
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone Hashmap_Impl4_Bucket_Interface as Bucket0 with type k = k, type v = v
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Logic_Model_Model_Model_Interface as Model2 with type self = k,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone Hashmap_Impl3_Model_Interface as Model1 with type k = k, type v = v, function Model0.model = Model2.model,
   function Bucket0.bucket = Bucket0.bucket, function Get0.get = Get0.get, type ModelTy0.modelTy = ModelTy0.modelTy,
   axiom .
   clone Hashmap_Impl5_HashmapInv_Interface as HashmapInv0 with type k = k, type v = v
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  val resize [@cfg:stackify] (self : borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v)) : ()
-    requires {[#"../hashmap.rs" 165 15 165 43] Seq.length (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * self))) < 1000}
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = Hashmap_List_Type.t_list (k, v),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  val resize [@cfg:stackify] (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) : ()
+    requires {[#"../hashmap.rs" 165 15 165 43] Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self))) < 1000}
     requires {[#"../hashmap.rs" 166 15 166 36] HashmapInv0.hashmap_inv ( * self)}
     ensures { [#"../hashmap.rs" 167 14 167 35] HashmapInv0.hashmap_inv ( ^ self) }
     ensures { [#"../hashmap.rs" 168 4 168 66] forall k : k . Map.get (Model1.model ( ^ self)) (Model2.model k) = Map.get (Model1.model ( * self)) (Model2.model k) }
@@ -1645,20 +1638,20 @@ module Hashmap_Impl5_Resize
   use mach.int.Int
   use mach.int.Int32
   use map.Map
-  use Alloc_Alloc_Global_Type
-  use Hashmap_List_Type
-  use Alloc_Vec_Vec_Type
-  use Hashmap_MyHashMap_Type
-  use Core_Option_Option_Type
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = k
   clone Hashmap_Hash_HashLog as HashLog0 with type self = k, axiom .
   clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = k, type ModelTy0.modelTy = ModelTy0.modelTy
   clone Hashmap_Hash_HashLogEqModel as HashLogEqModel0 with type self = k, function Model0.model = Model2.model,
   function HashLog0.hash_log = HashLog0.hash_log, type ModelTy0.modelTy = ModelTy0.modelTy, axiom .
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = Hashmap_List_Type.t_list (k, v),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone Hashmap_Impl4_BucketIx as BucketIx0 with type k = k, type v = v, function HashLog0.hash_log = HashLog0.hash_log,
   function Model0.model = Model0.model
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone Hashmap_Impl1_Get as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy0.modelTy,
   function Model0.model = Model2.model
   clone Hashmap_Impl4_Bucket as Bucket0 with type k = k, type v = v, function Model0.model = Model0.model,
@@ -1677,81 +1670,81 @@ module Hashmap_Impl5_Resize
   use prelude.UIntSize
   use mach.int.UInt64
   use prelude.IntSize
-  use Alloc_Boxed_Box_Type
-  use CreusotContracts_Logic_Ghost_Ghost_Type
-  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy2 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone CreusotContracts_Std1_Slice_Impl3_ResolveElswhere as ResolveElswhere0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
+  use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy2 with type t = Hashmap_List_Type.t_list (k, v)
+  clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = Hashmap_List_Type.t_list (k, v)
+  clone CreusotContracts_Std1_Slice_Impl3_ResolveElswhere as ResolveElswhere0 with type t = Hashmap_List_Type.t_list (k, v)
+  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = Hashmap_List_Type.t_list (k, v)
+  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = Hashmap_List_Type.t_list (k, v)
   clone Hashmap_Impl3_ModelTy_Type as ModelTy1 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve7 with type t = Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve6 with type self = Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve7 with type t = Hashmap_MyHashMap_Type.t_myhashmap k v
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve6 with type self = Hashmap_MyHashMap_Type.t_myhashmap k v
   clone Hashmap_Impl5_Add_Interface as Add0 with type k = k, type v = v,
   predicate HashmapInv0.hashmap_inv = HashmapInv0.hashmap_inv, function Model0.model = Model1.model,
   function Model1.model = Model2.model, function Bucket0.bucket = Bucket0.bucket, function Get0.get = Get0.get,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve5 with type self = Hashmap_List_Type.hashmap_list_type (k, v)
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve5 with type self = Hashmap_List_Type.t_list (k, v)
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve4 with type self = v
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = k
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone Core_Mem_Replace_Interface as Replace0 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Hashmap_List_Type.hashmap_list_type (k, v)
-  clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type i = usize, type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model,
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = Hashmap_List_Type.t_list (k, v)
+  clone Core_Mem_Replace_Interface as Replace0 with type t = Hashmap_List_Type.t_list (k, v)
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Hashmap_List_Type.t_list (k, v)
+  clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with type t = Hashmap_List_Type.t_list (k, v), type i = usize,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model0.model,
   predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
   predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere, type Output0.output = Output0.output
-  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v)
-  clone CreusotContracts_Logic_Model_Impl1_Model as Model3 with type t = Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v,
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)
+  clone CreusotContracts_Logic_Model_Impl1_Model as Model3 with type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
   type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model1.model
-  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v),
+  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v),
   axiom .
   clone Hashmap_Impl5_New_Interface as New0 with type k = k, type v = v,
   predicate HashmapInv0.hashmap_inv = HashmapInv0.hashmap_inv, function Model0.model = Model1.model,
   function Model1.model = Model2.model, function Bucket0.bucket = Bucket0.bucket, function Get0.get = Get0.get,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = Hashmap_List_Type.hashmap_list_type (k, v),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model0.model
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v))
-  let rec cfg resize [@cfg:stackify] [#"../hashmap.rs" 170 4 170 24] (self : borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v)) : ()
-    requires {[#"../hashmap.rs" 165 15 165 43] Seq.length (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * self))) < 1000}
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = Hashmap_List_Type.t_list (k, v),
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model0.model
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
+  let rec cfg resize [@cfg:stackify] [#"../hashmap.rs" 170 4 170 24] (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) : ()
+    requires {[#"../hashmap.rs" 165 15 165 43] Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self))) < 1000}
     requires {[#"../hashmap.rs" 166 15 166 36] HashmapInv0.hashmap_inv ( * self)}
     ensures { [#"../hashmap.rs" 167 14 167 35] HashmapInv0.hashmap_inv ( ^ self) }
     ensures { [#"../hashmap.rs" 168 4 168 66] forall k : k . Map.get (Model1.model ( ^ self)) (Model2.model k) = Map.get (Model1.model ( * self)) (Model2.model k) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var self_1 : borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v);
-  var old_self_6 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type (borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v));
+  var self_1 : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v);
+  var old_self_6 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v));
   var _8 : ();
-  var new_9 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v;
+  var new_9 : Hashmap_MyHashMap_Type.t_myhashmap k v;
   var _10 : usize;
   var _11 : usize;
-  var _12 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Hashmap_List_Type.hashmap_list_type (k, v)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _12 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
   var i_13 : usize;
   var _14 : ();
   var _22 : ();
   var _23 : bool;
   var _24 : usize;
   var _25 : usize;
-  var _26 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (Hashmap_List_Type.hashmap_list_type (k, v)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
-  var l_27 : Hashmap_List_Type.hashmap_list_type (k, v);
-  var _28 : borrowed (Hashmap_List_Type.hashmap_list_type (k, v));
-  var _29 : borrowed (Hashmap_List_Type.hashmap_list_type (k, v));
-  var _30 : borrowed (Hashmap_List_Type.hashmap_list_type (k, v));
-  var _31 : borrowed (Alloc_Vec_Vec_Type.alloc_vec_vec_type (Hashmap_List_Type.hashmap_list_type (k, v)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type));
+  var _26 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
+  var l_27 : Hashmap_List_Type.t_list (k, v);
+  var _28 : borrowed (Hashmap_List_Type.t_list (k, v));
+  var _29 : borrowed (Hashmap_List_Type.t_list (k, v));
+  var _30 : borrowed (Hashmap_List_Type.t_list (k, v));
+  var _31 : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global));
   var _32 : usize;
-  var _33 : Hashmap_List_Type.hashmap_list_type (k, v);
+  var _33 : Hashmap_List_Type.t_list (k, v);
   var _34 : ();
   var _41 : isize;
   var k_42 : k;
   var v_43 : v;
-  var tl_44 : Hashmap_List_Type.hashmap_list_type (k, v);
+  var tl_44 : Hashmap_List_Type.t_list (k, v);
   var _45 : ();
-  var _46 : borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v);
+  var _46 : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v);
   var _47 : k;
   var _48 : v;
-  var _49 : Hashmap_List_Type.hashmap_list_type (k, v);
+  var _49 : Hashmap_List_Type.t_list (k, v);
   var _50 : ();
   var _51 : ();
   var _52 : ();
@@ -1759,19 +1752,19 @@ module Hashmap_Impl5_Resize
   var _55 : ();
   var _56 : ();
   var _57 : ();
-  var _58 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v;
+  var _58 : Hashmap_MyHashMap_Type.t_myhashmap k v;
   {
     self_1 <- self;
     goto BB0
   }
   BB0 {
     _8 <- ();
-    old_self_6 <- ([#"../hashmap.rs" 171 23 171 38] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type self_1);
+    old_self_6 <- ([#"../hashmap.rs" 171 23 171 38] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost self_1);
     goto BB1
   }
   BB1 {
     assume { Resolve0.resolve old_self_6 };
-    _12 <- Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * self_1);
+    _12 <- Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1);
     _11 <- ([#"../hashmap.rs" 172 32 172 50] Len0.len _12);
     goto BB2
   }
@@ -1792,14 +1785,14 @@ module Hashmap_Impl5_Resize
   }
   BB6 {
     invariant seen { [#"../hashmap.rs" 175 8 175 111] forall k : k . BucketIx0.bucket_ix ( * Deref0.deref old_self_6) k < UInt64.to_int i_13 -> Map.get (Model3.model (Deref0.deref old_self_6)) (Model2.model k) = Map.get (Model1.model new_9) (Model2.model k) };
-    invariant unseen { [#"../hashmap.rs" 175 8 175 111] forall k : k . UInt64.to_int i_13 <= BucketIx0.bucket_ix ( * Deref0.deref old_self_6) k /\ BucketIx0.bucket_ix ( * Deref0.deref old_self_6) k <= Seq.length (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * Deref0.deref old_self_6))) -> Map.get (Model1.model new_9) (Model2.model k) = Core_Option_Option_Type.Core_Option_Option_None_Type };
-    invariant rest { [#"../hashmap.rs" 175 8 175 111] forall j : int . UInt64.to_int i_13 <= j /\ j < Seq.length (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * Deref0.deref old_self_6))) -> Seq.get (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * self_1))) j = Seq.get (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * Deref0.deref old_self_6))) j };
+    invariant unseen { [#"../hashmap.rs" 175 8 175 111] forall k : k . UInt64.to_int i_13 <= BucketIx0.bucket_ix ( * Deref0.deref old_self_6) k /\ BucketIx0.bucket_ix ( * Deref0.deref old_self_6) k <= Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Deref0.deref old_self_6))) -> Map.get (Model1.model new_9) (Model2.model k) = Core_Option_Option_Type.C_None };
+    invariant rest { [#"../hashmap.rs" 175 8 175 111] forall j : int . UInt64.to_int i_13 <= j /\ j < Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Deref0.deref old_self_6))) -> Seq.get (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1))) j = Seq.get (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Deref0.deref old_self_6))) j };
     invariant a { [#"../hashmap.rs" 181 23 181 40] HashmapInv0.hashmap_inv new_9 };
     invariant p { [#"../hashmap.rs" 182 23 182 49]  ^ Inner0.inner old_self_6 =  ^ self_1 };
-    invariant l { [#"../hashmap.rs" 183 23 183 73] Seq.length (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * Deref0.deref old_self_6))) = Seq.length (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * self_1))) };
-    invariant z { [#"../hashmap.rs" 184 23 184 50] UInt64.to_int i_13 <= Seq.length (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * self_1))) };
+    invariant l { [#"../hashmap.rs" 183 23 183 73] Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Deref0.deref old_self_6))) = Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1))) };
+    invariant z { [#"../hashmap.rs" 184 23 184 50] UInt64.to_int i_13 <= Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1))) };
     _24 <- i_13;
-    _26 <- Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * self_1);
+    _26 <- Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1);
     _25 <- ([#"../hashmap.rs" 185 18 185 36] Len0.len _26);
     goto BB7
   }
@@ -1811,8 +1804,8 @@ module Hashmap_Impl5_Resize
       end
   }
   BB8 {
-    _31 <- borrow_mut (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * self_1));
-    self_1 <- { self_1 with current = (let Hashmap_MyHashMap_Type.Hashmap_MyHashMap_Type a =  * self_1 in Hashmap_MyHashMap_Type.Hashmap_MyHashMap_Type ( ^ _31)) };
+    _31 <- borrow_mut (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1));
+    self_1 <- { self_1 with current = (let Hashmap_MyHashMap_Type.C_MyHashMap a =  * self_1 in Hashmap_MyHashMap_Type.C_MyHashMap ( ^ _31)) };
     _32 <- i_13;
     _30 <- ([#"../hashmap.rs" 186 56 186 71] IndexMut0.index_mut _31 _32);
     goto BB9
@@ -1823,7 +1816,7 @@ module Hashmap_Impl5_Resize
     assume { Resolve1.resolve _30 };
     _28 <- borrow_mut ( * _29);
     _29 <- { _29 with current = ( ^ _28) };
-    _33 <- Hashmap_List_Type.Hashmap_List_Nil_Type;
+    _33 <- Hashmap_List_Type.C_Nil;
     l_27 <- ([#"../hashmap.rs" 186 33 186 83] Replace0.replace _28 _33);
     goto BB10
   }
@@ -1849,26 +1842,26 @@ module Hashmap_Impl5_Resize
   BB16 {
     invariant a { [#"../hashmap.rs" 188 27 188 44] HashmapInv0.hashmap_inv new_9 };
     invariant x { [#"../hashmap.rs" 188 12 188 46] forall k : k . BucketIx0.bucket_ix ( * Deref0.deref old_self_6) k < UInt64.to_int i_13 -> Map.get (Model3.model (Deref0.deref old_self_6)) (Model2.model k) = Map.get (Model1.model new_9) (Model2.model k) };
-    invariant x { [#"../hashmap.rs" 188 12 188 46] forall k : k . UInt64.to_int i_13 < BucketIx0.bucket_ix ( * Deref0.deref old_self_6) k /\ BucketIx0.bucket_ix ( * Deref0.deref old_self_6) k <= Seq.length (Model0.model (Hashmap_MyHashMap_Type.hashmap_myhashmap_type_MyHashMap_buckets ( * Deref0.deref old_self_6))) -> Map.get (Model1.model new_9) (Model2.model k) = Core_Option_Option_Type.Core_Option_Option_None_Type };
+    invariant x { [#"../hashmap.rs" 188 12 188 46] forall k : k . UInt64.to_int i_13 < BucketIx0.bucket_ix ( * Deref0.deref old_self_6) k /\ BucketIx0.bucket_ix ( * Deref0.deref old_self_6) k <= Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Deref0.deref old_self_6))) -> Map.get (Model1.model new_9) (Model2.model k) = Core_Option_Option_Type.C_None };
     invariant zzz { [#"../hashmap.rs" 188 12 188 46] forall k : k . BucketIx0.bucket_ix ( * Deref0.deref old_self_6) k = UInt64.to_int i_13 -> Map.get (Model3.model (Inner0.inner old_self_6)) (Model2.model k) = match (Get0.get l_27 (Model2.model k)) with
-      | Core_Option_Option_Type.Core_Option_Option_None_Type -> Map.get (Model1.model new_9) (Model2.model k)
-      | Core_Option_Option_Type.Core_Option_Option_Some_Type v -> Core_Option_Option_Type.Core_Option_Option_Some_Type v
+      | Core_Option_Option_Type.C_None -> Map.get (Model1.model new_9) (Model2.model k)
+      | Core_Option_Option_Type.C_Some v -> Core_Option_Option_Type.C_Some v
       end };
     invariant l_no_double_binding { [#"../hashmap.rs" 195 45 195 66] NoDoubleBinding0.no_double_binding l_27 };
     invariant x { [#"../hashmap.rs" 196 27 196 54] GoodBucket0.good_bucket ( * Deref0.deref old_self_6) l_27 (UInt64.to_int i_13) };
     switch (l_27)
-      | Hashmap_List_Type.Hashmap_List_Cons_Type _ _ -> goto BB17
+      | Hashmap_List_Type.C_Cons _ _ -> goto BB17
       | _ -> goto BB21
       end
   }
   BB17 {
     assume { Resolve3.resolve k_42 };
-    k_42 <- (let (a, _) = Hashmap_List_Type.hashmap_list_type_Cons_0 l_27 in a);
+    k_42 <- (let (a, _) = Hashmap_List_Type.cons_0 l_27 in a);
     assume { Resolve4.resolve v_43 };
-    v_43 <- (let (_, a) = Hashmap_List_Type.hashmap_list_type_Cons_0 l_27 in a);
+    v_43 <- (let (_, a) = Hashmap_List_Type.cons_0 l_27 in a);
     assume { Resolve5.resolve tl_44 };
-    tl_44 <- Hashmap_List_Type.hashmap_list_type_Cons_1 l_27;
-    l_27 <- (let Hashmap_List_Type.Hashmap_List_Cons_Type a b = l_27 in Hashmap_List_Type.Hashmap_List_Cons_Type a (any Hashmap_List_Type.hashmap_list_type (k, v)));
+    tl_44 <- Hashmap_List_Type.cons_1 l_27;
+    l_27 <- (let Hashmap_List_Type.C_Cons a b = l_27 in Hashmap_List_Type.C_Cons a (any Hashmap_List_Type.t_list (k, v)));
     _46 <- borrow_mut new_9;
     new_9 <-  ^ _46;
     assume { Resolve3.resolve _47 };
@@ -1883,7 +1876,7 @@ module Hashmap_Impl5_Resize
   BB18 {
     assume { Resolve2.resolve _49 };
     _49 <- tl_44;
-    tl_44 <- any Hashmap_List_Type.hashmap_list_type (k, v);
+    tl_44 <- any Hashmap_List_Type.t_list (k, v);
     assume { Resolve2.resolve l_27 };
     l_27 <- _49;
     goto BB19
@@ -1918,7 +1911,7 @@ module Hashmap_Impl5_Resize
     _14 <- ();
     assume { Resolve6.resolve _58 };
     _58 <- new_9;
-    new_9 <- any Hashmap_MyHashMap_Type.hashmap_myhashmap_type k v;
+    new_9 <- any Hashmap_MyHashMap_Type.t_myhashmap k v;
     assume { Resolve6.resolve ( * self_1) };
     self_1 <- { self_1 with current = _58 };
     goto BB26
@@ -1987,18 +1980,18 @@ module Hashmap_Main
   use prelude.UIntSize
   use prelude.IntSize
   use prelude.Borrow
-  use Alloc_Alloc_Global_Type
-  use Hashmap_List_Type
-  use Alloc_Vec_Vec_Type
-  use Hashmap_MyHashMap_Type
-  use Core_Option_Option_Type
   clone Hashmap_Impl2_HashLog as HashLog0 with axiom .
   clone Hashmap_Impl2_HashLogEqModel as HashLogEqModel0 with function HashLog0.hash_log = HashLog0.hash_log, axiom .
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = Hashmap_List_Type.hashmap_list_type (usize, isize),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = Hashmap_List_Type.t_list (usize, isize),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
   clone Hashmap_Impl4_BucketIx as BucketIx0 with type k = usize, type v = isize,
   function HashLog0.hash_log = HashLog0.hash_log, function Model0.model = Model3.model
   clone CreusotContracts_Logic_Int_Impl20_ModelTy_Type as ModelTy0
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Logic_Int_Impl20_Model as Model1
   clone Hashmap_Impl1_Get as Get1 with type k = usize, type v = isize, type ModelTy0.modelTy = ModelTy0.modelTy,
   function Model0.model = Model1.model
@@ -2014,7 +2007,7 @@ module Hashmap_Main
   clone Hashmap_Impl3_Model as Model0 with type k = usize, type v = isize, function Model0.model = Model1.model,
   function Bucket0.bucket = Bucket0.bucket, function Get0.get = Get1.get, type ModelTy0.modelTy = ModelTy0.modelTy,
   axiom .
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model2 with type t = Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize,
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model2 with type t = Hashmap_MyHashMap_Type.t_myhashmap usize isize,
   type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model0.model
   clone Hashmap_Impl5_HashmapInv as HashmapInv0 with type k = usize, type v = isize,
   function Model0.model = Model3.model, predicate GoodBucket0.good_bucket = GoodBucket0.good_bucket,
@@ -2032,36 +2025,36 @@ module Hashmap_Main
   type ModelTy0.modelTy = ModelTy0.modelTy
   let rec cfg main [@cfg:stackify] [#"../hashmap.rs" 226 0 226 13] (_ : ()) : () = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var h1_1 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
-  var h2_2 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
-  var _x_3 : Core_Option_Option_Type.core_option_option_type isize;
-  var _4 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
-  var _y_5 : Core_Option_Option_Type.core_option_option_type isize;
-  var _6 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
-  var _z_7 : Core_Option_Option_Type.core_option_option_type isize;
-  var _8 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
-  var _t_9 : Core_Option_Option_Type.core_option_option_type isize;
-  var _10 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
+  var h1_1 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
+  var h2_2 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
+  var _x_3 : Core_Option_Option_Type.t_option isize;
+  var _4 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
+  var _y_5 : Core_Option_Option_Type.t_option isize;
+  var _6 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
+  var _z_7 : Core_Option_Option_Type.t_option isize;
+  var _8 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
+  var _t_9 : Core_Option_Option_Type.t_option isize;
+  var _10 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _11 : ();
-  var _12 : borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize);
-  var _13 : Core_Option_Option_Type.core_option_option_type isize;
-  var _14 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
-  var _15 : Core_Option_Option_Type.core_option_option_type isize;
-  var _16 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
-  var _17 : Core_Option_Option_Type.core_option_option_type isize;
-  var _18 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
-  var _19 : Core_Option_Option_Type.core_option_option_type isize;
-  var _20 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
+  var _12 : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize);
+  var _13 : Core_Option_Option_Type.t_option isize;
+  var _14 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
+  var _15 : Core_Option_Option_Type.t_option isize;
+  var _16 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
+  var _17 : Core_Option_Option_Type.t_option isize;
+  var _18 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
+  var _19 : Core_Option_Option_Type.t_option isize;
+  var _20 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   var _21 : ();
-  var _22 : borrowed (Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize);
-  var _23 : Core_Option_Option_Type.core_option_option_type isize;
-  var _24 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
-  var _25 : Core_Option_Option_Type.core_option_option_type isize;
-  var _26 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
-  var _27 : Core_Option_Option_Type.core_option_option_type isize;
-  var _28 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
-  var _29 : Core_Option_Option_Type.core_option_option_type isize;
-  var _30 : Hashmap_MyHashMap_Type.hashmap_myhashmap_type usize isize;
+  var _22 : borrowed (Hashmap_MyHashMap_Type.t_myhashmap usize isize);
+  var _23 : Core_Option_Option_Type.t_option isize;
+  var _24 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
+  var _25 : Core_Option_Option_Type.t_option isize;
+  var _26 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
+  var _27 : Core_Option_Option_Type.t_option isize;
+  var _28 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
+  var _29 : Core_Option_Option_Type.t_option isize;
+  var _30 : Hashmap_MyHashMap_Type.t_myhashmap usize isize;
   {
     goto BB0
   }
@@ -2106,28 +2099,28 @@ module Hashmap_Main
   }
   BB8 {
     _x_3 <- _13;
-    _13 <- any Core_Option_Option_Type.core_option_option_type isize;
+    _13 <- any Core_Option_Option_Type.t_option isize;
     _16 <- h1_1;
     _15 <- ([#"../hashmap.rs" 244 9 244 18] Get0.get _16 (2 : usize));
     goto BB9
   }
   BB9 {
     _y_5 <- _15;
-    _15 <- any Core_Option_Option_Type.core_option_option_type isize;
+    _15 <- any Core_Option_Option_Type.t_option isize;
     _18 <- h2_2;
     _17 <- ([#"../hashmap.rs" 245 9 245 18] Get0.get _18 (1 : usize));
     goto BB10
   }
   BB10 {
     _z_7 <- _17;
-    _17 <- any Core_Option_Option_Type.core_option_option_type isize;
+    _17 <- any Core_Option_Option_Type.t_option isize;
     _20 <- h2_2;
     _19 <- ([#"../hashmap.rs" 246 9 246 18] Get0.get _20 (2 : usize));
     goto BB11
   }
   BB11 {
     _t_9 <- _19;
-    _19 <- any Core_Option_Option_Type.core_option_option_type isize;
+    _19 <- any Core_Option_Option_Type.t_option isize;
     _22 <- borrow_mut h2_2;
     h2_2 <-  ^ _22;
     _21 <- ([#"../hashmap.rs" 249 4 249 17] Add0.add _22 (1 : usize) (42 : isize));
@@ -2140,28 +2133,28 @@ module Hashmap_Main
   }
   BB13 {
     _x_3 <- _23;
-    _23 <- any Core_Option_Option_Type.core_option_option_type isize;
+    _23 <- any Core_Option_Option_Type.t_option isize;
     _26 <- h1_1;
     _25 <- ([#"../hashmap.rs" 251 9 251 18] Get0.get _26 (2 : usize));
     goto BB14
   }
   BB14 {
     _y_5 <- _25;
-    _25 <- any Core_Option_Option_Type.core_option_option_type isize;
+    _25 <- any Core_Option_Option_Type.t_option isize;
     _28 <- h2_2;
     _27 <- ([#"../hashmap.rs" 252 9 252 18] Get0.get _28 (1 : usize));
     goto BB15
   }
   BB15 {
     _z_7 <- _27;
-    _27 <- any Core_Option_Option_Type.core_option_option_type isize;
+    _27 <- any Core_Option_Option_Type.t_option isize;
     _30 <- h2_2;
     _29 <- ([#"../hashmap.rs" 253 9 253 18] Get0.get _30 (2 : usize));
     goto BB16
   }
   BB16 {
     _t_9 <- _29;
-    _29 <- any Core_Option_Option_Type.core_option_option_type isize;
+    _29 <- any Core_Option_Option_Type.t_option isize;
     _0 <- ();
     goto BB17
   }
@@ -2203,9 +2196,9 @@ module Core_Clone_Clone_Clone
 end
 module Hashmap_Impl0
   type t
-  use Hashmap_List_Type
-  clone Core_Clone_Clone_CloneFrom_Interface as CloneFrom0 with type self = Hashmap_List_Type.hashmap_list_type t
+  use Hashmap_List_Type as Hashmap_List_Type
+  clone Core_Clone_Clone_CloneFrom_Interface as CloneFrom0 with type self = Hashmap_List_Type.t_list t
   clone Hashmap_Impl0_Clone_Interface as Clone0 with type t = t
-  clone Core_Clone_Clone_Clone_Interface as Clone1 with type self = Hashmap_List_Type.hashmap_list_type t,
+  clone Core_Clone_Clone_Clone_Interface as Clone1 with type self = Hashmap_List_Type.t_list t,
   val clone' = Clone0.clone'
 end

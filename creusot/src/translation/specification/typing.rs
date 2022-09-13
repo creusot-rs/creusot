@@ -121,7 +121,12 @@ pub enum Literal {
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum Pattern<'tcx> {
-    Constructor { adt: AdtDef<'tcx>, variant: VariantIdx, fields: Vec<Pattern<'tcx>> },
+    Constructor {
+        adt: AdtDef<'tcx>,
+        substs: SubstsRef<'tcx>,
+        variant: VariantIdx,
+        fields: Vec<Pattern<'tcx>>,
+    },
     Tuple(Vec<Pattern<'tcx>>),
     Wildcard,
     Binder(Symbol),
@@ -478,7 +483,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         match &*pat.kind {
             PatKind::Wild => Ok(Pattern::Wildcard),
             PatKind::Binding { name, .. } => Ok(Pattern::Binder(*name)),
-            PatKind::Variant { subpatterns, adt_def, variant_index, .. } => {
+            PatKind::Variant { subpatterns, adt_def, variant_index, substs, .. } => {
                 let mut fields: Vec<_> = subpatterns
                     .iter()
                     .map(|pat| Ok((pat.field, self.pattern_term(&pat.pattern)?)))
@@ -493,7 +498,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     .map(|el| el.reduce(|_, a| a).1)
                     .collect();
 
-                Ok(Pattern::Constructor { adt: *adt_def, variant: *variant_index, fields })
+                Ok(Pattern::Constructor { adt: *adt_def, substs, variant: *variant_index, fields })
             }
             PatKind::Leaf { subpatterns } => {
                 let mut fields: Vec<_> = subpatterns
@@ -506,7 +511,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let fields = fields.into_iter().map(|a| a.1).collect();
                     Ok(Pattern::Tuple(fields))
                 } else {
-                    let adt_def = pat.ty.ty_adt_def().unwrap();
+                    let (adt_def, substs) = if let TyKind::Adt(def, substs) = pat.ty.kind() {
+                        (def, substs)
+                    } else {
+                        unreachable!()
+                    };
 
                     let field_count = adt_def.variants()[0usize.into()].fields.len();
                     let defaults = (0..field_count).map(|i| (i.into(), Pattern::Wildcard));
@@ -515,7 +524,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         .merge_join_by(fields, |i: &(Field, _), j: &(Field, _)| i.0.cmp(&j.0))
                         .map(|el| el.reduce(|_, a| a).1)
                         .collect();
-                    Ok(Pattern::Constructor { adt: adt_def, variant: 0u32.into(), fields })
+                    Ok(Pattern::Constructor { adt: *adt_def, substs, variant: 0u32.into(), fields })
                 }
             }
             PatKind::Deref { subpattern } => {
@@ -666,7 +675,7 @@ fn field_pattern(ty: Ty, field: Field) -> Option<Pattern> {
 
             Some(Pattern::Tuple(fields))
         }
-        TyKind::Adt(ref adt, _) => {
+        TyKind::Adt(ref adt, substs) => {
             assert!(adt.is_struct(), "can only access fields of struct types");
             assert_eq!(adt.variants().len(), 1, "expected a single variant");
             let variant = &adt.variants()[0u32.into()];
@@ -674,7 +683,7 @@ fn field_pattern(ty: Ty, field: Field) -> Option<Pattern> {
             let mut fields: Vec<_> = (0..variant.fields.len()).map(|_| Pattern::Wildcard).collect();
             fields[field.as_usize()] = Pattern::Binder(Symbol::intern("a"));
 
-            Some(Pattern::Constructor { adt: *adt, variant: 0usize.into(), fields })
+            Some(Pattern::Constructor { adt: *adt, substs, variant: 0usize.into(), fields })
         }
         _ => unreachable!("field_pattern: {:?}", ty),
     }

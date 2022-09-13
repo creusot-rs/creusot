@@ -329,9 +329,10 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
 
     fn lower_pat(&mut self, pat: Pattern<'tcx>) -> Pat {
         match pat {
-            Pattern::Constructor { adt, variant, fields } => {
+            Pattern::Constructor { adt, variant, fields, substs } => {
                 let variant = &adt.variants()[variant];
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
+                self.names.insert(adt.did(), substs);
                 Pat::ConsP(constructor_qname(self.ctx, variant), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,

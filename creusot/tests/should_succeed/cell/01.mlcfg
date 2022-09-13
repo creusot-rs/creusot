@@ -13,35 +13,35 @@ module C01_Inv_Inv
     
 end
 module Core_Cell_UnsafeCell_Type
-  type core_cell_unsafecell_type 't =
-    | Core_Cell_UnsafeCell_Type 't
+  type t_unsafecell 't =
+    | C_UnsafeCell 't
     
 end
 module Core_Cell_Cell_Type
-  use Core_Cell_UnsafeCell_Type
-  type core_cell_cell_type 't =
-    | Core_Cell_Cell_Type (Core_Cell_UnsafeCell_Type.core_cell_unsafecell_type 't)
+  use Core_Cell_UnsafeCell_Type as Core_Cell_UnsafeCell_Type
+  type t_cell 't =
+    | C_Cell (Core_Cell_UnsafeCell_Type.t_unsafecell 't)
     
 end
 module Core_Marker_PhantomData_Type
-  type core_marker_phantomdata_type 't =
-    | Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
     
 end
 module C01_Cell_Type
-  use Core_Marker_PhantomData_Type
-  use Core_Cell_Cell_Type
-  type c01_cell_type 't 'i =
-    | C01_Cell_Type (Core_Cell_Cell_Type.core_cell_cell_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 'i)
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Cell_Cell_Type as Core_Cell_Cell_Type
+  type t_cell 't 'i =
+    | C_Cell (Core_Cell_Cell_Type.t_cell 't) (Core_Marker_PhantomData_Type.t_phantomdata 'i)
     
 end
 module C01_Impl0_Get_Interface
   type t
   type i
   use prelude.Borrow
-  use C01_Cell_Type
+  use C01_Cell_Type as C01_Cell_Type
   clone C01_Inv_Inv_Interface as Inv0 with type self = i, type t = t
-  val get [@cfg:stackify] (self : C01_Cell_Type.c01_cell_type t i) : t
+  val get [@cfg:stackify] (self : C01_Cell_Type.t_cell t i) : t
     ensures { [#"../01.rs" 18 14 18 28] Inv0.inv result }
     
 end
@@ -49,9 +49,9 @@ module C01_Impl0_Get
   type t
   type i
   use prelude.Borrow
-  use C01_Cell_Type
+  use C01_Cell_Type as C01_Cell_Type
   clone C01_Inv_Inv as Inv0 with type self = i, type t = t
-  val get [@cfg:stackify] (self : C01_Cell_Type.c01_cell_type t i) : t
+  val get [@cfg:stackify] (self : C01_Cell_Type.t_cell t i) : t
     ensures { [#"../01.rs" 18 14 18 28] Inv0.inv result }
     
 end
@@ -59,9 +59,9 @@ module C01_Impl0_Set_Interface
   type t
   type i
   use prelude.Borrow
-  use C01_Cell_Type
+  use C01_Cell_Type as C01_Cell_Type
   clone C01_Inv_Inv_Interface as Inv0 with type self = i, type t = t
-  val set [@cfg:stackify] (self : C01_Cell_Type.c01_cell_type t i) (v : t) : ()
+  val set [@cfg:stackify] (self : C01_Cell_Type.t_cell t i) (v : t) : ()
     requires {[#"../01.rs" 24 15 24 24] Inv0.inv v}
     
 end
@@ -69,9 +69,9 @@ module C01_Impl0_Set
   type t
   type i
   use prelude.Borrow
-  use C01_Cell_Type
+  use C01_Cell_Type as C01_Cell_Type
   clone C01_Inv_Inv as Inv0 with type self = i, type t = t
-  val set [@cfg:stackify] (self : C01_Cell_Type.c01_cell_type t i) (v : t) : ()
+  val set [@cfg:stackify] (self : C01_Cell_Type.t_cell t i) (v : t) : ()
     requires {[#"../01.rs" 24 15 24 24] Inv0.inv v}
     
 end
@@ -90,52 +90,51 @@ module C01_Impl1_Inv
     
 end
 module C01_Even_Type
-  type c01_even_type  =
-    | C01_Even_Type
+  type t_even  =
+    | C_Even
     
 end
 module C01_Impl1
-  use C01_Even_Type
   use mach.int.Int
   use mach.int.UInt32
+  use C01_Even_Type as C01_Even_Type
   clone C01_Impl1_Inv as Inv0
-  clone C01_Inv_Inv_Interface as Inv1 with type self = C01_Even_Type.c01_even_type, type t = uint32,
-  predicate inv = Inv0.inv
+  clone C01_Inv_Inv_Interface as Inv1 with type self = C01_Even_Type.t_even, type t = uint32, predicate inv = Inv0.inv
 end
 module C01_AddsTwo_Interface
   use prelude.Borrow
   use mach.int.Int
   use mach.int.UInt32
-  use C01_Even_Type
-  use C01_Cell_Type
-  val adds_two [@cfg:stackify] (c : C01_Cell_Type.c01_cell_type uint32 (C01_Even_Type.c01_even_type)) : ()
+  use C01_Even_Type as C01_Even_Type
+  use C01_Cell_Type as C01_Cell_Type
+  val adds_two [@cfg:stackify] (c : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) : ()
 end
 module C01_AddsTwo
   use prelude.Borrow
   use mach.int.Int
   use mach.int.UInt32
-  use C01_Even_Type
-  use C01_Cell_Type
+  use C01_Even_Type as C01_Even_Type
+  use C01_Cell_Type as C01_Cell_Type
   clone C01_Impl1_Inv as Inv0
-  clone C01_Impl0_Set_Interface as Set0 with type t = uint32, type i = C01_Even_Type.c01_even_type,
+  clone C01_Impl0_Set_Interface as Set0 with type t = uint32, type i = C01_Even_Type.t_even,
   predicate Inv0.inv = Inv0.inv
-  clone C01_Impl0_Get_Interface as Get0 with type t = uint32, type i = C01_Even_Type.c01_even_type,
+  clone C01_Impl0_Get_Interface as Get0 with type t = uint32, type i = C01_Even_Type.t_even,
   predicate Inv0.inv = Inv0.inv
-  let rec cfg adds_two [@cfg:stackify] [#"../01.rs" 39 0 39 36] (c : C01_Cell_Type.c01_cell_type uint32 (C01_Even_Type.c01_even_type)) : ()
+  let rec cfg adds_two [@cfg:stackify] [#"../01.rs" 39 0 39 36] (c : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var c_1 : C01_Cell_Type.c01_cell_type uint32 (C01_Even_Type.c01_even_type);
+  var c_1 : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even);
   var v_2 : uint32;
-  var _3 : C01_Cell_Type.c01_cell_type uint32 (C01_Even_Type.c01_even_type);
+  var _3 : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even);
   var _4 : bool;
   var _5 : uint32;
   var _6 : ();
-  var _7 : C01_Cell_Type.c01_cell_type uint32 (C01_Even_Type.c01_even_type);
+  var _7 : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even);
   var _8 : uint32;
   var _9 : uint32;
   var _10 : ();
-  var _11 : C01_Cell_Type.c01_cell_type uint32 (C01_Even_Type.c01_even_type);
+  var _11 : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even);
   {
     c_1 <- c;
     goto BB0

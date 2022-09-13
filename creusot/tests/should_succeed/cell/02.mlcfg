@@ -1,23 +1,23 @@
 
 module Core_Cell_UnsafeCell_Type
-  type core_cell_unsafecell_type 't =
-    | Core_Cell_UnsafeCell_Type 't
+  type t_unsafecell 't =
+    | C_UnsafeCell 't
     
 end
 module Core_Cell_Cell_Type
-  use Core_Cell_UnsafeCell_Type
-  type core_cell_cell_type 't =
-    | Core_Cell_Cell_Type (Core_Cell_UnsafeCell_Type.core_cell_unsafecell_type 't)
+  use Core_Cell_UnsafeCell_Type as Core_Cell_UnsafeCell_Type
+  type t_cell 't =
+    | C_Cell (Core_Cell_UnsafeCell_Type.t_unsafecell 't)
     
 end
 module C02_Cell_Type
-  use Core_Cell_Cell_Type
-  type c02_cell_type 't 'i =
-    | C02_Cell_Type (Core_Cell_Cell_Type.core_cell_cell_type 't) 'i
+  use Core_Cell_Cell_Type as Core_Cell_Cell_Type
+  type t_cell 't 'i =
+    | C_Cell (Core_Cell_Cell_Type.t_cell 't) 'i
     
-  let function c02_cell_type_Cell_ghost_inv (self : c02_cell_type 't 'i) : 'i = [@vc:do_not_keep_trace] [@vc:sp]
+  let function cell_ghost_inv (self : t_cell 't 'i) : 'i = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | C02_Cell_Type _ a -> a
+      | C_Cell _ a -> a
       end
 end
 module C02_Inv_Inv_Interface
@@ -39,40 +39,40 @@ module C02_Impl0_Get_Interface
   type t
   type i
   use prelude.Borrow
-  use C02_Cell_Type
+  use C02_Cell_Type as C02_Cell_Type
   clone C02_Inv_Inv_Interface as Inv0 with type self = i, type t = t
-  val get [@cfg:stackify] (self : C02_Cell_Type.c02_cell_type t i) : t
-    ensures { [#"../02.rs" 18 4 18 42] Inv0.inv (C02_Cell_Type.c02_cell_type_Cell_ghost_inv self) result }
+  val get [@cfg:stackify] (self : C02_Cell_Type.t_cell t i) : t
+    ensures { [#"../02.rs" 18 4 18 42] Inv0.inv (C02_Cell_Type.cell_ghost_inv self) result }
     
 end
 module C02_Impl0_Get
   type t
   type i
   use prelude.Borrow
-  use C02_Cell_Type
+  use C02_Cell_Type as C02_Cell_Type
   clone C02_Inv_Inv as Inv0 with type self = i, type t = t
-  val get [@cfg:stackify] (self : C02_Cell_Type.c02_cell_type t i) : t
-    ensures { [#"../02.rs" 18 4 18 42] Inv0.inv (C02_Cell_Type.c02_cell_type_Cell_ghost_inv self) result }
+  val get [@cfg:stackify] (self : C02_Cell_Type.t_cell t i) : t
+    ensures { [#"../02.rs" 18 4 18 42] Inv0.inv (C02_Cell_Type.cell_ghost_inv self) result }
     
 end
 module C02_Impl0_Set_Interface
   type t
   type i
   use prelude.Borrow
-  use C02_Cell_Type
+  use C02_Cell_Type as C02_Cell_Type
   clone C02_Inv_Inv_Interface as Inv0 with type self = i, type t = t
-  val set [@cfg:stackify] (self : C02_Cell_Type.c02_cell_type t i) (v : t) : ()
-    requires {[#"../02.rs" 24 4 24 38] Inv0.inv (C02_Cell_Type.c02_cell_type_Cell_ghost_inv self) v}
+  val set [@cfg:stackify] (self : C02_Cell_Type.t_cell t i) (v : t) : ()
+    requires {[#"../02.rs" 24 4 24 38] Inv0.inv (C02_Cell_Type.cell_ghost_inv self) v}
     
 end
 module C02_Impl0_Set
   type t
   type i
   use prelude.Borrow
-  use C02_Cell_Type
+  use C02_Cell_Type as C02_Cell_Type
   clone C02_Inv_Inv as Inv0 with type self = i, type t = t
-  val set [@cfg:stackify] (self : C02_Cell_Type.c02_cell_type t i) (v : t) : ()
-    requires {[#"../02.rs" 24 4 24 38] Inv0.inv (C02_Cell_Type.c02_cell_type_Cell_ghost_inv self) v}
+  val set [@cfg:stackify] (self : C02_Cell_Type.t_cell t i) (v : t) : ()
+    requires {[#"../02.rs" 24 4 24 38] Inv0.inv (C02_Cell_Type.cell_ghost_inv self) v}
     
 end
 module C02_Fib_Interface
@@ -164,90 +164,87 @@ end
 module C02_Fib_Type
   use mach.int.Int
   use prelude.UIntSize
-  type c02_fib_type  =
-    | C02_Fib_Type usize
+  type t_fib  =
+    | C_Fib usize
     
-  let function c02_fib_type_Fib_ix (self : c02_fib_type) : usize = [@vc:do_not_keep_trace] [@vc:sp]
+  let function fib_ix (self : t_fib) : usize = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | C02_Fib_Type a -> a
+      | C_Fib a -> a
       end
 end
 module Core_Option_Option_Type
-  type core_option_option_type 't =
-    | Core_Option_Option_None_Type
-    | Core_Option_Option_Some_Type 't
+  type t_option 't =
+    | C_None
+    | C_Some 't
     
-  let function core_option_option_type_Some_0 (self : core_option_option_type 't) : 't
-   = [@vc:do_not_keep_trace] [@vc:sp]
+  let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
-      | Core_Option_Option_None_Type -> any 't
-      | Core_Option_Option_Some_Type a -> a
+      | C_None -> any 't
+      | C_Some a -> a
       end
 end
 module C02_Impl1_Inv_Interface
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Option_Option_Type
-  use C02_Fib_Type
-  predicate inv (self : C02_Fib_Type.c02_fib_type) (v : Core_Option_Option_Type.core_option_option_type usize)
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C02_Fib_Type as C02_Fib_Type
+  predicate inv (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize)
 end
 module C02_Impl1_Inv
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Option_Option_Type
-  use C02_Fib_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C02_Fib_Type as C02_Fib_Type
   use mach.int.UInt64
   clone C02_Fib_Interface as Fib1 with axiom .
-  predicate inv [#"../02.rs" 67 4 67 43] (self : C02_Fib_Type.c02_fib_type) (v : Core_Option_Option_Type.core_option_option_type usize)
-    
-   =
+  predicate inv [#"../02.rs" 67 4 67 43] (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize) =
     [#"../02.rs" 69 12 72 13] match (v) with
-      | Core_Option_Option_Type.Core_Option_Option_None_Type -> true
-      | Core_Option_Option_Type.Core_Option_Option_Some_Type i -> UInt64.to_int i = Fib1.fib (UInt64.to_int (C02_Fib_Type.c02_fib_type_Fib_ix self))
+      | Core_Option_Option_Type.C_None -> true
+      | Core_Option_Option_Type.C_Some i -> UInt64.to_int i = Fib1.fib (UInt64.to_int (C02_Fib_Type.fib_ix self))
       end
-  val inv (self : C02_Fib_Type.c02_fib_type) (v : Core_Option_Option_Type.core_option_option_type usize) : bool
+  val inv (self : C02_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option usize) : bool
     ensures { result = inv self v }
     
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
-  type core_ptr_nonnull_nonnull_type 't =
-    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
     
 end
 module Core_Marker_PhantomData_Type
-  type core_marker_phantomdata_type 't =
-    | Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
     
 end
 module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type
-  type core_ptr_unique_unique_type 't =
-    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
 module Alloc_RawVec_RawVec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Ptr_Unique_Unique_Type
-  type alloc_rawvec_rawvec_type 't 'a =
-    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
     
 end
 module Alloc_Vec_Vec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_RawVec_RawVec_Type
-  type alloc_vec_vec_type 't 'a =
-    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
 end
 module Alloc_Alloc_Global_Type
-  type alloc_alloc_global_type  =
-    | Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
     
 end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
@@ -256,8 +253,8 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -265,41 +262,41 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
-  val model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     ensures { result = model self }
     
-  axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module C02_FibCell_Interface
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use C02_Fib_Type
-  use Core_Option_Option_Type
-  use C02_Cell_Type
-  use Alloc_Vec_Vec_Type
-  predicate fib_cell (v : Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type))
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use C02_Fib_Type as C02_Fib_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C02_Cell_Type as C02_Cell_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate fib_cell (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
     
 end
 module C02_FibCell
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use C02_Fib_Type
-  use Core_Option_Option_Type
-  use C02_Cell_Type
-  use Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use C02_Fib_Type as C02_Fib_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C02_Cell_Type as C02_Cell_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use seq.Seq
   use mach.int.UInt64
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
-  predicate fib_cell [#"../02.rs" 80 0 80 32] (v : Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type))
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  predicate fib_cell [#"../02.rs" 80 0 80 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
     
    =
-    [#"../02.rs" 81 4 83 5] forall i : int . UInt64.to_int (C02_Fib_Type.c02_fib_type_Fib_ix (C02_Cell_Type.c02_cell_type_Cell_ghost_inv (Seq.get (Model0.model v) i))) = i
-  val fib_cell (v : Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) : bool
+    [#"../02.rs" 81 4 83 5] forall i : int . UInt64.to_int (C02_Fib_Type.fib_ix (C02_Cell_Type.cell_ghost_inv (Seq.get (Model0.model v) i))) = i
+  val fib_cell (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = fib_cell v }
     
 end
@@ -402,15 +399,15 @@ module Alloc_Vec_Impl16_Index_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -422,22 +419,22 @@ module Alloc_Vec_Impl16_Index
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
 end
 module CreusotContracts_Logic_Ghost_Ghost_Type
-  type creusotcontracts_logic_ghost_ghost_type 't =
-    | CreusotContracts_Logic_Ghost_Ghost_Type 't
+  type t_ghost 't =
+    | C_Ghost 't
     
 end
 module Alloc_Vec_Impl16
@@ -500,12 +497,12 @@ end
 module C02_Impl1
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Option_Option_Type
-  use C02_Fib_Type
   clone C02_Fib as Fib1 with axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C02_Fib_Type as C02_Fib_Type
   clone C02_Impl1_Inv as Inv0 with function Fib1.fib = Fib1.fib
-  clone C02_Inv_Inv_Interface as Inv1 with type self = C02_Fib_Type.c02_fib_type,
-  type t = Core_Option_Option_Type.core_option_option_type usize, predicate inv = Inv0.inv
+  clone C02_Inv_Inv_Interface as Inv1 with type self = C02_Fib_Type.t_fib,
+  type t = Core_Option_Option_Type.t_option usize, predicate inv = Inv0.inv
 end
 module C02_FibMemo_Interface
   use mach.int.UInt64
@@ -514,18 +511,18 @@ module C02_FibMemo_Interface
   use mach.int.Int32
   use prelude.Borrow
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use C02_Fib_Type
-  use Core_Option_Option_Type
-  use C02_Cell_Type
-  use Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use C02_Fib_Type as C02_Fib_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C02_Cell_Type as C02_Cell_Type
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone C02_Fib_Interface as Fib0 with axiom .
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone C02_FibCell_Interface as FibCell0
-  val fib_memo [@cfg:stackify] (mem : Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (i : usize) : usize
+  val fib_memo [@cfg:stackify] (mem : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (i : usize) : usize
     requires {[#"../02.rs" 86 11 86 25] FibCell0.fib_cell mem}
     requires {[#"../02.rs" 87 11 87 28] UInt64.to_int i < Seq.length (Model0.model mem)}
     requires {[#"../02.rs" 89 11 89 19] UInt64.to_int i <= 63}
@@ -539,37 +536,37 @@ module C02_FibMemo
   use mach.int.Int32
   use prelude.Borrow
   use prelude.UIntSize
-  use Alloc_Alloc_Global_Type
-  use C02_Fib_Type
-  use Core_Option_Option_Type
-  use C02_Cell_Type
-  use Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type),
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use C02_Fib_Type as C02_Fib_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C02_Cell_Type as C02_Cell_Type
+  clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
+  type a = Alloc_Alloc_Global_Type.t_global, axiom .
   clone C02_Fib as Fib0 with axiom .
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
   clone C02_FibCell as FibCell0 with function Model0.model = Model1.model
   use prelude.IntSize
-  use CreusotContracts_Logic_Ghost_Ghost_Type
   clone C02_Impl1_Inv as Inv0 with function Fib1.fib = Fib0.fib
-  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)
-  clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)
-  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)
-  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)
-  clone C02_Impl0_Set_Interface as Set0 with type t = Core_Option_Option_Type.core_option_option_type usize,
-  type i = C02_Fib_Type.c02_fib_type, predicate Inv0.inv = Inv0.inv
+  clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)
+  clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)
+  clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)
+  clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)
+  clone C02_Impl0_Set_Interface as Set0 with type t = Core_Option_Option_Type.t_option usize,
+  type i = C02_Fib_Type.t_fib, predicate Inv0.inv = Inv0.inv
   clone C02_LemmaFibBound as LemmaFibBound0 with function Fib0.fib = Fib0.fib, axiom .
   clone C02_LemmaMaxInt as LemmaMaxInt0 with axiom .
-  clone C02_Impl0_Get_Interface as Get0 with type t = Core_Option_Option_Type.core_option_option_type usize,
-  type i = C02_Fib_Type.c02_fib_type, predicate Inv0.inv = Inv0.inv
-  clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type),
-  type i = usize, type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model1.model,
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  clone C02_Impl0_Get_Interface as Get0 with type t = Core_Option_Option_Type.t_option usize,
+  type i = C02_Fib_Type.t_fib, predicate Inv0.inv = Inv0.inv
+  clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
+  type i = usize, type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model1.model,
   predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
   type Output0.output = Output0.output
-  let rec cfg fib_memo [@cfg:stackify] [#"../02.rs" 90 0 90 50] (mem : Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (i : usize) : usize
+  let rec cfg fib_memo [@cfg:stackify] [#"../02.rs" 90 0 90 50] (mem : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (i : usize) : usize
     requires {[#"../02.rs" 86 11 86 25] FibCell0.fib_cell mem}
     requires {[#"../02.rs" 87 11 87 28] UInt64.to_int i < Seq.length (Model0.model mem)}
     requires {[#"../02.rs" 89 11 89 19] UInt64.to_int i <= 63}
@@ -577,12 +574,12 @@ module C02_FibMemo
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : usize;
-  var mem_1 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var mem_1 : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global);
   var i_2 : usize;
-  var _7 : Core_Option_Option_Type.core_option_option_type usize;
-  var _8 : C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type);
-  var _9 : C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type);
-  var _10 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _7 : Core_Option_Option_Type.t_option usize;
+  var _8 : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib);
+  var _9 : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib);
+  var _10 : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global);
   var _11 : usize;
   var _12 : isize;
   var v_13 : usize;
@@ -591,25 +588,25 @@ module C02_FibMemo
   var _16 : usize;
   var _17 : bool;
   var _18 : usize;
-  var _19 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type ();
+  var _19 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost ();
   var _22 : ();
-  var _23 : CreusotContracts_Logic_Ghost_Ghost_Type.creusotcontracts_logic_ghost_ghost_type ();
+  var _23 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost ();
   var _26 : ();
   var _27 : usize;
-  var _28 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _28 : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global);
   var _29 : usize;
   var _30 : usize;
   var _31 : usize;
-  var _32 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _32 : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global);
   var _33 : usize;
   var _34 : usize;
   var _35 : ();
   var _37 : ();
-  var _38 : C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type);
-  var _39 : C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type);
-  var _40 : Alloc_Vec_Vec_Type.alloc_vec_vec_type (C02_Cell_Type.c02_cell_type (Core_Option_Option_Type.core_option_option_type usize) (C02_Fib_Type.c02_fib_type)) (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _38 : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib);
+  var _39 : C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib);
+  var _40 : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global);
   var _41 : usize;
-  var _42 : Core_Option_Option_Type.core_option_option_type usize;
+  var _42 : Core_Option_Option_Type.t_option usize;
   var _43 : usize;
   {
     mem_1 <- mem;
@@ -629,8 +626,8 @@ module C02_FibMemo
   }
   BB2 {
     switch (_7)
-      | Core_Option_Option_Type.Core_Option_Option_None_Type -> goto BB3
-      | Core_Option_Option_Type.Core_Option_Option_Some_Type _ -> goto BB5
+      | Core_Option_Option_Type.C_None -> goto BB3
+      | Core_Option_Option_Type.C_Some _ -> goto BB5
       end
   }
   BB3 {
@@ -645,7 +642,7 @@ module C02_FibMemo
     absurd
   }
   BB5 {
-    v_13 <- Core_Option_Option_Type.core_option_option_type_Some_0 _7;
+    v_13 <- Core_Option_Option_Type.some_0 _7;
     _0 <- v_13;
     goto BB18
   }
@@ -667,12 +664,12 @@ module C02_FibMemo
   }
   BB9 {
     _22 <- ();
-    _19 <- ([#"../02.rs" 99 16 99 42] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type (LemmaMaxInt0.lemma_max_int ()));
+    _19 <- ([#"../02.rs" 99 16 99 42] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (LemmaMaxInt0.lemma_max_int ()));
     goto BB10
   }
   BB10 {
     _26 <- ();
-    _23 <- ([#"../02.rs" 100 16 100 52] CreusotContracts_Logic_Ghost_Ghost_Type.CreusotContracts_Logic_Ghost_Ghost_Type (LemmaFibBound0.lemma_fib_bound 0));
+    _23 <- ([#"../02.rs" 100 16 100 52] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (LemmaFibBound0.lemma_fib_bound 0));
     goto BB11
   }
   BB11 {
@@ -707,7 +704,7 @@ module C02_FibMemo
   BB16 {
     _38 <- _39;
     _43 <- fib_i_14;
-    _42 <- Core_Option_Option_Type.Core_Option_Option_Some_Type _43;
+    _42 <- Core_Option_Option_Type.C_Some _43;
     _37 <- ([#"../02.rs" 104 12 104 35] Set0.set _38 _42);
     goto BB17
   }

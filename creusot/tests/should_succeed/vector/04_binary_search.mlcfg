@@ -69,48 +69,48 @@ module CreusotContracts_Logic_Model_Impl0_Model
     
 end
 module Core_Result_Result_Type
-  type core_result_result_type 't 'e =
-    | Core_Result_Result_Ok_Type 't
-    | Core_Result_Result_Err_Type 'e
+  type t_result 't 'e =
+    | C_Ok 't
+    | C_Err 'e
     
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
-  type core_ptr_nonnull_nonnull_type 't =
-    | Core_Ptr_NonNull_NonNull_Type opaque_ptr
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
     
 end
 module Core_Marker_PhantomData_Type
-  type core_marker_phantomdata_type 't =
-    | Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
     
 end
 module Core_Ptr_Unique_Unique_Type
-  use Core_Marker_PhantomData_Type
-  use Core_Ptr_NonNull_NonNull_Type
-  type core_ptr_unique_unique_type 't =
-    | Core_Ptr_Unique_Unique_Type (Core_Ptr_NonNull_NonNull_Type.core_ptr_nonnull_nonnull_type 't) (Core_Marker_PhantomData_Type.core_marker_phantomdata_type 't)
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
     
 end
 module Alloc_RawVec_RawVec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Core_Ptr_Unique_Unique_Type
-  type alloc_rawvec_rawvec_type 't 'a =
-    | Alloc_RawVec_RawVec_Type (Core_Ptr_Unique_Unique_Type.core_ptr_unique_unique_type 't) usize 'a
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
     
 end
 module Alloc_Vec_Vec_Type
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_RawVec_RawVec_Type
-  type alloc_vec_vec_type 't 'a =
-    | Alloc_Vec_Vec_Type (Alloc_RawVec_RawVec_Type.alloc_rawvec_rawvec_type 't 'a) usize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
 end
 module Alloc_Alloc_Global_Type
-  type alloc_alloc_global_type  =
-    | Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
     
 end
 module CreusotContracts_Std1_Vec_Impl0_ModelTy_Type
@@ -133,8 +133,8 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -142,12 +142,12 @@ module CreusotContracts_Std1_Vec_Impl0_Model
   use seq.Seq
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
-  val model (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : Seq.seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     ensures { result = model self }
     
-  axiom model_spec : forall self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a . Seq.length (model self) <= 18446744073709551615
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module Alloc_Vec_Impl1_Len_Interface
   type t
@@ -157,9 +157,9 @@ module Alloc_Vec_Impl1_Len_Interface
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -171,9 +171,9 @@ module Alloc_Vec_Impl1_Len
   use prelude.Borrow
   use mach.int.Int
   use prelude.UIntSize
-  use Alloc_Vec_Vec_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) : usize
+  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
@@ -227,15 +227,15 @@ module Alloc_Vec_Impl16_Index_Interface
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -247,15 +247,15 @@ module Alloc_Vec_Impl16_Index
   use prelude.Borrow
   use prelude.Slice
   use seq.Seq
-  use Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
   clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.alloc_vec_vec_type t a) (index : i) : Output0.output
+  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
     
@@ -324,20 +324,20 @@ module C04BinarySearch_BinarySearch_Interface
   use mach.int.UInt64
   use mach.int.UInt32
   use prelude.Borrow
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  use Core_Result_Result_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = uint32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use Core_Result_Result_Type as Core_Result_Result_Type
   clone C04BinarySearch_Sorted_Interface as Sorted0
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type uint32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy
-  val binary_search [@cfg:stackify] (arr : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (elem : uint32) : Core_Result_Result_Type.core_result_result_type usize usize
+  val binary_search [@cfg:stackify] (arr : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (elem : uint32) : Core_Result_Result_Type.t_result usize usize
     requires {[#"../04_binary_search.rs" 16 11 16 38] Seq.length (Model0.model arr) <= 18446744073709551615}
     requires {[#"../04_binary_search.rs" 17 11 17 23] Sorted0.sorted (Model0.model arr)}
-    ensures { [#"../04_binary_search.rs" 18 0 18 66] forall x : usize . result = Core_Result_Result_Type.Core_Result_Result_Ok_Type x -> Seq.get (Model0.model arr) (UInt64.to_int x) = elem }
-    ensures { [#"../04_binary_search.rs" 19 0 20 51] forall x : usize . result = Core_Result_Result_Type.Core_Result_Result_Err_Type x -> (forall i : usize . i < x -> Seq.get (Model0.model arr) (UInt64.to_int i) <= elem) }
-    ensures { [#"../04_binary_search.rs" 21 0 22 70] forall x : usize . result = Core_Result_Result_Type.Core_Result_Result_Err_Type x -> (forall i : usize . x < i /\ UInt64.to_int i < Seq.length (Model0.model arr) -> elem < Seq.get (Model0.model arr) (UInt64.to_int i)) }
+    ensures { [#"../04_binary_search.rs" 18 0 18 66] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> Seq.get (Model0.model arr) (UInt64.to_int x) = elem }
+    ensures { [#"../04_binary_search.rs" 19 0 20 51] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . i < x -> Seq.get (Model0.model arr) (UInt64.to_int i) <= elem) }
+    ensures { [#"../04_binary_search.rs" 21 0 22 70] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . x < i /\ UInt64.to_int i < Seq.length (Model0.model arr) -> elem < Seq.get (Model0.model arr) (UInt64.to_int i)) }
     
 end
 module C04BinarySearch_BinarySearch
@@ -347,16 +347,16 @@ module C04BinarySearch_BinarySearch
   use mach.int.UInt64
   use mach.int.UInt32
   use prelude.Borrow
-  use Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type
-  use Core_Result_Result_Type
   clone C04BinarySearch_SortedRange as SortedRange0
-  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = uint32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = uint32, type a = Alloc_Alloc_Global_Type.t_global,
+  axiom .
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = uint32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type
+  type a = Alloc_Alloc_Global_Type.t_global
+  use Core_Result_Result_Type as Core_Result_Result_Type
   clone C04BinarySearch_Sorted as Sorted0 with predicate SortedRange0.sorted_range = SortedRange0.sorted_range
-  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Alloc_Vec_Vec_Type.alloc_vec_vec_type uint32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type),
+  clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
   use mach.int.Int32
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = uint32
@@ -364,29 +364,29 @@ module C04BinarySearch_BinarySearch
   clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = uint32
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = uint32
   clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = uint32, type i = usize,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model1.model,
+  type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model1.model,
   predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
   type Output0.output = Output0.output
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = uint32,
-  type a = Alloc_Alloc_Global_Type.alloc_alloc_global_type, function Model0.model = Model1.model
-  let rec cfg binary_search [@cfg:stackify] [#"../04_binary_search.rs" 23 0 23 71] (arr : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type)) (elem : uint32) : Core_Result_Result_Type.core_result_result_type usize usize
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = uint32, type a = Alloc_Alloc_Global_Type.t_global,
+  function Model0.model = Model1.model
+  let rec cfg binary_search [@cfg:stackify] [#"../04_binary_search.rs" 23 0 23 71] (arr : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (elem : uint32) : Core_Result_Result_Type.t_result usize usize
     requires {[#"../04_binary_search.rs" 16 11 16 38] Seq.length (Model0.model arr) <= 18446744073709551615}
     requires {[#"../04_binary_search.rs" 17 11 17 23] Sorted0.sorted (Model0.model arr)}
-    ensures { [#"../04_binary_search.rs" 18 0 18 66] forall x : usize . result = Core_Result_Result_Type.Core_Result_Result_Ok_Type x -> Seq.get (Model0.model arr) (UInt64.to_int x) = elem }
-    ensures { [#"../04_binary_search.rs" 19 0 20 51] forall x : usize . result = Core_Result_Result_Type.Core_Result_Result_Err_Type x -> (forall i : usize . i < x -> Seq.get (Model0.model arr) (UInt64.to_int i) <= elem) }
-    ensures { [#"../04_binary_search.rs" 21 0 22 70] forall x : usize . result = Core_Result_Result_Type.Core_Result_Result_Err_Type x -> (forall i : usize . x < i /\ UInt64.to_int i < Seq.length (Model0.model arr) -> elem < Seq.get (Model0.model arr) (UInt64.to_int i)) }
+    ensures { [#"../04_binary_search.rs" 18 0 18 66] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> Seq.get (Model0.model arr) (UInt64.to_int x) = elem }
+    ensures { [#"../04_binary_search.rs" 19 0 20 51] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . i < x -> Seq.get (Model0.model arr) (UInt64.to_int i) <= elem) }
+    ensures { [#"../04_binary_search.rs" 21 0 22 70] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . x < i /\ UInt64.to_int i < Seq.length (Model0.model arr) -> elem < Seq.get (Model0.model arr) (UInt64.to_int i)) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : Core_Result_Result_Type.core_result_result_type usize usize;
-  var arr_1 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _0 : Core_Result_Result_Type.t_result usize usize;
+  var arr_1 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
   var elem_2 : uint32;
   var _8 : ();
   var _9 : bool;
   var _10 : usize;
-  var _11 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _11 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
   var _12 : ();
   var size_13 : usize;
-  var _14 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _14 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
   var base_15 : usize;
   var _16 : ();
   var _20 : ();
@@ -402,7 +402,7 @@ module C04BinarySearch_BinarySearch
   var _30 : bool;
   var _31 : uint32;
   var _32 : uint32;
-  var _33 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _33 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
   var _34 : usize;
   var _35 : uint32;
   var _36 : usize;
@@ -411,7 +411,7 @@ module C04BinarySearch_BinarySearch
   var _39 : ();
   var cmp_40 : uint32;
   var _41 : uint32;
-  var _42 : Alloc_Vec_Vec_Type.alloc_vec_vec_type uint32 (Alloc_Alloc_Global_Type.alloc_alloc_global_type);
+  var _42 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
   var _43 : usize;
   var _44 : bool;
   var _45 : uint32;
@@ -441,7 +441,7 @@ module C04BinarySearch_BinarySearch
       end
   }
   BB2 {
-    _0 <- Core_Result_Result_Type.Core_Result_Result_Err_Type (0 : usize);
+    _0 <- Core_Result_Result_Type.C_Err (0 : usize);
     goto BB20
   }
   BB3 {
@@ -525,7 +525,7 @@ module C04BinarySearch_BinarySearch
   }
   BB14 {
     _47 <- base_15;
-    _0 <- Core_Result_Result_Type.Core_Result_Result_Ok_Type _47;
+    _0 <- Core_Result_Result_Type.C_Ok _47;
     goto BB19
   }
   BB15 {
@@ -540,12 +540,12 @@ module C04BinarySearch_BinarySearch
   BB16 {
     _52 <- base_15;
     _51 <- ([#"../04_binary_search.rs" 45 12 45 20] _52 + (1 : usize));
-    _0 <- Core_Result_Result_Type.Core_Result_Result_Err_Type _51;
+    _0 <- Core_Result_Result_Type.C_Err _51;
     goto BB18
   }
   BB17 {
     _53 <- base_15;
-    _0 <- Core_Result_Result_Type.Core_Result_Result_Err_Type _53;
+    _0 <- Core_Result_Result_Type.C_Err _53;
     goto BB18
   }
   BB18 {
