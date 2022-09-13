@@ -5,42 +5,34 @@ use indexmap::IndexMap;
 pub use util::{item_name, module_name, ItemType};
 use why3::declaration::{Decl, Module, TyDecl};
 
-pub enum TranslatedItem<'tcx> {
+pub enum TranslatedItem {
     Logic {
         interface: Module,
         modl: Module,
         proof_modl: Option<Module>,
-        dependencies: CloneSummary<'tcx>,
         has_axioms: bool,
     },
     Program {
         interface: Module,
         modl: Module,
-        dependencies: CloneSummary<'tcx>,
         has_axioms: bool,
     },
     Trait {
         laws: Vec<DefId>,
-        dependencies: CloneSummary<'tcx>, // always empty
     },
     Impl {
         laws: Vec<DefId>, // Instantiations of trait laws
         modl: Module,     // Refinement of traits,
-        dependencies: CloneSummary<'tcx>,
     },
     AssocTy {
         modl: Module,
-        dependencies: CloneSummary<'tcx>,
     },
     Extern {
         interface: Module,
         body: Module,
-        // TODO: Get rid of this result.
-        dependencies: Result<CloneSummary<'tcx>, DefId>,
     },
     Constant {
         modl: Module,
-        dependencies: CloneSummary<'tcx>,
     },
     // Types can not have dependencies yet, as Why3 does not yet have applicative clones
     Type {
@@ -60,32 +52,15 @@ impl TypeDeclaration {
     }
 }
 
-impl<'a, 'tcx> TranslatedItem<'tcx> {
-    pub fn dependencies(&'a self, metadata: &'a Metadata<'tcx>) -> Option<&'a CloneSummary<'tcx>> {
-        use TranslatedItem::*;
+impl<'a> TranslatedItem {
+    pub fn external_dependencies<'tcx>(
+        &'a self,
+        metadata: &'a Metadata<'tcx>,
+        id: DefId,
+    ) -> Option<&'a CloneSummary<'tcx>> {
         match self {
-            Extern { dependencies, .. } => match dependencies {
-                Ok(deps) => Some(deps),
-                Err(id) => Some(metadata.dependencies(*id).unwrap()),
-            },
-            _ => self.local_dependencies(),
-        }
-    }
-
-    // Get the dependencies of a locally defined function
-    // Panics if `self` is not local
-    pub fn local_dependencies(&self) -> Option<&CloneSummary<'tcx>> {
-        use TranslatedItem::*;
-
-        match self {
-            Logic { dependencies, .. } => Some(dependencies),
-            Program { dependencies, .. } => Some(dependencies),
-            Trait { dependencies, .. } => Some(dependencies),
-            Impl { dependencies, .. } => Some(dependencies),
-            AssocTy { dependencies, .. } => Some(dependencies),
-            Constant { dependencies, .. } => Some(dependencies),
-            Extern { .. } => unreachable!("local_dependencies: called on a non-local item"),
-            Type { .. } => None,
+            TranslatedItem::Extern { .. } => Some(metadata.dependencies(id).unwrap()),
+            _ => None,
         }
     }
 
