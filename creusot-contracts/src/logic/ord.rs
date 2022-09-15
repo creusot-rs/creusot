@@ -160,12 +160,20 @@ macro_rules! ord_logic_impl {
 }
 
 ord_logic_impl!(Int);
-ord_logic_impl!(usize);
-ord_logic_impl!(u64);
+
+ord_logic_impl!(u8);
+ord_logic_impl!(u16);
 ord_logic_impl!(u32);
-ord_logic_impl!(isize);
+ord_logic_impl!(u64);
+ord_logic_impl!(u128);
+ord_logic_impl!(usize);
+
+ord_logic_impl!(i8);
+ord_logic_impl!(i16);
 ord_logic_impl!(i32);
 ord_logic_impl!(i64);
+ord_logic_impl!(i128);
+ord_logic_impl!(isize);
 
 impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
     #[logic]

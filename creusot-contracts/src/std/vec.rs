@@ -94,7 +94,6 @@ extern_spec! {
             #[ensures((@result).len() == @n)]
             #[ensures(forall<i : Int> 0 <= i && i < @n ==> (@result)[i] == elem)]
             fn from_elem<T : Clone>(elem : T, n : usize) -> Vec<T>;
-
         }
     }
 }

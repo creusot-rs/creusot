@@ -253,7 +253,6 @@ extern_spec! {
       #[ensures(ix.has_value(@*self, *result))]
       fn index(&self, ix: I) -> &<[T] as Index<I>>::Output;
     }
-
 }
 
 impl<T> Model for Iter<'_, T> {

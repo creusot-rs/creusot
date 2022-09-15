@@ -19,16 +19,10 @@ extern_spec! {
             fn from(i: i32) -> BigInt;
         }
 
-        impl PartialEq<BigInt> for BigInt {
-            #[ensures(result == (@self== @rhs))]
-            fn eq(&self, rhs: &BigInt) -> bool;
-        }
-
         impl Add<BigInt> for BigInt {
             #[ensures(@result == @self + @rhs)]
             fn add(self, rhs: BigInt) -> BigInt;
         }
-
 
         impl Sub<BigInt> for BigInt {
             #[ensures(@result == @self - @rhs)]
@@ -44,11 +38,6 @@ extern_spec! {
             #[requires(@rhs != 0)]
             #[ensures(@result == @self / @rhs)]
             fn div(self, rhs: BigInt) -> BigInt;
-        }
-
-        impl Clone for BigInt {
-            #[ensures(result == *self)]
-            fn clone(&self) -> BigInt;
         }
     }
 }

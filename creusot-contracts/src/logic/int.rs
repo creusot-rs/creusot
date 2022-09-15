@@ -12,8 +12,6 @@ use std::ops::*;
 #[derive(std::clone::Clone, Copy)]
 pub struct Int(*mut ());
 
-impl WellFounded for Int {}
-
 impl Int {
     #[trusted]
     #[logic]

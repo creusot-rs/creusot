@@ -58,6 +58,8 @@ pub enum Expr {
     False,
 }
 
+// FIXME: this should go away, we have not defined any order relation on Expr
+#[trusted]
 impl WellFounded for Expr {}
 
 use std::alloc::Allocator;
