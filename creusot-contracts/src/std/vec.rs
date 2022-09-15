@@ -118,8 +118,8 @@ impl<T> Resolve for Vec<T> {
 
 impl<T, A: Allocator> IteratorSpec for std::vec::IntoIter<T, A> {
     #[predicate]
-    fn completed(self) -> bool {
-        pearlite! { @self == Seq::EMPTY }
+    fn completed(self, o: Self) -> bool {
+        pearlite! { self == o && @self == Seq::EMPTY }
     }
 
     #[predicate]
@@ -158,8 +158,8 @@ extern_spec! {
         mod vec {
             impl<T, A : Allocator> Iterator for IntoIter<T, A> {
                 #[ensures(match result {
-                    None => (*self).completed() && self.resolve(),
-                    Some(v) => (*self).produces(Seq::singleton(v), ^self) && !(*self).completed()
+                  None => (*self).completed(^self),
+                  Some(v) => (*self).produces(Seq::singleton(v), ^self)
                 })]
                 fn next(&mut self) -> Option<T>;
             }

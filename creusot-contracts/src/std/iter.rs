@@ -4,10 +4,10 @@ use creusot_contracts_proc::*;
 
 pub trait IteratorSpec: Iterator {
     #[predicate]
-    fn completed(self) -> bool;
+    fn produces(self, visited: Seq<Self::Item>, _: Self) -> bool;
 
     #[predicate]
-    fn produces(self, visited: Seq<Self::Item>, _: Self) -> bool;
+    fn completed(self, _: Self) -> bool;
 
     #[law]
     #[ensures(a.produces(Seq::EMPTY, a))]
@@ -27,8 +27,8 @@ extern_spec! {
                 where Self : IteratorSpec {
 
                 #[ensures(match result {
-                    None => (*self).completed(),
-                    Some(v) => (*self).produces(Seq::singleton(v), ^self) && !(*self).completed()
+                    None => (*self).completed(^self),
+                    Some(v) => (*self).produces(Seq::singleton(v), ^self)
                 })]
                 fn next(&mut self) -> Option<Self_::Item>;
             }
