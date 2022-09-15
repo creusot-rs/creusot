@@ -1,5 +1,5 @@
 use crate as creusot_contracts;
-use crate::{Seq, Int, Model, OrdLogic};
+use crate::{Int, Model, OrdLogic, Seq};
 use creusot_contracts_proc::*;
 use std::iter::Skip;
 
@@ -53,11 +53,11 @@ impl<I> Model for Skip<I> {
     #[logic]
     #[trusted]
     fn model(self) -> Self::ModelTy {
-        pearlite!{ absurd }
+        pearlite! { absurd }
     }
 }
 
-impl<I : IteratorSpec> IteratorSpec for Skip<I> {
+impl<I: IteratorSpec> IteratorSpec for Skip<I> {
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
