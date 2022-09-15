@@ -11,12 +11,6 @@ pub struct Skip<I> {
     n: usize,
 }
 
-impl<I> Skip<I> {
-    pub fn new(iter: I, n: usize) -> Skip<I> {
-        Skip { iter, n }
-    }
-}
-
 impl<I> Iterator for Skip<I>
 where
     I: Iterator,

@@ -152,17 +152,3 @@ impl<T, A: Allocator> Model for std::vec::IntoIter<T, A> {
         absurd
     }
 }
-
-extern_spec! {
-    mod std {
-        mod vec {
-            impl<T, A : Allocator> Iterator for IntoIter<T, A> {
-                #[ensures(match result {
-                  None => self.completed(),
-                  Some(v) => (*self).produces(Seq::singleton(v), ^self)
-                })]
-                fn next(&mut self) -> Option<T>;
-            }
-        }
-    }
-}
