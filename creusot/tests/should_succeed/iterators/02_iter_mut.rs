@@ -14,8 +14,8 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
 
     #[predicate]
-    fn completed(self) -> bool {
-        pearlite! { (@self.inner).ext_eq(Seq::EMPTY) }
+    fn completed(&mut self) -> bool {
+        pearlite! { self.resolve() && (@self.inner).ext_eq(Seq::EMPTY) }
     }
 
     #[predicate]
@@ -41,8 +41,8 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[ensures(match result {
-      None => (*self).completed() && self.resolve(),
-      Some(v) => (*self).produces(Seq::singleton(v), ^self) && !(*self).completed()
+      None => self.completed(),
+      Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {
         (self.inner).take_first_mut()
@@ -56,13 +56,11 @@ impl<'a, T> IterMut<'a, T> {
     }
 }
 
-#[trusted]
 #[ensures(@*result.inner == @*v)]
 #[ensures(@^result.inner == @^v)]
 #[ensures((@^v).len() == (@v).len())]
 fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
-    // IterMut { inner : &mut v[..] }
-    panic!()
+    IterMut { inner: &mut v[..] }
 }
 
 #[ensures((@^v).len() == (@v).len())]

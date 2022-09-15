@@ -215,12 +215,14 @@ module Core_Option_Option_Type
 end
 module CreusotContracts_Std1_Iter_IteratorSpec_Completed_Interface
   type self
-  predicate completed (self : self)
+  use prelude.Borrow
+  predicate completed (self : borrowed self)
 end
 module CreusotContracts_Std1_Iter_IteratorSpec_Completed
   type self
-  predicate completed (self : self)
-  val completed (self : self) : bool
+  use prelude.Borrow
+  predicate completed (self : borrowed self)
+  val completed (self : borrowed self) : bool
     ensures { result = completed self }
     
 end
@@ -261,8 +263,8 @@ module Core_Slice_Iter_Impl181_Next_Interface
   use Core_Option_Option_Type as Core_Option_Option_Type
   val next [@cfg:stackify] (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : Core_Option_Option_Type.t_option t
     ensures { match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed ( * self)
-      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self) /\ not Completed0.completed ( * self)
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
+      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
     
 end
@@ -278,8 +280,8 @@ module Core_Slice_Iter_Impl181_Next
   use Core_Option_Option_Type as Core_Option_Option_Type
   val next [@cfg:stackify] (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : Core_Option_Option_Type.t_option t
     ensures { match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed ( * self)
-      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self) /\ not Completed0.completed ( * self)
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
+      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
     
 end
@@ -384,21 +386,41 @@ module CreusotContracts_Std1_Slice_Impl11_ProducesTrans_Impl
    = [@vc:do_not_keep_trace] [@vc:sp]
     ()
 end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
 module CreusotContracts_Std1_Slice_Impl11_Completed_Interface
   type t
+  use prelude.Borrow
   use Core_Slice_Iter_Iter_Type as Core_Slice_Iter_Iter_Type
-  predicate completed (self : Core_Slice_Iter_Iter_Type.t_iter t)
+  predicate completed (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t))
 end
 module CreusotContracts_Std1_Slice_Impl11_Completed
   type t
+  use prelude.Borrow
   use Core_Slice_Iter_Iter_Type as Core_Slice_Iter_Iter_Type
   use seq.Seq
   clone CreusotContracts_Std1_Slice_Impl9_Model_Interface as Model0 with type t = t
-  predicate completed (self : Core_Slice_Iter_Iter_Type.t_iter t) =
-    Model0.model self = Seq.empty 
-  val completed (self : Core_Slice_Iter_Iter_Type.t_iter t) : bool
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface as Resolve0 with type t = Core_Slice_Iter_Iter_Type.t_iter t
+  predicate completed (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) =
+    Resolve0.resolve self /\ Model0.model ( * self) = Seq.empty 
+  val completed (self : borrowed (Core_Slice_Iter_Iter_Type.t_iter t)) : bool
     ensures { result = completed self }
     
+end
+module CreusotContracts_Logic_Resolve_Impl1
+  type t
 end
 module C03StdIterators_SliceIter_Interface
   type t
@@ -431,10 +453,12 @@ module C03StdIterators_SliceIter
   clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
   use prelude.IntSize
-  clone Core_Slice_Iter_Impl181_Item_Type as Item0 with type t = t
   use Core_Slice_Iter_Iter_Type as Core_Slice_Iter_Iter_Type
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve6 with type t = Core_Slice_Iter_Iter_Type.t_iter t
+  clone Core_Slice_Iter_Impl181_Item_Type as Item0 with type t = t
   clone CreusotContracts_Std1_Slice_Impl9_Model as Model2 with type t = t
-  clone CreusotContracts_Std1_Slice_Impl11_Completed as Completed0 with type t = t, function Model0.model = Model2.model
+  clone CreusotContracts_Std1_Slice_Impl11_Completed as Completed0 with type t = t,
+  predicate Resolve0.resolve = Resolve6.resolve, function Model0.model = Model2.model
   clone CreusotContracts_Std1_Slice_Impl11_Produces as Produces0 with type t = t, function Model0.model = Model2.model
   clone CreusotContracts_Std1_Slice_Impl11_ProducesTrans as ProducesTrans0 with type t = t,
   predicate Produces0.produces = Produces0.produces, axiom .
@@ -685,10 +709,12 @@ module C03StdIterators_VecIter
   clone CreusotContracts_Logic_Model_Impl0_Model as Model0 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
   use prelude.IntSize
-  clone Core_Slice_Iter_Impl181_Item_Type as Item0 with type t = t
   use Core_Slice_Iter_Iter_Type as Core_Slice_Iter_Iter_Type
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve6 with type t = Core_Slice_Iter_Iter_Type.t_iter t
+  clone Core_Slice_Iter_Impl181_Item_Type as Item0 with type t = t
   clone CreusotContracts_Std1_Slice_Impl9_Model as Model2 with type t = t
-  clone CreusotContracts_Std1_Slice_Impl11_Completed as Completed0 with type t = t, function Model0.model = Model2.model
+  clone CreusotContracts_Std1_Slice_Impl11_Completed as Completed0 with type t = t,
+  predicate Resolve0.resolve = Resolve6.resolve, function Model0.model = Model2.model
   clone CreusotContracts_Std1_Slice_Impl11_Produces as Produces0 with type t = t, function Model0.model = Model2.model
   clone CreusotContracts_Std1_Slice_Impl11_ProducesTrans as ProducesTrans0 with type t = t,
   predicate Produces0.produces = Produces0.produces, axiom .
@@ -825,20 +851,6 @@ end
 module CreusotContracts_Logic_Model_Impl1
   type t
 end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
 module Alloc_Vec_Impl11_DerefMut_Interface
   type t
   type a
@@ -971,8 +983,8 @@ module Core_Slice_Iter_Impl187_Next_Interface
   use Core_Option_Option_Type as Core_Option_Option_Type
   val next [@cfg:stackify] (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut t)) : Core_Option_Option_Type.t_option (borrowed t)
     ensures { match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed ( * self)
-      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self) /\ not Completed0.completed ( * self)
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
+      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
     
 end
@@ -988,13 +1000,10 @@ module Core_Slice_Iter_Impl187_Next
   use Core_Option_Option_Type as Core_Option_Option_Type
   val next [@cfg:stackify] (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut t)) : Core_Option_Option_Type.t_option (borrowed t)
     ensures { match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed ( * self)
-      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self) /\ not Completed0.completed ( * self)
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
+      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
     
-end
-module CreusotContracts_Logic_Resolve_Impl1
-  type t
 end
 module Alloc_Vec_Impl11
   type t
@@ -1083,18 +1092,20 @@ module CreusotContracts_Std1_Slice_Impl12_ProducesTrans_Impl
 end
 module CreusotContracts_Std1_Slice_Impl12_Completed_Interface
   type t
+  use prelude.Borrow
   use Core_Slice_Iter_IterMut_Type as Core_Slice_Iter_IterMut_Type
-  predicate completed (self : Core_Slice_Iter_IterMut_Type.t_itermut t)
+  predicate completed (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut t))
 end
 module CreusotContracts_Std1_Slice_Impl12_Completed
   type t
-  use Core_Slice_Iter_IterMut_Type as Core_Slice_Iter_IterMut_Type
   use prelude.Borrow
+  use Core_Slice_Iter_IterMut_Type as Core_Slice_Iter_IterMut_Type
   use seq.Seq
   clone CreusotContracts_Std1_Slice_Impl10_Model_Interface as Model0 with type t = t, axiom .
-  predicate completed (self : Core_Slice_Iter_IterMut_Type.t_itermut t) =
-    Seq.(==) ( * Model0.model self) (Seq.empty )
-  val completed (self : Core_Slice_Iter_IterMut_Type.t_itermut t) : bool
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface as Resolve0 with type t = Core_Slice_Iter_IterMut_Type.t_itermut t
+  predicate completed (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut t)) =
+    Resolve0.resolve self /\  * Model0.model ( * self) = Seq.empty 
+  val completed (self : borrowed (Core_Slice_Iter_IterMut_Type.t_itermut t)) : bool
     ensures { result = completed self }
     
 end
@@ -1135,11 +1146,12 @@ module C03StdIterators_AllZero
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
   use prelude.Slice
   use prelude.IntSize
-  clone Core_Slice_Iter_Impl187_Item_Type as Item0 with type t = usize
   use Core_Slice_Iter_IterMut_Type as Core_Slice_Iter_IterMut_Type
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve3 with type t = Core_Slice_Iter_IterMut_Type.t_itermut usize
+  clone Core_Slice_Iter_Impl187_Item_Type as Item0 with type t = usize
   clone CreusotContracts_Std1_Slice_Impl10_Model as Model3 with type t = usize, axiom .
   clone CreusotContracts_Std1_Slice_Impl12_Completed as Completed0 with type t = usize,
-  function Model0.model = Model3.model
+  predicate Resolve0.resolve = Resolve3.resolve, function Model0.model = Model3.model
   clone CreusotContracts_Std1_Slice_Impl12_Produces as Produces0 with type t = usize,
   function Model0.model = Model3.model
   clone CreusotContracts_Std1_Slice_Impl12_ProducesTrans as ProducesTrans0 with type t = usize,

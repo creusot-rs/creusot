@@ -15,15 +15,18 @@ impl Iterator for Range {
     type Item = isize;
 
     #[predicate]
-    fn completed(self) -> bool {
-        pearlite! { self.start >= self.end }
+    fn completed(&mut self) -> bool {
+        pearlite! {
+            self.resolve() && self.start >= self.end
+        }
     }
 
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.end == o.end && self.start <= o.start
-            &&  visited.len() == @(o.start) - @(self.start)
+            && (visited.len() > 0 ==> o.start <= o.end)
+            && visited.len() == @(o.start) - @(self.start)
             && forall<i : Int> 0 <= i && i < visited.len() ==>
                 @(visited[i]) == @self.start + i
         }
@@ -39,10 +42,9 @@ impl Iterator for Range {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
-    // #[requires(!(*self).completed())]
     #[ensures(match result {
-      None => (^self).completed() && self.resolve(),
-      Some(v) => (*self).produces(Seq::singleton(v), ^self) && !(*self).completed()
+      None => self.completed(),
+      Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<isize> {
         if self.start >= self.end {
