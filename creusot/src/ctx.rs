@@ -42,6 +42,7 @@ pub struct TranslationCtx<'sess, 'tcx> {
     ty_binding_groups: HashMap<DefId, DefId>, // maps type ids to their 'representative type'
     functions: IndexMap<DefId, TranslatedItem>,
     dependencies: IndexMap<DefId, CloneSummary<'tcx>>,
+    laws: IndexMap<DefId, Vec<DefId>>,
     terms: IndexMap<DefId, Term<'tcx>>,
     pub externs: Metadata<'tcx>,
     pub(crate) opts: &'sess Options,
@@ -64,6 +65,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
 
         Self {
             tcx,
+            laws: Default::default(),
             translated_items: Default::default(),
             in_translation: Default::default(),
             functions: Default::default(),
@@ -294,14 +296,14 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         self.functions.insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
     }
 
-    pub fn add_trait(&mut self, def_id: DefId, laws: Vec<DefId>) {
+    pub fn add_trait(&mut self, def_id: DefId) {
         self.dependencies.insert(def_id, CloneSummary::new());
-        self.functions.insert(def_id, TranslatedItem::Trait { laws });
+        self.functions.insert(def_id, TranslatedItem::Trait {});
     }
 
-    pub fn add_impl(&mut self, def_id: DefId, laws: Vec<DefId>, modl: Module) {
+    pub fn add_impl(&mut self, def_id: DefId, modl: Module) {
         self.dependencies.insert(def_id, CloneSummary::new());
-        self.functions.insert(def_id, TranslatedItem::Impl { modl, laws });
+        self.functions.insert(def_id, TranslatedItem::Impl { modl });
     }
 
     pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
@@ -319,6 +321,14 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     // Panics a type hasn't yet been translated
     pub fn representative_type(&self, def_id: DefId) -> DefId {
         *self.ty_binding_groups.get(&def_id).unwrap_or_else(|| panic!("no key for {:?}", def_id))
+    }
+
+    pub fn laws(&mut self, trait_or_impl: DefId) -> &[DefId] {
+        if self.laws.get(&trait_or_impl).is_none() {
+            self.laws.insert(trait_or_impl, self.laws_inner(trait_or_impl));
+        };
+
+        &self.laws[&trait_or_impl]
     }
 
     // TODO Make private

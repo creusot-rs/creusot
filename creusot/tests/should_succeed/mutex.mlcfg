@@ -259,17 +259,6 @@ module Mutex_Impl3_Postcondition
     ensures { result = postcondition self _2' }
     
 end
-module CreusotContracts_Logic_Ghost_Impl0
-  type t
-end
-module Mutex_Impl2
-  use mach.int.Int
-  use mach.int.UInt32
-  use Mutex_Even_Type as Mutex_Even_Type
-  clone Mutex_Impl2_Inv as Inv0
-  clone Mutex_Inv_Inv_Interface as Inv1 with type self = Mutex_Even_Type.t_even, type t = uint32,
-  predicate inv = Inv0.inv
-end
 module Mutex_Impl3_Call_Interface
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
   val call [@cfg:stackify] (self : Mutex_AddsTwo_Type.t_addstwo) : ()
@@ -518,59 +507,9 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
-module CreusotContracts_Logic_Resolve_Impl1
-  type t
-end
 module Mutex_Impl3_Return_Type
   type return'  =
     ()
-end
-module Mutex_FakeFnOnce_Call_Interface
-  type self
-  clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = self
-  clone Mutex_FakeFnOnce_Postcondition_Interface as Postcondition0 with type self = self,
-  type Return0.return' = Return0.return'
-  clone Mutex_FakeFnOnce_Precondition_Interface as Precondition0 with type self = self
-  val call [@cfg:stackify] (self : self) : Return0.return'
-    requires {[#"../mutex.rs" 82 15 82 34] Precondition0.precondition self}
-    ensures { [#"../mutex.rs" 83 14 83 40] Postcondition0.postcondition self result }
-    
-end
-module Mutex_FakeFnOnce_Call
-  type self
-  clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = self
-  clone Mutex_FakeFnOnce_Postcondition as Postcondition0 with type self = self, type Return0.return' = Return0.return'
-  clone Mutex_FakeFnOnce_Precondition as Precondition0 with type self = self
-  val call [@cfg:stackify] (self : self) : Return0.return'
-    requires {[#"../mutex.rs" 82 15 82 34] Precondition0.precondition self}
-    ensures { [#"../mutex.rs" 83 14 83 40] Postcondition0.postcondition self result }
-    
-end
-module Mutex_Impl3
-  use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
-  clone Mutex_Impl3_Return_Type as Return0
-  clone Mutex_Impl3_Postcondition as Postcondition0
-  clone Mutex_Impl3_Precondition as Precondition0
-  clone Mutex_Impl3_Call_Interface as Call0
-  clone Mutex_FakeFnOnce_Call_Interface as Call1 with type self = Mutex_AddsTwo_Type.t_addstwo, val call = Call0.call,
-  predicate Precondition0.precondition = Precondition0.precondition,
-  predicate Postcondition0.postcondition = Postcondition0.postcondition, type Return0.return' = Return0.return'
-  clone Mutex_FakeFnOnce_Postcondition_Interface as Postcondition1 with type self = Mutex_AddsTwo_Type.t_addstwo,
-  predicate postcondition = Postcondition0.postcondition, type Return0.return' = Return0.return'
-  clone Mutex_FakeFnOnce_Precondition_Interface as Precondition1 with type self = Mutex_AddsTwo_Type.t_addstwo,
-  predicate precondition = Precondition0.precondition
-  clone Mutex_FakeFnOnce_Return_Type as Return1 with type self = Mutex_AddsTwo_Type.t_addstwo,
-  type return' = Return0.return'
-end
-module Mutex_Impl5
-  type f
-  clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = f
-  clone Mutex_FakeFnOnce_Postcondition as Postcondition0 with type self = f, type Return0.return' = Return0.return'
-  use Mutex_SpawnPostCond_Type as Mutex_SpawnPostCond_Type
-  clone Mutex_Impl5_Inv as Inv0 with type f = f, type Return0.return' = Return0.return',
-  predicate Postcondition0.postcondition = Postcondition0.postcondition
-  clone Mutex_Inv_Inv_Interface as Inv1 with type self = Mutex_SpawnPostCond_Type.t_spawnpostcond f,
-  type t = Return0.return', predicate inv = Inv0.inv
 end
 module Mutex_Concurrent_Interface
   val concurrent [@cfg:stackify] (_ : ()) : ()
@@ -683,4 +622,59 @@ module Mutex_Concurrent
     return _0
   }
   
+end
+module Mutex_Impl2
+  use mach.int.Int
+  use mach.int.UInt32
+  use Mutex_Even_Type as Mutex_Even_Type
+  clone Mutex_Impl2_Inv as Inv0
+  clone Mutex_Inv_Inv_Interface as Inv1 with type self = Mutex_Even_Type.t_even, type t = uint32,
+  predicate inv = Inv0.inv
+end
+module Mutex_Impl5
+  type f
+  clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = f
+  clone Mutex_FakeFnOnce_Postcondition as Postcondition0 with type self = f, type Return0.return' = Return0.return'
+  use Mutex_SpawnPostCond_Type as Mutex_SpawnPostCond_Type
+  clone Mutex_Impl5_Inv as Inv0 with type f = f, type Return0.return' = Return0.return',
+  predicate Postcondition0.postcondition = Postcondition0.postcondition
+  clone Mutex_Inv_Inv_Interface as Inv1 with type self = Mutex_SpawnPostCond_Type.t_spawnpostcond f,
+  type t = Return0.return', predicate inv = Inv0.inv
+end
+module Mutex_FakeFnOnce_Call_Interface
+  type self
+  clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = self
+  clone Mutex_FakeFnOnce_Postcondition_Interface as Postcondition0 with type self = self,
+  type Return0.return' = Return0.return'
+  clone Mutex_FakeFnOnce_Precondition_Interface as Precondition0 with type self = self
+  val call [@cfg:stackify] (self : self) : Return0.return'
+    requires {[#"../mutex.rs" 82 15 82 34] Precondition0.precondition self}
+    ensures { [#"../mutex.rs" 83 14 83 40] Postcondition0.postcondition self result }
+    
+end
+module Mutex_FakeFnOnce_Call
+  type self
+  clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = self
+  clone Mutex_FakeFnOnce_Postcondition as Postcondition0 with type self = self, type Return0.return' = Return0.return'
+  clone Mutex_FakeFnOnce_Precondition as Precondition0 with type self = self
+  val call [@cfg:stackify] (self : self) : Return0.return'
+    requires {[#"../mutex.rs" 82 15 82 34] Precondition0.precondition self}
+    ensures { [#"../mutex.rs" 83 14 83 40] Postcondition0.postcondition self result }
+    
+end
+module Mutex_Impl3
+  use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
+  clone Mutex_Impl3_Return_Type as Return0
+  clone Mutex_Impl3_Postcondition as Postcondition0
+  clone Mutex_Impl3_Precondition as Precondition0
+  clone Mutex_Impl3_Call_Interface as Call0
+  clone Mutex_FakeFnOnce_Call_Interface as Call1 with type self = Mutex_AddsTwo_Type.t_addstwo, val call = Call0.call,
+  predicate Precondition0.precondition = Precondition0.precondition,
+  predicate Postcondition0.postcondition = Postcondition0.postcondition, type Return0.return' = Return0.return'
+  clone Mutex_FakeFnOnce_Postcondition_Interface as Postcondition1 with type self = Mutex_AddsTwo_Type.t_addstwo,
+  predicate postcondition = Postcondition0.postcondition, type Return0.return' = Return0.return'
+  clone Mutex_FakeFnOnce_Precondition_Interface as Precondition1 with type self = Mutex_AddsTwo_Type.t_addstwo,
+  predicate precondition = Precondition0.precondition
+  clone Mutex_FakeFnOnce_Return_Type as Return1 with type self = Mutex_AddsTwo_Type.t_addstwo,
+  type return' = Return0.return'
 end
