@@ -1,6 +1,6 @@
 use crate as creusot_contracts;
 use crate::{
-    logic::OrdLogic,
+    logic::*,
     std::{default::DefaultSpec, iter::IteratorSpec},
     Int, Model, Seq,
 };
@@ -279,8 +279,8 @@ impl<'a, T> Model for IterMut<'a, T> {
 
 impl<T> IteratorSpec for Iter<'_, T> {
     #[predicate]
-    fn completed(self, o: Self) -> bool {
-        pearlite! { self == o && @self == Seq::EMPTY }
+    fn completed(&mut self) -> bool {
+        pearlite! { self.resolve() && @*self == Seq::EMPTY }
     }
 
     #[predicate]
@@ -306,8 +306,8 @@ impl<T> IteratorSpec for Iter<'_, T> {
 
 impl<'a, T> IteratorSpec for IterMut<'a, T> {
     #[predicate]
-    fn completed(self, o: Self) -> bool {
-        pearlite! { self == o && (@self).ext_eq(Seq::EMPTY) }
+    fn completed(&mut self) -> bool {
+        pearlite! { self.resolve() && *@*self == Seq::EMPTY }
     }
 
     #[predicate]
@@ -338,7 +338,7 @@ extern_spec! {
         mod slice {
             impl<'a, T> Iterator for Iter<'a, T> {
                 #[ensures(match result {
-                  None => (*self).completed(^self),
+                  None => self.completed(),
                   Some(v) => (*self).produces(Seq::singleton(v), ^self)
                 })]
                 fn next(&mut self) -> Option<&'a T>;
@@ -346,7 +346,7 @@ extern_spec! {
 
             impl<'a, T> Iterator for IterMut<'a, T> {
                 #[ensures(match result {
-                  None => (*self).completed(^self),
+                  None => self.completed(),
                   Some(v) => (*self).produces(Seq::singleton(v), ^self)
                 })]
                 fn next(&mut self) -> Option<&'a mut T>;

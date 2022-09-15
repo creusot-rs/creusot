@@ -14,8 +14,8 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
 
     #[predicate]
-    fn completed(self, o: Self) -> bool {
-        pearlite! { self == o && (@self.inner).ext_eq(Seq::EMPTY) }
+    fn completed(&mut self) -> bool {
+        pearlite! { self.resolve() && (@self.inner).ext_eq(Seq::EMPTY) }
     }
 
     #[predicate]
@@ -41,7 +41,7 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[ensures(match result {
-      None => (*self).completed(^self),
+      None => self.completed(),
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<Self::Item> {

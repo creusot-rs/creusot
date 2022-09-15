@@ -14,20 +14,35 @@ module C01Range_Range_Type
       | C_Range _ a -> a
       end
 end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
 module C01Range_Impl0_Completed_Interface
+  use prelude.Borrow
   use C01Range_Range_Type as C01Range_Range_Type
-  predicate completed (self : C01Range_Range_Type.t_range) (o : C01Range_Range_Type.t_range)
+  predicate completed (self : borrowed (C01Range_Range_Type.t_range))
 end
 module C01Range_Impl0_Completed
+  use prelude.Borrow
   use C01Range_Range_Type as C01Range_Range_Type
   use mach.int.Int
   use prelude.IntSize
-  predicate completed [#"../01_range.rs" 18 4 18 39] (self : C01Range_Range_Type.t_range) (o : C01Range_Range_Type.t_range)
-    
-   =
-    [#"../01_range.rs" 20 12 20 47] self = o /\ C01Range_Range_Type.range_start self >= C01Range_Range_Type.range_end self
-  val completed (self : C01Range_Range_Type.t_range) (o : C01Range_Range_Type.t_range) : bool
-    ensures { result = completed self o }
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface as Resolve0 with type t = C01Range_Range_Type.t_range
+  predicate completed [#"../01_range.rs" 18 4 18 35] (self : borrowed (C01Range_Range_Type.t_range)) =
+    [#"../01_range.rs" 20 12 20 52] Resolve0.resolve self /\ C01Range_Range_Type.range_start ( * self) >= C01Range_Range_Type.range_end ( * self)
+  val completed (self : borrowed (C01Range_Range_Type.t_range)) : bool
+    ensures { result = completed self }
     
 end
 module C01Range_Impl0_Produces_Interface
@@ -130,20 +145,6 @@ module Core_Option_Option_Type
       | C_Some a -> a
       end
 end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
 module CreusotContracts_Logic_Resolve_Impl1
   type t
 end
@@ -158,7 +159,7 @@ module C01Range_Impl0_Next_Interface
   use Core_Option_Option_Type as Core_Option_Option_Type
   val next [@cfg:stackify] (self : borrowed (C01Range_Range_Type.t_range)) : Core_Option_Option_Type.t_option isize
     ensures { [#"../01_range.rs" 45 14 48 5] match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed ( * self) ( ^ self)
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
     
@@ -169,13 +170,13 @@ module C01Range_Impl0_Next
   use prelude.Borrow
   use seq.Seq
   use C01Range_Range_Type as C01Range_Range_Type
-  clone C01Range_Impl0_Produces as Produces0
-  clone C01Range_Impl0_Completed as Completed0
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = C01Range_Range_Type.t_range
+  clone C01Range_Impl0_Produces as Produces0
+  clone C01Range_Impl0_Completed as Completed0 with predicate Resolve0.resolve = Resolve0.resolve
+  use Core_Option_Option_Type as Core_Option_Option_Type
   let rec cfg next [@cfg:stackify] [#"../01_range.rs" 49 4 49 39] (self : borrowed (C01Range_Range_Type.t_range)) : Core_Option_Option_Type.t_option isize
     ensures { [#"../01_range.rs" 45 14 48 5] match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed ( * self) ( ^ self)
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
     
@@ -312,13 +313,15 @@ module C01Range_Common_Iterator_Produces
 end
 module C01Range_Common_Iterator_Completed_Interface
   type self
-  predicate completed (self : self) (_2' : self)
+  use prelude.Borrow
+  predicate completed (self : borrowed self)
 end
 module C01Range_Common_Iterator_Completed
   type self
-  predicate completed [#"../common.rs" 11 4 11 40] (self : self) (_2' : self)
-  val completed (self : self) (_2' : self) : bool
-    ensures { result = completed self _2' }
+  use prelude.Borrow
+  predicate completed [#"../common.rs" 11 4 11 36] (self : borrowed self)
+  val completed (self : borrowed self) : bool
+    ensures { result = completed self }
     
 end
 module C01Range_Common_Iterator_ProducesRefl_Interface
@@ -370,7 +373,7 @@ module C01Range_Common_Iterator_Next_Interface
   use Core_Option_Option_Type as Core_Option_Option_Type
   val next [@cfg:stackify] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
     ensures { [#"../common.rs" 23 14 26 5] match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed ( * self) ( ^ self)
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
     
@@ -385,7 +388,7 @@ module C01Range_Common_Iterator_Next
   use Core_Option_Option_Type as Core_Option_Option_Type
   val next [@cfg:stackify] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
     ensures { [#"../common.rs" 23 14 26 5] match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed ( * self) ( ^ self)
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
     
@@ -393,13 +396,14 @@ end
 module C01Range_Impl0
   use seq.Seq
   use C01Range_Range_Type as C01Range_Range_Type
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = C01Range_Range_Type.t_range
   clone C01Range_Impl0_Item_Type as Item0
   clone C01Range_Impl0_Produces as Produces0
   clone C01Range_Impl0_ProducesRefl as ProducesRefl0 with predicate Produces0.produces = Produces0.produces, axiom .
   clone C01Range_Common_Iterator_ProducesRefl_Interface as ProducesRefl1 with type self = C01Range_Range_Type.t_range,
   function produces_refl = ProducesRefl0.produces_refl, predicate Produces0.produces = Produces0.produces,
   type Item0.item = Item0.item, axiom .
-  clone C01Range_Impl0_Completed as Completed0
+  clone C01Range_Impl0_Completed as Completed0 with predicate Resolve0.resolve = Resolve0.resolve
   clone C01Range_Common_Iterator_Completed_Interface as Completed1 with type self = C01Range_Range_Type.t_range,
   predicate completed = Completed0.completed
   clone C01Range_Common_Iterator_Produces_Interface as Produces1 with type self = C01Range_Range_Type.t_range,
@@ -438,7 +442,8 @@ module C01Range_SumRange
   use seq.Seq
   use prelude.Borrow
   use C01Range_Range_Type as C01Range_Range_Type
-  clone C01Range_Impl0_Completed as Completed0
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = C01Range_Range_Type.t_range
+  clone C01Range_Impl0_Completed as Completed0 with predicate Resolve0.resolve = Resolve0.resolve
   clone C01Range_Impl0_Produces as Produces0
   clone C01Range_Impl0_ProducesTrans as ProducesTrans0 with predicate Produces0.produces = Produces0.produces, axiom .
   clone C01Range_Impl0_ProducesRefl as ProducesRefl0 with predicate Produces0.produces = Produces0.produces, axiom .

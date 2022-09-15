@@ -8,7 +8,7 @@ pub trait Iterator {
     fn produces(self, visited: Seq<Self::Item>, _: Self) -> bool;
 
     #[predicate]
-    fn completed(self, _: Self) -> bool;
+    fn completed(&mut self) -> bool;
 
     #[law]
     #[ensures(a.produces(Seq::EMPTY, a))]
@@ -21,7 +21,7 @@ pub trait Iterator {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
     #[ensures(match result {
-      None => (*self).completed(^self),
+      None => self.completed(),
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<Self::Item>;

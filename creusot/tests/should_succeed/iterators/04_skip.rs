@@ -24,13 +24,14 @@ where
     type Item = I::Item;
 
     #[predicate]
-    fn completed(self, o: Self) -> bool {
+    fn completed(&mut self) -> bool {
         pearlite! {
-            @o.n == 0 &&
-            exists<s: Seq<Self::Item>, i: I>
+            @(^self).n == 0 &&
+            exists<s: Seq<Self::Item>, i: &mut I>
                 s.len() <= @self.n &&
-                self.iter.produces(s, i) &&
-                i.completed(o.iter)
+                self.iter.produces(s, *i) &&
+                i.completed() &&
+                ^i == (^self).iter
         }
     }
 
@@ -57,7 +58,7 @@ where
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[ensures(match result {
-      None => (*self).completed(^self),
+      None => self.completed(),
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
     fn next(&mut self) -> Option<I::Item> {

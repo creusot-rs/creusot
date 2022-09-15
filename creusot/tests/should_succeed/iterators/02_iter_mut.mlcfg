@@ -11,6 +11,20 @@ module C02IterMut_IterMut_Type
       | C_IterMut a -> a
       end
 end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
 module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
   type modelTy
@@ -54,23 +68,24 @@ module CreusotContracts_Std1_Slice_Impl0_ModelTy_Type
 end
 module C02IterMut_Impl0_Completed_Interface
   type t
+  use prelude.Borrow
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
-  predicate completed (self : C02IterMut_IterMut_Type.t_itermut t) (o : C02IterMut_IterMut_Type.t_itermut t)
+  predicate completed (self : borrowed (C02IterMut_IterMut_Type.t_itermut t))
 end
 module C02IterMut_Impl0_Completed
   type t
+  use prelude.Borrow
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   use seq.Seq
   use prelude.Slice
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy
-  predicate completed [#"../02_iter_mut.rs" 17 4 17 39] (self : C02IterMut_IterMut_Type.t_itermut t) (o : C02IterMut_IterMut_Type.t_itermut t)
-    
-   =
-    [#"../02_iter_mut.rs" 18 20 18 65] self = o /\ Seq.(==) (Model0.model (C02IterMut_IterMut_Type.itermut_inner self)) (Seq.empty )
-  val completed (self : C02IterMut_IterMut_Type.t_itermut t) (o : C02IterMut_IterMut_Type.t_itermut t) : bool
-    ensures { result = completed self o }
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface as Resolve0 with type t = C02IterMut_IterMut_Type.t_itermut t
+  predicate completed [#"../02_iter_mut.rs" 17 4 17 35] (self : borrowed (C02IterMut_IterMut_Type.t_itermut t)) =
+    [#"../02_iter_mut.rs" 18 20 18 70] Resolve0.resolve self /\ Seq.(==) (Model0.model (C02IterMut_IterMut_Type.itermut_inner ( * self))) (Seq.empty )
+  val completed (self : borrowed (C02IterMut_IterMut_Type.t_itermut t)) : bool
+    ensures { result = completed self }
     
 end
 module CreusotContracts_Std1_Slice_Impl0_Model_Interface
@@ -204,6 +219,9 @@ module Core_Option_Option_Type
       | C_Some a -> a
       end
 end
+module CreusotContracts_Logic_Resolve_Impl1
+  type t
+end
 module CreusotContracts_Logic_Model_Impl1
   type t
 end
@@ -258,23 +276,6 @@ module Core_Slice_Impl0_TakeFirstMut
       end }
     
 end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Logic_Resolve_Impl1
-  type t
-end
 module C02IterMut_Impl0_Next_Interface
   type t
   use prelude.Borrow
@@ -285,7 +286,7 @@ module C02IterMut_Impl0_Next_Interface
   use Core_Option_Option_Type as Core_Option_Option_Type
   val next [@cfg:stackify] (self : borrowed (C02IterMut_IterMut_Type.t_itermut t)) : Core_Option_Option_Type.t_option (borrowed t)
     ensures { [#"../02_iter_mut.rs" 43 14 46 5] match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed ( * self) ( ^ self)
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
     
@@ -300,16 +301,17 @@ module C02IterMut_Impl0_Next
   clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = C02IterMut_IterMut_Type.t_itermut t
   clone C02IterMut_Impl0_Produces as Produces0 with type t = t, function Model0.model = Model1.model
-  clone C02IterMut_Impl0_Completed as Completed0 with type t = t, function Model0.model = Model0.model
+  clone C02IterMut_Impl0_Completed as Completed0 with type t = t, predicate Resolve0.resolve = Resolve0.resolve,
+  function Model0.model = Model0.model
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Logic_Seq_Impl2_Tail as Tail0 with type t = t
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = C02IterMut_IterMut_Type.t_itermut t
   clone Core_Slice_Impl0_TakeFirstMut_Interface as TakeFirstMut0 with type t = t, function Model0.model = Model1.model,
   function Tail0.tail = Tail0.tail
   let rec cfg next [@cfg:stackify] [#"../02_iter_mut.rs" 47 4 47 44] (self : borrowed (C02IterMut_IterMut_Type.t_itermut t)) : Core_Option_Option_Type.t_option (borrowed t)
     ensures { [#"../02_iter_mut.rs" 43 14 46 5] match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed ( * self) ( ^ self)
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
     
@@ -775,13 +777,15 @@ module C02IterMut_Common_Iterator_Produces
 end
 module C02IterMut_Common_Iterator_Completed_Interface
   type self
-  predicate completed (self : self) (_2' : self)
+  use prelude.Borrow
+  predicate completed (self : borrowed self)
 end
 module C02IterMut_Common_Iterator_Completed
   type self
-  predicate completed [#"../common.rs" 11 4 11 40] (self : self) (_2' : self)
-  val completed (self : self) (_2' : self) : bool
-    ensures { result = completed self _2' }
+  use prelude.Borrow
+  predicate completed [#"../common.rs" 11 4 11 36] (self : borrowed self)
+  val completed (self : borrowed self) : bool
+    ensures { result = completed self }
     
 end
 module C02IterMut_Common_Iterator_ProducesRefl_Interface
@@ -833,7 +837,7 @@ module C02IterMut_Common_Iterator_Next_Interface
   use Core_Option_Option_Type as Core_Option_Option_Type
   val next [@cfg:stackify] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
     ensures { [#"../common.rs" 23 14 26 5] match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed ( * self) ( ^ self)
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
     
@@ -848,7 +852,7 @@ module C02IterMut_Common_Iterator_Next
   use Core_Option_Option_Type as Core_Option_Option_Type
   val next [@cfg:stackify] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
     ensures { [#"../common.rs" 23 14 26 5] match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed ( * self) ( ^ self)
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
     
@@ -862,6 +866,7 @@ module C02IterMut_Impl0
   clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = seq t,
   type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = C02IterMut_IterMut_Type.t_itermut t
   clone C02IterMut_Impl0_Item_Type as Item0 with type t = t
   clone C02IterMut_Impl0_Produces as Produces0 with type t = t, function Model0.model = Model0.model
   clone C02IterMut_Impl0_ProducesRefl as ProducesRefl0 with type t = t,
@@ -869,7 +874,8 @@ module C02IterMut_Impl0
   clone C02IterMut_Common_Iterator_ProducesRefl_Interface as ProducesRefl1 with type self = C02IterMut_IterMut_Type.t_itermut t,
   function produces_refl = ProducesRefl0.produces_refl, predicate Produces0.produces = Produces0.produces,
   type Item0.item = Item0.item, axiom .
-  clone C02IterMut_Impl0_Completed as Completed0 with type t = t, function Model0.model = Model1.model
+  clone C02IterMut_Impl0_Completed as Completed0 with type t = t, predicate Resolve0.resolve = Resolve0.resolve,
+  function Model0.model = Model1.model
   clone C02IterMut_Common_Iterator_Completed_Interface as Completed1 with type self = C02IterMut_IterMut_Type.t_itermut t,
   predicate completed = Completed0.completed
   clone C02IterMut_Common_Iterator_Produces_Interface as Produces1 with type self = C02IterMut_IterMut_Type.t_itermut t,
@@ -933,7 +939,9 @@ module C02IterMut_AllZero
   clone CreusotContracts_Logic_Model_Impl1_Model as Model3 with type t = seq usize,
   type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model2.model
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
-  clone C02IterMut_Impl0_Completed as Completed0 with type t = usize, function Model0.model = Model3.model
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = C02IterMut_IterMut_Type.t_itermut usize
+  clone C02IterMut_Impl0_Completed as Completed0 with type t = usize, predicate Resolve0.resolve = Resolve2.resolve,
+  function Model0.model = Model3.model
   clone C02IterMut_Impl0_Produces as Produces0 with type t = usize, function Model0.model = Model2.model
   clone C02IterMut_Impl0_ProducesTrans as ProducesTrans0 with type t = usize,
   predicate Produces0.produces = Produces0.produces, axiom .
