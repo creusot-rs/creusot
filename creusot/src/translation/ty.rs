@@ -84,8 +84,9 @@ fn translate_ty_inner<'tcx>(
                 names.import_builtin_module(builtin.clone().module_qname());
                 MlT::TConstructor(builtin.without_search_path())
             } else {
-                names.insert(def.did(), s);
-                MlT::TConstructor(translate_ty_name(ctx, def.did()))
+                ctx.translate(def.did());
+                names.insert(def.did(), s); // TODO: Overhaul `CloneInfo` so we can use that to build type names
+                MlT::TConstructor(item_qname(ctx, def.did(), Namespace::TypeNS))
             };
 
             let args = s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
@@ -224,9 +225,9 @@ pub fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSet<DefId
 
 fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
     // Check if we've already translated this type before.
-    if !ctx.translated_items.contains(&did) {
-        translate_tydecl(ctx, ctx.def_span(did), did);
-    };
+    // if !ctx.translated_items().contains(&did) {
+    //     translate_tydecl(ctx, ctx.def_span(did), did);
+    // };
 
     item_qname(ctx, did, Namespace::TypeNS)
 }
@@ -243,25 +244,22 @@ fn translate_ty_param(p: Symbol) -> Ident {
 // Additionally, types are not translated one by one but rather as a *binding group*, so that mutually
 // recursive types are properly translated.
 // Results are accumulated and can be collected at once by consuming the `Ctx`
-pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId) {
+pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, did: DefId) {
+    let span = ctx.def_span(did);
     // mark this type as translated
-    if ctx.translated_items.contains(&did) {
+    if ctx.translated_items().contains(&did) {
         return;
     }
 
     let bg = ty_binding_group(ctx.tcx, did);
 
-    for did in &bg {
-        if !ctx.translated_items.insert(*did) {
-            ctx.crash_and_error(
-                span,
-                &format!("already translated member of mutually recursive binding group {:?}", did),
-            );
-        }
-    }
+    ctx.start_group(bg.clone());
     ctx.add_binding_group(&bg);
 
     if let Some(_) = get_builtin(ctx.tcx, did) {
+        for did in bg {
+            ctx.finish(did);
+        }
         return;
     }
 
@@ -287,6 +285,9 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
         };
         ctx.add_type(did, modl);
         let _ = names.to_clones(ctx);
+        for did in bg {
+            ctx.finish(did);
+        }
         return;
     }
 
@@ -298,6 +299,11 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, span: Span, did: DefId
     let mut decls = names.to_clones(ctx);
     decls.push(Decl::TyDecl(TyDecl::Adt { tys: tys.clone() }));
     let modl = Module { name, decls };
+
+    for did in &bg {
+        ctx.finish(*did)
+    }
+
     ctx.add_type(did, modl);
 }
 

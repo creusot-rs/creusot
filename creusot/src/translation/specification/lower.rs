@@ -223,7 +223,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
                 let ctor = constructor_qname(self.ctx, &adt.variants()[variant]);
-                crate::ty::translate_tydecl(self.ctx, self.ctx.def_span(adt.did()), adt.did());
+                self.ctx.translate(adt.did());
                 Exp::Constructor { ctor, args }
             }
             TermKind::Cur { box term } => {

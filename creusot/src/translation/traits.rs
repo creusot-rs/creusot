@@ -26,9 +26,11 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
     // Translate a trait declaration
     pub fn translate_trait(&mut self, def_id: DefId) {
         debug!("translating trait {def_id:?}");
-        if !self.translated_items.insert(def_id) {
+        if self.translated_items().contains(&def_id) {
             return;
         }
+
+        self.start(def_id);
 
         let mut laws = Vec::new();
 
@@ -38,13 +40,15 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
             }
         }
 
+        self.finish(def_id);
         self.add_trait(def_id, laws);
     }
 
     pub fn translate_impl(&mut self, impl_id: DefId) {
-        if !self.translated_items.insert(impl_id) {
+        if self.translated_items().contains(&impl_id) {
             return;
         }
+        self.start(impl_id);
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
         self.translate_trait(trait_ref.def_id);
 
@@ -124,14 +128,15 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         }
 
         decls.extend(names.to_clones(self));
+        self.finish(impl_id);
         self.add_impl(impl_id, laws, Module { name: module_name(self, impl_id), decls });
     }
 
     pub fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
         assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
-        let mut names = CloneMap::new(self.tcx, def_id, true);
 
-        self.translated_items.insert(def_id);
+        self.start(def_id);
+        let mut names = CloneMap::new(self.tcx, def_id, true);
 
         let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
         let name = item_name(self.tcx, def_id, Namespace::TypeNS);
@@ -152,6 +157,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         decls.extend(names.to_clones(self));
         decls.push(Decl::TyDecl(ty_decl));
+        self.finish(def_id);
 
         (Module { name: module_name(self, def_id), decls }, names.summary())
     }
@@ -211,6 +217,7 @@ fn logic_refinement<'tcx>(
     let mut refn = trait_precond.implies(impl_precond).log_and(post_refn);
     refn = if args.is_empty() { refn } else { Exp::Forall(args, box refn) };
 
+    // Don't use `item_name` here
     let name = item_name(ctx.tcx, impl_item_id, Namespace::ValueNS);
 
     Goal { name: format!("{}_spec", &*name).into(), goal: refn }
