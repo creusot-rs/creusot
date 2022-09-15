@@ -17,12 +17,9 @@ pub enum TranslatedItem {
         modl: Module,
         has_axioms: bool,
     },
-    Trait {
-        laws: Vec<DefId>,
-    },
+    Trait {},
     Impl {
-        laws: Vec<DefId>, // Instantiations of trait laws
-        modl: Module,     // Refinement of traits,
+        modl: Module, // Refinement of traits,
     },
     AssocTy {
         modl: Module,
@@ -69,14 +66,6 @@ impl<'a> TranslatedItem {
             TranslatedItem::Logic { has_axioms, .. } => *has_axioms,
             TranslatedItem::Program { has_axioms, .. } => *has_axioms,
             _ => false,
-        }
-    }
-
-    pub fn laws(&self) -> Option<&[DefId]> {
-        match self {
-            TranslatedItem::Trait { laws, .. } => Some(&laws[..]),
-            TranslatedItem::Impl { laws, .. } => Some(&laws[..]),
-            _ => None,
         }
     }
 

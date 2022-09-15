@@ -24,31 +24,33 @@ use crate::{
 
 impl<'tcx> TranslationCtx<'_, 'tcx> {
     // Translate a trait declaration
-    pub fn translate_trait(&mut self, def_id: DefId) {
+    pub(crate) fn translate_trait(&mut self, def_id: DefId) {
         debug!("translating trait {def_id:?}");
         if self.translated_items().contains(&def_id) {
             return;
         }
 
         self.start(def_id);
+        self.finish(def_id);
+        self.add_trait(def_id);
+    }
 
+    pub(crate) fn laws_inner(&self, trait_or_impl: DefId) -> Vec<DefId> {
         let mut laws = Vec::new();
-
-        for item in associated_items(self.tcx, def_id) {
+        for item in associated_items(self.tcx, trait_or_impl) {
             if is_law(self.tcx, item.def_id) {
                 laws.push(item.def_id);
             }
         }
-
-        self.finish(def_id);
-        self.add_trait(def_id, laws);
+        laws
     }
 
-    pub fn translate_impl(&mut self, impl_id: DefId) {
+    pub(crate) fn translate_impl(&mut self, impl_id: DefId) {
         if self.translated_items().contains(&impl_id) {
             return;
         }
         self.start(impl_id);
+
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
         self.translate_trait(trait_ref.def_id);
 
@@ -129,7 +131,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         decls.extend(names.to_clones(self));
         self.finish(impl_id);
-        self.add_impl(impl_id, laws, Module { name: module_name(self, impl_id), decls });
+        self.add_impl(impl_id, Module { name: module_name(self, impl_id), decls });
     }
 
     pub fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {

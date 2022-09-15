@@ -554,8 +554,7 @@ impl<'tcx> CloneMap<'tcx> {
             return;
         }
 
-        ctx.translate(item.container_id(ctx.tcx));
-        let laws = ctx.item(item.container_id(ctx.tcx)).and_then(|i| i.laws()).unwrap_or(&[]);
+        let laws = ctx.laws(item.container_id(ctx.tcx));
 
         for law in laws {
             trace!("adding law {:?} in {:?}", *law, self.self_id);
