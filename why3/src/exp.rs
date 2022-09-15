@@ -710,6 +710,15 @@ impl Binder {
             panic!("cannot get name and type for binder")
         }
     }
+
+    pub fn type_of(&self) -> Option<&Type> {
+        match self {
+            Binder::Wild => None,
+            Binder::UnNamed(_) => None,
+            Binder::Named(_) => None,
+            Binder::Typed(_, _, ty) => Some(ty),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
