@@ -9,7 +9,6 @@ use std::ops::*;
     rustc_diagnostic_item = "creusot_int",
     creusot::builtins = "mach.int.Int.int"
 )]
-#[derive(std::clone::Clone, Copy)]
 pub struct Int(*mut ());
 
 impl Int {

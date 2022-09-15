@@ -2,35 +2,34 @@ use crate as creusot_contracts;
 use crate::macros::*;
 use core::ops::Deref;
 
-#[rustc_diagnostic_item = "ghost_type"]
-pub struct Ghost<T>(pub T)
+#[cfg_attr(feature = "contracts", creusot::builtins = "prelude.Ghost.ghost_ty")]
+pub struct Ghost<T>(std::marker::PhantomData<T>)
 where
     T: ?Sized;
 
 impl<T> Deref for Ghost<T> {
     type Target = T;
 
-    #[logic]
     #[trusted]
-    #[creusot::builtins = "ghost_deref"]
+    #[logic]
+    #[creusot::builtins = "prelude.Ghost.inner"]
     fn deref(&self) -> &Self::Target {
         absurd
     }
 }
 
 impl<T> Ghost<T> {
+    #[trusted]
     #[logic]
-    pub fn new(a: &T) -> Ghost<T> {
-        Ghost(*a)
+    #[creusot::builtins = "prelude.Ghost.new"]
+    pub fn new(_: T) -> Ghost<T> {
+        pearlite! { absurd }
     }
 
+    #[trusted]
     #[logic]
-    pub fn unwrap(self) -> T {
-        self.0
-    }
-
-    #[logic]
-    pub fn inner(&self) -> T {
-        self.0
+    #[creusot::builtins = "prelude.Ghost.inner"]
+    pub fn inner(self) -> T {
+        pearlite! { absurd }
     }
 }

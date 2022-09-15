@@ -44,15 +44,6 @@ module MappingTest_Impl0_Model
     0
   )
 end
-module CreusotContracts_Logic_Ghost_Ghost_Type
-  type t_ghost 't =
-    | C_Ghost 't
-    
-  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Ghost a -> a
-      end
-end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
@@ -153,7 +144,7 @@ module MappingTest_Incr
   use MappingTest_T_Type as MappingTest_T_Type
   clone MappingTest_Impl0_Model as Model0 with
     axiom .
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use prelude.Ghost
   clone MappingTest_Impl0_ModelTy_Type as ModelTy0
   clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with
     type t = MappingTest_T_Type.t_t,
@@ -169,7 +160,7 @@ module MappingTest_Incr
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var t_1 : borrowed (MappingTest_T_Type.t_t);
-  var old_t_5 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (MappingTest_T_Type.t_t));
+  var old_t_5 : Ghost.ghost_ty (borrowed (MappingTest_T_Type.t_t));
   var _7 : ();
   var _8 : ();
   {
@@ -178,13 +169,13 @@ module MappingTest_Incr
   }
   BB0 {
     _7 <- ();
-    old_t_5 <- ([#"../mapping_test.rs" 27 16 27 28] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost t_1);
+    old_t_5 <- ([#"../mapping_test.rs" 27 16 27 28] Ghost.new t_1);
     goto BB1
   }
   BB1 {
     t_1 <- { t_1 with current = (let MappingTest_T_Type.C_T a =  * t_1 in MappingTest_T_Type.C_T ([#"../mapping_test.rs" 28 4 28 15] MappingTest_T_Type.t_a ( * t_1) + (1 : int32))) };
     assume { Resolve0.resolve t_1 };
-    assert { [#"../mapping_test.rs" 31 19 31 51] Model0.model ( ^ t_1) = Map.set (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_t_5)) (Int32.to_int (MappingTest_T_Type.t_a ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_t_5))) 1 };
+    assert { [#"../mapping_test.rs" 31 19 31 51] Model0.model ( ^ t_1) = Map.set (Model1.model (Ghost.inner old_t_5)) (Int32.to_int (MappingTest_T_Type.t_a ( * Ghost.inner old_t_5))) 1 };
     _8 <- ();
     _0 <- ();
     return _0

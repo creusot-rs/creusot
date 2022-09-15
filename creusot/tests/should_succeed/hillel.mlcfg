@@ -195,15 +195,6 @@ module Alloc_Vec_Impl1_Push
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
-module CreusotContracts_Logic_Ghost_Ghost_Type
-  type t_ghost 't =
-    | C_Ghost 't
-    
-  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Ghost a -> a
-      end
-end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -286,7 +277,8 @@ module Hillel_RightPad
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ModelTy0.modelTy = ModelTy0.modelTy,
     function Model0.model = Model0.model
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use prelude.Ghost
+  use prelude.Ghost
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone Alloc_Vec_Impl1_Push_Interface as Push0 with
@@ -300,7 +292,7 @@ module Hillel_RightPad
     type a = Alloc_Alloc_Global_Type.t_global,
     function Model0.model = Model0.model
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with
-    type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+    type self = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   let rec cfg right_pad [@cfg:stackify] [#"../hillel.rs" 13 0 13 59] (str : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (len : usize) (pad : t) : ()
     ensures { [#"../hillel.rs" 7 10 7 64] Seq.length (Model0.model ( ^ str)) >= UInt64.to_int len /\ Seq.length (Model0.model ( ^ str)) >= Seq.length (Model1.model str) }
     ensures { [#"../hillel.rs" 8 10 8 64] Seq.length (Model0.model ( ^ str)) = UInt64.to_int len \/ Seq.length (Model0.model ( ^ str)) = Seq.length (Model1.model str) }
@@ -314,7 +306,7 @@ module Hillel_RightPad
   var str_1 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var len_2 : usize;
   var pad_3 : t;
-  var old_str_10 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)));
+  var old_str_10 : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)));
   var _12 : ();
   var _19 : ();
   var _20 : bool;
@@ -335,7 +327,7 @@ module Hillel_RightPad
   }
   BB0 {
     _12 <- ();
-    old_str_10 <- ([#"../hillel.rs" 14 18 14 32] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost str_1);
+    old_str_10 <- ([#"../hillel.rs" 14 18 14 32] Ghost.new str_1);
     goto BB1
   }
   BB1 {
@@ -343,12 +335,12 @@ module Hillel_RightPad
     goto BB2
   }
   BB2 {
-    invariant proph_const { [#"../hillel.rs" 16 29 16 46]  ^ str_1 =  ^ CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_10 };
-    invariant old_str_bound { [#"../hillel.rs" 17 31 17 63] Seq.length (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_10)) <= Seq.length (Model1.model str_1) };
-    invariant len_bound { [#"../hillel.rs" 16 4 16 48] Seq.length (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_10)) < UInt64.to_int len_2 -> Seq.length (Model1.model str_1) <= UInt64.to_int len_2 };
-    invariant len_bound { [#"../hillel.rs" 16 4 16 48] Seq.length (Model1.model str_1) > UInt64.to_int len_2 -> Seq.length (Model1.model str_1) = Seq.length (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_10)) };
-    invariant old_elem { [#"../hillel.rs" 16 4 16 48] forall i : int . 0 <= i /\ i < Seq.length (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_10)) -> Seq.get (Model1.model str_1) i = Seq.get (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_10)) i };
-    invariant pad_elem { [#"../hillel.rs" 16 4 16 48] forall i : int . Seq.length (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_10)) <= i /\ i < Seq.length (Model1.model str_1) -> Seq.get (Model1.model str_1) i = pad_3 };
+    invariant proph_const { [#"../hillel.rs" 16 29 16 46]  ^ str_1 =  ^ Ghost.inner old_str_10 };
+    invariant old_str_bound { [#"../hillel.rs" 17 31 17 63] Seq.length (Model1.model (Ghost.inner old_str_10)) <= Seq.length (Model1.model str_1) };
+    invariant len_bound { [#"../hillel.rs" 16 4 16 48] Seq.length (Model1.model (Ghost.inner old_str_10)) < UInt64.to_int len_2 -> Seq.length (Model1.model str_1) <= UInt64.to_int len_2 };
+    invariant len_bound { [#"../hillel.rs" 16 4 16 48] Seq.length (Model1.model str_1) > UInt64.to_int len_2 -> Seq.length (Model1.model str_1) = Seq.length (Model1.model (Ghost.inner old_str_10)) };
+    invariant old_elem { [#"../hillel.rs" 16 4 16 48] forall i : int . 0 <= i /\ i < Seq.length (Model1.model (Ghost.inner old_str_10)) -> Seq.get (Model1.model str_1) i = Seq.get (Model1.model (Ghost.inner old_str_10)) i };
+    invariant pad_elem { [#"../hillel.rs" 16 4 16 48] forall i : int . Seq.length (Model1.model (Ghost.inner old_str_10)) <= i /\ i < Seq.length (Model1.model str_1) -> Seq.get (Model1.model str_1) i = pad_3 };
     _22 <-  * str_1;
     _21 <- ([#"../hillel.rs" 22 10 22 19] Len0.len _22);
     goto BB3
@@ -433,28 +425,6 @@ module Alloc_Vec_Impl1_Insert
     ensures { forall i : int . UInt64.to_int index < i /\ i < Seq.length (Model0.model ( ^ self)) -> Seq.get (Model0.model ( ^ self)) i = Seq.get (Model1.model self) (i - 1) }
     
 end
-module CreusotContracts_Logic_Ghost_Impl1_Inner_Stub
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-end
-module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-end
-module CreusotContracts_Logic_Ghost_Impl1_Inner
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t =
-    CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
-  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-    ensures { result = inner self }
-    
-end
 module Hillel_LeftPad_Interface
   type t
   use prelude.Borrow
@@ -501,11 +471,10 @@ module Hillel_LeftPad
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ModelTy0.modelTy = ModelTy0.modelTy,
     function Model0.model = Model0.model
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use prelude.Ghost
+  use prelude.Ghost
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with
-    type t = usize
   clone Alloc_Vec_Impl1_Insert_Interface as Insert0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -518,7 +487,7 @@ module Hillel_LeftPad
     type a = Alloc_Alloc_Global_Type.t_global,
     function Model0.model = Model0.model
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with
-    type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+    type self = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   let rec cfg left_pad [@cfg:stackify] [#"../hillel.rs" 31 0 31 58] (str : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (len : usize) (pad : t) : ()
     ensures { [#"../hillel.rs" 27 10 27 64] Seq.length (Model0.model ( ^ str)) >= UInt64.to_int len /\ Seq.length (Model0.model ( ^ str)) >= Seq.length (Model1.model str) }
     ensures { [#"../hillel.rs" 28 10 28 64] Seq.length (Model0.model ( ^ str)) = UInt64.to_int len \/ Seq.length (Model0.model ( ^ str)) = Seq.length (Model1.model str) }
@@ -530,9 +499,9 @@ module Hillel_LeftPad
   var str_1 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var len_2 : usize;
   var pad_3 : t;
-  var old_str_8 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)));
+  var old_str_8 : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)));
   var _10 : ();
-  var c_11 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost usize;
+  var c_11 : Ghost.ghost_ty usize;
   var _14 : ();
   var _22 : ();
   var _23 : bool;
@@ -542,11 +511,11 @@ module Hillel_LeftPad
   var _27 : ();
   var _28 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var _29 : t;
-  var _30 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost usize;
+  var _30 : Ghost.ghost_ty usize;
+  var _32 : ();
   var _33 : ();
   var _34 : ();
   var _35 : ();
-  var _36 : ();
   {
     str_1 <- str;
     len_2 <- len;
@@ -555,26 +524,26 @@ module Hillel_LeftPad
   }
   BB0 {
     _10 <- ();
-    old_str_8 <- ([#"../hillel.rs" 32 18 32 32] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost str_1);
+    old_str_8 <- ([#"../hillel.rs" 32 18 32 32] Ghost.new str_1);
     goto BB1
   }
   BB1 {
     assume { Resolve0.resolve old_str_8 };
     _14 <- ();
-    c_11 <- ([#"../hillel.rs" 33 30 33 42] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (0 : usize));
+    c_11 <- ([#"../hillel.rs" 33 30 33 42] Ghost.new (0 : usize));
     goto BB2
   }
   BB2 {
     goto BB3
   }
   BB3 {
-    invariant proph_const { [#"../hillel.rs" 35 29 35 46]  ^ str_1 =  ^ CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_8 };
-    invariant old_str_bound { [#"../hillel.rs" 36 31 36 63] Seq.length (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_8)) <= Seq.length (Model1.model str_1) };
-    invariant len_bound { [#"../hillel.rs" 35 4 35 48] Seq.length (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_8)) < UInt64.to_int len_2 -> Seq.length (Model1.model str_1) <= UInt64.to_int len_2 };
-    invariant len_bound { [#"../hillel.rs" 35 4 35 48] Seq.length (Model1.model str_1) > UInt64.to_int len_2 -> Seq.length (Model1.model str_1) = Seq.length (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_8)) };
-    invariant count { [#"../hillel.rs" 39 23 39 60] UInt64.to_int (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 c_11) = Seq.length (Model1.model str_1) - Seq.length (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_8)) };
-    invariant old_elem { [#"../hillel.rs" 35 4 35 48] forall i : int . UInt64.to_int (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 c_11) <= i /\ i < Seq.length (Model1.model str_1) -> Seq.get (Model1.model str_1) i = Seq.get (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_str_8)) (i - UInt64.to_int (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 c_11)) };
-    invariant pad_elem { [#"../hillel.rs" 35 4 35 48] forall i : int . 0 <= i /\ i < UInt64.to_int (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 c_11) -> Seq.get (Model1.model str_1) i = pad_3 };
+    invariant proph_const { [#"../hillel.rs" 35 29 35 46]  ^ str_1 =  ^ Ghost.inner old_str_8 };
+    invariant old_str_bound { [#"../hillel.rs" 36 31 36 63] Seq.length (Model1.model (Ghost.inner old_str_8)) <= Seq.length (Model1.model str_1) };
+    invariant len_bound { [#"../hillel.rs" 35 4 35 48] Seq.length (Model1.model (Ghost.inner old_str_8)) < UInt64.to_int len_2 -> Seq.length (Model1.model str_1) <= UInt64.to_int len_2 };
+    invariant len_bound { [#"../hillel.rs" 35 4 35 48] Seq.length (Model1.model str_1) > UInt64.to_int len_2 -> Seq.length (Model1.model str_1) = Seq.length (Model1.model (Ghost.inner old_str_8)) };
+    invariant count { [#"../hillel.rs" 39 23 39 60] UInt64.to_int (Ghost.inner c_11) = Seq.length (Model1.model str_1) - Seq.length (Model1.model (Ghost.inner old_str_8)) };
+    invariant old_elem { [#"../hillel.rs" 35 4 35 48] forall i : int . UInt64.to_int (Ghost.inner c_11) <= i /\ i < Seq.length (Model1.model str_1) -> Seq.get (Model1.model str_1) i = Seq.get (Model1.model (Ghost.inner old_str_8)) (i - UInt64.to_int (Ghost.inner c_11)) };
+    invariant pad_elem { [#"../hillel.rs" 35 4 35 48] forall i : int . 0 <= i /\ i < UInt64.to_int (Ghost.inner c_11) -> Seq.get (Model1.model str_1) i = pad_3 };
     _25 <-  * str_1;
     _24 <- ([#"../hillel.rs" 42 10 42 19] Len0.len _25);
     goto BB4
@@ -596,13 +565,13 @@ module Hillel_LeftPad
     goto BB6
   }
   BB6 {
-    _33 <- ();
-    _30 <- ([#"../hillel.rs" 44 12 44 38] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost ((1 : usize) + Inner0.inner c_11));
+    _32 <- ();
+    _30 <- ([#"../hillel.rs" 44 12 44 38] Ghost.new ((1 : usize) + Ghost.inner c_11));
     goto BB7
   }
   BB7 {
     c_11 <- _30;
-    _30 <- any CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost usize;
+    _30 <- any Ghost.ghost_ty usize;
     _22 <- ();
     goto BB3
   }
@@ -1044,9 +1013,9 @@ module Hillel_InsertUnique
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ModelTy0.modelTy = ModelTy0.modelTy,
     function Model0.model = Model1.model
+  use prelude.Ghost
   use mach.int.Int
   use prelude.UIntSize
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   use mach.int.UInt64
   clone CreusotContracts_Logic_Model_Impl0_Model as Model3 with
     type t = t,
@@ -1103,7 +1072,7 @@ module Hillel_InsertUnique
   var _0 : ();
   var vec_1 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var elem_2 : t;
-  var _8 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost ();
+  var _8 : Ghost.ghost_ty ();
   var _10 : ();
   var _11 : ();
   var i_13 : usize;
@@ -1142,7 +1111,7 @@ module Hillel_InsertUnique
   }
   BB2 {
     _10 <- ();
-    _8 <- ([#"../hillel.rs" 79 4 79 52] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (SubsetPush0.subset_push (Model0.model vec_1) elem_2));
+    _8 <- ([#"../hillel.rs" 79 4 79 52] Ghost.new (SubsetPush0.subset_push (Model0.model vec_1) elem_2));
     goto BB3
   }
   BB3 {
@@ -1327,17 +1296,17 @@ module Core_Slice_Impl0_Len
     ensures { Seq.length (Model0.model self) = UInt64.to_int result }
     
 end
-module CreusotContracts_Logic_Seq_Impl2_New_Stub
+module CreusotContracts_Logic_Seq_Impl0_New_Stub
   type t
   use seq.Seq
   function new (_ : ()) : Seq.seq t
 end
-module CreusotContracts_Logic_Seq_Impl2_New_Interface
+module CreusotContracts_Logic_Seq_Impl0_New_Interface
   type t
   use seq.Seq
   function new (_ : ()) : Seq.seq t
 end
-module CreusotContracts_Logic_Seq_Impl2_New
+module CreusotContracts_Logic_Seq_Impl0_New
   type t
   use seq.Seq
   function new (_ : ()) : Seq.seq t =
@@ -1438,10 +1407,9 @@ module Hillel_Unique
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     axiom .
+  use prelude.Ghost
   use mach.int.Int
   use prelude.UIntSize
-  use seq.Seq
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   use mach.int.UInt64
   use seq_ext.SeqExt
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy2 with
@@ -1451,6 +1419,8 @@ module Hillel_Unique
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ModelTy0.modelTy = ModelTy2.modelTy,
     function Model0.model = Model0.model
+  use seq.Seq
+  use prelude.Ghost
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with
     type self = t
   clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve4 with
@@ -1472,8 +1442,8 @@ module Hillel_Unique
     type t = t,
     function Model0.model = Model1.model
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with
-    type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq t)
-  clone CreusotContracts_Logic_Seq_Impl2_New as New1 with
+    type self = Ghost.ghost_ty (Seq.seq t)
+  clone CreusotContracts_Logic_Seq_Impl0_New as New1 with
     type t = t
   clone Alloc_Vec_Impl0_New_Interface as New0 with
     type t = t,
@@ -1487,7 +1457,7 @@ module Hillel_Unique
   var _0 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
   var str_1 : seq t;
   var unique_5 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
-  var sub_str_6 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq t);
+  var sub_str_6 : Ghost.ghost_ty (Seq.seq t);
   var _9 : ();
   var i_10 : usize;
   var _11 : ();
@@ -1504,7 +1474,7 @@ module Hillel_Unique
   var _27 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var _28 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var _29 : t;
-  var _30 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq t);
+  var _30 : Ghost.ghost_ty (Seq.seq t);
   var _33 : ();
   var _34 : ();
   var _35 : ();
@@ -1521,7 +1491,7 @@ module Hillel_Unique
   }
   BB1 {
     _9 <- ();
-    sub_str_6 <- ([#"../hillel.rs" 102 37 102 58] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (New1.new ()));
+    sub_str_6 <- ([#"../hillel.rs" 102 37 102 58] Ghost.new (New1.new ()));
     goto BB2
   }
   BB2 {
@@ -1540,10 +1510,10 @@ module Hillel_Unique
   }
   BB6 {
     invariant i_bound { [#"../hillel.rs" 105 25 105 43] UInt64.to_int i_10 <= Seq.length (Model1.model str_1) };
-    invariant sub_str { [#"../hillel.rs" 106 25 106 66] Seq.(==) (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 sub_str_6) (SeqExt.subsequence (Model1.model str_1) 0 (UInt64.to_int i_10)) };
+    invariant sub_str { [#"../hillel.rs" 106 25 106 66] Seq.(==) (Ghost.inner sub_str_6) (SeqExt.subsequence (Model1.model str_1) 0 (UInt64.to_int i_10)) };
     invariant unique { [#"../hillel.rs" 107 24 107 42] IsUnique0.is_unique (Model0.model unique_5) };
     invariant unique_subset { [#"../hillel.rs" 108 31 108 55] IsSubset0.is_subset (Model0.model unique_5) (Model1.model str_1) };
-    invariant unique_subset { [#"../hillel.rs" 109 31 109 59] IsSubset0.is_subset (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 sub_str_6) (Model0.model unique_5) };
+    invariant unique_subset { [#"../hillel.rs" 109 31 109 59] IsSubset0.is_subset (Ghost.inner sub_str_6) (Model0.model unique_5) };
     _19 <- i_10;
     _21 <- str_1;
     _20 <- ([#"../hillel.rs" 110 14 110 23] Len0.len _21);
@@ -1579,13 +1549,13 @@ module Hillel_Unique
   BB10 {
     assume { Resolve2.resolve _28 };
     _33 <- ();
-    _30 <- ([#"../hillel.rs" 113 18 113 47] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (Seq.snoc (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 sub_str_6) elem_22));
+    _30 <- ([#"../hillel.rs" 113 18 113 47] Ghost.new (Seq.snoc (Ghost.inner sub_str_6) elem_22));
     goto BB11
   }
   BB11 {
     assume { Resolve0.resolve sub_str_6 };
     sub_str_6 <- _30;
-    _30 <- any CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq t);
+    _30 <- any Ghost.ghost_ty (Seq.seq t);
     i_10 <- ([#"../hillel.rs" 114 8 114 14] i_10 + (1 : usize));
     _17 <- ();
     goto BB6

@@ -118,15 +118,6 @@ module ListIndexMut_Get
     ensures { result = get l ix }
     
 end
-module CreusotContracts_Logic_Ghost_Ghost_Type
-  type t_ghost 't =
-    | C_Ghost 't
-    
-  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Ghost a -> a
-      end
-end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
@@ -176,8 +167,8 @@ module ListIndexMut_IndexMut
   use ListIndexMut_Option_Type as ListIndexMut_Option_Type
   clone ListIndexMut_Get as Get0
   clone ListIndexMut_Len as Len0
+  use prelude.Ghost
   use prelude.IntSize
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with
     type t = uint32
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with
@@ -196,7 +187,7 @@ module ListIndexMut_IndexMut
   var param_l_1 : borrowed (ListIndexMut_List_Type.t_list);
   var param_ix_2 : usize;
   var _3 : borrowed uint32;
-  var old_l_9 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (ListIndexMut_List_Type.t_list));
+  var old_l_9 : Ghost.ghost_ty (borrowed (ListIndexMut_List_Type.t_list));
   var _11 : ();
   var l_12 : borrowed (ListIndexMut_List_Type.t_list);
   var ix_13 : usize;
@@ -220,7 +211,7 @@ module ListIndexMut_IndexMut
   }
   BB0 {
     _11 <- ();
-    old_l_9 <- ([#"../list_index_mut.rs" 45 16 45 34] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost param_l_1);
+    old_l_9 <- ([#"../list_index_mut.rs" 45 16 45 34] Ghost.new param_l_1);
     goto BB1
   }
   BB1 {
@@ -232,10 +223,10 @@ module ListIndexMut_IndexMut
   }
   BB2 {
     invariant valid_ix { [#"../list_index_mut.rs" 48 26 48 56] (0 : usize) <= ix_13 /\ UInt64.to_int ix_13 < Len0.len ( * l_12) };
-    invariant get_target_now { [#"../list_index_mut.rs" 49 32 49 71] Get0.get ( * l_12) (UInt64.to_int ix_13) = Get0.get ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) (UInt64.to_int param_ix_2) };
-    invariant get_target_fin { [#"../list_index_mut.rs" 50 32 50 71] Get0.get ( ^ l_12) (UInt64.to_int ix_13) = Get0.get ( ^ CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) (UInt64.to_int param_ix_2) };
-    invariant len { [#"../list_index_mut.rs" 48 4 48 58] Len0.len ( ^ l_12) = Len0.len ( * l_12) -> Len0.len ( ^ CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) = Len0.len ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) };
-    invariant untouched { [#"../list_index_mut.rs" 48 4 48 58] (forall i : int . 0 <= i /\ i < Len0.len ( * l_12) /\ i <> UInt64.to_int ix_13 -> Get0.get ( ^ l_12) i = Get0.get ( * l_12) i) -> (forall i : int . 0 <= i /\ i < Len0.len ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) /\ i <> UInt64.to_int param_ix_2 -> Get0.get ( ^ CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) i = Get0.get ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) i) };
+    invariant get_target_now { [#"../list_index_mut.rs" 49 32 49 71] Get0.get ( * l_12) (UInt64.to_int ix_13) = Get0.get ( * Ghost.inner old_l_9) (UInt64.to_int param_ix_2) };
+    invariant get_target_fin { [#"../list_index_mut.rs" 50 32 50 71] Get0.get ( ^ l_12) (UInt64.to_int ix_13) = Get0.get ( ^ Ghost.inner old_l_9) (UInt64.to_int param_ix_2) };
+    invariant len { [#"../list_index_mut.rs" 48 4 48 58] Len0.len ( ^ l_12) = Len0.len ( * l_12) -> Len0.len ( ^ Ghost.inner old_l_9) = Len0.len ( * Ghost.inner old_l_9) };
+    invariant untouched { [#"../list_index_mut.rs" 48 4 48 58] (forall i : int . 0 <= i /\ i < Len0.len ( * l_12) /\ i <> UInt64.to_int ix_13 -> Get0.get ( ^ l_12) i = Get0.get ( * l_12) i) -> (forall i : int . 0 <= i /\ i < Len0.len ( * Ghost.inner old_l_9) /\ i <> UInt64.to_int param_ix_2 -> Get0.get ( ^ Ghost.inner old_l_9) i = Get0.get ( * Ghost.inner old_l_9) i) };
     _22 <- ix_13;
     _21 <- ([#"../list_index_mut.rs" 57 10 57 16] _22 > (0 : usize));
     switch (_21)

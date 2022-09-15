@@ -1117,15 +1117,6 @@ module Core_Cmp_PartialEq_Eq
     ensures { result = (Model0.model self = Model1.model other) }
     
 end
-module CreusotContracts_Logic_Ghost_Ghost_Type
-  type t_ghost 't =
-    | C_Ghost 't
-    
-  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Ghost a -> a
-      end
-end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
@@ -1143,28 +1134,6 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
      ^ self =  * self
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
-    
-end
-module CreusotContracts_Logic_Ghost_Impl1_Inner_Stub
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-end
-module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-end
-module CreusotContracts_Logic_Ghost_Impl1_Inner
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t =
-    CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
-  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-    ensures { result = inner self }
     
 end
 module CreusotContracts_Std1_Slice_Impl3_InBounds_Stub
@@ -1367,16 +1336,17 @@ module Hashmap_Impl5_Add
     function Model0.model = Model2.model,
     predicate GoodBucket0.good_bucket = GoodBucket0.good_bucket,
     predicate NoDoubleBinding0.no_double_binding = NoDoubleBinding0.no_double_binding
+  use prelude.Ghost
   use mach.int.Int
   use prelude.UIntSize
   use mach.int.UInt64
   use prelude.IntSize
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Logic_Model_Impl0_Model as Model3 with
     type t = k,
     type ModelTy0.modelTy = ModelTy0.modelTy,
     function Model0.model = Model1.model
   use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
+  use prelude.Ghost
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with
     type t = Hashmap_List_Type.t_list (k, v)
   clone Core_Slice_Index_Impl2_Output_Type as Output0 with
@@ -1405,12 +1375,8 @@ module Hashmap_Impl5_Add
     type t = k
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve4 with
     type t = Hashmap_List_Type.t_list (k, v)
-  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner1 with
-    type t = borrowed (Hashmap_List_Type.t_list (k, v))
-  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with
-    type t = borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with
-    type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Hashmap_List_Type.t_list (k, v)))
+    type self = Ghost.ghost_ty (borrowed (Hashmap_List_Type.t_list (k, v)))
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with
     type t = Hashmap_List_Type.t_list (k, v)
   clone Alloc_Vec_Impl17_IndexMut_Interface as IndexMut0 with
@@ -1432,7 +1398,7 @@ module Hashmap_Impl5_Add
     type a = Alloc_Alloc_Global_Type.t_global,
     function Model0.model = Model2.model
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with
-    type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
+    type self = Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
   let rec cfg add [@cfg:stackify] [#"../hashmap.rs" 114 4 114 41] (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) (key : k) (val' : v) : ()
     requires {[#"../hashmap.rs" 111 15 111 36] HashmapInv0.hashmap_inv ( * self)}
     ensures { [#"../hashmap.rs" 112 14 112 35] HashmapInv0.hashmap_inv ( ^ self) }
@@ -1447,7 +1413,7 @@ module Hashmap_Impl5_Add
   var self_1 : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v);
   var key_2 : k;
   var val'_3 : v;
-  var old_self_7 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v));
+  var old_self_7 : Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v));
   var _9 : ();
   var length_10 : usize;
   var _11 : Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global);
@@ -1462,7 +1428,7 @@ module Hashmap_Impl5_Add
   var _20 : borrowed (Hashmap_List_Type.t_list (k, v));
   var _21 : borrowed (Alloc_Vec_Vec_Type.t_vec (Hashmap_List_Type.t_list (k, v)) (Alloc_Alloc_Global_Type.t_global));
   var _22 : usize;
-  var old_l_23 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Hashmap_List_Type.t_list (k, v)));
+  var old_l_23 : Ghost.ghost_ty (borrowed (Hashmap_List_Type.t_list (k, v)));
   var _25 : ();
   var _26 : ();
   var _34 : ();
@@ -1498,7 +1464,7 @@ module Hashmap_Impl5_Add
   }
   BB0 {
     _9 <- ();
-    old_self_7 <- ([#"../hashmap.rs" 116 23 116 38] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost self_1);
+    old_self_7 <- ([#"../hashmap.rs" 116 23 116 38] Ghost.new self_1);
     goto BB1
   }
   BB1 {
@@ -1536,7 +1502,7 @@ module Hashmap_Impl5_Add
     _19 <- { _19 with current = ( ^ l_18) };
     assume { Resolve2.resolve _19 };
     _25 <- ();
-    old_l_23 <- ([#"../hashmap.rs" 120 20 120 32] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost l_18);
+    old_l_23 <- ([#"../hashmap.rs" 120 20 120 32] Ghost.new l_18);
     goto BB6
   }
   BB6 {
@@ -1544,13 +1510,13 @@ module Hashmap_Impl5_Add
     goto BB7
   }
   BB7 {
-    invariant y { [#"../hashmap.rs" 122 23 122 49]  ^ Inner0.inner old_self_7 =  ^ self_1 };
+    invariant y { [#"../hashmap.rs" 122 23 122 49]  ^ Ghost.inner old_self_7 =  ^ self_1 };
     invariant xx { [#"../hashmap.rs" 123 24 123 52] GoodBucket0.good_bucket ( * self_1) ( * l_18) (UInt64.to_int index_12) };
-    invariant xx { [#"../hashmap.rs" 122 8 122 51] GoodBucket0.good_bucket ( * self_1) ( ^ l_18) (UInt64.to_int index_12) -> GoodBucket0.good_bucket ( * self_1) ( ^ Inner1.inner old_l_23) (UInt64.to_int index_12) };
-    invariant get_key { [#"../hashmap.rs" 122 8 122 51] Get0.get ( ^ l_18) (Model1.model key_2) = Core_Option_Option_Type.C_Some val'_3 -> Get0.get ( ^ CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_23) (Model1.model key_2) = Core_Option_Option_Type.C_Some val'_3 };
-    invariant get_rest { [#"../hashmap.rs" 122 8 122 51] forall i : ModelTy0.modelTy . Get0.get ( ^ l_18) i = Get0.get ( * l_18) i -> Get0.get ( ^ CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_23) i = Get0.get ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_23) i };
+    invariant xx { [#"../hashmap.rs" 122 8 122 51] GoodBucket0.good_bucket ( * self_1) ( ^ l_18) (UInt64.to_int index_12) -> GoodBucket0.good_bucket ( * self_1) ( ^ Ghost.inner old_l_23) (UInt64.to_int index_12) };
+    invariant get_key { [#"../hashmap.rs" 122 8 122 51] Get0.get ( ^ l_18) (Model1.model key_2) = Core_Option_Option_Type.C_Some val'_3 -> Get0.get ( ^ Ghost.inner old_l_23) (Model1.model key_2) = Core_Option_Option_Type.C_Some val'_3 };
+    invariant get_rest { [#"../hashmap.rs" 122 8 122 51] forall i : ModelTy0.modelTy . Get0.get ( ^ l_18) i = Get0.get ( * l_18) i -> Get0.get ( ^ Ghost.inner old_l_23) i = Get0.get ( * Ghost.inner old_l_23) i };
     invariant no_double_binding { [#"../hashmap.rs" 127 39 127 63] NoDoubleBinding0.no_double_binding ( * l_18) };
-    invariant no_double_binding_magic { [#"../hashmap.rs" 122 8 122 51] (forall i : ModelTy0.modelTy . Get0.get ( * l_18) i = Get0.get ( ^ l_18) i \/ i = Model1.model key_2) /\ NoDoubleBinding0.no_double_binding ( ^ l_18) -> NoDoubleBinding0.no_double_binding ( ^ CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_23) };
+    invariant no_double_binding_magic { [#"../hashmap.rs" 122 8 122 51] (forall i : ModelTy0.modelTy . Get0.get ( * l_18) i = Get0.get ( ^ l_18) i \/ i = Model1.model key_2) /\ NoDoubleBinding0.no_double_binding ( ^ l_18) -> NoDoubleBinding0.no_double_binding ( ^ Ghost.inner old_l_23) };
     switch ( * l_18)
       | Hashmap_List_Type.C_Cons _ _ -> goto BB8
       | _ -> goto BB12
@@ -2169,9 +2135,9 @@ module Hashmap_Impl5_Resize
     function Model0.model = Model0.model,
     predicate GoodBucket0.good_bucket = GoodBucket0.good_bucket,
     predicate NoDoubleBinding0.no_double_binding = NoDoubleBinding0.no_double_binding
+  use prelude.Ghost
   use prelude.UIntSize
   use prelude.IntSize
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   use mach.int.UInt64
   use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy2 with
@@ -2188,6 +2154,7 @@ module Hashmap_Impl5_Resize
     type k = k,
     type v = v,
     type ModelTy0.modelTy = ModelTy0.modelTy
+  use prelude.Ghost
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve7 with
     type t = Hashmap_MyHashMap_Type.t_myhashmap k v
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve6 with
@@ -2222,8 +2189,6 @@ module Hashmap_Impl5_Resize
     predicate HasValue0.has_value = HasValue0.has_value,
     predicate ResolveElswhere0.resolve_elswhere = ResolveElswhere0.resolve_elswhere,
     type Output0.output = Output0.output
-  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with
-    type t = borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)
   clone CreusotContracts_Logic_Model_Impl1_Model as Model3 with
     type t = Hashmap_MyHashMap_Type.t_myhashmap k v,
     type ModelTy0.modelTy = ModelTy1.modelTy,
@@ -2242,7 +2207,7 @@ module Hashmap_Impl5_Resize
     type a = Alloc_Alloc_Global_Type.t_global,
     function Model0.model = Model0.model
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with
-    type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
+    type self = Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v))
   let rec cfg resize [@cfg:stackify] [#"../hashmap.rs" 170 4 170 24] (self : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v)) : ()
     requires {[#"../hashmap.rs" 165 15 165 43] Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self))) < 1000}
     requires {[#"../hashmap.rs" 166 15 166 36] HashmapInv0.hashmap_inv ( * self)}
@@ -2252,7 +2217,7 @@ module Hashmap_Impl5_Resize
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var self_1 : borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v);
-  var old_self_6 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v));
+  var old_self_6 : Ghost.ghost_ty (borrowed (Hashmap_MyHashMap_Type.t_myhashmap k v));
   var _8 : ();
   var new_9 : Hashmap_MyHashMap_Type.t_myhashmap k v;
   var _10 : usize;
@@ -2296,7 +2261,7 @@ module Hashmap_Impl5_Resize
   }
   BB0 {
     _8 <- ();
-    old_self_6 <- ([#"../hashmap.rs" 171 23 171 38] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost self_1);
+    old_self_6 <- ([#"../hashmap.rs" 171 23 171 38] Ghost.new self_1);
     goto BB1
   }
   BB1 {
@@ -2321,12 +2286,12 @@ module Hashmap_Impl5_Resize
     goto BB6
   }
   BB6 {
-    invariant seen { [#"../hashmap.rs" 175 8 175 111] forall k : k . BucketIx0.bucket_ix ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6) k < UInt64.to_int i_13 -> Map.get (Model3.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6)) (Model2.model k) = Map.get (Model1.model new_9) (Model2.model k) };
-    invariant unseen { [#"../hashmap.rs" 175 8 175 111] forall k : k . UInt64.to_int i_13 <= BucketIx0.bucket_ix ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6) k /\ BucketIx0.bucket_ix ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6) k <= Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6))) -> Map.get (Model1.model new_9) (Model2.model k) = Core_Option_Option_Type.C_None };
-    invariant rest { [#"../hashmap.rs" 175 8 175 111] forall j : int . UInt64.to_int i_13 <= j /\ j < Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6))) -> Seq.get (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1))) j = Seq.get (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6))) j };
+    invariant seen { [#"../hashmap.rs" 175 8 175 111] forall k : k . BucketIx0.bucket_ix ( * Ghost.inner old_self_6) k < UInt64.to_int i_13 -> Map.get (Model3.model (Ghost.inner old_self_6)) (Model2.model k) = Map.get (Model1.model new_9) (Model2.model k) };
+    invariant unseen { [#"../hashmap.rs" 175 8 175 111] forall k : k . UInt64.to_int i_13 <= BucketIx0.bucket_ix ( * Ghost.inner old_self_6) k /\ BucketIx0.bucket_ix ( * Ghost.inner old_self_6) k <= Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Ghost.inner old_self_6))) -> Map.get (Model1.model new_9) (Model2.model k) = Core_Option_Option_Type.C_None };
+    invariant rest { [#"../hashmap.rs" 175 8 175 111] forall j : int . UInt64.to_int i_13 <= j /\ j < Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Ghost.inner old_self_6))) -> Seq.get (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1))) j = Seq.get (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Ghost.inner old_self_6))) j };
     invariant a { [#"../hashmap.rs" 181 23 181 40] HashmapInv0.hashmap_inv new_9 };
-    invariant p { [#"../hashmap.rs" 182 23 182 49]  ^ Inner0.inner old_self_6 =  ^ self_1 };
-    invariant l { [#"../hashmap.rs" 183 23 183 73] Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6))) = Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1))) };
+    invariant p { [#"../hashmap.rs" 182 23 182 49]  ^ Ghost.inner old_self_6 =  ^ self_1 };
+    invariant l { [#"../hashmap.rs" 183 23 183 73] Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Ghost.inner old_self_6))) = Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1))) };
     invariant z { [#"../hashmap.rs" 184 23 184 50] UInt64.to_int i_13 <= Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1))) };
     _24 <- i_13;
     _26 <- Hashmap_MyHashMap_Type.myhashmap_buckets ( * self_1);
@@ -2378,14 +2343,14 @@ module Hashmap_Impl5_Resize
   }
   BB16 {
     invariant a { [#"../hashmap.rs" 188 27 188 44] HashmapInv0.hashmap_inv new_9 };
-    invariant x { [#"../hashmap.rs" 188 12 188 46] forall k : k . BucketIx0.bucket_ix ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6) k < UInt64.to_int i_13 -> Map.get (Model3.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6)) (Model2.model k) = Map.get (Model1.model new_9) (Model2.model k) };
-    invariant x { [#"../hashmap.rs" 188 12 188 46] forall k : k . UInt64.to_int i_13 < BucketIx0.bucket_ix ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6) k /\ BucketIx0.bucket_ix ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6) k <= Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6))) -> Map.get (Model1.model new_9) (Model2.model k) = Core_Option_Option_Type.C_None };
-    invariant zzz { [#"../hashmap.rs" 188 12 188 46] forall k : k . BucketIx0.bucket_ix ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6) k = UInt64.to_int i_13 -> Map.get (Model3.model (Inner0.inner old_self_6)) (Model2.model k) = match (Get0.get l_27 (Model2.model k)) with
+    invariant x { [#"../hashmap.rs" 188 12 188 46] forall k : k . BucketIx0.bucket_ix ( * Ghost.inner old_self_6) k < UInt64.to_int i_13 -> Map.get (Model3.model (Ghost.inner old_self_6)) (Model2.model k) = Map.get (Model1.model new_9) (Model2.model k) };
+    invariant x { [#"../hashmap.rs" 188 12 188 46] forall k : k . UInt64.to_int i_13 < BucketIx0.bucket_ix ( * Ghost.inner old_self_6) k /\ BucketIx0.bucket_ix ( * Ghost.inner old_self_6) k <= Seq.length (Model0.model (Hashmap_MyHashMap_Type.myhashmap_buckets ( * Ghost.inner old_self_6))) -> Map.get (Model1.model new_9) (Model2.model k) = Core_Option_Option_Type.C_None };
+    invariant zzz { [#"../hashmap.rs" 188 12 188 46] forall k : k . BucketIx0.bucket_ix ( * Ghost.inner old_self_6) k = UInt64.to_int i_13 -> Map.get (Model3.model (Ghost.inner old_self_6)) (Model2.model k) = match (Get0.get l_27 (Model2.model k)) with
       | Core_Option_Option_Type.C_None -> Map.get (Model1.model new_9) (Model2.model k)
       | Core_Option_Option_Type.C_Some v -> Core_Option_Option_Type.C_Some v
       end };
     invariant l_no_double_binding { [#"../hashmap.rs" 195 45 195 66] NoDoubleBinding0.no_double_binding l_27 };
-    invariant x { [#"../hashmap.rs" 196 27 196 54] GoodBucket0.good_bucket ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6) l_27 (UInt64.to_int i_13) };
+    invariant x { [#"../hashmap.rs" 196 27 196 54] GoodBucket0.good_bucket ( * Ghost.inner old_self_6) l_27 (UInt64.to_int i_13) };
     switch (l_27)
       | Hashmap_List_Type.C_Cons _ _ -> goto BB17
       | _ -> goto BB21
@@ -2427,7 +2392,7 @@ module Hashmap_Impl5_Resize
   }
   BB21 {
     _34 <- ();
-    assert { [#"../hashmap.rs" 201 12 201 115] forall k : k . BucketIx0.bucket_ix ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6) k = UInt64.to_int i_13 -> Map.get (Model3.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_6)) (Model2.model k) = Map.get (Model1.model new_9) (Model2.model k) };
+    assert { [#"../hashmap.rs" 201 12 201 115] forall k : k . BucketIx0.bucket_ix ( * Ghost.inner old_self_6) k = UInt64.to_int i_13 -> Map.get (Model3.model (Ghost.inner old_self_6)) (Model2.model k) = Map.get (Model1.model new_9) (Model2.model k) };
     goto BB23
   }
   BB22 {
@@ -2466,17 +2431,17 @@ module Hashmap_Impl5_Resize
   }
   
 end
-module CreusotContracts_Logic_Int_Impl14_Model_Stub
+module CreusotContracts_Logic_Int_Impl12_Model_Stub
   use mach.int.Int
   use prelude.UIntSize
   function model (self : usize) : int
 end
-module CreusotContracts_Logic_Int_Impl14_Model_Interface
+module CreusotContracts_Logic_Int_Impl12_Model_Interface
   use mach.int.Int
   use prelude.UIntSize
   function model (self : usize) : int
 end
-module CreusotContracts_Logic_Int_Impl14_Model
+module CreusotContracts_Logic_Int_Impl12_Model
   use mach.int.Int
   use prelude.UIntSize
   use mach.int.UInt64
@@ -2486,7 +2451,7 @@ module CreusotContracts_Logic_Int_Impl14_Model
     ensures { result = model self }
     
 end
-module CreusotContracts_Logic_Int_Impl14_ModelTy_Type
+module CreusotContracts_Logic_Int_Impl12_ModelTy_Type
   use mach.int.Int
   type modelTy  =
     int
@@ -2515,8 +2480,8 @@ module Hashmap_Main
     type v = isize,
     function HashLog0.hash_log = HashLog0.hash_log,
     function Model0.model = Model3.model
-  clone CreusotContracts_Logic_Int_Impl14_ModelTy_Type as ModelTy0
-  clone CreusotContracts_Logic_Int_Impl14_Model as Model1
+  clone CreusotContracts_Logic_Int_Impl12_ModelTy_Type as ModelTy0
+  clone CreusotContracts_Logic_Int_Impl12_Model as Model1
   clone Hashmap_Impl1_Get as Get1 with
     type k = usize,
     type v = isize,
@@ -2786,8 +2751,8 @@ module Hashmap_Impl2
     function HashLog0.hash_log = HashLog0.hash_log
   goal hash_log_spec : forall self : usize . forall result : int . ([#"../hashmap.rs" 65 14 65 25] result >= 0) -> ([#"../hashmap.rs" 49 14 49 25] result >= 0)
   use mach.int.UInt64
-  clone CreusotContracts_Logic_Int_Impl14_ModelTy_Type as ModelTy0
-  clone CreusotContracts_Logic_Int_Impl14_Model as Model0
+  clone CreusotContracts_Logic_Int_Impl12_ModelTy_Type as ModelTy0
+  clone CreusotContracts_Logic_Int_Impl12_Model as Model0
   clone Hashmap_Impl2_HashLogEqModel as HashLogEqModel0 with
     function HashLog0.hash_log = HashLog0.hash_log,
     axiom .

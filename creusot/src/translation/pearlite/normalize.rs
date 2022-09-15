@@ -8,7 +8,6 @@ use creusot_rustc::{
     middle::ty::{ParamEnv, TyCtxt},
     span::{symbol::sym, Symbol},
 };
-use rustc_middle::ty::subst::GenericArg;
 
 use super::{super_visit_mut_term, BinOp, TermVisitorMut};
 
@@ -114,11 +113,6 @@ fn optimize_builtin<'tcx>(
         Some(TermKind::Lit(Literal::Integer(c as i128)))
     } else if builtin_attr == Some(Symbol::intern("prelude.Int128.to_int")) && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    // Don't think this preserves the typing
-    } else if builtin_attr == Some(Symbol::intern("ghost_deref")) {
-        let ghost_type = tcx.get_diagnostic_item(Symbol::intern("ghost_type")).unwrap();
-        let substs = tcx.mk_substs([GenericArg::from(args[0].ty)].iter());
-        Some(TermKind::Projection { lhs: box args.remove(0), name: 0usize.into(), def: ghost_type, substs })
     } else if builtin_attr == Some(Symbol::intern("identity")) {
         Some(args.remove(0).kind)
     } else if Some(def_id) == tcx.get_diagnostic_item(sym::unreachable) {

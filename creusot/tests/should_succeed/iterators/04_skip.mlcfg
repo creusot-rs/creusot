@@ -533,15 +533,6 @@ module Core_Option_Impl0_IsNone
     ensures { result = (self = Core_Option_Option_Type.C_None) }
     
 end
-module CreusotContracts_Logic_Ghost_Ghost_Type
-  type t_ghost 't =
-    | C_Ghost 't
-    
-  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Ghost a -> a
-      end
-end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -574,28 +565,6 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
      ^ self =  * self
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
-    
-end
-module CreusotContracts_Logic_Ghost_Impl1_Inner_Stub
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-end
-module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-end
-module CreusotContracts_Logic_Ghost_Impl1_Inner
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t =
-    CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
-  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-    ensures { result = inner self }
     
 end
 module CreusotContracts_Std1_Default_Impl2_DefaultLog_Stub
@@ -680,11 +649,12 @@ module C04Skip_Impl0_Next
   clone C04Skip_Impl0_Invariant as Invariant0 with
     type i = i,
     predicate Invariant0.invariant' = Invariant1.invariant'
+  use prelude.Ghost
   use mach.int.Int
   use prelude.UIntSize
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   use mach.int.UInt64
   clone CreusotContracts_Std1_Default_Impl2_DefaultLog as DefaultLog0
+  use prelude.Ghost
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with
     type self = Core_Option_Option_Type.t_option Item0.item
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with
@@ -697,15 +667,13 @@ module C04Skip_Impl0_Next
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed1.completed,
     predicate Produces0.produces = Produces1.produces
-  clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with
-    type t = borrowed (C04Skip_Skip_Type.t_skip i)
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with
     type t = usize
   clone Core_Mem_Take_Interface as Take0 with
     type t = usize,
     function DefaultLog0.default_log = DefaultLog0.default_log
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with
-    type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (C04Skip_Skip_Type.t_skip i))
+    type self = Ghost.ghost_ty (borrowed (C04Skip_Skip_Type.t_skip i))
   let rec cfg next [@cfg:stackify] [#"../04_skip.rs" 67 4 67 41] (self : borrowed (C04Skip_Skip_Type.t_skip i)) : Core_Option_Option_Type.t_option Item0.item
     requires {[#"../04_skip.rs" 62 4 62 40] Invariant0.invariant' ( * self)}
     ensures { [#"../04_skip.rs" 62 4 62 40] Invariant0.invariant' ( ^ self) }
@@ -717,7 +685,7 @@ module C04Skip_Impl0_Next
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option Item0.item;
   var self_1 : borrowed (C04Skip_Skip_Type.t_skip i);
-  var old_self_5 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (C04Skip_Skip_Type.t_skip i));
+  var old_self_5 : Ghost.ghost_ty (borrowed (C04Skip_Skip_Type.t_skip i));
   var _7 : ();
   var n_8 : usize;
   var _9 : borrowed usize;
@@ -739,7 +707,7 @@ module C04Skip_Impl0_Next
   }
   BB0 {
     _7 <- ();
-    old_self_5 <- ([#"../04_skip.rs" 68 23 68 38] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost self_1);
+    old_self_5 <- ([#"../04_skip.rs" 68 23 68 38] Ghost.new self_1);
     goto BB1
   }
   BB1 {
@@ -756,8 +724,8 @@ module C04Skip_Impl0_Next
     goto BB3
   }
   BB3 {
-    invariant proph_const { [#"../04_skip.rs" 70 33 70 59]  ^ self_1 =  ^ Inner0.inner old_self_5 };
-    invariant produces { [#"../04_skip.rs" 70 8 70 61] exists s : Seq.seq Item0.item . Seq.length s + UInt64.to_int n_8 = UInt64.to_int (C04Skip_Skip_Type.skip_n ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_5)) /\ Produces1.produces (C04Skip_Skip_Type.skip_iter ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_self_5)) s (C04Skip_Skip_Type.skip_iter ( * self_1)) };
+    invariant proph_const { [#"../04_skip.rs" 70 33 70 59]  ^ self_1 =  ^ Ghost.inner old_self_5 };
+    invariant produces { [#"../04_skip.rs" 70 8 70 61] exists s : Seq.seq Item0.item . Seq.length s + UInt64.to_int n_8 = UInt64.to_int (C04Skip_Skip_Type.skip_n ( * Ghost.inner old_self_5)) /\ Produces1.produces (C04Skip_Skip_Type.skip_iter ( * Ghost.inner old_self_5)) s (C04Skip_Skip_Type.skip_iter ( * self_1)) };
     invariant n_0 { [#"../04_skip.rs" 73 25 73 40] UInt64.to_int (C04Skip_Skip_Type.skip_n ( * self_1)) = 0 };
     invariant inv { [#"../04_skip.rs" 74 25 74 41] Invariant0.invariant' ( * self_1) };
     _18 <- borrow_mut (C04Skip_Skip_Type.skip_iter ( * self_1));

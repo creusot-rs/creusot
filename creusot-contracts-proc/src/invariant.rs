@@ -156,7 +156,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
             #(#inner)*
             match #it.next() {
                 Some(#elem) => {
-                    #produced = ghost! { #produced.push(#elem) };
+                    #produced = ghost! { #produced.inner().push(#elem) };
                     let #pat = #elem;
                     #body
                 },

@@ -340,15 +340,6 @@ module Alloc_Vec_Impl1_Push
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
-module CreusotContracts_Logic_Ghost_Ghost_Type
-  type t_ghost 't =
-    | C_Ghost 't
-    
-  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Ghost a -> a
-      end
-end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -442,11 +433,12 @@ module C08CollectExtend_Extend
     function Model0.model = Model0.model
   clone CreusotContracts_Std1_Iter_IteratorSpec_Completed_Interface as Completed0 with
     type self = i
+  use prelude.Ghost
   use mach.int.Int
   use prelude.IntSize
-  use seq.Seq
   use Core_Option_Option_Type as Core_Option_Option_Type
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use seq.Seq
+  use prelude.Ghost
   clone Alloc_Vec_Impl1_Push_Interface as Push0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -455,23 +447,23 @@ module C08CollectExtend_Extend
     type self = t
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve5 with
     type self = Core_Option_Option_Type.t_option t
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve4 with
-    type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost i
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve3 with
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve4 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone Core_Iter_Traits_Iterator_Iterator_Next_Interface as Next0 with
     type self = i,
     type Item0.item = t,
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with
+    type self = Ghost.ghost_ty (Seq.seq t)
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with
-    type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq t)
+    type self = Ghost.ghost_ty i
   clone Core_Iter_Traits_Collect_Impl0_IntoIter_Interface as IntoIter0 with
     type i = i
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with
     type self = i
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with
-    type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
+    type self = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   let rec cfg extend [@cfg:stackify] [#"../08_collect_extend.rs" 22 0 22 70] (vec : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (iter : i) : ()
     ensures { [#"../08_collect_extend.rs" 18 0 21 2] exists prod : Seq.seq t . exists done_ : borrowed i . Completed0.completed done_ /\ Produces0.produces iter prod ( * done_) /\ Model0.model ( ^ vec) = Seq.(++) (Model1.model vec) prod }
     
@@ -479,20 +471,20 @@ module C08CollectExtend_Extend
   var _0 : ();
   var vec_1 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var iter_2 : i;
-  var old_vec_4 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)));
+  var old_vec_4 : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)));
   var _6 : ();
   var iter_7 : i;
   var _8 : i;
-  var iter_old_9 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost i;
+  var iter_old_9 : Ghost.ghost_ty i;
   var _11 : ();
-  var produced_12 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq t);
+  var produced_12 : Ghost.ghost_ty (Seq.seq t);
   var _15 : ();
   var _19 : ();
   var _20 : Core_Option_Option_Type.t_option t;
   var _21 : borrowed i;
   var _22 : isize;
   var i_23 : t;
-  var _24 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq t);
+  var _24 : Ghost.ghost_ty (Seq.seq t);
   var _26 : ();
   var x_27 : t;
   var _28 : ();
@@ -509,7 +501,7 @@ module C08CollectExtend_Extend
   }
   BB1 {
     _6 <- ();
-    old_vec_4 <- ([#"../08_collect_extend.rs" 23 18 23 32] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost vec_1);
+    old_vec_4 <- ([#"../08_collect_extend.rs" 23 18 23 32] Ghost.new vec_1);
     goto BB2
   }
   BB2 {
@@ -522,25 +514,26 @@ module C08CollectExtend_Extend
   }
   BB3 {
     _11 <- ();
-    iter_old_9 <- ([#"../08_collect_extend.rs" 24 4 24 46] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost iter_7);
+    iter_old_9 <- ([#"../08_collect_extend.rs" 24 4 24 46] Ghost.new iter_7);
     goto BB4
   }
   BB4 {
+    assume { Resolve2.resolve iter_old_9 };
     _15 <- ();
-    produced_12 <- ([#"../08_collect_extend.rs" 24 4 24 46] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (Seq.empty ));
+    produced_12 <- ([#"../08_collect_extend.rs" 24 4 24 46] Ghost.new (Seq.empty ));
     goto BB5
   }
   BB5 {
-    assume { Resolve2.resolve produced_12 };
+    assume { Resolve3.resolve produced_12 };
     goto BB6
   }
   BB6 {
     goto BB7
   }
   BB7 {
-    invariant structural { [#"../08_collect_extend.rs" 24 4 24 46] Produces0.produces (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 iter_old_9) (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 produced_12) iter_7 };
-    invariant vec_proph { [#"../08_collect_extend.rs" 24 27 24 44]  ^ CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_vec_4 =  ^ vec_1 };
-    invariant vec { [#"../08_collect_extend.rs" 25 21 25 64] Seq.(==) (Model1.model vec_1) (Seq.(++) (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_vec_4)) (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 produced_12)) };
+    invariant structural { [#"../08_collect_extend.rs" 24 4 24 46] Produces0.produces (Ghost.inner iter_old_9) (Ghost.inner produced_12) iter_7 };
+    invariant vec_proph { [#"../08_collect_extend.rs" 24 27 24 44]  ^ Ghost.inner old_vec_4 =  ^ vec_1 };
+    invariant vec { [#"../08_collect_extend.rs" 25 21 25 64] Seq.(==) (Model1.model vec_1) (Seq.(++) (Model1.model (Ghost.inner old_vec_4)) (Ghost.inner produced_12)) };
     _21 <- borrow_mut iter_7;
     iter_7 <-  ^ _21;
     _20 <- ([#"../08_collect_extend.rs" 24 4 24 46] Next0.next _21);
@@ -553,14 +546,13 @@ module C08CollectExtend_Extend
       end
   }
   BB9 {
-    assume { Resolve3.resolve vec_1 };
+    assume { Resolve4.resolve vec_1 };
     _0 <- ();
     goto BB17
   }
   BB10 {
-    assume { Resolve3.resolve vec_1 };
+    assume { Resolve4.resolve vec_1 };
     assume { Resolve1.resolve iter_7 };
-    assume { Resolve4.resolve iter_old_9 };
     assume { Resolve5.resolve _20 };
     absurd
   }
@@ -569,13 +561,13 @@ module C08CollectExtend_Extend
     i_23 <- Core_Option_Option_Type.some_0 _20;
     _20 <- (let Core_Option_Option_Type.C_Some a = _20 in Core_Option_Option_Type.C_Some (any t));
     _26 <- ();
-    _24 <- ([#"../08_collect_extend.rs" 24 4 24 46] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (Seq.snoc (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 produced_12) i_23));
+    _24 <- ([#"../08_collect_extend.rs" 24 4 24 46] Ghost.new (Seq.snoc (Ghost.inner produced_12) i_23));
     goto BB12
   }
   BB12 {
-    assume { Resolve2.resolve produced_12 };
+    assume { Resolve3.resolve produced_12 };
     produced_12 <- _24;
-    _24 <- any CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq t);
+    _24 <- any Ghost.ghost_ty (Seq.seq t);
     assume { Resolve6.resolve x_27 };
     x_27 <- i_23;
     i_23 <- any t;
@@ -606,14 +598,10 @@ module C08CollectExtend_Extend
     goto BB18
   }
   BB18 {
-    assume { Resolve4.resolve iter_old_9 };
+    assume { Resolve1.resolve iter_7 };
     goto BB19
   }
   BB19 {
-    assume { Resolve1.resolve iter_7 };
-    goto BB20
-  }
-  BB20 {
     return _0
   }
   
@@ -722,11 +710,12 @@ module C08CollectExtend_Collect
     axiom .
   clone CreusotContracts_Std1_Iter_IteratorSpec_Completed_Interface as Completed0 with
     type self = i
+  use prelude.Ghost
   use mach.int.Int
   use prelude.IntSize
-  use seq.Seq
   use Core_Option_Option_Type as Core_Option_Option_Type
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use seq.Seq
+  use prelude.Ghost
   clone Alloc_Vec_Impl1_Push_Interface as Push0 with
     type t = Item0.item,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -735,9 +724,7 @@ module C08CollectExtend_Collect
     type self = Item0.item
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve4 with
     type self = Core_Option_Option_Type.t_option Item0.item
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with
-    type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost i
-  clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve2 with
+  clone CreusotContracts_Std1_Vec_Impl3_Resolve as Resolve3 with
     type t = Item0.item,
     function Model0.model = Model0.model,
     predicate Resolve0.resolve = Resolve5.resolve
@@ -746,8 +733,10 @@ module C08CollectExtend_Collect
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with
+    type self = Ghost.ghost_ty (Seq.seq Item0.item)
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with
-    type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq Item0.item)
+    type self = Ghost.ghost_ty i
   clone Core_Iter_Traits_Collect_Impl0_IntoIter_Interface as IntoIter0 with
     type i = i
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with
@@ -765,16 +754,16 @@ module C08CollectExtend_Collect
   var _4 : ();
   var iter_5 : i;
   var _6 : i;
-  var iter_old_7 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost i;
+  var iter_old_7 : Ghost.ghost_ty i;
   var _9 : ();
-  var produced_10 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq Item0.item);
+  var produced_10 : Ghost.ghost_ty (Seq.seq Item0.item);
   var _13 : ();
   var _16 : ();
   var _17 : Core_Option_Option_Type.t_option Item0.item;
   var _18 : borrowed i;
   var _19 : isize;
   var i_20 : Item0.item;
-  var _21 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq Item0.item);
+  var _21 : Ghost.ghost_ty (Seq.seq Item0.item);
   var _23 : ();
   var x_24 : Item0.item;
   var _25 : ();
@@ -801,16 +790,17 @@ module C08CollectExtend_Collect
   }
   BB3 {
     _9 <- ();
-    iter_old_7 <- ([#"../08_collect_extend.rs" 42 4 42 47] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost iter_5);
+    iter_old_7 <- ([#"../08_collect_extend.rs" 42 4 42 47] Ghost.new iter_5);
     goto BB4
   }
   BB4 {
+    assume { Resolve1.resolve iter_old_7 };
     _13 <- ();
-    produced_10 <- ([#"../08_collect_extend.rs" 42 4 42 47] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (Seq.empty ));
+    produced_10 <- ([#"../08_collect_extend.rs" 42 4 42 47] Ghost.new (Seq.empty ));
     goto BB5
   }
   BB5 {
-    assume { Resolve1.resolve produced_10 };
+    assume { Resolve2.resolve produced_10 };
     goto BB6
   }
   BB6 {
@@ -820,8 +810,8 @@ module C08CollectExtend_Collect
     goto BB8
   }
   BB8 {
-    invariant structural { [#"../08_collect_extend.rs" 42 4 42 47] Produces0.produces (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 iter_old_7) (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 produced_10) iter_5 };
-    invariant vec { [#"../08_collect_extend.rs" 42 21 42 45] Seq.(==) (Model0.model res_3) (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 produced_10) };
+    invariant structural { [#"../08_collect_extend.rs" 42 4 42 47] Produces0.produces (Ghost.inner iter_old_7) (Ghost.inner produced_10) iter_5 };
+    invariant vec { [#"../08_collect_extend.rs" 42 21 42 45] Seq.(==) (Model0.model res_3) (Ghost.inner produced_10) };
     _18 <- borrow_mut iter_5;
     iter_5 <-  ^ _18;
     _17 <- ([#"../08_collect_extend.rs" 42 4 42 47] Next0.next _18);
@@ -838,9 +828,8 @@ module C08CollectExtend_Collect
     goto BB18
   }
   BB11 {
-    assume { Resolve2.resolve res_3 };
+    assume { Resolve3.resolve res_3 };
     assume { Resolve0.resolve iter_5 };
-    assume { Resolve3.resolve iter_old_7 };
     assume { Resolve4.resolve _17 };
     absurd
   }
@@ -849,13 +838,13 @@ module C08CollectExtend_Collect
     i_20 <- Core_Option_Option_Type.some_0 _17;
     _17 <- (let Core_Option_Option_Type.C_Some a = _17 in Core_Option_Option_Type.C_Some (any Item0.item));
     _23 <- ();
-    _21 <- ([#"../08_collect_extend.rs" 42 4 42 47] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (Seq.snoc (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 produced_10) i_20));
+    _21 <- ([#"../08_collect_extend.rs" 42 4 42 47] Ghost.new (Seq.snoc (Ghost.inner produced_10) i_20));
     goto BB13
   }
   BB13 {
-    assume { Resolve1.resolve produced_10 };
+    assume { Resolve2.resolve produced_10 };
     produced_10 <- _21;
-    _21 <- any CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq Item0.item);
+    _21 <- any Ghost.ghost_ty (Seq.seq Item0.item);
     assume { Resolve5.resolve x_24 };
     x_24 <- i_20;
     i_20 <- any Item0.item;
@@ -886,20 +875,16 @@ module C08CollectExtend_Collect
     goto BB19
   }
   BB19 {
-    assume { Resolve3.resolve iter_old_7 };
+    assume { Resolve0.resolve iter_5 };
+    assume { Resolve3.resolve _0 };
+    _0 <- res_3;
+    res_3 <- any Alloc_Vec_Vec_Type.t_vec Item0.item (Alloc_Alloc_Global_Type.t_global);
     goto BB20
   }
   BB20 {
-    assume { Resolve0.resolve iter_5 };
-    assume { Resolve2.resolve _0 };
-    _0 <- res_3;
-    res_3 <- any Alloc_Vec_Vec_Type.t_vec Item0.item (Alloc_Alloc_Global_Type.t_global);
     goto BB21
   }
   BB21 {
-    goto BB22
-  }
-  BB22 {
     return _0
   }
   

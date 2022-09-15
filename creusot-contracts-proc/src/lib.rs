@@ -354,7 +354,7 @@ pub fn ghost(assertion: TS1) -> TS1 {
                 #[creusot::no_translate]
                 #[creusot::decl::spec]
                 #[creusot::spec::ghost]
-                || { Ghost(#assertion) }
+                || { creusot_contracts::logic::Ghost::new(#assertion) }
             )()
         }
     })

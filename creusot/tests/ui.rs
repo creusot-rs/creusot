@@ -137,6 +137,7 @@ where
             if !success {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
                 writeln!(&mut out, "failure").unwrap();
+                out.reset().unwrap();
             }
 
             if output.stdout.is_empty() {
