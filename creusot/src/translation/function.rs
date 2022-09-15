@@ -487,25 +487,45 @@ pub fn closure_contract<'tcx>(
     let contract =
         names.with_public_clones(|names| contract_of(ctx, def_id).to_exp(ctx, names, def_id));
 
-    let postcondition = contract.ensures_conj();
-    let precondition = contract.requires_conj();
+    let mut postcondition = contract.ensures_conj();
+    let mut precondition = contract.requires_conj();
 
     let result_ty = clos_sig.retty;
     clos_sig.contract = Contract::new();
     clos_sig.retty = None;
 
+    let args: Vec<_> = clos_sig.args.drain(1..).collect();
+
+    if args.len() == 0 {
+        clos_sig.args.push(Binder::wild(Type::UNIT));
+    } else {
+        let arg_tys = args
+            .iter()
+            .map(|a| a.type_of().expect("signature bindings should be typed").clone())
+            .collect();
+        clos_sig.args.push(Binder::typed("args".into(), Type::Tuple(arg_tys)));
+
+        let binders: Vec<_> =
+            args.into_iter().flat_map(|a| a.var_type_pairs()).map(|a| Pattern::VarP(a.0)).collect();
+        postcondition = Exp::Let {
+            pattern: Pattern::TupleP(binders.clone()),
+            arg: box Exp::pure_var("args".into()),
+            body: box postcondition,
+        };
+        precondition = Exp::Let {
+            pattern: Pattern::TupleP(binders.clone()),
+            arg: box Exp::pure_var("args".into()),
+            body: box precondition,
+        };
+    }
+
     // Build the signatures for the pre and post conditions
     let mut post_sig = clos_sig.clone();
-    if post_sig.args.len() == 1 {
-        post_sig.args.push(Binder::wild(Type::UNIT));
-    }
+    let pre_sig = clos_sig;
+
     post_sig
         .args
         .push(Binder::typed(Ident::build("result"), result_ty.unwrap_or(Type::Tuple(vec![]))));
-    let mut pre_sig = clos_sig;
-    if pre_sig.args.len() == 1 {
-        pre_sig.args.push(Binder::wild(Type::UNIT));
-    }
 
     let mut contracts = Vec::new();
     let env_ty =
