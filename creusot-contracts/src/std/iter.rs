@@ -77,8 +77,7 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
             (@o).1 == 0 &&
             exists<s: Seq<Self::Item>>
                 s.len() == (@self).1 &&
-                (@self).0.produces(s.concat(visited), (@o).0) &&
-                (s.len() < (@self).1 ==> visited == Seq::EMPTY)
+                (@self).0.produces(s.concat(visited), (@o).0)
         }
     }
 
