@@ -42,8 +42,7 @@ where
             @o.n == 0 &&
             exists<s: Seq<Self::Item>>
                 s.len() == @self.n &&
-                self.iter.produces(s.concat(visited), o.iter) &&
-                (s.len() < @self.n ==> visited == Seq::EMPTY)
+                self.iter.produces(s.concat(visited), o.iter)
         }
     }
 
