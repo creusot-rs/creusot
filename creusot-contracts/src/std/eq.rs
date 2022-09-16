@@ -11,8 +11,8 @@ extern_spec! {
                 #[ensures(result == (@self == @rhs))]
                 fn eq(&self, rhs: &Rhs) -> bool
                 where
-                    Self_: Model,
-                    Rhs: Model<ModelTy = Self_::ModelTy>;
+                    Self: Model,
+                    Rhs: Model<ModelTy = Self::ModelTy>;
 
             }
         }
