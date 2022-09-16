@@ -345,6 +345,9 @@ impl Exp {
                     Exp::QVar(_, Purity::Program) => self.pure &= false,
                     Exp::Verbatim(_) => self.pure &= false,
                     Exp::Absurd => self.pure &= false,
+                    // This is a bit absurd, but you can't put "pure {...}"
+                    // in a term, so it's not "pure".
+                    Exp::Pure(_) => self.pure &= false,
                     _ => {
                         super_visit(self, exp);
                     }
