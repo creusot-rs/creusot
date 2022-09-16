@@ -2,6 +2,7 @@ use crate as creusot_contracts;
 use crate::macros::*;
 use core::ops::Deref;
 
+#[rustc_diagnostic_item = "ghost_type"]
 pub struct Ghost<T>(pub T)
 where
     T: ?Sized;
@@ -11,8 +12,7 @@ impl<T> Deref for Ghost<T> {
 
     #[logic]
     #[trusted]
-    // #[creusot::builtins = "ghost_deref"]
-    #[ensures(*result == self.0)]
+    #[creusot::builtins = "ghost_deref"]
     fn deref(&self) -> &Self::Target {
         absurd
     }
@@ -25,6 +25,7 @@ impl<T> Ghost<T> {
     }
 
     #[logic]
+    #[creusot::builtins = "ghost_inner"]
     pub fn unwrap(self) -> T {
         self.0
     }
