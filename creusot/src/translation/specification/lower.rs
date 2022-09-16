@@ -192,28 +192,16 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
             TermKind::Forall { binder, box body } => {
                 let ty =
                     translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, binder.1);
-                let old = std::mem::replace(&mut self.pure, Purity::Logic);
-                let f =
-                    Exp::Forall(vec![(binder.0.to_string().into(), ty)], box self.lower_term(body));
-                let _ = std::mem::replace(&mut self.pure, old);
-                if Purity::Program == self.pure {
-                    Exp::Pure(box f)
-                } else {
-                    f
-                }
+                self.pure_exp(|this| {
+                    Exp::Forall(vec![(binder.0.to_string().into(), ty)], box this.lower_term(body))
+                })
             }
             TermKind::Exists { binder, box body } => {
                 let ty =
                     translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, binder.1);
-                let old = std::mem::replace(&mut self.pure, Purity::Logic);
-                let f =
-                    Exp::Exists(vec![(binder.0.to_string().into(), ty)], box self.lower_term(body));
-                let _ = std::mem::replace(&mut self.pure, old);
-                if Purity::Program == self.pure {
-                    Exp::Pure(box f)
-                } else {
-                    f
-                }
+                self.pure_exp(|this| {
+                    Exp::Exists(vec![(binder.0.to_string().into(), ty)], box this.lower_term(body))
+                })
             }
             TermKind::Constructor { adt, variant, fields } => {
                 self.ctx.translate(adt.did());
@@ -235,14 +223,7 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 Exp::Final(box self.lower_term(term))
             }
             TermKind::Impl { box lhs, box rhs } => {
-                let pure = std::mem::replace(&mut self.pure, Purity::Logic);
-                let exp = Exp::Impl(box self.lower_term(lhs), box self.lower_term(rhs));
-                self.pure = pure;
-                if Purity::Program == self.pure {
-                    Exp::Pure(box exp)
-                } else {
-                    exp
-                }
+                self.pure_exp(|this| Exp::Impl(box this.lower_term(lhs), box this.lower_term(rhs)))
             }
             TermKind::Old { box term } => Exp::Old(box self.lower_term(term)),
             TermKind::Match { box scrutinee, mut arms } => {
@@ -331,6 +312,18 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 Exp::Abs(binders, box body)
             }
             TermKind::Absurd => Exp::Absurd,
+        }
+    }
+
+    fn pure_exp(&mut self, f: impl FnOnce(&mut Self) -> Exp) -> Exp {
+        match self.pure {
+            Purity::Logic => f(self),
+            Purity::Program => {
+                self.pure = Purity::Logic;
+                let ret = f(self);
+                self.pure = Purity::Program;
+                Exp::Pure(box ret)
+            }
         }
     }
 
