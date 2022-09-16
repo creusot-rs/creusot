@@ -108,6 +108,7 @@ impl Parse for ContractItem {
             || input.peek(Token![move])
         {
             let mut closure: ExprClosure = input.parse()?;
+            let _: Option<Token![,]> = input.parse()?;
             closure.attrs.extend(attrs);
             return Ok(ContractItem::Closure(closure));
         }

@@ -25,7 +25,6 @@ impl<T> Ghost<T> {
     }
 
     #[logic]
-    #[creusot::builtins = "ghost_inner"]
     pub fn unwrap(self) -> T {
         self.0
     }

@@ -132,6 +132,12 @@ where
             out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
             writeln!(&mut out, "blessed").unwrap();
             out.reset().unwrap();
+            let (success, _) = differ(output.clone(), &stdout, &stderr).unwrap();
+
+            if !success {
+                out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+                writeln!(&mut out, "failure").unwrap();
+            }
 
             if output.stdout.is_empty() {
                 let _ = std::fs::remove_file(stdout);
@@ -145,7 +151,7 @@ where
                 std::fs::write(stderr, &output.stderr).unwrap();
             }
         } else {
-            let (success, mut buf) = differ(output, &stdout, &stderr).unwrap();
+            let (success, mut buf) = differ(output.clone(), &stdout, &stderr).unwrap();
 
             if success {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
@@ -218,7 +224,7 @@ fn should_succeed_case(
 ) -> Result<(bool, Buffer), Box<dyn Error>> {
     let mut buf = Buffer::ansi();
     use std::str::from_utf8;
-    match output.ok() {
+    match output.clone().ok() {
         Ok(output) => {
             let expect_out = &std::fs::read(stdout).unwrap_or_else(|_| Vec::new());
             let expect_err = &std::fs::read(stderr).unwrap_or_else(|_| Vec::new());
@@ -231,11 +237,11 @@ fn should_succeed_case(
             Ok((success_out && success_err, buf))
         }
         Err(err) => {
-            let expect_err = &std::fs::read(stderr).unwrap_or_else(|_| Vec::new());
-
             let output = err.as_output().unwrap();
-            let success = compare_str(&mut buf, from_utf8(&output.stderr)?, from_utf8(expect_err)?);
-            Ok((success, buf))
+
+            write!(buf, "{}", from_utf8(&output.stderr)?)?;
+            // let success = compare_str(&mut buf, from_utf8(&output.stderr)?, from_utf8(expect_err)?);
+            Ok((false, buf))
         }
     }
 }
@@ -248,7 +254,7 @@ fn should_fail_case(
     let mut buf = Buffer::ansi();
     use std::str::from_utf8;
 
-    match output.ok() {
+    match output.clone().ok() {
         Ok(_) => Ok((false, buf)),
         Err(err) => {
             let expect_err = &std::fs::read(stderr).unwrap_or_else(|_| Vec::new());
