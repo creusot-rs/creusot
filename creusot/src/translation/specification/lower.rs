@@ -235,7 +235,14 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                 Exp::Final(box self.lower_term(term))
             }
             TermKind::Impl { box lhs, box rhs } => {
-                Exp::Impl(box self.lower_term(lhs), box self.lower_term(rhs))
+                let pure = std::mem::replace(&mut self.pure, Purity::Logic);
+                let exp = Exp::Impl(box self.lower_term(lhs), box self.lower_term(rhs));
+                self.pure = pure;
+                if Purity::Program == self.pure {
+                    Exp::Pure(box exp)
+                } else {
+                    exp
+                }
             }
             TermKind::Old { box term } => Exp::Old(box self.lower_term(term)),
             TermKind::Match { box scrutinee, mut arms } => {
