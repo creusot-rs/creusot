@@ -31,10 +31,10 @@ extern_spec! {
                     None => self.completed(),
                     Some(v) => (*self).produces(Seq::singleton(v), ^self)
                 })]
-                fn next(&mut self) -> Option<Self_::Item>;
+                fn next(&mut self) -> Option<Self::Item>;
 
                 #[ensures(@result == (self, @n))]
-                fn skip(self, n: usize) -> Skip<Self_>;
+                fn skip(self, n: usize) -> Skip<Self>;
             }
         }
     }

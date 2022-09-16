@@ -6,6 +6,7 @@ use syn::{
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
     token::{Add, Brace, Colon, Comma, For, Impl, Paren, Semi, Trait, Unsafe},
+    visit_mut::VisitMut,
     *,
 };
 
@@ -157,9 +158,13 @@ impl FlatSpec {
             };
 
             let self_ty = data.self_ty.self_ty();
+            let mut replacer = SelfEscape { self_ty };
+
             self.inputs.iter_mut().for_each(|input| match input {
                 FnArg::Receiver(Receiver { reference, mutability, .. }) => {
-                    let mut self_ty = self_ty.clone();
+                    // An `impl` block may have a `self` reciever, but we should replace it with the actual
+                    // underlying type. This constructs the correct replacement for those cases.
+                    let mut self_ty = replacer.self_ty.clone();
                     if let Some((_, l)) = reference {
                         self_ty = parse_quote! { & #l #mutability #self_ty};
                     };
@@ -170,26 +175,20 @@ impl FlatSpec {
                         ty: Box::new(self_ty),
                     });
                 }
-                FnArg::Typed(PatType { ty, .. }) => escape_self_in_type(ty, self_ty.clone()),
+                FnArg::Typed(PatType { ty, .. }) => replacer.visit_type_mut(ty),
             });
 
-            if let ReturnType::Type(_, ty) = &mut self.output {
-                escape_self_in_type(ty, self_ty.clone());
-            }
+            replacer.visit_return_type_mut(&mut self.output);
 
             match data.self_ty {
                 TraitOrImpl::Trait(trait_name, generics) => {
                     where_clause.predicates.push(parse_quote! { Self_ : #trait_name #generics });
 
                     self.generics.params.insert(0, parse_quote! { Self_ });
-                    if let Some(where_clause) = &mut self.generics.where_clause {
-                        where_clause.predicates.iter_mut().for_each(|pred| match pred {
-                            WherePredicate::Type(PredicateType { bounded_ty, .. }) => {
-                                escape_self_in_type(bounded_ty, self_ty.clone());
-                            }
-                            _ => (),
-                        });
-                    }
+
+                    where_clause.predicates.iter_mut().for_each(|pred| {
+                        replacer.visit_where_predicate_mut(pred);
+                    });
                 }
                 _ => {}
             }
@@ -223,36 +222,29 @@ impl FlatSpec {
     }
 }
 
-fn escape_self_in_type(t: &mut Type, self_ty: Type) {
-    match t {
-        Type::Reference(TypeReference { elem, .. }) => escape_self_in_type(elem, self_ty),
-        Type::Path(TypePath { path, qself }) => {
-            if path.segments[0].ident == "Self" {
-                if self_ty == parse_quote! { Self_ } {
-                    let mut ident: Ident = parse_quote! { Self_ };
-                    ident.set_span(path.segments[0].ident.span());
-                    path.segments[0].ident = ident;
-                } else {
-                    if path.segments.len() > 1 {
-                        let segments = std::mem::take(&mut path.segments);
-                        path.segments = segments.into_iter().skip(1).collect();
-                        *qself = Some(QSelf {
-                            lt_token: Default::default(),
-                            ty: Box::new(self_ty),
-                            position: 0,
-                            as_token: Default::default(),
-                            gt_token: Default::default(),
-                        });
+struct SelfEscape {
+    self_ty: Type,
+}
+
+impl syn::visit_mut::VisitMut for SelfEscape {
+    fn visit_type_mut(&mut self, ty: &mut Type) {
+        match ty {
+            Type::Path(TypePath { path, .. }) => {
+                if path.segments[0].ident == "Self" {
+                    if self.self_ty == parse_quote! { Self_ } {
+                        let mut ident: Ident = parse_quote! { Self_ };
+                        ident.set_span(path.segments[0].ident.span());
+                        path.segments[0].ident = ident;
                     } else {
-                        *t = self_ty;
+                        *ty = self.self_ty.clone();
                     }
                 }
             }
+            _ => {}
         }
 
-        // I'm lazy
-        _ => {}
-    };
+        visit_mut::visit_type_mut(self, ty);
+    }
 }
 
 fn escape_self_in_contracts(attrs: &mut Vec<Attribute>) -> Result<()> {
@@ -331,10 +323,13 @@ fn escape_self_in_term(t: &mut Term) {
                 }
             }
         }
-        Term::Range(TermRange { .. }) => {
-            unimplemented!("escape in range")
-            // escape_self_in_term(from);
-            // escape_self_in_term(to);
+        Term::Range(TermRange { from, to, .. }) => {
+            if let Some(from) = from {
+                escape_self_in_term(from);
+            }
+            if let Some(to) = to {
+                escape_self_in_term(to);
+            }
         }
         Term::Repeat(TermRepeat { expr, len, .. }) => {
             escape_self_in_term(expr);

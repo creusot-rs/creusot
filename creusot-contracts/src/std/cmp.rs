@@ -63,7 +63,7 @@ mod real_ord {
                     #[ensures(result == self || result == o)]
                     #[ensures(@self <= @o ==> result == o)]
                     #[ensures(@o < @self ==> result == self)]
-                    fn max(self, o: Self_) -> Self;
+                    fn max(self, o: Self) -> Self;
                 }
             }
         }
