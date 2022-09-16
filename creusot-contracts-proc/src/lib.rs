@@ -200,9 +200,16 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
         ContractItem::Closure(clos) => {
             let req_body = pretyping::encode_term(&term).unwrap();
 
-            let inputs = clos.inputs.clone();
             let clos_name = Ident::new("closure", Span::mixed_site());
+            let mut inputs = clos.inputs.clone();
 
+            inputs.iter_mut().enumerate().for_each(|(ix, p)| match p {
+                Pat::Wild(_) => {
+                    let id = Ident::new(&format!("bndr{}", ix), Span::mixed_site());
+                    *p = parse_quote! { #id };
+                }
+                _ => (),
+            });
             let mut args = inputs.clone();
             // Remove any type ascriptions
             args.iter_mut().for_each(|p| match p {
