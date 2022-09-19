@@ -60,31 +60,6 @@ module Alloc_Alloc_Global_Type
     | C_Global
     
 end
-module CreusotContracts_Logic_Ghost_Ghost_Type
-  type t_ghost 't =
-    | C_Ghost 't
-    
-  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Ghost a -> a
-      end
-end
-module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-end
-module CreusotContracts_Logic_Ghost_Impl1_Inner
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t =
-    CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
-  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-    ensures { result = inner self }
-    
-end
 module Alloc_Vec_Impl1_Len_Interface
   type t
   type a
@@ -225,6 +200,31 @@ module Alloc_Vec_Impl17_IndexMut
     ensures { Seq.length (Model0.model ( ^ self)) = Seq.length (Model0.model ( * self)) }
     
 end
+module CreusotContracts_Logic_Ghost_Ghost_Type
+  type t_ghost 't =
+    | C_Ghost 't
+    
+  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Ghost a -> a
+      end
+end
+module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
+end
+module CreusotContracts_Logic_Ghost_Impl1_Inner
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t =
+    CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
+  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
+    ensures { result = inner self }
+    
+end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
@@ -328,6 +328,7 @@ module C01_AllZero
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = uint32, type a = Alloc_Alloc_Global_Type.t_global,
     axiom .
   use prelude.UIntSize
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   use mach.int.UInt64
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = uint32
   clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = uint32
@@ -343,7 +344,6 @@ module C01_AllZero
     type Output0.output = Output0.output
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = uint32, type a = Alloc_Alloc_Global_Type.t_global,
     function Model0.model = Model0.model
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))
   let rec cfg all_zero [@cfg:stackify] [#"../01.rs" 7 0 7 33] (v : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global))) : ()
     ensures { [#"../01.rs" 5 0 5 74] forall i : int . 0 <= i /\ i < Seq.length (Model0.model ( ^ v)) -> Seq.get (Model0.model ( ^ v)) i = (0 : uint32) }

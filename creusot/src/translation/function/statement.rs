@@ -50,11 +50,11 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
         let rval: Expr<'tcx> = match rvalue {
             Rvalue::Use(rval) => match rval {
                 Move(pl) => {
-                    self.emit_statementf(fmir::Statement::Resolve(*place));
+                    self.emit_statement(fmir::Statement::Resolve(*place));
                     Expr::Move(*pl)
                 }
                 Copy(pl) => {
-                    self.emit_statementf(fmir::Statement::Resolve(*place));
+                    self.emit_statement(fmir::Statement::Resolve(*place));
                     Expr::Copy(*pl)
                 }
                 Constant(box c) => {
@@ -152,7 +152,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                                 .assertions
                                 .remove(&def_id)
                                 .expect("Could not find body of assertion");
-                            self.emit_statementf(fmir::Statement::Assertion(assertion));
+                            self.emit_statement(fmir::Statement::Assertion(assertion));
                             return;
                         } else if util::is_ghost(self.tcx, def_id) {
                             return;

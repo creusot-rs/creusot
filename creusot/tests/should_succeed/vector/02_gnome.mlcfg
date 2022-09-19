@@ -343,77 +343,6 @@ module CreusotContracts_Logic_Ord_OrdLogic_EqCmp
     
   axiom eq_cmp_spec : forall x : self, y : self . (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal)
 end
-module CreusotContracts_Logic_Ghost_Ghost_Type
-  type t_ghost 't =
-    | C_Ghost 't
-    
-  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Ghost a -> a
-      end
-end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Logic_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Logic_Model_Model_ModelTy_Type
-  type self
-  type modelTy
-end
-module CreusotContracts_Logic_Model_Model_Model_Interface
-  type self
-  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
-end
-module CreusotContracts_Logic_Model_Model_Model
-  type self
-  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
-  val model (self : self) : ModelTy0.modelTy
-    ensures { result = model self }
-    
-end
-module CreusotContracts_Logic_Model_Impl1_Model_Interface
-  type t
-  use prelude.Borrow
-  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  function model (self : borrowed t) : ModelTy0.modelTy
-end
-module CreusotContracts_Logic_Model_Impl1_Model
-  type t
-  use prelude.Borrow
-  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
-    type ModelTy0.modelTy = ModelTy0.modelTy
-  function model (self : borrowed t) : ModelTy0.modelTy =
-    Model0.model ( * self)
-  val model (self : borrowed t) : ModelTy0.modelTy
-    ensures { result = model self }
-    
-end
-module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-end
-module CreusotContracts_Logic_Ghost_Impl1_Inner
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t =
-    CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
-  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-    ensures { result = inner self }
-    
-end
 module Alloc_Vec_Impl1_Len_Interface
   type t
   type a
@@ -441,6 +370,10 @@ module Alloc_Vec_Impl1_Len
   val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
+end
+module CreusotContracts_Logic_Model_Model_ModelTy_Type
+  type self
+  type modelTy
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface
   type self
@@ -589,6 +522,37 @@ module Alloc_Vec_Impl11_DerefMut
     ensures { Model0.model ( ^ result) = Model1.model ( ^ self) }
     
 end
+module CreusotContracts_Logic_Model_Model_Model_Interface
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+  val model (self : self) : ModelTy0.modelTy
+    ensures { result = model self }
+    
+end
+module CreusotContracts_Logic_Model_Impl1_Model_Interface
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : borrowed t) : ModelTy0.modelTy
+end
+module CreusotContracts_Logic_Model_Impl1_Model
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+    type ModelTy0.modelTy = ModelTy0.modelTy
+  function model (self : borrowed t) : ModelTy0.modelTy =
+    Model0.model ( * self)
+  val model (self : borrowed t) : ModelTy0.modelTy
+    ensures { result = model self }
+    
+end
 module Core_Slice_Impl0_Swap_Interface
   type t
   use mach.int.UInt64
@@ -625,6 +589,42 @@ module Core_Slice_Impl0_Swap
     requires {UInt64.to_int a < Seq.length (Model0.model self)}
     requires {UInt64.to_int b < Seq.length (Model0.model self)}
     ensures { Permut.exchange (Model1.model ( ^ self)) (Model1.model ( * self)) (UInt64.to_int a) (UInt64.to_int b) }
+    
+end
+module CreusotContracts_Logic_Ghost_Ghost_Type
+  type t_ghost 't =
+    | C_Ghost 't
+    
+  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Ghost a -> a
+      end
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
+end
+module CreusotContracts_Logic_Ghost_Impl1_Inner
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t =
+    CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
+  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
+    ensures { result = inner self }
     
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
@@ -745,10 +745,11 @@ module C02Gnome_GnomeSort
     axiom .
   use mach.int.Int
   use prelude.UIntSize
-  use mach.int.Int32
-  use mach.int.UInt64
   use prelude.Slice
   use seq.Seq
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use mach.int.Int32
+  use mach.int.UInt64
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model2 with type t = t, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = t
   clone CreusotContracts_Logic_Model_Impl1_Model as Model3 with type t = seq t,
@@ -772,7 +773,6 @@ module C02Gnome_GnomeSort
     type Output0.output = Output0.output
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
     function Model0.model = Model0.model
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model

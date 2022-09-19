@@ -271,13 +271,6 @@ module IteNormalize_Expr_Type
     | C_True
     | C_False
     
-  let function var_v (self : t_expr) : usize = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_IfThenElse _ _ _ -> any usize
-      | C_Var a -> a
-      | C_True -> any usize
-      | C_False -> any usize
-      end
   let function ifthenelse_c (self : t_expr) : t_expr = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
       | C_IfThenElse a _ _ -> a
@@ -298,6 +291,13 @@ module IteNormalize_Expr_Type
       | C_Var _ -> any t_expr
       | C_True -> any t_expr
       | C_False -> any t_expr
+      end
+  let function var_v (self : t_expr) : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_IfThenElse _ _ _ -> any usize
+      | C_Var a -> a
+      | C_True -> any usize
+      | C_False -> any usize
       end
 end
 module Core_Clone_Impls_Impl5_Clone_Interface
@@ -351,9 +351,9 @@ module IteNormalize_Impl7_Clone
   use prelude.IntSize
   use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  clone Alloc_Boxed_Impl12_Clone_Interface as Clone1 with type t = IteNormalize_Expr_Type.t_expr,
+  clone Core_Clone_Impls_Impl5_Clone_Interface as Clone1
+  clone Alloc_Boxed_Impl12_Clone_Interface as Clone0 with type t = IteNormalize_Expr_Type.t_expr,
     type a = Alloc_Alloc_Global_Type.t_global
-  clone Core_Clone_Impls_Impl5_Clone_Interface as Clone0
   let rec cfg clone' [@cfg:stackify] [#"../ite_normalize.rs" 53 9 53 14] (self : IteNormalize_Expr_Type.t_expr) : IteNormalize_Expr_Type.t_expr
     ensures { [#"../ite_normalize.rs" 53 9 53 14] result = self }
     
@@ -397,17 +397,17 @@ module IteNormalize_Impl7_Clone
     t_1_5 <- IteNormalize_Expr_Type.ifthenelse_t self_1;
     e_1_6 <- IteNormalize_Expr_Type.ifthenelse_e self_1;
     _8 <- c_1_4;
-    _7 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone1.clone' _8);
+    _7 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone0.clone' _8);
     goto BB4
   }
   BB4 {
     _10 <- t_1_5;
-    _9 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone1.clone' _10);
+    _9 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone0.clone' _10);
     goto BB5
   }
   BB5 {
     _12 <- e_1_6;
-    _11 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone1.clone' _12);
+    _11 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone0.clone' _12);
     goto BB6
   }
   BB6 {
@@ -426,7 +426,7 @@ module IteNormalize_Impl7_Clone
   BB10 {
     v_1_13 <- IteNormalize_Expr_Type.var_v self_1;
     _15 <- v_1_13;
-    _14 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone0.clone' _15);
+    _14 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone1.clone' _15);
     goto BB11
   }
   BB11 {
@@ -1393,11 +1393,11 @@ module IteNormalize_Impl6_Simplify
   clone IteNormalize_Impl6_IsNormalized as IsNormalized0
   use mach.int.Int
   use prelude.UIntSize
+  use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
   clone CreusotContracts_Logic_Model_Impl5_ModelTy_Type as ModelTy1
   clone CreusotContracts_Logic_Int_Impl20_ModelTy_Type as ModelTy0
   clone CreusotContracts_Logic_Model_Impl5_Model as Model1
   use Core_Option_Option_Type as Core_Option_Option_Type
-  use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
   clone IteNormalize_Impl2_Model as Model0 with type k = usize, type v = bool, type ModelTy0.modelTy = ModelTy0.modelTy,
     type ModelTy1.modelTy = ModelTy1.modelTy
   clone IteNormalize_Impl6_SimplifyHelper_Interface as SimplifyHelper0 with predicate IsNormalized0.is_normalized = IsNormalized0.is_normalized,
@@ -1467,41 +1467,6 @@ module Core_Clone_Clone_Clone
     ensures { result = self }
     
 end
-module IteNormalize_Impl1
-  type k
-  type v
-  use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
-  clone Core_Clone_Clone_CloneFrom_Interface as CloneFrom0 with type self = IteNormalize_BTreeMap_Type.t_btreemap k v
-  clone IteNormalize_Impl1_Clone_Interface as Clone0 with type k = k, type v = v
-  clone Core_Clone_Clone_Clone_Interface as Clone1 with type self = IteNormalize_BTreeMap_Type.t_btreemap k v,
-    val clone' = Clone0.clone'
-end
-module IteNormalize_Impl7
-  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
-  clone Core_Clone_Clone_CloneFrom_Interface as CloneFrom0 with type self = IteNormalize_Expr_Type.t_expr
-  clone IteNormalize_Impl7_Clone_Interface as Clone0
-  clone Core_Clone_Clone_Clone_Interface as Clone1 with type self = IteNormalize_Expr_Type.t_expr,
-    val clone' = Clone0.clone'
-end
-module IteNormalize_Impl2
-  type k
-  type v
-  use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
-  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy3 with type self = v
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy2 with type self = k
-  clone IteNormalize_Impl2_ModelTy_Type as ModelTy0 with type k = k, type v = v,
-    type ModelTy0.modelTy = ModelTy2.modelTy, type ModelTy1.modelTy = ModelTy3.modelTy
-  clone IteNormalize_Impl2_Model as Model0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy2.modelTy,
-    type ModelTy1.modelTy = ModelTy3.modelTy
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = IteNormalize_BTreeMap_Type.t_btreemap k v,
-    function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = IteNormalize_BTreeMap_Type.t_btreemap k v,
-    type modelTy = ModelTy0.modelTy
-end
-module IteNormalize_Impl3
-  
-end
 module Core_Convert_From_From_Interface
   type self
   type t
@@ -1515,18 +1480,4 @@ module Core_Convert_From_From
   val from [@cfg:stackify] (_1' : t) : self
     requires {false}
     
-end
-module IteNormalize_Impl4
-  use mach.int.Int
-  use prelude.UIntSize
-  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
-  clone IteNormalize_Impl4_From_Interface as From0
-  clone Core_Convert_From_From_Interface as From1 with type self = IteNormalize_Expr_Type.t_expr, type t = usize,
-    val from = From0.from
-end
-module IteNormalize_Impl5
-  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
-  clone IteNormalize_Impl5_From_Interface as From0
-  clone Core_Convert_From_From_Interface as From1 with type self = IteNormalize_Expr_Type.t_expr, type t = bool,
-    val from = From0.from
 end
