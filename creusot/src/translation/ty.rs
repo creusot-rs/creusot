@@ -223,12 +223,7 @@ pub fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSet<DefId
     group
 }
 
-fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
-    // Check if we've already translated this type before.
-    // if !ctx.translated_items().contains(&did) {
-    //     translate_tydecl(ctx, ctx.def_span(did), did);
-    // };
-
+fn translate_ty_name(ctx: &TranslationCtx<'_, '_>, did: DefId) -> QName {
     item_qname(ctx, did, Namespace::TypeNS)
 }
 
@@ -246,11 +241,6 @@ fn translate_ty_param(p: Symbol) -> Ident {
 // Results are accumulated and can be collected at once by consuming the `Ctx`
 pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, did: DefId) {
     let span = ctx.def_span(did);
-    // mark this type as translated
-    if ctx.translated_items().contains(&did) {
-        return;
-    }
-
     let bg = ty_binding_group(ctx.tcx, did);
 
     ctx.start_group(bg.clone());
