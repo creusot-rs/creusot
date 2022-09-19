@@ -40,7 +40,7 @@ pub struct TranslationCtx<'tcx> {
     translated_items: IndexSet<DefId>,
     in_translation: Vec<IndexSet<DefId>>,
     ty_binding_groups: HashMap<DefId, DefId>, // maps type ids to their 'representative type'
-    functions: IndexMap<DefId, TranslatedItem>,
+    functions: IndexMap<DefId, TranslatedItem<'tcx>>,
     dependencies: IndexMap<DefId, CloneSummary<'tcx>>,
     laws: IndexMap<DefId, Vec<DefId>>,
     terms: IndexMap<DefId, Term<'tcx>>,
@@ -118,7 +118,9 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.functions.insert(def_id, TranslatedItem::Constant { modl });
             }
             ItemType::Type => {
-                translate_tydecl(self, def_id);
+                let ty = translate_tydecl(self, def_id);
+                self.functions.insert(def_id, ty);
+                self.dependencies.insert(def_id, CloneSummary::new());
             }
             ItemType::Interface => unreachable!(),
             ItemType::Unsupported(dk) => self.crash_and_error(
@@ -291,11 +293,6 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
     }
 
-    pub fn add_type(&mut self, def_id: DefId, modl: Module) {
-        let repr = self.representative_type(def_id);
-        self.functions.insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
-    }
-
     pub fn add_trait(&mut self, def_id: DefId) {
         self.dependencies.insert(def_id, CloneSummary::new());
         self.functions.insert(def_id, TranslatedItem::Trait {});
@@ -312,7 +309,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         })
     }
 
-    pub fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
+    pub fn item(&self, def_id: DefId) -> Option<&TranslatedItem<'tcx>> {
         let def_id = self.ty_binding_groups.get(&def_id).unwrap_or(&def_id);
         self.functions.get(def_id)
     }
@@ -344,7 +341,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.opts.should_output
     }
 
-    pub fn modules(self) -> impl Iterator<Item = (DefId, TranslatedItem)> + Captures<'tcx> {
+    pub fn modules(self) -> impl Iterator<Item = (DefId, TranslatedItem<'tcx>)> + Captures<'tcx> {
         self.functions.into_iter()
     }
 

@@ -3,14 +3,14 @@ use creusot_rustc::{
     middle::ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
-        ClosureSubsts, FieldDef, ProjectionTy, Ty, TyCtxt, VariantDef,
+        ClosureSubsts, ProjectionTy, Ty, TyCtxt, VariantDef,
     },
     resolve::Namespace,
     span::{Span, Symbol, DUMMY_SP},
     type_ir::sty::TyKind::*,
 };
-use indexmap::IndexSet;
-use std::collections::{HashMap, VecDeque};
+use indexmap::{IndexMap, IndexSet};
+use std::collections::VecDeque;
 use why3::{
     declaration::{AdtDecl, ConstructorDecl, Contract, Decl, Field, LetFun, Module, Signature},
     exp::{Binder, Exp, Pattern},
@@ -38,7 +38,7 @@ use crate::{
 /// tyvars with us. Do this if we change the tyvars again.
 #[derive(Clone, PartialEq, Eq)]
 enum TyTranslation<'tcx> {
-    Declaration(HashMap<ProjectionTy<'tcx>, Ident>),
+    Declaration(IndexMap<ProjectionTy<'tcx>, Ident>),
     Usage,
 }
 
@@ -102,19 +102,15 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
                 MlT::Tuple(tys)
             }
             Param(p) => {
-                if let TyTranslation::Declaration(used) = self.mode {
+                if let TyTranslation::Declaration(_) = self.mode {
                     MlT::TVar(translate_ty_param(p.name))
                 } else {
                     MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
                 }
             }
             Projection(pty) => {
-                if let TyTranslation::Declaration(used) = self.mode {
-                    let count = used.len();
-                    let assoc: &Ident = used
-                        .entry(*pty)
-                        .or_insert_with(|| Ident::build(&format!("assoc{}", count)));
-                    MlT::TVar(assoc.clone())
+                if let TyTranslation::Declaration(ref used) = self.mode {
+                    MlT::TVar(used[pty].clone())
                 } else {
                     translate_projection_ty(self.ctx, self.names, pty)
                 }
@@ -248,15 +244,11 @@ fn translate_ty_param(p: Symbol) -> Ident {
 // Additionally, types are not translated one by one but rather as a *binding group*, so that mutually
 // recursive types are properly translated.
 // Results are accumulated and can be collected at once by consuming the `Ctx`
-pub fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
+pub fn translate_tydecl<'tcx>(ctx: &mut TranslationCtx<'tcx>, did: DefId) -> TranslatedItem<'tcx> {
     let span = ctx.def_span(did);
-    // mark this type as translated
-    if ctx.translated_items().contains(&did) {
-        return;
-    }
 
+    // move this out of here
     let bg = ty_binding_group(ctx.tcx, did);
-
     ctx.start_group(bg.clone());
     ctx.add_binding_group(&bg);
 
@@ -264,7 +256,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
         for did in bg {
             ctx.finish(did);
         }
-        return;
+        return TranslatedItem::BuiltinType;
     }
 
     let did = *bg.first().unwrap();
@@ -287,17 +279,30 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
                 ty_params: ty_params.clone(),
             })],
         };
-        ctx.add_type(did, modl);
         let _ = names.to_clones(ctx);
         for did in bg {
             ctx.finish(did);
         }
-        return;
+        return TranslatedItem::Type {
+            modl,
+            accessors: Default::default(),
+            associated_types: Default::default(),
+        };
     }
+
+    let mut projections: IndexMap<ProjectionTy, Ident> = Default::default();
+
+    let mut count = 0;
+    bg.iter().map(|id| ctx.adt_def(id)).flat_map(|def| def.all_fields()).for_each(|fld| {
+        walk_projections(ctx.tcx.type_of(fld.did), |pty| {
+            projections.entry(*pty).or_insert_with(|| Ident::build(&format!("assoc{}", count)));
+            count += 1;
+        })
+    });
 
     let mut tys = Vec::new();
     for did in bg.iter() {
-        tys.push(build_ty_decl(ctx, &mut names, *did));
+        tys.push(build_ty_decl(ctx, &mut names, &projections, *did));
     }
 
     let mut decls = names.to_clones(ctx);
@@ -308,12 +313,17 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
         ctx.finish(*did)
     }
 
-    ctx.add_type(did, modl);
+    return TranslatedItem::Type {
+        modl,
+        accessors: Default::default(),
+        associated_types: projections,
+    };
 }
 
 fn build_ty_decl<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
+    assoc_tys: &IndexMap<ProjectionTy<'tcx>, Ident>,
     did: DefId,
 ) -> AdtDecl {
     let adt = ctx.tcx.adt_def(did);
@@ -322,30 +332,33 @@ fn build_ty_decl<'tcx>(
     let ty_name = translate_ty_name(ctx, did).name;
 
     // Collect type variables of declaration
-    let ty_args: Vec<_> = ty_param_names(ctx.tcx, did).collect();
+    let ty_args: Vec<_> = ty_param_names(ctx.tcx, did).chain(assoc_tys.values().cloned()).collect();
 
-    let kind = {
-        let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
-        let mut ml_ty_def = Vec::new();
+    let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
+    let mut ml_ty_def = Vec::new();
 
-        for var_def in adt.variants().iter() {
-            let field_tys: Vec<_> = var_def
-                .fields
-                .iter()
-                .map(|f| {
-                    let ty = field_ty(ctx, names, f, substs);
-                    Field { ty, ghost: false }
-                })
-                .collect();
-            let var_name = constructor_qname(ctx, var_def).name;
-
-            ml_ty_def.push(ConstructorDecl { name: var_name, fields: field_tys });
-        }
-
-        AdtDecl { ty_name, ty_params: ty_args, constrs: ml_ty_def }
+    let mut trans = Ctx {
+        span: ctx.def_span(did),
+        ctx,
+        names,
+        mode: TyTranslation::Declaration(assoc_tys.clone()),
     };
 
-    kind
+    for var_def in adt.variants().iter() {
+        let field_tys: Vec<_> = var_def
+            .fields
+            .iter()
+            .map(|f| {
+                let ty = trans.inner(f.ty(trans.ctx.tcx, substs));
+                Field { ty, ghost: false }
+            })
+            .collect();
+        let var_name = constructor_qname(trans.ctx, var_def).name;
+
+        ml_ty_def.push(ConstructorDecl { name: var_name, fields: field_tys });
+    }
+
+    AdtDecl { ty_name, ty_params: ty_args, constrs: ml_ty_def }
 }
 
 pub fn translate_closure_ty<'tcx>(
@@ -383,17 +396,6 @@ fn ty_param_names(tcx: TyCtxt<'_>, def_id: DefId) -> impl Iterator<Item = Ident>
         .map(Ident::from)
 }
 
-fn field_ty<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    field: &FieldDef,
-    substs: SubstsRef<'tcx>,
-) -> MlT {
-    let ty = field.ty(ctx.tcx, substs);
-
-    Ctx { mode: TyTranslation::Declaration(Default::default()), span: ctx.def_span(field.did), ctx, names }.inner(ty)
-}
-
 pub fn translate_accessor(
     ctx: &mut TranslationCtx<'_>,
     adt_did: DefId,
@@ -412,7 +414,24 @@ pub fn translate_accessor(
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let repr = ctx.representative_type(adt_did);
     let mut names = CloneMap::new(ctx.tcx, repr, false);
-    let target_ty = field_ty(ctx, &mut names, &variant.fields[ix], substs);
+
+    let projections = if let TranslatedItem::Type { associated_types, .. } = ctx.item(repr).unwrap()
+    {
+        associated_types
+    } else {
+        unreachable!()
+    };
+    // let target_ty = field_ty(ctx, &mut names, &, substs);
+
+    let ty = variant.fields[ix].ty(ctx.tcx, substs);
+
+    let target_ty = Ctx {
+        mode: TyTranslation::Declaration(projections.clone()),
+        span: ctx.def_span(variant.fields[ix].did),
+        ctx,
+        names: &mut names,
+    }
+    .inner(ty);
 
     let variant_arities: Vec<_> = adt_def
         .variants()

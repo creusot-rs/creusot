@@ -812,7 +812,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
 }
 
 // Walk all the projections in a substitution so we can add dependencies on them
-fn walk_projections<'tcx, T: TypeFoldable<'tcx>, F: FnMut(&ProjectionTy<'tcx>)>(s: T, f: F) {
+pub fn walk_projections<'tcx, T: TypeFoldable<'tcx>, F: FnMut(&ProjectionTy<'tcx>)>(s: T, f: F) {
     s.visit_with(&mut ProjectionTyVisitor { f, p: std::marker::PhantomData });
 }
 

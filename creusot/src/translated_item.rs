@@ -2,10 +2,14 @@ pub use crate::clone_map::*;
 use crate::{metadata::Metadata, util};
 use creusot_rustc::hir::def_id::DefId;
 use indexmap::IndexMap;
+use rustc_middle::ty::ProjectionTy;
 pub use util::{item_name, module_name, ItemType};
-use why3::declaration::{Decl, Module, TyDecl};
+use why3::{
+    declaration::{Decl, Module, TyDecl},
+    Ident,
+};
 
-pub enum TranslatedItem {
+pub enum TranslatedItem<'tcx> {
     Logic {
         interface: Module,
         modl: Module,
@@ -35,7 +39,9 @@ pub enum TranslatedItem {
     Type {
         modl: Module,
         accessors: IndexMap<DefId, IndexMap<DefId, Decl>>,
+        associated_types: IndexMap<ProjectionTy<'tcx>, Ident>,
     },
+    BuiltinType,
 }
 
 pub struct TypeDeclaration {
@@ -49,8 +55,8 @@ impl TypeDeclaration {
     }
 }
 
-impl<'a> TranslatedItem {
-    pub fn external_dependencies<'tcx>(
+impl<'tcx> TranslatedItem<'tcx> {
+    pub fn external_dependencies<'a>(
         &'a self,
         metadata: &'a Metadata<'tcx>,
         id: DefId,
@@ -87,6 +93,7 @@ impl<'a> TranslatedItem {
 
                 box iter::once(modl)
             }
+            TranslatedItem::BuiltinType => box std::iter::empty(),
         }
     }
 
@@ -102,6 +109,7 @@ impl<'a> TranslatedItem {
             TranslatedItem::Extern { interface, .. } => box std::iter::once(interface),
             TranslatedItem::Constant { modl, .. } => box std::iter::once(modl),
             TranslatedItem::Type { .. } => self.modules(),
+            TranslatedItem::BuiltinType => box std::iter::empty(),
         }
     }
 }
