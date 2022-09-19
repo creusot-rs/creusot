@@ -24,15 +24,9 @@ use crate::{
 
 impl<'tcx> TranslationCtx<'_, 'tcx> {
     // Translate a trait declaration
-    pub(crate) fn translate_trait(&mut self, def_id: DefId) {
+    pub(crate) fn translate_trait(&mut self, def_id: DefId) -> TranslatedItem {
         debug!("translating trait {def_id:?}");
-        if self.translated_items().contains(&def_id) {
-            return;
-        }
-
-        self.start(def_id);
-        self.finish(def_id);
-        self.add_trait(def_id);
+        TranslatedItem::Trait {}
     }
 
     pub(crate) fn laws_inner(&self, trait_or_impl: DefId) -> Vec<DefId> {
@@ -45,12 +39,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         laws
     }
 
-    pub(crate) fn translate_impl(&mut self, impl_id: DefId) {
-        if self.translated_items().contains(&impl_id) {
-            return;
-        }
-        self.start(impl_id);
-
+    pub(crate) fn translate_impl(&mut self, impl_id: DefId) -> TranslatedItem {
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
         self.translate_trait(trait_ref.def_id);
 
@@ -130,14 +119,12 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         }
 
         decls.extend(names.to_clones(self));
-        self.finish(impl_id);
-        self.add_impl(impl_id, Module { name: module_name(self, impl_id), decls });
+        TranslatedItem::Impl { modl: Module { name: module_name(self, impl_id), decls } }
     }
 
     pub fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
         assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
 
-        self.start(def_id);
         let mut names = CloneMap::new(self.tcx, def_id, true);
 
         let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
@@ -159,7 +146,6 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         decls.extend(names.to_clones(self));
         decls.push(Decl::TyDecl(ty_decl));
-        self.finish(def_id);
 
         (Module { name: module_name(self, def_id), decls }, names.summary())
     }

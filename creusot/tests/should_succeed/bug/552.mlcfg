@@ -16,20 +16,6 @@ module C552_Impl0_Invariants
     ensures { result = invariants self }
     
 end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve
-  type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
-end
 module C552_Transition_Type
   type t_transition  =
     | C_Transition
@@ -65,6 +51,20 @@ module C552_Impl1_Transition
   }
   
 end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
 module C552_Impl0_Step_Interface
   use prelude.Borrow
   use C552_Machine_Type as C552_Machine_Type
@@ -79,7 +79,7 @@ module C552_Impl0_Step
   use C552_Machine_Type as C552_Machine_Type
   clone C552_Impl0_Invariants as Invariants0
   use C552_Transition_Type as C552_Transition_Type
-  clone C552_Impl1_Transition_Interface as Transition0 with predicate Invariants0.invariants = Invariants0.invariants
+  clone C552_Impl1_Transition_Interface as Transition1 with predicate Invariants0.invariants = Invariants0.invariants
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = C552_Machine_Type.t_machine
   let rec cfg step [@cfg:stackify] [#"../552.rs" 22 4 22 30] (self : borrowed (C552_Machine_Type.t_machine)) : bool
     requires {[#"../552.rs" 21 4 21 41] Invariants0.invariants ( * self)}
@@ -97,7 +97,7 @@ module C552_Impl0_Step
   BB0 {
     _5 <-  * self_1;
     assume { Resolve0.resolve self_1 };
-    _4 <- ([#"../552.rs" 23 8 23 25] Transition0.transition _5);
+    _4 <- ([#"../552.rs" 23 8 23 25] Transition1.transition _5);
     goto BB1
   }
   BB1 {
@@ -134,13 +134,4 @@ module C552_MachineTrait_Step
     requires {[#"../552.rs" 11 4 11 41] Invariants0.invariants ( * self)}
     ensures { [#"../552.rs" 11 4 11 41] Invariants0.invariants ( ^ self) }
     
-end
-module C552_Impl0
-  use C552_Machine_Type as C552_Machine_Type
-  clone C552_Impl0_Invariants as Invariants0
-  clone C552_Impl0_Step_Interface as Step0 with predicate Invariants0.invariants = Invariants0.invariants
-  clone C552_MachineTrait_Step_Interface as Step1 with type self = C552_Machine_Type.t_machine, val step = Step0.step,
-    predicate Invariants0.invariants = Invariants0.invariants
-  clone C552_MachineTrait_Invariants_Interface as Invariants1 with type self = C552_Machine_Type.t_machine,
-    predicate invariants = Invariants0.invariants
 end

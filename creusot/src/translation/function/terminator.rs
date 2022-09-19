@@ -144,7 +144,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                         kind: TermKind::Unary { op: UnOp::Not, arg: box ass },
                     };
                 }
-                self.emit_statementf(fmir::Statement::Assertion(ass));
+                self.emit_statement(fmir::Statement::Assertion(ass));
                 self.emit_terminator(mk_goto(*target))
             }
 
@@ -157,7 +157,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
             }
             DropAndReplace { target, place, value, .. } => {
                 // Resolve
-                self.emit_statementf(fmir::Statement::Resolve(*place));
+                self.emit_statement(fmir::Statement::Resolve(*place));
 
                 // Assign
                 let rhs = self.translate_operand(value);

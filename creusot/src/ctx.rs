@@ -91,10 +91,21 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         debug!("translating {:?}", def_id);
 
         match item_type(self.tcx, def_id) {
-            ItemType::Trait => self.translate_trait(def_id),
+            ItemType::Trait => {
+                self.start(def_id);
+                let tr = self.translate_trait(def_id);
+                self.dependencies.insert(def_id, CloneSummary::new());
+                self.functions.insert(def_id, tr);
+                self.finish(def_id);
+            }
             ItemType::Impl => {
                 if self.tcx.impl_trait_ref(def_id).is_some() {
-                    self.translate_impl(def_id)
+                    self.start(def_id);
+                    let impl_ = self.translate_impl(def_id);
+
+                    self.dependencies.insert(def_id, CloneSummary::new());
+                    self.functions.insert(def_id, impl_);
+                    self.finish(def_id);
                 }
             }
 
@@ -104,9 +115,10 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                 self.finish(def_id);
             }
             ItemType::AssocTy => {
+                self.start(def_id);
                 let (modl, dependencies) = self.translate_assoc_ty(def_id);
+                self.finish(def_id);
                 self.dependencies.insert(def_id, dependencies);
-                self.translated_items.insert(def_id);
                 self.functions.insert(def_id, TranslatedItem::AssocTy { modl });
             }
             ItemType::Constant => {
@@ -114,7 +126,6 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
                 let (modl, dependencies) = self.translate_constant(def_id);
                 self.finish(def_id);
                 self.dependencies.insert(def_id, dependencies);
-                self.translated_items.insert(def_id);
                 self.functions.insert(def_id, TranslatedItem::Constant { modl });
             }
             ItemType::Type => {
@@ -131,10 +142,6 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     // Checks if we are allowed to recurse into
     fn safe_cycle(&self, def_id: DefId) -> bool {
         self.in_translation.last().map(|l| l.contains(&def_id)).unwrap_or_default()
-    }
-
-    pub(crate) fn translated_items(&self) -> &IndexSet<DefId> {
-        &self.translated_items
     }
 
     pub(crate) fn start_group(&mut self, ids: IndexSet<DefId>) {
@@ -294,16 +301,6 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
     pub fn add_type(&mut self, def_id: DefId, modl: Module) {
         let repr = self.representative_type(def_id);
         self.functions.insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
-    }
-
-    pub fn add_trait(&mut self, def_id: DefId) {
-        self.dependencies.insert(def_id, CloneSummary::new());
-        self.functions.insert(def_id, TranslatedItem::Trait {});
-    }
-
-    pub fn add_impl(&mut self, def_id: DefId, modl: Module) {
-        self.dependencies.insert(def_id, CloneSummary::new());
-        self.functions.insert(def_id, TranslatedItem::Impl { modl });
     }
 
     pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {

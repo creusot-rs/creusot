@@ -32,13 +32,7 @@ use creusot_rustc::{
 };
 use indexmap::IndexMap;
 use std::{collections::BTreeMap, rc::Rc};
-use why3::{
-    declaration::*,
-    exp::*,
-    mlcfg::{self, Statement::*, *},
-    ty::Type,
-    Ident,
-};
+use why3::{declaration::*, exp::*, mlcfg::*, ty::Type, Ident};
 
 use super::specification::typing::Term;
 
@@ -139,18 +133,18 @@ pub struct BodyTranslator<'body, 'sess, 'tcx> {
 
     body: &'body Body<'tcx>,
 
+    // TODO: Remove
     sig: Signature,
 
     resolver: EagerResolver<'body, 'tcx>,
 
     // Spec / Ghost variables
     erased_locals: BitSet<Local>,
-    // local_map: HashMap<Local, Local>,
 
     // Current block being generated
-    current_block: (Vec<mlcfg::Statement>, Option<mlcfg::Terminator>),
+    current_block: (Vec<fmir::Statement<'tcx>>, Option<fmir::Terminator<'tcx>>),
 
-    past_blocks: BTreeMap<mlcfg::BlockId, mlcfg::Block>,
+    past_blocks: BTreeMap<BasicBlock, fmir::Block<'tcx>>,
 
     // Type translation context
     ctx: &'body mut TranslationCtx<'sess, 'tcx>,
@@ -241,21 +235,30 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
                 .take(arg_count)
                 .map(|(_, id, _)| {
                     let rhs = id.arg_name();
-                    Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
+                    Statement::Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
                 })
                 .collect(),
             terminator: Terminator::Goto(BlockId(0)),
         };
         decls.extend(self.names.to_clones(self.ctx));
 
-        decls.push(Decl::FunDecl(CfgFunction {
+        let param_env = self.param_env();
+        let func = Decl::FunDecl(CfgFunction {
             sig: self.sig,
             rec: true,
             constant: false,
             vars: vars.into_iter().map(|i| (i.0, i.1.ident(), i.2)).collect(),
             entry,
-            blocks: self.past_blocks,
-        }));
+            blocks: self
+                .past_blocks
+                .into_iter()
+                .map(|(bb, bbd)| {
+                    (BlockId(bb.into()), bbd.to_why(self.ctx, self.names, self.body, param_env))
+                })
+                .collect(),
+        });
+        decls.extend(self.names.to_clones(self.ctx));
+        decls.push(func);
         decls
     }
 
@@ -267,7 +270,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             }
 
             for (name, body) in self.invariants.remove(&bb).unwrap_or_else(Vec::new) {
-                self.emit_statementf(fmir::Statement::Invariant(name, body));
+                self.emit_statement(fmir::Statement::Invariant(name, body));
             }
 
             self.freeze_locals_between_blocks(bb);
@@ -282,13 +285,12 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
             self.translate_terminator(bbd.terminator(), loc);
 
-            self.past_blocks.insert(
-                BlockId(bb.into()),
-                Block {
-                    statements: std::mem::take(&mut self.current_block.0),
-                    terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
-                },
-            );
+            let block = fmir::Block {
+                stmts: std::mem::take(&mut self.current_block.0),
+                terminator: std::mem::replace(&mut self.current_block.1, None).unwrap(),
+            };
+
+            self.past_blocks.insert(bb, block);
         }
     }
 
@@ -315,22 +317,14 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         self.ctx.param_env(self.def_id)
     }
 
-    fn emit_statement(&mut self, s: mlcfg::Statement) {
+    fn emit_statement(&mut self, s: fmir::Statement<'tcx>) {
         self.current_block.0.push(s);
-    }
-
-    fn emit_statementf(&mut self, s: fmir::Statement<'tcx>) {
-        let stmts = s.to_why(self.ctx, self.names, self.body, self.param_env());
-
-        for s in stmts {
-            self.emit_statement(s)
-        }
     }
 
     fn emit_terminator(&mut self, t: fmir::Terminator<'tcx>) {
         assert!(self.current_block.1.is_none());
 
-        self.current_block.1 = Some(t.to_why(self.ctx, self.names, Some(self.body)));
+        self.current_block.1 = Some(t);
     }
 
     fn emit_borrow(&mut self, lhs: &Place<'tcx>, rhs: &Place<'tcx>) {
@@ -342,7 +336,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     }
 
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>) {
-        self.emit_statementf(fmir::Statement::Assignment(*lhs, rhs));
+        self.emit_statement(fmir::Statement::Assignment(*lhs, rhs));
     }
 
     // Inserts drop statements for variables which died over the course of a goto or switch
@@ -378,26 +372,25 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
             self.freeze_locals(dying);
             let deaths = std::mem::take(&mut self.current_block.0);
+            // let deaths = deaths
+            //     .into_iter()
+            //     .flat_map(|d| d.to_why(self.ctx, self.names, self.body, self.param_env()))
+            //     .collect();
 
             let drop_block = self.fresh_block_id();
-            let pred_id = BlockId(pred.index());
+            let pred_id = pred;
 
             // Otherwise, we emit the deaths and move them to a stand-alone block.
-
-            self.past_blocks
-                .get_mut(&pred_id)
-                .unwrap()
-                .terminator
-                .retarget(BlockId(bb.index()), drop_block);
+            self.past_blocks.get_mut(&pred_id).unwrap().terminator.retarget(bb, drop_block);
             self.past_blocks.insert(
                 drop_block,
-                Block { statements: deaths, terminator: Terminator::Goto(BlockId(bb.into())) },
+                fmir::Block { stmts: deaths, terminator: fmir::Terminator::Goto(bb) },
             );
         }
     }
 
-    fn fresh_block_id(&mut self) -> BlockId {
-        let id = BlockId(BasicBlock::from_usize(self.fresh_id).into());
+    fn fresh_block_id(&mut self) -> BasicBlock {
+        let id = BasicBlock::from_usize(self.fresh_id);
         self.fresh_id += 1;
         id
     }
@@ -411,7 +404,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         dying.subtract(&self.erased_locals.to_hybrid());
 
         for local in dying.iter() {
-            self.emit_statementf(fmir::Statement::Resolve(local.into()));
+            self.emit_statement(fmir::Statement::Resolve(local.into()));
         }
     }
 

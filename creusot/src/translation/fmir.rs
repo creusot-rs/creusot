@@ -19,7 +19,6 @@ use creusot_rustc::{
     span::{Span, Symbol, DUMMY_SP},
     target::abi::VariantIdx,
 };
-use indexmap::IndexMap;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     exp::{Exp, Pattern},
@@ -229,6 +228,58 @@ pub enum Branches<'tcx> {
 }
 
 impl<'tcx> Terminator<'tcx> {
+    pub(crate) fn retarget(&mut self, from: BasicBlock, to: BasicBlock) {
+        match self {
+            Terminator::Goto(bb) => {
+                if *bb == from {
+                    *bb = to
+                };
+            }
+            Terminator::Switch(_, brs) => match brs {
+                Branches::Int(brs, def) => {
+                    if *def == from {
+                        *def = to
+                    };
+                    for (_, bb) in brs {
+                        if *bb == from {
+                            *bb = from
+                        }
+                    }
+                }
+                Branches::Uint(brs, def) => {
+                    if *def == from {
+                        *def = to
+                    };
+                    for (_, bb) in brs {
+                        if *bb == from {
+                            *bb = from
+                        }
+                    }
+                }
+                Branches::Constructor(_, _, brs, def) => {
+                    if *def == from {
+                        *def = to
+                    };
+                    for (_, bb) in brs {
+                        if *bb == from {
+                            *bb = from
+                        }
+                    }
+                }
+                Branches::Bool(bb1, bb2) => {
+                    if *bb1 == from {
+                        *bb1 = to
+                    };
+                    if *bb2 == from {
+                        *bb2 = to;
+                    }
+                }
+            },
+            Terminator::Return => {}
+            Terminator::Abort => {}
+        }
+    }
+
     pub fn to_why(
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
@@ -317,31 +368,45 @@ impl<'tcx> Branches<'tcx> {
 }
 
 pub struct Block<'tcx> {
-    stmts: Vec<Statement<'tcx>>,
-    terminator: Option<Terminator<'tcx>>,
+    pub(crate) stmts: Vec<Statement<'tcx>>,
+    pub(crate) terminator: Terminator<'tcx>,
 }
 
 impl<'tcx> Block<'tcx> {
-    pub fn to_why(self) -> why3::mlcfg::Block {
-        todo!()
-    }
-}
-
-pub struct Builder<'tcx> {
-    blocks: IndexMap<BasicBlock, Block<'tcx>>,
-    current: Block<'tcx>,
-    block_id: BasicBlock,
-}
-
-impl<'tcx> Builder<'tcx> {
-    pub fn new() -> Self {
-        Builder {
-            blocks: Default::default(),
-            block_id: BasicBlock::MAX,
-            current: Block { stmts: Vec::new(), terminator: None },
+    pub fn to_why(
+        self,
+        ctx: &mut TranslationCtx<'_, 'tcx>,
+        names: &mut CloneMap<'tcx>,
+        body: &Body<'tcx>,
+        param_env: ParamEnv<'tcx>,
+    ) -> why3::mlcfg::Block {
+        mlcfg::Block {
+            statements: self
+                .stmts
+                .into_iter()
+                .flat_map(|s| s.to_why(ctx, names, body, param_env))
+                .collect(),
+            terminator: self.terminator.to_why(ctx, names, Some(body)),
         }
     }
 }
+
+// pub struct Builder<'tcx> {
+//     blocks: IndexMap<BasicBlock, Block<'tcx>>,
+//     current: Block<'tcx>,
+//     block_id: BasicBlock,
+// }
+
+// impl<'tcx> Builder<'tcx> {
+//     pub fn new() -> Self {
+//         Builder {
+//             blocks: Default::default(),
+//             block_id: BasicBlock::MAX,
+//             current: Block { stmts: Vec::new(), terminator: None },
+//         }
+//     }
+// }
+
 impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
