@@ -10,7 +10,7 @@ use creusot_rustc::{
     type_ir::sty::TyKind::*,
 };
 use indexmap::IndexSet;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use why3::{
     declaration::{AdtDecl, ConstructorDecl, Contract, Decl, Field, LetFun, Module, Signature},
     exp::{Binder, Exp, Pattern},
@@ -36,9 +36,9 @@ use crate::{
 /// This enum selects the two behaviors
 /// TODO: perhaps a cleaner solution would be to carry a substitution which chooses how to replace
 /// tyvars with us. Do this if we change the tyvars again.
-#[derive(Copy, Clone, PartialEq, Eq)]
-enum TyTranslation {
-    Declaration,
+#[derive(Clone, PartialEq, Eq)]
+enum TyTranslation<'tcx> {
+    Declaration(HashMap<ProjectionTy<'tcx>, Ident>),
     Usage,
 }
 
@@ -46,7 +46,7 @@ struct Ctx<'a, 'tcx> {
     ctx: &'a mut TranslationCtx<'tcx>,
     names: &'a mut CloneMap<'tcx>,
     span: Span,
-    mode: TyTranslation,
+    mode: TyTranslation<'tcx>,
 }
 
 // Translate a type usage
@@ -102,18 +102,19 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
                 MlT::Tuple(tys)
             }
             Param(p) => {
-                if let TyTranslation::Declaration = self.mode {
+                if let TyTranslation::Declaration(used) = self.mode {
                     MlT::TVar(translate_ty_param(p.name))
                 } else {
                     MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
                 }
             }
             Projection(pty) => {
-                if matches!(self.mode, TyTranslation::Declaration) {
-                    self.ctx.crash_and_error(
-                        self.span,
-                        "associated types are unsupported in type declarations",
-                    )
+                if let TyTranslation::Declaration(used) = self.mode {
+                    let count = used.len();
+                    let assoc: &Ident = used
+                        .entry(*pty)
+                        .or_insert_with(|| Ident::build(&format!("assoc{}", count)));
+                    MlT::TVar(assoc.clone())
                 } else {
                     translate_projection_ty(self.ctx, self.names, pty)
                 }
@@ -332,8 +333,8 @@ fn build_ty_decl<'tcx>(
                 .fields
                 .iter()
                 .map(|f| {
-                    let (ty, ghost) = field_ty(ctx, names, f, substs);
-                    Field { ty, ghost }
+                    let ty = field_ty(ctx, names, f, substs);
+                    Field { ty, ghost: false }
                 })
                 .collect();
             let var_name = constructor_qname(ctx, var_def).name;
@@ -387,13 +388,10 @@ fn field_ty<'tcx>(
     names: &mut CloneMap<'tcx>,
     field: &FieldDef,
     substs: SubstsRef<'tcx>,
-) -> (MlT, bool) {
+) -> MlT {
     let ty = field.ty(ctx.tcx, substs);
-    (
-        Ctx { mode: TyTranslation::Declaration, span: ctx.def_span(field.did), ctx, names }
-            .inner(ty),
-        false,
-    )
+
+    Ctx { mode: TyTranslation::Declaration(Default::default()), span: ctx.def_span(field.did), ctx, names }.inner(ty)
 }
 
 pub fn translate_accessor(
@@ -414,7 +412,7 @@ pub fn translate_accessor(
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let repr = ctx.representative_type(adt_did);
     let mut names = CloneMap::new(ctx.tcx, repr, false);
-    let (target_ty, ghost) = field_ty(ctx, &mut names, &variant.fields[ix], substs);
+    let target_ty = field_ty(ctx, &mut names, &variant.fields[ix], substs);
 
     let variant_arities: Vec<_> = adt_def
         .variants()
@@ -434,7 +432,7 @@ pub fn translate_accessor(
         Ident::build(&acc_name),
         variant_ix.into(),
         &variant_arities,
-        (ix, target_ty, ghost),
+        (ix, target_ty, false),
     )
 }
 
