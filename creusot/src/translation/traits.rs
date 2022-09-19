@@ -22,7 +22,7 @@ use crate::{
     util::{ident_of, inputs_and_output, is_law, is_spec, item_type},
 };
 
-impl<'tcx> TranslationCtx<'_, 'tcx> {
+impl<'tcx> TranslationCtx<'tcx> {
     // Translate a trait declaration
     pub(crate) fn translate_trait(&mut self, def_id: DefId) {
         debug!("translating trait {def_id:?}");
@@ -166,7 +166,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 }
 
 fn logic_refinement<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     impl_item_id: DefId,
     trait_item_id: DefId,

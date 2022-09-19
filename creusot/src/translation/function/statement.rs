@@ -12,7 +12,7 @@ use crate::{
     util::{self, is_ghost_closure},
 };
 
-impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
+impl<'tcx> BodyTranslator<'_, 'tcx> {
     pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>, loc: Location) {
         use StatementKind::*;
         match statement.kind {

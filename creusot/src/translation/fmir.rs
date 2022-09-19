@@ -61,7 +61,7 @@ pub enum Expr<'tcx> {
 impl<'tcx> Expr<'tcx> {
     pub fn to_why(
         self,
-        ctx: &mut TranslationCtx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
         body: Option<&Body<'tcx>>,
     ) -> Exp {
@@ -231,7 +231,7 @@ pub enum Branches<'tcx> {
 impl<'tcx> Terminator<'tcx> {
     pub fn to_why(
         self,
-        ctx: &mut TranslationCtx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
         body: Option<&Body<'tcx>>,
     ) -> why3::mlcfg::Terminator {
@@ -251,7 +251,7 @@ impl<'tcx> Terminator<'tcx> {
 impl<'tcx> Branches<'tcx> {
     fn to_why(
         self,
-        ctx: &mut TranslationCtx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
         discr: Exp,
     ) -> mlcfg::Terminator {
@@ -345,7 +345,7 @@ impl<'tcx> Builder<'tcx> {
 impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
-        ctx: &mut TranslationCtx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
         body: &Body<'tcx>,
         param_env: ParamEnv<'tcx>,
@@ -398,7 +398,7 @@ impl<'tcx> Statement<'tcx> {
 }
 
 fn resolve_predicate_of<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,

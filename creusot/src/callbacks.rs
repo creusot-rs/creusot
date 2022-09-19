@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use creusot_rustc::{
     driver::{Callbacks, Compilation},
     interface::{interface::Compiler, Config, Queries},
@@ -6,12 +8,12 @@ use creusot_rustc::{
 use crate::{cleanup_spec_closures::*, options::Options};
 
 pub struct ToWhy {
-    opts: Options,
+    opts: Arc<Options>,
 }
 
 impl ToWhy {
     pub fn new(opts: Options) -> Self {
-        ToWhy { opts }
+        ToWhy { opts: Arc::new(opts) }
     }
 }
 use crate::ctx;
@@ -34,7 +36,7 @@ impl Callbacks for ToWhy {
         queries.global_ctxt().unwrap();
 
         let _ = queries.global_ctxt().unwrap().peek_mut().enter(|tcx| {
-            let mut ctx = ctx::TranslationCtx::new(tcx, &self.opts);
+            let mut ctx = ctx::TranslationCtx::new(tcx, self.opts.clone());
             let _ = crate::translation::before_analysis(&mut ctx);
             let _ = tcx.analysis(());
 

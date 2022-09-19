@@ -370,7 +370,7 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     // Update the clone graph with new entries
-    fn update_graph(&mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) {
+    fn update_graph(&mut self, ctx: &mut ctx::TranslationCtx<'tcx>) {
         // Construct a maximal sharing graph for all dependencies.
         // We build edges between each (function, subst) pair, following the call graph
         // Additionally, when the substitution refers to an associated type, we construct
@@ -411,7 +411,7 @@ impl<'tcx> CloneMap<'tcx> {
 
     fn clone_dependencies(
         &mut self,
-        ctx: &mut TranslationCtx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         key: (DefId, SubstsRef<'tcx>),
     ) {
         // Check the substitution for dependencies on closures
@@ -496,7 +496,7 @@ impl<'tcx> CloneMap<'tcx> {
     // information.
     fn resolve_dep(
         &self,
-        ctx: &TranslationCtx<'_, 'tcx>,
+        ctx: &TranslationCtx<'tcx>,
         dep: (DefId, SubstsRef<'tcx>),
     ) -> DepNode<'tcx> {
         let param_env = ctx.param_env(self.self_id);
@@ -534,7 +534,7 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
-    fn clone_laws(&mut self, ctx: &mut TranslationCtx<'_, 'tcx>, key: (DefId, SubstsRef<'tcx>)) {
+    fn clone_laws(&mut self, ctx: &mut TranslationCtx<'tcx>, key: (DefId, SubstsRef<'tcx>)) {
         let Some(item) = ctx.tcx.opt_associated_item(key.0) else { return };
 
         // Dont clone laws into the trait / impl which defines them.
@@ -565,7 +565,7 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
-    pub fn to_clones(&mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) -> Vec<Decl> {
+    pub fn to_clones(&mut self, ctx: &mut ctx::TranslationCtx<'tcx>) -> Vec<Decl> {
         debug!("emitting clones for {:?}", self.self_id);
         let mut decls = Vec::new();
 
@@ -696,7 +696,7 @@ impl<'tcx> CloneMap<'tcx> {
 
 // Create the substitution used to clone `def_id` with the rustc substitution `subst`.
 pub fn base_subst<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     mut def_id: DefId,
     subst: SubstsRef<'tcx>,

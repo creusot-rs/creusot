@@ -44,7 +44,7 @@ enum TyTranslation {
 
 // Translate a type usage
 pub fn translate_ty<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     span: Span,
     ty: Ty<'tcx>,
@@ -54,7 +54,7 @@ pub fn translate_ty<'tcx>(
 
 fn translate_ty_inner<'tcx>(
     trans: TyTranslation,
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     span: Span,
     ty: Ty<'tcx>,
@@ -173,7 +173,7 @@ fn translate_ty_inner<'tcx>(
 }
 
 pub fn translate_projection_ty<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     pty: &ProjectionTy<'tcx>,
 ) -> MlT {
@@ -223,7 +223,7 @@ pub fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSet<DefId
     group
 }
 
-fn translate_ty_name(ctx: &mut TranslationCtx<'_, '_>, did: DefId) -> QName {
+fn translate_ty_name(ctx: &mut TranslationCtx<'_>, did: DefId) -> QName {
     // Check if we've already translated this type before.
     // if !ctx.translated_items().contains(&did) {
     //     translate_tydecl(ctx, ctx.def_span(did), did);
@@ -244,7 +244,7 @@ fn translate_ty_param(p: Symbol) -> Ident {
 // Additionally, types are not translated one by one but rather as a *binding group*, so that mutually
 // recursive types are properly translated.
 // Results are accumulated and can be collected at once by consuming the `Ctx`
-pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, did: DefId) {
+pub fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
     let span = ctx.def_span(did);
     // mark this type as translated
     if ctx.translated_items().contains(&did) {
@@ -308,7 +308,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, did: DefId) {
 }
 
 fn build_ty_decl<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     did: DefId,
 ) -> AdtDecl {
@@ -345,7 +345,7 @@ fn build_ty_decl<'tcx>(
 }
 
 pub fn translate_closure_ty<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     did: DefId,
     subst: SubstsRef<'tcx>,
@@ -383,7 +383,7 @@ fn ty_param_names(tcx: TyCtxt<'_>, def_id: DefId) -> impl Iterator<Item = Ident>
 }
 
 fn field_ty<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     field: &FieldDef,
     substs: SubstsRef<'tcx>,
@@ -401,7 +401,7 @@ fn field_ty<'tcx>(
 }
 
 pub fn translate_accessor(
-    ctx: &mut TranslationCtx<'_, '_>,
+    ctx: &mut TranslationCtx<'_>,
     adt_did: DefId,
     variant_did: DefId,
     field_id: DefId,
@@ -480,7 +480,7 @@ pub fn build_accessor(
 }
 
 pub fn closure_accessors<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     ty_id: DefId,
     subst: ClosureSubsts<'tcx>,
@@ -539,7 +539,7 @@ pub fn variant_accessor_name(
 }
 
 pub fn intty_to_ty(
-    ctx: &TranslationCtx<'_, '_>,
+    ctx: &TranslationCtx<'_>,
     names: &mut CloneMap<'_>,
     ity: &creusot_rustc::middle::ty::IntTy,
 ) -> MlT {
@@ -579,7 +579,7 @@ pub fn intty_to_ty(
 }
 
 pub fn uintty_to_ty(
-    ctx: &TranslationCtx<'_, '_>,
+    ctx: &TranslationCtx<'_>,
     names: &mut CloneMap<'_>,
     ity: &creusot_rustc::middle::ty::UintTy,
 ) -> MlT {
