@@ -42,6 +42,13 @@ enum TyTranslation {
     Usage,
 }
 
+struct Ctx<'a, 'tcx> {
+    ctx: &'a mut TranslationCtx<'tcx>,
+    names: &'a mut CloneMap<'tcx>,
+    span: Span,
+    mode: TyTranslation,
+}
+
 // Translate a type usage
 pub fn translate_ty<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
@@ -49,126 +56,122 @@ pub fn translate_ty<'tcx>(
     span: Span,
     ty: Ty<'tcx>,
 ) -> MlT {
-    translate_ty_inner(TyTranslation::Usage, ctx, names, span, ty)
+    Ctx { ctx, names, span, mode: TyTranslation::Usage }.inner(ty)
 }
 
-fn translate_ty_inner<'tcx>(
-    trans: TyTranslation,
-    ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    span: Span,
-    ty: Ty<'tcx>,
-) -> MlT {
-    match ty.kind() {
-        Bool => MlT::Bool,
-        Char => {
-            ctx.warn(span, "support for string types is partial and experimental, expect to encounter limitations.");
-            MlT::Char
-        }
-        Int(ity) => intty_to_ty(ctx, names, ity),
-        Uint(uity) => uintty_to_ty(ctx, names, uity),
-        Float(flty) => floatty_to_ty(names, flty),
-        Adt(def, s) => {
-            if def.is_box() {
-                return translate_ty_inner(trans, ctx, names, span, s[0].expect_ty());
+impl<'a, 'tcx> Ctx<'a, 'tcx> {
+    fn inner(&mut self, ty: Ty<'tcx>) -> MlT {
+        match ty.kind() {
+            Bool => MlT::Bool,
+            Char => {
+                self.ctx.warn(self.span, "support for string types is partial and experimental, expect to encounter limitations.");
+                MlT::Char
             }
+            Int(ity) => intty_to_ty(self.ctx, self.names, ity),
+            Uint(uity) => uintty_to_ty(self.ctx, self.names, uity),
+            Float(flty) => floatty_to_ty(self.names, flty),
+            Adt(def, s) => {
+                if def.is_box() {
+                    return self.inner(s[0].expect_ty());
+                }
 
-            if Some(def.did()) == ctx.tcx.get_diagnostic_item(Symbol::intern("creusot_int")) {
-                names.import_prelude_module(PreludeModule::Int);
-                return MlT::Integer;
+                if Some(def.did())
+                    == self.ctx.tcx.get_diagnostic_item(Symbol::intern("creusot_int"))
+                {
+                    self.names.import_prelude_module(PreludeModule::Int);
+                    return MlT::Integer;
+                }
+
+                let cons = if let Some(builtin) = get_builtin(self.ctx.tcx, def.did())
+                    .and_then(|a| QName::from_string(&a.as_str()))
+                {
+                    self.names.import_builtin_module(builtin.clone().module_qname());
+                    MlT::TConstructor(builtin.without_search_path())
+                } else {
+                    self.ctx.translate(def.did());
+                    self.names.insert(def.did(), s); // TODO: Overhaul `CloneInfo` so we can use that to build type names
+                    MlT::TConstructor(item_qname(self.ctx, def.did(), Namespace::TypeNS))
+                };
+
+                let args = s.types().map(|t| self.inner(t)).collect();
+
+                MlT::TApp(box cons, args)
             }
+            Tuple(ref args) => {
+                let tys = (*args).iter().map(|t| self.inner(t)).collect();
+                MlT::Tuple(tys)
+            }
+            Param(p) => {
+                if let TyTranslation::Declaration = self.mode {
+                    MlT::TVar(translate_ty_param(p.name))
+                } else {
+                    MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
+                }
+            }
+            Projection(pty) => {
+                if matches!(self.mode, TyTranslation::Declaration) {
+                    self.ctx.crash_and_error(
+                        self.span,
+                        "associated types are unsupported in type declarations",
+                    )
+                } else {
+                    translate_projection_ty(self.ctx, self.names, pty)
+                }
+            }
+            Ref(_, ty, borkind) => {
+                use creusot_rustc::ast::Mutability::*;
+                self.names.import_prelude_module(PreludeModule::Borrow);
+                match borkind {
+                    Mut => MlT::MutableBorrow(box self.inner(*ty)),
+                    Not => self.inner(*ty),
+                }
+            }
+            Slice(ty) => {
+                self.names.import_prelude_module(PreludeModule::Slice);
+                self.names.import_prelude_module(PreludeModule::Seq);
+                // self.names.import_prelude_module(PreludeModule:);
+                MlT::TApp(box MlT::TConstructor("seq".into()), vec![self.inner(*ty)])
+            }
+            Array(ty, _) => {
+                self.names.import_prelude_module(PreludeModule::Slice);
+                self.names.import_prelude_module(PreludeModule::Seq);
 
-            let cons = if let Some(builtin) =
-                get_builtin(ctx.tcx, def.did()).and_then(|a| QName::from_string(&a.as_str()))
+                MlT::TApp(box MlT::TConstructor("rust_array".into()), vec![self.inner(*ty)])
+            }
+            Str => {
+                self.ctx.warn(self.span, "support for string types is partial and experimental, expect to encounter limitations.");
+                MlT::TConstructor("string".into())
+            }
+            // Slice()
+            Never => MlT::Tuple(vec![]),
+            RawPtr(_) => {
+                self.names.import_prelude_module(PreludeModule::Opaque);
+                MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
+            }
+            Closure(id, subst) => {
+                self.ctx.translate(*id);
+
+                if util::is_logic(self.ctx.tcx, *id) {
+                    return MlT::Tuple(Vec::new());
+                }
+
+                let name =
+                    item_name(self.ctx.tcx, *id, Namespace::TypeNS).to_string().to_lowercase();
+                let cons =
+                    MlT::TConstructor(self.names.insert(*id, subst).qname_ident(name.into()));
+
+                cons
+            }
+            FnDef(_, _) =>
+            /* FnDef types are effectively singleton types, so it is sound to translate to unit. */
             {
-                names.import_builtin_module(builtin.clone().module_qname());
-                MlT::TConstructor(builtin.without_search_path())
-            } else {
-                ctx.translate(def.did());
-                names.insert(def.did(), s); // TODO: Overhaul `CloneInfo` so we can use that to build type names
-                MlT::TConstructor(item_qname(ctx, def.did(), Namespace::TypeNS))
-            };
-
-            let args = s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
-
-            MlT::TApp(box cons, args)
-        }
-        Tuple(ref args) => {
-            let tys =
-                (*args).iter().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
-            MlT::Tuple(tys)
-        }
-        Param(p) => {
-            if let TyTranslation::Declaration = trans {
-                MlT::TVar(translate_ty_param(p.name))
-            } else {
-                MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
+                MlT::Tuple(vec![])
             }
+            // Foreign(_) => todo!(),
+            // // FnPtr(_) => todo!(),
+            // FnPtr(_) => MlT::Tuple(vec![]),
+            _ => self.ctx.crash_and_error(self.span, &format!("unsupported type {:?}", ty)),
         }
-        Projection(pty) => {
-            if matches!(trans, TyTranslation::Declaration) {
-                ctx.crash_and_error(span, "associated types are unsupported in type declarations")
-            } else {
-                translate_projection_ty(ctx, names, pty)
-            }
-        }
-        Ref(_, ty, borkind) => {
-            use creusot_rustc::ast::Mutability::*;
-            names.import_prelude_module(PreludeModule::Borrow);
-            match borkind {
-                Mut => MlT::MutableBorrow(box translate_ty_inner(trans, ctx, names, span, *ty)),
-                Not => translate_ty_inner(trans, ctx, names, span, *ty),
-            }
-        }
-        Slice(ty) => {
-            names.import_prelude_module(PreludeModule::Slice);
-            names.import_prelude_module(PreludeModule::Seq);
-            // names.import_prelude_module(PreludeModule:);
-            MlT::TApp(
-                box MlT::TConstructor("seq".into()),
-                vec![translate_ty_inner(trans, ctx, names, span, *ty)],
-            )
-        }
-        Array(ty, _) => {
-            names.import_prelude_module(PreludeModule::Slice);
-            names.import_prelude_module(PreludeModule::Seq);
-
-            MlT::TApp(
-                box MlT::TConstructor("rust_array".into()),
-                vec![translate_ty_inner(trans, ctx, names, span, *ty)],
-            )
-        }
-        Str => {
-            ctx.warn(span, "support for string types is partial and experimental, expect to encounter limitations.");
-            MlT::TConstructor("string".into())
-        }
-        // Slice()
-        Never => MlT::Tuple(vec![]),
-        RawPtr(_) => {
-            names.import_prelude_module(PreludeModule::Opaque);
-            MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
-        }
-        Closure(id, subst) => {
-            ctx.translate(*id);
-
-            if util::is_logic(ctx.tcx, *id) {
-                return MlT::Tuple(Vec::new());
-            }
-
-            let name = item_name(ctx.tcx, *id, Namespace::TypeNS).to_string().to_lowercase();
-            let cons = MlT::TConstructor(names.insert(*id, subst).qname_ident(name.into()));
-
-            cons
-        }
-        FnDef(_, _) =>
-        /* FnDef types are effectively singleton types, so it is sound to translate to unit. */
-        {
-            MlT::Tuple(vec![])
-        }
-        // Foreign(_) => todo!(),
-        // // FnPtr(_) => todo!(),
-        // FnPtr(_) => MlT::Tuple(vec![]),
-        _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
 }
 
@@ -354,10 +357,7 @@ pub fn translate_closure_ty<'tcx>(
     let closure_subst = subst.as_closure();
     let fields: Vec<_> = closure_subst
         .upvar_tys()
-        .map(|uv| Field {
-            ty: translate_ty_inner(TyTranslation::Usage, ctx, names, DUMMY_SP, uv),
-            ghost: false,
-        })
+        .map(|uv| Field { ty: translate_ty(ctx, names, DUMMY_SP, uv), ghost: false })
         .collect();
 
     let mut cons_name = item_name(ctx.tcx, did, Namespace::ValueNS);
@@ -388,14 +388,10 @@ fn field_ty<'tcx>(
     field: &FieldDef,
     substs: SubstsRef<'tcx>,
 ) -> (MlT, bool) {
+    let ty = field.ty(ctx.tcx, substs);
     (
-        translate_ty_inner(
-            TyTranslation::Declaration,
-            ctx,
-            names,
-            ctx.def_span(field.did),
-            field.ty(ctx.tcx, substs),
-        ),
+        Ctx { mode: TyTranslation::Declaration, span: ctx.def_span(field.did), ctx, names }
+            .inner(ty),
         false,
     )
 }
