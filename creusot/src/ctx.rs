@@ -279,7 +279,7 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             DiagnosticId::Lint {
                 name: String::from("creusot"),
                 has_future_breakage: false,
-                is_force_warn: true,
+                is_force_warn: false,
             },
         )
     }
