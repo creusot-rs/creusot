@@ -1,9 +1,20 @@
-trait Tr {
+extern crate creusot_contracts;
+
+pub trait Tr {
     type A;
 }
 
-struct Assoc<T: Tr> {
+pub struct Assoc<T: Tr> {
     item: T::A,
 }
 
-fn uses<T: Tr>(x: Assoc<T>) {}
+pub fn uses<T: Tr>(_: Assoc<T>) {}
+
+
+impl Tr for () {
+    type A = bool;
+}
+
+pub fn uses_instance(x: Assoc<()>) -> bool {
+    x.item
+}

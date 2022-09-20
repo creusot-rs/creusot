@@ -10,6 +10,7 @@ use creusot_rustc::{
     type_ir::sty::TyKind::*,
 };
 use indexmap::{IndexMap, IndexSet};
+use rustc_middle::ty::{ParamEnv, subst::Subst};
 use std::collections::VecDeque;
 use why3::{
     declaration::{AdtDecl, ConstructorDecl, Contract, Decl, Field, LetFun, Module, Signature},
@@ -60,6 +61,20 @@ pub fn translate_ty<'tcx>(
 }
 
 impl<'a, 'tcx> Ctx<'a, 'tcx> {
+    fn associated_types(&self, def_id: DefId) -> impl Iterator<Item = ProjectionTy<'tcx>> + '_ {
+        if let Some(item) = self.ctx.item(def_id) {
+            if let TranslatedItem::Type { associated_types, .. } = item {
+                associated_types.keys().cloned()
+            } else {
+                unreachable!()
+            }
+        } else if let TyTranslation::Declaration(proj) = &self.mode {
+            proj.keys().cloned()
+        } else {
+            unreachable!()
+        }
+    }
+
     fn inner(&mut self, ty: Ty<'tcx>) -> MlT {
         match ty.kind() {
             Bool => MlT::Bool,
@@ -93,7 +108,13 @@ impl<'a, 'tcx> Ctx<'a, 'tcx> {
                     MlT::TConstructor(item_qname(self.ctx, def.did(), Namespace::TypeNS))
                 };
 
-                let args = s.types().map(|t| self.inner(t)).collect();
+                let tcx = self.ctx.tcx;
+                let extra_params : Vec<_> = self.associated_types(def.did()).map(|pty| {
+                    tcx.try_normalize_erasing_regions(ParamEnv::empty(), pty).unwrap()
+                })
+                .collect();
+
+                let args = s.types().chain(extra_params).map(|t| self.inner(t)).collect();
 
                 MlT::TApp(box cons, args)
             }
@@ -183,6 +204,8 @@ pub fn translate_projection_ty<'tcx>(
 }
 
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
+
+use super::traits::resolve_opt;
 
 pub fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSet<DefId> {
     let mut graph = DiGraphMap::<_, ()>::new();
