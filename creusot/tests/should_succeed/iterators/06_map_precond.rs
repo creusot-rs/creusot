@@ -131,6 +131,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
             )
     }
 
+    // Probably needs to be reworked
     #[predicate]
     fn has_precond(self) -> bool {
         pearlite! {
@@ -172,7 +173,10 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
     initial.iter.invariant() ==>
     Map::new_logic(iter, func).inner_extension(initial) ==>
     initial.has_precond() ==>
-    forall<n: Map<I, _, _>, b: B> n.iter.invariant() ==> initial.produces(Seq::singleton(b), n) ==> n.has_precond()
+    forall<n: Map<I, _, _>, b: B> n.iter.invariant() ==> initial.produces(Seq::singleton(b), n) ==>
+        (forall<e : I::Item, i2 : I>
+                // having iter on the left hand side is *crucial* to increment.
+                iter.produces(n.produced.push(e), i2) ==> n.func.precondition((e, n.produced)))
 )]
 #[ensures(result.invariant())]
 #[ensures(result == Map { init_iter: Ghost(iter), iter, func, produced: Ghost(Seq::EMPTY) })]
@@ -187,12 +191,15 @@ pub fn map<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B>(
 //     map(iter, |x, _| x);
 // }
 
-// #[requires(iter.invariant())]
-// #[requires(forall<prod : _, fin: _> iter.produces(prod, fin) ==> forall<x : _> 0 <= x && x < prod.len() ==> prod[x] <= 10u32)]
-// fn increment<I: Iterator<Item = u32>>(iter: I) {
-//     map(
-//         iter,
-//         #[requires(@x <= 15)]
-//         |x: u32, _| x + 1,
-//     );
-// }
+#[requires(iter.invariant())]
+#[requires(forall<done_ : &mut I> done_.completed() ==> forall<next : I, steps: Seq<_>> (^done_).produces(steps, next) ==> steps == Seq::EMPTY && ^done_ == next)]
+#[requires(forall<prod : _, fin: _> iter.produces(prod, fin) ==>
+    forall<x : _> 0 <= x && x < prod.len() ==> prod[x] <= 10u32
+)]
+fn increment<I: Iterator<Item = u32>>(iter: I) {
+    map(
+        iter,
+        #[requires(@x <= 15)]
+        |x: u32, _| x + 1,
+    );
+}
