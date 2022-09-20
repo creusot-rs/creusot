@@ -75,7 +75,7 @@ pub fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
 
     for impls in ctx.tcx.all_local_trait_impls(()).values() {
         for impl_id in impls {
-            ctx.translate_impl(impl_id.to_def_id());
+            ctx.translate(impl_id.to_def_id());
         }
     }
 

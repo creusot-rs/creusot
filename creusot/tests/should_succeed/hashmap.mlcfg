@@ -2089,3 +2089,59 @@ module Core_Clone_Clone_Clone
     ensures { result = self }
     
 end
+module Hashmap_Impl0
+  type t
+  use Hashmap_List_Type as Hashmap_List_Type
+  clone Core_Clone_Clone_CloneFrom_Interface as CloneFrom0 with type self = Hashmap_List_Type.t_list t
+  clone Hashmap_Impl0_Clone_Interface as Clone0 with type t = t
+  clone Core_Clone_Clone_Clone_Interface as Clone1 with type self = Hashmap_List_Type.t_list t,
+    val clone' = Clone0.clone'
+end
+module Hashmap_Impl2
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.UIntSize
+  clone Hashmap_Impl2_HashLog as HashLog0 with axiom .
+  clone Hashmap_Hash_HashLog_Interface as HashLog1 with type self = usize, function hash_log = HashLog0.hash_log,
+    axiom .
+  clone Hashmap_Impl2_Hash_Interface as Hash0 with function HashLog0.hash_log = HashLog0.hash_log
+  clone Hashmap_Hash_Hash_Interface as Hash1 with type self = usize, val hash = Hash0.hash,
+    function HashLog0.hash_log = HashLog0.hash_log
+  goal hash_log_spec : forall self : usize . forall result : int . ([#"../hashmap.rs" 65 14 65 25] result >= 0) -> ([#"../hashmap.rs" 49 14 49 25] result >= 0)
+  use mach.int.UInt64
+  clone CreusotContracts_Logic_Int_Impl20_ModelTy_Type as ModelTy0
+  clone CreusotContracts_Logic_Int_Impl20_Model as Model0
+  clone Hashmap_Impl2_HashLogEqModel as HashLogEqModel0 with function HashLog0.hash_log = HashLog0.hash_log, axiom .
+  clone Hashmap_Hash_HashLogEqModel_Interface as HashLogEqModel1 with type self = usize,
+    function hash_log_eq_model = HashLogEqModel0.hash_log_eq_model, function Model0.model = Model0.model,
+    function HashLog0.hash_log = HashLog0.hash_log, type ModelTy0.modelTy = ModelTy0.modelTy, axiom .
+  goal hash_log_eq_model_spec : forall x : usize, y : usize . (([#"../hashmap.rs" 53 15 53 23] UInt64.to_int x = UInt64.to_int y) -> ([#"../hashmap.rs" 71 15 71 23] UInt64.to_int x = UInt64.to_int y)) /\ (forall result : () . ([#"../hashmap.rs" 72 14 72 42] HashLog0.hash_log x = HashLog0.hash_log y) -> ([#"../hashmap.rs" 54 14 54 42] HashLog0.hash_log x = HashLog0.hash_log y))
+end
+module Hashmap_Impl3
+  type k
+  type v
+  clone Hashmap_Hash_HashLog as HashLog0 with type self = k, axiom .
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Hashmap_List_Type as Hashmap_List_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model as Model3 with type t = Hashmap_List_Type.t_list (k, v),
+    type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  use Hashmap_MyHashMap_Type as Hashmap_MyHashMap_Type
+  clone Hashmap_Impl4_BucketIx as BucketIx0 with type k = k, type v = v, function HashLog0.hash_log = HashLog0.hash_log,
+    function Model0.model = Model3.model
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy2 with type self = k
+  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = k, type ModelTy0.modelTy = ModelTy2.modelTy
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone Hashmap_Impl1_Get as Get0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy2.modelTy,
+    function Model0.model = Model2.model
+  clone Hashmap_Impl4_Bucket as Bucket0 with type k = k, type v = v, function Model0.model = Model3.model,
+    function BucketIx0.bucket_ix = BucketIx0.bucket_ix
+  clone Hashmap_Impl3_ModelTy_Type as ModelTy0 with type k = k, type v = v, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone Hashmap_Impl3_Model as Model0 with type k = k, type v = v, function Model0.model = Model2.model,
+    function Bucket0.bucket = Bucket0.bucket, function Get0.get = Get0.get, type ModelTy0.modelTy = ModelTy2.modelTy,
+    axiom .
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = Hashmap_MyHashMap_Type.t_myhashmap k v,
+    function model = Model0.model, type ModelTy0.modelTy = ModelTy0.modelTy
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = Hashmap_MyHashMap_Type.t_myhashmap k v,
+    type modelTy = ModelTy0.modelTy
+end

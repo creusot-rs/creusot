@@ -599,3 +599,40 @@ module C04Skip_Impl1_Item_Type
   type item  =
     Item0.item
 end
+module C04Skip_Impl1
+  type i
+  use seq.Seq
+  clone C04Skip_Common_Iterator_Completed as Completed2 with type self = i
+  clone C04Skip_Common_Iterator_Item_Type as Item2 with type self = i
+  clone C04Skip_Common_Iterator_Produces as Produces2 with type self = i, type Item0.item = Item2.item
+  use C04Skip_Skip_Type as C04Skip_Skip_Type
+  clone C04Skip_Common_Iterator_Invariant as Invariant0 with type self = C04Skip_Skip_Type.t_skip i
+  clone C04Skip_Impl1_Item_Type as Item0 with type i = i, type Item0.item = Item2.item
+  clone C04Skip_Impl1_Produces as Produces0 with type i = i, type Item0.item = Item2.item,
+    predicate Produces0.produces = Produces2.produces
+  clone C04Skip_Impl1_ProducesRefl as ProducesRefl0 with type i = i, predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item2.item, axiom .
+  clone C04Skip_Common_Iterator_ProducesRefl_Interface as ProducesRefl1 with type self = C04Skip_Skip_Type.t_skip i,
+    function produces_refl = ProducesRefl0.produces_refl, predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces, type Item0.item = Item0.item, axiom .
+  clone C04Skip_Impl1_Completed as Completed0 with type i = i, type Item0.item = Item2.item,
+    predicate Produces0.produces = Produces2.produces, predicate Completed0.completed = Completed2.completed
+  clone C04Skip_Common_Iterator_Completed_Interface as Completed1 with type self = C04Skip_Skip_Type.t_skip i,
+    predicate completed = Completed0.completed
+  clone C04Skip_Common_Iterator_Produces_Interface as Produces1 with type self = C04Skip_Skip_Type.t_skip i,
+    predicate produces = Produces0.produces, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Item_Type as Item1 with type self = C04Skip_Skip_Type.t_skip i, type item = Item0.item
+  goal produces_refl_spec : forall a : C04Skip_Skip_Type.t_skip i . (([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> true) /\ (forall result : () . ([#"../04_skip.rs" 50 14 50 39] Produces0.produces a (Seq.empty ) a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a))
+  clone C04Skip_Impl1_ProducesTrans as ProducesTrans0 with type i = i,
+    predicate Produces0.produces = Produces0.produces, type Item0.item = Item2.item, axiom .
+  clone C04Skip_Common_Iterator_ProducesTrans_Interface as ProducesTrans1 with type self = C04Skip_Skip_Type.t_skip i,
+    function produces_trans = ProducesTrans0.produces_trans, predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces, type Item0.item = Item0.item, axiom .
+  goal produces_trans_spec : forall a : C04Skip_Skip_Type.t_skip i, ab : Seq.seq Item2.item, b : C04Skip_Skip_Type.t_skip i, bc : Seq.seq Item2.item, c : C04Skip_Skip_Type.t_skip i . (([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) && ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) && ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) && ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) && ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../04_skip.rs" 55 15 55 32] Produces0.produces b bc c) && ([#"../04_skip.rs" 54 15 54 32] Produces0.produces a ab b)) /\ (forall result : () . ([#"../04_skip.rs" 56 14 56 42] Produces0.produces a (Seq.(++) ab bc) c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c))
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone C04Skip_Impl1_Next_Interface as Next0 with type i = i, type Item0.item = Item2.item,
+    predicate Completed0.completed = Completed0.completed, predicate Produces0.produces = Produces0.produces
+  clone C04Skip_Common_Iterator_Next_Interface as Next1 with type self = C04Skip_Skip_Type.t_skip i,
+    val next = Next0.next, predicate Invariant0.invariant' = Invariant0.invariant', type Item0.item = Item0.item,
+    predicate Completed0.completed = Completed0.completed, predicate Produces0.produces = Produces0.produces
+end
