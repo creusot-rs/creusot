@@ -1,4 +1,16 @@
 
+module C02IterMut_Common_Iterator_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+end
+module C02IterMut_Common_Iterator_Invariant
+  type self
+  predicate invariant' [#"../common.rs" 28 4 28 30] (self : self) =
+    [#"../common.rs" 29 8 29 12] true
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
 module C02IterMut_IterMut_Type
   use prelude.Borrow
   use prelude.Slice
@@ -694,36 +706,6 @@ module CreusotContracts_Logic_Ghost_Ghost_Type
       | C_Ghost a -> a
       end
 end
-module CreusotContracts_Logic_Ghost_Impl0_Deref_Interface
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-end
-module CreusotContracts_Logic_Ghost_Impl0_Deref
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-  val deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-    ensures { result = deref self }
-    
-  axiom deref_spec : forall self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t . deref self = CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
-end
-module CreusotContracts_Logic_Ghost_Impl1_Unwrap_Interface
-  type t
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function unwrap (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-end
-module CreusotContracts_Logic_Ghost_Impl1_Unwrap
-  type t
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function unwrap (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t =
-    CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
-  val unwrap (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-    ensures { result = unwrap self }
-    
-end
 module C02IterMut_AllZero_Interface
   use prelude.Borrow
   use seq.Seq
@@ -777,13 +759,9 @@ module C02IterMut_AllZero
     predicate Produces0.produces = Produces0.produces, axiom .
   clone C02IterMut_Impl0_ProducesRefl as ProducesRefl0 with type t = usize,
     predicate Produces0.produces = Produces0.produces, axiom .
-  clone CreusotContracts_Logic_Ghost_Impl1_Unwrap as Unwrap0 with type t = Seq.seq (borrowed usize)
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = usize
   clone C02IterMut_Impl0_Next_Interface as Next0 with type t = usize,
     predicate Completed0.completed = Completed0.completed, predicate Produces0.produces = Produces0.produces
-  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref1 with type t = Seq.seq (borrowed usize), axiom .
-  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = C02IterMut_IterMut_Type.t_itermut usize,
-    axiom .
   clone C02IterMut_Impl1_IntoIter_Interface as IntoIter0 with type t = usize
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global)
   clone C02IterMut_IterMut_Interface as IterMut1 with type t = usize, function Model0.model = Model2.model,
@@ -808,9 +786,9 @@ module C02IterMut_AllZero
   var _19 : isize;
   var i_20 : borrowed usize;
   var _21 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq (borrowed usize));
-  var _23 : ();
-  var x_24 : borrowed usize;
-  var _25 : ();
+  var _24 : ();
+  var x_25 : borrowed usize;
+  var _26 : ();
   {
     v_1 <- v;
     goto BB0
@@ -840,8 +818,8 @@ module C02IterMut_AllZero
     goto BB5
   }
   BB5 {
-    invariant structural { [#"../02_iter_mut.rs" 69 4 69 91] Produces0.produces (Deref0.deref iter_old_7) (Deref1.deref produced_10) iter_4 };
-    invariant user { [#"../02_iter_mut.rs" 69 4 69 91] forall i : int . 0 <= i /\ i < Seq.length (Deref1.deref produced_10) -> UInt64.to_int ( ^ Seq.get (Deref1.deref produced_10) i) = 0 };
+    invariant structural { [#"../02_iter_mut.rs" 69 4 69 91] Produces0.produces (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 iter_old_7) (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 produced_10) iter_4 };
+    invariant user { [#"../02_iter_mut.rs" 69 4 69 91] forall i : int . 0 <= i /\ i < Seq.length (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 produced_10) -> UInt64.to_int ( ^ Seq.get (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 produced_10) i) = 0 };
     _18 <- borrow_mut iter_4;
     iter_4 <-  ^ _18;
     _17 <- ([#"../02_iter_mut.rs" 69 4 69 91] Next0.next _18);
@@ -864,18 +842,18 @@ module C02IterMut_AllZero
     assume { Resolve1.resolve i_20 };
     i_20 <- Core_Option_Option_Type.some_0 _17;
     _17 <- (let Core_Option_Option_Type.C_Some a = _17 in Core_Option_Option_Type.C_Some (any borrowed usize));
-    _23 <- ();
-    _21 <- ([#"../02_iter_mut.rs" 69 4 69 91] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (Seq.snoc (Unwrap0.unwrap produced_10) i_20));
+    _24 <- ();
+    _21 <- ([#"../02_iter_mut.rs" 69 4 69 91] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost (Seq.snoc (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 produced_10) i_20));
     goto BB10
   }
   BB10 {
     produced_10 <- _21;
     _21 <- any CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (Seq.seq (borrowed usize));
-    assume { Resolve1.resolve x_24 };
-    x_24 <- i_20;
+    assume { Resolve1.resolve x_25 };
+    x_25 <- i_20;
     i_20 <- any borrowed usize;
-    x_24 <- { x_24 with current = (0 : usize) };
-    assume { Resolve1.resolve x_24 };
+    x_25 <- { x_25 with current = (0 : usize) };
+    assume { Resolve1.resolve x_25 };
     _16 <- ();
     goto BB5
   }
@@ -924,6 +902,7 @@ module C02IterMut_Common_Iterator_ProducesRefl_Interface
   use seq.Seq
   clone C02IterMut_Common_Iterator_Item_Type as Item0 with type self = self
   clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C02IterMut_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
   function produces_refl (a : self) : ()
 end
 module C02IterMut_Common_Iterator_ProducesRefl
@@ -931,17 +910,20 @@ module C02IterMut_Common_Iterator_ProducesRefl
   use seq.Seq
   clone C02IterMut_Common_Iterator_Item_Type as Item0 with type self = self
   clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  function produces_refl [#"../common.rs" 15 4 15 30] (a : self) : ()
+  clone C02IterMut_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
+  function produces_refl [#"../common.rs" 16 4 16 30] (a : self) : ()
   val produces_refl (a : self) : ()
+    requires {[#"../common.rs" 14 15 14 28] Invariant0.invariant' a}
     ensures { result = produces_refl a }
     
-  axiom produces_refl_spec : forall a : self . [#"../common.rs" 14 14 14 39] Produces0.produces a (Seq.empty ) a
+  axiom produces_refl_spec : forall a : self . ([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a)
 end
 module C02IterMut_Common_Iterator_ProducesTrans_Interface
   type self
   use seq.Seq
   clone C02IterMut_Common_Iterator_Item_Type as Item0 with type self = self
   clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C02IterMut_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
   function produces_trans (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
 end
 module C02IterMut_Common_Iterator_ProducesTrans
@@ -949,14 +931,18 @@ module C02IterMut_Common_Iterator_ProducesTrans
   use seq.Seq
   clone C02IterMut_Common_Iterator_Item_Type as Item0 with type self = self
   clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  function produces_trans [#"../common.rs" 21 4 21 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+  clone C02IterMut_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
+  function produces_trans [#"../common.rs" 25 4 25 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
     
   val produces_trans (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
-    requires {[#"../common.rs" 18 15 18 32] Produces0.produces a ab b}
-    requires {[#"../common.rs" 19 15 19 32] Produces0.produces b bc c}
+    requires {[#"../common.rs" 19 15 19 28] Invariant0.invariant' a}
+    requires {[#"../common.rs" 20 15 20 28] Invariant0.invariant' b}
+    requires {[#"../common.rs" 21 15 21 28] Invariant0.invariant' c}
+    requires {[#"../common.rs" 22 15 22 32] Produces0.produces a ab b}
+    requires {[#"../common.rs" 23 15 23 32] Produces0.produces b bc c}
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 18 15 18 32] Produces0.produces a ab b) -> ([#"../common.rs" 19 15 19 32] Produces0.produces b bc c) -> ([#"../common.rs" 20 14 20 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) -> ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) -> ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) -> ([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C02IterMut_Common_Iterator_Next_Interface
   type self
@@ -966,8 +952,11 @@ module C02IterMut_Common_Iterator_Next_Interface
   clone C02IterMut_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
   clone C02IterMut_Common_Iterator_Completed_Interface as Completed0 with type self = self
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone C02IterMut_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
   val next [@cfg:stackify] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
-    ensures { [#"../common.rs" 23 14 26 5] match (result) with
+    requires {[#"../common.rs" 32 4 32 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../common.rs" 32 4 32 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../common.rs" 33 14 36 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
@@ -981,8 +970,11 @@ module C02IterMut_Common_Iterator_Next
   clone C02IterMut_Common_Iterator_Produces as Produces0 with type self = self, type Item0.item = Item0.item
   clone C02IterMut_Common_Iterator_Completed as Completed0 with type self = self
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone C02IterMut_Common_Iterator_Invariant as Invariant0 with type self = self
   val next [@cfg:stackify] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
-    ensures { [#"../common.rs" 23 14 26 5] match (result) with
+    requires {[#"../common.rs" 32 4 32 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../common.rs" 32 4 32 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../common.rs" 33 14 36 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }

@@ -694,22 +694,6 @@ module CreusotContracts_Logic_Ghost_Impl1_Inner
     ensures { result = inner self }
     
 end
-module CreusotContracts_Logic_Ghost_Impl0_Deref_Interface
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-end
-module CreusotContracts_Logic_Ghost_Impl0_Deref
-  type t
-  use prelude.Borrow
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-  val deref (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-    ensures { result = deref self }
-    
-  axiom deref_spec : forall self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t . deref self = CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
-end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
@@ -866,8 +850,6 @@ module HeapsortGeneric_SiftDown
     predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
     type Output0.output = Output0.output
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-  clone CreusotContracts_Logic_Ghost_Impl0_Deref as Deref0 with type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
-    axiom .
   clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   let rec cfg sift_down [@cfg:stackify] [#"../heapsort_generic.rs" 38 0 38 62] (v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) (start : usize) (end' : usize) : ()
@@ -955,8 +937,8 @@ module HeapsortGeneric_SiftDown
     invariant proph_const { [#"../heapsort_generic.rs" 42 29 42 49]  ^ v_1 =  ^ Inner0.inner old_v_11 };
     invariant permutation { [#"../heapsort_generic.rs" 43 29 43 64] PermutationOf0.permutation_of (Model1.model v_1) (Model1.model (Inner0.inner old_v_11)) };
     invariant i_bounds { [#"../heapsort_generic.rs" 44 26 44 51] UInt64.to_int start_2 <= UInt64.to_int i_14 /\ UInt64.to_int i_14 < UInt64.to_int end'_3 };
-    invariant unchanged { [#"../heapsort_generic.rs" 42 4 42 51] forall j : int . 0 <= j /\ j < UInt64.to_int start_2 \/ UInt64.to_int end'_3 <= j /\ j < Seq.length (Model1.model v_1) -> Seq.get (Model1.model (Deref0.deref old_v_11)) j = Seq.get (Model1.model v_1) j };
-    invariant keep_bound { [#"../heapsort_generic.rs" 42 4 42 51] forall m : t . (forall j : int . UInt64.to_int start_2 <= j /\ j < UInt64.to_int end'_3 -> LeLog0.le_log (Seq.get (Model1.model (Deref0.deref old_v_11)) j) m) -> (forall j : int . UInt64.to_int start_2 <= j /\ j < UInt64.to_int end'_3 -> LeLog0.le_log (Seq.get (Model1.model v_1) j) m) };
+    invariant unchanged { [#"../heapsort_generic.rs" 42 4 42 51] forall j : int . 0 <= j /\ j < UInt64.to_int start_2 \/ UInt64.to_int end'_3 <= j /\ j < Seq.length (Model1.model v_1) -> Seq.get (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_v_11)) j = Seq.get (Model1.model v_1) j };
+    invariant keep_bound { [#"../heapsort_generic.rs" 42 4 42 51] forall m : t . (forall j : int . UInt64.to_int start_2 <= j /\ j < UInt64.to_int end'_3 -> LeLog0.le_log (Seq.get (Model1.model (CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_v_11)) j) m) -> (forall j : int . UInt64.to_int start_2 <= j /\ j < UInt64.to_int end'_3 -> LeLog0.le_log (Seq.get (Model1.model v_1) j) m) };
     invariant heap { [#"../heapsort_generic.rs" 42 4 42 51] forall j : int . UInt64.to_int start_2 <= Parent0.parent j /\ j < UInt64.to_int end'_3 /\ UInt64.to_int i_14 <> Parent0.parent j -> LeLog0.le_log (Seq.get (Model1.model v_1) j) (Seq.get (Model1.model v_1) (Parent0.parent j)) };
     invariant hole_left { [#"../heapsort_generic.rs" 42 4 42 51] let c = 2 * UInt64.to_int i_14 + 1 in c < UInt64.to_int end'_3 /\ UInt64.to_int start_2 <= Parent0.parent (UInt64.to_int i_14) -> LeLog0.le_log (Seq.get (Model1.model v_1) c) (Seq.get (Model1.model v_1) (Parent0.parent (Parent0.parent c))) };
     invariant hole_right { [#"../heapsort_generic.rs" 42 4 42 51] let c = 2 * UInt64.to_int i_14 + 2 in c < UInt64.to_int end'_3 /\ UInt64.to_int start_2 <= Parent0.parent (UInt64.to_int i_14) -> LeLog0.le_log (Seq.get (Model1.model v_1) c) (Seq.get (Model1.model v_1) (Parent0.parent (Parent0.parent c))) };

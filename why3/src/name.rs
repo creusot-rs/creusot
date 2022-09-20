@@ -90,7 +90,7 @@ impl QName {
     }
 
     pub fn module_qname(mut self) -> QName {
-        assert!(self.module.len() > 0, "ident has no module");
+        assert!(self.module.len() > 0, "ident has no module {:?}", self);
         let id = self.module.pop().unwrap();
         self.name = id;
         self

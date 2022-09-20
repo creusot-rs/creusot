@@ -110,6 +110,11 @@ impl<T> Seq<T> {
     pub fn contains(self, e: T) -> bool {
         pearlite! { exists<i : Int> 0 <= i &&  i <self.len() && self[i] == e }
     }
+
+    // A hack to trigger loading the `seq.FreeMonoid` module which is quite useful
+    #[logic]
+    #[creusot::builtins = "seq.FreeMonoid.left_neutral"]
+    pub fn left_neutral(self) {}
 }
 
 // A hack which allows us to use [..] notation for sequences.
