@@ -1,4 +1,4 @@
-We thank you, contributor, for working for improving the Creusot tool
+We thank you, contributor, for working to improve the Creusot tool
 for Rust verification.
 
 In order to be able to merge contributions to the source code of
