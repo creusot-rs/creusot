@@ -1,6 +1,5 @@
 extern crate creusot_contracts;
-
-use creusot_contracts::{std::*, *};
+use creusot_contracts::*;
 
 mod common;
 use common::*;
@@ -26,7 +25,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
 
     #[predicate]
     fn completed(&mut self) -> bool {
-        (pearlite! { (exists<x :_> (^self).iter == Err(x)) })
+        pearlite! { exists<x :_> (^self).iter == Err(x) }
     }
 
     #[predicate]
@@ -47,7 +46,7 @@ impl<I: Iterator> Iterator for Fuse<I> {
             Err(_) => None,
             Ok(iter) => match iter.next() {
                 None => {
-                    self.iter = Err(ghost!{ *iter });
+                    self.iter = Err(ghost! { *iter });
                     None
                 }
                 x => x,
@@ -68,4 +67,22 @@ impl<I: Iterator> Iterator for Fuse<I> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+// Not a subtrait of `FusedIterator` here for type inference reasons.
+// extern_spec! version should be though.
+pub trait FusedIterator: Iterator {
+    #[law]
+    #[requires(self.completed())]
+    #[requires((^self).produces(steps, next))]
+    #[ensures(steps == Seq::EMPTY && ^self == next)]
+    fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self);
+}
+
+impl<I: Iterator> FusedIterator for Fuse<I> {
+    #[law]
+    #[requires(self.completed())]
+    #[requires((^self).produces(steps, next))]
+    #[ensures(steps == Seq::EMPTY && ^self == next)]
+    fn is_fused(&mut self, steps: Seq<Self::Item>, next: Self) {}
 }
