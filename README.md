@@ -16,7 +16,11 @@ Creusot works by translating Rust code to WhyML, the verification and specificat
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details.
 
-**Note**: :warning: This is _research_ software, and favors _progress_ over stability :warning:
+:warning: This is _research_ software, and favors _progress_ over stability :warning:
+
+## Citing Creusot
+
+If you would like to cite Creusot in academic contexts, we encourage you to use our [ICFEM'22 publication](https://hal.inria.fr/hal-03737878/file/main.pdf).
 
 # Examples of Verification
 
