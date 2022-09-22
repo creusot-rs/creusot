@@ -254,7 +254,7 @@ pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, did: DefId) {
     }
 
     let did = *bg.first().unwrap();
-    let mut names = CloneMap::new(ctx.tcx, did, false);
+    let mut names = CloneMap::new(ctx.tcx, did, CloneLevel::Stub);
 
     let name = module_name(ctx, did);
 
@@ -407,7 +407,7 @@ pub fn translate_accessor(
 
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let repr = ctx.representative_type(adt_did);
-    let mut names = CloneMap::new(ctx.tcx, repr, false);
+    let mut names = CloneMap::new(ctx.tcx, repr, CloneLevel::Stub);
     let (target_ty, ghost) = field_ty(ctx, &mut names, &variant.fields[ix], substs);
 
     let variant_arities: Vec<_> = adt_def

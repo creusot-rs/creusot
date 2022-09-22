@@ -3,6 +3,11 @@ module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
   type modelTy
 end
+module CreusotContracts_Logic_Model_Model_Model_Stub
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
@@ -16,6 +21,12 @@ module CreusotContracts_Logic_Model_Model_Model
     ensures { result = model self }
     
 end
+module CreusotContracts_Logic_Model_Impl0_Model_Stub
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : t) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Impl0_Model_Interface
   type t
   use prelude.Borrow
@@ -26,7 +37,7 @@ module CreusotContracts_Logic_Model_Impl0_Model
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : t) : ModelTy0.modelTy =
     Model0.model self
@@ -40,6 +51,14 @@ module CreusotContracts_Std1_Slice_Impl0_ModelTy_Type
   type modelTy  =
     Seq.seq t
 end
+module CreusotContracts_Std1_Slice_Impl0_Model_Stub
+  type t
+  use seq.Seq
+  use mach.int.Int
+  use prelude.UIntSize
+  use prelude.Slice
+  function model (self : seq t) : Seq.seq t
+end
 module CreusotContracts_Std1_Slice_Impl0_Model_Interface
   type t
   use seq.Seq
@@ -47,6 +66,7 @@ module CreusotContracts_Std1_Slice_Impl0_Model_Interface
   use prelude.UIntSize
   use prelude.Slice
   function model (self : seq t) : Seq.seq t
+  axiom model_spec : forall self : seq t . model self = Slice.id self && Seq.length (model self) <= 18446744073709551615
 end
 module CreusotContracts_Std1_Slice_Impl0_Model
   type t
@@ -68,7 +88,7 @@ module C01_IndexSlice_Interface
   use prelude.Slice
   use mach.int.UInt32
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = uint32
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = seq uint32,
+  clone CreusotContracts_Logic_Model_Impl0_Model_Stub as Model0 with type t = seq uint32,
     type ModelTy0.modelTy = ModelTy0.modelTy
   val index_slice [@cfg:stackify] (a : seq uint32) : uint32
     requires {[#"../01.rs" 5 11 5 26] 10 < Seq.length (Model0.model a)}
@@ -112,6 +132,12 @@ module C01_IndexSlice
   }
   
 end
+module CreusotContracts_Logic_Model_Impl1_Model_Stub
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : borrowed t) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
   use prelude.Borrow
@@ -122,13 +148,18 @@ module CreusotContracts_Logic_Model_Impl1_Model
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : borrowed t) : ModelTy0.modelTy =
     Model0.model ( * self)
   val model (self : borrowed t) : ModelTy0.modelTy
     ensures { result = model self }
     
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
@@ -152,8 +183,8 @@ module C01_IndexMutSlice_Interface
   use mach.int.UInt32
   use prelude.Slice
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = uint32
-  clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model1 with type t = uint32, axiom .
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = seq uint32,
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model1 with type t = uint32, axiom .
+  clone CreusotContracts_Logic_Model_Impl1_Model_Stub as Model0 with type t = seq uint32,
     type ModelTy0.modelTy = ModelTy0.modelTy
   val index_mut_slice [@cfg:stackify] (a : borrowed (seq uint32)) : ()
     requires {[#"../01.rs" 10 11 10 26] Seq.length (Model0.model a) = 5}
@@ -217,7 +248,7 @@ module Core_Slice_Impl0_Len_Interface
   use mach.int.Int
   use prelude.UIntSize
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = seq t,
+  clone CreusotContracts_Logic_Model_Impl0_Model_Stub as Model0 with type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   val len [@cfg:stackify] (self : seq t) : usize
     ensures { Seq.length (Model0.model self) = UInt64.to_int result }
@@ -238,6 +269,10 @@ module Core_Slice_Impl0_Len
     ensures { Seq.length (Model0.model self) = UInt64.to_int result }
     
 end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
+end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
@@ -257,7 +292,7 @@ module C01_SliceFirst_Interface
   use seq.Seq
   use prelude.Slice
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = seq t,
+  clone CreusotContracts_Logic_Model_Impl0_Model_Stub as Model0 with type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   use Core_Option_Option_Type as Core_Option_Option_Type
   val slice_first [@cfg:stackify] (a : seq t) : Core_Option_Option_Type.t_option t

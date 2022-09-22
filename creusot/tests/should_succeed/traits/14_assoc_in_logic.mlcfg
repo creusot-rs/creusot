@@ -3,6 +3,11 @@ module C14AssocInLogic_Assoc_Ty_Type
   type self
   type ty
 end
+module C14AssocInLogic_FromTy_Stub
+  type t
+  clone C14AssocInLogic_Assoc_Ty_Type as Ty0 with type self = t
+  function from_ty (_x : Ty0.ty) : t
+end
 module C14AssocInLogic_FromTy_Interface
   type t
   clone C14AssocInLogic_Assoc_Ty_Type as Ty0 with type self = t
@@ -15,6 +20,11 @@ module C14AssocInLogic_FromTy
   val from_ty (_x : Ty0.ty) : t
     ensures { result = from_ty _x }
     
+end
+module C14AssocInLogic_ToTy_Stub
+  type t
+  clone C14AssocInLogic_Assoc_Ty_Type as Ty0 with type self = t
+  function to_ty (_x : t) : Ty0.ty
 end
 module C14AssocInLogic_ToTy_Interface
   type t
@@ -32,8 +42,8 @@ end
 module C14AssocInLogic_Test_Interface
   type t
   clone C14AssocInLogic_Assoc_Ty_Type as Ty0 with type self = t
-  clone C14AssocInLogic_FromTy_Interface as FromTy0 with type t = t, type Ty0.ty = Ty0.ty
-  clone C14AssocInLogic_ToTy_Interface as ToTy0 with type t = t, type Ty0.ty = Ty0.ty
+  clone C14AssocInLogic_FromTy_Stub as FromTy0 with type t = t, type Ty0.ty = Ty0.ty
+  clone C14AssocInLogic_ToTy_Stub as ToTy0 with type t = t, type Ty0.ty = Ty0.ty
   val test [@cfg:stackify] (_a : t) : ()
     ensures { [#"../14_assoc_in_logic.rs" 22 10 22 34] _a = FromTy0.from_ty (ToTy0.to_ty _a) }
     
@@ -41,8 +51,8 @@ end
 module C14AssocInLogic_Test
   type t
   clone C14AssocInLogic_Assoc_Ty_Type as Ty0 with type self = t
-  clone C14AssocInLogic_FromTy as FromTy0 with type t = t, type Ty0.ty = Ty0.ty
-  clone C14AssocInLogic_ToTy as ToTy0 with type t = t, type Ty0.ty = Ty0.ty
+  clone C14AssocInLogic_FromTy_Interface as FromTy0 with type t = t, type Ty0.ty = Ty0.ty
+  clone C14AssocInLogic_ToTy_Interface as ToTy0 with type t = t, type Ty0.ty = Ty0.ty
   val test [@cfg:stackify] (_a : t) : ()
     ensures { [#"../14_assoc_in_logic.rs" 22 10 22 34] _a = FromTy0.from_ty (ToTy0.to_ty _a) }
     

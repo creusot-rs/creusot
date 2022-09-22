@@ -28,6 +28,11 @@ module IncSome2Tree_Tree_Type
       | C_Leaf -> any t_tree
       end
 end
+module IncSome2Tree_Impl1_Sum_Stub
+  use mach.int.Int
+  use IncSome2Tree_Tree_Type as IncSome2Tree_Tree_Type
+  function sum (self : IncSome2Tree_Tree_Type.t_tree) : int
+end
 module IncSome2Tree_Impl1_Sum_Interface
   use mach.int.Int
   use IncSome2Tree_Tree_Type as IncSome2Tree_Tree_Type
@@ -47,20 +52,29 @@ module IncSome2Tree_Impl1_Sum
     ensures { result = sum self }
     
 end
+module IncSome2Tree_Impl1_LemmaSumNonneg_Stub
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Borrow
+  use IncSome2Tree_Tree_Type as IncSome2Tree_Tree_Type
+  clone IncSome2Tree_Impl1_Sum_Stub as Sum0
+  function lemma_sum_nonneg (self : IncSome2Tree_Tree_Type.t_tree) : ()
+end
 module IncSome2Tree_Impl1_LemmaSumNonneg_Interface
   use mach.int.Int
   use mach.int.Int32
   use prelude.Borrow
   use IncSome2Tree_Tree_Type as IncSome2Tree_Tree_Type
-  clone IncSome2Tree_Impl1_Sum_Interface as Sum0
+  clone IncSome2Tree_Impl1_Sum_Stub as Sum0
   function lemma_sum_nonneg (self : IncSome2Tree_Tree_Type.t_tree) : ()
+  axiom lemma_sum_nonneg_spec : forall self : IncSome2Tree_Tree_Type.t_tree . [#"../inc_some_2_tree.rs" 27 14 27 29] Sum0.sum self >= 0
 end
 module IncSome2Tree_Impl1_LemmaSumNonneg
   use mach.int.Int
   use mach.int.Int32
   use prelude.Borrow
   use IncSome2Tree_Tree_Type as IncSome2Tree_Tree_Type
-  clone IncSome2Tree_Impl1_Sum_Interface as Sum0
+  clone IncSome2Tree_Impl1_Sum_Stub as Sum0
   function lemma_sum_nonneg [#"../inc_some_2_tree.rs" 28 4 28 30] (self : IncSome2Tree_Tree_Type.t_tree) : ()
   val lemma_sum_nonneg (self : IncSome2Tree_Tree_Type.t_tree) : ()
     ensures { result = lemma_sum_nonneg self }
@@ -93,7 +107,7 @@ module IncSome2Tree_Impl1_SumX_Interface
   use mach.int.UInt32
   use prelude.Borrow
   use IncSome2Tree_Tree_Type as IncSome2Tree_Tree_Type
-  clone IncSome2Tree_Impl1_Sum_Interface as Sum0
+  clone IncSome2Tree_Impl1_Sum_Stub as Sum0
   val sum_x [@cfg:stackify] (self : IncSome2Tree_Tree_Type.t_tree) : uint32
     requires {[#"../inc_some_2_tree.rs" 38 15 38 38] Sum0.sum self <= 1000000}
     ensures { [#"../inc_some_2_tree.rs" 39 14 39 35] UInt32.to_int result = Sum0.sum self }
@@ -173,6 +187,11 @@ module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
   type modelTy
 end
+module CreusotContracts_Logic_Model_Model_Model_Stub
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
@@ -186,6 +205,12 @@ module CreusotContracts_Logic_Model_Model_Model
     ensures { result = model self }
     
 end
+module CreusotContracts_Logic_Model_Impl1_Model_Stub
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : borrowed t) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
   use prelude.Borrow
@@ -196,7 +221,7 @@ module CreusotContracts_Logic_Model_Impl1_Model
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : borrowed t) : ModelTy0.modelTy =
     Model0.model ( * self)
@@ -208,6 +233,11 @@ module CreusotContracts_Logic_Int_Impl14_ModelTy_Type
   use mach.int.Int
   type modelTy  =
     int
+end
+module CreusotContracts_Logic_Int_Impl14_Model_Stub
+  use mach.int.Int
+  use mach.int.UInt32
+  function model (self : uint32) : int
 end
 module CreusotContracts_Logic_Int_Impl14_Model_Interface
   use mach.int.Int
@@ -222,6 +252,11 @@ module CreusotContracts_Logic_Int_Impl14_Model
   val model (self : uint32) : int
     ensures { result = model self }
     
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
@@ -272,9 +307,9 @@ module IncSome2Tree_Impl1_TakeSomeRest_Interface
   use mach.int.UInt32
   clone CreusotContracts_Logic_Int_Impl14_ModelTy_Type as ModelTy0
   use IncSome2Tree_Tree_Type as IncSome2Tree_Tree_Type
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = uint32,
+  clone CreusotContracts_Logic_Model_Impl1_Model_Stub as Model0 with type t = uint32,
     type ModelTy0.modelTy = ModelTy0.modelTy
-  clone IncSome2Tree_Impl1_Sum_Interface as Sum0
+  clone IncSome2Tree_Impl1_Sum_Stub as Sum0
   val take_some_rest [@cfg:stackify] (self : borrowed (IncSome2Tree_Tree_Type.t_tree)) : (borrowed uint32, borrowed (IncSome2Tree_Tree_Type.t_tree))
     ensures { [#"../inc_some_2_tree.rs" 54 14 55 70] Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ (let (a, _) = result in a)) + Sum0.sum ( ^ (let (_, a) = result in a)) - Model0.model (let (a, _) = result in a) - Sum0.sum ( * (let (_, a) = result in a)) }
     ensures { [#"../inc_some_2_tree.rs" 56 14 56 37] Model0.model (let (a, _) = result in a) <= Sum0.sum ( * self) }
@@ -442,6 +477,10 @@ module IncSome2Tree_Impl1_TakeSomeRest
   }
   
 end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
+end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
@@ -453,6 +492,11 @@ module CreusotContracts_Logic_Resolve_Resolve_Resolve
     ensures { result = resolve self }
     
 end
+module CreusotContracts_Logic_Resolve_Impl0_Resolve_Stub
+  type t1
+  type t2
+  predicate resolve (self : (t1, t2))
+end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve_Interface
   type t1
   type t2
@@ -461,8 +505,8 @@ end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve
   type t1
   type t2
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = t2
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t1
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve1 with type self = t2
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve0 with type self = t1
   predicate resolve (self : (t1, t2)) =
     Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
   val resolve (self : (t1, t2)) : bool
@@ -474,7 +518,7 @@ module IncSome2Tree_IncSome2Tree_Interface
   use mach.int.Int
   use mach.int.Int32
   use IncSome2Tree_Tree_Type as IncSome2Tree_Tree_Type
-  clone IncSome2Tree_Impl1_Sum_Interface as Sum0
+  clone IncSome2Tree_Impl1_Sum_Stub as Sum0
   val inc_some_2_tree [@cfg:stackify] (t : IncSome2Tree_Tree_Type.t_tree) (j : uint32) (k : uint32) : ()
     requires {[#"../inc_some_2_tree.rs" 79 11 79 41] Sum0.sum t + UInt32.to_int j + UInt32.to_int k <= 1000000}
     

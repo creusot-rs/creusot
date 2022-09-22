@@ -70,6 +70,15 @@ module SparseArray_Sparse_Type
       | C_Sparse _ _ a _ _ -> a
       end
 end
+module CreusotContracts_Std1_Vec_Impl0_Model_Stub
+  type t
+  type a
+  use seq.Seq
+  use mach.int.Int
+  use prelude.UIntSize
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   type t
   type a
@@ -78,6 +87,7 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use prelude.UIntSize
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -91,6 +101,13 @@ module CreusotContracts_Std1_Vec_Impl0_Model
     ensures { result = model self }
     
   axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
+end
+module SparseArray_Impl1_IsElt_Stub
+  type t
+  use prelude.Borrow
+  use mach.int.Int
+  use SparseArray_Sparse_Type as SparseArray_Sparse_Type
+  predicate is_elt (self : SparseArray_Sparse_Type.t_sparse t) (i : int)
 end
 module SparseArray_Impl1_IsElt_Interface
   type t
@@ -110,7 +127,7 @@ module SparseArray_Impl1_IsElt
   use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = usize,
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global, axiom .
   predicate is_elt [#"../sparse_array.rs" 52 4 52 36] (self : SparseArray_Sparse_Type.t_sparse t) (i : int) =
     [#"../sparse_array.rs" 53 20 55 66] 0 <= i /\ i < UInt64.to_int (SparseArray_Sparse_Type.sparse_size self) /\ UInt64.to_int (Seq.get (Model0.model (SparseArray_Sparse_Type.sparse_idx self)) i) < UInt64.to_int (SparseArray_Sparse_Type.sparse_n self) /\ UInt64.to_int (Seq.get (Model0.model (SparseArray_Sparse_Type.sparse_back self)) (UInt64.to_int (Seq.get (Model0.model (SparseArray_Sparse_Type.sparse_idx self)) i))) = i
@@ -124,6 +141,20 @@ module Core_Option_Option_Type
     | C_Some 't
     
 end
+module SparseArray_Impl0_Model_Stub
+  type t
+  use seq.Seq
+  use mach.int.UInt64
+  use mach.int.Int
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use SparseArray_Sparse_Type as SparseArray_Sparse_Type
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+    axiom .
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone SparseArray_Impl1_IsElt_Stub as IsElt0 with type t = t
+  function model (self : SparseArray_Sparse_Type.t_sparse t) : Seq.seq (Core_Option_Option_Type.t_option t)
+end
 module SparseArray_Impl0_Model_Interface
   type t
   use seq.Seq
@@ -132,11 +163,16 @@ module SparseArray_Impl0_Model_Interface
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use SparseArray_Sparse_Type as SparseArray_Sparse_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+    axiom .
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone SparseArray_Impl1_IsElt_Interface as IsElt0 with type t = t
+  clone SparseArray_Impl1_IsElt_Stub as IsElt0 with type t = t
   function model (self : SparseArray_Sparse_Type.t_sparse t) : Seq.seq (Core_Option_Option_Type.t_option t)
+  axiom model_spec : forall self : SparseArray_Sparse_Type.t_sparse t . ([#"../sparse_array.rs" 35 4 37 6] forall i : int . Seq.get (model self) i = (if IsElt0.is_elt self i then
+    Core_Option_Option_Type.C_Some (Seq.get (Model0.model (SparseArray_Sparse_Type.sparse_values self)) i)
+  else
+    Core_Option_Option_Type.C_None
+  )) && ([#"../sparse_array.rs" 34 14 34 42] Seq.length (model self) = UInt64.to_int (SparseArray_Sparse_Type.sparse_size self))
 end
 module SparseArray_Impl0_Model
   type t
@@ -146,10 +182,10 @@ module SparseArray_Impl0_Model
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use SparseArray_Sparse_Type as SparseArray_Sparse_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+    axiom .
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone SparseArray_Impl1_IsElt_Interface as IsElt0 with type t = t
+  clone SparseArray_Impl1_IsElt_Stub as IsElt0 with type t = t
   function model [#"../sparse_array.rs" 38 4 38 35] (self : SparseArray_Sparse_Type.t_sparse t) : Seq.seq (Core_Option_Option_Type.t_option t)
     
   val model (self : SparseArray_Sparse_Type.t_sparse t) : Seq.seq (Core_Option_Option_Type.t_option t)
@@ -165,6 +201,11 @@ module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
   type modelTy
 end
+module CreusotContracts_Logic_Model_Model_Model_Stub
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
@@ -178,6 +219,12 @@ module CreusotContracts_Logic_Model_Model_Model
     ensures { result = model self }
     
 end
+module CreusotContracts_Logic_Model_Impl0_Model_Stub
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : t) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Impl0_Model_Interface
   type t
   use prelude.Borrow
@@ -188,7 +235,7 @@ module CreusotContracts_Logic_Model_Impl0_Model
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : t) : ModelTy0.modelTy =
     Model0.model self
@@ -202,6 +249,12 @@ module SparseArray_Impl0_ModelTy_Type
   use Core_Option_Option_Type as Core_Option_Option_Type
   type modelTy  =
     Seq.seq (Core_Option_Option_Type.t_option t)
+end
+module SparseArray_Impl1_SparseInv_Stub
+  type t
+  use prelude.Borrow
+  use SparseArray_Sparse_Type as SparseArray_Sparse_Type
+  predicate sparse_inv (self : SparseArray_Sparse_Type.t_sparse t)
 end
 module SparseArray_Impl1_SparseInv_Interface
   type t
@@ -222,11 +275,11 @@ module SparseArray_Impl1_SparseInv
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone SparseArray_Impl0_ModelTy_Type as ModelTy0 with type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model2 with type t = usize,
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model2 with type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global, axiom .
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global, axiom .
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = SparseArray_Sparse_Type.t_sparse t,
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model1 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+    axiom .
+  clone CreusotContracts_Logic_Model_Impl0_Model_Stub as Model0 with type t = SparseArray_Sparse_Type.t_sparse t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   predicate sparse_inv [#"../sparse_array.rs" 62 4 62 32] (self : SparseArray_Sparse_Type.t_sparse t) =
     [#"../sparse_array.rs" 63 8 74 9] UInt64.to_int (SparseArray_Sparse_Type.sparse_n self) <= UInt64.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (Model0.model self) = UInt64.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (Model1.model (SparseArray_Sparse_Type.sparse_values self)) = UInt64.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (Model2.model (SparseArray_Sparse_Type.sparse_idx self)) = UInt64.to_int (SparseArray_Sparse_Type.sparse_size self) /\ Seq.length (Model2.model (SparseArray_Sparse_Type.sparse_back self)) = UInt64.to_int (SparseArray_Sparse_Type.sparse_size self) /\ (forall i : int . 0 <= i /\ i < UInt64.to_int (SparseArray_Sparse_Type.sparse_n self) -> match (Seq.get (Model2.model (SparseArray_Sparse_Type.sparse_back self)) i) with
@@ -235,6 +288,12 @@ module SparseArray_Impl1_SparseInv
   val sparse_inv (self : SparseArray_Sparse_Type.t_sparse t) : bool
     ensures { result = sparse_inv self }
     
+end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Stub
+  type self
+  type t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface
   type self
@@ -255,6 +314,13 @@ module Core_Slice_Index_SliceIndex_Output_Type
   type self
   type t
   type output
+end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Stub
+  type self
+  type t
+  clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = self, type t = t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface
   type self
@@ -289,11 +355,11 @@ module Alloc_Vec_Impl16_Index_Interface
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Stub as HasValue0 with type self = i, type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Stub as InBounds0 with type self = i, type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = a, axiom .
   val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
@@ -319,6 +385,10 @@ module Alloc_Vec_Impl16_Index
     ensures { HasValue0.has_value index (Model0.model self) result }
     
 end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
+end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
@@ -329,6 +399,13 @@ module CreusotContracts_Logic_Resolve_Resolve_Resolve
   val resolve (self : self) : bool
     ensures { result = resolve self }
     
+end
+module CreusotContracts_Std1_Slice_Impl3_InBounds_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl3_InBounds_Interface
   type t
@@ -348,6 +425,13 @@ module CreusotContracts_Std1_Slice_Impl3_InBounds
   val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
+end
+module CreusotContracts_Std1_Slice_Impl3_HasValue_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
 end
 module CreusotContracts_Std1_Slice_Impl3_HasValue_Interface
   type t
@@ -383,9 +467,9 @@ module SparseArray_Impl1_Get_Interface
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone SparseArray_Impl0_ModelTy_Type as ModelTy0 with type t = t
   use SparseArray_Sparse_Type as SparseArray_Sparse_Type
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = SparseArray_Sparse_Type.t_sparse t,
+  clone CreusotContracts_Logic_Model_Impl0_Model_Stub as Model0 with type t = SparseArray_Sparse_Type.t_sparse t,
     type ModelTy0.modelTy = ModelTy0.modelTy
-  clone SparseArray_Impl1_SparseInv_Interface as SparseInv0 with type t = t
+  clone SparseArray_Impl1_SparseInv_Stub as SparseInv0 with type t = t
   val get [@cfg:stackify] (self : SparseArray_Sparse_Type.t_sparse t) (i : usize) : Core_Option_Option_Type.t_option t
     requires {[#"../sparse_array.rs" 79 15 79 32] SparseInv0.sparse_inv self}
     requires {[#"../sparse_array.rs" 80 15 80 33] UInt64.to_int i < Seq.length (Model0.model self)}
@@ -545,15 +629,26 @@ module SparseArray_Impl1_Get
   }
   
 end
+module SparseArray_Impl1_LemmaPermutation_Stub
+  type t
+  use mach.int.Int
+  use mach.int.Int32
+  use mach.int.UInt64
+  use SparseArray_Sparse_Type as SparseArray_Sparse_Type
+  clone SparseArray_Impl1_IsElt_Stub as IsElt0 with type t = t
+  clone SparseArray_Impl1_SparseInv_Stub as SparseInv0 with type t = t
+  function lemma_permutation (self : SparseArray_Sparse_Type.t_sparse t) (i : int) : ()
+end
 module SparseArray_Impl1_LemmaPermutation_Interface
   type t
   use mach.int.Int
   use mach.int.Int32
   use mach.int.UInt64
   use SparseArray_Sparse_Type as SparseArray_Sparse_Type
-  clone SparseArray_Impl1_IsElt_Interface as IsElt0 with type t = t
-  clone SparseArray_Impl1_SparseInv_Interface as SparseInv0 with type t = t
+  clone SparseArray_Impl1_IsElt_Stub as IsElt0 with type t = t
+  clone SparseArray_Impl1_SparseInv_Stub as SparseInv0 with type t = t
   function lemma_permutation (self : SparseArray_Sparse_Type.t_sparse t) (i : int) : ()
+  axiom lemma_permutation_spec : forall self : SparseArray_Sparse_Type.t_sparse t, i : int . ([#"../sparse_array.rs" 101 15 101 32] SparseInv0.sparse_inv self) -> ([#"../sparse_array.rs" 102 15 102 34] SparseArray_Sparse_Type.sparse_n self = SparseArray_Sparse_Type.sparse_size self) -> ([#"../sparse_array.rs" 103 15 103 41] 0 <= i /\ i < UInt64.to_int (SparseArray_Sparse_Type.sparse_size self)) -> ([#"../sparse_array.rs" 104 14 104 28] IsElt0.is_elt self i)
 end
 module SparseArray_Impl1_LemmaPermutation
   type t
@@ -561,8 +656,8 @@ module SparseArray_Impl1_LemmaPermutation
   use mach.int.Int32
   use mach.int.UInt64
   use SparseArray_Sparse_Type as SparseArray_Sparse_Type
-  clone SparseArray_Impl1_IsElt_Interface as IsElt0 with type t = t
-  clone SparseArray_Impl1_SparseInv_Interface as SparseInv0 with type t = t
+  clone SparseArray_Impl1_IsElt_Stub as IsElt0 with type t = t
+  clone SparseArray_Impl1_SparseInv_Stub as SparseInv0 with type t = t
   function lemma_permutation [#"../sparse_array.rs" 105 4 105 38] (self : SparseArray_Sparse_Type.t_sparse t) (i : int) : ()
     
    =
@@ -606,6 +701,12 @@ module SparseArray_Impl1_LemmaPermutation_Impl
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../sparse_array.rs" 100 4 100 12] ()
 end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Stub
+  type self
+  type t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  predicate resolve_elswhere (self : self) (old' : ModelTy0.modelTy) (fin : ModelTy0.modelTy)
+end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface
   type self
   type t
@@ -631,13 +732,13 @@ module Alloc_Vec_Impl17_IndexMut_Interface
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere0 with type self = i,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Stub as ResolveElswhere0 with type self = i,
     type t = seq t, type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Stub as HasValue0 with type self = i, type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Stub as InBounds0 with type self = i, type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = a, axiom .
   val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (Model0.model ( * self))}
     ensures { HasValue0.has_value index (Model0.model ( * self)) ( * result) }
@@ -676,6 +777,11 @@ module CreusotContracts_Logic_Ghost_Ghost_Type
     | C_Ghost 't
     
 end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
@@ -689,6 +795,13 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
     
+end
+module CreusotContracts_Std1_Slice_Impl3_ResolveElswhere_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  predicate resolve_elswhere [@inline:trivial] (self : usize) (old' : Seq.seq t) (fin : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl3_ResolveElswhere_Interface
   type t
@@ -719,14 +832,14 @@ module SparseArray_Impl1_Set_Interface
   use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model1 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+    axiom .
   use SparseArray_Sparse_Type as SparseArray_Sparse_Type
-  clone SparseArray_Impl1_IsElt_Interface as IsElt0 with type t = t
+  clone SparseArray_Impl1_IsElt_Stub as IsElt0 with type t = t
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone SparseArray_Impl0_Model_Interface as Model0 with type t = t, predicate IsElt0.is_elt = IsElt0.is_elt,
+  clone SparseArray_Impl0_Model_Stub as Model0 with type t = t, predicate IsElt0.is_elt = IsElt0.is_elt,
     function Model0.model = Model1.model, axiom .
-  clone SparseArray_Impl1_SparseInv_Interface as SparseInv0 with type t = t
+  clone SparseArray_Impl1_SparseInv_Stub as SparseInv0 with type t = t
   val set [@cfg:stackify] (self : borrowed (SparseArray_Sparse_Type.t_sparse t)) (i : usize) (v : t) : ()
     requires {[#"../sparse_array.rs" 109 15 109 35] SparseInv0.sparse_inv ( * self)}
     requires {[#"../sparse_array.rs" 110 15 110 34] UInt64.to_int i < Seq.length (Model0.model ( * self))}
@@ -959,8 +1072,8 @@ module Alloc_Vec_FromElem_Interface
   use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+    axiom .
   val from_elem [@cfg:stackify] (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (Model0.model result) = UInt64.to_int n }
     ensures { forall i : int . 0 <= i /\ i < UInt64.to_int n -> Seq.get (Model0.model result) i = elem }
@@ -989,14 +1102,14 @@ module SparseArray_Create_Interface
   use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model1 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+    axiom .
   use SparseArray_Sparse_Type as SparseArray_Sparse_Type
-  clone SparseArray_Impl1_IsElt_Interface as IsElt0 with type t = t
+  clone SparseArray_Impl1_IsElt_Stub as IsElt0 with type t = t
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone SparseArray_Impl0_Model_Interface as Model0 with type t = t, predicate IsElt0.is_elt = IsElt0.is_elt,
+  clone SparseArray_Impl0_Model_Stub as Model0 with type t = t, predicate IsElt0.is_elt = IsElt0.is_elt,
     function Model0.model = Model1.model, axiom .
-  clone SparseArray_Impl1_SparseInv_Interface as SparseInv0 with type t = t
+  clone SparseArray_Impl1_SparseInv_Stub as SparseInv0 with type t = t
   val create [@cfg:stackify] (sz : usize) (dummy : t) : SparseArray_Sparse_Type.t_sparse t
     ensures { [#"../sparse_array.rs" 135 10 135 29] SparseInv0.sparse_inv result }
     ensures { [#"../sparse_array.rs" 136 10 136 27] SparseArray_Sparse_Type.sparse_size result = sz }
@@ -1087,6 +1200,11 @@ module CreusotContracts_Logic_Int_Impl26_ModelTy_Type
   use mach.int.Int
   type modelTy  =
     int
+end
+module CreusotContracts_Logic_Int_Impl26_Model_Stub
+  use mach.int.Int
+  use mach.int.Int32
+  function model (self : int32) : int
 end
 module CreusotContracts_Logic_Int_Impl26_Model_Interface
   use mach.int.Int

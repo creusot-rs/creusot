@@ -45,7 +45,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
         // Impl Refinement module
         let mut decls: Vec<_> = own_generic_decls_for(self.tcx, impl_id).collect();
-        let mut names = CloneMap::new(self.tcx, impl_id, true);
+        let mut names = CloneMap::new(self.tcx, impl_id, CloneLevel::Body);
 
         // names.param_env(param_env);
         let mut laws = Vec::new();
@@ -125,7 +125,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
     pub fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
         assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
 
-        let mut names = CloneMap::new(self.tcx, def_id, true);
+        let mut names = CloneMap::new(self.tcx, def_id, CloneLevel::Interface);
 
         let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
         let name = item_name(self.tcx, def_id, Namespace::TypeNS);
@@ -220,7 +220,7 @@ pub fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &Ass
 use crate::function::{all_generic_decls_for, own_generic_decls_for};
 use creusot_rustc::middle::ty::{subst::InternalSubsts, AssocItem, Binder};
 
-fn resolve_impl_source_opt<'tcx>(
+pub fn resolve_impl_source_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
@@ -231,7 +231,9 @@ fn resolve_impl_source_opt<'tcx>(
 
     let trait_ref = if let Some(assoc) = tcx.opt_associated_item(def_id) {
         match assoc.container {
-            ImplContainer => tcx.impl_trait_ref(assoc.container_id(tcx))?,
+            ImplContainer => {
+                EarlyBinder(tcx.impl_trait_ref(assoc.container_id(tcx))?).subst(tcx, substs)
+            }
             TraitContainer => TraitRef { def_id: assoc.container_id(tcx), substs },
         }
     } else {
@@ -305,6 +307,8 @@ pub fn resolve_assoc_item_opt<'tcx>(
 
     // If we're given an associated item that is already on an instance,
     // we don't need to resolve at all!
+    //
+    // FIXME: not true given specialization!
     if let AssocItemContainer::ImplContainer = assoc.container {
         return None;
     }

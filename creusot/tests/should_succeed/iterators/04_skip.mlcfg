@@ -1,4 +1,8 @@
 
+module C04Skip_Common_Iterator_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
 module C04Skip_Common_Iterator_Invariant_Interface
   type self
   predicate invariant' (self : self)
@@ -25,6 +29,10 @@ module C04Skip_Skip_Type
     match (self) with
       | C_Skip a _ -> a
       end
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
@@ -82,6 +90,12 @@ module C04Skip_Common_Iterator_Item_Type
   type self
   type item
 end
+module C04Skip_Common_Iterator_Produces_Stub
+  type self
+  use seq.Seq
+  clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = self
+  predicate produces (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+end
 module C04Skip_Common_Iterator_Produces_Interface
   type self
   use seq.Seq
@@ -97,6 +111,11 @@ module C04Skip_Common_Iterator_Produces
     ensures { result = produces self visited _3' }
     
 end
+module C04Skip_Common_Iterator_Completed_Stub
+  type self
+  use prelude.Borrow
+  predicate completed (self : borrowed self)
+end
 module C04Skip_Common_Iterator_Completed_Interface
   type self
   use prelude.Borrow
@@ -109,6 +128,12 @@ module C04Skip_Common_Iterator_Completed
   val completed (self : borrowed self) : bool
     ensures { result = completed self }
     
+end
+module C04Skip_Impl1_Completed_Stub
+  type i
+  use prelude.Borrow
+  use C04Skip_Skip_Type as C04Skip_Skip_Type
+  predicate completed (self : borrowed (C04Skip_Skip_Type.t_skip i))
 end
 module C04Skip_Impl1_Completed_Interface
   type i
@@ -124,29 +149,38 @@ module C04Skip_Impl1_Completed
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
-  clone C04Skip_Common_Iterator_Completed_Interface as Completed0 with type self = i
+  clone C04Skip_Common_Iterator_Completed_Stub as Completed0 with type self = i
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = i
-  clone C04Skip_Common_Iterator_Produces_Interface as Produces0 with type self = i, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Produces_Stub as Produces0 with type self = i, type Item0.item = Item0.item
   predicate completed [#"../04_skip.rs" 27 4 27 35] (self : borrowed (C04Skip_Skip_Type.t_skip i)) =
     [#"../04_skip.rs" 28 8 35 9] UInt64.to_int (C04Skip_Skip_Type.skip_n ( ^ self)) = 0 /\ (exists i : borrowed i . exists s : Seq.seq Item0.item . Seq.length s <= UInt64.to_int (C04Skip_Skip_Type.skip_n ( * self)) /\ Produces0.produces (C04Skip_Skip_Type.skip_iter ( * self)) s ( * i) /\ Completed0.completed i /\  ^ i = C04Skip_Skip_Type.skip_iter ( ^ self))
   val completed (self : borrowed (C04Skip_Skip_Type.t_skip i)) : bool
     ensures { result = completed self }
     
 end
+module C04Skip_Common_Iterator_ProducesRefl_Stub
+  type self
+  use seq.Seq
+  clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = self
+  clone C04Skip_Common_Iterator_Produces_Stub as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Invariant_Stub as Invariant0 with type self = self
+  function produces_refl (a : self) : ()
+end
 module C04Skip_Common_Iterator_ProducesRefl_Interface
   type self
   use seq.Seq
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = self
-  clone C04Skip_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  clone C04Skip_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
+  clone C04Skip_Common_Iterator_Produces_Stub as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Invariant_Stub as Invariant0 with type self = self
   function produces_refl (a : self) : ()
+  axiom produces_refl_spec : forall a : self . ([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a)
 end
 module C04Skip_Common_Iterator_ProducesRefl
   type self
   use seq.Seq
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = self
-  clone C04Skip_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  clone C04Skip_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
+  clone C04Skip_Common_Iterator_Produces_Stub as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Invariant_Stub as Invariant0 with type self = self
   function produces_refl [#"../common.rs" 16 4 16 30] (a : self) : ()
   val produces_refl (a : self) : ()
     requires {[#"../common.rs" 14 15 14 28] Invariant0.invariant' a}
@@ -154,20 +188,29 @@ module C04Skip_Common_Iterator_ProducesRefl
     
   axiom produces_refl_spec : forall a : self . ([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a)
 end
+module C04Skip_Common_Iterator_ProducesTrans_Stub
+  type self
+  use seq.Seq
+  clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = self
+  clone C04Skip_Common_Iterator_Produces_Stub as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Invariant_Stub as Invariant0 with type self = self
+  function produces_trans (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+end
 module C04Skip_Common_Iterator_ProducesTrans_Interface
   type self
   use seq.Seq
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = self
-  clone C04Skip_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  clone C04Skip_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
+  clone C04Skip_Common_Iterator_Produces_Stub as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Invariant_Stub as Invariant0 with type self = self
   function produces_trans (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) -> ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) -> ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) -> ([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C04Skip_Common_Iterator_ProducesTrans
   type self
   use seq.Seq
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = self
-  clone C04Skip_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  clone C04Skip_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
+  clone C04Skip_Common_Iterator_Produces_Stub as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Invariant_Stub as Invariant0 with type self = self
   function produces_trans [#"../common.rs" 25 4 25 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
     
   val produces_trans (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
@@ -179,6 +222,13 @@ module C04Skip_Common_Iterator_ProducesTrans
     ensures { result = produces_trans a ab b bc c }
     
   axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) -> ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) -> ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) -> ([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c)
+end
+module C04Skip_Impl1_Produces_Stub
+  type i
+  use seq.Seq
+  clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = i
+  use C04Skip_Skip_Type as C04Skip_Skip_Type
+  predicate produces (self : C04Skip_Skip_Type.t_skip i) (visited : Seq.seq Item0.item) (o : C04Skip_Skip_Type.t_skip i)
 end
 module C04Skip_Impl1_Produces_Interface
   type i
@@ -195,7 +245,7 @@ module C04Skip_Impl1_Produces
   use mach.int.UInt64
   use mach.int.Int
   use mach.int.Int32
-  clone C04Skip_Common_Iterator_Produces_Interface as Produces0 with type self = i, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Produces_Stub as Produces0 with type self = i, type Item0.item = Item0.item
   predicate produces [#"../04_skip.rs" 39 4 39 64] (self : C04Skip_Skip_Type.t_skip i) (visited : Seq.seq Item0.item) (o : C04Skip_Skip_Type.t_skip i)
     
    =
@@ -204,20 +254,29 @@ module C04Skip_Impl1_Produces
     ensures { result = produces self visited o }
     
 end
+module C04Skip_Impl1_ProducesRefl_Stub
+  type i
+  use seq.Seq
+  clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = i
+  use C04Skip_Skip_Type as C04Skip_Skip_Type
+  clone C04Skip_Impl1_Produces_Stub as Produces0 with type i = i, type Item0.item = Item0.item
+  function produces_refl (a : C04Skip_Skip_Type.t_skip i) : ()
+end
 module C04Skip_Impl1_ProducesRefl_Interface
   type i
   use seq.Seq
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = i
   use C04Skip_Skip_Type as C04Skip_Skip_Type
-  clone C04Skip_Impl1_Produces_Interface as Produces0 with type i = i, type Item0.item = Item0.item
+  clone C04Skip_Impl1_Produces_Stub as Produces0 with type i = i, type Item0.item = Item0.item
   function produces_refl (a : C04Skip_Skip_Type.t_skip i) : ()
+  axiom produces_refl_spec : forall a : C04Skip_Skip_Type.t_skip i . [#"../04_skip.rs" 50 14 50 39] Produces0.produces a (Seq.empty ) a
 end
 module C04Skip_Impl1_ProducesRefl
   type i
   use seq.Seq
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = i
   use C04Skip_Skip_Type as C04Skip_Skip_Type
-  clone C04Skip_Impl1_Produces_Interface as Produces0 with type i = i, type Item0.item = Item0.item
+  clone C04Skip_Impl1_Produces_Stub as Produces0 with type i = i, type Item0.item = Item0.item
   function produces_refl [#"../04_skip.rs" 51 4 51 29] (a : C04Skip_Skip_Type.t_skip i) : () =
     [#"../04_skip.rs" 49 4 49 10] ()
   val produces_refl (a : C04Skip_Skip_Type.t_skip i) : ()
@@ -228,9 +287,9 @@ end
 module C04Skip_Impl1_ProducesRefl_Impl
   type i
   use seq.Seq
-  clone C04Skip_Common_Iterator_Invariant as Invariant0 with type self = i
+  clone C04Skip_Common_Iterator_Invariant_Interface as Invariant0 with type self = i
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = i
-  clone C04Skip_Common_Iterator_Produces as Produces1 with type self = i, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Produces_Interface as Produces1 with type self = i, type Item0.item = Item0.item
   clone C04Skip_Common_Iterator_ProducesTrans as ProducesTrans0 with type self = i,
     predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item, axiom .
@@ -246,21 +305,31 @@ module C04Skip_Impl1_ProducesRefl_Impl
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../04_skip.rs" 49 4 49 10] ()
 end
+module C04Skip_Impl1_ProducesTrans_Stub
+  type i
+  use seq.Seq
+  clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = i
+  use C04Skip_Skip_Type as C04Skip_Skip_Type
+  clone C04Skip_Impl1_Produces_Stub as Produces0 with type i = i, type Item0.item = Item0.item
+  function produces_trans (a : C04Skip_Skip_Type.t_skip i) (ab : Seq.seq Item0.item) (b : C04Skip_Skip_Type.t_skip i) (bc : Seq.seq Item0.item) (c : C04Skip_Skip_Type.t_skip i) : ()
+    
+end
 module C04Skip_Impl1_ProducesTrans_Interface
   type i
   use seq.Seq
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = i
   use C04Skip_Skip_Type as C04Skip_Skip_Type
-  clone C04Skip_Impl1_Produces_Interface as Produces0 with type i = i, type Item0.item = Item0.item
+  clone C04Skip_Impl1_Produces_Stub as Produces0 with type i = i, type Item0.item = Item0.item
   function produces_trans (a : C04Skip_Skip_Type.t_skip i) (ab : Seq.seq Item0.item) (b : C04Skip_Skip_Type.t_skip i) (bc : Seq.seq Item0.item) (c : C04Skip_Skip_Type.t_skip i) : ()
     
+  axiom produces_trans_spec : forall a : C04Skip_Skip_Type.t_skip i, ab : Seq.seq Item0.item, b : C04Skip_Skip_Type.t_skip i, bc : Seq.seq Item0.item, c : C04Skip_Skip_Type.t_skip i . ([#"../04_skip.rs" 54 15 54 32] Produces0.produces a ab b) -> ([#"../04_skip.rs" 55 15 55 32] Produces0.produces b bc c) -> ([#"../04_skip.rs" 56 14 56 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C04Skip_Impl1_ProducesTrans
   type i
   use seq.Seq
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = i
   use C04Skip_Skip_Type as C04Skip_Skip_Type
-  clone C04Skip_Impl1_Produces_Interface as Produces0 with type i = i, type Item0.item = Item0.item
+  clone C04Skip_Impl1_Produces_Stub as Produces0 with type i = i, type Item0.item = Item0.item
   function produces_trans [#"../04_skip.rs" 57 4 57 90] (a : C04Skip_Skip_Type.t_skip i) (ab : Seq.seq Item0.item) (b : C04Skip_Skip_Type.t_skip i) (bc : Seq.seq Item0.item) (c : C04Skip_Skip_Type.t_skip i) : ()
     
    =
@@ -275,9 +344,9 @@ end
 module C04Skip_Impl1_ProducesTrans_Impl
   type i
   use seq.Seq
-  clone C04Skip_Common_Iterator_Invariant as Invariant0 with type self = i
+  clone C04Skip_Common_Iterator_Invariant_Interface as Invariant0 with type self = i
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = i
-  clone C04Skip_Common_Iterator_Produces as Produces1 with type self = i, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Produces_Interface as Produces1 with type self = i, type Item0.item = Item0.item
   clone C04Skip_Common_Iterator_ProducesTrans as ProducesTrans0 with type self = i,
     predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item, axiom .
@@ -301,6 +370,10 @@ module Core_Option_Option_Type
     | C_Some 't
     
 end
+module CreusotContracts_Std1_Default_DefaultSpec_DefaultLog_Stub
+  type self
+  function default_log (_ : ()) : self
+end
 module CreusotContracts_Std1_Default_DefaultSpec_DefaultLog_Interface
   type self
   function default_log (_ : ()) : self
@@ -315,7 +388,7 @@ end
 module Core_Mem_Take_Interface
   type t
   use prelude.Borrow
-  clone CreusotContracts_Std1_Default_DefaultSpec_DefaultLog_Interface as DefaultLog0 with type self = t
+  clone CreusotContracts_Std1_Default_DefaultSpec_DefaultLog_Stub as DefaultLog0 with type self = t
   val take [@cfg:stackify] (dest : borrowed t) : t
     ensures { result =  * dest }
     ensures {  ^ dest = DefaultLog0.default_log () }
@@ -335,10 +408,10 @@ module C04Skip_Common_Iterator_Next_Interface
   use prelude.Borrow
   use seq.Seq
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = self
-  clone C04Skip_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
-  clone C04Skip_Common_Iterator_Completed_Interface as Completed0 with type self = self
+  clone C04Skip_Common_Iterator_Produces_Stub as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Completed_Stub as Completed0 with type self = self
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone C04Skip_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
+  clone C04Skip_Common_Iterator_Invariant_Stub as Invariant0 with type self = self
   val next [@cfg:stackify] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
     requires {[#"../common.rs" 32 4 32 40] Invariant0.invariant' ( * self)}
     ensures { [#"../common.rs" 32 4 32 40] Invariant0.invariant' ( ^ self) }
@@ -353,10 +426,10 @@ module C04Skip_Common_Iterator_Next
   use prelude.Borrow
   use seq.Seq
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = self
-  clone C04Skip_Common_Iterator_Produces as Produces0 with type self = self, type Item0.item = Item0.item
-  clone C04Skip_Common_Iterator_Completed as Completed0 with type self = self
+  clone C04Skip_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Completed_Interface as Completed0 with type self = self
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone C04Skip_Common_Iterator_Invariant as Invariant0 with type self = self
+  clone C04Skip_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
   val next [@cfg:stackify] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
     requires {[#"../common.rs" 32 4 32 40] Invariant0.invariant' ( * self)}
     ensures { [#"../common.rs" 32 4 32 40] Invariant0.invariant' ( ^ self) }
@@ -391,6 +464,11 @@ module CreusotContracts_Logic_Ghost_Ghost_Type
       | C_Ghost a -> a
       end
 end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
@@ -404,6 +482,12 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
     
+end
+module CreusotContracts_Logic_Ghost_Impl1_Inner_Stub
+  type t
+  use prelude.Borrow
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
 end
 module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
   type t
@@ -420,6 +504,11 @@ module CreusotContracts_Logic_Ghost_Impl1_Inner
   val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
     ensures { result = inner self }
     
+end
+module CreusotContracts_Std1_Default_Impl2_DefaultLog_Stub
+  use mach.int.Int
+  use prelude.UIntSize
+  function default_log (_ : ()) : usize
 end
 module CreusotContracts_Std1_Default_Impl2_DefaultLog_Interface
   use mach.int.Int
@@ -441,8 +530,8 @@ module C04Skip_Impl1_Next_Interface
   use seq.Seq
   use C04Skip_Skip_Type as C04Skip_Skip_Type
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = i
-  clone C04Skip_Impl1_Produces_Interface as Produces0 with type i = i, type Item0.item = Item0.item
-  clone C04Skip_Impl1_Completed_Interface as Completed0 with type i = i
+  clone C04Skip_Impl1_Produces_Stub as Produces0 with type i = i, type Item0.item = Item0.item
+  clone C04Skip_Impl1_Completed_Stub as Completed0 with type i = i
   use Core_Option_Option_Type as Core_Option_Option_Type
   val next [@cfg:stackify] (self : borrowed (C04Skip_Skip_Type.t_skip i)) : Core_Option_Option_Type.t_option Item0.item
     ensures { [#"../04_skip.rs" 59 14 62 5] match (result) with
@@ -455,10 +544,10 @@ module C04Skip_Impl1_Next
   type i
   use prelude.Borrow
   use seq.Seq
-  clone C04Skip_Common_Iterator_Invariant as Invariant0 with type self = i
-  clone C04Skip_Common_Iterator_Completed as Completed1 with type self = i
+  clone C04Skip_Common_Iterator_Invariant_Interface as Invariant0 with type self = i
+  clone C04Skip_Common_Iterator_Completed_Interface as Completed1 with type self = i
   clone C04Skip_Common_Iterator_Item_Type as Item0 with type self = i
-  clone C04Skip_Common_Iterator_Produces as Produces1 with type self = i, type Item0.item = Item0.item
+  clone C04Skip_Common_Iterator_Produces_Interface as Produces1 with type self = i, type Item0.item = Item0.item
   clone C04Skip_Common_Iterator_ProducesTrans as ProducesTrans0 with type self = i,
     predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item, axiom .
@@ -602,9 +691,9 @@ end
 module C04Skip_Impl1
   type i
   use seq.Seq
-  clone C04Skip_Common_Iterator_Completed as Completed2 with type self = i
+  clone C04Skip_Common_Iterator_Completed_Interface as Completed2 with type self = i
   clone C04Skip_Common_Iterator_Item_Type as Item2 with type self = i
-  clone C04Skip_Common_Iterator_Produces as Produces2 with type self = i, type Item0.item = Item2.item
+  clone C04Skip_Common_Iterator_Produces_Interface as Produces2 with type self = i, type Item0.item = Item2.item
   use C04Skip_Skip_Type as C04Skip_Skip_Type
   clone C04Skip_Common_Iterator_Invariant as Invariant0 with type self = C04Skip_Skip_Type.t_skip i
   clone C04Skip_Impl1_Item_Type as Item0 with type i = i, type Item0.item = Item2.item

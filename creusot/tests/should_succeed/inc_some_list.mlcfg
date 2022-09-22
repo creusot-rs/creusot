@@ -23,6 +23,11 @@ module IncSomeList_List_Type
       | C_Nil -> any t_list
       end
 end
+module IncSomeList_Impl1_Sum_Stub
+  use mach.int.Int
+  use IncSomeList_List_Type as IncSomeList_List_Type
+  function sum (self : IncSomeList_List_Type.t_list) : int
+end
 module IncSomeList_Impl1_Sum_Interface
   use mach.int.Int
   use IncSomeList_List_Type as IncSomeList_List_Type
@@ -42,20 +47,29 @@ module IncSomeList_Impl1_Sum
     ensures { result = sum self }
     
 end
+module IncSomeList_Impl1_LemmaSumNonneg_Stub
+  use mach.int.Int
+  use mach.int.Int32
+  use prelude.Borrow
+  use IncSomeList_List_Type as IncSomeList_List_Type
+  clone IncSomeList_Impl1_Sum_Stub as Sum0
+  function lemma_sum_nonneg (self : IncSomeList_List_Type.t_list) : ()
+end
 module IncSomeList_Impl1_LemmaSumNonneg_Interface
   use mach.int.Int
   use mach.int.Int32
   use prelude.Borrow
   use IncSomeList_List_Type as IncSomeList_List_Type
-  clone IncSomeList_Impl1_Sum_Interface as Sum0
+  clone IncSomeList_Impl1_Sum_Stub as Sum0
   function lemma_sum_nonneg (self : IncSomeList_List_Type.t_list) : ()
+  axiom lemma_sum_nonneg_spec : forall self : IncSomeList_List_Type.t_list . [#"../inc_some_list.rs" 27 14 27 29] Sum0.sum self >= 0
 end
 module IncSomeList_Impl1_LemmaSumNonneg
   use mach.int.Int
   use mach.int.Int32
   use prelude.Borrow
   use IncSomeList_List_Type as IncSomeList_List_Type
-  clone IncSomeList_Impl1_Sum_Interface as Sum0
+  clone IncSomeList_Impl1_Sum_Stub as Sum0
   function lemma_sum_nonneg [#"../inc_some_list.rs" 28 4 28 30] (self : IncSomeList_List_Type.t_list) : ()
   val lemma_sum_nonneg (self : IncSomeList_List_Type.t_list) : ()
     ensures { result = lemma_sum_nonneg self }
@@ -88,7 +102,7 @@ module IncSomeList_Impl1_SumX_Interface
   use mach.int.UInt32
   use prelude.Borrow
   use IncSomeList_List_Type as IncSomeList_List_Type
-  clone IncSomeList_Impl1_Sum_Interface as Sum0
+  clone IncSomeList_Impl1_Sum_Stub as Sum0
   val sum_x [@cfg:stackify] (self : IncSomeList_List_Type.t_list) : uint32
     requires {[#"../inc_some_list.rs" 35 15 35 38] Sum0.sum self <= 1000000}
     ensures { [#"../inc_some_list.rs" 36 14 36 35] UInt32.to_int result = Sum0.sum self }
@@ -153,6 +167,11 @@ module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
   type modelTy
 end
+module CreusotContracts_Logic_Model_Model_Model_Stub
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
@@ -166,6 +185,12 @@ module CreusotContracts_Logic_Model_Model_Model
     ensures { result = model self }
     
 end
+module CreusotContracts_Logic_Model_Impl1_Model_Stub
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : borrowed t) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
   use prelude.Borrow
@@ -176,7 +201,7 @@ module CreusotContracts_Logic_Model_Impl1_Model
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : borrowed t) : ModelTy0.modelTy =
     Model0.model ( * self)
@@ -188,6 +213,11 @@ module CreusotContracts_Logic_Int_Impl14_ModelTy_Type
   use mach.int.Int
   type modelTy  =
     int
+end
+module CreusotContracts_Logic_Int_Impl14_Model_Stub
+  use mach.int.Int
+  use mach.int.UInt32
+  function model (self : uint32) : int
 end
 module CreusotContracts_Logic_Int_Impl14_Model_Interface
   use mach.int.Int
@@ -207,6 +237,11 @@ module CreusotContracts_Logic_Ghost_Ghost_Type
   type t_ghost 't =
     | C_Ghost 't
     
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
@@ -257,9 +292,9 @@ module IncSomeList_Impl1_TakeSome_Interface
   use mach.int.UInt32
   clone CreusotContracts_Logic_Int_Impl14_ModelTy_Type as ModelTy0
   use IncSomeList_List_Type as IncSomeList_List_Type
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = uint32,
+  clone CreusotContracts_Logic_Model_Impl1_Model_Stub as Model0 with type t = uint32,
     type ModelTy0.modelTy = ModelTy0.modelTy
-  clone IncSomeList_Impl1_Sum_Interface as Sum0
+  clone IncSomeList_Impl1_Sum_Stub as Sum0
   val take_some [@cfg:stackify] (self : borrowed (IncSomeList_List_Type.t_list)) : borrowed uint32
     ensures { [#"../inc_some_list.rs" 44 14 44 62] Sum0.sum ( ^ self) - Sum0.sum ( * self) = UInt32.to_int ( ^ result) - Model0.model result }
     ensures { [#"../inc_some_list.rs" 45 14 45 35] Model0.model result <= Sum0.sum ( * self) }
@@ -394,7 +429,7 @@ module IncSomeList_IncSomeList_Interface
   use mach.int.Int
   use mach.int.Int32
   use IncSomeList_List_Type as IncSomeList_List_Type
-  clone IncSomeList_Impl1_Sum_Interface as Sum0
+  clone IncSomeList_Impl1_Sum_Stub as Sum0
   val inc_some_list [@cfg:stackify] (l : IncSomeList_List_Type.t_list) (k : uint32) : ()
     requires {[#"../inc_some_list.rs" 61 11 61 36] Sum0.sum l + UInt32.to_int k <= 1000000}
     

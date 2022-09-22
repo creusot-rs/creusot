@@ -26,6 +26,10 @@ module Core_Clone_Clone_Clone
     ensures { result = self }
     
 end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
+end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
@@ -95,6 +99,11 @@ module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
   type modelTy
 end
+module CreusotContracts_Logic_Model_Model_Model_Stub
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
@@ -108,6 +117,12 @@ module CreusotContracts_Logic_Model_Model_Model
     ensures { result = model self }
     
 end
+module CreusotContracts_Logic_Model_Impl0_Model_Stub
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : t) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Impl0_Model_Interface
   type t
   use prelude.Borrow
@@ -118,7 +133,7 @@ module CreusotContracts_Logic_Model_Impl0_Model
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : t) : ModelTy0.modelTy =
     Model0.model self
@@ -135,6 +150,15 @@ module DeriveMacros_Impl0_ModelTy_Type
   type modelTy  =
     DeriveMacros_Product_Type.t_product ModelTy0.modelTy ModelTy1.modelTy
 end
+module DeriveMacros_Impl0_Model_Stub
+  type a
+  type b
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = b
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = a
+  use DeriveMacros_Product_Type as DeriveMacros_Product_Type
+  function model (self : DeriveMacros_Product_Type.t_product a b) : DeriveMacros_Product_Type.t_product ModelTy0.modelTy ModelTy1.modelTy
+    
+end
 module DeriveMacros_Impl0_Model_Interface
   type a
   type b
@@ -150,9 +174,9 @@ module DeriveMacros_Impl0_Model
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = b
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = a
   use DeriveMacros_Product_Type as DeriveMacros_Product_Type
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = b,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model1 with type self = b,
     type ModelTy0.modelTy = ModelTy1.modelTy
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = a,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = a,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model [#"../derive_macros.rs" 21 4 21 35] (self : DeriveMacros_Product_Type.t_product a b) : DeriveMacros_Product_Type.t_product ModelTy0.modelTy ModelTy1.modelTy
     
@@ -167,9 +191,9 @@ module Core_Cmp_PartialEq_Eq_Interface
   type rhs
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model1 with type t = rhs,
+  clone CreusotContracts_Logic_Model_Impl0_Model_Stub as Model1 with type t = rhs,
     type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = self,
+  clone CreusotContracts_Logic_Model_Impl0_Model_Stub as Model0 with type t = self,
     type ModelTy0.modelTy = ModelTy0.modelTy
   val eq [@cfg:stackify] (self : self) (other : rhs) : bool
     ensures { result = (Model0.model self = Model1.model other) }
@@ -197,7 +221,7 @@ module DeriveMacros_Impl3_Eq_Interface
   use DeriveMacros_Product_Type as DeriveMacros_Product_Type
   clone DeriveMacros_Impl0_ModelTy_Type as ModelTy0 with type a = a, type b = b,
     type ModelTy0.modelTy = ModelTy1.modelTy, type ModelTy1.modelTy = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = DeriveMacros_Product_Type.t_product a b,
+  clone CreusotContracts_Logic_Model_Impl0_Model_Stub as Model0 with type t = DeriveMacros_Product_Type.t_product a b,
     type ModelTy0.modelTy = ModelTy0.modelTy
   val eq [@cfg:stackify] (self : DeriveMacros_Product_Type.t_product a b) (rhs : DeriveMacros_Product_Type.t_product a b) : bool
     ensures { [#"../derive_macros.rs" 7 16 7 25] result = (Model0.model self = Model0.model rhs) }
@@ -208,9 +232,11 @@ module DeriveMacros_Impl3_Eq
   type b
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy2 with type self = b
-  clone CreusotContracts_Logic_Model_Model_Model as Model3 with type self = b, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model3 with type self = b,
+    type ModelTy0.modelTy = ModelTy2.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = a
-  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = a, type ModelTy0.modelTy = ModelTy1.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model2 with type self = a,
+    type ModelTy0.modelTy = ModelTy1.modelTy
   use DeriveMacros_Product_Type as DeriveMacros_Product_Type
   clone DeriveMacros_Impl0_Model as Model1 with type a = a, type b = b, type ModelTy0.modelTy = ModelTy1.modelTy,
     type ModelTy1.modelTy = ModelTy2.modelTy, function Model0.model = Model2.model, function Model1.model = Model3.model
@@ -397,6 +423,15 @@ module DeriveMacros_Impl1_ModelTy_Type
   type modelTy  =
     DeriveMacros_Sum_Type.t_sum ModelTy0.modelTy ModelTy1.modelTy
 end
+module DeriveMacros_Impl1_Model_Stub
+  type a
+  type b
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = b
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = a
+  use DeriveMacros_Sum_Type as DeriveMacros_Sum_Type
+  function model (self : DeriveMacros_Sum_Type.t_sum a b) : DeriveMacros_Sum_Type.t_sum ModelTy0.modelTy ModelTy1.modelTy
+    
+end
 module DeriveMacros_Impl1_Model_Interface
   type a
   type b
@@ -412,9 +447,9 @@ module DeriveMacros_Impl1_Model
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = b
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = a
   use DeriveMacros_Sum_Type as DeriveMacros_Sum_Type
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = b,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model1 with type self = b,
     type ModelTy0.modelTy = ModelTy1.modelTy
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = a,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = a,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model [#"../derive_macros.rs" 36 4 36 35] (self : DeriveMacros_Sum_Type.t_sum a b) : DeriveMacros_Sum_Type.t_sum ModelTy0.modelTy ModelTy1.modelTy
     
@@ -427,6 +462,11 @@ module DeriveMacros_Impl1_Model
     ensures { result = model self }
     
 end
+module CreusotContracts_Logic_Resolve_Impl0_Resolve_Stub
+  type t1
+  type t2
+  predicate resolve (self : (t1, t2))
+end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve_Interface
   type t1
   type t2
@@ -435,8 +475,8 @@ end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve
   type t1
   type t2
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = t2
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t1
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve1 with type self = t2
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve0 with type self = t1
   predicate resolve (self : (t1, t2)) =
     Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
   val resolve (self : (t1, t2)) : bool
@@ -452,7 +492,7 @@ module DeriveMacros_Impl5_Eq_Interface
   use DeriveMacros_Sum_Type as DeriveMacros_Sum_Type
   clone DeriveMacros_Impl1_ModelTy_Type as ModelTy0 with type a = a, type b = b,
     type ModelTy0.modelTy = ModelTy1.modelTy, type ModelTy1.modelTy = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = DeriveMacros_Sum_Type.t_sum a b,
+  clone CreusotContracts_Logic_Model_Impl0_Model_Stub as Model0 with type t = DeriveMacros_Sum_Type.t_sum a b,
     type ModelTy0.modelTy = ModelTy0.modelTy
   val eq [@cfg:stackify] (self : DeriveMacros_Sum_Type.t_sum a b) (rhs : DeriveMacros_Sum_Type.t_sum a b) : bool
     ensures { [#"../derive_macros.rs" 26 16 26 25] result = (Model0.model self = Model0.model rhs) }
@@ -463,9 +503,11 @@ module DeriveMacros_Impl5_Eq
   type b
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy2 with type self = b
-  clone CreusotContracts_Logic_Model_Model_Model as Model3 with type self = b, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model3 with type self = b,
+    type ModelTy0.modelTy = ModelTy2.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = a
-  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = a, type ModelTy0.modelTy = ModelTy1.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model2 with type self = a,
+    type ModelTy0.modelTy = ModelTy1.modelTy
   use DeriveMacros_Sum_Type as DeriveMacros_Sum_Type
   clone DeriveMacros_Impl1_Model as Model1 with type a = a, type b = b, type ModelTy0.modelTy = ModelTy1.modelTy,
     type ModelTy1.modelTy = ModelTy2.modelTy, function Model0.model = Model2.model, function Model1.model = Model3.model
@@ -660,9 +702,11 @@ module DeriveMacros_Impl3
   type a
   type b
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy2 with type self = b
-  clone CreusotContracts_Logic_Model_Model_Model as Model3 with type self = b, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model3 with type self = b,
+    type ModelTy0.modelTy = ModelTy2.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = a
-  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = a, type ModelTy0.modelTy = ModelTy1.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model2 with type self = a,
+    type ModelTy0.modelTy = ModelTy1.modelTy
   use DeriveMacros_Product_Type as DeriveMacros_Product_Type
   clone DeriveMacros_Impl0_Model as Model1 with type a = a, type b = b, type ModelTy0.modelTy = ModelTy1.modelTy,
     type ModelTy1.modelTy = ModelTy2.modelTy, function Model0.model = Model2.model, function Model1.model = Model3.model
@@ -682,9 +726,11 @@ module DeriveMacros_Impl5
   type a
   type b
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy2 with type self = b
-  clone CreusotContracts_Logic_Model_Model_Model as Model3 with type self = b, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model3 with type self = b,
+    type ModelTy0.modelTy = ModelTy2.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = a
-  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = a, type ModelTy0.modelTy = ModelTy1.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model2 with type self = a,
+    type ModelTy0.modelTy = ModelTy1.modelTy
   use DeriveMacros_Sum_Type as DeriveMacros_Sum_Type
   clone DeriveMacros_Impl1_Model as Model1 with type a = a, type b = b, type ModelTy0.modelTy = ModelTy1.modelTy,
     type ModelTy1.modelTy = ModelTy2.modelTy, function Model0.model = Model2.model, function Model1.model = Model3.model
@@ -704,9 +750,11 @@ module DeriveMacros_Impl0
   type a
   type b
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy3 with type self = b
-  clone CreusotContracts_Logic_Model_Model_Model as Model3 with type self = b, type ModelTy0.modelTy = ModelTy3.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model3 with type self = b,
+    type ModelTy0.modelTy = ModelTy3.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy2 with type self = a
-  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = a, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model2 with type self = a,
+    type ModelTy0.modelTy = ModelTy2.modelTy
   use DeriveMacros_Product_Type as DeriveMacros_Product_Type
   clone DeriveMacros_Impl0_ModelTy_Type as ModelTy0 with type a = a, type b = b,
     type ModelTy0.modelTy = ModelTy2.modelTy, type ModelTy1.modelTy = ModelTy3.modelTy
@@ -721,9 +769,11 @@ module DeriveMacros_Impl1
   type a
   type b
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy3 with type self = b
-  clone CreusotContracts_Logic_Model_Model_Model as Model3 with type self = b, type ModelTy0.modelTy = ModelTy3.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model3 with type self = b,
+    type ModelTy0.modelTy = ModelTy3.modelTy
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy2 with type self = a
-  clone CreusotContracts_Logic_Model_Model_Model as Model2 with type self = a, type ModelTy0.modelTy = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model2 with type self = a,
+    type ModelTy0.modelTy = ModelTy2.modelTy
   use DeriveMacros_Sum_Type as DeriveMacros_Sum_Type
   clone DeriveMacros_Impl1_ModelTy_Type as ModelTy0 with type a = a, type b = b,
     type ModelTy0.modelTy = ModelTy2.modelTy, type ModelTy1.modelTy = ModelTy3.modelTy

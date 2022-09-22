@@ -33,6 +33,15 @@ module Alloc_Vec_Vec_Type
     | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
     
 end
+module CreusotContracts_Std1_Vec_Impl0_Model_Stub
+  type t
+  type a
+  use seq.Seq
+  use mach.int.Int
+  use prelude.UIntSize
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   type t
   type a
@@ -41,6 +50,7 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use prelude.UIntSize
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -67,8 +77,8 @@ module Alloc_Vec_Impl0_New_Interface
   use mach.int.Int32
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+    axiom .
   val new [@cfg:stackify] (_ : ()) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (Model0.model result) = 0 }
     
@@ -92,7 +102,7 @@ module Alloc_Vec_Impl1_Push_Interface
   use prelude.Borrow
   use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = a, axiom .
   val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
@@ -108,6 +118,10 @@ module Alloc_Vec_Impl1_Push
     ensures { Model0.model ( ^ self) = Seq.snoc (Model0.model ( * self)) value }
     
 end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
+end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
@@ -118,6 +132,12 @@ module CreusotContracts_Logic_Resolve_Resolve_Resolve
   val resolve (self : self) : bool
     ensures { result = resolve self }
     
+end
+module CreusotContracts_Std1_Vec_Impl3_Resolve_Stub
+  type t
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
 end
 module CreusotContracts_Std1_Vec_Impl3_Resolve_Interface
   type t
@@ -132,14 +152,18 @@ module CreusotContracts_Std1_Vec_Impl3_Resolve
   use mach.int.Int
   use mach.int.Int32
   use seq.Seq
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global, axiom .
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve0 with type self = t
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
+    axiom .
   predicate resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) =
     forall i : int . 0 <= i /\ i < Seq.length (Model0.model self) -> Resolve0.resolve (Seq.get (Model0.model self) i)
   val resolve (self : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) : bool
     ensures { result = resolve self }
     
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Stub
+  type t
+  predicate resolve (self : t)
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
   type t
@@ -159,7 +183,7 @@ module IndexRange_CreateArr_Interface
   use mach.int.Int32
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = int32,
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = int32,
     type a = Alloc_Alloc_Global_Type.t_global, axiom .
   val create_arr [@cfg:stackify] (_ : ()) : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global)
     ensures { [#"../index_range.rs" 7 4 12 25] Seq.length (Model0.model result) = 5 /\ Int32.to_int (Seq.get (Model0.model result) 0) = 0 /\ Int32.to_int (Seq.get (Model0.model result) 1) = 1 /\ Int32.to_int (Seq.get (Model0.model result) 2) = 2 /\ Int32.to_int (Seq.get (Model0.model result) 3) = 3 /\ Int32.to_int (Seq.get (Model0.model result) 4) = 4 }
@@ -261,6 +285,12 @@ module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
   type modelTy
 end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Stub
+  type self
+  type t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
+end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface
   type self
   type t
@@ -280,6 +310,13 @@ module Core_Slice_Index_SliceIndex_Output_Type
   type self
   type t
   type output
+end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Stub
+  type self
+  type t
+  clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = self, type t = t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface
   type self
@@ -314,11 +351,11 @@ module Alloc_Vec_Impl16_Index_Interface
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Stub as HasValue0 with type self = i, type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Stub as InBounds0 with type self = i, type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = a, axiom .
   val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
@@ -344,6 +381,11 @@ module Alloc_Vec_Impl16_Index
     ensures { HasValue0.has_value index (Model0.model self) result }
     
 end
+module CreusotContracts_Logic_Model_Model_Model_Stub
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
@@ -357,6 +399,12 @@ module CreusotContracts_Logic_Model_Model_Model
     ensures { result = model self }
     
 end
+module CreusotContracts_Logic_Model_Impl0_Model_Stub
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : t) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Impl0_Model_Interface
   type t
   use prelude.Borrow
@@ -367,7 +415,7 @@ module CreusotContracts_Logic_Model_Impl0_Model
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : t) : ModelTy0.modelTy =
     Model0.model self
@@ -384,7 +432,7 @@ module Core_Slice_Impl0_Len_Interface
   use mach.int.Int
   use prelude.UIntSize
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = seq t,
+  clone CreusotContracts_Logic_Model_Impl0_Model_Stub as Model0 with type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   val len [@cfg:stackify] (self : seq t) : usize
     ensures { Seq.length (Model0.model self) = UInt64.to_int result }
@@ -405,6 +453,14 @@ module Core_Slice_Impl0_Len
     ensures { Seq.length (Model0.model self) = UInt64.to_int result }
     
 end
+module CreusotContracts_Std1_Slice_Impl0_Model_Stub
+  type t
+  use seq.Seq
+  use mach.int.Int
+  use prelude.UIntSize
+  use prelude.Slice
+  function model (self : seq t) : Seq.seq t
+end
 module CreusotContracts_Std1_Slice_Impl0_Model_Interface
   type t
   use seq.Seq
@@ -412,6 +468,7 @@ module CreusotContracts_Std1_Slice_Impl0_Model_Interface
   use prelude.UIntSize
   use prelude.Slice
   function model (self : seq t) : Seq.seq t
+  axiom model_spec : forall self : seq t . model self = Slice.id self && Seq.length (model self) <= 18446744073709551615
 end
 module CreusotContracts_Std1_Slice_Impl0_Model
   type t
@@ -432,8 +489,8 @@ module Alloc_Vec_Impl10_Deref_Interface
   use prelude.Slice
   use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model1 with type t = t, type a = a, axiom .
-  clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model1 with type t = t, type a = a, axiom .
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model0 with type t = t, axiom .
   val deref [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : seq t
     ensures { Model0.model result = Model1.model self }
     
@@ -465,12 +522,12 @@ module Core_Slice_Impl0_Get_Interface
   use seq.Seq
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Stub as HasValue0 with type self = i, type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Stub as InBounds0 with type self = i, type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model0 with type t = t, axiom .
   val get [@cfg:stackify] (self : seq t) (index : i) : Core_Option_Option_Type.t_option Output0.output
     ensures { InBounds0.in_bounds index (Model0.model self) -> (exists r : Output0.output . result = Core_Option_Option_Type.C_Some r /\ HasValue0.has_value index (Model0.model self) r) }
     ensures { InBounds0.in_bounds index (Model0.model self) \/ result = Core_Option_Option_Type.C_None }
@@ -511,6 +568,12 @@ module Core_Option_Impl0_IsNone
     ensures { result = (self = Core_Option_Option_Type.C_None) }
     
 end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Stub
+  type self
+  type t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  predicate resolve_elswhere (self : self) (old' : ModelTy0.modelTy) (fin : ModelTy0.modelTy)
+end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface
   type self
   type t
@@ -536,13 +599,13 @@ module Alloc_Vec_Impl17_IndexMut_Interface
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Interface as ResolveElswhere0 with type self = i,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_ResolveElswhere_Stub as ResolveElswhere0 with type self = i,
     type t = seq t, type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Stub as HasValue0 with type self = i, type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Stub as InBounds0 with type self = i, type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = a, axiom .
   val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (Model0.model ( * self))}
     ensures { HasValue0.has_value index (Model0.model ( * self)) ( * result) }
@@ -585,7 +648,7 @@ module Alloc_Vec_Impl1_Len_Interface
   use mach.int.Int
   use prelude.UIntSize
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = a, axiom .
   val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
@@ -604,6 +667,11 @@ module Alloc_Vec_Impl1_Len
     ensures { UInt64.to_int result = Seq.length (Model0.model self) }
     
 end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
@@ -617,6 +685,14 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
     
+end
+module CreusotContracts_Std1_Slice_Impl4_InBounds_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate in_bounds (self : Core_Ops_Range_Range_Type.t_range usize) (seq : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl4_InBounds_Interface
   type t
@@ -639,6 +715,15 @@ module CreusotContracts_Std1_Slice_Impl4_InBounds
     ensures { result = in_bounds self seq }
     
 end
+module CreusotContracts_Std1_Slice_Impl4_HasValue_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  use prelude.Slice
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate has_value (self : Core_Ops_Range_Range_Type.t_range usize) (seq : Seq.seq t) (out : seq t)
+end
 module CreusotContracts_Std1_Slice_Impl4_HasValue_Interface
   type t
   use mach.int.Int
@@ -657,7 +742,7 @@ module CreusotContracts_Std1_Slice_Impl4_HasValue
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   use mach.int.UInt64
   use seq_ext.SeqExt
-  clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model0 with type t = t, axiom .
   predicate has_value (self : Core_Ops_Range_Range_Type.t_range usize) (seq : Seq.seq t) (out : seq t) =
     SeqExt.subsequence seq (UInt64.to_int (Core_Ops_Range_Range_Type.range_start self)) (UInt64.to_int (Core_Ops_Range_Range_Type.range_end self)) = Model0.model out
   val has_value (self : Core_Ops_Range_Range_Type.t_range usize) (seq : Seq.seq t) (out : seq t) : bool
@@ -670,6 +755,14 @@ module Core_Slice_Index_Impl3_Output_Type
   use seq.Seq
   type output  =
     seq t
+end
+module CreusotContracts_Std1_Slice_Impl4_ResolveElswhere_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate resolve_elswhere (self : Core_Ops_Range_Range_Type.t_range usize) (old' : Seq.seq t) (fin : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl4_ResolveElswhere_Interface
   type t
@@ -693,6 +786,13 @@ module CreusotContracts_Std1_Slice_Impl4_ResolveElswhere
     ensures { result = resolve_elswhere self old' fin }
     
 end
+module CreusotContracts_Std1_Slice_Impl3_InBounds_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
+end
 module CreusotContracts_Std1_Slice_Impl3_InBounds_Interface
   type t
   use mach.int.Int
@@ -711,6 +811,13 @@ module CreusotContracts_Std1_Slice_Impl3_InBounds
   val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
+end
+module CreusotContracts_Std1_Slice_Impl3_HasValue_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
 end
 module CreusotContracts_Std1_Slice_Impl3_HasValue_Interface
   type t
@@ -1459,6 +1566,14 @@ module Core_Ops_Range_RangeTo_Type
       | C_RangeTo a -> a
       end
 end
+module CreusotContracts_Std1_Slice_Impl5_InBounds_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  use Core_Ops_Range_RangeTo_Type as Core_Ops_Range_RangeTo_Type
+  predicate in_bounds (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (seq : Seq.seq t)
+end
 module CreusotContracts_Std1_Slice_Impl5_InBounds_Interface
   type t
   use mach.int.Int
@@ -1480,6 +1595,15 @@ module CreusotContracts_Std1_Slice_Impl5_InBounds
     ensures { result = in_bounds self seq }
     
 end
+module CreusotContracts_Std1_Slice_Impl5_HasValue_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  use prelude.Slice
+  use Core_Ops_Range_RangeTo_Type as Core_Ops_Range_RangeTo_Type
+  predicate has_value (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (seq : Seq.seq t) (out : seq t)
+end
 module CreusotContracts_Std1_Slice_Impl5_HasValue_Interface
   type t
   use mach.int.Int
@@ -1499,7 +1623,7 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue
   use mach.int.Int32
   use mach.int.UInt64
   use seq_ext.SeqExt
-  clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model0 with type t = t, axiom .
   predicate has_value (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (seq : Seq.seq t) (out : seq t) =
     SeqExt.subsequence seq 0 (UInt64.to_int (Core_Ops_Range_RangeTo_Type.rangeto_end self)) = Model0.model out
   val has_value (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (seq : Seq.seq t) (out : seq t) : bool
@@ -1512,6 +1636,14 @@ module Core_Slice_Index_Impl4_Output_Type
   use seq.Seq
   type output  =
     seq t
+end
+module CreusotContracts_Std1_Slice_Impl5_ResolveElswhere_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  use Core_Ops_Range_RangeTo_Type as Core_Ops_Range_RangeTo_Type
+  predicate resolve_elswhere (self : Core_Ops_Range_RangeTo_Type.t_rangeto usize) (old' : Seq.seq t) (fin : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl5_ResolveElswhere_Interface
   type t
@@ -2021,6 +2153,14 @@ module Core_Ops_Range_RangeFrom_Type
       | C_RangeFrom a -> a
       end
 end
+module CreusotContracts_Std1_Slice_Impl6_InBounds_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
+  predicate in_bounds (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (seq : Seq.seq t)
+end
 module CreusotContracts_Std1_Slice_Impl6_InBounds_Interface
   type t
   use mach.int.Int
@@ -2042,6 +2182,15 @@ module CreusotContracts_Std1_Slice_Impl6_InBounds
     ensures { result = in_bounds self seq }
     
 end
+module CreusotContracts_Std1_Slice_Impl6_HasValue_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  use prelude.Slice
+  use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
+  predicate has_value (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (seq : Seq.seq t) (out : seq t)
+end
 module CreusotContracts_Std1_Slice_Impl6_HasValue_Interface
   type t
   use mach.int.Int
@@ -2060,7 +2209,7 @@ module CreusotContracts_Std1_Slice_Impl6_HasValue
   use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
   use mach.int.UInt64
   use seq_ext.SeqExt
-  clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model0 with type t = t, axiom .
   predicate has_value (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (seq : Seq.seq t) (out : seq t) =
     SeqExt.subsequence seq (UInt64.to_int (Core_Ops_Range_RangeFrom_Type.rangefrom_start self)) (Seq.length seq) = Model0.model out
   val has_value (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (seq : Seq.seq t) (out : seq t) : bool
@@ -2073,6 +2222,15 @@ module Core_Slice_Index_Impl5_Output_Type
   use seq.Seq
   type output  =
     seq t
+end
+module CreusotContracts_Std1_Slice_Impl6_ResolveElswhere_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  use Core_Ops_Range_RangeFrom_Type as Core_Ops_Range_RangeFrom_Type
+  predicate resolve_elswhere (self : Core_Ops_Range_RangeFrom_Type.t_rangefrom usize) (old' : Seq.seq t) (fin : Seq.seq t)
+    
 end
 module CreusotContracts_Std1_Slice_Impl6_ResolveElswhere_Interface
   type t
@@ -2619,6 +2777,12 @@ module Core_Ops_Range_RangeFull_Type
     | C_RangeFull
     
 end
+module CreusotContracts_Std1_Slice_Impl7_InBounds_Stub
+  type t
+  use seq.Seq
+  use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
+  predicate in_bounds (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (_seq : Seq.seq t)
+end
 module CreusotContracts_Std1_Slice_Impl7_InBounds_Interface
   type t
   use seq.Seq
@@ -2635,6 +2799,13 @@ module CreusotContracts_Std1_Slice_Impl7_InBounds
     ensures { result = in_bounds self _seq }
     
 end
+module CreusotContracts_Std1_Slice_Impl7_HasValue_Stub
+  type t
+  use seq.Seq
+  use prelude.Slice
+  use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
+  predicate has_value (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (seq : Seq.seq t) (out : seq t)
+end
 module CreusotContracts_Std1_Slice_Impl7_HasValue_Interface
   type t
   use seq.Seq
@@ -2647,7 +2818,7 @@ module CreusotContracts_Std1_Slice_Impl7_HasValue
   use seq.Seq
   use prelude.Slice
   use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
-  clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model0 with type t = t, axiom .
   predicate has_value (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (seq : Seq.seq t) (out : seq t) =
     seq = Model0.model out
   val has_value (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (seq : Seq.seq t) (out : seq t) : bool
@@ -2660,6 +2831,12 @@ module Core_Slice_Index_Impl6_Output_Type
   use seq.Seq
   type output  =
     seq t
+end
+module CreusotContracts_Std1_Slice_Impl7_ResolveElswhere_Stub
+  type t
+  use seq.Seq
+  use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
+  predicate resolve_elswhere (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (_old : Seq.seq t) (_fin : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl7_ResolveElswhere_Interface
   type t
@@ -3149,6 +3326,14 @@ module Core_Ops_Range_RangeToInclusive_Type
       | C_RangeToInclusive a -> a
       end
 end
+module CreusotContracts_Std1_Slice_Impl8_InBounds_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  use Core_Ops_Range_RangeToInclusive_Type as Core_Ops_Range_RangeToInclusive_Type
+  predicate in_bounds (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (seq : Seq.seq t)
+end
 module CreusotContracts_Std1_Slice_Impl8_InBounds_Interface
   type t
   use mach.int.Int
@@ -3168,6 +3353,16 @@ module CreusotContracts_Std1_Slice_Impl8_InBounds
     UInt64.to_int (Core_Ops_Range_RangeToInclusive_Type.rangetoinclusive_end self) < Seq.length seq
   val in_bounds (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
+    
+end
+module CreusotContracts_Std1_Slice_Impl8_HasValue_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  use prelude.Slice
+  use Core_Ops_Range_RangeToInclusive_Type as Core_Ops_Range_RangeToInclusive_Type
+  predicate has_value (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (seq : Seq.seq t) (out : seq t)
     
 end
 module CreusotContracts_Std1_Slice_Impl8_HasValue_Interface
@@ -3190,7 +3385,7 @@ module CreusotContracts_Std1_Slice_Impl8_HasValue
   use mach.int.Int32
   use mach.int.UInt64
   use seq_ext.SeqExt
-  clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model0 with type t = t, axiom .
   predicate has_value (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (seq : Seq.seq t) (out : seq t)
     
    =
@@ -3205,6 +3400,15 @@ module Core_Slice_Index_Impl8_Output_Type
   use seq.Seq
   type output  =
     seq t
+end
+module CreusotContracts_Std1_Slice_Impl8_ResolveElswhere_Stub
+  type t
+  use mach.int.Int
+  use prelude.UIntSize
+  use seq.Seq
+  use Core_Ops_Range_RangeToInclusive_Type as Core_Ops_Range_RangeToInclusive_Type
+  predicate resolve_elswhere (self : Core_Ops_Range_RangeToInclusive_Type.t_rangetoinclusive usize) (old' : Seq.seq t) (fin : Seq.seq t)
+    
 end
 module CreusotContracts_Std1_Slice_Impl8_ResolveElswhere_Interface
   type t

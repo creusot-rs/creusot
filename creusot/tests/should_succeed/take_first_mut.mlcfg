@@ -10,6 +10,14 @@ module Core_Option_Option_Type
       | C_Some a -> a
       end
 end
+module CreusotContracts_Std1_Slice_Impl0_Model_Stub
+  type t
+  use seq.Seq
+  use mach.int.Int
+  use prelude.UIntSize
+  use prelude.Slice
+  function model (self : seq t) : Seq.seq t
+end
 module CreusotContracts_Std1_Slice_Impl0_Model_Interface
   type t
   use seq.Seq
@@ -17,6 +25,7 @@ module CreusotContracts_Std1_Slice_Impl0_Model_Interface
   use prelude.UIntSize
   use prelude.Slice
   function model (self : seq t) : Seq.seq t
+  axiom model_spec : forall self : seq t . model self = Slice.id self && Seq.length (model self) <= 18446744073709551615
 end
 module CreusotContracts_Std1_Slice_Impl0_Model
   type t
@@ -29,6 +38,11 @@ module CreusotContracts_Std1_Slice_Impl0_Model
     ensures { result = model self }
     
   axiom model_spec : forall self : seq t . model self = Slice.id self && Seq.length (model self) <= 18446744073709551615
+end
+module CreusotContracts_Logic_Seq_Impl2_Tail_Stub
+  type t
+  use seq.Seq
+  function tail (self : Seq.seq t) : Seq.seq t
 end
 module CreusotContracts_Logic_Seq_Impl2_Tail_Interface
   type t
@@ -47,6 +61,10 @@ module CreusotContracts_Logic_Seq_Impl2_Tail
     ensures { result = tail self }
     
 end
+module CreusotContracts_Std1_Default_DefaultSpec_DefaultLog_Stub
+  type self
+  function default_log (_ : ()) : self
+end
 module CreusotContracts_Std1_Default_DefaultSpec_DefaultLog_Interface
   type self
   function default_log (_ : ()) : self
@@ -61,7 +79,7 @@ end
 module Core_Mem_Take_Interface
   type t
   use prelude.Borrow
-  clone CreusotContracts_Std1_Default_DefaultSpec_DefaultLog_Interface as DefaultLog0 with type self = t
+  clone CreusotContracts_Std1_Default_DefaultSpec_DefaultLog_Stub as DefaultLog0 with type self = t
   val take [@cfg:stackify] (dest : borrowed t) : t
     ensures { result =  * dest }
     ensures {  ^ dest = DefaultLog0.default_log () }
@@ -80,6 +98,11 @@ module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
   type modelTy
 end
+module CreusotContracts_Logic_Model_Model_Model_Stub
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
@@ -93,6 +116,12 @@ module CreusotContracts_Logic_Model_Model_Model
     ensures { result = model self }
     
 end
+module CreusotContracts_Logic_Model_Impl1_Model_Stub
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : borrowed t) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
   use prelude.Borrow
@@ -103,7 +132,7 @@ module CreusotContracts_Logic_Model_Impl1_Model
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : borrowed t) : ModelTy0.modelTy =
     Model0.model ( * self)
@@ -125,9 +154,9 @@ module Core_Slice_Impl0_SplitFirstMut_Interface
   use prelude.Borrow
   use prelude.Slice
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
-  clone CreusotContracts_Logic_Seq_Impl2_Tail_Interface as Tail0 with type t = t
-  clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model1 with type t = t, axiom .
-  clone CreusotContracts_Logic_Model_Impl1_Model_Interface as Model0 with type t = seq t,
+  clone CreusotContracts_Logic_Seq_Impl2_Tail_Stub as Tail0 with type t = t
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model1 with type t = t, axiom .
+  clone CreusotContracts_Logic_Model_Impl1_Model_Stub as Model0 with type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   use Core_Option_Option_Type as Core_Option_Option_Type
   val split_first_mut [@cfg:stackify] (self : borrowed (seq t)) : Core_Option_Option_Type.t_option (borrowed t, borrowed (seq t))
@@ -153,6 +182,11 @@ module Core_Slice_Impl0_SplitFirstMut
     ensures { forall tail : borrowed (seq t) . forall first : borrowed t . result = Core_Option_Option_Type.C_Some (first, tail) /\  * first = Seq.get (Model1.model ( * self)) 0 /\  ^ first = Seq.get (Model1.model ( ^ self)) 0 /\ Seq.length (Model1.model ( * self)) > 0 /\ Seq.length (Model1.model ( ^ self)) > 0 /\ Model1.model ( * tail) = Tail0.tail (Model1.model ( * self)) /\ Model1.model ( ^ tail) = Tail0.tail (Model1.model ( ^ self)) }
     
 end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
@@ -167,6 +201,10 @@ module CreusotContracts_Logic_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
+end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
@@ -178,20 +216,29 @@ module CreusotContracts_Logic_Resolve_Resolve_Resolve
     ensures { result = resolve self }
     
 end
+module CreusotContracts_Std1_Slice_Impl1_DefaultLog_Stub
+  type t
+  use prelude.Borrow
+  use seq.Seq
+  use prelude.Slice
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model0 with type t = t, axiom .
+  function default_log (_ : ()) : borrowed (seq t)
+end
 module CreusotContracts_Std1_Slice_Impl1_DefaultLog_Interface
   type t
   use prelude.Borrow
   use seq.Seq
   use prelude.Slice
-  clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model0 with type t = t, axiom .
   function default_log (_ : ()) : borrowed (seq t)
+  axiom default_log_spec : Model0.model ( ^ default_log ()) = Seq.empty  && Model0.model ( * default_log ()) = Seq.empty 
 end
 module CreusotContracts_Std1_Slice_Impl1_DefaultLog
   type t
   use prelude.Borrow
   use seq.Seq
   use prelude.Slice
-  clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model0 with type t = t, axiom .
   function default_log (_ : ()) : borrowed (seq t)
   val default_log (_wild0 : ()) : borrowed (seq t)
     ensures { result = default_log _wild0 }
@@ -205,8 +252,8 @@ module TakeFirstMut_TakeFirstMut_Interface
   use mach.int.Int32
   use seq.Seq
   use prelude.Slice
-  clone CreusotContracts_Logic_Seq_Impl2_Tail_Interface as Tail0 with type t = t
-  clone CreusotContracts_Std1_Slice_Impl0_Model_Interface as Model0 with type t = t, axiom .
+  clone CreusotContracts_Logic_Seq_Impl2_Tail_Stub as Tail0 with type t = t
+  clone CreusotContracts_Std1_Slice_Impl0_Model_Stub as Model0 with type t = t, axiom .
   use Core_Option_Option_Type as Core_Option_Option_Type
   val take_first_mut [@cfg:stackify] (self_ : borrowed (borrowed (seq t))) : Core_Option_Option_Type.t_option (borrowed t)
     ensures { [#"../take_first_mut.rs" 6 10 15 1] match (result) with
