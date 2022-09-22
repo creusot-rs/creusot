@@ -1,0 +1,711 @@
+
+module C07Fuse_Common_Iterator_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+end
+module C07Fuse_Common_Iterator_Invariant
+  type self
+  predicate invariant' [#"../common.rs" 28 4 28 30] (self : self) =
+    [#"../common.rs" 29 8 29 12] true
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module Core_Result_Result_Type
+  type t_result 't 'e =
+    | C_Ok 't
+    | C_Err 'e
+    
+  let function ok_0 (self : t_result 't 'e) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Ok a -> a
+      | C_Err _ -> any 't
+      end
+end
+module CreusotContracts_Logic_Ghost_Ghost_Type
+  type t_ghost 't =
+    | C_Ghost 't
+    
+  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Ghost a -> a
+      end
+end
+module C07Fuse_Fuse_Type
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  type t_fuse 'i =
+    | C_Fuse (Core_Result_Result_Type.t_result 'i (CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost 'i))
+    
+  let function fuse_iter (self : t_fuse 'i) : Core_Result_Result_Type.t_result 'i (CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost 'i)
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Fuse a -> a
+      end
+end
+module C07Fuse_Impl0_Inner_Interface
+  type i
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  function inner (self : C07Fuse_Fuse_Type.t_fuse i) : i
+end
+module C07Fuse_Impl0_Inner
+  type i
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  function inner [#"../07_fuse.rs" 15 4 15 23] (self : C07Fuse_Fuse_Type.t_fuse i) : i =
+    [#"../07_fuse.rs" 16 8 19 9] match (C07Fuse_Fuse_Type.fuse_iter self) with
+      | Core_Result_Result_Type.C_Ok i -> i
+      | Core_Result_Result_Type.C_Err gi -> CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 gi
+      end
+  val inner (self : C07Fuse_Fuse_Type.t_fuse i) : i
+    ensures { result = inner self }
+    
+end
+module C07Fuse_Impl1_Completed_Interface
+  type i
+  use prelude.Borrow
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  predicate completed (self : borrowed (C07Fuse_Fuse_Type.t_fuse i))
+end
+module C07Fuse_Impl1_Completed
+  type i
+  use prelude.Borrow
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  predicate completed [#"../07_fuse.rs" 27 4 27 35] (self : borrowed (C07Fuse_Fuse_Type.t_fuse i)) =
+    [#"../07_fuse.rs" 28 8 28 57] exists x : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost i . C07Fuse_Fuse_Type.fuse_iter ( ^ self) = Core_Result_Result_Type.C_Err x
+  val completed (self : borrowed (C07Fuse_Fuse_Type.t_fuse i)) : bool
+    ensures { result = completed self }
+    
+end
+module C07Fuse_Common_Iterator_Item_Type
+  type self
+  type item
+end
+module C07Fuse_Common_Iterator_Produces_Interface
+  type self
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = self
+  predicate produces (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+end
+module C07Fuse_Common_Iterator_Produces
+  type self
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = self
+  predicate produces [#"../common.rs" 8 4 8 65] (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+  val produces (self : self) (visited : Seq.seq Item0.item) (_3' : self) : bool
+    ensures { result = produces self visited _3' }
+    
+end
+module C07Fuse_Common_Iterator_ProducesRefl_Interface
+  type self
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = self
+  clone C07Fuse_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
+  function produces_refl (a : self) : ()
+end
+module C07Fuse_Common_Iterator_ProducesRefl
+  type self
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = self
+  clone C07Fuse_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
+  function produces_refl [#"../common.rs" 16 4 16 30] (a : self) : ()
+  val produces_refl (a : self) : ()
+    requires {[#"../common.rs" 14 15 14 28] Invariant0.invariant' a}
+    ensures { result = produces_refl a }
+    
+  axiom produces_refl_spec : forall a : self . ([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a)
+end
+module C07Fuse_Common_Iterator_ProducesTrans_Interface
+  type self
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = self
+  clone C07Fuse_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
+  function produces_trans (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+end
+module C07Fuse_Common_Iterator_ProducesTrans
+  type self
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = self
+  clone C07Fuse_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
+  function produces_trans [#"../common.rs" 25 4 25 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+    
+  val produces_trans (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+    requires {[#"../common.rs" 19 15 19 28] Invariant0.invariant' a}
+    requires {[#"../common.rs" 20 15 20 28] Invariant0.invariant' b}
+    requires {[#"../common.rs" 21 15 21 28] Invariant0.invariant' c}
+    requires {[#"../common.rs" 22 15 22 32] Produces0.produces a ab b}
+    requires {[#"../common.rs" 23 15 23 32] Produces0.produces b bc c}
+    ensures { result = produces_trans a ab b bc c }
+    
+  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) -> ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) -> ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) -> ([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c)
+end
+module C07Fuse_Impl1_Produces_Interface
+  type i
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  predicate produces (self : C07Fuse_Fuse_Type.t_fuse i) (prod : Seq.seq Item0.item) (other : C07Fuse_Fuse_Type.t_fuse i)
+    
+end
+module C07Fuse_Impl1_Produces
+  type i
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Common_Iterator_Produces_Interface as Produces0 with type self = i, type Item0.item = Item0.item
+  clone C07Fuse_Impl0_Inner_Interface as Inner0 with type i = i
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  predicate produces [#"../07_fuse.rs" 32 4 32 65] (self : C07Fuse_Fuse_Type.t_fuse i) (prod : Seq.seq Item0.item) (other : C07Fuse_Fuse_Type.t_fuse i)
+    
+   =
+    [#"../07_fuse.rs" 33 8 36 9] match (C07Fuse_Fuse_Type.fuse_iter self) with
+      | Core_Result_Result_Type.C_Err _ -> prod = Seq.empty  /\ C07Fuse_Fuse_Type.fuse_iter other = C07Fuse_Fuse_Type.fuse_iter self
+      | Core_Result_Result_Type.C_Ok i -> Produces0.produces i prod (Inner0.inner other)
+      end
+  val produces (self : C07Fuse_Fuse_Type.t_fuse i) (prod : Seq.seq Item0.item) (other : C07Fuse_Fuse_Type.t_fuse i) : bool
+    ensures { result = produces self prod other }
+    
+end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+end
+module C07Fuse_Impl1_Item_Type
+  type i
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  type item  =
+    Item0.item
+end
+module C07Fuse_Common_Iterator_Completed_Interface
+  type self
+  use prelude.Borrow
+  predicate completed (self : borrowed self)
+end
+module C07Fuse_Common_Iterator_Completed
+  type self
+  use prelude.Borrow
+  predicate completed [#"../common.rs" 11 4 11 36] (self : borrowed self)
+  val completed (self : borrowed self) : bool
+    ensures { result = completed self }
+    
+end
+module C07Fuse_Common_Iterator_Next_Interface
+  type self
+  use prelude.Borrow
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = self
+  clone C07Fuse_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Completed_Interface as Completed0 with type self = self
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone C07Fuse_Common_Iterator_Invariant_Interface as Invariant0 with type self = self
+  val next [@cfg:stackify] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
+    requires {[#"../common.rs" 32 4 32 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../common.rs" 32 4 32 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../common.rs" 33 14 36 5] match (result) with
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
+      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
+      end }
+    
+end
+module C07Fuse_Common_Iterator_Next
+  type self
+  use prelude.Borrow
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = self
+  clone C07Fuse_Common_Iterator_Produces as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Completed as Completed0 with type self = self
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone C07Fuse_Common_Iterator_Invariant as Invariant0 with type self = self
+  val next [@cfg:stackify] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
+    requires {[#"../common.rs" 32 4 32 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../common.rs" 32 4 32 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../common.rs" 33 14 36 5] match (result) with
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
+      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
+      end }
+    
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
+end
+module C07Fuse_Impl1_Next_Interface
+  type i
+  use prelude.Borrow
+  use seq.Seq
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  clone C07Fuse_Impl1_Produces_Interface as Produces0 with type i = i, type Item0.item = Item0.item
+  clone C07Fuse_Impl1_Completed_Interface as Completed0 with type i = i
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone C07Fuse_Common_Iterator_Invariant_Interface as Invariant0 with type self = C07Fuse_Fuse_Type.t_fuse i
+  val next [@cfg:stackify] (self : borrowed (C07Fuse_Fuse_Type.t_fuse i)) : Core_Option_Option_Type.t_option Item0.item
+    requires {[#"../07_fuse.rs" 39 4 39 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../07_fuse.rs" 39 4 39 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../07_fuse.rs" 40 14 43 5] match (result) with
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
+      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
+      end }
+    
+end
+module C07Fuse_Impl1_Next
+  type i
+  use prelude.Borrow
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Invariant as Invariant1 with type self = i
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  clone C07Fuse_Impl1_Item_Type as Item1 with type i = i, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Produces as Produces1 with type self = i, type Item0.item = Item0.item
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Impl0_Inner as Inner0 with type i = i
+  clone C07Fuse_Common_Iterator_ProducesTrans as ProducesTrans1 with type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant', predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item, axiom .
+  clone C07Fuse_Common_Iterator_ProducesRefl as ProducesRefl1 with type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant', predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item, axiom .
+  clone C07Fuse_Impl1_Produces as Produces0 with type i = i, type Item0.item = Item0.item,
+    function Inner0.inner = Inner0.inner, predicate Produces0.produces = Produces1.produces
+  clone C07Fuse_Common_Iterator_Invariant as Invariant0 with type self = C07Fuse_Fuse_Type.t_fuse i
+  clone C07Fuse_Common_Iterator_ProducesTrans as ProducesTrans0 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item1.item, axiom .
+  clone C07Fuse_Common_Iterator_ProducesRefl as ProducesRefl0 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item1.item, axiom .
+  clone C07Fuse_Impl1_Completed as Completed0 with type i = i
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use mach.int.Int
+  use prelude.IntSize
+  clone C07Fuse_Common_Iterator_Completed as Completed1 with type self = i
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve4 with type self = Core_Result_Result_Type.t_result i (CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost i)
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve3 with type self = Core_Option_Option_Type.t_option Item0.item
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = i
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = C07Fuse_Fuse_Type.t_fuse i
+  clone C07Fuse_Common_Iterator_Next_Interface as Next0 with type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant', type Item0.item = Item0.item,
+    predicate Completed0.completed = Completed1.completed, predicate Produces0.produces = Produces1.produces
+  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Core_Result_Result_Type.t_result i (CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost i)
+  let rec cfg next [@cfg:stackify] [#"../07_fuse.rs" 44 4 44 44] (self : borrowed (C07Fuse_Fuse_Type.t_fuse i)) : Core_Option_Option_Type.t_option Item0.item
+    requires {[#"../07_fuse.rs" 39 4 39 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../07_fuse.rs" 39 4 39 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../07_fuse.rs" 40 14 43 5] match (result) with
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
+      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
+      end }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : Core_Option_Option_Type.t_option Item0.item;
+  var self_1 : borrowed (C07Fuse_Fuse_Type.t_fuse i);
+  var _5 : borrowed (Core_Result_Result_Type.t_result i (CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost i));
+  var _6 : isize;
+  var iter_7 : borrowed i;
+  var _8 : Core_Option_Option_Type.t_option Item0.item;
+  var _9 : borrowed i;
+  var _10 : isize;
+  var _11 : Core_Result_Result_Type.t_result i (CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost i);
+  var _12 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost i;
+  var _14 : ();
+  var x_15 : Core_Option_Option_Type.t_option Item0.item;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    _5 <- borrow_mut (C07Fuse_Fuse_Type.fuse_iter ( * self_1));
+    self_1 <- { self_1 with current = (let C07Fuse_Fuse_Type.C_Fuse a =  * self_1 in C07Fuse_Fuse_Type.C_Fuse ( ^ _5)) };
+    switch ( * _5)
+      | Core_Result_Result_Type.C_Ok _ -> goto BB1
+      | Core_Result_Result_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB1 {
+    iter_7 <- borrow_mut (Core_Result_Result_Type.ok_0 ( * _5));
+    _5 <- { _5 with current = (let Core_Result_Result_Type.C_Ok a =  * _5 in Core_Result_Result_Type.C_Ok ( ^ iter_7)) };
+    assume { Resolve0.resolve _5 };
+    _9 <- borrow_mut ( * iter_7);
+    iter_7 <- { iter_7 with current = ( ^ _9) };
+    _8 <- ([#"../07_fuse.rs" 47 30 47 41] Next0.next _9);
+    goto BB4
+  }
+  BB2 {
+    assume { Resolve1.resolve self_1 };
+    assume { Resolve0.resolve _5 };
+    absurd
+  }
+  BB3 {
+    assume { Resolve1.resolve self_1 };
+    assume { Resolve0.resolve _5 };
+    _0 <- Core_Option_Option_Type.C_None;
+    goto BB14
+  }
+  BB4 {
+    assume { Resolve2.resolve iter_7 };
+    switch (_8)
+      | Core_Option_Option_Type.C_None -> goto BB6
+      | _ -> goto BB5
+      end
+  }
+  BB5 {
+    assume { Resolve1.resolve self_1 };
+    assume { Resolve3.resolve x_15 };
+    x_15 <- _8;
+    _8 <- any Core_Option_Option_Type.t_option Item0.item;
+    assume { Resolve3.resolve _0 };
+    _0 <- x_15;
+    x_15 <- any Core_Option_Option_Type.t_option Item0.item;
+    goto BB11
+  }
+  BB6 {
+    _14 <- ();
+    _12 <- ([#"../07_fuse.rs" 49 36 49 52] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost ( * iter_7));
+    goto BB7
+  }
+  BB7 {
+    _11 <- Core_Result_Result_Type.C_Err _12;
+    goto BB8
+  }
+  BB8 {
+    assume { Resolve4.resolve (C07Fuse_Fuse_Type.fuse_iter ( * self_1)) };
+    self_1 <- { self_1 with current = (let C07Fuse_Fuse_Type.C_Fuse a =  * self_1 in C07Fuse_Fuse_Type.C_Fuse _11) };
+    goto BB9
+  }
+  BB9 {
+    assume { Resolve1.resolve self_1 };
+    goto BB10
+  }
+  BB10 {
+    _0 <- Core_Option_Option_Type.C_None;
+    goto BB12
+  }
+  BB11 {
+    goto BB12
+  }
+  BB12 {
+    goto BB13
+  }
+  BB13 {
+    goto BB14
+  }
+  BB14 {
+    return _0
+  }
+  
+end
+module C07Fuse_Impl1_ProducesRefl_Interface
+  type i
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Impl1_Produces_Interface as Produces0 with type i = i, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Invariant_Interface as Invariant0 with type self = C07Fuse_Fuse_Type.t_fuse i
+  function produces_refl (a : C07Fuse_Fuse_Type.t_fuse i) : ()
+end
+module C07Fuse_Impl1_ProducesRefl
+  type i
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Impl1_Produces_Interface as Produces0 with type i = i, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Invariant_Interface as Invariant0 with type self = C07Fuse_Fuse_Type.t_fuse i
+  function produces_refl [#"../07_fuse.rs" 60 4 60 29] (a : C07Fuse_Fuse_Type.t_fuse i) : () =
+    [#"../07_fuse.rs" 57 4 57 10] ()
+  val produces_refl (a : C07Fuse_Fuse_Type.t_fuse i) : ()
+    requires {[#"../07_fuse.rs" 58 15 58 28] Invariant0.invariant' a}
+    ensures { result = produces_refl a }
+    
+  axiom produces_refl_spec : forall a : C07Fuse_Fuse_Type.t_fuse i . ([#"../07_fuse.rs" 58 15 58 28] Invariant0.invariant' a) -> ([#"../07_fuse.rs" 59 14 59 39] Produces0.produces a (Seq.empty ) a)
+end
+module C07Fuse_Impl1_ProducesRefl_Impl
+  type i
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Invariant as Invariant1 with type self = i
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  clone C07Fuse_Common_Iterator_Produces as Produces1 with type self = i, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_ProducesTrans as ProducesTrans1 with type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant', predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item, axiom .
+  clone C07Fuse_Common_Iterator_ProducesRefl as ProducesRefl1 with type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant', predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item, axiom .
+  clone C07Fuse_Impl1_Item_Type as Item1 with type i = i, type Item0.item = Item0.item
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Impl0_Inner as Inner0 with type i = i
+  clone C07Fuse_Impl1_Produces as Produces0 with type i = i, type Item0.item = Item0.item,
+    function Inner0.inner = Inner0.inner, predicate Produces0.produces = Produces1.produces
+  clone C07Fuse_Common_Iterator_Invariant as Invariant0 with type self = C07Fuse_Fuse_Type.t_fuse i
+  clone C07Fuse_Common_Iterator_ProducesTrans as ProducesTrans0 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item1.item, axiom .
+  clone C07Fuse_Common_Iterator_ProducesRefl as ProducesRefl0 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item1.item, axiom .
+  let rec ghost function produces_refl (a : C07Fuse_Fuse_Type.t_fuse i) : ()
+    requires {[#"../07_fuse.rs" 58 15 58 28] Invariant0.invariant' a}
+    ensures { [#"../07_fuse.rs" 59 14 59 39] Produces0.produces a (Seq.empty ) a }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../07_fuse.rs" 57 4 57 10] ()
+end
+module C07Fuse_Impl1_ProducesTrans_Interface
+  type i
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Impl1_Produces_Interface as Produces0 with type i = i, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Invariant_Interface as Invariant0 with type self = C07Fuse_Fuse_Type.t_fuse i
+  function produces_trans (a : C07Fuse_Fuse_Type.t_fuse i) (ab : Seq.seq Item0.item) (b : C07Fuse_Fuse_Type.t_fuse i) (bc : Seq.seq Item0.item) (c : C07Fuse_Fuse_Type.t_fuse i) : ()
+    
+end
+module C07Fuse_Impl1_ProducesTrans
+  type i
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Impl1_Produces_Interface as Produces0 with type i = i, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Invariant_Interface as Invariant0 with type self = C07Fuse_Fuse_Type.t_fuse i
+  function produces_trans [#"../07_fuse.rs" 69 4 69 90] (a : C07Fuse_Fuse_Type.t_fuse i) (ab : Seq.seq Item0.item) (b : C07Fuse_Fuse_Type.t_fuse i) (bc : Seq.seq Item0.item) (c : C07Fuse_Fuse_Type.t_fuse i) : ()
+    
+   =
+    [#"../07_fuse.rs" 62 4 62 10] ()
+  val produces_trans (a : C07Fuse_Fuse_Type.t_fuse i) (ab : Seq.seq Item0.item) (b : C07Fuse_Fuse_Type.t_fuse i) (bc : Seq.seq Item0.item) (c : C07Fuse_Fuse_Type.t_fuse i) : ()
+    requires {[#"../07_fuse.rs" 63 15 63 28] Invariant0.invariant' a}
+    requires {[#"../07_fuse.rs" 64 15 64 28] Invariant0.invariant' b}
+    requires {[#"../07_fuse.rs" 65 15 65 28] Invariant0.invariant' c}
+    requires {[#"../07_fuse.rs" 66 15 66 32] Produces0.produces a ab b}
+    requires {[#"../07_fuse.rs" 67 15 67 32] Produces0.produces b bc c}
+    ensures { result = produces_trans a ab b bc c }
+    
+  axiom produces_trans_spec : forall a : C07Fuse_Fuse_Type.t_fuse i, ab : Seq.seq Item0.item, b : C07Fuse_Fuse_Type.t_fuse i, bc : Seq.seq Item0.item, c : C07Fuse_Fuse_Type.t_fuse i . ([#"../07_fuse.rs" 63 15 63 28] Invariant0.invariant' a) -> ([#"../07_fuse.rs" 64 15 64 28] Invariant0.invariant' b) -> ([#"../07_fuse.rs" 65 15 65 28] Invariant0.invariant' c) -> ([#"../07_fuse.rs" 66 15 66 32] Produces0.produces a ab b) -> ([#"../07_fuse.rs" 67 15 67 32] Produces0.produces b bc c) -> ([#"../07_fuse.rs" 68 14 68 42] Produces0.produces a (Seq.(++) ab bc) c)
+end
+module C07Fuse_Impl1_ProducesTrans_Impl
+  type i
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Invariant as Invariant1 with type self = i
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  clone C07Fuse_Impl1_Item_Type as Item1 with type i = i, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Produces as Produces1 with type self = i, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_ProducesTrans as ProducesTrans1 with type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant', predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item, axiom .
+  clone C07Fuse_Common_Iterator_ProducesRefl as ProducesRefl1 with type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant', predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item, axiom .
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Impl0_Inner as Inner0 with type i = i
+  clone C07Fuse_Impl1_Produces as Produces0 with type i = i, type Item0.item = Item0.item,
+    function Inner0.inner = Inner0.inner, predicate Produces0.produces = Produces1.produces
+  clone C07Fuse_Common_Iterator_Invariant as Invariant0 with type self = C07Fuse_Fuse_Type.t_fuse i
+  clone C07Fuse_Common_Iterator_ProducesTrans as ProducesTrans0 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item1.item, axiom .
+  clone C07Fuse_Common_Iterator_ProducesRefl as ProducesRefl0 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item1.item, axiom .
+  let rec ghost function produces_trans (a : C07Fuse_Fuse_Type.t_fuse i) (ab : Seq.seq Item0.item) (b : C07Fuse_Fuse_Type.t_fuse i) (bc : Seq.seq Item0.item) (c : C07Fuse_Fuse_Type.t_fuse i) : ()
+    requires {[#"../07_fuse.rs" 63 15 63 28] Invariant0.invariant' a}
+    requires {[#"../07_fuse.rs" 64 15 64 28] Invariant0.invariant' b}
+    requires {[#"../07_fuse.rs" 65 15 65 28] Invariant0.invariant' c}
+    requires {[#"../07_fuse.rs" 66 15 66 32] Produces0.produces a ab b}
+    requires {[#"../07_fuse.rs" 67 15 67 32] Produces0.produces b bc c}
+    ensures { [#"../07_fuse.rs" 68 14 68 42] Produces0.produces a (Seq.(++) ab bc) c }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../07_fuse.rs" 62 4 62 10] ()
+end
+module C07Fuse_Impl2_IsFused_Interface
+  type i
+  use prelude.Borrow
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Impl1_Produces_Interface as Produces0 with type i = i, type Item0.item = Item0.item
+  clone C07Fuse_Impl1_Completed_Interface as Completed0 with type i = i
+  function is_fused (self : borrowed (C07Fuse_Fuse_Type.t_fuse i)) (steps : Seq.seq Item0.item) (next : C07Fuse_Fuse_Type.t_fuse i) : ()
+    
+end
+module C07Fuse_Impl2_IsFused
+  type i
+  use prelude.Borrow
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Impl1_Produces_Interface as Produces0 with type i = i, type Item0.item = Item0.item
+  clone C07Fuse_Impl1_Completed_Interface as Completed0 with type i = i
+  function is_fused [#"../07_fuse.rs" 87 4 87 62] (self : borrowed (C07Fuse_Fuse_Type.t_fuse i)) (steps : Seq.seq Item0.item) (next : C07Fuse_Fuse_Type.t_fuse i) : ()
+    
+   =
+    [#"../07_fuse.rs" 83 4 83 10] ()
+  val is_fused (self : borrowed (C07Fuse_Fuse_Type.t_fuse i)) (steps : Seq.seq Item0.item) (next : C07Fuse_Fuse_Type.t_fuse i) : ()
+    requires {[#"../07_fuse.rs" 84 15 84 31] Completed0.completed self}
+    requires {[#"../07_fuse.rs" 85 15 85 44] Produces0.produces ( ^ self) steps next}
+    ensures { result = is_fused self steps next }
+    
+  axiom is_fused_spec : forall self : borrowed (C07Fuse_Fuse_Type.t_fuse i), steps : Seq.seq Item0.item, next : C07Fuse_Fuse_Type.t_fuse i . ([#"../07_fuse.rs" 84 15 84 31] Completed0.completed self) -> ([#"../07_fuse.rs" 85 15 85 44] Produces0.produces ( ^ self) steps next) -> ([#"../07_fuse.rs" 86 14 86 50] steps = Seq.empty  /\  ^ self = next)
+end
+module C07Fuse_Impl2_IsFused_Impl
+  type i
+  use prelude.Borrow
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  clone C07Fuse_Impl1_Item_Type as Item1 with type i = i, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Produces as Produces1 with type self = i, type Item0.item = Item0.item
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Impl0_Inner as Inner0 with type i = i
+  clone C07Fuse_Impl1_Produces as Produces0 with type i = i, type Item0.item = Item0.item,
+    function Inner0.inner = Inner0.inner, predicate Produces0.produces = Produces1.produces
+  clone C07Fuse_Common_Iterator_Invariant as Invariant0 with type self = C07Fuse_Fuse_Type.t_fuse i
+  clone C07Fuse_Common_Iterator_ProducesTrans as ProducesTrans2 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item1.item, axiom .
+  clone C07Fuse_Common_Iterator_ProducesRefl as ProducesRefl2 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item1.item, axiom .
+  clone C07Fuse_Common_Iterator_Invariant as Invariant1 with type self = i
+  clone C07Fuse_Common_Iterator_ProducesTrans as ProducesTrans1 with type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant', predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item, axiom .
+  clone C07Fuse_Common_Iterator_ProducesRefl as ProducesRefl1 with type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant', predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item, axiom .
+  clone C07Fuse_Impl1_ProducesTrans as ProducesTrans0 with type i = i,
+    predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item0.item, axiom .
+  clone C07Fuse_Impl1_ProducesRefl as ProducesRefl0 with type i = i,
+    predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item0.item, axiom .
+  clone C07Fuse_Impl1_Completed as Completed0 with type i = i
+  let rec ghost function is_fused (self : borrowed (C07Fuse_Fuse_Type.t_fuse i)) (steps : Seq.seq Item0.item) (next : C07Fuse_Fuse_Type.t_fuse i) : ()
+    requires {[#"../07_fuse.rs" 84 15 84 31] Completed0.completed self}
+    requires {[#"../07_fuse.rs" 85 15 85 44] Produces0.produces ( ^ self) steps next}
+    ensures { [#"../07_fuse.rs" 86 14 86 50] steps = Seq.empty  /\  ^ self = next }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../07_fuse.rs" 83 4 83 10] ()
+end
+module C07Fuse_Impl1
+  type i
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item2 with type self = i
+  clone C07Fuse_Common_Iterator_Produces as Produces2 with type self = i, type Item0.item = Item2.item
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Impl0_Inner as Inner0 with type i = i
+  clone C07Fuse_Common_Iterator_Invariant as Invariant0 with type self = C07Fuse_Fuse_Type.t_fuse i
+  clone C07Fuse_Impl1_Item_Type as Item0 with type i = i, type Item0.item = Item2.item
+  clone C07Fuse_Impl1_Produces as Produces0 with type i = i, type Item0.item = Item2.item,
+    function Inner0.inner = Inner0.inner, predicate Produces0.produces = Produces2.produces
+  clone C07Fuse_Impl1_ProducesRefl as ProducesRefl0 with type i = i,
+    predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item2.item, axiom .
+  clone C07Fuse_Common_Iterator_ProducesRefl_Interface as ProducesRefl1 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    function produces_refl = ProducesRefl0.produces_refl, predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces, type Item0.item = Item0.item, axiom .
+  clone C07Fuse_Impl1_Completed as Completed0 with type i = i
+  clone C07Fuse_Common_Iterator_Completed_Interface as Completed1 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    predicate completed = Completed0.completed
+  clone C07Fuse_Common_Iterator_Produces_Interface as Produces1 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    predicate produces = Produces0.produces, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Item_Type as Item1 with type self = C07Fuse_Fuse_Type.t_fuse i, type item = Item0.item
+  goal produces_refl_spec : forall a : C07Fuse_Fuse_Type.t_fuse i . (([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> ([#"../07_fuse.rs" 58 15 58 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../07_fuse.rs" 59 14 59 39] Produces0.produces a (Seq.empty ) a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a))
+  clone C07Fuse_Impl1_ProducesTrans as ProducesTrans0 with type i = i,
+    predicate Invariant0.invariant' = Invariant0.invariant', predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item2.item, axiom .
+  clone C07Fuse_Common_Iterator_ProducesTrans_Interface as ProducesTrans1 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    function produces_trans = ProducesTrans0.produces_trans, predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces, type Item0.item = Item0.item, axiom .
+  goal produces_trans_spec : forall a : C07Fuse_Fuse_Type.t_fuse i, ab : Seq.seq Item2.item, b : C07Fuse_Fuse_Type.t_fuse i, bc : Seq.seq Item2.item, c : C07Fuse_Fuse_Type.t_fuse i . (([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) && ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) && ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) && ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) && ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../07_fuse.rs" 67 15 67 32] Produces0.produces b bc c) && ([#"../07_fuse.rs" 66 15 66 32] Produces0.produces a ab b) && ([#"../07_fuse.rs" 65 15 65 28] Invariant0.invariant' c) && ([#"../07_fuse.rs" 64 15 64 28] Invariant0.invariant' b) && ([#"../07_fuse.rs" 63 15 63 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../07_fuse.rs" 68 14 68 42] Produces0.produces a (Seq.(++) ab bc) c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c))
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone C07Fuse_Impl1_Next_Interface as Next0 with type i = i, predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item2.item, predicate Completed0.completed = Completed0.completed,
+    predicate Produces0.produces = Produces0.produces
+  clone C07Fuse_Common_Iterator_Next_Interface as Next1 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    val next = Next0.next, predicate Invariant0.invariant' = Invariant0.invariant', type Item0.item = Item0.item,
+    predicate Completed0.completed = Completed0.completed, predicate Produces0.produces = Produces0.produces
+end
+module C07Fuse_FusedIterator_IsFused_Interface
+  type self
+  use prelude.Borrow
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = self
+  clone C07Fuse_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Completed_Interface as Completed0 with type self = self
+  function is_fused (self : borrowed self) (steps : Seq.seq Item0.item) (next : self) : ()
+end
+module C07Fuse_FusedIterator_IsFused
+  type self
+  use prelude.Borrow
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = self
+  clone C07Fuse_Common_Iterator_Produces_Interface as Produces0 with type self = self, type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Completed_Interface as Completed0 with type self = self
+  function is_fused [#"../07_fuse.rs" 79 4 79 63] (self : borrowed self) (steps : Seq.seq Item0.item) (next : self) : ()
+  val is_fused (self : borrowed self) (steps : Seq.seq Item0.item) (next : self) : ()
+    requires {[#"../07_fuse.rs" 76 15 76 31] Completed0.completed self}
+    requires {[#"../07_fuse.rs" 77 15 77 44] Produces0.produces ( ^ self) steps next}
+    ensures { result = is_fused self steps next }
+    
+  axiom is_fused_spec : forall self : borrowed self, steps : Seq.seq Item0.item, next : self . ([#"../07_fuse.rs" 76 15 76 31] Completed0.completed self) -> ([#"../07_fuse.rs" 77 15 77 44] Produces0.produces ( ^ self) steps next) -> ([#"../07_fuse.rs" 78 14 78 50] steps = Seq.empty  /\  ^ self = next)
+end
+module C07Fuse_Impl2
+  type i
+  use prelude.Borrow
+  use seq.Seq
+  clone C07Fuse_Common_Iterator_Item_Type as Item0 with type self = i
+  clone C07Fuse_Common_Iterator_Produces as Produces1 with type self = i, type Item0.item = Item0.item
+  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
+  use Core_Result_Result_Type as Core_Result_Result_Type
+  use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
+  clone C07Fuse_Impl0_Inner as Inner0 with type i = i
+  clone C07Fuse_Impl1_Item_Type as Item1 with type i = i, type Item0.item = Item0.item
+  clone C07Fuse_Impl1_Produces as Produces0 with type i = i, type Item0.item = Item0.item,
+    function Inner0.inner = Inner0.inner, predicate Produces0.produces = Produces1.produces
+  clone C07Fuse_Impl1_Completed as Completed0 with type i = i
+  clone C07Fuse_Impl2_IsFused as IsFused0 with type i = i, predicate Completed0.completed = Completed0.completed,
+    predicate Produces0.produces = Produces0.produces, type Item0.item = Item0.item, axiom .
+  clone C07Fuse_FusedIterator_IsFused_Interface as IsFused1 with type self = C07Fuse_Fuse_Type.t_fuse i,
+    function is_fused = IsFused0.is_fused, predicate Completed0.completed = Completed0.completed,
+    predicate Produces0.produces = Produces0.produces, type Item0.item = Item1.item, axiom .
+  goal is_fused_spec : forall self : borrowed (C07Fuse_Fuse_Type.t_fuse i), steps : Seq.seq Item0.item, next : C07Fuse_Fuse_Type.t_fuse i . (([#"../07_fuse.rs" 77 15 77 44] Produces0.produces ( ^ self) steps next) && ([#"../07_fuse.rs" 76 15 76 31] Completed0.completed self) -> ([#"../07_fuse.rs" 85 15 85 44] Produces0.produces ( ^ self) steps next) && ([#"../07_fuse.rs" 84 15 84 31] Completed0.completed self)) /\ (forall result : () . ([#"../07_fuse.rs" 86 14 86 50] steps = Seq.empty  /\  ^ self = next) -> ([#"../07_fuse.rs" 78 14 78 50] steps = Seq.empty  /\  ^ self = next))
+end
