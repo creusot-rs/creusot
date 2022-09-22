@@ -47,15 +47,25 @@ where
     }
 
     #[law]
+    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[requires(a.invariant())]
+    #[requires(b.invariant())]
+    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
+    #[predicate]
+    fn invariant(self) -> bool {
+        self.iter.invariant()
+    }
+
+    #[maintains((mut self).invariant())]
     #[ensures(match result {
       None => self.completed(),
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
@@ -67,6 +77,7 @@ where
         #[invariant(produces, exists<s : Seq<Self::Item>> s.len() + @n == @old_self.n
                               && old_self.iter.produces(s, self.iter))]
         #[invariant(n_0, @(*self).n == 0)]
+        #[invariant(inv, self.invariant())]
         loop {
             let r = self.iter.next();
             if n == 0 || r.is_none() {
