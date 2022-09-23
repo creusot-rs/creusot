@@ -7,8 +7,13 @@ use why3::declaration::{Decl, Module, TyDecl};
 
 pub enum TranslatedItem {
     Logic {
+        // A module which contains the contract with an opaque function symbol
         interface: Module,
+        // A dummy module which just contains the function symbol with no contract
+        stub: Module,
+        // A module which contains the function body but uses stubs for all called functions
         modl: Module,
+        // A module which contains the function body (and contract) but uses the actual bodies of all called functions
         proof_modl: Option<Module>,
         has_axioms: bool,
     },
@@ -73,9 +78,10 @@ impl<'a> TranslatedItem {
         use std::iter;
         use TranslatedItem::*;
         match self {
-            Logic { interface, modl, proof_modl, .. } => {
-                box iter::once(interface).chain(iter::once(modl)).chain(proof_modl.into_iter())
-            }
+            Logic { interface, stub, modl, proof_modl, .. } => box iter::once(stub)
+                .chain(iter::once(interface))
+                .chain(iter::once(modl))
+                .chain(proof_modl.into_iter()),
             Program { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
             Trait { .. } => box iter::empty(),
             Impl { modl, .. } => box iter::once(modl),
@@ -92,9 +98,9 @@ impl<'a> TranslatedItem {
 
     pub fn interface(self) -> Box<dyn Iterator<Item = Module>> {
         match self {
-            TranslatedItem::Logic { interface, modl, .. } => {
-                box std::iter::once(interface).chain(std::iter::once(modl))
-            }
+            TranslatedItem::Logic { interface, modl, stub, .. } => box std::iter::once(stub)
+                .chain(std::iter::once(interface))
+                .chain(std::iter::once(modl)),
             TranslatedItem::Program { interface, .. } => box std::iter::once(interface),
             TranslatedItem::Trait { .. } => box std::iter::empty(),
             TranslatedItem::Impl { modl, .. } => box std::iter::once(modl),

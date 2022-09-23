@@ -1,4 +1,8 @@
 
+module C18TraitLaws_Symmetric_Op_Stub
+  type self
+  function op (self : self) (_2' : self) : self
+end
 module C18TraitLaws_Symmetric_Op_Interface
   type self
   function op (self : self) (_2' : self) : self
@@ -10,27 +14,38 @@ module C18TraitLaws_Symmetric_Op
     ensures { result = op self _2' }
     
 end
+module C18TraitLaws_Symmetric_Reflexive_Stub
+  type self
+  clone C18TraitLaws_Symmetric_Op_Stub as Op0 with type self = self
+  function reflexive (a : self) (b : self) : ()
+end
 module C18TraitLaws_Symmetric_Reflexive_Interface
   type self
-  clone C18TraitLaws_Symmetric_Op_Interface as Op0 with type self = self
+  clone C18TraitLaws_Symmetric_Op_Stub as Op0 with type self = self
   function reflexive (a : self) (b : self) : ()
+  axiom reflexive_spec : forall a : self, b : self . [#"../18_trait_laws.rs" 9 14 9 32] Op0.op a b = Op0.op b a
 end
 module C18TraitLaws_Symmetric_Reflexive
   type self
-  clone C18TraitLaws_Symmetric_Op_Interface as Op0 with type self = self
+  clone C18TraitLaws_Symmetric_Op_Stub as Op0 with type self = self
   function reflexive [#"../18_trait_laws.rs" 10 4 10 35] (a : self) (b : self) : ()
   val reflexive (a : self) (b : self) : ()
     ensures { result = reflexive a b }
     
   axiom reflexive_spec : forall a : self, b : self . [#"../18_trait_laws.rs" 9 14 9 32] Op0.op a b = Op0.op b a
 end
-module C18TraitLaws_UsesOp_Interface
+module C18TraitLaws_UsesOp_Stub
   type t
   function uses_op (x : t) (y : t) : bool
 end
+module C18TraitLaws_UsesOp_Interface
+  type t
+  function uses_op (x : t) (y : t) : bool
+  axiom uses_op_spec : forall x : t, y : t . [#"../18_trait_laws.rs" 14 10 14 24] uses_op x y = true
+end
 module C18TraitLaws_UsesOp
   type t
-  clone C18TraitLaws_Symmetric_Op_Interface as Op0 with type self = t
+  clone C18TraitLaws_Symmetric_Op_Stub as Op0 with type self = t
   function uses_op [#"../18_trait_laws.rs" 15 0 15 48] (x : t) (y : t) : bool =
     [#"../18_trait_laws.rs" 16 16 16 34] Op0.op x y = Op0.op y x
   val uses_op (x : t) (y : t) : bool
@@ -40,13 +55,16 @@ module C18TraitLaws_UsesOp
 end
 module C18TraitLaws_UsesOp_Impl
   type t
-  clone C18TraitLaws_Symmetric_Op as Op0 with type self = t
+  clone C18TraitLaws_Symmetric_Op_Interface as Op0 with type self = t
   clone C18TraitLaws_Symmetric_Reflexive as Reflexive0 with type self = t, function Op0.op = Op0.op, axiom .
   let rec ghost function uses_op (x : t) (y : t) : bool
     ensures { [#"../18_trait_laws.rs" 14 10 14 24] result = true }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../18_trait_laws.rs" 16 16 16 34] let b = Op0.op y x in let a = Op0.op x y in pure {a = b}
+end
+module C18TraitLaws_Impl0_Op_Stub
+  function op (self : ()) (_2' : ()) : ()
 end
 module C18TraitLaws_Impl0_Op_Interface
   function op (self : ()) (_2' : ()) : ()
@@ -58,6 +76,9 @@ module C18TraitLaws_Impl0_Op
     ensures { result = op self _2' }
     
 end
+module C18TraitLaws_Impl0_Reflexive_Stub
+  function reflexive (_1' : ()) (_2' : ()) : ()
+end
 module C18TraitLaws_Impl0_Reflexive_Interface
   function reflexive (_1' : ()) (_2' : ()) : ()
 end
@@ -68,11 +89,15 @@ module C18TraitLaws_Impl0_Reflexive
     ensures { result = reflexive _1' _2' }
     
 end
-module C18TraitLaws_ImplLaws_Interface
+module C18TraitLaws_ImplLaws_Stub
   function impl_laws (_ : ()) : bool
 end
+module C18TraitLaws_ImplLaws_Interface
+  function impl_laws (_ : ()) : bool
+  axiom impl_laws_spec : [#"../18_trait_laws.rs" 30 10 30 24] impl_laws () = true
+end
 module C18TraitLaws_ImplLaws
-  clone C18TraitLaws_Impl0_Op_Interface as Op0
+  clone C18TraitLaws_Impl0_Op_Stub as Op0
   function impl_laws [#"../18_trait_laws.rs" 31 0 31 26] (_ : ()) : bool =
     [#"../18_trait_laws.rs" 32 16 32 38] Op0.op () () = Op0.op () ()
   val impl_laws (_wild0 : ()) : bool

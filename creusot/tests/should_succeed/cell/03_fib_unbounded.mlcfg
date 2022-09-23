@@ -20,6 +20,12 @@ module C03FibUnbounded_Cell_Type
       | C_Cell _ a -> a
       end
 end
+module C03FibUnbounded_Inv_Inv_Stub
+  type self
+  type t
+  use prelude.Borrow
+  predicate inv (self : self) (x : t)
+end
 module C03FibUnbounded_Inv_Inv_Interface
   type self
   type t
@@ -40,7 +46,7 @@ module C03FibUnbounded_Impl0_Get_Interface
   type i
   use prelude.Borrow
   use C03FibUnbounded_Cell_Type as C03FibUnbounded_Cell_Type
-  clone C03FibUnbounded_Inv_Inv_Interface as Inv0 with type self = i, type t = t
+  clone C03FibUnbounded_Inv_Inv_Stub as Inv0 with type self = i, type t = t
   val get [@cfg:stackify] (self : C03FibUnbounded_Cell_Type.t_cell t i) : t
     ensures { [#"../03_fib_unbounded.rs" 19 4 19 42] Inv0.inv (C03FibUnbounded_Cell_Type.cell_ghost_inv self) result }
     
@@ -50,7 +56,7 @@ module C03FibUnbounded_Impl0_Get
   type i
   use prelude.Borrow
   use C03FibUnbounded_Cell_Type as C03FibUnbounded_Cell_Type
-  clone C03FibUnbounded_Inv_Inv as Inv0 with type self = i, type t = t
+  clone C03FibUnbounded_Inv_Inv_Interface as Inv0 with type self = i, type t = t
   val get [@cfg:stackify] (self : C03FibUnbounded_Cell_Type.t_cell t i) : t
     ensures { [#"../03_fib_unbounded.rs" 19 4 19 42] Inv0.inv (C03FibUnbounded_Cell_Type.cell_ghost_inv self) result }
     
@@ -60,7 +66,7 @@ module C03FibUnbounded_Impl0_Set_Interface
   type i
   use prelude.Borrow
   use C03FibUnbounded_Cell_Type as C03FibUnbounded_Cell_Type
-  clone C03FibUnbounded_Inv_Inv_Interface as Inv0 with type self = i, type t = t
+  clone C03FibUnbounded_Inv_Inv_Stub as Inv0 with type self = i, type t = t
   val set [@cfg:stackify] (self : C03FibUnbounded_Cell_Type.t_cell t i) (v : t) : ()
     requires {[#"../03_fib_unbounded.rs" 25 4 25 38] Inv0.inv (C03FibUnbounded_Cell_Type.cell_ghost_inv self) v}
     
@@ -70,10 +76,14 @@ module C03FibUnbounded_Impl0_Set
   type i
   use prelude.Borrow
   use C03FibUnbounded_Cell_Type as C03FibUnbounded_Cell_Type
-  clone C03FibUnbounded_Inv_Inv as Inv0 with type self = i, type t = t
+  clone C03FibUnbounded_Inv_Inv_Interface as Inv0 with type self = i, type t = t
   val set [@cfg:stackify] (self : C03FibUnbounded_Cell_Type.t_cell t i) (v : t) : ()
     requires {[#"../03_fib_unbounded.rs" 25 4 25 38] Inv0.inv (C03FibUnbounded_Cell_Type.cell_ghost_inv self) v}
     
+end
+module C03FibUnbounded_Fib_Stub
+  use mach.int.Int
+  function fib (i : int) : int
 end
 module C03FibUnbounded_Fib_Interface
   use mach.int.Int
@@ -121,6 +131,13 @@ module Core_Option_Option_Type
       | C_Some a -> a
       end
 end
+module C03FibUnbounded_Impl1_Inv_Stub
+  use prelude.Borrow
+  use mach.int.Int
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C03FibUnbounded_Fib_Type as C03FibUnbounded_Fib_Type
+  predicate inv (self : C03FibUnbounded_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option int)
+end
 module C03FibUnbounded_Impl1_Inv_Interface
   use prelude.Borrow
   use mach.int.Int
@@ -133,7 +150,7 @@ module C03FibUnbounded_Impl1_Inv
   use mach.int.Int
   use Core_Option_Option_Type as Core_Option_Option_Type
   use C03FibUnbounded_Fib_Type as C03FibUnbounded_Fib_Type
-  clone C03FibUnbounded_Fib_Interface as Fib1 with axiom .
+  clone C03FibUnbounded_Fib_Stub as Fib1 with axiom .
   predicate inv [#"../03_fib_unbounded.rs" 49 4 49 43] (self : C03FibUnbounded_Fib_Type.t_fib) (v : Core_Option_Option_Type.t_option int)
     
    =
@@ -182,6 +199,14 @@ module Alloc_Alloc_Global_Type
     | C_Global
     
 end
+module CreusotContracts_Std1_Vec_Impl0_Model_Stub
+  type t
+  type a
+  use seq.Seq
+  use mach.int.Int
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   type t
   type a
@@ -189,6 +214,7 @@ module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   use mach.int.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
@@ -201,6 +227,16 @@ module CreusotContracts_Std1_Vec_Impl0_Model
     ensures { result = model self }
     
   axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= 18446744073709551615
+end
+module C03FibUnbounded_FibCell_Stub
+  use mach.int.Int
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use C03FibUnbounded_Fib_Type as C03FibUnbounded_Fib_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C03FibUnbounded_Cell_Type as C03FibUnbounded_Cell_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  predicate fib_cell (v : Alloc_Vec_Vec_Type.t_vec (C03FibUnbounded_Cell_Type.t_cell (Core_Option_Option_Type.t_option int) (C03FibUnbounded_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
+    
 end
 module C03FibUnbounded_FibCell_Interface
   use mach.int.Int
@@ -220,7 +256,7 @@ module C03FibUnbounded_FibCell
   use C03FibUnbounded_Cell_Type as C03FibUnbounded_Cell_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use seq.Seq
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = C03FibUnbounded_Cell_Type.t_cell (Core_Option_Option_Type.t_option int) (C03FibUnbounded_Fib_Type.t_fib),
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = C03FibUnbounded_Cell_Type.t_cell (Core_Option_Option_Type.t_option int) (C03FibUnbounded_Fib_Type.t_fib),
     type a = Alloc_Alloc_Global_Type.t_global, axiom .
   predicate fib_cell [#"../03_fib_unbounded.rs" 62 0 62 32] (v : Alloc_Vec_Vec_Type.t_vec (C03FibUnbounded_Cell_Type.t_cell (Core_Option_Option_Type.t_option int) (C03FibUnbounded_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
     
@@ -233,6 +269,11 @@ end
 module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
   type modelTy
+end
+module CreusotContracts_Logic_Model_Model_Model_Stub
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
@@ -247,6 +288,12 @@ module CreusotContracts_Logic_Model_Model_Model
     ensures { result = model self }
     
 end
+module CreusotContracts_Logic_Model_Impl0_Model_Stub
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : t) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Impl0_Model_Interface
   type t
   use prelude.Borrow
@@ -257,7 +304,7 @@ module CreusotContracts_Logic_Model_Impl0_Model
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : t) : ModelTy0.modelTy =
     Model0.model self
@@ -271,6 +318,12 @@ module CreusotContracts_Std1_Vec_Impl0_ModelTy_Type
   use seq.Seq
   type modelTy  =
     Seq.seq t
+end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Stub
+  type self
+  type t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface
   type self
@@ -291,6 +344,13 @@ module Core_Slice_Index_SliceIndex_Output_Type
   type self
   type t
   type output
+end
+module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Stub
+  type self
+  type t
+  clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = self, type t = t
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface
   type self
@@ -325,11 +385,11 @@ module Alloc_Vec_Impl16_Index_Interface
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy0 with type t = t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = i, type t = seq t
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface as HasValue0 with type self = i, type t = seq t,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Stub as HasValue0 with type self = i, type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy, type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface as InBounds0 with type self = i, type t = seq t,
+  clone CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Stub as InBounds0 with type self = i, type t = seq t,
     type ModelTy0.modelTy = ModelTy0.modelTy
-  clone CreusotContracts_Std1_Vec_Impl0_Model_Interface as Model0 with type t = t, type a = a, axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_Model_Stub as Model0 with type t = t, type a = a, axiom .
   val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (Model0.model self)}
     ensures { HasValue0.has_value index (Model0.model self) result }
@@ -355,6 +415,12 @@ module Alloc_Vec_Impl16_Index
     ensures { HasValue0.has_value index (Model0.model self) result }
     
 end
+module CreusotContracts_Std1_Slice_Impl3_InBounds_Stub
+  type t
+  use mach.int.Int
+  use seq.Seq
+  predicate in_bounds [@inline:trivial] (self : int) (seq : Seq.seq t)
+end
 module CreusotContracts_Std1_Slice_Impl3_InBounds_Interface
   type t
   use mach.int.Int
@@ -370,6 +436,12 @@ module CreusotContracts_Std1_Slice_Impl3_InBounds
   val in_bounds [@inline:trivial] (self : int) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
+end
+module CreusotContracts_Std1_Slice_Impl3_HasValue_Stub
+  type t
+  use mach.int.Int
+  use seq.Seq
+  predicate has_value [@inline:trivial] (self : int) (seq : Seq.seq t) (out : t)
 end
 module CreusotContracts_Std1_Slice_Impl3_HasValue_Interface
   type t
@@ -403,10 +475,10 @@ module C03FibUnbounded_FibMemo_Interface
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = C03FibUnbounded_Cell_Type.t_cell (Core_Option_Option_Type.t_option int) (C03FibUnbounded_Fib_Type.t_fib),
     type a = Alloc_Alloc_Global_Type.t_global
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone C03FibUnbounded_Fib_Interface as Fib0 with axiom .
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = Alloc_Vec_Vec_Type.t_vec (C03FibUnbounded_Cell_Type.t_cell (Core_Option_Option_Type.t_option int) (C03FibUnbounded_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global),
+  clone C03FibUnbounded_Fib_Stub as Fib0 with axiom .
+  clone CreusotContracts_Logic_Model_Impl0_Model_Stub as Model0 with type t = Alloc_Vec_Vec_Type.t_vec (C03FibUnbounded_Cell_Type.t_cell (Core_Option_Option_Type.t_option int) (C03FibUnbounded_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global),
     type ModelTy0.modelTy = ModelTy0.modelTy
-  clone C03FibUnbounded_FibCell_Interface as FibCell0
+  clone C03FibUnbounded_FibCell_Stub as FibCell0
   val fib_memo [@cfg:stackify] (mem : Alloc_Vec_Vec_Type.t_vec (C03FibUnbounded_Cell_Type.t_cell (Core_Option_Option_Type.t_option int) (C03FibUnbounded_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global)) (i : int) : int
     requires {[#"../03_fib_unbounded.rs" 68 11 68 25] FibCell0.fib_cell mem}
     requires {[#"../03_fib_unbounded.rs" 69 11 69 28] i < Seq.length (Model0.model mem)}

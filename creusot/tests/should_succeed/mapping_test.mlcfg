@@ -10,12 +10,24 @@ module MappingTest_T_Type
       | C_T a -> a
       end
 end
+module MappingTest_Impl0_Model_Stub
+  use mach.int.Int
+  use map.Map
+  use mach.int.Int32
+  use MappingTest_T_Type as MappingTest_T_Type
+  function model (self : MappingTest_T_Type.t_t) : Map.map int int
+end
 module MappingTest_Impl0_Model_Interface
   use mach.int.Int
   use map.Map
   use mach.int.Int32
   use MappingTest_T_Type as MappingTest_T_Type
   function model (self : MappingTest_T_Type.t_t) : Map.map int int
+  axiom model_spec : forall self : MappingTest_T_Type.t_t . [#"../mapping_test.rs" 15 4 17 76] forall i : int . Map.get (model self) i = (if 0 <= i /\ i < Int32.to_int (MappingTest_T_Type.t_a self) then
+    1
+  else
+    0
+  )
 end
 module MappingTest_Impl0_Model
   use mach.int.Int
@@ -41,6 +53,11 @@ module CreusotContracts_Logic_Ghost_Ghost_Type
       | C_Ghost a -> a
       end
 end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
@@ -59,6 +76,11 @@ module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
   type modelTy
 end
+module CreusotContracts_Logic_Model_Model_Model_Stub
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
@@ -72,6 +94,12 @@ module CreusotContracts_Logic_Model_Model_Model
     ensures { result = model self }
     
 end
+module CreusotContracts_Logic_Model_Impl1_Model_Stub
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : borrowed t) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
   use prelude.Borrow
@@ -82,7 +110,7 @@ module CreusotContracts_Logic_Model_Impl1_Model
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : borrowed t) : ModelTy0.modelTy =
     Model0.model ( * self)
@@ -102,7 +130,7 @@ module MappingTest_Incr_Interface
   use prelude.Borrow
   use map.Map
   use MappingTest_T_Type as MappingTest_T_Type
-  clone MappingTest_Impl0_Model_Interface as Model0 with axiom .
+  clone MappingTest_Impl0_Model_Stub as Model0 with axiom .
   val incr [@cfg:stackify] (t : borrowed (MappingTest_T_Type.t_t)) : ()
     requires {[#"../mapping_test.rs" 23 12 23 26] 0 <= Int32.to_int (MappingTest_T_Type.t_a ( * t))}
     requires {[#"../mapping_test.rs" 24 12 24 28] Int32.to_int (MappingTest_T_Type.t_a ( * t)) < 1000}

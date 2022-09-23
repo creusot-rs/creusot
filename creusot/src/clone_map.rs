@@ -1,5 +1,6 @@
 use creusot_rustc::{
     hir::def_id::DefId,
+    infer::traits::ImplSource,
     middle::ty::{
         self,
         subst::{InternalSubsts, Subst, SubstsRef},
@@ -12,7 +13,7 @@ use creusot_rustc::{
 use heck::CamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
-use rustc_middle::ty::subst::GenericArgKind;
+use rustc_middle::ty::{subst::GenericArgKind, ParamEnv, TraitRef};
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
     Ident, QName,
@@ -20,8 +21,11 @@ use why3::{
 
 use crate::{
     ctx::{self, *},
-    translation::{interface, traits},
-    util::{self, get_builtin, ident_of, ident_of_ty, item_name},
+    translation::{
+        interface,
+        traits::{self, resolve_impl_source_opt},
+    },
+    util::{self, get_builtin, ident_of, ident_of_ty, is_law, item_name},
 };
 
 // Prelude modules
@@ -98,11 +102,11 @@ pub struct CloneMap<'tcx> {
     // Track how many instances of a name already exist
     name_counts: IndexMap<Symbol, usize>,
 
-    // Whether we want to be using the 'full' version of a definition.
-    // When this is true we will clone the body of a logic function, however
-    // we *always* clone the interface of a program definition.
-    // This matches the notion of 'public' clones
-    pub use_full_clones: bool,
+    // Indicates the desired level of information in clones
+    // - Stub: serves purely in logical function definitions to get around the limitations of `clone`
+    // - Interface: Will clone only the interface of used modules
+    // - Body: Will directly use the full body of dependencies, except for program functions
+    clone_level: CloneLevel,
 
     // DefId of the item which is cloning. Used for trait resolution
     self_id: DefId,
@@ -240,7 +244,7 @@ impl<'tcx> CloneInfo<'tcx> {
 }
 
 impl<'tcx> CloneMap<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, self_id: DefId, use_full_clones: bool) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, self_id: DefId, clone_level: CloneLevel) -> Self {
         let names = IndexMap::new();
         let mut c = CloneMap {
             tcx,
@@ -248,7 +252,7 @@ impl<'tcx> CloneMap<'tcx> {
             names,
             name_counts: Default::default(),
             prelude: IndexMap::new(),
-            use_full_clones,
+            clone_level,
             clone_graph: DiGraphMap::new(),
             last_cloned: 0,
             public: false,
@@ -380,6 +384,7 @@ impl<'tcx> CloneMap<'tcx> {
         // to build the correct substitution.
         //
         let mut i = self.last_cloned;
+        let param_env = ctx.param_env(self.self_id);
 
         while i < self.names.len() {
             let key = *self.names.get_index(i).unwrap().0;
@@ -393,6 +398,12 @@ impl<'tcx> CloneMap<'tcx> {
 
             if self.names[&key].kind == Kind::Hidden {
                 continue;
+            }
+
+            if still_specializable(self.tcx, param_env, key.0, key.1) && !is_law(self.tcx, key.0) {
+                if !(self.tcx.parent(self.self_id) == self.tcx.parent(key.0)) {
+                    self.names[&key].opaque();
+                }
             }
 
             ctx.translate(key.0);
@@ -445,8 +456,10 @@ impl<'tcx> CloneMap<'tcx> {
         });
 
         let key_public = self.names[&key].public;
-        // Whether we are treating this clone as an opaque symbol
-        let opaque_clone = !self.use_full_clones || self.names[&key].opaque == CloneOpacity::Opaque;
+
+        let opaque_clone = !matches!(self.clone_level, CloneLevel::Body)
+            || self.names[&key].opaque == CloneOpacity::Opaque;
+
         for (dep, info) in ctx.dependencies(key.0).iter().flat_map(|i| i.iter()) {
             if opaque_clone && !info.public {
                 continue;
@@ -458,7 +471,8 @@ impl<'tcx> CloneMap<'tcx> {
             let dep = self.resolve_dep(ctx, (dep.0, EarlyBinder(dep.1).subst(self.tcx, key.1)));
 
             if let DepNode::Dep((defid, subst)) = dep {
-                trace!("inserting dependency {:?}", dep);
+                trace!("inserting dependency {:?} {:?}", key, dep);
+
                 self.insert(defid, subst).public |= key_public && info.public;
             }
 
@@ -550,7 +564,7 @@ impl<'tcx> CloneMap<'tcx> {
             return;
         }
 
-        if !self.use_full_clones {
+        if self.clone_level == CloneLevel::Stub {
             return;
         }
 
@@ -616,7 +630,7 @@ impl<'tcx> CloneMap<'tcx> {
 
                         Decl::UseDecl(Use { name: name.clone(), as_: None })
                     } else {
-                        let name = cloneable_name(ctx, def_id, false);
+                        let name = cloneable_name(ctx, def_id, CloneLevel::Body);
                         Decl::UseDecl(Use { name: name.clone(), as_: Some(name) })
                     };
                     // self.import_builtin_module(name.clone());
@@ -660,10 +674,9 @@ impl<'tcx> CloneMap<'tcx> {
                 clone_subst.push(CloneSubst::Axiom(None))
             }
 
-            let interface = match self.names[&node].opaque {
-                CloneOpacity::Opaque => true,
-                CloneOpacity::Default => !self.use_full_clones,
-                CloneOpacity::Transparent => false,
+            let interface = match (self.clone_level, self.names[&node].opaque) {
+                (CloneLevel::Body, CloneOpacity::Opaque) => CloneLevel::Interface,
+                (x, _) => x,
             };
 
             debug!(
@@ -730,19 +743,28 @@ pub fn base_subst<'tcx>(
     clone_subst
 }
 
-fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: bool) -> QName {
+// Which kind of module should we clone
+// TODO: Unify with `CloneOpacity`
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum CloneLevel {
+    Stub,
+    Interface,
+    Body,
+}
+
+fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel) -> QName {
     use util::ItemType::*;
 
     // TODO: Refactor.
     match util::item_type(ctx.tcx, def_id) {
-        Logic | Predicate | Impl => {
-            if interface {
-                // TODO: this should directly be a function...
-                QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
-            } else {
-                module_name(ctx, def_id).into()
-            }
-        }
+        Logic | Predicate | Impl => match interface {
+            CloneLevel::Stub => QName {
+                module: Vec::new(),
+                name: format!("{}_Stub", &*module_name(ctx, def_id)).into(),
+            },
+            CloneLevel::Interface => interface::interface_name(ctx, def_id).into(),
+            CloneLevel::Body => module_name(ctx, def_id).into(),
+        },
         Interface | Program | Closure => {
             QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
         }
@@ -808,6 +830,28 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
         Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
         Type => None,
         _ => unreachable!(),
+    }
+}
+
+// We consider an item to be further specializable if it is provided by a parameter bound (ie: `I : Iterator`) *and*
+// the item in question could in theory be refined further (ie: it is a default method or specializable).
+fn still_specializable<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    def_id: DefId,
+    substs: SubstsRef<'tcx>,
+) -> bool {
+    if let Some(_) = tcx.trait_of_item(def_id) {
+        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs).unwrap();
+        let is_final = tcx.impl_defaultness(def_id).is_final();
+        matches!(impl_source, ImplSource::Param(_, _)) && !is_final
+    } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
+        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs).unwrap();
+
+        let is_final = tcx.impl_defaultness(def_id).is_final();
+        matches!(impl_source, ImplSource::Param(_, _)) && !is_final
+    } else {
+        false
     }
 }
 

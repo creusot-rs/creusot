@@ -27,7 +27,7 @@ pub fn default_decl<'tcx>(
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
     info!("generating default declaration for def_id={:?}", def_id);
-    let mut names = CloneMap::new(ctx.tcx, def_id, false);
+    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Interface);
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));

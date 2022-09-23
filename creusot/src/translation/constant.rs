@@ -1,5 +1,5 @@
 use crate::{
-    clone_map::CloneMap,
+    clone_map::{CloneLevel, CloneMap},
     ctx::{module_name, CloneSummary, TranslationCtx},
     traits::resolve_assoc_item_opt,
     translation::specification::typing::Literal,
@@ -25,11 +25,9 @@ use super::fmir::Expr;
 
 impl<'tcx> TranslationCtx<'_, 'tcx> {
     pub fn translate_constant(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
-        let mut names = CloneMap::new(self.tcx, def_id, false);
-        let _ = names.to_clones(self);
         let modl = Module { name: module_name(self, def_id), decls: Vec::new() };
 
-        (modl, names.summary())
+        (modl, CloneSummary::new())
     }
 }
 

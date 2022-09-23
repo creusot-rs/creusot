@@ -197,10 +197,10 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
         let translated = if util::is_logic(self.tcx, def_id) || util::is_predicate(self.tcx, def_id)
         {
             debug!("translating {:?} as logical", def_id);
-            let (modl, proof_modl, has_axioms, deps) =
+            let (stub, modl, proof_modl, has_axioms, deps) =
                 crate::translation::translate_logic_or_predicate(self, def_id);
             self.dependencies.insert(def_id, deps.summary());
-            TranslatedItem::Logic { interface, modl, proof_modl, has_axioms }
+            TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
         } else if !def_id.is_local() {
             debug!("translating {:?} as extern", def_id);
 

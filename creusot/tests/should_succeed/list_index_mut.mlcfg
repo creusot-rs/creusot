@@ -57,6 +57,11 @@ module ListIndexMut_List_Type
       | C_List a _ -> a
       end
 end
+module ListIndexMut_Len_Stub
+  use mach.int.Int
+  use ListIndexMut_List_Type as ListIndexMut_List_Type
+  function len (l : ListIndexMut_List_Type.t_list) : int
+end
 module ListIndexMut_Len_Interface
   use mach.int.Int
   use ListIndexMut_List_Type as ListIndexMut_List_Type
@@ -77,6 +82,13 @@ module ListIndexMut_Len
   val len (l : ListIndexMut_List_Type.t_list) : int
     ensures { result = len l }
     
+end
+module ListIndexMut_Get_Stub
+  use mach.int.Int
+  use mach.int.UInt32
+  use ListIndexMut_Option_Type as ListIndexMut_Option_Type
+  use ListIndexMut_List_Type as ListIndexMut_List_Type
+  function get (l : ListIndexMut_List_Type.t_list) (ix : int) : ListIndexMut_Option_Type.t_option uint32
 end
 module ListIndexMut_Get_Interface
   use mach.int.Int
@@ -117,6 +129,11 @@ module CreusotContracts_Logic_Ghost_Ghost_Type
       | C_Ghost a -> a
       end
 end
+module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
@@ -140,8 +157,8 @@ module ListIndexMut_IndexMut_Interface
   use mach.int.UInt32
   use ListIndexMut_List_Type as ListIndexMut_List_Type
   use ListIndexMut_Option_Type as ListIndexMut_Option_Type
-  clone ListIndexMut_Get_Interface as Get0
-  clone ListIndexMut_Len_Interface as Len0
+  clone ListIndexMut_Get_Stub as Get0
+  clone ListIndexMut_Len_Stub as Len0
   val index_mut [@cfg:stackify] (param_l : borrowed (ListIndexMut_List_Type.t_list)) (param_ix : usize) : borrowed uint32
     requires {[#"../list_index_mut.rs" 39 11 39 36] UInt64.to_int param_ix < Len0.len ( * param_l)}
     ensures { [#"../list_index_mut.rs" 40 10 40 51] ListIndexMut_Option_Type.C_Some ( * result) = Get0.get ( * param_l) (UInt64.to_int param_ix) }
@@ -280,8 +297,8 @@ module ListIndexMut_Write_Interface
   use mach.int.UInt32
   use ListIndexMut_List_Type as ListIndexMut_List_Type
   use ListIndexMut_Option_Type as ListIndexMut_Option_Type
-  clone ListIndexMut_Get_Interface as Get0
-  clone ListIndexMut_Len_Interface as Len0
+  clone ListIndexMut_Get_Stub as Get0
+  clone ListIndexMut_Len_Stub as Len0
   val write [@cfg:stackify] (l : borrowed (ListIndexMut_List_Type.t_list)) (ix : usize) (v : uint32) : ()
     requires {[#"../list_index_mut.rs" 71 11 71 24] UInt64.to_int ix < Len0.len ( * l)}
     ensures { [#"../list_index_mut.rs" 72 10 72 33] ListIndexMut_Option_Type.C_Some v = Get0.get ( ^ l) (UInt64.to_int ix) }

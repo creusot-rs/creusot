@@ -24,10 +24,14 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     }
 
     #[law]
+    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[requires(a.invariant())]
+    #[requires(b.invariant())]
+    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -36,10 +40,10 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
-            exists<is : Seq<I::Item>, fs : Seq<&mut F>>
-                   self.iter.produces(is, succ.iter )
+            exists<items : Seq<I::Item>, fs : Seq<&mut F>>
+                   self.iter.produces(items, succ.iter )
 
-                && is.len() == fs.len()
+                && items.len() == fs.len()
                 && fs.len() == visited.len()
 
                 && (forall<i : Int> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == * fs[i])
@@ -50,14 +54,14 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
 
                 && forall<i : Int>
                     0 <= i && i < visited.len() ==>
-                    fs[i].postcondition_mut((is[i],), visited[i])
+                    fs[i].postcondition_mut((items[i],), visited[i])
         }
     }
 
     #[predicate]
     fn invariant(self) -> bool {
         pearlite! {
-            forall<f : F, e: _> f.precondition((e,))
+            self.iter.invariant() && (forall<f : F, e: _> f.precondition((e,)))
         }
     }
 

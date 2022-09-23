@@ -36,6 +36,14 @@ impl<I: Iterator> Iterator for Fuse<I> {
         }
     }
 
+    #[predicate]
+    fn invariant(self) -> bool {
+        match self.iter {
+            Ok(i) => i.invariant(),
+            Err(gi) => gi.invariant(),
+        }
+    }
+
     #[maintains((mut self).invariant())]
     #[ensures(match result {
       None => self.completed(),

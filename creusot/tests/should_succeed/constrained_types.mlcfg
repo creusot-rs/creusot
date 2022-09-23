@@ -3,6 +3,11 @@ module CreusotContracts_Logic_Model_Model_ModelTy_Type
   type self
   type modelTy
 end
+module CreusotContracts_Logic_Model_Model_Model_Stub
+  type self
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
+  function model (self : self) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
@@ -16,6 +21,12 @@ module CreusotContracts_Logic_Model_Model_Model
     ensures { result = model self }
     
 end
+module CreusotContracts_Logic_Model_Impl0_Model_Stub
+  type t
+  use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : t) : ModelTy0.modelTy
+end
 module CreusotContracts_Logic_Model_Impl0_Model_Interface
   type t
   use prelude.Borrow
@@ -26,13 +37,20 @@ module CreusotContracts_Logic_Model_Impl0_Model
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : t) : ModelTy0.modelTy =
     Model0.model self
   val model (self : t) : ModelTy0.modelTy
     ensures { result = model self }
     
+end
+module CreusotContracts_Logic_Model_Impl4_Model_Stub
+  type t
+  type u
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = u
+  clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
+  function model (self : (t, u)) : (ModelTy0.modelTy, ModelTy1.modelTy)
 end
 module CreusotContracts_Logic_Model_Impl4_Model_Interface
   type t
@@ -46,9 +64,9 @@ module CreusotContracts_Logic_Model_Impl4_Model
   type u
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = u
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model1 with type self = u,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model1 with type self = u,
     type ModelTy0.modelTy = ModelTy1.modelTy
-  clone CreusotContracts_Logic_Model_Model_Model_Interface as Model0 with type self = t,
+  clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
   function model (self : (t, u)) : (ModelTy0.modelTy, ModelTy1.modelTy) =
     (Model0.model (let (a, _) = self in a), Model1.model (let (_, a) = self in a))
@@ -63,6 +81,11 @@ module Core_Cmp_Ordering_Type
     | C_Greater
     
 end
+module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub
+  type self
+  use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
+  function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
+end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
@@ -76,6 +99,10 @@ module CreusotContracts_Logic_Ord_OrdLogic_CmpLog
     ensures { result = cmp_log self _2' }
     
 end
+module CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub
+  type self
+  predicate lt_log (self : self) (o : self)
+end
 module CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface
   type self
   predicate lt_log (self : self) (o : self)
@@ -83,12 +110,17 @@ end
 module CreusotContracts_Logic_Ord_OrdLogic_LtLog
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = self
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   predicate lt_log (self : self) (o : self) =
     CmpLog0.cmp_log self o = Core_Cmp_Ordering_Type.C_Less
   val lt_log (self : self) (o : self) : bool
     ensures { result = lt_log self o }
     
+end
+module CreusotContracts_Logic_Ord_Impl0_LtLog_Stub
+  type a
+  type b
+  predicate lt_log (self : (a, b)) (o : (a, b))
 end
 module CreusotContracts_Logic_Ord_Impl0_LtLog_Interface
   type a
@@ -98,8 +130,8 @@ end
 module CreusotContracts_Logic_Ord_Impl0_LtLog
   type a
   type b
-  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog1 with type self = a
-  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = b
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog1 with type self = a
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog0 with type self = b
   predicate lt_log (self : (a, b)) (o : (a, b)) =
     (let (a, _) = self in a) = (let (a, _) = o in a) /\ LtLog0.lt_log (let (_, a) = self in a) (let (_, a) = o in a) \/ LtLog1.lt_log (let (a, _) = self in a) (let (a, _) = o in a)
   val lt_log (self : (a, b)) (o : (a, b)) : bool
@@ -122,11 +154,10 @@ module Core_Tuple_Impl7_Lt_Interface
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy1 with type self = u
   clone CreusotContracts_Logic_Model_Impl4_ModelTy_Type as ModelTy0 with type t = u, type u = t,
     type ModelTy0.modelTy = ModelTy1.modelTy, type ModelTy1.modelTy = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Ord_Impl0_LtLog_Interface as LtLog0 with type a = ModelTy1.modelTy,
-    type b = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Model_Impl4_Model_Interface as Model1 with type t = u, type u = t,
+  clone CreusotContracts_Logic_Ord_Impl0_LtLog_Stub as LtLog0 with type a = ModelTy1.modelTy, type b = ModelTy2.modelTy
+  clone CreusotContracts_Logic_Model_Impl4_Model_Stub as Model1 with type t = u, type u = t,
     type ModelTy0.modelTy = ModelTy1.modelTy, type ModelTy1.modelTy = ModelTy2.modelTy
-  clone CreusotContracts_Logic_Model_Impl0_Model_Interface as Model0 with type t = (u, t),
+  clone CreusotContracts_Logic_Model_Impl0_Model_Stub as Model0 with type t = (u, t),
     type ModelTy0.modelTy = ModelTy0.modelTy
   val lt [@cfg:stackify] (self : (u, t)) (other : (u, t)) : bool
     ensures { [#"../constrained_types.rs" 9 18 9 47] result = LtLog0.lt_log (Model0.model self) (Model1.model other) }
@@ -150,6 +181,10 @@ module Core_Tuple_Impl7_Lt
     ensures { [#"../constrained_types.rs" 9 18 9 47] result = LtLog0.lt_log (Model0.model self) (Model1.model other) }
     
 end
+module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
+end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
   predicate resolve (self : self)
@@ -161,6 +196,11 @@ module CreusotContracts_Logic_Resolve_Resolve_Resolve
     ensures { result = resolve self }
     
 end
+module CreusotContracts_Logic_Resolve_Impl0_Resolve_Stub
+  type t1
+  type t2
+  predicate resolve (self : (t1, t2))
+end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve_Interface
   type t1
   type t2
@@ -169,13 +209,17 @@ end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve
   type t1
   type t2
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve1 with type self = t2
-  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface as Resolve0 with type self = t1
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve1 with type self = t2
+  clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve0 with type self = t1
   predicate resolve (self : (t1, t2)) =
     Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
   val resolve (self : (t1, t2)) : bool
     ensures { result = resolve self }
     
+end
+module CreusotContracts_Logic_Resolve_Impl2_Resolve_Stub
+  type t
+  predicate resolve (self : t)
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
   type t
@@ -194,6 +238,11 @@ module CreusotContracts_Logic_Int_Impl14_ModelTy_Type
   type modelTy  =
     int
 end
+module CreusotContracts_Logic_Int_Impl14_Model_Stub
+  use mach.int.Int
+  use mach.int.UInt32
+  function model (self : uint32) : int
+end
 module CreusotContracts_Logic_Int_Impl14_Model_Interface
   use mach.int.Int
   use mach.int.UInt32
@@ -207,6 +256,10 @@ module CreusotContracts_Logic_Int_Impl14_Model
   val model (self : uint32) : int
     ensures { result = model self }
     
+end
+module CreusotContracts_Logic_Ord_Impl1_LtLog_Stub
+  use mach.int.Int
+  predicate lt_log (self : int) (_2' : int)
 end
 module CreusotContracts_Logic_Ord_Impl1_LtLog_Interface
   use mach.int.Int

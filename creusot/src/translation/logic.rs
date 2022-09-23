@@ -10,7 +10,7 @@ use why3::{
     Ident,
 };
 
-fn binders_to_args(
+pub fn binders_to_args(
     ctx: &mut TranslationCtx,
     binders: Vec<Binder>,
 ) -> (Vec<why3::Exp>, Vec<Binder>) {
@@ -42,8 +42,8 @@ fn binders_to_args(
 pub fn translate_logic_or_predicate<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
-) -> (Module, Option<Module>, bool, CloneMap<'tcx>) {
-    let mut names = CloneMap::new(ctx.tcx, def_id, false);
+) -> (Module, Module, Option<Module>, bool, CloneMap<'tcx>) {
+    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
 
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
     let mut val_sig = sig.clone();
@@ -118,7 +118,34 @@ pub fn translate_logic_or_predicate<'tcx>(
     }
 
     let name = module_name(ctx, def_id);
-    (Module { name, decls }, proof_modl, has_axioms, names)
+
+    (stub_module(ctx, def_id), Module { name, decls }, proof_modl, has_axioms, names)
+}
+
+fn stub_module(ctx: &mut TranslationCtx, def_id: DefId) -> Module {
+    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
+    let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
+
+    if util::is_predicate(ctx.tcx, def_id) {
+        sig.retty = None;
+    }
+    sig.contract = Contract::new();
+
+    let decl = match util::item_type(ctx.tcx, def_id) {
+        ItemType::Logic => Decl::ValDecl(ValKind::Function { sig }),
+        ItemType::Predicate => Decl::ValDecl(ValKind::Predicate { sig }),
+        _ => unreachable!(),
+    };
+
+    let name = module_name(ctx, def_id);
+    let name = format!("{}_Stub", &*name).into();
+
+    let mut decls: Vec<_> = Vec::new();
+    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
+    decls.extend(names.to_clones(ctx));
+    decls.push(decl);
+
+    Module { name, decls }
 }
 
 fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
@@ -126,7 +153,7 @@ fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, def_id, true);
+    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
 
     let sig = crate::util::signature_of(ctx, &mut names, def_id);
 

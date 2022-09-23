@@ -5,7 +5,7 @@ use why3::{
     Ident,
 };
 
-use crate::{clone_map::CloneMap, ctx::*, util};
+use crate::{clone_map::CloneMap, ctx::*, translation::spec_axiom, util};
 
 use creusot_rustc::{
     hir::def_id::DefId,
@@ -22,7 +22,7 @@ pub fn interface_for<'tcx>(
     def_id: DefId,
 ) -> (Module, CloneMap<'tcx>) {
     debug!("interface_for: {def_id:?}");
-    let mut names = CloneMap::new(ctx.tcx, def_id, false);
+    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
     let mut sig = util::signature_of(ctx, &mut names, def_id);
 
     sig.contract.variant = Vec::new();
@@ -53,13 +53,25 @@ pub fn interface_for<'tcx>(
 
     match util::item_type(ctx.tcx, def_id) {
         ItemType::Predicate => {
+            let sig_contract = sig.clone();
             sig.retty = None;
             sig.contract = Contract::new();
             decls.push(Decl::ValDecl(ValKind::Predicate { sig }));
+
+            let has_axioms = !sig_contract.contract.is_empty();
+            if has_axioms {
+                decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
+            }
         }
         ItemType::Logic => {
+            let sig_contract = sig.clone();
             sig.contract = Contract::new();
             decls.push(Decl::ValDecl(ValKind::Function { sig }));
+
+            let has_axioms = !sig_contract.contract.is_empty();
+            if has_axioms {
+                decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
+            }
         }
         _ => {
             if !def_id.is_local() && !ctx.externs.verified(def_id) && sig.contract.is_empty() {

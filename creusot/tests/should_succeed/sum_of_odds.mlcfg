@@ -1,4 +1,8 @@
 
+module SumOfOdds_Sqr_Stub
+  use mach.int.Int
+  function sqr (x : int) : int
+end
 module SumOfOdds_Sqr_Interface
   use mach.int.Int
   function sqr (x : int) : int
@@ -11,18 +15,26 @@ module SumOfOdds_Sqr
     ensures { result = sqr x }
     
 end
+module SumOfOdds_IsSquare_Stub
+  use mach.int.Int
+  predicate is_square (y : int)
+end
 module SumOfOdds_IsSquare_Interface
   use mach.int.Int
   predicate is_square (y : int)
 end
 module SumOfOdds_IsSquare
   use mach.int.Int
-  clone SumOfOdds_Sqr_Interface as Sqr0
+  clone SumOfOdds_Sqr_Stub as Sqr0
   predicate is_square [#"../sum_of_odds.rs" 12 0 12 28] (y : int) =
     [#"../sum_of_odds.rs" 13 4 13 44] exists z : int . y = Sqr0.sqr z
   val is_square (y : int) : bool
     ensures { result = is_square y }
     
+end
+module SumOfOdds_SumOfOdd_Stub
+  use mach.int.Int
+  function sum_of_odd (x : int) : int
 end
 module SumOfOdds_SumOfOdd_Interface
   use mach.int.Int
@@ -51,18 +63,26 @@ module SumOfOdds_SumOfOdd_Impl
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../sum_of_odds.rs" 16 0 16 8] if x <= 0 then 0 else sum_of_odd (x - 1) + 2 * x - 1
 end
+module SumOfOdds_SumOfOddIsSqr_Stub
+  use mach.int.Int
+  use mach.int.Int32
+  clone SumOfOdds_Sqr_Stub as Sqr0
+  clone SumOfOdds_SumOfOdd_Stub as SumOfOdd0 with axiom .
+  function sum_of_odd_is_sqr (x : int) : ()
+end
 module SumOfOdds_SumOfOddIsSqr_Interface
   use mach.int.Int
   use mach.int.Int32
-  clone SumOfOdds_Sqr_Interface as Sqr0
-  clone SumOfOdds_SumOfOdd_Interface as SumOfOdd0 with axiom .
+  clone SumOfOdds_Sqr_Stub as Sqr0
+  clone SumOfOdds_SumOfOdd_Stub as SumOfOdd0 with axiom .
   function sum_of_odd_is_sqr (x : int) : ()
+  axiom sum_of_odd_is_sqr_spec : forall x : int . ([#"../sum_of_odds.rs" 27 11 27 17] x >= 0) -> ([#"../sum_of_odds.rs" 28 10 28 33] SumOfOdd0.sum_of_odd x = Sqr0.sqr x)
 end
 module SumOfOdds_SumOfOddIsSqr
   use mach.int.Int
   use mach.int.Int32
-  clone SumOfOdds_Sqr_Interface as Sqr0
-  clone SumOfOdds_SumOfOdd_Interface as SumOfOdd0 with axiom .
+  clone SumOfOdds_Sqr_Stub as Sqr0
+  clone SumOfOdds_SumOfOdd_Stub as SumOfOdd0 with axiom .
   function sum_of_odd_is_sqr [#"../sum_of_odds.rs" 30 0 30 28] (x : int) : ()
   val sum_of_odd_is_sqr (x : int) : ()
     requires {[#"../sum_of_odds.rs" 27 11 27 17] x >= 0}
@@ -92,7 +112,7 @@ module SumOfOdds_ComputeSumOfOdd_Interface
   use mach.int.UInt32
   use mach.int.Int
   use mach.int.Int32
-  clone SumOfOdds_SumOfOdd_Interface as SumOfOdd0 with axiom .
+  clone SumOfOdds_SumOfOdd_Stub as SumOfOdd0 with axiom .
   val compute_sum_of_odd [@cfg:stackify] (x : uint32) : uint32
     requires {[#"../sum_of_odds.rs" 34 11 34 23] UInt32.to_int x < 65536}
     ensures { [#"../sum_of_odds.rs" 35 10 35 35] UInt32.to_int result = SumOfOdd0.sum_of_odd (UInt32.to_int x) }
