@@ -64,36 +64,12 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
     // Should not quantify over self or the `invariant` cannot be made into a type invariant
     #[predicate]
     fn invariant(self) -> bool {
-        // invariant implies precondition
         pearlite! {
-            (forall<reset : &mut Self>
-                reset.completed() ==>
-                (^reset).iter.invariant() ==>
-                (^reset).has_precond() &&
-                (forall<initial: Self>
-                    initial.iter.invariant() ==>
-                    (^reset).inner_extension(initial) ==>
-                    initial.has_precond()  ==>
-                    // post condition implies invariant
-                    forall<n: Self, b: B>
-                        n.iter.invariant() ==>
-                        initial.produces(Seq::singleton(b), n) ==>
-                            n.has_precond()
-                )
-            ) &&
-            (forall<initial: Self>
-                self.inner_extension(initial) ==>
-                initial.has_precond()  ==>
-                initial.iter.invariant() ==>
-                // post condition implies invariant
-                forall<n: Self, b: B>
-                    n.iter.invariant() ==>
-                    initial.produces(Seq::singleton(b), n) ==>
-                        n.has_precond()
-            ) &&
+            Self::reinitialize() &&
+            self.preservation() &&
             self.init_iter.invariant() && self.iter.invariant() &&
             self.init_iter.produces(*self.produced, self.iter) &&
-            self.has_precond()
+            self.has_precond(self.iter, Seq::EMPTY)
         }
     }
 
@@ -133,11 +109,11 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
 
     // Probably needs to be reworked
     #[predicate]
-    fn has_precond(self) -> bool {
+    fn has_precond(self, start: I, with: Seq<I::Item>) -> bool {
         pearlite! {
             forall<e : I::Item, i2 : I>
                 i2.invariant() ==>
-                self.iter.produces(Seq::singleton(e), i2) ==> self.func.precondition((e, self.produced))
+                start.produces(with.push(e), i2) ==> self.func.precondition((e, self.produced))
         }
     }
 
@@ -161,29 +137,45 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
     fn new_logic(iter: I, func: F) -> Self {
         Map { iter, func, init_iter: Ghost(iter), produced: Ghost(Seq::EMPTY) }
     }
+
+    #[predicate]
+    fn reinitialize() -> bool {
+        pearlite! {
+            forall<reset : &mut Map<I, _, F>>
+                reset.completed() ==>
+                (^reset).iter.invariant() ==>
+                (^reset).has_precond((^reset).iter, Seq::EMPTY) &&
+                (^reset).preservation()
+        }
+    }
+
+    #[predicate]
+    fn preservation(self) -> bool {
+        pearlite! {
+            forall<initial: Self>
+                self.inner_extension(initial) ==>
+                initial.has_precond(initial.iter, Seq::EMPTY)  ==>
+                initial.iter.invariant() ==>
+                // post condition implies invariant
+                forall<n: Self, b: B>
+                    n.iter.invariant() ==>
+                    initial.produces(Seq::singleton(b), n) ==>
+                        n.has_precond(n.iter, Seq::EMPTY)
+
+        }
+    }
 }
 
 #[requires(forall<e : I::Item, i2 : I> i2.invariant() ==> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost(Seq::EMPTY))))]
-#[requires(forall<reset : &mut Map<I, _, F>>
-    reset.completed() ==>
-    (^reset).iter.invariant() ==>
-    (^reset).has_precond() &&
-    (forall<initial: _> (^reset).inner_extension(initial) ==>
-        initial.iter.invariant() ==>
-        initial.has_precond()  ==>
-        forall<n: _, b: B> initial.produces(Seq::singleton(b), n) ==> n.has_precond()
-    )
-)]
+#[requires(Map::<I, _, F>::reinitialize())]
 #[requires(iter.invariant())]
-#[requires(forall<initial: Map<I, _, _>>
+#[requires(
+    forall<initial: Map<I, _, _>>
     initial.iter.invariant() ==>
     Map::new_logic(iter, func).inner_extension(initial) ==>
-    initial.has_precond() ==>
+    initial.has_precond(initial.iter, Seq::EMPTY) ==>
     forall<n: Map<I, _, _>, b: B> n.iter.invariant() ==> initial.produces(Seq::singleton(b), n) ==>
-        (forall<e : I::Item, i2 : I>
-                i2.invariant() ==>
-                // having iter on the left hand side is *crucial* to increment.
-                iter.produces(n.produced.push(e), i2) ==> n.func.precondition((e, n.produced)))
+        n.has_precond(iter, *n.produced)
 )]
 #[ensures(result.invariant())]
 #[ensures(result == Map { init_iter: Ghost(iter), iter, func, produced: Ghost(Seq::EMPTY) })]
