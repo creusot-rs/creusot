@@ -187,7 +187,7 @@ pub fn map<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B>(
 }
 
 #[requires(iter.invariant())]
-fn identity<I: Iterator>(iter: I) {
+pub fn identity<I: Iterator>(iter: I) {
     map(iter, |x, _| x);
 }
 
@@ -199,7 +199,7 @@ fn identity<I: Iterator>(iter: I) {
 #[requires(forall<prod : _, fin: I> fin.invariant() ==> iter.produces(prod, fin) ==>
     forall<x : _> 0 <= x && x < prod.len() ==> prod[x] <= 10u32
 )]
-fn increment<I: Iterator<Item = u32>>(iter: I) {
+pub fn increment<I: Iterator<Item = u32>>(iter: I) {
     let i = map(
         iter,
         #[requires(@x <= 15)]
@@ -211,4 +211,20 @@ fn increment<I: Iterator<Item = u32>>(iter: I) {
         forall<prod : _, fin: Map<_, _, _>> fin.invariant() ==> i.produces(prod, fin) ==>
             forall<x : _> 0 <= x && x < prod.len() ==> prod[x] <= 11u32
     };
+}
+
+#[requires(iter.invariant())]
+#[requires(forall<done_ : &mut I> done_.completed() ==> (^done_).invariant() ==> forall<next : I, steps: Seq<_>> (^done_).produces(steps, next) ==> steps == Seq::EMPTY && ^done_ == next)]
+#[requires(forall<prod : _, fin: I> fin.invariant() ==> iter.produces(prod, fin) ==> prod.len() <= @usize::MAX)]
+pub fn counter<I: Iterator<Item = u32>>(iter: I) {
+    let mut cnt = 0;
+    map(
+        iter,
+        #[requires(@cnt == (*prod).len() && cnt < usize::MAX)]
+        #[ensures(@cnt == @old(cnt) + 1)]
+        |x, prod: Ghost<Seq<_>>| {
+            cnt += 1;
+            x
+        },
+    );
 }
