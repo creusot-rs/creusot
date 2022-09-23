@@ -84,7 +84,6 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
 
                     crate::constant::from_ty_const(
                         self.ctx,
-                        self.names,
                         constant,
                         self.param_env,
                         creusot_rustc::span::DUMMY_SP,
@@ -388,7 +387,8 @@ pub(crate) fn lower_literal<'tcx>(
                 Constant::const_false().into()
             }
         }
-        Literal::Function => Exp::Tuple(Vec::new()),
+        // TODO: Perform clone
+        Literal::Function(_, _) => Exp::Tuple(Vec::new()),
         Literal::Float(f) => Constant::Float(f).into(),
         Literal::ZST => Exp::Tuple(Vec::new()),
         _ => unimplemented!("literal: {lit:?}"),

@@ -15,10 +15,11 @@ use creusot_rustc::{
     hir::{def::DefKind, def_id::DefId, Unsafety},
     middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyKind, TypeVisitable},
     resolve::Namespace,
-    smir::mir::{BasicBlock, BinOp, Body, Place, UnOp},
+    smir::mir::{self, BasicBlock, BinOp, Place, UnOp},
     span::{Span, Symbol, DUMMY_SP},
     target::abi::VariantIdx,
 };
+use indexmap::IndexMap;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     exp::{Exp, Pattern},
@@ -41,20 +42,22 @@ pub enum RValue<'tcx> {
 }
 
 pub enum Expr<'tcx> {
+    // TODO: Get rid of this
     Place(Place<'tcx>),
+
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
     BinOp(BinOp, Ty<'tcx>, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
     UnaryOp(UnOp, Box<Expr<'tcx>>),
+    // TODO: Split out closures?
     Constructor(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
     Call(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
-    Constant(Literal),
+    Constant(Literal<'tcx>),
     Cast(Box<Expr<'tcx>>, Ty<'tcx>, Ty<'tcx>),
     Tuple(Vec<Expr<'tcx>>),
     Span(Span, Box<Expr<'tcx>>),
     Len(Box<Expr<'tcx>>),
     // Migration escape hatch
-    Exp(why3::exp::Exp),
 }
 
 impl<'tcx> Expr<'tcx> {
@@ -62,7 +65,7 @@ impl<'tcx> Expr<'tcx> {
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut CloneMap<'tcx>,
-        body: Option<&Body<'tcx>>,
+        body: Option<&mir::Body<'tcx>>,
     ) -> Exp {
         match self {
             Expr::Place(pl) => {
@@ -152,7 +155,6 @@ impl<'tcx> Expr<'tcx> {
             Expr::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, body)).collect())
             }
-            Expr::Exp(e) => e,
             Expr::Span(sp, e) => {
                 let e = e.to_why(ctx, names, body);
                 ctx.attach_span(sp, e)
@@ -208,7 +210,6 @@ impl<'tcx> Expr<'tcx> {
             Expr::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
             Expr::Span(_, e) => e.invalidated_places(places),
             Expr::Len(e) => e.invalidated_places(places),
-            Expr::Exp(_) => {}
         }
     }
 }
@@ -284,7 +285,7 @@ impl<'tcx> Terminator<'tcx> {
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut CloneMap<'tcx>,
-        body: Option<&Body<'tcx>>,
+        body: Option<&mir::Body<'tcx>>,
     ) -> why3::mlcfg::Terminator {
         use why3::mlcfg::Terminator::*;
         match self {
@@ -367,6 +368,10 @@ impl<'tcx> Branches<'tcx> {
     }
 }
 
+pub struct Body<'tcx> {
+    pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
+}
+
 pub struct Block<'tcx> {
     pub(crate) stmts: Vec<Statement<'tcx>>,
     pub(crate) terminator: Terminator<'tcx>,
@@ -377,7 +382,7 @@ impl<'tcx> Block<'tcx> {
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut CloneMap<'tcx>,
-        body: &Body<'tcx>,
+        body: &mir::Body<'tcx>,
         param_env: ParamEnv<'tcx>,
     ) -> why3::mlcfg::Block {
         mlcfg::Block {
@@ -391,28 +396,12 @@ impl<'tcx> Block<'tcx> {
     }
 }
 
-// pub struct Builder<'tcx> {
-//     blocks: IndexMap<BasicBlock, Block<'tcx>>,
-//     current: Block<'tcx>,
-//     block_id: BasicBlock,
-// }
-
-// impl<'tcx> Builder<'tcx> {
-//     pub(crate) fn new() -> Self {
-//         Builder {
-//             blocks: Default::default(),
-//             block_id: BasicBlock::MAX,
-//             current: Block { stmts: Vec::new(), terminator: None },
-//         }
-//     }
-// }
-
 impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut CloneMap<'tcx>,
-        body: &Body<'tcx>,
+        body: &mir::Body<'tcx>,
         param_env: ParamEnv<'tcx>,
     ) -> Vec<mlcfg::Statement> {
         match self {
@@ -547,5 +536,19 @@ pub(crate) fn uint_to_int(uty: &UintTy) -> Exp {
         UintTy::U32 => Exp::impure_qvar(QName::from_string("UInt32.to_int").unwrap()),
         UintTy::U64 => Exp::impure_qvar(QName::from_string("UInt64.to_int").unwrap()),
         UintTy::U128 => Exp::impure_qvar(QName::from_string("UInt128.to_int").unwrap()),
+    }
+}
+impl<'tcx> Body<'tcx> {
+    pub(crate) fn to_why(
+        self,
+        ctx: &mut TranslationCtx<'_, 'tcx>,
+        names: &mut CloneMap<'tcx>,
+        body: &mir::Body<'tcx>,
+        param_env: ParamEnv<'tcx>,
+    ) -> std::collections::BTreeMap<BlockId, mlcfg::Block> {
+        self.blocks
+            .into_iter()
+            .map(|(bb, block)| (BlockId(bb.index()), block.to_why(ctx, names, body, param_env)))
+            .collect()
     }
 }

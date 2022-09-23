@@ -63,7 +63,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
                             return;
                         }
                     };
-                    crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
+                    crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
                 }
             },
             Rvalue::Ref(_, ss, pl) => match ss {

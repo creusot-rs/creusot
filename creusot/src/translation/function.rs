@@ -31,7 +31,7 @@ use creusot_rustc::{
     transform::{remove_false_edges::*, simplify::*},
 };
 use indexmap::IndexMap;
-use std::{collections::BTreeMap, rc::Rc};
+use std::{mem, rc::Rc};
 use why3::{declaration::*, exp::*, mlcfg::*, ty::Type, Ident};
 
 use super::specification::typing::Term;
@@ -100,9 +100,9 @@ pub(crate) fn translate_function<'tcx, 'sess>(
         .and_then(|span| ctx.span_attr(span))
         .map(|attr| sig.attrs.push(attr));
 
-    let func_translator = BodyTranslator::build_context(tcx, ctx, &body, &mut names, sig, def_id);
+    let func_translator = BodyTranslator::build_context(tcx, ctx, &body, sig, def_id);
 
-    decls.extend(func_translator.translate());
+    decls.extend(func_translator.translate(&mut names));
     let name = module_name(ctx, def_id);
     Module { name, decls }
 }
@@ -144,16 +144,13 @@ pub struct BodyTranslator<'body, 'sess, 'tcx> {
     // Current block being generated
     current_block: (Vec<fmir::Statement<'tcx>>, Option<fmir::Terminator<'tcx>>),
 
-    past_blocks: BTreeMap<BasicBlock, fmir::Block<'tcx>>,
+    past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
 
     // Type translation context
     ctx: &'body mut TranslationCtx<'sess, 'tcx>,
 
     // Fresh BlockId
     fresh_id: usize,
-
-    // Gives a fresh name to every mono-morphization of a function or trait
-    names: &'body mut CloneMap<'tcx>,
 
     invariants: IndexMap<BasicBlock, Vec<(Symbol, Term<'tcx>)>>,
 
@@ -167,7 +164,6 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'sess, 'tcx>,
         body: &'body Body<'tcx>,
-        names: &'body mut CloneMap<'tcx>,
         sig: Signature,
         def_id: DefId,
     ) -> Self {
@@ -203,27 +199,25 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             def_id,
             resolver,
             erased_locals,
-            // local_map,
             current_block: (Vec::new(), None),
-            past_blocks: BTreeMap::new(),
+            past_blocks: Default::default(),
             ctx,
             fresh_id: body.basic_blocks().len(),
-            names,
             invariants,
             assertions,
             borrows,
         }
     }
 
-    fn translate(mut self) -> Vec<Decl> {
+    fn translate(mut self, names: &mut CloneMap<'tcx>) -> Vec<Decl> {
         let mut decls: Vec<_> = Vec::new();
 
-        decls.extend(self.names.to_clones(self.ctx));
+        decls.extend(names.to_clones(self.ctx));
 
-        self.translate_body();
+        let body = self.translate_body();
 
         let arg_count = self.body.arg_count;
-        let vars = self.translate_vars();
+        let vars = self.translate_vars(names);
 
         assert!(self.assertions.is_empty(), "unused assertions");
         assert!(self.invariants.is_empty(), "unused invariants");
@@ -240,7 +234,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
                 .collect(),
             terminator: Terminator::Goto(BlockId(0)),
         };
-        decls.extend(self.names.to_clones(self.ctx));
+        decls.extend(names.to_clones(self.ctx));
 
         let param_env = self.param_env();
         let func = Decl::FunDecl(CfgFunction {
@@ -249,20 +243,14 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             constant: false,
             vars: vars.into_iter().map(|i| (i.0, i.1.ident(), i.2)).collect(),
             entry,
-            blocks: self
-                .past_blocks
-                .into_iter()
-                .map(|(bb, bbd)| {
-                    (BlockId(bb.into()), bbd.to_why(self.ctx, self.names, self.body, param_env))
-                })
-                .collect(),
+            blocks: body.to_why(self.ctx, names, self.body, param_env),
         });
-        decls.extend(self.names.to_clones(self.ctx));
+        decls.extend(names.to_clones(self.ctx));
         decls.push(func);
         decls
     }
 
-    fn translate_body(&mut self) {
+    fn translate_body(&mut self) -> fmir::Body<'tcx> {
         for (bb, bbd) in reverse_postorder(self.body) {
             self.current_block = (vec![], None);
             if bbd.is_cleanup {
@@ -292,9 +280,11 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 
             self.past_blocks.insert(bb, block);
         }
+
+        fmir::Body { blocks: mem::take(&mut self.past_blocks) }
     }
 
-    fn translate_vars(&mut self) -> Vec<(bool, LocalIdent, Type)> {
+    fn translate_vars(&mut self, names: &mut CloneMap<'tcx>) -> Vec<(bool, LocalIdent, Type)> {
         let mut vars = Vec::with_capacity(self.body.local_decls.len());
 
         for (loc, decl) in self.body.local_decls.iter_enumerated() {
@@ -306,7 +296,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             vars.push((
                 false,
                 ident,
-                ty::translate_ty(&mut self.ctx, &mut self.names, decl.source_info.span, decl.ty),
+                ty::translate_ty(&mut self.ctx, names, decl.source_info.span, decl.ty),
             ))
         }
 
@@ -381,7 +371,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
             let pred_id = pred;
 
             // Otherwise, we emit the deaths and move them to a stand-alone block.
-            self.past_blocks.get_mut(&pred_id).unwrap().terminator.retarget(bb, drop_block);
+            self.past_blocks.get_mut(pred_id).unwrap().terminator.retarget(bb, drop_block);
             self.past_blocks.insert(
                 drop_block,
                 fmir::Block { stmts: deaths, terminator: fmir::Terminator::Goto(bb) },
@@ -413,7 +403,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => Expr::Place(*pl),
             Operand::Constant(c) => {
-                crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
+                crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
             }
         }
     }

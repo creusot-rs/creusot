@@ -187,6 +187,6 @@ fn translate_operand<'tcx>(
 
     match operand {
         Move(pl) | Copy(pl) => translate_rplace_inner(ctx, names, body, pl.local, pl.projection),
-        Constant(c) => from_mir_constant(param_env, ctx, names, c).to_why(ctx, names, Some(body)),
+        Constant(c) => from_mir_constant(param_env, ctx, c).to_why(ctx, names, Some(body)),
     }
 }

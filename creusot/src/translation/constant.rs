@@ -1,5 +1,4 @@
 use crate::{
-    clone_map::CloneMap,
     ctx::{module_name, CloneSummary, TranslationCtx},
     traits::resolve_assoc_item_opt,
     translation::specification::typing::Literal,
@@ -15,11 +14,7 @@ use creusot_rustc::{
     span::Span,
     target::abi::Size,
 };
-use why3::{
-    declaration::Module,
-    exp::{Constant, Exp},
-    QName,
-};
+use why3::declaration::Module;
 
 use super::fmir::Expr;
 
@@ -34,21 +29,20 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
     c: &creusot_rustc::smir::mir::Constant<'tcx>,
 ) -> Expr<'tcx> {
-    from_mir_constant_kind(ctx, names, c.literal, env, c.span)
+    from_mir_constant_kind(ctx, c.literal, env, c.span)
 }
 
 pub(crate) fn from_mir_constant_kind<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
+    // names: &mut CloneMap<'tcx>,
     ck: creusot_rustc::smir::mir::ConstantKind<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
 ) -> Expr<'tcx> {
     if let Some(c) = ck.const_for_ty() {
-        return from_ty_const(ctx, names, c, env, span);
+        return from_ty_const(ctx, c, env, span);
     }
 
     if ck.ty().is_unit() {
@@ -61,16 +55,17 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
             let size = Size::from_bytes(end);
             let bytes = data.inner().get_bytes(&ctx.tcx, AllocRange { start, size }).unwrap();
             let string = std::str::from_utf8(bytes).unwrap();
-            return Expr::Exp(Exp::Const(Constant::String(string.into())));
+
+            return Expr::Constant(Literal::String(string.into()));
         }
     }
 
-    return Expr::Constant(try_to_bits(ctx, names, env, ck.ty(), span, ck));
+    return Expr::Constant(try_to_bits(ctx, env, ck.ty(), span, ck));
 }
 
 pub(crate) fn from_ty_const<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
+    // names: &mut CloneMap<'tcx>,
     c: Const<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
@@ -78,31 +73,30 @@ pub(crate) fn from_ty_const<'tcx>(
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
     if let ConstKind::Unevaluated(u) = c.kind() &&
-       let Some(builtin_nm) = get_builtin(ctx.tcx, u.def.did) &&
-       let Some(nm) = QName::from_string(builtin_nm.as_str()) {
-            names.import_builtin_module(nm.clone().module_qname());
-            return Expr::Exp(Exp::pure_qvar(nm.without_search_path()));
-    };
+       let Some(_) = get_builtin(ctx.tcx, u.def.did) {
+        return Expr::Constant(Literal::Function(u.def.did, u.substs))
+       };
 
     if let ConstKind::Unevaluated(Unevaluated { promoted: Some(p), .. }) = c.kind() {
-        return Expr::Exp(Exp::impure_var(format!("promoted{:?}", p.as_usize()).into()));
+        todo!("implement promoted")
+        // return Expr::Place(Symbol::intern(format!("promoted{:?}", p.as_usize())));
     }
 
     if let ConstKind::Param(_) = c.kind() {
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
 
-    return Expr::Constant(try_to_bits(ctx, names, env, c.ty(), span, c));
+    return Expr::Constant(try_to_bits(ctx, env, c.ty(), span, c));
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx>>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
-    names: &mut CloneMap<'tcx>,
+    // names: &mut CloneMap<'tcx>,
     env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
     span: Span,
     c: C,
-) -> Literal {
+) -> Literal<'tcx> {
     use rustc_middle::ty::{FloatTy, IntTy, UintTy};
     use rustc_type_ir::sty::TyKind::{Bool, Float, FnDef, Int, Uint};
     match ty.kind() {
@@ -153,8 +147,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
         FnDef(def_id, subst) => {
             let method =
                 resolve_assoc_item_opt(ctx.tcx, env, *def_id, subst).unwrap_or((*def_id, subst));
-            names.insert(method.0, method.1);
-            Literal::Function
+            Literal::Function(method.0, method.1)
         }
         _ => {
             ctx.crash_and_error(span, &format!("unsupported constant expression"));
