@@ -2,7 +2,7 @@ use clap::*;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error};
 
-#[derive(Parser, Serialize, Deserialize)]
+#[derive(Parser, Serialize, Deserialize, Clone)]
 pub struct CreusotArgs {
     /// Treat all integer values as unbounded mathematical integers
     #[clap(long)]
@@ -46,7 +46,7 @@ where
     Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
-#[derive(Parser)]
+#[derive(Parser, Clone)]
 pub struct Args {
     #[clap(flatten)]
     pub creusot: CreusotArgs,
@@ -61,6 +61,7 @@ pub enum SpanMode {
     Off,
 }
 
+#[derive(Clone)]
 pub struct Options {
     pub(crate) extern_paths: HashMap<String, String>,
     pub(crate) metadata_path: Option<String>,
@@ -73,7 +74,7 @@ pub struct Options {
     pub(crate) match_str: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum OutputFile {
     File(String),
     Stdout,

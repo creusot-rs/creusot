@@ -63,7 +63,7 @@ pub enum Expr<'tcx> {
 impl<'tcx> Expr<'tcx> {
     pub(crate) fn to_why(
         self,
-        ctx: &mut TranslationCtx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
         body: Option<&mir::Body<'tcx>>,
     ) -> Exp {
@@ -283,7 +283,7 @@ impl<'tcx> Terminator<'tcx> {
 
     pub(crate) fn to_why(
         self,
-        ctx: &mut TranslationCtx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
         body: Option<&mir::Body<'tcx>>,
     ) -> why3::mlcfg::Terminator {
@@ -303,7 +303,7 @@ impl<'tcx> Terminator<'tcx> {
 impl<'tcx> Branches<'tcx> {
     fn to_why(
         self,
-        ctx: &mut TranslationCtx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
         discr: Exp,
     ) -> mlcfg::Terminator {
@@ -380,7 +380,7 @@ pub struct Block<'tcx> {
 impl<'tcx> Block<'tcx> {
     pub(crate) fn to_why(
         self,
-        ctx: &mut TranslationCtx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
         body: &mir::Body<'tcx>,
         param_env: ParamEnv<'tcx>,
@@ -399,7 +399,7 @@ impl<'tcx> Block<'tcx> {
 impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
-        ctx: &mut TranslationCtx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
         body: &mir::Body<'tcx>,
         param_env: ParamEnv<'tcx>,
@@ -452,7 +452,7 @@ impl<'tcx> Statement<'tcx> {
 }
 
 fn resolve_predicate_of<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
@@ -541,7 +541,7 @@ pub(crate) fn uint_to_int(uty: &UintTy) -> Exp {
 impl<'tcx> Body<'tcx> {
     pub(crate) fn to_why(
         self,
-        ctx: &mut TranslationCtx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
         body: &mir::Body<'tcx>,
         param_env: ParamEnv<'tcx>,

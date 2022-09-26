@@ -17,7 +17,7 @@ use why3::{
     QName,
 };
 
-impl<'tcx> Lower<'_, '_, 'tcx> {
+impl<'tcx> Lower<'_, 'tcx> {
     pub(crate) fn lookup_builtin(
         &mut self,
         method: (DefId, SubstsRef<'tcx>),

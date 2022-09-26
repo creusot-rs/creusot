@@ -37,7 +37,7 @@ use why3::{declaration::Module, exp::Exp};
 pub(crate) use crate::translated_item::*;
 
 // TODO: The state in here should be as opaque as possible...
-pub struct TranslationCtx<'sess, 'tcx> {
+pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
     translated_items: IndexSet<DefId>,
     in_translation: Vec<IndexSet<DefId>>,
@@ -47,13 +47,13 @@ pub struct TranslationCtx<'sess, 'tcx> {
     laws: IndexMap<DefId, Vec<DefId>>,
     terms: IndexMap<DefId, Term<'tcx>>,
     pub externs: Metadata<'tcx>,
-    pub(crate) opts: &'sess Options,
+    pub(crate) opts: Options,
     creusot_items: CreusotItems,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
 }
 
-impl<'tcx> Deref for TranslationCtx<'_, 'tcx> {
+impl<'tcx> Deref for TranslationCtx<'tcx> {
     type Target = TyCtxt<'tcx>;
 
     fn deref(&self) -> &Self::Target {
@@ -61,8 +61,8 @@ impl<'tcx> Deref for TranslationCtx<'_, 'tcx> {
     }
 }
 
-impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
-    pub(crate) fn new(tcx: TyCtxt<'tcx>, opts: &'sess Options) -> Self {
+impl<'tcx, 'sess> TranslationCtx<'tcx> {
+    pub(crate) fn new(tcx: TyCtxt<'tcx>, opts: Options) -> Self {
         let creusot_items = creusot_items::local_creusot_items(tcx);
 
         Self {
