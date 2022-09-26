@@ -63,41 +63,7 @@ pub(crate) fn translate_function<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: D
     let mut decls = Vec::new();
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
 
-    if ctx.tcx.is_closure(def_id) {
-        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-            let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
-            let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
-            decls.extend(names.to_clones(ctx));
-            decls.push(env_ty);
-            decls.extend(accessors);
-
-            let contracts = closure_contract(ctx, &mut names, def_id);
-            decls.extend(names.to_clones(ctx));
-            decls.extend(contracts);
-        }
-    }
-
-    let param_env = ctx.param_env(def_id);
-    for p in promoted.borrow().iter_enumerated() {
-        if is_ghost_closure(ctx.tcx, p.1.return_ty()).is_some() {
-            continue;
-        }
-
-        let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p);
-        decls.extend(names.to_clones(ctx));
-        let promoted = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
-
-        decls.push(promoted);
-    }
-    let mut sig = signature_of(ctx, &mut names, def_id);
-
-    def_id
-        .as_local()
-        .map(|d| ctx.def_span(d))
-        .and_then(|span| ctx.span_attr(span))
-        .map(|attr| sig.attrs.push(attr));
-
-    let func_translator = BodyTranslator::build_context(tcx, ctx, &body, sig, def_id);
+    let func_translator = BodyTranslator::build_context(tcx, ctx, &body, def_id);
 
     decls.extend(func_translator.translate(&mut names));
     let name = module_name(ctx, def_id);
@@ -130,9 +96,6 @@ pub struct BodyTranslator<'body, 'tcx> {
 
     body: &'body Body<'tcx>,
 
-    // TODO: Remove
-    sig: Signature,
-
     resolver: EagerResolver<'body, 'tcx>,
 
     // Spec / Ghost variables
@@ -161,7 +124,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'tcx>,
         body: &'body Body<'tcx>,
-        sig: Signature,
         def_id: DefId,
     ) -> Self {
         let (invariants, assertions) = corrected_invariant_names_and_locations(ctx, def_id, &body);
@@ -191,7 +153,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         BodyTranslator {
             tcx,
-            sig,
             body,
             def_id,
             resolver,
@@ -207,21 +168,23 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn translate(mut self, names: &mut CloneMap<'tcx>) -> Vec<Decl> {
+        let mut sig = signature_of(self.ctx, names, self.def_id);
+
         let body = self.translate_body();
 
         assert!(self.assertions.is_empty(), "unused assertions");
         assert!(self.invariants.is_empty(), "unused invariants");
 
+        self.def_id
+            .as_local()
+            .map(|d| self.ctx.def_span(d))
+            .and_then(|span| self.ctx.span_attr(span))
+            .map(|attr| sig.attrs.push(attr));
+
         let param_env = self.param_env();
         let (entry, vars, blocks) = body.to_why(self.ctx, names, self.body, param_env);
-        let func = Decl::FunDecl(CfgFunction {
-            sig: self.sig,
-            rec: true,
-            constant: false,
-            vars,
-            entry,
-            blocks,
-        });
+        let func =
+            Decl::FunDecl(CfgFunction { sig, rec: true, constant: false, vars, entry, blocks });
         let mut decls: Vec<_> = Vec::new();
         decls.extend(names.to_clones(self.ctx));
         decls.push(func);
