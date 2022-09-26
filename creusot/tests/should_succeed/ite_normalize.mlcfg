@@ -301,6 +301,13 @@ module IteNormalize_Expr_Type
     | C_True
     | C_False
     
+  let function var_v (self : t_expr) : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_IfThenElse _ _ _ -> any usize
+      | C_Var a -> a
+      | C_True -> any usize
+      | C_False -> any usize
+      end
   let function ifthenelse_c (self : t_expr) : t_expr = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
       | C_IfThenElse a _ _ -> a
@@ -321,13 +328,6 @@ module IteNormalize_Expr_Type
       | C_Var _ -> any t_expr
       | C_True -> any t_expr
       | C_False -> any t_expr
-      end
-  let function var_v (self : t_expr) : usize = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_IfThenElse _ _ _ -> any usize
-      | C_Var a -> a
-      | C_True -> any usize
-      | C_False -> any usize
       end
 end
 module Core_Clone_Impls_Impl5_Clone_Interface
@@ -376,14 +376,14 @@ module IteNormalize_Impl7_Clone_Interface
 end
 module IteNormalize_Impl7_Clone
   use prelude.Borrow
-  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   use mach.int.Int
   use prelude.IntSize
   use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  clone Core_Clone_Impls_Impl5_Clone_Interface as Clone1
-  clone Alloc_Boxed_Impl12_Clone_Interface as Clone0 with type t = IteNormalize_Expr_Type.t_expr,
+  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
+  clone Alloc_Boxed_Impl12_Clone_Interface as Clone1 with type t = IteNormalize_Expr_Type.t_expr,
     type a = Alloc_Alloc_Global_Type.t_global
+  clone Core_Clone_Impls_Impl5_Clone_Interface as Clone0
   let rec cfg clone' [@cfg:stackify] [#"../ite_normalize.rs" 53 9 53 14] (self : IteNormalize_Expr_Type.t_expr) : IteNormalize_Expr_Type.t_expr
     ensures { [#"../ite_normalize.rs" 53 9 53 14] result = self }
     
@@ -427,17 +427,17 @@ module IteNormalize_Impl7_Clone
     t_1_5 <- IteNormalize_Expr_Type.ifthenelse_t self_1;
     e_1_6 <- IteNormalize_Expr_Type.ifthenelse_e self_1;
     _8 <- c_1_4;
-    _7 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone0.clone' _8);
+    _7 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone1.clone' _8);
     goto BB4
   }
   BB4 {
     _10 <- t_1_5;
-    _9 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone0.clone' _10);
+    _9 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone1.clone' _10);
     goto BB5
   }
   BB5 {
     _12 <- e_1_6;
-    _11 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone0.clone' _12);
+    _11 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone1.clone' _12);
     goto BB6
   }
   BB6 {
@@ -456,7 +456,7 @@ module IteNormalize_Impl7_Clone
   BB10 {
     v_1_13 <- IteNormalize_Expr_Type.var_v self_1;
     _15 <- v_1_13;
-    _14 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone1.clone' _15);
+    _14 <- ([#"../ite_normalize.rs" 53 9 53 14] Clone0.clone' _15);
     goto BB11
   }
   BB11 {
@@ -671,12 +671,12 @@ module IteNormalize_Impl6_Transpose_Interface
     
 end
 module IteNormalize_Impl6_Transpose
-  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
-  clone IteNormalize_Impl6_IsNormalized as IsNormalized0
   use mach.int.Int
   use prelude.IntSize
   use prelude.Borrow
+  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   clone IteNormalize_Impl7_Clone_Interface as Clone0
+  clone IteNormalize_Impl6_IsNormalized as IsNormalized0
   let rec cfg transpose [@cfg:stackify] [#"../ite_normalize.rs" 106 4 106 52] (self : IteNormalize_Expr_Type.t_expr) (a : IteNormalize_Expr_Type.t_expr) (b : IteNormalize_Expr_Type.t_expr) : IteNormalize_Expr_Type.t_expr
     requires {[#"../ite_normalize.rs" 101 15 101 35] IsNormalized0.is_normalized self}
     requires {[#"../ite_normalize.rs" 102 15 102 32] IsNormalized0.is_normalized a}
@@ -870,10 +870,10 @@ module IteNormalize_Impl6_Normalize_Interface
 end
 module IteNormalize_Impl6_Normalize
   use prelude.Borrow
-  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
-  clone IteNormalize_Impl6_IsNormalized as IsNormalized0
   use mach.int.Int
   use prelude.IntSize
+  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
+  clone IteNormalize_Impl6_IsNormalized as IsNormalized0
   clone IteNormalize_Impl6_Transpose_Interface as Transpose0 with predicate IsNormalized0.is_normalized = IsNormalized0.is_normalized
   clone IteNormalize_Impl7_Clone_Interface as Clone0
   let rec cfg normalize [@cfg:stackify] [#"../ite_normalize.rs" 141 4 141 35] (self : IteNormalize_Expr_Type.t_expr) : IteNormalize_Expr_Type.t_expr
@@ -1080,21 +1080,17 @@ module IteNormalize_Impl6_SimplifyHelper
   use prelude.UIntSize
   use mach.int.UInt64
   use map.Map
-  clone CreusotContracts_Logic_Model_Impl5_ModelTy_Type as ModelTy1
-  clone CreusotContracts_Logic_Int_Impl20_ModelTy_Type as ModelTy0
-  use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
-  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
-  clone IteNormalize_Impl6_DoesNotContain as DoesNotContain0
-  clone IteNormalize_Impl6_IsSimplified as IsSimplified0 with predicate DoesNotContain0.does_not_contain = DoesNotContain0.does_not_contain
-  clone CreusotContracts_Logic_Model_Impl5_Model as Model1
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  clone IteNormalize_Impl2_Model as Model0 with type k = usize, type v = bool, type ModelTy0.modelTy = ModelTy0.modelTy,
-    type ModelTy1.modelTy = ModelTy1.modelTy
-  clone IteNormalize_Impl6_IsNormalized as IsNormalized0
   use prelude.IntSize
   use prelude.Borrow
+  clone CreusotContracts_Logic_Model_Impl5_Model as Model1
+  clone CreusotContracts_Logic_Model_Impl5_ModelTy_Type as ModelTy1
   clone CreusotContracts_Logic_Model_Impl0_Model as Model7 with type t = bool, type ModelTy0.modelTy = ModelTy1.modelTy,
     function Model0.model = Model1.model
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone CreusotContracts_Logic_Int_Impl20_ModelTy_Type as ModelTy0
+  use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
+  clone IteNormalize_Impl2_Model as Model0 with type k = usize, type v = bool, type ModelTy0.modelTy = ModelTy0.modelTy,
+    type ModelTy1.modelTy = ModelTy1.modelTy
   clone IteNormalize_Impl2_ModelTy_Type as ModelTy3 with type k = usize, type v = bool,
     type ModelTy0.modelTy = ModelTy0.modelTy, type ModelTy1.modelTy = ModelTy1.modelTy
   clone CreusotContracts_Logic_Model_Impl1_Model as Model6 with type t = IteNormalize_BTreeMap_Type.t_btreemap usize bool,
@@ -1116,6 +1112,10 @@ module IteNormalize_Impl6_SimplifyHelper
   clone IteNormalize_Impl0_Get_Interface as Get0 with type k = usize, type v = bool,
     function Model0.model = Model2.model, function Model1.model = Model3.model, function Model2.model = Model4.model,
     type ModelTy2.modelTy = ModelTy0.modelTy, type ModelTy3.modelTy = ModelTy1.modelTy
+  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
+  clone IteNormalize_Impl6_DoesNotContain as DoesNotContain0
+  clone IteNormalize_Impl6_IsSimplified as IsSimplified0 with predicate DoesNotContain0.does_not_contain = DoesNotContain0.does_not_contain
+  clone IteNormalize_Impl6_IsNormalized as IsNormalized0
   let rec cfg simplify_helper [@cfg:stackify] [#"../ite_normalize.rs" 185 4 185 66] (self : IteNormalize_Expr_Type.t_expr) (state : IteNormalize_BTreeMap_Type.t_btreemap usize bool) : IteNormalize_Expr_Type.t_expr
     requires {[#"../ite_normalize.rs" 181 15 181 35] IsNormalized0.is_normalized self}
     ensures { [#"../ite_normalize.rs" 182 4 182 110] forall i : usize . (exists v : bool . Map.get (Model0.model state) (UInt64.to_int i) = Core_Option_Option_Type.C_Some (Model1.model v)) -> DoesNotContain0.does_not_contain result i }
@@ -1439,19 +1439,19 @@ module IteNormalize_Impl6_Simplify_Interface
     
 end
 module IteNormalize_Impl6_Simplify
-  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
-  clone IteNormalize_Impl6_DoesNotContain as DoesNotContain0
-  clone IteNormalize_Impl6_IsSimplified as IsSimplified0 with predicate DoesNotContain0.does_not_contain = DoesNotContain0.does_not_contain
-  clone IteNormalize_Impl6_IsNormalized as IsNormalized0
   use mach.int.Int
   use prelude.UIntSize
-  use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
   clone CreusotContracts_Logic_Model_Impl5_ModelTy_Type as ModelTy1
   clone CreusotContracts_Logic_Int_Impl20_ModelTy_Type as ModelTy0
   clone CreusotContracts_Logic_Model_Impl5_Model as Model1
   use Core_Option_Option_Type as Core_Option_Option_Type
+  use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
   clone IteNormalize_Impl2_Model as Model0 with type k = usize, type v = bool, type ModelTy0.modelTy = ModelTy0.modelTy,
     type ModelTy1.modelTy = ModelTy1.modelTy
+  use IteNormalize_Expr_Type as IteNormalize_Expr_Type
+  clone IteNormalize_Impl6_DoesNotContain as DoesNotContain0
+  clone IteNormalize_Impl6_IsSimplified as IsSimplified0 with predicate DoesNotContain0.does_not_contain = DoesNotContain0.does_not_contain
+  clone IteNormalize_Impl6_IsNormalized as IsNormalized0
   clone IteNormalize_Impl6_SimplifyHelper_Interface as SimplifyHelper0 with predicate IsNormalized0.is_normalized = IsNormalized0.is_normalized,
     function Model0.model = Model0.model, function Model1.model = Model1.model,
     predicate DoesNotContain0.does_not_contain = DoesNotContain0.does_not_contain,

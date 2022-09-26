@@ -207,41 +207,22 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn translate(mut self, names: &mut CloneMap<'tcx>) -> Vec<Decl> {
-        let mut decls: Vec<_> = Vec::new();
-
-        decls.extend(names.to_clones(self.ctx));
-
         let body = self.translate_body();
-
-        let arg_count = self.body.arg_count;
-        let vars = self.translate_vars(names);
 
         assert!(self.assertions.is_empty(), "unused assertions");
         assert!(self.invariants.is_empty(), "unused invariants");
 
-        let entry = Block {
-            statements: vars
-                .iter()
-                .skip(1)
-                .take(arg_count)
-                .map(|(_, id, _)| {
-                    let rhs = id.arg_name();
-                    Statement::Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
-                })
-                .collect(),
-            terminator: Terminator::Goto(BlockId(0)),
-        };
-        decls.extend(names.to_clones(self.ctx));
-
         let param_env = self.param_env();
+        let (entry, vars, blocks) = body.to_why(self.ctx, names, self.body, param_env);
         let func = Decl::FunDecl(CfgFunction {
             sig: self.sig,
             rec: true,
             constant: false,
-            vars: vars.into_iter().map(|i| (i.0, i.1.ident(), i.2)).collect(),
+            vars,
             entry,
-            blocks: body.to_why(self.ctx, names, self.body, param_env),
+            blocks,
         });
+        let mut decls: Vec<_> = Vec::new();
         decls.extend(names.to_clones(self.ctx));
         decls.push(func);
         decls
@@ -277,24 +258,22 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
             self.past_blocks.insert(bb, block);
         }
+        let arg_count = self.body.arg_count;
 
-        fmir::Body { blocks: mem::take(&mut self.past_blocks) }
+        let locals = self.translate_vars();
+
+        fmir::Body { arg_count, locals, blocks: mem::take(&mut self.past_blocks) }
     }
 
-    fn translate_vars(&mut self, names: &mut CloneMap<'tcx>) -> Vec<(bool, LocalIdent, Type)> {
-        let mut vars = Vec::with_capacity(self.body.local_decls.len());
+    fn translate_vars(&mut self) -> IndexMap<Local, Ty<'tcx>> {
+        let mut vars = IndexMap::with_capacity(self.body.local_decls.len());
 
         for (loc, decl) in self.body.local_decls.iter_enumerated() {
             if self.erased_locals.contains(loc) {
                 continue;
             }
-            let ident = self.translate_local(loc);
 
-            vars.push((
-                false,
-                ident,
-                ty::translate_ty(&mut self.ctx, names, decl.source_info.span, decl.ty),
-            ))
+            vars.insert(loc, decl.ty);
         }
 
         vars

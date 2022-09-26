@@ -15,17 +15,18 @@ use creusot_rustc::{
     hir::{def::DefKind, def_id::DefId, Unsafety},
     middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyKind, TypeVisitable},
     resolve::Namespace,
-    smir::mir::{self, BasicBlock, BinOp, Place, UnOp},
+    smir::mir::{self, BasicBlock, BinOp, Local, Place, UnOp},
     span::{Span, Symbol, DUMMY_SP},
     target::abi::VariantIdx,
 };
 use indexmap::IndexMap;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    exp::{Exp, Pattern},
+    exp::{self, Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
-    QName,
+    ty::Type,
+    Ident, QName,
 };
 
 pub enum Statement<'tcx> {
@@ -369,6 +370,8 @@ impl<'tcx> Branches<'tcx> {
 }
 
 pub struct Body<'tcx> {
+    pub(crate) arg_count: usize,
+    pub(crate) locals: IndexMap<Local, Ty<'tcx>>,
     pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
 }
 
@@ -545,10 +548,43 @@ impl<'tcx> Body<'tcx> {
         names: &mut CloneMap<'tcx>,
         body: &mir::Body<'tcx>,
         param_env: ParamEnv<'tcx>,
-    ) -> std::collections::BTreeMap<BlockId, mlcfg::Block> {
-        self.blocks
+    ) -> (mlcfg::Block, Vec<(bool, Ident, Type)>, std::collections::BTreeMap<BlockId, mlcfg::Block>)
+    {
+        let entry = mlcfg::Block {
+            statements: self
+                .locals
+                .iter()
+                .skip(1)
+                .take(self.arg_count)
+                .map(|(loc, _)| {
+                    let id = place::translate_local(body, *loc);
+
+                    mlcfg::Statement::Assign {
+                        lhs: id.ident(),
+                        rhs: Exp::impure_var(id.arg_name()),
+                    }
+                })
+                .collect(),
+            terminator: mlcfg::Terminator::Goto(BlockId(0)),
+        };
+        let locals = self
+            .locals
+            .into_iter()
+            .map(|(local, ty)| {
+                (
+                    false,
+                    place::translate_local(body, local).ident(),
+                    translate_ty(ctx, names, DUMMY_SP, ty),
+                )
+            })
+            .collect();
+
+        let blocks = self
+            .blocks
             .into_iter()
             .map(|(bb, block)| (BlockId(bb.index()), block.to_why(ctx, names, body, param_env)))
-            .collect()
+            .collect();
+
+        (entry, locals, blocks)
     }
 }

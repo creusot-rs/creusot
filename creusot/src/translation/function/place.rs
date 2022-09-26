@@ -227,7 +227,7 @@ pub(crate) fn translate_rplace_inner<'tcx>(
     inner
 }
 
-pub(super) fn translate_local(body: &Body, loc: Local) -> LocalIdent {
+pub(crate) fn translate_local(body: &Body, loc: Local) -> LocalIdent {
     use rustc_middle::mir::VarDebugInfoContents::Place;
     let debug_info: Vec<_> = body
         .var_debug_info
