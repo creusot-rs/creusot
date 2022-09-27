@@ -19,12 +19,17 @@ use petgraph::{
 use rustc_middle::ty::{subst::InternalSubsts, DefIdTree, TyKind};
 use util::ItemType;
 use why3::{
-    declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use}, QName,
+    declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
+    QName,
 };
 
 use crate::{
     ctx::TranslationCtx,
-    translation::traits::resolve_opt,
+    specification::typing::super_visit_term,
+    translation::{
+        specification::typing::{Term, TermKind, TermVisitor},
+        traits::resolve_opt,
+    },
     util::{self, item_name, item_qname, item_type},
 };
 
@@ -57,8 +62,45 @@ fn get_immediate_deps<'tcx>(
             }
             v
         }
+        ItemType::Logic | ItemType::Predicate
+            if def_id.is_local() && !util::is_trusted(ctx.tcx, def_id) =>
+        {
+            term_dependencies(ctx, def_id)
+        }
         _ => ctx.dependencies(def_id).map(|i| i.keys().cloned().collect()).unwrap_or_default(),
     }
+}
+
+fn term_dependencies<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    def_id: DefId,
+) -> Vec<(DefId, SubstsRef<'tcx>)> {
+    #[derive(Default)]
+    struct Dependencies<'tcx> {
+        deps: Vec<(DefId, SubstsRef<'tcx>)>,
+    }
+
+    impl<'tcx> TermVisitor<'tcx> for Dependencies<'tcx> {
+        fn visit_term(&mut self, term: &Term<'tcx>) {
+            match &term.kind {
+                TermKind::Item(id, subst) => self.deps.push((*id, subst)),
+                TermKind::Call { id, subst, fun: _, args: _ } => self.deps.push((*id, subst)),
+                TermKind::Constructor { adt: _, variant: _, fields: _ } => {
+                    if let TyKind::Adt(def, subst) = term.ty.kind() {
+                        self.deps.push((def.did(), subst))
+                    } else {
+                        unreachable!()
+                    }
+                }
+                _ => {}
+            };
+            super_visit_term(term, self)
+        }
+    }
+
+    let mut deps = Dependencies::default();
+    deps.visit_term(ctx.term(def_id).unwrap());
+    deps.deps
 }
 
 type MonoGraph<'tcx> = DiGraphMap<(DefId, SubstsRef<'tcx>), (DefId, SubstsRef<'tcx>)>;
@@ -91,9 +133,6 @@ pub fn collect<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> MonoGraph
         }
     }
 
-    // let prior = PriorClones::from_deps(ctx.tcx, &ctx.dependencies);
-
-    // make_clones(ctx, graph.clone(), &prior, def_id);
     graph
 }
 

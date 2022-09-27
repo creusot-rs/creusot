@@ -154,7 +154,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.in_translation.last().map(|l| l.contains(&def_id)).unwrap_or_default()
     }
 
-    pub(crate) fn start_group(&mut self, ids: IndexSet<DefId>) {
+    fn start_group(&mut self, ids: IndexSet<DefId>) {
         assert!(!ids.is_empty());
         if self.in_translation.iter().rev().any(|s| !s.is_disjoint(&ids)) {
             let span = self.def_span(ids.first().unwrap());
@@ -170,12 +170,12 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     // Mark an id as in translation.
-    pub(crate) fn start(&mut self, def_id: DefId) {
+    fn start(&mut self, def_id: DefId) {
         self.start_group(IndexSet::from_iter([def_id]));
     }
 
     // Indicate we have finished translating a given id
-    pub(crate) fn finish(&mut self, def_id: DefId) {
+    fn finish(&mut self, def_id: DefId) {
         if !self.in_translation.last_mut().unwrap().remove(&def_id) {
             self.crash_and_error(
                 self.def_span(def_id),

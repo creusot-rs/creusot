@@ -90,6 +90,7 @@ pub enum TermKind<'tcx> {
     Closure { args: Vec<Pattern<'tcx>>, body: Box<Term<'tcx>> },
     Absurd,
 }
+
 impl<'tcx> TypeFoldable<'tcx> for Literal<'tcx> {
     fn try_fold_with<F: creusot_rustc::middle::ty::FallibleTypeFolder<'tcx>>(
         self,
@@ -744,6 +745,51 @@ impl<'tcx> Pattern<'tcx> {
             }
             Pattern::Boolean(_) => {}
         }
+    }
+}
+
+pub trait TermVisitor<'tcx> {
+    fn visit_term(&mut self, term: &Term<'tcx>);
+}
+
+pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: &mut V) {
+    match &term.kind {
+        TermKind::Var(_) => {}
+        TermKind::Lit(_) => {}
+        TermKind::Item(_, _) => {}
+        TermKind::Binary { op: _, lhs, rhs } => {
+            visitor.visit_term(&*lhs);
+            visitor.visit_term(&*rhs);
+        }
+        TermKind::Unary { op: _, arg } => visitor.visit_term(&*arg),
+        TermKind::Forall { binder: _, body } => visitor.visit_term(&*body),
+        TermKind::Exists { binder: _, body } => visitor.visit_term(&*body),
+        TermKind::Call { id: _, subst: _, fun, args } => {
+            visitor.visit_term(&*fun);
+            args.iter().for_each(|a| visitor.visit_term(&*a))
+        }
+        TermKind::Constructor { adt: _, variant: _, fields } => {
+            fields.iter().for_each(|a| visitor.visit_term(&*a))
+        }
+        TermKind::Tuple { fields } => fields.iter().for_each(|a| visitor.visit_term(&*a)),
+        TermKind::Cur { term } => visitor.visit_term(&*term),
+        TermKind::Fin { term } => visitor.visit_term(&*term),
+        TermKind::Impl { lhs, rhs } => {
+            visitor.visit_term(&*lhs);
+            visitor.visit_term(&*rhs)
+        }
+        TermKind::Match { scrutinee, arms } => {
+            visitor.visit_term(&*scrutinee);
+            arms.iter().for_each(|(_, arm)| visitor.visit_term(&*arm))
+        }
+        TermKind::Let { pattern: _, arg, body } => {
+            visitor.visit_term(&*arg);
+            visitor.visit_term(&*body)
+        }
+        TermKind::Projection { lhs, name: _, def: _ } => visitor.visit_term(&*lhs),
+        TermKind::Old { term } => visitor.visit_term(&*term),
+        TermKind::Closure { args: _, body } => visitor.visit_term(&*body),
+        TermKind::Absurd => {}
     }
 }
 
