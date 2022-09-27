@@ -2,6 +2,7 @@ use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::clone_map::*;
 use crate::{
+    backend::{self, clone_map2},
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
@@ -12,11 +13,10 @@ use crate::{
         interface::interface_for,
         specification,
         specification::{typing::Term, ContractClauses},
-        ty,
-        ty::translate_tydecl,
+        ty::{self, ty_binding_group},
     },
     util,
-    util::item_type, backend::clone_map2,
+    util::item_type,
 };
 use creusot_rustc::{
     data_structures::captures::Captures,
@@ -131,7 +131,16 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 self.functions.insert(def_id, TranslatedItem::Constant { modl });
             }
             ItemType::Type => {
-                translate_tydecl(self, def_id);
+                let bg = ty_binding_group(self.tcx, def_id);
+                self.start_group(bg.clone());
+                self.add_binding_group(&bg);
+                let modl = backend::ty::translate_tydecl(self, &bg);
+                for did in bg {
+                    self.finish(did);
+                }
+                if let Some(modl) = modl {
+                    self.add_type(def_id, modl);
+                }
             }
             ItemType::Unsupported(dk) => self.crash_and_error(
                 self.tcx.def_span(def_id),

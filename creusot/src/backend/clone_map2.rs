@@ -16,10 +16,10 @@ use petgraph::{
     visit::{DfsPostOrder, Walker},
     EdgeDirection::Outgoing,
 };
-use rustc_middle::ty::{subst::InternalSubsts, DefIdTree, TyCtxt};
+use rustc_middle::ty::{subst::InternalSubsts, DefIdTree, TyCtxt, TyKind};
 use util::ItemType;
 use why3::{
-    declaration::{CloneSubst, Decl, DeclClone, Use},
+    declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
     ty::Type,
     Print, QName,
 };
@@ -28,7 +28,7 @@ use crate::{
     clone_map::CloneSummary,
     ctx::TranslationCtx,
     translation::traits::resolve_opt,
-    util::{self, item_name, item_type, item_qname},
+    util::{self, item_name, item_qname, item_type},
 };
 
 // The clone wars are over
@@ -41,7 +41,27 @@ fn get_immediate_deps<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> Vec<(DefId, SubstsRef<'tcx>)> {
-    ctx.dependencies(def_id).map(|i| i.keys().cloned().collect()).unwrap_or_default()
+    match item_type(ctx.tcx, def_id) {
+        ItemType::Type => {
+            let substs = InternalSubsts::identity_for_item(ctx.tcx, def_id);
+            let tys = ctx
+                .adt_def(def_id)
+                .all_fields()
+                .map(|f| f.ty(ctx.tcx, substs))
+                .flat_map(|fld| fld.walk());
+
+            let mut v = Vec::new();
+
+            for ty in tys {
+                match ty.expect_ty().kind() {
+                    TyKind::Adt(def, sub) => v.push((def.did(), *sub)),
+                    _ => {}
+                }
+            }
+            v
+        }
+        _ => ctx.dependencies(def_id).map(|i| i.keys().cloned().collect()).unwrap_or_default(),
+    }
 }
 
 type MonoGraph<'tcx> = DiGraphMap<(DefId, SubstsRef<'tcx>), (DefId, SubstsRef<'tcx>)>;
@@ -74,9 +94,9 @@ pub fn collect<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> MonoGraph
         }
     }
 
-    let prior = PriorClones::from_deps(ctx.tcx, &ctx.dependencies);
+    // let prior = PriorClones::from_deps(ctx.tcx, &ctx.dependencies);
 
-    make_clones(ctx, graph.clone(), &prior, def_id);
+    // make_clones(ctx, graph.clone(), &prior, def_id);
     graph
 }
 
@@ -94,7 +114,7 @@ impl<'tcx> Names<'tcx> {
     }
 }
 
-fn name_clones<'tcx>(ctx: &mut TranslationCtx<'tcx>, graph: &MonoGraph<'tcx>) -> Names<'tcx> {
+pub fn name_clones<'tcx>(ctx: &mut TranslationCtx<'tcx>, graph: &MonoGraph<'tcx>) -> Names<'tcx> {
     let mut names = IndexMap::new();
     let mut assigned = IndexMap::new();
     for (def_id, subst) in graph.nodes() {
@@ -120,18 +140,18 @@ fn name_clones<'tcx>(ctx: &mut TranslationCtx<'tcx>, graph: &MonoGraph<'tcx>) ->
 }
 
 // A map of the public clones in each definition
-struct PriorClones<'tcx> {
+pub struct PriorClones<'tcx> {
     prior: IndexMap<DefId, IndexMap<(DefId, SubstsRef<'tcx>), QName>>,
 }
 
 impl<'tcx> PriorClones<'tcx> {
-    pub(crate) fn from_deps(tcx: TyCtxt<'tcx>, deps: &IndexMap<DefId, CloneSummary<'tcx>>) -> Self {
+    pub(crate) fn from_deps(ctx: &TranslationCtx<'tcx>) -> Self {
         let mut prior = IndexMap::new();
 
-        for (id, summ) in deps {
+        for (id, summ) in &ctx.dependencies {
             let mut clones = IndexMap::new();
             for (k, info) in summ {
-                clones.insert(*k, info.qname(tcx, k.0));
+                clones.insert(*k, info.qname(ctx.tcx, k.0));
             }
             prior.insert(*id, clones);
         }
@@ -149,7 +169,7 @@ impl<'tcx> PriorClones<'tcx> {
 }
 
 // Transform a graph into a set of clones
-fn make_clones<'tcx>(
+pub fn make_clones<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     graph: MonoGraph<'tcx>,
     priors: &PriorClones<'tcx>,
@@ -163,13 +183,14 @@ fn make_clones<'tcx>(
     let mut clones = Vec::new();
     let mut uses = Vec::new();
 
-    eprintln!("---- {root:?} ----");
-
     while let Some(node) = topo.walk_next(&graph) {
-        if node.0 == root { continue; }
+        if node.0 == root {
+            continue;
+        }
 
         if item_type(ctx.tcx, node.0) == ItemType::Type {
-            uses.push(Decl::UseDecl(Use { name: item_qname(ctx, node.0, Namespace::TypeNS), as_: None }));
+            let name = item_qname(ctx, node.0, Namespace::TypeNS).module_qname();
+            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(name) }));
             continue;
         };
 
@@ -184,15 +205,11 @@ fn make_clones<'tcx>(
             subst.push(CloneSubst::Val(priors.get(node.0, orig), names.get(dep)))
         }
 
-        let clone =
-            DeclClone { name: names.get(node), subst, kind: why3::declaration::CloneKind::Bare };
-        clones.push(clone);
+        let clone = DeclClone { name: names.get(node), subst, kind: CloneKind::Bare };
+        clones.push(Decl::Clone(clone));
     }
 
-    uses.into_iter().for_each(|u| eprintln!("{}", u.display()));
-    clones.into_iter().for_each(|u| eprintln!("{}", u.display()));
-    eprintln!("--------");
-    Default::default()
+    uses.into_iter().chain(clones).collect()
 }
 
 pub fn base_subst<'tcx>(

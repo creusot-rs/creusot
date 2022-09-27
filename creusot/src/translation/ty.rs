@@ -231,110 +231,6 @@ fn translate_ty_param(p: Symbol) -> Ident {
     Ident::build(&p.to_string().to_lowercase())
 }
 
-// Translate a Rust type declation to an ML one
-// Rust tuple-like types are translated as one would expect, to product types in WhyML
-// However, Rust struct types are *not* translated to WhyML records, instead we 'forget' the field names
-// and also translate them to product types.
-//
-// Additionally, types are not translated one by one but rather as a *binding group*, so that mutually
-// recursive types are properly translated.
-// Results are accumulated and can be collected at once by consuming the `Ctx`
-pub(crate) fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
-    let span = ctx.def_span(did);
-    let bg = ty_binding_group(ctx.tcx, did);
-
-    ctx.start_group(bg.clone());
-    ctx.add_binding_group(&bg);
-
-    if let Some(_) = get_builtin(ctx.tcx, did) {
-        for did in bg {
-            ctx.finish(did);
-        }
-        return;
-    }
-
-    let did = *bg.first().unwrap();
-    let mut names = CloneMap::new(ctx.tcx, did, CloneLevel::Stub);
-
-    let name = module_name(ctx, did);
-
-    // Trusted types (opaque)
-    if util::is_trusted(ctx.tcx, did) {
-        if bg.len() > 1 {
-            ctx.crash_and_error(span, "cannot mark mutually recursive types as trusted");
-        }
-        let ty_name = translate_ty_name(ctx, did).name;
-
-        let ty_params: Vec<_> = ty_param_names(ctx.tcx, did).collect();
-        let modl = Module {
-            name,
-            decls: vec![Decl::TyDecl(TyDecl::Opaque {
-                ty_name: ty_name.clone(),
-                ty_params: ty_params.clone(),
-            })],
-        };
-        ctx.add_type(did, modl);
-        let _ = names.to_clones(ctx);
-        for did in bg {
-            ctx.finish(did);
-        }
-        return;
-    }
-
-    let mut tys = Vec::new();
-    for did in bg.iter() {
-        tys.push(build_ty_decl(ctx, &mut names, *did));
-    }
-
-    let mut decls = names.to_clones(ctx);
-    decls.push(Decl::TyDecl(TyDecl::Adt { tys: tys.clone() }));
-    let modl = Module { name, decls };
-
-    for did in &bg {
-        ctx.finish(*did)
-    }
-
-    ctx.add_type(did, modl);
-}
-
-fn build_ty_decl<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    did: DefId,
-) -> AdtDecl {
-    let adt = ctx.tcx.adt_def(did);
-
-    // HACK(xavier): Clean up
-    let ty_name = translate_ty_name(ctx, did).name;
-
-    // Collect type variables of declaration
-    let ty_args: Vec<_> = ty_param_names(ctx.tcx, did).collect();
-
-    let kind = {
-        let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
-        let mut ml_ty_def = Vec::new();
-
-        for var_def in adt.variants().iter() {
-            let field_tys: Vec<_> = var_def
-                .fields
-                .iter()
-                .map(|f| {
-                    let (ty, ghost) = field_ty(ctx, names, f, substs);
-                    Field { ty, ghost }
-                })
-                .collect();
-            let var_name = constructor_qname(ctx, var_def).name;
-
-            ml_ty_def.push(ConstructorDecl { name: var_name, fields: field_tys });
-        }
-
-        AdtDecl { ty_name, ty_params: ty_args, constrs: ml_ty_def }
-    };
-
-    kind
-}
-
-
 pub(crate) fn translate_closure_ty<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
@@ -390,7 +286,6 @@ fn field_ty<'tcx>(
         false,
     )
 }
-
 
 pub(crate) fn translate_accessor(
     ctx: &mut TranslationCtx<'_>,
