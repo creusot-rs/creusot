@@ -13,6 +13,7 @@ mod analysis;
 pub mod callbacks;
 mod cleanup_spec_closures;
 pub(crate) mod clone_map;
+pub mod backend;
 pub(crate) mod creusot_items;
 pub(crate) mod ctx;
 
@@ -20,6 +21,7 @@ mod extended_location;
 mod gather_spec_closures;
 pub mod options;
 mod resolve;
+
 // #[allow(dead_code)]
 mod rustc_extensions;
 mod translation;

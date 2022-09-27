@@ -610,7 +610,7 @@ pub(crate) fn uintty_to_ty(
     }
 }
 
-fn floatty_to_ty(names: &mut CloneMap<'_>, fty: &creusot_rustc::middle::ty::FloatTy) -> MlT {
+pub(crate) fn floatty_to_ty(names: &mut CloneMap<'_>, fty: &creusot_rustc::middle::ty::FloatTy) -> MlT {
     use creusot_rustc::middle::ty::FloatTy::*;
 
     match fty {

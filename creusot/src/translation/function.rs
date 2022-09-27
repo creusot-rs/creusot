@@ -63,6 +63,34 @@ pub(crate) fn translate_function<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: D
     let mut decls = Vec::new();
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
 
+    //     if ctx.tcx.is_closure(def_id) {
+    //     if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
+    //         let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
+    //         let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
+    //         decls.extend(names.to_clones(ctx));
+    //         decls.push(env_ty);
+    //         decls.extend(accessors);
+
+    //         let contracts = closure_contract(ctx, &mut names, def_id);
+    //         decls.extend(names.to_clones(ctx));
+    //         decls.extend(contracts);
+    //     }
+    // }
+
+    // let param_env = ctx.param_env(def_id);
+    // for p in promoted.borrow().iter_enumerated() {
+    //     if is_ghost_closure(ctx.tcx, p.1.return_ty()).is_some() {
+    //         continue;
+    //     }
+
+    //     let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p);
+    //     decls.extend(names.to_clones(ctx));
+    //     let promoted = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
+
+    //     decls.push(promoted);
+    // }
+
+
     let func_translator = BodyTranslator::build_context(tcx, ctx, &body, def_id);
 
     decls.extend(func_translator.translate(&mut names));

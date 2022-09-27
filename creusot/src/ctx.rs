@@ -16,7 +16,7 @@ use crate::{
         ty::translate_tydecl,
     },
     util,
-    util::item_type,
+    util::item_type, backend::clone_map2,
 };
 use creusot_rustc::{
     data_structures::captures::Captures,
@@ -43,7 +43,7 @@ pub struct TranslationCtx<'tcx> {
     in_translation: Vec<IndexSet<DefId>>,
     ty_binding_groups: HashMap<DefId, DefId>, // maps type ids to their 'representative type'
     functions: IndexMap<DefId, TranslatedItem>,
-    dependencies: IndexMap<DefId, CloneSummary<'tcx>>,
+    pub(crate) dependencies: IndexMap<DefId, CloneSummary<'tcx>>,
     laws: IndexMap<DefId, Vec<DefId>>,
     terms: IndexMap<DefId, Term<'tcx>>,
     pub externs: Metadata<'tcx>,
@@ -218,6 +218,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             let modl = crate::translation::translate_function(self, def_id);
             TranslatedItem::Program { interface, modl, has_axioms: self.tcx.is_closure(def_id) }
         };
+
+        clone_map2::collect(self, def_id);
 
         self.functions.insert(def_id, translated);
     }
