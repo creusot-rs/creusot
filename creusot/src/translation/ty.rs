@@ -12,7 +12,7 @@ use creusot_rustc::{
 use indexmap::IndexSet;
 use std::collections::VecDeque;
 use why3::{
-    declaration::{AdtDecl, ConstructorDecl, Contract, Decl, Field, LetFun, Module, Signature},
+    declaration::{AdtDecl, ConstructorDecl, Contract, Decl, Field, LetFun, Signature},
     exp::{Binder, Exp, Pattern},
     Ident,
 };
@@ -21,7 +21,7 @@ use why3::{declaration::TyDecl, ty::Type as MlT, QName};
 
 use crate::{
     ctx::*,
-    util::{self, constructor_qname, get_builtin, item_name, item_qname},
+    util::{self, get_builtin, item_name, item_qname},
 };
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:

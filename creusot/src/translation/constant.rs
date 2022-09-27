@@ -77,7 +77,7 @@ pub(crate) fn from_ty_const<'tcx>(
         return Expr::Constant(Literal::Function(u.def.did, u.substs))
        };
 
-    if let ConstKind::Unevaluated(Unevaluated { promoted: Some(p), .. }) = c.kind() {
+    if let ConstKind::Unevaluated(Unevaluated { promoted: Some(_p), .. }) = c.kind() {
         todo!("implement promoted")
         // return Expr::Place(Symbol::intern(format!("promoted{:?}", p.as_usize())));
     }

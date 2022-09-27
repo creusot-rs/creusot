@@ -8,9 +8,9 @@ use crate::{
     translation::{
         specification::contract_of,
         traits, ty,
-        ty::{closure_accessors, translate_closure_ty, translate_ty},
+        ty::{translate_ty},
     },
-    util::{self, ident_of, is_ghost_closure, signature_of},
+    util::{self, ident_of, signature_of},
 };
 use creusot_rustc::{
     borrowck::borrow_set::BorrowSet,
@@ -32,7 +32,7 @@ use creusot_rustc::{
 };
 use indexmap::IndexMap;
 use std::{mem, rc::Rc};
-use why3::{declaration::*, exp::*, mlcfg::*, ty::Type, Ident};
+use why3::{declaration::*, exp::*, ty::Type, Ident};
 
 use super::specification::typing::Term;
 
@@ -53,7 +53,7 @@ pub(crate) fn translate_function<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: D
     }
 
     // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
-    let (body, promoted) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
+    let (body, _promoted) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.

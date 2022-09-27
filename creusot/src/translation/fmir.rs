@@ -22,7 +22,7 @@ use creusot_rustc::{
 use indexmap::IndexMap;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    exp::{self, Exp, Pattern},
+    exp::{Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
     ty::Type,

@@ -7,14 +7,13 @@ use crate::{
 use creusot_rustc::{
     hir::def_id::DefId,
     middle::ty::{
-        subst::{Subst, SubstsRef},
-        EarlyBinder,
+        subst::{SubstsRef},
     },
     resolve::Namespace,
-    span::{Span, Symbol},
+    span::{Span},
 };
 use indexmap::IndexSet;
-use rustc_middle::ty::{self, subst::InternalSubsts, FieldDef, ProjectionTy, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{self, subst::InternalSubsts, FieldDef, Ty, TyCtxt, TyKind};
 use why3::{
     declaration::{AdtDecl, ConstructorDecl, Decl, Field, Module, TyDecl},
     ty::Type,
@@ -118,7 +117,7 @@ fn translate_ty_inner<'tcx>(
                 return Type::Tuple(Vec::new());
             }
 
-            let name = item_name(ctx.tcx, *id, Namespace::TypeNS).to_string().to_lowercase();
+            let _name = item_name(ctx.tcx, *id, Namespace::TypeNS).to_string().to_lowercase();
 
             Type::TConstructor(names.get((*id, subst)))
         }

@@ -16,16 +16,13 @@ use petgraph::{
     visit::{DfsPostOrder, Walker},
     EdgeDirection::Outgoing,
 };
-use rustc_middle::ty::{subst::InternalSubsts, DefIdTree, TyCtxt, TyKind};
+use rustc_middle::ty::{subst::InternalSubsts, DefIdTree, TyKind};
 use util::ItemType;
 use why3::{
-    declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
-    ty::Type,
-    Print, QName,
+    declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use}, QName,
 };
 
 use crate::{
-    clone_map::CloneSummary,
     ctx::TranslationCtx,
     translation::traits::resolve_opt,
     util::{self, item_name, item_qname, item_type},
