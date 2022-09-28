@@ -22,7 +22,7 @@ use why3::{
     Ident,
 };
 
-pub fn lower_pure<'tcx>(
+pub(crate) fn lower_pure<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     // term_id: DefId,
@@ -39,7 +39,7 @@ pub fn lower_pure<'tcx>(
     term
 }
 
-pub fn lower_impure<'tcx>(
+pub(crate) fn lower_impure<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     term_id: DefId,
@@ -65,7 +65,7 @@ pub(super) struct Lower<'a, 'sess, 'tcx> {
     param_env: ParamEnv<'tcx>,
 }
 impl<'tcx> Lower<'_, '_, 'tcx> {
-    pub fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
+    pub(crate) fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
         match term.kind {
             TermKind::Lit(l) => {
                 let c = lower_literal(self.ctx, self.names, l);
@@ -360,7 +360,7 @@ use creusot_rustc::{
     middle::ty::{subst::SubstsRef, TyCtxt},
 };
 
-pub fn lower_literal<'tcx>(
+pub(crate) fn lower_literal<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     lit: Literal,

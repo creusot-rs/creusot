@@ -35,7 +35,11 @@ pub struct EagerResolver<'body, 'tcx> {
 }
 
 impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, body: &'body Body<'tcx>, borrows: Rc<BorrowSet<'tcx>>) -> Self {
+    pub(crate) fn new(
+        tcx: TyCtxt<'tcx>,
+        body: &'body Body<'tcx>,
+        borrows: Rc<BorrowSet<'tcx>>,
+    ) -> Self {
         let local_init = MaybeInitializedLocals
             .into_engine(tcx, body)
             .iterate_to_fixpoint()
@@ -88,7 +92,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         bits
     }
 
-    pub fn locals_resolved_at_loc(&mut self, loc: Location) -> BitSet<Local> {
+    pub(crate) fn locals_resolved_at_loc(&mut self, loc: Location) -> BitSet<Local> {
         self.locals_resolved_between(
             ExtendedLocation::Start(loc),
             ExtendedLocation::Mid(loc),
@@ -97,7 +101,7 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         )
     }
 
-    pub fn locals_resolved_between_blocks(
+    pub(crate) fn locals_resolved_between_blocks(
         &mut self,
         from: BasicBlock,
         to: BasicBlock,

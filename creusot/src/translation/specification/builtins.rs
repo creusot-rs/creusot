@@ -18,7 +18,7 @@ use why3::{
 };
 
 impl<'tcx> Lower<'_, '_, 'tcx> {
-    pub fn lookup_builtin(
+    pub(crate) fn lookup_builtin(
         &mut self,
         method: (DefId, SubstsRef<'tcx>),
         args: &mut Vec<Exp>,

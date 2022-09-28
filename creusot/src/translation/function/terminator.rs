@@ -38,7 +38,11 @@ use std::collections::HashMap;
 // patterns in match expressions.
 
 impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
-    pub fn translate_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: Location) {
+    pub(crate) fn translate_terminator(
+        &mut self,
+        terminator: &mir::Terminator<'tcx>,
+        location: Location,
+    ) {
         let span = terminator.source_info.span;
         match &terminator.kind {
             Goto { target } => self.emit_terminator(mk_goto(*target)),
@@ -177,7 +181,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
     }
 }
 
-pub fn resolve_function<'tcx>(
+pub(crate) fn resolve_function<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
@@ -247,7 +251,7 @@ fn evaluate_additional_predicates<'tcx>(
 }
 
 // Find the place being discriminated, if there is one
-pub fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Place<'tcx>> {
+pub(crate) fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Place<'tcx>> {
     let discr = if let TerminatorKind::SwitchInt { discr, .. } = &bbd.terminator().kind {
         discr
     } else {
@@ -267,7 +271,7 @@ pub fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Plac
     }
 }
 
-pub fn make_switch<'tcx>(
+pub(crate) fn make_switch<'tcx>(
     ctx: &TranslationCtx<'_, 'tcx>,
     si: SourceInfo,
     switch_ty: Ty<'tcx>,

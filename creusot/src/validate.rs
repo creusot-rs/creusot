@@ -8,7 +8,7 @@ use crate::{
 
 // Validate that laws have no additional generic parameters.
 //  TODO(xavier): Why was this necessary?
-pub fn validate_traits(ctx: &mut TranslationCtx) {
+pub(crate) fn validate_traits(ctx: &mut TranslationCtx) {
     let mut law_violations = Vec::new();
 
     for trait_item_id in ctx.hir_crate_items(()).trait_items() {
@@ -26,7 +26,7 @@ pub fn validate_traits(ctx: &mut TranslationCtx) {
     }
 }
 
-pub fn validate_impls(ctx: &TranslationCtx) {
+pub(crate) fn validate_impls(ctx: &TranslationCtx) {
     for impl_id in ctx.all_local_trait_impls(()).values().flat_map(|i| i.iter()) {
         if ctx.def_kind(*impl_id) != DefKind::Impl {
             continue;

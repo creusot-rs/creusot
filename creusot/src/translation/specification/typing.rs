@@ -30,7 +30,7 @@ use creusot_rustc::{
     span::{Span, Symbol},
     target::abi::VariantIdx,
 };
-pub use creusot_rustc::{middle::thir, smir::mir::Field};
+pub(crate) use creusot_rustc::{middle::thir, smir::mir::Field};
 use itertools::Itertools;
 use log::*;
 use rustc_type_ir::{IntTy, UintTy};
@@ -133,7 +133,7 @@ pub enum Pattern<'tcx> {
     Boolean(bool),
 }
 
-pub fn typecheck(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
+pub(crate) fn typecheck(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
     let (thir, expr) = tcx.thir_body(WithOptConstParam::unknown(id)).map_err(|_| CrErr)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {

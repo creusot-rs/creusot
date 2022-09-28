@@ -19,7 +19,6 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use why3::declaration::Module;
 
 type CloneMetadata<'tcx> = HashMap<DefId, CloneSummary<'tcx>>;
 type ExternSpecs<'tcx> = HashMap<DefId, ExternSpec<'tcx>>;
@@ -32,39 +31,31 @@ pub struct Metadata<'tcx> {
 }
 
 impl<'tcx> Metadata<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>) -> Self {
+    pub(crate) fn new(tcx: TyCtxt<'tcx>) -> Self {
         Metadata { tcx, crates: Default::default(), extern_specs: Default::default() }
     }
 
-    pub fn get(&self, cnum: CrateNum) -> Option<&CrateMetadata<'tcx>> {
+    pub(crate) fn get(&self, cnum: CrateNum) -> Option<&CrateMetadata<'tcx>> {
         self.crates.get(&cnum)
     }
 
     /// Determines whether a DefId has been verified by Creusot or not.
     /// We consider that if we don't have metadata about a crate then it must be unverified
-    pub fn verified(&self, def_id: DefId) -> bool {
+    pub(crate) fn verified(&self, def_id: DefId) -> bool {
         self.crates.get(&def_id.krate).map_or(false, |meta| meta.dependencies.contains_key(&def_id))
     }
 
-    pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
+    pub(crate) fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
         assert!(!def_id.is_local());
-        self.get(def_id.krate)?.dependencies.get(&def_id)
+        self.get(def_id.krate)?.dependencies(def_id)
     }
 
-    pub fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
+    pub(crate) fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
         assert!(!def_id.is_local());
-        self.get(def_id.krate)?.terms.get(&def_id)
+        self.get(def_id.krate)?.term(def_id)
     }
 
-    pub fn debug_creusot_items(&self) {
-        for cmeta in &self.crates {
-            error!("items {:?}", cmeta.0);
-
-            eprintln!("{:?}", cmeta.1.creusot_items);
-        }
-    }
-
-    pub fn creusot_item(&self, sym: Symbol) -> Option<DefId> {
+    pub(crate) fn creusot_item(&self, sym: Symbol) -> Option<DefId> {
         for cmeta in &self.crates {
             if cmeta.1.creusot_item(sym).is_some() {
                 return cmeta.1.creusot_item(sym);
@@ -77,7 +68,7 @@ impl<'tcx> Metadata<'tcx> {
         self.extern_specs.get(&id)
     }
 
-    pub fn load(&mut self, overrides: &HashMap<String, String>) {
+    pub(crate) fn load(&mut self, overrides: &HashMap<String, String>) {
         let cstore = CStore::from_tcx(self.tcx);
         for cnum in external_crates(self.tcx) {
             let (cmeta, mut ext_specs) = CrateMetadata::load(self.tcx, cstore, overrides, cnum);
@@ -93,7 +84,6 @@ impl<'tcx> Metadata<'tcx> {
 }
 
 pub struct CrateMetadata<'tcx> {
-    modules: IndexMap<DefId, Module>,
     terms: IndexMap<DefId, Term<'tcx>>,
     dependencies: CloneMetadata<'tcx>,
     creusot_items: CreusotItems,
@@ -101,9 +91,8 @@ pub struct CrateMetadata<'tcx> {
 }
 
 impl<'tcx> CrateMetadata<'tcx> {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
-            modules: Default::default(),
             dependencies: Default::default(),
             terms: Default::default(),
             creusot_items: Default::default(),
@@ -111,22 +100,17 @@ impl<'tcx> CrateMetadata<'tcx> {
         }
     }
 
-    pub fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
+    pub(crate) fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
         assert!(!def_id.is_local());
         self.dependencies.get(&def_id)
     }
 
-    pub fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
+    pub(crate) fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
         assert!(!def_id.is_local());
         self.terms.get(&def_id)
     }
 
-    pub fn body(&self, def_id: DefId) -> Option<&Module> {
-        assert!(!def_id.is_local());
-        self.modules.get(&def_id)
-    }
-
-    pub fn creusot_item(&self, sym: Symbol) -> Option<DefId> {
+    pub(crate) fn creusot_item(&self, sym: Symbol) -> Option<DefId> {
         self.creusot_items.symbol_to_id.get(&sym).cloned()
     }
 
@@ -228,7 +212,7 @@ fn export_file(ctx: &TranslationCtx, out: &Option<String>) -> PathBuf {
     })
 }
 
-pub fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
+pub(crate) fn dump_exports(ctx: &TranslationCtx, out: &Option<String>) {
     let out_filename = export_file(ctx, out);
     debug!("dump_exports={:?}", out_filename);
 

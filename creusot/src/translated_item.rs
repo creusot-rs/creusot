@@ -1,9 +1,9 @@
-pub use crate::clone_map::*;
-use crate::{metadata::Metadata, util};
+pub(crate) use crate::clone_map::*;
+use crate::metadata::Metadata;
 use creusot_rustc::hir::def_id::DefId;
 use indexmap::IndexMap;
-pub use util::{item_name, module_name, ItemType};
-use why3::declaration::{Decl, Module, TyDecl};
+
+use why3::declaration::{Decl, Module};
 
 pub enum TranslatedItem {
     Logic {
@@ -43,19 +43,8 @@ pub enum TranslatedItem {
     },
 }
 
-pub struct TypeDeclaration {
-    pub ty_decl: TyDecl,
-    pub accessors: IndexMap<DefId, IndexMap<DefId, Decl>>,
-}
-
-impl TypeDeclaration {
-    pub fn accessors(&self) -> impl Iterator<Item = &Decl> {
-        self.accessors.values().flat_map(|v| v.values())
-    }
-}
-
 impl<'a> TranslatedItem {
-    pub fn external_dependencies<'tcx>(
+    pub(crate) fn external_dependencies<'tcx>(
         &'a self,
         metadata: &'a Metadata<'tcx>,
         id: DefId,
@@ -66,7 +55,7 @@ impl<'a> TranslatedItem {
         }
     }
 
-    pub fn has_axioms(&self) -> bool {
+    pub(crate) fn has_axioms(&self) -> bool {
         match self {
             TranslatedItem::Logic { has_axioms, .. } => *has_axioms,
             TranslatedItem::Program { has_axioms, .. } => *has_axioms,
@@ -74,7 +63,7 @@ impl<'a> TranslatedItem {
         }
     }
 
-    pub fn modules(self) -> Box<dyn Iterator<Item = Module>> {
+    pub(crate) fn modules(self) -> Box<dyn Iterator<Item = Module>> {
         use std::iter;
         use TranslatedItem::*;
         match self {
@@ -96,7 +85,7 @@ impl<'a> TranslatedItem {
         }
     }
 
-    pub fn interface(self) -> Box<dyn Iterator<Item = Module>> {
+    pub(crate) fn interface(self) -> Box<dyn Iterator<Item = Module>> {
         match self {
             TranslatedItem::Logic { interface, modl, stub, .. } => box std::iter::once(stub)
                 .chain(std::iter::once(interface))

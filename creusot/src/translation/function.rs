@@ -36,12 +36,12 @@ use why3::{declaration::*, exp::*, mlcfg::*, ty::Type, Ident};
 
 use super::specification::typing::Term;
 
-pub mod place;
+pub(crate) mod place;
 mod promoted;
 mod statement;
-pub mod terminator;
+pub(crate) mod terminator;
 
-pub fn translate_function<'tcx, 'sess>(
+pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &mut TranslationCtx<'sess, 'tcx>,
     def_id: DefId,
 ) -> Module {
@@ -107,7 +107,7 @@ pub fn translate_function<'tcx, 'sess>(
     Module { name, decls }
 }
 
-pub fn translate_trusted<'tcx>(
+pub(crate) fn translate_trusted<'tcx>(
     tcx: TyCtxt<'tcx>,
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
@@ -409,7 +409,7 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
     }
 
     // Useful helper to translate an operand
-    pub fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Expr<'tcx> {
+    pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Expr<'tcx> {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => Expr::Place(*pl),
             Operand::Constant(c) => {
@@ -428,33 +428,33 @@ impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
 pub struct LocalIdent(Local, Option<Symbol>);
 
 impl LocalIdent {
-    pub fn anon(loc: Local) -> Self {
+    pub(crate) fn anon(loc: Local) -> Self {
         LocalIdent(loc, None)
     }
 
-    pub fn dbg_raw(loc: Local, name: Symbol) -> Self {
+    pub(crate) fn dbg_raw(loc: Local, name: Symbol) -> Self {
         LocalIdent(loc, Some(name))
     }
 
-    pub fn dbg(loc: Local, dbg: &VarDebugInfo) -> Self {
+    pub(crate) fn dbg(loc: Local, dbg: &VarDebugInfo) -> Self {
         LocalIdent(loc, Some(dbg.name))
     }
 
-    pub fn arg_name(&self) -> why3::Ident {
+    pub(crate) fn arg_name(&self) -> why3::Ident {
         match &self.1 {
             None => format!("{:?}'", self.0).into(),
             Some(h) => ident_of(*h),
         }
     }
 
-    pub fn symbol(&self) -> Symbol {
+    pub(crate) fn symbol(&self) -> Symbol {
         match &self.1 {
             Some(id) => Symbol::intern(&format!("{}_{}", &*ident_of(*id), self.0.index())),
             None => Symbol::intern(&format!("_{}", self.0.index())),
         }
     }
 
-    pub fn ident(&self) -> why3::Ident {
+    pub(crate) fn ident(&self) -> why3::Ident {
         match &self.1 {
             Some(id) => format!("{}_{}", &*ident_of(*id), self.0.index()).into(),
             None => format!("_{}", self.0.index()).into(),
@@ -462,7 +462,7 @@ impl LocalIdent {
     }
 }
 
-pub fn closure_contract<'tcx>(
+pub(crate) fn closure_contract<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
@@ -616,7 +616,7 @@ fn closure_resolve<'tcx>(
     Decl::PredDecl(Predicate { sig, body: resolve })
 }
 
-pub fn closure_unnest<'tcx>(
+pub(crate) fn closure_unnest<'tcx>(
     tcx: TyCtxt<'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
@@ -705,7 +705,7 @@ fn resolve_predicate_of<'tcx>(
     }
 }
 
-pub fn resolve_trait_loaded(tcx: TyCtxt) -> bool {
+pub(crate) fn resolve_trait_loaded(tcx: TyCtxt) -> bool {
     tcx.get_diagnostic_item(Symbol::intern("creusot_resolve")).is_some()
 }
 
@@ -727,13 +727,13 @@ pub(crate) fn closure_generic_decls(
     all_generic_decls_for(tcx, def_id)
 }
 
-pub fn all_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
+pub(crate) fn all_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
     let generics = tcx.generics_of(def_id);
 
     generic_decls((0..generics.count()).map(move |i| generics.param_at(i, tcx)))
 }
 
-pub fn own_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
+pub(crate) fn own_generic_decls_for(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = Decl> + '_ {
     let generics = tcx.generics_of(def_id);
     generic_decls(generics.params.iter())
 }

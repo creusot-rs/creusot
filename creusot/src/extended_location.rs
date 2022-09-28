@@ -29,7 +29,7 @@ impl Dir for dataflow::Backward {
 }
 
 impl ExtendedLocation {
-    pub fn is_entry_loc(self) -> bool {
+    pub(crate) fn is_entry_loc(self) -> bool {
         if let Self::Start(loc) = self {
             loc == Location::START
         } else {
@@ -37,18 +37,18 @@ impl ExtendedLocation {
         }
     }
 
-    pub fn loc(&self) -> &Location {
+    pub(crate) fn loc(&self) -> &Location {
         match self {
             Self::Start(l) => l,
             Self::Mid(l) => l,
         }
     }
 
-    pub fn same_block(&self, other: Self) -> bool {
+    pub(crate) fn same_block(&self, other: Self) -> bool {
         self.loc().block == other.loc().block
     }
 
-    pub fn seek_to<'tcx, A, R, D>(self, cursor: &mut ResultsCursor<'_, 'tcx, A, R>)
+    pub(crate) fn seek_to<'tcx, A, R, D>(self, cursor: &mut ResultsCursor<'_, 'tcx, A, R>)
     where
         A: Analysis<'tcx, Direction = D>,
         D: Dir,

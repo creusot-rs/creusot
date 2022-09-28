@@ -6,7 +6,7 @@ use creusot_rustc::{
     smir::mir::{self, Local, Location},
 };
 
-pub mod uninit_locals;
+pub(crate) mod uninit_locals;
 
 pub struct NeverLive(BitSet<Local>);
 
@@ -14,7 +14,7 @@ pub struct NeverLive(BitSet<Local>);
 /// We use this to account for function arguments which are never live when calculating
 /// when to drop them.
 impl NeverLive {
-    pub fn for_body(body: &mir::Body) -> BitSet<Local> {
+    pub(crate) fn for_body(body: &mir::Body) -> BitSet<Local> {
         let mut ever_live = NeverLive(BitSet::new_filled(body.local_decls.len()));
         ever_live.visit_body(body);
         ever_live.0
@@ -63,7 +63,7 @@ pub enum DefUse {
     Drop,
 }
 
-pub fn categorize(context: PlaceContext) -> Option<DefUse> {
+pub(crate) fn categorize(context: PlaceContext) -> Option<DefUse> {
     match context {
         ///////////////////////////////////////////////////////////////////////////
         // DEFS

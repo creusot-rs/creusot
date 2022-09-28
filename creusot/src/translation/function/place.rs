@@ -32,7 +32,7 @@ use why3::{
 
 /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-pub fn create_assign_inner<'tcx>(
+pub(crate) fn create_assign_inner<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     body: &Body<'tcx>,
@@ -159,7 +159,7 @@ pub fn create_assign_inner<'tcx>(
 // [(P as Some)]   ---> [_1]
 // [(P as Some).0] ---> let Some(a) = [_1] in a
 // [(* P)] ---> * [P]
-pub fn translate_rplace_inner<'tcx>(
+pub(crate) fn translate_rplace_inner<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     body: &Body<'tcx>,

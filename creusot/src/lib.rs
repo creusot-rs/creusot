@@ -10,12 +10,11 @@ extern crate rustc_smir;
 extern crate rustc_type_ir;
 
 mod analysis;
-pub mod arg_value;
 pub mod callbacks;
 mod cleanup_spec_closures;
-pub mod clone_map;
+pub(crate) mod clone_map;
 pub(crate) mod creusot_items;
-pub mod ctx;
+pub(crate) mod ctx;
 
 mod extended_location;
 mod gather_spec_closures;
@@ -24,9 +23,9 @@ mod resolve;
 // #[allow(dead_code)]
 mod rustc_extensions;
 mod translation;
-pub mod util;
+pub(crate) mod util;
 use translation::*;
 mod error;
-pub mod metadata;
+pub(crate) mod metadata;
 mod translated_item;
 mod validate;

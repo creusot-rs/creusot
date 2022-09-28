@@ -43,7 +43,7 @@ enum TyTranslation {
 }
 
 // Translate a type usage
-pub fn translate_ty<'tcx>(
+pub(crate) fn translate_ty<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     span: Span,
@@ -172,7 +172,7 @@ fn translate_ty_inner<'tcx>(
     }
 }
 
-pub fn translate_projection_ty<'tcx>(
+pub(crate) fn translate_projection_ty<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     pty: &ProjectionTy<'tcx>,
@@ -184,7 +184,7 @@ pub fn translate_projection_ty<'tcx>(
 
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
 
-pub fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSet<DefId> {
+pub(crate) fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSet<DefId> {
     let mut graph = DiGraphMap::<_, ()>::new();
     graph.add_node(ty_id);
 
@@ -239,7 +239,7 @@ fn translate_ty_param(p: Symbol) -> Ident {
 // Additionally, types are not translated one by one but rather as a *binding group*, so that mutually
 // recursive types are properly translated.
 // Results are accumulated and can be collected at once by consuming the `Ctx`
-pub fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, did: DefId) {
+pub(crate) fn translate_tydecl(ctx: &mut TranslationCtx<'_, '_>, did: DefId) {
     let span = ctx.def_span(did);
     let bg = ty_binding_group(ctx.tcx, did);
 
@@ -334,7 +334,7 @@ fn build_ty_decl<'tcx>(
     kind
 }
 
-pub fn translate_closure_ty<'tcx>(
+pub(crate) fn translate_closure_ty<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     did: DefId,
@@ -390,7 +390,7 @@ fn field_ty<'tcx>(
     )
 }
 
-pub fn translate_accessor(
+pub(crate) fn translate_accessor(
     ctx: &mut TranslationCtx<'_, '_>,
     adt_did: DefId,
     variant_did: DefId,
@@ -432,7 +432,7 @@ pub fn translate_accessor(
     )
 }
 
-pub fn build_accessor(
+pub(crate) fn build_accessor(
     this: MlT,
     acc_name: Ident,
     variant_ix: usize,
@@ -469,7 +469,7 @@ pub fn build_accessor(
     Decl::LetFun(LetFun { sig, rec: false, ghost: target_field.2, body: discr_exp })
 }
 
-pub fn closure_accessors<'tcx>(
+pub(crate) fn closure_accessors<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     ty_id: DefId,
@@ -504,13 +504,13 @@ pub fn closure_accessors<'tcx>(
     accessors
 }
 
-pub fn closure_accessor_name(tcx: TyCtxt, def: DefId, ix: usize) -> Ident {
+pub(crate) fn closure_accessor_name(tcx: TyCtxt, def: DefId, ix: usize) -> Ident {
     let ty_name = item_name(tcx, def, Namespace::TypeNS).to_string().to_lowercase();
 
     format!("{}_{}", &*ty_name, ix).into()
 }
 
-pub fn variant_accessor_name(
+pub(crate) fn variant_accessor_name(
     ctx: &TranslationCtx,
     def: DefId,
     variant: &VariantDef,
@@ -528,7 +528,7 @@ pub fn variant_accessor_name(
     }
 }
 
-pub fn intty_to_ty(
+pub(crate) fn intty_to_ty(
     ctx: &TranslationCtx<'_, '_>,
     names: &mut CloneMap<'_>,
     ity: &creusot_rustc::middle::ty::IntTy,
@@ -568,7 +568,7 @@ pub fn intty_to_ty(
     }
 }
 
-pub fn uintty_to_ty(
+pub(crate) fn uintty_to_ty(
     ctx: &TranslationCtx<'_, '_>,
     names: &mut CloneMap<'_>,
     ity: &creusot_rustc::middle::ty::UintTy,
@@ -623,58 +623,58 @@ fn floatty_to_ty(names: &mut CloneMap<'_>, fty: &creusot_rustc::middle::ty::Floa
     }
 }
 
-pub fn double_ty() -> MlT {
+pub(crate) fn double_ty() -> MlT {
     MlT::TConstructor(QName::from_string("Float64.t").unwrap())
 }
 
-pub fn single_ty() -> MlT {
+pub(crate) fn single_ty() -> MlT {
     MlT::TConstructor(QName::from_string("Float32.t").unwrap())
 }
 
-pub fn u8_ty() -> MlT {
+pub(crate) fn u8_ty() -> MlT {
     MlT::TConstructor(QName::from_string("uint8").unwrap())
 }
 
-pub fn u16_ty() -> MlT {
+pub(crate) fn u16_ty() -> MlT {
     MlT::TConstructor(QName::from_string("uint16").unwrap())
 }
 
-pub fn u32_ty() -> MlT {
+pub(crate) fn u32_ty() -> MlT {
     MlT::TConstructor(QName::from_string("uint32").unwrap())
 }
 
-pub fn u64_ty() -> MlT {
+pub(crate) fn u64_ty() -> MlT {
     MlT::TConstructor(QName::from_string("uint64").unwrap())
 }
 
-pub fn u128_ty() -> MlT {
+pub(crate) fn u128_ty() -> MlT {
     MlT::TConstructor(QName::from_string("uint128").unwrap())
 }
 
-pub fn usize_ty() -> MlT {
+pub(crate) fn usize_ty() -> MlT {
     MlT::TConstructor(QName::from_string("usize").unwrap())
 }
 
-pub fn i8_ty() -> MlT {
+pub(crate) fn i8_ty() -> MlT {
     MlT::TConstructor(QName::from_string("int8").unwrap())
 }
 
-pub fn i16_ty() -> MlT {
+pub(crate) fn i16_ty() -> MlT {
     MlT::TConstructor(QName::from_string("int16").unwrap())
 }
 
-pub fn i32_ty() -> MlT {
+pub(crate) fn i32_ty() -> MlT {
     MlT::TConstructor(QName::from_string("int32").unwrap())
 }
 
-pub fn i64_ty() -> MlT {
+pub(crate) fn i64_ty() -> MlT {
     MlT::TConstructor(QName::from_string("int64").unwrap())
 }
 
-pub fn i128_ty() -> MlT {
+pub(crate) fn i128_ty() -> MlT {
     MlT::TConstructor(QName::from_string("int128").unwrap())
 }
 
-pub fn isize_ty() -> MlT {
+pub(crate) fn isize_ty() -> MlT {
     MlT::TConstructor(QName::from_string("isize").unwrap())
 }

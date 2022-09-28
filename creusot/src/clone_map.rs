@@ -13,7 +13,7 @@ use creusot_rustc::{
 use heck::CamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
-use rustc_middle::ty::{subst::GenericArgKind, ParamEnv, TraitRef};
+use rustc_middle::ty::{subst::GenericArgKind, ParamEnv};
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
     Ident, QName,
@@ -29,6 +29,7 @@ use crate::{
 };
 
 // Prelude modules
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PreludeModule {
     Float32,
@@ -151,7 +152,7 @@ enum Kind {
 }
 
 impl Kind {
-    pub fn qname_ident(&self, method: Ident) -> QName {
+    pub(crate) fn qname_ident(&self, method: Ident) -> QName {
         let module = match &self {
             Kind::Named(name) => vec![name.to_string().into()],
             _ => Vec::new(),
@@ -209,42 +210,39 @@ impl<'tcx> CloneInfo<'tcx> {
         }
     }
 
-    pub fn mk_export(&mut self) {
-        self.kind = Kind::Export;
-    }
-
-    pub fn add_dep(&mut self, tcx: TyCtxt<'tcx>, name: Symbol, mut dep: (DefId, SubstsRef<'tcx>)) {
+    pub(crate) fn add_dep(
+        &mut self,
+        tcx: TyCtxt<'tcx>,
+        name: Symbol,
+        mut dep: (DefId, SubstsRef<'tcx>),
+    ) {
         dep.1 = tcx.erase_regions(dep.1);
         self.additional_deps.push((name, dep));
     }
 
-    pub fn opaque(&mut self) {
+    pub(crate) fn opaque(&mut self) {
         self.opaque = CloneOpacity::Opaque;
     }
 
-    pub fn transparent(&mut self) {
+    pub(crate) fn transparent(&mut self) {
         self.opaque = CloneOpacity::Transparent;
     }
 
     // TODO: When traits stop holding all functions we can remove the last two arguments
-    pub fn qname(&self, tcx: TyCtxt, def_id: DefId) -> QName {
+    pub(crate) fn qname(&self, tcx: TyCtxt, def_id: DefId) -> QName {
         self.qname_ident(match tcx.def_kind(def_id) {
             // DefKind::Closure => Ident::build("closure"),
             _ => item_name(tcx, def_id, Namespace::ValueNS),
         })
     }
 
-    pub fn qname_sym(&self, sym: creusot_rustc::span::symbol::Symbol) -> QName {
-        self.qname_ident(sym.to_string().into())
-    }
-
-    pub fn qname_ident(&self, method: Ident) -> QName {
+    pub(crate) fn qname_ident(&self, method: Ident) -> QName {
         self.kind.qname_ident(method)
     }
 }
 
 impl<'tcx> CloneMap<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, self_id: DefId, clone_level: CloneLevel) -> Self {
+    pub(crate) fn new(tcx: TyCtxt<'tcx>, self_id: DefId, clone_level: CloneLevel) -> Self {
         let names = IndexMap::new();
         let mut c = CloneMap {
             tcx,
@@ -263,7 +261,7 @@ impl<'tcx> CloneMap<'tcx> {
         c
     }
 
-    pub fn summary(&self) -> CloneSummary<'tcx> {
+    pub(crate) fn summary(&self) -> CloneSummary<'tcx> {
         self.names
             .iter()
             .filter_map(|(k, ci)| match &ci.kind {
@@ -273,7 +271,7 @@ impl<'tcx> CloneMap<'tcx> {
             .collect()
     }
 
-    pub fn with_public_clones<F, A>(&mut self, f: F) -> A
+    pub(crate) fn with_public_clones<F, A>(&mut self, f: F) -> A
     where
         F: FnOnce(&mut Self) -> A,
     {
@@ -283,7 +281,7 @@ impl<'tcx> CloneMap<'tcx> {
         ret
     }
 
-    pub fn insert(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
+    pub(crate) fn insert(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
         let subst = self.tcx.erase_regions(subst);
 
         let (def_id, subst) = self.closure_hack(def_id, subst);
@@ -322,29 +320,12 @@ impl<'tcx> CloneMap<'tcx> {
         (self.self_id, subst)
     }
 
-    pub fn import_prelude_module(&mut self, module: PreludeModule) {
+    pub(crate) fn import_prelude_module(&mut self, module: PreludeModule) {
         self.prelude.entry(module.qname()).or_insert(false);
     }
 
-    pub fn import_builtin_module(&mut self, module: QName) {
+    pub(crate) fn import_builtin_module(&mut self, module: QName) {
         self.prelude.entry(module).or_insert(false);
-    }
-
-    pub fn keys(&self) -> impl Iterator<Item = &CloneNode<'tcx>> {
-        self.names.keys()
-    }
-
-    pub fn clear_graph(&mut self) {
-        for (_, b) in self.prelude.iter_mut() {
-            *b = false;
-        }
-
-        for ci in self.names.values_mut() {
-            ci.cloned = false;
-        }
-        self.last_cloned = 0;
-        self.clone_graph = DiGraphMap::new();
-        self.used_types = Default::default();
     }
 
     fn closure_hack(&self, def_id: DefId, subst: SubstsRef<'tcx>) -> (DefId, SubstsRef<'tcx>) {
@@ -579,7 +560,7 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
-    pub fn to_clones(&mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) -> Vec<Decl> {
+    pub(crate) fn to_clones(&mut self, ctx: &mut ctx::TranslationCtx<'_, 'tcx>) -> Vec<Decl> {
         debug!("emitting clones for {:?}", self.self_id);
         let mut decls = Vec::new();
 
@@ -708,7 +689,7 @@ impl<'tcx> CloneMap<'tcx> {
 }
 
 // Create the substitution used to clone `def_id` with the rustc substitution `subst`.
-pub fn base_subst<'tcx>(
+pub(crate) fn base_subst<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     mut def_id: DefId,
@@ -765,7 +746,7 @@ fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel) ->
             CloneLevel::Interface => interface::interface_name(ctx, def_id).into(),
             CloneLevel::Body => module_name(ctx, def_id).into(),
         },
-        Interface | Program | Closure => {
+        Program | Closure => {
             QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
         }
         Constant | Trait | Type | AssocTy => module_name(ctx, def_id).into(),
@@ -822,7 +803,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
     match util::item_type(tcx, def_id) {
         Logic => Some(SymbolKind::Function(tcx.item_name(def_id))),
         Predicate => Some(SymbolKind::Predicate(tcx.item_name(def_id))),
-        Interface | Program => Some(SymbolKind::Val(tcx.item_name(def_id))),
+        Program => Some(SymbolKind::Val(tcx.item_name(def_id))),
         AssocTy => match tcx.associated_item(def_id).container {
             ty::TraitContainer => Some(SymbolKind::Type(tcx.item_name(def_id))),
             ty::ImplContainer => None,

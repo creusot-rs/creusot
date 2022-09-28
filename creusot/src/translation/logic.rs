@@ -10,7 +10,7 @@ use why3::{
     Ident,
 };
 
-pub fn binders_to_args(
+pub(crate) fn binders_to_args(
     ctx: &mut TranslationCtx,
     binders: Vec<Binder>,
 ) -> (Vec<why3::Exp>, Vec<Binder>) {
@@ -39,7 +39,7 @@ pub fn binders_to_args(
     (args, out_binders)
 }
 
-pub fn translate_logic_or_predicate<'tcx>(
+pub(crate) fn translate_logic_or_predicate<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
 ) -> (Module, Module, Option<Module>, bool, CloneMap<'tcx>) {
@@ -229,6 +229,6 @@ fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
     Axiom { name: "def".into(), axiom }
 }
 
-pub fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
+pub(crate) fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
     format!("{}_Impl", Cow::from(&*module_name(ctx, def_id))).into()
 }

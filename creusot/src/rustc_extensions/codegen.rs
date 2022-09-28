@@ -29,7 +29,7 @@ use rustc_smir::very_unstable::middle::ty::{self, fold::TypeFoldable, TyCtxt};
 ///
 /// Assumes that this is run after the entire crate has been successfully type-checked.
 /// This also expects that `trait_ref` is fully normalized.
-pub fn codegen_fulfill_obligation<'tcx>(
+pub(crate) fn codegen_fulfill_obligation<'tcx>(
     tcx: TyCtxt<'tcx>,
     (param_env, trait_ref): (ty::ParamEnv<'tcx>, ty::PolyTraitRef<'tcx>),
 ) -> Result<ImplSource<'tcx, ()>, DiagnosticBuilder<'tcx, ErrorGuaranteed>> {

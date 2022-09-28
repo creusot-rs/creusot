@@ -19,7 +19,7 @@ use crate::util;
 /// Specifications in Creusot are encoded inside of special closures that are inserted throughout the code.
 /// The code inside those closures is meant to be Pearlite and is thus not subject to Rust's borrow checker, however it needs to be able to refer to normal Rust variables.
 /// To prevent the closures from intererring with the borrow checking of the surrounding environment, we replace the MIR body of the closure with an empty loop and remove all of the arguments to the closure in the surrounding MIR.
-pub fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut Body<'tcx>) {
+pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body: &mut Body<'tcx>) {
     trace!("cleanup_spec_closures: {:?}", def_id);
     if util::no_mir(tcx, def_id) {
         trace!("replacing function body");
@@ -52,7 +52,7 @@ fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) {
     }
 }
 
-pub fn make_loop(_: TyCtxt) -> IndexVec<BasicBlock, BasicBlockData> {
+pub(crate) fn make_loop(_: TyCtxt) -> IndexVec<BasicBlock, BasicBlockData> {
     let mut body = IndexVec::new();
     body.push(BasicBlockData::new(Some(Terminator {
         source_info: SourceInfo::outermost(creusot_rustc::span::DUMMY_SP),
@@ -98,7 +98,7 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
 
 use creusot_rustc::index::vec::Idx;
 
-pub fn map_locals<V>(
+pub(crate) fn map_locals<V>(
     local_decls: &mut IndexVec<Local, V>,
     dead_locals: &IndexSet<Local>,
 ) -> IndexVec<Local, Option<Local>> {

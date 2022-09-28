@@ -21,9 +21,9 @@ use why3::{declaration::Contract, exp::Exp, Ident};
 
 mod builtins;
 mod lower;
-pub mod typing;
+pub(crate) mod typing;
 
-pub use lower::*;
+pub(crate) use lower::*;
 
 #[derive(Clone, Debug, Default, TypeFoldable, TypeVisitable)]
 pub struct PreContract<'tcx> {
@@ -33,7 +33,7 @@ pub struct PreContract<'tcx> {
 }
 
 impl<'tcx> PreContract<'tcx> {
-    pub fn to_exp(
+    pub(crate) fn to_exp(
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut CloneMap<'tcx>,
@@ -66,7 +66,7 @@ impl<'tcx> PreContract<'tcx> {
         out
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
     }
 }
@@ -79,7 +79,7 @@ pub struct ContractClauses {
 }
 
 impl ContractClauses {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self { variant: None, requires: Vec::new(), ensures: Vec::new() }
     }
 
@@ -105,7 +105,7 @@ impl ContractClauses {
         EarlyBinder(out)
     }
 
-    pub fn iter_ids(&self) -> impl Iterator<Item = DefId> + '_ {
+    pub(crate) fn iter_ids(&self) -> impl Iterator<Item = DefId> + '_ {
         self.requires.iter().chain(self.ensures.iter()).chain(self.variant.iter()).cloned()
     }
 }
@@ -171,7 +171,7 @@ impl ScopeTree {
 }
 
 // Turn a typing context into a substition.
-pub fn inv_subst<'tcx>(body: &Body<'tcx>, loc: Location) -> HashMap<Symbol, Term<'tcx>> {
+pub(crate) fn inv_subst<'tcx>(body: &Body<'tcx>, loc: Location) -> HashMap<Symbol, Term<'tcx>> {
     // let local_map = real_locals(tcx, body);
     let info = body.source_info(loc);
     let mut args = HashMap::new();
@@ -251,7 +251,7 @@ pub(crate) fn contract_clauses_of(
     Ok(contract)
 }
 
-pub fn inherited_extern_spec<'tcx>(
+pub(crate) fn inherited_extern_spec<'tcx>(
     ctx: &TranslationCtx<'_, 'tcx>,
     def_id: DefId,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
@@ -272,7 +272,10 @@ pub fn inherited_extern_spec<'tcx>(
     }
 }
 
-pub fn contract_of<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, def_id: DefId) -> PreContract<'tcx> {
+pub(crate) fn contract_of<'tcx>(
+    ctx: &mut TranslationCtx<'_, 'tcx>,
+    def_id: DefId,
+) -> PreContract<'tcx> {
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
         extern_spec.contract.get_pre(ctx).subst(ctx.tcx, extern_spec.subst)
     } else {
@@ -286,7 +289,7 @@ pub fn contract_of<'tcx>(ctx: &mut TranslationCtx<'_, 'tcx>, def_id: DefId) -> P
 }
 
 // These methods are allowed to cheat the purity restrictions because they are lang items we cannot redefine
-pub fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
+pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
     let def_path = tcx.def_path_str(def_id);
 
     def_path == "std::ops::Index::index"
