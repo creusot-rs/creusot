@@ -5,12 +5,7 @@ use crate::{
     util::{self, constructor_qname, get_builtin, item_name, item_qname, module_name},
 };
 use creusot_rustc::{
-    hir::def_id::DefId,
-    middle::ty::{
-        subst::{SubstsRef},
-    },
-    resolve::Namespace,
-    span::{Span},
+    hir::def_id::DefId, middle::ty::subst::SubstsRef, resolve::Namespace, span::Span,
 };
 use indexmap::IndexSet;
 use rustc_middle::ty::{self, subst::InternalSubsts, FieldDef, Ty, TyCtxt, TyKind};
@@ -133,7 +128,10 @@ fn translate_ty_inner<'tcx>(
     }
 }
 
-pub fn translate_tydecl(ctx: &mut TranslationCtx<'_>, bg: &IndexSet<DefId>) -> Option<Module> {
+pub(crate) fn translate_tydecl(
+    ctx: &mut TranslationCtx<'_>,
+    bg: &IndexSet<DefId>,
+) -> Option<Module> {
     let did = bg[0];
     let span = ctx.def_span(did);
 

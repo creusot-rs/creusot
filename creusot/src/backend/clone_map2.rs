@@ -153,7 +153,10 @@ impl<'tcx> Names<'tcx> {
     }
 }
 
-pub fn name_clones<'tcx>(ctx: &mut TranslationCtx<'tcx>, graph: &MonoGraph<'tcx>) -> Names<'tcx> {
+pub(crate) fn name_clones<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    graph: &MonoGraph<'tcx>,
+) -> Names<'tcx> {
     let mut names = IndexMap::new();
     let mut assigned = IndexMap::new();
     for (def_id, subst) in graph.nodes() {
