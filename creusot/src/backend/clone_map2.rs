@@ -39,6 +39,7 @@ use crate::{
 //
 
 // Temporary to start testing
+// Eventually dependency tracking should probably move into main part of crate?
 fn get_immediate_deps<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
@@ -105,6 +106,8 @@ fn term_dependencies<'tcx>(
 
 type MonoGraph<'tcx> = DiGraphMap<(DefId, SubstsRef<'tcx>), (DefId, SubstsRef<'tcx>)>;
 
+// TODO: should take graph by `&mut` and not take the root def_id directly? (stored in graph?) should instead take a type
+// which can have dependencies or a list of dependencies to traverse
 pub fn collect<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> MonoGraph<'tcx> {
     let mut to_visit = vec![(def_id, InternalSubsts::identity_for_item(ctx.tcx, def_id))];
     let mut finished = HashSet::new();
@@ -233,11 +236,12 @@ pub fn make_clones<'tcx>(
         let mut subst = base_subst(ctx, names, node.0, node.1);
 
         for dep in graph.neighbors_directed(node, Outgoing) {
-            if item_type(ctx.tcx, dep.0) == ItemType::Type {
+            let orig = graph[(node, dep)];
+            // FIXME: Not really correct
+            if item_type(ctx.tcx, orig.0) == ItemType::Type {
                 continue;
             }
 
-            let orig = graph[(node, dep)];
             subst.push(CloneSubst::Val(priors.get(node.0, orig), names.get(dep)))
         }
 

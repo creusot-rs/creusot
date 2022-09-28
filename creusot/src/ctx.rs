@@ -2,7 +2,7 @@ use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::clone_map::*;
 use crate::{
-    backend::{self, clone_map2},
+    backend::{self, clone_map2::{self, PriorClones}},
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
@@ -31,8 +31,9 @@ use creusot_rustc::{
     trait_selection::traits::SelectionContext,
 };
 use indexmap::{IndexMap, IndexSet};
+
 pub(crate) use util::{item_name, module_name, ItemType};
-use why3::{declaration::Module, exp::Exp};
+use why3::{declaration::Module, exp::Exp, Print};
 
 pub(crate) use crate::translated_item::*;
 
@@ -134,6 +135,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 let bg = ty_binding_group(self.tcx, def_id);
                 self.start_group(bg.clone());
                 self.add_binding_group(&bg);
+                // TODO remove
                 let modl = backend::ty::translate_tydecl(self, &bg);
                 for did in bg {
                     self.finish(did);
@@ -210,6 +212,12 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             let (stub, modl, proof_modl, has_axioms, deps) =
                 crate::translation::translate_logic_or_predicate(self, def_id);
             self.dependencies.insert(def_id, deps.summary());
+
+            let graph = clone_map2::collect(self, def_id);
+            let priors = PriorClones::from_deps(self);
+            eprintln!("---- {def_id:?} ----");
+            clone_map2::make_clones(self, graph, &priors, def_id).into_iter().for_each(|c| eprintln!("{}", c.display()));
+            eprintln!("--------");
             TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
         } else if !def_id.is_local() {
             debug!("translating {:?} as extern", def_id);
@@ -228,7 +236,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             TranslatedItem::Program { interface, modl, has_axioms: self.tcx.is_closure(def_id) }
         };
 
-        clone_map2::collect(self, def_id);
+        // clone_map2::collect(self, def_id);
 
         self.functions.insert(def_id, translated);
     }

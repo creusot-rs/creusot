@@ -77,19 +77,15 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
     let sig_contract = sig.clone();
     sig.contract = Contract::new();
 
-    let mut decls: Vec<_> = Vec::new();
-    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-    decls.extend(names.to_clones(ctx));
-
+    let mut body_decls = Vec::new();
     let proof_modl = proof_module(ctx, def_id);
     if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
-        decls.push(Decl::ValDecl(val));
-        decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
+        body_decls.push(Decl::ValDecl(val));
+        body_decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
     } else {
         let term = ctx.term(def_id).unwrap().clone();
         let body = specification::lower_pure(ctx, &mut names, ctx.param_env(def_id), term);
-        decls.extend(names.to_clones(ctx));
 
         if sig_contract.contract.variant.is_empty() {
             let decl = match util::item_type(ctx.tcx, def_id) {
@@ -97,20 +93,25 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
                 ItemType::Predicate => Decl::PredDecl(Predicate { sig, body }),
                 _ => unreachable!(),
             };
-            decls.push(decl);
-            decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
+            body_decls.push(decl);
+            body_decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
         } else if body.is_pure() {
             let def_sig = sig.clone();
             let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
-            decls.push(Decl::ValDecl(val));
-            decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
-            decls.push(Decl::Axiom(definition_axiom(&def_sig, body)));
+            body_decls.push(Decl::ValDecl(val));
+            body_decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
+            body_decls.push(Decl::Axiom(definition_axiom(&def_sig, body)));
         } else {
             let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
-            decls.push(Decl::ValDecl(val));
-            decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
+            body_decls.push(Decl::ValDecl(val));
+            body_decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
         }
     }
+
+    let mut decls: Vec<_> = Vec::new();
+    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
+    decls.extend(names.to_clones(ctx));
+    decls.extend(body_decls);
 
     let has_axioms = !sig_contract.contract.is_empty();
     if has_axioms {
