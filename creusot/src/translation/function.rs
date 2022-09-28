@@ -5,11 +5,7 @@ use crate::{
     gather_spec_closures::corrected_invariant_names_and_locations,
     resolve::EagerResolver,
     rustc_extensions::renumber,
-    translation::{
-        specification::contract_of,
-        traits, ty,
-        ty::{translate_ty},
-    },
+    translation::{specification::contract_of, traits, ty, ty::translate_ty},
     util::{self, ident_of, signature_of},
 };
 use creusot_rustc::{
@@ -89,7 +85,6 @@ pub(crate) fn translate_function<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: D
 
     //     decls.push(promoted);
     // }
-
 
     let func_translator = BodyTranslator::build_context(tcx, ctx, &body, def_id);
 

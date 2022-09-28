@@ -38,7 +38,11 @@ use std::collections::HashMap;
 // patterns in match expressions.
 
 impl<'tcx> BodyTranslator<'_, 'tcx> {
-    pub(crate) fn translate_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: Location) {
+    pub(crate) fn translate_terminator(
+        &mut self,
+        terminator: &mir::Terminator<'tcx>,
+        location: Location,
+    ) {
         let span = terminator.source_info.span;
         match &terminator.kind {
             Goto { target } => self.emit_terminator(mk_goto(*target)),

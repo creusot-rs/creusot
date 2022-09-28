@@ -2,7 +2,10 @@ use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::clone_map::*;
 use crate::{
-    backend::{self, clone_map2::{self, PriorClones}},
+    backend::{
+        self,
+        clone_map2::{self, PriorClones},
+    },
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
@@ -216,7 +219,9 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             let graph = clone_map2::collect(self, def_id);
             let priors = PriorClones::from_deps(self);
             eprintln!("---- {def_id:?} ----");
-            clone_map2::make_clones(self, graph, &priors, def_id).into_iter().for_each(|c| eprintln!("{}", c.display()));
+            clone_map2::make_clones(self, graph, &priors, def_id)
+                .into_iter()
+                .for_each(|c| eprintln!("{}", c.display()));
             eprintln!("--------");
             TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
         } else if !def_id.is_local() {

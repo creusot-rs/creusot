@@ -277,8 +277,10 @@ pub(crate) fn inherited_extern_spec<'tcx>(
     }
 }
 
-
-pub(crate) fn contract_of<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> PreContract<'tcx> {
+pub(crate) fn contract_of<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    def_id: DefId,
+) -> PreContract<'tcx> {
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
         let mut contract = extern_spec.contract.get_pre(ctx).subst(ctx.tcx, extern_spec.subst);
         contract.subst(&extern_spec.arg_subst.iter().cloned().collect());

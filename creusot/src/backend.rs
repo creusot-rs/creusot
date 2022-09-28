@@ -1,2 +1,2 @@
-pub mod ty;
-pub mod clone_map2;
+pub(crate) mod ty;
+pub(crate) mod clone_map2;

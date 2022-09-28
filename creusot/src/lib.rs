@@ -10,10 +10,10 @@ extern crate rustc_smir;
 extern crate rustc_type_ir;
 
 mod analysis;
+pub(crate) mod backend;
 pub mod callbacks;
 mod cleanup_spec_closures;
 pub(crate) mod clone_map;
-pub mod backend;
 pub(crate) mod creusot_items;
 pub(crate) mod ctx;
 
