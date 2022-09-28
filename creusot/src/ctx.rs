@@ -25,8 +25,10 @@ use creusot_rustc::{
         def::DefKind,
         def_id::{DefId, LocalDefId},
     },
+    infer::traits::{Obligation, ObligationCause},
     middle::ty::{subst::InternalSubsts, ParamEnv, TyCtxt},
     span::{Span, Symbol, DUMMY_SP},
+    trait_selection::traits::SelectionContext,
 };
 use indexmap::{IndexMap, IndexSet};
 pub(crate) use util::{item_name, module_name, ItemType};
@@ -368,7 +370,23 @@ impl<'tcx, 'sess> TranslationCtx<'sess, 'tcx> {
             .unwrap_or_else(|| (def_id, InternalSubsts::identity_for_item(self.tcx, def_id)));
         if let Some(es) = self.extern_spec(id) {
             let mut additional_predicates = Vec::new();
-            additional_predicates.extend(es.predicates_for(self.tcx, subst));
+
+            {
+                // Only add predicates which don't already hold
+                use creusot_rustc::infer::infer::TyCtxtInferExt;
+                self.tcx.infer_ctxt().enter(|infcx| {
+                    let mut selcx = SelectionContext::new(&infcx);
+                    let param_env = self.tcx.param_env(def_id);
+                    for pred in es.predicates_for(self.tcx, subst) {
+                        let obligation_cause = ObligationCause::dummy();
+                        let obligation = Obligation::new(obligation_cause, param_env, pred);
+                        if !selcx.predicate_may_hold_fatal(&obligation) {
+                            additional_predicates.push(pred)
+                        }
+                    }
+                });
+            }
+
             additional_predicates.extend(self.tcx.param_env(def_id).caller_bounds());
             ParamEnv::new(
                 self.mk_predicates(additional_predicates.into_iter()),
