@@ -13,7 +13,7 @@ pub struct CreusotItems {
     pub symbol_to_id: HashMap<Symbol, DefId>,
 }
 
-pub fn local_creusot_items(tcx: TyCtxt) -> CreusotItems {
+pub(crate) fn local_creusot_items(tcx: TyCtxt) -> CreusotItems {
     let mut items: CreusotItems = Default::default();
 
     for owner in tcx.hir().body_owners() {

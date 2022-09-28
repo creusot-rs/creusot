@@ -8,11 +8,11 @@ pub struct ModuleTree {
 }
 
 impl ModuleTree {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self { decls: Vec::new(), inner: IndexMap::new() }
     }
 
-    pub fn add_decl(&mut self, key: why3::mlcfg::QName, decl: Decl) {
+    pub(crate) fn add_decl(&mut self, key: why3::mlcfg::QName, decl: Decl) {
         let mut node = self;
 
         for elem in key.module.iter() {
@@ -26,7 +26,7 @@ impl ModuleTree {
     }
 
     // Look up a *module* name in the tree and return a mutable reference to its contents
-    pub fn get_module_mut(&mut self, key: why3::mlcfg::QName) -> &mut Vec<Decl> {
+    pub(crate) fn get_module_mut(&mut self, key: why3::mlcfg::QName) -> &mut Vec<Decl> {
         let mut node = self;
 
         for elem in key.module.iter().chain(std::iter::once(&key.name)) {
@@ -39,7 +39,7 @@ impl ModuleTree {
         &mut node.decls
     }
 
-    pub fn reify(self) -> Vec<Decl> {
+    pub(crate) fn reify(self) -> Vec<Decl> {
         self.inner.into_iter().map(|(n, c)| c.reify_(n)).chain(self.decls.into_iter()).collect()
     }
 

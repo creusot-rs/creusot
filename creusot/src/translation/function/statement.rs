@@ -13,7 +13,7 @@ use crate::{
 };
 
 impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
-    pub fn translate_statement(&mut self, statement: &'_ Statement<'tcx>, loc: Location) {
+    pub(crate) fn translate_statement(&mut self, statement: &'_ Statement<'tcx>, loc: Location) {
         use StatementKind::*;
         match statement.kind {
             Assign(box (ref pl, ref rv)) => {

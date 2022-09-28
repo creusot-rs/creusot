@@ -21,7 +21,7 @@ use crate::error::CreusotResult;
 
 use super::place::translate_rplace_inner;
 
-pub fn promoted_signature<'tcx>(
+pub(crate) fn promoted_signature<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     (promoted, body): (Promoted, &Body<'tcx>),
@@ -52,7 +52,7 @@ pub fn promoted_signature<'tcx>(
 // instead of cfgs
 //
 // We use a custom translation because if we use `any` inside a `constant` / `function` its body is marked as opaque, and `mlcfg` heavily uses `any`.
-pub fn translate_promoted<'tcx>(
+pub(crate) fn translate_promoted<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     param_env: ParamEnv<'tcx>,

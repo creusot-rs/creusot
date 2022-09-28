@@ -58,7 +58,7 @@ pub enum Expr<'tcx> {
 }
 
 impl<'tcx> Expr<'tcx> {
-    pub fn to_why(
+    pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut CloneMap<'tcx>,
@@ -280,7 +280,7 @@ impl<'tcx> Terminator<'tcx> {
         }
     }
 
-    pub fn to_why(
+    pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut CloneMap<'tcx>,
@@ -373,7 +373,7 @@ pub struct Block<'tcx> {
 }
 
 impl<'tcx> Block<'tcx> {
-    pub fn to_why(
+    pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
         names: &mut CloneMap<'tcx>,
@@ -398,7 +398,7 @@ impl<'tcx> Block<'tcx> {
 // }
 
 // impl<'tcx> Builder<'tcx> {
-//     pub fn new() -> Self {
+//     pub(crate) fn new() -> Self {
 //         Builder {
 //             blocks: Default::default(),
 //             block_id: BasicBlock::MAX,
@@ -506,7 +506,7 @@ fn resolve_predicate_of<'tcx>(
     }
 }
 
-pub fn int_from_int(ity: &IntTy) -> Exp {
+pub(crate) fn int_from_int(ity: &IntTy) -> Exp {
     match ity {
         IntTy::Isize => Exp::impure_qvar(QName::from_string("IntSize.of_int").unwrap()),
         IntTy::I8 => Exp::impure_qvar(QName::from_string("Int8.of_int").unwrap()),
@@ -517,7 +517,7 @@ pub fn int_from_int(ity: &IntTy) -> Exp {
     }
 }
 
-pub fn uint_from_int(uty: &UintTy) -> Exp {
+pub(crate) fn uint_from_int(uty: &UintTy) -> Exp {
     match uty {
         UintTy::Usize => Exp::impure_qvar(QName::from_string("UIntSize.of_int").unwrap()),
         UintTy::U8 => Exp::impure_qvar(QName::from_string("UInt8.of_int").unwrap()),
@@ -528,7 +528,7 @@ pub fn uint_from_int(uty: &UintTy) -> Exp {
     }
 }
 
-pub fn int_to_int(ity: &IntTy) -> Exp {
+pub(crate) fn int_to_int(ity: &IntTy) -> Exp {
     match ity {
         IntTy::Isize => Exp::impure_qvar(QName::from_string("IntSize.to_int").unwrap()),
         IntTy::I8 => Exp::impure_qvar(QName::from_string("Int8.to_int").unwrap()),
@@ -539,7 +539,7 @@ pub fn int_to_int(ity: &IntTy) -> Exp {
     }
 }
 
-pub fn uint_to_int(uty: &UintTy) -> Exp {
+pub(crate) fn uint_to_int(uty: &UintTy) -> Exp {
     match uty {
         UintTy::Usize => Exp::impure_qvar(QName::from_string("UIntSize.to_int").unwrap()),
         UintTy::U8 => Exp::impure_qvar(QName::from_string("UInt8.to_int").unwrap()),

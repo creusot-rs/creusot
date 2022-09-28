@@ -25,18 +25,6 @@ use why3::{
     Ident, QName,
 };
 
-pub fn parent_module(tcx: TyCtxt, def_id: DefId) -> DefId {
-    let mut module_id = def_id;
-
-    loop {
-        module_id = tcx.parent(module_id);
-        if tcx.def_kind(module_id) == DefKind::Mod {
-            break;
-        }
-    }
-    module_id
-}
-
 pub(crate) fn no_mir(tcx: TyCtxt, def_id: DefId) -> bool {
     crate::util::is_no_translate(tcx, def_id)
         || crate::util::is_logic(tcx, def_id)
@@ -139,7 +127,7 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
     }
 }
 
-pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
+pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).and_then(|a| {
         match &a.args {
             MacArgs::Eq(_, MacArgsEq::Hir(l)) => Some(l.token_lit.symbol),
@@ -148,18 +136,18 @@ pub fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     })
 }
 
-pub fn constructor_qname(ctx: &TranslationCtx, var: &VariantDef) -> QName {
+pub(crate) fn constructor_qname(ctx: &TranslationCtx, var: &VariantDef) -> QName {
     QName {
         module: vec![module_name(ctx, var.def_id)],
         name: item_name(ctx.tcx, var.def_id, Namespace::ValueNS).to_string().into(),
     }
 }
 
-pub fn item_qname(ctx: &TranslationCtx, def_id: DefId, ns: Namespace) -> QName {
+pub(crate) fn item_qname(ctx: &TranslationCtx, def_id: DefId, ns: Namespace) -> QName {
     QName { module: vec![module_name(ctx, def_id)], name: item_name(ctx.tcx, def_id, ns) }
 }
 
-pub fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
+pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
     use creusot_rustc::hir::def::DefKind::*;
 
     match tcx.def_kind(def_id) {
@@ -205,7 +193,7 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
     Ident::build(&id)
 }
 
-pub fn module_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
+pub(crate) fn module_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
     let kind = ctx.def_kind(def_id);
     use creusot_rustc::hir::def::DefKind::*;
 
@@ -253,28 +241,12 @@ pub enum ItemType {
     Impl,
     Type,
     AssocTy,
-    Interface,
     Constant,
     Unsupported(DefKind),
 }
 
 impl ItemType {
-    // Whether this definition should be 'transparent' which affects
-    // how we clone it. Transparent definitions will clone the *interface*
-    // of their dependencies, even in their body module. In particular
-    // this is used to get around the generativity of why3 clones for logic
-    // functions.
-    pub fn is_transparent(&self) -> bool {
-        use ItemType::*;
-        matches!(self, Logic | Predicate | Type | Interface)
-    }
-
-    pub fn logical(&self) -> bool {
-        use ItemType::*;
-        matches!(self, Logic | Predicate)
-    }
-
-    pub fn val(&self, sig: Signature) -> ValKind {
+    pub(crate) fn val(&self, sig: Signature) -> ValKind {
         match self {
             ItemType::Logic => ValKind::Function { sig },
             ItemType::Predicate => ValKind::Predicate { sig },
@@ -283,7 +255,7 @@ impl ItemType {
         }
     }
 
-    pub fn to_str(&self) -> &str {
+    pub(crate) fn to_str(&self) -> &str {
         match self {
             ItemType::Logic => "logic function",
             ItemType::Predicate => "predicate",
@@ -293,14 +265,13 @@ impl ItemType {
             ItemType::Impl => "trait implementation",
             ItemType::Type => "type declaration",
             ItemType::AssocTy => "associated type",
-            ItemType::Interface => "[INTERFACE]",
             ItemType::Constant => "constant",
             ItemType::Unsupported(_) => "[OTHER]",
         }
     }
 }
 
-pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
+pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
     match tcx.def_kind(def_id) {
         DefKind::Trait => ItemType::Trait,
         DefKind::Impl => ItemType::Impl,
@@ -322,7 +293,7 @@ pub fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
     }
 }
 
-pub fn inputs_and_output<'tcx>(
+pub(crate) fn inputs_and_output<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
 ) -> (impl Iterator<Item = (creusot_rustc::span::symbol::Ident, Ty<'tcx>)>, Ty<'tcx>) {
@@ -357,7 +328,7 @@ pub fn inputs_and_output<'tcx>(
     (inputs, output)
 }
 
-pub fn signature_of<'tcx>(
+pub(crate) fn signature_of<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
@@ -432,23 +403,7 @@ pub fn signature_of<'tcx>(
     Signature { name, attrs, retty: Some(retty), args, contract }
 }
 
-use creusot_rustc::ast::{
-    token::TokenKind::Literal,
-    tokenstream::{TokenStream, TokenTree::*},
-};
-
-pub fn ts_to_symbol(ts: TokenStream) -> Option<Symbol> {
-    assert_eq!(ts.len(), 1);
-
-    if let Token(tok, _) = ts.trees().next().unwrap() {
-        if let Literal(lit) = tok.kind {
-            return Some(lit.symbol);
-        }
-    }
-    None
-}
-
-pub fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a AttrItem> {
+pub(crate) fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a AttrItem> {
     for attr in attrs.iter() {
         if attr.is_doc_comment() {
             continue;
@@ -474,7 +429,7 @@ pub fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a AttrIte
     None
 }
 
-pub fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
+pub(crate) fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {
     let mut matched = Vec::new();
 
     for attr in attrs.iter() {
@@ -502,7 +457,7 @@ pub fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute
     matched
 }
 
-pub fn is_attr(attr: &Attribute, str: &str) -> bool {
+pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {
     match &attr.kind {
         AttrKind::DocComment(..) => false,
         AttrKind::Normal(attr) => {
@@ -622,7 +577,7 @@ impl<'a> ExpMutVisitor for ClosureSubst {
         }
     }
 }
-pub fn closure_capture_subst<'tcx>(
+pub(crate) fn closure_capture_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,

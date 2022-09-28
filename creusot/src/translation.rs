@@ -1,13 +1,13 @@
-pub mod constant;
-pub mod external;
+pub(crate) mod constant;
+pub(crate) mod external;
 #[allow(dead_code)]
-pub mod fmir;
-pub mod function;
-pub mod interface;
+pub(crate) mod fmir;
+pub(crate) mod function;
+pub(crate) mod interface;
 mod logic;
-pub mod specification;
-pub mod traits;
-pub mod ty;
+pub(crate) mod specification;
+pub(crate) mod traits;
+pub(crate) mod ty;
 
 use crate::{
     ctx,
@@ -19,14 +19,14 @@ use crate::{
 };
 use creusot_rustc::hir::{def::DefKind, def_id::LOCAL_CRATE};
 use ctx::TranslationCtx;
-pub use function::{translate_function, LocalIdent};
+pub(crate) use function::{translate_function, LocalIdent};
 use heck::CamelCase;
-pub use logic::*;
+pub(crate) use logic::*;
 use rustc_middle::ty::Ty;
 use std::{error::Error, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
 
-pub fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
+pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     ctx.load_metadata();
     load_extern_specs(ctx).map_err(|_| Box::new(CrErr))?;
@@ -51,7 +51,7 @@ pub fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
 
 use std::time::Instant;
 // TODO: Move the main loop out of `translation.rs`
-pub fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
+pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
     for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
         ctx.translate_trait(*tr);
     }
@@ -133,7 +133,7 @@ pub fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
 }
 use creusot_rustc::smir::mir;
 
-pub fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -> why3::exp::BinOp {
+pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -> why3::exp::BinOp {
     use why3::exp::BinOp;
     match op {
         mir::BinOp::Add => {

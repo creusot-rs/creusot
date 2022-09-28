@@ -14,11 +14,11 @@ pub struct Error {
 }
 
 impl Error {
-    pub fn new(span: Span, msg: impl Into<String>) -> Self {
+    pub(crate) fn new(span: Span, msg: impl Into<String>) -> Self {
         Error { span, msg: msg.into() }
     }
 
-    pub fn emit(self, sess: &Session) -> ! {
+    pub(crate) fn emit(self, sess: &Session) -> ! {
         sess.span_fatal_with_code(
             self.span,
             &self.msg,

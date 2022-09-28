@@ -122,7 +122,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
         TranslatedItem::Impl { modl: Module { name: module_name(self, impl_id), decls } }
     }
 
-    pub fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
+    pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
         assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
 
         let mut names = CloneMap::new(self.tcx, def_id, CloneLevel::Interface);
@@ -211,7 +211,7 @@ fn logic_refinement<'tcx>(
     Goal { name: format!("{}_spec", &*name).into(), goal: refn }
 }
 
-pub fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &AssocItem> {
+pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &AssocItem> {
     tcx.associated_items(def_id)
         .in_definition_order()
         .filter(move |item| !is_spec(tcx, item.def_id))
@@ -220,7 +220,7 @@ pub fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &Ass
 use crate::function::{all_generic_decls_for, own_generic_decls_for};
 use creusot_rustc::middle::ty::{subst::InternalSubsts, AssocItem, Binder};
 
-pub fn resolve_impl_source_opt<'tcx>(
+pub(crate) fn resolve_impl_source_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
@@ -258,7 +258,7 @@ pub fn resolve_impl_source_opt<'tcx>(
     }
 }
 
-pub fn resolve_opt<'tcx>(
+pub(crate) fn resolve_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
@@ -272,7 +272,7 @@ pub fn resolve_opt<'tcx>(
     }
 }
 
-pub fn resolve_trait_opt<'tcx>(
+pub(crate) fn resolve_trait_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
@@ -296,7 +296,7 @@ use creusot_rustc::middle::ty::AssocItemContainer;
 
 use super::specification::contract_of;
 
-pub fn resolve_assoc_item_opt<'tcx>(
+pub(crate) fn resolve_assoc_item_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,

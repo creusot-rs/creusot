@@ -16,7 +16,7 @@ use creusot_rustc::{
     span::Symbol,
 };
 
-pub fn corrected_invariant_names_and_locations<'tcx>(
+pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
     body: &Body<'tcx>,
@@ -91,7 +91,7 @@ pub struct InvariantClosures<'tcx> {
 }
 
 impl<'tcx> InvariantClosures<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>, def_id: DefId) -> Self {
+    pub(crate) fn new(tcx: TyCtxt<'tcx>, def_id: DefId) -> Self {
         InvariantClosures { tcx, def_id, closures: IndexSet::new() }
     }
 }

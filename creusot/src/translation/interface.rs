@@ -17,7 +17,7 @@ use super::{
     ty::{closure_accessors, translate_closure_ty},
 };
 
-pub fn interface_for<'tcx>(
+pub(crate) fn interface_for<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
 ) -> (Module, CloneMap<'tcx>) {
@@ -87,6 +87,6 @@ pub fn interface_for<'tcx>(
     (Module { name, decls }, names)
 }
 
-pub fn interface_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
+pub(crate) fn interface_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
     format!("{}_Interface", Cow::from(&*module_name(ctx, def_id))).into()
 }

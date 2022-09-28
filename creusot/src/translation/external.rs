@@ -22,7 +22,7 @@ use why3::declaration::{Decl, Module, ValKind, ValKind::Val};
 
 use super::specification::ContractClauses;
 
-pub fn default_decl<'tcx>(
+pub(crate) fn default_decl<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
@@ -55,7 +55,7 @@ pub fn default_decl<'tcx>(
     (Module { name, decls }, names.summary())
 }
 
-pub fn extern_module<'tcx>(
+pub(crate) fn extern_module<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     def_id: DefId,
 ) -> (
@@ -193,7 +193,7 @@ struct ExtractExternItems<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> ExtractExternItems<'a, 'tcx> {
-    pub fn new(thir: &'a Thir<'tcx>) -> Self {
+    pub(crate) fn new(thir: &'a Thir<'tcx>) -> Self {
         ExtractExternItems { thir, items: IndexSet::new() }
     }
 }

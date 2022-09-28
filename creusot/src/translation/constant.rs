@@ -1,5 +1,5 @@
 use crate::{
-    clone_map::{CloneLevel, CloneMap},
+    clone_map::CloneMap,
     ctx::{module_name, CloneSummary, TranslationCtx},
     traits::resolve_assoc_item_opt,
     translation::specification::typing::Literal,
@@ -24,14 +24,14 @@ use why3::{
 use super::fmir::Expr;
 
 impl<'tcx> TranslationCtx<'_, 'tcx> {
-    pub fn translate_constant(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
+    pub(crate) fn translate_constant(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
         let modl = Module { name: module_name(self, def_id), decls: Vec::new() };
 
         (modl, CloneSummary::new())
     }
 }
 
-pub fn from_mir_constant<'tcx>(
+pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
@@ -40,7 +40,7 @@ pub fn from_mir_constant<'tcx>(
     from_mir_constant_kind(ctx, names, c.literal, env, c.span)
 }
 
-pub fn from_mir_constant_kind<'tcx>(
+pub(crate) fn from_mir_constant_kind<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     ck: creusot_rustc::smir::mir::ConstantKind<'tcx>,
@@ -68,7 +68,7 @@ pub fn from_mir_constant_kind<'tcx>(
     return Expr::Constant(try_to_bits(ctx, names, env, ck.ty(), span, ck));
 }
 
-pub fn from_ty_const<'tcx>(
+pub(crate) fn from_ty_const<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
     c: Const<'tcx>,
