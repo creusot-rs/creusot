@@ -17,7 +17,7 @@ use creusot_rustc::{
     span::Symbol,
 };
 use std::collections::{HashMap, HashSet};
-use why3::{declaration::Contract, exp::Exp, Ident};
+use why3::declaration::Contract;
 
 mod builtins;
 mod lower;
@@ -33,6 +33,20 @@ pub struct PreContract<'tcx> {
 }
 
 impl<'tcx> PreContract<'tcx> {
+    pub(crate) fn subst(&mut self, subst: &HashMap<Symbol, Term<'tcx>>) {
+        for r in &mut self.requires {
+            r.subst(subst);
+        }
+
+        for e in &mut self.ensures {
+            e.subst(subst);
+        }
+
+        for v in &mut self.variant {
+            v.subst(subst);
+        }
+    }
+
     pub(crate) fn to_exp(
         self,
         ctx: &mut TranslationCtx<'_, 'tcx>,
@@ -53,16 +67,6 @@ impl<'tcx> PreContract<'tcx> {
             out.variant = vec![lower_pure(ctx, names, param_env, term)];
         }
 
-        if let Some(extern_spec) = ctx.extern_spec(id) {
-            let subst = extern_spec
-                .arg_subst
-                .iter()
-                .map(|(i, i2)| {
-                    (Ident::build(i.as_str()), Exp::impure_var(Ident::build(i2.as_str())))
-                })
-                .collect();
-            out.subst(&subst);
-        }
         out
     }
 
@@ -277,10 +281,15 @@ pub(crate) fn contract_of<'tcx>(
     def_id: DefId,
 ) -> PreContract<'tcx> {
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
-        extern_spec.contract.get_pre(ctx).subst(ctx.tcx, extern_spec.subst)
+        let mut contract = extern_spec.contract.get_pre(ctx).subst(ctx.tcx, extern_spec.subst);
+        contract.subst(&extern_spec.arg_subst.iter().cloned().collect());
+        contract
     } else {
         if let Some((def_id, subst)) = inherited_extern_spec(ctx, def_id) {
-            ctx.extern_spec(def_id).cloned().unwrap().contract.get_pre(ctx).subst(ctx.tcx, subst)
+            let spec = ctx.extern_spec(def_id).cloned().unwrap();
+            let mut contract = spec.contract.get_pre(ctx).subst(ctx.tcx, subst);
+            contract.subst(&spec.arg_subst.iter().cloned().collect());
+            contract
         } else {
             let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
             contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst)

@@ -25,7 +25,6 @@ use why3::{
 pub(crate) fn lower_pure<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
     names: &mut CloneMap<'tcx>,
-    // term_id: DefId,
     param_env: ParamEnv<'tcx>,
     term: Term<'tcx>,
 ) -> Exp {
@@ -167,8 +166,14 @@ impl<'tcx> Lower<'_, '_, 'tcx> {
                     "resolved_methodb={:?}",
                     resolve_opt(self.ctx.tcx, self.param_env, id, subst)
                 );
-                let method =
-                    resolve_opt(self.ctx.tcx, self.param_env, id, subst).unwrap_or((id, subst));
+
+                let method = if self.ctx.trait_of_item(id).is_some() {
+                    resolve_opt(self.ctx.tcx, self.param_env, id, subst)
+                        .expect("could not resolve trait instance")
+                } else {
+                    resolve_opt(self.ctx.tcx, self.param_env, id, subst).unwrap_or((id, subst))
+                };
+
                 debug!("resolved_method={:?}", method);
 
                 if is_identity_from(self.ctx.tcx, id, method.1) {

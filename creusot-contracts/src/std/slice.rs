@@ -277,7 +277,7 @@ impl<'a, T> Model for IterMut<'a, T> {
     }
 }
 
-impl<T> IteratorSpec for Iter<'_, T> {
+impl<'a, T> IteratorSpec for Iter<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! { self.resolve() && @*self == Seq::EMPTY }
@@ -336,21 +336,21 @@ impl<'a, T> IteratorSpec for IterMut<'a, T> {
 extern_spec! {
     mod std {
         mod slice {
-            impl<'a, T> Iterator for Iter<'a, T> {
-                #[ensures(match result {
-                  None => self.completed(),
-                  Some(v) => (*self).produces(Seq::singleton(v), ^self)
-                })]
-                fn next(&mut self) -> Option<&'a T>;
-            }
+            // impl<'a, T> Iterator for Iter<'a, T> {
+            //     #[ensures(match result {
+            //       None => self.completed(),
+            //       Some(v) => (*self).produces(Seq::singleton(v), ^self)
+            //     })]
+            //     fn next(&mut self) -> Option<&'a T>;
+            // }
 
-            impl<'a, T> Iterator for IterMut<'a, T> {
-                #[ensures(match result {
-                  None => self.completed(),
-                  Some(v) => (*self).produces(Seq::singleton(v), ^self)
-                })]
-                fn next(&mut self) -> Option<&'a mut T>;
-            }
+            // impl<'a, T> Iterator for IterMut<'a, T> {
+            //     #[ensures(match result {
+            //       None => self.completed(),
+            //       Some(v) => (*self).produces(Seq::singleton(v), ^self)
+            //     })]
+            //     fn next(&mut self) -> Option<&'a mut T>;
+            // }
         }
     }
 }

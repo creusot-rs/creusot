@@ -15,12 +15,15 @@ use creusot_rustc::{
             EarlyBinder, Predicate, TyCtxt, TyKind, WithOptConstParam,
         },
     },
-    span::Symbol,
+    span::{Symbol, DUMMY_SP},
 };
 use indexmap::IndexSet;
 use why3::declaration::{Decl, Module, ValKind, ValKind::Val};
 
-use super::specification::ContractClauses;
+use super::specification::{
+    typing::{Term, TermKind},
+    ContractClauses,
+};
 
 pub(crate) fn default_decl<'tcx>(
     ctx: &mut TranslationCtx<'_, 'tcx>,
@@ -86,7 +89,7 @@ pub(crate) struct ExternSpec<'tcx> {
     // The contract we are attaching
     pub contract: ContractClauses,
     pub subst: SubstsRef<'tcx>,
-    pub arg_subst: Vec<(Symbol, Symbol)>,
+    pub arg_subst: Vec<(Symbol, Term<'tcx>)>,
     // Additional predicates we must verify to call this function
     pub additional_predicates: Vec<Predicate<'tcx>>,
 }
@@ -176,12 +179,15 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     let additional_predicates =
         ctx.tcx.predicates_of(def_id).instantiate(ctx.tcx, subst).predicates.into_iter().collect();
+
     let arg_subst = ctx
         .tcx
         .fn_arg_names(def_id)
         .iter()
-        .zip(ctx.tcx.fn_arg_names(id).iter())
-        .map(|(i, i2)| (i.name, i2.name))
+        .zip(ctx.tcx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).skip_binder().inputs()))
+        .map(|(i, (i2, ty))| {
+            (i.name, Term { ty: *ty, kind: TermKind::Var(i2.name), span: DUMMY_SP })
+        })
         .collect();
     Ok((id, ExternSpec { contract, additional_predicates, subst, arg_subst }))
 }

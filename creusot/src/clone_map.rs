@@ -823,9 +823,12 @@ fn still_specializable<'tcx>(
     substs: SubstsRef<'tcx>,
 ) -> bool {
     if let Some(_) = tcx.trait_of_item(def_id) {
-        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs).unwrap();
+        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs);
+        if impl_source.is_none() {
+            return true
+        }
         let is_final = tcx.impl_defaultness(def_id).is_final();
-        matches!(impl_source, ImplSource::Param(_, _)) && !is_final
+        matches!(impl_source.unwrap(), ImplSource::Param(_, _)) && !is_final
     } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
         let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs).unwrap();
 
