@@ -5,7 +5,7 @@ use crate::{
         fmir::uint_to_int,
         ty::{closure_accessor_name, variant_accessor_name},
     },
-    util::{constructor_qname, item_qname},
+    util::{constructor_qname, item_qname}, backend::clone_map2::Names,
 };
 use creusot_rustc::{
     middle::ty::{TyKind, UintTy},
@@ -203,6 +203,74 @@ pub(crate) fn translate_rplace_inner<'tcx>(
                     let accessor_name = closure_accessor_name(ctx.tcx, *id, ix.as_usize());
                     inner = Call(
                         box Exp::impure_qvar(names.insert(*id, subst).qname_ident(accessor_name)),
+                        vec![inner],
+                    );
+                }
+                e => unreachable!("{:?}", e),
+            },
+            Downcast(_, _) => {}
+            Index(ix) => {
+                // TODO: Use [_] syntax
+                let ix_exp = Exp::impure_var(translate_local(body, *ix).ident());
+                let conv_func = uint_to_int(&UintTy::Usize);
+                inner = Call(
+                    box Exp::impure_qvar(QName::from_string("Seq.get").unwrap()),
+                    vec![inner, conv_func.app_to(ix_exp)],
+                )
+            }
+            ConstantIndex { .. } => unimplemented!("constant index projection"),
+            Subslice { .. } => unimplemented!("subslice projection"),
+        }
+        place_ty = place_ty.projection_ty(ctx.tcx, *elem);
+    }
+
+    inner
+}
+
+pub(crate) fn translate_rplace_inner2<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    names: &Names<'tcx>,
+    body: &Body<'tcx>,
+    loc: Local,
+    proj: &[creusot_rustc::middle::mir::PlaceElem<'tcx>],
+) -> Exp {
+    let mut inner = Exp::impure_var(translate_local(body, loc).ident());
+    use creusot_rustc::smir::mir::ProjectionElem::*;
+    let mut place_ty = Place::ty_from(loc, &[], body, ctx.tcx);
+
+    for elem in proj {
+        match elem {
+            Deref => {
+                use creusot_rustc::hir::Mutability::*;
+                let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
+                if mutability == Mut {
+                    inner = Current(box inner)
+                }
+            }
+            Field(ix, _) => match place_ty.ty.kind() {
+                TyKind::Adt(def, _) => {
+                    let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
+                    let variant = &def.variants()[variant_id];
+
+                    ctx.translate_accessor(def.variants()[variant_id].fields[ix.as_usize()].did);
+                    let accessor_name =
+                        variant_accessor_name(ctx, def.did(), variant, ix.as_usize());
+                    inner = Call(box Exp::impure_qvar(accessor_name), vec![inner]);
+                }
+                TyKind::Tuple(fields) => {
+                    let mut pat = vec![Wildcard; fields.len()];
+                    pat[ix.as_usize()] = VarP("a".into());
+
+                    inner = Let {
+                        pattern: TupleP(pat),
+                        arg: box inner,
+                        body: box Exp::impure_var("a".into()),
+                    }
+                }
+                TyKind::Closure(id, subst) => {
+                    let accessor_name = closure_accessor_name(ctx.tcx, *id, ix.as_usize());
+                    inner = Call(
+                        box Exp::impure_qvar(names.get((*id, subst))),
                         vec![inner],
                     );
                 }

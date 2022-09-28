@@ -85,14 +85,13 @@ impl<'tcx> Lower<'_, 'tcx> {
                         ty: term.ty,
                     });
 
-                    // crate::constant::from_ty_const(
-                    //     self.ctx,
-                    //     constant,
-                    //     self.param_env,
-                    //     creusot_rustc::span::DUMMY_SP,
-                    // )
-                    // .to_why2(self.ctx, self.names, None)
-                    todo!("fmir::to_why")
+                    crate::constant::from_ty_const(
+                        self.ctx,
+                        constant,
+                        self.param_env,
+                        creusot_rustc::span::DUMMY_SP,
+                    )
+                    .to_why2(self.ctx, self.names, None)
                 })
             }
             TermKind::Var(v) => Exp::pure_var(util::ident_of(v)),

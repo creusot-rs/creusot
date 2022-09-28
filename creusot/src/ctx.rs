@@ -216,12 +216,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 crate::translation::translate_logic_or_predicate(self, def_id);
             self.dependencies.insert(def_id, deps.summary());
 
-            let graph = clone_map2::collect(self, def_id);
-            let priors = PriorClones::from_deps(self);
             eprintln!("---- {def_id:?} ----");
-            clone_map2::make_clones(self, graph, &priors, def_id)
-                .into_iter()
-                .for_each(|c| eprintln!("{}", c.display()));
+            backend::logic::translate_logic_or_predicate(self, def_id);
             eprintln!("--------");
             TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
         } else if !def_id.is_local() {
