@@ -110,7 +110,7 @@ pub struct CloneMap<'tcx> {
     clone_level: CloneLevel,
 
     // DefId of the item which is cloning. Used for trait resolution
-    self_id: DefId,
+    pub self_id: DefId,
     // TODO: Push the graph into an opaque type with tight api boundary
     // Graph which is used to calculate the full clone set
     clone_graph: DiGraphMap<DepNode<'tcx>, IndexSet<(Kind, SymbolKind)>>,

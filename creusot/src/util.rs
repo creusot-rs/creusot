@@ -1,6 +1,13 @@
 use crate::{
     ctx::*,
-    translation::{self, ty::closure_accessor_name},
+    translation::{
+        self,
+        specification::{
+            typing::{super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
+            PreContract,
+        },
+        ty::closure_accessor_name,
+    },
 };
 use creusot_rustc::{
     ast::{
@@ -14,9 +21,14 @@ use creusot_rustc::{
         DefIdTree, EarlyBinder, ReErased, Subst, Ty, TyCtxt, TyKind, VariantDef,
     },
     resolve::Namespace,
-    span::Symbol,
+    span::{symbol, Symbol, DUMMY_SP},
 };
-use std::{collections::HashMap, iter};
+use indexmap::IndexMap;
+use rustc_middle::ty::{ClosureKind, RegionKind};
+use std::{
+    collections::{HashMap, HashSet},
+    iter,
+};
 use why3::{
     declaration,
     declaration::{Signature, ValKind},
@@ -328,40 +340,66 @@ pub(crate) fn inputs_and_output<'tcx>(
     (inputs, output)
 }
 
+pub struct PreSignature<'tcx> {
+    pub(crate) inputs: Vec<(symbol::Ident, Ty<'tcx>)>,
+    pub(crate) output: Ty<'tcx>,
+    pub(crate) contract: PreContract<'tcx>,
+    // trusted: bool,
+    // span: Span,
+    // program: bool,
+}
+
+pub(crate) fn pre_sig_of<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    def_id: DefId,
+) -> PreSignature<'tcx> {
+    let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
+
+    let mut contract = crate::specification::contract_of(ctx, def_id);
+    if output.is_never() {
+        contract.ensures.push(Term {
+            kind: TermKind::Lit(Literal::Bool(false)),
+            ty: ctx.mk_ty(TyKind::Bool),
+            span: DUMMY_SP,
+        });
+    }
+
+    if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
+        let mut pre_subst =
+            closure_capture_subst(ctx.tcx, def_id, subst, subst.as_closure().kind(), false);
+        for pre in &mut contract.requires {
+            pre_subst.visit_mut_term(pre);
+        }
+
+        let mut post_subst =
+            closure_capture_subst(ctx.tcx, def_id, subst, subst.as_closure().kind(), true);
+        for post in &mut contract.ensures {
+            post_subst.visit_mut_term(post);
+        }
+
+        assert!(contract.variant.is_none());
+    }
+
+    PreSignature { inputs: inputs.collect(), output, contract }
+}
+
 pub(crate) fn signature_of<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Signature {
     debug!("signature_of {def_id:?}");
-    let (inputs, output) = inputs_and_output(ctx.tcx, def_id);
+    let pre_sig = pre_sig_of(ctx, def_id);
 
-    let mut contract = names.with_public_clones(|names| {
-        let pre_contract = crate::specification::contract_of(ctx, def_id);
-        pre_contract.to_exp(ctx, names, def_id)
-    });
-
-    let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
-
-    if output.is_never() {
-        contract.ensures.push(Exp::Const(Constant::const_false()));
-    }
-
-    if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-        let post_subst = names.with_public_clones(|names| {
-            closure_capture_subst(ctx.tcx, names, def_id, subst, subst.as_closure().kind(), false)
-        });
-        let pre_subst = names.with_public_clones(|names| {
-            closure_capture_subst(ctx.tcx, names, def_id, subst, subst.as_closure().kind(), true)
-        });
-        contract.visit_mut(pre_subst, post_subst.clone(), post_subst);
-    }
+    let contract = names.with_public_clones(|names| pre_sig.contract.to_exp(ctx, names, def_id));
 
     let name = item_name(ctx.tcx, def_id, Namespace::ValueNS);
 
     let span = ctx.tcx.def_span(def_id);
     let mut args: Vec<Binder> = names.with_public_clones(|names| {
-        inputs
+        pre_sig
+            .inputs
+            .into_iter()
             .enumerate()
             .map(|(ix, (id, ty))| {
                 let ty = translation::ty::translate_ty(ctx, names, span, ty);
@@ -378,7 +416,6 @@ pub(crate) fn signature_of<'tcx>(
     });
 
     if args.is_empty() {
-        // TODO: Change arguments to be patterns not identifiers
         args.push(Binder::wild(Type::UNIT));
     };
 
@@ -388,7 +425,7 @@ pub(crate) fn signature_of<'tcx>(
     };
 
     let retty = names.with_public_clones(|names| {
-        translation::ty::translate_ty(ctx, names, span, EarlyBinder(output).subst(ctx.tcx, subst))
+        translation::ty::translate_ty(ctx, names, span, pre_sig.output)
     });
     Signature { name, attrs, retty: Some(retty), args, contract }
 }
@@ -459,122 +496,133 @@ pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {
     }
 }
 
-#[derive(Clone)]
-pub struct ClosureSubst(HashMap<Ident, (Exp, bool)>, ty::ClosureKind, bool);
+use creusot_rustc::smir::mir::Field;
 
-impl<'a> ExpMutVisitor for ClosureSubst {
-    fn visit_mut(&mut self, exp: &mut Exp) {
-        match exp {
-            Exp::Old(box Exp::Var(v, _)) => {
-                if let Some((e, is_bor)) = self.0.get(v) {
-                    let arg = if self.1 == ty::ClosureKind::FnMut {
-                        Exp::Current(box Exp::pure_var(Ident::build("_1'")))
-                    } else {
-                        Exp::pure_var(Ident::build("_1'"))
-                    };
+pub(crate) struct ClosureSubst<'tcx> {
+    def_id: DefId,
+    post: bool,
+    self_: Term<'tcx>,
+    map: IndexMap<Symbol, (Ty<'tcx>, Field)>,
+    bound: HashSet<Symbol>,
+}
 
-                    let e = e.clone().app_to(arg);
+impl<'tcx> ClosureSubst<'tcx> {
+    fn var(&self, x: Symbol) -> Term<'tcx> {
+        let (ty, ix) = *self.map.get(&x).unwrap_or_else(|| panic!("{:?} not found", x));
 
-                    if *is_bor {
-                        *exp = Exp::Current(box e)
-                    } else {
-                        *exp = e
-                    }
-                }
+        let self_ = if self.self_.ty.is_ref() && self.self_.ty.is_mutable_ptr() {
+            Term {
+                ty: self.self_.ty.peel_refs(),
+                kind: if self.post {
+                    TermKind::Fin { term: box self.self_.clone() }
+                } else {
+                    TermKind::Cur { term: box self.self_.clone() }
+                },
+                span: DUMMY_SP,
             }
-            Exp::Var(v, _) => {
-                if let Some((e, is_bor)) = self.0.get(v) {
-                    let arg = if self.1 == ty::ClosureKind::FnMut {
-                        if self.2 {
-                            Exp::Current(box Exp::pure_var(Ident::build("_1'")))
-                        } else {
-                            Exp::Final(box Exp::pure_var(Ident::build("_1'")))
-                        }
-                    } else {
-                        Exp::pure_var(Ident::build("_1'"))
-                    };
+        } else {
+            self.self_.clone()
+        };
+        let proj = Term {
+            ty,
+            kind: TermKind::Projection { lhs: box self_, name: ix, def: self.def_id },
+            span: DUMMY_SP,
+        };
 
-                    let e = e.clone().app_to(arg);
+        if ty.is_mutable_ptr() {
+            Term { ty: ty.peel_refs(), kind: TermKind::Cur { term: box proj }, span: DUMMY_SP }
+        } else {
+            proj
+        }
+    }
 
-                    if *is_bor {
-                        *exp = Exp::Current(box e)
-                    } else {
-                        *exp = e
-                    }
-                }
+    fn old(&self, x: Symbol) -> Term<'tcx> {
+        let (ty, ix) = *self.map.get(&x).unwrap_or_else(|| panic!("{:?} not found", x));
+
+        let self_ = if self.self_.ty.is_ref() && self.self_.ty.is_mutable_ptr() {
+            Term {
+                ty: self.self_.ty.peel_refs(),
+                kind: TermKind::Cur { term: box self.self_.clone() },
+                span: DUMMY_SP,
             }
-            Exp::Abs(binders, body) => {
-                let mut subst = self.0.clone();
+        } else {
+            self.self_.clone()
+        };
+        let proj = Term {
+            ty,
+            kind: TermKind::Projection { lhs: box self_, name: ix, def: self.def_id },
+            span: DUMMY_SP,
+        };
 
-                for binder in binders {
-                    binder.fvs().into_iter().for_each(|id| {
-                        subst.remove(&id);
-                    });
-                }
-
-                std::mem::swap(&mut self.0, &mut subst);
-                self.visit_mut(body);
-                std::mem::swap(&mut self.0, &mut subst);
-            }
-
-            Exp::Let { pattern, arg, body } => {
-                self.visit_mut(arg);
-                let mut bound = pattern.binders();
-                let mut subst = self.0.clone();
-                bound.drain(..).for_each(|k| {
-                    subst.remove(&k);
-                });
-
-                std::mem::swap(&mut self.0, &mut subst);
-                self.visit_mut(body);
-                std::mem::swap(&mut self.0, &mut subst);
-            }
-            Exp::Match(box scrut, brs) => {
-                self.visit_mut(scrut);
-
-                for (pat, br) in brs {
-                    let mut s = self.0.clone();
-                    pat.binders().drain(..).for_each(|b| {
-                        s.remove(&b);
-                    });
-
-                    std::mem::swap(&mut self.0, &mut s);
-                    self.visit_mut(br);
-                    std::mem::swap(&mut self.0, &mut s);
-                }
-            }
-            Exp::Forall(binders, exp) => {
-                let mut subst = self.0.clone();
-                binders.iter().for_each(|k| {
-                    subst.remove(&k.0);
-                });
-
-                std::mem::swap(&mut self.0, &mut subst);
-                self.visit_mut(exp);
-                std::mem::swap(&mut self.0, &mut subst);
-            }
-            Exp::Exists(binders, exp) => {
-                let mut subst = self.0.clone();
-                binders.iter().for_each(|k| {
-                    subst.remove(&k.0);
-                });
-
-                std::mem::swap(&mut self.0, &mut subst);
-                self.visit_mut(exp);
-                std::mem::swap(&mut self.0, &mut subst);
-            }
-            _ => super_visit_mut(self, exp),
+        if ty.is_mutable_ptr() {
+            Term { ty: ty.peel_refs(), kind: TermKind::Cur { term: box proj }, span: DUMMY_SP }
+        } else {
+            proj
         }
     }
 }
+
+impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
+    fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
+        match &term.kind {
+            TermKind::Old { term: box Term { kind: TermKind::Var(x), .. }, .. } => {
+                if !self.bound.contains(&x) {
+                    *term = self.old(*x);
+                    return;
+                }
+            }
+            TermKind::Var(x) => {
+                if !self.bound.contains(&x) {
+                    *term = self.var(*x);
+                }
+            }
+            TermKind::Forall { binder, .. } => {
+                let mut bound = self.bound.clone();
+                bound.insert(binder.0);
+                std::mem::swap(&mut self.bound, &mut bound);
+                super_visit_mut_term(term, self);
+                std::mem::swap(&mut self.bound, &mut bound);
+            }
+            TermKind::Exists { binder, .. } => {
+                let mut bound = self.bound.clone();
+                bound.insert(binder.0);
+                std::mem::swap(&mut self.bound, &mut bound);
+                super_visit_mut_term(term, self);
+                std::mem::swap(&mut self.bound, &mut bound);
+            }
+            TermKind::Match { arms, .. } => {
+                let mut bound = self.bound.clone();
+                arms.iter().for_each(|arm| arm.0.binds(&mut bound));
+                std::mem::swap(&mut self.bound, &mut bound);
+                super_visit_mut_term(term, self);
+                std::mem::swap(&mut self.bound, &mut bound);
+            }
+            TermKind::Let { pattern, .. } => {
+                let mut bound = self.bound.clone();
+                pattern.binds(&mut bound);
+                std::mem::swap(&mut self.bound, &mut bound);
+                super_visit_mut_term(term, self);
+                std::mem::swap(&mut self.bound, &mut bound);
+            }
+            TermKind::Closure { args, .. } => {
+                let mut bound = self.bound.clone();
+                args.iter().for_each(|a| a.binds(&mut bound));
+                std::mem::swap(&mut self.bound, &mut bound);
+                super_visit_mut_term(term, self);
+                std::mem::swap(&mut self.bound, &mut bound);
+            }
+            _ => super_visit_mut_term(term, self),
+        }
+    }
+}
+
 pub(crate) fn closure_capture_subst<'tcx>(
     tcx: TyCtxt<'tcx>,
-    names: &mut CloneMap<'tcx>,
     def_id: DefId,
     cs: SubstsRef<'tcx>,
     // What kind of substitution we should generate. The same precondition can be used in several ways
     ck: ty::ClosureKind,
-    precond: bool,
+    is_post: bool,
 ) -> ClosureSubst {
     let mut fun_def_id = def_id;
     while tcx.is_closure(fun_def_id) {
@@ -584,15 +632,18 @@ pub(crate) fn closure_capture_subst<'tcx>(
     let capture_names =
         tcx.symbols_for_closure_captures((fun_def_id.expect_local(), def_id.expect_local()));
     let captures = capture_names.iter().zip(cs.as_closure().upvar_tys());
-    let subst = captures
-        .into_iter()
-        .enumerate()
-        .map(|(ix, (nm, ty))| {
-            // todo
-            let acc_name = closure_accessor_name(tcx, def_id, ix);
-            let acc = Exp::impure_qvar(names.insert(def_id, cs).qname_ident(acc_name));
-            (nm.as_str().into(), (acc, ty.is_mutable_ptr()))
-        })
-        .collect();
-    ClosureSubst(subst, ck, precond)
+
+    let ty = match ck {
+        ClosureKind::Fn => tcx.mk_imm_ref(tcx.mk_region(RegionKind::ReErased), tcx.type_of(def_id)),
+        ClosureKind::FnMut => {
+            tcx.mk_mut_ref(tcx.mk_region(RegionKind::ReErased), tcx.type_of(def_id))
+        }
+        ClosureKind::FnOnce => tcx.type_of(def_id),
+    };
+
+    let self_ = Term { ty, kind: TermKind::Var(Symbol::intern("_1'")), span: DUMMY_SP };
+
+    let subst =
+        captures.into_iter().enumerate().map(|(ix, (nm, ty))| (*nm, (ty, ix.into()))).collect();
+    ClosureSubst { self_, map: subst, post: is_post, def_id, bound: Default::default() }
 }

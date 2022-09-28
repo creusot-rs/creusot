@@ -3,19 +3,21 @@ use crate::{
     ctx::*,
     translation::{
         traits::{resolve_assoc_item_opt, resolve_opt},
-        ty::{intty_to_ty, translate_ty, uintty_to_ty, variant_accessor_name},
+        ty::{
+            closure_accessor_name, intty_to_ty, translate_ty, uintty_to_ty, variant_accessor_name,
+        },
     },
     util,
     util::constructor_qname,
 };
 use creusot_rustc::{
-    hir::Unsafety,
+    hir::{def::DefKind, Unsafety},
     middle::{
         ty,
         ty::{EarlyBinder, ParamEnv, Subst},
     },
 };
-use rustc_middle::ty::{Ty, TyKind};
+use rustc_middle::ty::{subst::InternalSubsts, Ty, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
     ty::Type,
@@ -267,16 +269,33 @@ impl<'tcx> Lower<'_, 'tcx> {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
             }
             TermKind::Projection { box lhs, name, def: did } => {
-                let def = self.ctx.tcx.adt_def(did);
                 let lhs = self.lower_term(lhs);
-                self.ctx
-                    .translate_accessor(def.variants()[0u32.into()].fields[name.as_usize()].did);
-                let accessor = variant_accessor_name(
-                    self.ctx,
-                    did,
-                    &def.variants()[0u32.into()],
-                    name.as_usize(),
-                );
+                let accessor = if self.ctx.is_closure(did) {
+                    let subst = match self.ctx.tcx.def_kind(did) {
+                        DefKind::Closure => match self.ctx.tcx.type_of(did).kind() {
+                            TyKind::Closure(_, subst) => subst,
+                            _ => unreachable!(),
+                        },
+                        _ => unreachable!(),
+                    };
+
+                    self.names.insert(did, subst).qname_ident(closure_accessor_name(
+                        self.ctx.tcx,
+                        did,
+                        name.as_usize(),
+                    ))
+                } else {
+                    let def = self.ctx.tcx.adt_def(did);
+                    self.ctx.translate_accessor(
+                        def.variants()[0u32.into()].fields[name.as_usize()].did,
+                    );
+                    variant_accessor_name(
+                        self.ctx,
+                        did,
+                        &def.variants()[0u32.into()],
+                        name.as_usize(),
+                    )
+                };
                 Exp::Call(box Exp::pure_qvar(accessor), vec![lhs])
             }
             TermKind::Closure { args, body } => {

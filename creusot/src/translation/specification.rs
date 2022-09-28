@@ -27,9 +27,9 @@ pub(crate) use lower::*;
 
 #[derive(Clone, Debug, Default, TypeFoldable, TypeVisitable)]
 pub struct PreContract<'tcx> {
-    variant: Option<Term<'tcx>>,
-    requires: Vec<Term<'tcx>>,
-    ensures: Vec<Term<'tcx>>,
+    pub(crate) variant: Option<Term<'tcx>>,
+    pub(crate) requires: Vec<Term<'tcx>>,
+    pub(crate) ensures: Vec<Term<'tcx>>,
 }
 
 impl<'tcx> PreContract<'tcx> {
@@ -72,6 +72,22 @@ impl<'tcx> PreContract<'tcx> {
 
     pub(crate) fn is_empty(&self) -> bool {
         self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
+    }
+
+    pub(crate) fn ensures_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
+        let mut ensures = self.ensures.clone();
+
+        let postcond = ensures.pop().unwrap_or(Term::mk_true(tcx));
+        let mut postcond = ensures.into_iter().rfold(postcond, Term::conj);
+        postcond
+    }
+
+    pub(crate) fn requires_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
+        let mut requires = self.requires.clone();
+
+        let precond = requires.pop().unwrap_or(Term::mk_true(tcx));
+        let mut precond = requires.into_iter().rfold(precond, Term::conj);
+        precond
     }
 }
 
