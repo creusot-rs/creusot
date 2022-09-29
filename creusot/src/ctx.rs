@@ -212,12 +212,12 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         let translated = if util::is_logic(self.tcx, def_id) || util::is_predicate(self.tcx, def_id)
         {
             debug!("translating {:?} as logical", def_id);
-            let (stub, modl, proof_modl, has_axioms, deps) =
+            let (_, _, _, has_axioms, deps) =
                 crate::translation::translate_logic_or_predicate(self, def_id);
             self.dependencies.insert(def_id, deps.summary());
 
             eprintln!("---- {def_id:?} ----");
-            backend::logic::translate_logic_or_predicate(self, def_id);
+            let (stub, modl, proof_modl, _) = backend::logic::translate_logic_or_predicate(self, def_id);
             eprintln!("--------");
             TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
         } else if !def_id.is_local() {

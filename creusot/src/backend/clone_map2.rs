@@ -28,9 +28,9 @@ use crate::{
     specification::typing::super_visit_term,
     translation::{
         specification::typing::{Term, TermKind, TermVisitor},
-        traits::resolve_opt,
+        traits::resolve_opt, interface,
     },
-    util::{self, item_name, item_qname, item_type},
+    util::{self, item_name, item_qname, item_type, module_name},
 };
 
 // The clone wars are over
@@ -215,6 +215,7 @@ pub fn make_clones<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     graph: MonoGraph<'tcx>,
     priors: &PriorClones<'tcx>,
+    level: CloneLevel,
     root: DefId,
 ) -> Vec<Decl> {
     let mut topo =
@@ -248,7 +249,11 @@ pub fn make_clones<'tcx>(
             subst.push(CloneSubst::Val(priors.get(node.0, orig), names.get(dep)))
         }
 
-        let clone = DeclClone { name: names.get(node), subst, kind: CloneKind::Bare };
+        let clone = DeclClone {
+            name: cloneable_name(ctx, node.0, level),
+            subst,
+            kind: CloneKind::Named(names.get(node).module_ident().unwrap().clone()),
+        };
         clones.push(Decl::Clone(clone));
     }
 
@@ -287,4 +292,34 @@ pub fn base_subst<'tcx>(
     }
 
     clone_subst
+}
+
+// Which kind of module should we clone
+// TODO: Unify with `CloneOpacity`
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum CloneLevel {
+    Stub,
+    Interface,
+    Body,
+}
+
+fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel) -> QName {
+    use util::ItemType::*;
+
+    // TODO: Refactor.
+    match util::item_type(ctx.tcx, def_id) {
+        Logic | Predicate | Impl => match interface {
+            CloneLevel::Stub => QName {
+                module: Vec::new(),
+                name: format!("{}_Stub", &*module_name(ctx, def_id)).into(),
+            },
+            CloneLevel::Interface => interface::interface_name(ctx, def_id).into(),
+            CloneLevel::Body => module_name(ctx, def_id).into(),
+        },
+        Program | Closure => {
+            QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
+        }
+        Constant | Trait | Type | AssocTy => module_name(ctx, def_id).into(),
+        Unsupported(_) => unreachable!(),
+    }
 }

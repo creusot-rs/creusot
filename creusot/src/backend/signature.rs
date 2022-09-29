@@ -4,42 +4,10 @@
 use crate::{
     backend::ty,
     ctx::*,
-    translation::{
-        self,
-        specification::{
-            typing::{super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
-            PreContract,
-        },
-        ty::closure_accessor_name,
-    },
     util::{item_type, why3_attrs},
 };
-use creusot_rustc::{
-    ast::{
-        ast::{MacArgs, MacArgsEq},
-        AttrItem, AttrKind, Attribute,
-    },
-    hir::{def::DefKind, def_id::DefId, Unsafety},
-    middle::ty::{
-        subst::{InternalSubsts, SubstsRef},
-        DefIdTree, EarlyBinder, ReErased, Subst, Ty, TyCtxt, TyKind, VariantDef,
-    },
-    resolve::Namespace,
-    span::{symbol, Symbol, DUMMY_SP},
-};
-use indexmap::IndexMap;
-use rustc_middle::ty::{ClosureKind, RegionKind};
-use std::{
-    collections::{HashMap, HashSet},
-    iter,
-};
-use why3::{
-    declaration,
-    declaration::{Signature, ValKind},
-    exp::{super_visit_mut, Binder, Constant, Exp, ExpMutVisitor},
-    ty::Type,
-    Ident, QName,
-};
+use creusot_rustc::{self, hir::def_id::DefId, resolve::Namespace, span::Symbol};
+use why3::{declaration, declaration::Signature, exp::Binder, ty::Type};
 
 use crate::{
     ctx::{item_name, TranslationCtx},

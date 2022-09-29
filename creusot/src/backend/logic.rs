@@ -11,7 +11,7 @@ use why3::{
 };
 
 use super::{
-    clone_map2::{collect, name_clones, make_clones, PriorClones},
+    clone_map2::{self, collect, make_clones, name_clones, PriorClones},
     signature, term,
 };
 
@@ -54,6 +54,9 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
 
     let mut sig = signature::signature_of(ctx, &names, def_id);
     let mut val_sig = sig.clone();
+    if util::is_predicate(ctx.tcx, def_id) {
+        sig.retty = None;
+    }
     val_sig.contract.variant = Vec::new();
     let (val_args, val_binders) = binders_to_args(ctx, val_sig.args);
     val_sig.contract.ensures = vec![Exp::BinaryOp(
@@ -108,7 +111,7 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     let priors = &PriorClones::from_deps(ctx);
-    decls.extend(make_clones(ctx, graph, priors, def_id));
+    decls.extend(make_clones(ctx, graph, priors, clone_map2::CloneLevel::Stub, def_id));
     decls.extend(body_decls);
 
     let has_axioms = !sig_contract.contract.is_empty();
