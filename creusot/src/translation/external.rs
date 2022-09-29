@@ -25,7 +25,6 @@ use super::specification::{
     ContractClauses,
 };
 
-
 pub(crate) fn default_decl<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
@@ -58,7 +57,6 @@ pub(crate) fn default_decl<'tcx>(
 
     (Module { name, decls }, names.summary())
 }
-
 
 pub(crate) fn extern_module<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,

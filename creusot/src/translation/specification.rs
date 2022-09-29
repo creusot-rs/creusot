@@ -1,6 +1,11 @@
 use self::typing::{pearlite_stub, Term, TermKind};
 use super::LocalIdent;
-use crate::{ctx::*, util, util::closure_owner, backend::{clone_map2::Names, self}};
+use crate::{
+    backend::{self, clone_map2::Names},
+    ctx::*,
+    util,
+    util::closure_owner,
+};
 use creusot_rustc::{
     hir::def_id::DefId,
     macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
@@ -70,7 +75,7 @@ impl<'tcx> PreContract<'tcx> {
         out
     }
 
-     pub(crate) fn to_exp2(
+    pub(crate) fn to_exp2(
         self,
         ctx: &mut TranslationCtx<'tcx>,
         names: &Names<'tcx>,
@@ -293,7 +298,6 @@ pub(crate) fn contract_clauses_of(
 
     Ok(contract)
 }
-
 
 pub(crate) fn inherited_extern_spec<'tcx>(
     ctx: &TranslationCtx<'tcx>,

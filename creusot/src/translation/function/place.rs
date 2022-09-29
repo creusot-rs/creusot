@@ -1,11 +1,12 @@
 use super::LocalIdent;
 use crate::{
+    backend::clone_map2::Names,
     ctx::{CloneMap, TranslationCtx},
     translation::{
         fmir::uint_to_int,
         ty::{closure_accessor_name, variant_accessor_name},
     },
-    util::{constructor_qname, item_qname}, backend::clone_map2::Names,
+    util::{constructor_qname, item_qname},
 };
 use creusot_rustc::{
     middle::ty::{TyKind, UintTy},
@@ -269,10 +270,7 @@ pub(crate) fn translate_rplace_inner2<'tcx>(
                 }
                 TyKind::Closure(id, subst) => {
                     let accessor_name = closure_accessor_name(ctx.tcx, *id, ix.as_usize());
-                    inner = Call(
-                        box Exp::impure_qvar(names.get((*id, subst))),
-                        vec![inner],
-                    );
+                    inner = Call(box Exp::impure_qvar(names.get((*id, subst))), vec![inner]);
                 }
                 e => unreachable!("{:?}", e),
             },

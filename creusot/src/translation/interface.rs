@@ -17,7 +17,6 @@ use super::{
     ty::{closure_accessors, translate_closure_ty},
 };
 
-
 pub(crate) fn interface_for<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,

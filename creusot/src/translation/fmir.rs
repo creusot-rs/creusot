@@ -5,11 +5,12 @@ use super::{
     ty::translate_ty,
 };
 use crate::{
+    backend::{self, clone_map2::Names},
     clone_map::PreludeModule,
     ctx::{item_name, CloneMap, TranslationCtx},
     specification::typing::{Literal, Term},
     translation::{binop_to_binop, function::place::translate_rplace_inner, unop_to_unop},
-    util::item_qname, backend::{clone_map2::Names, self},
+    util::item_qname,
 };
 use creusot_rustc::{
     hir::{def::DefKind, def_id::DefId, Unsafety},
@@ -216,18 +217,14 @@ impl<'tcx> Expr<'tcx> {
                 box l.to_why2(ctx, names, body),
                 box r.to_why2(ctx, names, body),
             ),
-            Expr::BinOp(BinOp::Eq, ty, l, r) if ty.is_bool() => {
-                Exp::Call(
-                    box Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap()),
-                    vec![l.to_why2(ctx, names, body), r.to_why2(ctx, names, body)],
-                )
-            }
-            Expr::BinOp(BinOp::Ne, ty, l, r) if ty.is_bool() => {
-                Exp::Call(
-                    box Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap()),
-                    vec![l.to_why2(ctx, names, body), r.to_why2(ctx, names, body)],
-                )
-            }
+            Expr::BinOp(BinOp::Eq, ty, l, r) if ty.is_bool() => Exp::Call(
+                box Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap()),
+                vec![l.to_why2(ctx, names, body), r.to_why2(ctx, names, body)],
+            ),
+            Expr::BinOp(BinOp::Ne, ty, l, r) if ty.is_bool() => Exp::Call(
+                box Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap()),
+                vec![l.to_why2(ctx, names, body), r.to_why2(ctx, names, body)],
+            ),
             Expr::BinOp(op, ty, l, r) => Exp::BinaryOp(
                 binop_to_binop(ctx, ty, op),
                 box l.to_why2(ctx, names, body),

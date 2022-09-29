@@ -15,7 +15,7 @@ use why3::{
     Ident, QName,
 };
 
-use super::clone_map2::{self, Names, CloneLevel};
+use super::clone_map2::{self, CloneLevel, Names};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 enum TyTranslation {
@@ -170,7 +170,8 @@ pub(crate) fn translate_tydecl(
         tys.push(build_ty_decl(ctx, &names, *did));
     }
 
-    let mut decls = clone_map2::make_clones(ctx, graph, &PriorClones::from_deps(&ctx), CloneLevel::Stub, did);
+    let mut decls =
+        clone_map2::make_clones(ctx, graph, &PriorClones::from_deps(&ctx), CloneLevel::Stub, did);
 
     decls.push(Decl::TyDecl(TyDecl::Adt { tys }));
     Some(Module { name, decls })
