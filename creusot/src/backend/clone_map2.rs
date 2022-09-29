@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use creusot_rustc::{
     hir::def_id::DefId,
+    macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
     middle::ty::{
         subst::{Subst, SubstsRef},
         EarlyBinder,
@@ -16,7 +17,10 @@ use petgraph::{
     visit::{DfsPostOrder, Walker},
     EdgeDirection::Outgoing,
 };
-use rustc_middle::ty::{subst::InternalSubsts, DefIdTree, TyKind};
+use rustc_middle::{
+    middle::dependency_format::Dependencies,
+    ty::{subst::InternalSubsts, DefIdTree, Ty, TyKind},
+};
 use util::ItemType;
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
@@ -27,8 +31,9 @@ use crate::{
     ctx::TranslationCtx,
     specification::typing::super_visit_term,
     translation::{
+        interface,
         specification::typing::{Term, TermKind, TermVisitor},
-        traits::resolve_opt, interface,
+        traits::resolve_opt,
     },
     util::{self, item_name, item_qname, item_type, module_name},
 };
@@ -36,14 +41,29 @@ use crate::{
 // The clone wars are over
 // Implements a simpler version of CloneMap, split as two operations: gathering all the 'monomorphic' instances of functions / types used
 // and a second why3 specific pass turning that into clones (and later not into clones!)
-//
+
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug, PartialOrd, Ord, TypeFoldable, TypeVisitable)]
+pub enum Dependency<'tcx> {
+    // A normal, good Rust function or type
+    Item(DefId, SubstsRef<'tcx>),
+    // Cannot be a tuple, adt or other composite type.
+    // Can be, &mut, &, *mut, [T], [T; N], u32, i32, bool, etc..
+    BaseTy(Ty<'tcx>),
+}
+
+// Depending on where we are cloning from we will only want to keep
+// all or some of our dependencies
+enum DepLevel {
+    Body,
+    Signature,
+}
 
 // Temporary to start testing
 // Eventually dependency tracking should probably move into main part of crate?
 fn get_immediate_deps<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
-) -> Vec<(DefId, SubstsRef<'tcx>)> {
+) -> Vec<Dependency<'tcx>> {
     match item_type(ctx.tcx, def_id) {
         ItemType::Type => {
             let substs = InternalSubsts::identity_for_item(ctx.tcx, def_id);
@@ -57,7 +77,7 @@ fn get_immediate_deps<'tcx>(
 
             for ty in tys {
                 match ty.expect_ty().kind() {
-                    TyKind::Adt(def, sub) => v.push((def.did(), *sub)),
+                    TyKind::Adt(def, sub) => v.push(Dependency::Item(def.did(), *sub)),
                     _ => {}
                 }
             }
@@ -68,27 +88,29 @@ fn get_immediate_deps<'tcx>(
         {
             term_dependencies(ctx, def_id)
         }
-        _ => ctx.dependencies(def_id).map(|i| i.keys().cloned().collect()).unwrap_or_default(),
+        _ => ctx
+            .dependencies(def_id)
+            .map(|i| i.keys().cloned().map(|i| Dependency::Item(i.0, i.1)).collect())
+            .unwrap_or_default(),
     }
 }
 
-fn term_dependencies<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> Vec<(DefId, SubstsRef<'tcx>)> {
+fn term_dependencies<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Vec<Dependency<'tcx>> {
     #[derive(Default)]
     struct Dependencies<'tcx> {
-        deps: Vec<(DefId, SubstsRef<'tcx>)>,
+        deps: Vec<Dependency<'tcx>>,
     }
 
     impl<'tcx> TermVisitor<'tcx> for Dependencies<'tcx> {
         fn visit_term(&mut self, term: &Term<'tcx>) {
             match &term.kind {
-                TermKind::Item(id, subst) => self.deps.push((*id, subst)),
-                TermKind::Call { id, subst, fun: _, args: _ } => self.deps.push((*id, subst)),
+                TermKind::Item(id, subst) => self.deps.push(Dependency::Item(*id, subst)),
+                TermKind::Call { id, subst, fun: _, args: _ } => {
+                    self.deps.push(Dependency::Item(*id, subst))
+                }
                 TermKind::Constructor { adt: _, variant: _, fields: _ } => {
                     if let TyKind::Adt(def, subst) = term.ty.kind() {
-                        self.deps.push((def.did(), subst))
+                        self.deps.push(Dependency::Item(def.did(), subst))
                     } else {
                         unreachable!()
                     }
@@ -104,12 +126,13 @@ fn term_dependencies<'tcx>(
     deps.deps
 }
 
-type MonoGraph<'tcx> = DiGraphMap<(DefId, SubstsRef<'tcx>), (DefId, SubstsRef<'tcx>)>;
+type MonoGraph<'tcx> = DiGraphMap<Dependency<'tcx>, Option<(DefId, SubstsRef<'tcx>)>>;
 
 // TODO: should take graph by `&mut` and not take the root def_id directly? (stored in graph?) should instead take a type
 // which can have dependencies or a list of dependencies to traverse
 pub fn collect<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> MonoGraph<'tcx> {
-    let mut to_visit = vec![(def_id, InternalSubsts::identity_for_item(ctx.tcx, def_id))];
+    let mut to_visit =
+        vec![Dependency::Item(def_id, InternalSubsts::identity_for_item(ctx.tcx, def_id))];
     let mut finished = HashSet::new();
     let param_env = ctx.param_env(def_id);
 
@@ -120,19 +143,25 @@ pub fn collect<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> MonoGraph
             continue;
         }
         graph.add_node(next);
+        let Dependency::Item(id, subst) = next else { continue };
 
-        let to_add = EarlyBinder(get_immediate_deps(ctx, next.0)).subst(ctx.tcx, next.1);
+        let to_add = EarlyBinder(get_immediate_deps(ctx, id)).subst(ctx.tcx, subst);
 
         for dep in to_add {
-            let tgt = if can_resolve(ctx, dep) {
-                resolve_opt(ctx.tcx, param_env, dep.0, dep.1).unwrap()
-            } else {
-                ctx.normalize_erasing_regions(param_env, dep)
+            let Dependency::Item(id, subst) = dep else {
+                graph.add_edge(next, dep, None);
+                continue
             };
 
-            graph.add_edge(next, tgt, dep);
+            let tgt = if can_resolve(ctx, (id, subst)) {
+                resolve_opt(ctx.tcx, param_env, id, subst).unwrap()
+            } else {
+                ctx.normalize_erasing_regions(param_env, (id, subst))
+            };
 
-            to_visit.push(tgt);
+            graph.add_edge(next, Dependency::Item(tgt.0, tgt.1), Some((id, subst)));
+
+            to_visit.push(Dependency::Item(tgt.0, tgt.1));
         }
     }
 
@@ -159,7 +188,9 @@ pub(crate) fn name_clones<'tcx>(
 ) -> Names<'tcx> {
     let mut names = IndexMap::new();
     let mut assigned = IndexMap::new();
-    for (def_id, subst) in graph.nodes() {
+    for node in graph.nodes() {
+        let Dependency::Item(def_id, subst) = node else { continue };
+
         let count = assigned.entry(def_id).or_insert(0);
 
         let base_sym = match util::item_type(ctx.tcx, def_id) {
@@ -218,8 +249,8 @@ pub fn make_clones<'tcx>(
     level: CloneLevel,
     root: DefId,
 ) -> Vec<Decl> {
-    let mut topo =
-        DfsPostOrder::new(&graph, (root, InternalSubsts::identity_for_item(ctx.tcx, root)));
+    let root = Dependency::Item(root, InternalSubsts::identity_for_item(ctx.tcx, root));
+    let mut topo = DfsPostOrder::new(&graph, root);
 
     let names = &name_clones(ctx, &graph);
 
@@ -227,32 +258,35 @@ pub fn make_clones<'tcx>(
     let mut uses = Vec::new();
 
     while let Some(node) = topo.walk_next(&graph) {
-        if node.0 == root {
+        if node == root {
             continue;
         }
 
-        if item_type(ctx.tcx, node.0) == ItemType::Type {
-            let name = item_qname(ctx, node.0, Namespace::TypeNS).module_qname();
+        let Dependency::Item(id, subst) = node else {continue };
+
+        if item_type(ctx.tcx, id) == ItemType::Type {
+            let name = item_qname(ctx, id, Namespace::TypeNS).module_qname();
             uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(name) }));
             continue;
         };
 
-        let mut subst = base_subst(ctx, names, node.0, node.1);
+        let mut clone_subst = base_subst(ctx, names, id, subst);
 
         for dep in graph.neighbors_directed(node, Outgoing) {
-            let orig = graph[(node, dep)];
+            let Dependency::Item(id, subst) = dep else {continue };
+            let orig = graph[(node, dep)].unwrap();
             // FIXME: Not really correct
             if item_type(ctx.tcx, orig.0) == ItemType::Type {
                 continue;
             }
 
-            subst.push(CloneSubst::Val(priors.get(node.0, orig), names.get(dep)))
+            clone_subst.push(CloneSubst::Val(priors.get(id, orig), names.get((id, subst))))
         }
 
         let clone = DeclClone {
-            name: cloneable_name(ctx, node.0, level),
-            subst,
-            kind: CloneKind::Named(names.get(node).module_ident().unwrap().clone()),
+            name: cloneable_name(ctx, id, level),
+            subst: clone_subst,
+            kind: CloneKind::Named(names.get((id, subst)).module_ident().unwrap().clone()),
         };
         clones.push(Decl::Clone(clone));
     }
