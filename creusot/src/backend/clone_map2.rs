@@ -227,6 +227,7 @@ pub fn collect<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> MonoGraph
     // Color the nodes
     let mut level: IndexMap<_, DepLevel> = IndexMap::default();
     for (_, tgt, (lvl, _)) in graph.all_edges() {
+        eprintln!("{tgt:?} to {lvl:?}");
         level.entry(tgt).and_modify(|a| *a = (*a).max(*lvl)).or_insert(*lvl);
     }
 
@@ -308,6 +309,7 @@ pub(crate) fn name_clones<'tcx>(
     Names { names }
 }
 
+// Temporary, eventually provided via a cached query
 // A map of the public clones in each definition
 pub struct PriorClones<'tcx> {
     prior: IndexMap<DefId, IndexMap<(DefId, SubstsRef<'tcx>), QName>>,
@@ -351,7 +353,7 @@ pub fn make_clones<'tcx>(
     let names = &name_clones(ctx, &graph);
 
     let desired_dep_level = match level {
-        CloneLevel::Stub => DepLevel::Body,
+        CloneLevel::Stub => DepLevel::Body, // Stub clones need a separate, shallow traversal of the graph
         CloneLevel::Interface => DepLevel::Signature,
         CloneLevel::Body => DepLevel::Body,
     };
@@ -366,6 +368,7 @@ pub fn make_clones<'tcx>(
         if graph.level[&node] < desired_dep_level {
             continue;
         };
+        eprintln!("cloning {node:?} at level {:?}", graph.level[&node]);
 
         let Dependency::Item(id, subst) = node else {continue };
 
