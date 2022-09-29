@@ -10,6 +10,7 @@ use crate::{
     },
 };
 use creusot_rustc::{
+    macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
     ast::{
         ast::{MacArgs, MacArgsEq},
         AttrItem, AttrKind, Attribute,
@@ -308,7 +309,7 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
 pub(crate) fn inputs_and_output<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
-) -> (impl Iterator<Item = (creusot_rustc::span::symbol::Ident, Ty<'tcx>)>, Ty<'tcx>) {
+) -> (impl Iterator<Item = (symbol::Ident, Ty<'tcx>)>, Ty<'tcx>) {
     let (inputs, output): (Box<dyn Iterator<Item = (creusot_rustc::span::symbol::Ident, _)>>, _) =
         match tcx.type_of(def_id).kind() {
             TyKind::FnDef(..) => {
@@ -340,8 +341,9 @@ pub(crate) fn inputs_and_output<'tcx>(
     (inputs, output)
 }
 
+#[derive(TypeVisitable, TypeFoldable, Debug, Clone)]
 pub struct PreSignature<'tcx> {
-    pub(crate) inputs: Vec<(symbol::Ident, Ty<'tcx>)>,
+    pub(crate) inputs: Vec<(symbol::Symbol, Ty<'tcx>)>,
     pub(crate) output: Ty<'tcx>,
     pub(crate) contract: PreContract<'tcx>,
     // trusted: bool,
@@ -380,7 +382,7 @@ pub(crate) fn pre_sig_of<'tcx>(
         assert!(contract.variant.is_none());
     }
 
-    PreSignature { inputs: inputs.collect(), output, contract }
+    PreSignature { inputs: inputs.map(|(i, ty)| (i.name, ty)).collect(), output, contract }
 }
 
 pub(crate) fn signature_of<'tcx>(
@@ -403,12 +405,12 @@ pub(crate) fn signature_of<'tcx>(
             .enumerate()
             .map(|(ix, (id, ty))| {
                 let ty = translation::ty::translate_ty(ctx, names, span, ty);
-                let id = if id.name.is_empty() {
+                let id = if id.is_empty() {
                     format!("_{}'", ix + 1).into()
-                } else if id.name == Symbol::intern("result") {
-                    ctx.crash_and_error(id.span, "`result` is not allowed as a parameter name");
+                } else if id == Symbol::intern("result") {
+                    ctx.crash_and_error(DUMMY_SP, "`result` is not allowed as a parameter name");
                 } else {
-                    ident_of(id.name)
+                    ident_of(id)
                 };
                 Binder::typed(id, ty)
             })

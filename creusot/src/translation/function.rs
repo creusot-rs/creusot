@@ -464,7 +464,7 @@ pub(crate) fn closure_contract<'tcx>(
             span: DUMMY_SP,
         };
         let arg_pat = typing::Pattern::Tuple(
-            pre_clos_sig.inputs.iter().map(|(nm, _)| typing::Pattern::Binder(nm.name)).collect(),
+            pre_clos_sig.inputs.iter().map(|(nm, _)| typing::Pattern::Binder(*nm)).collect(),
         );
 
         postcondition = typing::Term {

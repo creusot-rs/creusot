@@ -6,7 +6,12 @@ use crate::{
     ctx::*,
     util::{item_type, why3_attrs},
 };
-use creusot_rustc::{self, hir::def_id::DefId, resolve::Namespace, span::Symbol};
+use creusot_rustc::{
+    self,
+    hir::def_id::DefId,
+    resolve::Namespace,
+    span::{Symbol, DUMMY_SP},
+};
 use why3::{declaration, declaration::Signature, exp::Binder, ty::Type};
 
 use crate::{
@@ -35,12 +40,12 @@ pub(crate) fn signature_of<'tcx>(
         .enumerate()
         .map(|(ix, (id, ty))| {
             let ty = ty::translate_ty(ctx, names, span, ty);
-            let id = if id.name.is_empty() {
+            let id = if id.is_empty() {
                 format!("_{}'", ix + 1).into()
-            } else if id.name == Symbol::intern("result") {
-                ctx.crash_and_error(id.span, "`result` is not allowed as a parameter name");
+            } else if id == Symbol::intern("result") {
+                ctx.crash_and_error(DUMMY_SP, "`result` is not allowed as a parameter name");
             } else {
-                ident_of(id.name)
+                ident_of(id)
             };
             Binder::typed(id, ty)
         })

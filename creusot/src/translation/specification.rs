@@ -102,11 +102,16 @@ impl<'tcx> PreContract<'tcx> {
         self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_none()
     }
 
+    pub(crate) fn terms(&self) -> impl Iterator<Item = &Term<'tcx>> {
+        self.requires.iter().chain(self.ensures.iter()).chain(self.variant.iter())
+    }
+
+
     pub(crate) fn ensures_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
         let mut ensures = self.ensures.clone();
 
         let postcond = ensures.pop().unwrap_or(Term::mk_true(tcx));
-        let mut postcond = ensures.into_iter().rfold(postcond, Term::conj);
+        let postcond = ensures.into_iter().rfold(postcond, Term::conj);
         postcond
     }
 
@@ -114,7 +119,7 @@ impl<'tcx> PreContract<'tcx> {
         let mut requires = self.requires.clone();
 
         let precond = requires.pop().unwrap_or(Term::mk_true(tcx));
-        let mut precond = requires.into_iter().rfold(precond, Term::conj);
+        let precond = requires.into_iter().rfold(precond, Term::conj);
         precond
     }
 }

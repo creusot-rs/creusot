@@ -5,7 +5,7 @@ use creusot_rustc::{
     macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
     middle::ty::{
         subst::{Subst, SubstsRef},
-        EarlyBinder,
+        EarlyBinder, TypeVisitable,
     },
     resolve::Namespace,
     span::{Symbol, DUMMY_SP},
@@ -19,7 +19,10 @@ use petgraph::{
 };
 use rustc_middle::{
     middle::dependency_format::Dependencies,
-    ty::{subst::InternalSubsts, DefIdTree, Ty, TyKind},
+    ty::{
+        subst::{GenericArgKind, InternalSubsts},
+        DefIdTree, Ty, TyCtxt, TyKind, TypeVisitor,
+    },
 };
 use util::ItemType;
 use why3::{
@@ -35,7 +38,7 @@ use crate::{
         specification::typing::{Term, TermKind, TermVisitor},
         traits::resolve_opt,
     },
-    util::{self, item_name, item_qname, item_type, module_name},
+    util::{self, item_name, item_qname, item_type, module_name, pre_sig_of},
 };
 
 // The clone wars are over
@@ -75,16 +78,22 @@ fn get_immediate_deps<'tcx>(
 
             let mut v = Vec::new();
 
-            for ty in tys {
-                match ty.expect_ty().kind() {
-                    TyKind::Adt(def, sub) => v.push(Dependency::Item(def.did(), *sub)),
-                    _ => {}
+            for arg in tys {
+                match arg.unpack() {
+                    GenericArgKind::Type(ty) => match ty.kind() {
+                        TyKind::Adt(def, sub) => v.push(Dependency::Item(def.did(), *sub)),
+                        _ => {}
+                    },
+                    GenericArgKind::Lifetime(_) => {}
+                    a => panic!("{a:?}"),
                 }
             }
             v
         }
         ItemType::Logic | ItemType::Predicate
-            if def_id.is_local() && !util::is_trusted(ctx.tcx, def_id) =>
+            if def_id.is_local()
+                && !util::is_trusted(ctx.tcx, def_id)
+                && util::has_body(ctx, def_id) =>
         {
             term_dependencies(ctx, def_id)
         }
@@ -121,8 +130,30 @@ fn term_dependencies<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Vec
         }
     }
 
+    impl<'tcx> TypeVisitor<'tcx> for Dependencies<'tcx> {
+        fn visit_ty(&mut self, t: Ty<'tcx>) -> std::ops::ControlFlow<Self::BreakTy> {
+            match t.kind() {
+                TyKind::Adt(def, sub) => self.deps.push(Dependency::Item(def.did(), *sub)),
+                TyKind::Projection(pty) => {
+                    self.deps.push(Dependency::Item(pty.item_def_id, pty.substs))
+                }
+                _ => {}
+            };
+            std::ops::ControlFlow::Continue(())
+        }
+    }
+
     let mut deps = Dependencies::default();
-    deps.visit_term(ctx.term(def_id).unwrap());
+
+    let sig = pre_sig_of(ctx, def_id);
+    sig.contract.terms().for_each(|t| {
+        deps.visit_term(t);
+    });
+    sig.visit_with(&mut deps);
+
+    if let Some(term) = ctx.term(def_id) {
+        deps.visit_term(term);
+    }
     deps.deps
 }
 
@@ -144,6 +175,7 @@ pub fn collect<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> MonoGraph
         }
         graph.add_node(next);
         let Dependency::Item(id, subst) = next else { continue };
+        ctx.translate(id);
 
         let to_add = EarlyBinder(get_immediate_deps(ctx, id)).subst(ctx.tcx, subst);
 
@@ -153,7 +185,9 @@ pub fn collect<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> MonoGraph
                 continue
             };
 
-            let tgt = if can_resolve(ctx, (id, subst)) {
+            let tgt = if let Some(tgt) = closure_hack(ctx.tcx, def_id, subst) {
+                tgt
+            } else if can_resolve(ctx, (id, subst)) {
                 resolve_opt(ctx.tcx, param_env, id, subst).unwrap()
             } else {
                 ctx.normalize_erasing_regions(param_env, (id, subst))
@@ -168,10 +202,41 @@ pub fn collect<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> MonoGraph
     graph
 }
 
+fn closure_hack<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    subst: SubstsRef<'tcx>,
+) -> Option<(DefId, SubstsRef<'tcx>)> {
+    if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), def_id)
+        || tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id)
+        || tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id)
+        || tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id)
+        || tcx.is_diagnostic_item(Symbol::intern("fn_impl_resolve"), def_id)
+    {
+        debug!("closure_hack: {:?}", def_id);
+        let self_ty = subst.types().nth(1).unwrap();
+        if let TyKind::Closure(id, csubst) = self_ty.kind() {
+            return Some((*id, csubst));
+        }
+    };
+
+    if tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), def_id)
+        || tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), def_id)
+    {
+        let self_ty = subst.types().nth(0).unwrap();
+        if let TyKind::Closure(id, csubst) = self_ty.kind() {
+            return Some((*id, csubst));
+        }
+    }
+
+    None
+}
+
 fn can_resolve<'tcx>(ctx: &mut TranslationCtx<'tcx>, dep: (DefId, SubstsRef<'tcx>)) -> bool {
     ctx.trait_of_item(dep.0).is_some()
 }
 
+#[derive(Debug)]
 pub struct Names<'tcx> {
     names: IndexMap<(DefId, SubstsRef<'tcx>), QName>,
 }
