@@ -106,7 +106,6 @@ impl<'tcx> PreContract<'tcx> {
         self.requires.iter().chain(self.ensures.iter()).chain(self.variant.iter())
     }
 
-
     pub(crate) fn ensures_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
         let mut ensures = self.ensures.clone();
 

@@ -10,12 +10,12 @@ use crate::{
     },
 };
 use creusot_rustc::{
-    macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
     ast::{
         ast::{MacArgs, MacArgsEq},
         AttrItem, AttrKind, Attribute,
     },
     hir::{def::DefKind, def_id::DefId, Unsafety},
+    macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
     middle::ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
