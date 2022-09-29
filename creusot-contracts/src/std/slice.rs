@@ -332,25 +332,3 @@ impl<'a, T> IteratorSpec for IterMut<'a, T> {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
-
-extern_spec! {
-    mod std {
-        mod slice {
-            // impl<'a, T> Iterator for Iter<'a, T> {
-            //     #[ensures(match result {
-            //       None => self.completed(),
-            //       Some(v) => (*self).produces(Seq::singleton(v), ^self)
-            //     })]
-            //     fn next(&mut self) -> Option<&'a T>;
-            // }
-
-            // impl<'a, T> Iterator for IterMut<'a, T> {
-            //     #[ensures(match result {
-            //       None => self.completed(),
-            //       Some(v) => (*self).produces(Seq::singleton(v), ^self)
-            //     })]
-            //     fn next(&mut self) -> Option<&'a mut T>;
-            // }
-        }
-    }
-}
