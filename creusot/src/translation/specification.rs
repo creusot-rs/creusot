@@ -19,11 +19,9 @@ use creusot_rustc::{
 use std::collections::{HashMap, HashSet};
 use why3::declaration::Contract;
 
-mod builtins;
-mod lower;
 pub(crate) mod typing;
 
-pub(crate) use lower::*;
+pub(crate) use crate::backend::term::*;
 
 #[derive(Clone, Debug, Default, TypeFoldable, TypeVisitable)]
 pub struct PreContract<'tcx> {

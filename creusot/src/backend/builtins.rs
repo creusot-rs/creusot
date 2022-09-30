@@ -1,4 +1,4 @@
-use super::lower::{mk_binders, Lower};
+use super::term::{mk_binders, Lower};
 use crate::{
     ctx::PreludeModule,
     translation::{

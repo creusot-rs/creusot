@@ -1,4 +1,4 @@
-use super::typing::{self, Literal, Pattern, Term, TermKind};
+use crate::specification::typing::{self, Literal, Pattern, Term, TermKind};
 use crate::{
     ctx::*,
     translation::{
