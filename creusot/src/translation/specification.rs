@@ -49,7 +49,7 @@ impl<'tcx> PreContract<'tcx> {
 
     pub(crate) fn to_exp(
         self,
-        ctx: &mut TranslationCtx<'_, 'tcx>,
+        ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
         id: DefId,
     ) -> Contract {
@@ -87,7 +87,7 @@ impl ContractClauses {
         Self { variant: None, requires: Vec::new(), ensures: Vec::new() }
     }
 
-    fn get_pre<'tcx>(self, ctx: &mut TranslationCtx<'_, 'tcx>) -> EarlyBinder<PreContract<'tcx>> {
+    fn get_pre<'tcx>(self, ctx: &mut TranslationCtx<'tcx>) -> EarlyBinder<PreContract<'tcx>> {
         let mut out = PreContract::default();
         for req_id in self.requires {
             log::debug!("require clause {:?}", req_id);
@@ -256,7 +256,7 @@ pub(crate) fn contract_clauses_of(
 }
 
 pub(crate) fn inherited_extern_spec<'tcx>(
-    ctx: &TranslationCtx<'_, 'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
     let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
@@ -277,7 +277,7 @@ pub(crate) fn inherited_extern_spec<'tcx>(
 }
 
 pub(crate) fn contract_of<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> PreContract<'tcx> {
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {

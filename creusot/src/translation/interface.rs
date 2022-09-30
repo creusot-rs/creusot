@@ -18,7 +18,7 @@ use super::{
 };
 
 pub(crate) fn interface_for<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> (Module, CloneMap<'tcx>) {
     debug!("interface_for: {def_id:?}");

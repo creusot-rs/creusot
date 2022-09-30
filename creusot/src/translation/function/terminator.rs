@@ -37,7 +37,7 @@ use std::collections::HashMap;
 // rather than switching on discriminant since WhyML doesn't have integer
 // patterns in match expressions.
 
-impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
+impl<'tcx> BodyTranslator<'_, 'tcx> {
     pub(crate) fn translate_terminator(
         &mut self,
         terminator: &mir::Terminator<'tcx>,
@@ -182,7 +182,7 @@ impl<'tcx> BodyTranslator<'_, '_, 'tcx> {
 }
 
 pub(crate) fn resolve_function<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
     subst: SubstsRef<'tcx>,
@@ -272,7 +272,7 @@ pub(crate) fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Opti
 }
 
 pub(crate) fn make_switch<'tcx>(
-    ctx: &TranslationCtx<'_, 'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     si: SourceInfo,
     switch_ty: Ty<'tcx>,
     targets: &SwitchTargets,

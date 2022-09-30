@@ -114,7 +114,8 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
             }
         };
 
-        let matcher: &str = ctx.opts.match_str.as_ref().map(|s| &s[..]).unwrap_or("");
+        let matcher = ctx.opts.match_str.clone();
+        let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
         let tcx = ctx.tcx;
         let modules = ctx.modules().flat_map(|(id, item)| {
             if tcx.def_path_str(id).contains(matcher) {

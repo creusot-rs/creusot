@@ -329,7 +329,7 @@ pub(crate) fn inputs_and_output<'tcx>(
 }
 
 pub(crate) fn signature_of<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Signature {

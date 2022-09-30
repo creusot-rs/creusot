@@ -23,7 +23,7 @@ use why3::{
 };
 
 pub(crate) fn lower_pure<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     param_env: ParamEnv<'tcx>,
     term: Term<'tcx>,
@@ -39,7 +39,7 @@ pub(crate) fn lower_pure<'tcx>(
 }
 
 pub(crate) fn lower_impure<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     term_id: DefId,
     param_env: ParamEnv<'tcx>,
@@ -56,14 +56,14 @@ pub(crate) fn lower_impure<'tcx>(
     term
 }
 
-pub(super) struct Lower<'a, 'sess, 'tcx> {
-    pub(super) ctx: &'a mut TranslationCtx<'sess, 'tcx>,
+pub(super) struct Lower<'a, 'tcx> {
+    pub(super) ctx: &'a mut TranslationCtx<'tcx>,
     pub(super) names: &'a mut CloneMap<'tcx>,
     // true when we are translating a purely logical term
     pub(super) pure: Purity,
     param_env: ParamEnv<'tcx>,
 }
-impl<'tcx> Lower<'_, '_, 'tcx> {
+impl<'tcx> Lower<'_, 'tcx> {
     pub(crate) fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
         match term.kind {
             TermKind::Lit(l) => {
@@ -366,7 +366,7 @@ use creusot_rustc::{
 };
 
 pub(crate) fn lower_literal<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     lit: Literal,
 ) -> Exp {

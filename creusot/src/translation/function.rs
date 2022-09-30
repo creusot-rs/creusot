@@ -42,7 +42,7 @@ mod statement;
 pub(crate) mod terminator;
 
 pub(crate) fn translate_function<'tcx, 'sess>(
-    ctx: &mut TranslationCtx<'sess, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> Module {
     let tcx = ctx.tcx;
@@ -109,7 +109,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
 
 pub(crate) fn translate_trusted<'tcx>(
     tcx: TyCtxt<'tcx>,
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> Module {
     let mut names = CloneMap::new(tcx, def_id, CloneLevel::Interface);
@@ -126,7 +126,7 @@ pub(crate) fn translate_trusted<'tcx>(
 }
 
 // Split this into several sub-contexts: Core, Analysis, Results?
-pub struct BodyTranslator<'body, 'sess, 'tcx> {
+pub struct BodyTranslator<'body, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
 
     def_id: DefId,
@@ -147,7 +147,7 @@ pub struct BodyTranslator<'body, 'sess, 'tcx> {
     past_blocks: BTreeMap<BasicBlock, fmir::Block<'tcx>>,
 
     // Type translation context
-    ctx: &'body mut TranslationCtx<'sess, 'tcx>,
+    ctx: &'body mut TranslationCtx<'tcx>,
 
     // Fresh BlockId
     fresh_id: usize,
@@ -162,10 +162,10 @@ pub struct BodyTranslator<'body, 'sess, 'tcx> {
     borrows: Rc<BorrowSet<'tcx>>,
 }
 
-impl<'body, 'sess, 'tcx> BodyTranslator<'body, 'sess, 'tcx> {
+impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     fn build_context(
         tcx: TyCtxt<'tcx>,
-        ctx: &'body mut TranslationCtx<'sess, 'tcx>,
+        ctx: &'body mut TranslationCtx<'tcx>,
         body: &'body Body<'tcx>,
         names: &'body mut CloneMap<'tcx>,
         sig: Signature,
@@ -463,7 +463,7 @@ impl LocalIdent {
 }
 
 pub(crate) fn closure_contract<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Vec<Decl> {
@@ -584,7 +584,7 @@ pub(crate) fn closure_contract<'tcx>(
 }
 
 fn closure_resolve<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
     subst: SubstsRef<'tcx>,
@@ -659,7 +659,7 @@ impl ResolveStmt {
 }
 
 fn resolve_predicate_of<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,

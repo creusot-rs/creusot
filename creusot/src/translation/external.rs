@@ -26,7 +26,7 @@ use super::specification::{
 };
 
 pub(crate) fn default_decl<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
     info!("generating default declaration for def_id={:?}", def_id);
@@ -59,7 +59,7 @@ pub(crate) fn default_decl<'tcx>(
 }
 
 pub(crate) fn extern_module<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> (
     Module,
@@ -106,7 +106,7 @@ impl<'tcx> ExternSpec<'tcx> {
 
 // Must be run before MIR generation.
 pub(crate) fn extract_extern_specs_from_item<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     def_id: LocalDefId,
 ) -> CreusotResult<(DefId, ExternSpec<'tcx>)> {
     // Handle error gracefully
