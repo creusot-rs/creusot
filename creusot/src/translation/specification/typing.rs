@@ -27,7 +27,7 @@ use creusot_rustc::{
         },
     },
     smir::mir::BorrowKind,
-    span::{Span, Symbol},
+    span::{Span, Symbol, DUMMY_SP},
     target::abi::VariantIdx,
 };
 pub(crate) use creusot_rustc::{middle::thir, smir::mir::Field};
@@ -733,7 +733,7 @@ fn lower_hir_pat<'tcx>(tcx: TyCtxt<'tcx>, pat: &hir::Pat<'tcx>) -> CreusotResult
 }
 
 impl<'tcx> Pattern<'tcx> {
-    fn binds(&self, binders: &mut HashSet<Symbol>) {
+    pub(crate) fn binds(&self, binders: &mut HashSet<Symbol>) {
         match self {
             Pattern::Constructor { fields, .. } => fields.iter().for_each(|f| f.binds(binders)),
             Pattern::Tuple(fields) => fields.iter().for_each(|f| f.binds(binders)),
@@ -741,12 +741,129 @@ impl<'tcx> Pattern<'tcx> {
             Pattern::Binder(s) => {
                 binders.insert(*s);
             }
+
             Pattern::Boolean(_) => {}
         }
     }
 }
 
+pub trait TermVisitor<'tcx> {
+    fn visit_term(&mut self, term: &Term<'tcx>);
+}
+
+#[allow(dead_code)]
+pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: &mut V) {
+    match &term.kind {
+        TermKind::Var(_) => {}
+        TermKind::Lit(_) => {}
+        TermKind::Item(_, _) => {}
+        TermKind::Binary { op: _, lhs, rhs } => {
+            visitor.visit_term(&*lhs);
+            visitor.visit_term(&*rhs);
+        }
+        TermKind::Unary { op: _, arg } => visitor.visit_term(&*arg),
+        TermKind::Forall { binder: _, body } => visitor.visit_term(&*body),
+        TermKind::Exists { binder: _, body } => visitor.visit_term(&*body),
+        TermKind::Call { id: _, subst: _, fun, args } => {
+            visitor.visit_term(&*fun);
+            args.iter().for_each(|a| visitor.visit_term(&*a))
+        }
+        TermKind::Constructor { adt: _, variant: _, fields } => {
+            fields.iter().for_each(|a| visitor.visit_term(&*a))
+        }
+        TermKind::Tuple { fields } => fields.iter().for_each(|a| visitor.visit_term(&*a)),
+        TermKind::Cur { term } => visitor.visit_term(&*term),
+        TermKind::Fin { term } => visitor.visit_term(&*term),
+        TermKind::Impl { lhs, rhs } => {
+            visitor.visit_term(&*lhs);
+            visitor.visit_term(&*rhs)
+        }
+        TermKind::Match { scrutinee, arms } => {
+            visitor.visit_term(&*scrutinee);
+            arms.iter().for_each(|(_, arm)| visitor.visit_term(&*arm))
+        }
+        TermKind::Let { pattern: _, arg, body } => {
+            visitor.visit_term(&*arg);
+            visitor.visit_term(&*body)
+        }
+        TermKind::Projection { lhs, name: _, def: _ } => visitor.visit_term(&*lhs),
+        TermKind::Old { term } => visitor.visit_term(&*term),
+        TermKind::Closure { args: _, body } => visitor.visit_term(&*body),
+        TermKind::Absurd => {}
+    }
+}
+
+pub trait TermVisitorMut<'tcx> {
+    fn visit_mut_term(&mut self, term: &mut Term<'tcx>);
+}
+
+pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
+    term: &mut Term<'tcx>,
+    visitor: &mut V,
+) {
+    match &mut term.kind {
+        TermKind::Var(_) => {}
+        TermKind::Lit(_) => {}
+        TermKind::Item(_, _) => {}
+        TermKind::Binary { op: _, lhs, rhs } => {
+            visitor.visit_mut_term(&mut *lhs);
+            visitor.visit_mut_term(&mut *rhs);
+        }
+        TermKind::Unary { op: _, arg } => visitor.visit_mut_term(&mut *arg),
+        TermKind::Forall { binder: _, body } => visitor.visit_mut_term(&mut *body),
+        TermKind::Exists { binder: _, body } => visitor.visit_mut_term(&mut *body),
+        TermKind::Call { id: _, subst: _, fun, args } => {
+            visitor.visit_mut_term(&mut *fun);
+            args.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
+        }
+        TermKind::Constructor { adt: _, variant: _, fields } => {
+            fields.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
+        }
+        TermKind::Tuple { fields } => {
+            fields.iter_mut().for_each(|a| visitor.visit_mut_term(&mut *a))
+        }
+        TermKind::Cur { term } => visitor.visit_mut_term(&mut *term),
+        TermKind::Fin { term } => visitor.visit_mut_term(&mut *term),
+        TermKind::Impl { lhs, rhs } => {
+            visitor.visit_mut_term(&mut *lhs);
+            visitor.visit_mut_term(&mut *rhs)
+        }
+        TermKind::Match { scrutinee, arms } => {
+            visitor.visit_mut_term(&mut *scrutinee);
+            arms.iter_mut().for_each(|(_, arm)| visitor.visit_mut_term(&mut *arm))
+        }
+        TermKind::Let { pattern: _, arg, body } => {
+            visitor.visit_mut_term(&mut *arg);
+            visitor.visit_mut_term(&mut *body)
+        }
+        TermKind::Projection { lhs, name: _, def: _ } => visitor.visit_mut_term(&mut *lhs),
+        TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
+        TermKind::Closure { args: _, body } => visitor.visit_mut_term(&mut *body),
+        TermKind::Absurd => {}
+    }
+}
+
 impl<'tcx> Term<'tcx> {
+    pub(crate) fn mk_true(tcx: TyCtxt<'tcx>) -> Self {
+        Term {
+            ty: tcx.mk_ty(TyKind::Bool),
+            kind: TermKind::Lit(Literal::Bool(true)),
+            span: DUMMY_SP,
+        }
+    }
+
+    pub(crate) fn conj(self, rhs: Self) -> Self {
+        match self.kind {
+            TermKind::Lit(Literal::Bool(false)) => self,
+            TermKind::Lit(Literal::Bool(true)) => rhs,
+            _ => Term {
+                ty: self.ty,
+                kind: TermKind::Binary { op: BinOp::And, lhs: box self, rhs: box rhs },
+                span: DUMMY_SP,
+            },
+        }
+    }
+
     pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<Symbol, Term<'tcx>>) {
         self.subst_inner(&mut HashSet::new(), inv_subst);
     }

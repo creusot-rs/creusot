@@ -1,9 +1,11 @@
-use super::typing::{self, Literal, Pattern, Term, TermKind};
 use crate::{
     ctx::*,
+    specification::typing::{self, Literal, Pattern, Term, TermKind},
     translation::{
         traits::{resolve_assoc_item_opt, resolve_opt},
-        ty::{intty_to_ty, translate_ty, uintty_to_ty, variant_accessor_name},
+        ty::{
+            closure_accessor_name, intty_to_ty, translate_ty, uintty_to_ty, variant_accessor_name,
+        },
     },
     util,
     util::constructor_qname,
@@ -267,16 +269,27 @@ impl<'tcx> Lower<'_, 'tcx> {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
             }
             TermKind::Projection { box lhs, name, def: did } => {
-                let def = self.ctx.tcx.adt_def(did);
                 let lhs = self.lower_term(lhs);
-                self.ctx
-                    .translate_accessor(def.variants()[0u32.into()].fields[name.as_usize()].did);
-                let accessor = variant_accessor_name(
-                    self.ctx,
-                    did,
-                    &def.variants()[0u32.into()],
-                    name.as_usize(),
-                );
+                let accessor = match util::item_type(self.ctx.tcx, did) {
+                    ItemType::Closure => {
+                        let TyKind::Closure(did, subst) = self.ctx.type_of(did).kind() else { unreachable!() };
+                        let proj = closure_accessor_name(self.ctx.tcx, *did, name.as_usize());
+                        let acc = self.names.insert(*did, subst).qname_ident(proj);
+                        acc
+                    }
+                    _ => {
+                        let def = self.ctx.tcx.adt_def(did);
+                        self.ctx.translate_accessor(
+                            def.variants()[0u32.into()].fields[name.as_usize()].did,
+                        );
+                        variant_accessor_name(
+                            self.ctx,
+                            did,
+                            &def.variants()[0u32.into()],
+                            name.as_usize(),
+                        )
+                    }
+                };
                 Exp::Call(box Exp::pure_qvar(accessor), vec![lhs])
             }
             TermKind::Closure { args, body } => {
