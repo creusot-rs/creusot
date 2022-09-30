@@ -14,7 +14,7 @@ use creusot_rustc::{
         ty::{EarlyBinder, ParamEnv, Subst},
     },
 };
-use rustc_middle::ty::{subst::InternalSubsts, Ty, TyKind};
+use rustc_middle::ty::{Ty, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
     ty::Type,
@@ -362,8 +362,8 @@ impl<'tcx> Lower<'_, 'tcx> {
         method: (DefId, SubstsRef<'tcx>),
         args: &mut Vec<Exp>,
     ) -> Option<Exp> {
-        let mut def_id = method.0;
-        let substs = method.1;
+        let def_id = method.0;
+        let _substs = method.1;
 
         let def_id = Some(def_id);
         let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
@@ -393,7 +393,7 @@ use creusot_rustc::{
 };
 
 pub(crate) fn lower_literal<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    _ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     lit: Literal,
 ) -> Exp {

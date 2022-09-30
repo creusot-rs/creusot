@@ -1,26 +1,20 @@
 use crate::{
-    ctx::*,
-    pearlite::{self, Literal, Pattern, Term, TermKind},
+    pearlite::{self, Literal, Term, TermKind},
     translation::{
-        traits::{resolve_assoc_item_opt, resolve_opt},
-        ty::{
-            closure_accessor_name, intty_to_ty, translate_ty, uintty_to_ty, variant_accessor_name,
-        },
+        traits::{resolve_opt},
     },
-    util,
-    util::{constructor_qname, get_builtin},
+    util::{get_builtin},
 };
 use creusot_rustc::{
-    hir::{def_id::DefId, Unsafety},
+    hir::{def_id::DefId},
     middle::{
-        ty,
-        ty::{subst::SubstsRef, EarlyBinder, ParamEnv, Subst, TyCtxt},
+        ty::{ParamEnv, TyCtxt},
     },
-    span::{symbol::sym, Span, Symbol},
+    span::{symbol::sym, Symbol},
 };
-use rustc_middle::ty::{subst::GenericArg, Ty, TyKind};
+use rustc_middle::ty::{subst::GenericArg};
 
-use super::{super_visit_mut_term, BinOp, TermVisitor, TermVisitorMut};
+use super::{super_visit_mut_term, BinOp, TermVisitorMut};
 
 pub(crate) fn normalize<'tcx>(
     tcx: TyCtxt<'tcx>,

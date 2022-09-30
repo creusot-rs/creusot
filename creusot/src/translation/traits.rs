@@ -161,7 +161,12 @@ fn logic_refinement<'tcx>(
     // Get the contract of the trait version
     let trait_contract = names.with_public_clones(|names| {
         let pre_contract = crate::specification::contract_of(ctx, trait_item_id);
-        EarlyBinder(pre_contract).subst(ctx.tcx, refn_subst).to_exp(ctx, names, impl_item_id)
+        let param_env = ctx.param_env(impl_item_id);
+        EarlyBinder(pre_contract).subst(ctx.tcx, refn_subst).normalize(ctx.tcx, param_env).to_exp(
+            ctx,
+            names,
+            impl_item_id,
+        )
     });
 
     let impl_contract = names.with_public_clones(|names| {

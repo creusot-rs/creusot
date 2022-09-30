@@ -18,6 +18,7 @@ use creusot_rustc::{
     smir::mir::{Body, Local, Location, SourceScope},
     span::Symbol,
 };
+use rustc_middle::ty::ParamEnv;
 use std::collections::{HashMap, HashSet};
 use why3::declaration::Contract;
 
@@ -45,6 +46,13 @@ impl<'tcx> PreContract<'tcx> {
         }
     }
 
+    pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Self {
+        self.requires = self.requires.into_iter().map(|r| normalize(tcx, param_env, r)).collect();
+        self.ensures = self.ensures.into_iter().map(|r| normalize(tcx, param_env, r)).collect();
+        self.variant = self.variant.into_iter().map(|r| normalize(tcx, param_env, r)).nth(0);
+        self
+    }
+
     pub(crate) fn to_exp(
         self,
         ctx: &mut TranslationCtx<'tcx>,
@@ -55,25 +63,14 @@ impl<'tcx> PreContract<'tcx> {
         let param_env = ctx.param_env(closure_owner(ctx.tcx, id));
 
         for term in self.requires {
-            out.requires.push(lower_pure(
-                ctx,
-                names,
-                param_env,
-                normalize(ctx.tcx, param_env, term),
-            ));
+            out.requires.push(lower_pure(ctx, names, param_env, term));
         }
         for term in self.ensures {
-            out.ensures.push(lower_pure(
-                ctx,
-                names,
-                param_env,
-                normalize(ctx.tcx, param_env, term),
-            ));
+            out.ensures.push(lower_pure(ctx, names, param_env, term));
         }
 
         if let Some(term) = self.variant {
-            out.variant =
-                vec![lower_pure(ctx, names, param_env, normalize(ctx.tcx, param_env, term))];
+            out.variant = vec![lower_pure(ctx, names, param_env, term)];
         }
 
         out
@@ -313,13 +310,13 @@ pub(crate) fn contract_of<'tcx>(
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
         let mut contract = extern_spec.contract.get_pre(ctx).subst(ctx.tcx, extern_spec.subst);
         contract.subst(&extern_spec.arg_subst.iter().cloned().collect());
-        contract
+        contract.normalize(ctx.tcx, ctx.param_env(def_id))
     } else {
-        if let Some((def_id, subst)) = inherited_extern_spec(ctx, def_id) {
-            let spec = ctx.extern_spec(def_id).cloned().unwrap();
+        if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
+            let spec = ctx.extern_spec(parent_id).cloned().unwrap();
             let mut contract = spec.contract.get_pre(ctx).subst(ctx.tcx, subst);
             contract.subst(&spec.arg_subst.iter().cloned().collect());
-            contract
+            contract.normalize(ctx.tcx, ctx.param_env(def_id))
         } else {
             let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
             contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst)
