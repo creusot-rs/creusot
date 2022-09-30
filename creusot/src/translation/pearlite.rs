@@ -114,8 +114,10 @@ impl<'tcx> TypeVisitable<'tcx> for Literal {
 #[derive(Clone, Debug, Decodable, Encodable)]
 pub enum Literal {
     Bool(bool),
-    Int(i128, IntTy),
-    Uint(u128, UintTy),
+    // TODO: Find a way to make this a BigInt type
+    Integer(i128),
+    MachSigned(i128, IntTy),
+    MachUnsigned(u128, UintTy),
     Float(f64),
     String(String),
     ZST,
@@ -245,15 +247,15 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     LitKind::Int(u, lty) => match lty {
                         LitIntType::Signed(ity) => {
                             let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
-                            Literal::Int(val, int_ty(ity))
+                            Literal::MachSigned(val, int_ty(ity))
                         }
-                        LitIntType::Unsigned(uty) => Literal::Uint(u, uint_ty(uty)),
+                        LitIntType::Unsigned(uty) => Literal::MachUnsigned(u, uint_ty(uty)),
                         LitIntType::Unsuffixed => match ty.kind() {
                             TyKind::Int(ity) => {
                                 let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
-                                Literal::Int(val, *ity)
+                                Literal::MachSigned(val, *ity)
                             }
-                            TyKind::Uint(uty) => Literal::Uint(u, *uty),
+                            TyKind::Uint(uty) => Literal::MachUnsigned(u, *uty),
                             _ => unreachable!(),
                         },
                     },

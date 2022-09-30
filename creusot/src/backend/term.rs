@@ -96,7 +96,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                 let rhs = self.lower_term(rhs);
 
                 use pearlite::BinOp::*;
-                if matches!(op, Add | Sub | Mul | Div | Rem) {
+                if matches!(op, Add | Sub | Mul | Div | Rem | Le | Ge | Lt | Gt) {
                     self.names.import_prelude_module(PreludeModule::Int);
                 }
 
@@ -368,13 +368,18 @@ pub(crate) fn lower_literal<'tcx>(
     lit: Literal,
 ) -> Exp {
     match lit {
-        Literal::Int(u, intty) => {
+        Literal::Integer(i) => {
+            eprintln!("{i:?}");
+            Constant::Int(i, None).into()
+        }
+        Literal::MachSigned(u, intty) => {
             let why_ty = intty_to_ty(ctx, names, &intty);
-
+            eprintln!("{why_ty:?}");
             Constant::Int(u, Some(why_ty)).into()
         }
-        Literal::Uint(u, uty) => {
+        Literal::MachUnsigned(u, uty) => {
             let why_ty = uintty_to_ty(ctx, names, &uty);
+            eprintln!("{why_ty:?}");
 
             Constant::Uint(u, Some(why_ty)).into()
         }
@@ -388,7 +393,7 @@ pub(crate) fn lower_literal<'tcx>(
         Literal::Function => Exp::Tuple(Vec::new()),
         Literal::Float(f) => Constant::Float(f).into(),
         Literal::ZST => Exp::Tuple(Vec::new()),
-        _ => unimplemented!("literal: {lit:?}"),
+        Literal::String(string) => Constant::String(string).into(),
     }
 }
 

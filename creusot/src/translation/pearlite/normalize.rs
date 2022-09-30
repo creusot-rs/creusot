@@ -89,24 +89,41 @@ fn optimize_builtin<'tcx>(
         Some(TermKind::Binary { op: BinOp::Rem, lhs: box args.remove(0), rhs: box args.remove(0) })
     } else if builtin_attr == Some(Symbol::intern("neg_int")) {
         Some(TermKind::Unary { op: pearlite::UnOp::Neg, arg: box args.remove(0) })
-    // } else if builtin_attr == Some(Symbol::intern("int.Int.(<=)")) {
-    // } else if builtin_attr == Some(Symbol::intern("int.Int.(<)")) {
-    // } else if builtin_attr == Some(Symbol::intern("int.Int.(>=)")) {
-    // } else if builtin_attr == Some(Symbol::intern("int.Int.(>)")) {
+    } else if builtin_attr == Some(Symbol::intern("int.Int.(<=)")) {
+        Some(TermKind::Binary { op: BinOp::Le, lhs: box args.remove(0), rhs: box args.remove(0) })
+    } else if builtin_attr == Some(Symbol::intern("int.Int.(<)")) {
+        Some(TermKind::Binary { op: BinOp::Lt, lhs: box args.remove(0), rhs: box args.remove(0) })
+    } else if builtin_attr == Some(Symbol::intern("int.Int.(>=)")) {
+        Some(TermKind::Binary { op: BinOp::Ge, lhs: box args.remove(0), rhs: box args.remove(0) })
+    } else if builtin_attr == Some(Symbol::intern("int.Int.(>)")) {
+        Some(TermKind::Binary { op: BinOp::Gt, lhs: box args.remove(0), rhs: box args.remove(0) })
     } else if builtin_attr == Some(Symbol::intern("==")) {
         Some(TermKind::Binary { op: BinOp::Eq, lhs: box args.remove(0), rhs: box args.remove(0) })
     } else if builtin_attr == Some(Symbol::intern("!=")) {
         Some(TermKind::Binary { op: BinOp::Ne, lhs: box args.remove(0), rhs: box args.remove(0) })
-    // } else if builtin_attr == Some(Symbol::intern("mach.int.UInt8.to_int")) {
-    // } else if builtin_attr == Some(Symbol::intern("mach.int.UInt16.to_int")) {
-    // } else if builtin_attr == Some(Symbol::intern("mach.int.UInt32.to_int")) {
-    // } else if builtin_attr == Some(Symbol::intern("mach.int.UInt64.to_int")) {
-    // } else if builtin_attr == Some(Symbol::intern("mach.int.UInt128.to_int")) {
-    // } else if builtin_attr == Some(Symbol::intern("mach.int.Int8.to_int")) {
-    // } else if builtin_attr == Some(Symbol::intern("mach.int.Int16.to_int")) {
-    // } else if builtin_attr == Some(Symbol::intern("mach.int.Int32.to_int")) {
-    // } else if builtin_attr == Some(Symbol::intern("mach.int.Int64.to_int")) {
-    // } else if builtin_attr == Some(Symbol::intern("mach.int.Int128.to_int")) {
+    } else if builtin_attr == Some(Symbol::intern("mach.int.UInt8.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {
+        Some(TermKind::Lit(Literal::Integer(c as i128)))
+    } else if builtin_attr == Some(Symbol::intern("mach.int.UInt16.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {
+        Some(TermKind::Lit(Literal::Integer(c as i128)))
+    } else if builtin_attr == Some(Symbol::intern("mach.int.UInt32.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {
+        Some(TermKind::Lit(Literal::Integer(c as i128)))
+    } else if builtin_attr == Some(Symbol::intern("mach.int.UInt64.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {
+        Some(TermKind::Lit(Literal::Integer(c as i128)))
+    } else if builtin_attr == Some(Symbol::intern("mach.int.UInt128.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {
+        if c > isize::MAX as u128 {
+            panic!("integer constant too large")
+        }
+        Some(TermKind::Lit(Literal::Integer(c as i128)))
+    } else if builtin_attr == Some(Symbol::intern("mach.int.Int8.to_int")) && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind {
+        Some(TermKind::Lit(Literal::Integer(c as i128)))
+    } else if builtin_attr == Some(Symbol::intern("mach.int.Int16.to_int")) && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind {
+        Some(TermKind::Lit(Literal::Integer(c as i128)))
+    } else if builtin_attr == Some(Symbol::intern("mach.int.Int32.to_int")) && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind {
+        Some(TermKind::Lit(Literal::Integer(c as i128)))
+    } else if builtin_attr == Some(Symbol::intern("mach.int.Int64.to_int")) && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind {
+        Some(TermKind::Lit(Literal::Integer(c as i128)))
+    } else if builtin_attr == Some(Symbol::intern("mach.int.Int128.to_int")) && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind {
+        Some(TermKind::Lit(Literal::Integer(c as i128)))
     // } else if builtin_attr == Some(Symbol::intern("ghost_new")) {
 
     //     // } else if builtin_attr == Some(Symbol::intern("ghost_inner")) {

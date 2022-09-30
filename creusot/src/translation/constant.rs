@@ -116,7 +116,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
                 IntTy::I32 => bits as i32 as i128,
                 IntTy::I64 => bits as i64 as i128,
             };
-            Literal::Int(bits, *ity)
+            Literal::MachSigned(bits, *ity)
         }
         Uint(uty) => {
             let bits = c.get_bits(ctx.tcx, env, ty).unwrap();
@@ -128,7 +128,8 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
                 UintTy::U32 => bits as u32 as u128,
                 UintTy::U64 => bits as u64 as u128,
             };
-            Literal::Uint(bits, *uty)
+            eprintln!(">>>> {:?} {:?}", bits, uty);
+            Literal::MachUnsigned(bits, *uty)
         }
         Bool => Literal::Bool(c.get_bits(ctx.tcx, env, ty) == Some(1)),
         Float(FloatTy::F32) => {

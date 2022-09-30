@@ -576,9 +576,9 @@ pub(crate) fn uintty_to_ty(
     use creusot_rustc::middle::ty::UintTy::*;
     names.import_prelude_module(PreludeModule::Int);
 
-    if !ctx.opts.bounds_check {
-        return MlT::Integer;
-    }
+    // if !ctx.opts.bounds_check {
+    //     return MlT::Integer;
+    // }
 
     match ity {
         Usize => {
