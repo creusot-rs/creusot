@@ -42,42 +42,7 @@ impl<'tcx> Lower<'_, 'tcx> {
         let def_id = Some(def_id);
         let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
 
-        if builtin_attr == Some(Symbol::intern("add_int")) {
-            let l = args.remove(0);
-            let r = args.remove(0);
-            self.names.import_prelude_module(PreludeModule::Int);
-
-            return Some(Exp::BinaryOp(BinOp::Add, box l, box r));
-        } else if builtin_attr == Some(Symbol::intern("sub_int")) {
-            let l = args.remove(0);
-            let r = args.remove(0);
-            self.names.import_prelude_module(PreludeModule::Int);
-
-            return Some(Exp::BinaryOp(BinOp::Sub, box l, box r));
-        } else if builtin_attr == Some(Symbol::intern("mul_int")) {
-            let l = args.remove(0);
-            let r = args.remove(0);
-            self.names.import_prelude_module(PreludeModule::Int);
-
-            return Some(Exp::BinaryOp(BinOp::Mul, box l, box r));
-        } else if builtin_attr == Some(Symbol::intern("div_int")) {
-            let l = args.remove(0);
-            let r = args.remove(0);
-            self.names.import_prelude_module(PreludeModule::Int);
-
-            return Some(Exp::Call(box Exp::pure_var("div".into()), vec![l, r]));
-        } else if builtin_attr == Some(Symbol::intern("rem_int")) {
-            let l = args.remove(0);
-            let r = args.remove(0);
-            self.names.import_prelude_module(PreludeModule::Int);
-
-            return Some(Exp::Call(box Exp::pure_var("Int.mod".into()), vec![l, r]));
-        } else if builtin_attr == Some(Symbol::intern("neg_int")) {
-            let a = args.remove(0);
-            self.names.import_prelude_module(PreludeModule::Int);
-
-            return Some(Exp::UnaryOp(UnOp::Neg, box a));
-        } else if builtin_attr == Some(Symbol::intern("int.Int.(<=)")) {
+        if builtin_attr == Some(Symbol::intern("int.Int.(<=)")) {
             let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
             translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
 
@@ -109,22 +74,6 @@ impl<'tcx> Lower<'_, 'tcx> {
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Gt, box l, box r));
-        } else if builtin_attr == Some(Symbol::intern("==")) {
-            let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
-            translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
-
-            let l = args.remove(0);
-            let r = args.remove(0);
-
-            return Some(Exp::BinaryOp(BinOp::Eq, box l, box r));
-        } else if builtin_attr == Some(Symbol::intern("!=")) {
-            let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
-            translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
-
-            let l = args.remove(0);
-            let r = args.remove(0);
-
-            return Some(Exp::BinaryOp(BinOp::Ne, box l, box r));
         } else if builtin_attr == Some(Symbol::intern("mach.int.UInt8.to_int")) {
             if let Exp::Const(Constant::Uint(v, _)) = args[0] {
                 return Some(Exp::Const(Constant::Uint(v, None)));
