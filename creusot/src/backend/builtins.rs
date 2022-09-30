@@ -77,7 +77,7 @@ impl<'tcx> Lower<'_, 'tcx> {
             self.names.import_prelude_module(PreludeModule::Int);
 
             return Some(Exp::UnaryOp(UnOp::Neg, box a));
-        } else if builtin_attr == Some(Symbol::intern("<=")) {
+        } else if builtin_attr == Some(Symbol::intern("int.Int.(<=)")) {
             let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
             translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
 
@@ -85,7 +85,7 @@ impl<'tcx> Lower<'_, 'tcx> {
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Le, box l, box r));
-        } else if builtin_attr == Some(Symbol::intern("<")) {
+        } else if builtin_attr == Some(Symbol::intern("int.Int.(<)")) {
             let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
             translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
 
@@ -93,7 +93,7 @@ impl<'tcx> Lower<'_, 'tcx> {
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Lt, box l, box r));
-        } else if builtin_attr == Some(Symbol::intern(">=")) {
+        } else if builtin_attr == Some(Symbol::intern("int.Int.(>=)")) {
             let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
             translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
 
@@ -101,7 +101,7 @@ impl<'tcx> Lower<'_, 'tcx> {
             let r = args.remove(0);
 
             return Some(Exp::BinaryOp(BinOp::Ge, box l, box r));
-        } else if builtin_attr == Some(Symbol::intern(">")) {
+        } else if builtin_attr == Some(Symbol::intern("int.Int.(>)")) {
             let ty = self.ctx.tcx.fn_sig(def_id.unwrap()).no_bound_vars().unwrap().inputs()[0];
             translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty);
 

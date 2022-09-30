@@ -85,28 +85,28 @@ macro_rules! ord_logic_impl {
 
             #[trusted]
             #[predicate]
-            #[creusot::builtins = "<="]
+            #[creusot::builtins = "int.Int.(<=)"]
             fn le_log(self, _: Self) -> bool {
                 true
             }
 
             #[trusted]
             #[predicate]
-            #[creusot::builtins = "<"]
+            #[creusot::builtins = "int.Int.(<)"]
             fn lt_log(self, _: Self) -> bool {
                 true
             }
 
             #[trusted]
             #[predicate]
-            #[creusot::builtins = ">="]
+            #[creusot::builtins = "int.Int.(>=)"]
             fn ge_log(self, _: Self) -> bool {
                 true
             }
 
             #[trusted]
             #[predicate]
-            #[creusot::builtins = ">"]
+            #[creusot::builtins = "int.Int.(>)"]
             fn gt_log(self, _: Self) -> bool {
                 true
             }
