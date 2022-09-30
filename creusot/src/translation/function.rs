@@ -1,16 +1,21 @@
 use super::fmir::RValue;
 use crate::{
+    backend::term::lower_pure,
     ctx::*,
     fmir::{self, Expr},
     gather_spec_closures::corrected_invariant_names_and_locations,
     resolve::EagerResolver,
     rustc_extensions::renumber,
     translation::{
-        specification::contract_of,
+        specification::{
+            contract_of,
+            typing::{self, TermKind, TermVisitorMut},
+            PreContract,
+        },
         traits, ty,
         ty::{closure_accessors, translate_closure_ty, translate_ty},
     },
-    util::{self, ident_of, is_ghost_closure, signature_of},
+    util::{self, ident_of, is_ghost_closure, pre_sig_of, sig_to_why3, signature_of},
 };
 use creusot_rustc::{
     borrowck::borrow_set::BorrowSet,
@@ -474,66 +479,81 @@ pub(crate) fn closure_contract<'tcx>(
     };
     let kind = subst.as_closure().kind();
 
-    let mut clos_sig = signature_of(ctx, names, def_id);
+    let mut pre_clos_sig = pre_sig_of(ctx, def_id);
+    // let mut clos_sig = signature_of(ctx, names, def_id);
 
     // Get the raw contracts
-    let contract =
-        names.with_public_clones(|names| contract_of(ctx, def_id).to_exp(ctx, names, def_id));
+    let contract = contract_of(ctx, def_id);
 
-    let mut postcondition = contract.ensures_conj();
-    let mut precondition = contract.requires_conj();
+    let mut postcondition: Term<'_> = contract.ensures_conj(ctx.tcx);
+    let mut precondition: Term<'_> = contract.requires_conj(ctx.tcx);
 
-    let result_ty = clos_sig.retty;
-    clos_sig.contract = Contract::new();
-    clos_sig.retty = None;
+    let result_ty = translate_ty(ctx, names, DUMMY_SP, pre_clos_sig.output);
+    pre_clos_sig.contract = PreContract::default();
 
-    let args: Vec<_> = clos_sig.args.drain(1..).collect();
+    let args: Vec<_> = pre_clos_sig.inputs.drain(1..).collect();
 
     if args.len() == 0 {
-        clos_sig.args.push(Binder::wild(Type::UNIT));
+        pre_clos_sig.inputs.push((Symbol::intern("_"), DUMMY_SP, ctx.tcx.mk_unit()))
     } else {
-        let arg_tys = args
-            .iter()
-            .map(|a| a.type_of().expect("signature bindings should be typed").clone())
-            .collect();
-        clos_sig.args.push(Binder::typed("args".into(), Type::Tuple(arg_tys)));
+        let arg_tys: Vec<_> = args.iter().map(|(_, _, ty)| *ty).collect();
 
-        let binders: Vec<_> =
-            args.into_iter().flat_map(|a| a.var_type_pairs()).map(|a| Pattern::VarP(a.0)).collect();
-        postcondition = Exp::Let {
-            pattern: Pattern::TupleP(binders.clone()),
-            arg: box Exp::pure_var("args".into()),
-            body: box postcondition,
+        pre_clos_sig.inputs.push((
+            Symbol::intern("args"),
+            DUMMY_SP,
+            ctx.tcx.mk_tup(arg_tys.iter()),
+        ));
+
+        let arg_tuple = Term {
+            ty: ctx.tcx.mk_tup(arg_tys.iter()),
+            kind: TermKind::Var(Symbol::intern("args")),
+            span: DUMMY_SP,
         };
-        precondition = Exp::Let {
-            pattern: Pattern::TupleP(binders.clone()),
-            arg: box Exp::pure_var("args".into()),
-            body: box precondition,
+        let arg_pat = typing::Pattern::Tuple(
+            args.iter().map(|(nm, _, _)| typing::Pattern::Binder(*nm)).collect(),
+        );
+
+        postcondition = typing::Term {
+            span: postcondition.span,
+            kind: TermKind::Let {
+                pattern: arg_pat.clone(),
+                arg: box arg_tuple.clone(),
+                body: box postcondition,
+            },
+            ty: ctx.tcx.mk_ty(TyKind::Bool),
+        };
+        precondition = typing::Term {
+            span: precondition.span,
+            kind: TermKind::Let { pattern: arg_pat, arg: box arg_tuple, body: box precondition },
+            ty: ctx.tcx.mk_ty(TyKind::Bool),
         };
     }
 
     // Build the signatures for the pre and post conditions
-    let mut post_sig = clos_sig.clone();
-    let pre_sig = clos_sig;
+    let mut post_sig = sig_to_why3(ctx, names, pre_clos_sig.clone(), def_id);
+    let mut pre_sig = sig_to_why3(ctx, names, pre_clos_sig, def_id);
 
-    post_sig
-        .args
-        .push(Binder::typed(Ident::build("result"), result_ty.unwrap_or(Type::Tuple(vec![]))));
+    post_sig.retty = None;
+    pre_sig.retty = None;
+    post_sig.args.push(Binder::typed(Ident::build("result"), result_ty));
 
     let mut contracts = Vec::new();
+    let param_env = ctx.param_env(def_id);
     let env_ty =
         ctx.tcx.closure_env_ty(def_id, subst, ty::RegionKind::ReErased).unwrap().peel_refs();
     let self_ty = translate_ty(ctx, names, DUMMY_SP, env_ty);
 
     {
         // Preconditions are the same for every kind of closure
-        let mut pre_sig = pre_sig.clone();
+        let mut pre_sig = pre_sig;
         pre_sig.name = Ident::build("precondition");
         pre_sig.args[0] = Binder::typed("_1'".into(), self_ty.clone());
-        let mut subst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, FnOnce, true);
+        let mut subst = util::closure_capture_subst(ctx.tcx, def_id, subst, FnOnce, true);
 
         let mut precondition = precondition.clone();
-        subst.visit_mut(&mut precondition);
+        subst.visit_mut_term(&mut precondition);
+        let precondition: Exp =
+            names.with_public_clones(|names| lower_pure(ctx, names, param_env, precondition));
 
         contracts.push(Decl::PredDecl(Predicate { sig: pre_sig, body: precondition }));
     }
@@ -543,10 +563,12 @@ pub(crate) fn closure_contract<'tcx>(
         post_sig.name = Ident::build("postcondition");
         post_sig.args[0] = Binder::typed("_1'".into(), self_ty.clone());
 
-        let mut csubst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, Fn, true);
+        let mut csubst = util::closure_capture_subst(ctx.tcx, def_id, subst, Fn, true);
         let mut postcondition = postcondition.clone();
 
-        csubst.visit_mut(&mut postcondition);
+        csubst.visit_mut_term(&mut postcondition);
+        let postcondition: Exp =
+            names.with_public_clones(|names| lower_pure(ctx, names, param_env, postcondition));
         contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
     }
 
@@ -557,12 +579,15 @@ pub(crate) fn closure_contract<'tcx>(
         let self_ty = Type::MutableBorrow(Box::new(self_ty.clone()));
         post_sig.args[0] = Binder::typed("_1'".into(), self_ty);
 
-        let mut csubst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, FnMut, true);
+        let mut csubst = util::closure_capture_subst(ctx.tcx, def_id, subst, FnMut, true);
 
         let mut postcondition = postcondition.clone();
+        csubst.visit_mut_term(&mut postcondition);
+
+        let mut postcondition: Exp =
+            names.with_public_clones(|names| lower_pure(ctx, names, param_env, postcondition));
         postcondition = postcondition.lazy_and(closure_unnest(ctx.tcx, names, def_id, subst));
 
-        csubst.visit_mut(&mut postcondition);
         contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
     }
 
@@ -571,10 +596,12 @@ pub(crate) fn closure_contract<'tcx>(
         post_sig.name = Ident::build("postcondition_once");
         post_sig.args[0] = Binder::typed("_1'".into(), self_ty.clone());
 
-        let mut csubst = util::closure_capture_subst(ctx.tcx, names, def_id, subst, FnOnce, true);
+        let mut csubst = util::closure_capture_subst(ctx.tcx, def_id, subst, FnOnce, true);
 
         let mut postcondition = postcondition.clone();
-        csubst.visit_mut(&mut postcondition);
+        csubst.visit_mut_term(&mut postcondition);
+        let postcondition: Exp =
+            names.with_public_clones(|names| lower_pure(ctx, names, param_env, postcondition));
         contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
     }
 
