@@ -509,8 +509,17 @@ pub(crate) fn closure_contract<'tcx>(
             kind: TermKind::Var(Symbol::intern("args")),
             span: DUMMY_SP,
         };
+
         let arg_pat = typing::Pattern::Tuple(
-            args.iter().map(|(nm, _, _)| typing::Pattern::Binder(*nm)).collect(),
+            args.iter()
+                .map(|(nm, _, _)| {
+                    if nm.is_empty() {
+                        typing::Pattern::Wildcard
+                    } else {
+                        typing::Pattern::Binder(*nm)
+                    }
+                })
+                .collect(),
         );
 
         postcondition = typing::Term {

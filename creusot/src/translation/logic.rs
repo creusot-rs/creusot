@@ -89,6 +89,10 @@ fn builtin_body<'tcx>(
         box Exp::Call(box Exp::pure_var(val_sig.name.clone()), val_args.clone()),
     )];
 
+    if util::is_predicate(ctx.tcx, def_id) {
+        sig.retty = None;
+    }
+
     let builtin = QName::from_string(get_builtin(ctx.tcx, def_id).unwrap().as_str()).unwrap();
 
     if !builtin.module.is_empty() {
@@ -97,10 +101,13 @@ fn builtin_body<'tcx>(
 
     let mut decls = names.to_clones(ctx);
     if !builtin.module.is_empty() {
-        decls.push(Decl::LogicDecl(Logic {
-            sig,
-            body: Exp::Call(box Exp::pure_qvar(builtin.without_search_path()), val_args),
-        }));
+        let body = Exp::Call(box Exp::pure_qvar(builtin.without_search_path()), val_args);
+
+        if util::is_predicate(ctx.tcx, def_id) {
+            decls.push(Decl::PredDecl(Predicate { sig, body }));
+        } else {
+            decls.push(Decl::LogicDecl(Logic { sig, body }));
+        }
     }
 
     decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
