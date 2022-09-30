@@ -128,7 +128,6 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
                 UintTy::U32 => bits as u32 as u128,
                 UintTy::U64 => bits as u64 as u128,
             };
-            eprintln!(">>>> {:?} {:?}", bits, uty);
             Literal::MachUnsigned(bits, *uty)
         }
         Bool => Literal::Bool(c.get_bits(ctx.tcx, env, ty) == Some(1)),

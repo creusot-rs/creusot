@@ -4,9 +4,6 @@ use std::{collections::HashMap, error::Error};
 
 #[derive(Parser, Serialize, Deserialize)]
 pub struct CreusotArgs {
-    /// Treat all integer values as unbounded mathematical integers
-    #[clap(long)]
-    unbounded: bool,
     /// Determines how to format the spans in generated code to loading in Why3.
     /// [Relative] is better if the generated code is meant to be checked into VCS.
     /// [Absolute] means the files can easily be moved around your system and still work.
@@ -68,7 +65,6 @@ pub struct Options {
     pub(crate) export_metadata: bool,
     pub(crate) should_output: bool,
     pub(crate) output_file: Option<OutputFile>,
-    pub(crate) bounds_check: bool,
     pub(crate) in_cargo: bool,
     pub(crate) span_mode: SpanMode,
     pub(crate) match_str: Option<String>,
@@ -100,7 +96,6 @@ impl Options {
             export_metadata: args.export_metadata,
             should_output,
             output_file,
-            bounds_check: !args.unbounded,
             in_cargo: cargo_creusot,
             span_mode: args.span_mode,
             match_str: args.focus_on,

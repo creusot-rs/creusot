@@ -369,17 +369,14 @@ pub(crate) fn lower_literal<'tcx>(
 ) -> Exp {
     match lit {
         Literal::Integer(i) => {
-            eprintln!("{i:?}");
             Constant::Int(i, None).into()
         }
         Literal::MachSigned(u, intty) => {
-            let why_ty = intty_to_ty(ctx, names, &intty);
-            eprintln!("{why_ty:?}");
+            let why_ty = intty_to_ty( names, &intty);
             Constant::Int(u, Some(why_ty)).into()
         }
         Literal::MachUnsigned(u, uty) => {
-            let why_ty = uintty_to_ty(ctx, names, &uty);
-            eprintln!("{why_ty:?}");
+            let why_ty = uintty_to_ty( names, &uty);
 
             Constant::Uint(u, Some(why_ty)).into()
         }
