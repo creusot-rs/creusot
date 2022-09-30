@@ -28,7 +28,7 @@ impl<A, B> Mapping<A, B> {
 
     #[trusted]
     #[logic]
-    #[creusot::builtins = "identity"]
+    #[creusot::builtins = "prelude.Mapping.from_fn"]
     pub fn from_fn<F: FnOnce(A) -> B>(_: F) -> Self {
         absurd
     }

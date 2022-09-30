@@ -11,7 +11,7 @@ pub fn all_zero(v: &mut Vec<u32>) {
     // Either Why3 or Creusot should be improved to do this automaticallly (probably why3)
     #[invariant(proph_const, ^v == ^old_v.inner())]
     #[invariant(in_bounds, (@*v).len() == (@*old_v.inner()).len())]
-    #[invariant(all_zero, forall<j : Int> 0 <= j && j < i.into() ==> (@*v)[j] == 0u32)]
+    #[invariant(all_zero, forall<j : Int> 0 <= j && j < @i ==> (@*v)[j] == 0u32)]
     while i < v.len() {
         v[i] = 0;
         i += 1;
