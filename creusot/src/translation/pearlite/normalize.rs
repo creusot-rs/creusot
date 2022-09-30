@@ -59,7 +59,7 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
                         .expect("could not resolve trait instance")
                 } else {
                     // TODO dont' do this
-                    resolve_opt(self.tcx, self.param_env, *id, subst).unwrap_or((*id, subst))
+                    (*id, *subst)
                 };
                 *id = method.0;
                 *subst = method.1;
