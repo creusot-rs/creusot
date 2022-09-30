@@ -23,7 +23,7 @@ use why3::{
 
 use super::fmir::Expr;
 
-impl<'tcx> TranslationCtx<'_, 'tcx> {
+impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn translate_constant(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
         let modl = Module { name: module_name(self, def_id), decls: Vec::new() };
 
@@ -33,7 +33,7 @@ impl<'tcx> TranslationCtx<'_, 'tcx> {
 
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     c: &creusot_rustc::smir::mir::Constant<'tcx>,
 ) -> Expr<'tcx> {
@@ -41,7 +41,7 @@ pub(crate) fn from_mir_constant<'tcx>(
 }
 
 pub(crate) fn from_mir_constant_kind<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     ck: creusot_rustc::smir::mir::ConstantKind<'tcx>,
     env: ParamEnv<'tcx>,
@@ -69,7 +69,7 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
 }
 
 pub(crate) fn from_ty_const<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     c: Const<'tcx>,
     env: ParamEnv<'tcx>,
@@ -96,7 +96,7 @@ pub(crate) fn from_ty_const<'tcx>(
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx>>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,

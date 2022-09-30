@@ -40,7 +40,7 @@ pub(crate) fn binders_to_args(
 }
 
 pub(crate) fn translate_logic_or_predicate<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> (Module, Module, Option<Module>, bool, CloneMap<'tcx>) {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);

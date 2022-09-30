@@ -61,6 +61,7 @@ pub enum SpanMode {
     Off,
 }
 
+#[derive(Clone)]
 pub struct Options {
     pub(crate) extern_paths: HashMap<String, String>,
     pub(crate) metadata_path: Option<String>,
@@ -73,7 +74,7 @@ pub struct Options {
     pub(crate) match_str: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum OutputFile {
     File(String),
     Stdout,

@@ -17,7 +17,7 @@ use creusot_rustc::{
 };
 
 pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
-    ctx: &mut TranslationCtx<'_, 'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
     body: &Body<'tcx>,
 ) -> (IndexMap<BasicBlock, Vec<(Symbol, Term<'tcx>)>>, IndexMap<DefId, Term<'tcx>>) {
