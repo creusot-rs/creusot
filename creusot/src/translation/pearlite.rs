@@ -9,6 +9,7 @@ use std::collections::HashSet;
 
 use crate::{
     error::{CrErr, CreusotResult, Error},
+    translation::specification::PurityVisitor,
     util,
 };
 use creusot_rustc::{
@@ -35,7 +36,9 @@ use itertools::Itertools;
 use log::*;
 use rustc_type_ir::{IntTy, UintTy};
 
-use super::PurityVisitor;
+mod normalize;
+
+pub(crate) use normalize::*;
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum BinOp {
@@ -85,7 +88,7 @@ pub enum TermKind<'tcx> {
     Impl { lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Match { scrutinee: Box<Term<'tcx>>, arms: Vec<(Pattern<'tcx>, Term<'tcx>)> },
     Let { pattern: Pattern<'tcx>, arg: Box<Term<'tcx>>, body: Box<Term<'tcx>> },
-    Projection { lhs: Box<Term<'tcx>>, name: Field, def: DefId },
+    Projection { lhs: Box<Term<'tcx>>, name: Field, def: DefId, substs: SubstsRef<'tcx> },
     Old { term: Box<Term<'tcx>> },
     Closure { args: Vec<Pattern<'tcx>>, body: Box<Term<'tcx>> },
     Absurd,
@@ -111,8 +114,10 @@ impl<'tcx> TypeVisitable<'tcx> for Literal {
 #[derive(Clone, Debug, Decodable, Encodable)]
 pub enum Literal {
     Bool(bool),
-    Int(i128, IntTy),
-    Uint(u128, UintTy),
+    // TODO: Find a way to make this a BigInt type
+    Integer(i128),
+    MachSigned(i128, IntTy),
+    MachUnsigned(u128, UintTy),
     Float(f64),
     String(String),
     ZST,
@@ -133,7 +138,7 @@ pub enum Pattern<'tcx> {
     Boolean(bool),
 }
 
-pub(crate) fn typecheck(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
+pub(crate) fn pearlite(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
     let (thir, expr) = tcx.thir_body(WithOptConstParam::unknown(id)).map_err(|_| CrErr)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
@@ -153,6 +158,8 @@ struct ThirTerm<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
 }
 
+// TODO: Ensure that types are correct during this translation, in particular
+// - Box, & and &mut
 impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn expr_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
         let ty = self.thir[expr].ty;
@@ -242,15 +249,15 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     LitKind::Int(u, lty) => match lty {
                         LitIntType::Signed(ity) => {
                             let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
-                            Literal::Int(val, int_ty(ity))
+                            Literal::MachSigned(val, int_ty(ity))
                         }
-                        LitIntType::Unsigned(uty) => Literal::Uint(u, uint_ty(uty)),
+                        LitIntType::Unsigned(uty) => Literal::MachUnsigned(u, uint_ty(uty)),
                         LitIntType::Unsuffixed => match ty.kind() {
                             TyKind::Int(ity) => {
                                 let val = if neg { (u as i128).wrapping_neg() } else { u as i128 };
-                                Literal::Int(val, *ity)
+                                Literal::MachSigned(val, *ity)
                             }
-                            TyKind::Uint(uty) => Literal::Uint(u, *uty),
+                            TyKind::Uint(uty) => Literal::MachUnsigned(u, *uty),
                             _ => unreachable!(),
                         },
                     },
@@ -401,12 +408,17 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     field_pattern(self.thir[lhs].ty, name).expect("expr_term: no term for field");
 
                 match &self.thir[lhs].ty.kind() {
-                    TyKind::Adt(def, _) => {
+                    TyKind::Adt(def, substs) => {
                         let lhs = self.expr_term(lhs)?;
                         Ok(Term {
                             ty,
                             span,
-                            kind: TermKind::Projection { lhs: box lhs, name, def: def.did() },
+                            kind: TermKind::Projection {
+                                lhs: box lhs,
+                                name,
+                                def: def.did(),
+                                substs,
+                            },
                         })
                     }
                     TyKind::Tuple(_) => {
@@ -455,7 +467,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             },
             ExprKind::Closure { closure_id, .. } => {
-                let term = typecheck(self.tcx, closure_id)?;
+                let term = pearlite(self.tcx, closure_id)?;
                 // eprintln!("{term:?}");
                 let pats = closure_pattern(self.tcx, closure_id)?;
 
@@ -600,7 +612,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let name = self.tcx.fn_arg_names(closure_id)[0];
                 let ty = sig.input(0).skip_binder();
 
-                Ok(((name.name, ty), typecheck(self.tcx, closure_id)?))
+                Ok(((name.name, ty), pearlite(self.tcx, closure_id)?))
             }
             _ => Err(Error::new(self.thir[body].span, "unexpected error in quantifier")),
         }
@@ -786,7 +798,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visitor.visit_term(&*arg);
             visitor.visit_term(&*body)
         }
-        TermKind::Projection { lhs, name: _, def: _ } => visitor.visit_term(&*lhs),
+        TermKind::Projection { lhs, name: _, def: _, substs: _ } => visitor.visit_term(&*lhs),
         TermKind::Old { term } => visitor.visit_term(&*term),
         TermKind::Closure { args: _, body } => visitor.visit_term(&*body),
         TermKind::Absurd => {}
@@ -836,7 +848,9 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visitor.visit_mut_term(&mut *arg);
             visitor.visit_mut_term(&mut *body)
         }
-        TermKind::Projection { lhs, name: _, def: _ } => visitor.visit_mut_term(&mut *lhs),
+        TermKind::Projection { lhs, name: _, def: _, substs: _ } => {
+            visitor.visit_mut_term(&mut *lhs)
+        }
         TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
         TermKind::Closure { args: _, body } => visitor.visit_mut_term(&mut *body),
         TermKind::Absurd => {}

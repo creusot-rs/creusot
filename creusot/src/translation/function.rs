@@ -1,4 +1,4 @@
-use super::fmir::RValue;
+use super::{fmir::RValue, pearlite::Term};
 use crate::{
     backend::term::lower_pure,
     ctx::*,
@@ -7,11 +7,8 @@ use crate::{
     resolve::EagerResolver,
     rustc_extensions::renumber,
     translation::{
-        specification::{
-            contract_of,
-            typing::{self, TermKind, TermVisitorMut},
-            PreContract,
-        },
+        pearlite::{self, TermKind, TermVisitorMut},
+        specification::{contract_of, PreContract},
         traits, ty,
         ty::{closure_accessors, translate_closure_ty, translate_ty},
     },
@@ -38,8 +35,6 @@ use creusot_rustc::{
 use indexmap::IndexMap;
 use std::{collections::BTreeMap, rc::Rc};
 use why3::{declaration::*, exp::*, mlcfg::*, ty::Type, Ident};
-
-use super::specification::typing::Term;
 
 pub(crate) mod place;
 mod promoted;
@@ -510,19 +505,19 @@ pub(crate) fn closure_contract<'tcx>(
             span: DUMMY_SP,
         };
 
-        let arg_pat = typing::Pattern::Tuple(
+        let arg_pat = pearlite::Pattern::Tuple(
             args.iter()
                 .map(|(nm, _, _)| {
                     if nm.is_empty() {
-                        typing::Pattern::Wildcard
+                        pearlite::Pattern::Wildcard
                     } else {
-                        typing::Pattern::Binder(*nm)
+                        pearlite::Pattern::Binder(*nm)
                     }
                 })
                 .collect(),
         );
 
-        postcondition = typing::Term {
+        postcondition = pearlite::Term {
             span: postcondition.span,
             kind: TermKind::Let {
                 pattern: arg_pat.clone(),
@@ -531,7 +526,7 @@ pub(crate) fn closure_contract<'tcx>(
             },
             ty: ctx.tcx.mk_ty(TyKind::Bool),
         };
-        precondition = typing::Term {
+        precondition = pearlite::Term {
             span: precondition.span,
             kind: TermKind::Let { pattern: arg_pat, arg: box arg_tuple, body: box precondition },
             ty: ctx.tcx.mk_ty(TyKind::Bool),

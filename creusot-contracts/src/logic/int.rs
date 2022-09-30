@@ -65,18 +65,9 @@ macro_rules! mach_int {
         impl Model for $t {
             type ModelTy = Int;
             #[logic]
-            #[creusot::builtins = concat!($ty_nm, ".to_int")]
-            fn model(self) -> Self::ModelTy {
-                Int::from(self)
-            }
-        }
-
-        #[cfg(feature = "contracts")]
-        impl From<$t> for Int {
-            #[logic]
             #[trusted]
             #[creusot::builtins = concat!($ty_nm, ".to_int")]
-            fn from(_: $t) -> Self {
+            fn model(self) -> Self::ModelTy {
                 absurd
             }
         }

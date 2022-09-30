@@ -1,14 +1,11 @@
 use crate::{
     ctx::*,
-    specification::typing::{self, Literal, Pattern, Term, TermKind},
-    translation::{
-        traits::{resolve_assoc_item_opt, resolve_opt},
-        ty::{
-            closure_accessor_name, intty_to_ty, translate_ty, uintty_to_ty, variant_accessor_name,
-        },
+    pearlite::{self, Literal, Pattern, Term, TermKind},
+    translation::ty::{
+        closure_accessor_name, intty_to_ty, translate_ty, uintty_to_ty, variant_accessor_name,
     },
     util,
-    util::constructor_qname,
+    util::{constructor_qname, get_builtin},
 };
 use creusot_rustc::{
     hir::Unsafety,
@@ -21,7 +18,7 @@ use rustc_middle::ty::{Ty, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
     ty::Type,
-    Ident,
+    Ident, QName,
 };
 
 pub(crate) fn lower_pure<'tcx>(
@@ -73,8 +70,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                 c
             }
             TermKind::Item(id, subst) => {
-                let method = resolve_assoc_item_opt(self.ctx.tcx, self.param_env, id, subst)
-                    .unwrap_or((id, subst));
+                let method = (id, subst);
                 debug!("resolved_method={:?}", method);
                 self.lookup_builtin(method, &mut Vec::new()).unwrap_or_else(|| {
                     let uneval = ty::Unevaluated::new(ty::WithOptConstParam::unknown(id), subst);
@@ -99,8 +95,8 @@ impl<'tcx> Lower<'_, 'tcx> {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
 
-                use typing::BinOp::*;
-                if matches!(op, Add | Sub | Mul | Div | Rem) {
+                use pearlite::BinOp::*;
+                if matches!(op, Add | Sub | Mul | Div | Rem | Le | Ge | Lt | Gt) {
                     self.names.import_prelude_module(PreludeModule::Int);
                 }
 
@@ -120,7 +116,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                             (Exp::Var("b".into(), self.pure), Some(rhs))
                         };
 
-                        let op = if let typing::BinOp::Eq = op { BinOp::Eq } else { BinOp::Ne };
+                        let op = if let pearlite::BinOp::Eq = op { BinOp::Eq } else { BinOp::Ne };
                         let mut inner = Exp::Pure(box Exp::BinaryOp(op, box a, box b));
 
                         if let Some(lhs) = lhs {
@@ -146,15 +142,15 @@ impl<'tcx> Lower<'_, 'tcx> {
             }
             TermKind::Unary { op, box arg } => {
                 let op = match op {
-                    typing::UnOp::Not => why3::exp::UnOp::Not,
-                    typing::UnOp::Neg => why3::exp::UnOp::Neg,
+                    pearlite::UnOp::Not => why3::exp::UnOp::Not,
+                    pearlite::UnOp::Neg => why3::exp::UnOp::Neg,
                 };
                 Exp::UnaryOp(op, box self.lower_term(arg))
             }
             TermKind::Call {
                 id,
                 subst,
-                // fun: box Term { kind: TermKind::Item(_, _), .. },
+                // fun: box Term { kind: TermKind::Item(id, subst), .. },
                 args,
                 ..
             } => {
@@ -164,19 +160,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                     args = vec![Exp::Tuple(vec![])];
                 }
 
-                debug!(
-                    "resolved_methodb={:?}",
-                    resolve_opt(self.ctx.tcx, self.param_env, id, subst)
-                );
-
-                let method = if self.ctx.trait_of_item(id).is_some() {
-                    resolve_opt(self.ctx.tcx, self.param_env, id, subst)
-                        .expect("could not resolve trait instance")
-                } else {
-                    resolve_opt(self.ctx.tcx, self.param_env, id, subst).unwrap_or((id, subst))
-                };
-
-                debug!("resolved_method={:?}", method);
+                let method = (id, subst);
 
                 if is_identity_from(self.ctx.tcx, id, method.1) {
                     return args.remove(0);
@@ -268,7 +252,7 @@ impl<'tcx> Lower<'_, 'tcx> {
             TermKind::Tuple { fields } => {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
             }
-            TermKind::Projection { box lhs, name, def: did } => {
+            TermKind::Projection { box lhs, name, def: did, substs } => {
                 let lhs = self.lower_term(lhs);
                 let accessor = match util::item_type(self.ctx.tcx, did) {
                     ItemType::Closure => {
@@ -278,6 +262,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                         acc
                     }
                     _ => {
+                        self.names.insert(did, substs);
                         let def = self.ctx.tcx.adt_def(did);
                         self.ctx.translate_accessor(
                             def.variants()[0u32.into()].fields[name.as_usize()].did,
@@ -371,6 +356,35 @@ impl<'tcx> Lower<'_, 'tcx> {
     fn lower_ty(&mut self, ty: Ty<'tcx>) -> Type {
         translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty)
     }
+
+    pub(crate) fn lookup_builtin(
+        &mut self,
+        method: (DefId, SubstsRef<'tcx>),
+        args: &mut Vec<Exp>,
+    ) -> Option<Exp> {
+        let def_id = method.0;
+        let _substs = method.1;
+
+        let def_id = Some(def_id);
+        let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
+
+        if let Some(builtin) = builtin_attr.and_then(|a| QName::from_string(&a.as_str())) {
+            self.names.import_builtin_module(builtin.clone().module_qname());
+
+            if let Purity::Program = self.pure {
+                return Some(mk_binders(
+                    Exp::pure_qvar(builtin.without_search_path()),
+                    args.clone(),
+                ));
+            } else {
+                return Some(Exp::Call(
+                    box Exp::pure_qvar(builtin.without_search_path()),
+                    args.clone(),
+                ));
+            }
+        }
+        None
+    }
 }
 
 use creusot_rustc::{
@@ -379,18 +393,18 @@ use creusot_rustc::{
 };
 
 pub(crate) fn lower_literal<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    _ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     lit: Literal,
 ) -> Exp {
     match lit {
-        Literal::Int(u, intty) => {
-            let why_ty = intty_to_ty(ctx, names, &intty);
-
+        Literal::Integer(i) => Constant::Int(i, None).into(),
+        Literal::MachSigned(u, intty) => {
+            let why_ty = intty_to_ty(names, &intty);
             Constant::Int(u, Some(why_ty)).into()
         }
-        Literal::Uint(u, uty) => {
-            let why_ty = uintty_to_ty(ctx, names, &uty);
+        Literal::MachUnsigned(u, uty) => {
+            let why_ty = uintty_to_ty(names, &uty);
 
             Constant::Uint(u, Some(why_ty)).into()
         }
@@ -404,25 +418,25 @@ pub(crate) fn lower_literal<'tcx>(
         Literal::Function => Exp::Tuple(Vec::new()),
         Literal::Float(f) => Constant::Float(f).into(),
         Literal::ZST => Exp::Tuple(Vec::new()),
-        _ => unimplemented!("literal: {lit:?}"),
+        Literal::String(string) => Constant::String(string).into(),
     }
 }
 
-fn binop_to_binop(op: typing::BinOp, purity: Purity) -> why3::exp::BinOp {
+fn binop_to_binop(op: pearlite::BinOp, purity: Purity) -> why3::exp::BinOp {
     match (op, purity) {
-        (typing::BinOp::Add, _) => BinOp::Add,
-        (typing::BinOp::Sub, _) => BinOp::Sub,
-        (typing::BinOp::Mul, _) => BinOp::Mul,
-        (typing::BinOp::Lt, _) => BinOp::Lt,
-        (typing::BinOp::Le, _) => BinOp::Le,
-        (typing::BinOp::Gt, _) => BinOp::Gt,
-        (typing::BinOp::Ge, _) => BinOp::Ge,
-        (typing::BinOp::Eq, Purity::Logic) => BinOp::Eq,
-        (typing::BinOp::Ne, Purity::Logic) => BinOp::Ne,
-        (typing::BinOp::And, Purity::Logic) => BinOp::LogAnd,
-        (typing::BinOp::And, Purity::Program) => BinOp::LazyAnd,
-        (typing::BinOp::Or, Purity::Logic) => BinOp::LogOr,
-        (typing::BinOp::Or, Purity::Program) => BinOp::LazyOr,
+        (pearlite::BinOp::Add, _) => BinOp::Add,
+        (pearlite::BinOp::Sub, _) => BinOp::Sub,
+        (pearlite::BinOp::Mul, _) => BinOp::Mul,
+        (pearlite::BinOp::Lt, _) => BinOp::Lt,
+        (pearlite::BinOp::Le, _) => BinOp::Le,
+        (pearlite::BinOp::Gt, _) => BinOp::Gt,
+        (pearlite::BinOp::Ge, _) => BinOp::Ge,
+        (pearlite::BinOp::Eq, Purity::Logic) => BinOp::Eq,
+        (pearlite::BinOp::Ne, Purity::Logic) => BinOp::Ne,
+        (pearlite::BinOp::And, Purity::Logic) => BinOp::LogAnd,
+        (pearlite::BinOp::And, Purity::Program) => BinOp::LazyAnd,
+        (pearlite::BinOp::Or, Purity::Logic) => BinOp::LogOr,
+        (pearlite::BinOp::Or, Purity::Program) => BinOp::LazyOr,
         _ => unreachable!(),
     }
 }

@@ -104,7 +104,10 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         }
         RT::Let(_) => Err(EncodeError::Unsupported(term.span(), "Let".into())),
         RT::Lit(TermLit { ref lit }) => match lit {
-            Lit::Int(int) if int.suffix() == "" => Ok(quote_spanned! {sp=> Int::from(#lit) }),
+            // FIXME: allow unbounded integers
+            Lit::Int(int) if int.suffix() == "" => {
+                Ok(quote_spanned! {sp=> (#lit as i128).model() })
+            }
             _ => Ok(quote_spanned! {sp=> #lit }),
         },
         RT::Match(TermMatch { expr, arms, .. }) => {

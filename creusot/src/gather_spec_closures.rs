@@ -2,7 +2,8 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::{
     ctx::TranslationCtx,
-    translation::specification::{inv_subst, typing::Term},
+    pearlite::Term,
+    translation::specification::inv_subst,
     util::{self, is_ghost_closure},
 };
 use creusot_rustc::{

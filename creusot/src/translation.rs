@@ -5,6 +5,7 @@ pub(crate) mod fmir;
 pub(crate) mod function;
 pub(crate) mod interface;
 mod logic;
+pub(crate) mod pearlite;
 pub(crate) mod specification;
 pub(crate) mod traits;
 pub(crate) mod ty;

@@ -97,7 +97,7 @@ pub fn fib_memo(mem: &FibCache, i: usize) -> usize {
                 1
             } else {
                 ghost! { lemma_max_int() };
-                ghost! { lemma_fib_bound(0.into()) };
+                ghost! { lemma_fib_bound(0.model()) };
                 fib_memo(mem, i - 1) + fib_memo(mem, i - 2)
             };
             proof_assert! { @fib_i == fib(@i)};

@@ -2,10 +2,8 @@ use crate::{
     ctx::*,
     translation::{
         self,
-        specification::{
-            typing::{super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
-            PreContract,
-        },
+        pearlite::{super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
+        specification::PreContract,
     },
 };
 use creusot_rustc::{
@@ -502,6 +500,7 @@ use creusot_rustc::smir::mir::Field;
 
 pub(crate) struct ClosureSubst<'tcx> {
     def_id: DefId,
+    substs: SubstsRef<'tcx>,
     post: bool,
     self_: Term<'tcx>,
     map: IndexMap<Symbol, (Ty<'tcx>, Field)>,
@@ -527,7 +526,12 @@ impl<'tcx> ClosureSubst<'tcx> {
         };
         let proj = Term {
             ty,
-            kind: TermKind::Projection { lhs: box self_, name: ix, def: self.def_id },
+            kind: TermKind::Projection {
+                lhs: box self_,
+                name: ix,
+                def: self.def_id,
+                substs: self.substs,
+            },
             span: DUMMY_SP,
         };
 
@@ -554,9 +558,15 @@ impl<'tcx> ClosureSubst<'tcx> {
         } else {
             self.self_.clone()
         };
+
         let proj = Term {
             ty,
-            kind: TermKind::Projection { lhs: box self_, name: ix, def: self.def_id },
+            kind: TermKind::Projection {
+                lhs: box self_,
+                name: ix,
+                def: self.def_id,
+                substs: self.substs,
+            },
             span: DUMMY_SP,
         };
 
@@ -659,5 +669,6 @@ pub(crate) fn closure_capture_subst<'tcx>(
 
     let subst =
         captures.into_iter().enumerate().map(|(ix, (nm, ty))| (*nm, (ty, ix.into()))).collect();
-    ClosureSubst { self_, map: subst, post: is_post, def_id, bound: Default::default() }
+    let TyKind::Closure(_, substs) = tcx.type_of(def_id).kind() else { unreachable!() };
+    ClosureSubst { self_, map: subst, post: is_post, def_id, bound: Default::default(), substs }
 }

@@ -1,5 +1,7 @@
-use self::typing::{pearlite_stub, Term, TermKind};
-use super::LocalIdent;
+use super::{
+    pearlite::{normalize, pearlite_stub, Term, TermKind},
+    LocalIdent,
+};
 use crate::{ctx::*, util, util::closure_owner};
 use creusot_rustc::{
     hir::def_id::DefId,
@@ -16,10 +18,9 @@ use creusot_rustc::{
     smir::mir::{Body, Local, Location, SourceScope},
     span::Symbol,
 };
+use rustc_middle::ty::ParamEnv;
 use std::collections::{HashMap, HashSet};
 use why3::declaration::Contract;
-
-pub(crate) mod typing;
 
 pub(crate) use crate::backend::term::*;
 
@@ -43,6 +44,13 @@ impl<'tcx> PreContract<'tcx> {
         for v in &mut self.variant {
             v.subst(subst);
         }
+    }
+
+    pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Self {
+        self.requires = self.requires.into_iter().map(|r| normalize(tcx, param_env, r)).collect();
+        self.ensures = self.ensures.into_iter().map(|r| normalize(tcx, param_env, r)).collect();
+        self.variant = self.variant.into_iter().map(|r| normalize(tcx, param_env, r)).nth(0);
+        self
     }
 
     pub(crate) fn to_exp(
@@ -302,13 +310,13 @@ pub(crate) fn contract_of<'tcx>(
     if let Some(extern_spec) = ctx.extern_spec(def_id).cloned() {
         let mut contract = extern_spec.contract.get_pre(ctx).subst(ctx.tcx, extern_spec.subst);
         contract.subst(&extern_spec.arg_subst.iter().cloned().collect());
-        contract
+        contract.normalize(ctx.tcx, ctx.param_env(def_id))
     } else {
-        if let Some((def_id, subst)) = inherited_extern_spec(ctx, def_id) {
-            let spec = ctx.extern_spec(def_id).cloned().unwrap();
+        if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
+            let spec = ctx.extern_spec(parent_id).cloned().unwrap();
             let mut contract = spec.contract.get_pre(ctx).subst(ctx.tcx, subst);
             contract.subst(&spec.arg_subst.iter().cloned().collect());
-            contract
+            contract.normalize(ctx.tcx, ctx.param_env(def_id))
         } else {
             let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
             contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst)
@@ -334,9 +342,9 @@ pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
         || def_path == "std::clone::Clone::clone"
 }
 
-struct PurityVisitor<'a, 'tcx> {
-    tcx: TyCtxt<'tcx>,
-    thir: &'a Thir<'tcx>,
+pub(crate) struct PurityVisitor<'a, 'tcx> {
+    pub(crate) tcx: TyCtxt<'tcx>,
+    pub(crate) thir: &'a Thir<'tcx>,
 }
 
 impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {

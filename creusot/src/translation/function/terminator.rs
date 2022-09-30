@@ -3,7 +3,7 @@ use crate::{
     ctx::TranslationCtx,
     translation::{
         fmir::{self, Branches, Expr, RValue, Terminator},
-        specification::typing::{Term, TermKind, UnOp},
+        pearlite::{Term, TermKind, UnOp},
         traits,
     },
     util::is_ghost_closure,

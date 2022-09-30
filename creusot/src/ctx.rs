@@ -10,8 +10,8 @@ use crate::{
         external,
         external::{extract_extern_specs_from_item, ExternSpec},
         interface::interface_for,
-        specification,
-        specification::{typing::Term, ContractClauses},
+        pearlite::{self, Term},
+        specification::ContractClauses,
         ty,
         ty::translate_tydecl,
     },
@@ -253,12 +253,14 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         }
 
         if util::has_body(self, def_id) {
-            let t = self.terms.entry(def_id).or_insert_with(|| {
-                let term = specification::typing::typecheck(self.tcx, def_id.expect_local())
+            if !self.terms.contains_key(&def_id) {
+                let term = pearlite::pearlite(self.tcx, def_id.expect_local())
                     .unwrap_or_else(|e| e.emit(self.tcx.sess));
-                term
-            });
-            Some(t)
+
+                self.terms
+                    .insert(def_id, pearlite::normalize(self.tcx, self.param_env(def_id), term));
+            };
+            self.terms.get(&def_id)
         } else {
             None
         }
