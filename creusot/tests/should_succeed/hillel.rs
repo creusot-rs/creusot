@@ -41,26 +41,26 @@ fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     #[invariant(pad_elem, forall<i: Int> 0 <= i && i < @c ==> (@str)[i] == pad)]
     while str.len() < len {
         str.insert(0, pad);
-        c = ghost! { (1 + c.inner()) };
+        c = ghost! { 1 + c.inner() };
     }
 }
 
 #[predicate]
-fn is_unique<T: Eq + Model>(s: Seq<T>) -> bool {
+fn is_unique<T>(s: Seq<T>) -> bool {
     pearlite! {
-        forall<i: Int, j :Int> 0 <= i && i < s.len() && 0 <= j && j < s.len() ==> @(s[i]) == @(s[j]) ==> i == j
+        forall<i: Int, j :Int> 0 <= i && i < s.len() && 0 <= j && j < s.len() ==> s[i] == s[j] ==> i == j
     }
 }
 
 #[predicate]
-fn contains<T: Model>(seq: Seq<T>, elem: T) -> bool {
+fn contains<T>(seq: Seq<T>, elem: T) -> bool {
     pearlite! {
-        exists<i: Int> 0 <= i && i < seq.len() && @(seq[i]) == @elem
+        exists<i: Int> 0 <= i && i < seq.len() && seq[i] == elem
     }
 }
 
 #[predicate]
-fn is_subset<T: Model>(sub: Seq<T>, sup: Seq<T>) -> bool {
+fn is_subset<T>(sub: Seq<T>, sup: Seq<T>) -> bool {
     pearlite! {
         forall<i: Int> 0 <= i && i < sub.len() ==> contains(sup, sub[i])
     }
@@ -68,45 +68,44 @@ fn is_subset<T: Model>(sub: Seq<T>, sup: Seq<T>) -> bool {
 
 #[logic]
 #[ensures(is_subset(s, s.push(elem)))]
-fn subset_push<T: Eq + Model>(s: Seq<T>, elem: T) {}
+fn subset_push<T>(s: Seq<T>, elem: T) {}
 
-#[requires(is_unique(@vec))]
-#[ensures(is_unique(@^vec))]
-#[ensures(is_subset(@vec, @^vec))]
-#[ensures(is_subset(@^vec, (@vec).push(elem)))]
-#[ensures(contains(@^vec, elem))]
-fn insert_unique<T: Eq + Model>(vec: &mut Vec<T>, elem: T) {
-    ghost! { pearlite! { subset_push(@vec, elem) } };
-    proof_assert! { is_subset(@vec, (@vec).push(elem)) };
+#[requires(is_unique(vec.deep_model()))]
+#[ensures(is_unique((^vec).deep_model()))]
+#[ensures(is_subset(vec.deep_model(), (^vec).deep_model()))]
+#[ensures(is_subset((^vec).deep_model(), vec.deep_model().push(elem.deep_model())))]
+#[ensures(contains((^vec).deep_model(), elem.deep_model()))]
+fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
+    ghost! { subset_push::<T::DeepModelTy> };
+    proof_assert! { is_subset(vec.deep_model(), vec.deep_model().push(elem.deep_model())) };
 
     let mut i = 0;
 
-    #[invariant(not_elem, forall<j: Int> 0 <= j && j < @i ==> @((@vec)[j]) != @elem)]
+    #[invariant(not_elem, forall<j: Int> 0 <= j && j < @i ==> vec.deep_model()[j] != elem.deep_model())]
     while i < vec.len() {
         if vec[i] == elem {
-            proof_assert! { contains(@vec, elem) };
+            proof_assert! { contains(vec.deep_model(), elem.deep_model()) };
             return;
         }
         i += 1;
     }
 
-    proof_assert! { is_unique((@vec).push(elem)) };
+    proof_assert! { is_unique(vec.deep_model().push(elem.deep_model())) };
     vec.push(elem);
 }
 
-#[ensures(is_unique(@result))]
-#[ensures(is_subset(@result, @str))]
-#[ensures(is_subset(@str, @result))]
-fn unique<T: Eq + Model + Copy>(str: &[T]) -> Vec<T> {
+#[ensures(is_unique(result.deep_model()))]
+#[ensures(is_subset(result.deep_model(), str.deep_model()))]
+#[ensures(is_subset(str.deep_model(), result.deep_model()))]
+fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     let mut unique = Vec::new();
     let mut sub_str: Ghost<Seq<T>> = ghost! { Seq::new() };
     let mut i: usize = 0;
 
     #[invariant(i_bound, @i <= (@str).len())]
-    #[invariant(sub_str, sub_str.ext_eq((@str).subsequence(0, @i)))]
-    #[invariant(unique, is_unique(@unique))]
-    #[invariant(unique_subset, is_subset(@unique, @str))]
-    #[invariant(unique_subset, is_subset(*sub_str, @unique))]
+    #[invariant(unique, is_unique(unique.deep_model()))]
+    #[invariant(unique_subset, is_subset(unique.deep_model(), str.deep_model()))]
+    #[invariant(unique_subset, is_subset(str.deep_model().subsequence(0, @i), unique.deep_model()))]
     while i < str.len() {
         let elem: T = str[i];
         insert_unique(&mut unique, elem);
@@ -114,8 +113,8 @@ fn unique<T: Eq + Model + Copy>(str: &[T]) -> Vec<T> {
         i += 1;
     }
 
-    proof_assert! { is_subset((@str).subsequence(0, (@str).len()), @unique) }
-    proof_assert! { (@str).subsequence(0, (@str).len()).ext_eq(@str) }
+    proof_assert! { is_subset(str.deep_model().subsequence(0, (@str).len()), unique.deep_model()) }
+    proof_assert! { str.deep_model().subsequence(0, (@str).len()).ext_eq(str.deep_model()) }
     unique
 }
 
@@ -125,7 +124,7 @@ fn unique<T: Eq + Model + Copy>(str: &[T]) -> Vec<T> {
 #[ensures(result >= 0)]
 fn sum_range(seq: Seq<u32>, from: Int, to: Int) -> Int {
     if to - from > 0 {
-        pearlite! { @(seq[from]) + sum_range(seq, from + 1, to) }
+        pearlite! { @seq[from] + sum_range(seq, from + 1, to) }
     } else {
         0
     }

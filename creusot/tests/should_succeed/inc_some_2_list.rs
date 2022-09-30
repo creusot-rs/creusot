@@ -19,9 +19,11 @@ fn random() -> bool {
 impl List {
     #[logic]
     fn sum(self) -> Int {
-        match self {
-            Cons(a, l) => a.model() + l.sum(),
-            Nil => 0,
+        pearlite! {
+            match self {
+                Cons(a, l) => @a + l.sum(),
+                Nil => 0,
+            }
         }
     }
 

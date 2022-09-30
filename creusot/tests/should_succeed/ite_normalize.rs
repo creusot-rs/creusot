@@ -7,14 +7,15 @@ use creusot_contracts::{derive::Clone, *};
 #[trusted]
 struct BTreeMap<K, V>(std::collections::BTreeMap<K, V>);
 
-impl<K: Model, V: Model> BTreeMap<K, V> {
+impl<K: DeepModel, V> BTreeMap<K, V> {
     #[trusted]
     fn new() -> Self {
         Self(std::collections::BTreeMap::new())
     }
 
     #[trusted]
-    #[ensures(@result == (@self).get(@key))]
+    #[ensures(result == None ==> (@self).get(key.deep_model()) == None)]
+    #[ensures(forall<v: &V> result == Some(v) ==> (@self).get(key.deep_model()) == Some(*v))]
     fn get<'a>(&'a self, key: &'a K) -> Option<&'a V>
     where
         K: Ord,
@@ -23,7 +24,7 @@ impl<K: Model, V: Model> BTreeMap<K, V> {
     }
 
     #[trusted]
-    #[ensures(forall<i: K> (@^self).get(@i) == (if @i == @key { Some(@value) } else { (@self).get(@i) }))]
+    #[ensures(forall<i: K::DeepModelTy> (@^self).get(i) == (if i == key.deep_model() { Some(value) } else { (@self).get(i) }))]
     fn insert(&mut self, key: K, value: V) -> Option<V>
     where
         K: Ord,
@@ -40,12 +41,12 @@ impl<K: Clone, V: Clone> Clone for BTreeMap<K, V> {
     }
 }
 
-impl<K: Model, V: Model> Model for BTreeMap<K, V> {
-    type ModelTy = creusot_contracts::Mapping<K::ModelTy, Option<V::ModelTy>>;
+impl<K: DeepModel, V> ShallowModel for BTreeMap<K, V> {
+    type ShallowModelTy = creusot_contracts::Mapping<K::DeepModelTy, Option<V>>;
 
     #[logic]
     #[trusted]
-    fn model(self) -> Self::ModelTy {
+    fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { absurd }
     }
 }
@@ -181,7 +182,7 @@ impl Expr {
     }
 
     #[requires(self.is_normalized())]
-    #[ensures(forall<i: usize> (exists<v: bool> (@state).get(@i) == Some(@v)) ==> result.does_not_contain(i))]
+    #[ensures(forall<i: usize> (exists<v: bool> (@state).get(@i) == Some(v)) ==> result.does_not_contain(i))]
     #[ensures(result.is_simplified())]
     #[variant(self)]
     fn simplify_helper(self, state: BTreeMap<usize, bool>) -> Self {

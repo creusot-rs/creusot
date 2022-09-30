@@ -3,12 +3,20 @@ use crate::*;
 use ::std::ops::*;
 use num_bigint::BigInt;
 
-impl crate::Model for num_bigint::BigInt {
-    type ModelTy = crate::Int;
+impl ShallowModel for num_bigint::BigInt {
+    type ShallowModelTy = crate::Int;
     #[logic]
     #[trusted]
-    fn model(self) -> Self::ModelTy {
+    fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { absurd }
+    }
+}
+
+impl DeepModel for num_bigint::BigInt {
+    type DeepModelTy = crate::Int;
+    #[logic]
+    fn deep_model(self) -> Self::DeepModelTy {
+        pearlite! { @self }
     }
 }
 

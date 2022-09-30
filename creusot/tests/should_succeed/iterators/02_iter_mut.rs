@@ -21,12 +21,12 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
-            (@*self.inner).len() == visited.len() + (@*tl.inner).len() &&
+            (@self.inner).len() == visited.len() + (@tl.inner).len() &&
             (@^self.inner).len() == visited.len() + (@^tl.inner).len() &&
-            (@(*self.inner)).subsequence(visited.len(), (@*self.inner).len()).ext_eq(@*tl.inner) &&
-            (@(^self.inner)).subsequence(visited.len(), (@^self.inner).len()).ext_eq(@^tl.inner )&&
+            (@self.inner).subsequence(visited.len(), (@self.inner).len()).ext_eq(@tl.inner) &&
+            (@^self.inner).subsequence(visited.len(), (@^self.inner).len()).ext_eq(@^tl.inner )&&
             (forall<i : Int> 0 <= i && i < visited.len() ==>
-                (@*self.inner)[i] == *visited[i] && (@^self.inner)[i] == ^visited[i])
+                (@self.inner)[i] == *visited[i] && (@^self.inner)[i] == ^visited[i])
         }
     }
 
@@ -56,7 +56,7 @@ impl<'a, T> IterMut<'a, T> {
     }
 }
 
-#[ensures(@*result.inner == @*v)]
+#[ensures(@result.inner == @v)]
 #[ensures(@^result.inner == @^v)]
 #[ensures((@^v).len() == (@v).len())]
 fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {

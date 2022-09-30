@@ -1,9 +1,9 @@
 use crate as creusot_contracts;
-use crate::{Int, Model, OrdLogic, Resolve, Seq};
+use crate::{Int, Resolve, Seq};
 use creusot_contracts_proc::*;
 use std::iter::{Skip, Take};
 
-pub trait IteratorSpec: Iterator {
+pub trait Iterator: std::iter::Iterator {
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, _: Self) -> bool;
 
@@ -25,7 +25,7 @@ extern_spec! {
     mod std {
         mod iter {
             trait Iterator
-                where Self : IteratorSpec {
+                where Self : Iterator {
 
                 #[ensures(match result {
                     None => self.completed(),
@@ -33,11 +33,10 @@ extern_spec! {
                 })]
                 fn next(&mut self) -> Option<Self::Item>;
 
-                #[ensures(@result == (self, @n))]
+                #[ensures(result.iter() == self && result.n() == @n)]
                 fn skip(self, n: usize) -> Skip<Self>;
 
-
-                #[ensures(@result == (self, @n))]
+                #[ensures(result.iter() == self && result.n() == @n)]
                 fn take(self, n: usize) -> Take<Self>;
             }
         }
@@ -51,26 +50,39 @@ extern_spec! {
     }
 }
 
-impl<I> Model for Skip<I> {
-    type ModelTy = (I, Int);
+trait SkipExt<I> {
+    #[logic]
+    fn iter(self) -> I;
+
+    #[logic]
+    fn n(self) -> Int;
+}
+
+impl<I> SkipExt<I> for Skip<I> {
+    #[logic]
+    #[trusted]
+    fn iter(self) -> I {
+        pearlite! { absurd }
+    }
 
     #[logic]
     #[trusted]
-    fn model(self) -> Self::ModelTy {
+    #[ensures(result >= 0 && result <= @usize::MAX)]
+    fn n(self) -> Int {
         pearlite! { absurd }
     }
 }
 
-impl<I: IteratorSpec> IteratorSpec for Skip<I> {
+impl<I: Iterator> Iterator for Skip<I> {
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
-            (@^self).1 == 0 &&
+            (^self).n() == 0 &&
             exists<s: Seq<Self::Item>, i: &mut I>
-                s.len() <= (@*self).1 &&
-                (@self).0.produces(s, *i) &&
+                s.len() <= (*self).n() &&
+                self.iter().produces(s, *i) &&
                 i.completed() &&
-                ^i == (@^self).0
+                ^i == (^self).iter()
         }
     }
 
@@ -78,10 +90,10 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            (@o).1 == 0 &&
+            o.n() == 0 &&
             exists<s: Seq<Self::Item>>
-                s.len() == (@self).1 &&
-                (@self).0.produces(s.concat(visited), (@o).0)
+                s.len() == self.n() &&
+                self.iter().produces(s.concat(visited), o.iter())
         }
     }
 
@@ -96,30 +108,44 @@ impl<I: IteratorSpec> IteratorSpec for Skip<I> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-impl<I> Model for Take<I> {
-    type ModelTy = (I, Int);
+trait TakeExt<I> {
+    #[logic]
+    fn iter(self) -> I;
+
+    #[logic]
+    fn n(self) -> Int;
+}
+
+impl<I> TakeExt<I> for Take<I> {
+    #[logic]
+    #[trusted]
+    fn iter(self) -> I {
+        pearlite! { absurd }
+    }
 
     #[logic]
     #[trusted]
-    fn model(self) -> Self::ModelTy {
+    #[ensures(result >= 0 && result <= @usize::MAX)]
+    fn n(self) -> Int {
         pearlite! { absurd }
     }
 }
 
-impl<I: IteratorSpec> IteratorSpec for Take<I> {
+impl<I: Iterator> Iterator for Take<I> {
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
-            (@*self).1 == 0 && self.resolve() ||
-            (@*self).1 > 0 && (@*self).1 == (@^self).1 + 1 &&
-                exists<i: &mut I> *i == (@*self).0 && ^i == (@^self).0 && i.completed()
+            self.n() == 0 && self.resolve() ||
+            (*self).n() > 0 && (*self).n() == (^self).n() + 1 &&
+                // Fixme: remove this existential quantification
+                exists<i: &mut I> *i == (*self).iter() && ^i == (^self).iter() && i.completed()
         }
     }
 
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            (@self).1 == (@o).1 + visited.len() && (@self).0.produces(visited, (@o).0)
+            self.n() == o.n() + visited.len() && self.iter().produces(visited, o.iter())
         }
     }
 

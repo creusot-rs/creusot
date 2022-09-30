@@ -1,24 +1,36 @@
 use crate as creusot_contracts;
 use crate::{
     logic::*,
-    std::{default::DefaultSpec, iter::IteratorSpec},
-    Int, Model, Seq,
+    std::{default::Default, iter::Iterator},
+    DeepModel, Int, Seq, ShallowModel,
 };
 use creusot_contracts_proc::*;
 use std::{
     ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
-    slice::{Iter, IterMut, SliceIndex},
+    slice::{Iter, IterMut},
 };
 
-impl<T> Model for [T] {
-    type ModelTy = Seq<T>;
+impl<T> ShallowModel for [T] {
+    type ShallowModelTy = Seq<T>;
 
     // We define this as trusted because builtins and ensures are incompatible
     #[logic]
     #[trusted]
     #[ensures(result.len() <= @usize::MAX)]
     #[ensures(result == slice_model(self))]
-    fn model(self) -> Self::ModelTy {
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        pearlite! { absurd }
+    }
+}
+
+impl<T: DeepModel> DeepModel for [T] {
+    type DeepModelTy = Seq<T::DeepModelTy>;
+
+    #[logic]
+    #[trusted]
+    #[ensures((@self).len() == result.len())]
+    #[ensures(forall<i: Int> 0 <= i && i < result.len() ==> result[i] == (@self)[i].deep_model())]
+    fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
     }
 }
@@ -30,40 +42,40 @@ fn slice_model<T>(_: [T]) -> Seq<T> {
     pearlite! { absurd }
 }
 
-impl<T> DefaultSpec for &mut [T] {
+impl<T> Default for &mut [T] {
     #[logic]
     #[trusted]
-    #[ensures(@*result == Seq::EMPTY)]
+    #[ensures(@result == Seq::EMPTY)]
     #[ensures(@^result == Seq::EMPTY)]
     fn default_log() -> Self {
         absurd
     }
 }
 
-impl<T> DefaultSpec for &[T] {
+impl<T> Default for &[T] {
     #[logic]
     #[trusted]
-    #[ensures(@*result == Seq::EMPTY)]
+    #[ensures(@result == Seq::EMPTY)]
     fn default_log() -> Self {
         absurd
     }
 }
 
-pub(crate) trait SliceIndexSpec<T: ?Sized>: SliceIndex<T>
+pub(crate) trait SliceIndex<T: ?Sized>: std::slice::SliceIndex<T>
 where
-    T: Model,
+    T: ShallowModel,
 {
     #[predicate]
-    fn in_bounds(self, seq: T::ModelTy) -> bool;
+    fn in_bounds(self, seq: T::ShallowModelTy) -> bool;
 
     #[predicate]
-    fn has_value(self, seq: T::ModelTy, out: Self::Output) -> bool;
+    fn has_value(self, seq: T::ShallowModelTy, out: Self::Output) -> bool;
 
     #[predicate]
-    fn resolve_elswhere(self, old: T::ModelTy, fin: T::ModelTy) -> bool;
+    fn resolve_elswhere(self, old: T::ShallowModelTy, fin: T::ShallowModelTy) -> bool;
 }
 
-impl<T> SliceIndexSpec<[T]> for usize {
+impl<T> SliceIndex<[T]> for usize {
     #[predicate]
     #[why3::attr = "inline:trivial"]
     fn in_bounds(self, seq: Seq<T>) -> bool {
@@ -83,7 +95,7 @@ impl<T> SliceIndexSpec<[T]> for usize {
     }
 }
 
-impl<T> SliceIndexSpec<[T]> for Range<usize> {
+impl<T> SliceIndex<[T]> for Range<usize> {
     #[predicate]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { @self.start <= @self.end && @self.end <= seq.len() }
@@ -103,7 +115,7 @@ impl<T> SliceIndexSpec<[T]> for Range<usize> {
     }
 }
 
-impl<T> SliceIndexSpec<[T]> for RangeTo<usize> {
+impl<T> SliceIndex<[T]> for RangeTo<usize> {
     #[predicate]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { @self.end <= seq.len() }
@@ -120,7 +132,7 @@ impl<T> SliceIndexSpec<[T]> for RangeTo<usize> {
     }
 }
 
-impl<T> SliceIndexSpec<[T]> for RangeFrom<usize> {
+impl<T> SliceIndex<[T]> for RangeFrom<usize> {
     #[predicate]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { @self.start <= seq.len() }
@@ -139,7 +151,7 @@ impl<T> SliceIndexSpec<[T]> for RangeFrom<usize> {
     }
 }
 
-impl<T> SliceIndexSpec<[T]> for RangeFull {
+impl<T> SliceIndex<[T]> for RangeFull {
     #[predicate]
     fn in_bounds(self, _seq: Seq<T>) -> bool {
         pearlite! { true }
@@ -156,7 +168,7 @@ impl<T> SliceIndexSpec<[T]> for RangeFull {
     }
 }
 
-impl<T> SliceIndexSpec<[T]> for RangeToInclusive<usize> {
+impl<T> SliceIndex<[T]> for RangeToInclusive<usize> {
     #[predicate]
     fn in_bounds(self, seq: Seq<T>) -> bool {
         pearlite! { @self.end < seq.len() }
@@ -180,16 +192,16 @@ extern_spec! {
 
         #[requires(@i < (@self).len())]
         #[requires(@j < (@self).len())]
-        #[ensures((@^self).exchange(@*self, @i, @j))]
+        #[ensures((@^self).exchange(@self, @i, @j))]
         fn swap(&mut self, i: usize, j: usize);
 
         #[ensures(
-            ix.in_bounds(@*self)
-            ==> exists<r: &<I as SliceIndex<[T]>>::Output> result == Some(r)
-                && ix.has_value(@*self_, *r)
+            ix.in_bounds(@self)
+            ==> exists<r: &<I as std::slice::SliceIndex<[T]>>::Output> result == Some(r)
+                && ix.has_value(@self_, *r)
         )]
-        #[ensures(ix.in_bounds(@*self) || result == None)]
-        fn get<I : SliceIndexSpec<[T]>>(&self, ix: I) -> Option<&<I as SliceIndex<[T]>>::Output>;
+        #[ensures(ix.in_bounds(@self) || result == None)]
+        fn get<I : SliceIndex<[T]>>(&self, ix: I) -> Option<&<I as std::slice::SliceIndex<[T]>>::Output>;
 
         #[requires(@mid <= (@self).len())]
         #[ensures({
@@ -202,12 +214,12 @@ extern_spec! {
         })]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 
-        #[ensures(result == None ==> (@self).len() == 0 && ^self == *self && @*self == Seq::EMPTY)]
+        #[ensures(result == None ==> (@self).len() == 0 && ^self == *self && @self == Seq::EMPTY)]
         #[ensures(forall<first: &mut T, tail: &mut [T]>
                   result == Some((first, tail))
-                && *first == (@*self)[0] && ^first == (@^self)[0]
-                && (@*self).len() > 0 && (@^self).len() > 0
-                && @*tail == (@*self).tail()
+                && *first == (@self)[0] && ^first == (@^self)[0]
+                && (@self).len() > 0 && (@^self).len() > 0
+                && @tail == (@self).tail()
                 && @^tail == (@^self).tail())]
         fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])>;
 
@@ -238,48 +250,48 @@ extern_spec! {
     }
 
     impl<T, I> IndexMut<I> for [T]
-        where I : SliceIndexSpec<[T]> {
-       #[requires(ix.in_bounds(@*self))]
-       #[ensures(ix.has_value(@*self, *result))]
+        where I : SliceIndex<[T]> {
+       #[requires(ix.in_bounds(@self))]
+       #[ensures(ix.has_value(@self, *result))]
        #[ensures(ix.has_value(@^self, ^result))]
-       #[ensures(ix.resolve_elswhere(@*self, @^self))]
-       #[ensures((@^self).len() == (@*self).len())]
+       #[ensures(ix.resolve_elswhere(@self, @^self))]
+       #[ensures((@^self).len() == (@self).len())]
         fn index_mut(&mut self, ix: I) -> &mut <[T] as Index<I>>::Output;
     }
 
     impl<T, I> Index<I> for [T]
-    where I : SliceIndexSpec<[T]> {
-      #[requires(ix.in_bounds(@*self))]
-      #[ensures(ix.has_value(@*self, *result))]
+    where I : SliceIndex<[T]> {
+      #[requires(ix.in_bounds(@self))]
+      #[ensures(ix.has_value(@self, *result))]
       fn index(&self, ix: I) -> &<[T] as Index<I>>::Output;
     }
 }
 
-impl<T> Model for Iter<'_, T> {
-    type ModelTy = Seq<T>;
+impl<T> ShallowModel for Iter<'_, T> {
+    type ShallowModelTy = Seq<T>;
 
     #[logic]
     #[trusted]
-    fn model(self) -> Self::ModelTy {
+    fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
     }
 }
 
-impl<'a, T> Model for IterMut<'a, T> {
-    type ModelTy = &'a mut Seq<T>;
+impl<'a, T> ShallowModel for IterMut<'a, T> {
+    type ShallowModelTy = &'a mut Seq<T>;
 
     #[logic]
     #[trusted]
     #[ensures((^result).len() == result.len())]
-    fn model(self) -> Self::ModelTy {
+    fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
     }
 }
 
-impl<'a, T> IteratorSpec for Iter<'a, T> {
+impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && @*self == Seq::EMPTY }
+        pearlite! { self.resolve() && @self == Seq::EMPTY }
     }
 
     #[predicate]
@@ -303,10 +315,10 @@ impl<'a, T> IteratorSpec for Iter<'a, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-impl<'a, T> IteratorSpec for IterMut<'a, T> {
+impl<'a, T> Iterator for IterMut<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && *@*self == Seq::EMPTY }
+        pearlite! { self.resolve() && *@self == Seq::EMPTY }
     }
 
     #[predicate]

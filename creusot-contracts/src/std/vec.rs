@@ -1,8 +1,8 @@
 use crate as creusot_contracts;
 use crate::{
     logic::*,
-    std::{iter::IteratorSpec, slice::SliceIndexSpec},
-    Int, Model, Seq,
+    std::{iter::Iterator, slice::SliceIndex},
+    DeepModel, Int, Seq, ShallowModel,
 };
 pub use ::std::vec::from_elem;
 use creusot_contracts_proc::*;
@@ -12,13 +12,26 @@ use std::{
     vec::IntoIter,
 };
 
-impl<T, A: Allocator> Model for Vec<T, A> {
-    type ModelTy = Seq<T>;
+impl<T, A: Allocator> ShallowModel for Vec<T, A> {
+    type ShallowModelTy = Seq<T>;
 
     #[logic]
     #[trusted]
     #[ensures(result.len() <= @usize::MAX)]
-    fn model(self) -> Self::ModelTy {
+    fn shallow_model(self) -> Seq<T> {
+        pearlite! { absurd }
+    }
+}
+
+impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
+    type DeepModelTy = Seq<T::DeepModelTy>;
+
+    #[logic]
+    #[trusted]
+    #[ensures(self.shallow_model().len() == result.len())]
+    #[ensures(forall<i: Int> 0 <= i && i < self.shallow_model().len()
+              ==> result[i] == (@self)[i].deep_model())]
+    fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
     }
 }
@@ -35,17 +48,17 @@ extern_spec! {
             }
 
             impl<T, A : Allocator> Vec<T, A> {
-                #[ensures(@result == (@*self).len())]
+                #[ensures(@result == (@self).len())]
                 fn len(&self) -> usize;
 
-                #[ensures(@^self == (@*self).push(v))]
+                #[ensures(@^self == (@self).push(v))]
                 fn push(&mut self, v: T);
 
                 #[ensures(match result {
                     Some(t) =>
-                        @^self == (@*self).subsequence(0, (@*self).len() - 1) &&
-                        @*self == (@^self).push(t),
-                    None => *self == ^self && (@*self).len() == 0
+                        @^self == (@self).subsequence(0, (@self).len() - 1) &&
+                        @self == (@^self).push(t),
+                    None => *self == ^self && (@self).len() == 0
                 })]
                 fn pop(&mut self) -> Option<T>;
 
@@ -65,28 +78,28 @@ extern_spec! {
                 fn into_iter(self) -> IntoIter<T, A>;
             }
 
-            impl<T, I : SliceIndexSpec<[T]>, A : Allocator> IndexMut<I> for Vec<T, A> {
-                #[requires(ix.in_bounds(@*self))]
-                #[ensures(ix.has_value(@*self, *result))]
+            impl<T, I : SliceIndex<[T]>, A : Allocator> IndexMut<I> for Vec<T, A> {
+                #[requires(ix.in_bounds(@self))]
+                #[ensures(ix.has_value(@self, *result))]
                 #[ensures(ix.has_value(@^self, ^result))]
-                #[ensures(ix.resolve_elswhere(@*self, @^self))]
-                #[ensures((@^self).len() == (@*self).len())]
+                #[ensures(ix.resolve_elswhere(@self, @^self))]
+                #[ensures((@^self).len() == (@self).len())]
                 fn index_mut(&mut self, ix: I) -> &mut <Vec<T, A> as Index<I>>::Output;
             }
 
-            impl<T, I : SliceIndexSpec<[T]>, A : Allocator> Index<I> for Vec<T, A> {
-                #[requires(ix.in_bounds(@*self))]
-                #[ensures(ix.has_value(@*self, *result))]
+            impl<T, I : SliceIndex<[T]>, A : Allocator> Index<I> for Vec<T, A> {
+                #[requires(ix.in_bounds(@self))]
+                #[ensures(ix.has_value(@self, *result))]
                 fn index(&self, ix: I) -> & <Vec<T, A> as Index<I>>::Output;
             }
 
             impl<T, A : Allocator> Deref for Vec<T, A> {
-                #[ensures(@*result == @*self)]
+                #[ensures(@result == @self)]
                 fn deref(&self) -> &[T];
             }
 
             impl<T, A : Allocator> DerefMut for Vec<T, A> {
-                #[ensures(@*result == @*self)]
+                #[ensures(@result == @self)]
                 #[ensures(@^result == @^self)]
                 fn deref_mut(&mut self) -> &mut [T];
             }
@@ -115,10 +128,10 @@ impl<T> Resolve for Vec<T> {
     }
 }
 
-impl<T, A: Allocator> IteratorSpec for std::vec::IntoIter<T, A> {
+impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && @*self == Seq::EMPTY }
+        pearlite! { self.resolve() && @self == Seq::EMPTY }
     }
 
     #[predicate]
@@ -142,12 +155,12 @@ impl<T, A: Allocator> IteratorSpec for std::vec::IntoIter<T, A> {
     fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
 }
 
-impl<T, A: Allocator> Model for std::vec::IntoIter<T, A> {
-    type ModelTy = Seq<T>;
+impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
+    type ShallowModelTy = Seq<T>;
 
     #[logic]
     #[trusted]
-    fn model(self) -> Self::ModelTy {
+    fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
     }
 }

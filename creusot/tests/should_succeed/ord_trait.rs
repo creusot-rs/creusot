@@ -1,14 +1,20 @@
 extern crate creusot_contracts;
-use creusot_contracts::{std::cmp::Ord, *};
+use creusot_contracts::*;
 
 #[ensures(result == true)]
-pub fn x<T: Ord>(x: &T) -> bool {
-    x.le(x)
+pub fn x<T: Ord + DeepModel>(x: &T) -> bool
+where
+    T::DeepModelTy: OrdLogic,
+{
+    x <= x
 }
 
-#[ensures(result == (*y <= *x))]
-pub fn gt_or_le<T: Ord>(x: &T, y: &T) -> bool {
-    x.ge(y)
+#[ensures(result == ((*y).deep_model() <= (*x).deep_model()))]
+pub fn gt_or_le<T: Ord + DeepModel>(x: &T, y: &T) -> bool
+where
+    T::DeepModelTy: OrdLogic,
+{
+    x >= y
 }
 
 #[ensures(result == (@x <= @y))]

@@ -3,10 +3,10 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 extern_spec! {
-    impl<U: PartialOrd<U> + Ord + Model, T: PartialOrd<T> + Ord + Model> PartialOrd for (U, T)
-    where U::ModelTy: OrdLogic, T::ModelTy: OrdLogic
+    impl<U: PartialOrd<U> + DeepModel, T: PartialOrd<T> + DeepModel> PartialOrd for (U, T)
+    where U::DeepModelTy: OrdLogic, T::DeepModelTy: OrdLogic
     {
-        #[ensures(result == (@self).lt_log(@*o))]
+        #[ensures(result == self.deep_model().lt_log(o.deep_model()))]
         fn lt(&self, o: &(U, T)) -> bool;
     }
 }

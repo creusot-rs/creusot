@@ -18,13 +18,13 @@ impl<T: Clone> Clone for List<T> {
     }
 }
 
-impl<K: Model, V> List<(K, V)> {
+impl<K: DeepModel, V> List<(K, V)> {
     #[logic]
-    fn get(self, index: K::ModelTy) -> Option<V> {
+    fn get(self, index: K::DeepModelTy) -> Option<V> {
         pearlite! {
             match self {
                 List::Nil => None,
-                List::Cons((k,v),tl) => if @k == index { Some(v) } else { tl.get(index) }
+                List::Cons((k,v),tl) => if k.deep_model() == index { Some(v) } else { tl.get(index) }
             }
         }
     }
@@ -34,75 +34,61 @@ impl<K: Model, V> List<(K, V)> {
         pearlite! {
             match self {
                 List::Nil => true,
-                List::Cons((k, _), tl) => tl.get(@k) == None && tl.no_double_binding()
+                List::Cons((k, _), tl) => tl.get(k.deep_model()) == None && tl.no_double_binding()
             }
         }
     }
 }
 
 // A slightly simplified version of the Rust hashing mechanisms, this sufficiently captures the behavior though
-trait Hash: Model {
-    #[ensures(@result == self.hash_log())]
+trait Hash: DeepModel {
+    #[ensures(@result == Self::hash_log(self.deep_model()))]
     fn hash(&self) -> u64;
 
     #[logic]
-    #[ensures(result >= 0)]
-    fn hash_log(self) -> Int;
-
-    #[law]
-    #[requires(@x == @y)]
-    #[ensures(x.hash_log() == y.hash_log())]
-    fn hash_log_eq_model(x: Self, y: Self);
+    fn hash_log(_: Self::DeepModelTy) -> Int;
 }
 
 impl Hash for usize {
-    #[ensures(@result == self.hash_log())]
+    #[ensures(@result == Self::hash_log(self.deep_model()))]
     fn hash(&self) -> u64 {
         *self as u64
     }
 
     #[logic]
-    #[ensures(result >= 0)]
-    fn hash_log(self) -> Int {
-        pearlite! { @self }
+    fn hash_log(x: Int) -> Int {
+        pearlite! { x }
     }
-
-    #[logic]
-    #[requires(@x == @y)]
-    #[ensures(x.hash_log() == y.hash_log())]
-    fn hash_log_eq_model(x: Self, y: Self) {}
 }
 
 struct MyHashMap<K, V> {
     buckets: Vec<List<(K, V)>>,
 }
 
-impl<K: Hash + Model, V> Model for MyHashMap<K, V> {
-    type ModelTy = Mapping<K::ModelTy, Option<V>>;
+impl<K: Hash, V> ShallowModel for MyHashMap<K, V> {
+    type ShallowModelTy = Mapping<K::DeepModelTy, Option<V>>;
 
     #[logic]
-    #[trusted]
-    #[ensures(forall<k : K> result.get(@k) == self.bucket(k).get(@k))]
-    fn model(self) -> Self::ModelTy {
-        absurd
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        pearlite! { |k| self.bucket(k).get(k) }
     }
 }
 impl<K: Hash, V> MyHashMap<K, V> {
     #[logic]
-    fn bucket(self, k: K) -> List<(K, V)> {
-        pearlite! { (@(self.buckets))[self.bucket_ix(k)] }
+    fn bucket(self, k: K::DeepModelTy) -> List<(K, V)> {
+        pearlite! { (@self.buckets)[self.bucket_ix(k)] }
     }
 
     #[logic]
-    fn bucket_ix(self, k: K) -> Int {
-        pearlite! { k.hash_log() % (@self.buckets).len() }
+    fn bucket_ix(self, k: K::DeepModelTy) -> Int {
+        pearlite! { K::hash_log(k).rem_euclid((@self.buckets).len()) }
     }
 }
 
-impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
+impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
     #[requires(0 < @size)]
     #[ensures(result.hashmap_inv())]
-    #[ensures(forall<i: K> (@result).get(@i) == None)]
+    #[ensures(forall<i: K::DeepModelTy> (@result).get(i) == None)]
     pub fn new(size: usize) -> MyHashMap<K, V> {
         let res = MyHashMap { buckets: vec::from_elem(List::Nil, size) };
         res
@@ -110,7 +96,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
 
     #[requires((*self).hashmap_inv())]
     #[ensures((^self).hashmap_inv())]
-    #[ensures(forall<i: K> (@^self).get(@i) == (if @i == @key { Some(val) } else { (@*self).get(@i) } ))]
+    #[ensures(forall<i: K::DeepModelTy> (@^self).get(i) == (if i == key.deep_model() { Some(val) } else { (@self).get(i) } ))]
     pub fn add(&mut self, key: K, val: V) {
         use List::*;
         let old_self = ghost! { self };
@@ -122,10 +108,10 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
         #[invariant(y, ^old_self.inner() == ^self)]
         #[invariant(xx, self.good_bucket(*l, @index))]
         #[invariant(xx, self.good_bucket(^l, @index) ==> self.good_bucket(^old_l.inner(), @index ))]
-        #[invariant(get_key, (^l).get(@key) == Some(val) ==> (^*old_l).get(@key) == Some(val))]
+        #[invariant(get_key, (^l).get(key.deep_model()) == Some(val) ==> (^*old_l).get(key.deep_model()) == Some(val))]
         #[invariant(get_rest, forall <i:_> (^l).get(i) == (*l).get(i) ==> (^*old_l).get(i) == old_l.get(i))]
         #[invariant(no_double_binding, (*l).no_double_binding())]
-        #[invariant(no_double_binding_magic, (forall <i:_> (*l).get(i) == (^l).get(i) || i == @key) && (^l).no_double_binding() ==>
+        #[invariant(no_double_binding_magic, (forall <i:_> (*l).get(i) == (^l).get(i) || i == key.deep_model()) && (^l).no_double_binding() ==>
                                              (^*old_l).no_double_binding())]
         while let Cons((k, v), tl) = l {
             let tl = tl;
@@ -144,14 +130,14 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
 
     #[requires(self.hashmap_inv())]
     #[ensures(match result {
-        Some(v) => (@self).get(@key) == Some(*v),
-        None => (@self).get(@key) == None,
+        Some(v) => (@self).get(key.deep_model()) == Some(*v),
+        None => (@self).get(key.deep_model()) == None,
     })]
     pub fn get(&self, key: K) -> Option<&V> {
         let index: usize = key.hash() as usize % self.buckets.len();
         let mut l = &self.buckets[index];
 
-        #[invariant(not_already_found, self.bucket(key).get(@key) == (*l).get(@key))]
+        #[invariant(not_already_found, self.bucket(key.deep_model()).get(key.deep_model()) == (*l).get(key.deep_model()))]
         while let List::Cons((k, v), tl) = l {
             if *k == key {
                 return Some(v);
@@ -165,17 +151,17 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[requires((@self.buckets).len() < 1000)]
     #[requires((*self).hashmap_inv())]
     #[ensures((^self).hashmap_inv())]
-    #[ensures(forall<k : K> (@^self).get(@k) == (@*self).get(@k))] // lets prove the extensional version for now
+    #[ensures(forall<k : K::DeepModelTy> (@^self).get(k) == (@self).get(k))] // lets prove the extensional version for now
     #[allow(dead_code)]
     fn resize(&mut self) {
         let old_self = ghost! { self };
         let mut new = Self::new(self.buckets.len() * 2);
 
         let mut i: usize = 0;
-        #[invariant(seen, forall<k : K> old_self.bucket_ix(k) < @i ==> (@*old_self).get(@k) == (@new).get(@k))]
-        #[invariant(unseen, forall<k : K>
+        #[invariant(seen, forall<k : K::DeepModelTy> old_self.bucket_ix(k) < @i ==> (@old_self).get(k) == (@new).get(k))]
+        #[invariant(unseen, forall<k : K::DeepModelTy>
             @i <=   old_self.bucket_ix(k) &&
-                    old_self.bucket_ix(k) <= (@old_self.buckets).len() ==> (@new).get(@k) == None
+                    old_self.bucket_ix(k) <= (@old_self.buckets).len() ==> (@new).get(k) == None
         )]
         #[invariant(rest, forall<j : Int> @i <= j && j < (@old_self.buckets).len() ==> (@self.buckets)[j] == (@old_self.buckets)[j])]
         #[invariant(a, new.hashmap_inv())]
@@ -186,19 +172,19 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
             let mut l: List<_> = std::mem::replace(&mut self.buckets[i], List::Nil);
 
             #[invariant(a, new.hashmap_inv())]
-            #[invariant(x, forall<k : K> (old_self).bucket_ix(k) < @i ==> (@*old_self).get(@k) == (@new).get(@k))]
-            #[invariant(x, forall<k : K>
-                @i < old_self.bucket_ix(k) && (old_self).bucket_ix(k) <= (@old_self.buckets).len()  ==> (@new).get(@k) == None
+            #[invariant(x, forall<k : K::DeepModelTy> old_self.bucket_ix(k) < @i ==> (@old_self).get(k) == (@new).get(k))]
+            #[invariant(x, forall<k : K::DeepModelTy>
+                @i < old_self.bucket_ix(k) && old_self.bucket_ix(k) <= (@old_self.buckets).len()  ==> (@new).get(k) == None
             )]
-            #[invariant(zzz, forall<k : K> (old_self).bucket_ix(k) == @i ==>
-                        (@old_self.inner()).get(@k) == match l.get(@k) { None => (@new).get(@k), Some(v) => Some(v) })]
+            #[invariant(zzz, forall<k : K::DeepModelTy> old_self.bucket_ix(k) == @i ==>
+                        (@old_self).get(k) == match l.get(k) { None => (@new).get(k), Some(v) => Some(v) })]
             #[invariant(l_no_double_binding, l.no_double_binding())]
             #[invariant(x, old_self.good_bucket(l, @i))]
             while let List::Cons((k, v), tl) = l {
                 new.add(k, v);
                 l = *tl;
             }
-            proof_assert! { forall<k : K> old_self.bucket_ix(k) == @i  ==> (@*old_self).get(@k) == (@new).get(@k) };
+            proof_assert! { forall<k : K::DeepModelTy> old_self.bucket_ix(k) == @i  ==> (@old_self).get(k) == (@new).get(k) };
             i += 1;
         }
 
@@ -208,7 +194,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[predicate]
     fn good_bucket(self, l: List<(K, V)>, h: Int) -> bool {
         pearlite! {
-            forall<k : K, v: _> l.get(@k) == Some(v) ==> self.bucket_ix(k) == h
+            forall<k : K::DeepModelTy, v: _> l.get(k) == Some(v) ==> self.bucket_ix(k) == h
         }
     }
 
@@ -217,7 +203,7 @@ impl<K: Hash + Copy + Eq + Model, V: Copy> MyHashMap<K, V> {
     #[predicate]
     fn hashmap_inv(&self) -> bool {
         pearlite! {
-            0 < (@(self.buckets)).len() &&
+            0 < (@self.buckets).len() &&
             forall<i : _> 0 <= i && i < (@self.buckets).len() ==> self.good_bucket((@self.buckets)[i], i) && (@self.buckets)[i].no_double_binding()
         }
     }

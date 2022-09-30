@@ -146,7 +146,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
     let elem = Ident::new("i", proc_macro::Span::def_site().into());
 
     quote! { {
-        use creusot_contracts::std::iter::IteratorSpec;
+        use creusot_contracts::std::iter::Iterator;
         let mut #it = (#iter).into_iter();
         let #iter_old = ghost! { #it };
         let mut #produced = ghost! { creusot_contracts::Seq::EMPTY };

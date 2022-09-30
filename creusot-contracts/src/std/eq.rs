@@ -7,12 +7,11 @@ extern_spec! {
     mod std {
         mod cmp {
             trait PartialEq<Rhs> {
-                #[ensures(result == (@self == @rhs))]
+                #[ensures(result == (self.deep_model() == rhs.deep_model()))]
                 fn eq(&self, rhs: &Rhs) -> bool
                 where
-                    Self: Model,
-                    Rhs: Model<ModelTy = Self::ModelTy>;
-
+                    Self: DeepModel,
+                    Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>;
             }
         }
     }

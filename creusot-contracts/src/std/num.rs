@@ -1,5 +1,5 @@
 use crate as creusot_contracts;
-use crate::{logic::OrdLogic, Int, Model};
+use crate::Int;
 use creusot_contracts_proc::*;
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given
@@ -49,7 +49,7 @@ macro_rules! spec_type {
                 // Else, returns the result of the division
                 #[ensures((@self == @$type::MIN && @rhs == -1) || @result.0 == @self / @rhs)]
                 // Overflow only occurs when computing `$type::MIN / -1`
-                #[ensures(@result.1 == (@self == @$type::MIN && @rhs == -1))]
+                #[ensures(result.1 == (@self == @$type::MIN && @rhs == -1))]
                 fn overflowing_div(self, rhs: $type) -> ($type, bool);
             }
         }
@@ -149,7 +149,7 @@ macro_rules! spec_op_common {
                 )]
                 // Overflow occurred iff the result is out of range
                 #[ensures(
-                    @result.1 == ((@self $op @rhs) < @$type::MIN || (@self $op @rhs) > @$type::MAX)
+                    result.1 == ((@self $op @rhs) < @$type::MIN || (@self $op @rhs) > @$type::MAX)
                 )]
                 fn $overflowing(self, rhs: $type) -> ($type, bool);
             }

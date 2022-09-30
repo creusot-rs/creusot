@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{std::cmp::Ord, *};
+use creusot_contracts::*;
 use std::cmp::Ordering;
 
 #[predicate]
@@ -15,13 +15,16 @@ fn sorted<T: OrdLogic>(s: Seq<T>) -> bool {
 }
 
 #[requires((@arr).len() <= @usize::MAX)]
-#[requires(sorted(@arr))]
-#[ensures(forall<x:usize> result == Ok(x) ==> (@arr)[@x] == elem)]
+#[requires(sorted(arr.deep_model()))]
+#[ensures(forall<x:usize> result == Ok(x) ==> arr.deep_model()[@x] == elem.deep_model())]
 #[ensures(forall<x:usize> result == Err(x) ==>
-    forall<i:usize>  i < x ==> (@arr)[@i] <= elem)]
+    forall<i:usize>  i < x ==> arr.deep_model()[@i] <= elem.deep_model())]
 #[ensures(forall<x:usize> result == Err(x) ==>
-    forall<i:usize> x <= i && @i < (@arr).len() ==> elem < (@arr)[@i])]
-pub fn binary_search<T: Ord + OrdLogic>(arr: &Vec<T>, elem: T) -> Result<usize, usize> {
+    forall<i:usize> x <= i && @i < (@arr).len() ==> elem.deep_model() < arr.deep_model()[@i])]
+pub fn binary_search<T: Ord + DeepModel>(arr: &Vec<T>, elem: T) -> Result<usize, usize>
+where
+    T::DeepModelTy: OrdLogic,
+{
     if arr.len() == 0 {
         return Err(0);
     }
@@ -29,14 +32,13 @@ pub fn binary_search<T: Ord + OrdLogic>(arr: &Vec<T>, elem: T) -> Result<usize, 
     let mut base: usize = 0;
 
     #[invariant(size_valid, 0 < @size && @size + @base <= (@arr).len())]
-    #[invariant(lower_b, forall<i : usize> i < base ==> (@arr)[@i] <= elem)]
-    #[invariant(lower_b, forall<i : usize> @base + @size <= @i && @i < (@arr).len() ==> elem < (@arr)[@i])]
+    #[invariant(lower_b, forall<i : usize> i < base ==> arr.deep_model()[@i] <= elem.deep_model())]
+    #[invariant(lower_b, forall<i : usize> @base + @size <= @i && @i < (@arr).len() ==> elem.deep_model() < arr.deep_model()[@i])]
     while size > 1 {
         let half = size / 2;
         let mid = base + half;
 
-        let x = &arr[mid];
-        base = if x.gt(&elem) { base } else { mid };
+        base = if arr[mid] > elem { base } else { mid };
 
         size -= half;
     }

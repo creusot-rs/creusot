@@ -1,5 +1,4 @@
 use crate as creusot_contracts;
-// use crate::logic::EqLogic;
 use crate::{logic::Int, macros::*};
 pub use std::cmp::Ordering;
 

@@ -1,70 +1,47 @@
 use crate as creusot_contracts;
 use creusot_contracts_proc::*;
 
-use crate::logic::ord::*;
-pub use std::cmp::Ordering;
+use crate::{logic::ord::*, DeepModel};
+use std::cmp::Ordering;
 
-pub trait Ord: OrdLogic + Eq {
-    #[ensures(result == self.cmp_log(*o))]
-    fn cmp(&self, o: &Self) -> Ordering;
+extern_spec! {
+    mod std {
+        mod cmp {
+            // TODO: for now, we only support total orders
+            trait PartialOrd<Rhs>
+                where Self: DeepModel,
+                      Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>,
+                      Self::DeepModelTy: OrdLogic
+            {
+                #[ensures(result == Some((*self).deep_model().cmp_log((*rhs).deep_model())))]
+                fn partial_cmp(&self, rhs: &Rhs) -> Option<Ordering>;
 
-    #[ensures(result == (*self <= *o))]
-    fn le(&self, o: &Self) -> bool {
-        match self.cmp(o) {
-            Ordering::Greater => false,
-            _ => true,
-        }
-    }
+                #[ensures(result == (self.deep_model() < other.deep_model()))]
+                fn lt(&self, other: &Rhs) -> bool;
 
-    #[ensures(result == (*self >= *o))]
-    fn ge(&self, o: &Self) -> bool {
-        match self.cmp(o) {
-            Ordering::Less => false,
-            _ => true,
-        }
-    }
+                #[ensures(result == (self.deep_model() <= other.deep_model()))]
+                fn le(&self, other: &Rhs) -> bool;
 
-    #[ensures(result == (*self > *o))]
-    fn gt(&self, o: &Self) -> bool {
-        match self.cmp(o) {
-            Ordering::Greater => true,
-            _ => false,
-        }
-    }
+                #[ensures(result == (self.deep_model() > other.deep_model()))]
+                fn gt(&self, other: &Rhs) -> bool;
 
-    #[ensures(result == (*self < *o))]
-    fn lt(&self, o: &Self) -> bool {
-        match self.cmp(o) {
-            Ordering::Less => true,
-            _ => false,
-        }
-    }
-}
+                #[ensures(result == (self.deep_model() >= other.deep_model()))]
+                fn ge(&self, other: &Rhs) -> bool;
+            }
 
-// The new spec, but peacefully coexisting with the previous approach
-mod real_ord {
-    use crate as creusot_contracts;
-    use crate::{logic::ord::*, Model};
-    use creusot_contracts_proc::*;
-    pub use std::cmp::Ordering;
+            trait Ord
+                where Self: DeepModel,
+                      Self::DeepModelTy: OrdLogic
+            {
+                #[ensures(result == (*self).deep_model().cmp_log((*rhs).deep_model()))]
+                fn cmp(&self, rhs: &Self) -> Ordering;
 
-    extern_spec! {
-        mod std {
-            mod cmp {
-                trait Ord
-                where Self: Model,
-                      Self::ModelTy: OrdLogic {
-
-                    #[ensures(result == (@self).cmp_log(@*rhs))]
-                    fn cmp(&self, rhs: &Self) -> Ordering;
-
-                    #[ensures(@result >= @self)]
-                    #[ensures(@result >= @o)]
-                    #[ensures(result == self || result == o)]
-                    #[ensures(@self <= @o ==> result == o)]
-                    #[ensures(@o < @self ==> result == self)]
-                    fn max(self, o: Self) -> Self;
-                }
+                #[ensures(result.deep_model() >= self.deep_model())]
+                #[ensures(result.deep_model() >= o.deep_model())]
+                #[ensures(result == self || result == o)]
+                #[ensures(self.deep_model() <= o.deep_model() ==> result == o)]
+                #[ensures(o.deep_model() < self.deep_model() ==> result == self)]
+                fn max(self, o: Self) -> Self;
             }
         }
     }

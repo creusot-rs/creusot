@@ -69,10 +69,6 @@ fn run_creusot(file: &Path, contracts: &str) -> Option<std::process::Command> {
         &format!("creusot_contracts={}", normalize_file_path(contracts)),
     ]);
 
-    if header_line.contains("UNBOUNDED") {
-        cmd.arg("--unbounded");
-    }
-
     cmd.args(&["--", "-Zno-codegen", "--crate-type=lib"]);
     cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path)]);
 

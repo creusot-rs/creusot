@@ -17,7 +17,7 @@ pub fn derive_partial_eq(input: proc_macro::TokenStream) -> proc_macro::TokenStr
 
     let expanded = quote! {
         impl #impl_generics ::std::cmp::PartialEq for #name #ty_generics #where_clause {
-            #[ensures(result == (@self == @rhs))]
+            #[ensures(result == (self.deep_model() == rhs.deep_model()))]
             fn eq(&self, rhs: &Self) -> bool {
                 #eq
             }
@@ -31,7 +31,7 @@ fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
             type_param.bounds.push(parse_quote!(std::cmp::PartialEq));
-            type_param.bounds.push(parse_quote!(creusot_contracts::Model));
+            type_param.bounds.push(parse_quote!(creusot_contracts::DeepModel));
         }
     }
     generics

@@ -59,13 +59,21 @@ impl Int {
 
 macro_rules! mach_int {
     ($t:ty, $ty_nm:expr) => {
-        impl Model for $t {
-            type ModelTy = Int;
+        impl ShallowModel for $t {
+            type ShallowModelTy = Int;
             #[logic]
             #[trusted]
             #[creusot::builtins = concat!($ty_nm, ".to_int")]
-            fn model(self) -> Self::ModelTy {
-                absurd
+            fn shallow_model(self) -> Self::ShallowModelTy {
+                pearlite! { absurd }
+            }
+        }
+
+        impl DeepModel for $t {
+            type DeepModelTy = Int;
+            #[logic]
+            fn deep_model(self) -> Self::DeepModelTy {
+                pearlite! { @self }
             }
         }
     };

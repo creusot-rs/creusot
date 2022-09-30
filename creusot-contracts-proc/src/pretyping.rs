@@ -54,10 +54,18 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             match op {
                 Eq(_) => Ok(quote_spanned! {sp=> creusot_contracts::stubs::equal(#left, #right) }),
                 Ne(_) => Ok(quote_spanned! {sp=> creusot_contracts::stubs::neq(#left, #right) }),
-                Lt(_) => Ok(quote_spanned! {sp=> (#left).lt_log(#right) }),
-                Le(_) => Ok(quote_spanned! {sp=> (#left).le_log(#right) }),
-                Ge(_) => Ok(quote_spanned! {sp=> (#left).ge_log(#right) }),
-                Gt(_) => Ok(quote_spanned! {sp=> (#left).gt_log(#right) }),
+                Lt(_) => Ok(
+                    quote_spanned! {sp=> creusot_contracts::logic::OrdLogic::lt_log(#left, #right) },
+                ),
+                Le(_) => Ok(
+                    quote_spanned! {sp=> creusot_contracts::logic::OrdLogic::le_log(#left, #right) },
+                ),
+                Ge(_) => Ok(
+                    quote_spanned! {sp=> creusot_contracts::logic::OrdLogic::ge_log(#left, #right) },
+                ),
+                Gt(_) => Ok(
+                    quote_spanned! {sp=> creusot_contracts::logic::OrdLogic::gt_log(#left, #right) },
+                ),
                 _ => Ok(quote_spanned! {sp=> #left #op #right }),
             }
         }
@@ -106,7 +114,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Lit(TermLit { ref lit }) => match lit {
             // FIXME: allow unbounded integers
             Lit::Int(int) if int.suffix() == "" => {
-                Ok(quote_spanned! {sp=> (#lit as i128).model() })
+                Ok(quote_spanned! {sp=> creusot_contracts::ShallowModel::shallow_model(#lit as i128) })
             }
             _ => Ok(quote_spanned! {sp=> #lit }),
         },
@@ -181,7 +189,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Model(TermModel { term, .. }) => {
             let term = encode_term(term)?;
             Ok(quote! {
-                (#term).model()
+                creusot_contracts::ShallowModel::shallow_model(#term)
             })
         }
         RT::Verbatim(_) => todo!(),

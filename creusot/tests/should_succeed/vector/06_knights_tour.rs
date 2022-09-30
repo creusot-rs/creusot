@@ -9,12 +9,12 @@ struct Point {
 
 // ISSUE: patterns in function binders are unsupported!
 impl Point {
-    #[requires(-10000 <= @(self.x) && @(self.x) <= 10000)]
-    #[requires(-10000 <= @(self.y) && @(self.y) <= 10000)]
-    #[requires(-10000 <= @(p.0) && @(p.0) <= 10000)]
-    #[requires(-10000 <= @(p.1) && @(p.1) <= 10000)]
-    #[ensures(@(result.x) == @(self.x) + @(p.0))]
-    #[ensures(@(result.y) == @(self.y) + @(p.1))]
+    #[requires(-10000 <= @self.x && @self.x <= 10000)]
+    #[requires(-10000 <= @self.y && @self.y <= 10000)]
+    #[requires(-10000 <= @p.0 && @p.0 <= 10000)]
+    #[requires(-10000 <= @p.1 && @p.1 <= 10000)]
+    #[ensures(@result.x == @self.x + @p.0)]
+    #[ensures(@result.y == @self.y + @p.1)]
     fn mov(&self, p: &(isize, isize)) -> Self {
         Self { x: (self.x + p.0), y: (self.y + p.1) }
     }
@@ -29,9 +29,9 @@ impl Board {
     #[predicate]
     fn wf(self) -> bool {
         pearlite! {
-            @(self.size) <= 1_000 &&
-            (@(self.field)).len() == @self.size &&
-            forall<i : Int> 0 <= i && i < @self.size ==> (@(@(self.field))[i]).len() == @self.size
+            @self.size <= 1_000 &&
+            (@self.field).len() == @self.size &&
+            forall<i : Int> 0 <= i && i < @self.size ==> (@(@self.field)[i]).len() == @self.size
         }
     }
     #[requires(@size <= 1000)]
@@ -43,7 +43,7 @@ impl Board {
         let mut i = 0;
         #[invariant(i_size, i <= size)]
         #[invariant(rows,
-            forall<j : Int> 0 <= j && j < @i ==> (@((@rows)[j])).len() == @size)]
+            forall<j : Int> 0 <= j && j < @i ==> (@(@rows)[j]).len() == @size)]
         #[invariant(row_len, (@rows).len() == @i )]
         while i < size {
             rows.push(std::vec::from_elem(0, size));
@@ -66,7 +66,7 @@ impl Board {
     #[predicate]
     fn in_bounds(self, p: Point) -> bool {
         pearlite! {
-            0 <= @(p.x) && @(p.x)< @(self.size) && 0 <= @(p.y) && @(p.y) < @(self.size)
+            0 <= @p.x && @p.x< @self.size && 0 <= @p.y && @p.y < @self.size
         }
     }
 
@@ -99,7 +99,7 @@ impl Board {
 
 #[trusted]
 #[ensures((@result).len() == 8)]
-#[ensures(forall<i : Int> 0 <= i && i < 8 ==> -2 <= @((@result)[i].0) && @((@result)[i].0) <= 2 && -2 <= @((@result)[i].1) &&@((@result)[i].1) <= 2)]
+#[ensures(forall<i : Int> 0 <= i && i < 8 ==> -2 <= @(@result)[i].0 && @(@result)[i].0 <= 2 && -2 <= @(@result)[i].1 && @(@result)[i].1 <= 2)]
 fn moves() -> Vec<(isize, isize)> {
     let mut v = Vec::new();
     v.push((2, 1));
