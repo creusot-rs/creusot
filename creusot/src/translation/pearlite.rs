@@ -38,7 +38,7 @@ use rustc_type_ir::{IntTy, UintTy};
 
 mod normalize;
 
-pub use normalize::*;
+pub(crate) use normalize::*;
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum BinOp {
@@ -88,7 +88,7 @@ pub enum TermKind<'tcx> {
     Impl { lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Match { scrutinee: Box<Term<'tcx>>, arms: Vec<(Pattern<'tcx>, Term<'tcx>)> },
     Let { pattern: Pattern<'tcx>, arg: Box<Term<'tcx>>, body: Box<Term<'tcx>> },
-    Projection { lhs: Box<Term<'tcx>>, name: Field, def: DefId },
+    Projection { lhs: Box<Term<'tcx>>, name: Field, def: DefId, substs: SubstsRef<'tcx> },
     Old { term: Box<Term<'tcx>> },
     Closure { args: Vec<Pattern<'tcx>>, body: Box<Term<'tcx>> },
     Absurd,
@@ -158,6 +158,8 @@ struct ThirTerm<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
 }
 
+// TODO: Ensure that types are correct during this translation, in particular
+// - Box, & and &mut
 impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn expr_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
         let ty = self.thir[expr].ty;
@@ -406,12 +408,17 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     field_pattern(self.thir[lhs].ty, name).expect("expr_term: no term for field");
 
                 match &self.thir[lhs].ty.kind() {
-                    TyKind::Adt(def, _) => {
+                    TyKind::Adt(def, substs) => {
                         let lhs = self.expr_term(lhs)?;
                         Ok(Term {
                             ty,
                             span,
-                            kind: TermKind::Projection { lhs: box lhs, name, def: def.did() },
+                            kind: TermKind::Projection {
+                                lhs: box lhs,
+                                name,
+                                def: def.did(),
+                                substs,
+                            },
                         })
                     }
                     TyKind::Tuple(_) => {
@@ -791,7 +798,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visitor.visit_term(&*arg);
             visitor.visit_term(&*body)
         }
-        TermKind::Projection { lhs, name: _, def: _ } => visitor.visit_term(&*lhs),
+        TermKind::Projection { lhs, name: _, def: _, substs: _ } => visitor.visit_term(&*lhs),
         TermKind::Old { term } => visitor.visit_term(&*term),
         TermKind::Closure { args: _, body } => visitor.visit_term(&*body),
         TermKind::Absurd => {}
@@ -841,7 +848,9 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visitor.visit_mut_term(&mut *arg);
             visitor.visit_mut_term(&mut *body)
         }
-        TermKind::Projection { lhs, name: _, def: _ } => visitor.visit_mut_term(&mut *lhs),
+        TermKind::Projection { lhs, name: _, def: _, substs: _ } => {
+            visitor.visit_mut_term(&mut *lhs)
+        }
         TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
         TermKind::Closure { args: _, body } => visitor.visit_mut_term(&mut *body),
         TermKind::Absurd => {}

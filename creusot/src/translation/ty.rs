@@ -65,8 +65,8 @@ fn translate_ty_inner<'tcx>(
             ctx.warn(span, "support for string types is partial and experimental, expect to encounter limitations.");
             MlT::Char
         }
-        Int(ity) => intty_to_ty( names, ity),
-        Uint(uity) => uintty_to_ty( names, uity),
+        Int(ity) => intty_to_ty(names, ity),
+        Uint(uity) => uintty_to_ty(names, uity),
         Float(flty) => floatty_to_ty(names, flty),
         Adt(def, s) => {
             if def.is_box() {
@@ -528,10 +528,7 @@ pub(crate) fn variant_accessor_name(
     }
 }
 
-pub(crate) fn intty_to_ty(
-    names: &mut CloneMap<'_>,
-    ity: &creusot_rustc::middle::ty::IntTy,
-) -> MlT {
+pub(crate) fn intty_to_ty(names: &mut CloneMap<'_>, ity: &creusot_rustc::middle::ty::IntTy) -> MlT {
     use creusot_rustc::middle::ty::IntTy::*;
     names.import_prelude_module(PreludeModule::Int);
 

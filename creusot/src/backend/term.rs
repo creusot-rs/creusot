@@ -5,7 +5,7 @@ use crate::{
         closure_accessor_name, intty_to_ty, translate_ty, uintty_to_ty, variant_accessor_name,
     },
     util,
-    util::constructor_qname,
+    util::{constructor_qname, get_builtin},
 };
 use creusot_rustc::{
     hir::Unsafety,
@@ -14,11 +14,11 @@ use creusot_rustc::{
         ty::{EarlyBinder, ParamEnv, Subst},
     },
 };
-use rustc_middle::ty::{Ty, TyKind};
+use rustc_middle::ty::{subst::InternalSubsts, Ty, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
     ty::Type,
-    Ident,
+    Ident, QName,
 };
 
 pub(crate) fn lower_pure<'tcx>(
@@ -252,7 +252,7 @@ impl<'tcx> Lower<'_, 'tcx> {
             TermKind::Tuple { fields } => {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
             }
-            TermKind::Projection { box lhs, name, def: did } => {
+            TermKind::Projection { box lhs, name, def: did, substs } => {
                 let lhs = self.lower_term(lhs);
                 let accessor = match util::item_type(self.ctx.tcx, did) {
                     ItemType::Closure => {
@@ -262,6 +262,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                         acc
                     }
                     _ => {
+                        self.names.insert(did, substs);
                         let def = self.ctx.tcx.adt_def(did);
                         self.ctx.translate_accessor(
                             def.variants()[0u32.into()].fields[name.as_usize()].did,
@@ -355,6 +356,35 @@ impl<'tcx> Lower<'_, 'tcx> {
     fn lower_ty(&mut self, ty: Ty<'tcx>) -> Type {
         translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty)
     }
+
+    pub(crate) fn lookup_builtin(
+        &mut self,
+        method: (DefId, SubstsRef<'tcx>),
+        args: &mut Vec<Exp>,
+    ) -> Option<Exp> {
+        let mut def_id = method.0;
+        let substs = method.1;
+
+        let def_id = Some(def_id);
+        let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
+
+        if let Some(builtin) = builtin_attr.and_then(|a| QName::from_string(&a.as_str())) {
+            self.names.import_builtin_module(builtin.clone().module_qname());
+
+            if let Purity::Program = self.pure {
+                return Some(mk_binders(
+                    Exp::pure_qvar(builtin.without_search_path()),
+                    args.clone(),
+                ));
+            } else {
+                return Some(Exp::Call(
+                    box Exp::pure_qvar(builtin.without_search_path()),
+                    args.clone(),
+                ));
+            }
+        }
+        None
+    }
 }
 
 use creusot_rustc::{
@@ -368,15 +398,13 @@ pub(crate) fn lower_literal<'tcx>(
     lit: Literal,
 ) -> Exp {
     match lit {
-        Literal::Integer(i) => {
-            Constant::Int(i, None).into()
-        }
+        Literal::Integer(i) => Constant::Int(i, None).into(),
         Literal::MachSigned(u, intty) => {
-            let why_ty = intty_to_ty( names, &intty);
+            let why_ty = intty_to_ty(names, &intty);
             Constant::Int(u, Some(why_ty)).into()
         }
         Literal::MachUnsigned(u, uty) => {
-            let why_ty = uintty_to_ty( names, &uty);
+            let why_ty = uintty_to_ty(names, &uty);
 
             Constant::Uint(u, Some(why_ty)).into()
         }
