@@ -1,11 +1,8 @@
 use crate::{
     ctx::*,
     pearlite::{self, Literal, Pattern, Term, TermKind},
-    translation::{
-        traits::{resolve_assoc_item_opt, resolve_opt},
-        ty::{
-            closure_accessor_name, intty_to_ty, translate_ty, uintty_to_ty, variant_accessor_name,
-        },
+    translation::ty::{
+        closure_accessor_name, intty_to_ty, translate_ty, uintty_to_ty, variant_accessor_name,
     },
     util,
     util::constructor_qname,
@@ -73,8 +70,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                 c
             }
             TermKind::Item(id, subst) => {
-                let method = resolve_assoc_item_opt(self.ctx.tcx, self.param_env, id, subst)
-                    .unwrap_or((id, subst));
+                let method = (id, subst);
                 debug!("resolved_method={:?}", method);
                 self.lookup_builtin(method, &mut Vec::new()).unwrap_or_else(|| {
                     let uneval = ty::Unevaluated::new(ty::WithOptConstParam::unknown(id), subst);
@@ -154,7 +150,7 @@ impl<'tcx> Lower<'_, 'tcx> {
             TermKind::Call {
                 id,
                 subst,
-                // fun: box Term { kind: TermKind::Item(_, _), .. },
+                // fun: box Term { kind: TermKind::Item(id, subst), .. },
                 args,
                 ..
             } => {
@@ -164,19 +160,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                     args = vec![Exp::Tuple(vec![])];
                 }
 
-                debug!(
-                    "resolved_methodb={:?}",
-                    resolve_opt(self.ctx.tcx, self.param_env, id, subst)
-                );
-
-                let method = if self.ctx.trait_of_item(id).is_some() {
-                    resolve_opt(self.ctx.tcx, self.param_env, id, subst)
-                        .expect("could not resolve trait instance")
-                } else {
-                    resolve_opt(self.ctx.tcx, self.param_env, id, subst).unwrap_or((id, subst))
-                };
-
-                debug!("resolved_method={:?}", method);
+                let method = (id, subst);
 
                 if is_identity_from(self.ctx.tcx, id, method.1) {
                     return args.remove(0);

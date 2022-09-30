@@ -1,5 +1,5 @@
 use super::{
-    pearlite::{pearlite_stub, Term, TermKind},
+    pearlite::{normalize, pearlite_stub, Term, TermKind},
     LocalIdent,
 };
 use crate::{ctx::*, util, util::closure_owner};
@@ -55,14 +55,25 @@ impl<'tcx> PreContract<'tcx> {
         let param_env = ctx.param_env(closure_owner(ctx.tcx, id));
 
         for term in self.requires {
-            out.requires.push(lower_pure(ctx, names, param_env, term));
+            out.requires.push(lower_pure(
+                ctx,
+                names,
+                param_env,
+                normalize(ctx.tcx, param_env, term),
+            ));
         }
         for term in self.ensures {
-            out.ensures.push(lower_pure(ctx, names, param_env, term));
+            out.ensures.push(lower_pure(
+                ctx,
+                names,
+                param_env,
+                normalize(ctx.tcx, param_env, term),
+            ));
         }
 
         if let Some(term) = self.variant {
-            out.variant = vec![lower_pure(ctx, names, param_env, term)];
+            out.variant =
+                vec![lower_pure(ctx, names, param_env, normalize(ctx.tcx, param_env, term))];
         }
 
         out
