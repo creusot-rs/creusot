@@ -1,5 +1,6 @@
-use super::specification::typing::Term;
-use crate::{creusot_items::CreusotItems, ctx::*, external::ExternSpec};
+use crate::{
+    creusot_items::CreusotItems, ctx::*, external::ExternSpec, translation::pearlite::Term,
+};
 use creusot_metadata::{
     decoder::{Decodable, MetadataBlob, MetadataDecoder},
     encoder::{Encodable, MetadataEncoder},

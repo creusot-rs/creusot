@@ -1,5 +1,7 @@
-use self::typing::{pearlite_stub, Term, TermKind};
-use super::LocalIdent;
+use super::{
+    pearlite::{pearlite_stub, Term, TermKind},
+    LocalIdent,
+};
 use crate::{ctx::*, util, util::closure_owner};
 use creusot_rustc::{
     hir::def_id::DefId,
@@ -18,8 +20,6 @@ use creusot_rustc::{
 };
 use std::collections::{HashMap, HashSet};
 use why3::declaration::Contract;
-
-pub(crate) mod typing;
 
 pub(crate) use crate::backend::term::*;
 
@@ -334,9 +334,9 @@ pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
         || def_path == "std::clone::Clone::clone"
 }
 
-struct PurityVisitor<'a, 'tcx> {
-    tcx: TyCtxt<'tcx>,
-    thir: &'a Thir<'tcx>,
+pub(crate) struct PurityVisitor<'a, 'tcx> {
+    pub(crate) tcx: TyCtxt<'tcx>,
+    pub(crate) thir: &'a Thir<'tcx>,
 }
 
 impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {

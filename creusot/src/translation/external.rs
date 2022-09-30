@@ -2,7 +2,11 @@ use crate::{
     ctx::*,
     error::{CrErr, CreusotResult},
     function::all_generic_decls_for,
-    translation::{traits, translate_logic_or_predicate},
+    translation::{
+        pearlite::{Term, TermKind},
+        specification::ContractClauses,
+        traits, translate_logic_or_predicate,
+    },
     util::item_type,
 };
 use creusot_rustc::{
@@ -19,11 +23,6 @@ use creusot_rustc::{
 };
 use indexmap::IndexSet;
 use why3::declaration::{Decl, Module, ValKind, ValKind::Val};
-
-use super::specification::{
-    typing::{Term, TermKind},
-    ContractClauses,
-};
 
 pub(crate) fn default_decl<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,

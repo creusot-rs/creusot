@@ -2,7 +2,7 @@ use crate::{
     clone_map::CloneMap,
     ctx::{module_name, CloneSummary, TranslationCtx},
     traits::resolve_assoc_item_opt,
-    translation::specification::typing::Literal,
+    translation::pearlite::Literal,
     util::get_builtin,
 };
 use creusot_rustc::{

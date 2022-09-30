@@ -9,6 +9,7 @@ use std::collections::HashSet;
 
 use crate::{
     error::{CrErr, CreusotResult, Error},
+    translation::specification::PurityVisitor,
     util,
 };
 use creusot_rustc::{
@@ -35,7 +36,9 @@ use itertools::Itertools;
 use log::*;
 use rustc_type_ir::{IntTy, UintTy};
 
-use super::PurityVisitor;
+mod normalize;
+
+pub use normalize::*;
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum BinOp {
@@ -133,7 +136,7 @@ pub enum Pattern<'tcx> {
     Boolean(bool),
 }
 
-pub(crate) fn typecheck(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
+pub(crate) fn pearlite(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
     let (thir, expr) = tcx.thir_body(WithOptConstParam::unknown(id)).map_err(|_| CrErr)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
@@ -455,7 +458,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             },
             ExprKind::Closure { closure_id, .. } => {
-                let term = typecheck(self.tcx, closure_id)?;
+                let term = pearlite(self.tcx, closure_id)?;
                 // eprintln!("{term:?}");
                 let pats = closure_pattern(self.tcx, closure_id)?;
 
@@ -600,7 +603,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let name = self.tcx.fn_arg_names(closure_id)[0];
                 let ty = sig.input(0).skip_binder();
 
-                Ok(((name.name, ty), typecheck(self.tcx, closure_id)?))
+                Ok(((name.name, ty), pearlite(self.tcx, closure_id)?))
             }
             _ => Err(Error::new(self.thir[body].span, "unexpected error in quantifier")),
         }

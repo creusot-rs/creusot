@@ -2,10 +2,8 @@ use crate::{
     ctx::*,
     translation::{
         self,
-        specification::{
-            typing::{super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
-            PreContract,
-        },
+        pearlite::{super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
+        specification::PreContract,
     },
 };
 use creusot_rustc::{

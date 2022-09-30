@@ -7,7 +7,7 @@ use super::{
 use crate::{
     clone_map::PreludeModule,
     ctx::{item_name, CloneMap, TranslationCtx},
-    specification::typing::{Literal, Term},
+    pearlite::{Literal, Term},
     translation::{binop_to_binop, function::place::translate_rplace_inner, unop_to_unop},
     util::item_qname,
 };
