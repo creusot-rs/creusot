@@ -70,7 +70,7 @@ pub(crate) fn create_assign_inner<'tcx>(
                 }
             }
             Field(ix, _) => match place_ty.ty.kind() {
-                TyKind::Adt(def, _) => {
+                TyKind::Adt(def, subst) => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                     let variant = &def.variants()[variant_id];
                     let var_size = variant.fields.len();
@@ -86,6 +86,7 @@ pub(crate) fn create_assign_inner<'tcx>(
 
                     let tyname = constructor_qname(ctx, variant);
 
+                    names.insert(def.did(), subst);
                     inner = Let {
                         pattern: ConsP(tyname.clone(), field_pats),
                         arg: box translate_rplace_inner(ctx, names, body, lhs.local, stump),
@@ -180,10 +181,11 @@ pub(crate) fn translate_rplace_inner<'tcx>(
                 }
             }
             Field(ix, _) => match place_ty.ty.kind() {
-                TyKind::Adt(def, _) => {
+                TyKind::Adt(def, subst) => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                     let variant = &def.variants()[variant_id];
 
+                    names.insert(def.did(), subst);
                     ctx.translate_accessor(def.variants()[variant_id].fields[ix.as_usize()].did);
                     let accessor_name =
                         variant_accessor_name(ctx, def.did(), variant, ix.as_usize());
