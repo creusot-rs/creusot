@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use why3::{
-    declaration::{Contract, Decl, Module, ValKind},
+    declaration::{Decl, LetKind, Module, ValDecl, ValKind},
     Ident,
 };
 
@@ -51,36 +51,18 @@ pub(crate) fn interface_for<'tcx>(
 
     decls.extend(names.to_clones(ctx));
 
-    match util::item_type(ctx.tcx, def_id) {
-        ItemType::Predicate => {
-            let sig_contract = sig.clone();
-            sig.retty = None;
-            sig.contract = Contract::new();
-            decls.push(Decl::ValDecl(ValKind::Predicate { sig }));
+    if util::is_predicate(ctx.tcx, def_id) {
+        sig.retty = None;
+    };
 
-            let has_axioms = !sig_contract.contract.is_empty();
-            if has_axioms {
-                decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
-            }
-        }
-        ItemType::Logic => {
-            let sig_contract = sig.clone();
-            sig.contract = Contract::new();
-            decls.push(Decl::ValDecl(ValKind::Function { sig }));
-
-            let has_axioms = !sig_contract.contract.is_empty();
-            if has_axioms {
-                decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
-            }
-        }
-        _ => {
-            if !def_id.is_local() && !ctx.externs.verified(def_id) && sig.contract.is_empty() {
-                sig.contract.requires.push(why3::exp::Exp::mk_false());
-            }
-
-            decls.push(Decl::ValDecl(ValKind::Val { sig }));
+    // TODO: make this part of `pre_sig_of`.
+    if !(util::is_logic(ctx.tcx, def_id) || util::is_predicate(ctx.tcx, def_id)) {
+        if !def_id.is_local() && !ctx.externs.verified(def_id) && sig.contract.is_empty() {
+            sig.contract.requires.push(why3::exp::Exp::mk_false());
         }
     }
+
+    decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
 
     let name = interface_name(ctx, def_id);
 

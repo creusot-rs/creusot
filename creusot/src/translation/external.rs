@@ -22,7 +22,7 @@ use creusot_rustc::{
     span::{Symbol, DUMMY_SP},
 };
 use indexmap::IndexSet;
-use why3::declaration::{Decl, Module, ValKind, ValKind::Val};
+use why3::declaration::{Decl, LetKind, Module, ValDecl, ValKind, ValKind::Val};
 
 pub(crate) fn default_decl<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
@@ -39,16 +39,16 @@ pub(crate) fn default_decl<'tcx>(
 
     decls.extend(names.to_clones(ctx));
     let decl = match item_type(ctx.tcx, def_id) {
-        ItemType::Logic => ValKind::Function { sig },
+        ItemType::Logic => ValDecl { sig, ghost: true, val: true, kind: Some(LetKind::Function) },
         ItemType::Predicate => {
             sig.retty = None;
-            ValKind::Predicate { sig }
+            ValDecl { sig, ghost: true, val: true, kind: Some(LetKind::Predicate) }
         }
         ItemType::Program => {
             if !ctx.externs.verified(def_id) && sig.contract.is_empty() {
                 sig.contract.requires.push(why3::exp::Exp::mk_false());
             }
-            Val { sig }
+            ValDecl { sig, ghost: false, val: true, kind: None }
         }
         _ => unreachable!("default_decl: Expected function"),
     };

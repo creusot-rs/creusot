@@ -22,7 +22,7 @@ use rustc_middle::ty::{ClosureKind, RegionKind};
 use std::{collections::HashSet, iter};
 use why3::{
     declaration,
-    declaration::{Signature, ValKind},
+    declaration::{LetKind, Signature, ValDecl, ValKind},
     exp::Binder,
     ty::Type,
     Ident, QName,
@@ -249,12 +249,16 @@ pub enum ItemType {
 }
 
 impl ItemType {
-    pub(crate) fn val(&self, sig: Signature) -> ValKind {
+    pub(crate) fn val(&self, sig: Signature) -> ValDecl {
         match self {
-            ItemType::Logic => ValKind::Function { sig },
-            ItemType::Predicate => ValKind::Predicate { sig },
-            ItemType::Program => ValKind::Val { sig },
-            _ => unreachable!(),
+            ItemType::Logic => {
+                ValDecl { sig, ghost: true, val: true, kind: Some(LetKind::Function) }
+            }
+            ItemType::Predicate => {
+                ValDecl { sig, ghost: true, val: true, kind: Some(LetKind::Predicate) }
+            }
+            ItemType::Program |  ItemType::Closure => ValDecl { sig, ghost: false, val: true, kind: None },
+            ity => unreachable!("non-function item {ity:?}"),
         }
     }
 

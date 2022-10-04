@@ -12,7 +12,7 @@ use creusot_rustc::{
     smir::mir::{Body, BorrowKind, Operand, Promoted, StatementKind},
 };
 use why3::{
-    declaration::{Contract, Decl, LetDecl, Signature},
+    declaration::{Contract, Decl, LetDecl, LetKind, Signature},
     exp::{Binder, Exp, Pattern},
     QName,
 };
@@ -173,7 +173,13 @@ pub(crate) fn translate_promoted<'tcx>(
         }
     }
     let sig = promoted_signature(ctx, names, (promoted, body));
-    Ok(Decl::Let(LetDecl { sig, rec: false, constant: true, body: exp }))
+    Ok(Decl::Let(LetDecl {
+        kind: Some(LetKind::Constant),
+        sig,
+        rec: false,
+        body: exp,
+        ghost: false,
+    }))
 }
 
 fn translate_operand<'tcx>(
