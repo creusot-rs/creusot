@@ -71,7 +71,7 @@ impl<'tcx> PreContract<'tcx> {
         }
 
         if let Some(term) = self.may_panic {
-            out.may_panic = Some(lower_pure(ctx, names, param_env, term));
+            out.raises = Some(lower_pure(ctx, names, param_env, term));
         }
 
         out

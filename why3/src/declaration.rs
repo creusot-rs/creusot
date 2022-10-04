@@ -55,7 +55,7 @@ pub struct Contract {
     pub requires: Vec<Exp>,
     pub ensures: Vec<Exp>,
     pub variant: Vec<Exp>,
-    pub may_panic: Option<Exp>,
+    pub raises: Option<Exp>,
 }
 
 impl Contract {
@@ -64,7 +64,7 @@ impl Contract {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_empty() && self.may_panic.is_none()
+        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_empty() && self.raises.is_none()
     }
 
     pub fn extend(&mut self, other: Contract) {
@@ -73,7 +73,7 @@ impl Contract {
         self.variant.extend(other.variant);
         // You can't put multiple raises expressions in whyml, but we can
         // merge this into "e1 or e2".
-        self.may_panic = match (self.may_panic.take(), other.may_panic) {
+        self.raises = match (self.raises.take(), other.raises) {
             (Some(exp), None) | (None, Some(exp)) => Some(exp),
             (None, None) => None,
             (Some(e1), Some(e2)) => Some(Exp::BinaryOp(
@@ -111,7 +111,7 @@ impl Contract {
         mut req_visitor: T,
         mut ens_visitor: T,
         mut var_visitor: T,
-        mut may_panic_visitor: T,
+        mut raises_visitor: T,
     ) {
         for req in self.requires.iter_mut() {
             req_visitor.visit_mut(req);
@@ -125,8 +125,8 @@ impl Contract {
             var_visitor.visit_mut(var);
         }
 
-        if let Some(may_panic) = &mut self.may_panic {
-            may_panic_visitor.visit_mut(may_panic);
+        if let Some(raises) = &mut self.raises {
+            raises_visitor.visit_mut(raises);
         }
     }
 
@@ -145,8 +145,8 @@ impl Contract {
             qfvs.extend(var.qfvs());
         }
 
-        if let Some(may_panic) = &self.may_panic {
-            qfvs.extend(may_panic.qfvs());
+        if let Some(raises) = &self.raises {
+            qfvs.extend(raises.qfvs());
         }
 
         qfvs
