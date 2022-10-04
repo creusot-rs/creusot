@@ -1,11 +1,12 @@
 use crate::{
+    backend::logic::translate_logic_or_predicate,
     ctx::*,
     error::{CrErr, CreusotResult},
     function::all_generic_decls_for,
     translation::{
         pearlite::{Term, TermKind},
         specification::ContractClauses,
-        traits, translate_logic_or_predicate,
+        traits,
     },
     util::{self, item_type},
 };

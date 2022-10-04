@@ -5,7 +5,7 @@ use why3::{
     Ident,
 };
 
-use crate::{clone_map::CloneMap, ctx::*, translation::spec_axiom, util};
+use crate::{backend::logic::spec_axiom, clone_map::CloneMap, ctx::*, util};
 
 use creusot_rustc::{
     hir::def_id::DefId,
