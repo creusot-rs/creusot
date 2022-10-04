@@ -513,7 +513,9 @@ impl Print for Contract {
             doc = doc.append(
                 alloc
                     .text("raises ")
-                    .append(alloc.text("Panic.Panic -> ").append(raises.pretty(alloc, env)).braces())
+                    .append(
+                        alloc.text("Panic.Panic -> ").append(raises.pretty(alloc, env)).braces(),
+                    )
                     .append(alloc.hardline()),
             );
         }
