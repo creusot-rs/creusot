@@ -1,11 +1,11 @@
 use std::borrow::Cow;
 
 use why3::{
-    declaration::{Contract, Decl, Module, ValKind},
+    declaration::{Contract, Decl, Module},
     Ident,
 };
 
-use crate::{clone_map::CloneMap, ctx::*, translation::spec_axiom, util};
+use crate::{backend::logic::spec_axiom, clone_map::CloneMap, ctx::*, util};
 
 use creusot_rustc::{
     hir::def_id::DefId,
@@ -56,7 +56,7 @@ pub(crate) fn interface_for<'tcx>(
             let sig_contract = sig.clone();
             sig.retty = None;
             sig.contract = Contract::new();
-            decls.push(Decl::ValDecl(ValKind::Predicate { sig }));
+            decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
 
             let has_axioms = !sig_contract.contract.is_empty();
             if has_axioms {
@@ -66,7 +66,7 @@ pub(crate) fn interface_for<'tcx>(
         ItemType::Logic => {
             let sig_contract = sig.clone();
             sig.contract = Contract::new();
-            decls.push(Decl::ValDecl(ValKind::Function { sig }));
+            decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
 
             let has_axioms = !sig_contract.contract.is_empty();
             if has_axioms {
@@ -78,7 +78,7 @@ pub(crate) fn interface_for<'tcx>(
                 sig.contract.requires.push(why3::exp::Exp::mk_false());
             }
 
-            decls.push(Decl::ValDecl(ValKind::Val { sig }));
+            decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
         }
     }
 

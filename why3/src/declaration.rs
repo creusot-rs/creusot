@@ -28,11 +28,10 @@ pub struct Scope {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Decl {
-    FunDecl(CfgFunction),
+    CfgDecl(CfgFunction),
     Let(LetDecl),
-    LetFun(LetFun),
-    ValDecl(ValKind),
-    LogicDecl(Logic),
+    ValDecl(ValDecl),
+    LogicDefn(Logic),
     Scope(Scope),
     Module(Module),
     TyDecl(TyDecl),
@@ -265,6 +264,17 @@ pub enum ValKind {
     Val { sig: Signature },
     Predicate { sig: Signature },
     Function { sig: Signature },
+    ValFunction { sig: Signature },
+    ValPredicate { sig: Signature },
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+pub struct ValDecl {
+    pub ghost: bool,
+    pub val: bool,
+    pub kind: Option<LetKind>,
+    pub sig: Signature,
 }
 
 #[derive(Debug, Clone)]
@@ -291,17 +301,17 @@ pub struct Goal {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct LetDecl {
+    pub kind: Option<LetKind>,
     pub sig: Signature,
     pub rec: bool,
-    pub constant: bool,
+    pub ghost: bool,
     pub body: Exp,
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-pub struct LetFun {
-    pub sig: Signature,
-    pub rec: bool,
-    pub ghost: bool,
-    pub body: Exp,
+pub enum LetKind {
+    Function,
+    Predicate,
+    Constant,
 }

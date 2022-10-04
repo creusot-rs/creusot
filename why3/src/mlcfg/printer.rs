@@ -88,8 +88,8 @@ impl Print for Decl {
         A::Doc: Clone,
     {
         match self {
-            Decl::FunDecl(fun) => fun.pretty(alloc, env),
-            Decl::LogicDecl(log) => log.pretty(alloc, env),
+            Decl::CfgDecl(fun) => fun.pretty(alloc, env),
+            Decl::LogicDefn(log) => log.pretty(alloc, env),
             Decl::Module(modl) => modl.pretty(alloc, env),
             Decl::Scope(scope) => scope.pretty(alloc, env),
             Decl::PredDecl(p) => p.pretty(alloc, env),
@@ -100,7 +100,6 @@ impl Print for Decl {
             Decl::Axiom(a) => a.pretty(alloc, env),
             Decl::Goal(g) => g.pretty(alloc, env),
             Decl::Let(l) => l.pretty(alloc, env),
-            Decl::LetFun(l) => l.pretty(alloc, env),
         }
     }
 }
@@ -213,46 +212,18 @@ impl Print for LetDecl {
             doc = doc.append("rec ");
         }
 
-        if self.constant {
-            doc = doc.append("constant ");
-        }
-
-        doc = doc
-            .append(
-                self.sig
-                    .pretty(alloc, env)
-                    .append(alloc.line_())
-                    .append(alloc.text(" = [@vc:do_not_keep_trace] [@vc:sp]")),
-            )
-            .group()
-            .append(alloc.line())
-            .append(self.body.pretty(alloc, env).indent(2));
-
-        doc
-    }
-}
-
-impl Print for LetFun {
-    fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
-        &'a self,
-        alloc: &'a A,
-        env: &mut PrintEnv,
-    ) -> DocBuilder<'a, A>
-    where
-        A::Doc: Clone,
-    {
-        let mut doc = alloc.text("let ");
-
-        if self.rec {
-            doc = doc.append("rec ");
-        }
-
         if self.ghost {
             doc = doc.append("ghost ");
         }
 
+        match self.kind {
+            Some(LetKind::Function) => doc = doc.append("function "),
+            Some(LetKind::Predicate) => doc = doc.append("predicate "),
+            Some(LetKind::Constant) => doc = doc.append("constant "),
+            None => {}
+        }
+
         doc = doc
-            .append("function ")
             .append(
                 self.sig
                     .pretty(alloc, env)
@@ -467,7 +438,7 @@ impl Print for Use {
     }
 }
 
-impl Print for ValKind {
+impl Print for ValDecl {
     fn pretty<'b, 'a: 'b, A: DocAllocator<'a>>(
         &'a self,
         alloc: &'a A,
@@ -476,11 +447,25 @@ impl Print for ValKind {
     where
         A::Doc: Clone,
     {
-        match self {
-            ValKind::Val { sig } => alloc.text("val ").append(sig.pretty(alloc, env)),
-            ValKind::Predicate { sig } => alloc.text("predicate ").append(sig.pretty(alloc, env)),
-            ValKind::Function { sig } => alloc.text("function ").append(sig.pretty(alloc, env)),
+        let mut doc = alloc.nil();
+
+        if self.val {
+            doc = doc.append("val ");
         }
+
+        if self.ghost {
+            doc = doc.append("ghost ");
+        }
+
+        match self.kind {
+            Some(LetKind::Function) => doc = doc.append("function "),
+            Some(LetKind::Predicate) => doc = doc.append("predicate "),
+            Some(LetKind::Constant) => doc = doc.append("constant "),
+            None => {}
+        };
+
+        doc = doc.append(self.sig.pretty(alloc, env));
+        doc
     }
 }
 
