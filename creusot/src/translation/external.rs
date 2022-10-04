@@ -1,11 +1,12 @@
 use crate::{
+    backend::logic::translate_logic_or_predicate,
     ctx::*,
     error::{CrErr, CreusotResult},
     function::all_generic_decls_for,
     translation::{
         pearlite::{Term, TermKind},
         specification::ContractClauses,
-        traits, translate_logic_or_predicate,
+        traits,
     },
     util::item_type,
 };
@@ -69,6 +70,7 @@ pub(crate) fn extern_module<'tcx>(
             match item_type(ctx.tcx, def_id) {
                 // the dependencies should be what was already stored in the metadata...
                 ItemType::Logic | ItemType::Predicate => {
+                    // TODO: remove?
                     (translate_logic_or_predicate(ctx, def_id).0, None)
                 }
                 _ => unreachable!("extern_module: unexpected term for {:?}", def_id),

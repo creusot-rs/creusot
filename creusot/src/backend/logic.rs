@@ -104,13 +104,23 @@ fn builtin_body<'tcx>(
         let body = Exp::Call(box Exp::pure_qvar(builtin.without_search_path()), val_args);
 
         if util::is_predicate(ctx.tcx, def_id) {
-            decls.push(Decl::PredDecl(Predicate { sig, body }));
+            decls.push(Decl::Let(LetDecl {
+                sig,
+                body,
+                kind: Some(LetKind::Predicate),
+                rec: true,
+                ghost: true,
+            }));
         } else {
-            decls.push(Decl::LogicDecl(Logic { sig, body }));
+            decls.push(Decl::Let(LetDecl {
+                sig,
+                body,
+                kind: Some(LetKind::Function),
+                rec: true,
+                ghost: true,
+            }));
         }
     }
-
-    decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
 
     let name = module_name(ctx, def_id);
 
@@ -154,30 +164,29 @@ fn body_module<'tcx>(
     if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
         decls.push(Decl::ValDecl(val));
-        decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
     } else {
         let term = ctx.term(def_id).unwrap().clone();
-        let body = specification::lower_pure(ctx, &mut names, ctx.param_env(def_id), term);
+        let body = specification::lower_impure(ctx, &mut names, def_id, ctx.param_env(def_id), term);
         decls.extend(names.to_clones(ctx));
 
         if sig_contract.contract.variant.is_empty() {
-            let decl = match util::item_type(ctx.tcx, def_id) {
-                ItemType::Logic => Decl::LogicDecl(Logic { sig, body }),
-                ItemType::Predicate => Decl::PredDecl(Predicate { sig, body }),
+            let kind = match util::item_type(ctx.tcx, def_id) {
+                ItemType::Logic => Some(LetKind::Function),
+                ItemType::Predicate => Some(LetKind::Predicate),
                 _ => unreachable!(),
             };
+
+            let decl =
+                Decl::Let(LetDecl { kind, sig, rec: true, ghost: true, body });
             decls.push(decl);
-            decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
         } else if body.is_pure() {
             let def_sig = sig.clone();
             let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
             decls.push(Decl::ValDecl(val));
-            decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
             decls.push(Decl::Axiom(definition_axiom(&def_sig, body)));
         } else {
             let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
             decls.push(Decl::ValDecl(val));
-            decls.push(Decl::ValDecl(ValKind::Val { sig: val_sig }));
         }
     }
 
@@ -200,12 +209,13 @@ fn stub_module(ctx: &mut TranslationCtx, def_id: DefId) -> Module {
     }
     sig.contract = Contract::new();
 
-    let decl = match util::item_type(ctx.tcx, def_id) {
-        ItemType::Logic => Decl::ValDecl(ValKind::Function { sig }),
-        ItemType::Predicate => Decl::ValDecl(ValKind::Predicate { sig }),
+    let kind = match util::item_type(ctx.tcx, def_id) {
+        ItemType::Logic => LetKind::Function,
+        ItemType::Predicate => LetKind::Predicate,
         _ => unreachable!(),
     };
 
+    let decl = Decl::ValDecl(ValDecl { ghost: true, val: true, kind: Some(kind), sig });
     let name = module_name(ctx, def_id);
     let name = format!("{}_Stub", &*name).into();
 
@@ -236,7 +246,13 @@ fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx));
-    decls.push(Decl::LetFun(LetFun { sig, rec: true, ghost: true, body }));
+    decls.push(Decl::Let(LetDecl {
+        sig,
+        rec: true,
+        ghost: true,
+        body,
+        kind: Some(LetKind::Function),
+    }));
 
     let name = impl_name(ctx, def_id);
     Some(Module { name, decls })

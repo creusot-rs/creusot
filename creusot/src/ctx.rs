@@ -199,7 +199,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         {
             debug!("translating {:?} as logical", def_id);
             let (stub, modl, proof_modl, has_axioms, deps) =
-                crate::translation::translate_logic_or_predicate(self, def_id);
+                crate::backend::logic::translate_logic_or_predicate(self, def_id);
             self.dependencies.insert(def_id, deps);
             TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
         } else if !def_id.is_local() {

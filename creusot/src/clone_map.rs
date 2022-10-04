@@ -788,10 +788,10 @@ impl SymbolKind {
                 why3::ty::Type::TConstructor(tgt.qname_ident(id)),
             ),
             SymbolKind::Function(_) => {
-                CloneSubst::Function(src.qname_ident(id.clone()), tgt.qname_ident(id))
+                CloneSubst::Val(src.qname_ident(id.clone()), tgt.qname_ident(id))
             }
             SymbolKind::Predicate(_) => {
-                CloneSubst::Predicate(src.qname_ident(id.clone()), tgt.qname_ident(id))
+                CloneSubst::Val(src.qname_ident(id.clone()), tgt.qname_ident(id))
             }
         }
     }

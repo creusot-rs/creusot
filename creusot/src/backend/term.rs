@@ -7,6 +7,7 @@ use crate::{
     util,
     util::{constructor_qname, get_builtin},
 };
+use rustc_type_ir::IntTy;
 use creusot_rustc::{
     hir::Unsafety,
     middle::{
@@ -15,6 +16,7 @@ use creusot_rustc::{
     },
 };
 use rustc_middle::ty::{Ty, TyKind};
+use rustc_type_ir::UintTy;
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
     ty::Type,
@@ -92,14 +94,17 @@ impl<'tcx> Lower<'_, 'tcx> {
             }
             TermKind::Var(v) => Exp::pure_var(util::ident_of(v)),
             TermKind::Binary { op, box lhs, box rhs } => {
-                let lhs = self.lower_term(lhs);
-                let rhs = self.lower_term(rhs);
-
                 use pearlite::BinOp::*;
                 if matches!(op, Add | Sub | Mul | Div | Rem | Le | Ge | Lt | Gt) {
-                    self.names.import_prelude_module(PreludeModule::Int);
-                }
+                    match (lhs.ty.kind(), self.pure) {
+                        (TyKind::Uint(uty), Purity::Program) => self.names.import_prelude_module(uint_ty_to_module(*uty)),
+                        (TyKind::Int(ity), Purity::Program) => self.names.import_prelude_module(int_ty_to_module(*ity)),
+                        _ => self.names.import_prelude_module(PreludeModule::Int),
+                    };
+                };
 
+                let lhs = self.lower_term(lhs);
+                let rhs = self.lower_term(rhs);
                 match (op, self.pure) {
                     (Div, _) => Exp::Call(box Exp::pure_var("div".into()), vec![lhs, rhs]),
                     (Rem, _) => Exp::Call(box Exp::pure_var("mod".into()), vec![lhs, rhs]),
@@ -468,4 +473,26 @@ fn is_identity_from<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, subst: SubstsRef<'tcx>) 
         return subst[0].expect_ty() == EarlyBinder(out_ty).subst(tcx, subst);
     }
     false
+}
+
+fn uint_ty_to_module(uty: UintTy) -> PreludeModule {
+    match uty {
+        UintTy::Usize => PreludeModule::Usize,
+        UintTy::U8 => PreludeModule::UInt8,
+        UintTy::U16 => PreludeModule::UInt16,
+        UintTy::U32 => PreludeModule::UInt32,
+        UintTy::U64 => PreludeModule::UInt64,
+        UintTy::U128 => PreludeModule::UInt128,
+    }
+}
+
+fn int_ty_to_module(ity: IntTy) -> PreludeModule {
+    match ity {
+        IntTy::Isize => PreludeModule::Isize,
+        IntTy::I8 => PreludeModule::Int8,
+        IntTy::I16 => PreludeModule::Int16,
+        IntTy::I32 => PreludeModule::Int32,
+        IntTy::I64 => PreludeModule::Int64,
+        IntTy::I128 => PreludeModule::Int128,
+    }
 }

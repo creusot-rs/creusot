@@ -5,7 +5,7 @@ use why3::{
     Ident,
 };
 
-use crate::{clone_map::CloneMap, ctx::*, translation::spec_axiom, util};
+use crate::{clone_map::CloneMap, ctx::*, util};
 
 use creusot_rustc::{
     hir::def_id::DefId,
@@ -29,6 +29,7 @@ pub(crate) fn interface_for<'tcx>(
 
     let mut decls: Vec<_> = closure_generic_decls(ctx.tcx, def_id).collect();
 
+    // TODO: make this part of `pre_sig_of`.
     if ctx.tcx.is_closure(def_id) {
         if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
             let tydecl = translate_closure_ty(ctx, &mut names, def_id, subst);
