@@ -121,7 +121,7 @@ pub(crate) fn translate_trusted<'tcx>(
 
     decls.extend(names.to_clones(ctx));
 
-    decls.push(Decl::ValDecl(ValKind::Val { sig }));
+    decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
     return Module { name, decls };
 }
 
@@ -243,7 +243,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         decls.extend(self.names.to_clones(self.ctx));
 
         let param_env = self.param_env();
-        let func = Decl::FunDecl(CfgFunction {
+        let func = Decl::CfgDecl(CfgFunction {
             sig: self.sig,
             rec: true,
             constant: false,

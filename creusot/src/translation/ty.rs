@@ -12,7 +12,9 @@ use creusot_rustc::{
 use indexmap::IndexSet;
 use std::collections::VecDeque;
 use why3::{
-    declaration::{AdtDecl, ConstructorDecl, Contract, Decl, Field, LetFun, Module, Signature},
+    declaration::{
+        AdtDecl, ConstructorDecl, Contract, Decl, Field, LetDecl, LetKind, Module, Signature,
+    },
     exp::{Binder, Exp, Pattern},
     Ident,
 };
@@ -466,7 +468,13 @@ pub(crate) fn build_accessor(
 
     let discr_exp = Exp::Match(box Exp::pure_var("self".into()), branches);
 
-    Decl::LetFun(LetFun { sig, rec: false, ghost: target_field.2, body: discr_exp })
+    Decl::Let(LetDecl {
+        sig,
+        rec: false,
+        ghost: target_field.2,
+        body: discr_exp,
+        kind: Some(LetKind::Function),
+    })
 }
 
 pub(crate) fn closure_accessors<'tcx>(
