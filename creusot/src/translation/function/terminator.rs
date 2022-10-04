@@ -115,6 +115,19 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     let (fun_def_id, subst) =
                         resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
 
+                    // Update uses_panic if the function we're calling says it might panic.
+                    if let Some(item) = self.ctx.item(fun_def_id)
+                    && let Some(sig) = item.interface_signature() {
+                        // TODO: We probably need to check it isn't "raises(False)"
+                        if sig.contract.raises.is_some() {
+                            self.uses_panic = true;
+                        }
+                    } else if fun_def_id == self.def_id {
+                        // If this is a recursive call, it can't be the source of a panic
+                    } else {
+                        panic!("Expected a translated function for {fun_def_id:?} while translating {:?}", self.def_id);
+                    }
+
                     let exp = Expr::Call(fun_def_id, subst, func_args);
                     let span = span.source_callsite();
                     Expr::Span(span, box exp)
@@ -124,6 +137,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 self.emit_terminator(terminator);
             }
             Assert { cond, expected, msg: _, target, cleanup: _ } => {
+                // TODO: Emit raises on asserts...
+                self.uses_panic = true;
+
                 let mut ass = match cond {
                     Operand::Copy(pl) | Operand::Move(pl) => {
                         if let Some(locl) = pl.as_local() {

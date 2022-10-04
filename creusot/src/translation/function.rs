@@ -155,6 +155,10 @@ pub struct BodyTranslator<'body, 'tcx> {
     // Gives a fresh name to every mono-morphization of a function or trait
     names: &'body mut CloneMap<'tcx>,
 
+    /// Whether or not this function has any code path that panics or calls something
+    /// that might, so we can decide whether or not to emit a `raises` annotation.
+    uses_panic: bool,
+
     invariants: IndexMap<BasicBlock, Vec<(Symbol, Term<'tcx>)>>,
 
     assertions: IndexMap<DefId, Term<'tcx>>,
@@ -209,6 +213,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             ctx,
             fresh_id: body.basic_blocks().len(),
             names,
+            uses_panic: false,
             invariants,
             assertions,
             borrows,
@@ -241,6 +246,18 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             terminator: Terminator::Goto(BlockId(0)),
         };
         decls.extend(self.names.to_clones(self.ctx));
+
+        // Make sure may_panic is set if we do have a panic (reachable or not)
+        // and is unset if we do not (even if the user said panics are allowed)
+        // to avoid why3 errors about unused exceptions.
+        //
+        // Note that we are just modifying the signature of the implementation
+        // of the function, not the signature of the interface.
+        if !self.uses_panic {
+            self.sig.contract.raises = None;
+        } else if self.sig.contract.raises.is_none() {
+            self.sig.contract.raises = Some(Exp::mk_false())
+        }
 
         let param_env = self.param_env();
         let func = Decl::CfgDecl(CfgFunction {

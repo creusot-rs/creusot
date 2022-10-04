@@ -3,7 +3,7 @@ use crate::metadata::Metadata;
 use creusot_rustc::hir::def_id::DefId;
 use indexmap::IndexMap;
 
-use why3::declaration::{Decl, Module};
+use why3::declaration::{Decl, Module, Signature};
 
 pub enum TranslatedItem {
     Logic {
@@ -98,5 +98,21 @@ impl<'a> TranslatedItem {
             TranslatedItem::Constant { modl, .. } => box std::iter::once(modl),
             TranslatedItem::Type { .. } => self.modules(),
         }
+    }
+
+    pub(crate) fn interface_signature(&self) -> Option<&Signature> {
+        let interface = match self {
+            TranslatedItem::Program { interface, .. } => interface,
+            TranslatedItem::Extern { interface, .. } => interface,
+            TranslatedItem::Logic { interface, .. } => interface,
+            _ => return None,
+        };
+
+        // TODO: This needs some filling out. Or maybe just specialize
+        // this function on only program-fns?
+        interface.decls.iter().find_map(|decl| match decl {
+            Decl::ValDecl(decl) => Some(&decl.sig),
+            _ => None,
+        })
     }
 }

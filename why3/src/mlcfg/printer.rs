@@ -509,13 +509,14 @@ impl Print for Contract {
             )
         }
 
-        let raises = self.raises.as_ref().unwrap_or(&Exp::Const(Constant::Bool(false)));
-        doc = doc.append(
-            alloc
-                .text("raises ")
-                .append(alloc.text("Panic.Panic -> ").append(raises.pretty(alloc, env)).braces())
-                .append(alloc.hardline()),
-        );
+        if let Some(raises) = self.raises.as_ref() {
+            doc = doc.append(
+                alloc
+                    .text("raises ")
+                    .append(alloc.text("Panic.Panic -> ").append(raises.pretty(alloc, env)).braces())
+                    .append(alloc.hardline()),
+            );
+        }
 
         doc
     }
