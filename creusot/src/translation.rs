@@ -56,6 +56,13 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
     }
 
     let start = Instant::now();
+
+    for impls in ctx.tcx.all_local_trait_impls(()).values() {
+        for impl_id in impls {
+            ctx.translate(impl_id.to_def_id());
+        }
+    }
+
     for def_id in ctx.tcx.hir().body_owners() {
         let def_id = def_id.to_def_id();
 
@@ -70,12 +77,6 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
 
         info!("Translating body {:?}", def_id);
         ctx.translate(def_id);
-    }
-
-    for impls in ctx.tcx.all_local_trait_impls(()).values() {
-        for impl_id in impls {
-            ctx.translate(impl_id.to_def_id());
-        }
     }
 
     debug!("after_analysis_translate: {:?}", start.elapsed());
