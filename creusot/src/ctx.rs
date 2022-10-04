@@ -254,11 +254,11 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
         if util::has_body(self, def_id) {
             if !self.terms.contains_key(&def_id) {
-                let term = pearlite::pearlite(self.tcx, def_id.expect_local())
+                let mut term = pearlite::pearlite(self.tcx, def_id.expect_local())
                     .unwrap_or_else(|e| e.emit(self.tcx.sess));
+                pearlite::normalize(self.tcx, self.param_env(def_id), &mut term);
 
-                self.terms
-                    .insert(def_id, pearlite::normalize(self.tcx, self.param_env(def_id), term));
+                self.terms.insert(def_id, term);
             };
             self.terms.get(&def_id)
         } else {

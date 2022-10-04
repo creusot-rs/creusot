@@ -33,23 +33,15 @@ pub struct PreContract<'tcx> {
 
 impl<'tcx> PreContract<'tcx> {
     pub(crate) fn subst(&mut self, subst: &HashMap<Symbol, Term<'tcx>>) {
-        for r in &mut self.requires {
-            r.subst(subst);
-        }
-
-        for e in &mut self.ensures {
-            e.subst(subst);
-        }
-
-        for v in &mut self.variant {
-            v.subst(subst);
+        for term in self.terms_mut() {
+            term.subst(subst);
         }
     }
 
     pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>) -> Self {
-        self.requires = self.requires.into_iter().map(|r| normalize(tcx, param_env, r)).collect();
-        self.ensures = self.ensures.into_iter().map(|r| normalize(tcx, param_env, r)).collect();
-        self.variant = self.variant.into_iter().map(|r| normalize(tcx, param_env, r)).nth(0);
+        for term in self.terms_mut() {
+            normalize(tcx, param_env, term);
+        }
         self
     }
 
@@ -83,6 +75,10 @@ impl<'tcx> PreContract<'tcx> {
     #[allow(dead_code)]
     pub(crate) fn terms(&self) -> impl Iterator<Item = &Term<'tcx>> {
         self.requires.iter().chain(self.ensures.iter()).chain(self.variant.iter())
+    }
+
+    fn terms_mut(&mut self) -> impl Iterator<Item = &mut Term<'tcx>> {
+        self.requires.iter_mut().chain(self.ensures.iter_mut()).chain(self.variant.iter_mut())
     }
 
     pub(crate) fn ensures_conj(&self, tcx: TyCtxt<'tcx>) -> Term<'tcx> {
@@ -250,31 +246,18 @@ pub(crate) fn contract_clauses_of(
 
         // Stop using diagnostic item.
         // Use a custom HIR visitor which walks the attributes
+        let get_creusot_item = || {
+            let predicate_name = match &attr.args {
+                MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token_lit.symbol,
+                _ => return Err(InvalidTokens { id: def_id }),
+            };
+            ctx.creusot_item(predicate_name).ok_or(InvalidTerm { id: def_id })
+        };
+
         match attr.path.segments[2].ident.to_string().as_str() {
-            "requires" => {
-                let req_name = match &attr.args {
-                    MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token_lit.symbol,
-                    _ => return Err(InvalidTokens { id: def_id }),
-                };
-                let req_id = ctx.creusot_item(req_name).ok_or(InvalidTerm { id: def_id })?;
-                contract.requires.push(req_id);
-            }
-            "ensures" => {
-                let ens_name = match &attr.args {
-                    MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token_lit.symbol,
-                    _ => return Err(InvalidTokens { id: def_id }),
-                };
-                let ens_id = ctx.creusot_item(ens_name).ok_or(InvalidTerm { id: def_id })?;
-                contract.ensures.push(ens_id);
-            }
-            "variant" => {
-                let var_name = match &attr.args {
-                    MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token_lit.symbol,
-                    _ => return Err(InvalidTokens { id: def_id }),
-                };
-                let var_id = ctx.creusot_item(var_name).ok_or(InvalidTerm { id: def_id })?;
-                contract.variant = Some(var_id);
-            }
+            "requires" => contract.requires.push(get_creusot_item()?),
+            "ensures" => contract.ensures.push(get_creusot_item()?),
+            "variant" => contract.variant = Some(get_creusot_item()?),
             _ => {}
         }
     }
