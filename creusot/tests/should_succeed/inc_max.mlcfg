@@ -2,26 +2,23 @@
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
+  let rec ghost predicate resolve (self : borrowed t) = [@vc:do_not_keep_trace] [@vc:sp]
+    pure { ^ self =  * self}
 end
 module IncMax_TakeMax_Interface
+  use mach.int.UInt32
   use prelude.Borrow
   use mach.int.Int
-  use mach.int.UInt32
   val take_max [@cfg:stackify] (ma : borrowed uint32) (mb : borrowed uint32) : borrowed uint32
     ensures { [#"../inc_max.rs" 4 0 5 56] if  * ma >=  * mb then
        * mb =  ^ mb /\ result = ma
@@ -31,9 +28,9 @@ module IncMax_TakeMax_Interface
     
 end
 module IncMax_TakeMax
+  use mach.int.UInt32
   use prelude.Borrow
   use mach.int.Int
-  use mach.int.UInt32
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = uint32
   let rec cfg take_max [@cfg:stackify] [#"../inc_max.rs" 6 0 6 64] (ma : borrowed uint32) (mb : borrowed uint32) : borrowed uint32
     ensures { [#"../inc_max.rs" 4 0 5 56] if  * ma >=  * mb then
@@ -95,15 +92,15 @@ module IncMax_TakeMax
   
 end
 module IncMax_IncMax_Interface
-  use mach.int.Int
   use mach.int.UInt32
+  use mach.int.Int
   val inc_max [@cfg:stackify] (a : uint32) (b : uint32) : ()
     requires {[#"../inc_max.rs" 14 11 14 49] a <= (1000000 : uint32) /\ b <= (1000000 : uint32)}
     
 end
 module IncMax_IncMax
-  use mach.int.Int
   use mach.int.UInt32
+  use mach.int.Int
   use prelude.Borrow
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = uint32
   clone IncMax_TakeMax_Interface as TakeMax0

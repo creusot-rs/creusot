@@ -1,39 +1,33 @@
 
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve_Stub
   type t1
   type t2
-  predicate resolve (self : (t1, t2))
+  val ghost predicate resolve (self : (t1, t2))
 end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve_Interface
   type t1
   type t2
-  predicate resolve (self : (t1, t2))
+  val ghost predicate resolve (self : (t1, t2))
 end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve
   type t1
   type t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve1 with type self = t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve0 with type self = t1
-  predicate resolve (self : (t1, t2)) =
-    Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
-  val resolve (self : (t1, t2)) : bool
-    ensures { result = resolve self }
-    
+  let rec ghost predicate resolve (self : (t1, t2)) = [@vc:do_not_keep_trace] [@vc:sp]
+    Resolve0.resolve (let (a, _) = self in a) && Resolve1.resolve (let (_, a) = self in a)
 end
 module TraitImpl_Impl0_X_Interface
   type b
@@ -48,7 +42,7 @@ module TraitImpl_Impl0_X
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve1 with type self = t1
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = t1, type t2 = t2,
-    predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
+    val Resolve0.resolve = Resolve1.resolve, val Resolve1.resolve = Resolve2.resolve
   let rec cfg x [@cfg:stackify] [#"../trait_impl.rs" 25 4 25 14] (self : (t1, t2)) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();

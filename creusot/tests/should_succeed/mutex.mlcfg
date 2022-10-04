@@ -3,22 +3,19 @@ module Mutex_Inv_Inv_Stub
   type self
   type t
   use prelude.Borrow
-  predicate inv (self : self) (x : t)
+  val ghost predicate inv (self : self) (x : t)
 end
 module Mutex_Inv_Inv_Interface
   type self
   type t
   use prelude.Borrow
-  predicate inv (self : self) (x : t)
+  val ghost predicate inv (self : self) (x : t)
 end
 module Mutex_Inv_Inv
   type self
   type t
   use prelude.Borrow
-  predicate inv [#"../mutex.rs" 7 4 7 32] (self : self) (x : t)
-  val inv (self : self) (x : t) : bool
-    ensures { result = inv self x }
-    
+  val ghost predicate inv [#"../mutex.rs" 7 4 7 32] (self : self) (x : t)
 end
 module Mutex_MutexInner_Type
   type t_mutexinner 't
@@ -191,25 +188,23 @@ module Mutex_Impl2_Inv_Stub
   use mach.int.Int
   use mach.int.UInt32
   use Mutex_Even_Type as Mutex_Even_Type
-  predicate inv (self : Mutex_Even_Type.t_even) (x : uint32)
+  val ghost predicate inv (self : Mutex_Even_Type.t_even) (x : uint32)
 end
 module Mutex_Impl2_Inv_Interface
   use prelude.Borrow
   use mach.int.Int
   use mach.int.UInt32
   use Mutex_Even_Type as Mutex_Even_Type
-  predicate inv (self : Mutex_Even_Type.t_even) (x : uint32)
+  val ghost predicate inv (self : Mutex_Even_Type.t_even) (x : uint32)
 end
 module Mutex_Impl2_Inv
   use prelude.Borrow
   use mach.int.Int
   use mach.int.UInt32
   use Mutex_Even_Type as Mutex_Even_Type
-  predicate inv [#"../mutex.rs" 65 4 65 33] (self : Mutex_Even_Type.t_even) (x : uint32) =
-    [#"../mutex.rs" 66 8 66 24] mod x (2 : uint32) = (0 : uint32)
-  val inv (self : Mutex_Even_Type.t_even) (x : uint32) : bool
-    ensures { result = inv self x }
-    
+  let rec ghost predicate inv [#"../mutex.rs" 65 4 65 33] (self : Mutex_Even_Type.t_even) (x : uint32)
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../mutex.rs" 66 8 66 24] pure {mod x (2 : uint32) = (0 : uint32)}
 end
 module Mutex_AddsTwo_Type
   use prelude.Borrow
@@ -228,35 +223,31 @@ module Mutex_AddsTwo_Type
 end
 module Mutex_Impl3_Precondition_Stub
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
-  predicate precondition (self : Mutex_AddsTwo_Type.t_addstwo)
+  val ghost predicate precondition (self : Mutex_AddsTwo_Type.t_addstwo)
 end
 module Mutex_Impl3_Precondition_Interface
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
-  predicate precondition (self : Mutex_AddsTwo_Type.t_addstwo)
+  val ghost predicate precondition (self : Mutex_AddsTwo_Type.t_addstwo)
 end
 module Mutex_Impl3_Precondition
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
-  predicate precondition [#"../mutex.rs" 90 4 90 33] (self : Mutex_AddsTwo_Type.t_addstwo) =
+  let rec ghost predicate precondition [#"../mutex.rs" 90 4 90 33] (self : Mutex_AddsTwo_Type.t_addstwo)
+   = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../mutex.rs" 91 8 91 12] true
-  val precondition (self : Mutex_AddsTwo_Type.t_addstwo) : bool
-    ensures { result = precondition self }
-    
 end
 module Mutex_Impl3_Postcondition_Stub
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
-  predicate postcondition (self : Mutex_AddsTwo_Type.t_addstwo) (_2' : ())
+  val ghost predicate postcondition (self : Mutex_AddsTwo_Type.t_addstwo) (_2' : ())
 end
 module Mutex_Impl3_Postcondition_Interface
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
-  predicate postcondition (self : Mutex_AddsTwo_Type.t_addstwo) (_2' : ())
+  val ghost predicate postcondition (self : Mutex_AddsTwo_Type.t_addstwo) (_2' : ())
 end
 module Mutex_Impl3_Postcondition
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
-  predicate postcondition [#"../mutex.rs" 95 4 95 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2' : ()) =
+  let rec ghost predicate postcondition [#"../mutex.rs" 95 4 95 41] (self : Mutex_AddsTwo_Type.t_addstwo) (_2' : ())
+   = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../mutex.rs" 96 8 96 12] true
-  val postcondition (self : Mutex_AddsTwo_Type.t_addstwo) (_2' : ()) : bool
-    ensures { result = postcondition self _2' }
-    
 end
 module Mutex_Impl3_Call_Interface
   use Mutex_AddsTwo_Type as Mutex_AddsTwo_Type
@@ -272,10 +263,9 @@ module Mutex_Impl3_Call
   use Mutex_MutexGuard_Type as Mutex_MutexGuard_Type
   clone Mutex_Impl2_Inv as Inv0
   use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  clone Mutex_Impl1_Set_Interface as Set0 with type t = uint32, type i = Mutex_Even_Type.t_even,
-    predicate Inv0.inv = Inv0.inv
+  clone Mutex_Impl1_Set_Interface as Set0 with type t = uint32, type i = Mutex_Even_Type.t_even, val Inv0.inv = Inv0.inv
   clone Mutex_Impl1_Deref_Interface as Deref0 with type t = uint32, type i = Mutex_Even_Type.t_even,
-    predicate Inv0.inv = Inv0.inv
+    val Inv0.inv = Inv0.inv
   clone Mutex_Impl0_Lock_Interface as Lock0 with type t = uint32, type i = Mutex_Even_Type.t_even
   let rec cfg call [@cfg:stackify] [#"../mutex.rs" 99 4 99 23] (self : Mutex_AddsTwo_Type.t_addstwo) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -398,18 +388,15 @@ module Mutex_Impl4_Join
 end
 module Mutex_FakeFnOnce_Precondition_Stub
   type self
-  predicate precondition (self : self)
+  val ghost predicate precondition (self : self)
 end
 module Mutex_FakeFnOnce_Precondition_Interface
   type self
-  predicate precondition (self : self)
+  val ghost predicate precondition (self : self)
 end
 module Mutex_FakeFnOnce_Precondition
   type self
-  predicate precondition [#"../mutex.rs" 77 4 77 34] (self : self)
-  val precondition (self : self) : bool
-    ensures { result = precondition self }
-    
+  val ghost predicate precondition [#"../mutex.rs" 77 4 77 34] (self : self)
 end
 module Mutex_SpawnPostCond_Type
   type t_spawnpostcond 'f =
@@ -447,34 +434,31 @@ end
 module Mutex_FakeFnOnce_Postcondition_Stub
   type self
   clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = self
-  predicate postcondition (self : self) (_2' : Return0.return')
+  val ghost predicate postcondition (self : self) (_2' : Return0.return')
 end
 module Mutex_FakeFnOnce_Postcondition_Interface
   type self
   clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = self
-  predicate postcondition (self : self) (_2' : Return0.return')
+  val ghost predicate postcondition (self : self) (_2' : Return0.return')
 end
 module Mutex_FakeFnOnce_Postcondition
   type self
   clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = self
-  predicate postcondition [#"../mutex.rs" 80 4 80 52] (self : self) (_2' : Return0.return')
-  val postcondition (self : self) (_2' : Return0.return') : bool
-    ensures { result = postcondition self _2' }
-    
+  val ghost predicate postcondition [#"../mutex.rs" 80 4 80 52] (self : self) (_2' : Return0.return')
 end
 module Mutex_Impl5_Inv_Stub
   type f
   use prelude.Borrow
   clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = f
   use Mutex_SpawnPostCond_Type as Mutex_SpawnPostCond_Type
-  predicate inv (self : Mutex_SpawnPostCond_Type.t_spawnpostcond f) (v : Return0.return')
+  val ghost predicate inv (self : Mutex_SpawnPostCond_Type.t_spawnpostcond f) (v : Return0.return')
 end
 module Mutex_Impl5_Inv_Interface
   type f
   use prelude.Borrow
   clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = f
   use Mutex_SpawnPostCond_Type as Mutex_SpawnPostCond_Type
-  predicate inv (self : Mutex_SpawnPostCond_Type.t_spawnpostcond f) (v : Return0.return')
+  val ghost predicate inv (self : Mutex_SpawnPostCond_Type.t_spawnpostcond f) (v : Return0.return')
 end
 module Mutex_Impl5_Inv
   type f
@@ -482,12 +466,10 @@ module Mutex_Impl5_Inv
   clone Mutex_FakeFnOnce_Return_Type as Return0 with type self = f
   use Mutex_SpawnPostCond_Type as Mutex_SpawnPostCond_Type
   clone Mutex_FakeFnOnce_Postcondition_Stub as Postcondition0 with type self = f, type Return0.return' = Return0.return'
-  predicate inv [#"../mutex.rs" 148 4 148 39] (self : Mutex_SpawnPostCond_Type.t_spawnpostcond f) (v : Return0.return')
-   =
-    [#"../mutex.rs" 147 4 147 16] Postcondition0.postcondition (Mutex_SpawnPostCond_Type.spawnpostcond_f self) v
-  val inv (self : Mutex_SpawnPostCond_Type.t_spawnpostcond f) (v : Return0.return') : bool
-    ensures { result = inv self v }
+  let rec ghost predicate inv [#"../mutex.rs" 148 4 148 39] (self : Mutex_SpawnPostCond_Type.t_spawnpostcond f) (v : Return0.return')
     
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../mutex.rs" 147 4 147 16] Postcondition0.postcondition (Mutex_SpawnPostCond_Type.spawnpostcond_f self) v
 end
 module Mutex_Leak_Interface
   type t
@@ -506,21 +488,18 @@ end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
+  let rec ghost predicate resolve (self : borrowed t) = [@vc:do_not_keep_trace] [@vc:sp]
+    pure { ^ self =  * self}
 end
 module Mutex_Impl3_Return_Type
   type return'  =
@@ -543,17 +522,16 @@ module Mutex_Concurrent
   clone Mutex_Impl3_Return_Type as Return0
   use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   clone Mutex_Impl5_Inv as Inv1 with type f = Mutex_AddsTwo_Type.t_addstwo, type Return0.return' = Return0.return',
-    predicate Postcondition0.postcondition = Postcondition0.postcondition
+    val Postcondition0.postcondition = Postcondition0.postcondition
   clone Mutex_Impl3_Precondition as Precondition0
   clone Mutex_Impl2_Inv as Inv0
   clone Mutex_Impl4_Join_Interface as Join0 with type t = (),
-    type i = Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo), predicate Inv0.inv = Inv1.inv
+    type i = Mutex_SpawnPostCond_Type.t_spawnpostcond (Mutex_AddsTwo_Type.t_addstwo), val Inv0.inv = Inv1.inv
   clone Mutex_Spawn_Interface as Spawn0 with type t = (), type f = Mutex_AddsTwo_Type.t_addstwo,
-    predicate Precondition0.precondition = Precondition0.precondition
+    val Precondition0.precondition = Precondition0.precondition
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)
   clone Mutex_Leak_Interface as Leak0 with type t = Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even)
-  clone Mutex_Impl0_New_Interface as New0 with type t = uint32, type i = Mutex_Even_Type.t_even,
-    predicate Inv0.inv = Inv0.inv
+  clone Mutex_Impl0_New_Interface as New0 with type t = uint32, type i = Mutex_Even_Type.t_even, val Inv0.inv = Inv0.inv
   let rec cfg concurrent [@cfg:stackify] [#"../mutex.rs" 161 0 161 19] (_ : ()) : () = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var m_1 : Mutex_Mutex_Type.t_mutex uint32 (Mutex_Even_Type.t_even);
@@ -640,8 +618,7 @@ module Mutex_Impl2
   use mach.int.UInt32
   use Mutex_Even_Type as Mutex_Even_Type
   clone Mutex_Impl2_Inv as Inv0
-  clone Mutex_Inv_Inv_Interface as Inv1 with type self = Mutex_Even_Type.t_even, type t = uint32,
-    predicate inv = Inv0.inv
+  clone Mutex_Inv_Inv_Interface as Inv1 with type self = Mutex_Even_Type.t_even, type t = uint32, val inv = Inv0.inv
 end
 module Mutex_Impl5
   type f
@@ -650,9 +627,9 @@ module Mutex_Impl5
     type Return0.return' = Return0.return'
   use Mutex_SpawnPostCond_Type as Mutex_SpawnPostCond_Type
   clone Mutex_Impl5_Inv as Inv0 with type f = f, type Return0.return' = Return0.return',
-    predicate Postcondition0.postcondition = Postcondition0.postcondition
+    val Postcondition0.postcondition = Postcondition0.postcondition
   clone Mutex_Inv_Inv_Interface as Inv1 with type self = Mutex_SpawnPostCond_Type.t_spawnpostcond f,
-    type t = Return0.return', predicate inv = Inv0.inv
+    type t = Return0.return', val inv = Inv0.inv
 end
 module Mutex_FakeFnOnce_Call_Interface
   type self
@@ -683,12 +660,12 @@ module Mutex_Impl3
   clone Mutex_Impl3_Precondition as Precondition0
   clone Mutex_Impl3_Call_Interface as Call0
   clone Mutex_FakeFnOnce_Call_Interface as Call1 with type self = Mutex_AddsTwo_Type.t_addstwo, val call = Call0.call,
-    predicate Precondition0.precondition = Precondition0.precondition,
-    predicate Postcondition0.postcondition = Postcondition0.postcondition, type Return0.return' = Return0.return'
+    val Precondition0.precondition = Precondition0.precondition,
+    val Postcondition0.postcondition = Postcondition0.postcondition, type Return0.return' = Return0.return'
   clone Mutex_FakeFnOnce_Postcondition_Interface as Postcondition1 with type self = Mutex_AddsTwo_Type.t_addstwo,
-    predicate postcondition = Postcondition0.postcondition, type Return0.return' = Return0.return'
+    val postcondition = Postcondition0.postcondition, type Return0.return' = Return0.return'
   clone Mutex_FakeFnOnce_Precondition_Interface as Precondition1 with type self = Mutex_AddsTwo_Type.t_addstwo,
-    predicate precondition = Precondition0.precondition
+    val precondition = Precondition0.precondition
   clone Mutex_FakeFnOnce_Return_Type as Return1 with type self = Mutex_AddsTwo_Type.t_addstwo,
     type return' = Return0.return'
 end

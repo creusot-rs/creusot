@@ -58,55 +58,46 @@ module Switch_Test
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve_Stub
   type t1
   type t2
-  predicate resolve (self : (t1, t2))
+  val ghost predicate resolve (self : (t1, t2))
 end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve_Interface
   type t1
   type t2
-  predicate resolve (self : (t1, t2))
+  val ghost predicate resolve (self : (t1, t2))
 end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve
   type t1
   type t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve1 with type self = t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve0 with type self = t1
-  predicate resolve (self : (t1, t2)) =
-    Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
-  val resolve (self : (t1, t2)) : bool
-    ensures { result = resolve self }
-    
+  let rec ghost predicate resolve (self : (t1, t2)) = [@vc:do_not_keep_trace] [@vc:sp]
+    Resolve0.resolve (let (a, _) = self in a) && Resolve1.resolve (let (_, a) = self in a)
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve_Stub
   type t
-  predicate resolve (self : t)
+  val ghost predicate resolve (self : t)
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
   type t
-  predicate resolve (self : t)
+  val ghost predicate resolve (self : t)
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve
   type t
-  predicate resolve (self : t) =
+  let rec ghost predicate resolve (self : t) = [@vc:do_not_keep_trace] [@vc:sp]
     true
-  val resolve (self : t) : bool
-    ensures { result = resolve self }
-    
 end
 module Switch_Test2_Interface
   use mach.int.Int
@@ -122,7 +113,7 @@ module Switch_Test2
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = uint32
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve1 with type t = Switch_Option_Type.t_option uint32
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve0 with type t1 = Switch_Option_Type.t_option uint32,
-    type t2 = uint32, predicate Resolve0.resolve = Resolve1.resolve, predicate Resolve1.resolve = Resolve2.resolve
+    type t2 = uint32, val Resolve0.resolve = Resolve1.resolve, val Resolve1.resolve = Resolve2.resolve
   let rec cfg test2 [@cfg:stackify] [#"../switch.rs" 16 0 16 42] (o : (Switch_Option_Type.t_option uint32, uint32)) : uint32
     
    = [@vc:do_not_keep_trace] [@vc:sp]

@@ -2,61 +2,52 @@
 module C04_A_Stub
   use mach.int.Int
   use mach.int.UInt32
-  function a (x : uint32) : bool
+  val ghost function a (x : uint32) : bool
 end
 module C04_A_Interface
   use mach.int.Int
   use mach.int.UInt32
-  function a (x : uint32) : bool
+  val ghost function a (x : uint32) : bool
 end
 module C04_A
   use mach.int.Int
   use mach.int.UInt32
-  function a [#"../04.rs" 6 0 6 20] (x : uint32) : bool =
+  let rec ghost function a [#"../04.rs" 6 0 6 20] (x : uint32) : bool = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../04.rs" 7 4 7 12] x > (0 : uint32)
-  val a (x : uint32) : bool
-    ensures { result = a x }
-    
 end
 module C04_B_Stub
   use mach.int.Int
   use mach.int.UInt32
-  function b (x : uint32) : bool
+  val ghost function b (x : uint32) : bool
 end
 module C04_B_Interface
   use mach.int.Int
   use mach.int.UInt32
-  function b (x : uint32) : bool
+  val ghost function b (x : uint32) : bool
 end
 module C04_B
   use mach.int.Int
   use mach.int.UInt32
   clone C04_A_Stub as A0
-  function b [#"../04.rs" 11 0 11 20] (x : uint32) : bool =
-    [#"../04.rs" 12 4 12 21] x > (10 : uint32) /\ A0.a x
-  val b (x : uint32) : bool
-    ensures { result = b x }
-    
+  let rec ghost function b [#"../04.rs" 11 0 11 20] (x : uint32) : bool = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../04.rs" 12 4 12 21] x > (10 : uint32) && A0.a x
 end
 module C04_C_Stub
   use mach.int.Int
   use mach.int.UInt32
-  function c (x : uint32) : bool
+  val ghost function c (x : uint32) : bool
 end
 module C04_C_Interface
   use mach.int.Int
   use mach.int.UInt32
-  function c (x : uint32) : bool
+  val ghost function c (x : uint32) : bool
 end
 module C04_C
   use mach.int.Int
   use mach.int.UInt32
   clone C04_B_Stub as B0
-  function c [#"../04.rs" 16 0 16 20] (x : uint32) : bool =
-    [#"../04.rs" 17 4 17 21] x < (50 : uint32) /\ B0.b x
-  val c (x : uint32) : bool
-    ensures { result = c x }
-    
+  let rec ghost function c [#"../04.rs" 16 0 16 20] (x : uint32) : bool = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../04.rs" 17 4 17 21] x < (50 : uint32) && B0.b x
 end
 module C04_F_Interface
   use mach.int.Int
@@ -70,8 +61,8 @@ module C04_F
   use mach.int.Int
   use mach.int.UInt32
   clone C04_A as A0
-  clone C04_B as B0 with function A0.a = A0.a
-  clone C04_C as C0 with function B0.b = B0.b
+  clone C04_B as B0 with val A0.a = A0.a
+  clone C04_C as C0 with val B0.b = B0.b
   let rec cfg f [@cfg:stackify] [#"../04.rs" 21 0 21 16] (x : uint32) : ()
     requires {[#"../04.rs" 20 11 20 15] C0.c x}
     

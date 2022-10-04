@@ -2,20 +2,17 @@
 module C01_Inv_Inv_Stub
   type self
   type t
-  predicate inv (x : t)
+  val ghost predicate inv (x : t)
 end
 module C01_Inv_Inv_Interface
   type self
   type t
-  predicate inv (x : t)
+  val ghost predicate inv (x : t)
 end
 module C01_Inv_Inv
   type self
   type t
-  predicate inv [#"../01.rs" 8 4 8 25] (x : t)
-  val inv (x : t) : bool
-    ensures { result = inv x }
-    
+  val ghost predicate inv [#"../01.rs" 8 4 8 25] (x : t)
 end
 module Core_Cell_UnsafeCell_Type
   type t_unsafecell 't =
@@ -83,21 +80,18 @@ end
 module C01_Impl1_Inv_Stub
   use mach.int.Int
   use mach.int.UInt32
-  predicate inv (x : uint32)
+  val ghost predicate inv (x : uint32)
 end
 module C01_Impl1_Inv_Interface
   use mach.int.Int
   use mach.int.UInt32
-  predicate inv (x : uint32)
+  val ghost predicate inv (x : uint32)
 end
 module C01_Impl1_Inv
   use mach.int.Int
   use mach.int.UInt32
-  predicate inv [#"../01.rs" 34 4 34 26] (x : uint32) =
-    [#"../01.rs" 35 8 35 24] mod x (2 : uint32) = (0 : uint32)
-  val inv (x : uint32) : bool
-    ensures { result = inv x }
-    
+  let rec ghost predicate inv [#"../01.rs" 34 4 34 26] (x : uint32) = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../01.rs" 35 8 35 24] pure {mod x (2 : uint32) = (0 : uint32)}
 end
 module C01_Even_Type
   type t_even  =
@@ -119,10 +113,8 @@ module C01_AddsTwo
   use C01_Even_Type as C01_Even_Type
   use C01_Cell_Type as C01_Cell_Type
   clone C01_Impl1_Inv as Inv0
-  clone C01_Impl0_Set_Interface as Set0 with type t = uint32, type i = C01_Even_Type.t_even,
-    predicate Inv0.inv = Inv0.inv
-  clone C01_Impl0_Get_Interface as Get0 with type t = uint32, type i = C01_Even_Type.t_even,
-    predicate Inv0.inv = Inv0.inv
+  clone C01_Impl0_Set_Interface as Set0 with type t = uint32, type i = C01_Even_Type.t_even, val Inv0.inv = Inv0.inv
+  clone C01_Impl0_Get_Interface as Get0 with type t = uint32, type i = C01_Even_Type.t_even, val Inv0.inv = Inv0.inv
   let rec cfg adds_two [@cfg:stackify] [#"../01.rs" 39 0 39 36] (c : C01_Cell_Type.t_cell uint32 (C01_Even_Type.t_even)) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -185,5 +177,5 @@ module C01_Impl1
   use mach.int.UInt32
   use C01_Even_Type as C01_Even_Type
   clone C01_Impl1_Inv as Inv0
-  clone C01_Inv_Inv_Interface as Inv1 with type self = C01_Even_Type.t_even, type t = uint32, predicate inv = Inv0.inv
+  clone C01_Inv_Inv_Interface as Inv1 with type self = C01_Even_Type.t_even, type t = uint32, val inv = Inv0.inv
 end

@@ -1,19 +1,16 @@
 
 module HeapsortGeneric_Parent_Stub
   use mach.int.Int
-  function parent (i : int) : int
+  val ghost function parent (i : int) : int
 end
 module HeapsortGeneric_Parent_Interface
   use mach.int.Int
-  function parent (i : int) : int
+  val ghost function parent (i : int) : int
 end
 module HeapsortGeneric_Parent
   use mach.int.Int
-  function parent [#"../heapsort_generic.rs" 7 0 7 24] (i : int) : int =
+  let rec ghost function parent [#"../heapsort_generic.rs" 7 0 7 24] (i : int) : int = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../heapsort_generic.rs" 8 4 8 19] div (i + 1) 2 - 1
-  val parent (i : int) : int
-    ensures { result = parent i }
-    
 end
 module Core_Cmp_Ordering_Type
   type t_ordering  =
@@ -25,50 +22,44 @@ end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
-  function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
+  val ghost function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
-  function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
+  val ghost function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLog
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
-  function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
-  val cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
-    ensures { result = cmp_log self _2' }
-    
+  val ghost function cmp_log (self : self) (_2' : self) : Core_Cmp_Ordering_Type.t_ordering
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub
   type self
-  predicate le_log (self : self) (o : self)
+  val ghost predicate le_log (self : self) (o : self)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface
   type self
-  predicate le_log (self : self) (o : self)
+  val ghost predicate le_log (self : self) (o : self)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LeLog
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  predicate le_log (self : self) (o : self) =
-    CmpLog0.cmp_log self o <> Core_Cmp_Ordering_Type.C_Greater
-  val le_log (self : self) (o : self) : bool
-    ensures { result = le_log self o }
-    
+  let rec ghost predicate le_log (self : self) (o : self) = [@vc:do_not_keep_trace] [@vc:sp]
+    let a = CmpLog0.cmp_log self o in pure {a <> Core_Cmp_Ordering_Type.C_Greater}
 end
 module HeapsortGeneric_HeapFrag_Stub
   type t
   use seq.Seq
   use mach.int.Int
-  predicate heap_frag (s : Seq.seq t) (start : int) (end' : int)
+  val ghost predicate heap_frag (s : Seq.seq t) (start : int) (end' : int)
 end
 module HeapsortGeneric_HeapFrag_Interface
   type t
   use seq.Seq
   use mach.int.Int
-  predicate heap_frag (s : Seq.seq t) (start : int) (end' : int)
+  val ghost predicate heap_frag (s : Seq.seq t) (start : int) (end' : int)
 end
 module HeapsortGeneric_HeapFrag
   type t
@@ -76,287 +67,258 @@ module HeapsortGeneric_HeapFrag
   use mach.int.Int
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with type self = t
   clone HeapsortGeneric_Parent_Stub as Parent0
-  predicate heap_frag [#"../heapsort_generic.rs" 12 0 12 66] (s : Seq.seq t) (start : int) (end' : int) =
-    [#"../heapsort_generic.rs" 13 4 14 26] forall i : int . start <= Parent0.parent i /\ i < end' -> LeLog0.le_log (Seq.get s i) (Seq.get s (Parent0.parent i))
-  val heap_frag (s : Seq.seq t) (start : int) (end' : int) : bool
-    ensures { result = heap_frag s start end' }
-    
+  let rec ghost predicate heap_frag [#"../heapsort_generic.rs" 12 0 12 66] (s : Seq.seq t) (start : int) (end' : int)
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../heapsort_generic.rs" 13 4 14 26] pure {forall i : int . start <= Parent0.parent i /\ i < end' -> LeLog0.le_log (Seq.get s i) (Seq.get s (Parent0.parent i))}
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with type self = self
-  function cmp_le_log (x : self) (y : self) : ()
+  val ghost function cmp_le_log (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with type self = self
-  function cmp_le_log (x : self) (y : self) : ()
-  axiom cmp_le_log_spec : forall x : self, y : self . LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater)
+  val ghost function cmp_le_log (x : self) (y : self) : ()
+    ensures { LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater) }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with type self = self
-  function cmp_le_log (x : self) (y : self) : ()
-  val cmp_le_log (x : self) (y : self) : ()
-    ensures { result = cmp_le_log x y }
-    
+  val ghost function cmp_le_log (x : self) (y : self) : ()
   axiom cmp_le_log_spec : forall x : self, y : self . LeLog0.le_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Greater)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub
   type self
-  predicate lt_log (self : self) (o : self)
+  val ghost predicate lt_log (self : self) (o : self)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface
   type self
-  predicate lt_log (self : self) (o : self)
+  val ghost predicate lt_log (self : self) (o : self)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_LtLog
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  predicate lt_log (self : self) (o : self) =
-    CmpLog0.cmp_log self o = Core_Cmp_Ordering_Type.C_Less
-  val lt_log (self : self) (o : self) : bool
-    ensures { result = lt_log self o }
-    
+  let rec ghost predicate lt_log (self : self) (o : self) = [@vc:do_not_keep_trace] [@vc:sp]
+    let a = CmpLog0.cmp_log self o in pure {a = Core_Cmp_Ordering_Type.C_Less}
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog0 with type self = self
-  function cmp_lt_log (x : self) (y : self) : ()
+  val ghost function cmp_lt_log (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog0 with type self = self
-  function cmp_lt_log (x : self) (y : self) : ()
-  axiom cmp_lt_log_spec : forall x : self, y : self . LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less)
+  val ghost function cmp_lt_log (x : self) (y : self) : ()
+    ensures { LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less) }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog0 with type self = self
-  function cmp_lt_log (x : self) (y : self) : ()
-  val cmp_lt_log (x : self) (y : self) : ()
-    ensures { result = cmp_lt_log x y }
-    
+  val ghost function cmp_lt_log (x : self) (y : self) : ()
   axiom cmp_lt_log_spec : forall x : self, y : self . LtLog0.lt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_GeLog_Stub
   type self
-  predicate ge_log (self : self) (o : self)
+  val ghost predicate ge_log (self : self) (o : self)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface
   type self
-  predicate ge_log (self : self) (o : self)
+  val ghost predicate ge_log (self : self) (o : self)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_GeLog
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  predicate ge_log (self : self) (o : self) =
-    CmpLog0.cmp_log self o <> Core_Cmp_Ordering_Type.C_Less
-  val ge_log (self : self) (o : self) : bool
-    ensures { result = ge_log self o }
-    
+  let rec ghost predicate ge_log (self : self) (o : self) = [@vc:do_not_keep_trace] [@vc:sp]
+    let a = CmpLog0.cmp_log self o in pure {a <> Core_Cmp_Ordering_Type.C_Less}
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Stub as GeLog0 with type self = self
-  function cmp_ge_log (x : self) (y : self) : ()
+  val ghost function cmp_ge_log (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Stub as GeLog0 with type self = self
-  function cmp_ge_log (x : self) (y : self) : ()
-  axiom cmp_ge_log_spec : forall x : self, y : self . GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less)
+  val ghost function cmp_ge_log (x : self) (y : self) : ()
+    ensures { GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less) }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Stub as GeLog0 with type self = self
-  function cmp_ge_log (x : self) (y : self) : ()
-  val cmp_ge_log (x : self) (y : self) : ()
-    ensures { result = cmp_ge_log x y }
-    
+  val ghost function cmp_ge_log (x : self) (y : self) : ()
   axiom cmp_ge_log_spec : forall x : self, y : self . GeLog0.ge_log x y = (CmpLog0.cmp_log x y <> Core_Cmp_Ordering_Type.C_Less)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_GtLog_Stub
   type self
-  predicate gt_log (self : self) (o : self)
+  val ghost predicate gt_log (self : self) (o : self)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface
   type self
-  predicate gt_log (self : self) (o : self)
+  val ghost predicate gt_log (self : self) (o : self)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_GtLog
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  predicate gt_log (self : self) (o : self) =
-    CmpLog0.cmp_log self o = Core_Cmp_Ordering_Type.C_Greater
-  val gt_log (self : self) (o : self) : bool
-    ensures { result = gt_log self o }
-    
+  let rec ghost predicate gt_log (self : self) (o : self) = [@vc:do_not_keep_trace] [@vc:sp]
+    let a = CmpLog0.cmp_log self o in pure {a = Core_Cmp_Ordering_Type.C_Greater}
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Stub as GtLog0 with type self = self
-  function cmp_gt_log (x : self) (y : self) : ()
+  val ghost function cmp_gt_log (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Stub as GtLog0 with type self = self
-  function cmp_gt_log (x : self) (y : self) : ()
-  axiom cmp_gt_log_spec : forall x : self, y : self . GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater)
+  val ghost function cmp_gt_log (x : self) (y : self) : ()
+    ensures { GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater) }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Stub as GtLog0 with type self = self
-  function cmp_gt_log (x : self) (y : self) : ()
-  val cmp_gt_log (x : self) (y : self) : ()
-    ensures { result = cmp_gt_log x y }
-    
+  val ghost function cmp_gt_log (x : self) (y : self) : ()
   axiom cmp_gt_log_spec : forall x : self, y : self . GtLog0.gt_log x y = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater)
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Refl_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function refl (x : self) : ()
+  val ghost function refl (x : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Refl_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function refl (x : self) : ()
-  axiom refl_spec : forall x : self . CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal
+  val ghost function refl (x : self) : ()
+    ensures { CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Refl
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function refl (x : self) : ()
-  val refl (x : self) : ()
-    ensures { result = refl x }
-    
+  val ghost function refl (x : self) : ()
   axiom refl_spec : forall x : self . CmpLog0.cmp_log x x = Core_Cmp_Ordering_Type.C_Equal
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Trans_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
+  val ghost function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Trans_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
-  axiom trans_spec : forall x : self, y : self, z : self, o : Core_Cmp_Ordering_Type.t_ordering . CmpLog0.cmp_log x y = o -> CmpLog0.cmp_log y z = o -> CmpLog0.cmp_log x z = o
+  val ghost function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
+    requires {CmpLog0.cmp_log x y = o}
+    requires {CmpLog0.cmp_log y z = o}
+    ensures { CmpLog0.cmp_log x z = o }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Trans
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
-  val trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
-    requires {CmpLog0.cmp_log x y = o}
-    requires {CmpLog0.cmp_log y z = o}
-    ensures { result = trans x y z o }
-    
+  val ghost function trans (x : self) (y : self) (z : self) (o : Core_Cmp_Ordering_Type.t_ordering) : ()
   axiom trans_spec : forall x : self, y : self, z : self, o : Core_Cmp_Ordering_Type.t_ordering . CmpLog0.cmp_log x y = o -> CmpLog0.cmp_log y z = o -> CmpLog0.cmp_log x z = o
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym1_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function antisym1 (x : self) (y : self) : ()
+  val ghost function antisym1 (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym1_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function antisym1 (x : self) (y : self) : ()
-  axiom antisym1_spec : forall x : self, y : self . CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less -> CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater
+  val ghost function antisym1 (x : self) (y : self) : ()
+    requires {CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less}
+    ensures { CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym1
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function antisym1 (x : self) (y : self) : ()
-  val antisym1 (x : self) (y : self) : ()
-    requires {CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less}
-    ensures { result = antisym1 x y }
-    
+  val ghost function antisym1 (x : self) (y : self) : ()
   axiom antisym1_spec : forall x : self, y : self . CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Less -> CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Greater
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym2_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function antisym2 (x : self) (y : self) : ()
+  val ghost function antisym2 (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym2_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function antisym2 (x : self) (y : self) : ()
-  axiom antisym2_spec : forall x : self, y : self . CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater -> CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less
+  val ghost function antisym2 (x : self) (y : self) : ()
+    requires {CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater}
+    ensures { CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_Antisym2
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function antisym2 (x : self) (y : self) : ()
-  val antisym2 (x : self) (y : self) : ()
-    requires {CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater}
-    ensures { result = antisym2 x y }
-    
+  val ghost function antisym2 (x : self) (y : self) : ()
   axiom antisym2_spec : forall x : self, y : self . CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Greater -> CmpLog0.cmp_log y x = Core_Cmp_Ordering_Type.C_Less
 end
 module CreusotContracts_Logic_Ord_OrdLogic_EqCmp_Stub
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function eq_cmp (x : self) (y : self) : ()
+  val ghost function eq_cmp (x : self) (y : self) : ()
 end
 module CreusotContracts_Logic_Ord_OrdLogic_EqCmp_Interface
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function eq_cmp (x : self) (y : self) : ()
-  axiom eq_cmp_spec : forall x : self, y : self . (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal)
+  val ghost function eq_cmp (x : self) (y : self) : ()
+    ensures { (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal) }
+    
 end
 module CreusotContracts_Logic_Ord_OrdLogic_EqCmp
   type self
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Stub as CmpLog0 with type self = self
-  function eq_cmp (x : self) (y : self) : ()
-  val eq_cmp (x : self) (y : self) : ()
-    ensures { result = eq_cmp x y }
-    
+  val ghost function eq_cmp (x : self) (y : self) : ()
   axiom eq_cmp_spec : forall x : self, y : self . (x = y) = (CmpLog0.cmp_log x y = Core_Cmp_Ordering_Type.C_Equal)
 end
 module HeapsortGeneric_HeapFragMax_Stub
@@ -365,7 +327,7 @@ module HeapsortGeneric_HeapFragMax_Stub
   use seq.Seq
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with type self = t
   clone HeapsortGeneric_HeapFrag_Stub as HeapFrag0 with type t = t
-  function heap_frag_max (s : Seq.seq t) (i : int) (end' : int) : ()
+  val ghost function heap_frag_max (s : Seq.seq t) (i : int) (end' : int) : ()
 end
 module HeapsortGeneric_HeapFragMax_Interface
   type t
@@ -373,8 +335,11 @@ module HeapsortGeneric_HeapFragMax_Interface
   use seq.Seq
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with type self = t
   clone HeapsortGeneric_HeapFrag_Stub as HeapFrag0 with type t = t
-  function heap_frag_max (s : Seq.seq t) (i : int) (end' : int) : ()
-  axiom heap_frag_max_spec : forall s : Seq.seq t, i : int, end' : int . ([#"../heapsort_generic.rs" 18 11 18 31] HeapFrag0.heap_frag s 0 end') -> ([#"../heapsort_generic.rs" 19 11 19 28] 0 <= i /\ i < end') -> ([#"../heapsort_generic.rs" 20 10 20 22] LeLog0.le_log (Seq.get s i) (Seq.get s 0))
+  val ghost function heap_frag_max (s : Seq.seq t) (i : int) (end' : int) : ()
+    requires {[#"../heapsort_generic.rs" 18 11 18 31] HeapFrag0.heap_frag s 0 end'}
+    requires {[#"../heapsort_generic.rs" 19 11 19 28] 0 <= i /\ i < end'}
+    ensures { [#"../heapsort_generic.rs" 20 10 20 22] LeLog0.le_log (Seq.get s i) (Seq.get s 0) }
+    
 end
 module HeapsortGeneric_HeapFragMax
   type t
@@ -383,17 +348,7 @@ module HeapsortGeneric_HeapFragMax
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with type self = t
   clone HeapsortGeneric_HeapFrag_Stub as HeapFrag0 with type t = t
   clone HeapsortGeneric_Parent_Stub as Parent0
-  function heap_frag_max [#"../heapsort_generic.rs" 22 0 22 58] (s : Seq.seq t) (i : int) (end' : int) : ()
-  val heap_frag_max (s : Seq.seq t) (i : int) (end' : int) : ()
-    requires {[#"../heapsort_generic.rs" 18 11 18 31] HeapFrag0.heap_frag s 0 end'}
-    requires {[#"../heapsort_generic.rs" 19 11 19 28] 0 <= i /\ i < end'}
-    ensures { result = heap_frag_max s i end' }
-    
-  axiom def : forall s : Seq.seq t, i : int, end' : int . heap_frag_max s i end' = ([#"../heapsort_generic.rs" 23 4 25 5] if i > 0 then
-    heap_frag_max s (Parent0.parent i) end'
-  else
-    ()
-  )
+  val ghost function heap_frag_max [#"../heapsort_generic.rs" 22 0 22 58] (s : Seq.seq t) (i : int) (end' : int) : ()
   axiom heap_frag_max_spec : forall s : Seq.seq t, i : int, end' : int . ([#"../heapsort_generic.rs" 18 11 18 31] HeapFrag0.heap_frag s 0 end') -> ([#"../heapsort_generic.rs" 19 11 19 28] 0 <= i /\ i < end') -> ([#"../heapsort_generic.rs" 20 10 20 22] LeLog0.le_log (Seq.get s i) (Seq.get s 0))
 end
 module HeapsortGeneric_HeapFragMax_Impl
@@ -405,28 +360,28 @@ module HeapsortGeneric_HeapFragMax_Impl
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = t
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = t
-  clone CreusotContracts_Logic_Ord_OrdLogic_EqCmp as EqCmp0 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_EqCmp as EqCmp0 with type self = t, val CmpLog0.cmp_log = CmpLog0.cmp_log,
+    axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym2 as Antisym20 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym1 as Antisym10 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_Trans as Trans0 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_Refl as Refl0 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog as CmpGtLog0 with type self = t,
-    predicate GtLog0.gt_log = GtLog0.gt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog as CmpGeLog0 with type self = t,
-    predicate GeLog0.ge_log = GeLog0.ge_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog as CmpLtLog0 with type self = t,
-    predicate LtLog0.lt_log = LtLog0.lt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Trans as Trans0 with type self = t, val CmpLog0.cmp_log = CmpLog0.cmp_log,
+    axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Refl as Refl0 with type self = t, val CmpLog0.cmp_log = CmpLog0.cmp_log,
+    axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog as CmpGtLog0 with type self = t, val GtLog0.gt_log = GtLog0.gt_log,
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog as CmpGeLog0 with type self = t, val GeLog0.ge_log = GeLog0.ge_log,
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog as CmpLtLog0 with type self = t, val LtLog0.lt_log = LtLog0.lt_log,
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t,
-    predicate LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t, val LeLog0.le_log = LeLog0.le_log,
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone HeapsortGeneric_Parent as Parent0
-  clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, function Parent0.parent = Parent0.parent,
-    predicate LeLog0.le_log = LeLog0.le_log
+  clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, val Parent0.parent = Parent0.parent,
+    val LeLog0.le_log = LeLog0.le_log
   let rec ghost function heap_frag_max (s : Seq.seq t) (i : int) (end' : int) : ()
     requires {[#"../heapsort_generic.rs" 18 11 18 31] HeapFrag0.heap_frag s 0 end'}
     requires {[#"../heapsort_generic.rs" 19 11 19 28] 0 <= i /\ i < end'}
@@ -473,36 +428,34 @@ end
 module CreusotContracts_Std1_Vec_Impl0_Model_Stub
   type t
   type a
-  use seq.Seq
   use mach.int.Int
+  use seq.Seq
   use prelude.UIntSize
   use mach.int.UInt64
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val ghost function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_Model_Interface
   type t
   type a
-  use seq.Seq
   use mach.int.Int
+  use seq.Seq
   use prelude.UIntSize
   use mach.int.UInt64
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
-  axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= UInt64.to_int (18446744073709551615 : usize)
+  val ghost function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+    ensures { Seq.length result <= UInt64.to_int (18446744073709551615 : usize) }
+    
 end
 module CreusotContracts_Std1_Vec_Impl0_Model
   type t
   type a
-  use seq.Seq
   use mach.int.Int
+  use seq.Seq
   use prelude.UIntSize
   use mach.int.UInt64
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
-  val model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
-    ensures { result = model self }
-    
+  val ghost function model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   axiom model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (model self) <= UInt64.to_int (18446744073709551615 : usize)
 end
 module CreusotContracts_Logic_Model_Model_ModelTy_Type
@@ -512,32 +465,29 @@ end
 module CreusotContracts_Logic_Model_Model_Model_Stub
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
+  val ghost function model (self : self) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Model_Model_Interface
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
+  val ghost function model (self : self) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Model_Model
   type self
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = self
-  function model (self : self) : ModelTy0.modelTy
-  val model (self : self) : ModelTy0.modelTy
-    ensures { result = model self }
-    
+  val ghost function model (self : self) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Impl1_Model_Stub
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  function model (self : borrowed t) : ModelTy0.modelTy
+  val ghost function model (self : borrowed t) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Impl1_Model_Interface
   type t
   use prelude.Borrow
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  function model (self : borrowed t) : ModelTy0.modelTy
+  val ghost function model (self : borrowed t) : ModelTy0.modelTy
 end
 module CreusotContracts_Logic_Model_Impl1_Model
   type t
@@ -545,31 +495,25 @@ module CreusotContracts_Logic_Model_Impl1_Model
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
   clone CreusotContracts_Logic_Model_Model_Model_Stub as Model0 with type self = t,
     type ModelTy0.modelTy = ModelTy0.modelTy
-  function model (self : borrowed t) : ModelTy0.modelTy =
+  let rec ghost function model (self : borrowed t) : ModelTy0.modelTy = [@vc:do_not_keep_trace] [@vc:sp]
     Model0.model ( * self)
-  val model (self : borrowed t) : ModelTy0.modelTy
-    ensures { result = model self }
-    
 end
 module CreusotContracts_Logic_Seq_Impl2_PermutationOf_Stub
   type t
   use seq.Seq
-  predicate permutation_of (self : Seq.seq t) (o : Seq.seq t)
+  val ghost predicate permutation_of (self : Seq.seq t) (o : Seq.seq t)
 end
 module CreusotContracts_Logic_Seq_Impl2_PermutationOf_Interface
   type t
   use seq.Seq
-  predicate permutation_of (self : Seq.seq t) (o : Seq.seq t)
+  val ghost predicate permutation_of (self : Seq.seq t) (o : Seq.seq t)
 end
 module CreusotContracts_Logic_Seq_Impl2_PermutationOf
   type t
   use seq.Seq
   use seq.Permut
-  predicate permutation_of (self : Seq.seq t) (o : Seq.seq t) =
+  let rec ghost predicate permutation_of (self : Seq.seq t) (o : Seq.seq t) = [@vc:do_not_keep_trace] [@vc:sp]
     Permut.permut self o 0 (Seq.length self)
-  val permutation_of (self : Seq.seq t) (o : Seq.seq t) : bool
-    ensures { result = permutation_of self o }
-    
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
@@ -587,22 +531,19 @@ module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Stub
   type self
   type t
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
+  val ghost predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds_Interface
   type self
   type t
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
+  val ghost predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_InBounds
   type self
   type t
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
-  val in_bounds (self : self) (seq : ModelTy0.modelTy) : bool
-    ensures { result = in_bounds self seq }
-    
+  val ghost predicate in_bounds (self : self) (seq : ModelTy0.modelTy)
 end
 module Core_Slice_Index_SliceIndex_Output_Type
   type self
@@ -614,24 +555,21 @@ module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Stub
   type t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = self, type t = t
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
+  val ghost predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue_Interface
   type self
   type t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = self, type t = t
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
+  val ghost predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
 end
 module CreusotContracts_Std1_Slice_SliceIndexSpec_HasValue
   type self
   type t
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with type self = self, type t = t
   clone CreusotContracts_Logic_Model_Model_ModelTy_Type as ModelTy0 with type self = t
-  predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
-  val has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output) : bool
-    ensures { result = has_value self seq out }
-    
+  val ghost predicate has_value (self : self) (seq : ModelTy0.modelTy) (out : Output0.output)
 end
 module CreusotContracts_Std1_Slice_Impl0_ModelTy_Type
   type t
@@ -713,34 +651,33 @@ module CreusotContracts_Std1_Cmp_Ord_Le
 end
 module CreusotContracts_Std1_Slice_Impl0_Model_Stub
   type t
-  use seq.Seq
   use mach.int.Int
+  use seq.Seq
   use prelude.UIntSize
   use mach.int.UInt64
   use prelude.Slice
-  function model (self : seq t) : Seq.seq t
+  val ghost function model (self : seq t) : Seq.seq t
 end
 module CreusotContracts_Std1_Slice_Impl0_Model_Interface
   type t
-  use seq.Seq
   use mach.int.Int
+  use seq.Seq
   use prelude.UIntSize
   use mach.int.UInt64
   use prelude.Slice
-  function model (self : seq t) : Seq.seq t
-  axiom model_spec : forall self : seq t . model self = Slice.id self && Seq.length (model self) <= UInt64.to_int (18446744073709551615 : usize)
+  val ghost function model (self : seq t) : Seq.seq t
+    ensures { Seq.length result <= UInt64.to_int (18446744073709551615 : usize) }
+    ensures { result = Slice.id self }
+    
 end
 module CreusotContracts_Std1_Slice_Impl0_Model
   type t
-  use seq.Seq
   use mach.int.Int
+  use seq.Seq
   use prelude.UIntSize
   use mach.int.UInt64
   use prelude.Slice
-  function model (self : seq t) : Seq.seq t
-  val model (self : seq t) : Seq.seq t
-    ensures { result = model self }
-    
+  val ghost function model (self : seq t) : Seq.seq t
   axiom model_spec : forall self : seq t . model self = Slice.id self && Seq.length (model self) <= UInt64.to_int (18446744073709551615 : usize)
 end
 module Alloc_Vec_Impl11_DerefMut_Interface
@@ -773,9 +710,9 @@ module Alloc_Vec_Impl11_DerefMut
 end
 module Core_Slice_Impl0_Swap_Interface
   type t
+  use mach.int.Int
   use mach.int.UInt64
   use seq.Seq
-  use mach.int.Int
   use prelude.Borrow
   use seq.Permut
   use prelude.Slice
@@ -792,9 +729,9 @@ module Core_Slice_Impl0_Swap_Interface
 end
 module Core_Slice_Impl0_Swap
   type t
+  use mach.int.Int
   use mach.int.UInt64
   use seq.Seq
-  use mach.int.Int
   use prelude.Borrow
   use seq.Permut
   use prelude.Slice
@@ -820,73 +757,65 @@ module CreusotContracts_Logic_Ghost_Ghost_Type
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Ghost_Impl1_Inner_Stub
   type t
   use prelude.Borrow
   use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
+  val ghost function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
 end
 module CreusotContracts_Logic_Ghost_Impl1_Inner_Interface
   type t
   use prelude.Borrow
   use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
+  val ghost function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
 end
 module CreusotContracts_Logic_Ghost_Impl1_Inner
   type t
   use prelude.Borrow
   use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t =
+  let rec ghost function inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
+   = [@vc:do_not_keep_trace] [@vc:sp]
     CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 self
-  val inner (self : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost t) : t
-    ensures { result = inner self }
-    
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
+  let rec ghost predicate resolve (self : borrowed t) = [@vc:do_not_keep_trace] [@vc:sp]
+    pure { ^ self =  * self}
 end
 module CreusotContracts_Std1_Slice_Impl3_InBounds_Stub
   type t
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
+  val ghost predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl3_InBounds_Interface
   type t
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
+  val ghost predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
 end
 module CreusotContracts_Std1_Slice_Impl3_InBounds
   type t
@@ -894,25 +823,23 @@ module CreusotContracts_Std1_Slice_Impl3_InBounds
   use prelude.UIntSize
   use seq.Seq
   use mach.int.UInt64
-  predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
+  let rec ghost predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t)
+   = [@vc:do_not_keep_trace] [@vc:sp]
     UInt64.to_int self < Seq.length seq
-  val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
-    ensures { result = in_bounds self seq }
-    
 end
 module CreusotContracts_Std1_Slice_Impl3_HasValue_Stub
   type t
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
+  val ghost predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
 end
 module CreusotContracts_Std1_Slice_Impl3_HasValue_Interface
   type t
   use mach.int.Int
   use prelude.UIntSize
   use seq.Seq
-  predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
+  val ghost predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
 end
 module CreusotContracts_Std1_Slice_Impl3_HasValue
   type t
@@ -920,11 +847,9 @@ module CreusotContracts_Std1_Slice_Impl3_HasValue
   use prelude.UIntSize
   use seq.Seq
   use mach.int.UInt64
-  predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
-    Seq.get seq (UInt64.to_int self) = out
-  val has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) : bool
-    ensures { result = has_value self seq out }
-    
+  let rec ghost predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t)
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    pure {Seq.get seq (UInt64.to_int self) = out}
 end
 module Core_Slice_Index_Impl2_Output_Type
   type t
@@ -934,8 +859,8 @@ end
 module HeapsortGeneric_SiftDown_Interface
   type t
   use prelude.Borrow
-  use mach.int.UInt64
   use mach.int.Int
+  use mach.int.UInt64
   use seq.Seq
   use prelude.UIntSize
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
@@ -962,8 +887,8 @@ end
 module HeapsortGeneric_SiftDown
   type t
   use prelude.Borrow
-  use mach.int.UInt64
   use mach.int.Int
+  use mach.int.UInt64
   use seq.Seq
   use prelude.UIntSize
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface as GtLog0 with type self = t
@@ -971,25 +896,25 @@ module HeapsortGeneric_SiftDown
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = t
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = t
-  clone CreusotContracts_Logic_Ord_OrdLogic_EqCmp as EqCmp0 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_EqCmp as EqCmp0 with type self = t, val CmpLog0.cmp_log = CmpLog0.cmp_log,
+    axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym2 as Antisym20 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym1 as Antisym10 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_Trans as Trans0 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_Refl as Refl0 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog as CmpGtLog0 with type self = t,
-    predicate GtLog0.gt_log = GtLog0.gt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog as CmpGeLog0 with type self = t,
-    predicate GeLog0.ge_log = GeLog0.ge_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog as CmpLtLog0 with type self = t,
-    predicate LtLog0.lt_log = LtLog0.lt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Trans as Trans0 with type self = t, val CmpLog0.cmp_log = CmpLog0.cmp_log,
+    axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Refl as Refl0 with type self = t, val CmpLog0.cmp_log = CmpLog0.cmp_log,
+    axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog as CmpGtLog0 with type self = t, val GtLog0.gt_log = GtLog0.gt_log,
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog as CmpGeLog0 with type self = t, val GeLog0.ge_log = GeLog0.ge_log,
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog as CmpLtLog0 with type self = t, val LtLog0.lt_log = LtLog0.lt_log,
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t,
-    predicate LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t, val LeLog0.le_log = LeLog0.le_log,
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = t,
     type a = Alloc_Alloc_Global_Type.t_global
@@ -999,29 +924,29 @@ module HeapsortGeneric_SiftDown
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
     axiom .
   clone CreusotContracts_Logic_Model_Impl1_Model as Model1 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model0.model
-  clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, function Parent0.parent = Parent0.parent,
-    predicate LeLog0.le_log = LeLog0.le_log
+    type ModelTy0.modelTy = ModelTy0.modelTy, val Model0.model = Model0.model
+  clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, val Parent0.parent = Parent0.parent,
+    val LeLog0.le_log = LeLog0.le_log
   use prelude.Slice
   use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model2 with type t = t, axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = t
   clone CreusotContracts_Logic_Model_Impl1_Model as Model3 with type t = seq t,
-    type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model2.model
+    type ModelTy0.modelTy = ModelTy1.modelTy, val Model0.model = Model2.model
   clone Core_Slice_Index_Impl2_Output_Type as Output0 with type t = t
   clone CreusotContracts_Std1_Slice_Impl3_HasValue as HasValue0 with type t = t
   clone CreusotContracts_Std1_Slice_Impl3_InBounds as InBounds0 with type t = t
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve3 with type t = seq t
-  clone Core_Slice_Impl0_Swap_Interface as Swap0 with type t = t, function Model0.model = Model3.model,
-    function Model1.model = Model2.model
+  clone Core_Slice_Impl0_Swap_Interface as Swap0 with type t = t, val Model0.model = Model3.model,
+    val Model1.model = Model2.model
   clone Alloc_Vec_Impl11_DerefMut_Interface as DerefMut0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
-    function Model0.model = Model2.model, function Model1.model = Model0.model
-  clone CreusotContracts_Std1_Cmp_Ord_Le_Interface as Le0 with type self = t, predicate LeLog0.le_log = LeLog0.le_log
-  clone CreusotContracts_Std1_Cmp_Ord_Lt_Interface as Lt0 with type self = t, predicate LtLog0.lt_log = LtLog0.lt_log
+    val Model0.model = Model2.model, val Model1.model = Model0.model
+  clone CreusotContracts_Std1_Cmp_Ord_Le_Interface as Le0 with type self = t, val LeLog0.le_log = LeLog0.le_log
+  clone CreusotContracts_Std1_Cmp_Ord_Lt_Interface as Lt0 with type self = t, val LtLog0.lt_log = LtLog0.lt_log
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve2 with type self = t
   clone Alloc_Vec_Impl16_Index_Interface as Index0 with type t = t, type i = usize,
-    type a = Alloc_Alloc_Global_Type.t_global, function Model0.model = Model0.model,
-    predicate InBounds0.in_bounds = InBounds0.in_bounds, predicate HasValue0.has_value = HasValue0.has_value,
+    type a = Alloc_Alloc_Global_Type.t_global, val Model0.model = Model0.model,
+    val InBounds0.in_bounds = InBounds0.in_bounds, val HasValue0.has_value = HasValue0.has_value,
     type Output0.output = Output0.output
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
@@ -1261,44 +1186,40 @@ module HeapsortGeneric_SortedRange_Stub
   type t
   use seq.Seq
   use mach.int.Int
-  predicate sorted_range (s : Seq.seq t) (l : int) (u : int)
+  val ghost predicate sorted_range (s : Seq.seq t) (l : int) (u : int)
 end
 module HeapsortGeneric_SortedRange_Interface
   type t
   use seq.Seq
   use mach.int.Int
-  predicate sorted_range (s : Seq.seq t) (l : int) (u : int)
+  val ghost predicate sorted_range (s : Seq.seq t) (l : int) (u : int)
 end
 module HeapsortGeneric_SortedRange
   type t
   use seq.Seq
   use mach.int.Int
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with type self = t
-  predicate sorted_range [#"../heapsort_generic.rs" 72 0 72 58] (s : Seq.seq t) (l : int) (u : int) =
-    [#"../heapsort_generic.rs" 73 4 75 5] forall j : int . forall i : int . l <= i /\ i < j /\ j < u -> LeLog0.le_log (Seq.get s i) (Seq.get s j)
-  val sorted_range (s : Seq.seq t) (l : int) (u : int) : bool
-    ensures { result = sorted_range s l u }
-    
+  let rec ghost predicate sorted_range [#"../heapsort_generic.rs" 72 0 72 58] (s : Seq.seq t) (l : int) (u : int)
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../heapsort_generic.rs" 73 4 75 5] pure {forall j : int . forall i : int . l <= i /\ i < j /\ j < u -> LeLog0.le_log (Seq.get s i) (Seq.get s j)}
 end
 module HeapsortGeneric_Sorted_Stub
   type t
   use seq.Seq
-  predicate sorted (s : Seq.seq t)
+  val ghost predicate sorted (s : Seq.seq t)
 end
 module HeapsortGeneric_Sorted_Interface
   type t
   use seq.Seq
-  predicate sorted (s : Seq.seq t)
+  val ghost predicate sorted (s : Seq.seq t)
 end
 module HeapsortGeneric_Sorted
   type t
   use seq.Seq
   clone HeapsortGeneric_SortedRange_Stub as SortedRange0 with type t = t
-  predicate sorted [#"../heapsort_generic.rs" 79 0 79 36] (s : Seq.seq t) =
+  let rec ghost predicate sorted [#"../heapsort_generic.rs" 79 0 79 36] (s : Seq.seq t)
+   = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../heapsort_generic.rs" 81 8 81 35] SortedRange0.sorted_range s 0 (Seq.length s)
-  val sorted (s : Seq.seq t) : bool
-    ensures { result = sorted s }
-    
 end
 module Alloc_Vec_Impl1_Len_Interface
   type t
@@ -1330,8 +1251,8 @@ module Alloc_Vec_Impl1_Len
 end
 module HeapsortGeneric_HeapSort_Interface
   type t
-  use seq.Seq
   use mach.int.Int
+  use seq.Seq
   use prelude.UIntSize
   use mach.int.UInt64
   use prelude.Borrow
@@ -1353,8 +1274,8 @@ module HeapsortGeneric_HeapSort_Interface
 end
 module HeapsortGeneric_HeapSort
   type t
-  use seq.Seq
   use mach.int.Int
+  use seq.Seq
   use prelude.UIntSize
   use mach.int.UInt64
   use prelude.Borrow
@@ -1363,61 +1284,59 @@ module HeapsortGeneric_HeapSort
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with type self = t
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with type self = t
-  clone CreusotContracts_Logic_Ord_OrdLogic_EqCmp as EqCmp0 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_EqCmp as EqCmp0 with type self = t, val CmpLog0.cmp_log = CmpLog0.cmp_log,
+    axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym2 as Antisym20 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym1 as Antisym10 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_Trans as Trans0 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_Refl as Refl0 with type self = t,
-    function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog as CmpGtLog0 with type self = t,
-    predicate GtLog0.gt_log = GtLog0.gt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog as CmpGeLog0 with type self = t,
-    predicate GeLog0.ge_log = GeLog0.ge_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog as CmpLtLog0 with type self = t,
-    predicate LtLog0.lt_log = LtLog0.lt_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Trans as Trans0 with type self = t, val CmpLog0.cmp_log = CmpLog0.cmp_log,
+    axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_Refl as Refl0 with type self = t, val CmpLog0.cmp_log = CmpLog0.cmp_log,
+    axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog as CmpGtLog0 with type self = t, val GtLog0.gt_log = GtLog0.gt_log,
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog as CmpGeLog0 with type self = t, val GeLog0.ge_log = GeLog0.ge_log,
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog as CmpLtLog0 with type self = t, val LtLog0.lt_log = LtLog0.lt_log,
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with type self = t
-  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t,
-    predicate LeLog0.le_log = LeLog0.le_log, function CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
-  clone HeapsortGeneric_SortedRange as SortedRange0 with type t = t, predicate LeLog0.le_log = LeLog0.le_log
+  clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog as CmpLeLog0 with type self = t, val LeLog0.le_log = LeLog0.le_log,
+    val CmpLog0.cmp_log = CmpLog0.cmp_log, axiom .
+  clone HeapsortGeneric_SortedRange as SortedRange0 with type t = t, val LeLog0.le_log = LeLog0.le_log
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ModelTy_Type as ModelTy0 with type t = t,
     type a = Alloc_Alloc_Global_Type.t_global
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Logic_Seq_Impl2_PermutationOf as PermutationOf0 with type t = t
-  clone HeapsortGeneric_Sorted as Sorted0 with type t = t,
-    predicate SortedRange0.sorted_range = SortedRange0.sorted_range
+  clone HeapsortGeneric_Sorted as Sorted0 with type t = t, val SortedRange0.sorted_range = SortedRange0.sorted_range
   clone CreusotContracts_Std1_Vec_Impl0_Model as Model1 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
     axiom .
   clone CreusotContracts_Logic_Model_Impl1_Model as Model0 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    type ModelTy0.modelTy = ModelTy0.modelTy, function Model0.model = Model1.model
+    type ModelTy0.modelTy = ModelTy0.modelTy, val Model0.model = Model1.model
   use prelude.Slice
   use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
   clone CreusotContracts_Std1_Slice_Impl0_ModelTy_Type as ModelTy1 with type t = t
   clone CreusotContracts_Std1_Slice_Impl0_Model as Model2 with type t = t, axiom .
   clone CreusotContracts_Logic_Model_Impl1_Model as Model3 with type t = seq t,
-    type ModelTy0.modelTy = ModelTy1.modelTy, function Model0.model = Model2.model
+    type ModelTy0.modelTy = ModelTy1.modelTy, val Model0.model = Model2.model
   clone HeapsortGeneric_Parent as Parent0
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-  clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, function Parent0.parent = Parent0.parent,
-    predicate LeLog0.le_log = LeLog0.le_log
-  clone HeapsortGeneric_HeapFragMax as HeapFragMax0 with type t = t,
-    predicate HeapFrag0.heap_frag = HeapFrag0.heap_frag, predicate LeLog0.le_log = LeLog0.le_log,
-    function Parent0.parent = Parent0.parent, axiom .
+  clone HeapsortGeneric_HeapFrag as HeapFrag0 with type t = t, val Parent0.parent = Parent0.parent,
+    val LeLog0.le_log = LeLog0.le_log
+  clone HeapsortGeneric_HeapFragMax as HeapFragMax0 with type t = t, val HeapFrag0.heap_frag = HeapFrag0.heap_frag,
+    val LeLog0.le_log = LeLog0.le_log, val Parent0.parent = Parent0.parent, axiom .
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with type t = seq t
-  clone Core_Slice_Impl0_Swap_Interface as Swap0 with type t = t, function Model0.model = Model3.model,
-    function Model1.model = Model2.model
+  clone Core_Slice_Impl0_Swap_Interface as Swap0 with type t = t, val Model0.model = Model3.model,
+    val Model1.model = Model2.model
   clone Alloc_Vec_Impl11_DerefMut_Interface as DerefMut0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
-    function Model0.model = Model2.model, function Model1.model = Model1.model
-  clone HeapsortGeneric_SiftDown_Interface as SiftDown0 with type t = t, function Model0.model = Model1.model,
-    predicate HeapFrag0.heap_frag = HeapFrag0.heap_frag, function Model1.model = Model0.model,
-    predicate PermutationOf0.permutation_of = PermutationOf0.permutation_of, predicate LeLog0.le_log = LeLog0.le_log
+    val Model0.model = Model2.model, val Model1.model = Model1.model
+  clone HeapsortGeneric_SiftDown_Interface as SiftDown0 with type t = t, val Model0.model = Model1.model,
+    val HeapFrag0.heap_frag = HeapFrag0.heap_frag, val Model1.model = Model0.model,
+    val PermutationOf0.permutation_of = PermutationOf0.permutation_of, val LeLog0.le_log = LeLog0.le_log
   clone CreusotContracts_Logic_Ghost_Impl1_Inner as Inner0 with type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with type t = t, type a = Alloc_Alloc_Global_Type.t_global,
-    function Model0.model = Model1.model
+    val Model0.model = Model1.model
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve as Resolve0 with type self = CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
   let rec cfg heap_sort [@cfg:stackify] [#"../heapsort_generic.rs" 88 0 88 40] (v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : ()
     requires {[#"../heapsort_generic.rs" 85 11 85 42] Seq.length (Model0.model v) < div (UInt64.to_int (18446744073709551615 : usize)) 2}

@@ -2,21 +2,18 @@
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
-  predicate resolve (self : borrowed t)
+  val ghost predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Logic_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
-  predicate resolve (self : borrowed t) =
-     ^ self =  * self
-  val resolve (self : borrowed t) : bool
-    ensures { result = resolve self }
-    
+  let rec ghost predicate resolve (self : borrowed t) = [@vc:do_not_keep_trace] [@vc:sp]
+    pure { ^ self =  * self}
 end
 module C492_ReborrowTuple_Interface
   type t
@@ -55,55 +52,46 @@ module C492_ReborrowTuple
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve_Interface
   type self
-  predicate resolve (self : self)
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Resolve_Resolve
   type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
+  val ghost predicate resolve (self : self)
 end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve_Stub
   type t1
   type t2
-  predicate resolve (self : (t1, t2))
+  val ghost predicate resolve (self : (t1, t2))
 end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve_Interface
   type t1
   type t2
-  predicate resolve (self : (t1, t2))
+  val ghost predicate resolve (self : (t1, t2))
 end
 module CreusotContracts_Logic_Resolve_Impl0_Resolve
   type t1
   type t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve1 with type self = t2
   clone CreusotContracts_Logic_Resolve_Resolve_Resolve_Stub as Resolve0 with type self = t1
-  predicate resolve (self : (t1, t2)) =
-    Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
-  val resolve (self : (t1, t2)) : bool
-    ensures { result = resolve self }
-    
+  let rec ghost predicate resolve (self : (t1, t2)) = [@vc:do_not_keep_trace] [@vc:sp]
+    Resolve0.resolve (let (a, _) = self in a) && Resolve1.resolve (let (_, a) = self in a)
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve_Stub
   type t
-  predicate resolve (self : t)
+  val ghost predicate resolve (self : t)
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve_Interface
   type t
-  predicate resolve (self : t)
+  val ghost predicate resolve (self : t)
 end
 module CreusotContracts_Logic_Resolve_Impl2_Resolve
   type t
-  predicate resolve (self : t) =
+  let rec ghost predicate resolve (self : t) = [@vc:do_not_keep_trace] [@vc:sp]
     true
-  val resolve (self : t) : bool
-    ensures { result = resolve self }
-    
 end
 module C492_Test_Interface
   val test [@cfg:stackify] (_ : ()) : ()
@@ -118,7 +106,7 @@ module C492_Test
   clone CreusotContracts_Logic_Resolve_Impl2_Resolve as Resolve2 with type t = uint32
   clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with type t = int32
   clone CreusotContracts_Logic_Resolve_Impl0_Resolve as Resolve1 with type t1 = borrowed int32, type t2 = uint32,
-    predicate Resolve0.resolve = Resolve0.resolve, predicate Resolve1.resolve = Resolve2.resolve
+    val Resolve0.resolve = Resolve0.resolve, val Resolve1.resolve = Resolve2.resolve
   clone C492_ReborrowTuple_Interface as ReborrowTuple0 with type t = int32
   let rec cfg test [@cfg:stackify] [#"../492.rs" 10 0 10 13] (_ : ()) : ()
     ensures { [#"../492.rs" 9 10 9 15] false }
