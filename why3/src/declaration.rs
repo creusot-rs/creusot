@@ -2,7 +2,7 @@ use indexmap::IndexSet;
 use std::collections::{BTreeMap, HashMap};
 
 use crate::{
-    exp::{Binder, BinOp, Exp, ExpMutVisitor},
+    exp::{BinOp, Binder, Exp, ExpMutVisitor},
     mlcfg::{Block, BlockId},
     ty::Type,
     *,
@@ -64,7 +64,10 @@ impl Contract {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.requires.is_empty() && self.ensures.is_empty() && self.variant.is_empty() && self.raises.is_none()
+        self.requires.is_empty()
+            && self.ensures.is_empty()
+            && self.variant.is_empty()
+            && self.raises.is_none()
     }
 
     pub fn extend(&mut self, other: Contract) {
@@ -76,11 +79,7 @@ impl Contract {
         self.raises = match (self.raises.take(), other.raises) {
             (Some(exp), None) | (None, Some(exp)) => Some(exp),
             (None, None) => None,
-            (Some(e1), Some(e2)) => Some(Exp::BinaryOp(
-                BinOp::LogOr,
-                Box::new(e1),
-                Box::new(e2),
-            )),
+            (Some(e1), Some(e2)) => Some(Exp::BinaryOp(BinOp::LogOr, Box::new(e1), Box::new(e2))),
         };
     }
 
