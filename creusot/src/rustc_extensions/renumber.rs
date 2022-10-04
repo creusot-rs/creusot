@@ -66,8 +66,4 @@ impl<'a, 'tcx> MutVisitor<'tcx> for NllVisitor<'a, 'tcx> {
         let old_region = *region;
         *region = self.renumber_regions(old_region);
     }
-
-    fn visit_const(&mut self, constant: &mut ty::Const<'tcx>, _location: Location) {
-        *constant = self.renumber_regions(*constant);
-    }
 }

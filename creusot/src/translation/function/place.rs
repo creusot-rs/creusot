@@ -150,6 +150,7 @@ pub(crate) fn create_assign_inner<'tcx>(
             }
             ConstantIndex { .. } => unimplemented!("ConstantIndex"),
             Subslice { .. } => unimplemented!("Subslice"),
+            OpaqueCast(_) => unimplemented!("OpaqueCast"),
         }
     }
 
@@ -222,6 +223,7 @@ pub(crate) fn translate_rplace_inner<'tcx>(
             }
             ConstantIndex { .. } => unimplemented!("constant index projection"),
             Subslice { .. } => unimplemented!("subslice projection"),
+            OpaqueCast(_) => unimplemented!("opaque cast projection"),
         }
         place_ty = place_ty.projection_ty(ctx.tcx, *elem);
     }

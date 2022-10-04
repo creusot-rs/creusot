@@ -9,7 +9,7 @@ use creusot_rustc::{
     hir::def_id::DefId,
     middle::{
         mir::interpret::{AllocRange, ConstValue},
-        ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt, Unevaluated},
+        ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
     },
     smir::mir::ConstantKind,
     span::Span,
@@ -43,11 +43,11 @@ pub(crate) fn from_mir_constant<'tcx>(
 pub(crate) fn from_mir_constant_kind<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
-    ck: creusot_rustc::smir::mir::ConstantKind<'tcx>,
+    ck: ConstantKind<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
 ) -> Expr<'tcx> {
-    if let Some(c) = ck.const_for_ty() {
+    if let ConstantKind::Ty(c) = ck {
         return from_ty_const(ctx, names, c, env, span);
     }
 
@@ -59,7 +59,10 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
         if let Some(ConstValue::Slice { data, start, end }) = ck.try_to_value(ctx.tcx) {
             let start = Size::from_bytes(start);
             let size = Size::from_bytes(end);
-            let bytes = data.inner().get_bytes(&ctx.tcx, AllocRange { start, size }).unwrap();
+            let bytes = data
+                .inner()
+                .get_bytes_strip_provenance(&ctx.tcx, AllocRange { start, size })
+                .unwrap();
             let string = std::str::from_utf8(bytes).unwrap();
             return Expr::Exp(Exp::Const(Constant::String(string.into())));
         }
@@ -84,9 +87,9 @@ pub(crate) fn from_ty_const<'tcx>(
             return Expr::Exp(Exp::pure_qvar(nm.without_search_path()));
     };
 
-    if let ConstKind::Unevaluated(Unevaluated { promoted: Some(p), .. }) = c.kind() {
-        return Expr::Exp(Exp::impure_var(format!("promoted{:?}", p.as_usize()).into()));
-    }
+    // if let ConstKind::Unevaluated(UnevaluatedConst{ promoted: Some(p), .. }) = c.kind() {
+    //     return Expr::Exp(Exp::impure_var(format!("promoted{:?}", p.as_usize()).into()));
+    // }
 
     if let ConstKind::Param(_) = c.kind() {
         ctx.crash_and_error(span, "const generic parameters are not yet supported");

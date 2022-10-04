@@ -16,7 +16,7 @@ use creusot_rustc::{
     middle::{
         thir::{self, visit::Visitor, Expr, ExprKind, Thir},
         ty::{
-            subst::{GenericArgKind, InternalSubsts, Subst, SubstsRef},
+            subst::{GenericArgKind, InternalSubsts, SubstsRef},
             EarlyBinder, Predicate, TyCtxt, TyKind, WithOptConstParam,
         },
     },

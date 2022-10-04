@@ -207,7 +207,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             current_block: (Vec::new(), None),
             past_blocks: BTreeMap::new(),
             ctx,
-            fresh_id: body.basic_blocks().len(),
+            fresh_id: body.basic_blocks.len(),
             names,
             invariants,
             assertions,

@@ -16,12 +16,15 @@ use creusot_rustc::{
     ast::{LitIntType, LitKind},
     hir::{
         def_id::{DefId, LocalDefId},
-        HirId,
+        HirId, OwnerId,
     },
     macros::{Decodable, Encodable, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
     middle::{
         mir::Mutability::*,
-        thir::{visit, Adt, ArmId, Block, ExprId, ExprKind, Pat, PatKind, StmtId, StmtKind, Thir},
+        thir::{
+            visit, AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId,
+            StmtKind, Thir,
+        },
         ty::{
             int_ty, subst::SubstsRef, uint_ty, AdtDef, Ty, TyCtxt, TyKind, TypeFoldable,
             TypeVisitable, UpvarSubsts, WithOptConstParam,
@@ -167,7 +170,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         let span = self.thir[expr].span;
         match thir_term.kind {
             ExprKind::Scope { value, .. } => self.expr_term(value),
-            ExprKind::Block { body: Block { ref stmts, expr, .. } } => {
+            ExprKind::Block { block } => {
+                let Block { ref stmts, expr, .. } = self.thir[block];
                 let mut inner = match expr {
                     Some(e) => self.expr_term(e)?,
                     None => Term { ty, span, kind: TermKind::Tuple { fields: vec![] } },
@@ -356,7 +360,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     Err(Error::new(self.thir[arg].span, "cannot perform a mutable borrow"))
                 }
             }
-            ExprKind::Adt(box Adt { adt_def, variant_index, ref fields, .. }) => {
+            ExprKind::Adt(box AdtExpr { adt_def, variant_index, ref fields, .. }) => {
                 let mut fields: Vec<_> = fields
                     .iter()
                     .map(|f| Ok((f.name, self.expr_term(f.expr)?)))
@@ -466,7 +470,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 }
                 _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             },
-            ExprKind::Closure { closure_id, .. } => {
+            ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 let term = pearlite(self.tcx, closure_id)?;
                 // eprintln!("{term:?}");
                 let pats = closure_pattern(self.tcx, closure_id)?;
@@ -492,7 +496,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
     fn pattern_term(&self, pat: &Pat<'tcx>) -> CreusotResult<Pattern<'tcx>> {
         trace!("{:?}", pat);
-        match &*pat.kind {
+        match &pat.kind {
             PatKind::Wild => Ok(Pattern::Wildcard),
             PatKind::Binding { name, .. } => Ok(Pattern::Binder(*name)),
             PatKind::Variant { subpatterns, adt_def, variant_index, substs, .. } => {
@@ -591,8 +595,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         kind: TermKind::Let { pattern, arg: box initializer, body: box inner },
                     })
                 } else {
-                    let span =
-                        self.tcx.hir().span(HirId { owner: self.item_id, local_id: init_scope.id });
+                    let span = self.tcx.hir().span(HirId {
+                        owner: OwnerId { def_id: self.item_id },
+                        local_id: init_scope.id,
+                    });
                     Err(Error::new(span, "let-bindings must have values"))
                 }
             }
@@ -603,7 +609,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         trace!("{:?}", self.thir[body].kind);
         match self.thir[body].kind {
             ExprKind::Scope { value, .. } => self.quant_term(value),
-            ExprKind::Closure { closure_id, substs, .. } => {
+            ExprKind::Closure(box ClosureExpr { closure_id, substs, .. }) => {
                 let sig = match substs {
                     UpvarSubsts::Closure(subst) => subst.as_closure().sig(),
                     _ => unreachable!(),
@@ -717,7 +723,9 @@ fn not_spec(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: StmtId) -> bool {
 fn not_spec_expr(tcx: TyCtxt<'_>, thir: &Thir<'_>, id: ExprId) -> bool {
     match thir[id].kind {
         ExprKind::Scope { value, .. } => not_spec_expr(tcx, thir, value),
-        ExprKind::Closure { closure_id, .. } => !util::is_spec(tcx, closure_id.to_def_id()),
+        ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
+            !util::is_spec(tcx, closure_id.to_def_id())
+        }
         _ => true,
     }
 }

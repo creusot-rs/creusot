@@ -24,4 +24,3 @@ pub extern crate rustc_span as span;
 pub extern crate rustc_target as target;
 pub extern crate rustc_trait_selection as trait_selection;
 pub extern crate rustc_type_ir as type_ir;
-pub extern crate rustc_typeck as typeck;
