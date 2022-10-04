@@ -12,13 +12,8 @@ use rustc_middle::ty::subst::GenericArg;
 
 use super::{super_visit_mut_term, BinOp, TermVisitorMut};
 
-pub(crate) fn normalize<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    mut term: Term<'tcx>,
-) -> Term<'tcx> {
-    NormalizeTerm { param_env, tcx }.visit_mut_term(&mut term);
-    term
+pub(crate) fn normalize<'tcx>(tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>, term: &mut Term<'tcx>) {
+    NormalizeTerm { param_env, tcx }.visit_mut_term(term);
 }
 
 struct NormalizeTerm<'tcx> {
