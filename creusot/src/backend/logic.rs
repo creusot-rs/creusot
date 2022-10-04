@@ -154,9 +154,6 @@ fn body_module<'tcx>(
         .and_then(|span| ctx.span_attr(span))
         .map(|attr| sig.attrs.push(attr));
 
-    let sig_contract = sig.clone();
-    sig.contract = Contract::new();
-
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx));
@@ -169,30 +166,15 @@ fn body_module<'tcx>(
         let body = specification::lower_impure(ctx, &mut names, def_id, ctx.param_env(def_id), term);
         decls.extend(names.to_clones(ctx));
 
-        if sig_contract.contract.variant.is_empty() {
-            let kind = match util::item_type(ctx.tcx, def_id) {
-                ItemType::Logic => Some(LetKind::Function),
-                ItemType::Predicate => Some(LetKind::Predicate),
-                _ => unreachable!(),
-            };
+        // TODO: Supress proof obligations
+        decls.push(Decl::Let(LetDecl {
+            sig,
+            rec: true,
+            ghost: true,
+            body,
+            kind: Some(LetKind::Function),
+        }));
 
-            let decl =
-                Decl::Let(LetDecl { kind, sig, rec: true, ghost: true, body });
-            decls.push(decl);
-        } else if body.is_pure() {
-            let def_sig = sig.clone();
-            let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
-            decls.push(Decl::ValDecl(val));
-            decls.push(Decl::Axiom(definition_axiom(&def_sig, body)));
-        } else {
-            let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
-            decls.push(Decl::ValDecl(val));
-        }
-    }
-
-    let has_axioms = !pre_sig_of(ctx, def_id).contract.is_empty();
-    if has_axioms {
-        decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
     }
 
     let name = module_name(ctx, def_id);
@@ -258,31 +240,6 @@ fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
     Some(Module { name, decls })
 }
 
-pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
-    let mut ensures = sig.contract.ensures.clone();
-    let postcondition: Exp = ensures.pop().unwrap_or(Exp::mk_true());
-
-    let mut postcondition = ensures.into_iter().rfold(postcondition, Exp::lazy_conj);
-    postcondition.reassociate();
-
-    let preconditions = sig.contract.requires.iter().cloned();
-    let mut condition = preconditions.rfold(postcondition, |acc, arg| Exp::Impl(box arg, box acc));
-
-    let func_call = function_call(sig);
-    condition.subst(&[("result".into(), func_call)].into_iter().collect());
-    let args: Vec<(_, _)> = sig
-        .args
-        .iter()
-        .cloned()
-        .flat_map(|b| b.var_type_pairs())
-        .filter(|arg| &*arg.0 != "_")
-        .collect();
-
-    let axiom = if args.is_empty() { condition } else { Exp::Forall(args, box condition) };
-
-    Axiom { name: format!("{}_spec", &*sig.name).into(), axiom }
-}
-
 fn function_call(sig: &Signature) -> Exp {
     let mut args: Vec<_> = sig
         .args
@@ -297,21 +254,6 @@ fn function_call(sig: &Signature) -> Exp {
     }
 
     Exp::Call(box Exp::pure_var(sig.name.clone()), args)
-}
-
-fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
-    let call = function_call(sig);
-
-    let equation = Exp::BinaryOp(BinOp::Eq, box call, box body);
-
-    let preconditions = sig.contract.requires.iter().cloned();
-    let condition = preconditions.rfold(equation, |acc, arg| Exp::Impl(box arg, box acc));
-
-    let args: Vec<_> = sig.args.clone().into_iter().flat_map(|b| b.var_type_pairs()).collect();
-
-    let axiom = if args.is_empty() { condition } else { Exp::Forall(args, box condition) };
-
-    Axiom { name: "def".into(), axiom }
 }
 
 pub(crate) fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
