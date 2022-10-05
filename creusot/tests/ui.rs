@@ -30,7 +30,7 @@ fn main() {
             temp_file.as_os_str(),
             "--output-file=/dev/null".as_ref(),
         ])
-        .args(&["--", "--package", "creusot-contracts", "--features=contracts,num_bigint"])
+        .args(&["--", "--package", "creusot-contracts", "--features=contracts"])
         .env("RUST_BACKTRACE", "1")
         .env("CREUSOT_CONTINUE", "true");
 
