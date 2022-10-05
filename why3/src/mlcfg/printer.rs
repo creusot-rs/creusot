@@ -369,13 +369,13 @@ impl Print for DeclClone {
         if self.subst.is_empty() {
             doc
         } else {
-            doc.append(" with ").append(
+            doc.append(" with").append(alloc.hardline()).append(
                 alloc
                     .intersperse(
                         self.subst.iter().map(|s| s.pretty(alloc, env)),
-                        alloc.text(",").append(alloc.softline()),
+                        alloc.text(",").append(alloc.hardline()),
                     )
-                    .nest(2),
+                    .indent(2),
             )
         }
     }
