@@ -153,7 +153,7 @@ pub(crate) fn pearlite(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
 
     let lower = ThirTerm { tcx, item_id: id, thir: &thir };
 
-    lower.expr_term(expr)
+    lower.body_term(expr)
 }
 
 struct ThirTerm<'a, 'tcx> {
@@ -165,6 +165,25 @@ struct ThirTerm<'a, 'tcx> {
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
 impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
+    fn body_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
+        let body = self.expr_term(expr)?;
+        let owner_id = util::closure_owner(self.tcx, self.item_id.into());
+        let id_wcp = WithOptConstParam::unknown(owner_id.expect_local());
+        let (thir, _) = self.tcx.thir_body(id_wcp).map_err(|_| CrErr)?;
+        let thir: &Thir = &thir.borrow();
+        let res = thir.params.iter().enumerate()
+            .map(|(idx, param)| Ok((idx, param.ty, self.pattern_term(&*param.pat.as_ref().ok_or(CrErr)?)?)))
+            .fold_ok(body, |body, (idx, ty, pattern)| match pattern {
+                Pattern::Binder(_) | Pattern::Wildcard => body,
+                _ => {
+                    let name = format!("{}", util::AnonymousParamName(idx)); // Allocate on stack?
+                    let arg = Box::new(Term{ty, span: DUMMY_SP, kind: TermKind::Var(Symbol::intern(&name))});
+                    Term{ty: body.ty, span: body.span, kind: TermKind::Let {pattern, arg, body: Box::new(body)} }
+                }
+            });
+        res
+    }
+
     fn expr_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
         let ty = self.thir[expr].ty;
         let thir_term = &self.thir[expr];
