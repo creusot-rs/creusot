@@ -8,7 +8,10 @@ use crate::{
 use creusot_rustc::{
     hir::def_id::DefId,
     middle::{
-        mir::interpret::{AllocRange, ConstValue},
+        mir::{
+            interpret::{AllocRange, ConstValue},
+            UnevaluatedConst,
+        },
         ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
     },
     smir::mir::ConstantKind,
@@ -68,6 +71,10 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
         }
     }
 
+    if let ConstantKind::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
+        return Expr::Exp(Exp::impure_var(format!("promoted{:?}", p.as_usize()).into()));
+    }
+
     return Expr::Constant(try_to_bits(ctx, names, env, ck.ty(), span, ck));
 }
 
@@ -86,10 +93,6 @@ pub(crate) fn from_ty_const<'tcx>(
             names.import_builtin_module(nm.clone().module_qname());
             return Expr::Exp(Exp::pure_qvar(nm.without_search_path()));
     };
-
-    // if let ConstKind::Unevaluated(UnevaluatedConst{ promoted: Some(p), .. }) = c.kind() {
-    //     return Expr::Exp(Exp::impure_var(format!("promoted{:?}", p.as_usize()).into()));
-    // }
 
     if let ConstKind::Param(_) = c.kind() {
         ctx.crash_and_error(span, "const generic parameters are not yet supported");

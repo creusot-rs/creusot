@@ -13,7 +13,7 @@ use creusot_rustc::{
         mir::visit::Visitor,
         ty::{TyCtxt, TyKind},
     },
-    smir::mir::{AggregateKind, BasicBlock, Body, ConstantKind, Location, Operand, Rvalue},
+    smir::mir::{AggregateKind, BasicBlock, Body, Location, Operand, Rvalue},
     span::Symbol,
 };
 
@@ -104,10 +104,8 @@ impl<'tcx> Visitor<'tcx> for InvariantClosures<'tcx> {
                 self.closures.insert(id.to_def_id());
             }
             Rvalue::Use(Operand::Constant(box ck)) => {
-                if let ConstantKind::Ty(c) = ck.literal {
-                    if let Some(def_id) = is_ghost_closure(self.tcx, c.ty()) {
-                        self.closures.insert(def_id);
-                    }
+                if let Some(def_id) = is_ghost_closure(self.tcx, ck.literal.ty()) {
+                    self.closures.insert(def_id);
                 }
             }
             _ => {}
@@ -127,10 +125,8 @@ impl<'tcx> Visitor<'tcx> for ClosureLocations {
                 self.locations.insert(id.to_def_id(), loc);
             }
             Rvalue::Use(Operand::Constant(box ck)) => {
-                if let ConstantKind::Ty(c) = ck.literal {
-                    if let TyKind::Closure(def_id, _) = c.ty().peel_refs().kind() {
-                        self.locations.insert(*def_id, loc);
-                    }
+                if let TyKind::Closure(def_id, _) = ck.literal.ty().peel_refs().kind() {
+                    self.locations.insert(*def_id, loc);
                 }
             }
             _ => {}

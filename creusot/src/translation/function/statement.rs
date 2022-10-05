@@ -1,8 +1,8 @@
 use creusot_rustc::{
     borrowck::borrow_set::TwoPhaseActivation,
     smir::mir::{
-        BinOp, BorrowKind::*, CastKind, ConstantKind, Location, Operand::*, Place, Rvalue,
-        SourceInfo, Statement, StatementKind,
+        BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
+        StatementKind,
     },
 };
 
@@ -58,10 +58,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     Expr::Copy(*pl)
                 }
                 Constant(box c) => {
-                    if let ConstantKind::Ty(c) = c.literal {
-                        if is_ghost_closure(self.tcx, c.ty()).is_some() {
-                            return;
-                        }
+                    if is_ghost_closure(self.tcx, c.literal.ty()).is_some() {
+                        return;
                     };
                     crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
                 }
