@@ -28,9 +28,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             StorageDead(_) | StorageLive(_) | Nop => {}
             // Not real instructions
             FakeRead(_) | AscribeUserType(_, _) | Retag(_, _) | Coverage(_) => {}
-            CopyNonOverlapping(_) => self.ctx.crash_and_error(
+            Intrinsic(_) => self.ctx.crash_and_error(
                 statement.source_info.span,
-                "copy non overlapping is not supported",
+                "intrinsics are not supported",
             ),
             Deinit(_) => unreachable!("Deinit unsupported")
             // No assembly!
@@ -58,10 +58,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     Expr::Copy(*pl)
                 }
                 Constant(box c) => {
-                    if let Some(c) = c.literal.const_for_ty() {
-                        if is_ghost_closure(self.tcx, c.ty()).is_some() {
-                            return;
-                        }
+                    if is_ghost_closure(self.tcx, c.literal.ty()).is_some() {
+                        return;
                     };
                     crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
                 }
@@ -176,7 +174,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::Cast(
                 CastKind::Pointer(_)
                 | CastKind::PointerExposeAddress
-                | CastKind::PointerFromExposedAddress,
+                | CastKind::PointerFromExposedAddress
+                | CastKind::DynStar,
                 _,
                 _,
             ) => self.ctx.crash_and_error(si.span, "Pointer casts are currently unsupported"),

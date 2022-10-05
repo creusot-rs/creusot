@@ -11,7 +11,7 @@ use creusot_rustc::{
     hir::Unsafety,
     middle::{
         ty,
-        ty::{EarlyBinder, ParamEnv, Subst},
+        ty::{EarlyBinder, ParamEnv},
     },
 };
 use rustc_middle::ty::{Ty, TyKind};
@@ -73,7 +73,8 @@ impl<'tcx> Lower<'_, 'tcx> {
                 let method = (id, subst);
                 debug!("resolved_method={:?}", method);
                 self.lookup_builtin(method, &mut Vec::new()).unwrap_or_else(|| {
-                    let uneval = ty::Unevaluated::new(ty::WithOptConstParam::unknown(id), subst);
+                    let uneval =
+                        ty::UnevaluatedConst::new(ty::WithOptConstParam::unknown(id), subst);
 
                     let constant = self.ctx.tcx.mk_const(ty::ConstS {
                         kind: ty::ConstKind::Unevaluated(uneval),

@@ -4,10 +4,11 @@ use extern_spec::ExternSpecs;
 use pearlite_syn::*;
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
-use quote::{quote, ToTokens, TokenStreamExt};
+use quote::{quote, quote_spanned, ToTokens, TokenStreamExt};
 use std::iter;
 use syn::{
     parse::{Parse, Result},
+    spanned::Spanned,
     token::{Brace, Comma},
     *,
 };
@@ -465,22 +466,24 @@ pub fn logic(_: TS1, tokens: TS1) -> TS1 {
 }
 
 fn logic_sig(sig: TraitItemSignature) -> TS1 {
-    TS1::from(quote! {
+    let span = sig.span();
+    TS1::from(quote_spanned! {span=>
         #[creusot::decl::logic]
         #sig
     })
 }
 
 fn logic_item(log: LogicItem) -> TS1 {
+    let span = log.sig.span();
+
     let term = log.body;
     let vis = log.vis;
     let def = log.defaultness;
     let sig = log.sig;
     let attrs = log.attrs;
-
     let req_body = pretyping::encode_block(&term).unwrap();
 
-    TS1::from(quote! {
+    TS1::from(quote_spanned! {span=>
         #[creusot::decl::logic]
         #(#attrs)*
         #vis #def #sig {
@@ -510,13 +513,15 @@ pub fn predicate(_: TS1, tokens: TS1) -> TS1 {
 }
 
 fn predicate_sig(sig: TraitItemSignature) -> TS1 {
-    TS1::from(quote! {
+    let span = sig.span();
+    TS1::from(quote_spanned! {span=>
         #[creusot::decl::predicate]
         #sig
     })
 }
 
 fn predicate_item(log: LogicItem) -> TS1 {
+    let span = log.sig.span();
     let term = log.body;
     let vis = log.vis;
     let def = log.defaultness;
@@ -525,7 +530,7 @@ fn predicate_item(log: LogicItem) -> TS1 {
 
     let req_body = pretyping::encode_block(&term).unwrap();
 
-    TS1::from(quote! {
+    TS1::from(quote_spanned! {span=>
         #[creusot::decl::predicate]
         #(#attrs)*
         #vis #def #sig {

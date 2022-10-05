@@ -12,7 +12,7 @@ use creusot_rustc::{
         ty::{
             self,
             subst::{InternalSubsts, SubstsRef},
-            EarlyBinder, Subst, TyCtxt,
+            EarlyBinder, TyCtxt,
         },
     },
     smir::mir::{Body, Local, Location, SourceScope},

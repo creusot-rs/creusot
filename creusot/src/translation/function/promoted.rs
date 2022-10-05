@@ -60,7 +60,7 @@ pub(crate) fn translate_promoted<'tcx>(
 ) -> CreusotResult<Decl> {
     let mut previous_block = None;
     let mut exp = Exp::impure_var("_0".into());
-    for (id, bbd) in body.basic_blocks().iter_enumerated().rev() {
+    for (id, bbd) in body.basic_blocks.iter_enumerated().rev() {
         // Safety check
         match bbd.terminator().kind {
             TerminatorKind::Return => {

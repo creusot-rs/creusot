@@ -47,10 +47,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         match &terminator.kind {
             Goto { target } => self.emit_terminator(mk_goto(*target)),
             SwitchInt { discr, targets, .. } => {
-                let real_discr =
-                    discriminator_for_switch(&self.body.basic_blocks()[location.block])
-                        .map(Operand::Move)
-                        .unwrap_or_else(|| discr.clone());
+                let real_discr = discriminator_for_switch(&self.body.basic_blocks[location.block])
+                    .map(Operand::Move)
+                    .unwrap_or_else(|| discr.clone());
 
                 let discriminant = self.translate_operand(&real_discr);
                 let switch = make_switch(

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use creusot_rustc::{
     hir::def_id::DefId,
     middle::ty::{
-        subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, Subst, TraitRef, TyCtxt,
+        subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, TraitRef, TyCtxt,
     },
     resolve::Namespace,
     trait_selection::traits::ImplSource,

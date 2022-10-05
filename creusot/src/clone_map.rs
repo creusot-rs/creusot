@@ -3,7 +3,7 @@ use creusot_rustc::{
     infer::traits::ImplSource,
     middle::ty::{
         self,
-        subst::{InternalSubsts, Subst, SubstsRef},
+        subst::{InternalSubsts, SubstsRef},
         DefIdTree, EarlyBinder, ProjectionTy, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable,
         TypeVisitor,
     },
