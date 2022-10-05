@@ -316,6 +316,12 @@ impl<'tcx> Lower<'_, 'tcx> {
                 Exp::Abs(binders, box body)
             }
             TermKind::Absurd => Exp::Absurd,
+            TermKind::Reborrow { cur, fin } => Exp::Record {
+                fields: vec![
+                    ("current".into(), self.lower_term(*cur)),
+                    ("final".into(), self.lower_term(*fin)),
+                ],
+            },
         }
     }
 
