@@ -25,7 +25,10 @@
 // free.
 
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{
+    logic::{Int, Seq},
+    *,
+};
 
 // number of positive elements of `t` between `i` (included) and `j`
 // (excluded)

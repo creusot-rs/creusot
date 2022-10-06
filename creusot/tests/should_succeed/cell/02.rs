@@ -1,6 +1,5 @@
 extern crate creusot_contracts;
-
-use creusot_contracts::*;
+use creusot_contracts::{logic::Int, *};
 
 pub trait Inv<T> {
     #[predicate]

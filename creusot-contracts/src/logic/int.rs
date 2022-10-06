@@ -1,6 +1,5 @@
-use super::model::*;
 use crate as creusot_contracts;
-use crate::macros::*;
+use crate::{macros::*, DeepModel, ShallowModel};
 
 use std::ops::*;
 

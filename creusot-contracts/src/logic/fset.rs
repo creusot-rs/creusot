@@ -1,7 +1,7 @@
 use crate as creusot_contracts;
 use crate::macros::*;
 
-use crate::Int;
+use crate::logic::int::Int;
 
 #[cfg_attr(feature = "contracts", creusot::builtins = "set.Fset.fset")]
 pub struct FSet<T: ?Sized>(std::marker::PhantomData<T>);
@@ -51,13 +51,13 @@ impl<T: ?Sized> FSet<T> {
     #[logic]
     #[creusot::builtins = "set.Fset.remove"]
     pub fn rem(_: T, _: Self) -> Self {
-        pearlite! { absurd}
+        pearlite! { absurd }
     }
 
     #[logic]
     #[creusot::builtins = "set.Fset.union"]
     pub fn union(self, _: Self) -> Self {
-        pearlite! { absurd}
+        pearlite! { absurd }
     }
 
     #[logic]

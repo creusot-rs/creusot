@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{logic::OrdLogic, *};
 
 #[ensures(result == true)]
 pub fn x<T: Ord + DeepModel>(x: &T) -> bool

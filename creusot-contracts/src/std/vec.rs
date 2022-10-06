@@ -2,7 +2,7 @@ use crate as creusot_contracts;
 use crate::{
     logic::*,
     std::{iter::Iterator, slice::SliceIndex},
-    DeepModel, Int, Seq, ShallowModel,
+    DeepModel, Resolve, ShallowModel,
 };
 use creusot_contracts_proc::*;
 use std::{

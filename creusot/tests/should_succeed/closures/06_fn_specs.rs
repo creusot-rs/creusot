@@ -14,7 +14,6 @@ pub fn weaken_std<A, F: Fn<A>>(f: F, a: A) -> F::Output {
     weaken_2_std(f, a)
 }
 
-
 #[requires(f.precondition(a))]
 #[ensures(exists<f2: &mut F> *f2 == f && f2.postcondition_mut(a, result) && (^f2).resolve())]
 fn weaken_2<A, F: FnMutSpec<A>>(f: F, a: A) -> F::Output {
@@ -26,7 +25,6 @@ fn weaken_2<A, F: FnMutSpec<A>>(f: F, a: A) -> F::Output {
 fn weaken_2_std<A, F: FnMut<A> + Resolve>(f: F, a: A) -> F::Output {
     weaken_3_std(f, a)
 }
-
 
 #[requires(f.precondition(a))]
 #[ensures(f.postcondition_once(a, result))]

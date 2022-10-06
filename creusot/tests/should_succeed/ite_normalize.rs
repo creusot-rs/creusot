@@ -42,7 +42,7 @@ impl<K: Clone, V: Clone> Clone for BTreeMap<K, V> {
 }
 
 impl<K: DeepModel, V> ShallowModel for BTreeMap<K, V> {
-    type ShallowModelTy = creusot_contracts::Mapping<K::DeepModelTy, Option<V>>;
+    type ShallowModelTy = creusot_contracts::logic::Mapping<K::DeepModelTy, Option<V>>;
 
     #[logic]
     #[trusted]

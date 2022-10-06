@@ -1,6 +1,9 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{
+    logic::{Int, OrdLogic, Seq},
+    *,
+};
 
 #[predicate]
 fn sorted_range<T: OrdLogic>(s: Seq<T>, l: Int, u: Int) -> bool {

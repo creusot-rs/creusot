@@ -265,7 +265,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                 #[allow(unused_must_use)]
                 let _ =
                     #attrs
-                    |result| {creusot_contracts::stubs::closure_result(res, result); #req_body }
+                    |result| {creusot_contracts::__stubs::closure_result(res, result); #req_body }
                 ;
                 res});
             TS1::from(quote! {
@@ -292,7 +292,7 @@ fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
     let var_name = generate_unique_ident(&f.sig.ident.to_string());
     let mut var_sig = f.sig.clone();
     var_sig.ident = var_name.clone();
-    // var_sig.output = parse_quote! { -> impl creusot_contracts::logic::WellFounded };
+    // var_sig.output = parse_quote! { -> impl creusot_contracts::WellFounded };
     let var_body = pretyping::encode_term(&p).unwrap_or_else(|e| {
         return e.into_tokens();
     });
@@ -304,7 +304,7 @@ fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
             #[creusot::no_translate]
             #[creusot::item=#name_tag]
             #[creusot::decl::spec]
-            ||{ creusot_contracts::stubs::variant_check(#var_body) }
+            ||{ creusot_contracts::__stubs::variant_check(#var_body) }
         ;
     };
 
@@ -354,7 +354,7 @@ pub fn ghost(assertion: TS1) -> TS1 {
                 #[creusot::no_translate]
                 #[creusot::decl::spec]
                 #[creusot::spec::ghost]
-                || { creusot_contracts::logic::Ghost::new(#assertion) }
+                || { creusot_contracts::Ghost::new(#assertion) }
             )()
         }
     })

@@ -1,5 +1,8 @@
 use crate as creusot_contracts;
-use crate::{Int, Resolve, Seq};
+use crate::{
+    logic::{Int, Seq},
+    Resolve,
+};
 use creusot_contracts_proc::*;
 use std::iter::{Skip, Take};
 

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{logic::Mapping, *};
 
 // Tests that we can use field access syntax in pearlite.
 
@@ -36,13 +36,13 @@ pub fn field1_is_true(x: B) -> bool {
 }
 
 pub fn ghost_closure() {
-    let x = ghost! { pearlite! { |a : u32| a  } };
+    let _x = ghost! { pearlite! { |a : u32| a  } };
 }
 
-pub fn pearlite_closure(x: Ghost<Mapping<u32, bool>>) {}
+pub fn pearlite_closure(_x: Ghost<Mapping<u32, bool>>) {}
 
 pub fn caller() {
-    pearlite_closure(ghost! { pearlite! { |a| true }});
+    pearlite_closure(ghost! { pearlite! { |_a| true }});
 }
 
 // Implicit logical reborrows

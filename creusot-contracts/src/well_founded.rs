@@ -1,5 +1,6 @@
-use crate::{trusted, Int};
+use crate::{logic::Int, trusted};
 
+// Instances of this trait are types which are allowed as variants of recursive definitions.
 #[trusted]
 pub trait WellFounded {}
 

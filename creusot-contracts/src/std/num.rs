@@ -1,5 +1,5 @@
 use crate as creusot_contracts;
-use crate::Int;
+use crate::logic::Int;
 use creusot_contracts_proc::*;
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given

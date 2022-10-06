@@ -2,7 +2,11 @@
 #![feature(box_patterns)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{derive::Clone, *};
+use creusot_contracts::{
+    derive::Clone,
+    logic::{Int, Mapping, OrdLogic},
+    *,
+};
 use std::cmp::{Ord, Ordering::*};
 
 #[derive(Clone, Copy)]
@@ -46,7 +50,10 @@ impl<K: DeepModel, V> Tree<K, V> {
     }
 
     #[logic]
-    fn model_acc(self, accu: <Self as ShallowModel>::ShallowModelTy) -> <Self as ShallowModel>::ShallowModelTy {
+    fn model_acc(
+        self,
+        accu: <Self as ShallowModel>::ShallowModelTy,
+    ) -> <Self as ShallowModel>::ShallowModelTy {
         pearlite! {
             match self {
                 Tree { node: None } => accu,
@@ -62,7 +69,11 @@ impl<K: DeepModel, V> Tree<K, V> {
     #[logic]
     #[ensures(self.model_acc(accu).get(k) == accu.get(k) ||
               exists<v: V> self.model_acc(accu).get(k) == Some(v) && self.has_mapping(k, v))]
-    fn model_acc_has_mapping(self, accu: <Self as ShallowModel>::ShallowModelTy, k: K::DeepModelTy) {
+    fn model_acc_has_mapping(
+        self,
+        accu: <Self as ShallowModel>::ShallowModelTy,
+        k: K::DeepModelTy,
+    ) {
         pearlite! {
             match self {
                 Tree { node: None } => (),

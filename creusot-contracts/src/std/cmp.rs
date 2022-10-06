@@ -1,7 +1,7 @@
 use crate as creusot_contracts;
 use creusot_contracts_proc::*;
 
-use crate::{logic::ord::*, DeepModel};
+use crate::{logic::OrdLogic, DeepModel};
 use std::cmp::Ordering;
 
 extern_spec! {

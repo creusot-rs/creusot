@@ -51,7 +51,7 @@ extern_spec! {
                 #[ensures(result == *self && ^self == Some(value))]
                 fn replace(&mut self, value: T) -> Option<T>;
 
-                #[ensures(self == None ==> result == T::default_log())]
+                #[ensures(self == None ==> result.is_default())]
                 #[ensures(self == None || self == Some(result))]
                 fn unwrap_or_default(self) -> T
                 where
@@ -102,8 +102,8 @@ extern_spec! {
 }
 
 impl<T> Default for Option<T> {
-    #[logic]
-    fn default_log() -> Option<T> {
-        None
+    #[predicate]
+    fn is_default(self) -> bool {
+        pearlite! { self == None }
     }
 }

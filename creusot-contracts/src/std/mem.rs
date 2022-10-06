@@ -14,7 +14,7 @@ extern_spec! {
             fn swap<T>(x: &mut T, y: &mut T);
 
             #[ensures(result == *dest)]
-            #[ensures(^dest == T::default_log())]
+            #[ensures((^dest).is_default())]
             fn take<T: Default>(dest: &mut T) -> T;
         }
     }

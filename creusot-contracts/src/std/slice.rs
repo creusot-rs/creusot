@@ -2,7 +2,7 @@ use crate as creusot_contracts;
 use crate::{
     logic::*,
     std::{default::Default, iter::Iterator},
-    DeepModel, Int, Seq, ShallowModel,
+    DeepModel, Resolve, ShallowModel,
 };
 use creusot_contracts_proc::*;
 use std::{
@@ -43,21 +43,16 @@ fn slice_model<T>(_: [T]) -> Seq<T> {
 }
 
 impl<T> Default for &mut [T] {
-    #[logic]
-    #[trusted]
-    #[ensures(@result == Seq::EMPTY)]
-    #[ensures(@^result == Seq::EMPTY)]
-    fn default_log() -> Self {
-        absurd
+    #[predicate]
+    fn is_default(self) -> bool {
+        pearlite! { @self == Seq::EMPTY && @^self == Seq::EMPTY }
     }
 }
 
 impl<T> Default for &[T] {
-    #[logic]
-    #[trusted]
-    #[ensures(@result == Seq::EMPTY)]
-    fn default_log() -> Self {
-        absurd
+    #[predicate]
+    fn is_default(self) -> bool {
+        pearlite! { @self == Seq::EMPTY }
     }
 }
 

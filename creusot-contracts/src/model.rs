@@ -1,5 +1,8 @@
+#[cfg(feature = "contracts")]
 use crate as creusot_contracts;
-use crate::{macros::*, Int, Seq};
+
+use crate::{logic::Seq, macros::*};
+
 #[cfg(feature = "contracts")]
 use std::alloc::Allocator;
 
@@ -102,7 +105,7 @@ impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
     // TODO
     // #[ensures(result.len() == @N)]
     #[ensures(self.shallow_model().len() == result.len())]
-    #[ensures(forall<i: Int> 0 <= i && i < result.len() ==> result[i] == (@self)[i].deep_model())]
+    #[ensures(forall<i: _> 0 <= i && i < result.len() ==> result[i] == (@self)[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
     }

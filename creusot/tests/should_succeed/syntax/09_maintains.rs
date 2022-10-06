@@ -1,8 +1,7 @@
 #![allow(unused_variables)]
 
 extern crate creusot_contracts;
-
-use creusot_contracts::*;
+use creusot_contracts::{logic::Int, *};
 
 // Tests that we can use field access syntax in pearlite.
 

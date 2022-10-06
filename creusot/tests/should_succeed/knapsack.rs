@@ -1,5 +1,8 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{
+    logic::{Int, Seq},
+    *,
+};
 
 pub struct Item<Name> {
     pub name: Name,

@@ -1,5 +1,8 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{
+    logic::{Int, Mapping},
+    *,
+};
 
 enum List<T> {
     Nil,
@@ -90,7 +93,7 @@ impl<K: Hash + Copy + Eq + DeepModel, V: Copy> MyHashMap<K, V> {
     #[ensures(result.hashmap_inv())]
     #[ensures(forall<i: K::DeepModelTy> (@result).get(i) == None)]
     pub fn new(size: usize) -> MyHashMap<K, V> {
-        let res = MyHashMap { buckets: vec![ List::Nil; size ] };
+        let res = MyHashMap { buckets: vec![List::Nil; size] };
         res
     }
 

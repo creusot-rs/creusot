@@ -1,4 +1,6 @@
+#[cfg(feature = "contracts")]
 use crate as creusot_contracts;
+
 use crate::macros::*;
 
 #[cfg_attr(feature = "contracts", rustc_diagnostic_item = "creusot_resolve")]

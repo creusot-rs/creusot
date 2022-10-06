@@ -1,7 +1,10 @@
 #![feature(type_ascription)]
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{
+    logic::{Int, OrdLogic, Seq},
+    *,
+};
 
 #[logic]
 fn parent(i: Int) -> Int {

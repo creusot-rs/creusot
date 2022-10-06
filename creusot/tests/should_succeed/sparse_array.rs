@@ -12,7 +12,10 @@
 // requires to reason about permutation,
 
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{
+    logic::{Int, Seq},
+    *,
+};
 
 /* The sparse array data structure
  */
@@ -136,13 +139,7 @@ impl<T> Sparse<T> {
 #[ensures(result.size == sz)]
 #[ensures(forall<i: Int> (@result)[i] == None)]
 pub fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
-    Sparse {
-        size: sz,
-        n: 0,
-        values : vec![dummy;sz],
-        idx : vec![0;sz],
-        back : vec![0;sz],
-    }
+    Sparse { size: sz, n: 0, values: vec![dummy; sz], idx: vec![0; sz], back: vec![0; sz] }
 }
 
 /* A test program
