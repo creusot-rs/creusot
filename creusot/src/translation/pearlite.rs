@@ -171,14 +171,21 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         let id_wcp = WithOptConstParam::unknown(owner_id.expect_local());
         let (thir, _) = self.tcx.thir_body(id_wcp).map_err(|_| CrErr)?;
         let thir: &Thir = &thir.borrow();
-        let res = thir.params.iter().enumerate()
-            .map(|(idx, param)| Ok((idx, param.ty, self.pattern_term(&*param.pat.as_ref().ok_or(CrErr)?)?)))
+        let res = thir
+            .params
+            .iter()
+            .enumerate()
+            .map(|(idx, param)| {
+                Ok((idx, param.ty, self.pattern_term(&*param.pat.as_ref().ok_or(CrErr)?)?))
+            })
             .fold_ok(body, |body, (idx, ty, pattern)| match pattern {
                 Pattern::Binder(_) | Pattern::Wildcard => body,
                 _ => {
                     let name = format!("{}", util::AnonymousParamName(idx)); // Allocate on stack?
-                    let arg = Box::new(Term{ty, span: DUMMY_SP, kind: TermKind::Var(Symbol::intern(&name))});
-                    Term{ty: body.ty, span: body.span, kind: TermKind::Let {pattern, arg, body: Box::new(body)} }
+                    let arg_kind = TermKind::Var(Symbol::intern(&name));
+                    let arg = Box::new(Term { ty, span: DUMMY_SP, kind: arg_kind });
+                    let kind = TermKind::Let { pattern, arg, body: Box::new(body) };
+                    Term { ty: body.ty, span: body.span, kind }
                 }
             });
         res

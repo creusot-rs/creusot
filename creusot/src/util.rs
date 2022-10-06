@@ -19,8 +19,11 @@ use creusot_rustc::{
 };
 use indexmap::IndexMap;
 use rustc_middle::ty::{ClosureKind, RegionKind};
-use std::{collections::HashSet, iter};
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::HashSet,
+    fmt::{Display, Formatter},
+    iter,
+};
 use why3::{
     declaration,
     declaration::{LetKind, Signature, ValDecl},
@@ -679,7 +682,6 @@ pub(crate) fn closure_capture_subst<'tcx>(
     let TyKind::Closure(_, substs) = tcx.type_of(def_id).kind() else { unreachable!() };
     ClosureSubst { self_, map: subst, post: is_post, def_id, bound: Default::default(), substs }
 }
-
 
 pub(crate) struct AnonymousParamName(pub(crate) usize);
 
