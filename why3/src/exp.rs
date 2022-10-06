@@ -95,6 +95,7 @@ pub enum Exp {
     Let { pattern: Pattern, arg: Box<Exp>, body: Box<Exp> },
     Var(Ident, Purity),
     QVar(QName, Purity),
+    Record { fields: Vec<(String, Exp)> },
     RecUp { record: Box<Exp>, label: String, val: Box<Exp> },
     RecField { record: Box<Exp>, label: String },
     Tuple(Vec<Exp>),
@@ -187,6 +188,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
         Exp::Exists(_, e) => f.visit_mut(e),
         Exp::Attr(_, e) => f.visit_mut(e),
         Exp::Ghost(e) => f.visit_mut(e),
+        Exp::Record { fields } => fields.iter_mut().for_each(|(_, e)| f.visit_mut(e)),
     }
 }
 
@@ -248,6 +250,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
         Exp::Exists(_, e) => f.visit(e),
         Exp::Attr(_, e) => f.visit(e),
         Exp::Ghost(e) => f.visit(e),
+        Exp::Record { fields } => fields.iter().for_each(|(_, e)| f.visit(e)),
     }
 }
 
@@ -523,6 +526,7 @@ impl Exp {
             Exp::Verbatim(_) => Atom,
             Exp::Attr(_, _) => Attr,
             Exp::Ghost(_) => App,
+            Exp::Record { fields: _ } => Atom,
             // _ => unimplemented!("{:?}", self),
         }
     }

@@ -759,6 +759,14 @@ impl Print for Exp {
             }
             Exp::Absurd => alloc.text("absurd"),
             Exp::Old(e) => alloc.text("old").append(e.pretty(alloc, env).parens()),
+            Exp::Record { fields } => alloc
+                .intersperse(
+                    fields
+                        .iter()
+                        .map(|(nm, a)| alloc.text(nm).append(" = ").append(a.pretty(alloc, env))),
+                    "; ",
+                )
+                .braces(),
         }
     }
 }
