@@ -1,6 +1,6 @@
 use crate as creusot_contracts;
 use crate::{logic::Int, macros::*};
-pub use std::cmp::Ordering;
+use std::cmp::Ordering;
 
 #[allow(unused)]
 pub trait OrdLogic {

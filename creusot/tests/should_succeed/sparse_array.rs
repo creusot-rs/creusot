@@ -12,7 +12,7 @@
 // requires to reason about permutation,
 
 extern crate creusot_contracts;
-use creusot_contracts::{std::vec, *};
+use creusot_contracts::*;
 
 /* The sparse array data structure
  */
@@ -139,12 +139,9 @@ pub fn create<T: Clone + Copy>(sz: usize, dummy: T) -> Sparse<T> {
     Sparse {
         size: sz,
         n: 0,
-        // values : vec![dummy;sz],
-        values: vec::from_elem(dummy, sz),
-        // idx : vec![0;sz],
-        idx: vec::from_elem(0, sz),
-        // back : vec![0;sz],
-        back: vec::from_elem(0, sz),
+        values : vec![dummy;sz],
+        idx : vec![0;sz],
+        back : vec![0;sz],
     }
 }
 

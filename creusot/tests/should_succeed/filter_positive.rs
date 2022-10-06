@@ -25,7 +25,7 @@
 // free.
 
 extern crate creusot_contracts;
-use creusot_contracts::{std::vec, *};
+use creusot_contracts::*;
 
 // number of positive elements of `t` between `i` (included) and `j`
 // (excluded)
@@ -89,8 +89,7 @@ pub fn m(t: Vec<i32>) -> Vec<i32> {
         }
         i += 1;
     }
-    let mut u: Vec<i32> = vec::from_elem(0, count);
-    //let mut u : Vec<i32> = vec![0;count];
+    let mut u: Vec<i32> = vec![0; count];
     count = 0;
 
     i = 0;

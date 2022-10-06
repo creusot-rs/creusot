@@ -132,7 +132,6 @@ pub mod derive {
     pub use ::std::{clone::Clone, cmp::PartialEq};
 }
 
-pub use macros::*;
 
 #[cfg(feature = "contracts")]
 pub mod stubs;
@@ -143,8 +142,7 @@ pub mod logic;
 pub mod std;
 
 #[cfg(not(feature = "contracts"))]
-pub mod std {
-    pub use std::vec;
-}
+pub mod std { }
 
+pub use macros::*;
 pub use logic::*;

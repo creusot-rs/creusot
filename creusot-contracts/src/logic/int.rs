@@ -1,6 +1,6 @@
 use super::model::*;
 use crate as creusot_contracts;
-use crate::{logic::*, macros::*};
+use crate::macros::*;
 
 use std::ops::*;
 

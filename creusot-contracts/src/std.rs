@@ -1,18 +1,11 @@
 mod boxed;
-pub mod clone;
-pub mod cmp;
-mod default;
-mod eq;
-mod fun;
+mod clone;
+mod cmp;
+pub mod default;
+pub mod ops;
 pub mod iter;
-pub mod mem;
+mod mem;
 mod num;
-pub mod option;
+mod option;
 mod slice;
-pub mod vec;
-
-pub use boxed::*;
-pub use clone::*;
-pub use eq::*;
-pub use fun::*;
-pub use vec::*;
+mod vec;

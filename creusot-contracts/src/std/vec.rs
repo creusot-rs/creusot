@@ -4,7 +4,6 @@ use crate::{
     std::{iter::Iterator, slice::SliceIndex},
     DeepModel, Int, Seq, ShallowModel,
 };
-pub use ::std::vec::from_elem;
 use creusot_contracts_proc::*;
 use std::{
     alloc::Allocator,

@@ -46,7 +46,7 @@ impl Board {
             forall<j : Int> 0 <= j && j < @i ==> (@(@rows)[j]).len() == @size)]
         #[invariant(row_len, (@rows).len() == @i )]
         while i < size {
-            rows.push(std::vec::from_elem(0, size));
+            rows.push(vec![0; size]);
             i += 1;
         }
 

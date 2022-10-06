@@ -7,6 +7,14 @@ use std::cmp::Ordering;
 extern_spec! {
     mod std {
         mod cmp {
+            trait PartialEq<Rhs> {
+                #[ensures(result == (self.deep_model() == rhs.deep_model()))]
+                fn eq(&self, rhs: &Rhs) -> bool
+                where
+                    Self: DeepModel,
+                    Rhs: DeepModel<DeepModelTy = Self::DeepModelTy>;
+            }
+
             // TODO: for now, we only support total orders
             trait PartialOrd<Rhs>
                 where Self: DeepModel,
