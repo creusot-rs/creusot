@@ -184,8 +184,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     let name = format!("{}", util::AnonymousParamName(idx)); // Allocate on stack?
                     let arg_kind = TermKind::Var(Symbol::intern(&name));
                     let arg = Box::new(Term { ty, span: DUMMY_SP, kind: arg_kind });
-                    let kind = TermKind::Let { pattern, arg, body: Box::new(body) };
-                    Term { ty: body.ty, span: body.span, kind }
+                    Term {
+                        ty: body.ty,
+                        span: body.span,
+                        kind: TermKind::Let { pattern, arg, body: Box::new(body) },
+                    }
                 }
             });
         res
