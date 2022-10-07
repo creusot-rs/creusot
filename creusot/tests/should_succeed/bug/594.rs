@@ -11,6 +11,15 @@ pub fn test_program((x, _): (u32, u32)) -> u32 {
     x
 }
 
+pub fn test_closure() {
+    let cl1 = #[ensures(result == b)]
+    |_c, (_a, b)| b;
+    let cl2 = #[ensures(result == b)]
+    |(_a, b)| b;
+    let _a = (cl1)(4, (0, 3));
+    let _b = (cl2)((0, 4));
+}
+
 pub struct T(u32);
 
 // #[ensures(result == x)]

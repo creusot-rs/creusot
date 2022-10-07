@@ -109,6 +109,14 @@ pub(crate) fn closure_owner(tcx: TyCtxt, mut def_id: DefId) -> DefId {
     def_id
 }
 
+pub(crate) fn param_def_id(tcx: TyCtxt, def_id: LocalDefId) -> LocalDefId {
+    if is_spec(tcx, def_id.to_def_id()) && tcx.is_closure(def_id.to_def_id()) {
+        tcx.parent(def_id.to_def_id()).expect_local()
+    } else {
+        def_id
+    }
+}
+
 pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
     loop {
         if is_no_translate(tcx, def_id) {
@@ -506,7 +514,7 @@ pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {
     }
 }
 
-use creusot_rustc::smir::mir::Field;
+use creusot_rustc::{smir::mir::Field, span::def_id::LocalDefId};
 
 pub(crate) struct ClosureSubst<'tcx> {
     def_id: DefId,
@@ -689,4 +697,9 @@ impl Display for AnonymousParamName {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "_{}'", self.0 + 1)
     }
+}
+
+pub(crate) fn anonymous_param_symbol(idx: usize) -> Symbol {
+    let name = format!("{}", AnonymousParamName(idx)); // Allocate on stack?
+    Symbol::intern(&name)
 }

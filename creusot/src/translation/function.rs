@@ -491,25 +491,21 @@ pub(crate) fn closure_contract<'tcx>(
     if args.len() == 0 {
         pre_clos_sig.inputs.push((Symbol::intern("_"), DUMMY_SP, ctx.tcx.mk_unit()))
     } else {
-        let arg_tys: Vec<_> = args.iter().map(|(_, _, ty)| *ty).collect();
+        let arg_tys = args.iter().map(|(_, _, ty)| *ty);
+        let arg_ty = ctx.tcx.mk_tup(arg_tys);
 
-        pre_clos_sig.inputs.push((
-            Symbol::intern("args"),
-            DUMMY_SP,
-            ctx.tcx.mk_tup(arg_tys.iter()),
-        ));
+        pre_clos_sig.inputs.push((Symbol::intern("args"), DUMMY_SP, arg_ty));
 
-        let arg_tuple = Term {
-            ty: ctx.tcx.mk_tup(arg_tys.iter()),
-            kind: TermKind::Var(Symbol::intern("args")),
-            span: DUMMY_SP,
-        };
+        let arg_tuple =
+            Term { ty: arg_ty, kind: TermKind::Var(Symbol::intern("args")), span: DUMMY_SP };
 
         let arg_pat = pearlite::Pattern::Tuple(
             args.iter()
-                .map(|(nm, _, _)| {
+                .enumerate()
+                .map(|(idx, (nm, _, _))| {
                     if nm.is_empty() {
-                        pearlite::Pattern::Wildcard
+                        // We skipped the first element
+                        pearlite::Pattern::Binder(util::anonymous_param_symbol(idx + 1))
                     } else {
                         pearlite::Pattern::Binder(*nm)
                     }

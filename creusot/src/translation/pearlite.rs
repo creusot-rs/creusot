@@ -167,22 +167,21 @@ struct ThirTerm<'a, 'tcx> {
 impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn body_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
         let body = self.expr_term(expr)?;
-        let owner_id = util::closure_owner(self.tcx, self.item_id.into());
-        let id_wcp = WithOptConstParam::unknown(owner_id.expect_local());
+        let owner_id = util::param_def_id(self.tcx, self.item_id.into());
+        let id_wcp = WithOptConstParam::unknown(owner_id);
         let (thir, _) = self.tcx.thir_body(id_wcp).map_err(|_| CrErr)?;
         let thir: &Thir = &thir.borrow();
         let res = thir
             .params
             .iter()
             .enumerate()
-            .map(|(idx, param)| {
-                Ok((idx, param.ty, self.pattern_term(&*param.pat.as_ref().ok_or(CrErr)?)?))
+            .filter_map(|(idx, param)| {
+                Some(self.pattern_term(&*param.pat.as_ref()?).map(|pat| (idx, param.ty, pat)))
             })
             .fold_ok(body, |body, (idx, ty, pattern)| match pattern {
                 Pattern::Binder(_) | Pattern::Wildcard => body,
                 _ => {
-                    let name = format!("{}", util::AnonymousParamName(idx)); // Allocate on stack?
-                    let arg_kind = TermKind::Var(Symbol::intern(&name));
+                    let arg_kind = TermKind::Var(util::anonymous_param_symbol(idx));
                     let arg = Box::new(Term { ty, span: DUMMY_SP, kind: arg_kind });
                     Term {
                         ty: body.ty,
