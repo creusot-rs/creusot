@@ -292,130 +292,6 @@ module C01Range_Impl1_IntoIter
   }
   
 end
-module C01Range_SumRange_Interface
-  use mach.int.Int64
-  use mach.int.Int
-  use prelude.IntSize
-  val sum_range [@cfg:stackify] (n : isize) : isize
-    requires {[#"../01_range.rs" 70 11 70 18] Int64.to_int n >= 0}
-    ensures { [#"../01_range.rs" 71 10 71 21] result = n }
-    
-end
-module C01Range_SumRange
-  use mach.int.Int64
-  use mach.int.Int
-  use prelude.IntSize
-  use prelude.Ghost
-  use seq.Seq
-  use prelude.Borrow
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use C01Range_Range_Type as C01Range_Range_Type
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = C01Range_Range_Type.t_range
-  clone C01Range_Impl0_Completed as Completed0 with
-    predicate Resolve0.resolve = Resolve0.resolve
-  clone C01Range_Impl0_Produces as Produces0
-  clone C01Range_Impl0_ProducesTrans as ProducesTrans0 with
-    predicate Produces0.produces = Produces0.produces,
-    axiom .
-  clone C01Range_Impl0_ProducesRefl as ProducesRefl0 with
-    predicate Produces0.produces = Produces0.produces,
-    axiom .
-  clone C01Range_Impl0_Next_Interface as Next0 with
-    predicate Completed0.completed = Completed0.completed,
-    predicate Produces0.produces = Produces0.produces
-  clone C01Range_Impl1_IntoIter_Interface as IntoIter0
-  let rec cfg sum_range [@cfg:stackify] [#"../01_range.rs" 72 0 72 35] (n : isize) : isize
-    requires {[#"../01_range.rs" 70 11 70 18] Int64.to_int n >= 0}
-    ensures { [#"../01_range.rs" 71 10 71 21] result = n }
-    
-   = [@vc:do_not_keep_trace] [@vc:sp]
-  var _0 : isize;
-  var n_1 : isize;
-  var i_4 : isize;
-  var _5 : ();
-  var iter_6 : C01Range_Range_Type.t_range;
-  var _7 : C01Range_Range_Type.t_range;
-  var _8 : isize;
-  var iter_old_9 : Ghost.ghost_ty (C01Range_Range_Type.t_range);
-  var _11 : ();
-  var produced_12 : Ghost.ghost_ty (Seq.seq isize);
-  var _15 : ();
-  var _18 : ();
-  var _19 : Core_Option_Option_Type.t_option isize;
-  var _20 : borrowed (C01Range_Range_Type.t_range);
-  var _21 : isize;
-  var i_22 : isize;
-  var _23 : Ghost.ghost_ty (Seq.seq isize);
-  var _25 : ();
-  var _26 : ();
-  {
-    n_1 <- n;
-    goto BB0
-  }
-  BB0 {
-    i_4 <- (0 : isize);
-    _8 <- n_1;
-    _7 <- C01Range_Range_Type.C_Range (0 : isize) _8;
-    iter_6 <- ([#"../01_range.rs" 74 4 74 54] IntoIter0.into_iter _7);
-    goto BB1
-  }
-  BB1 {
-    _11 <- ();
-    iter_old_9 <- ([#"../01_range.rs" 74 4 74 54] Ghost.new iter_6);
-    goto BB2
-  }
-  BB2 {
-    _15 <- ();
-    produced_12 <- ([#"../01_range.rs" 74 4 74 54] Ghost.new (Seq.empty ));
-    goto BB3
-  }
-  BB3 {
-    goto BB4
-  }
-  BB4 {
-    invariant structural { [#"../01_range.rs" 74 4 74 54] Produces0.produces (Ghost.inner iter_old_9) (Ghost.inner produced_12) iter_6 };
-    invariant user { [#"../01_range.rs" 74 22 74 52] Int64.to_int i_4 = Seq.length (Ghost.inner produced_12) /\ i_4 <= n_1 };
-    _20 <- borrow_mut iter_6;
-    iter_6 <-  ^ _20;
-    _19 <- ([#"../01_range.rs" 74 4 74 54] Next0.next _20);
-    goto BB5
-  }
-  BB5 {
-    switch (_19)
-      | Core_Option_Option_Type.C_None -> goto BB6
-      | Core_Option_Option_Type.C_Some _ -> goto BB8
-      end
-  }
-  BB6 {
-    _5 <- ();
-    _0 <- i_4;
-    return _0
-  }
-  BB7 {
-    absurd
-  }
-  BB8 {
-    i_22 <- Core_Option_Option_Type.some_0 _19;
-    _25 <- ();
-    _23 <- ([#"../01_range.rs" 74 4 74 54] Ghost.new (Seq.snoc (Ghost.inner produced_12) i_22));
-    goto BB9
-  }
-  BB9 {
-    produced_12 <- _23;
-    _23 <- any Ghost.ghost_ty (Seq.seq isize);
-    i_4 <- ([#"../01_range.rs" 76 8 76 14] i_4 + (1 : isize));
-    _18 <- ();
-    goto BB4
-  }
-  
-end
-module C01Range_Impl0_Item_Type
-  use mach.int.Int
-  use prelude.IntSize
-  type item  =
-    isize
-end
 module C01Range_Common_Iterator_Item_Type
   type self
   type item
@@ -442,24 +318,6 @@ module C01Range_Common_Iterator_Produces
   predicate produces [#"../common.rs" 8 4 8 65] (self : self) (visited : Seq.seq Item0.item) (_3' : self)
   val produces (self : self) (visited : Seq.seq Item0.item) (_3' : self) : bool
     ensures { result = produces self visited _3' }
-    
-end
-module C01Range_Common_Iterator_Completed_Stub
-  type self
-  use prelude.Borrow
-  predicate completed (self : borrowed self)
-end
-module C01Range_Common_Iterator_Completed_Interface
-  type self
-  use prelude.Borrow
-  predicate completed (self : borrowed self)
-end
-module C01Range_Common_Iterator_Completed
-  type self
-  use prelude.Borrow
-  predicate completed [#"../common.rs" 11 4 11 36] (self : borrowed self)
-  val completed (self : borrowed self) : bool
-    ensures { result = completed self }
     
 end
 module C01Range_Common_Iterator_ProducesRefl_Stub
@@ -550,6 +408,164 @@ module C01Range_Common_Iterator_ProducesTrans
     ensures { result = produces_trans a ab b bc c }
     
   axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) -> ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) -> ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) -> ([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c)
+end
+module C01Range_Impl0_Item_Type
+  use mach.int.Int
+  use prelude.IntSize
+  type item  =
+    isize
+end
+module C01Range_SumRange_Interface
+  use mach.int.Int64
+  use mach.int.Int
+  use prelude.IntSize
+  val sum_range [@cfg:stackify] (n : isize) : isize
+    requires {[#"../01_range.rs" 70 11 70 18] Int64.to_int n >= 0}
+    ensures { [#"../01_range.rs" 71 10 71 21] result = n }
+    
+end
+module C01Range_SumRange
+  use mach.int.Int64
+  use mach.int.Int
+  use prelude.IntSize
+  use prelude.Ghost
+  use seq.Seq
+  use prelude.Borrow
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use C01Range_Range_Type as C01Range_Range_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = C01Range_Range_Type.t_range
+  clone C01Range_Impl0_Item_Type as Item0
+  clone C01Range_Impl0_Completed as Completed0 with
+    predicate Resolve0.resolve = Resolve0.resolve
+  clone C01Range_Impl0_Produces as Produces0
+  clone C01Range_Impl0_ProducesTrans as ProducesTrans1 with
+    predicate Produces0.produces = Produces0.produces,
+    axiom .
+  clone C01Range_Impl0_ProducesRefl as ProducesRefl1 with
+    predicate Produces0.produces = Produces0.produces,
+    axiom .
+  clone C01Range_Common_Iterator_Invariant as Invariant0 with
+    type self = C01Range_Range_Type.t_range
+  clone C01Range_Common_Iterator_ProducesTrans as ProducesTrans0 with
+    type self = C01Range_Range_Type.t_range,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item0.item,
+    axiom .
+  clone C01Range_Common_Iterator_ProducesRefl as ProducesRefl0 with
+    type self = C01Range_Range_Type.t_range,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item0.item,
+    axiom .
+  clone C01Range_Impl0_Next_Interface as Next0 with
+    predicate Completed0.completed = Completed0.completed,
+    predicate Produces0.produces = Produces0.produces
+  clone C01Range_Impl1_IntoIter_Interface as IntoIter0
+  let rec cfg sum_range [@cfg:stackify] [#"../01_range.rs" 72 0 72 35] (n : isize) : isize
+    requires {[#"../01_range.rs" 70 11 70 18] Int64.to_int n >= 0}
+    ensures { [#"../01_range.rs" 71 10 71 21] result = n }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : isize;
+  var n_1 : isize;
+  var i_4 : isize;
+  var _5 : ();
+  var iter_6 : C01Range_Range_Type.t_range;
+  var _7 : C01Range_Range_Type.t_range;
+  var _8 : isize;
+  var iter_old_9 : Ghost.ghost_ty (C01Range_Range_Type.t_range);
+  var _11 : ();
+  var produced_12 : Ghost.ghost_ty (Seq.seq isize);
+  var _15 : ();
+  var _19 : ();
+  var _20 : Core_Option_Option_Type.t_option isize;
+  var _21 : borrowed (C01Range_Range_Type.t_range);
+  var _22 : isize;
+  var i_23 : isize;
+  var _24 : Ghost.ghost_ty (Seq.seq isize);
+  var _26 : ();
+  var _27 : ();
+  {
+    n_1 <- n;
+    goto BB0
+  }
+  BB0 {
+    i_4 <- (0 : isize);
+    _8 <- n_1;
+    _7 <- C01Range_Range_Type.C_Range (0 : isize) _8;
+    iter_6 <- ([#"../01_range.rs" 74 4 74 54] IntoIter0.into_iter _7);
+    goto BB1
+  }
+  BB1 {
+    _11 <- ();
+    iter_old_9 <- ([#"../01_range.rs" 74 4 74 54] Ghost.new iter_6);
+    goto BB2
+  }
+  BB2 {
+    _15 <- ();
+    produced_12 <- ([#"../01_range.rs" 74 4 74 54] Ghost.new (Seq.empty ));
+    goto BB3
+  }
+  BB3 {
+    goto BB4
+  }
+  BB4 {
+    invariant type_invariant { [#"../01_range.rs" 74 4 74 54] Invariant0.invariant' iter_6 };
+    invariant structural { [#"../01_range.rs" 74 4 74 54] Produces0.produces (Ghost.inner iter_old_9) (Ghost.inner produced_12) iter_6 };
+    invariant user { [#"../01_range.rs" 74 22 74 52] Int64.to_int i_4 = Seq.length (Ghost.inner produced_12) /\ i_4 <= n_1 };
+    _21 <- borrow_mut iter_6;
+    iter_6 <-  ^ _21;
+    _20 <- ([#"../01_range.rs" 74 4 74 54] Next0.next _21);
+    goto BB5
+  }
+  BB5 {
+    switch (_20)
+      | Core_Option_Option_Type.C_None -> goto BB6
+      | Core_Option_Option_Type.C_Some _ -> goto BB8
+      end
+  }
+  BB6 {
+    _5 <- ();
+    _0 <- i_4;
+    return _0
+  }
+  BB7 {
+    absurd
+  }
+  BB8 {
+    i_23 <- Core_Option_Option_Type.some_0 _20;
+    _26 <- ();
+    _24 <- ([#"../01_range.rs" 74 4 74 54] Ghost.new (Seq.snoc (Ghost.inner produced_12) i_23));
+    goto BB9
+  }
+  BB9 {
+    produced_12 <- _24;
+    _24 <- any Ghost.ghost_ty (Seq.seq isize);
+    i_4 <- ([#"../01_range.rs" 76 8 76 14] i_4 + (1 : isize));
+    _19 <- ();
+    goto BB4
+  }
+  
+end
+module C01Range_Common_Iterator_Completed_Stub
+  type self
+  use prelude.Borrow
+  predicate completed (self : borrowed self)
+end
+module C01Range_Common_Iterator_Completed_Interface
+  type self
+  use prelude.Borrow
+  predicate completed (self : borrowed self)
+end
+module C01Range_Common_Iterator_Completed
+  type self
+  use prelude.Borrow
+  predicate completed [#"../common.rs" 11 4 11 36] (self : borrowed self)
+  val completed (self : borrowed self) : bool
+    ensures { result = completed self }
+    
 end
 module C01Range_Common_Iterator_Next_Interface
   type self

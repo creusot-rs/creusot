@@ -2,7 +2,7 @@ use crate as creusot_contracts;
 use crate::{
     logic::*,
     std::{default::Default, iter::Iterator},
-    DeepModel, Resolve, ShallowModel,
+    DeepModel, Invariant, Resolve, ShallowModel,
 };
 use creusot_contracts_proc::*;
 use std::{
@@ -53,6 +53,26 @@ impl<T> Default for &[T] {
     #[predicate]
     fn is_default(self) -> bool {
         pearlite! { @self == Seq::EMPTY }
+    }
+}
+
+pub trait SliceExt {
+    type Output;
+
+    #[logic]
+    fn to_mut_seq(&mut self) -> Seq<&mut Self::Output>;
+}
+
+impl<T> SliceExt for [T] {
+    type Output = T;
+
+    #[logic]
+    #[trusted]
+    #[ensures(result.len() == (@self).len())]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == (@self)[i])]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> ^result[i] == (@^self)[i])]
+    fn to_mut_seq(&mut self) -> Seq<&mut T> {
+        pearlite! { absurd }
     }
 }
 
@@ -231,11 +251,13 @@ extern_spec! {
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
 
         #[ensures(@result == @self)]
+        #[ensures(result.invariant())]
         fn iter(&self) -> Iter<'_, T>;
 
         #[ensures(*@result == @self)]
         #[ensures(^@result == @^self)]
         #[ensures((^@result).len() == (@self).len())]
+        #[ensures(result.invariant())]
         fn iter_mut(&mut self) -> IterMut<'_, T>;
     }
 
@@ -269,6 +291,13 @@ impl<T> ShallowModel for Iter<'_, T> {
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
+    }
+}
+
+impl<T> Invariant for Iter<'_, T> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        true
     }
 }
 
@@ -308,6 +337,14 @@ impl<'a, T> Iterator for Iter<'a, T> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+impl<'a, T> Invariant for IterMut<'a, T> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        // Property that is always true but we must carry around..
+        pearlite! { (^@self).len() == (*@self).len() }
+    }
 }
 
 impl<'a, T> Iterator for IterMut<'a, T> {

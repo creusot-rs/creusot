@@ -168,6 +168,59 @@ module CreusotContracts_Std1_Slice_Impl0_ShallowModel
     
   axiom shallow_model_spec : forall self : seq t . shallow_model self = Slice.id self && Seq.length (shallow_model self) <= UInt64.to_int (18446744073709551615 : usize)
 end
+module CreusotContracts_Std1_Slice_Impl4_ToMutSeq_Stub
+  type t
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Borrow
+  use prelude.Slice
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
+    type t = t
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
+    type t = t,
+    axiom .
+  clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
+    type t = seq t,
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+  function to_mut_seq (self : borrowed (seq t)) : Seq.seq (borrowed t)
+end
+module CreusotContracts_Std1_Slice_Impl4_ToMutSeq_Interface
+  type t
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Borrow
+  use prelude.Slice
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
+    type t = t
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
+    type t = t,
+    axiom .
+  clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
+    type t = seq t,
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+  function to_mut_seq (self : borrowed (seq t)) : Seq.seq (borrowed t)
+  axiom to_mut_seq_spec : forall self : borrowed (seq t) . (forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq self) ->  ^ Seq.get (to_mut_seq self) i = Seq.get (ShallowModel1.shallow_model ( ^ self)) i) && (forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq self) ->  * Seq.get (to_mut_seq self) i = Seq.get (ShallowModel0.shallow_model self) i) && Seq.length (to_mut_seq self) = Seq.length (ShallowModel0.shallow_model self)
+end
+module CreusotContracts_Std1_Slice_Impl4_ToMutSeq
+  type t
+  use seq.Seq
+  use mach.int.Int
+  use prelude.Borrow
+  use prelude.Slice
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
+    type t = t
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
+    type t = t,
+    axiom .
+  clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
+    type t = seq t,
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+  function to_mut_seq (self : borrowed (seq t)) : Seq.seq (borrowed t)
+  val to_mut_seq (self : borrowed (seq t)) : Seq.seq (borrowed t)
+    ensures { result = to_mut_seq self }
+    
+  axiom to_mut_seq_spec : forall self : borrowed (seq t) . (forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq self) ->  ^ Seq.get (to_mut_seq self) i = Seq.get (ShallowModel1.shallow_model ( ^ self)) i) && (forall i : int . 0 <= i /\ i < Seq.length (to_mut_seq self) ->  * Seq.get (to_mut_seq self) i = Seq.get (ShallowModel0.shallow_model self) i) && Seq.length (to_mut_seq self) = Seq.length (ShallowModel0.shallow_model self)
+end
 module C02IterMut_Impl0_Produces_Stub
   type t
   use seq.Seq
@@ -189,8 +242,6 @@ module C02IterMut_Impl0_Produces
   use seq.Seq
   use prelude.Borrow
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
-  use mach.int.Int
-  use seq_ext.SeqExt
   use prelude.Slice
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
     type t = t
@@ -200,12 +251,41 @@ module C02IterMut_Impl0_Produces
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+  clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq_Stub as ToMutSeq0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
+    axiom .
   predicate produces [#"../02_iter_mut.rs" 25 4 25 65] (self : C02IterMut_IterMut_Type.t_itermut t) (visited : Seq.seq (borrowed t)) (tl : C02IterMut_IterMut_Type.t_itermut t)
     
    =
-    [#"../02_iter_mut.rs" 27 12 32 84] Seq.length (ShallowModel0.shallow_model (C02IterMut_IterMut_Type.itermut_inner self)) = Seq.length visited + Seq.length (ShallowModel0.shallow_model (C02IterMut_IterMut_Type.itermut_inner tl)) /\ Seq.length (ShallowModel1.shallow_model ( ^ C02IterMut_IterMut_Type.itermut_inner self)) = Seq.length visited + Seq.length (ShallowModel1.shallow_model ( ^ C02IterMut_IterMut_Type.itermut_inner tl)) /\ Seq.(==) (SeqExt.subsequence (ShallowModel0.shallow_model (C02IterMut_IterMut_Type.itermut_inner self)) (Seq.length visited) (Seq.length (ShallowModel0.shallow_model (C02IterMut_IterMut_Type.itermut_inner self)))) (ShallowModel0.shallow_model (C02IterMut_IterMut_Type.itermut_inner tl)) /\ Seq.(==) (SeqExt.subsequence (ShallowModel1.shallow_model ( ^ C02IterMut_IterMut_Type.itermut_inner self)) (Seq.length visited) (Seq.length (ShallowModel1.shallow_model ( ^ C02IterMut_IterMut_Type.itermut_inner self)))) (ShallowModel1.shallow_model ( ^ C02IterMut_IterMut_Type.itermut_inner tl)) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> Seq.get (ShallowModel0.shallow_model (C02IterMut_IterMut_Type.itermut_inner self)) i =  * Seq.get visited i /\ Seq.get (ShallowModel1.shallow_model ( ^ C02IterMut_IterMut_Type.itermut_inner self)) i =  ^ Seq.get visited i)
+    [#"../02_iter_mut.rs" 26 8 28 9] Seq.(==) (ToMutSeq0.to_mut_seq (C02IterMut_IterMut_Type.itermut_inner self)) (Seq.(++) visited (ToMutSeq0.to_mut_seq (C02IterMut_IterMut_Type.itermut_inner tl)))
   val produces (self : C02IterMut_IterMut_Type.t_itermut t) (visited : Seq.seq (borrowed t)) (tl : C02IterMut_IterMut_Type.t_itermut t) : bool
     ensures { result = produces self visited tl }
+    
+end
+module C02IterMut_Impl0_Invariant_Stub
+  type t
+  use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
+  predicate invariant' (self : C02IterMut_IterMut_Type.t_itermut t)
+end
+module C02IterMut_Impl0_Invariant_Interface
+  type t
+  use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
+  predicate invariant' (self : C02IterMut_IterMut_Type.t_itermut t)
+end
+module C02IterMut_Impl0_Invariant
+  type t
+  use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
+  use prelude.Borrow
+  use seq.Seq
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel0 with
+    type t = t,
+    axiom .
+  predicate invariant' [#"../02_iter_mut.rs" 32 4 32 30] (self : C02IterMut_IterMut_Type.t_itermut t) =
+    [#"../02_iter_mut.rs" 34 20 34 64] Seq.length (ShallowModel0.shallow_model ( ^ C02IterMut_IterMut_Type.itermut_inner self)) = Seq.length (ShallowModel0.shallow_model ( * C02IterMut_IterMut_Type.itermut_inner self))
+  val invariant' (self : C02IterMut_IterMut_Type.t_itermut t) : bool
+    ensures { result = invariant' self }
     
 end
 module C02IterMut_Impl0_ProducesRefl_Stub
@@ -213,6 +293,8 @@ module C02IterMut_Impl0_ProducesRefl_Stub
   use seq.Seq
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone C02IterMut_Impl0_Produces_Stub as Produces0 with
+    type t = t
+  clone C02IterMut_Impl0_Invariant_Stub as Invariant0 with
     type t = t
   function produces_refl (a : C02IterMut_IterMut_Type.t_itermut t) : ()
 end
@@ -222,8 +304,10 @@ module C02IterMut_Impl0_ProducesRefl_Interface
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone C02IterMut_Impl0_Produces_Stub as Produces0 with
     type t = t
+  clone C02IterMut_Impl0_Invariant_Stub as Invariant0 with
+    type t = t
   function produces_refl (a : C02IterMut_IterMut_Type.t_itermut t) : ()
-  axiom produces_refl_spec : forall a : C02IterMut_IterMut_Type.t_itermut t . [#"../02_iter_mut.rs" 37 14 37 39] Produces0.produces a (Seq.empty ) a
+  axiom produces_refl_spec : forall a : C02IterMut_IterMut_Type.t_itermut t . ([#"../02_iter_mut.rs" 38 15 38 28] Invariant0.invariant' a) -> ([#"../02_iter_mut.rs" 39 14 39 39] Produces0.produces a (Seq.empty ) a)
 end
 module C02IterMut_Impl0_ProducesRefl
   type t
@@ -231,12 +315,15 @@ module C02IterMut_Impl0_ProducesRefl
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone C02IterMut_Impl0_Produces_Stub as Produces0 with
     type t = t
-  function produces_refl [#"../02_iter_mut.rs" 38 4 38 29] (a : C02IterMut_IterMut_Type.t_itermut t) : () =
-    [#"../02_iter_mut.rs" 36 4 36 10] ()
+  clone C02IterMut_Impl0_Invariant_Stub as Invariant0 with
+    type t = t
+  function produces_refl [#"../02_iter_mut.rs" 40 4 40 29] (a : C02IterMut_IterMut_Type.t_itermut t) : () =
+    [#"../02_iter_mut.rs" 37 4 37 10] ()
   val produces_refl (a : C02IterMut_IterMut_Type.t_itermut t) : ()
+    requires {[#"../02_iter_mut.rs" 38 15 38 28] Invariant0.invariant' a}
     ensures { result = produces_refl a }
     
-  axiom produces_refl_spec : forall a : C02IterMut_IterMut_Type.t_itermut t . [#"../02_iter_mut.rs" 37 14 37 39] Produces0.produces a (Seq.empty ) a
+  axiom produces_refl_spec : forall a : C02IterMut_IterMut_Type.t_itermut t . ([#"../02_iter_mut.rs" 38 15 38 28] Invariant0.invariant' a) -> ([#"../02_iter_mut.rs" 39 14 39 39] Produces0.produces a (Seq.empty ) a)
 end
 module C02IterMut_Impl0_ProducesRefl_Impl
   type t
@@ -244,23 +331,33 @@ module C02IterMut_Impl0_ProducesRefl_Impl
   use prelude.Slice
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
     type t = t
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel1 with
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel0 with
     type t = t,
     axiom .
-  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel0 with
+  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel1 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq as ToMutSeq0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
+    axiom .
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone C02IterMut_Impl0_Produces as Produces0 with
     type t = t,
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel1.shallow_model
+    function ToMutSeq0.to_mut_seq = ToMutSeq0.to_mut_seq,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel0.shallow_model
+  clone C02IterMut_Impl0_Invariant as Invariant0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   let rec ghost function produces_refl (a : C02IterMut_IterMut_Type.t_itermut t) : ()
-    ensures { [#"../02_iter_mut.rs" 37 14 37 39] Produces0.produces a (Seq.empty ) a }
+    requires {[#"../02_iter_mut.rs" 38 15 38 28] Invariant0.invariant' a}
+    ensures { [#"../02_iter_mut.rs" 39 14 39 39] Produces0.produces a (Seq.empty ) a }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../02_iter_mut.rs" 36 4 36 10] ()
+    [#"../02_iter_mut.rs" 37 4 37 10] ()
 end
 module C02IterMut_Impl0_ProducesTrans_Stub
   type t
@@ -268,6 +365,8 @@ module C02IterMut_Impl0_ProducesTrans_Stub
   use prelude.Borrow
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone C02IterMut_Impl0_Produces_Stub as Produces0 with
+    type t = t
+  clone C02IterMut_Impl0_Invariant_Stub as Invariant0 with
     type t = t
   function produces_trans (a : C02IterMut_IterMut_Type.t_itermut t) (ab : Seq.seq (borrowed t)) (b : C02IterMut_IterMut_Type.t_itermut t) (bc : Seq.seq (borrowed t)) (c : C02IterMut_IterMut_Type.t_itermut t) : ()
     
@@ -279,9 +378,11 @@ module C02IterMut_Impl0_ProducesTrans_Interface
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone C02IterMut_Impl0_Produces_Stub as Produces0 with
     type t = t
+  clone C02IterMut_Impl0_Invariant_Stub as Invariant0 with
+    type t = t
   function produces_trans (a : C02IterMut_IterMut_Type.t_itermut t) (ab : Seq.seq (borrowed t)) (b : C02IterMut_IterMut_Type.t_itermut t) (bc : Seq.seq (borrowed t)) (c : C02IterMut_IterMut_Type.t_itermut t) : ()
     
-  axiom produces_trans_spec : forall a : C02IterMut_IterMut_Type.t_itermut t, ab : Seq.seq (borrowed t), b : C02IterMut_IterMut_Type.t_itermut t, bc : Seq.seq (borrowed t), c : C02IterMut_IterMut_Type.t_itermut t . ([#"../02_iter_mut.rs" 41 15 41 32] Produces0.produces a ab b) -> ([#"../02_iter_mut.rs" 42 15 42 32] Produces0.produces b bc c) -> ([#"../02_iter_mut.rs" 43 14 43 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : C02IterMut_IterMut_Type.t_itermut t, ab : Seq.seq (borrowed t), b : C02IterMut_IterMut_Type.t_itermut t, bc : Seq.seq (borrowed t), c : C02IterMut_IterMut_Type.t_itermut t . ([#"../02_iter_mut.rs" 43 15 43 28] Invariant0.invariant' a) -> ([#"../02_iter_mut.rs" 44 15 44 28] Invariant0.invariant' b) -> ([#"../02_iter_mut.rs" 45 15 45 28] Invariant0.invariant' c) -> ([#"../02_iter_mut.rs" 46 15 46 32] Produces0.produces a ab b) -> ([#"../02_iter_mut.rs" 47 15 47 32] Produces0.produces b bc c) -> ([#"../02_iter_mut.rs" 48 14 48 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C02IterMut_Impl0_ProducesTrans
   type t
@@ -290,16 +391,21 @@ module C02IterMut_Impl0_ProducesTrans
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone C02IterMut_Impl0_Produces_Stub as Produces0 with
     type t = t
-  function produces_trans [#"../02_iter_mut.rs" 44 4 44 90] (a : C02IterMut_IterMut_Type.t_itermut t) (ab : Seq.seq (borrowed t)) (b : C02IterMut_IterMut_Type.t_itermut t) (bc : Seq.seq (borrowed t)) (c : C02IterMut_IterMut_Type.t_itermut t) : ()
+  clone C02IterMut_Impl0_Invariant_Stub as Invariant0 with
+    type t = t
+  function produces_trans [#"../02_iter_mut.rs" 49 4 49 90] (a : C02IterMut_IterMut_Type.t_itermut t) (ab : Seq.seq (borrowed t)) (b : C02IterMut_IterMut_Type.t_itermut t) (bc : Seq.seq (borrowed t)) (c : C02IterMut_IterMut_Type.t_itermut t) : ()
     
    =
-    [#"../02_iter_mut.rs" 40 4 40 10] ()
+    [#"../02_iter_mut.rs" 42 4 42 10] ()
   val produces_trans (a : C02IterMut_IterMut_Type.t_itermut t) (ab : Seq.seq (borrowed t)) (b : C02IterMut_IterMut_Type.t_itermut t) (bc : Seq.seq (borrowed t)) (c : C02IterMut_IterMut_Type.t_itermut t) : ()
-    requires {[#"../02_iter_mut.rs" 41 15 41 32] Produces0.produces a ab b}
-    requires {[#"../02_iter_mut.rs" 42 15 42 32] Produces0.produces b bc c}
+    requires {[#"../02_iter_mut.rs" 43 15 43 28] Invariant0.invariant' a}
+    requires {[#"../02_iter_mut.rs" 44 15 44 28] Invariant0.invariant' b}
+    requires {[#"../02_iter_mut.rs" 45 15 45 28] Invariant0.invariant' c}
+    requires {[#"../02_iter_mut.rs" 46 15 46 32] Produces0.produces a ab b}
+    requires {[#"../02_iter_mut.rs" 47 15 47 32] Produces0.produces b bc c}
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : C02IterMut_IterMut_Type.t_itermut t, ab : Seq.seq (borrowed t), b : C02IterMut_IterMut_Type.t_itermut t, bc : Seq.seq (borrowed t), c : C02IterMut_IterMut_Type.t_itermut t . ([#"../02_iter_mut.rs" 41 15 41 32] Produces0.produces a ab b) -> ([#"../02_iter_mut.rs" 42 15 42 32] Produces0.produces b bc c) -> ([#"../02_iter_mut.rs" 43 14 43 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : C02IterMut_IterMut_Type.t_itermut t, ab : Seq.seq (borrowed t), b : C02IterMut_IterMut_Type.t_itermut t, bc : Seq.seq (borrowed t), c : C02IterMut_IterMut_Type.t_itermut t . ([#"../02_iter_mut.rs" 43 15 43 28] Invariant0.invariant' a) -> ([#"../02_iter_mut.rs" 44 15 44 28] Invariant0.invariant' b) -> ([#"../02_iter_mut.rs" 45 15 45 28] Invariant0.invariant' c) -> ([#"../02_iter_mut.rs" 46 15 46 32] Produces0.produces a ab b) -> ([#"../02_iter_mut.rs" 47 15 47 32] Produces0.produces b bc c) -> ([#"../02_iter_mut.rs" 48 14 48 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C02IterMut_Impl0_ProducesTrans_Impl
   type t
@@ -308,25 +414,37 @@ module C02IterMut_Impl0_ProducesTrans_Impl
   use prelude.Slice
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
     type t = t
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel1 with
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel0 with
     type t = t,
     axiom .
-  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel0 with
+  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel1 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq as ToMutSeq0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
+    axiom .
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone C02IterMut_Impl0_Produces as Produces0 with
     type t = t,
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel1.shallow_model
+    function ToMutSeq0.to_mut_seq = ToMutSeq0.to_mut_seq,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel0.shallow_model
+  clone C02IterMut_Impl0_Invariant as Invariant0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   let rec ghost function produces_trans (a : C02IterMut_IterMut_Type.t_itermut t) (ab : Seq.seq (borrowed t)) (b : C02IterMut_IterMut_Type.t_itermut t) (bc : Seq.seq (borrowed t)) (c : C02IterMut_IterMut_Type.t_itermut t) : ()
-    requires {[#"../02_iter_mut.rs" 41 15 41 32] Produces0.produces a ab b}
-    requires {[#"../02_iter_mut.rs" 42 15 42 32] Produces0.produces b bc c}
-    ensures { [#"../02_iter_mut.rs" 43 14 43 42] Produces0.produces a (Seq.(++) ab bc) c }
+    requires {[#"../02_iter_mut.rs" 43 15 43 28] Invariant0.invariant' a}
+    requires {[#"../02_iter_mut.rs" 44 15 44 28] Invariant0.invariant' b}
+    requires {[#"../02_iter_mut.rs" 45 15 45 28] Invariant0.invariant' c}
+    requires {[#"../02_iter_mut.rs" 46 15 46 32] Produces0.produces a ab b}
+    requires {[#"../02_iter_mut.rs" 47 15 47 32] Produces0.produces b bc c}
+    ensures { [#"../02_iter_mut.rs" 48 14 48 42] Produces0.produces a (Seq.(++) ab bc) c }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../02_iter_mut.rs" 40 4 40 10] ()
+    [#"../02_iter_mut.rs" 42 4 42 10] ()
 end
 module Core_Option_Option_Type
   type t_option 't =
@@ -407,8 +525,12 @@ module C02IterMut_Impl0_Next_Interface
   clone C02IterMut_Impl0_Completed_Stub as Completed0 with
     type t = t
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone C02IterMut_Impl0_Invariant_Stub as Invariant0 with
+    type t = t
   val next [@cfg:stackify] (self : borrowed (C02IterMut_IterMut_Type.t_itermut t)) : Core_Option_Option_Type.t_option (borrowed t)
-    ensures { [#"../02_iter_mut.rs" 46 14 49 5] match (result) with
+    requires {[#"../02_iter_mut.rs" 51 4 51 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../02_iter_mut.rs" 51 4 51 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../02_iter_mut.rs" 52 14 55 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
@@ -419,35 +541,46 @@ module C02IterMut_Impl0_Next
   use prelude.Borrow
   use seq.Seq
   use prelude.Slice
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel1 with
-    type t = t,
-    axiom .
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
     type t = t
-  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel0 with
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel0 with
+    type t = t,
+    axiom .
+  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel1 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq as ToMutSeq0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
+    axiom .
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = C02IterMut_IterMut_Type.t_itermut t
   clone C02IterMut_Impl0_Produces as Produces0 with
     type t = t,
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel1.shallow_model
+    function ToMutSeq0.to_mut_seq = ToMutSeq0.to_mut_seq,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel0.shallow_model
   clone C02IterMut_Impl0_Completed as Completed0 with
     type t = t,
     predicate Resolve0.resolve = Resolve0.resolve,
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone C02IterMut_Impl0_Invariant as Invariant0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Logic_Seq_Impl0_Tail as Tail0 with
     type t = t
   clone Core_Slice_Impl0_TakeFirstMut_Interface as TakeFirstMut0 with
     type t = t,
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function Tail0.tail = Tail0.tail
-  let rec cfg next [@cfg:stackify] [#"../02_iter_mut.rs" 50 4 50 44] (self : borrowed (C02IterMut_IterMut_Type.t_itermut t)) : Core_Option_Option_Type.t_option (borrowed t)
-    ensures { [#"../02_iter_mut.rs" 46 14 49 5] match (result) with
+  let rec cfg next [@cfg:stackify] [#"../02_iter_mut.rs" 56 4 56 44] (self : borrowed (C02IterMut_IterMut_Type.t_itermut t)) : Core_Option_Option_Type.t_option (borrowed t)
+    requires {[#"../02_iter_mut.rs" 51 4 51 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../02_iter_mut.rs" 51 4 51 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../02_iter_mut.rs" 52 14 55 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
@@ -455,15 +588,15 @@ module C02IterMut_Impl0_Next
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option (borrowed t);
   var self_1 : borrowed (C02IterMut_IterMut_Type.t_itermut t);
-  var _3 : borrowed (borrowed (seq t));
+  var _5 : borrowed (borrowed (seq t));
   {
     self_1 <- self;
     goto BB0
   }
   BB0 {
-    _3 <- borrow_mut (C02IterMut_IterMut_Type.itermut_inner ( * self_1));
-    self_1 <- { self_1 with current = (let C02IterMut_IterMut_Type.C_IterMut a =  * self_1 in C02IterMut_IterMut_Type.C_IterMut ( ^ _3)) };
-    _0 <- ([#"../02_iter_mut.rs" 51 8 51 37] TakeFirstMut0.take_first_mut _3);
+    _5 <- borrow_mut (C02IterMut_IterMut_Type.itermut_inner ( * self_1));
+    self_1 <- { self_1 with current = (let C02IterMut_IterMut_Type.C_IterMut a =  * self_1 in C02IterMut_IterMut_Type.C_IterMut ( ^ _5)) };
+    _0 <- ([#"../02_iter_mut.rs" 57 8 57 37] TakeFirstMut0.take_first_mut _5);
     goto BB1
   }
   BB1 {
@@ -491,7 +624,7 @@ module C02IterMut_Impl1_IntoIter_Interface
   type t
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   val into_iter [@cfg:stackify] (self : C02IterMut_IterMut_Type.t_itermut t) : C02IterMut_IterMut_Type.t_itermut t
-    ensures { [#"../02_iter_mut.rs" 56 14 56 28] result = self }
+    ensures { [#"../02_iter_mut.rs" 62 14 62 28] result = self }
     
 end
 module C02IterMut_Impl1_IntoIter
@@ -499,8 +632,8 @@ module C02IterMut_Impl1_IntoIter
   use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   clone CreusotContracts_Resolve_Resolve_Resolve as Resolve0 with
     type self = C02IterMut_IterMut_Type.t_itermut t
-  let rec cfg into_iter [@cfg:stackify] [#"../02_iter_mut.rs" 57 4 57 30] (self : C02IterMut_IterMut_Type.t_itermut t) : C02IterMut_IterMut_Type.t_itermut t
-    ensures { [#"../02_iter_mut.rs" 56 14 56 28] result = self }
+  let rec cfg into_iter [@cfg:stackify] [#"../02_iter_mut.rs" 63 4 63 30] (self : C02IterMut_IterMut_Type.t_itermut t) : C02IterMut_IterMut_Type.t_itermut t
+    ensures { [#"../02_iter_mut.rs" 62 14 62 28] result = self }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : C02IterMut_IterMut_Type.t_itermut t;
@@ -780,19 +913,19 @@ module Alloc_Vec_Impl17_IndexMut
     ensures { Seq.length (ShallowModel1.shallow_model ( ^ self)) = Seq.length (ShallowModel0.shallow_model self) }
     
 end
-module CreusotContracts_Std1_Slice_Impl8_InBounds_Stub
+module CreusotContracts_Std1_Slice_Impl9_InBounds_Stub
   type t
   use seq.Seq
   use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
   predicate in_bounds (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (_seq : Seq.seq t)
 end
-module CreusotContracts_Std1_Slice_Impl8_InBounds_Interface
+module CreusotContracts_Std1_Slice_Impl9_InBounds_Interface
   type t
   use seq.Seq
   use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
   predicate in_bounds (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (_seq : Seq.seq t)
 end
-module CreusotContracts_Std1_Slice_Impl8_InBounds
+module CreusotContracts_Std1_Slice_Impl9_InBounds
   type t
   use seq.Seq
   use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
@@ -802,21 +935,21 @@ module CreusotContracts_Std1_Slice_Impl8_InBounds
     ensures { result = in_bounds self _seq }
     
 end
-module CreusotContracts_Std1_Slice_Impl8_HasValue_Stub
+module CreusotContracts_Std1_Slice_Impl9_HasValue_Stub
   type t
   use seq.Seq
   use prelude.Slice
   use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
   predicate has_value (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (seq : Seq.seq t) (out : seq t)
 end
-module CreusotContracts_Std1_Slice_Impl8_HasValue_Interface
+module CreusotContracts_Std1_Slice_Impl9_HasValue_Interface
   type t
   use seq.Seq
   use prelude.Slice
   use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
   predicate has_value (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (seq : Seq.seq t) (out : seq t)
 end
-module CreusotContracts_Std1_Slice_Impl8_HasValue
+module CreusotContracts_Std1_Slice_Impl9_HasValue
   type t
   use seq.Seq
   use prelude.Slice
@@ -830,19 +963,19 @@ module CreusotContracts_Std1_Slice_Impl8_HasValue
     ensures { result = has_value self seq out }
     
 end
-module CreusotContracts_Std1_Slice_Impl8_ResolveElswhere_Stub
+module CreusotContracts_Std1_Slice_Impl9_ResolveElswhere_Stub
   type t
   use seq.Seq
   use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
   predicate resolve_elswhere (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (_old : Seq.seq t) (_fin : Seq.seq t)
 end
-module CreusotContracts_Std1_Slice_Impl8_ResolveElswhere_Interface
+module CreusotContracts_Std1_Slice_Impl9_ResolveElswhere_Interface
   type t
   use seq.Seq
   use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
   predicate resolve_elswhere (self : Core_Ops_Range_RangeFull_Type.t_rangefull) (_old : Seq.seq t) (_fin : Seq.seq t)
 end
-module CreusotContracts_Std1_Slice_Impl8_ResolveElswhere
+module CreusotContracts_Std1_Slice_Impl9_ResolveElswhere
   type t
   use seq.Seq
   use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
@@ -871,6 +1004,9 @@ module C02IterMut_IterMut_Interface
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
     type t = t
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
+  clone C02IterMut_Impl0_Invariant_Stub as Invariant0 with
+    type t = t
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel3 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -884,11 +1020,11 @@ module C02IterMut_IterMut_Interface
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   val iter_mut [@cfg:stackify] (v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : C02IterMut_IterMut_Type.t_itermut t
-    ensures { [#"../02_iter_mut.rs" 62 10 62 29] ShallowModel0.shallow_model (C02IterMut_IterMut_Type.itermut_inner result) = ShallowModel1.shallow_model v }
-    ensures { [#"../02_iter_mut.rs" 63 10 63 31] ShallowModel2.shallow_model ( ^ C02IterMut_IterMut_Type.itermut_inner result) = ShallowModel3.shallow_model ( ^ v) }
-    ensures { [#"../02_iter_mut.rs" 64 10 64 35] Seq.length (ShallowModel3.shallow_model ( ^ v)) = Seq.length (ShallowModel1.shallow_model v) }
+    ensures { [#"../02_iter_mut.rs" 68 10 68 29] ShallowModel0.shallow_model (C02IterMut_IterMut_Type.itermut_inner result) = ShallowModel1.shallow_model v }
+    ensures { [#"../02_iter_mut.rs" 69 10 69 31] ShallowModel2.shallow_model ( ^ C02IterMut_IterMut_Type.itermut_inner result) = ShallowModel3.shallow_model ( ^ v) }
+    ensures { [#"../02_iter_mut.rs" 70 10 70 35] Seq.length (ShallowModel3.shallow_model ( ^ v)) = Seq.length (ShallowModel1.shallow_model v) }
+    ensures { [#"../02_iter_mut.rs" 71 10 71 28] Invariant0.invariant' result }
     
 end
 module C02IterMut_IterMut
@@ -896,38 +1032,61 @@ module C02IterMut_IterMut
   use prelude.Borrow
   use seq.Seq
   use prelude.Slice
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
+    type t = t
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel2 with
+    type t = t,
+    axiom .
+  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel0 with
+    type t = seq t,
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
+    function ShallowModel0.shallow_model = ShallowModel2.shallow_model
+  clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq as ToMutSeq0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel2.shallow_model,
+    axiom .
+  use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
+  clone C02IterMut_Impl0_Produces as Produces0 with
+    type t = t,
+    function ToMutSeq0.to_mut_seq = ToMutSeq0.to_mut_seq,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel2.shallow_model
+  clone C02IterMut_Impl0_Invariant as Invariant0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel2.shallow_model
+  clone C02IterMut_Impl0_ProducesTrans as ProducesTrans0 with
+    type t = t,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    axiom .
+  clone C02IterMut_Impl0_ProducesRefl as ProducesRefl0 with
+    type t = t,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    axiom .
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel3 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     axiom .
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel2 with
-    type t = t,
-    axiom .
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
-  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel0 with
-    type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
-    function ShallowModel0.shallow_model = ShallowModel2.shallow_model
-  use C02IterMut_IterMut_Type as C02IterMut_IterMut_Type
   use Core_Ops_Range_RangeFull_Type as Core_Ops_Range_RangeFull_Type
   clone Core_Slice_Index_Impl7_Output_Type as Output0 with
     type t = t
-  clone CreusotContracts_Std1_Slice_Impl8_ResolveElswhere as ResolveElswhere0 with
+  clone CreusotContracts_Std1_Slice_Impl9_ResolveElswhere as ResolveElswhere0 with
     type t = t
-  clone CreusotContracts_Std1_Slice_Impl8_HasValue as HasValue0 with
+  clone CreusotContracts_Std1_Slice_Impl9_HasValue as HasValue0 with
     type t = t,
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model
-  clone CreusotContracts_Std1_Slice_Impl8_InBounds as InBounds0 with
+  clone CreusotContracts_Std1_Slice_Impl9_InBounds as InBounds0 with
     type t = t
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = seq t
@@ -943,39 +1102,40 @@ module C02IterMut_IterMut
     type Output0.output = Output0.output
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-  let rec cfg iter_mut [@cfg:stackify] [#"../02_iter_mut.rs" 65 0 65 55] (v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : C02IterMut_IterMut_Type.t_itermut t
-    ensures { [#"../02_iter_mut.rs" 62 10 62 29] ShallowModel0.shallow_model (C02IterMut_IterMut_Type.itermut_inner result) = ShallowModel1.shallow_model v }
-    ensures { [#"../02_iter_mut.rs" 63 10 63 31] ShallowModel2.shallow_model ( ^ C02IterMut_IterMut_Type.itermut_inner result) = ShallowModel3.shallow_model ( ^ v) }
-    ensures { [#"../02_iter_mut.rs" 64 10 64 35] Seq.length (ShallowModel3.shallow_model ( ^ v)) = Seq.length (ShallowModel1.shallow_model v) }
+  let rec cfg iter_mut [@cfg:stackify] [#"../02_iter_mut.rs" 72 0 72 55] (v : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global))) : C02IterMut_IterMut_Type.t_itermut t
+    ensures { [#"../02_iter_mut.rs" 68 10 68 29] ShallowModel0.shallow_model (C02IterMut_IterMut_Type.itermut_inner result) = ShallowModel1.shallow_model v }
+    ensures { [#"../02_iter_mut.rs" 69 10 69 31] ShallowModel2.shallow_model ( ^ C02IterMut_IterMut_Type.itermut_inner result) = ShallowModel3.shallow_model ( ^ v) }
+    ensures { [#"../02_iter_mut.rs" 70 10 70 35] Seq.length (ShallowModel3.shallow_model ( ^ v)) = Seq.length (ShallowModel1.shallow_model v) }
+    ensures { [#"../02_iter_mut.rs" 71 10 71 28] Invariant0.invariant' result }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : C02IterMut_IterMut_Type.t_itermut t;
   var v_1 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
-  var _5 : borrowed (seq t);
   var _6 : borrowed (seq t);
   var _7 : borrowed (seq t);
-  var _8 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
-  var _9 : Core_Ops_Range_RangeFull_Type.t_rangefull;
+  var _8 : borrowed (seq t);
+  var _9 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
+  var _10 : Core_Ops_Range_RangeFull_Type.t_rangefull;
   {
     v_1 <- v;
     goto BB0
   }
   BB0 {
-    _8 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _8) };
+    _9 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _9) };
     assume { Resolve0.resolve v_1 };
-    _9 <- Core_Ops_Range_RangeFull_Type.C_RangeFull;
-    _7 <- ([#"../02_iter_mut.rs" 66 26 66 31] IndexMut0.index_mut _8 _9);
+    _10 <- Core_Ops_Range_RangeFull_Type.C_RangeFull;
+    _8 <- ([#"../02_iter_mut.rs" 73 26 73 31] IndexMut0.index_mut _9 _10);
     goto BB1
   }
   BB1 {
+    _7 <- borrow_mut ( * _8);
+    _8 <- { _8 with current = ( ^ _7) };
+    assume { Resolve1.resolve _8 };
     _6 <- borrow_mut ( * _7);
     _7 <- { _7 with current = ( ^ _6) };
     assume { Resolve1.resolve _7 };
-    _5 <- borrow_mut ( * _6);
-    _6 <- { _6 with current = ( ^ _5) };
-    assume { Resolve1.resolve _6 };
-    _0 <- C02IterMut_IterMut_Type.C_IterMut _5;
+    _0 <- C02IterMut_IterMut_Type.C_IterMut _6;
     return _0
   }
   
@@ -999,8 +1159,8 @@ module C02IterMut_AllZero_Interface
     type a = Alloc_Alloc_Global_Type.t_global,
     axiom .
   val all_zero [@cfg:stackify] (v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : ()
-    ensures { [#"../02_iter_mut.rs" 69 10 69 35] Seq.length (ShallowModel0.shallow_model ( ^ v)) = Seq.length (ShallowModel1.shallow_model v) }
-    ensures { [#"../02_iter_mut.rs" 70 0 70 69] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model v) -> UInt64.to_int (Seq.get (ShallowModel0.shallow_model ( ^ v)) i) = 0 }
+    ensures { [#"../02_iter_mut.rs" 76 10 76 35] Seq.length (ShallowModel0.shallow_model ( ^ v)) = Seq.length (ShallowModel1.shallow_model v) }
+    ensures { [#"../02_iter_mut.rs" 77 0 77 69] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model v) -> UInt64.to_int (Seq.get (ShallowModel0.shallow_model ( ^ v)) i) = 0 }
     
 end
 module C02IterMut_AllZero
@@ -1042,22 +1202,34 @@ module C02IterMut_AllZero
     type t = usize,
     predicate Resolve0.resolve = Resolve2.resolve,
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model
-  clone C02IterMut_Impl0_Produces as Produces0 with
+  clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq as ToMutSeq0 with
     type t = usize,
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel3.shallow_model,
+    axiom .
+  clone C02IterMut_Impl0_Produces as Produces0 with
+    type t = usize,
+    function ToMutSeq0.to_mut_seq = ToMutSeq0.to_mut_seq,
+    function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel3.shallow_model
+  clone C02IterMut_Impl0_Invariant as Invariant0 with
+    type t = usize,
+    function ShallowModel0.shallow_model = ShallowModel3.shallow_model
   clone C02IterMut_Impl0_ProducesTrans as ProducesTrans0 with
     type t = usize,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces,
     axiom .
   clone C02IterMut_Impl0_ProducesRefl as ProducesRefl0 with
     type t = usize,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces,
     axiom .
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = usize
   clone C02IterMut_Impl0_Next_Interface as Next0 with
     type t = usize,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces
   clone C02IterMut_Impl1_IntoIter_Interface as IntoIter0 with
@@ -1069,10 +1241,11 @@ module C02IterMut_AllZero
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
     function ShallowModel2.shallow_model = ShallowModel3.shallow_model,
-    function ShallowModel3.shallow_model = ShallowModel0.shallow_model
-  let rec cfg all_zero [@cfg:stackify] [#"../02_iter_mut.rs" 71 0 71 35] (v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : ()
-    ensures { [#"../02_iter_mut.rs" 69 10 69 35] Seq.length (ShallowModel0.shallow_model ( ^ v)) = Seq.length (ShallowModel1.shallow_model v) }
-    ensures { [#"../02_iter_mut.rs" 70 0 70 69] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model v) -> UInt64.to_int (Seq.get (ShallowModel0.shallow_model ( ^ v)) i) = 0 }
+    function ShallowModel3.shallow_model = ShallowModel0.shallow_model,
+    predicate Invariant0.invariant' = Invariant0.invariant'
+  let rec cfg all_zero [@cfg:stackify] [#"../02_iter_mut.rs" 78 0 78 35] (v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : ()
+    ensures { [#"../02_iter_mut.rs" 76 10 76 35] Seq.length (ShallowModel0.shallow_model ( ^ v)) = Seq.length (ShallowModel1.shallow_model v) }
+    ensures { [#"../02_iter_mut.rs" 77 0 77 69] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel1.shallow_model v) -> UInt64.to_int (Seq.get (ShallowModel0.shallow_model ( ^ v)) i) = 0 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1084,15 +1257,15 @@ module C02IterMut_AllZero
   var _9 : ();
   var produced_10 : Ghost.ghost_ty (Seq.seq (borrowed usize));
   var _13 : ();
-  var _16 : ();
-  var _17 : Core_Option_Option_Type.t_option (borrowed usize);
-  var _18 : borrowed (C02IterMut_IterMut_Type.t_itermut usize);
-  var _19 : isize;
-  var i_20 : borrowed usize;
-  var _21 : Ghost.ghost_ty (Seq.seq (borrowed usize));
-  var _23 : ();
-  var x_24 : borrowed usize;
-  var _25 : ();
+  var _17 : ();
+  var _18 : Core_Option_Option_Type.t_option (borrowed usize);
+  var _19 : borrowed (C02IterMut_IterMut_Type.t_itermut usize);
+  var _20 : isize;
+  var i_21 : borrowed usize;
+  var _22 : Ghost.ghost_ty (Seq.seq (borrowed usize));
+  var _24 : ();
+  var x_25 : borrowed usize;
+  var _26 : ();
   {
     v_1 <- v;
     goto BB0
@@ -1100,37 +1273,38 @@ module C02IterMut_AllZero
   BB0 {
     _6 <- borrow_mut ( * v_1);
     v_1 <- { v_1 with current = ( ^ _6) };
-    _5 <- ([#"../02_iter_mut.rs" 73 13 73 24] IterMut1.iter_mut _6);
+    _5 <- ([#"../02_iter_mut.rs" 80 13 80 24] IterMut1.iter_mut _6);
     goto BB1
   }
   BB1 {
     assume { Resolve0.resolve v_1 };
-    iter_4 <- ([#"../02_iter_mut.rs" 72 4 72 91] IntoIter0.into_iter _5);
+    iter_4 <- ([#"../02_iter_mut.rs" 79 4 79 91] IntoIter0.into_iter _5);
     goto BB2
   }
   BB2 {
     _9 <- ();
-    iter_old_7 <- ([#"../02_iter_mut.rs" 72 4 72 91] Ghost.new iter_4);
+    iter_old_7 <- ([#"../02_iter_mut.rs" 79 4 79 91] Ghost.new iter_4);
     goto BB3
   }
   BB3 {
     _13 <- ();
-    produced_10 <- ([#"../02_iter_mut.rs" 72 4 72 91] Ghost.new (Seq.empty ));
+    produced_10 <- ([#"../02_iter_mut.rs" 79 4 79 91] Ghost.new (Seq.empty ));
     goto BB4
   }
   BB4 {
     goto BB5
   }
   BB5 {
-    invariant structural { [#"../02_iter_mut.rs" 72 4 72 91] Produces0.produces (Ghost.inner iter_old_7) (Ghost.inner produced_10) iter_4 };
-    invariant user { [#"../02_iter_mut.rs" 72 4 72 91] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner produced_10) -> UInt64.to_int ( ^ Seq.get (Ghost.inner produced_10) i) = 0 };
-    _18 <- borrow_mut iter_4;
-    iter_4 <-  ^ _18;
-    _17 <- ([#"../02_iter_mut.rs" 72 4 72 91] Next0.next _18);
+    invariant type_invariant { [#"../02_iter_mut.rs" 79 4 79 91] Invariant0.invariant' iter_4 };
+    invariant structural { [#"../02_iter_mut.rs" 79 4 79 91] Produces0.produces (Ghost.inner iter_old_7) (Ghost.inner produced_10) iter_4 };
+    invariant user { [#"../02_iter_mut.rs" 79 4 79 91] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner produced_10) -> UInt64.to_int ( ^ Seq.get (Ghost.inner produced_10) i) = 0 };
+    _19 <- borrow_mut iter_4;
+    iter_4 <-  ^ _19;
+    _18 <- ([#"../02_iter_mut.rs" 79 4 79 91] Next0.next _19);
     goto BB6
   }
   BB6 {
-    switch (_17)
+    switch (_18)
       | Core_Option_Option_Type.C_None -> goto BB7
       | Core_Option_Option_Type.C_Some _ -> goto BB9
       end
@@ -1143,22 +1317,22 @@ module C02IterMut_AllZero
     absurd
   }
   BB9 {
-    assume { Resolve1.resolve i_20 };
-    i_20 <- Core_Option_Option_Type.some_0 _17;
-    _17 <- (let Core_Option_Option_Type.C_Some a = _17 in Core_Option_Option_Type.C_Some (any borrowed usize));
-    _23 <- ();
-    _21 <- ([#"../02_iter_mut.rs" 72 4 72 91] Ghost.new (Seq.snoc (Ghost.inner produced_10) i_20));
+    assume { Resolve1.resolve i_21 };
+    i_21 <- Core_Option_Option_Type.some_0 _18;
+    _18 <- (let Core_Option_Option_Type.C_Some a = _18 in Core_Option_Option_Type.C_Some (any borrowed usize));
+    _24 <- ();
+    _22 <- ([#"../02_iter_mut.rs" 79 4 79 91] Ghost.new (Seq.snoc (Ghost.inner produced_10) i_21));
     goto BB10
   }
   BB10 {
-    produced_10 <- _21;
-    _21 <- any Ghost.ghost_ty (Seq.seq (borrowed usize));
-    assume { Resolve1.resolve x_24 };
-    x_24 <- i_20;
-    i_20 <- any borrowed usize;
-    x_24 <- { x_24 with current = (0 : usize) };
-    assume { Resolve1.resolve x_24 };
-    _16 <- ();
+    produced_10 <- _22;
+    _22 <- any Ghost.ghost_ty (Seq.seq (borrowed usize));
+    assume { Resolve1.resolve x_25 };
+    x_25 <- i_21;
+    i_21 <- any borrowed usize;
+    x_25 <- { x_25 with current = (0 : usize) };
+    assume { Resolve1.resolve x_25 };
+    _17 <- ();
     goto BB5
   }
   
@@ -1366,16 +1540,24 @@ module C02IterMut_Impl0
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
-  clone C02IterMut_Common_Iterator_Invariant as Invariant0 with
-    type self = C02IterMut_IterMut_Type.t_itermut t
+  clone CreusotContracts_Std1_Slice_Impl4_ToMutSeq as ToMutSeq0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel1.shallow_model,
+    axiom .
+  clone C02IterMut_Impl0_Invariant as Invariant0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone C02IterMut_Impl0_Item_Type as Item0 with
     type t = t
   clone C02IterMut_Impl0_Produces as Produces0 with
     type t = t,
+    function ToMutSeq0.to_mut_seq = ToMutSeq0.to_mut_seq,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel1.shallow_model
   clone C02IterMut_Impl0_ProducesRefl as ProducesRefl0 with
     type t = t,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces,
     axiom .
   clone C02IterMut_Common_Iterator_ProducesRefl_Interface as ProducesRefl1 with
@@ -1399,10 +1581,11 @@ module C02IterMut_Impl0
   clone C02IterMut_Common_Iterator_Item_Type as Item1 with
     type self = C02IterMut_IterMut_Type.t_itermut t,
     type item = Item0.item
-  goal produces_refl_spec : forall a : C02IterMut_IterMut_Type.t_itermut t . (([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> true) /\ (forall result : () . ([#"../02_iter_mut.rs" 37 14 37 39] Produces0.produces a (Seq.empty ) a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a))
+  goal produces_refl_spec : forall a : C02IterMut_IterMut_Type.t_itermut t . (([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> ([#"../02_iter_mut.rs" 38 15 38 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../02_iter_mut.rs" 39 14 39 39] Produces0.produces a (Seq.empty ) a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a))
   use prelude.Borrow
   clone C02IterMut_Impl0_ProducesTrans as ProducesTrans0 with
     type t = t,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces,
     axiom .
   clone C02IterMut_Common_Iterator_ProducesTrans_Interface as ProducesTrans1 with
@@ -1412,10 +1595,11 @@ module C02IterMut_Impl0
     predicate Produces0.produces = Produces0.produces,
     type Item0.item = Item0.item,
     axiom .
-  goal produces_trans_spec : forall a : C02IterMut_IterMut_Type.t_itermut t, ab : Seq.seq (borrowed t), b : C02IterMut_IterMut_Type.t_itermut t, bc : Seq.seq (borrowed t), c : C02IterMut_IterMut_Type.t_itermut t . (([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) && ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) && ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) && ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) && ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../02_iter_mut.rs" 42 15 42 32] Produces0.produces b bc c) && ([#"../02_iter_mut.rs" 41 15 41 32] Produces0.produces a ab b)) /\ (forall result : () . ([#"../02_iter_mut.rs" 43 14 43 42] Produces0.produces a (Seq.(++) ab bc) c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c))
+  goal produces_trans_spec : forall a : C02IterMut_IterMut_Type.t_itermut t, ab : Seq.seq (borrowed t), b : C02IterMut_IterMut_Type.t_itermut t, bc : Seq.seq (borrowed t), c : C02IterMut_IterMut_Type.t_itermut t . (([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) && ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) && ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) && ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) && ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../02_iter_mut.rs" 47 15 47 32] Produces0.produces b bc c) && ([#"../02_iter_mut.rs" 46 15 46 32] Produces0.produces a ab b) && ([#"../02_iter_mut.rs" 45 15 45 28] Invariant0.invariant' c) && ([#"../02_iter_mut.rs" 44 15 44 28] Invariant0.invariant' b) && ([#"../02_iter_mut.rs" 43 15 43 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../02_iter_mut.rs" 48 14 48 42] Produces0.produces a (Seq.(++) ab bc) c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c))
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone C02IterMut_Impl0_Next_Interface as Next0 with
     type t = t,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces
   clone C02IterMut_Common_Iterator_Next_Interface as Next1 with
@@ -1425,4 +1609,7 @@ module C02IterMut_Impl0
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces
+  clone C02IterMut_Common_Iterator_Invariant_Interface as Invariant1 with
+    type self = C02IterMut_IterMut_Type.t_itermut t,
+    predicate invariant' = Invariant0.invariant'
 end

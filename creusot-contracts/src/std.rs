@@ -7,5 +7,5 @@ mod mem;
 mod num;
 pub mod ops;
 mod option;
-mod slice;
+pub mod slice;
 mod vec;

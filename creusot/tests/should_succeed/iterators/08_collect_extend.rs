@@ -23,7 +23,7 @@ use iter::Iterator;
   exists<done_ : &mut I, prod: Seq<_>>
     done_.completed() && iter.produces(prod, *done_) && @^vec == (@vec).concat(prod)
 )]
-pub fn extend<T, I: Iterator<Item = T>>(vec: &mut Vec<T>, iter: I) {
+pub fn extend<T, I: Iterator<Item = T> + Invariant>(vec: &mut Vec<T>, iter: I) {
     let old_vec = ghost! { vec };
     #[invariant(vec_proph, ^*old_vec == ^vec)]
     #[invariant(vec, (@vec).ext_eq((@old_vec).concat(*produced)))]
