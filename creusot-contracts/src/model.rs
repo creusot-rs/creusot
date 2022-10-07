@@ -79,22 +79,15 @@ impl<T: ShallowModel + ?Sized, A: Allocator> ShallowModel for Box<T, A> {
 impl<T, const N: usize> ShallowModel for [T; N] {
     type ShallowModelTy = Seq<T>;
 
-    // We define this as trusted because builtins and ensures are incompatible
     #[logic]
     #[trusted]
-    // TODO
+    #[creusot::builtins = "prelude.Slice.id"]
+    // TODO:
     // #[ensures(result.len() == @N)]
-    #[ensures(result == array_model(self))]
+    // Warning: #[ensures] and #[trusted] are incompatible, so this might require
     fn shallow_model(self) -> Self::ShallowModelTy {
-        array_model(self)
+        pearlite! { absurd }
     }
-}
-
-#[logic]
-#[trusted]
-#[creusot::builtins = "prelude.Slice.id"]
-fn array_model<T, const N: usize>(_: [T; N]) -> Seq<T> {
-    pearlite! { absurd }
 }
 
 impl<T: DeepModel, const N: usize> DeepModel for [T; N] {
