@@ -143,6 +143,15 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
         },
     );
 
+    invariants.insert(
+        0,
+        Invariant {
+            name: Ident::new("type_invariant", Span::call_site()),
+            span: Span::call_site(),
+            invariant: parse_quote! { (#it).invariant() },
+        },
+    );
+
     let elem = Ident::new("i", proc_macro::Span::def_site().into());
 
     quote! { {

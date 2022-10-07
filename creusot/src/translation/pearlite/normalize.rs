@@ -45,8 +45,9 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
             }
             TermKind::Item(id, subst) => {
                 let method = if self.tcx.trait_of_item(*id).is_some() {
-                    resolve_opt(self.tcx, self.param_env, *id, subst)
-                        .expect("could not resolve trait instance")
+                    resolve_opt(self.tcx, self.param_env, *id, subst).unwrap_or_else(|| {
+                        panic!("could not resolve trait instance {:?}", (*id, *subst))
+                    })
                 } else {
                     // TODO dont' do this
                     (*id, *subst)

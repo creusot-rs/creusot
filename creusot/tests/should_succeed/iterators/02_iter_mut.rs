@@ -23,26 +23,30 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
-        pearlite! {
-            (@self.inner).len() == visited.len() + (@tl.inner).len() &&
-            (@^self.inner).len() == visited.len() + (@^tl.inner).len() &&
-            (@self.inner).subsequence(visited.len(), (@self.inner).len()).ext_eq(@tl.inner) &&
-            (@^self.inner).subsequence(visited.len(), (@^self.inner).len()).ext_eq(@^tl.inner )&&
-            (forall<i : Int> 0 <= i && i < visited.len() ==>
-                (@self.inner)[i] == *visited[i] && (@^self.inner)[i] == ^visited[i])
-        }
+        self.inner.to_mut_seq().ext_eq(visited.concat(tl.inner.to_mut_seq()))
+    }
+
+    #[predicate]
+    fn invariant(self) -> bool {
+        // Property that is always true but we must carry around..
+        pearlite! { (@^self.inner).len() == (@*self.inner).len() }
     }
 
     #[law]
+    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[requires(a.invariant())]
+    #[requires(b.invariant())]
+    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
+    #[maintains((mut self).invariant())]
     #[ensures(match result {
       None => self.completed(),
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
@@ -62,6 +66,7 @@ impl<'a, T> IterMut<'a, T> {
 #[ensures(@result.inner == @v)]
 #[ensures(@^result.inner == @^v)]
 #[ensures((@^v).len() == (@v).len())]
+#[ensures(result.invariant())]
 fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
     IterMut { inner: &mut v[..] }
 }

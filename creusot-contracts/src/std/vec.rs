@@ -2,7 +2,7 @@ use crate as creusot_contracts;
 use crate::{
     logic::*,
     std::{iter::Iterator, slice::SliceIndex},
-    DeepModel, Resolve, ShallowModel,
+    DeepModel, Invariant, Resolve, ShallowModel,
 };
 use creusot_contracts_proc::*;
 use std::{
@@ -74,6 +74,7 @@ extern_spec! {
                 fn insert(&mut self, index: usize, element: T);
 
                 #[ensures(@result == @self)]
+                #[ensures(result.invariant())]
                 fn into_iter(self) -> IntoIter<T, A>;
             }
 
@@ -115,7 +116,15 @@ extern_spec! {
 extern_spec! {
     impl<'a, T, A : Allocator> IntoIterator for &'a std::vec::Vec<T, A> {
         #[ensures(@result == @self)]
+        #[ensures(result.invariant())]
         fn into_iter(self) -> std::slice::Iter<'a, T>;
+    }
+}
+
+impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        true
     }
 }
 

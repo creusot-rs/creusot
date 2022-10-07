@@ -162,11 +162,16 @@ mod ghost {
     }
 }
 
+mod invariant;
 mod model;
 mod resolve;
 mod well_founded;
 
 pub use ghost::Ghost;
+pub use invariant::Invariant;
 pub use model::{DeepModel, ShallowModel};
 pub use resolve::Resolve;
 pub use well_founded::WellFounded;
+
+#[cfg(feature = "contracts")]
+pub use crate::std::slice::SliceExt;

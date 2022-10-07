@@ -1,12 +1,15 @@
 use crate as creusot_contracts;
 use crate::{
     logic::{Int, Seq},
-    Resolve,
+    Invariant, Resolve,
 };
 use creusot_contracts_proc::*;
 use std::iter::{Skip, Take};
 
-pub trait Iterator: std::iter::Iterator {
+mod map_inv;
+pub use map_inv::{IteratorExt, MapInv};
+
+pub trait Iterator: std::iter::Iterator + Invariant {
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, _: Self) -> bool;
 
@@ -14,10 +17,14 @@ pub trait Iterator: std::iter::Iterator {
     fn completed(&mut self) -> bool;
 
     #[law]
+    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self);
 
     #[law]
+    #[requires(a.invariant())]
+    #[requires(b.invariant())]
+    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -28,17 +35,23 @@ extern_spec! {
     mod std {
         mod iter {
             trait Iterator
-                where Self : Iterator {
+                where Self : Iterator + Invariant {
 
+                #[requires((*self).invariant())]
+                #[ensures((^self).invariant())]
                 #[ensures(match result {
                     None => self.completed(),
                     Some(v) => (*self).produces(Seq::singleton(v), ^self)
                 })]
                 fn next(&mut self) -> Option<Self::Item>;
 
+                #[requires(self.invariant())]
+                #[ensures(result.invariant())]
                 #[ensures(result.iter() == self && result.n() == @n)]
                 fn skip(self, n: usize) -> Skip<Self>;
 
+                #[requires(self.invariant())]
+                #[ensures(result.invariant())]
                 #[ensures(result.iter() == self && result.n() == @n)]
                 fn take(self, n: usize) -> Take<Self>;
             }
@@ -47,8 +60,9 @@ extern_spec! {
 }
 
 extern_spec! {
-    impl<I : Iterator> IntoIterator for I {
+    impl<I : Iterator + Invariant> IntoIterator for I {
         #[ensures(result == self)]
+        #[ensures(result.invariant())]
         fn into_iter(self) -> I;
     }
 }
@@ -73,6 +87,13 @@ impl<I> SkipExt<I> for Skip<I> {
     #[ensures(result >= 0 && result <= @usize::MAX)]
     fn n(self) -> Int {
         pearlite! { absurd }
+    }
+}
+
+impl<I: Invariant> Invariant for Skip<I> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        self.iter().invariant()
     }
 }
 
@@ -101,10 +122,14 @@ impl<I: Iterator> Iterator for Skip<I> {
     }
 
     #[law]
+    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[requires(a.invariant())]
+    #[requires(b.invariant())]
+    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -134,6 +159,13 @@ impl<I> TakeExt<I> for Take<I> {
     }
 }
 
+impl<I: Invariant> Invariant for Take<I> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        self.iter().invariant()
+    }
+}
+
 impl<I: Iterator> Iterator for Take<I> {
     #[predicate]
     fn completed(&mut self) -> bool {
@@ -153,10 +185,14 @@ impl<I: Iterator> Iterator for Take<I> {
     }
 
     #[law]
+    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
+    #[requires(a.invariant())]
+    #[requires(b.invariant())]
+    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
