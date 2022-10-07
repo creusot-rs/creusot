@@ -70,6 +70,11 @@ impl<'tcx> TranslationCtx<'tcx> {
                 continue;
             }
 
+            // If there is no contract to refine, skip this item
+            if contract_of(self, trait_item_id).is_empty() {
+                continue;
+            }
+
             self.translate(impl_item_id);
 
             let subst = InternalSubsts::identity_for_item(self.tcx, impl_item_id);

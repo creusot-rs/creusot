@@ -6,6 +6,9 @@ use crate::{
 use creusot_contracts_proc::*;
 use std::iter::{Skip, Take};
 
+mod map_inv;
+pub use map_inv::{IteratorExt, MapInv};
+
 pub trait Iterator: std::iter::Iterator + Invariant {
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, _: Self) -> bool;
