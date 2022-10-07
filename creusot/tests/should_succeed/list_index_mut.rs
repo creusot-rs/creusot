@@ -1,6 +1,5 @@
 extern crate creusot_contracts;
-
-use creusot_contracts::*;
+use creusot_contracts::{logic::Int, *};
 
 enum Option<T> {
     None,

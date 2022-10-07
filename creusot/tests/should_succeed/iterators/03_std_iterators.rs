@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{logic::Int, *};
 
 #[requires((@slice).len() < 1000)]
 #[ensures(@result == (@slice).len())]

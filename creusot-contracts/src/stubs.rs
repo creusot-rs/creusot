@@ -58,11 +58,6 @@ pub fn variant_check<R: crate::WellFounded>(r: R) -> R {
     r
 }
 
-// Used to create a constraint forcing the result of an ensures closure to agree with the outside
-// #[creusot::no_translate]
-// #[rustc_diagnostic_item = "closure_result_constraint"]
-// pub fn closure_result<Args, Args2, R, F : FnOnce<Args, Output=R>, G : FnOnce<Args2, Output=R>>(f: F, g: G) { }
-
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "closure_result_constraint"]
 pub fn closure_result<R>(_: R, _: R) {}

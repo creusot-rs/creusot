@@ -1,7 +1,7 @@
 // Toy example testing the lemma function feature of Creusot
 
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{logic::Int, *};
 
 #[logic]
 fn sqr(x: Int) -> Int {

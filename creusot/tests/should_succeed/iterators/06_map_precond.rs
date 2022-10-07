@@ -1,7 +1,11 @@
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{std::*, *};
+use creusot_contracts::{
+    logic::{Int, Seq},
+    std::ops::*,
+    *,
+};
 
 mod common;
 use common::*;
@@ -39,6 +43,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[predicate]
+    #[why3::attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.produced.len() + visited.len() == succ.produced.len()
@@ -50,7 +55,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
                 && if visited.len() == 0 { self.func == succ.func }
                    else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
                 && forall<i : Int> 0 <= i && i < visited.len() ==>
-                    fs[i].postcondition_mut((succ.produced[self.produced.len() + i], Ghost(succ.produced.subsequence(0, self.produced.len() + i))), visited[i])
+                    fs[i].postcondition_mut((succ.produced[self.produced.len() + i], Ghost::new(succ.produced.subsequence(0, self.produced.len() + i))), visited[i])
         }
     }
 
@@ -117,9 +122,9 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 i.invariant() ==>
                 self.iter.produces(s.push(e1).push(e2), i) ==>
-                (*f).precondition((e1, Ghost(self.produced.concat(s)))) ==>
-                f.postcondition_mut((e1, Ghost(self.produced.concat(s))), b) ==>
-                (^f).precondition((e2, Ghost(self.produced.concat(s).push(e1))))
+                (*f).precondition((e1, Ghost::new(self.produced.concat(s)))) ==>
+                f.postcondition_mut((e1, Ghost::new(self.produced.concat(s))), b) ==>
+                (^f).precondition((e2, Ghost::new(self.produced.concat(s).push(e1))))
         }
     }
 
@@ -129,9 +134,9 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 i.invariant() ==>
                 iter.produces(s.push(e1).push(e2), i) ==>
-                (*f).precondition((e1, Ghost(s))) ==>
-                f.postcondition_mut((e1, Ghost(s)), b) ==>
-                (^f).precondition((e2, Ghost(s.push(e1))))
+                (*f).precondition((e1, Ghost::new(s))) ==>
+                f.postcondition_mut((e1, Ghost::new(s)), b) ==>
+                (^f).precondition((e2, Ghost::new(s.push(e1))))
         }
     }
 
@@ -155,12 +160,12 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
     }
 }
 
-#[requires(forall<e : I::Item, i2 : I> i2.invariant() ==> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost(Seq::EMPTY))))]
+#[requires(forall<e : I::Item, i2 : I> i2.invariant() ==> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
 #[requires(Map::<I, _, F>::reinitialize())]
 #[requires(iter.invariant())]
 #[requires(Map::<I, I::Item, F>::preservation(iter))]
 #[ensures(result.invariant())]
-#[ensures(result == Map { iter, func, produced: Ghost(Seq::EMPTY) })]
+#[ensures(result == Map { iter, func, produced: Ghost::new(Seq::EMPTY) })]
 pub fn map<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B>(
     iter: I,
     func: F,
@@ -175,9 +180,6 @@ pub fn identity<I: Iterator>(iter: I) {
 
 #[requires(iter.invariant())]
 #[requires(forall<done_ : &mut I> done_.completed() ==> (^done_).invariant() ==> forall<next : I, steps: Seq<_>> (^done_).produces(steps, next) ==> steps == Seq::EMPTY && ^done_ == next)]
-#[requires(forall<prod : _, fin: I> fin.invariant() ==> iter.produces(prod, fin) ==>
-    forall<x : _> 0 <= x && x < prod.len() ==> prod[x] <= 10u32
-)]
 #[requires(forall<prod : _, fin: I> fin.invariant() ==> iter.produces(prod, fin) ==>
     forall<x : _> 0 <= x && x < prod.len() ==> prod[x] <= 10u32
 )]

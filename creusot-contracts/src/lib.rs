@@ -122,6 +122,8 @@ mod macros {
     pub use creusot_contracts_dummy::maintains;
 }
 
+pub use macros::*;
+
 #[cfg(feature = "contracts")]
 pub mod derive {
     pub use creusot_contracts_proc::{Clone, PartialEq};
@@ -132,22 +134,39 @@ pub mod derive {
     pub use ::std::{clone::Clone, cmp::PartialEq};
 }
 
-pub use macros::*;
-
 #[cfg(feature = "contracts")]
-pub mod stubs;
+#[path = "stubs.rs"]
+pub mod __stubs;
 
 pub mod logic;
 
 #[cfg(feature = "contracts")]
 pub mod std;
 
-#[cfg(all(feature = "contracts", feature = "num_bigint"))]
-pub mod bigint;
+#[cfg(not(feature = "contracts"))]
+pub mod std {}
+
+#[cfg(feature = "contracts")]
+mod ghost;
 
 #[cfg(not(feature = "contracts"))]
-pub mod std {
-    pub use std::vec;
+mod ghost {
+    pub struct Ghost<T>(std::marker::PhantomData<T>)
+    where
+        T: ?Sized;
+
+    impl<T> Ghost<T> {
+        pub fn new() -> Ghost<T> {
+            Ghost(std::marker::PhantomData)
+        }
+    }
 }
 
-pub use logic::*;
+mod model;
+mod resolve;
+mod well_founded;
+
+pub use ghost::Ghost;
+pub use model::{DeepModel, ShallowModel};
+pub use resolve::Resolve;
+pub use well_founded::WellFounded;

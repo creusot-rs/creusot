@@ -73,8 +73,8 @@ module ListIndexMut_Len
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
   use ListIndexMut_Option_Type as ListIndexMut_Option_Type
-  function len [#"../list_index_mut.rs" 15 0 15 22] (l : ListIndexMut_List_Type.t_list) : int =
-    [#"../list_index_mut.rs" 14 0 14 8] let ListIndexMut_List_Type.C_List _ ls = l in 1 + match (ls) with
+  function len [#"../list_index_mut.rs" 14 0 14 22] (l : ListIndexMut_List_Type.t_list) : int =
+    [#"../list_index_mut.rs" 13 0 13 8] let ListIndexMut_List_Type.C_List _ ls = l in 1 + match (ls) with
       | ListIndexMut_Option_Type.C_Some ls -> len ls
       | ListIndexMut_Option_Type.C_None -> 0
       end
@@ -103,10 +103,10 @@ module ListIndexMut_Get
   use ListIndexMut_List_Type as ListIndexMut_List_Type
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Boxed_Box_Type as Alloc_Boxed_Box_Type
-  function get [#"../list_index_mut.rs" 26 0 26 39] (l : ListIndexMut_List_Type.t_list) (ix : int) : ListIndexMut_Option_Type.t_option uint32
+  function get [#"../list_index_mut.rs" 25 0 25 39] (l : ListIndexMut_List_Type.t_list) (ix : int) : ListIndexMut_Option_Type.t_option uint32
     
    =
-    [#"../list_index_mut.rs" 25 0 25 8] let ListIndexMut_List_Type.C_List i ls = l in if ix > 0 then
+    [#"../list_index_mut.rs" 24 0 24 8] let ListIndexMut_List_Type.C_List i ls = l in if ix > 0 then
       match (ls) with
         | ListIndexMut_Option_Type.C_Some ls -> get ls (ix - 1)
         | ListIndexMut_Option_Type.C_None -> ListIndexMut_Option_Type.C_None
@@ -118,26 +118,17 @@ module ListIndexMut_Get
     ensures { result = get l ix }
     
 end
-module CreusotContracts_Logic_Ghost_Ghost_Type
-  type t_ghost 't =
-    | C_Ghost 't
-    
-  let function ghost_0 (self : t_ghost 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_Ghost a -> a
-      end
-end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve_Stub
+module CreusotContracts_Resolve_Impl1_Resolve_Stub
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t)
 end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve_Interface
+module CreusotContracts_Resolve_Impl1_Resolve_Interface
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t)
 end
-module CreusotContracts_Logic_Resolve_Impl1_Resolve
+module CreusotContracts_Resolve_Impl1_Resolve
   type t
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
@@ -157,11 +148,11 @@ module ListIndexMut_IndexMut_Interface
   clone ListIndexMut_Get_Stub as Get0
   clone ListIndexMut_Len_Stub as Len0
   val index_mut [@cfg:stackify] (param_l : borrowed (ListIndexMut_List_Type.t_list)) (param_ix : usize) : borrowed uint32
-    requires {[#"../list_index_mut.rs" 39 11 39 36] UInt64.to_int param_ix < Len0.len ( * param_l)}
-    ensures { [#"../list_index_mut.rs" 40 10 40 51] ListIndexMut_Option_Type.C_Some ( * result) = Get0.get ( * param_l) (UInt64.to_int param_ix) }
-    ensures { [#"../list_index_mut.rs" 41 10 41 51] ListIndexMut_Option_Type.C_Some ( ^ result) = Get0.get ( ^ param_l) (UInt64.to_int param_ix) }
-    ensures { [#"../list_index_mut.rs" 42 10 42 40] Len0.len ( ^ param_l) = Len0.len ( * param_l) }
-    ensures { [#"../list_index_mut.rs" 43 0 43 114] forall i : int . 0 <= i /\ i < Len0.len ( * param_l) /\ i <> UInt64.to_int param_ix -> Get0.get ( * param_l) i = Get0.get ( ^ param_l) i }
+    requires {[#"../list_index_mut.rs" 38 11 38 36] UInt64.to_int param_ix < Len0.len ( * param_l)}
+    ensures { [#"../list_index_mut.rs" 39 10 39 51] ListIndexMut_Option_Type.C_Some ( * result) = Get0.get ( * param_l) (UInt64.to_int param_ix) }
+    ensures { [#"../list_index_mut.rs" 40 10 40 51] ListIndexMut_Option_Type.C_Some ( ^ result) = Get0.get ( ^ param_l) (UInt64.to_int param_ix) }
+    ensures { [#"../list_index_mut.rs" 41 10 41 40] Len0.len ( ^ param_l) = Len0.len ( * param_l) }
+    ensures { [#"../list_index_mut.rs" 42 0 42 114] forall i : int . 0 <= i /\ i < Len0.len ( * param_l) /\ i <> UInt64.to_int param_ix -> Get0.get ( * param_l) i = Get0.get ( ^ param_l) i }
     
 end
 module ListIndexMut_IndexMut
@@ -176,27 +167,27 @@ module ListIndexMut_IndexMut
   use ListIndexMut_Option_Type as ListIndexMut_Option_Type
   clone ListIndexMut_Get as Get0
   clone ListIndexMut_Len as Len0
+  use prelude.Ghost
   use prelude.IntSize
-  use CreusotContracts_Logic_Ghost_Ghost_Type as CreusotContracts_Logic_Ghost_Ghost_Type
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve2 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
     type t = uint32
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = ListIndexMut_List_Type.t_list
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = ListIndexMut_List_Type.t_list
-  let rec cfg index_mut [@cfg:stackify] [#"../list_index_mut.rs" 44 0 44 65] (param_l : borrowed (ListIndexMut_List_Type.t_list)) (param_ix : usize) : borrowed uint32
-    requires {[#"../list_index_mut.rs" 39 11 39 36] UInt64.to_int param_ix < Len0.len ( * param_l)}
-    ensures { [#"../list_index_mut.rs" 40 10 40 51] ListIndexMut_Option_Type.C_Some ( * result) = Get0.get ( * param_l) (UInt64.to_int param_ix) }
-    ensures { [#"../list_index_mut.rs" 41 10 41 51] ListIndexMut_Option_Type.C_Some ( ^ result) = Get0.get ( ^ param_l) (UInt64.to_int param_ix) }
-    ensures { [#"../list_index_mut.rs" 42 10 42 40] Len0.len ( ^ param_l) = Len0.len ( * param_l) }
-    ensures { [#"../list_index_mut.rs" 43 0 43 114] forall i : int . 0 <= i /\ i < Len0.len ( * param_l) /\ i <> UInt64.to_int param_ix -> Get0.get ( * param_l) i = Get0.get ( ^ param_l) i }
+  let rec cfg index_mut [@cfg:stackify] [#"../list_index_mut.rs" 43 0 43 65] (param_l : borrowed (ListIndexMut_List_Type.t_list)) (param_ix : usize) : borrowed uint32
+    requires {[#"../list_index_mut.rs" 38 11 38 36] UInt64.to_int param_ix < Len0.len ( * param_l)}
+    ensures { [#"../list_index_mut.rs" 39 10 39 51] ListIndexMut_Option_Type.C_Some ( * result) = Get0.get ( * param_l) (UInt64.to_int param_ix) }
+    ensures { [#"../list_index_mut.rs" 40 10 40 51] ListIndexMut_Option_Type.C_Some ( ^ result) = Get0.get ( ^ param_l) (UInt64.to_int param_ix) }
+    ensures { [#"../list_index_mut.rs" 41 10 41 40] Len0.len ( ^ param_l) = Len0.len ( * param_l) }
+    ensures { [#"../list_index_mut.rs" 42 0 42 114] forall i : int . 0 <= i /\ i < Len0.len ( * param_l) /\ i <> UInt64.to_int param_ix -> Get0.get ( * param_l) i = Get0.get ( ^ param_l) i }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : borrowed uint32;
   var param_l_1 : borrowed (ListIndexMut_List_Type.t_list);
   var param_ix_2 : usize;
   var _3 : borrowed uint32;
-  var old_l_9 : CreusotContracts_Logic_Ghost_Ghost_Type.t_ghost (borrowed (ListIndexMut_List_Type.t_list));
+  var old_l_9 : Ghost.ghost_ty (borrowed (ListIndexMut_List_Type.t_list));
   var _11 : ();
   var l_12 : borrowed (ListIndexMut_List_Type.t_list);
   var ix_13 : usize;
@@ -220,7 +211,7 @@ module ListIndexMut_IndexMut
   }
   BB0 {
     _11 <- ();
-    old_l_9 <- ([#"../list_index_mut.rs" 45 16 45 34] CreusotContracts_Logic_Ghost_Ghost_Type.C_Ghost param_l_1);
+    old_l_9 <- ([#"../list_index_mut.rs" 44 16 44 34] Ghost.new param_l_1);
     goto BB1
   }
   BB1 {
@@ -231,13 +222,13 @@ module ListIndexMut_IndexMut
     goto BB2
   }
   BB2 {
-    invariant valid_ix { [#"../list_index_mut.rs" 48 26 48 56] (0 : usize) <= ix_13 /\ UInt64.to_int ix_13 < Len0.len ( * l_12) };
-    invariant get_target_now { [#"../list_index_mut.rs" 49 32 49 71] Get0.get ( * l_12) (UInt64.to_int ix_13) = Get0.get ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) (UInt64.to_int param_ix_2) };
-    invariant get_target_fin { [#"../list_index_mut.rs" 50 32 50 71] Get0.get ( ^ l_12) (UInt64.to_int ix_13) = Get0.get ( ^ CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) (UInt64.to_int param_ix_2) };
-    invariant len { [#"../list_index_mut.rs" 48 4 48 58] Len0.len ( ^ l_12) = Len0.len ( * l_12) -> Len0.len ( ^ CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) = Len0.len ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) };
-    invariant untouched { [#"../list_index_mut.rs" 48 4 48 58] (forall i : int . 0 <= i /\ i < Len0.len ( * l_12) /\ i <> UInt64.to_int ix_13 -> Get0.get ( ^ l_12) i = Get0.get ( * l_12) i) -> (forall i : int . 0 <= i /\ i < Len0.len ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) /\ i <> UInt64.to_int param_ix_2 -> Get0.get ( ^ CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) i = Get0.get ( * CreusotContracts_Logic_Ghost_Ghost_Type.ghost_0 old_l_9) i) };
+    invariant valid_ix { [#"../list_index_mut.rs" 47 26 47 56] (0 : usize) <= ix_13 /\ UInt64.to_int ix_13 < Len0.len ( * l_12) };
+    invariant get_target_now { [#"../list_index_mut.rs" 48 32 48 71] Get0.get ( * l_12) (UInt64.to_int ix_13) = Get0.get ( * Ghost.inner old_l_9) (UInt64.to_int param_ix_2) };
+    invariant get_target_fin { [#"../list_index_mut.rs" 49 32 49 71] Get0.get ( ^ l_12) (UInt64.to_int ix_13) = Get0.get ( ^ Ghost.inner old_l_9) (UInt64.to_int param_ix_2) };
+    invariant len { [#"../list_index_mut.rs" 47 4 47 58] Len0.len ( ^ l_12) = Len0.len ( * l_12) -> Len0.len ( ^ Ghost.inner old_l_9) = Len0.len ( * Ghost.inner old_l_9) };
+    invariant untouched { [#"../list_index_mut.rs" 47 4 47 58] (forall i : int . 0 <= i /\ i < Len0.len ( * l_12) /\ i <> UInt64.to_int ix_13 -> Get0.get ( ^ l_12) i = Get0.get ( * l_12) i) -> (forall i : int . 0 <= i /\ i < Len0.len ( * Ghost.inner old_l_9) /\ i <> UInt64.to_int param_ix_2 -> Get0.get ( ^ Ghost.inner old_l_9) i = Get0.get ( * Ghost.inner old_l_9) i) };
     _22 <- ix_13;
-    _21 <- ([#"../list_index_mut.rs" 57 10 57 16] _22 > (0 : usize));
+    _21 <- ([#"../list_index_mut.rs" 56 10 56 16] _22 > (0 : usize));
     switch (_21)
       | False -> goto BB7
       | True -> goto BB3
@@ -268,7 +259,7 @@ module ListIndexMut_IndexMut
     l_12 <- _26;
     _26 <- any borrowed (ListIndexMut_List_Type.t_list);
     _23 <- ();
-    ix_13 <- ([#"../list_index_mut.rs" 64 8 64 15] ix_13 - (1 : usize));
+    ix_13 <- ([#"../list_index_mut.rs" 63 8 63 15] ix_13 - (1 : usize));
     _20 <- ();
     goto BB2
   }
@@ -298,10 +289,10 @@ module ListIndexMut_Write_Interface
   clone ListIndexMut_Get_Stub as Get0
   clone ListIndexMut_Len_Stub as Len0
   val write [@cfg:stackify] (l : borrowed (ListIndexMut_List_Type.t_list)) (ix : usize) (v : uint32) : ()
-    requires {[#"../list_index_mut.rs" 71 11 71 24] UInt64.to_int ix < Len0.len ( * l)}
-    ensures { [#"../list_index_mut.rs" 72 10 72 33] ListIndexMut_Option_Type.C_Some v = Get0.get ( ^ l) (UInt64.to_int ix) }
-    ensures { [#"../list_index_mut.rs" 73 10 73 28] Len0.len ( ^ l) = Len0.len ( * l) }
-    ensures { [#"../list_index_mut.rs" 74 0 74 88] forall i : int . 0 <= i /\ i < Len0.len ( * l) /\ i <> UInt64.to_int ix -> Get0.get ( * l) i = Get0.get ( ^ l) i }
+    requires {[#"../list_index_mut.rs" 70 11 70 24] UInt64.to_int ix < Len0.len ( * l)}
+    ensures { [#"../list_index_mut.rs" 71 10 71 33] ListIndexMut_Option_Type.C_Some v = Get0.get ( ^ l) (UInt64.to_int ix) }
+    ensures { [#"../list_index_mut.rs" 72 10 72 28] Len0.len ( ^ l) = Len0.len ( * l) }
+    ensures { [#"../list_index_mut.rs" 73 0 73 88] forall i : int . 0 <= i /\ i < Len0.len ( * l) /\ i <> UInt64.to_int ix -> Get0.get ( * l) i = Get0.get ( ^ l) i }
     
 end
 module ListIndexMut_Write
@@ -316,18 +307,18 @@ module ListIndexMut_Write
   use ListIndexMut_Option_Type as ListIndexMut_Option_Type
   clone ListIndexMut_Get as Get0
   clone ListIndexMut_Len as Len0
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve1 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = uint32
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = ListIndexMut_List_Type.t_list
   clone ListIndexMut_IndexMut_Interface as IndexMut0 with
     function Len0.len = Len0.len,
     function Get0.get = Get0.get
-  let rec cfg write [@cfg:stackify] [#"../list_index_mut.rs" 75 0 75 45] (l : borrowed (ListIndexMut_List_Type.t_list)) (ix : usize) (v : uint32) : ()
-    requires {[#"../list_index_mut.rs" 71 11 71 24] UInt64.to_int ix < Len0.len ( * l)}
-    ensures { [#"../list_index_mut.rs" 72 10 72 33] ListIndexMut_Option_Type.C_Some v = Get0.get ( ^ l) (UInt64.to_int ix) }
-    ensures { [#"../list_index_mut.rs" 73 10 73 28] Len0.len ( ^ l) = Len0.len ( * l) }
-    ensures { [#"../list_index_mut.rs" 74 0 74 88] forall i : int . 0 <= i /\ i < Len0.len ( * l) /\ i <> UInt64.to_int ix -> Get0.get ( * l) i = Get0.get ( ^ l) i }
+  let rec cfg write [@cfg:stackify] [#"../list_index_mut.rs" 74 0 74 45] (l : borrowed (ListIndexMut_List_Type.t_list)) (ix : usize) (v : uint32) : ()
+    requires {[#"../list_index_mut.rs" 70 11 70 24] UInt64.to_int ix < Len0.len ( * l)}
+    ensures { [#"../list_index_mut.rs" 71 10 71 33] ListIndexMut_Option_Type.C_Some v = Get0.get ( ^ l) (UInt64.to_int ix) }
+    ensures { [#"../list_index_mut.rs" 72 10 72 28] Len0.len ( ^ l) = Len0.len ( * l) }
+    ensures { [#"../list_index_mut.rs" 73 0 73 88] forall i : int . 0 <= i /\ i < Len0.len ( * l) /\ i <> UInt64.to_int ix -> Get0.get ( * l) i = Get0.get ( ^ l) i }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -349,7 +340,7 @@ module ListIndexMut_Write
     _10 <- borrow_mut ( * l_1);
     l_1 <- { l_1 with current = ( ^ _10) };
     _11 <- ix_2;
-    _9 <- ([#"../list_index_mut.rs" 76 5 76 21] IndexMut0.index_mut _10 _11);
+    _9 <- ([#"../list_index_mut.rs" 75 5 75 21] IndexMut0.index_mut _10 _11);
     goto BB1
   }
   BB1 {
@@ -376,12 +367,12 @@ module ListIndexMut_F
   use prelude.UIntSize
   clone ListIndexMut_Get as Get0
   clone ListIndexMut_Len as Len0
-  clone CreusotContracts_Logic_Resolve_Impl1_Resolve as Resolve0 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = ListIndexMut_List_Type.t_list
   clone ListIndexMut_Write_Interface as Write0 with
     function Len0.len = Len0.len,
     function Get0.get = Get0.get
-  let rec cfg f [@cfg:stackify] [#"../list_index_mut.rs" 79 0 79 10] (_ : ()) : () = [@vc:do_not_keep_trace] [@vc:sp]
+  let rec cfg f [@cfg:stackify] [#"../list_index_mut.rs" 78 0 78 10] (_ : ()) : () = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var l_1 : ListIndexMut_List_Type.t_list;
   var _2 : ListIndexMut_Option_Type.t_option (ListIndexMut_List_Type.t_list);
@@ -416,7 +407,7 @@ module ListIndexMut_F
     l_1 <-  ^ _8;
     _7 <- borrow_mut ( * _8);
     _8 <- { _8 with current = ( ^ _7) };
-    _6 <- ([#"../list_index_mut.rs" 81 4 81 23] Write0.write _7 (0 : usize) (2 : uint32));
+    _6 <- ([#"../list_index_mut.rs" 80 4 80 23] Write0.write _7 (0 : usize) (2 : uint32));
     goto BB5
   }
   BB5 {

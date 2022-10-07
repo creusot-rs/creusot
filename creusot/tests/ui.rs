@@ -30,7 +30,7 @@ fn main() {
             temp_file.as_os_str(),
             "--output-file=/dev/null".as_ref(),
         ])
-        .args(&["--", "--package", "creusot-contracts", "--features=contracts,num_bigint"])
+        .args(&["--", "--package", "creusot-contracts", "--features=contracts"])
         .env("RUST_BACKTRACE", "1")
         .env("CREUSOT_CONTINUE", "true");
 
@@ -68,10 +68,6 @@ fn run_creusot(file: &Path, contracts: &str) -> Option<std::process::Command> {
         "--creusot-extern",
         &format!("creusot_contracts={}", normalize_file_path(contracts)),
     ]);
-
-    if header_line.contains("UNBOUNDED") {
-        cmd.arg("--unbounded");
-    }
 
     cmd.args(&["--", "-Zno-codegen", "--crate-type=lib"]);
     cmd.args(&["--extern", &format!("creusot_contracts={}", creusot_contract_path)]);
@@ -137,6 +133,7 @@ where
             if !success {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
                 writeln!(&mut out, "failure").unwrap();
+                out.reset().unwrap();
             }
 
             if output.stdout.is_empty() {

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{logic::Seq, *};
 
 mod common;
 use common::*;

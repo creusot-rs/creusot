@@ -1,15 +1,9 @@
 use crate as creusot_contracts;
 use crate::macros::*;
 
-use crate::{logic::*, Int};
+use crate::logic::int::Int;
 use std::ops::Index;
 
-impl<T: ?Sized> Copy for Seq<T> {}
-impl<T: ?Sized> Clone for Seq<T> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
 #[cfg_attr(feature = "contracts", creusot::builtins = "seq.Seq.seq")]
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
 

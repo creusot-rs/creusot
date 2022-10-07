@@ -1,5 +1,8 @@
 extern crate creusot_contracts;
-use creusot_contracts::{std::*, *};
+use creusot_contracts::{
+    logic::{Int, Seq},
+    *,
+};
 
 pub struct Item<Name> {
     pub name: Name,
@@ -79,8 +82,7 @@ fn m<Name>(items: Seq<Item<Name>>, i: Int, w: Int) -> Int {
     sum_values(s, s.len()) <= sum_values(@result, (@result).len())
 )]
 pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&Item<Name>> {
-    let mut best_value: Vec<Vec<usize>> =
-        vec::from_elem(vec::from_elem(0, max_weight + 1), items.len() + 1);
+    let mut best_value = vec![vec![0; max_weight + 1]; items.len() + 1];
     let mut i = 0;
 
     #[invariant(items_len, (@items).len() + 1 == (@best_value).len())]

@@ -2,7 +2,7 @@
 
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{logic::Int, *};
 
 #[requires(@y > 0)]
 fn division(x: usize, y: usize) -> usize {

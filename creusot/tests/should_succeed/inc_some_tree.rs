@@ -1,11 +1,14 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{logic::Int, *};
 
 pub enum Tree {
     Node(Box<Tree>, u32, Box<Tree>),
     Leaf,
 }
 use Tree::*;
+
+// FIXME: this should go away, we have not defined any order relation on Tree
+#[trusted]
 impl WellFounded for Tree {}
 
 #[trusted]
@@ -16,9 +19,11 @@ fn random() -> bool {
 impl Tree {
     #[logic]
     fn sum(self) -> Int {
-        match self {
-            Node(tl, a, tr) => tl.sum() + a.model() + tr.sum(),
-            Leaf => 0,
+        pearlite! {
+            match self {
+                Node(tl, a, tr) => tl.sum() + @a + tr.sum(),
+                Leaf => 0,
+            }
         }
     }
 

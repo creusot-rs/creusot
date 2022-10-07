@@ -31,7 +31,7 @@ fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
             type_param.bounds.push(parse_quote!(std::clone::Clone));
-            // type_param.bounds.push(parse_quote!(creusot_contracts::Model));
+            // type_param.bounds.push(parse_quote!(creusot_contracts::DeepModel));
         }
     }
     generics

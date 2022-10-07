@@ -10,16 +10,16 @@ pub struct Product<A, B> {
     b: B,
 }
 
-impl<A, B> Model for Product<A, B>
+impl<A, B> DeepModel for Product<A, B>
 where
-    A: Model,
-    B: Model,
+    A: DeepModel,
+    B: DeepModel,
 {
-    type ModelTy = Product<A::ModelTy, B::ModelTy>;
+    type DeepModelTy = Product<A::DeepModelTy, B::DeepModelTy>;
 
     #[logic]
-    fn model(self) -> Self::ModelTy {
-        Product { a: self.a.model(), b: self.b.model() }
+    fn deep_model(self) -> Self::DeepModelTy {
+        Product { a: self.a.deep_model(), b: self.b.deep_model() }
     }
 }
 
@@ -29,14 +29,14 @@ pub enum Sum<A, B> {
     B(B),
 }
 
-impl<A: Model, B: Model> Model for Sum<A, B> {
-    type ModelTy = Sum<A::ModelTy, B::ModelTy>;
+impl<A: DeepModel, B: DeepModel> DeepModel for Sum<A, B> {
+    type DeepModelTy = Sum<A::DeepModelTy, B::DeepModelTy>;
 
     #[logic]
-    fn model(self) -> Self::ModelTy {
+    fn deep_model(self) -> Self::DeepModelTy {
         match self {
-            Sum::A(a) => Sum::A(a.model()),
-            Sum::B(b) => Sum::B(b.model()),
+            Sum::A(a) => Sum::A(a.deep_model()),
+            Sum::B(b) => Sum::B(b.deep_model()),
         }
     }
 }

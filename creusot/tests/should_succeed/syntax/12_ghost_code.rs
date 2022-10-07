@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{logic::Seq, *};
 
 pub fn ghost_arg(g: Ghost<u32>) {
     let _x: Ghost<u32> = ghost! { *g };

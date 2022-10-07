@@ -2,6 +2,8 @@ use crate as creusot_contracts;
 use crate::Resolve;
 use creusot_contracts_proc::*;
 
+/// `FnOnceSpec` is an extension trait for the `FnOnce` trait, used for
+/// adding a specification to closures. It should not be used directly.
 #[rustc_diagnostic_item = "fn_once_spec"]
 pub trait FnOnceSpec<Args>: FnOnce<Args> {
     #[predicate]
@@ -11,6 +13,8 @@ pub trait FnOnceSpec<Args>: FnOnce<Args> {
     fn postcondition_once(self, a: Args, res: Self::Output) -> bool;
 }
 
+/// `FnMutSpec` is an extension trait for the `FnMut` trait, used for
+/// adding a specification to closures. It should not be used directly.
 #[rustc_diagnostic_item = "fn_mut_spec"]
 pub trait FnMutSpec<Args>: FnMut<Args> + FnOnceSpec<Args> {
     #[predicate]
@@ -23,6 +27,8 @@ pub trait FnMutSpec<Args>: FnMut<Args> + FnOnceSpec<Args> {
         Self: Sized;
 }
 
+/// `FnSpec` is an extension trait for the `Fn` trait, used for
+/// adding a specification to closures. It should not be used directly.
 #[rustc_diagnostic_item = "fn_spec"]
 pub trait FnSpec<Args>: Fn<Args> + FnMutSpec<Args> {
     #[predicate]
@@ -64,7 +70,9 @@ impl<Args, F: FnMut<Args>> FnMutSpec<Args> for F {
     }
 
     #[law]
-    fn fn_mut_once(self, _: Args, _: Self::Output) {}
+    #[trusted]
+    #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && (^s).resolve())]
+    fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 
 impl<Args, F: Fn<Args>> FnSpec<Args> for F {
@@ -76,15 +84,21 @@ impl<Args, F: Fn<Args>> FnSpec<Args> for F {
     }
 
     #[law]
-    fn fn_mut(&mut self, _: Args, _: Self::Output) {}
+    #[trusted]
+    #[ensures(self.postcondition_mut(args, res) == self.resolve() && self.postcondition(args, res))]
+    fn fn_mut(&mut self, args: Args, res: Self::Output) {}
 
     #[law]
-    fn fn_once(self, _: Args, _: Self::Output) {}
+    #[trusted]
+    #[ensures(self.postcondition_once(args, res) == self.resolve() && self.postcondition(args, res))]
+    fn fn_once(self, args: Args, res: Self::Output) {}
 }
 
 extern_spec! {
     mod std {
         mod ops {
+            // FIXME: we should not need the `Self :` bounds, because they are implied by the main trait bound.
+            // But if we remove them, some test fail.
             trait FnOnce<Args> where Self : FnOnceSpec<Args> {
                 #[requires(self.precondition(arg))]
                 #[ensures(self.postcondition_once(arg, result))]

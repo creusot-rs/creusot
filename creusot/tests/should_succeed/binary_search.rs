@@ -8,7 +8,7 @@
 // 3. Lists are restricted to size < 1,000,000 this is because of (1), since there is no upper
 //    bound on the size of a list.
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{logic::Int, *};
 
 pub enum List<T> {
     Cons(T, Box<List<T>>),

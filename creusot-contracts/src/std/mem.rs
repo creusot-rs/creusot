@@ -1,5 +1,5 @@
 use crate as creusot_contracts;
-use crate::std::default::DefaultSpec;
+use crate::std::default::Default;
 use creusot_contracts_proc::*;
 
 extern_spec! {
@@ -14,8 +14,8 @@ extern_spec! {
             fn swap<T>(x: &mut T, y: &mut T);
 
             #[ensures(result == *dest)]
-            #[ensures(^dest == T::default_log())]
-            fn take<T: DefaultSpec>(dest: &mut T) -> T;
+            #[ensures((^dest).is_default())]
+            fn take<T: Default>(dest: &mut T) -> T;
         }
     }
 }

@@ -1,6 +1,5 @@
-use super::model::*;
 use crate as creusot_contracts;
-use crate::{logic::*, macros::*};
+use crate::{macros::*, DeepModel, ShallowModel};
 
 use std::ops::*;
 
@@ -9,10 +8,7 @@ use std::ops::*;
     rustc_diagnostic_item = "creusot_int",
     creusot::builtins = "mach.int.Int.int"
 )]
-#[derive(std::clone::Clone, Copy)]
 pub struct Int(*mut ());
-
-impl WellFounded for Int {}
 
 impl Int {
     #[trusted]
@@ -62,13 +58,21 @@ impl Int {
 
 macro_rules! mach_int {
     ($t:ty, $ty_nm:expr) => {
-        impl Model for $t {
-            type ModelTy = Int;
+        impl ShallowModel for $t {
+            type ShallowModelTy = Int;
             #[logic]
             #[trusted]
             #[creusot::builtins = concat!($ty_nm, ".to_int")]
-            fn model(self) -> Self::ModelTy {
-                absurd
+            fn shallow_model(self) -> Self::ShallowModelTy {
+                pearlite! { absurd }
+            }
+        }
+
+        impl DeepModel for $t {
+            type DeepModelTy = Int;
+            #[logic]
+            fn deep_model(self) -> Self::DeepModelTy {
+                pearlite! { @self }
             }
         }
     };

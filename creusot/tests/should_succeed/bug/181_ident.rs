@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{logic::Int, *};
 
 // Bug #181
 #[logic]

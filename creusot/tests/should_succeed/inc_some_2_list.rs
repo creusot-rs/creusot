@@ -1,11 +1,14 @@
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{logic::Int, *};
 
 pub enum List {
     Cons(u32, Box<List>),
     Nil,
 }
 use List::*;
+
+// FIXME: this should go away, we have not defined any order relation on List
+#[trusted]
 impl WellFounded for List {}
 
 #[trusted]
@@ -16,9 +19,11 @@ fn random() -> bool {
 impl List {
     #[logic]
     fn sum(self) -> Int {
-        match self {
-            Cons(a, l) => a.model() + l.sum(),
-            Nil => 0,
+        pearlite! {
+            match self {
+                Cons(a, l) => @a + l.sum(),
+                Nil => 0,
+            }
         }
     }
 

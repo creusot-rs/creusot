@@ -1,5 +1,5 @@
 use crate as creusot_contracts;
-use crate::{std::default::DefaultSpec, Resolve};
+use crate::{std::default::Default, Resolve};
 use creusot_contracts_proc::*;
 
 extern_spec! {
@@ -51,11 +51,11 @@ extern_spec! {
                 #[ensures(result == *self && ^self == Some(value))]
                 fn replace(&mut self, value: T) -> Option<T>;
 
-                #[ensures(self == None ==> result == T::default_log())]
+                #[ensures(self == None ==> result.is_default())]
                 #[ensures(self == None || self == Some(result))]
                 fn unwrap_or_default(self) -> T
                 where
-                    T: DefaultSpec;
+                    T: Default;
             }
 
             impl<T> Option<&T> {
@@ -101,9 +101,9 @@ extern_spec! {
     }
 }
 
-impl<T> DefaultSpec for Option<T> {
-    #[logic]
-    fn default_log() -> Option<T> {
-        None
+impl<T> Default for Option<T> {
+    #[predicate]
+    fn is_default(self) -> bool {
+        pearlite! { self == None }
     }
 }
