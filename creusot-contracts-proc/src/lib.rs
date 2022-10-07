@@ -9,7 +9,7 @@ use std::iter;
 use syn::{
     parse::{Parse, Result},
     spanned::Spanned,
-    token::{Brace, Comma},
+    token::Brace,
     *,
 };
 
@@ -136,37 +136,44 @@ impl Parse for ContractItem {
     }
 }
 
+fn req_body(p: &Term) -> TokenStream {
+    pretyping::encode_term(p).unwrap_or_else(|e| {
+        return e.into_tokens();
+    })
+}
+
+fn spec_attrs(tag: &Ident) -> TokenStream {
+    let name_tag = format!("{}", quote! { #tag });
+    quote! {
+         #[creusot::no_translate]
+         #[creusot::item=#name_tag]
+         #[creusot::decl::spec]
+    }
+}
+
 // Generate a token stream for the item representing a specific
 // `requires` or `ensures`
 fn fn_spec_item(tag: Ident, result: Option<FnArg>, p: Term) -> TokenStream {
-    let req_body = pretyping::encode_term(&p).unwrap_or_else(|e| {
-        return e.into_tokens();
-    });
-    let name_tag = format!("{}", quote! { #tag });
+    let req_body = req_body(&p);
+    let attrs = spec_attrs(&tag);
 
     quote! {
         #[allow(unused_must_use)]
         let _ =
-            #[creusot::no_translate]
-            #[creusot::item=#name_tag]
-            #[creusot::decl::spec]
+            #attrs
             |#result|{ #req_body }
         ;
     }
 }
 
 fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
-    let req_body = pretyping::encode_term(&p).unwrap_or_else(|e| {
-        return e.into_tokens();
-    });
-    let name_tag = format!("{}", quote! { #tag });
+    let req_body = req_body(&p);
+    let attrs = spec_attrs(&tag);
     sig.ident = tag;
     sig.output = parse_quote! { -> bool };
 
     quote! {
-        #[creusot::no_translate]
-        #[creusot::item=#name_tag]
-        #[creusot::decl::spec]
+        #attrs
         #sig { #req_body }
     }
 }
@@ -199,47 +206,13 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
               #s
             })
         }
-        ContractItem::Closure(clos) => {
-            let req_body = pretyping::encode_term(&term).unwrap();
-
-            let clos_name = Ident::new("closure", Span::mixed_site());
-            let mut inputs = clos.inputs.clone();
-
-            inputs.iter_mut().enumerate().for_each(|(ix, p)| match p {
-                Pat::Wild(_) => {
-                    let id = Ident::new(&format!("bndr{}", ix), Span::mixed_site());
-                    *p = parse_quote! { #id };
-                }
-                _ => (),
-            });
-            let mut args = inputs.clone();
-            // Remove any type ascriptions
-            args.iter_mut().for_each(|p| match p {
-                Pat::Type(PatType { pat, .. }) => {
-                    let child = (**pat).clone();
-                    *p = child
-                }
-                _ => (),
-            });
-
-            if !args.trailing_punct() && !args.is_empty() {
-                args.push_punct(Comma::default())
-            }
-
+        ContractItem::Closure(mut clos) => {
+            let requires_tokens = fn_spec_item(req_name, None, term);
+            let body = &clos.body;
+            *clos.body = parse_quote!({let res = #body; #requires_tokens res});
             TS1::from(quote! {
-                {
-                    let #clos_name = #[creusot::spec::requires=#name_tag] #clos;
-                    #[allow(unused_must_use)]
-                    let _ =
-                        #[creusot::no_translate]
-                        #[creusot::item=#name_tag]
-                        #[creusot::decl::spec]
-                        |#inputs| {
-                            creusot_contracts::stubs::dummy_call(#clos_name, (#args));
-                            #req_body
-                        };
-                    #clos_name
-                }
+              #[creusot::spec::requires=#name_tag]
+              #clos
             })
         }
     }
@@ -283,50 +256,21 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
               #s
             })
         }
-        ContractItem::Closure(clos) => {
-            let req_body = pretyping::encode_term(&term).unwrap();
-            let clos_name = Ident::new("closure", Span::mixed_site());
-            let mut inputs = clos.inputs.clone();
-
-            inputs.iter_mut().enumerate().for_each(|(ix, p)| match p {
-                Pat::Wild(_) => {
-                    let id = Ident::new(&format!("bndr{}", ix), Span::mixed_site());
-                    *p = parse_quote! { #id };
-                }
-                _ => (),
-            });
-
-            let mut args = inputs.clone();
-            // Remove any type ascriptions
-            args.iter_mut().for_each(|p| match p {
-                Pat::Type(PatType { pat, .. }) => {
-                    let child = (**pat).clone();
-                    *p = child
-                }
-                _ => (),
-            });
-
-            inputs.push(parse_quote! { result });
-
-            if !args.trailing_punct() && !args.is_empty() {
-                args.push_punct(Comma::default())
-            }
-
+        ContractItem::Closure(mut clos) => {
+            let req_body = req_body(&term);
+            let attrs = spec_attrs(&ens_name);
+            let body = &clos.body;
+            *clos.body = parse_quote!({
+                let res = #body;
+                #[allow(unused_must_use)]
+                let _ =
+                    #attrs
+                    |result| {creusot_contracts::stubs::closure_result(res, result); #req_body }
+                ;
+                res});
             TS1::from(quote! {
-                {
-                    let #clos_name = #[creusot::spec::ensures=#name_tag] #clos;
-                    #[allow(unused_must_use)]
-                    let _ =
-                        #[creusot::no_translate]
-                        #[creusot::item=#name_tag]
-                        #[creusot::decl::spec]
-                        |#inputs| {
-                            creusot_contracts::stubs::dummy_call(#clos_name, (#args));
-                            creusot_contracts::stubs::closure_result(#clos_name, result);
-                            #req_body
-                        };
-                    #clos_name
-                }
+              #[creusot::spec::ensures=#name_tag]
+              #clos
             })
         }
     }

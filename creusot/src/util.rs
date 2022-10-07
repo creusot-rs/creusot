@@ -19,7 +19,11 @@ use creusot_rustc::{
 };
 use indexmap::IndexMap;
 use rustc_middle::ty::{ClosureKind, RegionKind};
-use std::{collections::HashSet, iter};
+use std::{
+    collections::HashSet,
+    fmt::{Display, Formatter},
+    iter,
+};
 use why3::{
     declaration,
     declaration::{LetKind, Signature, ValDecl},
@@ -103,6 +107,14 @@ pub(crate) fn closure_owner(tcx: TyCtxt, mut def_id: DefId) -> DefId {
     }
 
     def_id
+}
+
+pub(crate) fn param_def_id(tcx: TyCtxt, def_id: LocalDefId) -> LocalDefId {
+    if is_spec(tcx, def_id.to_def_id()) && tcx.is_closure(def_id.to_def_id()) {
+        tcx.parent(def_id.to_def_id()).expect_local()
+    } else {
+        def_id
+    }
 }
 
 pub(crate) fn should_translate(tcx: TyCtxt, mut def_id: DefId) -> bool {
@@ -400,7 +412,7 @@ pub(crate) fn sig_to_why3<'tcx>(
             .map(|(ix, (id, sp, ty))| {
                 let ty = translation::ty::translate_ty(ctx, names, span, ty);
                 let id = if id.is_empty() {
-                    format!("_{}'", ix + 1).into()
+                    format!("{}", AnonymousParamName(ix)).into()
                 } else if id == Symbol::intern("result") {
                     ctx.crash_and_error(sp, "`result` is not allowed as a parameter name");
                 } else {
@@ -502,7 +514,7 @@ pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {
     }
 }
 
-use creusot_rustc::smir::mir::Field;
+use creusot_rustc::{smir::mir::Field, span::def_id::LocalDefId};
 
 pub(crate) struct ClosureSubst<'tcx> {
     def_id: DefId,
@@ -677,4 +689,17 @@ pub(crate) fn closure_capture_subst<'tcx>(
         captures.into_iter().enumerate().map(|(ix, (nm, ty))| (*nm, (ty, ix.into()))).collect();
     let TyKind::Closure(_, substs) = tcx.type_of(def_id).kind() else { unreachable!() };
     ClosureSubst { self_, map: subst, post: is_post, def_id, bound: Default::default(), substs }
+}
+
+pub(crate) struct AnonymousParamName(pub(crate) usize);
+
+impl Display for AnonymousParamName {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "_{}'", self.0 + 1)
+    }
+}
+
+pub(crate) fn anonymous_param_symbol(idx: usize) -> Symbol {
+    let name = format!("{}", AnonymousParamName(idx)); // Allocate on stack?
+    Symbol::intern(&name)
 }
