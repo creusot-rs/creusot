@@ -48,7 +48,8 @@ pub enum Expr<'tcx> {
     UnaryOp(UnOp, Box<Expr<'tcx>>),
     Constructor(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
     Call(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
-    Constant(Literal),
+    // Get rid and replace with a Term<'tcx>?
+    Constant(Literal<'tcx>),
     Cast(Box<Expr<'tcx>>, Ty<'tcx>, Ty<'tcx>),
     Tuple(Vec<Expr<'tcx>>),
     Span(Span, Box<Expr<'tcx>>),

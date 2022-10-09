@@ -413,7 +413,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => Expr::Place(*pl),
             Operand::Constant(c) => {
-                crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
+                crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
             }
         }
     }

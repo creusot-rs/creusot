@@ -69,6 +69,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                 let c = lower_literal(self.ctx, self.names, l);
                 c
             }
+            // FIXME: this is a weird dance.
             TermKind::Item(id, subst) => {
                 let method = (id, subst);
                 debug!("resolved_method={:?}", method);
@@ -83,7 +84,6 @@ impl<'tcx> Lower<'_, 'tcx> {
 
                     crate::constant::from_ty_const(
                         self.ctx,
-                        self.names,
                         constant,
                         self.param_env,
                         creusot_rustc::span::DUMMY_SP,
@@ -402,7 +402,7 @@ use creusot_rustc::{
 pub(crate) fn lower_literal<'tcx>(
     _ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
-    lit: Literal,
+    lit: Literal<'tcx>,
 ) -> Exp {
     match lit {
         Literal::Integer(i) => Constant::Int(i, None).into(),
@@ -422,7 +422,10 @@ pub(crate) fn lower_literal<'tcx>(
                 Constant::const_false().into()
             }
         }
-        Literal::Function => Exp::Tuple(Vec::new()),
+        Literal::Function(id, subst) => {
+            names.insert(id, subst);
+            Exp::Tuple(Vec::new())
+        }
         Literal::Float(f) => Constant::Float(f).into(),
         Literal::ZST => Exp::Tuple(Vec::new()),
         Literal::String(string) => Constant::String(string).into(),
