@@ -54,7 +54,7 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
     } else {
         body_module(ctx, def_id)
     };
-    let proof_modl = proof_module(ctx, def_id);
+    let proof_modl = if def_id.is_local() { proof_module(ctx, def_id) } else { None };
     (stub_module(ctx, def_id), body_modl, proof_modl, has_axioms, deps)
 }
 
