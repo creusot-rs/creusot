@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Int, *};
+use creusot_contracts::{logic::Int, std::iter::*, *};
 
 #[requires((@slice).len() < 1000)]
 #[ensures(@result == (@slice).len())]
@@ -30,4 +30,11 @@ pub fn all_zero(v: &mut Vec<usize>) {
     for x in v.iter_mut() {
         *x = 0;
     }
+}
+
+#[requires(iter.invariant())]
+pub fn skip_take<I: Iterator>(iter: I, n: usize) {
+    let res = iter.take(n).skip(n).next();
+
+    proof_assert! { res == None };
 }
