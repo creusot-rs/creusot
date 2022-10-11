@@ -47,6 +47,7 @@ pub enum Expr<'tcx> {
     BinOp(BinOp, Ty<'tcx>, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
     UnaryOp(UnOp, Box<Expr<'tcx>>),
     Constructor(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
+    // Should this be a statement?
     Call(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
     // Get rid and replace with a Term<'tcx>?
     Constant(Literal<'tcx>),

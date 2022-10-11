@@ -1,6 +1,6 @@
 use super::Iterator;
 use crate as creusot_contracts;
-use crate::{
+use crate::{Resolve,
     logic::{Int, Seq},
     std::ops::*,
     Ghost, Invariant,
@@ -11,6 +11,14 @@ pub struct MapInv<I, A, F> {
     iter: I,
     func: F,
     produced: Ghost<Seq<A>>,
+}
+
+#[trusted]
+impl<I, A, F> Resolve for MapInv<I, A, F> {
+    #[predicate]
+    fn resolve(self) -> bool {
+        self.iter.resolve() && self.func.resolve()
+    }
 }
 
 pub trait IteratorExt: Iterator + Sized {
@@ -42,8 +50,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
     fn completed(&mut self) -> bool {
         pearlite! {
             *(^self).produced == Seq::EMPTY &&
-            (exists<iter: &mut I> *iter == self.iter && ^iter == (^self).iter && iter.completed()) &&
-            self.func == (^self).func
+            self.iter.completed() && self.func == (^self).func
         }
     }
 
