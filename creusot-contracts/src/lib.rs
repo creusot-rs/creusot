@@ -5,6 +5,7 @@
     feature(slice_take)
 )]
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns, box_syntax))]
+#![feature(step_trait)]
 
 #[cfg(feature = "contracts")]
 mod macros {

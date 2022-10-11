@@ -31,26 +31,20 @@ pub fn selection_sort<T: Ord + DeepModel>(v: &mut Vec<T>)
 where
     T::DeepModelTy: OrdLogic,
 {
-    let mut i: usize = 0;
     let old_v = ghost! { v };
     #[invariant(proph_const, ^v == ^old_v.inner())]
     #[invariant(permutation, (@v).permutation_of(@old_v))]
-    #[invariant(i_bound, @i <= (@v).len())]
-    #[invariant(sorted, sorted_range(v.deep_model(), 0, @i))]
-    #[invariant(partition, partition(v.deep_model(), @i))]
-    while i < v.len() {
+    #[invariant(sorted, sorted_range(v.deep_model(), 0, produced.len()))]
+    #[invariant(partition, partition(v.deep_model(), produced.len()))]
+    for i in 0..v.len() {
         let mut min = i;
-        let mut j = i + 1;
-        #[invariant(min_is_min, forall<k: Int> @i <= k && k < @j ==> v.deep_model()[@min] <= v.deep_model()[k])]
-        #[invariant(j_bound, @i <= @j && @j <= (@v).len())]
-        #[invariant(min_bound, @i <= @min && @min < @j)]
-        while j < v.len() {
+        #[invariant(min_is_min, forall<k: Int> @i <= k && k < produced.len() + @i + 1 ==> v.deep_model()[@min] <= v.deep_model()[k])]
+        #[invariant(min_bound, @i <= @min && @min < produced.len() + @i + 1)]
+        for j in (i + 1)..v.len() {
             if v[j] < v[min] {
                 min = j;
             }
-            j += 1;
         }
         v.swap(i, min);
-        i += 1;
     }
 }
