@@ -39,45 +39,6 @@ pub fn skip_take<I: Iterator>(iter: I, n: usize) {
     proof_assert! { res == None };
 }
 
-trait FromIterSpec<A>: FromIterator<A> {
-    #[predicate]
-    fn from_iter_logic(prod: Seq<A>, res: Self) -> bool;
-}
-
-impl<T> FromIterSpec<T> for Vec<T> {
-    #[predicate]
-    fn from_iter_logic(prod: Seq<T>, res: Self) -> bool {
-        pearlite! { prod == @res }
-    }
-}
-
-use logic::Seq;
-use std::iter::FromIterator;
-
-extern_spec! {
-    mod std {
-        mod iter {
-            trait FromIterator<A>
-                where Self: FromIterSpec<A> {
-
-            // TODO: Investigate why Self_ needed
-            #[ensures(Self_::from_iter_logic(Seq::EMPTY, result))]
-            fn from_iter<T>(iter: T) -> Self
-                where
-                    T: IntoIterator<Item = A>;
-            }
-            trait Iterator
-                where Self : Invariant {
-                #[ensures(exists<done_ : &mut Self_, prod: Seq<_>> (^done_).resolve() && done_.completed() && self.produces(prod, *done_) &&
-                    B::from_iter_logic(prod, result)
-                )]
-                fn collect<B>(self) -> B
-                    where B : FromIterSpec<Self::Item>;
-            }
-        }
-    }
-}
-
 pub fn counter(v: Vec<u32>) {
     let mut cnt = 0;
 

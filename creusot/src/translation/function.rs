@@ -33,7 +33,6 @@ use creusot_rustc::{
     transform::{remove_false_edges::*, simplify::*},
 };
 use indexmap::IndexMap;
-use rustc_middle::ty::subst::InternalSubsts;
 use std::{collections::BTreeMap, rc::Rc};
 use why3::{declaration::*, exp::*, mlcfg::*, ty::Type, Ident};
 

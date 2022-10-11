@@ -4,7 +4,7 @@ use crate::{
     Invariant, Resolve,
 };
 use creusot_contracts_proc::*;
-use std::iter::{Skip, Take};
+use std::iter::{FromIterator, Skip, Take};
 
 mod map_inv;
 pub use map_inv::{IteratorExt, MapInv};
@@ -31,6 +31,11 @@ pub trait Iterator: std::iter::Iterator + Invariant {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 }
 
+pub trait FromIteratorSpec<A>: std::iter::FromIterator<A> {
+    #[predicate]
+    fn from_iter_logic(prod: Seq<A>, res: Self) -> bool;
+}
+
 extern_spec! {
     mod std {
         mod iter {
@@ -54,6 +59,21 @@ extern_spec! {
                 #[ensures(result.invariant())]
                 #[ensures(result.iter() == self && result.n() == @n)]
                 fn take(self, n: usize) -> Take<Self>;
+
+                #[ensures(exists<done_ : &mut Self_, prod: Seq<_>> (^done_).resolve() && done_.completed() &&
+                    self.produces(prod, *done_) && B::from_iter_logic(prod, result))]
+                fn collect<B>(self) -> B
+                    where B : FromIteratorSpec<Self::Item>;
+            }
+
+            trait FromIterator<A>
+                where Self: FromIteratorSpec<A> {
+
+            // TODO: Investigate why Self_ needed
+            #[ensures(Self_::from_iter_logic(Seq::EMPTY, result))]
+            fn from_iter<T>(iter: T) -> Self
+                where
+                    T: IntoIterator<Item = A>;
             }
         }
     }

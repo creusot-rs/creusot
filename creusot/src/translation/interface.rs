@@ -1,20 +1,16 @@
-use std::borrow::Cow;
-
-use why3::{
-    declaration::{Contract, Decl, Module},
-    Exp, Ident,
+use super::{
+    function::{closure_contract, closure_generic_decls},
+    ty::{closure_accessors, translate_closure_ty},
 };
-
 use crate::{backend::logic::spec_axiom, clone_map::CloneMap, ctx::*, util};
-
 use creusot_rustc::{
     hir::def_id::DefId,
     middle::ty::{ClosureKind, TyKind},
 };
-
-use super::{
-    function::{closure_contract, closure_generic_decls, closure_unnest},
-    ty::{closure_accessors, translate_closure_ty},
+use std::borrow::Cow;
+use why3::{
+    declaration::{Contract, Decl, Module},
+    Exp, Ident,
 };
 
 pub(crate) fn interface_for<'tcx>(
