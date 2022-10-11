@@ -50,14 +50,12 @@ pub fn collect<I: Iterator>(iter: I) -> Vec<I::Item> {
     res
 }
 
-#[requires((@v1).len() == 5)]
-#[requires((@v2).len() == 5)]
-#[requires(forall<i : _> 0 <= i && i < (@v2).len() ==> @(@v2)[i] == i)]
 pub fn extend_index(mut v1: Vec<u32>, v2: Vec<u32>) {
+    let oldv1 = ghost! { *v1 };
+    let oldv2 = ghost! { *v2 };
     extend(&mut v1, v2.into_iter());
 
-    proof_assert! { (@v1).len() == 10 };
-    proof_assert! { @(@v1)[5] == 0 };
+    proof_assert! { (@v1).ext_eq((@oldv1).concat(@oldv2)) };
 }
 
 #[requires(forall<prod : Seq<u32>, fin: I> iter.produces(prod, fin) ==> forall<i : _> 0 <= i && i < prod.len() ==> @prod[i] == i)]

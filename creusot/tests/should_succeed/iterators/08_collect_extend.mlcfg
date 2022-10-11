@@ -1151,6 +1151,56 @@ module Alloc_Vec_Impl19_IntoIter
     ensures { Invariant0.invariant' result }
     
 end
+module CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type
+  type t
+  use seq.Seq
+  type shallowModelTy  =
+    Seq.seq t
+end
+module Alloc_Vec_Impl10_Deref_Interface
+  type t
+  type a
+  use prelude.Borrow
+  use prelude.Slice
+  use seq.Seq
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
+    type t = t,
+    type a = a
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
+    type t = t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel1 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a,
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy
+  clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
+    type t = seq t,
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+  val deref [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : seq t
+    ensures { ShallowModel0.shallow_model result = ShallowModel1.shallow_model self }
+    
+end
+module Alloc_Vec_Impl10_Deref
+  type t
+  type a
+  use prelude.Borrow
+  use prelude.Slice
+  use seq.Seq
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
+    type t = t,
+    type a = a
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
+    type t = t
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Model_Impl1_ShallowModel_Interface as ShallowModel1 with
+    type t = Alloc_Vec_Vec_Type.t_vec t a,
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy
+  clone CreusotContracts_Model_Impl1_ShallowModel_Interface as ShallowModel0 with
+    type t = seq t,
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+  val deref [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : seq t
+    ensures { ShallowModel0.shallow_model result = ShallowModel1.shallow_model self }
+    
+end
 module CreusotContracts_Resolve_Impl2_Resolve_Stub
   type t
   predicate resolve (self : t)
@@ -1242,6 +1292,38 @@ module CreusotContracts_Std1_Vec_Impl3_Produces
     ensures { result = produces self visited rhs }
     
 end
+module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub
+  type t
+  use seq.Seq
+  use mach.int.Int
+  use prelude.UIntSize
+  use mach.int.UInt64
+  use prelude.Slice
+  function shallow_model (self : seq t) : Seq.seq t
+end
+module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface
+  type t
+  use seq.Seq
+  use mach.int.Int
+  use prelude.UIntSize
+  use mach.int.UInt64
+  use prelude.Slice
+  function shallow_model (self : seq t) : Seq.seq t
+  axiom shallow_model_spec : forall self : seq t . shallow_model self = Slice.id self && Seq.length (shallow_model self) <= UInt64.to_int (18446744073709551615 : usize)
+end
+module CreusotContracts_Std1_Slice_Impl0_ShallowModel
+  type t
+  use seq.Seq
+  use mach.int.Int
+  use prelude.UIntSize
+  use mach.int.UInt64
+  use prelude.Slice
+  function shallow_model (self : seq t) : Seq.seq t
+  val shallow_model (self : seq t) : Seq.seq t
+    ensures { result = shallow_model self }
+    
+  axiom shallow_model_spec : forall self : seq t . shallow_model self = Slice.id self && Seq.length (shallow_model self) <= UInt64.to_int (18446744073709551615 : usize)
+end
 module CreusotContracts_Std1_Vec_Impl3_ProducesRefl_Stub
   type t
   type a
@@ -1321,49 +1403,39 @@ module CreusotContracts_Std1_Vec_Impl3_ProducesTrans
   axiom produces_trans_spec : forall a : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a, ab : Seq.seq t, b : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a, bc : Seq.seq t, c : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter t a . Produces0.produces a ab b -> Produces0.produces b bc c -> Produces0.produces a (Seq.(++) ab bc) c
 end
 module C08CollectExtend_ExtendIndex_Interface
-  use seq.Seq
   use mach.int.Int
   use mach.int.UInt32
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
-    type t = uint32,
-    type a = Alloc_Alloc_Global_Type.t_global,
-    axiom .
   val extend_index [@cfg:stackify] (v1 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (v2 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : ()
-    requires {[#"../08_collect_extend.rs" 53 11 53 27] Seq.length (ShallowModel0.shallow_model v1) = 5}
-    requires {[#"../08_collect_extend.rs" 54 11 54 27] Seq.length (ShallowModel0.shallow_model v2) = 5}
-    requires {[#"../08_collect_extend.rs" 55 0 55 71] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model v2) -> UInt32.to_int (Seq.get (ShallowModel0.shallow_model v2) i) = i}
     
 end
 module C08CollectExtend_ExtendIndex
-  use seq.Seq
   use mach.int.Int
   use mach.int.UInt32
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel0 with
-    type t = uint32,
-    type a = Alloc_Alloc_Global_Type.t_global,
-    axiom .
+  use prelude.Ghost
+  use prelude.Slice
+  use seq.Seq
   use prelude.Borrow
   use Alloc_Vec_IntoIter_IntoIter_Type as Alloc_Vec_IntoIter_IntoIter_Type
-  clone CreusotContracts_Std1_Vec_Impl4_ShallowModelTy_Type as ShallowModelTy1 with
+  clone CreusotContracts_Std1_Vec_Impl4_ShallowModelTy_Type as ShallowModelTy2 with
     type t = uint32,
     type a = Alloc_Alloc_Global_Type.t_global
-  clone CreusotContracts_Std1_Vec_Impl4_ShallowModel as ShallowModel1 with
+  clone CreusotContracts_Std1_Vec_Impl4_ShallowModel as ShallowModel4 with
     type t = uint32,
     type a = Alloc_Alloc_Global_Type.t_global
-  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel3 with
+  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel7 with
     type t = Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter uint32 (Alloc_Alloc_Global_Type.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy2.shallowModelTy,
+    function ShallowModel0.shallow_model = ShallowModel4.shallow_model
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
     type t = Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter uint32 (Alloc_Alloc_Global_Type.t_global)
   clone CreusotContracts_Std1_Vec_Impl3_Produces as Produces0 with
     type t = uint32,
     type a = Alloc_Alloc_Global_Type.t_global,
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+    function ShallowModel0.shallow_model = ShallowModel4.shallow_model
   clone CreusotContracts_Std1_Vec_Impl3_ProducesTrans as ProducesTrans0 with
     type t = uint32,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -1374,23 +1446,44 @@ module C08CollectExtend_ExtendIndex
     type a = Alloc_Alloc_Global_Type.t_global,
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel6 with
+    type t = uint32,
+    axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel0 with
+    type t = uint32,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    axiom .
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
     type t = uint32,
     type a = Alloc_Alloc_Global_Type.t_global
-  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel2 with
+  clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel5 with
     type t = Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Std1_Vec_Impl3_Completed as Completed0 with
     type t = uint32,
     type a = Alloc_Alloc_Global_Type.t_global,
     predicate Resolve0.resolve = Resolve3.resolve,
-    function ShallowModel0.shallow_model = ShallowModel3.shallow_model
+    function ShallowModel0.shallow_model = ShallowModel7.shallow_model
   clone CreusotContracts_Std1_Vec_Impl2_Invariant as Invariant0 with
     type t = uint32,
     type a = Alloc_Alloc_Global_Type.t_global
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
     type t = uint32
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
+    type t = uint32
+  clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel3 with
+    type t = Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global),
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel2 with
+    type t = seq uint32,
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
+    function ShallowModel0.shallow_model = ShallowModel6.shallow_model
+  clone CreusotContracts_Ghost_Impl1_ShallowModel as ShallowModel1 with
+    type t = seq uint32,
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
+    function ShallowModel0.shallow_model = ShallowModel2.shallow_model
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)
   clone C08CollectExtend_Extend_Interface as Extend0 with
@@ -1399,81 +1492,82 @@ module C08CollectExtend_ExtendIndex
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
-    function ShallowModel1.shallow_model = ShallowModel2.shallow_model
+    function ShallowModel1.shallow_model = ShallowModel5.shallow_model
   clone Alloc_Vec_Impl19_IntoIter_Interface as IntoIter1 with
     type t = uint32,
     type a = Alloc_Alloc_Global_Type.t_global,
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel0.shallow_model = ShallowModel4.shallow_model,
     function ShallowModel1.shallow_model = ShallowModel0.shallow_model,
     predicate Invariant0.invariant' = Invariant0.invariant'
   clone CreusotContracts_Std1_Vec_Impl6_Resolve as Resolve0 with
     type t = uint32,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     predicate Resolve0.resolve = Resolve2.resolve
-  let rec cfg extend_index [@cfg:stackify] [#"../08_collect_extend.rs" 56 0 56 51] (v1 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (v2 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : ()
-    requires {[#"../08_collect_extend.rs" 53 11 53 27] Seq.length (ShallowModel0.shallow_model v1) = 5}
-    requires {[#"../08_collect_extend.rs" 54 11 54 27] Seq.length (ShallowModel0.shallow_model v2) = 5}
-    requires {[#"../08_collect_extend.rs" 55 0 55 71] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model v2) -> UInt32.to_int (Seq.get (ShallowModel0.shallow_model v2) i) = i}
+  clone Alloc_Vec_Impl10_Deref_Interface as Deref0 with
+    type t = uint32,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel3.shallow_model
+  let rec cfg extend_index [@cfg:stackify] [#"../08_collect_extend.rs" 53 0 53 51] (v1 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (v2 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) : ()
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var v1_1 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
   var v2_2 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
+  var oldv1_3 : Ghost.ghost_ty (seq uint32);
   var _6 : ();
-  var _7 : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global));
-  var _8 : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global));
-  var _9 : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter uint32 (Alloc_Alloc_Global_Type.t_global);
-  var _10 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
+  var oldv2_7 : Ghost.ghost_ty (seq uint32);
+  var _10 : ();
   var _11 : ();
-  var _13 : ();
+  var _12 : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global));
+  var _13 : borrowed (Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global));
+  var _14 : Alloc_Vec_IntoIter_IntoIter_Type.t_intoiter uint32 (Alloc_Alloc_Global_Type.t_global);
+  var _15 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
+  var _16 : ();
   {
     v1_1 <- v1;
     v2_2 <- v2;
     goto BB0
   }
   BB0 {
+    _6 <- ();
+    oldv1_3 <- ([#"../08_collect_extend.rs" 54 16 54 30] Ghost.new (Deref0.deref v1_1));
     goto BB1
   }
   BB1 {
+    _10 <- ();
+    oldv2_7 <- ([#"../08_collect_extend.rs" 55 16 55 30] Ghost.new (Deref0.deref v2_2));
     goto BB2
   }
   BB2 {
+    _13 <- borrow_mut v1_1;
+    v1_1 <-  ^ _13;
+    _12 <- borrow_mut ( * _13);
+    _13 <- { _13 with current = ( ^ _12) };
+    assume { Resolve0.resolve _15 };
+    _15 <- v2_2;
+    v2_2 <- any Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
+    _14 <- ([#"../08_collect_extend.rs" 56 20 56 34] IntoIter1.into_iter _15);
     goto BB3
   }
   BB3 {
-    _8 <- borrow_mut v1_1;
-    v1_1 <-  ^ _8;
-    _7 <- borrow_mut ( * _8);
-    _8 <- { _8 with current = ( ^ _7) };
-    assume { Resolve0.resolve _10 };
-    _10 <- v2_2;
-    v2_2 <- any Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
-    _9 <- ([#"../08_collect_extend.rs" 57 20 57 34] IntoIter1.into_iter _10);
+    _11 <- ([#"../08_collect_extend.rs" 56 4 56 35] Extend0.extend _12 _14);
     goto BB4
   }
   BB4 {
-    _6 <- ([#"../08_collect_extend.rs" 57 4 57 35] Extend0.extend _7 _9);
+    assume { Resolve1.resolve _13 };
+    assert { [#"../08_collect_extend.rs" 58 20 58 57] Seq.(==) (ShallowModel0.shallow_model v1_1) (Seq.(++) (ShallowModel1.shallow_model oldv1_3) (ShallowModel1.shallow_model oldv2_7)) };
     goto BB5
   }
   BB5 {
-    assume { Resolve1.resolve _8 };
-    assert { [#"../08_collect_extend.rs" 59 20 59 37] Seq.length (ShallowModel0.shallow_model v1_1) = 10 };
+    _16 <- ();
+    _0 <- ();
     goto BB6
   }
   BB6 {
-    _11 <- ();
-    assert { [#"../08_collect_extend.rs" 60 20 60 34] UInt32.to_int (Seq.get (ShallowModel0.shallow_model v1_1) 5) = 0 };
     goto BB7
   }
   BB7 {
-    _13 <- ();
-    _0 <- ();
-    goto BB8
-  }
-  BB8 {
-    goto BB9
-  }
-  BB9 {
     assume { Resolve0.resolve v1_1 };
     return _0
   }
@@ -1488,7 +1582,7 @@ module C08CollectExtend_CollectExample_Interface
     type self = i,
     type Item0.item = uint32
   val collect_example [@cfg:stackify] (iter : i) : ()
-    requires {[#"../08_collect_extend.rs" 63 0 63 130] forall fin : i . forall prod : Seq.seq uint32 . Produces0.produces iter prod fin -> (forall i : int . 0 <= i /\ i < Seq.length prod -> UInt32.to_int (Seq.get prod i) = i)}
+    requires {[#"../08_collect_extend.rs" 61 0 61 130] forall fin : i . forall prod : Seq.seq uint32 . Produces0.produces iter prod fin -> (forall i : int . 0 <= i /\ i < Seq.length prod -> UInt32.to_int (Seq.get prod i) = i)}
     
 end
 module C08CollectExtend_CollectExample
@@ -1535,8 +1629,8 @@ module C08CollectExtend_CollectExample
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Resolve_Resolve_Resolve as Resolve0 with
     type self = i
-  let rec cfg collect_example [@cfg:stackify] [#"../08_collect_extend.rs" 64 0 64 56] (iter : i) : ()
-    requires {[#"../08_collect_extend.rs" 63 0 63 130] forall fin : i . forall prod : Seq.seq uint32 . Produces0.produces iter prod fin -> (forall i : int . 0 <= i /\ i < Seq.length prod -> UInt32.to_int (Seq.get prod i) = i)}
+  let rec cfg collect_example [@cfg:stackify] [#"../08_collect_extend.rs" 62 0 62 56] (iter : i) : ()
+    requires {[#"../08_collect_extend.rs" 61 0 61 130] forall fin : i . forall prod : Seq.seq uint32 . Produces0.produces iter prod fin -> (forall i : int . 0 <= i /\ i < Seq.length prod -> UInt32.to_int (Seq.get prod i) = i)}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -1555,11 +1649,11 @@ module C08CollectExtend_CollectExample
     assume { Resolve0.resolve _4 };
     _4 <- iter_1;
     iter_1 <- any i;
-    v_3 <- ([#"../08_collect_extend.rs" 65 22 65 35] Collect0.collect _4);
+    v_3 <- ([#"../08_collect_extend.rs" 63 22 63 35] Collect0.collect _4);
     goto BB2
   }
   BB2 {
-    assert { [#"../08_collect_extend.rs" 67 4 67 80] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model v_3) -> UInt32.to_int (Seq.get (ShallowModel0.shallow_model v_3) i) = i };
+    assert { [#"../08_collect_extend.rs" 65 4 65 80] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model v_3) -> UInt32.to_int (Seq.get (ShallowModel0.shallow_model v_3) i) = i };
     goto BB3
   }
   BB3 {
