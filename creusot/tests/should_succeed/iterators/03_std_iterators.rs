@@ -78,7 +78,6 @@ extern_spec! {
     }
 }
 
-#[requires((@v).len() == 4)]
 pub fn counter(v: Vec<u32>) {
     let mut cnt = 0;
 
@@ -94,6 +93,6 @@ pub fn counter(v: Vec<u32>) {
         )
         .collect();
 
-    proof_assert!{ (@x).len() == 4 };
-    proof_assert! { @cnt == 4 };
+    proof_assert! { (@x).len() == (@v).len() };
+    proof_assert! { @cnt == (@x).len() };
 }

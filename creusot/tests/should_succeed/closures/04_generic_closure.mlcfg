@@ -332,6 +332,86 @@ module CreusotContracts_Std1_Ops_Impl2_FnOnce
     
   axiom fn_once_spec : forall self : f, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = Resolve0.resolve self /\ Postcondition0.postcondition self args res
 end
+module CreusotContracts_Std1_Ops_Impl1_Unnest_Stub
+  type args
+  type f
+  predicate unnest (self : f) (_2' : f)
+end
+module CreusotContracts_Std1_Ops_Impl1_Unnest_Interface
+  type args
+  type f
+  predicate unnest (self : f) (_2' : f)
+end
+module CreusotContracts_Std1_Ops_Impl1_Unnest
+  type args
+  type f
+  predicate unnest (self : f) (_2' : f)
+  val unnest (self : f) (_2' : f) : bool
+    ensures { result = unnest self _2' }
+    
+end
+module CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Stub
+  type args
+  type f
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
+    type args = args,
+    type f = f
+  function unnest_refl (self : f) : ()
+end
+module CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Interface
+  type args
+  type f
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
+    type args = args,
+    type f = f
+  function unnest_refl (self : f) : ()
+  axiom unnest_refl_spec : forall self : f . Unnest0.unnest self self
+end
+module CreusotContracts_Std1_Ops_Impl1_UnnestRefl
+  type args
+  type f
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
+    type args = args,
+    type f = f
+  function unnest_refl (self : f) : () =
+    ()
+  val unnest_refl (self : f) : ()
+    ensures { result = unnest_refl self }
+    
+  axiom unnest_refl_spec : forall self : f . Unnest0.unnest self self
+end
+module CreusotContracts_Std1_Ops_Impl1_UnnestTrans_Stub
+  type args
+  type f
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
+    type args = args,
+    type f = f
+  function unnest_trans (self : f) (b : f) (c : f) : ()
+end
+module CreusotContracts_Std1_Ops_Impl1_UnnestTrans_Interface
+  type args
+  type f
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
+    type args = args,
+    type f = f
+  function unnest_trans (self : f) (b : f) (c : f) : ()
+  axiom unnest_trans_spec : forall self : f, b : f, c : f . Unnest0.unnest self b -> Unnest0.unnest b c -> Unnest0.unnest self c
+end
+module CreusotContracts_Std1_Ops_Impl1_UnnestTrans
+  type args
+  type f
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
+    type args = args,
+    type f = f
+  function unnest_trans (self : f) (b : f) (c : f) : () =
+    ()
+  val unnest_trans (self : f) (b : f) (c : f) : ()
+    requires {Unnest0.unnest self b}
+    requires {Unnest0.unnest b c}
+    ensures { result = unnest_trans self b c }
+    
+  axiom unnest_trans_spec : forall self : f, b : f, c : f . Unnest0.unnest self b -> Unnest0.unnest b c -> Unnest0.unnest self c
+end
 module CreusotContracts_Std1_Ops_Impl1_FnMutOnce_Stub
   type args
   type f
@@ -405,6 +485,9 @@ module C04GenericClosure_GenericClosure
   type b
   type f
   use prelude.Borrow
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
+    type args = a,
+    type f = f
   clone CreusotContracts_Resolve_Resolve_Resolve as Resolve1 with
     type self = f
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut as PostconditionMut0 with
@@ -422,6 +505,16 @@ module C04GenericClosure_GenericClosure
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     predicate Resolve0.resolve = Resolve1.resolve,
     type Output0.output = b,
+    axiom .
+  clone CreusotContracts_Std1_Ops_Impl1_UnnestTrans as UnnestTrans0 with
+    type args = a,
+    type f = f,
+    predicate Unnest0.unnest = Unnest0.unnest,
+    axiom .
+  clone CreusotContracts_Std1_Ops_Impl1_UnnestRefl as UnnestRefl0 with
+    type args = a,
+    type f = f,
+    predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
     type t = f
@@ -499,15 +592,17 @@ module C04GenericClosure_Mapper_Closure0_Interface
   type c04genericclosure_mapper_closure0  =
     | C04GenericClosure_Mapper_Closure0
     
-  predicate precondition [@cfg:stackify] (_1' : c04genericclosure_mapper_closure0) (args : a) =
+  predicate precondition [@cfg:stackify] (self : c04genericclosure_mapper_closure0) (args : a) =
     [#"../04_generic_closure.rs" 1 0 1 0] let (_a) = args in true
-  predicate postcondition [@cfg:stackify] (_1' : c04genericclosure_mapper_closure0) (args : a) (result : ()) =
+  predicate postcondition [@cfg:stackify] (self : c04genericclosure_mapper_closure0) (args : a) (result : ()) =
     [#"../04_generic_closure.rs" 1 0 1 0] let (_a) = args in true
-  predicate postcondition_mut [@cfg:stackify] (_1' : borrowed c04genericclosure_mapper_closure0) (args : a) (result : ())
+  predicate unnest (self : c04genericclosure_mapper_closure0) (_2' : c04genericclosure_mapper_closure0) =
+    true
+  predicate postcondition_mut [@cfg:stackify] (self : borrowed c04genericclosure_mapper_closure0) (args : a) (result : ())
     
    =
-    [#"../04_generic_closure.rs" 1 0 1 0] let (_a) = args in true
-  predicate postcondition_once [@cfg:stackify] (_1' : c04genericclosure_mapper_closure0) (args : a) (result : ()) =
+    ([#"../04_generic_closure.rs" 1 0 1 0] let (_a) = args in true) && unnest ( * self) ( ^ self)
+  predicate postcondition_once [@cfg:stackify] (self : c04genericclosure_mapper_closure0) (args : a) (result : ()) =
     [#"../04_generic_closure.rs" 1 0 1 0] let (_a) = args in true
   predicate resolve (_1' : c04genericclosure_mapper_closure0) =
     true
@@ -519,15 +614,17 @@ module C04GenericClosure_Mapper_Closure0
     | C04GenericClosure_Mapper_Closure0
     
   use prelude.Borrow
-  predicate precondition [@cfg:stackify] (_1' : c04genericclosure_mapper_closure0) (args : a) =
+  predicate precondition [@cfg:stackify] (self : c04genericclosure_mapper_closure0) (args : a) =
     [#"../04_generic_closure.rs" 1 0 1 0] let (_a) = args in true
-  predicate postcondition [@cfg:stackify] (_1' : c04genericclosure_mapper_closure0) (args : a) (result : ()) =
+  predicate postcondition [@cfg:stackify] (self : c04genericclosure_mapper_closure0) (args : a) (result : ()) =
     [#"../04_generic_closure.rs" 1 0 1 0] let (_a) = args in true
-  predicate postcondition_mut [@cfg:stackify] (_1' : borrowed c04genericclosure_mapper_closure0) (args : a) (result : ())
+  predicate unnest (self : c04genericclosure_mapper_closure0) (_2' : c04genericclosure_mapper_closure0) =
+    true
+  predicate postcondition_mut [@cfg:stackify] (self : borrowed c04genericclosure_mapper_closure0) (args : a) (result : ())
     
    =
-    [#"../04_generic_closure.rs" 1 0 1 0] let (_a) = args in true
-  predicate postcondition_once [@cfg:stackify] (_1' : c04genericclosure_mapper_closure0) (args : a) (result : ()) =
+    ([#"../04_generic_closure.rs" 1 0 1 0] let (_a) = args in true) && unnest ( * self) ( ^ self)
+  predicate postcondition_once [@cfg:stackify] (self : c04genericclosure_mapper_closure0) (args : a) (result : ()) =
     [#"../04_generic_closure.rs" 1 0 1 0] let (_a) = args in true
   predicate resolve (_1' : c04genericclosure_mapper_closure0) =
     true

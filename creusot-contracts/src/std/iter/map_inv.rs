@@ -1,9 +1,9 @@
 use super::Iterator;
 use crate as creusot_contracts;
-use crate::{Resolve,
+use crate::{
     logic::{Int, Seq},
     std::ops::*,
-    Ghost, Invariant,
+    Ghost, Invariant, Resolve,
 };
 use creusot_contracts_proc::*;
 
@@ -72,6 +72,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
     #[why3::attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
+            self.func.unnest(succ.func) &&
             self.produced.len() + visited.len() == succ.produced.len()
             && succ.produced.subsequence(0, self.produced.len()).ext_eq(*self.produced)
             && self.iter.produces(succ.produced.subsequence(self.produced.len(), succ.produced.len()), succ.iter )
@@ -187,6 +188,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
+            self.func.unnest(succ.func) &&
             exists<f: &mut F> *f == self.func && ^f == succ.func
             && { let e = succ.produced[self.produced.len()];
                  succ.produced.inner() == self.produced.push(e)

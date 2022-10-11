@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use why3::{
     declaration::{Contract, Decl, Module},
-    Ident,
+    Exp, Ident,
 };
 
 use crate::{backend::logic::spec_axiom, clone_map::CloneMap, ctx::*, util};
@@ -44,7 +44,11 @@ pub(crate) fn interface_for<'tcx>(
             decls.extend(contracts);
 
             if subst.as_closure().kind() == ClosureKind::FnMut {
-                sig.contract.ensures.push(closure_unnest(ctx.tcx, &mut names, def_id, subst))
+                sig.contract.ensures.push(
+                    Exp::pure_var("unnest".into())
+                        .app_to(Exp::Current(box Exp::pure_var("_1'".into())))
+                        .app_to(Exp::Final(box Exp::pure_var("_1'".into()))),
+                )
             }
         }
     }

@@ -115,7 +115,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 } else {
                     let (fun_def_id, subst) =
                         resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
-                    let subst = self.ctx.try_normalize_erasing_regions(self.param_env(), subst).unwrap_or(subst);
+                    let subst = self
+                        .ctx
+                        .try_normalize_erasing_regions(self.param_env(), subst)
+                        .unwrap_or(subst);
 
                     let exp = Expr::Call(fun_def_id, subst, func_args);
                     let span = span.source_callsite();

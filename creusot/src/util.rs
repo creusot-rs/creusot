@@ -333,7 +333,8 @@ pub(crate) fn inputs_and_output<'tcx>(
                 let env_region = ReErased;
                 let env_ty = tcx.closure_env_ty(def_id, subst, env_region).unwrap();
 
-                let closure_env = (creusot_rustc::span::symbol::Ident::empty(), env_ty);
+                // I wish this could be called "self"
+                let closure_env = (symbol::Ident::empty(), env_ty);
                 let names = tcx
                     .fn_arg_names(def_id)
                     .iter()
@@ -375,14 +376,26 @@ pub(crate) fn pre_sig_of<'tcx>(
     }
 
     if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-        let mut pre_subst =
-            closure_capture_subst(ctx.tcx, def_id, subst, subst.as_closure().kind(), false);
+        let mut pre_subst = closure_capture_subst(
+            ctx.tcx,
+            def_id,
+            subst,
+            subst.as_closure().kind(),
+            Symbol::intern("_1'"),
+            false,
+        );
         for pre in &mut contract.requires {
             pre_subst.visit_mut_term(pre);
         }
 
-        let mut post_subst =
-            closure_capture_subst(ctx.tcx, def_id, subst, subst.as_closure().kind(), true);
+        let mut post_subst = closure_capture_subst(
+            ctx.tcx,
+            def_id,
+            subst,
+            subst.as_closure().kind(),
+            Symbol::intern("_1'"),
+            true,
+        );
         for post in &mut contract.ensures {
             post_subst.visit_mut_term(post);
         }
@@ -397,6 +410,8 @@ pub(crate) fn sig_to_why3<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     pre_sig: PreSignature<'tcx>,
+    // FIXME: Get rid of this def id
+    // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
 ) -> Signature {
     let contract = names.with_public_clones(|names| pre_sig.contract.to_exp(ctx, names, def_id));
@@ -664,6 +679,7 @@ pub(crate) fn closure_capture_subst<'tcx>(
     cs: SubstsRef<'tcx>,
     // What kind of substitution we should generate. The same precondition can be used in several ways
     ck: ty::ClosureKind,
+    self_name: Symbol,
     is_post: bool,
 ) -> ClosureSubst {
     let mut fun_def_id = def_id;
@@ -683,7 +699,7 @@ pub(crate) fn closure_capture_subst<'tcx>(
         ClosureKind::FnOnce => tcx.type_of(def_id),
     };
 
-    let self_ = Term { ty, kind: TermKind::Var(Symbol::intern("_1'")), span: DUMMY_SP };
+    let self_ = Term { ty, kind: TermKind::Var(self_name), span: DUMMY_SP };
 
     let subst =
         captures.into_iter().enumerate().map(|(ix, (nm, ty))| (*nm, (ty, ix.into()))).collect();

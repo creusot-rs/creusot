@@ -20,6 +20,19 @@ pub trait FnMutSpec<Args>: FnMut<Args> + FnOnceSpec<Args> {
     #[predicate]
     fn postcondition_mut(&mut self, _: Args, _: Self::Output) -> bool;
 
+    #[predicate]
+    fn unnest(self, _: Self) -> bool;
+
+    #[law]
+    #[ensures(self.unnest(self))]
+    fn unnest_refl(self);
+
+    #[law]
+    #[requires(self.unnest(b))]
+    #[requires(b.unnest(c))]
+    #[ensures(self.unnest(c))]
+    fn unnest_trans(self, b: Self, c: Self);
+
     #[law]
     #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && (^s).resolve())]
     fn fn_mut_once(self, args: Args, res: Self::Output)
@@ -69,6 +82,23 @@ impl<Args, F: FnMut<Args>> FnMutSpec<Args> for F {
         absurd
     }
 
+    #[predicate]
+    #[trusted]
+    #[rustc_diagnostic_item = "fn_mut_impl_unnest"]
+    fn unnest(self, _: Self) -> bool {
+        absurd
+    }
+
+    #[law]
+    #[ensures(self.unnest(self))]
+    fn unnest_refl(self) {}
+
+    #[law]
+    #[requires(self.unnest(b))]
+    #[requires(b.unnest(c))]
+    #[ensures(self.unnest(c))]
+    fn unnest_trans(self, b: Self, c: Self) {}
+
     #[law]
     #[trusted]
     #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && (^s).resolve())]
@@ -108,6 +138,7 @@ extern_spec! {
             trait FnMut<Args> where Self : FnMutSpec<Args> {
                 #[requires((*self).precondition(arg))]
                 #[ensures(self.postcondition_mut(arg, result))]
+                #[ensures((*self).unnest(^self))]
                 fn call_mut(&mut self, arg: Args) -> Self::Output;
             }
 
