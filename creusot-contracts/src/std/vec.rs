@@ -1,7 +1,10 @@
 use crate as creusot_contracts;
 use crate::{
     logic::*,
-    std::{iter::Iterator, slice::SliceIndex},
+    std::{
+        iter::{FromIteratorSpec, Iterator},
+        slice::SliceIndex,
+    },
     DeepModel, Invariant, Resolve, ShallowModel,
 };
 use creusot_contracts_proc::*;
@@ -170,5 +173,12 @@ impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
+    }
+}
+
+impl<T> FromIteratorSpec<T> for Vec<T> {
+    #[predicate]
+    fn from_iter_logic(prod: Seq<T>, res: Self) -> bool {
+        pearlite! { prod == @res }
     }
 }

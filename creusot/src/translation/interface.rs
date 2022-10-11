@@ -1,20 +1,16 @@
-use std::borrow::Cow;
-
-use why3::{
-    declaration::{Contract, Decl, Module},
-    Ident,
+use super::{
+    function::{closure_contract, closure_generic_decls},
+    ty::{closure_accessors, translate_closure_ty},
 };
-
 use crate::{backend::logic::spec_axiom, clone_map::CloneMap, ctx::*, util};
-
 use creusot_rustc::{
     hir::def_id::DefId,
     middle::ty::{ClosureKind, TyKind},
 };
-
-use super::{
-    function::{closure_contract, closure_generic_decls, closure_unnest},
-    ty::{closure_accessors, translate_closure_ty},
+use std::borrow::Cow;
+use why3::{
+    declaration::{Contract, Decl, Module},
+    Exp, Ident,
 };
 
 pub(crate) fn interface_for<'tcx>(
@@ -44,7 +40,11 @@ pub(crate) fn interface_for<'tcx>(
             decls.extend(contracts);
 
             if subst.as_closure().kind() == ClosureKind::FnMut {
-                sig.contract.ensures.push(closure_unnest(ctx.tcx, &mut names, def_id, subst))
+                sig.contract.ensures.push(
+                    Exp::pure_var("unnest".into())
+                        .app_to(Exp::Current(box Exp::pure_var("_1'".into())))
+                        .app_to(Exp::Final(box Exp::pure_var("_1'".into()))),
+                )
             }
         }
     }

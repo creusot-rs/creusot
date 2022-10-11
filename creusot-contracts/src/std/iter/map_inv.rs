@@ -3,7 +3,7 @@ use crate as creusot_contracts;
 use crate::{
     logic::{Int, Seq},
     std::ops::*,
-    Ghost, Invariant,
+    Ghost, Invariant, Resolve,
 };
 use creusot_contracts_proc::*;
 
@@ -11,6 +11,14 @@ pub struct MapInv<I, A, F> {
     iter: I,
     func: F,
     produced: Ghost<Seq<A>>,
+}
+
+#[trusted]
+impl<I, A, F> Resolve for MapInv<I, A, F> {
+    #[predicate]
+    fn resolve(self) -> bool {
+        self.iter.resolve() && self.func.resolve()
+    }
 }
 
 pub trait IteratorExt: Iterator + Sized {
@@ -42,8 +50,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
     fn completed(&mut self) -> bool {
         pearlite! {
             *(^self).produced == Seq::EMPTY &&
-            (exists<iter: &mut I> *iter == self.iter && ^iter == (^self).iter && iter.completed()) &&
-            self.func == (^self).func
+            self.iter.completed() && self.func == (^self).func
         }
     }
 
@@ -65,6 +72,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
     #[why3::attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
+            self.func.unnest(succ.func) &&
             self.produced.len() + visited.len() == succ.produced.len()
             && succ.produced.subsequence(0, self.produced.len()).ext_eq(*self.produced)
             && self.iter.produces(succ.produced.subsequence(self.produced.len(), succ.produced.len()), succ.iter )
@@ -180,6 +188,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
+            self.func.unnest(succ.func) &&
             exists<f: &mut F> *f == self.func && ^f == succ.func
             && { let e = succ.produced[self.produced.len()];
                  succ.produced.inner() == self.produced.push(e)

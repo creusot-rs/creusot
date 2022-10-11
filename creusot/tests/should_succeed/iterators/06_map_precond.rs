@@ -23,8 +23,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
     fn completed(&mut self) -> bool {
         pearlite! {
             *(^self).produced == Seq::EMPTY &&
-            (exists<iter: &mut I> *iter == self.iter && ^iter == (^self).iter && iter.completed()) &&
-            self.func == (^self).func
+            self.iter.completed() && self.func == (^self).func
         }
     }
 
@@ -46,6 +45,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
     #[why3::attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
+            self.func.unnest(succ.func) &&
             self.produced.len() + visited.len() == succ.produced.len()
             && succ.produced.subsequence(0, self.produced.len()).ext_eq(*self.produced)
             && self.iter.produces(succ.produced.subsequence(self.produced.len(), succ.produced.len()), succ.iter )
@@ -151,6 +151,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
+            self.func.unnest(succ.func) &&
             exists<f: &mut F> *f == self.func && ^f == succ.func
             && { let e = succ.produced[self.produced.len()];
                  succ.produced.inner() == self.produced.push(e)
@@ -205,7 +206,7 @@ pub fn counter<I: Iterator<Item = u32>>(iter: I) {
     map(
         iter,
         #[requires(@cnt == (*_prod).len() && cnt < usize::MAX)]
-        #[ensures(@cnt == @old(cnt) + 1 && @cnt == (*_prod).len() + 1)]
+        #[ensures(@cnt == @old(cnt) + 1)]
         |x, _prod: Ghost<Seq<_>>| {
             cnt += 1;
             x

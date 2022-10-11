@@ -24,8 +24,8 @@ use creusot_rustc::{
         mir::{traversal::reverse_postorder, MirPass},
         ty::{
             subst::{GenericArg, SubstsRef},
-            DefIdTree, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind,
-            TypeVisitable, WithOptConstParam,
+            DefIdTree, EarlyBinder, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt,
+            TyKind, TypeVisitable, WithOptConstParam,
         },
     },
     smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo},
@@ -468,10 +468,8 @@ pub(crate) fn closure_contract<'tcx>(
     def_id: DefId,
 ) -> Vec<Decl> {
     use creusot_rustc::middle::ty::{self, ClosureKind::*};
-    let subst = match ctx.tcx.type_of(def_id).kind() {
-        TyKind::Closure(_, substs) => substs,
-        _ => return Vec::new(),
-    };
+    let TyKind::Closure(_, subst) =  ctx.tcx.type_of(def_id).kind() else { unreachable!() };
+
     let kind = subst.as_closure().kind();
 
     let mut pre_clos_sig = pre_sig_of(ctx, def_id);
@@ -547,8 +545,15 @@ pub(crate) fn closure_contract<'tcx>(
         // Preconditions are the same for every kind of closure
         let mut pre_sig = pre_sig;
         pre_sig.name = Ident::build("precondition");
-        pre_sig.args[0] = Binder::typed("_1'".into(), self_ty.clone());
-        let mut subst = util::closure_capture_subst(ctx.tcx, def_id, subst, FnOnce, true);
+        pre_sig.args[0] = Binder::typed("self".into(), self_ty.clone());
+        let mut subst = util::closure_capture_subst(
+            ctx.tcx,
+            def_id,
+            subst,
+            FnOnce,
+            Symbol::intern("self"),
+            true,
+        );
 
         let mut precondition = precondition.clone();
         subst.visit_mut_term(&mut precondition);
@@ -561,9 +566,10 @@ pub(crate) fn closure_contract<'tcx>(
     if kind <= Fn {
         let mut post_sig = post_sig.clone();
         post_sig.name = Ident::build("postcondition");
-        post_sig.args[0] = Binder::typed("_1'".into(), self_ty.clone());
+        post_sig.args[0] = Binder::typed("self".into(), self_ty.clone());
 
-        let mut csubst = util::closure_capture_subst(ctx.tcx, def_id, subst, Fn, true);
+        let mut csubst =
+            util::closure_capture_subst(ctx.tcx, def_id, subst, Fn, Symbol::intern("self"), true);
         let mut postcondition = postcondition.clone();
 
         csubst.visit_mut_term(&mut postcondition);
@@ -577,26 +583,56 @@ pub(crate) fn closure_contract<'tcx>(
         post_sig.name = Ident::build("postcondition_mut");
 
         let self_ty = Type::MutableBorrow(Box::new(self_ty.clone()));
-        post_sig.args[0] = Binder::typed("_1'".into(), self_ty);
+        post_sig.args[0] = Binder::typed("self".into(), self_ty);
 
-        let mut csubst = util::closure_capture_subst(ctx.tcx, def_id, subst, FnMut, true);
+        let mut csubst = util::closure_capture_subst(
+            ctx.tcx,
+            def_id,
+            subst,
+            FnMut,
+            Symbol::intern("self"),
+            true,
+        );
 
         let mut postcondition = postcondition.clone();
         csubst.visit_mut_term(&mut postcondition);
 
         let mut postcondition: Exp =
             names.with_public_clones(|names| lower_pure(ctx, names, param_env, postcondition));
-        postcondition = postcondition.lazy_and(closure_unnest(ctx.tcx, names, def_id, subst));
+        postcondition = postcondition.lazy_and(
+            Exp::pure_var("unnest".into())
+                .app_to(Exp::Current(box Exp::pure_var("self".into())))
+                .app_to(Exp::Final(box Exp::pure_var("self".into()))),
+        );
 
+        let args = subst.as_closure().sig().inputs().skip_binder()[0];
+        let unnest_subst = ctx.mk_substs([GenericArg::from(args), GenericArg::from(env_ty)].iter());
+
+        let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
+        let unnest_sig = EarlyBinder(pre_sig_of(ctx, unnest_id)).subst(ctx.tcx, unnest_subst);
+        let mut unnest_sig = sig_to_why3(ctx, names, unnest_sig, unnest_id);
+        unnest_sig.retty = None;
+
+        contracts.push(Decl::PredDecl(Predicate {
+            sig: unnest_sig,
+            body: closure_unnest(ctx.tcx, names, def_id, subst),
+        }));
         contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
     }
 
     if kind <= FnOnce {
         let mut post_sig = post_sig.clone();
         post_sig.name = Ident::build("postcondition_once");
-        post_sig.args[0] = Binder::typed("_1'".into(), self_ty.clone());
+        post_sig.args[0] = Binder::typed("self".into(), self_ty.clone());
 
-        let mut csubst = util::closure_capture_subst(ctx.tcx, def_id, subst, FnOnce, true);
+        let mut csubst = util::closure_capture_subst(
+            ctx.tcx,
+            def_id,
+            subst,
+            FnOnce,
+            Symbol::intern("self"),
+            true,
+        );
 
         let mut postcondition = postcondition.clone();
         csubst.visit_mut_term(&mut postcondition);
@@ -657,12 +693,13 @@ pub(crate) fn closure_unnest<'tcx>(
             let acc_name = ty::closure_accessor_name(tcx, def_id, ix);
             let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
 
-            let self_ = Exp::pure_var(Ident::build("_1'"));
+            let cur = Exp::pure_var(Ident::build("self"));
+            let fin = Exp::pure_var(Ident::build("_2'"));
 
             let unnest_one = Exp::BinaryOp(
                 BinOp::Eq,
-                box Exp::Final(box acc.clone().app_to(Exp::Final(box self_.clone()))),
-                box Exp::Final(box acc.app_to(Exp::Current(box self_))),
+                box Exp::Final(box acc.clone().app_to(fin.clone())),
+                box Exp::Final(box acc.app_to(cur)),
             );
 
             unnest = unnest_one.log_and(unnest);

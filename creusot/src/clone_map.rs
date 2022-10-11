@@ -333,6 +333,7 @@ impl<'tcx> CloneMap<'tcx> {
             || self.tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id)
             || self.tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id)
             || self.tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id)
+            || self.tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id)
             || self.tcx.is_diagnostic_item(Symbol::intern("fn_impl_resolve"), def_id)
         {
             debug!("closure_hack: {:?} {:?}", self.self_id, def_id);
