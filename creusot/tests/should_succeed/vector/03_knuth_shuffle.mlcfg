@@ -237,6 +237,185 @@ module Alloc_Vec_Impl1_Len
     ensures { UInt64.to_int result = Seq.length (ShallowModel0.shallow_model self) }
     
 end
+module Core_Ops_Range_Range_Type
+  type t_range 'idx =
+    | C_Range 'idx 'idx
+    
+  let function range_end (self : t_range 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Range _ a -> a
+      end
+  let function range_start (self : t_range 'idx) : 'idx = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Range a _ -> a
+      end
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module Core_Iter_Traits_Collect_Impl0_IntoIter_Interface
+  type i
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
+  val into_iter [@cfg:stackify] (self : i) : i
+    ensures { result = self }
+    ensures { Invariant0.invariant' result }
+    
+end
+module Core_Iter_Traits_Collect_Impl0_IntoIter
+  type i
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
+    type self = i
+  val into_iter [@cfg:stackify] (self : i) : i
+    ensures { result = self }
+    ensures { Invariant0.invariant' result }
+    
+end
+module CreusotContracts_Std1_Ops_Impl3_Invariant_Stub
+  type idx
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate invariant' (self : Core_Ops_Range_Range_Type.t_range idx)
+end
+module CreusotContracts_Std1_Ops_Impl3_Invariant_Interface
+  type idx
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate invariant' (self : Core_Ops_Range_Range_Type.t_range idx)
+end
+module CreusotContracts_Std1_Ops_Impl3_Invariant
+  type idx
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate invariant' (self : Core_Ops_Range_Range_Type.t_range idx) =
+    true
+  val invariant' (self : Core_Ops_Range_Range_Type.t_range idx) : bool
+    ensures { result = invariant' self }
+    
+end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+  let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_None -> any 't
+      | C_Some a -> a
+      end
+end
+module CreusotContracts_Std1_Iter_Iterator_Completed_Stub
+  type self
+  use prelude.Borrow
+  predicate completed (self : borrowed self)
+end
+module CreusotContracts_Std1_Iter_Iterator_Completed_Interface
+  type self
+  use prelude.Borrow
+  predicate completed (self : borrowed self)
+end
+module CreusotContracts_Std1_Iter_Iterator_Completed
+  type self
+  use prelude.Borrow
+  predicate completed (self : borrowed self)
+  val completed (self : borrowed self) : bool
+    ensures { result = completed self }
+    
+end
+module Core_Iter_Traits_Iterator_Iterator_Item_Type
+  type self
+  type item
+end
+module CreusotContracts_Std1_Iter_Iterator_Produces_Stub
+  type self
+  use seq.Seq
+  clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
+    type self = self
+  predicate produces (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+end
+module CreusotContracts_Std1_Iter_Iterator_Produces_Interface
+  type self
+  use seq.Seq
+  clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
+    type self = self
+  predicate produces (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+end
+module CreusotContracts_Std1_Iter_Iterator_Produces
+  type self
+  use seq.Seq
+  clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
+    type self = self
+  predicate produces (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+  val produces (self : self) (visited : Seq.seq Item0.item) (_3' : self) : bool
+    ensures { result = produces self visited _3' }
+    
+end
+module Core_Iter_Range_Impl3_Item_Type
+  type a
+  type item  =
+    a
+end
+module Core_Iter_Range_Impl3_Next_Interface
+  type a
+  use prelude.Borrow
+  use seq.Seq
+  clone Core_Iter_Range_Impl3_Item_Type as Item1 with
+    type a = a
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Std1_Iter_Iterator_Produces_Stub as Produces0 with
+    type self = Core_Ops_Range_Range_Type.t_range a,
+    type Item0.item = Item1.item
+  clone CreusotContracts_Std1_Iter_Iterator_Completed_Stub as Completed0 with
+    type self = Core_Ops_Range_Range_Type.t_range a
+  clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
+    type self = Core_Ops_Range_Range_Type.t_range a
+  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
+    type idx = a
+  val next [@cfg:stackify] (self : borrowed (Core_Ops_Range_Range_Type.t_range a)) : Core_Option_Option_Type.t_option a
+    requires {Invariant0.invariant' ( * self)}
+    ensures { Invariant0.invariant' ( ^ self) }
+    ensures { match (result) with
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
+      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
+      end }
+    
+end
+module Core_Iter_Range_Impl3_Next
+  type a
+  use prelude.Borrow
+  use seq.Seq
+  clone Core_Iter_Range_Impl3_Item_Type as Item1 with
+    type a = a
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Std1_Iter_Iterator_Produces_Interface as Produces0 with
+    type self = Core_Ops_Range_Range_Type.t_range a,
+    type Item0.item = Item1.item
+  clone CreusotContracts_Std1_Iter_Iterator_Completed_Interface as Completed0 with
+    type self = Core_Ops_Range_Range_Type.t_range a
+  clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
+    type self = Core_Ops_Range_Range_Type.t_range a
+  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Interface as Invariant0 with
+    type idx = a
+  val next [@cfg:stackify] (self : borrowed (Core_Ops_Range_Range_Type.t_range a)) : Core_Option_Option_Type.t_option a
+    requires {Invariant0.invariant' ( * self)}
+    ensures { Invariant0.invariant' ( ^ self) }
+    ensures { match (result) with
+      | Core_Option_Option_Type.C_None -> Completed0.completed self
+      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
+      end }
+    
+end
 module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub
   type t
   use seq.Seq
@@ -396,6 +575,61 @@ module CreusotContracts_Resolve_Resolve_Resolve
     ensures { result = resolve self }
     
 end
+module CreusotContracts_Model_DeepModel_DeepModelTy_Type
+  type self
+  type deepModelTy
+end
+module CreusotContracts_Model_DeepModel_DeepModel_Stub
+  type self
+  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
+    type self = self
+  function deep_model (self : self) : DeepModelTy0.deepModelTy
+end
+module CreusotContracts_Model_DeepModel_DeepModel_Interface
+  type self
+  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
+    type self = self
+  function deep_model (self : self) : DeepModelTy0.deepModelTy
+end
+module CreusotContracts_Model_DeepModel_DeepModel
+  type self
+  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
+    type self = self
+  function deep_model (self : self) : DeepModelTy0.deepModelTy
+  val deep_model (self : self) : DeepModelTy0.deepModelTy
+    ensures { result = deep_model self }
+    
+end
+module CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub
+  type idx
+  use seq.Seq
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx)
+    
+end
+module CreusotContracts_Std1_Iter_Range_Impl0_Produces_Interface
+  type idx
+  use seq.Seq
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx)
+    
+end
+module CreusotContracts_Std1_Iter_Range_Impl0_Produces
+  type idx
+  use seq.Seq
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  use mach.int.Int
+  clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
+    type self = idx,
+    type DeepModelTy0.deepModelTy = int
+  predicate produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx)
+    
+   =
+    Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) <= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0 -> DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) <= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) - DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> DeepModel0.deep_model (Seq.get visited i) = DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) + i)
+  val produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx) : bool
+    ensures { result = produces self visited o }
+    
+end
 module CreusotContracts_Ghost_Impl1_ShallowModel_Stub
   type t
   use prelude.Ghost
@@ -443,12 +677,142 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
+module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl_Stub
+  type idx
+  use seq.Seq
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
+    type idx = idx
+  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
+    type idx = idx
+  function produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
+end
+module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl_Interface
+  type idx
+  use seq.Seq
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
+    type idx = idx
+  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
+    type idx = idx
+  function produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
+  axiom produces_refl_spec : forall a : Core_Ops_Range_Range_Type.t_range idx . Invariant0.invariant' a -> Produces0.produces a (Seq.empty ) a
+end
+module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl
+  type idx
+  use seq.Seq
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
+    type idx = idx
+  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
+    type idx = idx
+  function produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : () =
+    ()
+  val produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
+    requires {Invariant0.invariant' a}
+    ensures { result = produces_refl a }
+    
+  axiom produces_refl_spec : forall a : Core_Ops_Range_Range_Type.t_range idx . Invariant0.invariant' a -> Produces0.produces a (Seq.empty ) a
+end
+module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans_Stub
+  type idx
+  use seq.Seq
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
+    type idx = idx
+  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
+    type idx = idx
+  function produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
+    
+end
+module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans_Interface
+  type idx
+  use seq.Seq
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
+    type idx = idx
+  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
+    type idx = idx
+  function produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
+    
+  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . Invariant0.invariant' a -> Invariant0.invariant' b -> Invariant0.invariant' c -> Produces0.produces a ab b -> Produces0.produces b bc c -> Produces0.produces a (Seq.(++) ab bc) c
+end
+module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans
+  type idx
+  use seq.Seq
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
+    type idx = idx
+  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
+    type idx = idx
+  function produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
+    
+   =
+    ()
+  val produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
+    requires {Invariant0.invariant' a}
+    requires {Invariant0.invariant' b}
+    requires {Invariant0.invariant' c}
+    requires {Produces0.produces a ab b}
+    requires {Produces0.produces b bc c}
+    ensures { result = produces_trans a ab b bc c }
+    
+  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . Invariant0.invariant' a -> Invariant0.invariant' b -> Invariant0.invariant' c -> Produces0.produces a ab b -> Produces0.produces b bc c -> Produces0.produces a (Seq.(++) ab bc) c
+end
+module CreusotContracts_Logic_Int_Impl18_DeepModel_Stub
+  use mach.int.Int
+  use prelude.UIntSize
+  function deep_model (self : usize) : int
+end
+module CreusotContracts_Logic_Int_Impl18_DeepModel_Interface
+  use mach.int.Int
+  use prelude.UIntSize
+  function deep_model (self : usize) : int
+end
+module CreusotContracts_Logic_Int_Impl18_DeepModel
+  use mach.int.Int
+  use prelude.UIntSize
+  use mach.int.UInt64
+  function deep_model (self : usize) : int =
+    UInt64.to_int self
+  val deep_model (self : usize) : int
+    ensures { result = deep_model self }
+    
+end
 module CreusotContracts_Model_Impl3_ShallowModelTy_Type
   type t
   clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
     type self = t
   type shallowModelTy  =
     ShallowModelTy0.shallowModelTy
+end
+module CreusotContracts_Std1_Iter_Range_Impl0_Completed_Stub
+  type idx
+  use prelude.Borrow
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx))
+end
+module CreusotContracts_Std1_Iter_Range_Impl0_Completed_Interface
+  type idx
+  use prelude.Borrow
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  predicate completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx))
+end
+module CreusotContracts_Std1_Iter_Range_Impl0_Completed
+  type idx
+  use prelude.Borrow
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  use mach.int.Int
+  clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
+    type self = idx,
+    type DeepModelTy0.deepModelTy = int
+  clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
+    type t = Core_Ops_Range_Range_Type.t_range idx
+  predicate completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx)) =
+    Resolve0.resolve self /\ DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start ( * self)) >= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end ( * self))
+  val completed (self : borrowed (Core_Ops_Range_Range_Type.t_range idx)) : bool
+    ensures { result = completed self }
+    
 end
 module C03KnuthShuffle_KnuthShuffle_Interface
   type t
@@ -492,8 +856,13 @@ module C03KnuthShuffle_KnuthShuffle
   use prelude.Ghost
   use mach.int.Int
   use prelude.UIntSize
-  use prelude.Slice
   use seq.Seq
+  use prelude.IntSize
+  use prelude.Slice
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
+    type t = Core_Ops_Range_Range_Type.t_range usize
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy2 with
     type t = t
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel6 with
@@ -503,21 +872,41 @@ module C03KnuthShuffle_KnuthShuffle
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy2.shallowModelTy,
     function ShallowModel0.shallow_model = ShallowModel6.shallow_model
-  clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel4 with
-    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
-    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
+  clone CreusotContracts_Logic_Int_Impl18_DeepModel as DeepModel0
+  clone CreusotContracts_Std1_Iter_Range_Impl0_Completed as Completed0 with
+    type idx = usize,
+    predicate Resolve0.resolve = Resolve3.resolve,
+    function DeepModel0.deep_model = DeepModel0.deep_model
+  clone Core_Iter_Range_Impl3_Item_Type as Item0 with
+    type a = usize
   clone CreusotContracts_Model_Impl3_ShallowModelTy_Type as ShallowModelTy1 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel3 with
+  clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel4 with
     type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
     type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  clone CreusotContracts_Std1_Iter_Range_Impl0_Produces as Produces0 with
+    type idx = usize,
+    function DeepModel0.deep_model = DeepModel0.deep_model
+  clone CreusotContracts_Std1_Ops_Impl3_Invariant as Invariant0 with
+    type idx = usize
+  clone CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans as ProducesTrans0 with
+    type idx = usize,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    axiom .
+  clone CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl as ProducesRefl0 with
+    type idx = usize,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    axiom .
+  clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel3 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   use prelude.Ghost
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
-    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = seq t
   clone Core_Slice_Impl0_Swap_Interface as Swap0 with
     type t = t,
@@ -531,13 +920,24 @@ module C03KnuthShuffle_KnuthShuffle
     function ShallowModel2.shallow_model = ShallowModel6.shallow_model,
     function ShallowModel3.shallow_model = ShallowModel0.shallow_model
   clone C03KnuthShuffle_RandInRange_Interface as RandInRange0
-  clone Alloc_Vec_Impl1_Len_Interface as Len0 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global,
-    function ShallowModel0.shallow_model = ShallowModel4.shallow_model
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
+    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  clone Core_Iter_Range_Impl3_Next_Interface as Next0 with
+    type a = usize,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    predicate Completed0.completed = Completed0.completed,
+    predicate Produces0.produces = Produces0.produces
   clone CreusotContracts_Ghost_Impl1_ShallowModel as ShallowModel2 with
     type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
     type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
+    function ShallowModel0.shallow_model = ShallowModel4.shallow_model
+  clone Core_Iter_Traits_Collect_Impl0_IntoIter_Interface as IntoIter0 with
+    type i = Core_Ops_Range_Range_Type.t_range usize,
+    predicate Invariant0.invariant' = Invariant0.invariant'
+  clone Alloc_Vec_Impl1_Len_Interface as Len0 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model
   clone CreusotContracts_Resolve_Resolve_Resolve as Resolve0 with
     type self = Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)))
@@ -549,28 +949,36 @@ module C03KnuthShuffle_KnuthShuffle
   var v_1 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
   var old_v_3 : Ghost.ghost_ty (borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)));
   var _5 : ();
-  var n_6 : usize;
-  var _9 : ();
-  var _10 : bool;
-  var _11 : usize;
-  var _12 : usize;
-  var _13 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
-  var upper_14 : usize;
-  var _15 : usize;
-  var _16 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
-  var _17 : usize;
-  var i_18 : usize;
-  var _19 : usize;
-  var _20 : ();
-  var _21 : borrowed (seq t);
-  var _22 : borrowed (seq t);
-  var _23 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
-  var _24 : usize;
-  var _25 : usize;
-  var _26 : usize;
-  var _27 : ();
+  var iter_6 : Core_Ops_Range_Range_Type.t_range usize;
+  var _7 : Core_Ops_Range_Range_Type.t_range usize;
+  var _8 : usize;
+  var _9 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
+  var iter_old_10 : Ghost.ghost_ty (Core_Ops_Range_Range_Type.t_range usize);
+  var _12 : ();
+  var produced_13 : Ghost.ghost_ty (Seq.seq usize);
+  var _16 : ();
+  var _21 : ();
+  var _22 : Core_Option_Option_Type.t_option usize;
+  var _23 : borrowed (Core_Ops_Range_Range_Type.t_range usize);
+  var _24 : isize;
+  var i_25 : usize;
+  var _26 : Ghost.ghost_ty (Seq.seq usize);
   var _28 : ();
-  var _29 : ();
+  var n_29 : usize;
+  var upper_30 : usize;
+  var _31 : usize;
+  var _32 : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global);
+  var _33 : usize;
+  var i_34 : usize;
+  var _35 : usize;
+  var _36 : ();
+  var _37 : borrowed (seq t);
+  var _38 : borrowed (seq t);
+  var _39 : borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global));
+  var _40 : usize;
+  var _41 : usize;
+  var _42 : usize;
+  var _43 : ();
   {
     v_1 <- v;
     goto BB0
@@ -582,61 +990,93 @@ module C03KnuthShuffle_KnuthShuffle
   }
   BB1 {
     assume { Resolve0.resolve old_v_3 };
-    n_6 <- (0 : usize);
+    _9 <-  * v_1;
+    _8 <- ([#"../03_knuth_shuffle.rs" 18 16 18 23] Len0.len _9);
     goto BB2
   }
   BB2 {
-    invariant permutation { [#"../03_knuth_shuffle.rs" 17 29 17 56] PermutationOf0.permutation_of (ShallowModel1.shallow_model v_1) (ShallowModel2.shallow_model old_v_3) };
-    invariant proph_const { [#"../03_knuth_shuffle.rs" 18 29 18 49]  ^ v_1 =  ^ Ghost.inner old_v_3 };
-    _11 <- n_6;
-    _13 <-  * v_1;
-    _12 <- ([#"../03_knuth_shuffle.rs" 19 14 19 21] Len0.len _13);
+    _7 <- Core_Ops_Range_Range_Type.C_Range (0 : usize) _8;
+    iter_6 <- ([#"../03_knuth_shuffle.rs" 16 4 16 58] IntoIter0.into_iter _7);
     goto BB3
   }
   BB3 {
-    _10 <- ([#"../03_knuth_shuffle.rs" 19 10 19 21] _11 < _12);
-    switch (_10)
-      | False -> goto BB9
-      | True -> goto BB4
-      end
+    _12 <- ();
+    iter_old_10 <- ([#"../03_knuth_shuffle.rs" 16 4 16 58] Ghost.new iter_6);
+    goto BB4
   }
   BB4 {
-    _16 <-  * v_1;
-    _15 <- ([#"../03_knuth_shuffle.rs" 22 20 22 27] Len0.len _16);
+    _16 <- ();
+    produced_13 <- ([#"../03_knuth_shuffle.rs" 16 4 16 58] Ghost.new (Seq.empty ));
     goto BB5
   }
   BB5 {
-    _17 <- n_6;
-    upper_14 <- ([#"../03_knuth_shuffle.rs" 22 20 22 31] _15 - _17);
-    _19 <- upper_14;
-    i_18 <- ([#"../03_knuth_shuffle.rs" 23 16 23 39] RandInRange0.rand_in_range (0 : usize) _19);
     goto BB6
   }
   BB6 {
-    _23 <- borrow_mut ( * v_1);
-    v_1 <- { v_1 with current = ( ^ _23) };
-    _22 <- ([#"../03_knuth_shuffle.rs" 24 8 24 28] DerefMut0.deref_mut _23);
+    invariant type_invariant { [#"../03_knuth_shuffle.rs" 16 4 16 58] Invariant0.invariant' iter_6 };
+    invariant structural { [#"../03_knuth_shuffle.rs" 16 4 16 58] Produces0.produces (Ghost.inner iter_old_10) (Ghost.inner produced_13) iter_6 };
+    invariant permutation { [#"../03_knuth_shuffle.rs" 16 29 16 56] PermutationOf0.permutation_of (ShallowModel1.shallow_model v_1) (ShallowModel2.shallow_model old_v_3) };
+    invariant proph_const { [#"../03_knuth_shuffle.rs" 17 29 17 49]  ^ v_1 =  ^ Ghost.inner old_v_3 };
+    _23 <- borrow_mut iter_6;
+    iter_6 <-  ^ _23;
+    _22 <- ([#"../03_knuth_shuffle.rs" 16 4 16 58] Next0.next _23);
     goto BB7
   }
   BB7 {
-    _21 <- borrow_mut ( * _22);
-    _22 <- { _22 with current = ( ^ _21) };
-    _24 <- i_18;
-    _26 <- upper_14;
-    _25 <- ([#"../03_knuth_shuffle.rs" 24 18 24 27] _26 - (1 : usize));
-    _20 <- ([#"../03_knuth_shuffle.rs" 24 8 24 28] Swap0.swap _21 _24 _25);
-    goto BB8
+    switch (_22)
+      | Core_Option_Option_Type.C_None -> goto BB8
+      | Core_Option_Option_Type.C_Some _ -> goto BB10
+      end
   }
   BB8 {
-    assume { Resolve1.resolve _22 };
-    n_6 <- ([#"../03_knuth_shuffle.rs" 25 8 25 14] n_6 + (1 : usize));
-    _9 <- ();
-    goto BB2
-  }
-  BB9 {
-    assume { Resolve2.resolve v_1 };
+    assume { Resolve1.resolve v_1 };
     _0 <- ();
     return _0
+  }
+  BB9 {
+    assume { Resolve1.resolve v_1 };
+    absurd
+  }
+  BB10 {
+    i_25 <- Core_Option_Option_Type.some_0 _22;
+    _28 <- ();
+    _26 <- ([#"../03_knuth_shuffle.rs" 16 4 16 58] Ghost.new (Seq.snoc (Ghost.inner produced_13) i_25));
+    goto BB11
+  }
+  BB11 {
+    produced_13 <- _26;
+    _26 <- any Ghost.ghost_ty (Seq.seq usize);
+    n_29 <- i_25;
+    _32 <-  * v_1;
+    _31 <- ([#"../03_knuth_shuffle.rs" 21 20 21 27] Len0.len _32);
+    goto BB12
+  }
+  BB12 {
+    _33 <- n_29;
+    upper_30 <- ([#"../03_knuth_shuffle.rs" 21 20 21 31] _31 - _33);
+    _35 <- upper_30;
+    i_34 <- ([#"../03_knuth_shuffle.rs" 22 16 22 39] RandInRange0.rand_in_range (0 : usize) _35);
+    goto BB13
+  }
+  BB13 {
+    _39 <- borrow_mut ( * v_1);
+    v_1 <- { v_1 with current = ( ^ _39) };
+    _38 <- ([#"../03_knuth_shuffle.rs" 23 8 23 28] DerefMut0.deref_mut _39);
+    goto BB14
+  }
+  BB14 {
+    _37 <- borrow_mut ( * _38);
+    _38 <- { _38 with current = ( ^ _37) };
+    _40 <- i_34;
+    _42 <- upper_30;
+    _41 <- ([#"../03_knuth_shuffle.rs" 23 18 23 27] _42 - (1 : usize));
+    _36 <- ([#"../03_knuth_shuffle.rs" 23 8 23 28] Swap0.swap _37 _40 _41);
+    goto BB15
+  }
+  BB15 {
+    assume { Resolve2.resolve _38 };
+    _21 <- ();
+    goto BB6
   }
   
 end

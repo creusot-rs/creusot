@@ -1,5 +1,7 @@
 use crate as creusot_contracts;
-use crate::Resolve;
+use crate::{logic::OrdLogic, DeepModel, Invariant, Resolve};
+use std::ops::{Range, RangeInclusive};
+
 use creusot_contracts_proc::*;
 
 /// `FnOnceSpec` is an extension trait for the `FnOnce` trait, used for
@@ -146,6 +148,86 @@ extern_spec! {
                 #[requires((*self).precondition(arg))]
                 #[ensures(self.postcondition(arg, result))]
                 fn call(&self, arg: Args) -> Self::Output;
+            }
+        }
+    }
+}
+
+impl<Idx> Invariant for Range<Idx> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        pearlite! { true }
+    }
+}
+
+impl<Idx> Invariant for RangeInclusive<Idx> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        pearlite! { true }
+    }
+}
+
+pub trait RangeInclusiveExt<Idx> {
+    #[logic]
+    fn start_log(self) -> Idx;
+
+    #[logic]
+    fn end_log(self) -> Idx;
+
+    #[predicate]
+    fn is_empty_log(self) -> bool
+    where
+        Idx: DeepModel,
+        Idx::DeepModelTy: OrdLogic;
+}
+
+impl<Idx> RangeInclusiveExt<Idx> for RangeInclusive<Idx> {
+    #[logic]
+    #[trusted]
+    fn start_log(self) -> Idx {
+        pearlite! { absurd }
+    }
+
+    #[logic]
+    #[trusted]
+    fn end_log(self) -> Idx {
+        pearlite! { absurd }
+    }
+
+    #[predicate]
+    #[trusted]
+    #[ensures(!result ==> self.start_log().deep_model() <= self.end_log().deep_model())]
+    fn is_empty_log(self) -> bool
+    where
+        Idx: DeepModel,
+        Idx::DeepModelTy: OrdLogic,
+    {
+        pearlite! { absurd }
+    }
+}
+
+extern_spec! {
+    mod std {
+        mod ops {
+            impl<Idx> RangeInclusive<Idx> {
+                #[ensures(result.start_log() == start)]
+                #[ensures(result.end_log() == end)]
+                #[ensures(start.deep_model() <= end.deep_model() ==> !result.is_empty_log())]
+                fn new(start: Idx, end: Idx) -> Self
+                    where Idx: DeepModel, Idx::DeepModelTy: OrdLogic;
+
+                #[ensures(*result == self.start_log())]
+                fn start(&self) -> &Idx;
+
+                #[ensures(*result == self.end_log())]
+                fn end(&self) -> &Idx;
+            }
+
+            impl<Idx : PartialOrd<Idx> + DeepModel> RangeInclusive<Idx>
+            where Idx::DeepModelTy: OrdLogic
+            {
+                #[ensures(result == self.is_empty_log())]
+                fn is_empty(&self) -> bool;
             }
         }
     }
