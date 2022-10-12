@@ -58,3 +58,14 @@ pub fn counter(v: Vec<u32>) {
     proof_assert! { (@x).ext_eq(@v) };
     proof_assert! { @cnt == (@x).len() };
 }
+
+#[requires(@n >= 0)]
+#[ensures(result == n)]
+pub fn sum_range(n: isize) -> isize {
+    let mut i = 0;
+    #[invariant(user, @i == produced.len() && i <= n)]
+    for _ in 0..n {
+        i += 1;
+    }
+    i
+}

@@ -1,4 +1,3 @@
-use crate as creusot_contracts;
 use crate::{
     logic::*,
     std::{default::Default, iter::Iterator},
@@ -57,14 +56,17 @@ impl<T> Default for &[T] {
 }
 
 pub trait SliceExt {
-    type Output;
+    type Item;
 
     #[logic]
-    fn to_mut_seq(&mut self) -> Seq<&mut Self::Output>;
+    fn to_mut_seq(&mut self) -> Seq<&mut Self::Item>;
+
+    #[logic]
+    fn to_ref_seq(&self) -> Seq<&Self::Item>;
 }
 
 impl<T> SliceExt for [T] {
-    type Output = T;
+    type Item = T;
 
     #[logic]
     #[trusted]
@@ -72,6 +74,14 @@ impl<T> SliceExt for [T] {
     #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == (@self)[i])]
     #[ensures(forall<i : _> 0 <= i && i < result.len() ==> ^result[i] == (@^self)[i])]
     fn to_mut_seq(&mut self) -> Seq<&mut T> {
+        pearlite! { absurd }
+    }
+
+    #[logic]
+    #[trusted]
+    #[ensures(result.len() == (@self).len())]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == (@self)[i])]
+    fn to_ref_seq(&self) -> Seq<&T> {
         pearlite! { absurd }
     }
 }
@@ -250,20 +260,25 @@ extern_spec! {
         })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
 
-        #[ensures(@result == @self)]
+        #[ensures(@result == self)]
         #[ensures(result.invariant())]
         fn iter(&self) -> Iter<'_, T>;
 
-        #[ensures(*@result == @self)]
-        #[ensures(^@result == @^self)]
-        #[ensures((^@result).len() == (@self).len())]
+        #[ensures(@result == self)]
         #[ensures(result.invariant())]
         fn iter_mut(&mut self) -> IterMut<'_, T>;
     }
 
     impl<'a, T> IntoIterator for &'a [T] {
-        #[ensures(@result == @self)]
+        #[ensures(@result == self)]
+        #[ensures(result.invariant())]
         fn into_iter(self) -> Iter<'a, T>;
+    }
+
+    impl<'a, T> IntoIterator for &'a mut[T] {
+        #[ensures(@result == self)]
+        #[ensures(result.invariant())]
+        fn into_iter(self) -> IterMut<'a, T>;
     }
 
     impl<T, I> IndexMut<I> for [T]
@@ -284,8 +299,8 @@ extern_spec! {
     }
 }
 
-impl<T> ShallowModel for Iter<'_, T> {
-    type ShallowModelTy = Seq<T>;
+impl<'a, T> ShallowModel for Iter<'a, T> {
+    type ShallowModelTy = &'a [T];
 
     #[logic]
     #[trusted]
@@ -301,30 +316,16 @@ impl<T> Invariant for Iter<'_, T> {
     }
 }
 
-impl<'a, T> ShallowModel for IterMut<'a, T> {
-    type ShallowModelTy = &'a mut Seq<T>;
-
-    #[logic]
-    #[trusted]
-    #[ensures((^result).len() == result.len())]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        absurd
-    }
-}
-
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && @self == Seq::EMPTY }
+        pearlite! { self.resolve() && @*@self == Seq::EMPTY }
     }
 
     #[predicate]
-    fn produces(self, visited: Seq<Self::Item>, rhs: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
-            (@self).len() == visited.len() + (@rhs).len() &&
-            (@self).subsequence(visited.len(), (@self).len()).ext_eq(@rhs) &&
-            (forall<i : Int> 0 <= i && i < visited.len() ==>
-                (@self)[i] == *visited[i])
+            (@self).to_ref_seq() == visited.concat((@tl).to_ref_seq())
         }
     }
 
@@ -339,29 +340,35 @@ impl<'a, T> Iterator for Iter<'a, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
+impl<'a, T> ShallowModel for IterMut<'a, T> {
+    type ShallowModelTy = &'a mut [T];
+
+    #[logic]
+    #[trusted]
+    #[ensures((@^result).len() == (@*result).len())]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        absurd
+    }
+}
+
 impl<'a, T> Invariant for IterMut<'a, T> {
     #[predicate]
     fn invariant(self) -> bool {
         // Property that is always true but we must carry around..
-        pearlite! { (^@self).len() == (*@self).len() }
+        pearlite! { (@^@self).len() == (@*@self).len() }
     }
 }
 
 impl<'a, T> Iterator for IterMut<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && *@self == Seq::EMPTY }
+        pearlite! { self.resolve() && @*@self == Seq::EMPTY }
     }
 
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
-            (@self).len() == visited.len() + (@tl).len() &&
-            (^@self).len() == visited.len() + (^@tl).len() &&
-            (@self).subsequence(visited.len(), (@self).len()).ext_eq(*@tl) &&
-            (^@self).subsequence(visited.len(), (^@self).len()).ext_eq(^@tl)&&
-            (forall<i : Int> 0 <= i && i < visited.len() ==>
-                (@self)[i] == *visited[i] && (^@self)[i] == ^visited[i])
+            (@self).to_mut_seq() == visited.concat((@tl).to_mut_seq())
         }
     }
 

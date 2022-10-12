@@ -19,6 +19,7 @@ use iter::Iterator;
 // }
 //
 // Here we prove the specific instance of `extend` for `Vec<T>`.
+#[requires(iter.invariant())]
 #[ensures(
   exists<done_ : &mut I, prod: Seq<_>>
     done_.completed() && iter.produces(prod, *done_) && @^vec == (@vec).concat(prod)
@@ -36,6 +37,7 @@ pub fn extend<T, I: Iterator<Item = T> + Invariant>(vec: &mut Vec<T>, iter: I) {
 //     B: FromIterator<Self::Item>,
 //
 //  We prove the specific instance for vector
+#[requires(iter.invariant())]
 #[ensures(
   exists<done_ : &mut I, prod: Seq<_>>
     done_.completed() && iter.produces(prod, *done_) && @result == prod
@@ -58,6 +60,7 @@ pub fn extend_index(mut v1: Vec<u32>, v2: Vec<u32>) {
     proof_assert! { (@v1).ext_eq((@oldv1).concat(@oldv2)) };
 }
 
+#[requires(iter.invariant())]
 #[requires(forall<prod : Seq<u32>, fin: I> iter.produces(prod, fin) ==> forall<i : _> 0 <= i && i < prod.len() ==> @prod[i] == i)]
 pub fn collect_example<I: Iterator<Item = u32>>(iter: I) {
     let v: Vec<u32> = collect(iter);

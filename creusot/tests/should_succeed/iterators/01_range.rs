@@ -71,9 +71,20 @@ impl Range {
 #[ensures(result == n)]
 pub fn sum_range(n: isize) -> isize {
     let mut i = 0;
+    let mut it = Range { start: 0, end: n }.into_iter();
+    let iter_old = ghost! { it };
+    let mut produced = ghost! { Seq::EMPTY };
+    #[invariant(type_invariant, it.invariant())]
+    #[invariant(structural, iter_old.produces(produced.inner(), it))]
     #[invariant(user, @i == produced.len() && i <= n)]
-    for _ in (Range { start: 0, end: n }) {
-        i += 1;
+    loop {
+        match it.next() {
+            Some(x) => {
+                produced = ghost! { produced.concat(Seq::singleton(x)) };
+                i += 1
+            }
+            None => break,
+        }
     }
     i
 }

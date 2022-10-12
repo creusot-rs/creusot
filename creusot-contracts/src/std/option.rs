@@ -1,4 +1,3 @@
-use crate as creusot_contracts;
 use crate::{std::default::Default, Resolve};
 use creusot_contracts_proc::*;
 

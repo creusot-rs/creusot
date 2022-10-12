@@ -7,6 +7,8 @@
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns, box_syntax))]
 #![feature(step_trait)]
 
+extern crate self as creusot_contracts;
+
 #[cfg(feature = "contracts")]
 mod macros {
     /// A pre-condition of a function or trait item

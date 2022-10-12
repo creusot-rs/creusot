@@ -1,4 +1,3 @@
-use crate as creusot_contracts;
 use crate::{logic::int::Int, macros::*};
 use std::cmp::Ordering;
 

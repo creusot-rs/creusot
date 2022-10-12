@@ -1,4 +1,3 @@
-use crate as creusot_contracts;
 use crate::{
     logic::{Int, Seq},
     std::{iter::Iterator, ops::RangeInclusiveExt},
@@ -44,6 +43,15 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
+#[logic]
+#[ensures(r.is_empty_log() == (result == 0))]
+fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<Idx>) -> Int {
+    pearlite! {
+        if r.is_empty_log() { 0 }
+        else { r.end_log().deep_model() - r.start_log().deep_model() + 1 }
+    }
+}
+
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> {
     #[predicate]
     fn completed(&mut self) -> bool {
@@ -55,18 +63,11 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> 
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            if self.is_empty_log() {
-                o.is_empty_log() && visited == Seq::EMPTY
-            } else {
-                (if o.is_empty_log() {
-                    visited.len() == self.end_log().deep_model() - self.start_log().deep_model() + 1
-                } else {
-                    o.end_log() == self.end_log() && self.start_log().deep_model() <= o.start_log().deep_model()
-                    && visited.len() == o.start_log().deep_model() - self.start_log().deep_model()
-                })
-                && forall<i : Int> 0 <= i && i < visited.len() ==>
-                    visited[i].deep_model() == self.start_log().deep_model() + i
-            }
+            visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
+            (self.is_empty_log() ==> o.is_empty_log()) &&
+            (o.is_empty_log() || self.end_log() == o.end_log()) &&
+            forall<i : Int> 0 <= i && i < visited.len() ==>
+                visited[i].deep_model() == self.start_log().deep_model() + i
         }
     }
 

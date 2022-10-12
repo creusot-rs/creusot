@@ -1,4 +1,3 @@
-use crate as creusot_contracts;
 use crate::{logic::Seq, resolve::Resolve, Invariant};
 use creusot_contracts_proc::*;
 use std::iter::{Skip, Take};
@@ -65,6 +64,8 @@ extern_spec! {
                 #[ensures(result.iter() == self && result.n() == @n)]
                 fn take(self, n: usize) -> Take<Self>;
 
+                #[requires(self.invariant())]
+                // TODO: Investigate why Self_ needed
                 #[ensures(exists<done_ : &mut Self_, prod: Seq<_>> (^done_).resolve() && done_.completed() &&
                     self.produces(prod, *done_) && B::from_iter_logic(prod, result))]
                 fn collect<B>(self) -> B
@@ -74,11 +75,14 @@ extern_spec! {
             trait FromIterator<A>
                 where Self: FromIterator<A> {
 
-            // TODO: Investigate why Self_ needed
-            #[ensures(Self_::from_iter_logic(Seq::EMPTY, result))]
-            fn from_iter<T>(iter: T) -> Self
-                where
-                    T: IntoIterator<Item = A>;
+                #[requires(iter.invariant())]
+                #[ensures(exists<done_ : &mut T, prod: Seq<T::Item>> (^done_).resolve() && done_.completed() &&
+                    iter.produces(prod, *done_) && Self_::from_iter_logic(prod, result))]
+                fn from_iter<T>(iter: T) -> Self
+                    where
+                        T: Iterator<Item = A>;
+                 // TODO : from_iter in Rust std lib uses T:IntoIterator<Item = A>
+                 // But we need to give a generic spec to IntoIterator
             }
         }
     }
@@ -87,7 +91,6 @@ extern_spec! {
 extern_spec! {
     impl<I : Iterator + Invariant> IntoIterator for I {
         #[ensures(result == self)]
-        #[ensures(result.invariant())]
         fn into_iter(self) -> I;
     }
 }

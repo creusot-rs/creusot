@@ -1,8 +1,6 @@
-use crate as creusot_contracts;
 use crate::{logic::OrdLogic, DeepModel, Invariant, Resolve};
-use std::ops::{Range, RangeInclusive};
-
 use creusot_contracts_proc::*;
+use std::ops::{Range, RangeInclusive};
 
 /// `FnOnceSpec` is an extension trait for the `FnOnce` trait, used for
 /// adding a specification to closures. It should not be used directly.
