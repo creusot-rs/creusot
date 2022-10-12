@@ -1,4 +1,3 @@
-use crate as creusot_contracts;
 use crate::{macros::*, DeepModel, ShallowModel};
 
 use std::ops::*;

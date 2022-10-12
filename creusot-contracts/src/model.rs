@@ -1,6 +1,3 @@
-#[cfg(feature = "contracts")]
-use crate as creusot_contracts;
-
 use crate::{logic::Seq, macros::*};
 
 #[cfg(feature = "contracts")]

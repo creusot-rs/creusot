@@ -1,4 +1,3 @@
-use crate as creusot_contracts;
 use crate::{
     logic::*,
     std::{
@@ -35,6 +34,14 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
               ==> result[i] == (@self)[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
+    }
+}
+
+#[trusted]
+impl<T> Resolve for Vec<T> {
+    #[predicate]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i : Int> 0 <= i && i < (@self).len() ==> (@self)[i].resolve() }
     }
 }
 
@@ -118,9 +125,15 @@ extern_spec! {
 // that cannot properly prefix `Vec` with `std::vec::` inside `&'a Vec`
 extern_spec! {
     impl<'a, T, A : Allocator> IntoIterator for &'a std::vec::Vec<T, A> {
-        #[ensures(@result == @self)]
+        #[ensures(@@result == @self)]
         #[ensures(result.invariant())]
         fn into_iter(self) -> std::slice::Iter<'a, T>;
+    }
+
+    impl<'a, T, A : Allocator> IntoIterator for &'a mut std::vec::Vec<T, A> {
+        #[ensures(@@result == @self)]
+        #[ensures(result.invariant())]
+        fn into_iter(self) -> std::slice::IterMut<'a, T>;
     }
 }
 
@@ -131,11 +144,13 @@ impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {
     }
 }
 
-#[trusted]
-impl<T> Resolve for Vec<T> {
-    #[predicate]
-    fn resolve(self) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i < (@self).len() ==> (@self)[i].resolve() }
+impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
+    type ShallowModelTy = Seq<T>;
+
+    #[logic]
+    #[trusted]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        absurd
     }
 }
 
@@ -148,10 +163,7 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[predicate]
     fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
         pearlite! {
-            (@self).len() == visited.len() + (@rhs).len() &&
-            (@self).subsequence(visited.len(), (@self).len()).ext_eq(@rhs) &&
-            (forall<i : Int> 0 <= i && i < visited.len() ==>
-                (@self)[i] == visited[i])
+            @self == visited.concat(@rhs)
         }
     }
 
@@ -164,16 +176,6 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
-}
-
-impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
-    type ShallowModelTy = Seq<T>;
-
-    #[logic]
-    #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        absurd
-    }
 }
 
 impl<T> FromIterator<T> for Vec<T> {

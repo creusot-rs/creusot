@@ -1,4 +1,3 @@
-use crate as creusot_contracts;
 use crate::macros::*;
 
 use crate::logic::int::Int;

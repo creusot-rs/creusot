@@ -1,5 +1,3 @@
-use crate as creusot_contracts;
-
 use creusot_contracts_proc::*;
 
 pub trait Default: std::default::Default {

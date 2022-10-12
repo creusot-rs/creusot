@@ -1,4 +1,3 @@
-use crate as creusot_contracts;
 use crate::{
     logic::{Int, Seq},
     std::iter::Iterator,

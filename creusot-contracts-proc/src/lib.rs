@@ -265,7 +265,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
                 #[allow(unused_must_use)]
                 let _ =
                     #attrs
-                    |result| {creusot_contracts::__stubs::closure_result(res, result); #req_body }
+                    |result| {::creusot_contracts::__stubs::closure_result(res, result); #req_body }
                 ;
                 res});
             TS1::from(quote! {
@@ -304,7 +304,7 @@ fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
             #[creusot::no_translate]
             #[creusot::item=#name_tag]
             #[creusot::decl::spec]
-            ||{ creusot_contracts::__stubs::variant_check(#var_body) }
+            ||{ ::creusot_contracts::__stubs::variant_check(#var_body) }
         ;
     };
 
@@ -354,7 +354,7 @@ pub fn ghost(assertion: TS1) -> TS1 {
                 #[creusot::no_translate]
                 #[creusot::decl::spec]
                 #[creusot::spec::ghost]
-                || { creusot_contracts::Ghost::new(#assertion) }
+                || { ::creusot_contracts::Ghost::new(#assertion) }
             )()
         }
     })
