@@ -1,5 +1,4 @@
-use crate::{std::default::Default, Resolve};
-use creusot_contracts_proc::*;
+use crate::{macros::*, std::default::Default, Resolve};
 
 extern_spec! {
     mod std {

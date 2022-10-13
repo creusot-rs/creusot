@@ -1,9 +1,9 @@
 use crate::{
     logic::{Int, Seq},
+    macros::*,
     std::iter::Iterator,
     Invariant, Resolve,
 };
-use creusot_contracts_proc::*;
 use std::iter::Skip;
 
 pub trait SkipExt<I> {

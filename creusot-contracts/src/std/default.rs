@@ -1,4 +1,4 @@
-use creusot_contracts_proc::*;
+use crate::macros::*;
 
 pub trait Default: std::default::Default {
     #[predicate]

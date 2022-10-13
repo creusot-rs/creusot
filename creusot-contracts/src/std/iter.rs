@@ -1,5 +1,4 @@
-use crate::{logic::Seq, resolve::Resolve, Invariant};
-use creusot_contracts_proc::*;
+use crate::{logic::Seq, macros::*, resolve::Resolve, Invariant};
 use std::iter::{Skip, Take};
 
 mod map_inv;

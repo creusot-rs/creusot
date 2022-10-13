@@ -1,11 +1,12 @@
 #![cfg_attr(
     feature = "contracts",
-    feature(unsized_locals, fn_traits, unboxed_closures, min_specialization, allocator_api),
+    feature(unsized_locals, fn_traits, min_specialization),
     allow(incomplete_features),
     feature(slice_take)
 )]
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns, box_syntax))]
-#![feature(step_trait)]
+#![feature(step_trait, allocator_api, unboxed_closures)]
+#![cfg_attr(not(feature = "contracts"), feature(rustc_attrs))]
 
 extern crate self as creusot_contracts;
 
@@ -143,11 +144,8 @@ pub mod __stubs;
 
 pub mod logic;
 
-#[cfg(feature = "contracts")]
+#[cfg_attr(not(feature = "contracts"), allow(unused))]
 pub mod std;
-
-#[cfg(not(feature = "contracts"))]
-pub mod std {}
 
 #[cfg(feature = "contracts")]
 mod ghost;

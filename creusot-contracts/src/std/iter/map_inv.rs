@@ -1,10 +1,10 @@
 use super::Iterator;
 use crate::{
     logic::{Int, Seq},
+    macros::*,
     std::ops::*,
     Ghost, Invariant, Resolve,
 };
-use creusot_contracts_proc::*;
 
 pub struct MapInv<I, A, F> {
     iter: I,
@@ -113,7 +113,8 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> ::std::iter::I
         match self.iter.next() {
             Some(v) => {
                 proof_assert! { self.func.precondition((v, self.produced)) };
-                ghost! { Self::produces_one_invariant };
+                #[allow(path_statements)]
+                let _: Ghost<()> = ghost! { {Self::produces_one_invariant; ()} };
                 let produced = ghost! { self.produced.push(v) };
                 let r = Some((self.func)(v, ghost! { self.produced.inner() })); // FIXME: Ghost should be Copy
                 self.produced = produced;
