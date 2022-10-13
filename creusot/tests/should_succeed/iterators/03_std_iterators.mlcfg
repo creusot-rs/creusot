@@ -3576,9 +3576,9 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_Produces
     type self = i
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   use prelude.Ghost
+  use prelude.Borrow
   use mach.int.Int
   use seq_ext.SeqExt
-  use prelude.Borrow
   use seq.Seq
   use prelude.Ghost
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut_Stub as PostconditionMut0 with
@@ -3594,11 +3594,11 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_Produces
   predicate produces [@inline:trivial] (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) (visited : Seq.seq b) (succ : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f)
     
    =
-    Unnest0.unnest (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ) /\ Seq.length (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) + Seq.length visited = Seq.length (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced succ)) /\ Seq.(==) (SeqExt.subsequence (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced succ)) 0 (Seq.length (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)))) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) /\ Produces0.produces (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) (SeqExt.subsequence (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced succ)) (Seq.length (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self))) (Seq.length (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced succ)))) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter succ) /\ (exists fs : Seq.seq (borrowed f) . Seq.length fs = Seq.length visited /\ (forall i : int . 1 <= i /\ i < Seq.length fs ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i) /\ (if Seq.length visited = 0 then
+    Unnest0.unnest (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ) /\ (exists s : Seq.seq Item0.item . Seq.length s = Seq.length visited /\ Produces0.produces (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) s (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter succ) /\ Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced succ) = Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) s /\ (exists fs : Seq.seq (borrowed f) . Seq.length fs = Seq.length visited /\ (forall i : int . 1 <= i /\ i < Seq.length fs ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i) /\ (if Seq.length visited = 0 then
       CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ
     else
        * Seq.get fs 0 = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self /\  ^ Seq.get fs (Seq.length visited - 1) = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ
-    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> PostconditionMut0.postcondition_mut (Seq.get fs i) (Seq.get (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced succ)) (Seq.length (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) + i), Ghost.new (SeqExt.subsequence (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced succ)) 0 (Seq.length (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) + i))) (Seq.get visited i)))
+    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> PostconditionMut0.postcondition_mut (Seq.get fs i) (Seq.get s i, Ghost.new (Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
   val produces [@inline:trivial] (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) (visited : Seq.seq b) (succ : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) : bool
     ensures { result = produces self visited succ }
     

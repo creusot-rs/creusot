@@ -71,17 +71,15 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
     #[why3::attr = "inline:trivial"]
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
-            self.func.unnest(succ.func) &&
-            self.produced.len() + visited.len() == succ.produced.len()
-            && succ.produced.subsequence(0, self.produced.len()).ext_eq(*self.produced)
-            && self.iter.produces(succ.produced.subsequence(self.produced.len(), succ.produced.len()), succ.iter )
-            && exists<fs: Seq<&mut F>>
-                fs.len() == visited.len()
-                && (forall<i : Int> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == * fs[i])
-                && if visited.len() == 0 { self.func == succ.func }
-                   else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
-                && forall<i : Int> 0 <= i && i < visited.len() ==>
-                    fs[i].postcondition_mut((succ.produced[self.produced.len() + i], Ghost::new(succ.produced.subsequence(0, self.produced.len() + i))), visited[i])
+            self.func.unnest(succ.func)
+            && exists<s : Seq<I::Item>> s.len() == visited.len() && self.iter.produces(s, succ.iter)
+            && succ.produced.inner() == self.produced.concat(s)
+            && exists<fs: Seq<&mut F>> fs.len() == visited.len()
+            && (forall<i : Int> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == * fs[i])
+            && if visited.len() == 0 { self.func == succ.func }
+               else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
+            && forall<i : Int> 0 <= i && i < visited.len() ==>
+                 fs[i].postcondition_mut((s[i], Ghost::new(self.produced.concat(s.subsequence(0, i)))), visited[i])
         }
     }
 }
@@ -189,9 +187,8 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
         pearlite! {
             self.func.unnest(succ.func) &&
             exists<f: &mut F> *f == self.func && ^f == succ.func
-            && { let e = succ.produced[self.produced.len()];
-                 succ.produced.inner() == self.produced.push(e)
-                 && self.iter.produces(Seq::singleton(e), succ.iter)
+            && { exists<e: I::Item> self.iter.produces(Seq::singleton(e), succ.iter)
+                 && succ.produced.inner() == self.produced.push(e)
                  && f.postcondition_mut((e, self.produced), visited) }
         }
     }

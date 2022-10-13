@@ -44,14 +44,13 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
     fn produces(self, visited: Seq<Self::Item>, succ: Self) -> bool {
         pearlite! {
             self.func.unnest(succ.func)
-            && exists<s : Seq<_>> s.len() == visited.len() && self.iter.produces(s, succ.iter )
-                && exists<fs: Seq<&mut F>>
-                    fs.len() == visited.len()
-                    && (forall<i : Int> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == * fs[i])
-                    && if visited.len() == 0 { self.func == succ.func }
-                       else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
-                    && forall<i : Int> 0 <= i && i < visited.len() ==>
-                        fs[i].postcondition_mut((s[i],), visited[i])
+            && exists<s : Seq<I::Item>> s.len() == visited.len() && self.iter.produces(s, succ.iter)
+            && exists<fs: Seq<&mut F>> fs.len() == visited.len()
+            && (forall<i : Int> 1 <= i && i < fs.len() ==>  ^fs[i - 1] == *fs[i])
+            && if visited.len() == 0 { self.func == succ.func }
+               else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
+            && forall<i : Int> 0 <= i && i < visited.len() ==>
+                 fs[i].postcondition_mut((s[i],), visited[i])
         }
     }
 
@@ -139,8 +138,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
         pearlite! {
             self.func.unnest(succ.func) &&
             exists<f: &mut F> *f == self.func && ^f == succ.func
-            && { exists<e : _>
-                 self.iter.produces(Seq::singleton(e), succ.iter)
+            && { exists<e : I::Item> self.iter.produces(Seq::singleton(e), succ.iter)
                  && f.postcondition_mut((e,), visited) }
         }
     }
