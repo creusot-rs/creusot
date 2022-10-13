@@ -18,6 +18,19 @@ jobs:
       run: |
         shopt -s globstar
         rustfmt **/*.rs --check
+  contracts-build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-contracts-${{ hashFiles('creusot-contracts/Cargo.lock') }}
+    - name: Build creusot-contracts with rustc
+      run: cargo build -p creusot-contracts
   build:
     runs-on: ubuntu-latest
     steps:

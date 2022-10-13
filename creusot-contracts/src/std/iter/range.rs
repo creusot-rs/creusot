@@ -1,9 +1,9 @@
 use crate::{
     logic::{Int, Seq},
+    macros::*,
     std::{iter::Iterator, ops::RangeInclusiveExt},
     DeepModel, Invariant, Resolve,
 };
-use creusot_contracts_proc::*;
 use std::{
     iter::Step,
     ops::{Range, RangeInclusive},

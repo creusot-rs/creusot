@@ -1,4 +1,4 @@
-use creusot_contracts_proc::*;
+use crate::macros::*;
 
 use crate::{logic::OrdLogic, DeepModel};
 use std::cmp::Ordering;

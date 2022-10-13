@@ -1,9 +1,9 @@
 use crate::{
     logic::*,
+    macros::*,
     std::{default::Default, iter::Iterator},
     DeepModel, Invariant, Resolve, ShallowModel,
 };
-use creusot_contracts_proc::*;
 use std::{
     ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
     slice::{Iter, IterMut},

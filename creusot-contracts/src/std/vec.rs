@@ -1,12 +1,12 @@
 use crate::{
     logic::*,
+    macros::*,
     std::{
         iter::{FromIterator, Iterator},
         slice::SliceIndex,
     },
     DeepModel, Invariant, Resolve, ShallowModel,
 };
-use creusot_contracts_proc::*;
 use std::{
     alloc::Allocator,
     ops::{Deref, DerefMut, Index, IndexMut},

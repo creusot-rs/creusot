@@ -1,4 +1,4 @@
-use creusot_contracts_proc::*;
+use crate::macros::*;
 
 extern_spec! {
     mod std {

@@ -1,5 +1,4 @@
-use crate::logic::Int;
-use creusot_contracts_proc::*;
+use crate::{logic::Int, macros::*};
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given
 /// integer type
