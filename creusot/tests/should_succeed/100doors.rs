@@ -16,24 +16,9 @@ extern crate creusot_contracts;
 use creusot_contracts::*;
 
 pub fn f() {
-    let mut door_open: Vec<bool> = Vec::with_capacity(100);
-    let mut i: usize = 1;
-    #[invariant(loop_bounds,1 <= @i && @i <= 101)]
-    #[invariant(door_size, (@door_open).len() == @i - 1)]
-    while i < 101 {
-        door_open.push(false);
-        i += 1;
-    }
-    // alternative 1: not supported
-    //let mut door_open: Vec<bool> = vec![false;100];
-    // alternative 2: not supported
-    //let mut door_open: Vec<bool> = Vec::new();
-    //door_open.resize(100,false);
-    assert!(door_open.len() == 100);
-    let mut pass: usize = 1;
-    #[invariant(loop_bounds,1 <= @pass && @pass <= 101)]
+    let mut door_open: Vec<bool> = vec![false; 100];
     #[invariant(door_size, (@door_open).len() == 100)]
-    while pass < 101 {
+    for pass in 1..101 {
         let mut door: usize = pass;
         #[invariant(loop_bounds,1 <= @door && @door <= 100 + @pass)]
         #[invariant(door_size, (@door_open).len() == 100)]
@@ -41,6 +26,5 @@ pub fn f() {
             door_open[door - 1] = !door_open[door - 1];
             door += pass;
         }
-        pass += 1;
     }
 }

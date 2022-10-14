@@ -21,7 +21,7 @@ use creusot_rustc::{
     index::bit_set::BitSet,
     infer::infer::TyCtxtInferExt,
     middle::{
-        mir::{traversal::reverse_postorder, MirPass},
+        mir::{traversal::reverse_postorder, MirPass, Mutability::*},
         ty::{
             subst::{GenericArg, SubstsRef},
             DefIdTree, EarlyBinder, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt,
@@ -685,25 +685,28 @@ pub(crate) fn closure_unnest<'tcx>(
     def_id: DefId,
     subst: SubstsRef<'tcx>,
 ) -> Exp {
+    // FIXME: does not work with move closures
+    // (problem is: how to detect a move closure).
+
     let mut unnest = Exp::mk_true();
 
     let csubst = subst.as_closure();
     for (ix, up_ty) in csubst.upvar_tys().enumerate() {
-        if up_ty.is_mutable_ptr() {
-            let acc_name = ty::closure_accessor_name(tcx, def_id, ix);
-            let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
-
-            let cur = Exp::pure_var(Ident::build("self"));
-            let fin = Exp::pure_var(Ident::build("_2'"));
-
-            let unnest_one = Exp::BinaryOp(
+        let acc_name = ty::closure_accessor_name(tcx, def_id, ix);
+        let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
+        let cur = Exp::pure_var(Ident::build("self"));
+        let fin = Exp::pure_var(Ident::build("_2'"));
+        let unnest_one = match up_ty.ref_mutability().unwrap() {
+            Mut => Exp::BinaryOp(
                 BinOp::Eq,
                 box Exp::Final(box acc.clone().app_to(fin.clone())),
                 box Exp::Final(box acc.app_to(cur)),
-            );
-
-            unnest = unnest_one.log_and(unnest);
-        }
+            ),
+            Not => {
+                Exp::BinaryOp(BinOp::Eq, box acc.clone().app_to(fin.clone()), box acc.app_to(cur))
+            }
+        };
+        unnest = unnest_one.log_and(unnest);
     }
 
     unnest
