@@ -84,6 +84,7 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
 
     #[invariant(not_elem, forall<j: Int> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
     for e in vec.iter() {
+        proof_assert! { *e == (@*vec)[produced.len()-1] };
         if e == &elem {
             proof_assert! { contains(vec.deep_model(), elem.deep_model()) };
             return;
