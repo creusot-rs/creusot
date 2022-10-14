@@ -2968,6 +2968,24 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_NextPrecondition
     ensures { result = next_precondition self }
     
 end
+module CreusotContracts_Std1_Ops_Impl1_Unnest_Stub
+  type args
+  type f
+  predicate unnest (self : f) (_2' : f)
+end
+module CreusotContracts_Std1_Ops_Impl1_Unnest_Interface
+  type args
+  type f
+  predicate unnest (self : f) (_2' : f)
+end
+module CreusotContracts_Std1_Ops_Impl1_Unnest
+  type args
+  type f
+  predicate unnest (self : f) (_2' : f)
+  val unnest (self : f) (_2' : f) : bool
+    ensures { result = unnest self _2' }
+    
+end
 module Core_Ops_Function_FnOnce_Output_Type
   type self
   type args
@@ -3007,13 +3025,13 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation_Stub
   type i
   type b
   type f
-  predicate preservation (iter : i)
+  predicate preservation (iter : i) (func : f)
 end
 module CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation_Interface
   type i
   type b
   type f
-  predicate preservation (iter : i)
+  predicate preservation (iter : i) (func : f)
 end
 module CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation
   type i
@@ -3036,12 +3054,15 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation
   clone CreusotContracts_Std1_Iter_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = Item0.item
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
     type self = i
-  predicate preservation (iter : i) =
-    forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Produces0.produces iter (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1, Ghost.new s) -> PostconditionMut0.postcondition_mut f (e1, Ghost.new s) b -> Precondition0.precondition ( ^ f) (e2, Ghost.new (Seq.snoc s e1))
-  val preservation (iter : i) : bool
-    ensures { result = preservation iter }
+  predicate preservation (iter : i) (func : f) =
+    forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Unnest0.unnest func ( * f) -> Produces0.produces iter (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1, Ghost.new s) -> PostconditionMut0.postcondition_mut f (e1, Ghost.new s) b -> Precondition0.precondition ( ^ f) (e2, Ghost.new (Seq.snoc s e1))
+  val preservation (iter : i) (func : f) : bool
+    ensures { result = preservation iter func }
     
 end
 module CreusotContracts_Std1_Iter_MapInv_Impl4_Reinitialize_Stub
@@ -3081,7 +3102,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_Reinitialize
     type f = f,
     type Item0.item = Item0.item
   predicate reinitialize (_ : ()) =
-    forall reset : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) . Completed0.completed reset -> Invariant0.invariant' (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter ( ^ reset)) -> NextPrecondition0.next_precondition ( ^ reset) /\ Preservation0.preservation (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter ( ^ reset))
+    forall reset : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) . Completed0.completed reset -> Invariant0.invariant' (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter ( ^ reset)) -> NextPrecondition0.next_precondition ( ^ reset) /\ Preservation0.preservation (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter ( ^ reset)) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func ( ^ reset))
   val reinitialize (_wild0 : ()) : bool
     ensures { result = reinitialize _wild0 }
     
@@ -3115,7 +3136,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv_Interface
     type f = f
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   predicate preservation_inv (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f)
-  axiom preservation_inv_spec : forall self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f . Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self) = Seq.empty  -> preservation_inv self = Preservation0.preservation (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self)
+  axiom preservation_inv_spec : forall self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f . Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self) = Seq.empty  -> preservation_inv self = Preservation0.preservation (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self)
 end
 module CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv
   type i
@@ -3143,14 +3164,17 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv
   clone CreusotContracts_Std1_Iter_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = Item0.item
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
     type self = i
   predicate preservation_inv (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) =
-    forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Produces0.produces (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1, Ghost.new (Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) s)) -> PostconditionMut0.postcondition_mut f (e1, Ghost.new (Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) s)) b -> Precondition0.precondition ( ^ f) (e2, Ghost.new (Seq.snoc (Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) s) e1))
+    forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Unnest0.unnest (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self) ( * f) -> Produces0.produces (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1, Ghost.new (Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) s)) -> PostconditionMut0.postcondition_mut f (e1, Ghost.new (Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) s)) b -> Precondition0.precondition ( ^ f) (e2, Ghost.new (Seq.snoc (Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) s) e1))
   val preservation_inv (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) : bool
     ensures { result = preservation_inv self }
     
-  axiom preservation_inv_spec : forall self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f . Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self) = Seq.empty  -> preservation_inv self = Preservation0.preservation (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self)
+  axiom preservation_inv_spec : forall self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f . Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self) = Seq.empty  -> preservation_inv self = Preservation0.preservation (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self)
 end
 module CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Stub
   type i
@@ -3240,7 +3264,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl0_MapInv_Interface
   val map_inv [@cfg:stackify] (self : i) (func : f) : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f
     requires {forall i2 : i . forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces self (Seq.singleton e) i2 -> Precondition0.precondition func (e, Ghost.new (Seq.empty ))}
     requires {Reinitialize0.reinitialize ()}
-    requires {Preservation0.preservation self}
+    requires {Preservation0.preservation self func}
     requires {Invariant0.invariant' self}
     ensures { Invariant1.invariant' result }
     ensures { result = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.C_MapInv self func (Ghost.new (Seq.empty )) }
@@ -3281,7 +3305,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl0_MapInv
   val map_inv [@cfg:stackify] (self : i) (func : f) : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f
     requires {forall i2 : i . forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces self (Seq.singleton e) i2 -> Precondition0.precondition func (e, Ghost.new (Seq.empty ))}
     requires {Reinitialize0.reinitialize ()}
-    requires {Preservation0.preservation self}
+    requires {Preservation0.preservation self func}
     requires {Invariant0.invariant' self}
     ensures { Invariant1.invariant' result }
     ensures { result = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.C_MapInv self func (Ghost.new (Seq.empty )) }
@@ -3527,24 +3551,6 @@ module CreusotContracts_Std1_Iter_MapInv_Impl5_Resolve
     ensures { result = resolve self }
     
 end
-module CreusotContracts_Std1_Ops_Impl1_Unnest_Stub
-  type args
-  type f
-  predicate unnest (self : f) (_2' : f)
-end
-module CreusotContracts_Std1_Ops_Impl1_Unnest_Interface
-  type args
-  type f
-  predicate unnest (self : f) (_2' : f)
-end
-module CreusotContracts_Std1_Ops_Impl1_Unnest
-  type args
-  type f
-  predicate unnest (self : f) (_2' : f)
-  val unnest (self : f) (_2' : f) : bool
-    ensures { result = unnest self _2' }
-    
-end
 module CreusotContracts_Std1_Iter_MapInv_Impl1_Produces_Stub
   type i
   type b
@@ -3585,6 +3591,9 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_Produces
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f,
     type Output0.output = b
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone CreusotContracts_Std1_Iter_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = Item0.item
@@ -3598,7 +3607,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_Produces
       CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ
     else
        * Seq.get fs 0 = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self /\  ^ Seq.get fs (Seq.length visited - 1) = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func succ
-    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> PostconditionMut0.postcondition_mut (Seq.get fs i) (Seq.get s i, Ghost.new (Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
+    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> Unnest0.unnest (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self) ( * Seq.get fs i) /\ Precondition0.precondition ( * Seq.get fs i) (Seq.get s i, Ghost.new (Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i))) /\ PostconditionMut0.postcondition_mut (Seq.get fs i) (Seq.get s i, Ghost.new (Seq.(++) (Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
   val produces [@inline:trivial] (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) (visited : Seq.seq b) (succ : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) : bool
     ensures { result = produces self visited succ }
     
@@ -3856,6 +3865,7 @@ module C03StdIterators_Counter
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
     predicate Unnest0.unnest = Closure00.unnest,
+    predicate Precondition0.precondition = Closure00.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure00.postcondition_mut,
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces0.produces
@@ -3865,6 +3875,7 @@ module C03StdIterators_Counter
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
+    predicate Unnest0.unnest = Closure00.unnest,
     predicate Precondition0.precondition = Closure00.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure00.postcondition_mut,
     type Item0.item = Item0.item,
@@ -3882,6 +3893,7 @@ module C03StdIterators_Counter
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
+    predicate Unnest0.unnest = Closure00.unnest,
     predicate Precondition0.precondition = Closure00.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure00.postcondition_mut,
     predicate Preservation0.preservation = Preservation0.preservation,

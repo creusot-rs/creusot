@@ -53,7 +53,9 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
             && if visited.len() == 0 { self.func == succ.func }
                else { *fs[0] == self.func &&  ^fs[visited.len() - 1] == succ.func }
             && forall<i : Int> 0 <= i && i < visited.len() ==>
-                 fs[i].postcondition_mut((s[i], Ghost::new(self.produced.concat(s.subsequence(0, i)))), visited[i])
+                 self.func.unnest(*fs[i])
+                 && (*fs[i]).precondition((s[i], Ghost::new(self.produced.concat(s.subsequence(0, i)))))
+                 && fs[i].postcondition_mut((s[i], Ghost::new(self.produced.concat(s.subsequence(0, i)))), visited[i])
         }
     }
 
@@ -109,16 +111,17 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
                 reset.completed() ==>
                 (^reset).iter.invariant() ==>
                 (^reset).next_precondition() &&
-                Self::preservation((^reset).iter)
+                Self::preservation((^reset).iter, (^reset).func)
         }
     }
 
     #[predicate]
-    #[ensures(self.produced.inner() == Seq::EMPTY ==> result == Self::preservation(self.iter))]
+    #[ensures(self.produced.inner() == Seq::EMPTY ==> result == Self::preservation(self.iter, self.func))]
     fn preservation_inv(self) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 i.invariant() ==>
+                self.func.unnest(*f) ==>
                 self.iter.produces(s.push(e1).push(e2), i) ==>
                 (*f).precondition((e1, Ghost::new(self.produced.concat(s)))) ==>
                 f.postcondition_mut((e1, Ghost::new(self.produced.concat(s))), b) ==>
@@ -127,10 +130,11 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
     }
 
     #[predicate]
-    fn preservation(iter: I) -> bool {
+    fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
                 i.invariant() ==>
+                func.unnest(*f) ==>
                 iter.produces(s.push(e1).push(e2), i) ==>
                 (*f).precondition((e1, Ghost::new(s))) ==>
                 f.postcondition_mut((e1, Ghost::new(s)), b) ==>
@@ -153,6 +157,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
             exists<f: &mut F> *f == self.func && ^f == succ.func
             && { exists<e: I::Item> self.iter.produces(Seq::singleton(e), succ.iter)
                  && succ.produced.inner() == self.produced.push(e)
+                 && (*f).precondition((e, self.produced))
                  && f.postcondition_mut((e, self.produced), visited) }
         }
     }
@@ -161,7 +166,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
 #[requires(forall<e : I::Item, i2 : I> i2.invariant() ==> iter.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
 #[requires(Map::<I, _, F>::reinitialize())]
 #[requires(iter.invariant())]
-#[requires(Map::<I, I::Item, F>::preservation(iter))]
+#[requires(Map::<I, I::Item, F>::preservation(iter, func))]
 #[ensures(result.invariant())]
 #[ensures(result == Map { iter, func, produced: Ghost::new(Seq::EMPTY) })]
 pub fn map<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B>(

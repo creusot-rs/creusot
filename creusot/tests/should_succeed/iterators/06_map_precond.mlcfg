@@ -264,11 +264,29 @@ module C06MapPrecond_Impl1_NextPrecondition
     type Item0.item = Item0.item
   clone C06MapPrecond_Common_Iterator_Invariant_Stub as Invariant0 with
     type self = i
-  predicate next_precondition [#"../06_map_precond.rs" 96 4 96 38] (self : C06MapPrecond_Map_Type.t_map i Item0.item f)
+  predicate next_precondition [#"../06_map_precond.rs" 98 4 98 38] (self : C06MapPrecond_Map_Type.t_map i Item0.item f)
    =
-    [#"../06_map_precond.rs" 97 8 102 9] forall i : i . forall e : Item0.item . Invariant0.invariant' i -> Produces0.produces (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) i -> Precondition0.precondition (C06MapPrecond_Map_Type.map_func self) (e, C06MapPrecond_Map_Type.map_produced self)
+    [#"../06_map_precond.rs" 99 8 104 9] forall i : i . forall e : Item0.item . Invariant0.invariant' i -> Produces0.produces (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) i -> Precondition0.precondition (C06MapPrecond_Map_Type.map_func self) (e, C06MapPrecond_Map_Type.map_produced self)
   val next_precondition (self : C06MapPrecond_Map_Type.t_map i Item0.item f) : bool
     ensures { result = next_precondition self }
+    
+end
+module CreusotContracts_Std1_Ops_Impl1_Unnest_Stub
+  type args
+  type f
+  predicate unnest (self : f) (_2' : f)
+end
+module CreusotContracts_Std1_Ops_Impl1_Unnest_Interface
+  type args
+  type f
+  predicate unnest (self : f) (_2' : f)
+end
+module CreusotContracts_Std1_Ops_Impl1_Unnest
+  type args
+  type f
+  predicate unnest (self : f) (_2' : f)
+  val unnest (self : f) (_2' : f) : bool
+    ensures { result = unnest self _2' }
     
 end
 module Core_Ops_Function_FnOnce_Output_Type
@@ -310,13 +328,13 @@ module C06MapPrecond_Impl1_Preservation_Stub
   type i
   type b
   type f
-  predicate preservation (iter : i)
+  predicate preservation (iter : i) (func : f)
 end
 module C06MapPrecond_Impl1_Preservation_Interface
   type i
   type b
   type f
-  predicate preservation (iter : i)
+  predicate preservation (iter : i) (func : f)
 end
 module C06MapPrecond_Impl1_Preservation
   type i
@@ -339,12 +357,15 @@ module C06MapPrecond_Impl1_Preservation
   clone C06MapPrecond_Common_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = Item0.item
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone C06MapPrecond_Common_Iterator_Invariant_Stub as Invariant0 with
     type self = i
-  predicate preservation [#"../06_map_precond.rs" 130 4 130 36] (iter : i) =
-    [#"../06_map_precond.rs" 131 8 138 9] forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Produces0.produces iter (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1, Ghost.new s) -> PostconditionMut0.postcondition_mut f (e1, Ghost.new s) b -> Precondition0.precondition ( ^ f) (e2, Ghost.new (Seq.snoc s e1))
-  val preservation (iter : i) : bool
-    ensures { result = preservation iter }
+  predicate preservation [#"../06_map_precond.rs" 133 4 133 45] (iter : i) (func : f) =
+    [#"../06_map_precond.rs" 134 8 142 9] forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Unnest0.unnest func ( * f) -> Produces0.produces iter (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1, Ghost.new s) -> PostconditionMut0.postcondition_mut f (e1, Ghost.new s) b -> Precondition0.precondition ( ^ f) (e2, Ghost.new (Seq.snoc s e1))
+  val preservation (iter : i) (func : f) : bool
+    ensures { result = preservation iter func }
     
 end
 module C06MapPrecond_Impl1_Reinitialize_Stub
@@ -383,28 +404,10 @@ module C06MapPrecond_Impl1_Reinitialize
     type b = b,
     type f = f,
     type Item0.item = Item0.item
-  predicate reinitialize [#"../06_map_precond.rs" 106 4 106 29] (_ : ()) =
-    [#"../06_map_precond.rs" 107 8 113 9] forall reset : borrowed (C06MapPrecond_Map_Type.t_map i Item0.item f) . Completed0.completed reset -> Invariant0.invariant' (C06MapPrecond_Map_Type.map_iter ( ^ reset)) -> NextPrecondition0.next_precondition ( ^ reset) /\ Preservation0.preservation (C06MapPrecond_Map_Type.map_iter ( ^ reset))
+  predicate reinitialize [#"../06_map_precond.rs" 108 4 108 29] (_ : ()) =
+    [#"../06_map_precond.rs" 109 8 115 9] forall reset : borrowed (C06MapPrecond_Map_Type.t_map i Item0.item f) . Completed0.completed reset -> Invariant0.invariant' (C06MapPrecond_Map_Type.map_iter ( ^ reset)) -> NextPrecondition0.next_precondition ( ^ reset) /\ Preservation0.preservation (C06MapPrecond_Map_Type.map_iter ( ^ reset)) (C06MapPrecond_Map_Type.map_func ( ^ reset))
   val reinitialize (_wild0 : ()) : bool
     ensures { result = reinitialize _wild0 }
-    
-end
-module CreusotContracts_Std1_Ops_Impl1_Unnest_Stub
-  type args
-  type f
-  predicate unnest (self : f) (_2' : f)
-end
-module CreusotContracts_Std1_Ops_Impl1_Unnest_Interface
-  type args
-  type f
-  predicate unnest (self : f) (_2' : f)
-end
-module CreusotContracts_Std1_Ops_Impl1_Unnest
-  type args
-  type f
-  predicate unnest (self : f) (_2' : f)
-  val unnest (self : f) (_2' : f) : bool
-    ensures { result = unnest self _2' }
     
 end
 module CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Stub
@@ -602,7 +605,7 @@ module C06MapPrecond_Impl1_PreservationInv_Interface
     type f = f
   use C06MapPrecond_Map_Type as C06MapPrecond_Map_Type
   predicate preservation_inv (self : C06MapPrecond_Map_Type.t_map i Item0.item f)
-  axiom preservation_inv_spec : forall self : C06MapPrecond_Map_Type.t_map i Item0.item f . [#"../06_map_precond.rs" 117 4 117 95] Ghost.inner (C06MapPrecond_Map_Type.map_produced self) = Seq.empty  -> preservation_inv self = Preservation0.preservation (C06MapPrecond_Map_Type.map_iter self)
+  axiom preservation_inv_spec : forall self : C06MapPrecond_Map_Type.t_map i Item0.item f . [#"../06_map_precond.rs" 119 4 119 106] Ghost.inner (C06MapPrecond_Map_Type.map_produced self) = Seq.empty  -> preservation_inv self = Preservation0.preservation (C06MapPrecond_Map_Type.map_iter self) (C06MapPrecond_Map_Type.map_func self)
 end
 module C06MapPrecond_Impl1_PreservationInv
   type i
@@ -630,15 +633,18 @@ module C06MapPrecond_Impl1_PreservationInv
   clone C06MapPrecond_Common_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = Item0.item
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone C06MapPrecond_Common_Iterator_Invariant_Stub as Invariant0 with
     type self = i
-  predicate preservation_inv [#"../06_map_precond.rs" 118 4 118 37] (self : C06MapPrecond_Map_Type.t_map i Item0.item f)
+  predicate preservation_inv [#"../06_map_precond.rs" 120 4 120 37] (self : C06MapPrecond_Map_Type.t_map i Item0.item f)
    =
-    [#"../06_map_precond.rs" 119 8 126 9] forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Produces0.produces (C06MapPrecond_Map_Type.map_iter self) (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1, Ghost.new (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s)) -> PostconditionMut0.postcondition_mut f (e1, Ghost.new (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s)) b -> Precondition0.precondition ( ^ f) (e2, Ghost.new (Seq.snoc (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s) e1))
+    [#"../06_map_precond.rs" 121 8 129 9] forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Unnest0.unnest (C06MapPrecond_Map_Type.map_func self) ( * f) -> Produces0.produces (C06MapPrecond_Map_Type.map_iter self) (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1, Ghost.new (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s)) -> PostconditionMut0.postcondition_mut f (e1, Ghost.new (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s)) b -> Precondition0.precondition ( ^ f) (e2, Ghost.new (Seq.snoc (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s) e1))
   val preservation_inv (self : C06MapPrecond_Map_Type.t_map i Item0.item f) : bool
     ensures { result = preservation_inv self }
     
-  axiom preservation_inv_spec : forall self : C06MapPrecond_Map_Type.t_map i Item0.item f . [#"../06_map_precond.rs" 117 4 117 95] Ghost.inner (C06MapPrecond_Map_Type.map_produced self) = Seq.empty  -> preservation_inv self = Preservation0.preservation (C06MapPrecond_Map_Type.map_iter self)
+  axiom preservation_inv_spec : forall self : C06MapPrecond_Map_Type.t_map i Item0.item f . [#"../06_map_precond.rs" 119 4 119 106] Ghost.inner (C06MapPrecond_Map_Type.map_produced self) = Seq.empty  -> preservation_inv self = Preservation0.preservation (C06MapPrecond_Map_Type.map_iter self) (C06MapPrecond_Map_Type.map_func self)
 end
 module C06MapPrecond_Impl1_PreservationInv_Impl
   type i
@@ -657,9 +663,6 @@ module C06MapPrecond_Impl1_PreservationInv_Impl
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f,
     type Output0.output = b
-  clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
-    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
-    type f = f
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut as PostconditionMut0 with
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f,
@@ -672,6 +675,9 @@ module C06MapPrecond_Impl1_PreservationInv_Impl
     predicate Resolve0.resolve = Resolve0.resolve,
     type Output0.output = b,
     axiom .
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone CreusotContracts_Std1_Ops_Impl1_UnnestTrans as UnnestTrans0 with
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f,
@@ -708,15 +714,16 @@ module C06MapPrecond_Impl1_PreservationInv_Impl
     type f = f,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces0.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
   use C06MapPrecond_Map_Type as C06MapPrecond_Map_Type
   let rec ghost predicate preservation_inv (self : C06MapPrecond_Map_Type.t_map i Item0.item f)
-    ensures { [#"../06_map_precond.rs" 117 4 117 95] Ghost.inner (C06MapPrecond_Map_Type.map_produced self) = Seq.empty  -> result = Preservation0.preservation (C06MapPrecond_Map_Type.map_iter self) }
+    ensures { [#"../06_map_precond.rs" 119 4 119 106] Ghost.inner (C06MapPrecond_Map_Type.map_produced self) = Seq.empty  -> result = Preservation0.preservation (C06MapPrecond_Map_Type.map_iter self) (C06MapPrecond_Map_Type.map_func self) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../06_map_precond.rs" 119 8 126 9] pure {forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Produces0.produces (C06MapPrecond_Map_Type.map_iter self) (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1, Ghost.new (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s)) -> PostconditionMut0.postcondition_mut f (e1, Ghost.new (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s)) b -> Precondition0.precondition ( ^ f) (e2, Ghost.new (Seq.snoc (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s) e1))}
+    [#"../06_map_precond.rs" 121 8 129 9] pure {forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Unnest0.unnest (C06MapPrecond_Map_Type.map_func self) ( * f) -> Produces0.produces (C06MapPrecond_Map_Type.map_iter self) (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1, Ghost.new (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s)) -> PostconditionMut0.postcondition_mut f (e1, Ghost.new (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s)) b -> Precondition0.precondition ( ^ f) (e2, Ghost.new (Seq.snoc (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s) e1))}
 end
 module C06MapPrecond_Impl0_Invariant_Stub
   type i
@@ -765,8 +772,8 @@ module C06MapPrecond_Impl0_Invariant
     type i = i,
     type b = b,
     type f = f
-  predicate invariant' [#"../06_map_precond.rs" 62 4 62 30] (self : C06MapPrecond_Map_Type.t_map i Item0.item f) =
-    [#"../06_map_precond.rs" 63 8 68 9] Reinitialize0.reinitialize () /\ PreservationInv0.preservation_inv self /\ Invariant0.invariant' (C06MapPrecond_Map_Type.map_iter self) /\ NextPrecondition0.next_precondition self
+  predicate invariant' [#"../06_map_precond.rs" 64 4 64 30] (self : C06MapPrecond_Map_Type.t_map i Item0.item f) =
+    [#"../06_map_precond.rs" 65 8 70 9] Reinitialize0.reinitialize () /\ PreservationInv0.preservation_inv self /\ Invariant0.invariant' (C06MapPrecond_Map_Type.map_iter self) /\ NextPrecondition0.next_precondition self
   val invariant' (self : C06MapPrecond_Map_Type.t_map i Item0.item f) : bool
     ensures { result = invariant' self }
     
@@ -811,6 +818,9 @@ module C06MapPrecond_Impl0_Produces
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f,
     type Output0.output = b
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone C06MapPrecond_Common_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = Item0.item
@@ -820,11 +830,11 @@ module C06MapPrecond_Impl0_Produces
   predicate produces [@inline:trivial] [#"../06_map_precond.rs" 46 4 46 67] (self : C06MapPrecond_Map_Type.t_map i Item0.item f) (visited : Seq.seq b) (succ : C06MapPrecond_Map_Type.t_map i Item0.item f)
     
    =
-    [#"../06_map_precond.rs" 47 8 57 9] Unnest0.unnest (C06MapPrecond_Map_Type.map_func self) (C06MapPrecond_Map_Type.map_func succ) /\ (exists s : Seq.seq Item0.item . Seq.length s = Seq.length visited /\ Produces0.produces (C06MapPrecond_Map_Type.map_iter self) s (C06MapPrecond_Map_Type.map_iter succ) /\ Ghost.inner (C06MapPrecond_Map_Type.map_produced succ) = Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s /\ (exists fs : Seq.seq (borrowed f) . Seq.length fs = Seq.length visited /\ (forall i : int . 1 <= i /\ i < Seq.length fs ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i) /\ (if Seq.length visited = 0 then
+    [#"../06_map_precond.rs" 47 8 59 9] Unnest0.unnest (C06MapPrecond_Map_Type.map_func self) (C06MapPrecond_Map_Type.map_func succ) /\ (exists s : Seq.seq Item0.item . Seq.length s = Seq.length visited /\ Produces0.produces (C06MapPrecond_Map_Type.map_iter self) s (C06MapPrecond_Map_Type.map_iter succ) /\ Ghost.inner (C06MapPrecond_Map_Type.map_produced succ) = Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) s /\ (exists fs : Seq.seq (borrowed f) . Seq.length fs = Seq.length visited /\ (forall i : int . 1 <= i /\ i < Seq.length fs ->  ^ Seq.get fs (i - 1) =  * Seq.get fs i) /\ (if Seq.length visited = 0 then
       C06MapPrecond_Map_Type.map_func self = C06MapPrecond_Map_Type.map_func succ
     else
        * Seq.get fs 0 = C06MapPrecond_Map_Type.map_func self /\  ^ Seq.get fs (Seq.length visited - 1) = C06MapPrecond_Map_Type.map_func succ
-    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> PostconditionMut0.postcondition_mut (Seq.get fs i) (Seq.get s i, Ghost.new (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
+    ) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> Unnest0.unnest (C06MapPrecond_Map_Type.map_func self) ( * Seq.get fs i) /\ Precondition0.precondition ( * Seq.get fs i) (Seq.get s i, Ghost.new (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i))) /\ PostconditionMut0.postcondition_mut (Seq.get fs i) (Seq.get s i, Ghost.new (Seq.(++) (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) (SeqExt.subsequence s 0 i))) (Seq.get visited i))))
   val produces [@inline:trivial] (self : C06MapPrecond_Map_Type.t_map i Item0.item f) (visited : Seq.seq b) (succ : C06MapPrecond_Map_Type.t_map i Item0.item f) : bool
     ensures { result = produces self visited succ }
     
@@ -939,9 +949,6 @@ module C06MapPrecond_Impl0_ProducesRefl_Impl
     type f = f,
     predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
-    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
-    type f = f
   use C06MapPrecond_Map_Type as C06MapPrecond_Map_Type
   clone C06MapPrecond_Impl0_Completed as Completed0 with
     type i = i,
@@ -966,12 +973,16 @@ module C06MapPrecond_Impl0_ProducesRefl_Impl
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
     axiom .
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone C06MapPrecond_Impl1_Preservation as Preservation0 with
     type i = i,
     type b = b,
     type f = f,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
@@ -990,6 +1001,7 @@ module C06MapPrecond_Impl0_ProducesRefl_Impl
     predicate Preservation0.preservation = Preservation0.preservation,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
@@ -1010,6 +1022,7 @@ module C06MapPrecond_Impl0_ProducesRefl_Impl
     type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
+    predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
   clone C06MapPrecond_Impl0_Invariant as Invariant0 with
     type i = i,
@@ -1146,9 +1159,6 @@ module C06MapPrecond_Impl0_ProducesTrans_Impl
     type f = f,
     predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
-    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
-    type f = f
   use C06MapPrecond_Map_Type as C06MapPrecond_Map_Type
   clone C06MapPrecond_Impl0_Completed as Completed0 with
     type i = i,
@@ -1173,12 +1183,16 @@ module C06MapPrecond_Impl0_ProducesTrans_Impl
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
     axiom .
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone C06MapPrecond_Impl1_Preservation as Preservation0 with
     type i = i,
     type b = b,
     type f = f,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
@@ -1197,6 +1211,7 @@ module C06MapPrecond_Impl0_ProducesTrans_Impl
     predicate Preservation0.preservation = Preservation0.preservation,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
@@ -1217,6 +1232,7 @@ module C06MapPrecond_Impl0_ProducesTrans_Impl
     type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
+    predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
   clone C06MapPrecond_Impl0_Invariant as Invariant0 with
     type i = i,
@@ -1281,7 +1297,7 @@ module C06MapPrecond_Impl1_ProducesOne_Interface
     type Item0.item = Item0.item
   predicate produces_one (self : C06MapPrecond_Map_Type.t_map i Item0.item f) (visited : b) (succ : C06MapPrecond_Map_Type.t_map i Item0.item f)
     
-  axiom produces_one_spec : forall self : C06MapPrecond_Map_Type.t_map i Item0.item f, visited : b, succ : C06MapPrecond_Map_Type.t_map i Item0.item f . [#"../06_map_precond.rs" 149 14 149 68] produces_one self visited succ = Produces0.produces self (Seq.singleton visited) succ
+  axiom produces_one_spec : forall self : C06MapPrecond_Map_Type.t_map i Item0.item f, visited : b, succ : C06MapPrecond_Map_Type.t_map i Item0.item f . [#"../06_map_precond.rs" 153 14 153 68] produces_one self visited succ = Produces0.produces self (Seq.singleton visited) succ
 end
 module C06MapPrecond_Impl1_ProducesOne
   type i
@@ -1304,20 +1320,23 @@ module C06MapPrecond_Impl1_ProducesOne
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f,
     type Output0.output = b
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone C06MapPrecond_Common_Iterator_Produces_Stub as Produces1 with
     type self = i,
     type Item0.item = Item0.item
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f
-  predicate produces_one [#"../06_map_precond.rs" 150 4 150 57] (self : C06MapPrecond_Map_Type.t_map i Item0.item f) (visited : b) (succ : C06MapPrecond_Map_Type.t_map i Item0.item f)
+  predicate produces_one [#"../06_map_precond.rs" 154 4 154 57] (self : C06MapPrecond_Map_Type.t_map i Item0.item f) (visited : b) (succ : C06MapPrecond_Map_Type.t_map i Item0.item f)
     
    =
-    [#"../06_map_precond.rs" 151 8 157 9] Unnest0.unnest (C06MapPrecond_Map_Type.map_func self) (C06MapPrecond_Map_Type.map_func succ) /\ (exists f : borrowed f .  * f = C06MapPrecond_Map_Type.map_func self /\  ^ f = C06MapPrecond_Map_Type.map_func succ /\ (exists e : Item0.item . Produces1.produces (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) (C06MapPrecond_Map_Type.map_iter succ) /\ Ghost.inner (C06MapPrecond_Map_Type.map_produced succ) = Seq.snoc (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) e /\ PostconditionMut0.postcondition_mut f (e, C06MapPrecond_Map_Type.map_produced self) visited))
+    [#"../06_map_precond.rs" 155 8 162 9] Unnest0.unnest (C06MapPrecond_Map_Type.map_func self) (C06MapPrecond_Map_Type.map_func succ) /\ (exists f : borrowed f .  * f = C06MapPrecond_Map_Type.map_func self /\  ^ f = C06MapPrecond_Map_Type.map_func succ /\ (exists e : Item0.item . Produces1.produces (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) (C06MapPrecond_Map_Type.map_iter succ) /\ Ghost.inner (C06MapPrecond_Map_Type.map_produced succ) = Seq.snoc (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) e /\ Precondition0.precondition ( * f) (e, C06MapPrecond_Map_Type.map_produced self) /\ PostconditionMut0.postcondition_mut f (e, C06MapPrecond_Map_Type.map_produced self) visited))
   val produces_one (self : C06MapPrecond_Map_Type.t_map i Item0.item f) (visited : b) (succ : C06MapPrecond_Map_Type.t_map i Item0.item f) : bool
     ensures { result = produces_one self visited succ }
     
-  axiom produces_one_spec : forall self : C06MapPrecond_Map_Type.t_map i Item0.item f, visited : b, succ : C06MapPrecond_Map_Type.t_map i Item0.item f . [#"../06_map_precond.rs" 149 14 149 68] produces_one self visited succ = Produces0.produces self (Seq.singleton visited) succ
+  axiom produces_one_spec : forall self : C06MapPrecond_Map_Type.t_map i Item0.item f, visited : b, succ : C06MapPrecond_Map_Type.t_map i Item0.item f . [#"../06_map_precond.rs" 153 14 153 68] produces_one self visited succ = Produces0.produces self (Seq.singleton visited) succ
 end
 module C06MapPrecond_Impl1_ProducesOne_Impl
   type i
@@ -1330,11 +1349,6 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
     type self = i
   clone C06MapPrecond_Common_Iterator_Item_Type as Item0 with
     type self = i
-  use seq.Seq
-  use prelude.Ghost
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
-    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
-    type f = f
   use C06MapPrecond_Map_Type as C06MapPrecond_Map_Type
   clone C06MapPrecond_Impl0_Completed as Completed0 with
     type i = i,
@@ -1342,13 +1356,21 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
     type f = f,
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed1.completed
+  use seq.Seq
+  use prelude.Ghost
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut as PostconditionMut0 with
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f,
     type Output0.output = b
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone C06MapPrecond_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone C06MapPrecond_Common_Iterator_Invariant_Interface as Invariant1 with
     type self = i
   clone C06MapPrecond_Impl1_Preservation as Preservation0 with
@@ -1357,6 +1379,7 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
     type f = f,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
@@ -1375,6 +1398,7 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
     predicate Preservation0.preservation = Preservation0.preservation,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
@@ -1412,9 +1436,6 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
     predicate Resolve0.resolve = Resolve0.resolve,
     type Output0.output = b,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
-    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
-    type f = f
   clone CreusotContracts_Std1_Ops_Impl1_UnnestTrans as UnnestTrans0 with
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f,
@@ -1444,6 +1465,7 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
     type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
+    predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
   clone C06MapPrecond_Impl0_ProducesTrans as ProducesTrans0 with
     type i = i,
@@ -1462,10 +1484,10 @@ module C06MapPrecond_Impl1_ProducesOne_Impl
     type Item0.item = Item0.item,
     axiom .
   let rec ghost predicate produces_one (self : C06MapPrecond_Map_Type.t_map i Item0.item f) (visited : b) (succ : C06MapPrecond_Map_Type.t_map i Item0.item f)
-    ensures { [#"../06_map_precond.rs" 149 14 149 68] result = Produces0.produces self (Seq.singleton visited) succ }
+    ensures { [#"../06_map_precond.rs" 153 14 153 68] result = Produces0.produces self (Seq.singleton visited) succ }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../06_map_precond.rs" 151 8 157 9] Unnest0.unnest (C06MapPrecond_Map_Type.map_func self) (C06MapPrecond_Map_Type.map_func succ) && pure {exists f : borrowed f .  * f = C06MapPrecond_Map_Type.map_func self /\  ^ f = C06MapPrecond_Map_Type.map_func succ /\ (exists e : Item0.item . Produces1.produces (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) (C06MapPrecond_Map_Type.map_iter succ) /\ Ghost.inner (C06MapPrecond_Map_Type.map_produced succ) = Seq.snoc (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) e /\ PostconditionMut0.postcondition_mut f (e, C06MapPrecond_Map_Type.map_produced self) visited)}
+    [#"../06_map_precond.rs" 155 8 162 9] Unnest0.unnest (C06MapPrecond_Map_Type.map_func self) (C06MapPrecond_Map_Type.map_func succ) && pure {exists f : borrowed f .  * f = C06MapPrecond_Map_Type.map_func self /\  ^ f = C06MapPrecond_Map_Type.map_func succ /\ (exists e : Item0.item . Produces1.produces (C06MapPrecond_Map_Type.map_iter self) (Seq.singleton e) (C06MapPrecond_Map_Type.map_iter succ) /\ Ghost.inner (C06MapPrecond_Map_Type.map_produced succ) = Seq.snoc (Ghost.inner (C06MapPrecond_Map_Type.map_produced self)) e /\ Precondition0.precondition ( * f) (e, C06MapPrecond_Map_Type.map_produced self) /\ PostconditionMut0.postcondition_mut f (e, C06MapPrecond_Map_Type.map_produced self) visited)}
 end
 module C06MapPrecond_Common_Iterator_Next_Interface
   type self
@@ -1683,7 +1705,7 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Interface
     type Item0.item = Item0.item
   function produces_one_invariant (self : C06MapPrecond_Map_Type.t_map i Item0.item f) (e : b) (other : C06MapPrecond_Map_Type.t_map i Item0.item f) : ()
     
-  axiom produces_one_invariant_spec : forall self : C06MapPrecond_Map_Type.t_map i Item0.item f, e : b, other : C06MapPrecond_Map_Type.t_map i Item0.item f . ([#"../06_map_precond.rs" 142 15 142 31] Invariant0.invariant' self) -> ([#"../06_map_precond.rs" 143 15 143 42] ProducesOne0.produces_one self e other) -> ([#"../06_map_precond.rs" 144 4 144 39] Invariant1.invariant' (C06MapPrecond_Map_Type.map_iter other)) -> ([#"../06_map_precond.rs" 145 14 145 31] Invariant0.invariant' other)
+  axiom produces_one_invariant_spec : forall self : C06MapPrecond_Map_Type.t_map i Item0.item f, e : b, other : C06MapPrecond_Map_Type.t_map i Item0.item f . ([#"../06_map_precond.rs" 146 15 146 31] Invariant0.invariant' self) -> ([#"../06_map_precond.rs" 147 15 147 42] ProducesOne0.produces_one self e other) -> ([#"../06_map_precond.rs" 148 4 148 39] Invariant1.invariant' (C06MapPrecond_Map_Type.map_iter other)) -> ([#"../06_map_precond.rs" 149 14 149 31] Invariant0.invariant' other)
 end
 module C06MapPrecond_Impl1_ProducesOneInvariant
   type i
@@ -1711,17 +1733,17 @@ module C06MapPrecond_Impl1_ProducesOneInvariant
     type b = b,
     type f = f,
     type Item0.item = Item0.item
-  function produces_one_invariant [#"../06_map_precond.rs" 146 4 146 54] (self : C06MapPrecond_Map_Type.t_map i Item0.item f) (e : b) (other : C06MapPrecond_Map_Type.t_map i Item0.item f) : ()
+  function produces_one_invariant [#"../06_map_precond.rs" 150 4 150 54] (self : C06MapPrecond_Map_Type.t_map i Item0.item f) (e : b) (other : C06MapPrecond_Map_Type.t_map i Item0.item f) : ()
     
    =
-    [#"../06_map_precond.rs" 141 4 141 12] ()
+    [#"../06_map_precond.rs" 145 4 145 12] ()
   val produces_one_invariant (self : C06MapPrecond_Map_Type.t_map i Item0.item f) (e : b) (other : C06MapPrecond_Map_Type.t_map i Item0.item f) : ()
-    requires {[#"../06_map_precond.rs" 142 15 142 31] Invariant0.invariant' self}
-    requires {[#"../06_map_precond.rs" 143 15 143 42] ProducesOne0.produces_one self e other}
-    requires {[#"../06_map_precond.rs" 144 4 144 39] Invariant1.invariant' (C06MapPrecond_Map_Type.map_iter other)}
+    requires {[#"../06_map_precond.rs" 146 15 146 31] Invariant0.invariant' self}
+    requires {[#"../06_map_precond.rs" 147 15 147 42] ProducesOne0.produces_one self e other}
+    requires {[#"../06_map_precond.rs" 148 4 148 39] Invariant1.invariant' (C06MapPrecond_Map_Type.map_iter other)}
     ensures { result = produces_one_invariant self e other }
     
-  axiom produces_one_invariant_spec : forall self : C06MapPrecond_Map_Type.t_map i Item0.item f, e : b, other : C06MapPrecond_Map_Type.t_map i Item0.item f . ([#"../06_map_precond.rs" 142 15 142 31] Invariant0.invariant' self) -> ([#"../06_map_precond.rs" 143 15 143 42] ProducesOne0.produces_one self e other) -> ([#"../06_map_precond.rs" 144 4 144 39] Invariant1.invariant' (C06MapPrecond_Map_Type.map_iter other)) -> ([#"../06_map_precond.rs" 145 14 145 31] Invariant0.invariant' other)
+  axiom produces_one_invariant_spec : forall self : C06MapPrecond_Map_Type.t_map i Item0.item f, e : b, other : C06MapPrecond_Map_Type.t_map i Item0.item f . ([#"../06_map_precond.rs" 146 15 146 31] Invariant0.invariant' self) -> ([#"../06_map_precond.rs" 147 15 147 42] ProducesOne0.produces_one self e other) -> ([#"../06_map_precond.rs" 148 4 148 39] Invariant1.invariant' (C06MapPrecond_Map_Type.map_iter other)) -> ([#"../06_map_precond.rs" 149 14 149 31] Invariant0.invariant' other)
 end
 module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
   type i
@@ -1766,9 +1788,6 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
     type f = f,
     predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
-    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
-    type f = f
   use C06MapPrecond_Map_Type as C06MapPrecond_Map_Type
   clone C06MapPrecond_Impl0_Completed as Completed0 with
     type i = i,
@@ -1793,6 +1812,9 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
     axiom .
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone C06MapPrecond_Impl0_Produces as Produces0 with
     type i = i,
     type b = b,
@@ -1800,6 +1822,7 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
     type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
+    predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
   clone C06MapPrecond_Impl1_Preservation as Preservation0 with
     type i = i,
@@ -1807,6 +1830,7 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
     type f = f,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
@@ -1825,6 +1849,7 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
     predicate Preservation0.preservation = Preservation0.preservation,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
@@ -1872,16 +1897,17 @@ module C06MapPrecond_Impl1_ProducesOneInvariant_Impl
     type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces1.produces = Produces1.produces,
+    predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     axiom .
   let rec ghost function produces_one_invariant (self : C06MapPrecond_Map_Type.t_map i Item0.item f) (e : b) (other : C06MapPrecond_Map_Type.t_map i Item0.item f) : ()
-    requires {[#"../06_map_precond.rs" 142 15 142 31] Invariant0.invariant' self}
-    requires {[#"../06_map_precond.rs" 143 15 143 42] ProducesOne0.produces_one self e other}
-    requires {[#"../06_map_precond.rs" 144 4 144 39] Invariant1.invariant' (C06MapPrecond_Map_Type.map_iter other)}
-    ensures { [#"../06_map_precond.rs" 145 14 145 31] Invariant0.invariant' other }
+    requires {[#"../06_map_precond.rs" 146 15 146 31] Invariant0.invariant' self}
+    requires {[#"../06_map_precond.rs" 147 15 147 42] ProducesOne0.produces_one self e other}
+    requires {[#"../06_map_precond.rs" 148 4 148 39] Invariant1.invariant' (C06MapPrecond_Map_Type.map_iter other)}
+    ensures { [#"../06_map_precond.rs" 149 14 149 31] Invariant0.invariant' other }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../06_map_precond.rs" 141 4 141 12] ()
+    [#"../06_map_precond.rs" 145 4 145 12] ()
 end
 module C06MapPrecond_Impl0_Next_Interface
   type i
@@ -1915,12 +1941,12 @@ module C06MapPrecond_Impl0_Next_Interface
     type f = f,
     type Item0.item = Item0.item
   val next [@cfg:stackify] (self : borrowed (C06MapPrecond_Map_Type.t_map i Item0.item f)) : Core_Option_Option_Type.t_option b
-    requires {[#"../06_map_precond.rs" 75 4 75 40] Invariant0.invariant' ( * self)}
-    ensures { [#"../06_map_precond.rs" 71 14 74 5] match (result) with
+    requires {[#"../06_map_precond.rs" 77 4 77 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../06_map_precond.rs" 73 14 76 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> ProducesOne0.produces_one ( * self) v ( ^ self)
       end }
-    ensures { [#"../06_map_precond.rs" 75 4 75 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../06_map_precond.rs" 77 4 77 40] Invariant0.invariant' ( ^ self) }
     
 end
 module C06MapPrecond_Impl0_Next
@@ -1965,9 +1991,6 @@ module C06MapPrecond_Impl0_Next
     type f = f,
     predicate Unnest0.unnest = Unnest0.unnest,
     axiom .
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
-    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
-    type f = f
   clone C06MapPrecond_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
@@ -1985,6 +2008,9 @@ module C06MapPrecond_Impl0_Next
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
     axiom .
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   use C06MapPrecond_Map_Type as C06MapPrecond_Map_Type
   clone C06MapPrecond_Impl0_Produces as Produces0 with
     type i = i,
@@ -1993,6 +2019,7 @@ module C06MapPrecond_Impl0_Next
     type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
+    predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
   clone C06MapPrecond_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
@@ -2002,6 +2029,7 @@ module C06MapPrecond_Impl0_Next
     type f = f,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
@@ -2020,6 +2048,7 @@ module C06MapPrecond_Impl0_Next
     predicate Preservation0.preservation = Preservation0.preservation,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
@@ -2047,6 +2076,7 @@ module C06MapPrecond_Impl0_Next
     type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces1.produces = Produces1.produces,
+    predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     axiom .
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -2095,13 +2125,13 @@ module C06MapPrecond_Impl0_Next
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed1.completed,
     predicate Produces0.produces = Produces1.produces
-  let rec cfg next [@cfg:stackify] [#"../06_map_precond.rs" 76 4 76 44] (self : borrowed (C06MapPrecond_Map_Type.t_map i Item0.item f)) : Core_Option_Option_Type.t_option b
-    requires {[#"../06_map_precond.rs" 75 4 75 40] Invariant0.invariant' ( * self)}
-    ensures { [#"../06_map_precond.rs" 71 14 74 5] match (result) with
+  let rec cfg next [@cfg:stackify] [#"../06_map_precond.rs" 78 4 78 44] (self : borrowed (C06MapPrecond_Map_Type.t_map i Item0.item f)) : Core_Option_Option_Type.t_option b
+    requires {[#"../06_map_precond.rs" 77 4 77 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../06_map_precond.rs" 73 14 76 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> ProducesOne0.produces_one ( * self) v ( ^ self)
       end }
-    ensures { [#"../06_map_precond.rs" 75 4 75 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../06_map_precond.rs" 77 4 77 40] Invariant0.invariant' ( ^ self) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option b;
@@ -2132,7 +2162,7 @@ module C06MapPrecond_Impl0_Next
   BB0 {
     _6 <- borrow_mut (C06MapPrecond_Map_Type.map_iter ( * self_1));
     self_1 <- { self_1 with current = (let C06MapPrecond_Map_Type.C_Map a b c =  * self_1 in C06MapPrecond_Map_Type.C_Map ( ^ _6) b c) };
-    _5 <- ([#"../06_map_precond.rs" 77 14 77 30] Next0.next _6);
+    _5 <- ([#"../06_map_precond.rs" 79 14 79 30] Next0.next _6);
     goto BB1
   }
   BB1 {
@@ -2143,7 +2173,7 @@ module C06MapPrecond_Impl0_Next
   }
   BB2 {
     _30 <- ();
-    _27 <- ([#"../06_map_precond.rs" 87 32 87 53] Ghost.new (Seq.empty ));
+    _27 <- ([#"../06_map_precond.rs" 89 32 89 53] Ghost.new (Seq.empty ));
     goto BB14
   }
   BB3 {
@@ -2155,18 +2185,18 @@ module C06MapPrecond_Impl0_Next
     assume { Resolve3.resolve v_8 };
     v_8 <- Core_Option_Option_Type.some_0 _5;
     _5 <- (let Core_Option_Option_Type.C_Some a = _5 in Core_Option_Option_Type.C_Some (any Item0.item));
-    assert { [#"../06_map_precond.rs" 79 16 79 76] Precondition0.precondition (C06MapPrecond_Map_Type.map_func ( * self_1)) (v_8, C06MapPrecond_Map_Type.map_produced ( * self_1)) };
+    assert { [#"../06_map_precond.rs" 81 16 81 76] Precondition0.precondition (C06MapPrecond_Map_Type.map_func ( * self_1)) (v_8, C06MapPrecond_Map_Type.map_produced ( * self_1)) };
     goto BB5
   }
   BB5 {
     _9 <- ();
     _14 <- ();
-    _11 <- ([#"../06_map_precond.rs" 80 16 80 55] Ghost.new ());
+    _11 <- ([#"../06_map_precond.rs" 82 16 82 55] Ghost.new ());
     goto BB6
   }
   BB6 {
     _17 <- ();
-    produced_15 <- ([#"../06_map_precond.rs" 81 31 81 63] Ghost.new (Seq.snoc (Ghost.inner (C06MapPrecond_Map_Type.map_produced ( * self_1))) v_8));
+    produced_15 <- ([#"../06_map_precond.rs" 83 31 83 63] Ghost.new (Seq.snoc (Ghost.inner (C06MapPrecond_Map_Type.map_produced ( * self_1))) v_8));
     goto BB7
   }
   BB7 {
@@ -2176,12 +2206,12 @@ module C06MapPrecond_Impl0_Next
     _22 <- v_8;
     v_8 <- any Item0.item;
     _25 <- ();
-    _23 <- ([#"../06_map_precond.rs" 82 44 82 76] Ghost.new (Ghost.inner (C06MapPrecond_Map_Type.map_produced ( * self_1))));
+    _23 <- ([#"../06_map_precond.rs" 84 44 84 76] Ghost.new (Ghost.inner (C06MapPrecond_Map_Type.map_produced ( * self_1))));
     goto BB8
   }
   BB8 {
     _21 <- (_22, _23);
-    _19 <- ([#"../06_map_precond.rs" 82 29 82 77] CallMut0.call_mut _20 _21);
+    _19 <- ([#"../06_map_precond.rs" 84 29 84 77] CallMut0.call_mut _20 _21);
     goto BB9
   }
   BB9 {
@@ -2260,12 +2290,12 @@ module C06MapPrecond_Map_Interface
   clone C06MapPrecond_Common_Iterator_Invariant_Stub as Invariant0 with
     type self = i
   val map [@cfg:stackify] (iter : i) (func : f) : C06MapPrecond_Map_Type.t_map i Item0.item f
-    requires {[#"../06_map_precond.rs" 161 0 161 147] forall i2 : i . forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces iter (Seq.singleton e) i2 -> Precondition0.precondition func (e, Ghost.new (Seq.empty ))}
-    requires {[#"../06_map_precond.rs" 162 11 162 41] Reinitialize0.reinitialize ()}
-    requires {[#"../06_map_precond.rs" 163 11 163 27] Invariant0.invariant' iter}
-    requires {[#"../06_map_precond.rs" 164 11 164 51] Preservation0.preservation iter}
-    ensures { [#"../06_map_precond.rs" 165 10 165 28] Invariant1.invariant' result }
-    ensures { [#"../06_map_precond.rs" 166 10 166 72] result = C06MapPrecond_Map_Type.C_Map iter func (Ghost.new (Seq.empty )) }
+    requires {[#"../06_map_precond.rs" 166 0 166 147] forall i2 : i . forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces iter (Seq.singleton e) i2 -> Precondition0.precondition func (e, Ghost.new (Seq.empty ))}
+    requires {[#"../06_map_precond.rs" 167 11 167 41] Reinitialize0.reinitialize ()}
+    requires {[#"../06_map_precond.rs" 168 11 168 27] Invariant0.invariant' iter}
+    requires {[#"../06_map_precond.rs" 169 11 169 57] Preservation0.preservation iter func}
+    ensures { [#"../06_map_precond.rs" 170 10 170 28] Invariant1.invariant' result }
+    ensures { [#"../06_map_precond.rs" 171 10 171 72] result = C06MapPrecond_Map_Type.C_Map iter func (Ghost.new (Seq.empty )) }
     
 end
 module C06MapPrecond_Map
@@ -2284,16 +2314,19 @@ module C06MapPrecond_Map
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f,
     type Output0.output = b
-  clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
-    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
-    type f = f
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut as PostconditionMut0 with
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f,
     type Output0.output = b
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone C06MapPrecond_Common_Iterator_Produces_Interface as Produces0 with
     type self = i,
     type Item0.item = Item0.item
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   use C06MapPrecond_Map_Type as C06MapPrecond_Map_Type
   clone C06MapPrecond_Impl0_Produces as Produces1 with
     type i = i,
@@ -2302,6 +2335,7 @@ module C06MapPrecond_Map
     type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces0.produces,
+    predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
   clone CreusotContracts_Std1_Ops_Impl1_FnMutOnce as FnMutOnce0 with
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
@@ -2323,9 +2357,6 @@ module C06MapPrecond_Map
     axiom .
   clone C06MapPrecond_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
-    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
-    type f = f
   clone C06MapPrecond_Common_Iterator_Invariant_Interface as Invariant0 with
     type self = i
   clone C06MapPrecond_Impl1_Preservation as Preservation0 with
@@ -2334,6 +2365,7 @@ module C06MapPrecond_Map
     type f = f,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces0.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
@@ -2344,6 +2376,7 @@ module C06MapPrecond_Map
     predicate Preservation0.preservation = Preservation0.preservation,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces0.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
@@ -2411,13 +2444,13 @@ module C06MapPrecond_Map
     axiom .
   clone CreusotContracts_Resolve_Resolve_Resolve as Resolve1 with
     type self = i
-  let rec cfg map [@cfg:stackify] [#"../06_map_precond.rs" 167 0 170 23] (iter : i) (func : f) : C06MapPrecond_Map_Type.t_map i Item0.item f
-    requires {[#"../06_map_precond.rs" 161 0 161 147] forall i2 : i . forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces iter (Seq.singleton e) i2 -> Precondition0.precondition func (e, Ghost.new (Seq.empty ))}
-    requires {[#"../06_map_precond.rs" 162 11 162 41] Reinitialize0.reinitialize ()}
-    requires {[#"../06_map_precond.rs" 163 11 163 27] Invariant0.invariant' iter}
-    requires {[#"../06_map_precond.rs" 164 11 164 51] Preservation0.preservation iter}
-    ensures { [#"../06_map_precond.rs" 165 10 165 28] Invariant1.invariant' result }
-    ensures { [#"../06_map_precond.rs" 166 10 166 72] result = C06MapPrecond_Map_Type.C_Map iter func (Ghost.new (Seq.empty )) }
+  let rec cfg map [@cfg:stackify] [#"../06_map_precond.rs" 172 0 175 23] (iter : i) (func : f) : C06MapPrecond_Map_Type.t_map i Item0.item f
+    requires {[#"../06_map_precond.rs" 166 0 166 147] forall i2 : i . forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces iter (Seq.singleton e) i2 -> Precondition0.precondition func (e, Ghost.new (Seq.empty ))}
+    requires {[#"../06_map_precond.rs" 167 11 167 41] Reinitialize0.reinitialize ()}
+    requires {[#"../06_map_precond.rs" 168 11 168 27] Invariant0.invariant' iter}
+    requires {[#"../06_map_precond.rs" 169 11 169 57] Preservation0.preservation iter func}
+    ensures { [#"../06_map_precond.rs" 170 10 170 28] Invariant1.invariant' result }
+    ensures { [#"../06_map_precond.rs" 171 10 171 72] result = C06MapPrecond_Map_Type.C_Map iter func (Ghost.new (Seq.empty )) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : C06MapPrecond_Map_Type.t_map i Item0.item f;
@@ -2452,7 +2485,7 @@ module C06MapPrecond_Map
     _10 <- func_2;
     func_2 <- any f;
     _14 <- ();
-    _11 <- ([#"../06_map_precond.rs" 171 32 171 51] Ghost.new (Seq.empty ));
+    _11 <- ([#"../06_map_precond.rs" 176 32 176 51] Ghost.new (Seq.empty ));
     goto BB5
   }
   BB5 {
@@ -2554,7 +2587,7 @@ module C06MapPrecond_Identity_Closure0
     type t = c06mapprecond_identity_closure0
   clone CreusotContracts_Resolve_Resolve_Resolve as Resolve0 with
     type self = Item0.item
-  let rec cfg c06MapPrecond_Identity_Closure0 [@cfg:stackify] [#"../06_map_precond.rs" 176 14 176 20] (_1' : borrowed c06mapprecond_identity_closure0) (x : Item0.item) (_3' : Ghost.ghost_ty (Seq.seq Item0.item)) : Item0.item
+  let rec cfg c06MapPrecond_Identity_Closure0 [@cfg:stackify] [#"../06_map_precond.rs" 181 14 181 20] (_1' : borrowed c06mapprecond_identity_closure0) (x : Item0.item) (_3' : Ghost.ghost_ty (Seq.seq Item0.item)) : Item0.item
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Item0.item;
@@ -2585,7 +2618,7 @@ module C06MapPrecond_Identity_Interface
   clone C06MapPrecond_Common_Iterator_Invariant_Stub as Invariant0 with
     type self = i
   val identity [@cfg:stackify] (iter : i) : ()
-    requires {[#"../06_map_precond.rs" 174 11 174 27] Invariant0.invariant' iter}
+    requires {[#"../06_map_precond.rs" 179 11 179 27] Invariant0.invariant' iter}
     
 end
 module C06MapPrecond_Identity
@@ -2622,6 +2655,7 @@ module C06MapPrecond_Identity
     type b = Item0.item,
     type f = Closure00.c06mapprecond_identity_closure0,
     predicate Unnest0.unnest = Closure00.unnest,
+    predicate Precondition0.precondition = Closure00.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure00.postcondition_mut,
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces0.produces
@@ -2631,6 +2665,7 @@ module C06MapPrecond_Identity
     type i = i,
     type b = Item0.item,
     type f = Closure00.c06mapprecond_identity_closure0,
+    predicate Unnest0.unnest = Closure00.unnest,
     predicate Precondition0.precondition = Closure00.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure00.postcondition_mut,
     type Item0.item = Item0.item,
@@ -2640,6 +2675,7 @@ module C06MapPrecond_Identity
     type i = i,
     type b = Item0.item,
     type f = Closure00.c06mapprecond_identity_closure0,
+    predicate Unnest0.unnest = Closure00.unnest,
     predicate Precondition0.precondition = Closure00.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure00.postcondition_mut,
     type Item0.item = Item0.item,
@@ -2711,8 +2747,8 @@ module C06MapPrecond_Identity
     predicate Invariant1.invariant' = Invariant1.invariant'
   clone CreusotContracts_Resolve_Resolve_Resolve as Resolve0 with
     type self = i
-  let rec cfg identity [@cfg:stackify] [#"../06_map_precond.rs" 175 0 175 37] (iter : i) : ()
-    requires {[#"../06_map_precond.rs" 174 11 174 27] Invariant0.invariant' iter}
+  let rec cfg identity [@cfg:stackify] [#"../06_map_precond.rs" 180 0 180 37] (iter : i) : ()
+    requires {[#"../06_map_precond.rs" 179 11 179 27] Invariant0.invariant' iter}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -2732,7 +2768,7 @@ module C06MapPrecond_Identity
     _4 <- iter_1;
     iter_1 <- any i;
     _5 <- Closure00.C06MapPrecond_Identity_Closure0;
-    _3 <- ([#"../06_map_precond.rs" 176 4 176 23] Map1.map _4 _5);
+    _3 <- ([#"../06_map_precond.rs" 181 4 181 23] Map1.map _4 _5);
     goto BB2
   }
   BB2 {
@@ -2761,22 +2797,22 @@ module C06MapPrecond_Increment_Closure3_Interface
   predicate precondition [@cfg:stackify] (self : c06mapprecond_increment_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32)))
     
    =
-    [#"../06_map_precond.rs" 187 19 187 27] let (x, _3') = args in UInt32.to_int x <= 15
+    [#"../06_map_precond.rs" 192 19 192 27] let (x, _3') = args in UInt32.to_int x <= 15
   predicate unnest (self : c06mapprecond_increment_closure3) (_2' : c06mapprecond_increment_closure3) =
     true
   predicate postcondition_mut [@cfg:stackify] (self : borrowed c06mapprecond_increment_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32))) (result : uint32)
     
    =
-    ([#"../06_map_precond.rs" 188 18 188 33] let (x, _3') = args in UInt32.to_int result = UInt32.to_int x + 1) && unnest ( * self) ( ^ self)
+    ([#"../06_map_precond.rs" 193 18 193 33] let (x, _3') = args in UInt32.to_int result = UInt32.to_int x + 1) && unnest ( * self) ( ^ self)
   predicate postcondition_once [@cfg:stackify] (self : c06mapprecond_increment_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32))) (result : uint32)
     
    =
-    [#"../06_map_precond.rs" 188 18 188 33] let (x, _3') = args in UInt32.to_int result = UInt32.to_int x + 1
+    [#"../06_map_precond.rs" 193 18 193 33] let (x, _3') = args in UInt32.to_int result = UInt32.to_int x + 1
   predicate resolve (_1' : c06mapprecond_increment_closure3) =
     true
   val c06MapPrecond_Increment_Closure3 [@cfg:stackify] (_1' : borrowed c06mapprecond_increment_closure3) (x : uint32) (_3' : Ghost.ghost_ty (Seq.seq uint32)) : uint32
-    requires {[#"../06_map_precond.rs" 187 19 187 27] UInt32.to_int x <= 15}
-    ensures { [#"../06_map_precond.rs" 188 18 188 33] UInt32.to_int result = UInt32.to_int x + 1 }
+    requires {[#"../06_map_precond.rs" 192 19 192 27] UInt32.to_int x <= 15}
+    ensures { [#"../06_map_precond.rs" 193 18 193 33] UInt32.to_int result = UInt32.to_int x + 1 }
     ensures { unnest ( * _1') ( ^ _1') }
     
 end
@@ -2793,26 +2829,26 @@ module C06MapPrecond_Increment_Closure3
   predicate precondition [@cfg:stackify] (self : c06mapprecond_increment_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32)))
     
    =
-    [#"../06_map_precond.rs" 187 19 187 27] let (x, _3') = args in UInt32.to_int x <= 15
+    [#"../06_map_precond.rs" 192 19 192 27] let (x, _3') = args in UInt32.to_int x <= 15
   predicate unnest (self : c06mapprecond_increment_closure3) (_2' : c06mapprecond_increment_closure3) =
     true
   predicate postcondition_mut [@cfg:stackify] (self : borrowed c06mapprecond_increment_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32))) (result : uint32)
     
    =
-    ([#"../06_map_precond.rs" 188 18 188 33] let (x, _3') = args in UInt32.to_int result = UInt32.to_int x + 1) && unnest ( * self) ( ^ self)
+    ([#"../06_map_precond.rs" 193 18 193 33] let (x, _3') = args in UInt32.to_int result = UInt32.to_int x + 1) && unnest ( * self) ( ^ self)
   predicate postcondition_once [@cfg:stackify] (self : c06mapprecond_increment_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32))) (result : uint32)
     
    =
-    [#"../06_map_precond.rs" 188 18 188 33] let (x, _3') = args in UInt32.to_int result = UInt32.to_int x + 1
+    [#"../06_map_precond.rs" 193 18 193 33] let (x, _3') = args in UInt32.to_int result = UInt32.to_int x + 1
   predicate resolve (_1' : c06mapprecond_increment_closure3) =
     true
   use seq.Seq
   use prelude.Ghost
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = c06mapprecond_increment_closure3
-  let rec cfg c06MapPrecond_Increment_Closure3 [@cfg:stackify] [#"../06_map_precond.rs" 188 8 188 35] (_1' : borrowed c06mapprecond_increment_closure3) (x : uint32) (_3' : Ghost.ghost_ty (Seq.seq uint32)) : uint32
-    requires {[#"../06_map_precond.rs" 187 19 187 27] UInt32.to_int x <= 15}
-    ensures { [#"../06_map_precond.rs" 188 18 188 33] UInt32.to_int result = UInt32.to_int x + 1 }
+  let rec cfg c06MapPrecond_Increment_Closure3 [@cfg:stackify] [#"../06_map_precond.rs" 193 8 193 35] (_1' : borrowed c06mapprecond_increment_closure3) (x : uint32) (_3' : Ghost.ghost_ty (Seq.seq uint32)) : uint32
+    requires {[#"../06_map_precond.rs" 192 19 192 27] UInt32.to_int x <= 15}
+    ensures { [#"../06_map_precond.rs" 193 18 193 33] UInt32.to_int result = UInt32.to_int x + 1 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
@@ -2831,7 +2867,7 @@ module C06MapPrecond_Increment_Closure3
   BB0 {
     assume { Resolve0.resolve _1 };
     _6 <- x_2;
-    res_5 <- ([#"../06_map_precond.rs" 189 20 189 25] _6 + (1 : uint32));
+    res_5 <- ([#"../06_map_precond.rs" 194 20 194 25] _6 + (1 : uint32));
     res_4 <- res_5;
     _0 <- res_4;
     return _0
@@ -2852,9 +2888,9 @@ module C06MapPrecond_Increment_Interface
   clone C06MapPrecond_Common_Iterator_Invariant_Stub as Invariant0 with
     type self = i
   val increment [@cfg:stackify] (iter : i) : ()
-    requires {[#"../06_map_precond.rs" 179 11 179 27] Invariant0.invariant' iter}
-    requires {[#"../06_map_precond.rs" 180 0 180 187] forall done_ : borrowed i . Completed0.completed done_ -> Invariant0.invariant' ( ^ done_) -> (forall steps : Seq.seq uint32 . forall next : i . Produces0.produces ( ^ done_) steps next -> steps = Seq.empty  /\  ^ done_ = next)}
-    requires {[#"../06_map_precond.rs" 181 0 183 2] forall fin : i . forall prod : Seq.seq uint32 . Invariant0.invariant' fin -> Produces0.produces iter prod fin -> (forall x : int . 0 <= x /\ x < Seq.length prod -> Seq.get prod x <= (10 : uint32))}
+    requires {[#"../06_map_precond.rs" 184 11 184 27] Invariant0.invariant' iter}
+    requires {[#"../06_map_precond.rs" 185 0 185 187] forall done_ : borrowed i . Completed0.completed done_ -> Invariant0.invariant' ( ^ done_) -> (forall steps : Seq.seq uint32 . forall next : i . Produces0.produces ( ^ done_) steps next -> steps = Seq.empty  /\  ^ done_ = next)}
+    requires {[#"../06_map_precond.rs" 186 0 188 2] forall fin : i . forall prod : Seq.seq uint32 . Invariant0.invariant' fin -> Produces0.produces iter prod fin -> (forall x : int . 0 <= x /\ x < Seq.length prod -> Seq.get prod x <= (10 : uint32))}
     
 end
 module C06MapPrecond_Increment
@@ -2906,6 +2942,7 @@ module C06MapPrecond_Increment
     type i = i,
     type b = uint32,
     type f = Closure30.c06mapprecond_increment_closure3,
+    predicate Unnest0.unnest = Closure30.unnest,
     predicate Precondition0.precondition = Closure30.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure30.postcondition_mut,
     type Item0.item = uint32,
@@ -2915,6 +2952,7 @@ module C06MapPrecond_Increment
     type i = i,
     type b = uint32,
     type f = Closure30.c06mapprecond_increment_closure3,
+    predicate Unnest0.unnest = Closure30.unnest,
     predicate Precondition0.precondition = Closure30.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure30.postcondition_mut,
     predicate Preservation0.preservation = Preservation0.preservation,
@@ -2927,6 +2965,7 @@ module C06MapPrecond_Increment
     type b = uint32,
     type f = Closure30.c06mapprecond_increment_closure3,
     predicate Unnest0.unnest = Closure30.unnest,
+    predicate Precondition0.precondition = Closure30.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure30.postcondition_mut,
     type Item0.item = uint32,
     predicate Produces0.produces = Produces0.produces
@@ -2980,10 +3019,10 @@ module C06MapPrecond_Increment
     predicate Invariant1.invariant' = Invariant1.invariant'
   clone CreusotContracts_Resolve_Resolve_Resolve as Resolve0 with
     type self = i
-  let rec cfg increment [@cfg:stackify] [#"../06_map_precond.rs" 184 0 184 50] (iter : i) : ()
-    requires {[#"../06_map_precond.rs" 179 11 179 27] Invariant0.invariant' iter}
-    requires {[#"../06_map_precond.rs" 180 0 180 187] forall done_ : borrowed i . Completed0.completed done_ -> Invariant0.invariant' ( ^ done_) -> (forall steps : Seq.seq uint32 . forall next : i . Produces0.produces ( ^ done_) steps next -> steps = Seq.empty  /\  ^ done_ = next)}
-    requires {[#"../06_map_precond.rs" 181 0 183 2] forall fin : i . forall prod : Seq.seq uint32 . Invariant0.invariant' fin -> Produces0.produces iter prod fin -> (forall x : int . 0 <= x /\ x < Seq.length prod -> Seq.get prod x <= (10 : uint32))}
+  let rec cfg increment [@cfg:stackify] [#"../06_map_precond.rs" 189 0 189 50] (iter : i) : ()
+    requires {[#"../06_map_precond.rs" 184 11 184 27] Invariant0.invariant' iter}
+    requires {[#"../06_map_precond.rs" 185 0 185 187] forall done_ : borrowed i . Completed0.completed done_ -> Invariant0.invariant' ( ^ done_) -> (forall steps : Seq.seq uint32 . forall next : i . Produces0.produces ( ^ done_) steps next -> steps = Seq.empty  /\  ^ done_ = next)}
+    requires {[#"../06_map_precond.rs" 186 0 188 2] forall fin : i . forall prod : Seq.seq uint32 . Invariant0.invariant' fin -> Produces0.produces iter prod fin -> (forall x : int . 0 <= x /\ x < Seq.length prod -> Seq.get prod x <= (10 : uint32))}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -3007,11 +3046,11 @@ module C06MapPrecond_Increment
     _6 <- iter_1;
     iter_1 <- any i;
     _7 <- Closure30.C06MapPrecond_Increment_Closure3;
-    i_5 <- ([#"../06_map_precond.rs" 185 12 190 5] Map1.map _6 _7);
+    i_5 <- ([#"../06_map_precond.rs" 190 12 195 5] Map1.map _6 _7);
     goto BB3
   }
   BB3 {
-    assert { [#"../06_map_precond.rs" 192 4 195 5] forall fin : C06MapPrecond_Map_Type.t_map i uint32 Closure30.c06mapprecond_increment_closure3 . forall prod : Seq.seq uint32 . Invariant1.invariant' fin -> Produces1.produces i_5 prod fin -> (forall x : int . 0 <= x /\ x < Seq.length prod -> Seq.get prod x <= (11 : uint32)) };
+    assert { [#"../06_map_precond.rs" 197 4 200 5] forall fin : C06MapPrecond_Map_Type.t_map i uint32 Closure30.c06mapprecond_increment_closure3 . forall prod : Seq.seq uint32 . Invariant1.invariant' fin -> Produces1.produces i_5 prod fin -> (forall x : int . 0 <= x /\ x < Seq.length prod -> Seq.get prod x <= (11 : uint32)) };
     goto BB4
   }
   BB4 {
@@ -3050,22 +3089,22 @@ module C06MapPrecond_Counter_Closure3_Interface
   predicate precondition [@cfg:stackify] (self : c06mapprecond_counter_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32)))
     
    =
-    [#"../06_map_precond.rs" 205 19 205 61] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 self < (18446744073709551615 : usize)
+    [#"../06_map_precond.rs" 210 19 210 61] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 self < (18446744073709551615 : usize)
   predicate unnest (self : c06mapprecond_counter_closure3) (_2' : c06mapprecond_counter_closure3) =
      ^ c06mapprecond_counter_closure3_0 _2' =  ^ c06mapprecond_counter_closure3_0 self
   predicate postcondition_mut [@cfg:stackify] (self : borrowed c06mapprecond_counter_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32))) (result : uint32)
     
    =
-    ([#"../06_map_precond.rs" 206 18 206 39] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( ^ self)) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * self)) + 1) && unnest ( * self) ( ^ self)
+    ([#"../06_map_precond.rs" 211 18 211 39] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( ^ self)) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * self)) + 1) && unnest ( * self) ( ^ self)
   predicate postcondition_once [@cfg:stackify] (self : c06mapprecond_counter_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32))) (result : uint32)
     
    =
-    [#"../06_map_precond.rs" 206 18 206 39] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) + 1
+    [#"../06_map_precond.rs" 211 18 211 39] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) + 1
   predicate resolve (_1' : c06mapprecond_counter_closure3) =
     Resolve0.resolve (c06mapprecond_counter_closure3_0 _1')
   val c06MapPrecond_Counter_Closure3 [@cfg:stackify] (_1' : borrowed c06mapprecond_counter_closure3) (x : uint32) (_prod : Ghost.ghost_ty (Seq.seq uint32)) : uint32
-    requires {[#"../06_map_precond.rs" 205 19 205 61] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 ( * _1') < (18446744073709551615 : usize)}
-    ensures { [#"../06_map_precond.rs" 206 18 206 39] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( ^ _1')) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) + 1 }
+    requires {[#"../06_map_precond.rs" 210 19 210 61] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 ( * _1') < (18446744073709551615 : usize)}
+    ensures { [#"../06_map_precond.rs" 211 18 211 39] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( ^ _1')) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) + 1 }
     ensures { unnest ( * _1') ( ^ _1') }
     
 end
@@ -3091,26 +3130,26 @@ module C06MapPrecond_Counter_Closure3
   predicate precondition [@cfg:stackify] (self : c06mapprecond_counter_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32)))
     
    =
-    [#"../06_map_precond.rs" 205 19 205 61] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 self < (18446744073709551615 : usize)
+    [#"../06_map_precond.rs" 210 19 210 61] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 self < (18446744073709551615 : usize)
   predicate unnest (self : c06mapprecond_counter_closure3) (_2' : c06mapprecond_counter_closure3) =
      ^ c06mapprecond_counter_closure3_0 _2' =  ^ c06mapprecond_counter_closure3_0 self
   predicate postcondition_mut [@cfg:stackify] (self : borrowed c06mapprecond_counter_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32))) (result : uint32)
     
    =
-    ([#"../06_map_precond.rs" 206 18 206 39] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( ^ self)) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * self)) + 1) && unnest ( * self) ( ^ self)
+    ([#"../06_map_precond.rs" 211 18 211 39] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( ^ self)) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * self)) + 1) && unnest ( * self) ( ^ self)
   predicate postcondition_once [@cfg:stackify] (self : c06mapprecond_counter_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32))) (result : uint32)
     
    =
-    [#"../06_map_precond.rs" 206 18 206 39] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) + 1
+    [#"../06_map_precond.rs" 211 18 211 39] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) + 1
   predicate resolve (_1' : c06mapprecond_counter_closure3) =
     Resolve0.resolve (c06mapprecond_counter_closure3_0 _1')
   use seq.Seq
   use prelude.Ghost
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = c06mapprecond_counter_closure3
-  let rec cfg c06MapPrecond_Counter_Closure3 [@cfg:stackify] [#"../06_map_precond.rs" 206 8 206 41] (_1' : borrowed c06mapprecond_counter_closure3) (x : uint32) (_prod : Ghost.ghost_ty (Seq.seq uint32)) : uint32
-    requires {[#"../06_map_precond.rs" 205 19 205 61] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 ( * _1') < (18446744073709551615 : usize)}
-    ensures { [#"../06_map_precond.rs" 206 18 206 39] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( ^ _1')) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) + 1 }
+  let rec cfg c06MapPrecond_Counter_Closure3 [@cfg:stackify] [#"../06_map_precond.rs" 211 8 211 41] (_1' : borrowed c06mapprecond_counter_closure3) (x : uint32) (_prod : Ghost.ghost_ty (Seq.seq uint32)) : uint32
+    requires {[#"../06_map_precond.rs" 210 19 210 61] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 ( * _1') < (18446744073709551615 : usize)}
+    ensures { [#"../06_map_precond.rs" 211 18 211 39] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( ^ _1')) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) + 1 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : uint32;
@@ -3126,7 +3165,7 @@ module C06MapPrecond_Counter_Closure3
     goto BB0
   }
   BB0 {
-    _1 <- { _1 with current = (let C06MapPrecond_Counter_Closure3 a =  * _1 in C06MapPrecond_Counter_Closure3 ({ (c06mapprecond_counter_closure3_0 ( * _1)) with current = ([#"../06_map_precond.rs" 208 12 208 20]  * c06mapprecond_counter_closure3_0 ( * _1) + (1 : usize)) })) };
+    _1 <- { _1 with current = (let C06MapPrecond_Counter_Closure3 a =  * _1 in C06MapPrecond_Counter_Closure3 ({ (c06mapprecond_counter_closure3_0 ( * _1)) with current = ([#"../06_map_precond.rs" 213 12 213 20]  * c06mapprecond_counter_closure3_0 ( * _1) + (1 : usize)) })) };
     assume { Resolve1.resolve _1 };
     res_5 <- x_2;
     res_4 <- res_5;
@@ -3151,9 +3190,9 @@ module C06MapPrecond_Counter_Interface
   clone C06MapPrecond_Common_Iterator_Invariant_Stub as Invariant0 with
     type self = i
   val counter [@cfg:stackify] (iter : i) : ()
-    requires {[#"../06_map_precond.rs" 198 11 198 27] Invariant0.invariant' iter}
-    requires {[#"../06_map_precond.rs" 199 0 199 187] forall done_ : borrowed i . Completed0.completed done_ -> Invariant0.invariant' ( ^ done_) -> (forall steps : Seq.seq uint32 . forall next : i . Produces0.produces ( ^ done_) steps next -> steps = Seq.empty  /\  ^ done_ = next)}
-    requires {[#"../06_map_precond.rs" 200 0 200 112] forall fin : i . forall prod : Seq.seq uint32 . Invariant0.invariant' fin -> Produces0.produces iter prod fin -> Seq.length prod <= UInt64.to_int (18446744073709551615 : usize)}
+    requires {[#"../06_map_precond.rs" 203 11 203 27] Invariant0.invariant' iter}
+    requires {[#"../06_map_precond.rs" 204 0 204 187] forall done_ : borrowed i . Completed0.completed done_ -> Invariant0.invariant' ( ^ done_) -> (forall steps : Seq.seq uint32 . forall next : i . Produces0.produces ( ^ done_) steps next -> steps = Seq.empty  /\  ^ done_ = next)}
+    requires {[#"../06_map_precond.rs" 205 0 205 112] forall fin : i . forall prod : Seq.seq uint32 . Invariant0.invariant' fin -> Produces0.produces iter prod fin -> Seq.length prod <= UInt64.to_int (18446744073709551615 : usize)}
     
 end
 module C06MapPrecond_Counter
@@ -3197,6 +3236,7 @@ module C06MapPrecond_Counter
     type b = uint32,
     type f = Closure30.c06mapprecond_counter_closure3,
     predicate Unnest0.unnest = Closure30.unnest,
+    predicate Precondition0.precondition = Closure30.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure30.postcondition_mut,
     type Item0.item = uint32,
     predicate Produces0.produces = Produces0.produces
@@ -3204,6 +3244,7 @@ module C06MapPrecond_Counter
     type i = i,
     type b = uint32,
     type f = Closure30.c06mapprecond_counter_closure3,
+    predicate Unnest0.unnest = Closure30.unnest,
     predicate Precondition0.precondition = Closure30.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure30.postcondition_mut,
     type Item0.item = uint32,
@@ -3213,6 +3254,7 @@ module C06MapPrecond_Counter
     type i = i,
     type b = uint32,
     type f = Closure30.c06mapprecond_counter_closure3,
+    predicate Unnest0.unnest = Closure30.unnest,
     predicate Precondition0.precondition = Closure30.precondition,
     predicate PostconditionMut0.postcondition_mut = Closure30.postcondition_mut,
     predicate Preservation0.preservation = Preservation0.preservation,
@@ -3284,10 +3326,10 @@ module C06MapPrecond_Counter
     predicate Invariant1.invariant' = Invariant1.invariant'
   clone CreusotContracts_Resolve_Resolve_Resolve as Resolve1 with
     type self = i
-  let rec cfg counter [@cfg:stackify] [#"../06_map_precond.rs" 201 0 201 48] (iter : i) : ()
-    requires {[#"../06_map_precond.rs" 198 11 198 27] Invariant0.invariant' iter}
-    requires {[#"../06_map_precond.rs" 199 0 199 187] forall done_ : borrowed i . Completed0.completed done_ -> Invariant0.invariant' ( ^ done_) -> (forall steps : Seq.seq uint32 . forall next : i . Produces0.produces ( ^ done_) steps next -> steps = Seq.empty  /\  ^ done_ = next)}
-    requires {[#"../06_map_precond.rs" 200 0 200 112] forall fin : i . forall prod : Seq.seq uint32 . Invariant0.invariant' fin -> Produces0.produces iter prod fin -> Seq.length prod <= UInt64.to_int (18446744073709551615 : usize)}
+  let rec cfg counter [@cfg:stackify] [#"../06_map_precond.rs" 206 0 206 48] (iter : i) : ()
+    requires {[#"../06_map_precond.rs" 203 11 203 27] Invariant0.invariant' iter}
+    requires {[#"../06_map_precond.rs" 204 0 204 187] forall done_ : borrowed i . Completed0.completed done_ -> Invariant0.invariant' ( ^ done_) -> (forall steps : Seq.seq uint32 . forall next : i . Produces0.produces ( ^ done_) steps next -> steps = Seq.empty  /\  ^ done_ = next)}
+    requires {[#"../06_map_precond.rs" 205 0 205 112] forall fin : i . forall prod : Seq.seq uint32 . Invariant0.invariant' fin -> Produces0.produces iter prod fin -> Seq.length prod <= UInt64.to_int (18446744073709551615 : usize)}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -3315,7 +3357,7 @@ module C06MapPrecond_Counter
     _9 <- borrow_mut cnt_5;
     cnt_5 <-  ^ _9;
     _8 <- Closure30.C06MapPrecond_Counter_Closure3 _9;
-    _6 <- ([#"../06_map_precond.rs" 203 4 211 5] Map1.map _7 _8);
+    _6 <- ([#"../06_map_precond.rs" 208 4 216 5] Map1.map _7 _8);
     goto BB3
   }
   BB3 {
@@ -3348,11 +3390,6 @@ module C06MapPrecond_Impl0
     type self = i
   clone C06MapPrecond_Common_Iterator_Item_Type as Item0 with
     type self = i
-  use seq.Seq
-  use prelude.Ghost
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
-    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
-    type f = f
   use C06MapPrecond_Map_Type as C06MapPrecond_Map_Type
   clone C06MapPrecond_Impl0_Completed as Completed0 with
     type i = i,
@@ -3360,10 +3397,15 @@ module C06MapPrecond_Impl0
     type f = f,
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed1.completed
+  use seq.Seq
+  use prelude.Ghost
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut as PostconditionMut0 with
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f,
     type Output0.output = b
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
+    type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
+    type f = f
   clone C06MapPrecond_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
@@ -3378,6 +3420,7 @@ module C06MapPrecond_Impl0
     type f = f,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
@@ -3396,6 +3439,7 @@ module C06MapPrecond_Impl0
     predicate Preservation0.preservation = Preservation0.preservation,
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
@@ -3420,6 +3464,7 @@ module C06MapPrecond_Impl0
     type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
+    predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
   clone C06MapPrecond_Impl0_Invariant as Invariant0 with
     type i = i,
@@ -3471,6 +3516,7 @@ module C06MapPrecond_Impl0
     type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces1.produces = Produces1.produces,
+    predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     axiom .
   use Core_Option_Option_Type as Core_Option_Option_Type

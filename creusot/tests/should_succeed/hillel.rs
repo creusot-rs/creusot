@@ -82,15 +82,13 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
     ghost! { subset_push::<T::DeepModelTy> };
     proof_assert! { is_subset(vec.deep_model(), vec.deep_model().push(elem.deep_model())) };
 
-    let mut i = 0;
-
-    #[invariant(not_elem, forall<j: Int> 0 <= j && j < @i ==> vec.deep_model()[j] != elem.deep_model())]
-    while i < vec.len() {
-        if vec[i] == elem {
+    #[invariant(not_elem, forall<j: Int> 0 <= j && j < produced.len() ==> produced[j].deep_model() != elem.deep_model())]
+    for e in vec.iter() {
+        proof_assert! { *e == (@*vec)[produced.len()-1] };
+        if e == &elem {
             proof_assert! { contains(vec.deep_model(), elem.deep_model()) };
             return;
         }
-        i += 1;
     }
 
     proof_assert! { is_unique(vec.deep_model().push(elem.deep_model())) };
@@ -103,17 +101,14 @@ fn insert_unique<T: Eq + DeepModel>(vec: &mut Vec<T>, elem: T) {
 fn unique<T: Eq + DeepModel + Copy>(str: &[T]) -> Vec<T> {
     let mut unique = Vec::new();
     let mut sub_str: Ghost<Seq<T>> = ghost! { Seq::new() };
-    let mut i: usize = 0;
 
-    #[invariant(i_bound, @i <= (@str).len())]
     #[invariant(unique, is_unique(unique.deep_model()))]
     #[invariant(unique_subset, is_subset(unique.deep_model(), str.deep_model()))]
-    #[invariant(unique_subset, is_subset(str.deep_model().subsequence(0, @i), unique.deep_model()))]
-    while i < str.len() {
+    #[invariant(unique_subset, is_subset(str.deep_model().subsequence(0, produced.len()), unique.deep_model()))]
+    for i in 0..str.len() {
         let elem: T = str[i];
         insert_unique(&mut unique, elem);
         sub_str = ghost! { sub_str.push(elem) };
-        i += 1;
     }
 
     proof_assert! { is_subset(str.deep_model().subsequence(0, (@str).len()), unique.deep_model()) }
@@ -161,13 +156,11 @@ fn score(seq: Seq<u32>, i: Int) -> Int {
 #[ensures(forall<i: Int> 0 <= i && i < (@s).len() ==> score(@s, @result) <= score(@s, i))]
 fn fulcrum(s: &[u32]) -> usize {
     let mut total: u32 = 0;
-    let mut i: usize = 0;
-    #[invariant(i_bound, @i <= (@s).len())]
-    #[invariant(total, @total == sum_range(@s, 0, @i))]
+
+    #[invariant(total, @total == sum_range(@s, 0, produced.len()))]
     #[invariant(total_bound, @total <= sum_range(@s, 0, (@s).len()))]
-    while i < s.len() {
-        total += s[i];
-        i += 1;
+    for &x in s {
+        total += x;
     }
 
     proof_assert! { @total == sum_range(@s, 0, (@s).len()) };
@@ -176,14 +169,12 @@ fn fulcrum(s: &[u32]) -> usize {
     let mut min_dist: u32 = total;
 
     let mut sum: u32 = 0;
-    let mut i: usize = 0;
-    #[invariant(i_bound, @i <= (@s).len())]
-    #[invariant(sum, @sum == sum_range(@s, 0, @i))]
+    #[invariant(sum, @sum == sum_range(@s, 0, produced.len()))]
     #[invariant(sum_bound, @sum <= @total)]
-    #[invariant(min_i_bound, @min_i <= @i && @min_i < (@s).len())]
+    #[invariant(min_i_bound, @min_i <= produced.len() && @min_i < (@s).len())]
     #[invariant(min_dist, @min_dist == score(@s, @min_i))]
-    #[invariant(min_i_min, forall<j: Int> 0 <= j && j < @i ==> score(@s, @min_i) <= score(@s, j))]
-    while i < s.len() {
+    #[invariant(min_i_min, forall<j: Int> 0 <= j && j < produced.len() ==> score(@s, @min_i) <= score(@s, j))]
+    for i in 0..s.len() {
         let dist = sum.abs_diff(total - sum);
         if dist < min_dist {
             min_i = i;
@@ -191,7 +182,6 @@ fn fulcrum(s: &[u32]) -> usize {
         }
 
         sum += s[i];
-        i += 1;
     }
 
     min_i

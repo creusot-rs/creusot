@@ -125,6 +125,7 @@ pub fn lower(loop_: Loop) -> TokenStream {
 
 // Lowers for loops to `loop` and inserts the structural invariant that we get 'for free'
 fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
+    let lbl = f.label;
     let pat = f.pat;
     let iter = f.expr;
     let body = f.body;
@@ -160,6 +161,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
         let mut #produced = ghost! { ::creusot_contracts::logic::Seq::EMPTY };
         #(#invariants;)*
         #(#outer)*
+        #lbl
         loop {
             #(#inner)*
             match ::std::iter::Iterator::next(&mut #it) {
