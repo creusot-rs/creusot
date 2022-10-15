@@ -21,7 +21,7 @@ use creusot_rustc::{
     index::bit_set::BitSet,
     infer::infer::TyCtxtInferExt,
     middle::{
-        mir::{traversal::reverse_postorder, MirPass, Mutability::*},
+        mir::{traversal::reverse_postorder, MirPass},
         ty::{
             subst::{GenericArg, SubstsRef},
             DefIdTree, EarlyBinder, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt,
@@ -33,6 +33,7 @@ use creusot_rustc::{
     transform::{remove_false_edges::*, simplify::*},
 };
 use indexmap::IndexMap;
+use rustc_middle::ty::UpvarCapture;
 use std::{collections::BTreeMap, rc::Rc};
 use why3::{declaration::*, exp::*, mlcfg::*, ty::Type, Ident};
 
@@ -688,25 +689,38 @@ pub(crate) fn closure_unnest<'tcx>(
     // FIXME: does not work with move closures
     // (problem is: how to detect a move closure).
 
+    let captures =
+        tcx.typeck(def_id.expect_local()).closure_min_captures_flattened(def_id.expect_local());
+
     let mut unnest = Exp::mk_true();
 
-    let csubst = subst.as_closure();
-    for (ix, up_ty) in csubst.upvar_tys().enumerate() {
-        let acc_name = ty::closure_accessor_name(tcx, def_id, ix);
-        let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
-        let cur = Exp::pure_var(Ident::build("self"));
-        let fin = Exp::pure_var(Ident::build("_2'"));
-        let unnest_one = match up_ty.ref_mutability().unwrap() {
-            Mut => Exp::BinaryOp(
-                BinOp::Eq,
-                box Exp::Final(box acc.clone().app_to(fin.clone())),
-                box Exp::Final(box acc.app_to(cur)),
-            ),
-            Not => {
-                Exp::BinaryOp(BinOp::Eq, box acc.clone().app_to(fin.clone()), box acc.app_to(cur))
+    for (ix, capture) in captures.enumerate() {
+        match capture.info.capture_kind {
+            // if we captured by value we get no unnesting predicate
+            UpvarCapture::ByValue => continue,
+            UpvarCapture::ByRef(is_mut) => {
+                let acc_name = ty::closure_accessor_name(tcx, def_id, ix);
+                let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
+                let cur = Exp::pure_var(Ident::build("self"));
+                let fin = Exp::pure_var(Ident::build("_2'"));
+
+                use rustc_middle::ty::BorrowKind;
+                let unnest_one = match is_mut {
+                    BorrowKind::ImmBorrow => Exp::BinaryOp(
+                        BinOp::Eq,
+                        box acc.clone().app_to(fin.clone()),
+                        box acc.app_to(cur),
+                    ),
+                    _ => Exp::BinaryOp(
+                        BinOp::Eq,
+                        box Exp::Final(box acc.clone().app_to(fin.clone())),
+                        box Exp::Final(box acc.app_to(cur)),
+                    ),
+                };
+
+                unnest = unnest_one.log_and(unnest);
             }
-        };
-        unnest = unnest_one.log_and(unnest);
+        }
     }
 
     unnest
