@@ -744,13 +744,22 @@ fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel) ->
                 module: Vec::new(),
                 name: format!("{}_Stub", &*module_name(ctx, def_id)).into(),
             },
+            // Why do we do this? Why not use the stub here as well?
             CloneLevel::Interface => interface::interface_name(ctx, def_id).into(),
             CloneLevel::Body => module_name(ctx, def_id).into(),
         },
+        Constant => match interface {
+            CloneLevel::Body => module_name(ctx, def_id).into(),
+            _ => QName {
+                module: Vec::new(),
+                name: format!("{}_Stub", &*module_name(ctx, def_id)).into(),
+            },
+        },
+
         Program | Closure => {
             QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
         }
-        Constant | Trait | Type | AssocTy => module_name(ctx, def_id).into(),
+        Trait | Type | AssocTy => module_name(ctx, def_id).into(),
         Unsupported(_) => unreachable!(),
     }
 }
@@ -761,6 +770,7 @@ enum SymbolKind {
     Type(Symbol),
     Function(Symbol),
     Predicate(Symbol),
+    Const(Symbol),
 }
 
 impl SymbolKind {
@@ -770,6 +780,7 @@ impl SymbolKind {
             SymbolKind::Type(i) => *i,
             SymbolKind::Function(i) => *i,
             SymbolKind::Predicate(i) => *i,
+            SymbolKind::Const(i) => *i,
         }
     }
 
@@ -794,6 +805,10 @@ impl SymbolKind {
             SymbolKind::Predicate(_) => {
                 CloneSubst::Predicate(src.qname_ident(id.clone()), tgt.qname_ident(id))
             }
+            SymbolKind::Const(_) => {
+                // TMP
+                CloneSubst::Val(src.qname_ident(id.clone()), tgt.qname_ident(id))
+            }
         }
     }
 }
@@ -811,6 +826,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
         },
         Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
         Type => None,
+        Constant => Some(SymbolKind::Const(tcx.item_name(def_id))),
         _ => unreachable!(),
     }
 }

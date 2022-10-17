@@ -372,13 +372,13 @@ module C06MapPrecond_Impl1_Reinitialize_Stub
   type i
   type b
   type f
-  predicate reinitialize (_ : ())
+  predicate reinitialize (_1' : ())
 end
 module C06MapPrecond_Impl1_Reinitialize_Interface
   type i
   type b
   type f
-  predicate reinitialize (_ : ())
+  predicate reinitialize (_1' : ())
 end
 module C06MapPrecond_Impl1_Reinitialize
   type i
@@ -404,10 +404,10 @@ module C06MapPrecond_Impl1_Reinitialize
     type b = b,
     type f = f,
     type Item0.item = Item0.item
-  predicate reinitialize [#"../06_map_precond.rs" 108 4 108 29] (_ : ()) =
+  predicate reinitialize [#"../06_map_precond.rs" 108 4 108 29] (_1' : ()) =
     [#"../06_map_precond.rs" 109 8 115 9] forall reset : borrowed (C06MapPrecond_Map_Type.t_map i Item0.item f) . Completed0.completed reset -> Invariant0.invariant' (C06MapPrecond_Map_Type.map_iter ( ^ reset)) -> NextPrecondition0.next_precondition ( ^ reset) /\ Preservation0.preservation (C06MapPrecond_Map_Type.map_iter ( ^ reset)) (C06MapPrecond_Map_Type.map_func ( ^ reset))
-  val reinitialize (_wild0 : ()) : bool
-    ensures { result = reinitialize _wild0 }
+  val reinitialize (_1' : ()) : bool
+    ensures { result = reinitialize _1' }
     
 end
 module CreusotContracts_Std1_Ops_Impl1_UnnestRefl_Stub
@@ -2867,7 +2867,7 @@ module C06MapPrecond_Increment_Closure3
   BB0 {
     assume { Resolve0.resolve _1 };
     _6 <- x_2;
-    res_5 <- ([#"../06_map_precond.rs" 194 20 194 25] _6 + (1 : uint32));
+    res_5 <- ([#"../06_map_precond.rs" 194 20 194 25] _6 + ([#"../06_map_precond.rs" 194 24 194 25] (1 : uint32)));
     res_4 <- res_5;
     _0 <- res_4;
     return _0
@@ -3067,6 +3067,17 @@ module C06MapPrecond_Increment
   }
   
 end
+module Core_Num_Impl12_Max_Stub
+  use mach.int.Int
+  use prelude.UIntSize
+  val constant mAX'  : usize
+end
+module Core_Num_Impl12_Max
+  use mach.int.Int
+  use prelude.UIntSize
+  let constant mAX'  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+end
 module C06MapPrecond_Counter_Closure3_Interface
   type i
   use prelude.Borrow
@@ -3074,8 +3085,9 @@ module C06MapPrecond_Counter_Closure3_Interface
   use prelude.Ghost
   use seq.Seq
   use mach.int.Int
-  use prelude.UIntSize
   use mach.int.UInt32
+  use prelude.UIntSize
+  clone Core_Num_Impl12_Max_Stub as Max0
   type c06mapprecond_counter_closure3  =
     | C06MapPrecond_Counter_Closure3 (borrowed usize)
     
@@ -3089,7 +3101,7 @@ module C06MapPrecond_Counter_Closure3_Interface
   predicate precondition [@cfg:stackify] (self : c06mapprecond_counter_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32)))
     
    =
-    [#"../06_map_precond.rs" 210 19 210 61] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 self < (18446744073709551615 : usize)
+    [#"../06_map_precond.rs" 210 19 210 61] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 self < Max0.mAX'
   predicate unnest (self : c06mapprecond_counter_closure3) (_2' : c06mapprecond_counter_closure3) =
      ^ c06mapprecond_counter_closure3_0 _2' =  ^ c06mapprecond_counter_closure3_0 self
   predicate postcondition_mut [@cfg:stackify] (self : borrowed c06mapprecond_counter_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32))) (result : uint32)
@@ -3103,7 +3115,7 @@ module C06MapPrecond_Counter_Closure3_Interface
   predicate resolve (_1' : c06mapprecond_counter_closure3) =
     Resolve0.resolve (c06mapprecond_counter_closure3_0 _1')
   val c06MapPrecond_Counter_Closure3 [@cfg:stackify] (_1' : borrowed c06mapprecond_counter_closure3) (x : uint32) (_prod : Ghost.ghost_ty (Seq.seq uint32)) : uint32
-    requires {[#"../06_map_precond.rs" 210 19 210 61] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 ( * _1') < (18446744073709551615 : usize)}
+    requires {[#"../06_map_precond.rs" 210 19 210 61] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 ( * _1') < Max0.mAX'}
     ensures { [#"../06_map_precond.rs" 211 18 211 39] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( ^ _1')) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) + 1 }
     ensures { unnest ( * _1') ( ^ _1') }
     
@@ -3127,10 +3139,11 @@ module C06MapPrecond_Counter_Closure3
   use mach.int.UInt64
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = usize
+  clone Core_Num_Impl12_Max as Max0
   predicate precondition [@cfg:stackify] (self : c06mapprecond_counter_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32)))
     
    =
-    [#"../06_map_precond.rs" 210 19 210 61] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 self < (18446744073709551615 : usize)
+    [#"../06_map_precond.rs" 210 19 210 61] let (x, _prod) = args in UInt64.to_int ( * c06mapprecond_counter_closure3_0 self) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 self < Max0.mAX'
   predicate unnest (self : c06mapprecond_counter_closure3) (_2' : c06mapprecond_counter_closure3) =
      ^ c06mapprecond_counter_closure3_0 _2' =  ^ c06mapprecond_counter_closure3_0 self
   predicate postcondition_mut [@cfg:stackify] (self : borrowed c06mapprecond_counter_closure3) (args : (uint32, Ghost.ghost_ty (Seq.seq uint32))) (result : uint32)
@@ -3148,7 +3161,7 @@ module C06MapPrecond_Counter_Closure3
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = c06mapprecond_counter_closure3
   let rec cfg c06MapPrecond_Counter_Closure3 [@cfg:stackify] [#"../06_map_precond.rs" 211 8 211 41] (_1' : borrowed c06mapprecond_counter_closure3) (x : uint32) (_prod : Ghost.ghost_ty (Seq.seq uint32)) : uint32
-    requires {[#"../06_map_precond.rs" 210 19 210 61] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 ( * _1') < (18446744073709551615 : usize)}
+    requires {[#"../06_map_precond.rs" 210 19 210 61] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) = Seq.length (Ghost.inner _prod) /\  * c06mapprecond_counter_closure3_0 ( * _1') < Max0.mAX'}
     ensures { [#"../06_map_precond.rs" 211 18 211 39] UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( ^ _1')) = UInt64.to_int ( * c06mapprecond_counter_closure3_0 ( * _1')) + 1 }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -3165,7 +3178,7 @@ module C06MapPrecond_Counter_Closure3
     goto BB0
   }
   BB0 {
-    _1 <- { _1 with current = (let C06MapPrecond_Counter_Closure3 a =  * _1 in C06MapPrecond_Counter_Closure3 ({ (c06mapprecond_counter_closure3_0 ( * _1)) with current = ([#"../06_map_precond.rs" 213 12 213 20]  * c06mapprecond_counter_closure3_0 ( * _1) + (1 : usize)) })) };
+    _1 <- { _1 with current = (let C06MapPrecond_Counter_Closure3 a =  * _1 in C06MapPrecond_Counter_Closure3 ({ (c06mapprecond_counter_closure3_0 ( * _1)) with current = ([#"../06_map_precond.rs" 213 12 213 20]  * c06mapprecond_counter_closure3_0 ( * _1) + ([#"../06_map_precond.rs" 213 19 213 20] (1 : usize))) })) };
     assume { Resolve1.resolve _1 };
     res_5 <- x_2;
     res_4 <- res_5;
@@ -3180,8 +3193,8 @@ module C06MapPrecond_Counter_Interface
   use seq.Seq
   use mach.int.Int
   use mach.int.UInt32
-  use prelude.UIntSize
   use mach.int.UInt64
+  clone Core_Num_Impl12_Max_Stub as Max0
   clone C06MapPrecond_Common_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = uint32
@@ -3192,7 +3205,7 @@ module C06MapPrecond_Counter_Interface
   val counter [@cfg:stackify] (iter : i) : ()
     requires {[#"../06_map_precond.rs" 203 11 203 27] Invariant0.invariant' iter}
     requires {[#"../06_map_precond.rs" 204 0 204 187] forall done_ : borrowed i . Completed0.completed done_ -> Invariant0.invariant' ( ^ done_) -> (forall steps : Seq.seq uint32 . forall next : i . Produces0.produces ( ^ done_) steps next -> steps = Seq.empty  /\  ^ done_ = next)}
-    requires {[#"../06_map_precond.rs" 205 0 205 112] forall fin : i . forall prod : Seq.seq uint32 . Invariant0.invariant' fin -> Produces0.produces iter prod fin -> Seq.length prod <= UInt64.to_int (18446744073709551615 : usize)}
+    requires {[#"../06_map_precond.rs" 205 0 205 112] forall fin : i . forall prod : Seq.seq uint32 . Invariant0.invariant' fin -> Produces0.produces iter prod fin -> Seq.length prod <= UInt64.to_int Max0.mAX'}
     
 end
 module C06MapPrecond_Counter
@@ -3201,7 +3214,6 @@ module C06MapPrecond_Counter
   use seq.Seq
   use mach.int.Int
   use mach.int.UInt32
-  use prelude.UIntSize
   use mach.int.UInt64
   clone C06MapPrecond_Common_Iterator_Produces_Interface as Produces0 with
     type self = i,
@@ -3220,14 +3232,17 @@ module C06MapPrecond_Counter
     predicate Produces0.produces = Produces0.produces,
     type Item0.item = uint32,
     axiom .
+  clone Core_Num_Impl12_Max as Max0
   clone C06MapPrecond_Common_Iterator_Completed_Interface as Completed0 with
     type self = i
+  use prelude.UIntSize
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = usize
   use seq.Seq
   use prelude.Ghost
   clone C06MapPrecond_Counter_Closure3_Interface as Closure30 with
     type i = i,
+    val Max0.mAX' = Max0.mAX',
     predicate Resolve0.resolve = Resolve0.resolve,
     axiom .
   use C06MapPrecond_Map_Type as C06MapPrecond_Map_Type
@@ -3329,7 +3344,7 @@ module C06MapPrecond_Counter
   let rec cfg counter [@cfg:stackify] [#"../06_map_precond.rs" 206 0 206 48] (iter : i) : ()
     requires {[#"../06_map_precond.rs" 203 11 203 27] Invariant0.invariant' iter}
     requires {[#"../06_map_precond.rs" 204 0 204 187] forall done_ : borrowed i . Completed0.completed done_ -> Invariant0.invariant' ( ^ done_) -> (forall steps : Seq.seq uint32 . forall next : i . Produces0.produces ( ^ done_) steps next -> steps = Seq.empty  /\  ^ done_ = next)}
-    requires {[#"../06_map_precond.rs" 205 0 205 112] forall fin : i . forall prod : Seq.seq uint32 . Invariant0.invariant' fin -> Produces0.produces iter prod fin -> Seq.length prod <= UInt64.to_int (18446744073709551615 : usize)}
+    requires {[#"../06_map_precond.rs" 205 0 205 112] forall fin : i . forall prod : Seq.seq uint32 . Invariant0.invariant' fin -> Produces0.produces iter prod fin -> Seq.length prod <= UInt64.to_int Max0.mAX'}
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
@@ -3350,7 +3365,7 @@ module C06MapPrecond_Counter
     goto BB2
   }
   BB2 {
-    cnt_5 <- (0 : usize);
+    cnt_5 <- ([#"../06_map_precond.rs" 207 18 207 19] (0 : usize));
     assume { Resolve1.resolve _7 };
     _7 <- iter_1;
     iter_1 <- any i;

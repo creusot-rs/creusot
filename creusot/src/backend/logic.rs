@@ -206,7 +206,7 @@ fn body_module<'tcx>(
     (Module { name, decls }, names.summary())
 }
 
-fn stub_module(ctx: &mut TranslationCtx, def_id: DefId) -> Module {
+pub(crate) fn stub_module(ctx: &mut TranslationCtx, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
 

@@ -241,9 +241,17 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 .collect(),
             terminator: Terminator::Goto(BlockId(0)),
         };
+        // Introduce names for wildcards so we can intialize the local versions
+        self.sig.args.iter_mut().enumerate().for_each(|(ix, bndr)| {
+            if let Binder::Typed(_, bndrs, _) = bndr && let &[Binder::Wild] = &bndrs[..] {
+                *bndrs = vec![Binder::Named(format!("_{}'", ix + 1).into())];
+            }
+        });
+
         decls.extend(self.names.to_clones(self.ctx));
 
         let param_env = self.param_env();
+
         let func = Decl::CfgDecl(CfgFunction {
             sig: self.sig,
             rec: true,

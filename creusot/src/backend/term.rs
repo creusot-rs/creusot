@@ -41,14 +41,13 @@ pub(crate) fn lower_impure<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     param_env: ParamEnv<'tcx>,
-
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
     let mut term = Lower { ctx, names, pure: Purity::Program, param_env }.lower_term(term);
     term.reassociate();
 
-     if !ctx.sess.source_map().is_imported(span) {
+    if !ctx.sess.source_map().is_imported(span) {
         term = ctx.attach_span(span, term);
     }
     term
@@ -73,21 +72,12 @@ impl<'tcx> Lower<'_, 'tcx> {
                 let method = (id, subst);
                 debug!("resolved_method={:?}", method);
                 self.lookup_builtin(method, &mut Vec::new()).unwrap_or_else(|| {
-                    let uneval =
-                        ty::UnevaluatedConst::new(ty::WithOptConstParam::unknown(id), subst);
-
-                    let constant = self.ctx.tcx.mk_const(ty::ConstS {
-                        kind: ty::ConstKind::Unevaluated(uneval),
-                        ty: term.ty,
-                    });
-
-                    crate::constant::from_ty_const(
-                        self.ctx,
-                        constant,
-                        self.param_env,
-                        creusot_rustc::span::DUMMY_SP,
-                    )
-                    .to_why(self.ctx, self.names, None)
+                    // eprintln!("{id:?} {subst:?}");
+                    let clone = self.names.insert(id, subst);
+                    match self.ctx.type_of(id).kind() {
+                        TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
+                        _ => Exp::pure_qvar(clone.qname(self.ctx.tcx, id)),
+                    }
                 })
             }
             TermKind::Var(v) => Exp::pure_var(util::ident_of(v)),

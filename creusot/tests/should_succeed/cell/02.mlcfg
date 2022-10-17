@@ -170,22 +170,22 @@ end
 module C02_LemmaMaxInt_Stub
   use int.Power
   use mach.int.Int
-  function lemma_max_int (_ : ()) : ()
+  function lemma_max_int (_1' : ()) : ()
 end
 module C02_LemmaMaxInt_Interface
   use int.Power
   use mach.int.Int
-  function lemma_max_int (_ : ()) : ()
-  axiom lemma_max_int_spec : [#"../02.rs" 58 10 58 49] Power.power 2 63 < 18446744073709551615
+  function lemma_max_int (_1' : ()) : ()
+  axiom lemma_max_int_spec : forall _1' : () . [#"../02.rs" 58 10 58 49] Power.power 2 63 < 18446744073709551615
 end
 module C02_LemmaMaxInt
   use int.Power
   use mach.int.Int
-  function lemma_max_int [#"../02.rs" 59 0 59 22] (_ : ()) : ()
-  val lemma_max_int (_wild0 : ()) : ()
-    ensures { result = lemma_max_int _wild0 }
+  function lemma_max_int [#"../02.rs" 59 0 59 22] (_1' : ()) : ()
+  val lemma_max_int (_1' : ()) : ()
+    ensures { result = lemma_max_int _1' }
     
-  axiom lemma_max_int_spec : [#"../02.rs" 58 10 58 49] Power.power 2 63 < 18446744073709551615
+  axiom lemma_max_int_spec : forall _1' : () . [#"../02.rs" 58 10 58 49] Power.power 2 63 < 18446744073709551615
 end
 module C02_Fib_Type
   use mach.int.Int
@@ -282,40 +282,51 @@ module Alloc_Alloc_Global_Type
     | C_Global
     
 end
+module Core_Num_Impl12_Max_Stub
+  use mach.int.Int
+  use prelude.UIntSize
+  val constant mAX'  : usize
+end
+module Core_Num_Impl12_Max
+  use mach.int.Int
+  use prelude.UIntSize
+  let constant mAX'  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub
   type t
   type a
   use seq.Seq
-  use mach.int.Int
-  use prelude.UIntSize
   use mach.int.UInt64
+  use mach.int.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl12_Max_Stub as Max0
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
   type t
   type a
   use seq.Seq
-  use mach.int.Int
-  use prelude.UIntSize
   use mach.int.UInt64
+  use mach.int.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl12_Max_Stub as Max0
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UInt64.to_int (18446744073709551615 : usize)
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UInt64.to_int Max0.mAX'
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   type t
   type a
   use seq.Seq
-  use mach.int.Int
-  use prelude.UIntSize
   use mach.int.UInt64
+  use mach.int.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl12_Max_Stub as Max0
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UInt64.to_int (18446744073709551615 : usize)
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UInt64.to_int Max0.mAX'
 end
 module C02_FibCell_Stub
   use mach.int.Int
@@ -349,9 +360,11 @@ module C02_FibCell
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   use seq.Seq
   use mach.int.UInt64
+  clone Core_Num_Impl12_Max_Stub as Max0
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
     type a = Alloc_Alloc_Global_Type.t_global,
+    val Max0.mAX' = Max0.mAX',
     axiom .
   predicate fib_cell [#"../02.rs" 79 0 79 32] (v : Alloc_Vec_Vec_Type.t_vec (C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib)) (Alloc_Alloc_Global_Type.t_global))
     
@@ -652,10 +665,12 @@ module C02_FibMemo
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
     type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
     type a = Alloc_Alloc_Global_Type.t_global
+  clone Core_Num_Impl12_Max as Max0
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel1 with
     type t = C02_Cell_Type.t_cell (Core_Option_Option_Type.t_option usize) (C02_Fib_Type.t_fib),
     type a = Alloc_Alloc_Global_Type.t_global,
+    val Max0.mAX' = Max0.mAX',
     axiom .
   clone C02_Fib as Fib0 with
     axiom .
@@ -664,7 +679,8 @@ module C02_FibMemo
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone C02_FibCell as FibCell0 with
-    function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    val Max0.mAX' = Max0.mAX'
   use prelude.IntSize
   use prelude.Ghost
   clone C02_Impl1_Inv as Inv0 with
@@ -764,7 +780,7 @@ module C02_FibMemo
   }
   BB3 {
     _16 <- i_2;
-    _15 <- ([#"../02.rs" 93 27 93 33] _16 = (0 : usize));
+    _15 <- ([#"../02.rs" 93 27 93 33] _16 = ([#"../02.rs" 93 32 93 33] (0 : usize)));
     switch (_15)
       | False -> goto BB7
       | True -> goto BB6
@@ -779,19 +795,19 @@ module C02_FibMemo
     goto BB18
   }
   BB6 {
-    fib_i_14 <- (0 : usize);
+    fib_i_14 <- ([#"../02.rs" 94 16 94 17] (0 : usize));
     goto BB15
   }
   BB7 {
     _18 <- i_2;
-    _17 <- ([#"../02.rs" 95 22 95 28] _18 = (1 : usize));
+    _17 <- ([#"../02.rs" 95 22 95 28] _18 = ([#"../02.rs" 95 27 95 28] (1 : usize)));
     switch (_17)
       | False -> goto BB9
       | True -> goto BB8
       end
   }
   BB8 {
-    fib_i_14 <- (1 : usize);
+    fib_i_14 <- ([#"../02.rs" 96 16 96 17] (1 : usize));
     goto BB14
   }
   BB9 {
@@ -807,14 +823,14 @@ module C02_FibMemo
   BB11 {
     _28 <- mem_1;
     _30 <- i_2;
-    _29 <- ([#"../02.rs" 100 30 100 35] _30 - (1 : usize));
+    _29 <- ([#"../02.rs" 100 30 100 35] _30 - ([#"../02.rs" 100 34 100 35] (1 : usize)));
     _27 <- ([#"../02.rs" 100 16 100 36] fib_memo _28 _29);
     goto BB12
   }
   BB12 {
     _32 <- mem_1;
     _34 <- i_2;
-    _33 <- ([#"../02.rs" 100 53 100 58] _34 - (2 : usize));
+    _33 <- ([#"../02.rs" 100 53 100 58] _34 - ([#"../02.rs" 100 57 100 58] (2 : usize)));
     _31 <- ([#"../02.rs" 100 39 100 59] fib_memo _32 _33);
     goto BB13
   }
