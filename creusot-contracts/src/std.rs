@@ -8,4 +8,5 @@ mod num;
 pub mod ops;
 mod option;
 pub mod slice;
+pub mod time;
 mod vec;
