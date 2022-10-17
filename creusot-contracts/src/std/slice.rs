@@ -51,19 +51,15 @@ impl<T> Default for &[T] {
     }
 }
 
-pub trait SliceExt {
-    type Item;
+pub trait SliceExt<T> {
+    #[logic]
+    fn to_mut_seq(&mut self) -> Seq<&mut T>;
 
     #[logic]
-    fn to_mut_seq(&mut self) -> Seq<&mut Self::Item>;
-
-    #[logic]
-    fn to_ref_seq(&self) -> Seq<&Self::Item>;
+    fn to_ref_seq(&self) -> Seq<&T>;
 }
 
-impl<T> SliceExt for [T] {
-    type Item = T;
-
+impl<T> SliceExt<T> for [T] {
     #[logic]
     #[trusted]
     #[ensures(result.len() == (@self).len())]
