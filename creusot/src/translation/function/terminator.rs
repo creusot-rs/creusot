@@ -164,7 +164,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             DropAndReplace { target, place, value, .. } => {
                 // Resolve
-                self.emit_statement(fmir::Statement::Resolve(*place));
+                self.emit_resolve(*place);
 
                 // Assign
                 let rhs = self.translate_operand(value);

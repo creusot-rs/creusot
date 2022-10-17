@@ -1,4 +1,7 @@
-use super::{fmir::RValue, pearlite::Term};
+use super::{
+    fmir::{resolve_predicate_of2, RValue},
+    pearlite::Term,
+};
 use crate::{
     backend::term::lower_pure,
     ctx::*,
@@ -29,12 +32,12 @@ use creusot_rustc::{
         },
     },
     smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo},
-    span::{Symbol, DUMMY_SP},
+    span::{Span, Symbol, DUMMY_SP},
     transform::{remove_false_edges::*, simplify::*},
 };
 use indexmap::IndexMap;
 use rustc_middle::ty::UpvarCapture;
-use std::{collections::BTreeMap, rc::Rc};
+use std::rc::Rc;
 use why3::{declaration::*, exp::*, mlcfg::*, ty::Type, Ident};
 
 pub(crate) mod place;
@@ -93,17 +96,10 @@ pub(crate) fn translate_function<'tcx, 'sess>(
 
         decls.push(promoted);
     }
-    let mut sig = signature_of(ctx, &mut names, def_id);
 
-    def_id
-        .as_local()
-        .map(|d| ctx.def_span(d))
-        .and_then(|span| ctx.span_attr(span))
-        .map(|attr| sig.attrs.push(attr));
-
-    let func_translator = BodyTranslator::build_context(tcx, ctx, &body, &mut names, sig, def_id);
-
-    decls.extend(func_translator.translate());
+    let func_translator = BodyTranslator::build_context(tcx, ctx, &body, def_id);
+    let fmir = func_translator.translate();
+    decls.extend(to_why(ctx, &mut names, fmir, &body, def_id));
     let name = module_name(ctx, def_id);
     Module { name, decls }
 }
@@ -126,6 +122,53 @@ pub(crate) fn translate_trusted<'tcx>(
     return Module { name, decls };
 }
 
+fn to_why<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    body: fmir::Body<'tcx>,
+    mir: &Body<'tcx>,
+    def_id: DefId,
+) -> Vec<Decl> {
+    let mut decls: Vec<_> = Vec::new();
+
+    let vars: Vec<_> = body
+        .locals
+        .into_iter()
+        .map(|(id, sp, ty)| (false, id, ty::translate_ty(ctx, names, sp, ty)))
+        .collect();
+
+    let entry = Block {
+        statements: vars
+            .iter()
+            .skip(1)
+            .take(body.arg_count)
+            .map(|(_, id, _)| {
+                let rhs = id.arg_name();
+                Statement::Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
+            })
+            .collect(),
+        terminator: Terminator::Goto(BlockId(0)),
+    };
+
+    let sig = signature_of(ctx, names, def_id);
+
+    let func = Decl::CfgDecl(CfgFunction {
+        sig,
+        rec: true,
+        constant: false,
+        vars: vars.into_iter().map(|i| (i.0, i.1.ident(), i.2)).collect(),
+        entry,
+        blocks: body
+            .blocks
+            .into_iter()
+            .map(|(bb, bbd)| (BlockId(bb.into()), bbd.to_why(ctx, names, mir)))
+            .collect(),
+    });
+    decls.extend(names.to_clones(ctx));
+    decls.push(func);
+    decls
+}
+
 // Split this into several sub-contexts: Core, Analysis, Results?
 pub struct BodyTranslator<'body, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
@@ -133,9 +176,6 @@ pub struct BodyTranslator<'body, 'tcx> {
     def_id: DefId,
 
     body: &'body Body<'tcx>,
-
-    // TODO: Remove
-    sig: Signature,
 
     resolver: EagerResolver<'body, 'tcx>,
 
@@ -145,16 +185,13 @@ pub struct BodyTranslator<'body, 'tcx> {
     // Current block being generated
     current_block: (Vec<fmir::Statement<'tcx>>, Option<fmir::Terminator<'tcx>>),
 
-    past_blocks: BTreeMap<BasicBlock, fmir::Block<'tcx>>,
+    past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
 
     // Type translation context
     ctx: &'body mut TranslationCtx<'tcx>,
 
     // Fresh BlockId
     fresh_id: usize,
-
-    // Gives a fresh name to every mono-morphization of a function or trait
-    names: &'body mut CloneMap<'tcx>,
 
     invariants: IndexMap<BasicBlock, Vec<(Symbol, Term<'tcx>)>>,
 
@@ -168,8 +205,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'tcx>,
         body: &'body Body<'tcx>,
-        names: &'body mut CloneMap<'tcx>,
-        sig: Signature,
+        // names: &'body mut CloneMap<'tcx>,
         def_id: DefId,
     ) -> Self {
         let (invariants, assertions) = corrected_invariant_names_and_locations(ctx, def_id, &body);
@@ -194,33 +230,23 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let borrows = Rc::new(borrows);
         let resolver = EagerResolver::new(tcx, body, borrows.clone());
 
-        // TODO: Remove?
-        // let local_map = real_locals(tcx, body);
-
         BodyTranslator {
             tcx,
-            sig,
             body,
             def_id,
             resolver,
             erased_locals,
-            // local_map,
             current_block: (Vec::new(), None),
-            past_blocks: BTreeMap::new(),
+            past_blocks: Default::default(),
             ctx,
             fresh_id: body.basic_blocks.len(),
-            names,
             invariants,
             assertions,
             borrows,
         }
     }
 
-    fn translate(mut self) -> Vec<Decl> {
-        let mut decls: Vec<_> = Vec::new();
-
-        decls.extend(self.names.to_clones(self.ctx));
-
+    fn translate(mut self) -> fmir::Body<'tcx> {
         self.translate_body();
 
         let arg_count = self.body.arg_count;
@@ -229,46 +255,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         assert!(self.assertions.is_empty(), "unused assertions");
         assert!(self.invariants.is_empty(), "unused invariants");
 
-        let entry = Block {
-            statements: vars
-                .iter()
-                .skip(1)
-                .take(arg_count)
-                .map(|(_, id, _)| {
-                    let rhs = id.arg_name();
-                    Statement::Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
-                })
-                .collect(),
-            terminator: Terminator::Goto(BlockId(0)),
-        };
-        // Introduce names for wildcards so we can intialize the local versions
-        self.sig.args.iter_mut().enumerate().for_each(|(ix, bndr)| {
-            if let Binder::Typed(_, bndrs, _) = bndr && let &[Binder::Wild] = &bndrs[..] {
-                *bndrs = vec![Binder::Named(format!("_{}'", ix + 1).into())];
-            }
-        });
-
-        decls.extend(self.names.to_clones(self.ctx));
-
-        let param_env = self.param_env();
-
-        let func = Decl::CfgDecl(CfgFunction {
-            sig: self.sig,
-            rec: true,
-            constant: false,
-            vars: vars.into_iter().map(|i| (i.0, i.1.ident(), i.2)).collect(),
-            entry,
-            blocks: self
-                .past_blocks
-                .into_iter()
-                .map(|(bb, bbd)| {
-                    (BlockId(bb.into()), bbd.to_why(self.ctx, self.names, self.body, param_env))
-                })
-                .collect(),
-        });
-        decls.extend(self.names.to_clones(self.ctx));
-        decls.push(func);
-        decls
+        fmir::Body { locals: vars, arg_count, blocks: self.past_blocks }
     }
 
     fn translate_body(&mut self) {
@@ -303,7 +290,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         }
     }
 
-    fn translate_vars(&mut self) -> Vec<(bool, LocalIdent, Type)> {
+    fn translate_vars(&mut self) -> Vec<(LocalIdent, Span, Ty<'tcx>)> {
         let mut vars = Vec::with_capacity(self.body.local_decls.len());
 
         for (loc, decl) in self.body.local_decls.iter_enumerated() {
@@ -312,11 +299,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
             let ident = self.translate_local(loc);
 
-            vars.push((
-                false,
-                ident,
-                ty::translate_ty(&mut self.ctx, &mut self.names, decl.source_info.span, decl.ty),
-            ))
+            vars.push((ident, decl.source_info.span, decl.ty))
         }
 
         vars
@@ -328,6 +311,17 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn emit_statement(&mut self, s: fmir::Statement<'tcx>) {
         self.current_block.0.push(s);
+    }
+
+    fn emit_resolve(&mut self, pl: Place<'tcx>) {
+        if let Some((id, subst)) =
+            resolve_predicate_of2(self.ctx, self.param_env(), pl.ty(self.body, self.ctx.tcx).ty)
+        {
+            // self.emit_statement(fmir::Statement::Assume(
+            //     Term { kind: TermKind::Call { id: id, subst: subst, fun: (), args: () }}
+            // ));
+            self.emit_statement(fmir::Statement::Resolve(id, subst, pl));
+        }
     }
 
     fn emit_terminator(&mut self, t: fmir::Terminator<'tcx>) {
@@ -390,7 +384,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             let pred_id = pred;
 
             // Otherwise, we emit the deaths and move them to a stand-alone block.
-            self.past_blocks.get_mut(&pred_id).unwrap().terminator.retarget(bb, drop_block);
+            self.past_blocks.get_mut(pred_id).unwrap().terminator.retarget(bb, drop_block);
             self.past_blocks.insert(
                 drop_block,
                 fmir::Block { stmts: deaths, terminator: fmir::Terminator::Goto(bb) },
@@ -413,7 +407,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         dying.subtract(&self.erased_locals.to_hybrid());
 
         for local in dying.iter() {
-            self.emit_statement(fmir::Statement::Resolve(local.into()));
+            self.emit_resolve(local.into());
         }
     }
 
