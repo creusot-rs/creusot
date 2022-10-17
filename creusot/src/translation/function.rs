@@ -241,9 +241,17 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                 .collect(),
             terminator: Terminator::Goto(BlockId(0)),
         };
+        // Introduce names for wildcards so we can intialize the local versions
+        self.sig.args.iter_mut().enumerate().for_each(|(ix, bndr)| {
+            if let Binder::Typed(_, bndrs, _) = bndr && let &[Binder::Wild] = &bndrs[..] {
+                *bndrs = vec![Binder::Named(format!("_{}'", ix + 1).into())];
+            }
+        });
+
         decls.extend(self.names.to_clones(self.ctx));
 
         let param_env = self.param_env();
+
         let func = Decl::CfgDecl(CfgFunction {
             sig: self.sig,
             rec: true,
@@ -537,7 +545,6 @@ pub(crate) fn closure_contract<'tcx>(
     post_sig.args.push(Binder::typed(Ident::build("result"), result_ty));
 
     let mut contracts = Vec::new();
-    let param_env = ctx.param_env(def_id);
     let env_ty =
         ctx.tcx.closure_env_ty(def_id, subst, ty::RegionKind::ReErased).unwrap().peel_refs();
     let self_ty = translate_ty(ctx, names, DUMMY_SP, env_ty);
@@ -559,7 +566,7 @@ pub(crate) fn closure_contract<'tcx>(
         let mut precondition = precondition.clone();
         subst.visit_mut_term(&mut precondition);
         let precondition: Exp =
-            names.with_public_clones(|names| lower_pure(ctx, names, param_env, precondition));
+            names.with_public_clones(|names| lower_pure(ctx, names, precondition));
 
         contracts.push(Decl::PredDecl(Predicate { sig: pre_sig, body: precondition }));
     }
@@ -575,7 +582,7 @@ pub(crate) fn closure_contract<'tcx>(
 
         csubst.visit_mut_term(&mut postcondition);
         let postcondition: Exp =
-            names.with_public_clones(|names| lower_pure(ctx, names, param_env, postcondition));
+            names.with_public_clones(|names| lower_pure(ctx, names, postcondition));
         contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
     }
 
@@ -599,7 +606,7 @@ pub(crate) fn closure_contract<'tcx>(
         csubst.visit_mut_term(&mut postcondition);
 
         let mut postcondition: Exp =
-            names.with_public_clones(|names| lower_pure(ctx, names, param_env, postcondition));
+            names.with_public_clones(|names| lower_pure(ctx, names, postcondition));
         postcondition = postcondition.lazy_and(
             Exp::pure_var("unnest".into())
                 .app_to(Exp::Current(box Exp::pure_var("self".into())))
@@ -638,7 +645,7 @@ pub(crate) fn closure_contract<'tcx>(
         let mut postcondition = postcondition.clone();
         csubst.visit_mut_term(&mut postcondition);
         let postcondition: Exp =
-            names.with_public_clones(|names| lower_pure(ctx, names, param_env, postcondition));
+            names.with_public_clones(|names| lower_pure(ctx, names, postcondition));
         contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
     }
 
