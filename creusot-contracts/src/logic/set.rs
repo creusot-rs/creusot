@@ -1,4 +1,4 @@
-use crate::macros::*;
+use crate::*;
 
 #[cfg_attr(feature = "contracts", creusot::builtins = "set.Set.set")]
 pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);

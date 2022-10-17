@@ -54,7 +54,7 @@ pub fn abs<T>() -> T {
 
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "variant_check"]
-pub fn variant_check<R: crate::WellFounded>(r: R) -> R {
+pub fn variant_check<R: crate::well_founded::WellFounded>(r: R) -> R {
     r
 }
 

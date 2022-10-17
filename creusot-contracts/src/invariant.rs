@@ -1,4 +1,4 @@
-use crate::macros::*;
+use crate::*;
 
 pub trait Invariant {
     #[predicate]

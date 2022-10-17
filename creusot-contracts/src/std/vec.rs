@@ -1,17 +1,13 @@
 use crate::{
-    logic::*,
-    macros::*,
+    invariant::Invariant,
     std::{
-        iter::{FromIterator, Iterator},
+        alloc::Allocator,
+        ops::{Deref, DerefMut, Index, IndexMut},
         slice::SliceIndex,
     },
-    DeepModel, Invariant, Resolve, ShallowModel,
+    *,
 };
-use std::{
-    alloc::Allocator,
-    ops::{Deref, DerefMut, Index, IndexMut},
-    vec::IntoIter,
-};
+pub use ::std::vec::*;
 
 impl<T, A: Allocator> ShallowModel for Vec<T, A> {
     type ShallowModelTy = Seq<T>;
@@ -148,13 +144,6 @@ extern_spec! {
     }
 }
 
-impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        true
-    }
-}
-
 impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
     type ShallowModelTy = Seq<T>;
 
@@ -162,6 +151,21 @@ impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
     #[trusted]
     fn shallow_model(self) -> Self::ShallowModelTy {
         absurd
+    }
+}
+
+#[trusted]
+impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
+    #[predicate]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i: Int> 0 <= i && i < (@self).len() ==> (@self)[i].resolve() }
+    }
+}
+
+impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        true
     }
 }
 

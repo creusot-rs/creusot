@@ -292,7 +292,7 @@ fn variant_inner(attr: TS1, tokens: TS1) -> Result<TS1> {
     let var_name = generate_unique_ident(&f.sig.ident.to_string());
     let mut var_sig = f.sig.clone();
     var_sig.ident = var_name.clone();
-    // var_sig.output = parse_quote! { -> impl creusot_contracts::WellFounded };
+    // var_sig.output = parse_quote! { -> impl creusot_contracts::well_founded::WellFounded };
     let var_body = pretyping::encode_term(&p).unwrap_or_else(|e| {
         return e.into_tokens();
     });
@@ -354,7 +354,7 @@ pub fn ghost(assertion: TS1) -> TS1 {
                 #[creusot::no_translate]
                 #[creusot::decl::spec]
                 #[creusot::spec::ghost]
-                || { ::creusot_contracts::Ghost::new(#assertion) }
+                || { ::creusot_contracts::ghost::Ghost::new(#assertion) }
             )()
         }
     })

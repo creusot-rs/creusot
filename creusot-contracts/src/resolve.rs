@@ -1,4 +1,4 @@
-use crate::macros::*;
+use crate::*;
 
 #[cfg_attr(feature = "contracts", rustc_diagnostic_item = "creusot_resolve")]
 #[trusted]

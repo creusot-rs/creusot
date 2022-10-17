@@ -149,7 +149,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
         Invariant {
             name: Ident::new("type_invariant", Span::call_site()),
             span: Span::call_site(),
-            invariant: parse_quote! { ::creusot_contracts::Invariant::invariant(#it) },
+            invariant: parse_quote! { ::creusot_contracts::invariant::Invariant::invariant(#it) },
         },
     );
 

@@ -1,12 +1,14 @@
-mod boxed;
-mod clone;
-mod cmp;
+pub use ::std::*;
+
+pub mod boxed;
+pub mod clone;
+pub mod cmp;
 pub mod default;
 pub mod iter;
-mod mem;
-mod num;
+pub mod mem;
+pub mod num;
 pub mod ops;
-mod option;
+pub mod option;
 pub mod slice;
 pub mod time;
-mod vec;
+pub mod vec;

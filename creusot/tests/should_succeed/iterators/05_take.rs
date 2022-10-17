@@ -1,10 +1,10 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{logic::Seq, *};
+use creusot_contracts::*;
 
 mod common;
-use common::*;
+use common::Iterator;
 
 pub struct Take<I> {
     iter: I,
@@ -21,9 +21,7 @@ where
     fn completed(&mut self) -> bool {
         pearlite! {
             @(*self).n == 0 && self.resolve() ||
-            @(*self).n > 0 && @(*self).n == @(^self).n + 1 &&
-            // FIXME : remove this quantification by unnesting
-                exists<i: &mut I> *i == (*self).iter && ^i == (^self).iter && i.completed()
+            @(*self).n > 0 && @(*self).n == @(^self).n + 1 && self.iter.completed()
         }
     }
 

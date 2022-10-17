@@ -2,7 +2,7 @@
 
 extern crate creusot_contracts;
 
-use creusot_contracts::{derive::Clone, *};
+use creusot_contracts::{std::clone::Clone, *};
 
 #[trusted]
 struct BTreeMap<K, V>(std::collections::BTreeMap<K, V>);

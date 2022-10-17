@@ -1,6 +1,7 @@
-use crate::macros::*;
+use crate::*;
+pub use ::std::default::*;
 
-pub trait Default: std::default::Default {
+pub trait Default: ::std::default::Default {
     #[predicate]
     fn is_default(self) -> bool;
 }

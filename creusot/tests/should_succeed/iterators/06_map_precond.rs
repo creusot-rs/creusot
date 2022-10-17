@@ -1,14 +1,10 @@
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{
-    logic::{Int, Seq},
-    std::ops::*,
-    *,
-};
+use creusot_contracts::*;
 
 mod common;
-use common::*;
+use common::Iterator;
 
 pub struct Map<I, A, F> {
     iter: I,
@@ -153,7 +149,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
-            self.func.unnest(succ.func) &&
             exists<f: &mut F> *f == self.func && ^f == succ.func
             && { exists<e: I::Item> self.iter.produces(Seq::singleton(e), succ.iter)
                  && succ.produced.inner() == self.produced.push(e)

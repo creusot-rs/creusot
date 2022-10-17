@@ -1,7 +1,7 @@
-use crate::{logic::Seq, macros::*};
+use crate::*;
 
 #[cfg(feature = "contracts")]
-use std::alloc::Allocator;
+use ::std::alloc::Allocator;
 
 /// The shallow model of a type is typically used to specify a data
 /// structure. This kind of model is mostly useful for notation purposes,
