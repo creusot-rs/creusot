@@ -17,14 +17,11 @@ use creusot_rustc::{
         ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
     },
     smir::mir::ConstantKind,
-    span::Span,
+    span::{Span, Symbol},
     target::abi::Size,
 };
 use rustc_middle::ty::subst::InternalSubsts;
-use why3::{
-    declaration::{Decl, LetDecl, LetKind, Module},
-    exp::{Constant, Exp},
-};
+use why3::declaration::{Decl, LetDecl, LetKind, Module};
 
 use super::{
     fmir::Expr,
@@ -94,12 +91,21 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
                 .get_bytes_strip_provenance(&ctx.tcx, AllocRange { start, size })
                 .unwrap();
             let string = std::str::from_utf8(bytes).unwrap();
-            return Expr::Exp(Exp::Const(Constant::String(string.into())));
+
+            return Expr::Constant(Term {
+                kind: TermKind::Lit(Literal::String(string.into())),
+                ty: ck.ty(),
+                span,
+            });
         }
     }
 
     if let ConstantKind::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
-        return Expr::Exp(Exp::impure_var(format!("promoted{:?}", p.as_usize()).into()));
+        return Expr::Constant(Term {
+            kind: TermKind::Var(Symbol::intern(&format!("promoted{:?}", p.as_usize()))),
+            ty: ck.ty(),
+            span,
+        });
     }
 
     return Expr::Constant(Term {

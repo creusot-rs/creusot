@@ -35,6 +35,7 @@ pub enum Statement<'tcx> {
 }
 
 // Re-organize this completely
+// Get rid of Expr and reimpose a more traditional statement-rvalue-operand setup
 pub enum RValue<'tcx> {
     Ghost(Term<'tcx>),
     Borrow(Place<'tcx>),
@@ -50,14 +51,11 @@ pub enum Expr<'tcx> {
     Constructor(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
     // Should this be a statement?
     Call(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
-    // Get rid and replace with a Term<'tcx>?
     Constant(Term<'tcx>),
     Cast(Box<Expr<'tcx>>, Ty<'tcx>, Ty<'tcx>),
     Tuple(Vec<Expr<'tcx>>),
     Span(Span, Box<Expr<'tcx>>),
     Len(Box<Expr<'tcx>>),
-    // Migration escape hatch
-    Exp(why3::exp::Exp),
 }
 
 impl<'tcx> Expr<'tcx> {
@@ -163,7 +161,6 @@ impl<'tcx> Expr<'tcx> {
             Expr::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, body, param_env)).collect())
             }
-            Expr::Exp(e) => e,
             Expr::Span(sp, e) => {
                 let e = e.to_why(ctx, names, body, param_env);
                 ctx.attach_span(sp, e)
@@ -219,7 +216,6 @@ impl<'tcx> Expr<'tcx> {
             Expr::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
             Expr::Span(_, e) => e.invalidated_places(places),
             Expr::Len(e) => e.invalidated_places(places),
-            Expr::Exp(_) => {}
         }
     }
 }
