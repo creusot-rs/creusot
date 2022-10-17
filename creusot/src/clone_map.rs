@@ -224,10 +224,6 @@ impl<'tcx> CloneInfo<'tcx> {
         self.opaque = CloneOpacity::Opaque;
     }
 
-    pub(crate) fn transparent(&mut self) {
-        self.opaque = CloneOpacity::Transparent;
-    }
-
     // TODO: When traits stop holding all functions we can remove the last two arguments
     pub(crate) fn qname(&self, tcx: TyCtxt, def_id: DefId) -> QName {
         self.qname_ident(match tcx.def_kind(def_id) {
@@ -382,10 +378,8 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            if still_specializable(self.tcx, param_env, key.0, key.1) && !is_law(self.tcx, key.0) {
-                if !(self.tcx.parent(self.self_id) == self.tcx.parent(key.0)) {
-                    self.names[&key].opaque();
-                }
+            if still_specializable(self.tcx, param_env, key.0, key.1) {
+                self.names[&key].opaque();
             }
 
             ctx.translate(key.0);
@@ -831,8 +825,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
     }
 }
 
-// We consider an item to be further specializable if it is provided by a parameter bound (ie: `I : Iterator`) *and*
-// the item in question could in theory be refined further (ie: it is a default method or specializable).
+// We consider an item to be further specializable if it is provided by a parameter bound (ie: `I : Iterator`).
 fn still_specializable<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
@@ -840,17 +833,11 @@ fn still_specializable<'tcx>(
     substs: SubstsRef<'tcx>,
 ) -> bool {
     if let Some(_) = tcx.trait_of_item(def_id) {
-        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs);
-        if impl_source.is_none() {
-            return true
-        }
-        let is_final = tcx.impl_defaultness(def_id).is_final();
-        matches!(impl_source.unwrap(), ImplSource::Param(_, _)) && !is_final
+        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs).unwrap();
+        matches!(impl_source, ImplSource::Param(_, _))
     } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
         let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs).unwrap();
-
-        let is_final = tcx.impl_defaultness(def_id).is_final();
-        matches!(impl_source, ImplSource::Param(_, _)) && !is_final
+        matches!(impl_source, ImplSource::Param(_, _))
     } else {
         false
     }

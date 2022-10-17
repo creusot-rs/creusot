@@ -51,18 +51,9 @@ impl<'tcx> TranslationCtx<'tcx> {
         let mut laws = Vec::new();
         let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
 
-        for trait_item in associated_items(self.tcx, trait_ref.def_id) {
-            let trait_item_id = trait_item.def_id;
-            let &impl_item_id = implementor_map.get(&trait_item.def_id).unwrap_or(&trait_item_id);
-
-            let parent_id = if implementor_map.contains_key(&trait_item.def_id) {
-                impl_id
-            } else {
-                trait_ref.def_id
-            };
-
-            if is_law(self.tcx, trait_item_id) {
-                laws.push(impl_item_id);
+        for (&trait_item, &impl_item) in implementor_map {
+            if is_law(self.tcx, trait_item) {
+                laws.push(impl_item);
             }
 
             // Don't generate refinements for impls that come from outside crates
@@ -71,55 +62,35 @@ impl<'tcx> TranslationCtx<'tcx> {
             }
 
             // If there is no contract to refine, skip this item
-            if contract_of(self, trait_item_id).is_empty() {
+            if contract_of(self, trait_item).is_empty() {
                 continue;
             }
 
-            self.translate(impl_item_id);
+            self.translate(impl_item);
 
-            let subst = InternalSubsts::identity_for_item(self.tcx, impl_item_id);
+            let subst = InternalSubsts::identity_for_item(self.tcx, impl_item);
+            names.insert(impl_item, subst);
 
-            if implementor_map.get(&trait_item_id).is_some() {
-                // let (id, subst) = resolve_opt(self.tcx, self.param_env(impl_item_id), impl_item_id, subst).unwrap_or((impl_item_id, subst));
-                names.insert(impl_item_id, subst);
-            }
+            decls.extend(own_generic_decls_for(self.tcx, impl_item));
 
-            decls.extend(own_generic_decls_for(self.tcx, impl_item_id));
+            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
 
-            let refn_subst = subst.rebase_onto(self.tcx, parent_id, trait_ref.substs);
+            let refinement = names.insert(trait_item, refn_subst);
 
-            let refinement = names.insert(trait_item_id, refn_subst);
+            refinement.add_dep(self.tcx, self.tcx.item_name(impl_item), (impl_item, subst));
+            refinement.opaque();
 
-            if implementor_map.get(&trait_item_id).is_some() {
-                refinement.add_dep(
-                    self.tcx,
-                    self.tcx.item_name(impl_item_id),
-                    (impl_item_id, subst),
-                );
-                refinement.opaque();
+            // Since we don't have contracts of logic functions in the interface and we can't substitute the definition in
+            // the implementation module, we must recreate the spec axiom by hand here.
+            if matches!(item_type(self.tcx, trait_item), ItemType::Logic | ItemType::Predicate) {
+                let contract = contract_of(self, trait_item);
 
-                // Since we don't have contracts of logic functions in the interface and we can't substitute the definition in
-                // the implementation module, we must recreate the spec axiom by hand here.
-                if matches!(
-                    item_type(self.tcx, trait_item_id),
-                    ItemType::Logic | ItemType::Predicate
-                ) {
-                    let contract = contract_of(self, trait_item_id);
-
-                    if !contract.is_empty() {
-                        let axiom = logic_refinement(
-                            self,
-                            &mut names,
-                            impl_item_id,
-                            trait_item_id,
-                            refn_subst,
-                        );
-                        decls.extend(names.to_clones(self));
-                        decls.push(Decl::Goal(axiom));
-                    }
+                if !contract.is_empty() {
+                    let axiom =
+                        logic_refinement(self, &mut names, impl_item, trait_item, refn_subst);
+                    decls.extend(names.to_clones(self));
+                    decls.push(Decl::Goal(axiom));
                 }
-            } else {
-                refinement.transparent();
             }
         }
 

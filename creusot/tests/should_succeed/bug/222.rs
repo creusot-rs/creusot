@@ -8,6 +8,7 @@ trait A {
         pearlite! { 5 }
     }
 
+    // Should not be provable
     #[law]
     #[ensures(Self::mktrue() <= 10)]
     fn is_true() {
@@ -21,11 +22,3 @@ impl A for () {
         pearlite! { 6 }
     }
 }
-
-// Should generate a VC for false
-// impl A for bool {
-//     #[logic]
-//     fn mktrue() -> Int {
-//         pearlite! { 15 }
-//     }
-// }
