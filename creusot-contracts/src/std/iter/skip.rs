@@ -48,6 +48,7 @@ impl<I: Iterator> Iterator for Skip<I> {
             exists<s: Seq<Self::Item>, i: &mut I>
                 s.len() <= (*self).n() &&
                 self.iter().produces(s, *i) &&
+                (forall<i: Int> 0 <= i && i < s.len() ==> s[i].resolve()) &&
                 i.completed() &&
                 ^i == (^self).iter()
         }
@@ -57,10 +58,11 @@ impl<I: Iterator> Iterator for Skip<I> {
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            o.n() == 0 &&
+            o.n() == 0 && visited.len() > 0 &&
             exists<s: Seq<Self::Item>>
                 s.len() == self.n() &&
-                self.iter().produces(s.concat(visited), o.iter())
+                self.iter().produces(s.concat(visited), o.iter()) &&
+                forall<i: Int> 0 <= i && i < s.len() ==> s[i].resolve()
         }
     }
 

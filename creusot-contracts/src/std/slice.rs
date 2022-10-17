@@ -339,6 +339,14 @@ impl<'a, T> ShallowModel for IterMut<'a, T> {
     }
 }
 
+#[trusted]
+impl<'a, T> Resolve for IterMut<'a, T> {
+    #[predicate]
+    fn resolve(self) -> bool {
+        pearlite! { *@self == ^@self }
+    }
+}
+
 impl<'a, T> Invariant for IterMut<'a, T> {
     #[predicate]
     fn invariant(self) -> bool {

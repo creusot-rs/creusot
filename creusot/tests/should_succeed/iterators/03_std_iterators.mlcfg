@@ -1499,6 +1499,36 @@ module Core_Slice_Iter_Impl187_Next
       end }
     
 end
+module CreusotContracts_Std1_Slice_Impl17_Resolve_Stub
+  type t
+  use Core_Slice_Iter_IterMut_Type as Core_Slice_Iter_IterMut_Type
+  predicate resolve (self : Core_Slice_Iter_IterMut_Type.t_itermut t)
+end
+module CreusotContracts_Std1_Slice_Impl17_Resolve_Interface
+  type t
+  use Core_Slice_Iter_IterMut_Type as Core_Slice_Iter_IterMut_Type
+  predicate resolve (self : Core_Slice_Iter_IterMut_Type.t_itermut t)
+end
+module CreusotContracts_Std1_Slice_Impl17_Resolve
+  type t
+  use Core_Slice_Iter_IterMut_Type as Core_Slice_Iter_IterMut_Type
+  use prelude.Borrow
+  clone Core_Num_Impl12_Max_Stub as Max0
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
+    type t = t,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  clone CreusotContracts_Std1_Slice_Impl14_ShallowModel_Stub as ShallowModel0 with
+    type t = t,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  predicate resolve (self : Core_Slice_Iter_IterMut_Type.t_itermut t) =
+     * ShallowModel0.shallow_model self =  ^ ShallowModel0.shallow_model self
+  val resolve (self : Core_Slice_Iter_IterMut_Type.t_itermut t) : bool
+    ensures { result = resolve self }
+    
+end
 module CreusotContracts_Std1_Slice_Impl16_ProducesRefl_Stub
   type t
   use seq.Seq
@@ -1671,8 +1701,13 @@ module C03StdIterators_AllZero
     type t = usize,
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve4 with
     type t = usize
+  clone CreusotContracts_Std1_Slice_Impl17_Resolve as Resolve3 with
+    type t = usize,
+    function ShallowModel0.shallow_model = ShallowModel4.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel3.shallow_model,
+    val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Std1_Slice_Impl15_Invariant as Invariant0 with
     type t = usize,
     function ShallowModel0.shallow_model = ShallowModel4.shallow_model,
@@ -1784,14 +1819,16 @@ module C03StdIterators_AllZero
       end
   }
   BB8 {
+    assume { Resolve3.resolve iter_4 };
     _0 <- ();
     return _0
   }
   BB9 {
+    assume { Resolve3.resolve iter_4 };
     absurd
   }
   BB10 {
-    assume { Resolve3.resolve i_24 };
+    assume { Resolve4.resolve i_24 };
     i_24 <- Core_Option_Option_Type.some_0 _20;
     _20 <- (let Core_Option_Option_Type.C_Some a = _20 in Core_Option_Option_Type.C_Some (any borrowed usize));
     _27 <- ();
@@ -1801,11 +1838,11 @@ module C03StdIterators_AllZero
   BB11 {
     produced_12 <- _25;
     _25 <- any Ghost.ghost_ty (Seq.seq (borrowed usize));
-    assume { Resolve3.resolve x_28 };
+    assume { Resolve4.resolve x_28 };
     x_28 <- i_24;
     i_24 <- any borrowed usize;
     x_28 <- { x_28 with current = ([#"../03_std_iterators.rs" 31 13 31 14] (0 : usize)) };
-    assume { Resolve3.resolve x_28 };
+    assume { Resolve4.resolve x_28 };
     _19 <- ();
     goto BB6
   }
@@ -2225,6 +2262,8 @@ module CreusotContracts_Std1_Iter_Skip_Impl2_Completed
     type self = i
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
+  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
+    type self = Item0.item
   clone CreusotContracts_Std1_Iter_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = Item0.item
@@ -2235,7 +2274,7 @@ module CreusotContracts_Std1_Iter_Skip_Impl2_Completed
     val Max0.mAX' = Max0.mAX',
     axiom .
   predicate completed (self : borrowed (Core_Iter_Adapters_Skip_Skip_Type.t_skip i)) =
-    N0.n ( ^ self) = 0 /\ (exists i : borrowed i . exists s : Seq.seq Item0.item . Seq.length s <= N0.n ( * self) /\ Produces0.produces (Iter0.iter ( * self)) s ( * i) /\ Completed0.completed i /\  ^ i = Iter0.iter ( ^ self))
+    N0.n ( ^ self) = 0 /\ (exists i : borrowed i . exists s : Seq.seq Item0.item . Seq.length s <= N0.n ( * self) /\ Produces0.produces (Iter0.iter ( * self)) s ( * i) /\ (forall i : int . 0 <= i /\ i < Seq.length s -> Resolve0.resolve (Seq.get s i)) /\ Completed0.completed i /\  ^ i = Iter0.iter ( ^ self))
   val completed (self : borrowed (Core_Iter_Adapters_Skip_Skip_Type.t_skip i)) : bool
     ensures { result = completed self }
     
@@ -2264,7 +2303,10 @@ module CreusotContracts_Std1_Iter_Skip_Impl2_Produces
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
   use Core_Iter_Adapters_Skip_Skip_Type as Core_Iter_Adapters_Skip_Skip_Type
+  use mach.int.Int
   clone Core_Num_Impl12_Max_Stub as Max0
+  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
+    type self = Item0.item
   clone CreusotContracts_Std1_Iter_Iterator_Produces_Stub as Produces0 with
     type self = i,
     type Item0.item = Item0.item
@@ -2277,7 +2319,7 @@ module CreusotContracts_Std1_Iter_Skip_Impl2_Produces
   predicate produces (self : Core_Iter_Adapters_Skip_Skip_Type.t_skip i) (visited : Seq.seq Item0.item) (o : Core_Iter_Adapters_Skip_Skip_Type.t_skip i)
     
    =
-    visited = Seq.empty  /\ self = o \/ N0.n o = 0 /\ (exists s : Seq.seq Item0.item . Seq.length s = N0.n self /\ Produces0.produces (Iter0.iter self) (Seq.(++) s visited) (Iter0.iter o))
+    visited = Seq.empty  /\ self = o \/ N0.n o = 0 /\ Seq.length visited > 0 /\ (exists s : Seq.seq Item0.item . Seq.length s = N0.n self /\ Produces0.produces (Iter0.iter self) (Seq.(++) s visited) (Iter0.iter o) /\ (forall i : int . 0 <= i /\ i < Seq.length s -> Resolve0.resolve (Seq.get s i)))
   val produces (self : Core_Iter_Adapters_Skip_Skip_Type.t_skip i) (visited : Seq.seq Item0.item) (o : Core_Iter_Adapters_Skip_Skip_Type.t_skip i) : bool
     ensures { result = produces self visited o }
     
@@ -2455,6 +2497,35 @@ module CreusotContracts_Std1_Iter_Take_Impl2_Produces
     ensures { result = produces self visited o }
     
 end
+module CreusotContracts_Std1_Iter_Take_Impl0_IterMut_Stub
+  type i
+  use prelude.Borrow
+  use Core_Iter_Adapters_Take_Take_Type as Core_Iter_Adapters_Take_Take_Type
+  clone CreusotContracts_Std1_Iter_Take_Impl0_Iter_Stub as Iter0 with
+    type i = i
+  function iter_mut (self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i)) : borrowed i
+end
+module CreusotContracts_Std1_Iter_Take_Impl0_IterMut_Interface
+  type i
+  use prelude.Borrow
+  use Core_Iter_Adapters_Take_Take_Type as Core_Iter_Adapters_Take_Take_Type
+  clone CreusotContracts_Std1_Iter_Take_Impl0_Iter_Stub as Iter0 with
+    type i = i
+  function iter_mut (self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i)) : borrowed i
+  axiom iter_mut_spec : forall self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i) . Iter0.iter ( * self) =  * iter_mut self /\ Iter0.iter ( ^ self) =  ^ iter_mut self
+end
+module CreusotContracts_Std1_Iter_Take_Impl0_IterMut
+  type i
+  use prelude.Borrow
+  use Core_Iter_Adapters_Take_Take_Type as Core_Iter_Adapters_Take_Take_Type
+  clone CreusotContracts_Std1_Iter_Take_Impl0_Iter_Stub as Iter0 with
+    type i = i
+  function iter_mut (self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i)) : borrowed i
+  val iter_mut (self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i)) : borrowed i
+    ensures { result = iter_mut self }
+    
+  axiom iter_mut_spec : forall self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i) . Iter0.iter ( * self) =  * iter_mut self /\ Iter0.iter ( ^ self) =  ^ iter_mut self
+end
 module CreusotContracts_Std1_Iter_Take_Impl2_Completed_Stub
   type i
   use prelude.Borrow
@@ -2472,11 +2543,15 @@ module CreusotContracts_Std1_Iter_Take_Impl2_Completed
   use prelude.Borrow
   use Core_Iter_Adapters_Take_Take_Type as Core_Iter_Adapters_Take_Take_Type
   use mach.int.Int
+  clone CreusotContracts_Std1_Iter_Take_Impl0_Iter_Stub as Iter0 with
+    type i = i
   clone Core_Num_Impl12_Max_Stub as Max0
   clone CreusotContracts_Std1_Iter_Iterator_Completed_Stub as Completed0 with
     type self = i
-  clone CreusotContracts_Std1_Iter_Take_Impl0_Iter_Stub as Iter0 with
-    type i = i
+  clone CreusotContracts_Std1_Iter_Take_Impl0_IterMut_Stub as IterMut0 with
+    type i = i,
+    function Iter0.iter = Iter0.iter,
+    axiom .
   clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
     type t = Core_Iter_Adapters_Take_Take_Type.t_take i
   clone CreusotContracts_Std1_Iter_Take_Impl0_N_Stub as N0 with
@@ -2484,7 +2559,7 @@ module CreusotContracts_Std1_Iter_Take_Impl2_Completed
     val Max0.mAX' = Max0.mAX',
     axiom .
   predicate completed (self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i)) =
-    N0.n ( * self) = 0 /\ Resolve0.resolve self \/ N0.n ( * self) > 0 /\ N0.n ( * self) = N0.n ( ^ self) + 1 /\ (exists i : borrowed i .  * i = Iter0.iter ( * self) /\  ^ i = Iter0.iter ( ^ self) /\ Completed0.completed i)
+    N0.n ( * self) = 0 /\ Resolve0.resolve self \/ N0.n ( * self) > 0 /\ N0.n ( * self) = N0.n ( ^ self) + 1 /\ Completed0.completed (IterMut0.iter_mut self)
   val completed (self : borrowed (Core_Iter_Adapters_Take_Take_Type.t_take i)) : bool
     ensures { result = completed self }
     
@@ -2716,11 +2791,15 @@ module C03StdIterators_SkipTake
     axiom .
   clone CreusotContracts_Std1_Iter_Iterator_Completed_Interface as Completed2 with
     type self = i
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve4 with
-    type t = Core_Iter_Adapters_Take_Take_Type.t_take i
-  clone Core_Num_Impl12_Max as Max0
   clone CreusotContracts_Std1_Iter_Take_Impl0_Iter as Iter0 with
     type i = i
+  clone CreusotContracts_Std1_Iter_Take_Impl0_IterMut as IterMut0 with
+    type i = i,
+    function Iter0.iter = Iter0.iter,
+    axiom .
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve5 with
+    type t = Core_Iter_Adapters_Take_Take_Type.t_take i
+  clone Core_Num_Impl12_Max as Max0
   clone CreusotContracts_Std1_Iter_Take_Impl0_N as N0 with
     type i = i,
     val Max0.mAX' = Max0.mAX',
@@ -2751,10 +2830,13 @@ module C03StdIterators_SkipTake
   clone CreusotContracts_Std1_Iter_Take_Impl2_Completed as Completed1 with
     type i = i,
     function N0.n = N0.n,
-    predicate Resolve0.resolve = Resolve4.resolve,
-    function Iter0.iter = Iter0.iter,
+    predicate Resolve0.resolve = Resolve5.resolve,
+    function IterMut0.iter_mut = IterMut0.iter_mut,
     predicate Completed0.completed = Completed2.completed,
-    val Max0.mAX' = Max0.mAX'
+    val Max0.mAX' = Max0.mAX',
+    function Iter0.iter = Iter0.iter
+  clone CreusotContracts_Resolve_Resolve_Resolve as Resolve4 with
+    type self = Item0.item
   clone Core_Iter_Adapters_Take_Impl1_Item_Type as Item2 with
     type i = i,
     type Item0.item = Item0.item
@@ -2770,6 +2852,7 @@ module C03StdIterators_SkipTake
     function N0.n = N1.n,
     function Iter0.iter = Iter1.iter,
     predicate Produces0.produces = Produces1.produces,
+    predicate Resolve0.resolve = Resolve4.resolve,
     val Max0.mAX' = Max0.mAX'
   clone CreusotContracts_Std1_Iter_Skip_Impl1_Invariant as Invariant2 with
     type i = Core_Iter_Adapters_Take_Take_Type.t_take i,
@@ -2799,6 +2882,7 @@ module C03StdIterators_SkipTake
     type Item0.item = Item2.item,
     function Iter0.iter = Iter1.iter,
     predicate Produces0.produces = Produces1.produces,
+    predicate Resolve0.resolve = Resolve4.resolve,
     predicate Completed0.completed = Completed1.completed,
     val Max0.mAX' = Max0.mAX'
   clone Core_Iter_Adapters_Skip_Impl1_Item_Type as Item1 with
@@ -2960,24 +3044,24 @@ end
 module CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   use prelude.Ghost
   use seq.Seq
-  type t_mapinv 'i 'a 'f =
-    | C_MapInv 'i 'f (Ghost.ghost_ty (Seq.seq 'a))
+  type t_mapinv 'i 'b 'f =
+    | C_MapInv 'i 'f (Ghost.ghost_ty (Seq.seq 'b))
     
-  let function mapinv_produced (self : t_mapinv 'i 'a 'f) : Ghost.ghost_ty (Seq.seq 'a)
+  let function mapinv_produced (self : t_mapinv 'i 'b 'f) : Ghost.ghost_ty (Seq.seq 'b)
    = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
       | C_MapInv _ _ a -> a
       end
-  let function mapinv_iter (self : t_mapinv 'i 'a 'f) : 'i = [@vc:do_not_keep_trace] [@vc:sp]
+  let function mapinv_iter (self : t_mapinv 'i 'b 'f) : 'i = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
       | C_MapInv a _ _ -> a
       end
-  let function mapinv_func (self : t_mapinv 'i 'a 'f) : 'f = [@vc:do_not_keep_trace] [@vc:sp]
+  let function mapinv_func (self : t_mapinv 'i 'b 'f) : 'f = [@vc:do_not_keep_trace] [@vc:sp]
     match (self) with
       | C_MapInv _ a _ -> a
       end
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl1_Completed_Stub
+module CreusotContracts_Std1_Iter_MapInv_Impl0_Completed_Stub
   type i
   type b
   type f
@@ -2987,7 +3071,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_Completed_Stub
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   predicate completed (self : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f))
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl1_Completed_Interface
+module CreusotContracts_Std1_Iter_MapInv_Impl0_Completed_Interface
   type i
   type b
   type f
@@ -2997,7 +3081,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_Completed_Interface
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   predicate completed (self : borrowed (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f))
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl1_Completed
+module CreusotContracts_Std1_Iter_MapInv_Impl0_Completed
   type i
   type b
   type f
@@ -3015,7 +3099,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_Completed
     ensures { result = completed self }
     
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl4_NextPrecondition_Stub
+module CreusotContracts_Std1_Iter_MapInv_Impl3_NextPrecondition_Stub
   type i
   type b
   type f
@@ -3024,7 +3108,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_NextPrecondition_Stub
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   predicate next_precondition (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f)
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl4_NextPrecondition_Interface
+module CreusotContracts_Std1_Iter_MapInv_Impl3_NextPrecondition_Interface
   type i
   type b
   type f
@@ -3033,7 +3117,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_NextPrecondition_Interface
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   predicate next_precondition (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f)
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl4_NextPrecondition
+module CreusotContracts_Std1_Iter_MapInv_Impl3_NextPrecondition
   type i
   type b
   type f
@@ -3111,19 +3195,19 @@ module CreusotContracts_Std1_Ops_Impl1_PostconditionMut
     ensures { result = postcondition_mut self _2' _3' }
     
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation_Stub
+module CreusotContracts_Std1_Iter_MapInv_Impl3_Preservation_Stub
   type i
   type b
   type f
   predicate preservation (iter : i) (func : f)
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation_Interface
+module CreusotContracts_Std1_Iter_MapInv_Impl3_Preservation_Interface
   type i
   type b
   type f
   predicate preservation (iter : i) (func : f)
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation
+module CreusotContracts_Std1_Iter_MapInv_Impl3_Preservation
   type i
   type b
   type f
@@ -3155,38 +3239,38 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation
     ensures { result = preservation iter func }
     
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl4_Reinitialize_Stub
+module CreusotContracts_Std1_Iter_MapInv_Impl3_Reinitialize_Stub
   type i
   type b
   type f
   predicate reinitialize (_1' : ())
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl4_Reinitialize_Interface
+module CreusotContracts_Std1_Iter_MapInv_Impl3_Reinitialize_Interface
   type i
   type b
   type f
   predicate reinitialize (_1' : ())
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl4_Reinitialize
+module CreusotContracts_Std1_Iter_MapInv_Impl3_Reinitialize
   type i
   type b
   type f
   use prelude.Borrow
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation_Stub as Preservation0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Preservation_Stub as Preservation0 with
     type i = i,
     type b = b,
     type f = f
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_NextPrecondition_Stub as NextPrecondition0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_NextPrecondition_Stub as NextPrecondition0 with
     type i = i,
     type b = b,
     type f = f,
     type Item0.item = Item0.item
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
     type self = i
-  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Completed_Stub as Completed0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl0_Completed_Stub as Completed0 with
     type i = i,
     type b = b,
     type f = f,
@@ -3197,7 +3281,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_Reinitialize
     ensures { result = reinitialize _1' }
     
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv_Stub
+module CreusotContracts_Std1_Iter_MapInv_Impl3_PreservationInv_Stub
   type i
   type b
   type f
@@ -3205,14 +3289,14 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv_Stub
   use seq.Seq
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation_Stub as Preservation0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Preservation_Stub as Preservation0 with
     type i = i,
     type b = b,
     type f = f
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   predicate preservation_inv (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f)
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv_Interface
+module CreusotContracts_Std1_Iter_MapInv_Impl3_PreservationInv_Interface
   type i
   type b
   type f
@@ -3220,7 +3304,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv_Interface
   use seq.Seq
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation_Stub as Preservation0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Preservation_Stub as Preservation0 with
     type i = i,
     type b = b,
     type f = f
@@ -3228,7 +3312,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv_Interface
   predicate preservation_inv (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f)
   axiom preservation_inv_spec : forall self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f . Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self) = Seq.empty  -> preservation_inv self = Preservation0.preservation (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self)
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv
+module CreusotContracts_Std1_Iter_MapInv_Impl3_PreservationInv
   type i
   type b
   type f
@@ -3236,7 +3320,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv
   use seq.Seq
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation_Stub as Preservation0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Preservation_Stub as Preservation0 with
     type i = i,
     type b = b,
     type f = f
@@ -3266,7 +3350,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv
     
   axiom preservation_inv_spec : forall self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f . Ghost.inner (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_produced self) = Seq.empty  -> preservation_inv self = Preservation0.preservation (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self)
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Stub
+module CreusotContracts_Std1_Iter_MapInv_Impl1_Invariant_Stub
   type i
   type b
   type f
@@ -3275,7 +3359,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Stub
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   predicate invariant' (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f)
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Interface
+module CreusotContracts_Std1_Iter_MapInv_Impl1_Invariant_Interface
   type i
   type b
   type f
@@ -3284,32 +3368,32 @@ module CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Interface
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   predicate invariant' (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f)
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant
+module CreusotContracts_Std1_Iter_MapInv_Impl1_Invariant
   type i
   type b
   type f
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation_Stub as Preservation0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Preservation_Stub as Preservation0 with
     type i = i,
     type b = b,
     type f = f
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_NextPrecondition_Stub as NextPrecondition0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_NextPrecondition_Stub as NextPrecondition0 with
     type i = i,
     type b = b,
     type f = f,
     type Item0.item = Item0.item
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
     type self = i
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv_Stub as PreservationInv0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_PreservationInv_Stub as PreservationInv0 with
     type i = i,
     type b = b,
     type f = f,
     predicate Preservation0.preservation = Preservation0.preservation,
     type Item0.item = Item0.item,
     axiom .
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Reinitialize_Stub as Reinitialize0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Reinitialize_Stub as Reinitialize0 with
     type i = i,
     type b = b,
     type f = f
@@ -3319,40 +3403,40 @@ module CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant
     ensures { result = invariant' self }
     
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl0_MapInv_Interface
-  type i
+module CreusotContracts_Std1_Iter_Iterator_MapInv_Interface
+  type self
   type b
   type f
   use seq.Seq
   use prelude.Ghost
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
-    type self = i
+    type self = self
   use seq.Seq
   use prelude.Ghost
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  clone CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Stub as Invariant1 with
-    type i = i,
+  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Invariant_Stub as Invariant1 with
+    type i = self,
     type b = b,
     type f = f,
     type Item0.item = Item0.item
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation_Stub as Preservation0 with
-    type i = i,
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Preservation_Stub as Preservation0 with
+    type i = self,
     type b = b,
     type f = f
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Reinitialize_Stub as Reinitialize0 with
-    type i = i,
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Reinitialize_Stub as Reinitialize0 with
+    type i = self,
     type b = b,
     type f = f
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f
   clone CreusotContracts_Std1_Iter_Iterator_Produces_Stub as Produces0 with
-    type self = i,
+    type self = self,
     type Item0.item = Item0.item
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
-    type self = i
-  val map_inv [@cfg:stackify] (self : i) (func : f) : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f
-    requires {forall i2 : i . forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces self (Seq.singleton e) i2 -> Precondition0.precondition func (e, Ghost.new (Seq.empty ))}
+    type self = self
+  val map_inv [@cfg:stackify] (self : self) (func : f) : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv self Item0.item f
+    requires {forall i2 : self . forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces self (Seq.singleton e) i2 -> Precondition0.precondition func (e, Ghost.new (Seq.empty ))}
     requires {Reinitialize0.reinitialize ()}
     requires {Preservation0.preservation self func}
     requires {Invariant0.invariant' self}
@@ -3360,40 +3444,40 @@ module CreusotContracts_Std1_Iter_MapInv_Impl0_MapInv_Interface
     ensures { result = CreusotContracts_Std1_Iter_MapInv_MapInv_Type.C_MapInv self func (Ghost.new (Seq.empty )) }
     
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl0_MapInv
-  type i
+module CreusotContracts_Std1_Iter_Iterator_MapInv
+  type self
   type b
   type f
   use seq.Seq
   use prelude.Ghost
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
-    type self = i
+    type self = self
   use seq.Seq
   use prelude.Ghost
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  clone CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Interface as Invariant1 with
-    type i = i,
+  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Invariant_Interface as Invariant1 with
+    type i = self,
     type b = b,
     type f = f,
     type Item0.item = Item0.item
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation_Interface as Preservation0 with
-    type i = i,
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Preservation_Interface as Preservation0 with
+    type i = self,
     type b = b,
     type f = f
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Reinitialize_Interface as Reinitialize0 with
-    type i = i,
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Reinitialize_Interface as Reinitialize0 with
+    type i = self,
     type b = b,
     type f = f
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Interface as Precondition0 with
     type args = (Item0.item, Ghost.ghost_ty (Seq.seq Item0.item)),
     type f = f
   clone CreusotContracts_Std1_Iter_Iterator_Produces_Interface as Produces0 with
-    type self = i,
+    type self = self,
     type Item0.item = Item0.item
   clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
-    type self = i
-  val map_inv [@cfg:stackify] (self : i) (func : f) : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f
-    requires {forall i2 : i . forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces self (Seq.singleton e) i2 -> Precondition0.precondition func (e, Ghost.new (Seq.empty ))}
+    type self = self
+  val map_inv [@cfg:stackify] (self : self) (func : f) : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv self Item0.item f
+    requires {forall i2 : self . forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces self (Seq.singleton e) i2 -> Precondition0.precondition func (e, Ghost.new (Seq.empty ))}
     requires {Reinitialize0.reinitialize ()}
     requires {Preservation0.preservation self func}
     requires {Invariant0.invariant' self}
@@ -3609,43 +3693,43 @@ module CreusotContracts_Std1_Vec_Impl6_Resolve
     ensures { result = resolve self }
     
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl3_Item_Type
+module CreusotContracts_Std1_Iter_MapInv_Impl2_Item_Type
   type i
   type b
   type f
   type item  =
     b
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl5_Resolve_Stub
+module CreusotContracts_Std1_Iter_MapInv_Impl4_Resolve_Stub
   type i
-  type a
+  type b
   type f
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  predicate resolve (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i a f)
+  predicate resolve (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i b f)
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl5_Resolve_Interface
+module CreusotContracts_Std1_Iter_MapInv_Impl4_Resolve_Interface
   type i
-  type a
+  type b
   type f
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  predicate resolve (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i a f)
+  predicate resolve (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i b f)
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl5_Resolve
+module CreusotContracts_Std1_Iter_MapInv_Impl4_Resolve
   type i
-  type a
+  type b
   type f
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve1 with
     type self = f
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
     type self = i
-  predicate resolve (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i a f) =
+  predicate resolve (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i b f) =
     Resolve0.resolve (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_iter self) /\ Resolve1.resolve (CreusotContracts_Std1_Iter_MapInv_MapInv_Type.mapinv_func self)
-  val resolve (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i a f) : bool
+  val resolve (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i b f) : bool
     ensures { result = resolve self }
     
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl1_Produces_Stub
+module CreusotContracts_Std1_Iter_MapInv_Impl0_Produces_Stub
   type i
   type b
   type f
@@ -3656,7 +3740,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_Produces_Stub
   predicate produces [@inline:trivial] (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) (visited : Seq.seq b) (succ : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f)
     
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl1_Produces_Interface
+module CreusotContracts_Std1_Iter_MapInv_Impl0_Produces_Interface
   type i
   type b
   type f
@@ -3667,7 +3751,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_Produces_Interface
   predicate produces [@inline:trivial] (self : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) (visited : Seq.seq b) (succ : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f)
     
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl1_Produces
+module CreusotContracts_Std1_Iter_MapInv_Impl0_Produces
   type i
   type b
   type f
@@ -3753,7 +3837,7 @@ module CreusotContracts_Resolve_Impl2_Resolve
     ensures { result = resolve self }
     
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesRefl_Stub
+module CreusotContracts_Std1_Iter_MapInv_Impl0_ProducesRefl_Stub
   type i
   type b
   type f
@@ -3761,19 +3845,19 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesRefl_Stub
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Produces_Stub as Produces0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl0_Produces_Stub as Produces0 with
     type i = i,
     type b = b,
     type f = f,
     type Item0.item = Item0.item
-  clone CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Stub as Invariant0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f,
     type Item0.item = Item0.item
   function produces_refl (a : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) : ()
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesRefl_Interface
+module CreusotContracts_Std1_Iter_MapInv_Impl0_ProducesRefl_Interface
   type i
   type b
   type f
@@ -3781,12 +3865,12 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesRefl_Interface
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Produces_Stub as Produces0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl0_Produces_Stub as Produces0 with
     type i = i,
     type b = b,
     type f = f,
     type Item0.item = Item0.item
-  clone CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Stub as Invariant0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f,
@@ -3794,7 +3878,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesRefl_Interface
   function produces_refl (a : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) : ()
   axiom produces_refl_spec : forall a : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f . Invariant0.invariant' a -> Produces0.produces a (Seq.empty ) a
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesRefl
+module CreusotContracts_Std1_Iter_MapInv_Impl0_ProducesRefl
   type i
   type b
   type f
@@ -3802,12 +3886,12 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesRefl
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Produces_Stub as Produces0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl0_Produces_Stub as Produces0 with
     type i = i,
     type b = b,
     type f = f,
     type Item0.item = Item0.item
-  clone CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Stub as Invariant0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f,
@@ -3820,7 +3904,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesRefl
     
   axiom produces_refl_spec : forall a : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f . Invariant0.invariant' a -> Produces0.produces a (Seq.empty ) a
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesTrans_Stub
+module CreusotContracts_Std1_Iter_MapInv_Impl0_ProducesTrans_Stub
   type i
   type b
   type f
@@ -3828,12 +3912,12 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesTrans_Stub
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Produces_Stub as Produces0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl0_Produces_Stub as Produces0 with
     type i = i,
     type b = b,
     type f = f,
     type Item0.item = Item0.item
-  clone CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Stub as Invariant0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f,
@@ -3841,7 +3925,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesTrans_Stub
   function produces_trans (a : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) (ab : Seq.seq b) (b : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) (bc : Seq.seq b) (c : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f) : ()
     
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesTrans_Interface
+module CreusotContracts_Std1_Iter_MapInv_Impl0_ProducesTrans_Interface
   type i
   type b
   type f
@@ -3849,12 +3933,12 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesTrans_Interface
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Produces_Stub as Produces0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl0_Produces_Stub as Produces0 with
     type i = i,
     type b = b,
     type f = f,
     type Item0.item = Item0.item
-  clone CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Stub as Invariant0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f,
@@ -3863,7 +3947,7 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesTrans_Interface
     
   axiom produces_trans_spec : forall a : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f, ab : Seq.seq b, b : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f, bc : Seq.seq b, c : CreusotContracts_Std1_Iter_MapInv_MapInv_Type.t_mapinv i Item0.item f . Invariant0.invariant' a -> Invariant0.invariant' b -> Invariant0.invariant' c -> Produces0.produces a ab b -> Produces0.produces b bc c -> Produces0.produces a (Seq.(++) ab bc) c
 end
-module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesTrans
+module CreusotContracts_Std1_Iter_MapInv_Impl0_ProducesTrans
   type i
   type b
   type f
@@ -3871,12 +3955,12 @@ module CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesTrans
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = i
   use CreusotContracts_Std1_Iter_MapInv_MapInv_Type as CreusotContracts_Std1_Iter_MapInv_MapInv_Type
-  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Produces_Stub as Produces0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl0_Produces_Stub as Produces0 with
     type i = i,
     type b = b,
     type f = f,
     type Item0.item = Item0.item
-  clone CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant_Stub as Invariant0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f,
@@ -3960,7 +4044,7 @@ module C03StdIterators_Counter
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model,
     function ToRefSeq0.to_ref_seq = ToRefSeq0.to_ref_seq,
     function ShallowModel1.shallow_model = ShallowModel1.shallow_model
-  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Produces as Produces1 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl0_Produces as Produces1 with
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
@@ -3971,7 +4055,7 @@ module C03StdIterators_Counter
     predicate Produces0.produces = Produces0.produces
   clone CreusotContracts_Std1_Slice_Impl12_Invariant as Invariant0 with
     type t = uint32
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Preservation as Preservation0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Preservation as Preservation0 with
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
@@ -3981,7 +4065,7 @@ module C03StdIterators_Counter
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_NextPrecondition as NextPrecondition0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_NextPrecondition as NextPrecondition0 with
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
@@ -3989,7 +4073,7 @@ module C03StdIterators_Counter
     type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_PreservationInv as PreservationInv0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_PreservationInv as PreservationInv0 with
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
@@ -4001,13 +4085,13 @@ module C03StdIterators_Counter
     predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Completed as Completed0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl0_Completed as Completed0 with
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed1.completed
-  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Reinitialize as Reinitialize0 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Reinitialize as Reinitialize0 with
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
@@ -4016,7 +4100,7 @@ module C03StdIterators_Counter
     predicate Invariant0.invariant' = Invariant0.invariant',
     predicate NextPrecondition0.next_precondition = NextPrecondition0.next_precondition,
     predicate Preservation0.preservation = Preservation0.preservation
-  clone CreusotContracts_Std1_Iter_MapInv_Impl2_Invariant as Invariant1 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl1_Invariant as Invariant1 with
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
@@ -4026,7 +4110,7 @@ module C03StdIterators_Counter
     predicate Invariant0.invariant' = Invariant0.invariant',
     predicate NextPrecondition0.next_precondition = NextPrecondition0.next_precondition,
     predicate Preservation0.preservation = Preservation0.preservation
-  clone CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesTrans as ProducesTrans1 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl0_ProducesTrans as ProducesTrans2 with
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
@@ -4034,7 +4118,7 @@ module C03StdIterators_Counter
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
     axiom .
-  clone CreusotContracts_Std1_Iter_MapInv_Impl1_ProducesRefl as ProducesRefl1 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl0_ProducesRefl as ProducesRefl2 with
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
@@ -4044,11 +4128,11 @@ module C03StdIterators_Counter
     axiom .
   clone CreusotContracts_Resolve_Impl2_Resolve as Resolve4 with
     type t = Core_Slice_Iter_Iter_Type.t_iter uint32
-  clone CreusotContracts_Std1_Slice_Impl13_ProducesTrans as ProducesTrans0 with
+  clone CreusotContracts_Std1_Slice_Impl13_ProducesTrans as ProducesTrans1 with
     type t = uint32,
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  clone CreusotContracts_Std1_Slice_Impl13_ProducesRefl as ProducesRefl0 with
+  clone CreusotContracts_Std1_Slice_Impl13_ProducesRefl as ProducesRefl1 with
     type t = uint32,
     predicate Produces0.produces = Produces0.produces,
     axiom .
@@ -4063,16 +4147,28 @@ module C03StdIterators_Counter
     type t = uint32,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     val Max0.mAX' = Max0.mAX'
-  clone CreusotContracts_Std1_Iter_MapInv_Impl5_Resolve as Resolve2 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl4_Resolve as Resolve2 with
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
-    type a = uint32,
+    type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
     predicate Resolve1.resolve = Closure00.resolve,
     predicate Resolve0.resolve = Resolve4.resolve
-  clone CreusotContracts_Std1_Iter_MapInv_Impl3_Item_Type as Item1 with
+  clone CreusotContracts_Std1_Iter_MapInv_Impl2_Item_Type as Item1 with
     type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0
+  clone CreusotContracts_Std1_Iter_Iterator_ProducesTrans as ProducesTrans0 with
+    type self = Core_Slice_Iter_Iter_Type.t_iter uint32,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item0.item,
+    axiom .
+  clone CreusotContracts_Std1_Iter_Iterator_ProducesRefl as ProducesRefl0 with
+    type self = Core_Slice_Iter_Iter_Type.t_iter uint32,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item0.item,
+    axiom .
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
     type t = uint32,
     type a = Alloc_Alloc_Global_Type.t_global
@@ -4094,8 +4190,8 @@ module C03StdIterators_Counter
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces1.produces,
     predicate FromIterLogic0.from_iter_logic = FromIterLogic0.from_iter_logic
-  clone CreusotContracts_Std1_Iter_MapInv_Impl0_MapInv_Interface as MapInv1 with
-    type i = Core_Slice_Iter_Iter_Type.t_iter uint32,
+  clone CreusotContracts_Std1_Iter_Iterator_MapInv_Interface as MapInv1 with
+    type self = Core_Slice_Iter_Iter_Type.t_iter uint32,
     type b = uint32,
     type f = Closure00.c03stditerators_counter_closure0,
     predicate Precondition0.precondition = Closure00.precondition,

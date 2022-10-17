@@ -5,6 +5,9 @@ pub trait TakeExt<I> {
     fn iter(self) -> I;
 
     #[logic]
+    fn iter_mut(&mut self) -> &mut I;
+
+    #[logic]
     fn n(self) -> Int;
 }
 
@@ -12,6 +15,13 @@ impl<I> TakeExt<I> for Take<I> {
     #[logic]
     #[trusted]
     fn iter(self) -> I {
+        pearlite! { absurd }
+    }
+
+    #[logic]
+    #[trusted]
+    #[ensures((*self).iter() == *result && (^self).iter() == ^result)]
+    fn iter_mut(&mut self) -> &mut I {
         pearlite! { absurd }
     }
 
@@ -45,9 +55,7 @@ impl<I: Iterator> Iterator for Take<I> {
     fn completed(&mut self) -> bool {
         pearlite! {
             self.n() == 0 && self.resolve() ||
-            (*self).n() > 0 && (*self).n() == (^self).n() + 1 &&
-                // Fixme: remove this existential quantification
-                exists<i: &mut I> *i == (*self).iter() && ^i == (^self).iter() && i.completed()
+            (*self).n() > 0 && (*self).n() == (^self).n() + 1 && self.iter_mut().completed()
         }
     }
 

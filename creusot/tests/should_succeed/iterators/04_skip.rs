@@ -24,6 +24,7 @@ where
             exists<s: Seq<Self::Item>, i: &mut I>
                 s.len() <= @self.n &&
                 self.iter.produces(s, *i) &&
+                (forall<i: Int> 0 <= i && i < s.len() ==> s[i].resolve()) &&
                 i.completed() &&
                 ^i == (^self).iter
         }
@@ -33,10 +34,11 @@ where
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             visited == Seq::EMPTY && self == o ||
-            @o.n == 0 &&
+            @o.n == 0 && visited.len() > 0 &&
             exists<s: Seq<Self::Item>>
                 s.len() == @self.n &&
-                self.iter.produces(s.concat(visited), o.iter)
+                self.iter.produces(s.concat(visited), o.iter) &&
+                forall<i: Int> 0 <= i && i < s.len() ==> s[i].resolve()
         }
     }
 
@@ -67,17 +69,24 @@ where
     fn next(&mut self) -> Option<I::Item> {
         let old_self = ghost! { self };
         let mut n = std::mem::take(&mut self.n);
+        let mut skipped = ghost! { Seq::EMPTY };
         #[invariant(proph_const, ^self == ^old_self.inner())]
-        #[invariant(produces, exists<s : Seq<Self::Item>> s.len() + @n == @old_self.n
-                              && old_self.iter.produces(s, self.iter))]
+        #[invariant(skipped_len, skipped.len() + @n == @old_self.n)]
+        #[invariant(produces, old_self.iter.produces(skipped.inner(), self.iter))]
+        #[invariant(skipped_resolve, forall<i: Int> 0 <= i && i < skipped.len() ==> skipped[i].resolve())]
         #[invariant(n_0, @(*self).n == 0)]
         #[invariant(inv, self.invariant())]
         loop {
             let r = self.iter.next();
-            if n == 0 || r.is_none() {
+            if n == 0 {
                 return r;
             }
-            n -= 1
+            if let Some(x) = r {
+                skipped = ghost! { skipped.concat(Seq::singleton(x)) };
+                n -= 1
+            } else {
+                return r;
+            }
         }
     }
 }

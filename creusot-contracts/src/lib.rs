@@ -181,7 +181,7 @@ pub use crate::{
 
 // Export extension traits anonymously
 pub use crate::std::{
-    iter::{IteratorExt as _, SkipExt as _, TakeExt as _},
+    iter::{SkipExt as _, TakeExt as _},
     ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
     slice::SliceExt as _,
 };

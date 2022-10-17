@@ -136,7 +136,6 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
     #[ensures(result == self.produces(Seq::singleton(visited), succ))]
     fn produces_one(self, visited: B, succ: Self) -> bool {
         pearlite! {
-            self.func.unnest(succ.func) &&
             exists<f: &mut F> *f == self.func && ^f == succ.func
             && { exists<e : I::Item> self.iter.produces(Seq::singleton(e), succ.iter)
                  && (*f).precondition((e,))
