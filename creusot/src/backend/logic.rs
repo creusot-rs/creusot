@@ -242,7 +242,7 @@ fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
         return None;
     }
     let term = ctx.term(def_id).unwrap().clone();
-    let body = specification::lower_impure(ctx, &mut names, def_id, ctx.param_env(def_id), term);
+    let body = specification::lower_impure(ctx, &mut names, ctx.param_env(def_id), term);
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
