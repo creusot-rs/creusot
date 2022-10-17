@@ -1,6 +1,5 @@
-use crate::macros::*;
-
-use std::alloc::Allocator;
+use crate::{std::alloc::Allocator, *};
+pub use ::std::boxed::*;
 
 extern_spec! {
     mod std {

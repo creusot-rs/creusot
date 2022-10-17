@@ -1,10 +1,10 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{logic::Seq, *};
+use creusot_contracts::*;
 
 mod common;
-use common::*;
+use common::Iterator;
 
 pub struct Skip<I> {
     iter: I,

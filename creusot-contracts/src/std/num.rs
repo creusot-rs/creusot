@@ -1,4 +1,5 @@
-use crate::{logic::Int, macros::*};
+use crate::*;
+pub use ::std::num::*;
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given
 /// integer type

@@ -1,12 +1,10 @@
 use crate::{
-    logic::{Int, Seq},
-    macros::*,
-    std::{iter::Iterator, ops::RangeInclusiveExt},
-    DeepModel, Invariant, Resolve,
-};
-use std::{
-    iter::Step,
-    ops::{Range, RangeInclusive},
+    invariant::Invariant,
+    std::{
+        iter::Step,
+        ops::{Range, RangeInclusive},
+    },
+    *,
 };
 
 impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {

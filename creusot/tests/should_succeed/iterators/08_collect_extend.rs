@@ -1,11 +1,11 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::{
+    invariant::Invariant,
     logic::{Int, Seq},
     std::*,
     *,
 };
-use iter::Iterator;
 
 // Modeling `extend`.
 //

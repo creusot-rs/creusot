@@ -1,4 +1,5 @@
-use crate::{macros::*, std::default::Default};
+use crate::*;
+pub use ::std::mem::*;
 
 extern_spec! {
     mod std {

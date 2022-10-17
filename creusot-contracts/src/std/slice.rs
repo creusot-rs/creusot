@@ -1,13 +1,9 @@
 use crate::{
-    logic::*,
-    macros::*,
-    std::{default::Default, iter::Iterator},
-    DeepModel, Invariant, Resolve, ShallowModel,
+    invariant::Invariant,
+    std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
+    *,
 };
-use std::{
-    ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
-    slice::{Iter, IterMut},
-};
+pub use ::std::slice::*;
 
 impl<T> ShallowModel for [T] {
     type ShallowModelTy = Seq<T>;
@@ -86,7 +82,7 @@ impl<T> SliceExt for [T] {
     }
 }
 
-pub(crate) trait SliceIndex<T: ?Sized>: std::slice::SliceIndex<T>
+pub(crate) trait SliceIndex<T: ?Sized>: ::std::slice::SliceIndex<T>
 where
     T: ShallowModel,
 {
@@ -220,13 +216,9 @@ extern_spec! {
         #[ensures((@^self).exchange(@self, @i, @j))]
         fn swap(&mut self, i: usize, j: usize);
 
-        #[ensures(
-            ix.in_bounds(@self)
-            ==> exists<r: &<I as std::slice::SliceIndex<[T]>>::Output> result == Some(r)
-                && ix.has_value(@self_, *r)
-        )]
+        #[ensures(ix.in_bounds(@self) ==> exists<r: _> result == Some(r) && ix.has_value(@self_, *r))]
         #[ensures(ix.in_bounds(@self) || result == None)]
-        fn get<I : SliceIndex<[T]>>(&self, ix: I) -> Option<&<I as std::slice::SliceIndex<[T]>>::Output>;
+        fn get<I : SliceIndex<[T]>>(&self, ix: I) -> Option<&<I as ::std::slice::SliceIndex<[T]>>::Output>;
 
         #[requires(@mid <= (@self).len())]
         #[ensures({
@@ -292,7 +284,7 @@ extern_spec! {
     }
 
     impl<T, I> Index<I> for [T]
-    where I : SliceIndex<[T]> {
+        where I : SliceIndex<[T]> {
       #[requires(ix.in_bounds(@self))]
       #[ensures(ix.has_value(@self, *result))]
       fn index(&self, ix: I) -> &<[T] as Index<I>>::Output;

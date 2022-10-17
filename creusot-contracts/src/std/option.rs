@@ -1,4 +1,5 @@
-use crate::{macros::*, std::default::Default, Resolve};
+use crate::*;
+pub use ::std::option::*;
 
 extern_spec! {
     mod std {

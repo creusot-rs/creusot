@@ -7,7 +7,7 @@ use creusot_contracts::{
 };
 
 mod common;
-use common::*;
+use common::Iterator;
 
 struct Range {
     start: isize,

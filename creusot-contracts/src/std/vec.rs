@@ -1,17 +1,13 @@
 use crate::{
-    logic::*,
-    macros::*,
+    invariant::Invariant,
     std::{
-        iter::{FromIterator, Iterator},
+        alloc::Allocator,
+        ops::{Deref, DerefMut, Index, IndexMut},
         slice::SliceIndex,
     },
-    DeepModel, Invariant, Resolve, ShallowModel,
+    *,
 };
-use std::{
-    alloc::Allocator,
-    ops::{Deref, DerefMut, Index, IndexMut},
-    vec::IntoIter,
-};
+pub use ::std::vec::*;
 
 impl<T, A: Allocator> ShallowModel for Vec<T, A> {
     type ShallowModelTy = Seq<T>;

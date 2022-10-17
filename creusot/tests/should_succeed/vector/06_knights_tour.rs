@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{derive::Clone, logic::Int, std::iter::IteratorExt, *};
+use creusot_contracts::{std::clone::Clone, *};
 
 #[derive(Copy, Clone)]
 struct Point {

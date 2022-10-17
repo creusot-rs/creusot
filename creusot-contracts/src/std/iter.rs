@@ -1,5 +1,5 @@
-use crate::{logic::Seq, macros::*, resolve::Resolve, Invariant};
-use std::iter::{Skip, Take};
+use crate::{invariant::Invariant, *};
+pub use ::std::iter::*;
 
 mod map_inv;
 pub use map_inv::{IteratorExt, MapInv};
@@ -12,7 +12,7 @@ pub use take::TakeExt;
 
 mod range;
 
-pub trait Iterator: std::iter::Iterator + Invariant {
+pub trait Iterator: ::std::iter::Iterator + Invariant {
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, _: Self) -> bool;
 
@@ -34,7 +34,7 @@ pub trait Iterator: std::iter::Iterator + Invariant {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 }
 
-pub trait FromIterator<A>: std::iter::FromIterator<A> {
+pub trait FromIterator<A>: ::std::iter::FromIterator<A> {
     #[predicate]
     fn from_iter_logic(prod: Seq<A>, res: Self) -> bool;
 }

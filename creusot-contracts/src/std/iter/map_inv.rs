@@ -1,10 +1,4 @@
-use super::Iterator;
-use crate::{
-    logic::{Int, Seq},
-    macros::*,
-    std::ops::*,
-    Ghost, Invariant, Resolve,
-};
+use crate::{invariant::Invariant, *};
 
 pub struct MapInv<I, A, F> {
     iter: I,

@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 use creusot_contracts::{
-    derive::{Clone, PartialEq},
+    std::{clone::Clone, cmp::PartialEq},
     *,
 };
 

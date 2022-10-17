@@ -1,10 +1,4 @@
-use crate::{
-    logic::{Int, Seq},
-    macros::*,
-    std::iter::Iterator,
-    Invariant, Resolve,
-};
-use std::iter::Take;
+use crate::{invariant::Invariant, std::iter::Take, *};
 
 pub trait TakeExt<I> {
     #[logic]

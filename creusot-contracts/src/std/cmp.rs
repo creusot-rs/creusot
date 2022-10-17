@@ -1,7 +1,8 @@
-use crate::macros::*;
+use crate::{logic::OrdLogic, *};
+pub use ::std::cmp::*;
 
-use crate::{logic::OrdLogic, DeepModel};
-use std::cmp::Ordering;
+#[cfg(feature = "contracts")]
+pub use creusot_contracts_proc::PartialEq;
 
 extern_spec! {
     mod std {

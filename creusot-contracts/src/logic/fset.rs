@@ -1,6 +1,4 @@
-use crate::macros::*;
-
-use crate::logic::int::Int;
+use crate::*;
 
 #[cfg_attr(feature = "contracts", creusot::builtins = "set.Fset.fset")]
 pub struct FSet<T: ?Sized>(std::marker::PhantomData<T>);

@@ -1,6 +1,5 @@
-use crate::{logic::*, macros::*, DeepModel, ShallowModel};
-
-use std::time::Duration;
+use crate::*;
+pub use ::std::time::*;
 
 impl ShallowModel for Duration {
     type ShallowModelTy = Int;

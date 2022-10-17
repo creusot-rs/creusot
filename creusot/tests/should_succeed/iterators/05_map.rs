@@ -1,14 +1,10 @@
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{
-    logic::{Int, Seq},
-    std::ops::*,
-    *,
-};
+use creusot_contracts::*;
 
 mod common;
-use common::*;
+use common::Iterator;
 
 pub struct Map<I, F> {
     // The inner iterator

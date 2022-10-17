@@ -126,18 +126,6 @@ mod macros {
     pub use creusot_contracts_dummy::maintains;
 }
 
-pub use macros::*;
-
-#[cfg(feature = "contracts")]
-pub mod derive {
-    pub use creusot_contracts_proc::{Clone, PartialEq};
-}
-
-#[cfg(not(feature = "contracts"))]
-pub mod derive {
-    pub use ::std::{clone::Clone, cmp::PartialEq};
-}
-
 #[cfg(feature = "contracts")]
 #[path = "stubs.rs"]
 pub mod __stubs;
@@ -148,10 +136,10 @@ pub mod logic;
 pub mod std;
 
 #[cfg(feature = "contracts")]
-mod ghost;
+pub mod ghost;
 
 #[cfg(not(feature = "contracts"))]
-mod ghost {
+pub mod ghost {
     pub struct Ghost<T>(std::marker::PhantomData<T>)
     where
         T: ?Sized;
@@ -163,16 +151,37 @@ mod ghost {
     }
 }
 
-mod invariant;
-mod model;
-mod resolve;
-mod well_founded;
+pub mod invariant;
+pub mod model;
+pub mod resolve;
+pub mod well_founded;
 
-pub use ghost::Ghost;
-pub use invariant::Invariant;
-pub use model::{DeepModel, ShallowModel};
-pub use resolve::Resolve;
-pub use well_founded::WellFounded;
+// We add some common things at the root of the creusot-contracts library
+pub use crate::{
+    ghost::Ghost,
+    logic::{Int, OrdLogic, Seq},
+    macros::*,
+    model::{DeepModel, ShallowModel},
+    resolve::Resolve,
+    std::{
+        // Shadow std::prelude by our version.
+        // For Clone and PartialEq, this is important for the derive macro.
+        // If the user write the glob pattern "use creusot_contracts::*", then
+        // rustc will either shadow the old identifier or complain about the
+        // ambiguïty (ex: for the derive macros Clone and PartialEq, a glob
+        // pattern is not enough to force rustc to use our version, but at least
+        // we get an error message).
+        clone::Clone,
+        cmp::PartialEq,
+        default::Default,
+        iter::{FromIterator, IntoIterator, Iterator},
+    },
+    well_founded::WellFounded,
+};
 
-#[cfg(feature = "contracts")]
-pub use crate::std::slice::SliceExt;
+// Export extension traits anonymously
+pub use crate::std::{
+    iter::{IteratorExt as _, SkipExt as _, TakeExt as _},
+    ops::{FnMutSpec as _, FnOnceSpec as _, FnSpec as _, RangeInclusiveExt as _},
+    slice::SliceExt as _,
+};

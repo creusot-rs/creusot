@@ -1,10 +1,4 @@
-use crate::{
-    logic::{Int, Seq},
-    macros::*,
-    std::iter::Iterator,
-    Invariant, Resolve,
-};
-use std::iter::Skip;
+use crate::{invariant::Invariant, std::iter::Skip, *};
 
 pub trait SkipExt<I> {
     #[logic]
