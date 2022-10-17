@@ -825,8 +825,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
     }
 }
 
-// We consider an item to be further specializable if it is provided by a parameter bound (ie: `I : Iterator`) *and*
-// the item in question could in theory be refined further (ie: it is a default method or specializable).
+// We consider an item to be further specializable if it is provided by a parameter bound (ie: `I : Iterator`).
 fn still_specializable<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
@@ -835,13 +834,10 @@ fn still_specializable<'tcx>(
 ) -> bool {
     if let Some(_) = tcx.trait_of_item(def_id) {
         let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs).unwrap();
-        let is_final = tcx.impl_defaultness(def_id).is_final();
-        matches!(impl_source, ImplSource::Param(_, _)) && !is_final
+        matches!(impl_source, ImplSource::Param(_, _))
     } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
         let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs).unwrap();
-
-        let is_final = tcx.impl_defaultness(def_id).is_final();
-        matches!(impl_source, ImplSource::Param(_, _)) && !is_final
+        matches!(impl_source, ImplSource::Param(_, _))
     } else {
         false
     }
