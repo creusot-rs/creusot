@@ -25,7 +25,7 @@ use crate::{
         interface,
         traits::{self, resolve_impl_source_opt},
     },
-    util::{self, get_builtin, ident_of, ident_of_ty, is_law, item_name},
+    util::{self, get_builtin, ident_of, ident_of_ty, item_name},
 };
 
 // Prelude modules
