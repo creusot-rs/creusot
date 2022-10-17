@@ -159,7 +159,7 @@ impl<'tcx> Expr<'tcx> {
                 };
                 exp
             }
-            Expr::Constant(c) => lower_impure(ctx, names, param_env, c),
+            Expr::Constant(c) => lower_impure(ctx, names, c),
             Expr::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, body, param_env)).collect())
             }
@@ -440,7 +440,7 @@ impl<'tcx> Statement<'tcx> {
                 ]
             }
             Statement::Assignment(lhs, RValue::Ghost(rhs)) => {
-                let ghost = lower_pure(ctx, names, param_env, rhs);
+                let ghost = lower_pure(ctx, names, rhs);
 
                 vec![place::create_assign_inner(ctx, names, body, &lhs, ghost)]
             }
@@ -466,12 +466,12 @@ impl<'tcx> Statement<'tcx> {
                 }
             }
             Statement::Assertion(a) => {
-                vec![mlcfg::Statement::Assert(lower_pure(ctx, names, param_env, a))]
+                vec![mlcfg::Statement::Assert(lower_pure(ctx, names, a))]
             }
 
             Statement::Invariant(nm, inv) => vec![mlcfg::Statement::Invariant(
                 nm.to_string().into(),
-                lower_pure(ctx, names, param_env, inv),
+                lower_pure(ctx, names, inv),
             )],
         }
     }

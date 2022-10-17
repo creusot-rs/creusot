@@ -7,13 +7,7 @@ use crate::{
     util,
     util::{constructor_qname, get_builtin},
 };
-use creusot_rustc::{
-    hir::Unsafety,
-    middle::{
-        ty,
-        ty::{EarlyBinder, ParamEnv},
-    },
-};
+use creusot_rustc::{hir::Unsafety, middle::ty::EarlyBinder};
 use rustc_middle::ty::{Ty, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
@@ -24,11 +18,10 @@ use why3::{
 pub(crate) fn lower_pure<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
-    param_env: ParamEnv<'tcx>,
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
-    let mut term = Lower { ctx, names, pure: Purity::Logic, param_env }.lower_term(term);
+    let mut term = Lower { ctx, names, pure: Purity::Logic }.lower_term(term);
     term.reassociate();
     if !ctx.sess.source_map().is_imported(span) {
         term = ctx.attach_span(span, term);
@@ -40,11 +33,10 @@ pub(crate) fn lower_pure<'tcx>(
 pub(crate) fn lower_impure<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
-    param_env: ParamEnv<'tcx>,
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
-    let mut term = Lower { ctx, names, pure: Purity::Program, param_env }.lower_term(term);
+    let mut term = Lower { ctx, names, pure: Purity::Program }.lower_term(term);
     term.reassociate();
 
     if !ctx.sess.source_map().is_imported(span) {
@@ -58,7 +50,6 @@ pub(super) struct Lower<'a, 'tcx> {
     pub(super) names: &'a mut CloneMap<'tcx>,
     // true when we are translating a purely logical term
     pub(super) pure: Purity,
-    param_env: ParamEnv<'tcx>,
 }
 impl<'tcx> Lower<'_, 'tcx> {
     pub(crate) fn lower_term(&mut self, term: Term<'tcx>) -> Exp {

@@ -100,14 +100,6 @@ pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::A
         .collect()
 }
 
-pub(crate) fn closure_owner(tcx: TyCtxt, mut def_id: DefId) -> DefId {
-    while tcx.is_closure(def_id) {
-        def_id = tcx.parent(def_id);
-    }
-
-    def_id
-}
-
 pub(crate) fn param_def_id(tcx: TyCtxt, def_id: LocalDefId) -> LocalDefId {
     if is_spec(tcx, def_id.to_def_id()) && tcx.is_closure(def_id.to_def_id()) {
         tcx.parent(def_id.to_def_id()).expect_local()
@@ -421,7 +413,7 @@ pub(crate) fn sig_to_why3<'tcx>(
     // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
 ) -> Signature {
-    let contract = names.with_public_clones(|names| pre_sig.contract.to_exp(ctx, names, def_id));
+    let contract = names.with_public_clones(|names| pre_sig.contract.to_exp(ctx, names));
 
     let name = item_name(ctx.tcx, def_id, Namespace::ValueNS);
 

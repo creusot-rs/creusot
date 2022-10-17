@@ -157,7 +157,7 @@ fn body_module<'tcx>(
         decls.push(Decl::ValDecl(ValDecl { sig: val_sig, ghost: false, val: true, kind: None }));
     } else {
         let term = ctx.term(def_id).unwrap().clone();
-        let body = specification::lower_pure(ctx, &mut names, ctx.param_env(def_id), term);
+        let body = specification::lower_pure(ctx, &mut names, term);
         decls.extend(names.to_clones(ctx));
 
         if sig_contract.contract.variant.is_empty() {
@@ -242,7 +242,7 @@ fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
         return None;
     }
     let term = ctx.term(def_id).unwrap().clone();
-    let body = specification::lower_impure(ctx, &mut names, ctx.param_env(def_id), term);
+    let body = specification::lower_impure(ctx, &mut names, term);
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));

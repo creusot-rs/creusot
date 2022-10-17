@@ -167,16 +167,15 @@ fn logic_refinement<'tcx>(
     let trait_contract = names.with_public_clones(|names| {
         let pre_contract = crate::specification::contract_of(ctx, trait_item_id);
         let param_env = ctx.param_env(impl_item_id);
-        EarlyBinder(pre_contract).subst(ctx.tcx, refn_subst).normalize(ctx.tcx, param_env).to_exp(
-            ctx,
-            names,
-            impl_item_id,
-        )
+        EarlyBinder(pre_contract)
+            .subst(ctx.tcx, refn_subst)
+            .normalize(ctx.tcx, param_env)
+            .to_exp(ctx, names)
     });
 
     let impl_contract = names.with_public_clones(|names| {
         let pre_contract = crate::specification::contract_of(ctx, impl_item_id);
-        pre_contract.to_exp(ctx, names, impl_item_id)
+        pre_contract.to_exp(ctx, names)
     });
 
     let (trait_inps, _) = inputs_and_output(ctx.tcx, trait_item_id);
