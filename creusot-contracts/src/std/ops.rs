@@ -1,10 +1,10 @@
 use crate::{invariant::Invariant, *};
 pub use ::std::ops::*;
 
-/// `FnOnceSpec` is an extension trait for the `FnOnce` trait, used for
+/// `FnOnceExt` is an extension trait for the `FnOnce` trait, used for
 /// adding a specification to closures. It should not be used directly.
 #[rustc_diagnostic_item = "fn_once_spec"]
-pub trait FnOnceSpec<Args>: FnOnce<Args> {
+pub trait FnOnceExt<Args>: FnOnce<Args> {
     #[predicate]
     fn precondition(self, a: Args) -> bool;
 
@@ -12,15 +12,20 @@ pub trait FnOnceSpec<Args>: FnOnce<Args> {
     fn postcondition_once(self, a: Args, res: Self::Output) -> bool;
 }
 
-/// `FnMutSpec` is an extension trait for the `FnMut` trait, used for
+/// `FnMutExt` is an extension trait for the `FnMut` trait, used for
 /// adding a specification to closures. It should not be used directly.
 #[rustc_diagnostic_item = "fn_mut_spec"]
-pub trait FnMutSpec<Args>: FnMut<Args> + FnOnceSpec<Args> {
+pub trait FnMutExt<Args>: FnMut<Args> + FnOnceExt<Args> {
     #[predicate]
     fn postcondition_mut(&mut self, _: Args, _: Self::Output) -> bool;
 
     #[predicate]
     fn unnest(self, _: Self) -> bool;
+
+    #[law]
+    #[requires(self.postcondition_mut(args, res))]
+    #[ensures((*self).unnest(^self))]
+    fn postcondition_mut_unnest(&mut self, args: Args, res: Self::Output);
 
     #[law]
     #[ensures(self.unnest(self))]
@@ -39,10 +44,10 @@ pub trait FnMutSpec<Args>: FnMut<Args> + FnOnceSpec<Args> {
         Self: Sized;
 }
 
-/// `FnSpec` is an extension trait for the `Fn` trait, used for
+/// `FnExt` is an extension trait for the `Fn` trait, used for
 /// adding a specification to closures. It should not be used directly.
 #[rustc_diagnostic_item = "fn_spec"]
-pub trait FnSpec<Args>: Fn<Args> + FnMutSpec<Args> {
+pub trait FnExt<Args>: Fn<Args> + FnMutExt<Args> {
     #[predicate]
     fn postcondition(&self, _: Args, _: Self::Output) -> bool;
 
@@ -57,7 +62,7 @@ pub trait FnSpec<Args>: Fn<Args> + FnMutSpec<Args> {
         Self: Sized;
 }
 
-impl<Args, F: FnOnce<Args>> FnOnceSpec<Args> for F {
+impl<Args, F: FnOnce<Args>> FnOnceExt<Args> for F {
     #[predicate]
     #[trusted]
     #[rustc_diagnostic_item = "fn_once_impl_precond"]
@@ -73,7 +78,7 @@ impl<Args, F: FnOnce<Args>> FnOnceSpec<Args> for F {
     }
 }
 
-impl<Args, F: FnMut<Args>> FnMutSpec<Args> for F {
+impl<Args, F: FnMut<Args>> FnMutExt<Args> for F {
     #[predicate]
     #[trusted]
     #[rustc_diagnostic_item = "fn_mut_impl_postcond"]
@@ -87,6 +92,11 @@ impl<Args, F: FnMut<Args>> FnMutSpec<Args> for F {
     fn unnest(self, _: Self) -> bool {
         absurd
     }
+
+    #[law]
+    #[requires(self.postcondition_mut(args, res))]
+    #[ensures((*self).unnest(^self))]
+    fn postcondition_mut_unnest(&mut self, args: Args, res: Self::Output) {}
 
     #[law]
     #[ensures(self.unnest(self))]
@@ -104,7 +114,7 @@ impl<Args, F: FnMut<Args>> FnMutSpec<Args> for F {
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 
-impl<Args, F: Fn<Args>> FnSpec<Args> for F {
+impl<Args, F: Fn<Args>> FnExt<Args> for F {
     #[predicate]
     #[trusted]
     #[rustc_diagnostic_item = "fn_impl_postcond"]
@@ -128,20 +138,19 @@ extern_spec! {
         mod ops {
             // FIXME: we should not need the `Self :` bounds, because they are implied by the main trait bound.
             // But if we remove them, some test fail.
-            trait FnOnce<Args> where Self : FnOnceSpec<Args> {
+            trait FnOnce<Args> where Self : FnOnceExt<Args> {
                 #[requires(self.precondition(arg))]
                 #[ensures(self.postcondition_once(arg, result))]
                 fn call_once(self, arg: Args) -> Self::Output;
             }
 
-            trait FnMut<Args> where Self : FnMutSpec<Args> {
+            trait FnMut<Args> where Self : FnMutExt<Args> {
                 #[requires((*self).precondition(arg))]
                 #[ensures(self.postcondition_mut(arg, result))]
-                #[ensures((*self).unnest(^self))]
                 fn call_mut(&mut self, arg: Args) -> Self::Output;
             }
 
-            trait Fn<Args> where Self : FnSpec<Args> {
+            trait Fn<Args> where Self : FnExt<Args> {
                 #[requires((*self).precondition(arg))]
                 #[ensures(self.postcondition(arg, result))]
                 fn call(&self, arg: Args) -> Self::Output;
