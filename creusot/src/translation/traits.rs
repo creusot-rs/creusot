@@ -14,7 +14,9 @@ use why3::{
     exp::Exp,
 };
 
-use crate::{rustc_extensions, util};
+use crate::{
+    rustc_extensions, translation::function::terminator::evaluate_additional_predicates, util,
+};
 
 use crate::{
     ctx::*,
@@ -74,6 +76,30 @@ impl<'tcx> TranslationCtx<'tcx> {
             decls.extend(own_generic_decls_for(self.tcx, impl_item));
 
             let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
+
+            // TODO: Clean up and abstract
+            let predicates = self
+                .extern_spec(trait_item)
+                .map(|p| p.predicates_for(self.tcx, refn_subst))
+                .unwrap_or_else(Vec::new);
+
+            use creusot_rustc::{
+                infer::infer::TyCtxtInferExt,
+                trait_selection::traits::error_reporting::InferCtxtExt,
+            };
+            self.tcx.infer_ctxt().enter(|infcx| {
+                let res = evaluate_additional_predicates(
+                    &infcx,
+                    predicates,
+                    self.param_env(impl_item),
+                    self.def_span(impl_item),
+                );
+                if let Err(errs) = res {
+                    let body_id = self.tcx.hir().body_owned_by(impl_item.expect_local());
+                    infcx.report_fulfillment_errors(&errs, Some(body_id), false);
+                    self.crash_and_error(creusot_rustc::span::DUMMY_SP, "error above");
+                }
+            });
 
             let refinement = names.insert(trait_item, refn_subst);
 

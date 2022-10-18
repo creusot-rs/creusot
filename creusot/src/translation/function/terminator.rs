@@ -232,7 +232,7 @@ fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, SubstsRef<'tcx>)> {
     }
 }
 
-fn evaluate_additional_predicates<'tcx>(
+pub(crate) fn evaluate_additional_predicates<'tcx>(
     infcx: &InferCtxt<'_, 'tcx>,
     p: Vec<Predicate<'tcx>>,
     param_env: ParamEnv<'tcx>,
