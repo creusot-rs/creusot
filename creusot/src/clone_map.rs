@@ -1,6 +1,5 @@
 use creusot_rustc::{
     hir::def_id::DefId,
-    infer::traits::ImplSource,
     middle::ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
@@ -13,7 +12,7 @@ use creusot_rustc::{
 use heck::CamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
-use rustc_middle::ty::{subst::GenericArgKind, ParamEnv};
+use rustc_middle::ty::subst::GenericArgKind;
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
     Ident, QName,
@@ -21,10 +20,7 @@ use why3::{
 
 use crate::{
     ctx::{self, *},
-    translation::{
-        interface,
-        traits::{self, resolve_impl_source_opt},
-    },
+    translation::{interface, traits},
     util::{self, get_builtin, ident_of, ident_of_ty, item_name},
 };
 
@@ -362,8 +358,6 @@ impl<'tcx> CloneMap<'tcx> {
         // to build the correct substitution.
         //
         let mut i = self.last_cloned;
-        let param_env = ctx.param_env(self.self_id);
-
         while i < self.names.len() {
             let key = *self.names.get_index(i).unwrap().0;
 
@@ -378,7 +372,7 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            if still_specializable(self.tcx, param_env, key.0, key.1) {
+            if still_specializable(self.tcx, key.0, key.1) {
                 self.names[&key].opaque();
             }
 
@@ -825,19 +819,22 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
     }
 }
 
+// | Final | Still Spec (Ty)| Res |
+// | T | _ | F |
+// | F | T | T |
+// | F | F | F |
+
 // We consider an item to be further specializable if it is provided by a parameter bound (ie: `I : Iterator`).
-fn still_specializable<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    def_id: DefId,
-    substs: SubstsRef<'tcx>,
-) -> bool {
-    if let Some(_) = tcx.trait_of_item(def_id) {
-        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs).unwrap();
-        matches!(impl_source, ImplSource::Param(_, _))
+fn still_specializable<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, substs: SubstsRef<'tcx>) -> bool {
+    use creusot_rustc::middle::ty::TypeVisitable;
+    if let Some(trait_id) = tcx.trait_of_item(def_id) {
+        let is_final = tcx.impl_defaultness(def_id).is_final();
+        let trait_generics = substs.truncate_to(tcx, tcx.generics_of(trait_id));
+        !is_final && trait_generics.still_further_specializable()
     } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
-        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs).unwrap();
-        matches!(impl_source, ImplSource::Param(_, _))
+        let is_final = tcx.impl_defaultness(def_id).is_final();
+        let trait_ref = tcx.impl_trait_ref(impl_id).unwrap();
+        !is_final && EarlyBinder(trait_ref).subst(tcx, substs).still_further_specializable()
     } else {
         false
     }

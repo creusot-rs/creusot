@@ -60,6 +60,7 @@ fn generate_unique_ident(prefix: &str) -> Ident {
 
 struct TraitItemSignature {
     attrs: Vec<Attribute>,
+    defaultness: Option<Token![default]>,
     sig: Signature,
     semi_token: Token![;],
 }
@@ -67,28 +68,53 @@ struct TraitItemSignature {
 impl ToTokens for TraitItemSignature {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         tokens.append_all(self.attrs.outer());
+        self.defaultness.to_tokens(tokens);
         self.sig.to_tokens(tokens);
         self.semi_token.to_tokens(tokens);
     }
 }
 
-enum ContractItem {
-    Fn(ItemFn),
-    TraitSig(TraitItemSignature),
+struct FnOrMethod {
+    defaultness: Option<Token![default]>,
+    visibility: Visibility,
+    attrs: Vec<Attribute>,
+    sig: Signature,
+    body: Option<Block>,
+    semi_token: Option<Token![;]>,
+}
+
+impl FnOrMethod {
+    fn is_trait_signature(&self) -> bool {
+        self.semi_token.is_some()
+    }
+}
+
+enum ContractSubject {
+    FnOrMethod(FnOrMethod),
     Closure(ExprClosure),
 }
 
-impl ContractItem {
+impl ToTokens for FnOrMethod {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        tokens.append_all(self.attrs.outer());
+        self.defaultness.to_tokens(tokens);
+        self.visibility.to_tokens(tokens);
+        self.sig.to_tokens(tokens);
+        self.body.to_tokens(tokens);
+        self.semi_token.to_tokens(tokens);
+    }
+}
+
+impl ContractSubject {
     fn name(&self) -> String {
         match self {
-            ContractItem::Fn(i) => i.sig.ident.to_string(),
-            ContractItem::TraitSig(tr) => tr.sig.ident.to_string(),
-            ContractItem::Closure(_) => "closure".to_string(),
+            ContractSubject::FnOrMethod(tr) => tr.sig.ident.to_string(),
+            ContractSubject::Closure(_) => "closure".to_string(),
         }
     }
 
     fn mark_unused(&mut self) {
-        if let ContractItem::TraitSig(sig) = self {
+        if let ContractSubject::FnOrMethod(sig) = self {
             for arg in sig.sig.inputs.iter_mut() {
                 let attrs = match arg {
                     FnArg::Receiver(r) => &mut r.attrs,
@@ -100,9 +126,9 @@ impl ContractItem {
     }
 }
 
-impl Parse for ContractItem {
+impl Parse for ContractSubject {
     fn parse(input: parse::ParseStream) -> Result<Self> {
-        let mut attrs = input.call(Attribute::parse_outer)?;
+        let attrs = input.call(Attribute::parse_outer)?;
         if input.peek(Token![|])
             || input.peek(Token![async]) && (input.peek2(Token![|]) || input.peek2(Token![move]))
             || input.peek(Token![static])
@@ -111,28 +137,36 @@ impl Parse for ContractItem {
             let mut closure: ExprClosure = input.parse()?;
             let _: Option<Token![,]> = input.parse()?;
             closure.attrs.extend(attrs);
-            return Ok(ContractItem::Closure(closure));
+            return Ok(ContractSubject::Closure(closure));
         }
+
+        let defaultness: Option<_> = input.parse()?;
         // Infalliable, no visibility = inherited
         let vis: Visibility = input.parse()?;
         let sig: Signature = input.parse()?;
         let lookahead = input.lookahead1();
-        if lookahead.peek(Token![;]) {
-            let semi_token: Token![;] = input.parse()?;
-            return Ok(ContractItem::TraitSig(TraitItemSignature { attrs, sig, semi_token }));
-        } else {
+
+        let (brace_token, stmts, semi_token) = if lookahead.peek(token::Brace) {
             let content;
             let brace_token = braced!(content in input);
-            attrs.extend(Attribute::parse_inner(input)?);
-            let stmts = content.call(Block::parse_within)?;
 
-            return Ok(ContractItem::Fn(ItemFn {
-                attrs,
-                vis,
-                sig,
-                block: Box::new(Block { brace_token, stmts }),
-            }));
-        }
+            let stmts = content.call(Block::parse_within)?;
+            (Some(brace_token), stmts, None)
+        } else if lookahead.peek(Token![;]) {
+            let semi_token: Token![;] = input.parse()?;
+            (None, Vec::new(), Some(semi_token))
+        } else {
+            return Err(lookahead.error());
+        };
+
+        return Ok(ContractSubject::FnOrMethod(FnOrMethod {
+            defaultness,
+            visibility: vis,
+            attrs,
+            sig,
+            body: brace_token.map(|brace_token| Block { brace_token, stmts }),
+            semi_token,
+        }));
     }
 }
 
@@ -180,7 +214,7 @@ fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
-    let mut item = parse_macro_input!(tokens as ContractItem);
+    let mut item = parse_macro_input!(tokens as ContractSubject);
     let term = parse_macro_input!(attr as Term);
     item.mark_unused();
 
@@ -189,24 +223,24 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     let name_tag = format!("{}", quote! { #req_name });
 
     match item {
-        ContractItem::Fn(mut f) => {
+        ContractSubject::FnOrMethod(fn_or_meth) if fn_or_meth.is_trait_signature() => {
+            let requires_tokens = sig_spec_item(req_name, fn_or_meth.sig.clone(), term);
+            TS1::from(quote! {
+              #requires_tokens
+              #[creusot::spec::requires=#name_tag]
+              #fn_or_meth
+            })
+        }
+        ContractSubject::FnOrMethod(mut f) => {
             let requires_tokens = fn_spec_item(req_name, None, term);
 
-            f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)));
+            f.body.as_mut().map(|b| b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens))));
             TS1::from(quote! {
               #[creusot::spec::requires=#name_tag]
               #f
             })
         }
-        ContractItem::TraitSig(s) => {
-            let requires_tokens = sig_spec_item(req_name, s.sig.clone(), term);
-            TS1::from(quote! {
-              #requires_tokens
-              #[creusot::spec::requires=#name_tag]
-              #s
-            })
-        }
-        ContractItem::Closure(mut clos) => {
+        ContractSubject::Closure(mut clos) => {
             let requires_tokens = fn_spec_item(req_name, None, term);
             let body = &clos.body;
             *clos.body = parse_quote!({let res = #body; #requires_tokens res});
@@ -220,7 +254,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
-    let mut item = parse_macro_input!(tokens as ContractItem);
+    let mut item = parse_macro_input!(tokens as ContractSubject);
     let term = parse_macro_input!(attr as Term);
     item.mark_unused();
 
@@ -228,20 +262,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     let name_tag = format!("{}", quote! { #ens_name });
 
     match item {
-        ContractItem::Fn(mut f) => {
-            let result = match f.sig.output {
-                ReturnType::Default => parse_quote! { result : () },
-                ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
-            };
-            let ensures_tokens = fn_spec_item(ens_name, Some(result), term);
-
-            f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)));
-            TS1::from(quote! {
-                #[creusot::spec::ensures=#name_tag]
-                #f
-            })
-        }
-        ContractItem::TraitSig(s) => {
+        ContractSubject::FnOrMethod(s) if s.is_trait_signature() => {
             let result = match s.sig.output {
                 ReturnType::Default => parse_quote! { result : () },
                 ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
@@ -256,7 +277,20 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
               #s
             })
         }
-        ContractItem::Closure(mut clos) => {
+        ContractSubject::FnOrMethod(mut f) => {
+            let result = match f.sig.output {
+                ReturnType::Default => parse_quote! { result : () },
+                ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
+            };
+            let ensures_tokens = fn_spec_item(ens_name, Some(result), term);
+
+            f.body.as_mut().map(|b| b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens))));
+            TS1::from(quote! {
+                #[creusot::spec::ensures=#name_tag]
+                #f
+            })
+        }
+        ContractSubject::Closure(mut clos) => {
             let req_body = req_body(&term);
             let attrs = spec_attrs(&ens_name);
             let body = &clos.body;
@@ -383,7 +417,12 @@ impl Parse for LogicInput {
         let lookahead = input.lookahead1();
         if lookahead.peek(Token![;]) {
             let semi_token: Token![;] = input.parse()?;
-            return Ok(LogicInput::Sig(TraitItemSignature { attrs, sig, semi_token }));
+            return Ok(LogicInput::Sig(TraitItemSignature {
+                attrs,
+                defaultness: default,
+                sig,
+                semi_token,
+            }));
         } else {
             let body;
             let brace_token = braced!(body in input);
