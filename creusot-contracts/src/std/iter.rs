@@ -1,16 +1,18 @@
 use crate::{invariant::Invariant, *};
 pub use ::std::iter::*;
 
+mod empty;
+
 mod map_inv;
 pub use map_inv::MapInv;
+
+mod range;
 
 mod skip;
 pub use skip::SkipExt;
 
 mod take;
 pub use take::TakeExt;
-
-mod range;
 
 pub trait Iterator: ::std::iter::Iterator + Invariant {
     #[predicate]
@@ -97,6 +99,9 @@ extern_spec! {
                  // TODO : from_iter in Rust std lib uses T:IntoIterator<Item = A>
                  // But we need to give a generic spec to IntoIterator
             }
+
+            #[ensures(result.invariant())]
+            fn empty<T>() -> Empty<T>;
         }
     }
 }
