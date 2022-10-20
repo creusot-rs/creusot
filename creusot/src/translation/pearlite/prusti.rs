@@ -12,8 +12,8 @@ use creusot_rustc::{
     middle::{
         mir::Mutability::{Mut, Not},
         ty::{
-            self, AdtDef, Binder, BoundRegion, BoundRegionKind, FieldDef, FnSig, FreeRegion, List,
-            RegionKind, SubstsRef, TyCtxt, TyKind,
+            self, AdtDef, Binder, BoundRegion, BoundRegionKind, BoundVariableKind, FieldDef, FnSig,
+            FreeRegion, GenericParamDefKind, Generics, List, RegionKind, SubstsRef, TyCtxt, TyKind,
         },
     },
     span::{
@@ -180,16 +180,39 @@ struct Ty<'tcx> {
 
 type Tenv<'tcx> = SemiPersistent<FxHashMap<Symbol, Ty<'tcx>>>;
 
-fn make_time_slice(attr: &AttrItem) -> TimeSlice {
+fn make_time_slice(
+    attr: &AttrItem,
+    mut regions: impl Iterator<Item = Region>,
+    non_blocked: &FxHashSet<Region>,
+) -> CreusotResult<TimeSlice> {
     use creusot_rustc::ast::{MacArgs, MacArgsEq};
     match &attr.args {
         MacArgs::Eq(_, MacArgsEq::Hir(l)) => {
             let sym = l.token_lit.symbol;
             match sym.as_str() {
-                "old" => Old,
-                "curr" => Curr,
-                "'_" => unimplemented!("elided lifetime"),
-                _ => Expiry(Region::Named(sym)),
+                "old" => Ok(Old),
+                "curr" => Ok(Curr),
+                "'_" => {
+                    let mut candiates = regions
+                        .filter(|r| matches!(r, Region::Elided(_)) && !non_blocked.contains(r));
+                    match (candiates.next(), candiates.next()) {
+                        (None, _) => {
+                            Err(Error::new(l.span, "function has no blocked anonymous regions"))
+                        }
+                        (Some(_), Some(_)) => Err(Error::new(
+                            l.span,
+                            "function has multiple blocked anonymous regions",
+                        )),
+                        (Some(c), None) => Ok(Expiry(c)),
+                    }
+                }
+                _ => {
+                    if regions.any(|r| r == Region::Named(sym)) {
+                        Ok(Expiry(Region::Named(sym)))
+                    } else {
+                        Err(Error::new(l.span, format!("use of undeclared lifetime name {sym}")))
+                    }
+                }
             }
         }
         _ => unreachable!(),
@@ -224,17 +247,34 @@ pub(super) fn prusti_to_creusot<'tcx>(
         None => return Ok(term),
         Some(attr) => attr,
     };
-    let ts = make_time_slice(attr);
+
     let owner_id = util::param_def_id(tcx, ctx.item_id);
     if tcx.is_closure(owner_id.into()) {
         return Err(Error::new(term.span, "Prusti specs on closures aren't supported"));
     }
     let sig: Binder<FnSig> = tcx.fn_sig(owner_id);
-    let args: &[Ident] = tcx.fn_arg_names(owner_id);
+    let bound_vars = sig.bound_vars();
+    let generics: &Generics = tcx.generics_of(owner_id);
+    let lifetimes1 = bound_vars.iter().filter_map(|x| match x {
+        BoundVariableKind::Region(BoundRegionKind::BrNamed(def_id, name)) => {
+            Some(Region::new(name, def_id))
+        }
+        _ => None,
+    });
+    let lifetimes2 = generics.params.iter().filter_map(|x| match x.kind {
+        GenericParamDefKind::Lifetime => {
+            let data = x.to_early_bound_region_data();
+            Some(Region::new(data.name, data.def_id))
+        }
+        _ => None,
+    });
+
     let sig = tcx.liberate_late_bound_regions(owner_id.to_def_id(), sig);
     let non_blocked: FxHashSet<Region> = empty_regions(tcx, owner_id).map(Region::from).collect();
+    let ts = make_time_slice(attr, lifetimes1.chain(lifetimes2), &non_blocked)?;
     //dbg!(&non_blocked);
     //eprintln!("{:?}", sig);
+    let args: &[Ident] = tcx.fn_arg_names(owner_id);
     let mut tenv: FxHashMap<_, _> = args
         .iter()
         .enumerate()

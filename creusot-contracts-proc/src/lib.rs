@@ -8,11 +8,11 @@ use quote::{quote, quote_spanned, ToTokens, TokenStreamExt};
 use std::iter;
 use syn::{
     parse::{Parse, Parser, Result},
-    punctuated::Punctuated,
     spanned::Spanned,
     token::Brace,
     *,
 };
+use syn::parse::ParseStream;
 
 mod extern_spec;
 mod invariant;
@@ -301,19 +301,29 @@ pub fn prusti_ensures(attr: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn prusti_ensures_expiry(attr: TS1, tokens: TS1) -> TS1 {
-    let split = Punctuated::<TokenStream, Token![,]>::parse_separated_nonempty.parse(attr);
-    let split = match split {
+    let parser = |input: ParseStream| {
+        let lookahead = input.lookahead1();
+        if lookahead.peek(Lifetime) {
+            let lt: Lifetime = input.parse()?;
+            let _: Token![,] = input.parse()?;
+            let rest: TokenStream = input.parse()?;
+            Ok((Some(lt), rest))
+        } else {
+            Ok((None, input.parse()?))
+        }
+    };
+    let split = parser.parse(attr);
+    let (lifetime, rest) = match split {
         Ok(split) => split,
         Err(err) => return err.into_compile_error().into(),
     };
-    let (prusti_info, rest) = if split.len() > 1 {
-        let mut iter = split.into_iter();
-        let (lifetime, rest) = (iter.next().unwrap().into(), iter.next().unwrap());
-        let lifetime: Lifetime = parse_macro_input!(lifetime);
-        let lifetime = format!("{}", lifetime);
-        (quote!(#[creusot::prusti::ts=#lifetime]), rest)
-    } else {
-        (quote!(#[creusot::prusti::ts="'_"]), split.into_iter().next().unwrap())
+    let prusti_info = match lifetime {
+        Some(lifetime) => {
+            let lifetime_string = format!("{}", lifetime);
+            let lifetime = LitStr::new(&lifetime_string, lifetime.span());
+            quote!(#[creusot::prusti::ts=#lifetime])
+        },
+        None => quote!(#[creusot::prusti::ts="'_"]),
     };
     ensures_helper(rest.into(), tokens, prusti_info)
 }
