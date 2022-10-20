@@ -15,7 +15,7 @@ use creusot::{
 };
 use rustc_driver::RunCompiler;
 use rustc_interface::interface::try_print_query_stack;
-use std::{env, panic, panic::PanicInfo, process::Command};
+use std::{backtrace, env, panic, panic::PanicInfo, process::Command};
 
 const BUG_REPORT_URL: &'static str = &"https://github.com/xldenis/creusot/issues/new";
 
@@ -58,6 +58,7 @@ fn report_panic(info: &PanicInfo) {
 
     if backtrace {
         try_print_query_stack(&handler, None);
+        eprintln!("{}", backtrace::Backtrace::capture());
     }
 }
 

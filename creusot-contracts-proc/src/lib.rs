@@ -7,7 +7,8 @@ use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned, ToTokens, TokenStreamExt};
 use std::iter;
 use syn::{
-    parse::{Parse, Result},
+    parse::{Parse, Parser, Result},
+    punctuated::Punctuated,
     spanned::Spanned,
     token::Brace,
     *,
@@ -19,6 +20,8 @@ mod maintains;
 mod pretyping;
 
 mod derive;
+
+const NONE: Option<Ident> = None; // Replace with Option<!> when it becomes available
 
 trait FilterAttrs<'a> {
     type Ret: Iterator<Item = &'a Attribute>;
@@ -142,21 +145,19 @@ fn req_body(p: &Term) -> TokenStream {
     })
 }
 
-fn spec_attrs(tag: &Ident) -> TokenStream {
-    let name_tag = format!("{}", quote! { #tag });
+fn spec_attrs(name_tag: &str, prusti_info: impl ToTokens) -> TokenStream {
     quote! {
-         #[creusot::no_translate]
-         #[creusot::item=#name_tag]
-         #[creusot::decl::spec]
+        #[creusot::no_translate]
+        #[creusot::item=#name_tag]
+        #[creusot::decl::spec]
+        #prusti_info
     }
 }
 
 // Generate a token stream for the item representing a specific
 // `requires` or `ensures`
-fn fn_spec_item(tag: Ident, result: Option<FnArg>, p: Term) -> TokenStream {
+fn fn_spec_item(attrs: TokenStream, result: Option<FnArg>, p: Term) -> TokenStream {
     let req_body = req_body(&p);
-    let attrs = spec_attrs(&tag);
-
     quote! {
         #[allow(unused_must_use)]
         let _ =
@@ -166,9 +167,8 @@ fn fn_spec_item(tag: Ident, result: Option<FnArg>, p: Term) -> TokenStream {
     }
 }
 
-fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
+fn sig_spec_item(attrs: TokenStream, tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
     let req_body = req_body(&p);
-    let attrs = spec_attrs(&tag);
     sig.ident = tag;
     sig.output = parse_quote! { -> bool };
 
@@ -180,6 +180,10 @@ fn sig_spec_item(tag: Ident, mut sig: Signature, p: Term) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
+    requires_helper(attr, tokens, NONE)
+}
+
+fn requires_helper(attr: TS1, tokens: TS1, prusti_info: impl ToTokens) -> TS1 {
     let mut item = parse_macro_input!(tokens as ContractItem);
     let term = parse_macro_input!(attr as Term);
     item.mark_unused();
@@ -188,9 +192,11 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
     let name_tag = format!("{}", quote! { #req_name });
 
+    let attrs = spec_attrs(&name_tag, prusti_info);
+
     match item {
         ContractItem::Fn(mut f) => {
-            let requires_tokens = fn_spec_item(req_name, None, term);
+            let requires_tokens = fn_spec_item(attrs, None, term);
 
             f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)));
             TS1::from(quote! {
@@ -199,7 +205,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             })
         }
         ContractItem::TraitSig(s) => {
-            let requires_tokens = sig_spec_item(req_name, s.sig.clone(), term);
+            let requires_tokens = sig_spec_item(attrs, req_name, s.sig.clone(), term);
             TS1::from(quote! {
               #requires_tokens
               #[creusot::spec::requires=#name_tag]
@@ -207,7 +213,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
             })
         }
         ContractItem::Closure(mut clos) => {
-            let requires_tokens = fn_spec_item(req_name, None, term);
+            let requires_tokens = fn_spec_item(attrs, None, term);
             let body = &clos.body;
             *clos.body = parse_quote!({let res = #body; #requires_tokens res});
             TS1::from(quote! {
@@ -220,6 +226,10 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
 #[proc_macro_attribute]
 pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
+    ensures_helper(attr, tokens, NONE)
+}
+
+fn ensures_helper(attr: TS1, tokens: TS1, prusti_info: impl ToTokens) -> TS1 {
     let mut item = parse_macro_input!(tokens as ContractItem);
     let term = parse_macro_input!(attr as Term);
     item.mark_unused();
@@ -227,13 +237,15 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
     let ens_name = generate_unique_ident(&item.name());
     let name_tag = format!("{}", quote! { #ens_name });
 
+    let attrs = spec_attrs(&name_tag, prusti_info);
+
     match item {
         ContractItem::Fn(mut f) => {
             let result = match f.sig.output {
                 ReturnType::Default => parse_quote! { result : () },
                 ReturnType::Type(_, ref ty) => parse_quote! { result : #ty },
             };
-            let ensures_tokens = fn_spec_item(ens_name, Some(result), term);
+            let ensures_tokens = fn_spec_item(attrs, Some(result), term);
 
             f.block.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)));
             TS1::from(quote! {
@@ -249,7 +261,7 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
 
             let mut sig = s.sig.clone();
             sig.inputs.push(result);
-            let ensures_tokens = sig_spec_item(ens_name, sig, term);
+            let ensures_tokens = sig_spec_item(attrs, ens_name, sig, term);
             TS1::from(quote! {
               #ensures_tokens
               #[creusot::spec::ensures=#name_tag]
@@ -258,7 +270,6 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
         }
         ContractItem::Closure(mut clos) => {
             let req_body = req_body(&term);
-            let attrs = spec_attrs(&ens_name);
             let body = &clos.body;
             *clos.body = parse_quote!({
                 let res = #body;
@@ -274,6 +285,37 @@ pub fn ensures(attr: TS1, tokens: TS1) -> TS1 {
             })
         }
     }
+}
+
+#[proc_macro_attribute]
+pub fn prusti_requires(attr: TS1, tokens: TS1) -> TS1 {
+    let prusti_info = quote!(#[creusot::prusti::ts="old"]);
+    requires_helper(attr, tokens, prusti_info)
+}
+
+#[proc_macro_attribute]
+pub fn prusti_ensures(attr: TS1, tokens: TS1) -> TS1 {
+    let prusti_info = quote!(#[creusot::prusti::ts="curr"]);
+    ensures_helper(attr, tokens, prusti_info)
+}
+
+#[proc_macro_attribute]
+pub fn prusti_ensures_expiry(attr: TS1, tokens: TS1) -> TS1 {
+    let split = Punctuated::<TokenStream, Token![,]>::parse_separated_nonempty.parse(attr);
+    let split = match split {
+        Ok(split) => split,
+        Err(err) => return err.into_compile_error().into(),
+    };
+    let (prusti_info, rest) = if split.len() > 1 {
+        let mut iter = split.into_iter();
+        let (lifetime, rest) = (iter.next().unwrap().into(), iter.next().unwrap());
+        let lifetime: Lifetime = parse_macro_input!(lifetime);
+        let lifetime = format!("{}", lifetime);
+        (quote!(#[creusot::prusti::ts=#lifetime]), rest)
+    } else {
+        (quote!(#[creusot::prusti::ts="'_"]), split.into_iter().next().unwrap())
+    };
+    ensures_helper(rest.into(), tokens, prusti_info)
 }
 
 #[proc_macro_attribute]

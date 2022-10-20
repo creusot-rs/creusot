@@ -40,6 +40,7 @@ use log::*;
 use rustc_type_ir::{IntTy, UintTy};
 
 mod normalize;
+mod prusti;
 
 pub(crate) use normalize::*;
 
@@ -153,7 +154,8 @@ pub(crate) fn pearlite(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
 
     let lower = ThirTerm { tcx, item_id: id, thir: &thir };
 
-    lower.body_term(expr)
+    let res = lower.body_term(expr)?;
+    prusti::prusti_to_creusot(&lower, res)
 }
 
 struct ThirTerm<'a, 'tcx> {
