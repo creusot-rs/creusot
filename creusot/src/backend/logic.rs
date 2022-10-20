@@ -67,12 +67,6 @@ fn builtin_body<'tcx>(
     let (val_args, val_binders) = binders_to_args(ctx, sig.args);
     sig.args = val_binders;
 
-    def_id
-        .as_local()
-        .map(|d| ctx.def_span(d))
-        .and_then(|span| ctx.span_attr(span))
-        .map(|attr| sig.attrs.push(attr));
-
     // Check that we don't have both `builtins` and a contract at the same time (which are contradictory)
     if !sig.contract.is_empty() {
         ctx.crash_and_error(
@@ -137,12 +131,6 @@ fn body_module<'tcx>(
     if util::is_predicate(ctx.tcx, def_id) {
         sig.retty = None;
     }
-
-    def_id
-        .as_local()
-        .map(|d| ctx.def_span(d))
-        .and_then(|span| ctx.span_attr(span))
-        .map(|attr| sig.attrs.push(attr));
 
     let sig_contract = sig.clone();
     sig.contract = Contract::new();

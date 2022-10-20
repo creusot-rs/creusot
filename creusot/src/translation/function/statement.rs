@@ -50,11 +50,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         let rval: Expr<'tcx> = match rvalue {
             Rvalue::Use(rval) => match rval {
                 Move(pl) => {
-                    self.emit_statement(fmir::Statement::Resolve(*place));
+                    self.emit_resolve(*place);
                     Expr::Move(*pl)
                 }
                 Copy(pl) => {
-                    self.emit_statement(fmir::Statement::Resolve(*place));
+                    self.emit_resolve(*place);
                     Expr::Copy(*pl)
                 }
                 Constant(box c) => {

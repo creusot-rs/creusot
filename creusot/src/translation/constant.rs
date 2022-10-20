@@ -42,7 +42,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         let res = from_ty_const(self, constant, self.param_env(def_id), self.def_span(def_id));
         let mut names = CloneMap::new(self.tcx, def_id, crate::clone_map::CloneLevel::Body);
-        let res = res.to_why(self, &mut names, None, self.param_env(def_id));
+        let res = res.to_why(self, &mut names, None);
         let sig = signature_of(self, &mut names, def_id);
         let mut decls = names.to_clones(self);
         decls.push(Decl::Let(LetDecl {
