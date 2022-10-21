@@ -101,8 +101,8 @@ pub fn maintains_impl(attr: TS1, body: TS1) -> Result<TS1> {
     let post_toks = maintains_tokens(&maintains, false);
     let body = TokenStream::from(body);
     Ok(quote! {
-      #[requires(#pre_toks)]
-      #[ensures(#post_toks)]
+      #[::creusot_contracts::requires(#pre_toks)]
+      #[::creusot_contracts::ensures(#post_toks)]
       #body
     }
     .into())
