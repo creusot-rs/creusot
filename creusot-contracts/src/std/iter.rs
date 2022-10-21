@@ -3,15 +3,15 @@ pub use ::std::iter::*;
 
 mod empty;
 mod map_inv;
+mod once;
 mod range;
+mod repeat;
 mod skip;
 mod take;
-mod once;
 
 pub use map_inv::MapInv;
 pub use skip::SkipExt;
 pub use take::TakeExt;
-
 
 pub trait Iterator: ::std::iter::Iterator + Invariant {
     #[predicate]
@@ -137,6 +137,10 @@ extern_spec! {
             #[ensures(@result == Some(value))]
             #[ensures(result.invariant())]
             fn once<T>(value: T) -> Once<T>;
+
+            #[ensures(@result == elt)]
+            #[ensures(result.invariant())]
+            fn repeat<T: Clone>(elt: T) -> Repeat<T>;
         }
     }
 }
