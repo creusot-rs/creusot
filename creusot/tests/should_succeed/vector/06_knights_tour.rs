@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{derive::Clone, logic::Int, *};
+use creusot_contracts::{std::clone::Clone, *};
 
 #[derive(Copy, Clone)]
 struct Point {
@@ -38,18 +38,12 @@ impl Board {
     #[ensures(result.size == size)]
     #[ensures(result.wf())]
     fn new(size: usize) -> Self {
-        let mut rows: Vec<Vec<_>> = Vec::with_capacity(size);
-
-        let mut i = 0;
-        #[invariant(i_size, i <= size)]
-        #[invariant(rows,
-            forall<j : Int> 0 <= j && j < @i ==> (@(@rows)[j]).len() == @size)]
-        #[invariant(row_len, (@rows).len() == @i )]
-        while i < size {
-            rows.push(vec![0; size]);
-            i += 1;
-        }
-
+        let rows = (0..size)
+            .map_inv(
+                #[ensures((@result).len() == @size)]
+                |_, _| vec![0; size],
+            )
+            .collect();
         Self { size, field: rows }
     }
 
@@ -76,14 +70,12 @@ impl Board {
     fn count_degree(&self, p: Point) -> usize {
         let mut count = 0;
 
-        let mut i = 0;
-        #[invariant(count, count <= i)]
-        while i < moves().len() {
-            let next = p.mov(&moves()[i]);
+        #[invariant(count, @count <= produced.len())]
+        for m in moves() {
+            let next = p.mov(&m);
             if self.available(next) {
                 count += 1;
             }
-            i += 1;
         }
         count
     }
@@ -117,20 +109,18 @@ fn moves() -> Vec<(isize, isize)> {
 #[ensures(forall<r: &(usize, Point)> result == Some(r) ==>
           exists<i:Int> 0 <= i && i < (@v).len() && (@v)[i] == *r)]
 fn min(v: &Vec<(usize, Point)>) -> Option<&(usize, Point)> {
-    let mut i = 0;
     let mut min = None;
     #[invariant(post, forall<r: &(usize, Point)> min == Some(r) ==>
                       exists<i:Int> 0 <= i && i < (@v).len() && (@v)[i] == *r)]
-    while i < v.len() {
+    for x in v {
         match min {
-            None => min = Some(&v[i]),
+            None => min = Some(x),
             Some(m) => {
-                if v[i].0 < m.0 {
-                    min = Some(&v[i])
+                if x.0 < m.0 {
+                    min = Some(x)
                 }
             }
         };
-        i += 1;
     }
     min
 }
@@ -146,37 +136,29 @@ fn dumb_nonlinear_arith(a: usize) {}
 pub fn knights_tour(size: usize, x: usize, y: usize) -> Option<Board> {
     let mut board = Board::new(size);
     let mut p = Point { x: x as isize, y: y as isize };
-    let mut step = 1;
-
-    board.set(p, step);
-    step += 1;
+    board.set(p, 1);
 
     ghost! { dumb_nonlinear_arith(size) };
     #[invariant(b, board.size == size)]
     #[invariant(b, board.wf())]
     #[invariant(p, board.in_bounds(p))]
-    // rather annoyingly z3 gets stuck proving size * size is inbounds, seemingly
-    // due to a why3 bug / limitation in mlcfg
-    while step <= (size * size) {
+    for step in 2..(size * size) {
         // choose next square by Warnsdorf's rule
         let mut candidates: Vec<(usize, Point)> = Vec::new();
-        let mut i = 0;
         #[invariant(c, forall<i: Int> 0 <= i && i < (@candidates).len() ==>
                     board.in_bounds((@candidates)[i].1))]
-        while i < moves().len() {
-            let adj = p.mov(&moves()[i]);
+        for m in moves() {
+            let adj = p.mov(&m);
             if board.available(adj) {
                 let degree = board.count_degree(adj);
                 candidates.push((degree, adj));
             }
-            i += 1;
         }
         match min(&candidates) {
             Some(&(_, adj)) => p = adj,
             None => return None,
         };
         board.set(p, step);
-        step += 1;
     }
     Some(board)
 }

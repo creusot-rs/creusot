@@ -125,6 +125,7 @@ pub fn lower(loop_: Loop) -> TokenStream {
 
 // Lowers for loops to `loop` and inserts the structural invariant that we get 'for free'
 fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
+    let lbl = f.label;
     let pat = f.pat;
     let iter = f.expr;
     let body = f.body;
@@ -139,24 +140,33 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
         Invariant {
             name: Ident::new("structural", Span::call_site()),
             span: Span::call_site(),
-            invariant: parse_quote! { (#iter_old).produces(*#produced, #it) },
+            invariant: parse_quote! { ::creusot_contracts::std::iter::Iterator::produces(#iter_old.inner(), #produced.inner(), #it) },
+        },
+    );
+
+    invariants.insert(
+        0,
+        Invariant {
+            name: Ident::new("type_invariant", Span::call_site()),
+            span: Span::call_site(),
+            invariant: parse_quote! { ::creusot_contracts::invariant::Invariant::invariant(#it) },
         },
     );
 
     let elem = Ident::new("i", proc_macro::Span::def_site().into());
 
     quote! { {
-        use creusot_contracts::std::iter::Iterator;
-        let mut #it = (#iter).into_iter();
+        let mut #it = ::std::iter::IntoIterator::into_iter(#iter);
         let #iter_old = ghost! { #it };
-        let mut #produced = ghost! { creusot_contracts::logic::Seq::EMPTY };
+        let mut #produced = ghost! { ::creusot_contracts::logic::Seq::EMPTY };
         #(#invariants;)*
         #(#outer)*
+        #lbl
         loop {
             #(#inner)*
-            match #it.next() {
+            match ::std::iter::Iterator::next(&mut #it) {
                 Some(#elem) => {
-                    #produced = ghost! { #produced.inner().push(#elem) };
+                    #produced = ghost! { #produced.inner().concat(::creusot_contracts::logic::Seq::singleton(#elem)) };
                     let #pat = #elem;
                     #body
                 },

@@ -1,14 +1,9 @@
-use crate as creusot_contracts;
 use crate::{
-    logic::*,
-    std::{default::Default, iter::Iterator},
-    DeepModel, Resolve, ShallowModel,
+    invariant::Invariant,
+    std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
+    *,
 };
-use creusot_contracts_proc::*;
-use std::{
-    ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
-    slice::{Iter, IterMut},
-};
+pub use ::std::slice::*;
 
 impl<T> ShallowModel for [T] {
     type ShallowModelTy = Seq<T>;
@@ -56,7 +51,34 @@ impl<T> Default for &[T] {
     }
 }
 
-pub(crate) trait SliceIndex<T: ?Sized>: std::slice::SliceIndex<T>
+pub trait SliceExt<T> {
+    #[logic]
+    fn to_mut_seq(&mut self) -> Seq<&mut T>;
+
+    #[logic]
+    fn to_ref_seq(&self) -> Seq<&T>;
+}
+
+impl<T> SliceExt<T> for [T] {
+    #[logic]
+    #[trusted]
+    #[ensures(result.len() == (@self).len())]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == (@self)[i])]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> ^result[i] == (@^self)[i])]
+    fn to_mut_seq(&mut self) -> Seq<&mut T> {
+        pearlite! { absurd }
+    }
+
+    #[logic]
+    #[trusted]
+    #[ensures(result.len() == (@self).len())]
+    #[ensures(forall<i : _> 0 <= i && i < result.len() ==> *result[i] == (@self)[i])]
+    fn to_ref_seq(&self) -> Seq<&T> {
+        pearlite! { absurd }
+    }
+}
+
+pub(crate) trait SliceIndex<T: ?Sized>: ::std::slice::SliceIndex<T>
 where
     T: ShallowModel,
 {
@@ -190,13 +212,9 @@ extern_spec! {
         #[ensures((@^self).exchange(@self, @i, @j))]
         fn swap(&mut self, i: usize, j: usize);
 
-        #[ensures(
-            ix.in_bounds(@self)
-            ==> exists<r: &<I as std::slice::SliceIndex<[T]>>::Output> result == Some(r)
-                && ix.has_value(@self_, *r)
-        )]
+        #[ensures(ix.in_bounds(@self) ==> exists<r: _> result == Some(r) && ix.has_value(@self_, *r))]
         #[ensures(ix.in_bounds(@self) || result == None)]
-        fn get<I : SliceIndex<[T]>>(&self, ix: I) -> Option<&<I as std::slice::SliceIndex<[T]>>::Output>;
+        fn get<I : SliceIndex<[T]>>(&self, ix: I) -> Option<&<I as ::std::slice::SliceIndex<[T]>>::Output>;
 
         #[requires(@mid <= (@self).len())]
         #[ensures({
@@ -230,18 +248,25 @@ extern_spec! {
         })]
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
 
-        #[ensures(@result == @self)]
+        #[ensures(@result == self)]
+        #[ensures(result.invariant())]
         fn iter(&self) -> Iter<'_, T>;
 
-        #[ensures(*@result == @self)]
-        #[ensures(^@result == @^self)]
-        #[ensures((^@result).len() == (@self).len())]
+        #[ensures(@result == self)]
+        #[ensures(result.invariant())]
         fn iter_mut(&mut self) -> IterMut<'_, T>;
     }
 
     impl<'a, T> IntoIterator for &'a [T] {
-        #[ensures(@result == @self)]
+        #[ensures(@result == self)]
+        #[ensures(result.invariant())]
         fn into_iter(self) -> Iter<'a, T>;
+    }
+
+    impl<'a, T> IntoIterator for &'a mut[T] {
+        #[ensures(@result == self)]
+        #[ensures(result.invariant())]
+        fn into_iter(self) -> IterMut<'a, T>;
     }
 
     impl<T, I> IndexMut<I> for [T]
@@ -255,15 +280,15 @@ extern_spec! {
     }
 
     impl<T, I> Index<I> for [T]
-    where I : SliceIndex<[T]> {
+        where I : SliceIndex<[T]> {
       #[requires(ix.in_bounds(@self))]
       #[ensures(ix.has_value(@self, *result))]
       fn index(&self, ix: I) -> &<[T] as Index<I>>::Output;
     }
 }
 
-impl<T> ShallowModel for Iter<'_, T> {
-    type ShallowModelTy = Seq<T>;
+impl<'a, T> ShallowModel for Iter<'a, T> {
+    type ShallowModelTy = &'a [T];
 
     #[logic]
     #[trusted]
@@ -272,30 +297,23 @@ impl<T> ShallowModel for Iter<'_, T> {
     }
 }
 
-impl<'a, T> ShallowModel for IterMut<'a, T> {
-    type ShallowModelTy = &'a mut Seq<T>;
-
-    #[logic]
-    #[trusted]
-    #[ensures((^result).len() == result.len())]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        absurd
+impl<T> Invariant for Iter<'_, T> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        true
     }
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && @self == Seq::EMPTY }
+        pearlite! { self.resolve() && @*@self == Seq::EMPTY }
     }
 
     #[predicate]
-    fn produces(self, visited: Seq<Self::Item>, rhs: Self) -> bool {
+    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
-            (@self).len() == visited.len() + (@rhs).len() &&
-            (@self).subsequence(visited.len(), (@self).len()).ext_eq(@rhs) &&
-            (forall<i : Int> 0 <= i && i < visited.len() ==>
-                (@self)[i] == *visited[i])
+            (@self).to_ref_seq() == visited.concat((@tl).to_ref_seq())
         }
     }
 
@@ -310,21 +328,43 @@ impl<'a, T> Iterator for Iter<'a, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
+impl<'a, T> ShallowModel for IterMut<'a, T> {
+    type ShallowModelTy = &'a mut [T];
+
+    #[logic]
+    #[trusted]
+    #[ensures((@^result).len() == (@*result).len())]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        absurd
+    }
+}
+
+#[trusted]
+impl<'a, T> Resolve for IterMut<'a, T> {
+    #[predicate]
+    fn resolve(self) -> bool {
+        pearlite! { *@self == ^@self }
+    }
+}
+
+impl<'a, T> Invariant for IterMut<'a, T> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        // Property that is always true but we must carry around..
+        pearlite! { (@^@self).len() == (@*@self).len() }
+    }
+}
+
 impl<'a, T> Iterator for IterMut<'a, T> {
     #[predicate]
     fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && *@self == Seq::EMPTY }
+        pearlite! { self.resolve() && @*@self == Seq::EMPTY }
     }
 
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         pearlite! {
-            (@self).len() == visited.len() + (@tl).len() &&
-            (^@self).len() == visited.len() + (^@tl).len() &&
-            (@self).subsequence(visited.len(), (@self).len()).ext_eq(*@tl) &&
-            (^@self).subsequence(visited.len(), (^@self).len()).ext_eq(^@tl)&&
-            (forall<i : Int> 0 <= i && i < visited.len() ==>
-                (@self)[i] == *visited[i] && (^@self)[i] == ^visited[i])
+            (@self).to_mut_seq() == visited.concat((@tl).to_mut_seq())
         }
     }
 

@@ -18,7 +18,7 @@ use creusot_rustc::{
         def_id::{DefId, LocalDefId},
         HirId, OwnerId,
     },
-    macros::{Decodable, Encodable, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
+    macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
     middle::{
         mir::Mutability::*,
         thir::{
@@ -77,7 +77,7 @@ pub struct Term<'tcx> {
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum TermKind<'tcx> {
     Var(Symbol),
-    Lit(Literal),
+    Lit(Literal<'tcx>),
     Item(DefId, SubstsRef<'tcx>),
     Binary { op: BinOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Unary { op: UnOp, arg: Box<Term<'tcx>> },
@@ -98,7 +98,7 @@ pub enum TermKind<'tcx> {
     Reborrow { cur: Box<Term<'tcx>>, fin: Box<Term<'tcx>> },
     Absurd,
 }
-impl<'tcx> TypeFoldable<'tcx> for Literal {
+impl<'tcx> TypeFoldable<'tcx> for Literal<'tcx> {
     fn try_fold_with<F: creusot_rustc::middle::ty::FallibleTypeFolder<'tcx>>(
         self,
         _: &mut F,
@@ -107,7 +107,7 @@ impl<'tcx> TypeFoldable<'tcx> for Literal {
     }
 }
 
-impl<'tcx> TypeVisitable<'tcx> for Literal {
+impl<'tcx> TypeVisitable<'tcx> for Literal<'tcx> {
     fn visit_with<V: creusot_rustc::middle::ty::TypeVisitor<'tcx>>(
         &self,
         _: &mut V,
@@ -116,8 +116,9 @@ impl<'tcx> TypeVisitable<'tcx> for Literal {
     }
 }
 
-#[derive(Clone, Debug, Decodable, Encodable)]
-pub enum Literal {
+// FIXME: Clean up this type: clarify use of ZST, Function, Integer types
+#[derive(Clone, Debug, TyDecodable, TyEncodable)]
+pub enum Literal<'tcx> {
     Bool(bool),
     // TODO: Find a way to make this a BigInt type
     Integer(i128),
@@ -126,7 +127,7 @@ pub enum Literal {
     Float(f64),
     String(String),
     ZST,
-    Function,
+    Function(DefId, SubstsRef<'tcx>),
 }
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]

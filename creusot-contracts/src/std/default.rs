@@ -1,8 +1,7 @@
-use crate as creusot_contracts;
+use crate::*;
+pub use ::std::default::*;
 
-use creusot_contracts_proc::*;
-
-pub trait Default: std::default::Default {
+pub trait Default: ::std::default::Default {
     #[predicate]
     fn is_default(self) -> bool;
 }

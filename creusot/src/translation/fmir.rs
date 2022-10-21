@@ -1,13 +1,13 @@
 use super::{
-    function::place,
-    specification::{lower_literal, lower_pure},
+    function::{place, LocalIdent},
+    specification::{lower_impure, lower_pure},
     traits,
     ty::translate_ty,
 };
 use crate::{
     clone_map::PreludeModule,
     ctx::{item_name, CloneMap, TranslationCtx},
-    pearlite::{Literal, Term},
+    pearlite::Term,
     translation::{binop_to_binop, function::place::translate_rplace_inner, unop_to_unop},
     util::item_qname,
 };
@@ -15,10 +15,11 @@ use creusot_rustc::{
     hir::{def::DefKind, def_id::DefId, Unsafety},
     middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyKind, TypeVisitable},
     resolve::Namespace,
-    smir::mir::{BasicBlock, BinOp, Body, Place, UnOp},
+    smir::mir::{self, BasicBlock, BinOp, Place, UnOp},
     span::{Span, Symbol, DUMMY_SP},
     target::abi::VariantIdx,
 };
+use indexmap::IndexMap;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     exp::{Exp, Pattern},
@@ -29,11 +30,15 @@ use why3::{
 
 pub enum Statement<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>),
-    Resolve(Place<'tcx>),
+    // TODO: Remove `Resolve` and replace it with `Assume`.
+    // The reason I have not done this yet is that it would require transforming a `Place` to a `Term`.
+    Resolve(DefId, SubstsRef<'tcx>, Place<'tcx>),
     Assertion(Term<'tcx>),
     Invariant(Symbol, Term<'tcx>),
 }
 
+// Re-organize this completely
+// Get rid of Expr and reimpose a more traditional statement-rvalue-operand setup
 pub enum RValue<'tcx> {
     Ghost(Term<'tcx>),
     Borrow(Place<'tcx>),
@@ -47,14 +52,13 @@ pub enum Expr<'tcx> {
     BinOp(BinOp, Ty<'tcx>, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
     UnaryOp(UnOp, Box<Expr<'tcx>>),
     Constructor(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
+    // Should this be a statement?
     Call(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
-    Constant(Literal),
+    Constant(Term<'tcx>),
     Cast(Box<Expr<'tcx>>, Ty<'tcx>, Ty<'tcx>),
     Tuple(Vec<Expr<'tcx>>),
     Span(Span, Box<Expr<'tcx>>),
     Len(Box<Expr<'tcx>>),
-    // Migration escape hatch
-    Exp(why3::exp::Exp),
 }
 
 impl<'tcx> Expr<'tcx> {
@@ -62,7 +66,8 @@ impl<'tcx> Expr<'tcx> {
         self,
         ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
-        body: Option<&Body<'tcx>>,
+        // TODO: Get rid of this by introducing an intermediate `Place` type
+        body: Option<&mir::Body<'tcx>>,
     ) -> Exp {
         match self {
             Expr::Place(pl) => {
@@ -148,11 +153,10 @@ impl<'tcx> Expr<'tcx> {
                 };
                 exp
             }
-            Expr::Constant(c) => lower_literal(ctx, names, c),
+            Expr::Constant(c) => lower_impure(ctx, names, c),
             Expr::Tuple(f) => {
                 Exp::Tuple(f.into_iter().map(|f| f.to_why(ctx, names, body)).collect())
             }
-            Expr::Exp(e) => e,
             Expr::Span(sp, e) => {
                 let e = e.to_why(ctx, names, body);
                 ctx.attach_span(sp, e)
@@ -208,7 +212,6 @@ impl<'tcx> Expr<'tcx> {
             Expr::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
             Expr::Span(_, e) => e.invalidated_places(places),
             Expr::Len(e) => e.invalidated_places(places),
-            Expr::Exp(_) => {}
         }
     }
 }
@@ -284,7 +287,8 @@ impl<'tcx> Terminator<'tcx> {
         self,
         ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
-        body: Option<&Body<'tcx>>,
+        // TODO: Get rid of this by introducing an intermediate `Place` type
+        body: Option<&mir::Body<'tcx>>,
     ) -> why3::mlcfg::Terminator {
         use why3::mlcfg::Terminator::*;
         match self {
@@ -377,43 +381,31 @@ impl<'tcx> Block<'tcx> {
         self,
         ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
-        body: &Body<'tcx>,
-        param_env: ParamEnv<'tcx>,
+        // TODO: Get rid of this by introducing an intermediate `Place` type
+        body: &mir::Body<'tcx>,
     ) -> why3::mlcfg::Block {
         mlcfg::Block {
-            statements: self
-                .stmts
-                .into_iter()
-                .flat_map(|s| s.to_why(ctx, names, body, param_env))
-                .collect(),
+            statements: self.stmts.into_iter().flat_map(|s| s.to_why(ctx, names, body)).collect(),
             terminator: self.terminator.to_why(ctx, names, Some(body)),
         }
     }
 }
 
-// pub struct Builder<'tcx> {
-//     blocks: IndexMap<BasicBlock, Block<'tcx>>,
-//     current: Block<'tcx>,
-//     block_id: BasicBlock,
-// }
-
-// impl<'tcx> Builder<'tcx> {
-//     pub(crate) fn new() -> Self {
-//         Builder {
-//             blocks: Default::default(),
-//             block_id: BasicBlock::MAX,
-//             current: Block { stmts: Vec::new(), terminator: None },
-//         }
-//     }
-// }
+pub struct Body<'tcx> {
+    // TODO: Split into return local, args, and true locals?
+    // TODO: Remove usage of `LocalIdent`.
+    pub(crate) locals: Vec<(LocalIdent, Span, Ty<'tcx>)>,
+    pub(crate) arg_count: usize,
+    pub(crate) blocks: IndexMap<BasicBlock, Block<'tcx>>,
+}
 
 impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
-        body: &Body<'tcx>,
-        param_env: ParamEnv<'tcx>,
+        // TODO: Get rid of this by introducing an intermediate `Place` type
+        body: &mir::Body<'tcx>,
     ) -> Vec<mlcfg::Statement> {
         match self {
             Statement::Assignment(lhs, RValue::Borrow(rhs)) => {
@@ -426,7 +418,7 @@ impl<'tcx> Statement<'tcx> {
                 ]
             }
             Statement::Assignment(lhs, RValue::Ghost(rhs)) => {
-                let ghost = lower_pure(ctx, names, param_env, rhs);
+                let ghost = lower_pure(ctx, names, rhs);
 
                 vec![place::create_assign_inner(ctx, names, body, &lhs, ghost)]
             }
@@ -441,33 +433,31 @@ impl<'tcx> Statement<'tcx> {
                 }
                 exps
             }
-            Statement::Resolve(pl) => {
-                match resolve_predicate_of(ctx, names, param_env, pl.ty(body, ctx.tcx).ty) {
-                    Some(rp) => {
-                        let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, Some(body)));
-                        vec![mlcfg::Statement::Assume(assume)]
-                    }
-                    None => Vec::new(),
-                }
+            Statement::Resolve(id, subst, pl) => {
+                ctx.translate(id);
+
+                let rp = Exp::impure_qvar(names.insert(id, subst).qname(ctx.tcx, id));
+
+                let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, Some(body)));
+                vec![mlcfg::Statement::Assume(assume)]
             }
             Statement::Assertion(a) => {
-                vec![mlcfg::Statement::Assert(lower_pure(ctx, names, param_env, a))]
+                vec![mlcfg::Statement::Assert(lower_pure(ctx, names, a))]
             }
 
             Statement::Invariant(nm, inv) => vec![mlcfg::Statement::Invariant(
                 nm.to_string().into(),
-                lower_pure(ctx, names, param_env, inv),
+                lower_pure(ctx, names, inv),
             )],
         }
     }
 }
 
-fn resolve_predicate_of<'tcx>(
+pub(crate) fn resolve_predicate_of2<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
-) -> Option<why3::exp::Exp> {
+) -> Option<(DefId, SubstsRef<'tcx>)> {
     if !super::function::resolve_trait_loaded(ctx.tcx) {
         ctx.warn(
             DUMMY_SP,
@@ -476,34 +466,19 @@ fn resolve_predicate_of<'tcx>(
         return None;
     }
 
-    let trait_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap();
     let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
     let subst = ctx.mk_substs([GenericArg::from(ty)].iter());
 
-    let resolve_impl = traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst);
+    let resolve_impl = traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
 
-    match resolve_impl {
-        Some(method) => {
-            if !ty.still_further_specializable()
-                && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), method.0)
-                && !method.1.type_at(0).is_closure()
-            {
-                return None;
-            }
-            ctx.translate(method.0);
-
-            Some(why3::exp::Exp::impure_qvar(
-                names.insert(method.0, method.1).qname(ctx.tcx, method.0),
-            ))
-        }
-        None => {
-            ctx.translate(trait_id);
-
-            Some(why3::exp::Exp::impure_qvar(
-                names.insert(trait_meth_id, subst).qname(ctx.tcx, trait_meth_id),
-            ))
-        }
+    if !ty.still_further_specializable()
+        && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_impl.0)
+        && !resolve_impl.1.type_at(0).is_closure()
+    {
+        return None;
     }
+
+    Some(resolve_impl)
 }
 
 pub(crate) fn int_from_int(ity: &IntTy) -> Exp {

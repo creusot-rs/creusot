@@ -2,7 +2,7 @@ use super::{
     pearlite::{normalize, pearlite_stub, Term, TermKind},
     LocalIdent,
 };
-use crate::{ctx::*, util, util::closure_owner};
+use crate::{ctx::*, util};
 use creusot_rustc::{
     hir::def_id::DefId,
     macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
@@ -49,20 +49,17 @@ impl<'tcx> PreContract<'tcx> {
         self,
         ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
-        id: DefId,
     ) -> Contract {
         let mut out = Contract::new();
-        let param_env = ctx.param_env(closure_owner(ctx.tcx, id));
-
         for term in self.requires {
-            out.requires.push(lower_pure(ctx, names, param_env, term));
+            out.requires.push(lower_pure(ctx, names, term));
         }
         for term in self.ensures {
-            out.ensures.push(lower_pure(ctx, names, param_env, term));
+            out.ensures.push(lower_pure(ctx, names, term));
         }
 
         if let Some(term) = self.variant {
-            out.variant = vec![lower_pure(ctx, names, param_env, term)];
+            out.variant = vec![lower_pure(ctx, names, term)];
         }
 
         out

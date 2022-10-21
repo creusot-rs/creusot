@@ -30,8 +30,8 @@ pub fn derive_clone(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 fn add_trait_bounds(mut generics: Generics) -> Generics {
     for param in &mut generics.params {
         if let GenericParam::Type(ref mut type_param) = *param {
-            type_param.bounds.push(parse_quote!(std::clone::Clone));
-            // type_param.bounds.push(parse_quote!(creusot_contracts::DeepModel));
+            type_param.bounds.push(parse_quote!(::std::clone::Clone));
+            // type_param.bounds.push(parse_quote!(::creusot_contracts::model::DeepModel));
         }
     }
     generics

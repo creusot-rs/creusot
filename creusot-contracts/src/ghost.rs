@@ -1,6 +1,4 @@
-use crate as creusot_contracts;
-use crate::{macros::*, ShallowModel};
-use core::ops::Deref;
+use crate::{std::ops::Deref, *};
 
 #[cfg_attr(feature = "contracts", creusot::builtins = "prelude.Ghost.ghost_ty")]
 pub struct Ghost<T>(std::marker::PhantomData<T>)

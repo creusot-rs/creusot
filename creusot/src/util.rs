@@ -15,7 +15,7 @@ use creusot_rustc::{
     macros::{TypeFoldable, TypeVisitable},
     middle::ty::{self, subst::SubstsRef, DefIdTree, ReErased, Ty, TyCtxt, TyKind, VariantDef},
     resolve::Namespace,
-    span::{symbol, Span, Symbol, DUMMY_SP},
+    span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP},
 };
 use indexmap::IndexMap;
 use rustc_middle::ty::{ClosureKind, RegionKind};
@@ -28,7 +28,6 @@ use why3::{
     declaration,
     declaration::{LetKind, Signature, ValDecl},
     exp::Binder,
-    ty::Type,
     Ident, QName,
 };
 
@@ -99,14 +98,6 @@ pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::A
         .into_iter()
         .map(|a| declaration::Attribute::Attr(a.value_str().unwrap().as_str().into()))
         .collect()
-}
-
-pub(crate) fn closure_owner(tcx: TyCtxt, mut def_id: DefId) -> DefId {
-    while tcx.is_closure(def_id) {
-        def_id = tcx.parent(def_id);
-    }
-
-    def_id
 }
 
 pub(crate) fn param_def_id(tcx: TyCtxt, def_id: LocalDefId) -> LocalDefId {
@@ -272,6 +263,9 @@ impl ItemType {
             ItemType::Program | ItemType::Closure => {
                 ValDecl { sig, ghost: false, val: true, kind: None }
             }
+            ItemType::Constant => {
+                ValDecl { sig, ghost: false, val: true, kind: Some(LetKind::Constant) }
+            }
             _ => unreachable!(),
         }
     }
@@ -333,7 +327,8 @@ pub(crate) fn inputs_and_output<'tcx>(
                 let env_region = ReErased;
                 let env_ty = tcx.closure_env_ty(def_id, subst, env_region).unwrap();
 
-                let closure_env = (creusot_rustc::span::symbol::Ident::empty(), env_ty);
+                // I wish this could be called "self"
+                let closure_env = (symbol::Ident::empty(), env_ty);
                 let names = tcx
                     .fn_arg_names(def_id)
                     .iter()
@@ -344,7 +339,7 @@ pub(crate) fn inputs_and_output<'tcx>(
                     sig.output(),
                 )
             }
-            _ => unreachable!(),
+            _ => (box iter::empty(), tcx.type_of(def_id)),
         };
     (inputs, output)
 }
@@ -375,14 +370,26 @@ pub(crate) fn pre_sig_of<'tcx>(
     }
 
     if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-        let mut pre_subst =
-            closure_capture_subst(ctx.tcx, def_id, subst, subst.as_closure().kind(), false);
+        let mut pre_subst = closure_capture_subst(
+            ctx.tcx,
+            def_id,
+            subst,
+            subst.as_closure().kind(),
+            Symbol::intern("_1'"),
+            false,
+        );
         for pre in &mut contract.requires {
             pre_subst.visit_mut_term(pre);
         }
 
-        let mut post_subst =
-            closure_capture_subst(ctx.tcx, def_id, subst, subst.as_closure().kind(), true);
+        let mut post_subst = closure_capture_subst(
+            ctx.tcx,
+            def_id,
+            subst,
+            subst.as_closure().kind(),
+            Symbol::intern("_1'"),
+            true,
+        );
         for post in &mut contract.ensures {
             post_subst.visit_mut_term(post);
         }
@@ -390,27 +397,35 @@ pub(crate) fn pre_sig_of<'tcx>(
         assert!(contract.variant.is_none());
     }
 
-    PreSignature { inputs: inputs.map(|(i, ty)| (i.name, i.span, ty)).collect(), output, contract }
+    let mut inputs: Vec<_> = inputs.map(|(i, ty)| (i.name, i.span, ty)).collect();
+    if ctx.type_of(def_id).is_fn() && inputs.is_empty() {
+        inputs.push((kw::Empty, DUMMY_SP, ctx.tcx.types.unit));
+    };
+
+    PreSignature { inputs, output, contract }
 }
 
 pub(crate) fn sig_to_why3<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     pre_sig: PreSignature<'tcx>,
+    // FIXME: Get rid of this def id
+    // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
     def_id: DefId,
 ) -> Signature {
-    let contract = names.with_public_clones(|names| pre_sig.contract.to_exp(ctx, names, def_id));
+    let contract = names.with_public_clones(|names| pre_sig.contract.to_exp(ctx, names));
 
     let name = item_name(ctx.tcx, def_id, Namespace::ValueNS);
 
     let span = ctx.tcx.def_span(def_id);
-    let mut args: Vec<Binder> = names.with_public_clones(|names| {
+    let args: Vec<Binder> = names.with_public_clones(|names| {
         pre_sig
             .inputs
             .into_iter()
             .enumerate()
             .map(|(ix, (id, sp, ty))| {
                 let ty = translation::ty::translate_ty(ctx, names, span, ty);
+                // I dont like this
                 let id = if id.is_empty() {
                     format!("{}", AnonymousParamName(ix)).into()
                 } else if id == Symbol::intern("result") {
@@ -423,14 +438,15 @@ pub(crate) fn sig_to_why3<'tcx>(
             .collect()
     });
 
-    if args.is_empty() {
-        args.push(Binder::wild(Type::UNIT));
-    };
-
     let mut attrs = why3_attrs(ctx.tcx, def_id);
     if matches!(item_type(ctx.tcx, def_id), ItemType::Program | ItemType::Closure) {
         attrs.push(declaration::Attribute::Attr("cfg:stackify".into()))
     };
+    def_id
+        .as_local()
+        .map(|d| ctx.def_span(d))
+        .and_then(|span| ctx.span_attr(span))
+        .map(|attr| attrs.push(attr));
 
     let retty = names.with_public_clones(|names| {
         translation::ty::translate_ty(ctx, names, span, pre_sig.output)
@@ -664,6 +680,7 @@ pub(crate) fn closure_capture_subst<'tcx>(
     cs: SubstsRef<'tcx>,
     // What kind of substitution we should generate. The same precondition can be used in several ways
     ck: ty::ClosureKind,
+    self_name: Symbol,
     is_post: bool,
 ) -> ClosureSubst {
     let mut fun_def_id = def_id;
@@ -683,7 +700,7 @@ pub(crate) fn closure_capture_subst<'tcx>(
         ClosureKind::FnOnce => tcx.type_of(def_id),
     };
 
-    let self_ = Term { ty, kind: TermKind::Var(Symbol::intern("_1'")), span: DUMMY_SP };
+    let self_ = Term { ty, kind: TermKind::Var(self_name), span: DUMMY_SP };
 
     let subst =
         captures.into_iter().enumerate().map(|(ix, (nm, ty))| (*nm, (ty, ix.into()))).collect();

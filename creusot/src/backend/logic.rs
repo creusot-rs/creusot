@@ -54,7 +54,7 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
     } else {
         body_module(ctx, def_id)
     };
-    let proof_modl = proof_module(ctx, def_id);
+    let proof_modl = if def_id.is_local() { proof_module(ctx, def_id) } else { None };
     (stub_module(ctx, def_id), body_modl, proof_modl, has_axioms, deps)
 }
 
@@ -66,12 +66,6 @@ fn builtin_body<'tcx>(
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
     let (val_args, val_binders) = binders_to_args(ctx, sig.args);
     sig.args = val_binders;
-
-    def_id
-        .as_local()
-        .map(|d| ctx.def_span(d))
-        .and_then(|span| ctx.span_attr(span))
-        .map(|attr| sig.attrs.push(attr));
 
     // Check that we don't have both `builtins` and a contract at the same time (which are contradictory)
     if !sig.contract.is_empty() {
@@ -138,12 +132,6 @@ fn body_module<'tcx>(
         sig.retty = None;
     }
 
-    def_id
-        .as_local()
-        .map(|d| ctx.def_span(d))
-        .and_then(|span| ctx.span_attr(span))
-        .map(|attr| sig.attrs.push(attr));
-
     let sig_contract = sig.clone();
     sig.contract = Contract::new();
 
@@ -157,7 +145,7 @@ fn body_module<'tcx>(
         decls.push(Decl::ValDecl(ValDecl { sig: val_sig, ghost: false, val: true, kind: None }));
     } else {
         let term = ctx.term(def_id).unwrap().clone();
-        let body = specification::lower_pure(ctx, &mut names, ctx.param_env(def_id), term);
+        let body = specification::lower_pure(ctx, &mut names, term);
         decls.extend(names.to_clones(ctx));
 
         if sig_contract.contract.variant.is_empty() {
@@ -206,7 +194,7 @@ fn body_module<'tcx>(
     (Module { name, decls }, names.summary())
 }
 
-fn stub_module(ctx: &mut TranslationCtx, def_id: DefId) -> Module {
+pub(crate) fn stub_module(ctx: &mut TranslationCtx, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
 
@@ -242,7 +230,7 @@ fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
         return None;
     }
     let term = ctx.term(def_id).unwrap().clone();
-    let body = specification::lower_impure(ctx, &mut names, def_id, ctx.param_env(def_id), term);
+    let body = specification::lower_impure(ctx, &mut names, term);
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));

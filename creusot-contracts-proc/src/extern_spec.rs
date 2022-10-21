@@ -91,7 +91,10 @@ impl ExternSpecs {
                 ExprPath {
                     attrs: Vec::new(),
                     qself: None,
-                    path: Path { leading_colon: Default::default(), segments: Punctuated::new() },
+                    path: Path {
+                        leading_colon: Some(Default::default()),
+                        segments: Punctuated::new(),
+                    },
                 },
                 None,
                 &mut specs,

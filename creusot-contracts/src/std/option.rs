@@ -1,6 +1,5 @@
-use crate as creusot_contracts;
-use crate::{std::default::Default, Resolve};
-use creusot_contracts_proc::*;
+use crate::*;
+pub use ::std::option::*;
 
 extern_spec! {
     mod std {

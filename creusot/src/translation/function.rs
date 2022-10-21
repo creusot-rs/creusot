@@ -1,4 +1,7 @@
-use super::{fmir::RValue, pearlite::Term};
+use super::{
+    fmir::{resolve_predicate_of2, RValue},
+    pearlite::Term,
+};
 use crate::{
     backend::term::lower_pure,
     ctx::*,
@@ -24,16 +27,17 @@ use creusot_rustc::{
         mir::{traversal::reverse_postorder, MirPass},
         ty::{
             subst::{GenericArg, SubstsRef},
-            DefIdTree, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind,
-            TypeVisitable, WithOptConstParam,
+            DefIdTree, EarlyBinder, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt,
+            TyKind, TypeVisitable, WithOptConstParam,
         },
     },
     smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo},
-    span::{Symbol, DUMMY_SP},
+    span::{Span, Symbol, DUMMY_SP},
     transform::{remove_false_edges::*, simplify::*},
 };
 use indexmap::IndexMap;
-use std::{collections::BTreeMap, rc::Rc};
+use rustc_middle::ty::UpvarCapture;
+use std::rc::Rc;
 use why3::{declaration::*, exp::*, mlcfg::*, ty::Type, Ident};
 
 pub(crate) mod place;
@@ -92,17 +96,10 @@ pub(crate) fn translate_function<'tcx, 'sess>(
 
         decls.push(promoted);
     }
-    let mut sig = signature_of(ctx, &mut names, def_id);
 
-    def_id
-        .as_local()
-        .map(|d| ctx.def_span(d))
-        .and_then(|span| ctx.span_attr(span))
-        .map(|attr| sig.attrs.push(attr));
-
-    let func_translator = BodyTranslator::build_context(tcx, ctx, &body, &mut names, sig, def_id);
-
-    decls.extend(func_translator.translate());
+    let func_translator = BodyTranslator::build_context(tcx, ctx, &body, def_id);
+    let fmir = func_translator.translate();
+    decls.extend(to_why(ctx, &mut names, fmir, &body, def_id));
     let name = module_name(ctx, def_id);
     Module { name, decls }
 }
@@ -125,6 +122,53 @@ pub(crate) fn translate_trusted<'tcx>(
     return Module { name, decls };
 }
 
+fn to_why<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    body: fmir::Body<'tcx>,
+    mir: &Body<'tcx>,
+    def_id: DefId,
+) -> Vec<Decl> {
+    let mut decls: Vec<_> = Vec::new();
+
+    let vars: Vec<_> = body
+        .locals
+        .into_iter()
+        .map(|(id, sp, ty)| (false, id, ty::translate_ty(ctx, names, sp, ty)))
+        .collect();
+
+    let entry = Block {
+        statements: vars
+            .iter()
+            .skip(1)
+            .take(body.arg_count)
+            .map(|(_, id, _)| {
+                let rhs = id.arg_name();
+                Statement::Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
+            })
+            .collect(),
+        terminator: Terminator::Goto(BlockId(0)),
+    };
+
+    let sig = signature_of(ctx, names, def_id);
+
+    let func = Decl::CfgDecl(CfgFunction {
+        sig,
+        rec: true,
+        constant: false,
+        vars: vars.into_iter().map(|i| (i.0, i.1.ident(), i.2)).collect(),
+        entry,
+        blocks: body
+            .blocks
+            .into_iter()
+            .map(|(bb, bbd)| (BlockId(bb.into()), bbd.to_why(ctx, names, mir)))
+            .collect(),
+    });
+    decls.extend(names.to_clones(ctx));
+    decls.push(func);
+    decls
+}
+
 // Split this into several sub-contexts: Core, Analysis, Results?
 pub struct BodyTranslator<'body, 'tcx> {
     pub tcx: TyCtxt<'tcx>,
@@ -132,9 +176,6 @@ pub struct BodyTranslator<'body, 'tcx> {
     def_id: DefId,
 
     body: &'body Body<'tcx>,
-
-    // TODO: Remove
-    sig: Signature,
 
     resolver: EagerResolver<'body, 'tcx>,
 
@@ -144,16 +185,13 @@ pub struct BodyTranslator<'body, 'tcx> {
     // Current block being generated
     current_block: (Vec<fmir::Statement<'tcx>>, Option<fmir::Terminator<'tcx>>),
 
-    past_blocks: BTreeMap<BasicBlock, fmir::Block<'tcx>>,
+    past_blocks: IndexMap<BasicBlock, fmir::Block<'tcx>>,
 
     // Type translation context
     ctx: &'body mut TranslationCtx<'tcx>,
 
     // Fresh BlockId
     fresh_id: usize,
-
-    // Gives a fresh name to every mono-morphization of a function or trait
-    names: &'body mut CloneMap<'tcx>,
 
     invariants: IndexMap<BasicBlock, Vec<(Symbol, Term<'tcx>)>>,
 
@@ -167,8 +205,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         tcx: TyCtxt<'tcx>,
         ctx: &'body mut TranslationCtx<'tcx>,
         body: &'body Body<'tcx>,
-        names: &'body mut CloneMap<'tcx>,
-        sig: Signature,
+        // names: &'body mut CloneMap<'tcx>,
         def_id: DefId,
     ) -> Self {
         let (invariants, assertions) = corrected_invariant_names_and_locations(ctx, def_id, &body);
@@ -193,33 +230,23 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         let borrows = Rc::new(borrows);
         let resolver = EagerResolver::new(tcx, body, borrows.clone());
 
-        // TODO: Remove?
-        // let local_map = real_locals(tcx, body);
-
         BodyTranslator {
             tcx,
-            sig,
             body,
             def_id,
             resolver,
             erased_locals,
-            // local_map,
             current_block: (Vec::new(), None),
-            past_blocks: BTreeMap::new(),
+            past_blocks: Default::default(),
             ctx,
             fresh_id: body.basic_blocks.len(),
-            names,
             invariants,
             assertions,
             borrows,
         }
     }
 
-    fn translate(mut self) -> Vec<Decl> {
-        let mut decls: Vec<_> = Vec::new();
-
-        decls.extend(self.names.to_clones(self.ctx));
-
+    fn translate(mut self) -> fmir::Body<'tcx> {
         self.translate_body();
 
         let arg_count = self.body.arg_count;
@@ -228,38 +255,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         assert!(self.assertions.is_empty(), "unused assertions");
         assert!(self.invariants.is_empty(), "unused invariants");
 
-        let entry = Block {
-            statements: vars
-                .iter()
-                .skip(1)
-                .take(arg_count)
-                .map(|(_, id, _)| {
-                    let rhs = id.arg_name();
-                    Statement::Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
-                })
-                .collect(),
-            terminator: Terminator::Goto(BlockId(0)),
-        };
-        decls.extend(self.names.to_clones(self.ctx));
-
-        let param_env = self.param_env();
-        let func = Decl::CfgDecl(CfgFunction {
-            sig: self.sig,
-            rec: true,
-            constant: false,
-            vars: vars.into_iter().map(|i| (i.0, i.1.ident(), i.2)).collect(),
-            entry,
-            blocks: self
-                .past_blocks
-                .into_iter()
-                .map(|(bb, bbd)| {
-                    (BlockId(bb.into()), bbd.to_why(self.ctx, self.names, self.body, param_env))
-                })
-                .collect(),
-        });
-        decls.extend(self.names.to_clones(self.ctx));
-        decls.push(func);
-        decls
+        fmir::Body { locals: vars, arg_count, blocks: self.past_blocks }
     }
 
     fn translate_body(&mut self) {
@@ -294,7 +290,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         }
     }
 
-    fn translate_vars(&mut self) -> Vec<(bool, LocalIdent, Type)> {
+    fn translate_vars(&mut self) -> Vec<(LocalIdent, Span, Ty<'tcx>)> {
         let mut vars = Vec::with_capacity(self.body.local_decls.len());
 
         for (loc, decl) in self.body.local_decls.iter_enumerated() {
@@ -303,11 +299,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             }
             let ident = self.translate_local(loc);
 
-            vars.push((
-                false,
-                ident,
-                ty::translate_ty(&mut self.ctx, &mut self.names, decl.source_info.span, decl.ty),
-            ))
+            vars.push((ident, decl.source_info.span, decl.ty))
         }
 
         vars
@@ -319,6 +311,17 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn emit_statement(&mut self, s: fmir::Statement<'tcx>) {
         self.current_block.0.push(s);
+    }
+
+    fn emit_resolve(&mut self, pl: Place<'tcx>) {
+        if let Some((id, subst)) =
+            resolve_predicate_of2(self.ctx, self.param_env(), pl.ty(self.body, self.ctx.tcx).ty)
+        {
+            // self.emit_statement(fmir::Statement::Assume(
+            //     Term { kind: TermKind::Call { id: id, subst: subst, fun: (), args: () }}
+            // ));
+            self.emit_statement(fmir::Statement::Resolve(id, subst, pl));
+        }
     }
 
     fn emit_terminator(&mut self, t: fmir::Terminator<'tcx>) {
@@ -381,7 +384,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             let pred_id = pred;
 
             // Otherwise, we emit the deaths and move them to a stand-alone block.
-            self.past_blocks.get_mut(&pred_id).unwrap().terminator.retarget(bb, drop_block);
+            self.past_blocks.get_mut(pred_id).unwrap().terminator.retarget(bb, drop_block);
             self.past_blocks.insert(
                 drop_block,
                 fmir::Block { stmts: deaths, terminator: fmir::Terminator::Goto(bb) },
@@ -404,7 +407,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         dying.subtract(&self.erased_locals.to_hybrid());
 
         for local in dying.iter() {
-            self.emit_statement(fmir::Statement::Resolve(local.into()));
+            self.emit_resolve(local.into());
         }
     }
 
@@ -413,7 +416,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
         match operand {
             Operand::Copy(pl) | Operand::Move(pl) => Expr::Place(*pl),
             Operand::Constant(c) => {
-                crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
+                crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
             }
         }
     }
@@ -468,10 +471,8 @@ pub(crate) fn closure_contract<'tcx>(
     def_id: DefId,
 ) -> Vec<Decl> {
     use creusot_rustc::middle::ty::{self, ClosureKind::*};
-    let subst = match ctx.tcx.type_of(def_id).kind() {
-        TyKind::Closure(_, substs) => substs,
-        _ => return Vec::new(),
-    };
+    let TyKind::Closure(_, subst) =  ctx.tcx.type_of(def_id).kind() else { unreachable!() };
+
     let kind = subst.as_closure().kind();
 
     let mut pre_clos_sig = pre_sig_of(ctx, def_id);
@@ -538,7 +539,6 @@ pub(crate) fn closure_contract<'tcx>(
     post_sig.args.push(Binder::typed(Ident::build("result"), result_ty));
 
     let mut contracts = Vec::new();
-    let param_env = ctx.param_env(def_id);
     let env_ty =
         ctx.tcx.closure_env_ty(def_id, subst, ty::RegionKind::ReErased).unwrap().peel_refs();
     let self_ty = translate_ty(ctx, names, DUMMY_SP, env_ty);
@@ -547,13 +547,20 @@ pub(crate) fn closure_contract<'tcx>(
         // Preconditions are the same for every kind of closure
         let mut pre_sig = pre_sig;
         pre_sig.name = Ident::build("precondition");
-        pre_sig.args[0] = Binder::typed("_1'".into(), self_ty.clone());
-        let mut subst = util::closure_capture_subst(ctx.tcx, def_id, subst, FnOnce, true);
+        pre_sig.args[0] = Binder::typed("self".into(), self_ty.clone());
+        let mut subst = util::closure_capture_subst(
+            ctx.tcx,
+            def_id,
+            subst,
+            FnOnce,
+            Symbol::intern("self"),
+            true,
+        );
 
         let mut precondition = precondition.clone();
         subst.visit_mut_term(&mut precondition);
         let precondition: Exp =
-            names.with_public_clones(|names| lower_pure(ctx, names, param_env, precondition));
+            names.with_public_clones(|names| lower_pure(ctx, names, precondition));
 
         contracts.push(Decl::PredDecl(Predicate { sig: pre_sig, body: precondition }));
     }
@@ -561,14 +568,15 @@ pub(crate) fn closure_contract<'tcx>(
     if kind <= Fn {
         let mut post_sig = post_sig.clone();
         post_sig.name = Ident::build("postcondition");
-        post_sig.args[0] = Binder::typed("_1'".into(), self_ty.clone());
+        post_sig.args[0] = Binder::typed("self".into(), self_ty.clone());
 
-        let mut csubst = util::closure_capture_subst(ctx.tcx, def_id, subst, Fn, true);
+        let mut csubst =
+            util::closure_capture_subst(ctx.tcx, def_id, subst, Fn, Symbol::intern("self"), true);
         let mut postcondition = postcondition.clone();
 
         csubst.visit_mut_term(&mut postcondition);
         let postcondition: Exp =
-            names.with_public_clones(|names| lower_pure(ctx, names, param_env, postcondition));
+            names.with_public_clones(|names| lower_pure(ctx, names, postcondition));
         contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
     }
 
@@ -577,31 +585,61 @@ pub(crate) fn closure_contract<'tcx>(
         post_sig.name = Ident::build("postcondition_mut");
 
         let self_ty = Type::MutableBorrow(Box::new(self_ty.clone()));
-        post_sig.args[0] = Binder::typed("_1'".into(), self_ty);
+        post_sig.args[0] = Binder::typed("self".into(), self_ty);
 
-        let mut csubst = util::closure_capture_subst(ctx.tcx, def_id, subst, FnMut, true);
+        let mut csubst = util::closure_capture_subst(
+            ctx.tcx,
+            def_id,
+            subst,
+            FnMut,
+            Symbol::intern("self"),
+            true,
+        );
 
         let mut postcondition = postcondition.clone();
         csubst.visit_mut_term(&mut postcondition);
 
         let mut postcondition: Exp =
-            names.with_public_clones(|names| lower_pure(ctx, names, param_env, postcondition));
-        postcondition = postcondition.lazy_and(closure_unnest(ctx.tcx, names, def_id, subst));
+            names.with_public_clones(|names| lower_pure(ctx, names, postcondition));
+        postcondition = postcondition.lazy_and(
+            Exp::pure_var("unnest".into())
+                .app_to(Exp::Current(box Exp::pure_var("self".into())))
+                .app_to(Exp::Final(box Exp::pure_var("self".into()))),
+        );
 
+        let args = subst.as_closure().sig().inputs().skip_binder()[0];
+        let unnest_subst = ctx.mk_substs([GenericArg::from(args), GenericArg::from(env_ty)].iter());
+
+        let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
+        let unnest_sig = EarlyBinder(pre_sig_of(ctx, unnest_id)).subst(ctx.tcx, unnest_subst);
+        let mut unnest_sig = sig_to_why3(ctx, names, unnest_sig, unnest_id);
+        unnest_sig.retty = None;
+
+        contracts.push(Decl::PredDecl(Predicate {
+            sig: unnest_sig,
+            body: closure_unnest(ctx.tcx, names, def_id, subst),
+        }));
         contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
     }
 
     if kind <= FnOnce {
         let mut post_sig = post_sig.clone();
         post_sig.name = Ident::build("postcondition_once");
-        post_sig.args[0] = Binder::typed("_1'".into(), self_ty.clone());
+        post_sig.args[0] = Binder::typed("self".into(), self_ty.clone());
 
-        let mut csubst = util::closure_capture_subst(ctx.tcx, def_id, subst, FnOnce, true);
+        let mut csubst = util::closure_capture_subst(
+            ctx.tcx,
+            def_id,
+            subst,
+            FnOnce,
+            Symbol::intern("self"),
+            true,
+        );
 
         let mut postcondition = postcondition.clone();
         csubst.visit_mut_term(&mut postcondition);
         let postcondition: Exp =
-            names.with_public_clones(|names| lower_pure(ctx, names, param_env, postcondition));
+            names.with_public_clones(|names| lower_pure(ctx, names, postcondition));
         contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
     }
 
@@ -649,23 +687,40 @@ pub(crate) fn closure_unnest<'tcx>(
     def_id: DefId,
     subst: SubstsRef<'tcx>,
 ) -> Exp {
+    // FIXME: does not work with move closures
+    // (problem is: how to detect a move closure).
+
+    let captures =
+        tcx.typeck(def_id.expect_local()).closure_min_captures_flattened(def_id.expect_local());
+
     let mut unnest = Exp::mk_true();
 
-    let csubst = subst.as_closure();
-    for (ix, up_ty) in csubst.upvar_tys().enumerate() {
-        if up_ty.is_mutable_ptr() {
-            let acc_name = ty::closure_accessor_name(tcx, def_id, ix);
-            let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
+    for (ix, capture) in captures.enumerate() {
+        match capture.info.capture_kind {
+            // if we captured by value we get no unnesting predicate
+            UpvarCapture::ByValue => continue,
+            UpvarCapture::ByRef(is_mut) => {
+                let acc_name = ty::closure_accessor_name(tcx, def_id, ix);
+                let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
+                let cur = Exp::pure_var(Ident::build("self"));
+                let fin = Exp::pure_var(Ident::build("_2'"));
 
-            let self_ = Exp::pure_var(Ident::build("_1'"));
+                use rustc_middle::ty::BorrowKind;
+                let unnest_one = match is_mut {
+                    BorrowKind::ImmBorrow => Exp::BinaryOp(
+                        BinOp::Eq,
+                        box acc.clone().app_to(fin.clone()),
+                        box acc.app_to(cur),
+                    ),
+                    _ => Exp::BinaryOp(
+                        BinOp::Eq,
+                        box Exp::Final(box acc.clone().app_to(fin.clone())),
+                        box Exp::Final(box acc.app_to(cur)),
+                    ),
+                };
 
-            let unnest_one = Exp::BinaryOp(
-                BinOp::Eq,
-                box Exp::Final(box acc.clone().app_to(Exp::Final(box self_.clone()))),
-                box Exp::Final(box acc.app_to(Exp::Current(box self_))),
-            );
-
-            unnest = unnest_one.log_and(unnest);
+                unnest = unnest_one.log_and(unnest);
+            }
         }
     }
 

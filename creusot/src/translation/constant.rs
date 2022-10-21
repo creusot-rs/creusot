@@ -1,9 +1,10 @@
 use crate::{
+    backend::logic::stub_module,
     clone_map::CloneMap,
-    ctx::{module_name, CloneSummary, TranslationCtx},
+    ctx::{module_name, CloneSummary, TranslatedItem, TranslationCtx},
     traits::resolve_assoc_item_opt,
     translation::pearlite::Literal,
-    util::get_builtin,
+    util::{get_builtin, signature_of},
 };
 use creusot_rustc::{
     hir::def_id::DefId,
@@ -12,46 +13,69 @@ use creusot_rustc::{
             interpret::{AllocRange, ConstValue},
             UnevaluatedConst,
         },
+        ty,
         ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
     },
     smir::mir::ConstantKind,
-    span::Span,
+    span::{Span, Symbol},
     target::abi::Size,
 };
-use why3::{
-    declaration::Module,
-    exp::{Constant, Exp},
-    QName,
+use rustc_middle::ty::subst::InternalSubsts;
+use why3::declaration::{Decl, LetDecl, LetKind, Module};
+
+use super::{
+    fmir::Expr,
+    pearlite::{Term, TermKind},
 };
 
-use super::fmir::Expr;
-
 impl<'tcx> TranslationCtx<'tcx> {
-    pub(crate) fn translate_constant(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
-        let modl = Module { name: module_name(self, def_id), decls: Vec::new() };
+    pub(crate) fn translate_constant(
+        &mut self,
+        def_id: DefId,
+    ) -> (TranslatedItem, CloneSummary<'tcx>) {
+        let subst = InternalSubsts::identity_for_item(self.tcx, def_id);
+        let uneval = ty::UnevaluatedConst::new(ty::WithOptConstParam::unknown(def_id), subst);
+        let constant = self.mk_const(ty::ConstS {
+            kind: ty::ConstKind::Unevaluated(uneval),
+            ty: self.type_of(def_id),
+        });
 
-        (modl, CloneSummary::new())
+        let res = from_ty_const(self, constant, self.param_env(def_id), self.def_span(def_id));
+        let mut names = CloneMap::new(self.tcx, def_id, crate::clone_map::CloneLevel::Body);
+        let res = res.to_why(self, &mut names, None);
+        let sig = signature_of(self, &mut names, def_id);
+        let mut decls = names.to_clones(self);
+        decls.push(Decl::Let(LetDecl {
+            kind: Some(LetKind::Constant),
+            sig: sig.clone(),
+            rec: false,
+            ghost: false,
+            body: res,
+        }));
+
+        let stub = stub_module(self, def_id);
+
+        let modl = Module { name: module_name(self, def_id), decls };
+        (TranslatedItem::Constant { stub, modl }, CloneSummary::new())
     }
 }
 
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
     c: &creusot_rustc::smir::mir::Constant<'tcx>,
 ) -> Expr<'tcx> {
-    from_mir_constant_kind(ctx, names, c.literal, env, c.span)
+    from_mir_constant_kind(ctx, c.literal, env, c.span)
 }
 
 pub(crate) fn from_mir_constant_kind<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
     ck: ConstantKind<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
 ) -> Expr<'tcx> {
     if let ConstantKind::Ty(c) = ck {
-        return from_ty_const(ctx, names, c, env, span);
+        return from_ty_const(ctx, c, env, span);
     }
 
     if ck.ty().is_unit() {
@@ -67,20 +91,32 @@ pub(crate) fn from_mir_constant_kind<'tcx>(
                 .get_bytes_strip_provenance(&ctx.tcx, AllocRange { start, size })
                 .unwrap();
             let string = std::str::from_utf8(bytes).unwrap();
-            return Expr::Exp(Exp::Const(Constant::String(string.into())));
+
+            return Expr::Constant(Term {
+                kind: TermKind::Lit(Literal::String(string.into())),
+                ty: ck.ty(),
+                span,
+            });
         }
     }
 
     if let ConstantKind::Unevaluated(UnevaluatedConst { promoted: Some(p), .. }, _) = ck {
-        return Expr::Exp(Exp::impure_var(format!("promoted{:?}", p.as_usize()).into()));
+        return Expr::Constant(Term {
+            kind: TermKind::Var(Symbol::intern(&format!("promoted{:?}", p.as_usize()))),
+            ty: ck.ty(),
+            span,
+        });
     }
 
-    return Expr::Constant(try_to_bits(ctx, names, env, ck.ty(), span, ck));
+    return Expr::Constant(Term {
+        kind: TermKind::Lit(try_to_bits(ctx, env, ck.ty(), span, ck)),
+        ty: ck.ty(),
+        span,
+    });
 }
 
 pub(crate) fn from_ty_const<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
     c: Const<'tcx>,
     env: ParamEnv<'tcx>,
     span: Span,
@@ -88,27 +124,29 @@ pub(crate) fn from_ty_const<'tcx>(
     // Check if a constant is builtin and thus should not be evaluated further
     // Builtin constants are given a body which panics
     if let ConstKind::Unevaluated(u) = c.kind() &&
-       let Some(builtin_nm) = get_builtin(ctx.tcx, u.def.did) &&
-       let Some(nm) = QName::from_string(builtin_nm.as_str()) {
-            names.import_builtin_module(nm.clone().module_qname());
-            return Expr::Exp(Exp::pure_qvar(nm.without_search_path()));
+       let Some(_) = get_builtin(ctx.tcx, u.def.did) {
+            return Expr::Constant(Term { kind: TermKind::Lit(Literal::Function(u.def.did, u.substs)), ty: c.ty(), span})
     };
 
     if let ConstKind::Param(_) = c.kind() {
         ctx.crash_and_error(span, "const generic parameters are not yet supported");
     }
 
-    return Expr::Constant(try_to_bits(ctx, names, env, c.ty(), span, c));
+    return Expr::Constant(Term {
+        kind: TermKind::Lit(try_to_bits(ctx, env, c.ty(), span, c)),
+        ty: c.ty(),
+        span,
+    });
 }
 
 fn try_to_bits<'tcx, C: ToBits<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    // names: &mut CloneMap<'tcx>,
     env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
     span: Span,
     c: C,
-) -> Literal {
+) -> Literal<'tcx> {
     use rustc_middle::ty::{FloatTy, IntTy, UintTy};
     use rustc_type_ir::sty::TyKind::{Bool, Float, FnDef, Int, Uint};
     match ty.kind() {
@@ -159,8 +197,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
         FnDef(def_id, subst) => {
             let method =
                 resolve_assoc_item_opt(ctx.tcx, env, *def_id, subst).unwrap_or((*def_id, subst));
-            names.insert(method.0, method.1);
-            Literal::Function
+            Literal::Function(method.0, method.1)
         }
         _ => {
             ctx.crash_and_error(span, &format!("unsupported constant expression"));

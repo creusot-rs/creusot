@@ -1,8 +1,4 @@
-use crate as creusot_contracts;
-use crate::macros::*;
-
-use crate::logic::int::Int;
-use std::ops::Index;
+use crate::{std::ops::Index, *};
 
 #[cfg_attr(feature = "contracts", creusot::builtins = "seq.Seq.seq")]
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);

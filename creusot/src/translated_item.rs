@@ -34,6 +34,7 @@ pub enum TranslatedItem {
         body: Module,
     },
     Constant {
+        stub: Module,
         modl: Module,
     },
     // Types can not have dependencies yet, as Why3 does not yet have applicative clones
@@ -75,7 +76,9 @@ impl<'a> TranslatedItem {
             Trait { .. } => box iter::empty(),
             Impl { modl, .. } => box iter::once(modl),
             AssocTy { modl, .. } => box iter::once(modl),
-            Constant { modl, .. } => box iter::once(modl),
+            Constant { stub, modl, .. } => {
+                box std::iter::once(stub).chain(box std::iter::once(modl))
+            }
             Extern { interface, body, .. } => box iter::once(interface).chain(iter::once(body)),
             Type { mut modl, accessors, .. } => {
                 modl.decls.extend(accessors.values().flat_map(|v| v.values()).cloned());
@@ -95,7 +98,9 @@ impl<'a> TranslatedItem {
             TranslatedItem::Impl { modl, .. } => box std::iter::once(modl),
             TranslatedItem::AssocTy { modl, .. } => box std::iter::once(modl),
             TranslatedItem::Extern { interface, .. } => box std::iter::once(interface),
-            TranslatedItem::Constant { modl, .. } => box std::iter::once(modl),
+            TranslatedItem::Constant { stub, modl, .. } => {
+                box std::iter::once(stub).chain(box std::iter::once(modl))
+            }
             TranslatedItem::Type { .. } => self.modules(),
         }
     }

@@ -1,6 +1,5 @@
-use crate as creusot_contracts;
-use crate::logic::Int;
-use creusot_contracts_proc::*;
+use crate::*;
+pub use ::std::num::*;
 
 /// Adds specifications for checked, wrapping, saturating, and overflowing operations on the given
 /// integer type

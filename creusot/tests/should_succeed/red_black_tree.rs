@@ -2,12 +2,8 @@
 #![feature(box_patterns)]
 extern crate creusot_contracts;
 
-use creusot_contracts::{
-    derive::Clone,
-    logic::{Int, Mapping, OrdLogic},
-    *,
-};
-use std::cmp::{Ord, Ordering::*};
+use creusot_contracts::{logic::Mapping, Clone, *};
+use std::cmp::Ordering::*;
 
 #[derive(Clone, Copy)]
 enum Color {

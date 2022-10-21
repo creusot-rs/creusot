@@ -1,6 +1,5 @@
 use creusot_rustc::{
     hir::def_id::DefId,
-    infer::traits::ImplSource,
     middle::ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
@@ -13,7 +12,7 @@ use creusot_rustc::{
 use heck::CamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
-use rustc_middle::ty::{subst::GenericArgKind, ParamEnv};
+use rustc_middle::ty::subst::GenericArgKind;
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
     Ident, QName,
@@ -21,11 +20,8 @@ use why3::{
 
 use crate::{
     ctx::{self, *},
-    translation::{
-        interface,
-        traits::{self, resolve_impl_source_opt},
-    },
-    util::{self, get_builtin, ident_of, ident_of_ty, is_law, item_name},
+    translation::{interface, traits},
+    util::{self, get_builtin, ident_of, ident_of_ty, item_name},
 };
 
 // Prelude modules
@@ -224,10 +220,6 @@ impl<'tcx> CloneInfo<'tcx> {
         self.opaque = CloneOpacity::Opaque;
     }
 
-    pub(crate) fn transparent(&mut self) {
-        self.opaque = CloneOpacity::Transparent;
-    }
-
     // TODO: When traits stop holding all functions we can remove the last two arguments
     pub(crate) fn qname(&self, tcx: TyCtxt, def_id: DefId) -> QName {
         self.qname_ident(match tcx.def_kind(def_id) {
@@ -333,6 +325,7 @@ impl<'tcx> CloneMap<'tcx> {
             || self.tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id)
             || self.tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id)
             || self.tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id)
+            || self.tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id)
             || self.tcx.is_diagnostic_item(Symbol::intern("fn_impl_resolve"), def_id)
         {
             debug!("closure_hack: {:?} {:?}", self.self_id, def_id);
@@ -365,8 +358,6 @@ impl<'tcx> CloneMap<'tcx> {
         // to build the correct substitution.
         //
         let mut i = self.last_cloned;
-        let param_env = ctx.param_env(self.self_id);
-
         while i < self.names.len() {
             let key = *self.names.get_index(i).unwrap().0;
 
@@ -381,10 +372,8 @@ impl<'tcx> CloneMap<'tcx> {
                 continue;
             }
 
-            if still_specializable(self.tcx, param_env, key.0, key.1) && !is_law(self.tcx, key.0) {
-                if !(self.tcx.parent(self.self_id) == self.tcx.parent(key.0)) {
-                    self.names[&key].opaque();
-                }
+            if still_specializable(self.tcx, key.0, key.1) {
+                self.names[&key].opaque();
             }
 
             ctx.translate(key.0);
@@ -743,13 +732,22 @@ fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel) ->
                 module: Vec::new(),
                 name: format!("{}_Stub", &*module_name(ctx, def_id)).into(),
             },
+            // Why do we do this? Why not use the stub here as well?
             CloneLevel::Interface => interface::interface_name(ctx, def_id).into(),
             CloneLevel::Body => module_name(ctx, def_id).into(),
         },
+        Constant => match interface {
+            CloneLevel::Body => module_name(ctx, def_id).into(),
+            _ => QName {
+                module: Vec::new(),
+                name: format!("{}_Stub", &*module_name(ctx, def_id)).into(),
+            },
+        },
+
         Program | Closure => {
             QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
         }
-        Constant | Trait | Type | AssocTy => module_name(ctx, def_id).into(),
+        Trait | Type | AssocTy => module_name(ctx, def_id).into(),
         Unsupported(_) => unreachable!(),
     }
 }
@@ -760,6 +758,7 @@ enum SymbolKind {
     Type(Symbol),
     Function(Symbol),
     Predicate(Symbol),
+    Const(Symbol),
 }
 
 impl SymbolKind {
@@ -769,6 +768,7 @@ impl SymbolKind {
             SymbolKind::Type(i) => *i,
             SymbolKind::Function(i) => *i,
             SymbolKind::Predicate(i) => *i,
+            SymbolKind::Const(i) => *i,
         }
     }
 
@@ -793,6 +793,10 @@ impl SymbolKind {
             SymbolKind::Predicate(_) => {
                 CloneSubst::Predicate(src.qname_ident(id.clone()), tgt.qname_ident(id))
             }
+            SymbolKind::Const(_) => {
+                // TMP
+                CloneSubst::Val(src.qname_ident(id.clone()), tgt.qname_ident(id))
+            }
         }
     }
 }
@@ -810,30 +814,27 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
         },
         Trait | Impl => unreachable!("trait blocks have no refinable symbols"),
         Type => None,
+        Constant => Some(SymbolKind::Const(tcx.item_name(def_id))),
         _ => unreachable!(),
     }
 }
 
-// We consider an item to be further specializable if it is provided by a parameter bound (ie: `I : Iterator`) *and*
-// the item in question could in theory be refined further (ie: it is a default method or specializable).
-fn still_specializable<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    def_id: DefId,
-    substs: SubstsRef<'tcx>,
-) -> bool {
-    if let Some(_) = tcx.trait_of_item(def_id) {
-        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs);
-        if impl_source.is_none() {
-            return true
-        }
-        let is_final = tcx.impl_defaultness(def_id).is_final();
-        matches!(impl_source.unwrap(), ImplSource::Param(_, _)) && !is_final
-    } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
-        let impl_source = resolve_impl_source_opt(tcx, param_env, def_id, substs).unwrap();
+// | Final | Still Spec (Ty)| Res |
+// | T | _ | F |
+// | F | T | T |
+// | F | F | F |
 
+// We consider an item to be further specializable if it is provided by a parameter bound (ie: `I : Iterator`).
+fn still_specializable<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, substs: SubstsRef<'tcx>) -> bool {
+    use creusot_rustc::middle::ty::TypeVisitable;
+    if let Some(trait_id) = tcx.trait_of_item(def_id) {
         let is_final = tcx.impl_defaultness(def_id).is_final();
-        matches!(impl_source, ImplSource::Param(_, _)) && !is_final
+        let trait_generics = substs.truncate_to(tcx, tcx.generics_of(trait_id));
+        !is_final && trait_generics.still_further_specializable()
+    } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
+        let is_final = tcx.impl_defaultness(def_id).is_final();
+        let trait_ref = tcx.impl_trait_ref(impl_id).unwrap();
+        !is_final && EarlyBinder(trait_ref).subst(tcx, substs).still_further_specializable()
     } else {
         false
     }

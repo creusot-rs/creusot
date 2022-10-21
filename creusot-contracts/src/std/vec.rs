@@ -1,15 +1,13 @@
-use crate as creusot_contracts;
 use crate::{
-    logic::*,
-    std::{iter::Iterator, slice::SliceIndex},
-    DeepModel, Resolve, ShallowModel,
+    invariant::Invariant,
+    std::{
+        alloc::Allocator,
+        ops::{Deref, DerefMut, Index, IndexMut},
+        slice::SliceIndex,
+    },
+    *,
 };
-use creusot_contracts_proc::*;
-use std::{
-    alloc::Allocator,
-    ops::{Deref, DerefMut, Index, IndexMut},
-    vec::IntoIter,
-};
+pub use ::std::vec::*;
 
 impl<T, A: Allocator> ShallowModel for Vec<T, A> {
     type ShallowModelTy = Seq<T>;
@@ -32,6 +30,14 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
               ==> result[i] == (@self)[i].deep_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
+    }
+}
+
+#[trusted]
+impl<T> Resolve for Vec<T> {
+    #[predicate]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i : Int> 0 <= i && i < (@self).len() ==> (@self)[i].resolve() }
     }
 }
 
@@ -74,7 +80,19 @@ extern_spec! {
                 fn insert(&mut self, index: usize, element: T);
 
                 #[ensures(@result == @self)]
+                #[ensures(result.invariant())]
                 fn into_iter(self) -> IntoIter<T, A>;
+            }
+
+            impl<T, A : Allocator> Extend<T> for Vec<T, A> {
+                #[requires(iter.invariant())]
+                #[ensures(exists<done_ : &mut I, prod: Seq<I::Item>>
+                    done_.completed() && iter.produces(prod, *done_) && @^self == (@self).concat(prod)
+                )]
+                fn extend<I>(&mut self, iter: I)
+                where
+                    // TODO: Investigate why ::std::iter::Iterator<Item = T> is needed... shouldn't it be implied?
+                    I : Iterator<Item = T> + Invariant + ::std::iter::Iterator<Item = T>;
             }
 
             impl<T, I : SliceIndex<[T]>, A : Allocator> IndexMut<I> for Vec<T, A> {
@@ -114,16 +132,40 @@ extern_spec! {
 // that cannot properly prefix `Vec` with `std::vec::` inside `&'a Vec`
 extern_spec! {
     impl<'a, T, A : Allocator> IntoIterator for &'a std::vec::Vec<T, A> {
-        #[ensures(@result == @self)]
+        #[ensures(@@result == @self)]
+        #[ensures(result.invariant())]
         fn into_iter(self) -> std::slice::Iter<'a, T>;
+    }
+
+    impl<'a, T, A : Allocator> IntoIterator for &'a mut std::vec::Vec<T, A> {
+        #[ensures(@@result == @self)]
+        #[ensures(result.invariant())]
+        fn into_iter(self) -> std::slice::IterMut<'a, T>;
+    }
+}
+
+impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
+    type ShallowModelTy = Seq<T>;
+
+    #[logic]
+    #[trusted]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        absurd
     }
 }
 
 #[trusted]
-impl<T> Resolve for Vec<T> {
+impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     #[predicate]
     fn resolve(self) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i < (@self).len() ==> (@self)[i].resolve() }
+        pearlite! { forall<i: Int> 0 <= i && i < (@self).len() ==> (@self)[i].resolve() }
+    }
+}
+
+impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        true
     }
 }
 
@@ -136,10 +178,7 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[predicate]
     fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
         pearlite! {
-            (@self).len() == visited.len() + (@rhs).len() &&
-            (@self).subsequence(visited.len(), (@self).len()).ext_eq(@rhs) &&
-            (forall<i : Int> 0 <= i && i < visited.len() ==>
-                (@self)[i] == visited[i])
+            @self == visited.concat(@rhs)
         }
     }
 
@@ -154,12 +193,9 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
 }
 
-impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
-    type ShallowModelTy = Seq<T>;
-
-    #[logic]
-    #[trusted]
-    fn shallow_model(self) -> Self::ShallowModelTy {
-        absurd
+impl<T> FromIterator<T> for Vec<T> {
+    #[predicate]
+    fn from_iter_logic(prod: Seq<T>, res: Self) -> bool {
+        pearlite! { prod == @res }
     }
 }

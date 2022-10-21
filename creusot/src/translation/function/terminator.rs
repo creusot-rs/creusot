@@ -115,6 +115,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 } else {
                     let (fun_def_id, subst) =
                         resolve_function(self.ctx, self.param_env(), fun_def_id, subst, span);
+                    let subst = self
+                        .ctx
+                        .try_normalize_erasing_regions(self.param_env(), subst)
+                        .unwrap_or(subst);
 
                     let exp = Expr::Call(fun_def_id, subst, func_args);
                     let span = span.source_callsite();
@@ -160,7 +164,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             DropAndReplace { target, place, value, .. } => {
                 // Resolve
-                self.emit_statement(fmir::Statement::Resolve(*place));
+                self.emit_resolve(*place);
 
                 // Assign
                 let rhs = self.translate_operand(value);
@@ -228,7 +232,7 @@ fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, SubstsRef<'tcx>)> {
     }
 }
 
-fn evaluate_additional_predicates<'tcx>(
+pub(crate) fn evaluate_additional_predicates<'tcx>(
     infcx: &InferCtxt<'_, 'tcx>,
     p: Vec<Predicate<'tcx>>,
     param_env: ParamEnv<'tcx>,

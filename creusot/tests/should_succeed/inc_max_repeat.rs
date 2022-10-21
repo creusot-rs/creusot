@@ -13,14 +13,11 @@ fn take_max<'a>(ma: &'a mut u32, mb: &'a mut u32) -> &'a mut u32 {
 
 #[requires(a <= 1_000_000u32 && b <= 1_000_000u32 && n <= 1_000_000u32)]
 pub fn inc_max_repeat(mut a: u32, mut b: u32, n: u32) {
-    let mut i: u32 = 0;
-    #[invariant(cntr_bound, i <= n)]
-    #[invariant(val_bound, a <= 1_000_000u32 + i && b <= 1_000_000u32 + i)]
-    #[invariant(diff_bound, a >= b + i || b >= a + i) ]
-    while i < n {
+    #[invariant(val_bound, @a <= 1_000_000 + produced.len() && @b <= 1_000_000 + produced.len())]
+    #[invariant(diff_bound, @a >= @b + produced.len() || @b >= @a + produced.len()) ]
+    for _ in 0..n {
         let mc = take_max(&mut a, &mut b);
         *mc += 1;
-        i += 1;
     }
-    assert!(a >= b + i || b >= a + i);
+    assert!(a >= b + n || b >= a + n);
 }

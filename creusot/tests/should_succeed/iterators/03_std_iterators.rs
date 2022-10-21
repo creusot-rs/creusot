@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Int, *};
+use creusot_contracts::{logic::Int, std::iter::*, *};
 
 #[requires((@slice).len() < 1000)]
 #[ensures(@result == (@slice).len())]
@@ -30,4 +30,42 @@ pub fn all_zero(v: &mut Vec<usize>) {
     for x in v.iter_mut() {
         *x = 0;
     }
+}
+
+#[requires(iter.invariant())]
+pub fn skip_take<I: Iterator>(iter: I, n: usize) {
+    let res = iter.take(n).skip(n).next();
+
+    proof_assert! { res == None };
+}
+
+pub fn counter(v: Vec<u32>) {
+    let mut cnt = 0;
+
+    let x: Vec<u32> = v
+        .iter()
+        .map_inv(
+            #[requires(@cnt == (*_prod).len() && cnt < usize::MAX)]
+            #[ensures(@cnt == @old(cnt) + 1 && @cnt == (*_prod).len() + 1 && result == *x)]
+            |x, _prod| {
+                cnt += 1;
+                *x
+            },
+        )
+        .collect();
+
+    proof_assert! { (@x).len() == (@v).len() };
+    proof_assert! { (@x).ext_eq(@v) };
+    proof_assert! { @cnt == (@x).len() };
+}
+
+#[requires(@n >= 0)]
+#[ensures(result == n)]
+pub fn sum_range(n: isize) -> isize {
+    let mut i = 0;
+    #[invariant(user, @i == produced.len() && i <= n)]
+    for _ in 0..n {
+        i += 1;
+    }
+    i
 }

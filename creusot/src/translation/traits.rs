@@ -14,7 +14,9 @@ use why3::{
     exp::Exp,
 };
 
-use crate::{rustc_extensions, util};
+use crate::{
+    rustc_extensions, translation::function::terminator::evaluate_additional_predicates, util,
+};
 
 use crate::{
     ctx::*,
@@ -51,18 +53,9 @@ impl<'tcx> TranslationCtx<'tcx> {
         let mut laws = Vec::new();
         let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
 
-        for trait_item in associated_items(self.tcx, trait_ref.def_id) {
-            let trait_item_id = trait_item.def_id;
-            let &impl_item_id = implementor_map.get(&trait_item.def_id).unwrap_or(&trait_item_id);
-
-            let parent_id = if implementor_map.contains_key(&trait_item.def_id) {
-                impl_id
-            } else {
-                trait_ref.def_id
-            };
-
-            if is_law(self.tcx, trait_item_id) {
-                laws.push(impl_item_id);
+        for (&trait_item, &impl_item) in implementor_map {
+            if is_law(self.tcx, trait_item) {
+                laws.push(impl_item);
             }
 
             // Don't generate refinements for impls that come from outside crates
@@ -70,51 +63,60 @@ impl<'tcx> TranslationCtx<'tcx> {
                 continue;
             }
 
-            self.translate(impl_item_id);
-
-            let subst = InternalSubsts::identity_for_item(self.tcx, impl_item_id);
-
-            if implementor_map.get(&trait_item_id).is_some() {
-                // let (id, subst) = resolve_opt(self.tcx, self.param_env(impl_item_id), impl_item_id, subst).unwrap_or((impl_item_id, subst));
-                names.insert(impl_item_id, subst);
+            // If there is no contract to refine, skip this item
+            if contract_of(self, trait_item).is_empty() {
+                continue;
             }
 
-            decls.extend(own_generic_decls_for(self.tcx, impl_item_id));
+            self.translate(impl_item);
 
-            let refn_subst = subst.rebase_onto(self.tcx, parent_id, trait_ref.substs);
+            let subst = InternalSubsts::identity_for_item(self.tcx, impl_item);
+            names.insert(impl_item, subst);
 
-            let refinement = names.insert(trait_item_id, refn_subst);
+            decls.extend(own_generic_decls_for(self.tcx, impl_item));
 
-            if implementor_map.get(&trait_item_id).is_some() {
-                refinement.add_dep(
-                    self.tcx,
-                    self.tcx.item_name(impl_item_id),
-                    (impl_item_id, subst),
+            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
+
+            // TODO: Clean up and abstract
+            let predicates = self
+                .extern_spec(trait_item)
+                .map(|p| p.predicates_for(self.tcx, refn_subst))
+                .unwrap_or_else(Vec::new);
+
+            use creusot_rustc::{
+                infer::infer::TyCtxtInferExt,
+                trait_selection::traits::error_reporting::InferCtxtExt,
+            };
+            self.tcx.infer_ctxt().enter(|infcx| {
+                let res = evaluate_additional_predicates(
+                    &infcx,
+                    predicates,
+                    self.param_env(impl_item),
+                    self.def_span(impl_item),
                 );
-                refinement.opaque();
-
-                // Since we don't have contracts of logic functions in the interface and we can't substitute the definition in
-                // the implementation module, we must recreate the spec axiom by hand here.
-                if matches!(
-                    item_type(self.tcx, trait_item_id),
-                    ItemType::Logic | ItemType::Predicate
-                ) {
-                    let contract = contract_of(self, trait_item_id);
-
-                    if !contract.is_empty() {
-                        let axiom = logic_refinement(
-                            self,
-                            &mut names,
-                            impl_item_id,
-                            trait_item_id,
-                            refn_subst,
-                        );
-                        decls.extend(names.to_clones(self));
-                        decls.push(Decl::Goal(axiom));
-                    }
+                if let Err(errs) = res {
+                    let body_id = self.tcx.hir().body_owned_by(impl_item.expect_local());
+                    infcx.report_fulfillment_errors(&errs, Some(body_id), false);
+                    self.crash_and_error(creusot_rustc::span::DUMMY_SP, "error above");
                 }
-            } else {
-                refinement.transparent();
+            });
+
+            let refinement = names.insert(trait_item, refn_subst);
+
+            refinement.add_dep(self.tcx, self.tcx.item_name(impl_item), (impl_item, subst));
+            refinement.opaque();
+
+            // Since we don't have contracts of logic functions in the interface and we can't substitute the definition in
+            // the implementation module, we must recreate the spec axiom by hand here.
+            if matches!(item_type(self.tcx, trait_item), ItemType::Logic | ItemType::Predicate) {
+                let contract = contract_of(self, trait_item);
+
+                if !contract.is_empty() {
+                    let axiom =
+                        logic_refinement(self, &mut names, impl_item, trait_item, refn_subst);
+                    decls.extend(names.to_clones(self));
+                    decls.push(Decl::Goal(axiom));
+                }
             }
         }
 
@@ -162,16 +164,15 @@ fn logic_refinement<'tcx>(
     let trait_contract = names.with_public_clones(|names| {
         let pre_contract = crate::specification::contract_of(ctx, trait_item_id);
         let param_env = ctx.param_env(impl_item_id);
-        EarlyBinder(pre_contract).subst(ctx.tcx, refn_subst).normalize(ctx.tcx, param_env).to_exp(
-            ctx,
-            names,
-            impl_item_id,
-        )
+        EarlyBinder(pre_contract)
+            .subst(ctx.tcx, refn_subst)
+            .normalize(ctx.tcx, param_env)
+            .to_exp(ctx, names)
     });
 
     let impl_contract = names.with_public_clones(|names| {
         let pre_contract = crate::specification::contract_of(ctx, impl_item_id);
-        pre_contract.to_exp(ctx, names, impl_item_id)
+        pre_contract.to_exp(ctx, names)
     });
 
     let (trait_inps, _) = inputs_and_output(ctx.tcx, trait_item_id);

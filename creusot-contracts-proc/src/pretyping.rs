@@ -53,20 +53,22 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let right = encode_term(right)?;
             match op {
                 Eq(_) => {
-                    Ok(quote_spanned! {sp=> creusot_contracts::__stubs::equal(#left, #right) })
+                    Ok(quote_spanned! {sp=> ::creusot_contracts::__stubs::equal(#left, #right) })
                 }
-                Ne(_) => Ok(quote_spanned! {sp=> creusot_contracts::__stubs::neq(#left, #right) }),
+                Ne(_) => {
+                    Ok(quote_spanned! {sp=> ::creusot_contracts::__stubs::neq(#left, #right) })
+                }
                 Lt(_) => Ok(
-                    quote_spanned! {sp=> creusot_contracts::logic::OrdLogic::lt_log(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::lt_log(#left, #right) },
                 ),
                 Le(_) => Ok(
-                    quote_spanned! {sp=> creusot_contracts::logic::OrdLogic::le_log(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::le_log(#left, #right) },
                 ),
                 Ge(_) => Ok(
-                    quote_spanned! {sp=> creusot_contracts::logic::OrdLogic::ge_log(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::ge_log(#left, #right) },
                 ),
                 Gt(_) => Ok(
-                    quote_spanned! {sp=> creusot_contracts::logic::OrdLogic::gt_log(#left, #right) },
+                    quote_spanned! {sp=> ::creusot_contracts::logic::OrdLogic::gt_log(#left, #right) },
                 ),
                 _ => Ok(quote_spanned! {sp=> #left #op #right }),
             }
@@ -77,7 +79,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             if let RT::Path(p) = &**func {
                 if p.inner.path.is_ident("old") {
                     return Ok(
-                        quote_spanned! {sp=> creusot_contracts::__stubs::old( #(#args),* ) },
+                        quote_spanned! {sp=> ::creusot_contracts::__stubs::old( #(#args),* ) },
                     );
                 }
             }
@@ -116,7 +118,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Lit(TermLit { ref lit }) => match lit {
             // FIXME: allow unbounded integers
             Lit::Int(int) if int.suffix() == "" => Ok(
-                quote_spanned! {sp=> creusot_contracts::ShallowModel::shallow_model(#lit as i128) },
+                quote_spanned! {sp=> ::creusot_contracts::model::ShallowModel::shallow_model(#lit as i128) },
             ),
             _ => Ok(quote_spanned! {sp=> #lit }),
         },
@@ -185,13 +187,13 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
         RT::Final(TermFinal { term, .. }) => {
             let term = encode_term(term)?;
             Ok(quote! {
-                * creusot_contracts::__stubs::fin(#term)
+                * ::creusot_contracts::__stubs::fin(#term)
             })
         }
         RT::Model(TermModel { term, .. }) => {
             let term = encode_term(term)?;
             Ok(quote! {
-                creusot_contracts::ShallowModel::shallow_model(#term)
+                ::creusot_contracts::model::ShallowModel::shallow_model(#term)
             })
         }
         RT::Verbatim(_) => todo!(),
@@ -199,7 +201,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let lhs = encode_term(lhs)?;
             let rhs = encode_term(rhs)?;
             Ok(quote! {
-                creusot_contracts::__stubs::equal(#lhs, #rhs)
+                ::creusot_contracts::__stubs::equal(#lhs, #rhs)
             })
         }
         RT::Impl(TermImpl { hyp, cons, .. }) => {
@@ -214,14 +216,14 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let hyp = encode_term(hyp)?;
             let cons = encode_term(cons)?;
             Ok(quote! {
-                creusot_contracts::__stubs::implication(#hyp, #cons)
+                ::creusot_contracts::__stubs::implication(#hyp, #cons)
             })
         }
         RT::Forall(TermForall { args, term, .. }) => {
             let mut ts = encode_term(term)?;
             for arg in args {
                 ts = quote! {
-                    creusot_contracts::__stubs::forall(
+                    ::creusot_contracts::__stubs::forall(
                         #[creusot::no_translate]
                         |#arg|{ #ts }
                     )
@@ -233,7 +235,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let mut ts = encode_term(term)?;
             for arg in args {
                 ts = quote! {
-                    creusot_contracts::__stubs::exists(
+                    ::creusot_contracts::__stubs::exists(
                         #[creusot::no_translate]
                         |#arg|{ #ts }
                     )
@@ -241,7 +243,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             }
             Ok(ts)
         }
-        RT::Absurd(_) => Ok(quote_spanned! {sp=> creusot_contracts::__stubs::abs() }),
+        RT::Absurd(_) => Ok(quote_spanned! {sp=> ::creusot_contracts::__stubs::abs() }),
         RT::Pearlite(term) => Ok(quote_spanned! {sp=> #term }),
         RT::Closure(clos) => {
             let inputs = &clos.inputs;
@@ -249,7 +251,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
             let clos = encode_term(&*clos.body)?;
 
             Ok(
-                quote_spanned! {sp=> creusot_contracts::logic::Mapping::from_fn(#[creusot :: decl :: logic] #[creusot::no_translate] |#inputs| #retty #clos)},
+                quote_spanned! {sp=> ::creusot_contracts::logic::Mapping::from_fn(#[creusot::decl::logic] #[creusot::no_translate] |#inputs| #retty #clos)},
             )
         }
         RT::__Nonexhaustive => todo!(),
@@ -303,7 +305,7 @@ mod tests {
 
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
-            "creusot_contracts :: __stubs :: old (x)"
+            ":: creusot_contracts :: __stubs :: old (x)"
         );
     }
 
@@ -312,13 +314,13 @@ mod tests {
         let term: Term = syn::parse_str("^ x").unwrap();
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
-            "* creusot_contracts :: __stubs :: fin (x)"
+            "* :: creusot_contracts :: __stubs :: fin (x)"
         );
 
         let term: Term = syn::parse_str("^ ^ x").unwrap();
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
-            "* creusot_contracts :: __stubs :: fin (* creusot_contracts :: __stubs :: fin (x))"
+            "* :: creusot_contracts :: __stubs :: fin (* :: creusot_contracts :: __stubs :: fin (x))"
         );
     }
 
@@ -330,7 +332,7 @@ mod tests {
 
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
-            "* * creusot_contracts :: __stubs :: fin (x)"
+            "* * :: creusot_contracts :: __stubs :: fin (x)"
         );
     }
 
@@ -339,13 +341,13 @@ mod tests {
         let term: Term = syn::parse_str("forall<x:Int> x == x").unwrap();
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
-            "creusot_contracts :: __stubs :: forall (# [creusot :: no_translate] | x : Int | { creusot_contracts :: __stubs :: equal (x , x) })"
+            ":: creusot_contracts :: __stubs :: forall (# [creusot :: no_translate] | x : Int | { :: creusot_contracts :: __stubs :: equal (x , x) })"
         );
 
         let term: Term = syn::parse_str("forall<x:Int> forall<y:Int> true").unwrap();
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
-            "creusot_contracts :: __stubs :: forall (# [creusot :: no_translate] | x : Int | { creusot_contracts :: __stubs :: forall (# [creusot :: no_translate] | y : Int | { true }) })"
+            ":: creusot_contracts :: __stubs :: forall (# [creusot :: no_translate] | x : Int | { :: creusot_contracts :: __stubs :: forall (# [creusot :: no_translate] | y : Int | { true }) })"
         );
     }
 
@@ -354,13 +356,13 @@ mod tests {
         let term: Term = syn::parse_str("exists<x:Int> x == x").unwrap();
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
-            "creusot_contracts :: __stubs :: exists (# [creusot :: no_translate] | x : Int | { creusot_contracts :: __stubs :: equal (x , x) })"
+            ":: creusot_contracts :: __stubs :: exists (# [creusot :: no_translate] | x : Int | { :: creusot_contracts :: __stubs :: equal (x , x) })"
         );
 
         let term: Term = syn::parse_str("exists<x:Int> exists<y:Int> true").unwrap();
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
-            "creusot_contracts :: __stubs :: exists (# [creusot :: no_translate] | x : Int | { creusot_contracts :: __stubs :: exists (# [creusot :: no_translate] | y : Int | { true }) })"
+            ":: creusot_contracts :: __stubs :: exists (# [creusot :: no_translate] | x : Int | { :: creusot_contracts :: __stubs :: exists (# [creusot :: no_translate] | y : Int | { true }) })"
         );
     }
 
@@ -369,7 +371,7 @@ mod tests {
         let term: Term = syn::parse_str("false ==> true").unwrap();
         assert_eq!(
             format!("{}", encode_term(&term).unwrap()),
-            "creusot_contracts :: __stubs :: implication (false , true)"
+            ":: creusot_contracts :: __stubs :: implication (false , true)"
         );
     }
 }

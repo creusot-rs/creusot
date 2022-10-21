@@ -1,5 +1,4 @@
-use crate as creusot_contracts;
-use crate::macros::*;
+use crate::*;
 
 #[cfg_attr(feature = "contracts", creusot::builtins = "map.Map.map")]
 pub struct Mapping<A, B>(std::marker::PhantomData<(A, B)>);

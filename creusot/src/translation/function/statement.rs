@@ -50,18 +50,18 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         let rval: Expr<'tcx> = match rvalue {
             Rvalue::Use(rval) => match rval {
                 Move(pl) => {
-                    self.emit_statement(fmir::Statement::Resolve(*place));
+                    self.emit_resolve(*place);
                     Expr::Move(*pl)
                 }
                 Copy(pl) => {
-                    self.emit_statement(fmir::Statement::Resolve(*place));
+                    self.emit_resolve(*place);
                     Expr::Copy(*pl)
                 }
                 Constant(box c) => {
                     if is_ghost_closure(self.tcx, c.literal.ty()).is_some() {
                         return;
                     };
-                    crate::constant::from_mir_constant(self.param_env(), self.ctx, self.names, c)
+                    crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
                 }
             },
             Rvalue::Ref(_, ss, pl) => match ss {

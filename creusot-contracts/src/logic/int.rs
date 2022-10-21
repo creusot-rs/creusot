@@ -1,7 +1,7 @@
-use crate as creusot_contracts;
-use crate::{macros::*, DeepModel, ShallowModel};
-
-use std::ops::*;
+use crate::{
+    std::ops::{Add, Div, Mul, Neg, Rem, Sub},
+    *,
+};
 
 #[cfg_attr(
     feature = "contracts",

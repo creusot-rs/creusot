@@ -7,13 +7,7 @@ use crate::{
     util,
     util::{constructor_qname, get_builtin},
 };
-use creusot_rustc::{
-    hir::Unsafety,
-    middle::{
-        ty,
-        ty::{EarlyBinder, ParamEnv},
-    },
-};
+use creusot_rustc::{hir::Unsafety, middle::ty::EarlyBinder};
 use rustc_middle::ty::{Ty, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
@@ -24,11 +18,10 @@ use why3::{
 pub(crate) fn lower_pure<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
-    param_env: ParamEnv<'tcx>,
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
-    let mut term = Lower { ctx, names, pure: Purity::Logic, param_env }.lower_term(term);
+    let mut term = Lower { ctx, names, pure: Purity::Logic }.lower_term(term);
     term.reassociate();
     if !ctx.sess.source_map().is_imported(span) {
         term = ctx.attach_span(span, term);
@@ -40,16 +33,13 @@ pub(crate) fn lower_pure<'tcx>(
 pub(crate) fn lower_impure<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
-    term_id: DefId,
-    param_env: ParamEnv<'tcx>,
-
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
-    let mut term = Lower { ctx, names, pure: Purity::Program, param_env }.lower_term(term);
+    let mut term = Lower { ctx, names, pure: Purity::Program }.lower_term(term);
     term.reassociate();
 
-    if term_id.is_local() {
+    if !ctx.sess.source_map().is_imported(span) {
         term = ctx.attach_span(span, term);
     }
     term
@@ -60,7 +50,6 @@ pub(super) struct Lower<'a, 'tcx> {
     pub(super) names: &'a mut CloneMap<'tcx>,
     // true when we are translating a purely logical term
     pub(super) pure: Purity,
-    param_env: ParamEnv<'tcx>,
 }
 impl<'tcx> Lower<'_, 'tcx> {
     pub(crate) fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
@@ -69,26 +58,17 @@ impl<'tcx> Lower<'_, 'tcx> {
                 let c = lower_literal(self.ctx, self.names, l);
                 c
             }
+            // FIXME: this is a weird dance.
             TermKind::Item(id, subst) => {
                 let method = (id, subst);
                 debug!("resolved_method={:?}", method);
                 self.lookup_builtin(method, &mut Vec::new()).unwrap_or_else(|| {
-                    let uneval =
-                        ty::UnevaluatedConst::new(ty::WithOptConstParam::unknown(id), subst);
-
-                    let constant = self.ctx.tcx.mk_const(ty::ConstS {
-                        kind: ty::ConstKind::Unevaluated(uneval),
-                        ty: term.ty,
-                    });
-
-                    crate::constant::from_ty_const(
-                        self.ctx,
-                        self.names,
-                        constant,
-                        self.param_env,
-                        creusot_rustc::span::DUMMY_SP,
-                    )
-                    .to_why(self.ctx, self.names, None)
+                    // eprintln!("{id:?} {subst:?}");
+                    let clone = self.names.insert(id, subst);
+                    match self.ctx.type_of(id).kind() {
+                        TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
+                        _ => Exp::pure_qvar(clone.qname(self.ctx.tcx, id)),
+                    }
                 })
             }
             TermKind::Var(v) => Exp::pure_var(util::ident_of(v)),
@@ -402,7 +382,7 @@ use creusot_rustc::{
 pub(crate) fn lower_literal<'tcx>(
     _ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
-    lit: Literal,
+    lit: Literal<'tcx>,
 ) -> Exp {
     match lit {
         Literal::Integer(i) => Constant::Int(i, None).into(),
@@ -422,7 +402,10 @@ pub(crate) fn lower_literal<'tcx>(
                 Constant::const_false().into()
             }
         }
-        Literal::Function => Exp::Tuple(Vec::new()),
+        Literal::Function(id, subst) => {
+            names.insert(id, subst);
+            Exp::Tuple(Vec::new())
+        }
         Literal::Float(f) => Constant::Float(f).into(),
         Literal::ZST => Exp::Tuple(Vec::new()),
         Literal::String(string) => Constant::String(string).into(),

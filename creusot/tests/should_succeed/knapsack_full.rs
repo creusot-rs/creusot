@@ -83,21 +83,16 @@ fn m<Name>(items: Seq<Item<Name>>, i: Int, w: Int) -> Int {
 )]
 pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&Item<Name>> {
     let mut best_value = vec![vec![0; max_weight + 1]; items.len() + 1];
-    let mut i = 0;
 
     #[invariant(items_len, (@items).len() + 1 == (@best_value).len())]
     #[invariant(weight_len, forall<i: Int> 0 <= i && i < (@best_value).len() ==>
                   @max_weight + 1 == (@(@best_value)[i]).len())]
-    #[invariant(best_value, forall<ii: Int, ww: Int> 0 <= ii && ii <= @i && 0 <= ww && ww <= @max_weight ==>
+    #[invariant(best_value, forall<ii: Int, ww: Int> 0 <= ii && ii <= produced.len() && 0 <= ww && ww <= @max_weight ==>
                   @(@(@best_value)[ii])[ww] == m(@items, ii, ww))]
     #[invariant(best_value_bounds, forall<ii: Int, ww: Int> 0 <= ii && ii <= (@items).len() && 0 <= ww && ww <= @max_weight ==>
                   @(@(@best_value)[ii])[ww] <= 10000000 * ii)]
-    while i < items.len() {
+    for i in 0..items.len() {
         let it = &items[i];
-
-        // Change compared to Rosetta Code: we start at w = 0.
-        // This makes it possible to allow 0-weight items, and makes the proof simpler.
-        let mut w = 0;
 
         #[invariant(items_len2, (@items).len() + 1 == (@best_value).len())]
         #[invariant(weight_len2, forall<i: Int> 0 <= i && i < (@best_value).len() ==>
@@ -105,19 +100,19 @@ pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&
         #[invariant(best_value2, forall<ii: Int, ww: Int>
                       0 <= ii && ii <= @i && 0 <= ww && ww <= @max_weight ==>
                       @(@(@best_value)[ii])[ww] == m(@items, ii, ww))]
-        #[invariant(best_value2, forall<ww: Int> 0 <= ww && ww <= @w-1 ==>
+        #[invariant(best_value2, forall<ww: Int> 0 <= ww && ww <= produced.len() - 1 ==>
                       @(@(@best_value)[@i+1])[ww] == m(@items, @i+1, ww))]
         #[invariant(best_value_bounds, forall<ii: Int, ww: Int> 0 <= ii && ii <= (@items).len() && 0 <= ww && ww <= @max_weight ==>
                   @(@(@best_value)[ii])[ww] <= 10000000 * ii)]
-        while w <= max_weight {
+        // Change compared to Rosetta Code: we start at w = 0.
+        // This makes it possible to allow 0-weight items, and makes the proof simpler.
+        for w in 0..=max_weight {
             best_value[i + 1][w] = if it.weight > w {
                 best_value[i][w]
             } else {
                 max(best_value[i][w], best_value[i][w - it.weight] + it.value)
             };
-            w += 1
         }
-        i += 1
     }
 
     let mut result: Vec<&_> = Vec::with_capacity(items.len());
