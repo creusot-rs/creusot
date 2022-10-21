@@ -167,8 +167,7 @@ fn translate_ty_inner<'tcx>(
         {
             MlT::Tuple(vec![])
         }
-        FnPtr(_) =>
-        {
+        FnPtr(_) => {
             names.import_prelude_module(PreludeModule::Opaque);
             MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
         }

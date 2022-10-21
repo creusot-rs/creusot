@@ -160,7 +160,6 @@ impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
     }
 }
 
-
 impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
     type ShallowModelTy = Seq<T>;
 
