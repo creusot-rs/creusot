@@ -78,10 +78,6 @@ extern_spec! {
                 #[ensures((@^self)[@index] == element)]
                 #[ensures(forall<i: Int> @index < i && i < (@^self).len() ==> (@^self)[i] == (@self)[i - 1])]
                 fn insert(&mut self, index: usize, element: T);
-
-                #[ensures(@result == @self)]
-                #[ensures(result.invariant())]
-                fn into_iter(self) -> IntoIter<T, A>;
             }
 
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
@@ -128,21 +124,42 @@ extern_spec! {
     }
 }
 
-// Has to be placed outside because of limitations in the proc macro for extern spec
-// that cannot properly prefix `Vec` with `std::vec::` inside `&'a Vec`
-extern_spec! {
-    impl<'a, T, A : Allocator> IntoIterator for &'a std::vec::Vec<T, A> {
-        #[ensures(@@result == @self)]
-        #[ensures(result.invariant())]
-        fn into_iter(self) -> std::slice::Iter<'a, T>;
+impl<T, A: Allocator> IntoIterator for Vec<T, A> {
+    #[predicate]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
     }
 
-    impl<'a, T, A : Allocator> IntoIterator for &'a mut std::vec::Vec<T, A> {
-        #[ensures(@@result == @self)]
-        #[ensures(result.invariant())]
-        fn into_iter(self) -> std::slice::IterMut<'a, T>;
+    #[predicate]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { @self == @res }
     }
 }
+
+impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
+    #[predicate]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
+
+    #[predicate]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { @self == @@res }
+    }
+}
+
+impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
+    #[predicate]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
+
+    #[predicate]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { @self == @@res }
+    }
+}
+
 
 impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
     type ShallowModelTy = Seq<T>;
@@ -195,7 +212,7 @@ impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
 
 impl<T> FromIterator<T> for Vec<T> {
     #[predicate]
-    fn from_iter_logic(prod: Seq<T>, res: Self) -> bool {
+    fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
         pearlite! { prod == @res }
     }
 }

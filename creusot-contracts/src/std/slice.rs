@@ -257,18 +257,6 @@ extern_spec! {
         fn iter_mut(&mut self) -> IterMut<'_, T>;
     }
 
-    impl<'a, T> IntoIterator for &'a [T] {
-        #[ensures(@result == self)]
-        #[ensures(result.invariant())]
-        fn into_iter(self) -> Iter<'a, T>;
-    }
-
-    impl<'a, T> IntoIterator for &'a mut[T] {
-        #[ensures(@result == self)]
-        #[ensures(result.invariant())]
-        fn into_iter(self) -> IterMut<'a, T>;
-    }
-
     impl<T, I> IndexMut<I> for [T]
         where I : SliceIndex<[T]> {
        #[requires(ix.in_bounds(@self))]
@@ -287,6 +275,30 @@ extern_spec! {
     }
 }
 
+impl<T> IntoIterator for &[T] {
+    #[predicate]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
+
+    #[predicate]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { self == @res }
+    }
+}
+
+impl<T> IntoIterator for &mut [T] {
+    #[predicate]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
+
+    #[predicate]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { self == @res }
+    }
+}
+
 impl<'a, T> ShallowModel for Iter<'a, T> {
     type ShallowModelTy = &'a [T];
 
@@ -297,7 +309,7 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
     }
 }
 
-impl<T> Invariant for Iter<'_, T> {
+impl<'a, T> Invariant for Iter<'a, T> {
     #[predicate]
     fn invariant(self) -> bool {
         true
