@@ -13,21 +13,6 @@ pub fn ensures(_: TS1, tokens: TS1) -> TS1 {
 }
 
 #[proc_macro_attribute]
-pub fn prusti_requires(_: TS1, tokens: TS1) -> TS1 {
-    tokens
-}
-
-#[proc_macro_attribute]
-pub fn prusti_ensures(_: TS1, tokens: TS1) -> TS1 {
-    tokens
-}
-
-#[proc_macro_attribute]
-pub fn prusti_ensures_expiry(_: TS1, tokens: TS1) -> TS1 {
-    tokens
-}
-
-#[proc_macro_attribute]
 pub fn variant(_: TS1, tokens: TS1) -> TS1 {
     tokens
 }
@@ -80,4 +65,24 @@ pub fn extern_spec(_: TS1) -> TS1 {
 #[proc_macro_attribute]
 pub fn maintains(_: TS1, tokens: TS1) -> TS1 {
     tokens
+}
+
+#[proc_macro_attribute]
+pub fn prusti_requires(_: TS1, tokens: TS1) -> TS1 {
+    tokens
+}
+
+#[proc_macro_attribute]
+pub fn prusti_ensures(_: TS1, tokens: TS1) -> TS1 {
+    tokens
+}
+
+#[proc_macro_attribute]
+pub fn prusti_ensures_expiry(_: TS1, tokens: TS1) -> TS1 {
+    tokens
+}
+
+#[proc_macro_attribute]
+pub fn prusti_logic(_: TS1, _: TS1) -> TS1 {
+    TS1::new()
 }

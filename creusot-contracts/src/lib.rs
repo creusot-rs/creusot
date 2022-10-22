@@ -75,7 +75,7 @@ mod macros {
     pub mod prusti {
         pub use base_macros::{
             prusti_ensures as ensures, prusti_ensures_expiry as after_expiry,
-            prusti_requires as requires,
+            prusti_requires as requires, prusti_logic as logic,
         };
     }
 }

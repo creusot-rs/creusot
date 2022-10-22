@@ -9,7 +9,7 @@ use crate::{
 use creusot_rustc::{
     ast::{
         ast::{MacArgs, MacArgsEq},
-        AttrItem, AttrKind, Attribute,
+        AttrItem, AttrKind, Attribute, Lit,
     },
     hir::{def::DefKind, def_id::DefId, Unsafety},
     macros::{TypeFoldable, TypeVisitable},
@@ -488,6 +488,17 @@ pub(crate) fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a 
         }
     }
     None
+}
+
+pub(crate) fn get_attr_lit<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    path: &[&str],
+) -> Option<&'tcx Lit> {
+    match &get_attr(tcx.get_attrs_unchecked(def_id), path)?.args {
+        MacArgs::Eq(_, MacArgsEq::Hir(l)) => Some(l),
+        _ => unreachable!(),
+    }
 }
 
 pub(crate) fn get_attrs<'a>(attrs: &'a [Attribute], path: &[&str]) -> Vec<&'a Attribute> {

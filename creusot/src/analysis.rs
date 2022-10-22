@@ -7,7 +7,6 @@ use creusot_rustc::{
 };
 
 pub(crate) mod uninit_locals;
-pub(crate) mod variance;
 
 pub struct NeverLive(BitSet<Local>);
 

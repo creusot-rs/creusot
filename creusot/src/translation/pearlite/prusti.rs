@@ -1,12 +1,10 @@
-use super::{Term, ThirTerm};
 use crate::{
-    analysis::variance::*,
     error::{CreusotResult, Error},
-    pearlite::{Pattern, TermKind},
+    pearlite::{Pattern, Term, TermKind, ThirTerm},
     util,
 };
 use creusot_rustc::{
-    ast::AttrItem,
+    ast::Lit,
     data_structures::fx::{FxHashMap, FxHashSet},
     hir::def_id::DefId,
     middle::{
@@ -22,11 +20,14 @@ use creusot_rustc::{
     },
 };
 use internal_iterator::*;
-use itertools::Itertools;
+use itertools::{Either, Itertools};
 use std::{
     hash::Hash,
+    iter,
     ops::{ControlFlow, Deref, DerefMut},
 };
+mod parsing;
+mod variance;
 
 struct SemiPersistent<T>(T);
 
@@ -154,6 +155,8 @@ enum Lattice<T> {
 use Lattice::*;
 use TimeSlice::*;
 
+type Home = Lattice<TimeSlice>;
+
 impl<T: Eq> Lattice<T> {
     fn union(self, other: Self) -> Self {
         match (self, other) {
@@ -163,11 +166,19 @@ impl<T: Eq> Lattice<T> {
         }
     }
 
-    fn matches(&self, other: &T) -> bool {
+    fn matches(self, other: T) -> bool {
         match self {
             Absurd => true,
             Inner(x) => x == other,
             Unknown => false,
+        }
+    }
+
+    fn subtype(self, other: Self) -> bool {
+        match other {
+            Absurd => matches!(other, Absurd),
+            Inner(y) => self.matches(y),
+            Unknown => true,
         }
     }
 }
@@ -180,42 +191,59 @@ struct Ty<'tcx> {
 
 type Tenv<'tcx> = SemiPersistent<FxHashMap<Symbol, Ty<'tcx>>>;
 
+/// Returns region corresponding to `l`
+/// Also checks that 'curr is not blocked
 fn make_time_slice(
-    attr: &AttrItem,
-    mut regions: impl Iterator<Item = Region>,
+    l: &Lit,
+    regions: impl Iterator<Item = Region>,
     non_blocked: &FxHashSet<Region>,
 ) -> CreusotResult<TimeSlice> {
-    use creusot_rustc::ast::{MacArgs, MacArgsEq};
-    match &attr.args {
-        MacArgs::Eq(_, MacArgsEq::Hir(l)) => {
-            let sym = l.token_lit.symbol;
-            match sym.as_str() {
-                "old" => Ok(Old),
-                "curr" => Ok(Curr),
-                "'_" => {
-                    let mut candiates = regions
-                        .filter(|r| matches!(r, Region::Elided(_)) && !non_blocked.contains(r));
-                    match (candiates.next(), candiates.next()) {
-                        (None, _) => {
-                            Err(Error::new(l.span, "function has no blocked anonymous regions"))
-                        }
-                        (Some(_), Some(_)) => Err(Error::new(
-                            l.span,
-                            "function has multiple blocked anonymous regions",
-                        )),
-                        (Some(c), None) => Ok(Expiry(c)),
-                    }
+    let mut bad_curr = false;
+    let curr_lifetime = Region::Named(Symbol::intern("'curr"));
+    let mut regions = regions
+        .inspect(|r| bad_curr = bad_curr || (*r == curr_lifetime && !non_blocked.contains(r)));
+    let sym = l.token_lit.symbol;
+    let res = match sym.as_str() {
+        "old" => Ok(Old),
+        "curr" => Ok(Curr),
+        "'_" => {
+            let mut candiates = (&mut regions)
+                .filter(|r| matches!(r, Region::Elided(_)) && !non_blocked.contains(r));
+            match (candiates.next(), candiates.next()) {
+                (None, _) => Err(Error::new(l.span, "function has no blocked anonymous regions")),
+                (Some(_), Some(_)) => {
+                    Err(Error::new(l.span, "function has multiple blocked anonymous regions"))
                 }
-                _ => {
-                    if regions.any(|r| r == Region::Named(sym)) {
-                        Ok(Expiry(Region::Named(sym)))
-                    } else {
-                        Err(Error::new(l.span, format!("use of undeclared lifetime name {sym}")))
-                    }
-                }
+                (Some(c), None) => Ok(Expiry(c)),
             }
         }
-        _ => unreachable!(),
+        _ => {
+            if regions.any(|r| r == Region::Named(sym)) {
+                Ok(Expiry(Region::Named(sym)))
+            } else {
+                Err(Error::new(l.span, format!("use of undeclared lifetime name {sym}")))
+            }
+        }
+    };
+    regions.for_each(drop);
+    if bad_curr {
+        Err(Error::new(l.span, "'curr region must not be blocked"))
+    } else {
+        res
+    }
+}
+
+/// Returns region corresponding to `l` in a logical context
+fn make_time_slice_logic(l: &Lit) -> CreusotResult<TimeSlice> {
+    let sym = l.token_lit.symbol;
+    match sym.as_str() {
+        "old" => Ok(Curr), //hack requires clauses to use same time slice as return
+        "curr" => Ok(Curr),
+        "'_" => Err(Error::new(
+            l.span,
+            "expiry contract on logic function must use a concrete lifetime/home",
+        )),
+        _ => Ok(Expiry(Region::Named(sym))),
     }
 }
 
@@ -235,20 +263,57 @@ impl<'tcx> Ctx<'tcx> {
     }
 }
 
+fn make_tenv<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    owner_id: LocalDefId,
+    sig: FnSig<'tcx>,
+    home_sig: Option<&Lit>,
+) -> CreusotResult<Tenv<'tcx>> {
+    let args: &[Ident] = tcx.fn_arg_names(owner_id);
+    let (arg_homes, ret_home) = match home_sig {
+        Some(lit) => {
+            let (arg_homes, ret_home) = parsing::parse_home_sig_lit(lit)?;
+            if arg_homes.len() != args.len() {
+                return Err(Error::new(lit.span, "number of args doesn't match signature"));
+            }
+            (Either::Left(arg_homes.into_iter()), ret_home)
+        }
+        None => {
+            let arg_homes = iter::repeat(Inner(Old));
+            (Either::Right(arg_homes), Inner(Curr))
+        }
+    };
+    let types = sig.inputs().iter().zip(arg_homes).map(|(&ty, home)| Ty { ty, home });
+
+    let mut tenv: FxHashMap<_, _> = args
+        .iter()
+        .enumerate()
+        .map(|(idx, arg)| {
+            if arg.name.is_empty() {
+                let name = format!("{}", util::AnonymousParamName(idx));
+                Symbol::intern(&name)
+            } else {
+                arg.name
+            }
+        })
+        .zip(types)
+        .collect();
+    tenv.insert(Symbol::intern("result"), Ty { ty: sig.output(), home: ret_home });
+    Ok(Tenv::new(tenv))
+}
+
 pub(super) fn prusti_to_creusot<'tcx>(
     ctx: &ThirTerm<'_, 'tcx>,
     mut term: Term<'tcx>,
 ) -> CreusotResult<Term<'tcx>> {
     let tcx = ctx.tcx;
-    let attr = match util::get_attr(
-        tcx.get_attrs_unchecked(ctx.item_id.into()),
-        &["creusot", "prusti", "ts"],
-    ) {
+    let item_id = ctx.item_id;
+    let attr = match util::get_attr_lit(tcx, item_id.to_def_id(), &["creusot", "prusti", "ts"]) {
         None => return Ok(term),
         Some(attr) => attr,
     };
 
-    let owner_id = util::param_def_id(tcx, ctx.item_id);
+    let owner_id = util::param_def_id(tcx, item_id);
     if tcx.is_closure(owner_id.into()) {
         return Err(Error::new(term.span, "Prusti specs on closures aren't supported"));
     }
@@ -268,31 +333,26 @@ pub(super) fn prusti_to_creusot<'tcx>(
         }
         _ => None,
     });
-
     let sig = tcx.liberate_late_bound_regions(owner_id.to_def_id(), sig);
-    let non_blocked: FxHashSet<Region> = empty_regions(tcx, owner_id).map(Region::from).collect();
-    let ts = make_time_slice(attr, lifetimes1.chain(lifetimes2), &non_blocked)?;
+    let home_sig = util::get_attr_lit(tcx, owner_id.into(), &["creusot", "prusti", "home_sig"]);
+    let non_blocked: FxHashSet<Region> = if home_sig.is_some() {
+        iter::once(Region::Named(Symbol::intern("'curr"))).collect()
+    } else {
+        variance::empty_regions(tcx, owner_id).map(Region::from).collect()
+    };
+    let ts = if home_sig.is_some() {
+        make_time_slice_logic(attr)?
+    } else {
+        make_time_slice(attr, lifetimes1.chain(lifetimes2), &non_blocked)?
+    };
     //dbg!(&non_blocked);
     //eprintln!("{:?}", sig);
-    let args: &[Ident] = tcx.fn_arg_names(owner_id);
-    let mut tenv: FxHashMap<_, _> = args
-        .iter()
-        .enumerate()
-        .map(|(idx, arg)| {
-            if arg.name.is_empty() {
-                let name = format!("{}", util::AnonymousParamName(idx));
-                Symbol::intern(&name)
-            } else {
-                arg.name
-            }
-        })
-        .zip(sig.inputs().iter().map(|&ty| Ty { ty, home: Inner(Old) }))
-        .collect();
-    tenv.insert(Symbol::intern("result"), Ty { ty: sig.output(), home: Inner(Curr) });
-    //eprintln!("{:?}", &tenv);
-    let mut tenv = Tenv::new(tenv);
+    let mut tenv = make_tenv(tcx, owner_id, sig, home_sig)?;
     let ctx = Ctx { tcx, non_blocked };
-    convert(&mut term, &mut tenv, ts, &ctx)?;
+    let final_type = convert(&mut term, &mut tenv, ts, &ctx)?;
+    if item_id == owner_id && !final_type.home.subtype(tenv[&Symbol::intern("result")].home) {
+        return Err(Error::new(term.span, "home mismatch"));
+    }
     Ok(term)
 }
 
@@ -407,7 +467,7 @@ fn convert<'tcx>(
             };
             //eprintln!("start: {start:?}, end: {end:?}");
             let res = match (ts, start, end) {
-                (ts, start, _) if start.matches(&ts) => TermKind::Cur { term },
+                (ts, start, _) if start.matches(ts) => TermKind::Cur { term },
                 (ts, _, end) if ts == end => TermKind::Fin { term },
                 _ => return Err(Error::new(term.span, "Invalid dereference")),
             };

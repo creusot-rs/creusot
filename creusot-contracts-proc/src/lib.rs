@@ -322,47 +322,6 @@ fn ensures_helper(attr: TS1, tokens: TS1, prusti_info: impl ToTokens) -> TS1 {
 }
 
 #[proc_macro_attribute]
-pub fn prusti_requires(attr: TS1, tokens: TS1) -> TS1 {
-    let prusti_info = quote!(#[creusot::prusti::ts="old"]);
-    requires_helper(attr, tokens, prusti_info)
-}
-
-#[proc_macro_attribute]
-pub fn prusti_ensures(attr: TS1, tokens: TS1) -> TS1 {
-    let prusti_info = quote!(#[creusot::prusti::ts="curr"]);
-    ensures_helper(attr, tokens, prusti_info)
-}
-
-#[proc_macro_attribute]
-pub fn prusti_ensures_expiry(attr: TS1, tokens: TS1) -> TS1 {
-    let parser = |input: ParseStream| {
-        let lookahead = input.lookahead1();
-        if lookahead.peek(Lifetime) {
-            let lt: Lifetime = input.parse()?;
-            let _: Token![,] = input.parse()?;
-            let rest: TokenStream = input.parse()?;
-            Ok((Some(lt), rest))
-        } else {
-            Ok((None, input.parse()?))
-        }
-    };
-    let split = parser.parse(attr);
-    let (lifetime, rest) = match split {
-        Ok(split) => split,
-        Err(err) => return err.into_compile_error().into(),
-    };
-    let prusti_info = match lifetime {
-        Some(lifetime) => {
-            let lifetime_string = format!("{}", lifetime);
-            let lifetime = LitStr::new(&lifetime_string, lifetime.span());
-            quote!(#[creusot::prusti::ts=#lifetime])
-        },
-        None => quote!(#[creusot::prusti::ts="'_"]),
-    };
-    ensures_helper(rest.into(), tokens, prusti_info)
-}
-
-#[proc_macro_attribute]
 pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
     match variant_inner(attr, tokens) {
         Ok(r) => r,
@@ -647,4 +606,60 @@ pub fn derive_partial_eq(tokens: TS1) -> TS1 {
 #[proc_macro_derive(Clone)]
 pub fn derive_clone(tokens: TS1) -> TS1 {
     derive::derive_clone(tokens)
+}
+
+// Prusti Macros
+#[proc_macro_attribute]
+pub fn prusti_requires(attr: TS1, tokens: TS1) -> TS1 {
+    let prusti_info = quote!(#[creusot::prusti::ts="old"]);
+    requires_helper(attr, tokens, prusti_info)
+}
+
+#[proc_macro_attribute]
+pub fn prusti_ensures(attr: TS1, tokens: TS1) -> TS1 {
+    let prusti_info = quote!(#[creusot::prusti::ts="curr"]);
+    ensures_helper(attr, tokens, prusti_info)
+}
+
+#[proc_macro_attribute]
+pub fn prusti_ensures_expiry(attr: TS1, tokens: TS1) -> TS1 {
+    let parser = |input: ParseStream| {
+        let lookahead = input.lookahead1();
+        if lookahead.peek(Lifetime) {
+            let lt: Lifetime = input.parse()?;
+            let _: Token![,] = input.parse()?;
+            let rest: TokenStream = input.parse()?;
+            Ok((Some(lt), rest))
+        } else {
+            Ok((None, input.parse()?))
+        }
+    };
+    let split = parser.parse(attr);
+    let (lifetime, rest) = match split {
+        Ok(split) => split,
+        Err(err) => return err.into_compile_error().into(),
+    };
+    let prusti_info = match lifetime {
+        Some(lifetime) => {
+            let lifetime_string = format!("{}", lifetime);
+            let lifetime = LitStr::new(&lifetime_string, lifetime.span());
+            quote!(#[creusot::prusti::ts=#lifetime])
+        },
+        None => quote!(#[creusot::prusti::ts="'_"]),
+    };
+    ensures_helper(rest.into(), tokens, prusti_info)
+}
+
+#[proc_macro_attribute]
+pub fn prusti_logic(attr: TS1, tokens: TS1) -> TS1 {
+    let attr = TokenStream::from(attr);
+    let tokens = TokenStream::from(tokens);
+    let sig = format!("{attr}");
+    let sig = LitStr::new(&sig, attr.span());
+    TS1::from(quote! {
+        #[creusot::prusti::ts="curr"]
+        #[creusot::prusti::home_sig=#sig]
+        #[::creusot_contracts::logic]
+        #tokens
+    })
 }
