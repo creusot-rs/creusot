@@ -290,7 +290,7 @@ impl<'tcx> CloneMap<'tcx> {
 
             let base = Symbol::intern(&base_sym.as_str().to_camel_case());
             let count: usize = *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
-            debug!("inserting {:?} {:?} as {}{}", def_id, subst, base, count);
+            trace!("inserting {:?} {:?} as {}{}", def_id, subst, base, count);
 
             let info =
                 CloneInfo::from_name(Symbol::intern(&format!("{}{}", base, count)), self.public);
@@ -328,7 +328,7 @@ impl<'tcx> CloneMap<'tcx> {
             || self.tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id)
             || self.tcx.is_diagnostic_item(Symbol::intern("fn_impl_resolve"), def_id)
         {
-            debug!("closure_hack: {:?} {:?}", self.self_id, def_id);
+            trace!("closure_hack: {:?} {:?}", self.self_id, def_id);
             let self_ty = subst.types().nth(1).unwrap();
             if let TyKind::Closure(id, csubst) = self_ty.kind() {
                 return (*id, csubst);
@@ -378,7 +378,7 @@ impl<'tcx> CloneMap<'tcx> {
 
             ctx.translate(key.0);
 
-            debug!(
+            trace!(
                 "{:?} {:?} has {:?} dependencies",
                 self.names[&key].kind,
                 key,
@@ -466,7 +466,7 @@ impl<'tcx> CloneMap<'tcx> {
     ) -> &mut IndexSet<(Kind, SymbolKind)> {
         let k1 = if let DepNode::Dep(d1) = user { Some(&self.names[&d1].kind) } else { None };
         let k2 = if let DepNode::Dep(d2) = prov { Some(&self.names[&d2].kind) } else { None };
-        debug!("{k1:?} = {:?} --> {k2:?} = {:?}", user, prov);
+        trace!("{k1:?} = {:?} --> {k2:?} = {:?}", user, prov);
 
         if let None = self.clone_graph.edge_weight_mut(user, prov) {
             self.clone_graph.add_edge(user, prov, IndexSet::new());
@@ -550,7 +550,7 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     pub(crate) fn to_clones(&mut self, ctx: &mut ctx::TranslationCtx<'tcx>) -> Vec<Decl> {
-        debug!("emitting clones for {:?}", self.self_id);
+        trace!("emitting clones for {:?}", self.self_id);
         let mut decls = Vec::new();
 
         use petgraph::visit::Walker;
@@ -558,7 +558,7 @@ impl<'tcx> CloneMap<'tcx> {
         // Update the clone graph with any new entries.
         self.update_graph(ctx);
 
-        debug!(
+        trace!(
             "dep_graph processed={} nodes={} edges={}",
             self.last_cloned,
             self.clone_graph.node_count(),
@@ -573,7 +573,7 @@ impl<'tcx> CloneMap<'tcx> {
         let mut topo = DfsPostOrder::new(&self.clone_graph, DepNode::Dep(self.self_key()));
         while let Some(node) = topo.walk_next(&self.clone_graph) {
             let DepNode::Dep(node @ (def_id, subst)) = node else { continue };
-            debug!("processing node {:?}", self.names[&node].kind);
+            trace!("processing node {:?}", self.names[&node].kind);
 
             // Though we pass in a &mut ref, it shouldn't actually be possible to add any new entries..
             let mut clone_subst = base_subst(ctx, self, def_id, subst);
@@ -649,7 +649,7 @@ impl<'tcx> CloneMap<'tcx> {
                 (x, _) => x,
             };
 
-            debug!(
+            trace!(
                 "emit clone node={node:?} name={:?} as={:?}",
                 cloneable_name(ctx, def_id, interface),
                 self.names[&node].kind.clone()
