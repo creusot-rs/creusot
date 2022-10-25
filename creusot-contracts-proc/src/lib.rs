@@ -480,7 +480,7 @@ pub fn law(_: TS1, tokens: TS1) -> TS1 {
     let tokens = TokenStream::from(tokens);
     TS1::from(quote! {
         #[creusot::decl::law]
-        #[logic]
+        #[::creusot_contracts::logic]
         #tokens
     })
 }
