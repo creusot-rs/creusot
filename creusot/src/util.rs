@@ -211,13 +211,13 @@ pub(crate) fn module_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
 }
 
 fn ident_path(tcx: TyCtxt, def_id: DefId) -> Ident {
-    use heck::CamelCase;
+    use heck::ToUpperCamelCase;
 
     let def_path = tcx.def_path(def_id);
 
     let mut segments = Vec::new();
 
-    let mut crate_name = tcx.crate_name(def_id.krate).to_string().to_camel_case();
+    let mut crate_name = tcx.crate_name(def_id.krate).to_string().to_upper_camel_case();
     if crate_name.chars().next().unwrap().is_numeric() {
         crate_name = format!("C{}", crate_name);
     }
@@ -226,7 +226,7 @@ fn ident_path(tcx: TyCtxt, def_id: DefId) -> Ident {
 
     for seg in def_path.data[..].iter() {
         match seg.data {
-            _ => segments.push(format!("{}", seg).to_camel_case()),
+            _ => segments.push(format!("{}", seg).to_upper_camel_case()),
         }
     }
 

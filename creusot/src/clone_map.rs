@@ -9,7 +9,7 @@ use creusot_rustc::{
     resolve::Namespace,
     span::{Symbol, DUMMY_SP},
 };
-use heck::CamelCase;
+use heck::ToUpperCamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
 use rustc_middle::ty::{subst::GenericArgKind, ParamEnv};
@@ -288,7 +288,7 @@ impl<'tcx> CloneMap<'tcx> {
                 _ => self.tcx.item_name(def_id),
             };
 
-            let base = Symbol::intern(&base_sym.as_str().to_camel_case());
+            let base = Symbol::intern(&base_sym.as_str().to_upper_camel_case());
             let count: usize = *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
             trace!("inserting {:?} {:?} as {}{}", def_id, subst, base, count);
 
@@ -688,7 +688,7 @@ pub(crate) fn base_subst<'tcx>(
     subst: SubstsRef<'tcx>,
 ) -> Vec<CloneSubst> {
     use creusot_rustc::middle::ty::GenericParamDefKind;
-    use heck::SnakeCase;
+    use heck::ToSnakeCase;
     loop {
         if ctx.tcx.is_closure(def_id) {
             def_id = ctx.tcx.parent(def_id);
