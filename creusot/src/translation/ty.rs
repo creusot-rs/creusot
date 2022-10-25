@@ -167,9 +167,11 @@ fn translate_ty_inner<'tcx>(
         {
             MlT::Tuple(vec![])
         }
+        FnPtr(_) => {
+            names.import_prelude_module(PreludeModule::Opaque);
+            MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
+        }
         // Foreign(_) => todo!(),
-        // // FnPtr(_) => todo!(),
-        // FnPtr(_) => MlT::Tuple(vec![]),
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
 }
