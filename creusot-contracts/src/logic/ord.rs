@@ -232,3 +232,42 @@ impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
     #[logic]
     fn eq_cmp(_: Self, _: Self) {}
 }
+
+impl<T: OrdLogic> OrdLogic for Option<T> {
+    #[logic]
+    fn cmp_log(self, o: Self) -> Ordering {
+        match (self, o) {
+            (None, None) => Ordering::Equal,
+            (None, Some(_)) => Ordering::Less,
+            (Some(_), None) => Ordering::Greater,
+            (Some(x), Some(y)) => x.cmp_log(y),
+        }
+    }
+
+    #[logic]
+    fn cmp_le_log(_: Self, _: Self) {}
+
+    #[logic]
+    fn cmp_lt_log(_: Self, _: Self) {}
+
+    #[logic]
+    fn cmp_ge_log(_: Self, _: Self) {}
+
+    #[logic]
+    fn cmp_gt_log(_: Self, _: Self) {}
+
+    #[logic]
+    fn refl(_: Self) {}
+
+    #[logic]
+    fn trans(_: Self, _: Self, _: Self, _: Ordering) {}
+
+    #[logic]
+    fn antisym1(_: Self, _: Self) {}
+
+    #[logic]
+    fn antisym2(_: Self, _: Self) {}
+
+    #[logic]
+    fn eq_cmp(_: Self, _: Self) {}
+}
