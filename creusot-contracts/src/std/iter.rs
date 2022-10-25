@@ -109,14 +109,13 @@ extern_spec! {
             }
 
             trait IntoIterator
-                where Self: IntoIterator, Self::IntoIter: Iterator {
+                where Self: IntoIterator {
 
                 #[requires(self.into_iter_pre())]
                 #[ensures(self.into_iter_post(result))]
-                //FIXME: this causes Creusot to crash.
-                //#[ensures(result.invariant())]
+                #[ensures(result.invariant())]
                 fn into_iter(self) -> Self::IntoIter
-                    where Self::IntoIter: Iterator;
+                    where Self::IntoIter: Iterator + Invariant;
             }
 
             trait FromIterator<A>

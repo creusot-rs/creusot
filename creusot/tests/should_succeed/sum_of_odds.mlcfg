@@ -160,6 +160,21 @@ module CreusotContracts_Std1_Iter_IntoIterator_IntoIterPost
     ensures { result = into_iter_post self res }
     
 end
+module CreusotContracts_Invariant_Invariant_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant
+  type self
+  predicate invariant' (self : self)
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
 module Core_Iter_Traits_Collect_Impl0_IntoIter_Type
   type i
   type intoIter  =
@@ -169,6 +184,8 @@ module Core_Iter_Traits_Collect_Impl0_IntoIter_Interface
   type i
   clone Core_Iter_Traits_Collect_Impl0_IntoIter_Type as IntoIter0 with
     type i = i
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   clone CreusotContracts_Std1_Iter_IntoIterator_IntoIterPost_Stub as IntoIterPost0 with
     type self = i,
     type IntoIter0.intoIter = IntoIter0.intoIter
@@ -177,12 +194,15 @@ module Core_Iter_Traits_Collect_Impl0_IntoIter_Interface
   val into_iter [@cfg:stackify] (self : i) : i
     requires {IntoIterPre0.into_iter_pre self}
     ensures { IntoIterPost0.into_iter_post self result }
+    ensures { Invariant0.invariant' result }
     
 end
 module Core_Iter_Traits_Collect_Impl0_IntoIter
   type i
   clone Core_Iter_Traits_Collect_Impl0_IntoIter_Type as IntoIter0 with
     type i = i
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
+    type self = i
   clone CreusotContracts_Std1_Iter_IntoIterator_IntoIterPost_Interface as IntoIterPost0 with
     type self = i,
     type IntoIter0.intoIter = IntoIter0.intoIter
@@ -191,6 +211,7 @@ module Core_Iter_Traits_Collect_Impl0_IntoIter
   val into_iter [@cfg:stackify] (self : i) : i
     requires {IntoIterPre0.into_iter_pre self}
     ensures { IntoIterPost0.into_iter_post self result }
+    ensures { Invariant0.invariant' result }
     
 end
 module CreusotContracts_Std1_Ops_Impl3_Invariant_Stub
@@ -398,21 +419,6 @@ module CreusotContracts_Resolve_Impl1_Resolve
      ^ self =  * self
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
-    
-end
-module CreusotContracts_Invariant_Invariant_Invariant_Stub
-  type self
-  predicate invariant' (self : self)
-end
-module CreusotContracts_Invariant_Invariant_Invariant_Interface
-  type self
-  predicate invariant' (self : self)
-end
-module CreusotContracts_Invariant_Invariant_Invariant
-  type self
-  predicate invariant' (self : self)
-  val invariant' (self : self) : bool
-    ensures { result = invariant' self }
     
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPre_Stub
@@ -644,7 +650,8 @@ module SumOfOdds_ComputeSumOfOdd
   clone Core_Iter_Traits_Collect_Impl0_IntoIter_Interface as IntoIter0 with
     type i = Core_Ops_Range_Range_Type.t_range uint32,
     predicate IntoIterPre0.into_iter_pre = IntoIterPre0.into_iter_pre,
-    predicate IntoIterPost0.into_iter_post = IntoIterPost0.into_iter_post
+    predicate IntoIterPost0.into_iter_post = IntoIterPost0.into_iter_post,
+    predicate Invariant0.invariant' = Invariant0.invariant'
   let rec cfg compute_sum_of_odd [@cfg:stackify] [#"../sum_of_odds.rs" 36 0 36 36] (x : uint32) : uint32
     requires {[#"../sum_of_odds.rs" 34 11 34 23] UInt32.to_int x < 65536}
     ensures { [#"../sum_of_odds.rs" 35 10 35 35] UInt32.to_int result = SumOfOdd0.sum_of_odd (UInt32.to_int x) }

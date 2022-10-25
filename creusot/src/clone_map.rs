@@ -12,7 +12,7 @@ use creusot_rustc::{
 use heck::CamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
-use rustc_middle::ty::subst::GenericArgKind;
+use rustc_middle::ty::{subst::GenericArgKind, ParamEnv};
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
     Ident, QName,
@@ -292,6 +292,9 @@ impl<'tcx> CloneMap<'tcx> {
             let count: usize = *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
             trace!("inserting {:?} {:?} as {}{}", def_id, subst, base, count);
 
+            // if base.as_str() == "IntoIter" && count == 1 && self.clone_level == CloneLevel::Interface {
+            //     panic!();
+            // }
             let info =
                 CloneInfo::from_name(Symbol::intern(&format!("{}{}", base, count)), self.public);
             info
@@ -418,7 +421,6 @@ impl<'tcx> CloneMap<'tcx> {
             let dep = self.resolve_dep(ctx, (pty.item_def_id, pty.substs));
 
             if let DepNode::Dep((defid, subst)) = dep {
-                trace!("inserting projection dependency {:?}", dep);
                 self.insert(defid, subst);
             }
 
@@ -576,7 +578,7 @@ impl<'tcx> CloneMap<'tcx> {
             trace!("processing node {:?}", self.names[&node].kind);
 
             // Though we pass in a &mut ref, it shouldn't actually be possible to add any new entries..
-            let mut clone_subst = base_subst(ctx, self, def_id, subst);
+            let mut clone_subst = base_subst(ctx, self, ctx.param_env(self.self_id), def_id, subst);
 
             if self.names[&node].cloned {
                 continue;
@@ -681,6 +683,7 @@ impl<'tcx> CloneMap<'tcx> {
 pub(crate) fn base_subst<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
+    param_env: ParamEnv<'tcx>,
     mut def_id: DefId,
     subst: SubstsRef<'tcx>,
 ) -> Vec<CloneSubst> {
@@ -704,8 +707,8 @@ pub(crate) fn base_subst<'tcx>(
         let p = trait_params.param_at(ix, ctx.tcx);
         let ty = subst[ix];
         if let GenericParamDefKind::Type { .. } = p.kind {
-            let ty =
-                super::ty::translate_ty(ctx, names, creusot_rustc::span::DUMMY_SP, ty.expect_ty());
+            let ty = ctx.normalize_erasing_regions(param_env, ty.expect_ty());
+            let ty = super::ty::translate_ty(ctx, names, creusot_rustc::span::DUMMY_SP, ty);
             clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
         }
     }
