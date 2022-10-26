@@ -244,30 +244,43 @@ impl<T: OrdLogic> OrdLogic for Option<T> {
         }
     }
 
-    #[logic]
-    fn cmp_le_log(_: Self, _: Self) {}
+    #[law]
+    #[ensures(x.le_log(y) == (x.cmp_log(y) != Ordering::Greater))]
+    fn cmp_le_log(x: Self, y: Self) {}
 
-    #[logic]
-    fn cmp_lt_log(_: Self, _: Self) {}
+    #[law]
+    #[ensures(x.lt_log(y) == (x.cmp_log(y) == Ordering::Less))]
+    fn cmp_lt_log(x: Self, y: Self) {}
 
-    #[logic]
-    fn cmp_ge_log(_: Self, _: Self) {}
+    #[law]
+    #[ensures(x.ge_log(y) == (x.cmp_log(y) != Ordering::Less))]
+    fn cmp_ge_log(x: Self, y: Self) {}
 
-    #[logic]
-    fn cmp_gt_log(_: Self, _: Self) {}
+    #[law]
+    #[ensures(x.gt_log(y) == (x.cmp_log(y) == Ordering::Greater))]
+    fn cmp_gt_log(x: Self, y: Self) {}
 
-    #[logic]
-    fn refl(_: Self) {}
+    #[law]
+    #[ensures(x.cmp_log(x) == Ordering::Equal)]
+    fn refl(x: Self) {}
 
-    #[logic]
-    fn trans(_: Self, _: Self, _: Self, _: Ordering) {}
+    #[law]
+    #[requires(x.cmp_log(y) == o)]
+    #[requires(y.cmp_log(z) == o)]
+    #[ensures(x.cmp_log(z) == o)]
+    fn trans(x: Self, y: Self, z: Self, o: Ordering) {}
 
-    #[logic]
-    fn antisym1(_: Self, _: Self) {}
+    #[law]
+    #[requires(x.cmp_log(y) == Ordering::Less)]
+    #[ensures(y.cmp_log(x) == Ordering::Greater)]
+    fn antisym1(x: Self, y: Self) {}
 
-    #[logic]
-    fn antisym2(_: Self, _: Self) {}
+    #[law]
+    #[requires(x.cmp_log(y) == Ordering::Greater)]
+    #[ensures(y.cmp_log(x) == Ordering::Less)]
+    fn antisym2(x: Self, y: Self) {}
 
-    #[logic]
-    fn eq_cmp(_: Self, _: Self) {}
+    #[law]
+    #[ensures((x == y) == (x.cmp_log(y) == Ordering::Equal))]
+    fn eq_cmp(x: Self, y: Self) {}
 }
