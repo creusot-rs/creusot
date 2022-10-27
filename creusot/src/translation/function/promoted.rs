@@ -1,9 +1,10 @@
 use crate::{
+    backend::program::uint_from_int,
     ctx::{CloneMap, TranslationCtx},
     error::Error,
     translation::{
-        binop_to_binop, constant::from_mir_constant, fmir::uint_from_int, function::LocalIdent,
-        ty::translate_ty, unop_to_unop,
+        binop_to_binop, constant::from_mir_constant, function::LocalIdent, ty::translate_ty,
+        unop_to_unop,
     },
     util::{self, constructor_qname},
 };

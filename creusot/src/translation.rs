@@ -184,7 +184,7 @@ pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -
     }
 }
 
-fn unop_to_unop(op: creusot_rustc::middle::mir::UnOp) -> why3::exp::UnOp {
+pub(crate) fn unop_to_unop(op: creusot_rustc::middle::mir::UnOp) -> why3::exp::UnOp {
     match op {
         creusot_rustc::middle::mir::UnOp::Not => why3::exp::UnOp::Not,
         creusot_rustc::middle::mir::UnOp::Neg => why3::exp::UnOp::Neg,
