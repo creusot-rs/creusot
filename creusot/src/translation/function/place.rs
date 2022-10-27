@@ -1,10 +1,8 @@
 use super::LocalIdent;
 use crate::{
+    backend::program::uint_to_int,
     ctx::{CloneMap, TranslationCtx},
-    translation::{
-        fmir::uint_to_int,
-        ty::{closure_accessor_name, variant_accessor_name},
-    },
+    translation::ty::{closure_accessor_name, variant_accessor_name},
     util::{constructor_qname, item_qname},
 };
 use creusot_rustc::{
