@@ -90,7 +90,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
             continue;
         }
 
-        let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p);
+        let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p, def_id);
         decls.extend(names.to_clones(ctx));
         let promoted = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
 
