@@ -40,7 +40,7 @@ use log::*;
 use rustc_type_ir::{IntTy, UintTy};
 
 mod normalize;
-mod prusti;
+pub mod prusti;
 
 pub(crate) use normalize::*;
 

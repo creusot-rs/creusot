@@ -5,19 +5,17 @@ use crate::{
 };
 use creusot_rustc::{
     ast::Lit,
-    data_structures::fx::{FxHashMap, FxHashSet},
+    data_structures::fx::FxHashMap,
     hir::def_id::DefId,
     middle::{
         mir::Mutability::{Mut, Not},
+        ty,
         ty::{
-            self, AdtDef, Binder, BoundRegion, BoundRegionKind, BoundVariableKind, FieldDef, FnSig,
-            FreeRegion, GenericParamDefKind, Generics, List, RegionKind, SubstsRef, TyCtxt, TyKind,
+            AdtDef, Binder, FieldDef, FnSig, FreeRegion, GenericParamDefKind, Generics, Region,
+            RegionKind, SubstsRef, TyKind,
         },
     },
-    span::{
-        def_id::LocalDefId,
-        symbol::{Ident, Symbol},
-    },
+    span::symbol::{Ident, Symbol},
 };
 use internal_iterator::*;
 use itertools::{Either, Itertools};
@@ -26,7 +24,13 @@ use std::{
     iter,
     ops::{ControlFlow, Deref, DerefMut},
 };
+
 mod parsing;
+mod typeck;
+pub(crate) use typeck::check_signature_agreement;
+mod types;
+use types::*;
+
 mod variance;
 
 struct SemiPersistent<T>(T);
@@ -107,119 +111,35 @@ impl<'a, K: Hash + Eq + Copy, V> SemiPersistent<FxHashMap<K, V>> {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
-enum Region {
-    Named(Symbol),
-    Elided(LocalDefId),
-    Unknown,
-}
-
-impl Region {
-    fn new(name: Symbol, d: DefId) -> Region {
-        if name.as_str() == "'_" {
-            Region::Elided(d.expect_local())
-        } else {
-            Region::Named(name)
-        }
-    }
-}
-
-impl From<ty::Region<'_>> for Region {
-    fn from(region: ty::Region<'_>) -> Self {
-        match region.kind() {
-            RegionKind::ReEarlyBound(bound) => Region::new(bound.name, bound.def_id),
-            RegionKind::ReLateBound(_, BoundRegion { kind: bound, .. })
-            | RegionKind::ReFree(FreeRegion { bound_region: bound, .. }) => match bound {
-                BoundRegionKind::BrNamed(def_id, name) => Region::new(name, def_id),
-                _ => unimplemented!(),
-            },
-            RegionKind::ReStatic => Region::Named(region.get_name().unwrap()),
-            _ => Region::Unknown,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum TimeSlice {
-    Old,
-    Curr,
-    Expiry(Region),
-}
-
-#[derive(Copy, Clone, Debug)]
-enum Lattice<T> {
-    Unknown,
-    Absurd,
-    Inner(T),
-}
-use Lattice::*;
-use TimeSlice::*;
-
-type Home = Lattice<TimeSlice>;
-
-impl<T: Eq> Lattice<T> {
-    fn union(self, other: Self) -> Self {
-        match (self, other) {
-            (Absurd, x) | (x, Absurd) => x,
-            (Inner(x), Inner(y)) if x == y => Inner(x),
-            _ => Unknown,
-        }
-    }
-
-    fn matches(self, other: T) -> bool {
-        match self {
-            Absurd => true,
-            Inner(x) => x == other,
-            Unknown => false,
-        }
-    }
-
-    fn subtype(self, other: Self) -> bool {
-        match other {
-            Absurd => matches!(other, Absurd),
-            Inner(y) => self.matches(y),
-            Unknown => true,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
-struct Ty<'tcx> {
-    ty: ty::Ty<'tcx>,
-    home: Lattice<TimeSlice>,
-}
-
 type Tenv<'tcx> = SemiPersistent<FxHashMap<Symbol, Ty<'tcx>>>;
+type TimeSlice<'tcx> = Region<'tcx>;
 
 /// Returns region corresponding to `l`
 /// Also checks that 'curr is not blocked
-fn make_time_slice(
+fn make_time_slice<'tcx>(
     l: &Lit,
-    regions: impl Iterator<Item = Region>,
-    non_blocked: &FxHashSet<Region>,
-) -> CreusotResult<TimeSlice> {
+    regions: impl Iterator<Item = Region<'tcx>>,
+    ctx: &Ctx<'tcx>,
+) -> CreusotResult<TimeSlice<'tcx>> {
     let mut bad_curr = false;
-    let curr_lifetime = Region::Named(Symbol::intern("'curr"));
-    let mut regions = regions
-        .inspect(|r| bad_curr = bad_curr || (*r == curr_lifetime && !non_blocked.contains(r)));
+    let mut regions = regions.inspect(|&r| bad_curr = bad_curr || ctx.check_ok_in_program(r));
     let sym = l.token_lit.symbol;
     let res = match sym.as_str() {
-        "old" => Ok(Old),
-        "curr" => Ok(Curr),
+        "old" => Ok(ctx.old_region),
+        "curr" => Ok(ctx.curr_region),
         "'_" => {
-            let mut candiates = (&mut regions)
-                .filter(|r| matches!(r, Region::Elided(_)) && !non_blocked.contains(r));
+            let mut candiates = (&mut regions).filter(|r| r.get_name() == None && !ctx.is_curr(*r));
             match (candiates.next(), candiates.next()) {
                 (None, _) => Err(Error::new(l.span, "function has no blocked anonymous regions")),
                 (Some(_), Some(_)) => {
                     Err(Error::new(l.span, "function has multiple blocked anonymous regions"))
                 }
-                (Some(c), None) => Ok(Expiry(c)),
+                (Some(c), None) => Ok(c),
             }
         }
         _ => {
-            if regions.any(|r| r == Region::Named(sym)) {
-                Ok(Expiry(Region::Named(sym)))
+            if let Some(r) = regions.find(|r| r.get_name() == Some(sym)) {
+                Ok(r)
             } else {
                 Err(Error::new(l.span, format!("use of undeclared lifetime name {sym}")))
             }
@@ -234,58 +154,51 @@ fn make_time_slice(
 }
 
 /// Returns region corresponding to `l` in a logical context
-fn make_time_slice_logic(l: &Lit) -> CreusotResult<TimeSlice> {
+fn make_time_slice_logic<'tcx>(
+    l: &Lit,
+    map: &FxHashMap<Symbol, Region<'tcx>>,
+    ctx: &Ctx<'tcx>,
+) -> CreusotResult<TimeSlice<'tcx>> {
     let sym = l.token_lit.symbol;
     match sym.as_str() {
-        "old" => Ok(Curr), //hack requires clauses to use same time slice as return
-        "curr" => Ok(Curr),
+        "old" => Ok(ctx.curr_region), //hack requires clauses to use same time slice as return
+        "curr" => Ok(ctx.curr_region),
         "'_" => Err(Error::new(
             l.span,
             "expiry contract on logic function must use a concrete lifetime/home",
         )),
-        _ => Ok(Expiry(Region::Named(sym))),
+        _ => Ok(ctx.parsed_home_to_region(sym, map)),
     }
 }
 
-struct Ctx<'tcx> {
-    tcx: TyCtxt<'tcx>,
-    non_blocked: FxHashSet<Region>,
-}
-
-impl<'tcx> Ctx<'tcx> {
-    fn region_to_ts(&self, reg: ty::Region<'tcx>) -> TimeSlice {
-        let reg = reg.into();
-        if self.non_blocked.contains(&reg) {
-            Curr
-        } else {
-            Expiry(reg)
-        }
-    }
-}
-
-fn make_tenv<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    owner_id: LocalDefId,
+fn add_homes_to_sig<'a, 'tcx>(
+    ctx: &'a Ctx<'tcx>,
     sig: FnSig<'tcx>,
-    home_sig: Option<&Lit>,
-) -> CreusotResult<Tenv<'tcx>> {
-    let args: &[Ident] = tcx.fn_arg_names(owner_id);
+    home_sig: Option<(&Lit, FxHashMap<Symbol, Region<'tcx>>)>,
+) -> CreusotResult<(impl Iterator<Item = (Symbol, Ty<'tcx>)> + 'a, Ty<'tcx>)> {
+    let args: &[Ident] = ctx.tcx.fn_arg_names(ctx.owner_id);
     let (arg_homes, ret_home) = match home_sig {
-        Some(lit) => {
+        Some((lit, map)) => {
             let (arg_homes, ret_home) = parsing::parse_home_sig_lit(lit)?;
             if arg_homes.len() != args.len() {
                 return Err(Error::new(lit.span, "number of args doesn't match signature"));
             }
-            (Either::Left(arg_homes.into_iter()), ret_home)
+            let home = ctx.parsed_home_to_region(ret_home, &map);
+            (
+                Either::Left(
+                    arg_homes.into_iter().map(move |h| ctx.parsed_home_to_region(h, &map)),
+                ),
+                home,
+            )
         }
         None => {
-            let arg_homes = iter::repeat(Inner(Old));
-            (Either::Right(arg_homes), Inner(Curr))
+            let arg_homes = iter::repeat(ctx.old_region);
+            (Either::Right(arg_homes), ctx.curr_region)
         }
     };
-    let types = sig.inputs().iter().zip(arg_homes).map(|(&ty, home)| Ty { ty, home });
+    let types = sig.inputs().iter().zip(arg_homes).map(|(&ty, home)| ctx.fix_regions(ty, home));
 
-    let mut tenv: FxHashMap<_, _> = args
+    let args = args
         .iter()
         .enumerate()
         .map(|(idx, arg)| {
@@ -296,10 +209,8 @@ fn make_tenv<'tcx>(
                 arg.name
             }
         })
-        .zip(types)
-        .collect();
-    tenv.insert(Symbol::intern("result"), Ty { ty: sig.output(), home: ret_home });
-    Ok(Tenv::new(tenv))
+        .zip(types);
+    Ok((args, ctx.fix_regions(sig.output(), ret_home)))
 }
 
 pub(super) fn prusti_to_creusot<'tcx>(
@@ -308,96 +219,101 @@ pub(super) fn prusti_to_creusot<'tcx>(
 ) -> CreusotResult<Term<'tcx>> {
     let tcx = ctx.tcx;
     let item_id = ctx.item_id;
-    let attr = match util::get_attr_lit(tcx, item_id.to_def_id(), &["creusot", "prusti", "ts"]) {
+    let owner_id = util::param_def_id(tcx, item_id).to_def_id();
+    if tcx.is_closure(owner_id) {
+        return Err(Error::new(term.span, "Prusti specs on closures aren't supported"));
+    }
+
+    let home_sig = util::get_attr_lit(tcx, owner_id, &["creusot", "prusti", "home_sig"]);
+    let ts = match util::get_attr_lit(tcx, item_id.to_def_id(), &["creusot", "prusti", "ts"]) {
         None => return Ok(term),
         Some(attr) => attr,
     };
+    let ctx = Ctx::new(tcx, owner_id, home_sig.is_some());
 
-    let owner_id = util::param_def_id(tcx, item_id);
-    if tcx.is_closure(owner_id.into()) {
-        return Err(Error::new(term.span, "Prusti specs on closures aren't supported"));
-    }
-    let sig: Binder<FnSig> = tcx.fn_sig(owner_id);
-    let bound_vars = sig.bound_vars();
-    let generics: &Generics = tcx.generics_of(owner_id);
-    let lifetimes1 = bound_vars.iter().filter_map(|x| match x {
-        BoundVariableKind::Region(BoundRegionKind::BrNamed(def_id, name)) => {
-            Some(Region::new(name, def_id))
-        }
-        _ => None,
-    });
-    let lifetimes2 = generics.params.iter().filter_map(|x| match x.kind {
-        GenericParamDefKind::Lifetime => {
-            let data = x.to_early_bound_region_data();
-            Some(Region::new(data.name, data.def_id))
-        }
-        _ => None,
-    });
-    let sig = tcx.liberate_late_bound_regions(owner_id.to_def_id(), sig);
-    let home_sig = util::get_attr_lit(tcx, owner_id.into(), &["creusot", "prusti", "home_sig"]);
-    let non_blocked: FxHashSet<Region> = if home_sig.is_some() {
-        iter::once(Region::Named(Symbol::intern("'curr"))).collect()
-    } else {
-        variance::empty_regions(tcx, owner_id).map(Region::from).collect()
-    };
-    let ts = if home_sig.is_some() {
-        make_time_slice_logic(attr)?
-    } else {
-        make_time_slice(attr, lifetimes1.chain(lifetimes2), &non_blocked)?
-    };
-    //dbg!(&non_blocked);
-    //eprintln!("{:?}", sig);
-    let mut tenv = make_tenv(tcx, owner_id, sig, home_sig)?;
-    let ctx = Ctx { tcx, non_blocked };
+    let (ts, arg_tys, res_ty) = full_signature(home_sig, ts, owner_id, &ctx)?;
+    let res_kv = (Symbol::intern("result"), res_ty);
+    let mut tenv = Tenv::new(arg_tys.chain(iter::once(res_kv)).collect());
     let final_type = convert(&mut term, &mut tenv, ts, &ctx)?;
-    if item_id == owner_id && !final_type.home.subtype(tenv[&Symbol::intern("result")].home) {
-        return Err(Error::new(term.span, "home mismatch"));
+    if item_id == owner_id.expect_local() {
+        typeck::check_sup(&ctx, res_ty, final_type, term.span)?
     }
     Ok(term)
 }
 
+fn full_signature<'a, 'tcx>(
+    home_sig: Option<&Lit>,
+    ts: &Lit,
+    owner_id: DefId,
+    ctx: &'a Ctx<'tcx>,
+) -> CreusotResult<(Region<'tcx>, impl Iterator<Item = (Symbol, Ty<'tcx>)> + 'a, Ty<'tcx>)> {
+    let tcx = ctx.tcx;
+    let sig: Binder<FnSig> = tcx.fn_sig(owner_id);
+    let bound_vars = sig.bound_vars();
+    let generics: &Generics = tcx.generics_of(owner_id);
+    let lifetimes1 = bound_vars.iter().map(|bvk| {
+        tcx.mk_region(RegionKind::ReFree(FreeRegion {
+            scope: owner_id,
+            bound_region: bvk.expect_region(),
+        }))
+    });
+    let lifetimes2 = generics.params.iter().filter_map(|x| match x.kind {
+        GenericParamDefKind::Lifetime => {
+            let data = x.to_early_bound_region_data();
+            Some(tcx.mk_region(RegionKind::ReEarlyBound(data)))
+        }
+        _ => None,
+    });
+    let lifetimes = lifetimes1.chain(lifetimes2);
+
+    let sig = tcx.liberate_late_bound_regions(owner_id, sig);
+
+    let (ts, home_sig) = match home_sig {
+        Some(lit) => {
+            let map: FxHashMap<_, _> =
+                lifetimes.filter_map(|r| Some((r.get_name()?, ctx.fix_region(r)))).collect();
+            (make_time_slice_logic(ts, &map, &ctx)?, Some((lit, map)))
+        }
+        None => (make_time_slice(ts, lifetimes, &ctx)?, None),
+    };
+    let ts = ctx.fix_region(ts);
+    //dbg!(&non_blocked);
+    //eprintln!("{:?}", sig);
+    let (arg_tys, res_ty) = add_homes_to_sig(&ctx, sig, home_sig)?;
+    Ok((ts, arg_tys, res_ty))
+}
+
 fn iterate_bindings<'tcx, R, F>(
     pat: &Pattern<'tcx>,
-    ty: ty::Ty<'tcx>,
+    ty: Ty<'tcx>,
     ctx: &Ctx<'tcx>,
     f: &mut F,
 ) -> ControlFlow<R>
 where
-    F: FnMut((Symbol, ty::Ty<'tcx>)) -> ControlFlow<R>,
+    F: FnMut((Symbol, Ty<'tcx>)) -> ControlFlow<R>,
 {
     let tcx = ctx.tcx;
-    match (ty.kind(), pat) {
-        (TyKind::Adt(adt2, subst), Pattern::Constructor { adt, variant, fields, .. }) => {
-            debug_assert_eq!(adt, adt2);
-            let field_defs = &adt.variants()[*variant].fields;
-            field_defs
-                .iter()
-                .zip(fields)
-                .try_for_each(|(def, pat)| iterate_bindings(pat, def.ty(tcx, subst), ctx, f))
+    match pat {
+        Pattern::Constructor { adt, variant, fields, .. } => ty
+            .as_adt_variant(*adt, *variant, tcx)
+            .zip(fields)
+            .try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f)),
+        Pattern::Tuple(fields) => {
+            ty.as_tuple().zip(fields).try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f))
         }
-        (TyKind::Tuple(tup), Pattern::Tuple(fields)) => {
-            let tup: &List<ty::Ty> = tup;
-            tup.iter()
-                .zip(fields.iter())
-                .try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f))
-        }
-        (TyKind::Never, Pattern::Constructor { fields, .. } | Pattern::Tuple(fields)) => {
-            fields.iter().try_for_each(|pat| iterate_bindings(pat, ty, ctx, f))
-        }
-        (_, Pattern::Constructor { .. } | Pattern::Tuple(_)) => unreachable!(),
-        (_, Pattern::Binder(sym)) => f((*sym, ty)),
+        Pattern::Binder(sym) => f((*sym, ty)),
         _ => ControlFlow::CONTINUE,
     }
 }
 
 struct PatternIter<'a, 'tcx> {
     pat: &'a Pattern<'tcx>,
-    ty: ty::Ty<'tcx>,
+    ty: Ty<'tcx>,
     ctx: &'a Ctx<'tcx>,
 }
 
 impl<'a, 'tcx> InternalIterator for PatternIter<'a, 'tcx> {
-    type Item = (Symbol, ty::Ty<'tcx>);
+    type Item = (Symbol, Ty<'tcx>);
 
     fn try_for_each<R, F>(self, mut f: F) -> ControlFlow<R>
     where
@@ -407,50 +323,61 @@ impl<'a, 'tcx> InternalIterator for PatternIter<'a, 'tcx> {
     }
 }
 
-fn strip_refs(Ty { ty, home }: Ty, ts: TimeSlice) -> Ty {
-    match ty.kind() {
+fn ref_depth(ty: ty::Ty<'_>) -> u32 {
+    if ty.ref_mutability() == Some(Not) {
+        1 + ref_depth(ty.peel_refs())
+    } else {
+        0
+    }
+}
+
+fn strip_refs<'tcx>(ty: Ty<'tcx>, ts: TimeSlice<'tcx>, max_depth: u32) -> Ty<'tcx> {
+    match ty.as_ref(ts) {
         // We must have de-referenced a shared reference,
         // so we'll we set the inner home to the current time slice
         // TODO? if we want to to be strict we could check if this reference is valid at the current time slice
-        TyKind::Ref(_, ty, Not) => strip_refs(Ty { ty: *ty, home: Inner(ts) }, ts),
-        _ => Ty { ty, home },
+        Some((_, ty, Not)) if max_depth > 0 => strip_refs(ty, ts, max_depth - 1),
+        _ => ty,
     }
 }
 
 fn convert<'tcx>(
     term: &mut Term<'tcx>,
     tenv: &mut Tenv<'tcx>,
-    ts: TimeSlice,
+    ts: TimeSlice<'tcx>,
     ctx: &Ctx<'tcx>,
 ) -> CreusotResult<Ty<'tcx>> {
     let tcx = ctx.tcx;
     let res = match &mut term.kind {
         TermKind::Var(v) => *tenv.get(v).unwrap(),
-        TermKind::Lit(_) | TermKind::Item(_, _) => Ty { ty: term.ty, home: Absurd }, // Can't return mutable reference
+        TermKind::Lit(_) | TermKind::Item(_, _) => Ty { ty: term.ty, home: ctx.absurd_home() }, // Can't return mutable reference
         TermKind::Binary { lhs, rhs, .. } => {
             convert(&mut *lhs, tenv, ts, ctx)?;
             convert(&mut *rhs, tenv, ts, ctx)?;
-            Ty { ty: term.ty, home: Absurd }
+            Ty { ty: term.ty, home: ctx.absurd_home() }
         }
         TermKind::Unary { arg, .. } => {
             convert(&mut *arg, tenv, ts, ctx)?;
-            Ty { ty: term.ty, home: Absurd }
+            Ty { ty: term.ty, home: ctx.absurd_home() }
         }
         TermKind::Forall { binder, body } | TermKind::Exists { binder, body } => {
-            let ty = Ty { ty: binder.1, home: Inner(ts) }; // TODO fix lifetimes in ty
+            let ty = ctx.fix_regions(binder.1, ts); // TODO handle lifetimes annotations in ty
             convert(&mut *body, &mut tenv.insert(binder.0, ty), ts, ctx)?
         }
         TermKind::Call { args, fun, .. } => {
-            convert(fun, tenv, ts, ctx)?;
-            args.iter_mut().try_for_each(|arg| convert(arg, tenv, ts, ctx).map(drop))?;
-            Ty { ty: term.ty, home: Unknown }
+            let fn_ty = convert(fun, tenv, ts, ctx)?;
+            let mut args = args.iter_mut().map(|arg| Ok((convert(arg, tenv, ts, ctx)?, arg.span)));
+            if fn_ty.is_never() {
+                args.fold_ok((), |_, _| ())?;
+                Ty::never(ctx.tcx)
+            } else {
+                typeck::check_call(ctx, ts, fn_ty, fun.span, args)?
+                    .unwrap_or(Ty::unknown_regions(term.ty, tcx))
+            }
         }
         TermKind::Constructor { fields, .. } | TermKind::Tuple { fields } => {
-            let home = fields
-                .iter_mut()
-                .map(|arg| convert(arg, tenv, ts, ctx).map(|x| x.home))
-                .fold_ok(Absurd, Lattice::union)?;
-            Ty { ty: term.ty, home }
+            fields.iter_mut().try_for_each(|arg| convert(arg, tenv, ts, ctx).map(drop))?;
+            Ty::unknown_regions(term.ty, tcx)
         }
         curr @ TermKind::Cur { .. } => {
             let curr_owned = std::mem::replace(curr, TermKind::Absurd);
@@ -459,36 +386,31 @@ fn convert<'tcx>(
                 _ => unreachable!(),
             };
             let ty = convert(&mut term, tenv, ts, ctx)?;
-            let start = ty.home;
-            let (end, ty): (TimeSlice, ty::Ty) = match ty.ty.kind() {
-                TyKind::Ref(region, ty, Mut) => (ctx.region_to_ts(*region), *ty),
-                TyKind::Never => return Ok(Ty { ty: tcx.mk_ty(TyKind::Never), home: Absurd }),
-                _ => unreachable!("curr operator can only apply to mutable references"),
-            };
+            if ty.is_never() {
+                return Ok(Ty::never(ctx.tcx));
+            }
+            let (end, inner_ty, m) = ty.as_ref(ts).unwrap();
+            assert!(matches!(m, Mut));
             //eprintln!("start: {start:?}, end: {end:?}");
-            let res = match (ts, start, end) {
-                (ts, start, _) if start.matches(ts) => TermKind::Cur { term },
-                (ts, _, end) if ts == end => TermKind::Fin { term },
-                _ => return Err(Error::new(term.span, "Invalid dereference")),
+            let res = match ts {
+                ts if ty.has_home_at_ts(ts) => TermKind::Cur { term },
+                ts if sub_ts(end, ts) => TermKind::Fin { term },
+                _ => return Err(Error::new(term.span, format!("invalid dereference of expression with home `{}` and lifetime `{end}` at time-slice `{ts}`", ty.home))),
             };
             *curr = res;
-            Ty { ty, home: Inner(ts) }
+            inner_ty
         }
         TermKind::Match { scrutinee, arms } => {
-            let Ty { ty, home } = convert(&mut *scrutinee, tenv, ts, ctx)?;
-            let home = arms
-                .iter_mut()
-                .map(|(pat, body)| {
-                    let iter = PatternIter { pat, ty, ctx }.map(|(sym, ty)| (sym, Ty { ty, home }));
-                    convert(&mut *body, &mut *tenv.insert_many(iter), ts, ctx).map(|x| x.home)
-                })
-                .fold_ok(Absurd, Lattice::union)?;
-            Ty { ty: term.ty, home }
+            let ty = convert(&mut *scrutinee, tenv, ts, ctx)?;
+            let iter = arms.iter_mut().map(|(pat, body)| {
+                let iter = PatternIter { pat, ty, ctx };
+                convert(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)
+            });
+            typeck::union(ctx, term.ty, iter)?
         }
         TermKind::Let { pattern, arg, body } => {
-            let Ty { ty, home } = convert(&mut *arg, tenv, ts, ctx)?;
-            let iter =
-                PatternIter { pat: pattern, ty, ctx }.map(|(sym, ty)| (sym, Ty { ty, home }));
+            let ty = convert(&mut *arg, tenv, ts, ctx)?;
+            let iter = PatternIter { pat: pattern, ty, ctx };
             let x = convert(&mut *body, &mut *tenv.insert_many(iter), ts, ctx)?;
             x
         }
@@ -506,10 +428,11 @@ fn convert<'tcx>(
                 _ => unreachable!("projection operator can only apply to adts"),
             }
         }
-        TermKind::Old { term } => convert(&mut *term, tenv, Old, ctx)?,
+        TermKind::Old { term } => convert(&mut *term, tenv, ctx.old_region, ctx)?,
         TermKind::Closure { .. } => todo!(),
-        TermKind::Absurd => Ty { ty: tcx.mk_ty(TyKind::Never), home: Absurd },
+        TermKind::Absurd => Ty::never(ctx.tcx),
         _ => return Err(Error::new(term.span, "The operation is not supported in Prusti specs")),
     };
-    Ok(strip_refs(res, ts))
+    let res = strip_refs(res, ts, ref_depth(term.ty));
+    Ok(res)
 }

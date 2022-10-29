@@ -6,6 +6,13 @@ pub fn simple<X>(x: X) -> X {
     x
 }
 
+
+#[allow(unconditional_recursion)]
+#[logic(() -> 'x)]
+pub fn unreachable<'a, X>() -> &'a mut X {
+    unreachable::<X>()
+}
+
 #[logic(('curr) -> 'curr)]
 #[ensures(result == *x)]
 pub fn cur<'a, X>(x: &'a mut X) -> X {

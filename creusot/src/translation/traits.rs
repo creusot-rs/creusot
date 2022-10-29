@@ -63,13 +63,6 @@ impl<'tcx> TranslationCtx<'tcx> {
                 continue;
             }
 
-            // If there is no contract to refine, skip this item
-            if contract_of(self, trait_item).is_empty() {
-                continue;
-            }
-
-            self.translate(impl_item);
-
             let subst = InternalSubsts::identity_for_item(self.tcx, impl_item);
             names.insert(impl_item, subst);
 
@@ -77,6 +70,18 @@ impl<'tcx> TranslationCtx<'tcx> {
 
             let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
 
+            use crate::translation::pearlite::prusti::check_signature_agreement;
+            match check_signature_agreement(self.tcx, impl_item, trait_item, refn_subst) {
+                Ok(()) => {}
+                Err(e) => e.emit(self.tcx.sess),
+            }
+
+            // If there is no contract to refine, skip this item
+            if contract_of(self, trait_item).is_empty() {
+                continue;
+            }
+
+            self.translate(impl_item);
             // TODO: Clean up and abstract
             let predicates = self
                 .extern_spec(trait_item)

@@ -39,10 +39,19 @@ fn main() {
         std::process::exit(1);
     }
 
-    should_fail("tests/should_fail/**/*.rs", |p| run_creusot(p, &temp_file.to_string_lossy()));
-    should_succeed("tests/should_succeed/**/*.rs", |p| {
+    let (sfc, sff) = should_fail("tests/should_fail/**/*.rs", |p| run_creusot(p, &temp_file.to_string_lossy()));
+    let (ssc, ssf) = should_succeed("tests/should_succeed/**/*.rs", |p| {
         run_creusot(p, &temp_file.to_string_lossy())
     });
+    let test_count = sfc + ssc;
+    let test_failures = sff + ssf;
+    if test_failures > 0 {
+        let mut out = StandardStream::stdout(ColorChoice::Always);
+        out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+        writeln!(out, "{} failures out of {} tests", test_failures, test_count).unwrap();
+        drop(out);
+        panic!();
+    }
 }
 
 fn run_creusot(file: &Path, contracts: &str) -> Option<std::process::Command> {
@@ -79,21 +88,21 @@ fn run_creusot(file: &Path, contracts: &str) -> Option<std::process::Command> {
     Some(cmd)
 }
 
-fn should_succeed<B>(s: &str, b: B)
+fn should_succeed<B>(s: &str, b: B) -> (u32, u32)
 where
     B: Fn(&Path) -> Option<std::process::Command>,
 {
-    glob_runner(s, b, should_succeed_case);
+    glob_runner(s, b, should_succeed_case)
 }
 
-fn should_fail<B>(s: &str, b: B)
+fn should_fail<B>(s: &str, b: B) -> (u32, u32)
 where
     B: Fn(&Path) -> Option<std::process::Command>,
 {
-    glob_runner(s, b, should_fail_case);
+    glob_runner(s, b, should_fail_case)
 }
 
-fn glob_runner<B, C>(s: &str, command_builder: B, differ: C)
+fn glob_runner<B, C>(s: &str, command_builder: B, differ: C) -> (u32, u32)
 where
     B: Fn(&Path) -> Option<std::process::Command>,
     C: Fn(std::process::Output, &Path, &Path) -> Result<(bool, Buffer), Box<dyn Error>>,
@@ -106,7 +115,6 @@ where
     let filter = std::env::args().nth(1);
 
     for entry in glob::glob(s).expect("Failed to read glob pattern") {
-        test_count += 1;
         let entry = entry.unwrap();
 
         if let Some(ref filter) = filter {
@@ -121,7 +129,7 @@ where
 
         let stderr = entry.with_extension("stderr");
         let stdout = entry.with_extension("mlcfg");
-
+        test_count += 1;
         write!(&mut out, "Testing {} ... ", entry.display()).unwrap();
 
         if bless {
@@ -167,11 +175,7 @@ where
         }
     }
 
-    if test_failures > 0 {
-        out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
-        drop(out);
-        panic!("{} failures out of {} tests", test_failures, test_count);
-    }
+    (test_count, test_failures)
 }
 
 fn compare_str(buf: &mut Buffer, got: &str, expect: &str) -> bool {
