@@ -7,7 +7,7 @@ use creusot_rustc::{
         ty,
         ty::{
             AdtDef, BoundRegionKind, FreeRegion, List, ParamEnv, Region, RegionKind, TyCtxt,
-            TyKind, TypeFlags, TypeFoldable, TypeFolder, TypeVisitable,
+            TyKind, TypeFoldable, TypeFolder,
         },
     },
     span::{def_id::DefId, Symbol},
@@ -72,10 +72,7 @@ impl<'tcx> Ty<'tcx> {
     }
 
     pub(super) fn unknown_regions(ty: ty::Ty<'tcx>, tcx: TyCtxt<'tcx>) -> Self {
-        debug_assert!(
-            !ty.has_type_flags(TypeFlags::HAS_RE_LATE_BOUND | TypeFlags::HAS_FREE_REGIONS)
-        );
-        Ty { ty, home: tcx.lifetimes.re_erased }
+        Ty { ty: tcx.erase_regions(ty), home: tcx.lifetimes.re_erased }
     }
 
     pub(super) fn is_never(self) -> bool {

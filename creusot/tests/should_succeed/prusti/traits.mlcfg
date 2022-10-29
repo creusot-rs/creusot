@@ -1,0 +1,208 @@
+
+module Traits_MyModel_Model_Stub
+  type self
+  type t
+  function model [#"../traits.rs" 6 4 6 24] (self : self) : t
+end
+module Traits_MyModel_Model_Interface
+  type self
+  type t
+  function model [#"../traits.rs" 6 4 6 24] (self : self) : t
+end
+module Traits_MyModel_Model
+  type self
+  type t
+  function model [#"../traits.rs" 6 4 6 24] (self : self) : t
+  val model [#"../traits.rs" 6 4 6 24] (self : self) : t
+    ensures { result = model self }
+    
+end
+module Traits_Impl0_Model_Stub
+  type x
+  type y
+  use prelude.Borrow
+  function model [#"../traits.rs" 11 4 11 23] (self : borrowed x) : y
+end
+module Traits_Impl0_Model_Interface
+  type x
+  type y
+  use prelude.Borrow
+  function model [#"../traits.rs" 11 4 11 23] (self : borrowed x) : y
+end
+module Traits_Impl0_Model
+  type x
+  type y
+  use prelude.Borrow
+  clone Traits_MyModel_Model_Stub as Model0 with
+    type self = x,
+    type t = y
+  function model [#"../traits.rs" 11 4 11 23] (self : borrowed x) : y =
+    [#"../traits.rs" 12 8 12 23] Model0.model ( * self)
+  val model [#"../traits.rs" 11 4 11 23] (self : borrowed x) : y
+    ensures { result = model self }
+    
+end
+module Traits_Impl1_Model_Stub
+  function model [#"../traits.rs" 18 4 18 26] (self : bool) : bool
+end
+module Traits_Impl1_Model_Interface
+  function model [#"../traits.rs" 18 4 18 26] (self : bool) : bool
+end
+module Traits_Impl1_Model
+  function model [#"../traits.rs" 18 4 18 26] (self : bool) : bool =
+    [#"../traits.rs" 17 4 17 24] if self then true else false
+  val model [#"../traits.rs" 18 4 18 26] (self : bool) : bool
+    ensures { result = model self }
+    
+end
+module CreusotContracts_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
+module Traits_Test_Interface
+  use prelude.Borrow
+  clone Traits_Impl0_Model_Stub as Model1 with
+    type x = bool,
+    type y = bool
+  clone Traits_Impl1_Model_Stub as Model0
+  val test [@cfg:stackify] [#"../traits.rs" 24 0 24 33] (x : borrowed bool) : bool
+    ensures { [#"../traits.rs" 23 10 23 42] Model0.model result = old(Model1.model x) }
+    
+end
+module Traits_Test
+  use prelude.Borrow
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = bool
+  clone Traits_Impl1_Model as Model0
+  clone Traits_Impl0_Model as Model1 with
+    type x = bool,
+    type y = bool,
+    function Model0.model = Model0.model
+  let rec cfg test [@cfg:stackify] [#"../traits.rs" 24 0 24 33] (x : borrowed bool) : bool
+    ensures { [#"../traits.rs" 23 10 23 42] Model0.model result = old(Model1.model x) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : bool;
+  var x_1 : borrowed bool;
+  var res_3 : bool;
+  var _4 : bool;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    res_3 <-  * x_1;
+    _4 <- res_3;
+    x_1 <- { x_1 with current = (not _4) };
+    assume { Resolve0.resolve x_1 };
+    _0 <- res_3;
+    return _0
+  }
+  
+end
+module Traits_Wrapper_Type
+  type t_wrapper 't =
+    | C_Wrapper 't
+    
+  let function wrapper_0 (self : t_wrapper 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Wrapper a -> a
+      end
+end
+module Traits_Impl2_Model_Stub
+  type t
+  use Traits_Wrapper_Type as Traits_Wrapper_Type
+  function model [#"../traits.rs" 34 4 34 23] (self : Traits_Wrapper_Type.t_wrapper t) : t
+end
+module Traits_Impl2_Model_Interface
+  type t
+  use Traits_Wrapper_Type as Traits_Wrapper_Type
+  function model [#"../traits.rs" 34 4 34 23] (self : Traits_Wrapper_Type.t_wrapper t) : t
+end
+module Traits_Impl2_Model
+  type t
+  use Traits_Wrapper_Type as Traits_Wrapper_Type
+  function model [#"../traits.rs" 34 4 34 23] (self : Traits_Wrapper_Type.t_wrapper t) : t =
+    [#"../traits.rs" 35 8 35 14] Traits_Wrapper_Type.wrapper_0 self
+  val model [#"../traits.rs" 34 4 34 23] (self : Traits_Wrapper_Type.t_wrapper t) : t
+    ensures { result = model self }
+    
+end
+module Traits_Test2_Interface
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use Traits_Wrapper_Type as Traits_Wrapper_Type
+  clone Traits_Impl2_Model_Stub as Model0 with
+    type t = borrowed uint32
+  val test2 [@cfg:stackify] [#"../traits.rs" 41 0 41 46] (x : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
+    ensures { [#"../traits.rs" 39 10 39 34] result = old(Model0.model x) }
+    ensures { [#"../traits.rs" 40 15 40 34] Model0.model x = result }
+    
+end
+module Traits_Test2
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = uint32
+  use Traits_Wrapper_Type as Traits_Wrapper_Type
+  clone Traits_Impl2_Model as Model0 with
+    type t = borrowed uint32
+  let rec cfg test2 [@cfg:stackify] [#"../traits.rs" 41 0 41 46] (x : Traits_Wrapper_Type.t_wrapper (borrowed uint32)) : borrowed uint32
+    ensures { [#"../traits.rs" 39 10 39 34] result = old(Model0.model x) }
+    ensures { [#"../traits.rs" 40 15 40 34] Model0.model x = result }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : borrowed uint32;
+  var x_1 : Traits_Wrapper_Type.t_wrapper (borrowed uint32);
+  var _2 : borrowed uint32;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    _2 <- borrow_mut ( * Traits_Wrapper_Type.wrapper_0 x_1);
+    x_1 <- (let Traits_Wrapper_Type.C_Wrapper a = x_1 in Traits_Wrapper_Type.C_Wrapper ({ (Traits_Wrapper_Type.wrapper_0 x_1) with current = ( ^ _2) }));
+    _0 <- borrow_mut ( * _2);
+    _2 <- { _2 with current = ( ^ _0) };
+    assume { Resolve0.resolve _2 };
+    return _0
+  }
+  
+end
+module Traits_Impl0
+  type x
+  type y
+  clone Traits_MyModel_Model_Interface as Model1 with
+    type self = x,
+    type t = y
+  clone Traits_Impl0_Model as Model0 with
+    type x = x,
+    type y = y,
+    function Model0.model = Model1.model
+end
+module Traits_Impl1
+  clone Traits_Impl1_Model as Model0
+end
+module Traits_Impl2
+  type t
+  use Traits_Wrapper_Type as Traits_Wrapper_Type
+  clone Traits_Impl2_Model as Model0 with
+    type t = t
+end

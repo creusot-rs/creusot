@@ -18,7 +18,7 @@ use creusot_rustc::{
     span::symbol::{Ident, Symbol},
 };
 use internal_iterator::*;
-use itertools::{Either, Itertools};
+use itertools::Either;
 use std::{
     hash::Hash,
     iter,
@@ -364,16 +364,12 @@ fn convert<'tcx>(
             let ty = ctx.fix_regions(binder.1, ts); // TODO handle lifetimes annotations in ty
             convert(&mut *body, &mut tenv.insert(binder.0, ty), ts, ctx)?
         }
-        TermKind::Call { args, fun, .. } => {
-            let fn_ty = convert(fun, tenv, ts, ctx)?;
-            let mut args = args.iter_mut().map(|arg| Ok((convert(arg, tenv, ts, ctx)?, arg.span)));
-            if fn_ty.is_never() {
-                args.fold_ok((), |_, _| ())?;
-                Ty::never(ctx.tcx)
-            } else {
-                typeck::check_call(ctx, ts, fn_ty, fun.span, args)?
-                    .unwrap_or(Ty::unknown_regions(term.ty, tcx))
-            }
+        TermKind::Call { args, fun, id, subst } => {
+            let _ = convert(fun, tenv, ts, ctx)?;
+            let args = args.iter_mut().map(|arg| Ok((convert(arg, tenv, ts, ctx)?, arg.span)));
+            let (id, subst) = typeck::try_resolve(&ctx, *id, *subst);
+            typeck::check_call(ctx, ts, id, subst, args)?
+                .unwrap_or(Ty::unknown_regions(term.ty, tcx))
         }
         TermKind::Constructor { fields, .. } | TermKind::Tuple { fields } => {
             fields.iter_mut().try_for_each(|arg| convert(arg, tenv, ts, ctx).map(drop))?;

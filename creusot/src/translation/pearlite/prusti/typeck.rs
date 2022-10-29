@@ -18,8 +18,8 @@ use creusot_rustc::{
     middle::{
         ty,
         ty::{
-            EarlyBinder, InternalSubsts, ParamEnv, PolyFnSig, Region, RegionKind, RegionVid,
-            SubstsRef, TyCtxt, TyKind, TypeFoldable,
+            EarlyBinder, Instance, InternalSubsts, ParamEnv, PolyFnSig, Region, RegionKind,
+            RegionVid, SubstsRef, TyCtxt, TyKind, TypeFoldable,
         },
     },
     span::{def_id::DefId, Span, Symbol, DUMMY_SP},
@@ -141,15 +141,11 @@ fn sup_tys<'tcx>(
 pub(super) fn check_call<'tcx>(
     ctx: &Ctx<'tcx>,
     ts: Region<'tcx>,
-    fn_ty: Ty<'tcx>,
-    fn_span: Span,
+    def_id: DefId,
+    subst_ref: SubstsRef<'tcx>,
     args: impl Iterator<Item = CreusotResult<(Ty<'tcx>, Span)>>,
 ) -> CreusotResult<Option<Ty<'tcx>>> {
     let tcx = ctx.tcx;
-    let (def_id, subst_ref): (DefId, SubstsRef) = match fn_ty.ty.kind() {
-        TyKind::FnDef(def_id, subst) => (*def_id, *subst),
-        _ => return Err(Error::new(fn_span, "call to non fndef type")),
-    };
     // Eagerly evaluate args to avoid running multiple inference contexts at the same time
     let args = args.collect::<CreusotResult<Vec<_>>>()?.into_iter();
     let (home_sig_args, home_sig_res) = match home_sig(ctx, def_id)? {
@@ -262,6 +258,17 @@ pub(super) fn check_sup<'tcx>(
     })
 }
 
+pub(super) fn try_resolve<'tcx>(
+    ctx: &Ctx<'tcx>,
+    def_id: DefId,
+    subst: SubstsRef<'tcx>,
+) -> (DefId, SubstsRef<'tcx>) {
+    match Instance::resolve(ctx.tcx, ctx.param_env(), def_id, subst) {
+        Err(_) | Ok(None) => return (def_id, subst), // Can't specialize
+        Ok(Some(inst)) => (inst.def.def_id(), inst.substs),
+    }
+}
+
 pub(crate) fn check_signature_agreement<'tcx>(
     tcx: TyCtxt<'tcx>,
     impl_id: DefId,
@@ -274,8 +281,7 @@ pub(crate) fn check_signature_agreement<'tcx>(
         return Ok(()); // We're not specializing a home signature
     }
     let ctx = Ctx::new(tcx, impl_id, true);
-    let fn_ty = tcx.mk_fn_def(impl_id, InternalSubsts::identity_for_item(tcx, impl_id));
-    let fn_ty = Ty { ty: fn_ty, home: ctx.absurd_home() };
+    let impl_id_subst = InternalSubsts::identity_for_item(tcx, impl_id);
     let impl_span: Span = tcx.def_span(impl_id);
     let ts = Lit::from_token_lit(
         token::Lit { kind: token::Err, symbol: Symbol::intern("curr"), suffix: None },
@@ -286,7 +292,7 @@ pub(crate) fn check_signature_agreement<'tcx>(
     let (ts, arg_tys, expect_res_ty) = super::full_signature(trait_home_sig, &ts, trait_id, &ctx)?;
     let args = arg_tys.map(|(_, ty)| subst(ty)).zip(iter::repeat(impl_span)).map(Ok);
     let expect_res_ty = subst(expect_res_ty);
-    let actual_res_ty = check_call(&ctx, ts, fn_ty, impl_span, args)?;
+    let actual_res_ty = check_call(&ctx, ts, impl_id, impl_id_subst, args)?;
     let actual_res_ty = match actual_res_ty {
         Some(ty) => ty,
         None => {

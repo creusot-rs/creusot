@@ -1,0 +1,55 @@
+
+module CreusotContracts_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
+module BlockedLifetime_Impl0_Test_Interface
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  val test [@cfg:stackify] [#"../blocked_lifetime.rs" 13 4 13 27] (x : borrowed uint32) : ()
+    ensures { [#"../blocked_lifetime.rs" 12 14 12 24]  ^ x = (5 : uint32) }
+    
+end
+module BlockedLifetime_Impl0_Test
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = uint32
+  let rec cfg test [@cfg:stackify] [#"../blocked_lifetime.rs" 13 4 13 27] (x : borrowed uint32) : ()
+    ensures { [#"../blocked_lifetime.rs" 12 14 12 24]  ^ x = (5 : uint32) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var x_1 : borrowed uint32;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    x_1 <- { x_1 with current = ([#"../blocked_lifetime.rs" 14 13 14 14] (5 : uint32)) };
+    assume { Resolve0.resolve x_1 };
+    _0 <- ();
+    return _0
+  }
+  
+end
+module BlockedLifetime_Impl0
+  clone BlockedLifetime_Impl0_Test_Interface as Test0
+end
