@@ -13,15 +13,16 @@ use creusot_rustc::{
             outlives::env::OutlivesEnvironment, region_constraints::Constraint, InferCtxt,
             RegionVariableOrigin, SubregionOrigin, TyCtxtInferExt,
         },
-        traits::ObligationCause,
+        traits::{ObligationCause, PredicateObligation},
     },
     middle::{
         ty,
         ty::{
-            EarlyBinder, Instance, InternalSubsts, ParamEnv, PolyFnSig, Region, RegionKind,
-            RegionVid, SubstsRef, TyCtxt, TyKind, TypeFoldable,
+            Binder, EarlyBinder, Instance, InternalSubsts, ParamEnv, PolyFnSig, Predicate,
+            PredicateKind, Region, RegionKind, RegionVid, SubstsRef, TyCtxt, TyKind, TypeFoldable,
         },
     },
+    smir::very_unstable::trait_selection::traits::query::normalize::AtExt,
     span::{def_id::DefId, Span, Symbol, DUMMY_SP},
 };
 use std::{collections::hash_map::Entry, iter};
@@ -123,9 +124,23 @@ fn sup_tys<'tcx>(
     if ty.is_never() {
         return; // Don't generate constraints for the never type
     }
-    let Ty { ty: ty_gen, home: home_gen } = ty_gen;
-    let Ty { ty, home } = ty;
     let oc = ObligationCause::dummy_with_span(span);
+    let normalize = |ty| {
+        let n_ty = infcx.at(&oc, param_env).normalize(ty).unwrap();
+        let trivial = n_ty.obligations.iter().all(|ob| match ob.predicate.kind().skip_binder() {
+            PredicateKind::RegionOutlives(r) if r.0 == r.1 => true,
+            _ => false,
+        });
+        if !trivial {
+            dbg!(ty);
+            dbg!(n_ty.value);
+            dbg!(n_ty.obligations);
+            panic!();
+        }
+        n_ty.value
+    };
+    let Ty { ty: ty_gen, home: home_gen } = normalize(ty_gen);
+    let Ty { ty, home } = normalize(ty);
     let infer_ok = infcx.at(&oc, param_env).sup(home_gen, home).unwrap();
     debug_assert!(infer_ok.obligations.is_empty());
     let infer_ok = match infcx.at(&oc, param_env).sub(ty_gen, ty) {

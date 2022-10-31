@@ -1,0 +1,159 @@
+
+module TraitsAt_MyModel_ModelTy_Type
+  type self
+  type modelTy
+end
+module TraitsAt_MyModel_Model_Stub
+  type self
+  clone TraitsAt_MyModel_ModelTy_Type as ModelTy0 with
+    type self = self
+  function model [#"../traits_at.rs" 7 4 7 36] (self : self) : ModelTy0.modelTy
+end
+module TraitsAt_MyModel_Model_Interface
+  type self
+  clone TraitsAt_MyModel_ModelTy_Type as ModelTy0 with
+    type self = self
+  function model [#"../traits_at.rs" 7 4 7 36] (self : self) : ModelTy0.modelTy
+end
+module TraitsAt_MyModel_Model
+  type self
+  clone TraitsAt_MyModel_ModelTy_Type as ModelTy0 with
+    type self = self
+  function model [#"../traits_at.rs" 7 4 7 36] (self : self) : ModelTy0.modelTy
+  val model [#"../traits_at.rs" 7 4 7 36] (self : self) : ModelTy0.modelTy
+    ensures { result = model self }
+    
+end
+module TraitsAt_Impl0_Model_Stub
+  type x
+  use prelude.Borrow
+  clone TraitsAt_MyModel_ModelTy_Type as ModelTy0 with
+    type self = x
+  function model [#"../traits_at.rs" 13 4 13 35] (self : borrowed x) : ModelTy0.modelTy
+end
+module TraitsAt_Impl0_Model_Interface
+  type x
+  use prelude.Borrow
+  clone TraitsAt_MyModel_ModelTy_Type as ModelTy0 with
+    type self = x
+  function model [#"../traits_at.rs" 13 4 13 35] (self : borrowed x) : ModelTy0.modelTy
+end
+module TraitsAt_Impl0_Model
+  type x
+  use prelude.Borrow
+  clone TraitsAt_MyModel_ModelTy_Type as ModelTy0 with
+    type self = x
+  clone TraitsAt_MyModel_Model_Stub as Model0 with
+    type self = x,
+    type ModelTy0.modelTy = ModelTy0.modelTy
+  function model [#"../traits_at.rs" 13 4 13 35] (self : borrowed x) : ModelTy0.modelTy =
+    [#"../traits_at.rs" 14 8 14 23] Model0.model ( * self)
+  val model [#"../traits_at.rs" 13 4 13 35] (self : borrowed x) : ModelTy0.modelTy
+    ensures { result = model self }
+    
+end
+module TraitsAt_Impl1_Model_Stub
+  function model [#"../traits_at.rs" 21 4 21 26] (self : bool) : bool
+end
+module TraitsAt_Impl1_Model_Interface
+  function model [#"../traits_at.rs" 21 4 21 26] (self : bool) : bool
+end
+module TraitsAt_Impl1_Model
+  function model [#"../traits_at.rs" 21 4 21 26] (self : bool) : bool =
+    [#"../traits_at.rs" 20 4 20 24] if self then true else false
+  val model [#"../traits_at.rs" 21 4 21 26] (self : bool) : bool
+    ensures { result = model self }
+    
+end
+module TraitsAt_Impl1_ModelTy_Type
+  type modelTy  =
+    bool
+end
+module CreusotContracts_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
+module TraitsAt_Test_Interface
+  use prelude.Borrow
+  clone TraitsAt_Impl1_ModelTy_Type as ModelTy0
+  clone TraitsAt_Impl0_Model_Stub as Model1 with
+    type x = bool,
+    type ModelTy0.modelTy = ModelTy0.modelTy
+  clone TraitsAt_Impl1_Model_Stub as Model0
+  val test [@cfg:stackify] [#"../traits_at.rs" 27 0 27 33] (x : borrowed bool) : bool
+    ensures { [#"../traits_at.rs" 26 10 26 42] Model0.model result = old(Model1.model x) }
+    
+end
+module TraitsAt_Test
+  use prelude.Borrow
+  clone TraitsAt_Impl1_ModelTy_Type as ModelTy0
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = bool
+  clone TraitsAt_Impl1_Model as Model0
+  clone TraitsAt_Impl0_Model as Model1 with
+    type x = bool,
+    type ModelTy0.modelTy = ModelTy0.modelTy,
+    function Model0.model = Model0.model
+  let rec cfg test [@cfg:stackify] [#"../traits_at.rs" 27 0 27 33] (x : borrowed bool) : bool
+    ensures { [#"../traits_at.rs" 26 10 26 42] Model0.model result = old(Model1.model x) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : bool;
+  var x_1 : borrowed bool;
+  var res_3 : bool;
+  var _4 : bool;
+  {
+    x_1 <- x;
+    goto BB0
+  }
+  BB0 {
+    res_3 <-  * x_1;
+    _4 <- res_3;
+    x_1 <- { x_1 with current = (not _4) };
+    assume { Resolve0.resolve x_1 };
+    _0 <- res_3;
+    return _0
+  }
+  
+end
+module TraitsAt_Impl0_ModelTy_Type
+  type x
+  clone TraitsAt_MyModel_ModelTy_Type as ModelTy0 with
+    type self = x
+  type modelTy  =
+    ModelTy0.modelTy
+end
+module TraitsAt_Impl0
+  type x
+  clone TraitsAt_MyModel_ModelTy_Type as ModelTy1 with
+    type self = x
+  clone TraitsAt_MyModel_Model_Interface as Model1 with
+    type self = x,
+    type ModelTy0.modelTy = ModelTy1.modelTy
+  clone TraitsAt_Impl0_Model as Model0 with
+    type x = x,
+    type ModelTy0.modelTy = ModelTy1.modelTy,
+    function Model0.model = Model1.model
+  clone TraitsAt_Impl0_ModelTy_Type as ModelTy0 with
+    type x = x,
+    type ModelTy0.modelTy = ModelTy1.modelTy
+end
+module TraitsAt_Impl1
+  clone TraitsAt_Impl1_Model as Model0
+  clone TraitsAt_Impl1_ModelTy_Type as ModelTy0
+end
