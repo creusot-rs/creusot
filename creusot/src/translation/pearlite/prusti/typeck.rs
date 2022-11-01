@@ -13,13 +13,13 @@ use creusot_rustc::{
             outlives::env::OutlivesEnvironment, region_constraints::Constraint, InferCtxt,
             RegionVariableOrigin, SubregionOrigin, TyCtxtInferExt,
         },
-        traits::{ObligationCause, PredicateObligation},
+        traits::ObligationCause,
     },
     middle::{
         ty,
         ty::{
-            Binder, EarlyBinder, Instance, InternalSubsts, ParamEnv, PolyFnSig, Predicate,
-            PredicateKind, Region, RegionKind, RegionVid, SubstsRef, TyCtxt, TyKind, TypeFoldable,
+            EarlyBinder, Instance, InternalSubsts, ParamEnv, PolyFnSig, PredicateKind, Region,
+            RegionKind, RegionVid, SubstsRef, TyCtxt, TyKind, TypeFoldable,
         },
     },
     smir::very_unstable::trait_selection::traits::query::normalize::AtExt,

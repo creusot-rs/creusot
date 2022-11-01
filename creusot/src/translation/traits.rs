@@ -64,9 +64,6 @@ impl<'tcx> TranslationCtx<'tcx> {
             }
 
             let subst = InternalSubsts::identity_for_item(self.tcx, impl_item);
-            names.insert(impl_item, subst);
-
-            decls.extend(own_generic_decls_for(self.tcx, impl_item));
 
             let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
 
@@ -80,6 +77,10 @@ impl<'tcx> TranslationCtx<'tcx> {
             if contract_of(self, trait_item).is_empty() {
                 continue;
             }
+
+            names.insert(impl_item, subst);
+
+            decls.extend(own_generic_decls_for(self.tcx, impl_item));
 
             self.translate(impl_item);
             // TODO: Clean up and abstract

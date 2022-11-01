@@ -220,15 +220,17 @@ pub(super) fn prusti_to_creusot<'tcx>(
     let tcx = ctx.tcx;
     let item_id = ctx.item_id;
     let owner_id = util::param_def_id(tcx, item_id).to_def_id();
+
+    let ts = match util::get_attr_lit(tcx, item_id.to_def_id(), &["creusot", "prusti", "ts"]) {
+        None => return Ok(term),
+        Some(attr) => attr,
+    };
+
     if tcx.is_closure(owner_id) {
         return Err(Error::new(term.span, "Prusti specs on closures aren't supported"));
     }
 
     let home_sig = util::get_attr_lit(tcx, owner_id, &["creusot", "prusti", "home_sig"]);
-    let ts = match util::get_attr_lit(tcx, item_id.to_def_id(), &["creusot", "prusti", "ts"]) {
-        None => return Ok(term),
-        Some(attr) => attr,
-    };
     let ctx = Ctx::new(tcx, owner_id, home_sig.is_some());
 
     let (ts, arg_tys, res_ty) = full_signature(home_sig, ts, owner_id, &ctx)?;
