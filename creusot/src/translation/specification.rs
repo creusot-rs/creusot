@@ -110,19 +110,19 @@ impl ContractClauses {
     fn get_pre<'tcx>(self, ctx: &mut TranslationCtx<'tcx>) -> EarlyBinder<PreContract<'tcx>> {
         let mut out = PreContract::default();
         for req_id in self.requires {
-            log::debug!("require clause {:?}", req_id);
+            log::trace!("require clause {:?}", req_id);
             let term = ctx.term(req_id).unwrap().clone();
             out.requires.push(term);
         }
 
         for ens_id in self.ensures {
-            log::debug!("ensures clause {:?}", ens_id);
+            log::trace!("ensures clause {:?}", ens_id);
             let term = ctx.term(ens_id).unwrap().clone();
             out.ensures.push(term);
         }
 
         if let Some(var_id) = self.variant {
-            log::debug!("variant clause {:?}", var_id);
+            log::trace!("variant clause {:?}", var_id);
             let term = ctx.term(var_id).unwrap().clone();
             out.variant = Some(term);
         };

@@ -92,6 +92,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         }
         debug!("translating {:?}", def_id);
 
+        // eprintln!("{:?}", self.param_env(def_id));
+
         match item_type(self.tcx, def_id) {
             ItemType::Trait => {
                 self.start(def_id);
@@ -373,6 +375,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         if let Some(es) = self.extern_spec(id) {
             let mut additional_predicates = Vec::new();
 
+            let base_env = self.tcx.param_env(def_id);
             {
                 // Only add predicates which don't already hold
                 use creusot_rustc::infer::infer::TyCtxtInferExt;
@@ -383,13 +386,17 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                         let obligation_cause = ObligationCause::dummy();
                         let obligation = Obligation::new(obligation_cause, param_env, pred);
                         if !selcx.predicate_may_hold_fatal(&obligation) {
-                            additional_predicates.push(pred)
+                            additional_predicates.push(
+                                self.tcx
+                                    .try_normalize_erasing_regions(base_env, pred)
+                                    .unwrap_or(pred),
+                            )
                         }
                     }
                 });
             }
 
-            additional_predicates.extend(self.tcx.param_env(def_id).caller_bounds());
+            additional_predicates.extend(base_env.caller_bounds());
             ParamEnv::new(
                 self.mk_predicates(additional_predicates.into_iter()),
                 creusot_rustc::infer::traits::Reveal::UserFacing,

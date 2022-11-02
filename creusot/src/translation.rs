@@ -20,7 +20,7 @@ use crate::{
 use creusot_rustc::hir::{def::DefKind, def_id::LOCAL_CRATE};
 use ctx::TranslationCtx;
 pub(crate) use function::{translate_function, LocalIdent};
-use heck::CamelCase;
+use heck::ToUpperCamelCase;
 use rustc_middle::ty::Ty;
 use std::{error::Error, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
@@ -124,7 +124,7 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
             }
         });
 
-        let crate_name = tcx.crate_name(LOCAL_CRATE).to_string().to_camel_case();
+        let crate_name = tcx.crate_name(LOCAL_CRATE).to_string().to_upper_camel_case();
         print_crate(&mut out, crate_name, modules)?;
     }
     debug!("after_analysis_dump: {:?}", start.elapsed());
