@@ -77,6 +77,9 @@ mod macros {
             prusti_ensures as ensures, prusti_ensures_expiry as after_expiry,
             prusti_requires as requires, prusti_logic as logic,
         };
+
+        #[cfg(feature = "contracts")]
+        pub use crate::__stubs::{curr, at_expiry};
     }
 }
 

@@ -367,11 +367,23 @@ fn convert<'tcx>(
             convert(&mut *body, &mut tenv.insert(binder.0, ty), ts, ctx)?
         }
         TermKind::Call { args, fun, id, subst } => {
-            let _ = convert(fun, tenv, ts, ctx)?;
-            let args = args.iter_mut().map(|arg| Ok((convert(arg, tenv, ts, ctx)?, arg.span)));
-            let (id, subst) = typeck::try_resolve(&ctx, *id, *subst);
-            typeck::check_call(ctx, ts, id, subst, args)?
-                .unwrap_or(Ty::unknown_regions(term.ty, tcx))
+            let new_reg = if tcx.is_diagnostic_item(Symbol::intern("prusti_curr"), *id) {
+                Some(ctx.curr_region)
+            } else if tcx.is_diagnostic_item(Symbol::intern("prusti_expiry"), *id) {
+                Some(subst.regions().next().unwrap())
+            } else {
+                None // just a regular function
+            };
+            if let Some(reg) = new_reg {
+                *term = args.pop().unwrap();
+                convert(term, tenv, reg, &ctx)?
+            } else {
+                let _ = convert(fun, tenv, ts, ctx)?;
+                let args = args.iter_mut().map(|arg| Ok((convert(arg, tenv, ts, ctx)?, arg.span)));
+                let (id, subst) = typeck::try_resolve(&ctx, *id, *subst);
+                typeck::check_call(ctx, ts, id, subst, args)?
+                    .unwrap_or(Ty::unknown_regions(term.ty, tcx))
+            }
         }
         TermKind::Constructor { fields, .. } | TermKind::Tuple { fields } => {
             fields.iter_mut().try_for_each(|arg| convert(arg, tenv, ts, ctx).map(drop))?;
@@ -429,7 +441,7 @@ fn convert<'tcx>(
         TermKind::Old { term } => convert(&mut *term, tenv, ctx.old_region, ctx)?,
         TermKind::Closure { .. } => todo!(),
         TermKind::Absurd => Ty::never(ctx.tcx),
-        _ => return Err(Error::new(term.span, "The operation is not supported in Prusti specs")),
+        _ => return Err(Error::new(term.span, "this operation is not supported in Prusti specs")),
     };
     let res = strip_refs(res, ts, ref_depth(term.ty));
     Ok(res)

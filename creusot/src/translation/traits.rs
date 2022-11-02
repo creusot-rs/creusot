@@ -77,12 +77,12 @@ impl<'tcx> TranslationCtx<'tcx> {
             if contract_of(self, trait_item).is_empty() {
                 continue;
             }
+            self.translate(impl_item);
 
             names.insert(impl_item, subst);
 
             decls.extend(own_generic_decls_for(self.tcx, impl_item));
 
-            self.translate(impl_item);
             // TODO: Clean up and abstract
             let predicates = self
                 .extern_spec(trait_item)
