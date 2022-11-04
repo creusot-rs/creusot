@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::prusti::*;
+use creusot_contracts::prusti_prelude::*;
 
 #[after_expiry(true)]
 fn test<'a>(x: &'a mut u32, y: &mut u32) -> &'a mut u32 {

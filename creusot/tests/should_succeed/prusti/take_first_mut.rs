@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 use ::std::mem;
-use creusot_contracts::{logic::*, prusti::*};
+use creusot_contracts::prusti_prelude::*;
 
 #[requires((@**s).len() > 0)]
 #[ensures(*result == old((@**s)[0]))]

@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::prusti::*;
+use creusot_contracts::prusti_prelude::*;
 
 trait MyModel {
     type ModelTy;

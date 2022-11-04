@@ -353,7 +353,7 @@ fn convert<'tcx>(
     let res = match &mut term.kind {
         TermKind::Var(v) => *tenv.get(v).unwrap(),
         TermKind::Lit(_) | TermKind::Item(_, _) => Ty { ty: term.ty, home: ctx.absurd_home() }, // Can't return mutable reference
-        TermKind::Binary { lhs, rhs, .. } => {
+        TermKind::Binary { lhs, rhs, .. } | TermKind::Impl { lhs, rhs } => {
             convert(&mut *lhs, tenv, ts, ctx)?;
             convert(&mut *rhs, tenv, ts, ctx)?;
             Ty { ty: term.ty, home: ctx.absurd_home() }

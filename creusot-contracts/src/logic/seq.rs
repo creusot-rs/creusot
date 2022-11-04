@@ -42,6 +42,21 @@ impl<T> Seq<T> {
         self.subsequence(1, self.len())
     }
 
+    #[logic]
+    pub fn upto_last(self) -> Seq<T> {
+        self.subsequence(0, self.len() - 1)
+    }
+
+    #[logic]
+    pub fn last(self) -> T {
+        self[self.len() - 1]
+    }
+
+    #[logic]
+    pub fn head(self) -> T {
+        self[0]
+    }
+
     #[trusted]
     #[logic]
     #[creusot::builtins = "seq.Seq.length"]

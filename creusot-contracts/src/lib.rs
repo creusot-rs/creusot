@@ -71,16 +71,6 @@ mod macros {
     /// Generates a `requires` and `ensures` clause in the shape of the input expression, with
     /// `mut` replaced by `*` in the `requires` and `^` in the ensures.
     pub use base_macros::maintains;
-
-    pub mod prusti {
-        pub use base_macros::{
-            prusti_ensures as ensures, prusti_ensures_expiry as after_expiry,
-            prusti_requires as requires, prusti_logic as logic,
-        };
-
-        #[cfg(feature = "contracts")]
-        pub use crate::__stubs::{curr, at_expiry};
-    }
 }
 
 #[cfg(feature = "contracts")]
@@ -114,31 +104,53 @@ pub mod resolve;
 pub mod well_founded;
 
 // We add some common things at the root of the creusot-contracts library
-pub use crate::{
-    ghost::Ghost,
-    logic::{Int, OrdLogic, Seq},
-    macros::*,
-    model::{DeepModel, ShallowModel},
-    resolve::Resolve,
-    std::{
-        // Shadow std::prelude by our version.
-        // For Clone and PartialEq, this is important for the derive macro.
-        // If the user write the glob pattern "use creusot_contracts::*", then
-        // rustc will either shadow the old identifier or complain about the
-        // ambiguïty (ex: for the derive macros Clone and PartialEq, a glob
-        // pattern is not enough to force rustc to use our version, but at least
-        // we get an error message).
-        clone::Clone,
-        cmp::PartialEq,
-        default::Default,
-        iter::{FromIterator, IntoIterator, Iterator},
-    },
-    well_founded::WellFounded,
-};
+mod base_prelude {
+    pub use crate::{
+        ghost::Ghost,
+        logic::{Int, OrdLogic, Seq},
+        model::{DeepModel, ShallowModel},
+        resolve::Resolve,
+        std::{
+            // Shadow std::prelude by our version.
+            // For Clone and PartialEq, this is important for the derive macro.
+            // If the user write the glob pattern "use creusot_contracts::*", then
+            // rustc will either shadow the old identifier or complain about the
+            // ambiguïty (ex: for the derive macros Clone and PartialEq, a glob
+            // pattern is not enough to force rustc to use our version, but at least
+            // we get an error message).
+            clone::Clone,
+            cmp::PartialEq,
+            default::Default,
+            iter::{FromIterator, IntoIterator, Iterator},
+        },
+        well_founded::WellFounded,
+    };
 
-// Export extension traits anonymously
-pub use crate::std::{
-    iter::{SkipExt as _, TakeExt as _},
-    ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
-    slice::SliceExt as _,
-};
+    // Export extension traits anonymously
+    pub use crate::std::{
+        iter::{SkipExt as _, TakeExt as _},
+        ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
+        slice::SliceExt as _,
+    };
+}
+
+pub mod prusti_macros {
+    pub use base_macros::{
+        ghost, invariant, law, pearlite, proof_assert, prusti_ensures as ensures,
+        prusti_ensures_expiry as after_expiry, prusti_logic as logic, prusti_requires as requires,
+        trusted,
+    };
+
+    #[cfg(feature = "contracts")]
+    pub use crate::__stubs::{at_expiry, curr};
+}
+
+pub mod prelude {
+    pub use crate::{base_prelude::*, macros::*};
+}
+
+pub mod prusti_prelude {
+    pub use crate::{base_prelude::*, prusti_macros::*};
+}
+
+pub use prelude::*;
