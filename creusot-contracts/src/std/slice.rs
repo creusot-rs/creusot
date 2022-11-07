@@ -255,6 +255,14 @@ extern_spec! {
         #[ensures(@result == self)]
         #[ensures(result.invariant())]
         fn iter_mut(&mut self) -> IterMut<'_, T>;
+
+        #[ensures(result == None ==> (@self).len() == 0)]
+        #[ensures(forall<x : _> result == Some(x) ==> (@self)[(@self).len() - 1] == *x)]
+        fn last(&self) -> Option<&T>;
+
+        #[ensures(result == None ==> (@self).len() == 0)]
+        #[ensures(forall<x : _> result == Some(x) ==> (@self)[0] == *x)]
+        fn first(&self) -> Option<&T>;
     }
 
     impl<T, I> IndexMut<I> for [T]
