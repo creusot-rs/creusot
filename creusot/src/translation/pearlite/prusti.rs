@@ -9,13 +9,12 @@ use creusot_rustc::{
     hir::def_id::DefId,
     middle::{
         mir::Mutability::{Mut, Not},
-        ty,
-        ty::{
-            AdtDef, Binder, FieldDef, FnSig, FreeRegion, GenericParamDefKind, Generics, Region,
-            RegionKind, SubstsRef, TyKind,
-        },
+        ty::{self, Binder, FnSig, FreeRegion, GenericParamDefKind, Generics, Region, RegionKind},
     },
-    span::symbol::{Ident, Symbol},
+    span::{
+        symbol::{Ident, Symbol},
+        DUMMY_SP,
+    },
 };
 use internal_iterator::*;
 use itertools::Either;
@@ -29,6 +28,7 @@ mod parsing;
 mod typeck;
 pub(crate) use typeck::check_signature_agreement;
 mod types;
+use crate::pearlite::prusti::parsing::Home;
 use types::*;
 
 mod variance;
@@ -175,28 +175,28 @@ fn add_homes_to_sig<'a, 'tcx>(
     ctx: &'a Ctx<'tcx>,
     sig: FnSig<'tcx>,
     home_sig: Option<(&Lit, FxHashMap<Symbol, Region<'tcx>>)>,
-) -> CreusotResult<(impl Iterator<Item = (Symbol, Ty<'tcx>)> + 'a, Ty<'tcx>)> {
+) -> CreusotResult<(impl Iterator<Item = (Symbol, CreusotResult<Ty<'tcx>>)> + 'a, Ty<'tcx>)> {
     let args: &[Ident] = ctx.tcx.fn_arg_names(ctx.owner_id);
-    let (arg_homes, ret_home) = match home_sig {
+    let (arg_homes, ret_home, span) = match home_sig {
         Some((lit, map)) => {
             let (arg_homes, ret_home) = parsing::parse_home_sig_lit(lit)?;
             if arg_homes.len() != args.len() {
                 return Err(Error::new(lit.span, "number of args doesn't match signature"));
             }
-            let home = ctx.parsed_home_to_region(ret_home, &map);
+            let home = ctx.map_parsed_home(ret_home, &map);
             (
-                Either::Left(
-                    arg_homes.into_iter().map(move |h| ctx.parsed_home_to_region(h, &map)),
-                ),
+                Either::Left(arg_homes.into_iter().map(move |h| ctx.map_parsed_home(h, &map))),
                 home,
+                lit.span,
             )
         }
         None => {
-            let arg_homes = iter::repeat(ctx.old_region);
-            (Either::Right(arg_homes), ctx.curr_region)
+            let arg_homes = iter::repeat(Home { data: ctx.old_region, is_ref: false });
+            (Either::Right(arg_homes), Home { data: ctx.curr_region, is_ref: false }, DUMMY_SP)
         }
     };
-    let types = sig.inputs().iter().zip(arg_homes).map(|(&ty, home)| ctx.fix_regions(ty, home));
+    let types =
+        sig.inputs().iter().zip(arg_homes).map(move |(&ty, home)| ctx.fix_homes(ty, home, span));
 
     let args = args
         .iter()
@@ -210,7 +210,7 @@ fn add_homes_to_sig<'a, 'tcx>(
             }
         })
         .zip(types);
-    Ok((args, ctx.fix_regions(sig.output(), ret_home)))
+    Ok((args, ctx.fix_homes(sig.output(), ret_home, span)?))
 }
 
 pub(super) fn prusti_to_creusot<'tcx>(
@@ -234,8 +234,9 @@ pub(super) fn prusti_to_creusot<'tcx>(
     let ctx = Ctx::new(tcx, owner_id, home_sig.is_some());
 
     let (ts, arg_tys, res_ty) = full_signature(home_sig, ts, owner_id, &ctx)?;
-    let res_kv = (Symbol::intern("result"), res_ty);
-    let mut tenv = Tenv::new(arg_tys.chain(iter::once(res_kv)).collect());
+    let res_kv = (Symbol::intern("result"), Ok(res_ty));
+    let arg_tys = arg_tys.chain(iter::once(res_kv)).map(|(k, v)| v.map(|v| (k, v)));
+    let mut tenv = Tenv::new(arg_tys.collect::<CreusotResult<_>>()?);
     let final_type = convert(&mut term, &mut tenv, ts, &ctx)?;
     if item_id == owner_id.expect_local() {
         typeck::check_sup(&ctx, res_ty, final_type, term.span)?
@@ -248,7 +249,11 @@ fn full_signature<'a, 'tcx>(
     ts: &Lit,
     owner_id: DefId,
     ctx: &'a Ctx<'tcx>,
-) -> CreusotResult<(Region<'tcx>, impl Iterator<Item = (Symbol, Ty<'tcx>)> + 'a, Ty<'tcx>)> {
+) -> CreusotResult<(
+    Region<'tcx>,
+    impl Iterator<Item = (Symbol, CreusotResult<Ty<'tcx>>)> + 'a,
+    Ty<'tcx>,
+)> {
     let tcx = ctx.tcx;
     let sig: Binder<FnSig> = tcx.fn_sig(owner_id);
     let bound_vars = sig.bound_vars();
@@ -296,8 +301,8 @@ where
 {
     let tcx = ctx.tcx;
     match pat {
-        Pattern::Constructor { adt, variant, fields, .. } => ty
-            .as_adt_variant(*adt, *variant, tcx)
+        Pattern::Constructor { variant, fields, .. } => ty
+            .as_adt_variant(*variant, tcx)
             .zip(fields)
             .try_for_each(|(ty, pat)| iterate_bindings(pat, ty, ctx, f)),
         Pattern::Tuple(fields) => {
@@ -325,21 +330,37 @@ impl<'a, 'tcx> InternalIterator for PatternIter<'a, 'tcx> {
     }
 }
 
-fn ref_depth(ty: ty::Ty<'_>) -> u32 {
-    if ty.ref_mutability() == Some(Not) {
-        1 + ref_depth(ty.peel_refs())
+fn strip_derefs<'tcx>(ty: Ty<'tcx>, ts: TimeSlice<'tcx>, target: ty::Ty<'tcx>) -> Ty<'tcx> {
+    let (depth, target_depth) = (deref_depth(ty.ty), deref_depth(target));
+    if depth >= target_depth {
+        strip_derefs_h(ty, ts, depth - target_depth)
     } else {
-        0
+        ty
     }
 }
 
-fn strip_refs<'tcx>(ty: Ty<'tcx>, ts: TimeSlice<'tcx>, max_depth: u32) -> Ty<'tcx> {
-    match ty.as_ref(ts) {
-        // We must have de-referenced a shared reference,
-        // so we'll we set the inner home to the current time slice
-        // TODO? if we want to to be strict we could check if this reference is valid at the current time slice
-        Some((_, ty, Not)) if max_depth > 0 => strip_refs(ty, ts, max_depth - 1),
-        _ => ty,
+fn deref_depth(ty: ty::Ty<'_>) -> u32 {
+    let mut ty = ty;
+    let mut res = 0;
+    loop {
+        ty = match ty.kind() {
+            ty::TyKind::Ref(_, ty, Not) => *ty,
+            ty::TyKind::Adt(adt, _) if adt.is_box() => ty.boxed_ty(),
+            _ => return res,
+        };
+        res += 1;
+    }
+}
+
+fn strip_derefs_h<'tcx>(ty: Ty<'tcx>, ts: TimeSlice<'tcx>, max_depth: u32) -> Ty<'tcx> {
+    if max_depth == 0 {
+        ty
+    } else if let Some((_, ty, Not)) = ty.as_ref(ts) {
+        strip_derefs_h(ty, ts, max_depth - 1)
+    } else if let Some(ty) = ty.try_unbox() {
+        strip_derefs_h(ty, ts, max_depth - 1)
+    } else {
+        unreachable!()
     }
 }
 
@@ -363,7 +384,8 @@ fn convert<'tcx>(
             Ty { ty: term.ty, home: ctx.absurd_home() }
         }
         TermKind::Forall { binder, body } | TermKind::Exists { binder, body } => {
-            let ty = ctx.fix_regions(binder.1, ts); // TODO handle lifetimes annotations in ty
+            let ty = binder.1.tuple_fields()[0];
+            let ty = ctx.fix_regions(ty, ts); // TODO handle lifetimes annotations in ty
             convert(&mut *body, &mut tenv.insert(binder.0, ty), ts, ctx)?
         }
         TermKind::Call { args, fun, id, subst } => {
@@ -425,24 +447,14 @@ fn convert<'tcx>(
             x
         }
         TermKind::Projection { lhs, name, .. } => {
-            let Ty { ty, home } = convert(&mut *lhs, tenv, ts, ctx)?;
-            match ty.kind() {
-                TyKind::Adt(adt, subst) => {
-                    let subst: SubstsRef = subst;
-                    let adt: &AdtDef = adt;
-                    debug_assert!(adt.is_struct());
-                    let def: &FieldDef = &adt.variants()[0u32.into()].fields[name.as_usize()];
-                    let ty = def.ty(tcx, subst);
-                    Ty { ty, home }
-                }
-                _ => unreachable!("projection operator can only apply to adts"),
-            }
+            let ty = convert(&mut *lhs, tenv, ts, ctx)?;
+            let res = ty.as_adt_variant(0u32.into(), tcx).nth(name.as_usize());
+            res.unwrap()
         }
         TermKind::Old { term } => convert(&mut *term, tenv, ctx.old_region, ctx)?,
         TermKind::Closure { .. } => todo!(),
         TermKind::Absurd => Ty::never(ctx.tcx),
         _ => return Err(Error::new(term.span, "this operation is not supported in Prusti specs")),
     };
-    let res = strip_refs(res, ts, ref_depth(term.ty));
-    Ok(res)
+    Ok(strip_derefs(res, ts, term.ty))
 }

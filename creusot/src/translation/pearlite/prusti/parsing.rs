@@ -6,11 +6,19 @@ fn skip_space(rest: &mut &str) {
     *rest = &rest[idx..];
 }
 
-pub(super) type Home = Symbol;
+#[derive(Copy, Clone, Debug)]
+pub(super) struct Home<T = Symbol> {
+    pub data: T,
+    pub is_ref: bool
+}
 
 pub(super) type HomeSig = (Vec<Home>, Home);
 
 fn parse_home(rest: &mut &str, counter: &mut u32) -> Option<Home> {
+    let has_r = rest.strip_prefix("r");
+    *rest = has_r.unwrap_or(*rest);
+    let has_r = has_r.is_some();
+    skip_space(rest);
     let after = rest.strip_prefix("'")?;
     let idx = after
         .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_' || c == '!'))
@@ -24,6 +32,7 @@ fn parse_home(rest: &mut &str, counter: &mut u32) -> Option<Home> {
         }
         other => Symbol::intern(other),
     };
+    let home = Home{data: home, is_ref: has_r};
     *rest = &rest[idx..];
     Some(home)
 }

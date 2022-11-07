@@ -1,4 +1,5 @@
 use crate::{std::ops::Index, *};
+use crate::prusti_prelude::logic as prusti_logic;
 
 #[cfg_attr(feature = "contracts", creusot::builtins = "seq.Seq.seq")]
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
@@ -9,12 +10,13 @@ impl<T> Seq<T> {
     #[creusot::builtins = "seq.Seq.empty"]
     pub const EMPTY: Self = { Seq(std::marker::PhantomData) };
 
-    #[logic]
+    #[prusti_logic(() -> '_)]
     pub fn new() -> Self {
         Self::EMPTY
     }
 
     #[logic]
+    #[creusot::prusti::home_sig="('x, '_) -> '_"] // Hack while we don't support constructors
     pub fn get(self, ix: Int) -> Option<T> {
         if ix < self.len() {
             Some(*self.index(ix))
@@ -24,69 +26,69 @@ impl<T> Seq<T> {
     }
 
     #[trusted]
-    #[logic]
+    #[prusti_logic(('x, '_, '_) -> 'x)]
     #[creusot::builtins = "seq_ext.SeqExt.subsequence"]
     pub fn subsequence(self, _: Int, _: Int) -> Self {
         absurd
     }
 
     #[trusted]
-    #[logic]
+    #[prusti_logic(('x) -> 'x)]
     #[creusot::builtins = "seq.Seq.singleton"]
     pub fn singleton(_: T) -> Self {
         absurd
     }
 
-    #[logic]
+    #[prusti_logic(('x) -> 'x)]
     pub fn tail(self) -> Self {
         self.subsequence(1, self.len())
     }
 
-    #[logic]
+    #[prusti_logic(('x) -> 'x)]
     pub fn upto_last(self) -> Seq<T> {
         self.subsequence(0, self.len() - 1)
     }
 
-    #[logic]
+    #[prusti_logic(('x) -> 'x)]
     pub fn last(self) -> T {
         self[self.len() - 1]
     }
 
-    #[logic]
+    #[prusti_logic(('x) -> 'x)]
     pub fn head(self) -> T {
         self[0]
     }
 
     #[trusted]
-    #[logic]
+    #[prusti_logic(('_) -> '_)]
     #[creusot::builtins = "seq.Seq.length"]
     pub fn len(self) -> Int {
         absurd
     }
 
     #[trusted]
-    #[logic]
+    #[prusti_logic(('x, '_, 'x) -> 'x)]
     #[creusot::builtins = "seq.Seq.set"]
     pub fn set(self, _: Int, _: T) -> Self {
         absurd
     }
 
     #[trusted]
-    #[predicate]
+    #[prusti_logic(('_, '_) -> '_)]
     #[creusot::builtins = "seq.Seq.(==)"]
     pub fn ext_eq(self, _: Self) -> bool {
         absurd
     }
 
     #[trusted]
-    #[logic]
+    #[prusti_logic(('x, 'x) -> 'x)]
     #[creusot::builtins = "seq.Seq.snoc"]
     pub fn push(self, _: T) -> Self {
         absurd
     }
 
     #[trusted]
-    #[logic]
+    #[prusti_logic(('x, 'x) -> 'x)]
     #[creusot::builtins = "seq.Seq.(++)"]
     pub fn concat(self, _: Self) -> Self {
         absurd
@@ -131,7 +133,7 @@ impl<T> std::ops::Index<Int> for Seq<T> {
     type Output = T;
 
     #[trusted]
-    #[logic]
+    #[prusti_logic((r'x, '_) -> r'x)]
     #[creusot::builtins = "seq.Seq.get"]
     fn index(&self, _: Int) -> &T {
         absurd

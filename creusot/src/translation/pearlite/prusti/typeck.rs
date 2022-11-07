@@ -58,11 +58,16 @@ impl<'tcx> FromIterator<(Region<'tcx>, Region<'tcx>)> for SubstMap<'tcx> {
 
 impl<'tcx> SubstMap<'tcx> {
     // Convert a home from the home_signature of to a region var
-    fn convert_sig_home(&mut self, sig_home: Home, infcx: &InferCtxt<'_, 'tcx>) -> Region<'tcx> {
-        *self
-            .0
-            .entry(sig_home)
-            .or_insert_with(|| infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP)))
+    fn convert_sig_pair(
+        &mut self,
+        home: Home,
+        ty_gen: ty::Ty<'tcx>,
+        infcx: &InferCtxt<'_, 'tcx>,
+    ) -> Ty<'tcx> {
+        let origin = RegionVariableOrigin::MiscVariable(DUMMY_SP);
+        let ty_gen = if home.is_ref { ty_gen.peel_refs() } else { ty_gen };
+        let home_gen = *self.0.entry(home.data).or_insert_with(|| infcx.next_region_var(origin));
+        Ty { home: home_gen, ty: ty_gen }
     }
 
     fn get_vid(&self, sym: Symbol) -> Option<RegionVid> {
@@ -120,9 +125,9 @@ fn sup_tys<'tcx>(
     span: Span,
     ty_gen: Ty<'tcx>,
     ty: Ty<'tcx>,
-) {
+) -> CreusotResult<()> {
     if ty.is_never() {
-        return; // Don't generate constraints for the never type
+        return Ok(()); // Don't generate constraints for the never type
     }
     let oc = ObligationCause::dummy_with_span(span);
     let normalize = |ty| {
@@ -145,9 +150,10 @@ fn sup_tys<'tcx>(
     debug_assert!(infer_ok.obligations.is_empty());
     let infer_ok = match infcx.at(&oc, param_env).sub(ty_gen, ty) {
         Ok(x) => x,
-        Err(err) => panic!("{:#?}", (err, ty_gen, ty, param_env)),
+        Err(err) => return Err(Error::new(span, err.to_string())),
     };
     debug_assert!(infer_ok.obligations.is_empty());
+    Ok(())
 }
 
 /// Returns Ok(Some(ty)) if fn_ty has a "home signature" and the call can be type checked to ty
@@ -185,15 +191,13 @@ pub(super) fn check_call<'tcx>(
             }
             _ => unreachable!(),
         };
-        args.zip(args_gen).zip(home_sig_args).for_each(|((arg, &ty_gen), home_sig_arg)| {
+        args.zip(args_gen).zip(home_sig_args).try_for_each(|((arg, &ty_gen), home_sig_arg)| {
             let (ty, span) = arg;
 
-            let home_gen = subst_map.convert_sig_home(home_sig_arg, &infcx);
-            let ty_gen = Ty { ty: ty_gen, home: home_gen };
-            sup_tys(&infcx, param_env, span, ty_gen, ty);
-        });
-        let res_home_gen = subst_map.convert_sig_home(home_sig_res, &infcx);
-        let res_ty_gen = Ty { ty: res_ty_gen, home: res_home_gen };
+            let ty_gen = subst_map.convert_sig_pair(home_sig_arg, ty_gen, &infcx);
+            sup_tys(&infcx, param_env, span, ty_gen, ty)
+        })?;
+        let res_ty_gen = subst_map.convert_sig_pair(home_sig_res, res_ty_gen, &infcx);
 
         let outlives = OutlivesEnvironment::new(param_env);
         infcx.process_registered_region_obligations(outlives.region_bound_pairs(), param_env);
@@ -228,7 +232,7 @@ pub(super) fn union<'tcx>(
     elts: impl Iterator<Item = CreusotResult<Ty<'tcx>>>,
 ) -> CreusotResult<Ty<'tcx>> {
     // Eagerly evaluate args to avoid running multiple inference contexts at the same time
-    let elts = elts.collect::<CreusotResult<Vec<_>>>()?.into_iter();
+    let mut elts = elts.collect::<CreusotResult<Vec<_>>>()?.into_iter();
     let tcx = ctx.tcx;
     let param_env = ctx.param_env();
     tcx.infer_ctxt().enter(|infcx| {
@@ -238,9 +242,7 @@ pub(super) fn union<'tcx>(
         });
         let home_gen = infcx.next_region_var(RegionVariableOrigin::MiscVariable(DUMMY_SP));
         let ty_gen = Ty { ty: ty_gen, home: home_gen };
-        elts.for_each(|ty| {
-            sup_tys(&infcx, param_env, DUMMY_SP, ty_gen, ty);
-        });
+        elts.try_for_each(|ty| sup_tys(&infcx, param_env, DUMMY_SP, ty_gen, ty))?;
         let constraints = infcx.take_and_reset_region_constraints();
         let var_info = RegionInfo::new(constraints.constraints.into_iter(), tcx);
         let res = ty_gen.fold_with(&mut RegionReplacer { tcx, f: |r| var_info.get_region(r, tcx) });
@@ -257,7 +259,7 @@ pub(super) fn check_sup<'tcx>(
     let tcx = ctx.tcx;
     let param_env = ctx.param_env();
     tcx.infer_ctxt().enter(|infcx| {
-        sup_tys(&infcx, param_env, span, expected, actual);
+        sup_tys(&infcx, param_env, span, expected, actual)?;
         let constraints = infcx.take_and_reset_region_constraints();
         constraints.constraints.into_iter().try_for_each(|(c, origin)| match c {
             Constraint::RegSubReg(reg1, reg2) => {
@@ -305,7 +307,10 @@ pub(crate) fn check_signature_agreement<'tcx>(
     let ts = ts.ok().unwrap();
     let subst = |ty| EarlyBinder(ty).subst(tcx, refn_subst);
     let (ts, arg_tys, expect_res_ty) = super::full_signature(trait_home_sig, &ts, trait_id, &ctx)?;
-    let args = arg_tys.map(|(_, ty)| subst(ty)).zip(iter::repeat(impl_span)).map(Ok);
+    let args = arg_tys
+        .map(|(_, ty)| ty.map(subst))
+        .zip(iter::repeat(impl_span))
+        .map(|(ty, sp)| ty.map(|ty| (ty, sp)));
     let expect_res_ty = subst(expect_res_ty);
     let actual_res_ty = check_call(&ctx, ts, impl_id, impl_id_subst, args)?;
     let actual_res_ty = match actual_res_ty {

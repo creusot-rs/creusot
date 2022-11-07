@@ -1,4 +1,7 @@
-use crate::pearlite::prusti::parsing::Home;
+use crate::{
+    error::{CreusotResult, Error},
+    pearlite::prusti::parsing::Home,
+};
 use creusot_rustc::{
     data_structures::fx::{FxHashMap, FxHashSet},
     macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
@@ -18,6 +21,7 @@ use std::{
     fmt::{Display, Formatter},
     iter,
 };
+use creusot_rustc::span::Span;
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 /// Since we use a different subtyping for this analysis
@@ -44,13 +48,12 @@ impl<'tcx> Ty<'tcx> {
 
     pub(super) fn as_adt_variant(
         self,
-        adt: AdtDef<'tcx>,
         variant: VariantIdx,
         tcx: TyCtxt<'tcx>,
     ) -> impl Iterator<Item = Ty<'tcx>> {
         let tys = match self.ty.kind() {
-            TyKind::Adt(adt2, subst_ref) => {
-                debug_assert_eq!(adt, *adt2);
+            TyKind::Adt(adt, subst_ref) => {
+                let adt: AdtDef = *adt;
                 let field_defs = &adt.variants()[variant].fields;
                 Either::Left(field_defs.iter().map(move |def| def.ty(tcx, *subst_ref)))
             }
@@ -63,6 +66,15 @@ impl<'tcx> Ty<'tcx> {
     pub(super) fn as_ref(self, ts: Region<'tcx>) -> Option<(Region<'tcx>, Self, Mutability)> {
         match self.ty.kind() {
             &TyKind::Ref(region, ty, m) => Some((region, Ty { ty, home: ts }, m)),
+            _ => None,
+        }
+    }
+
+    pub(super) fn try_unbox(self) -> Option<Self> {
+        match self.ty.kind() {
+            &TyKind::Adt(adt, subst) if adt.is_box() => {
+                Some(Ty { ty: subst.types().next().unwrap(), home: self.home })
+            }
             _ => None,
         }
     }
@@ -168,12 +180,34 @@ impl<'tcx> Ctx<'tcx> {
         Ty { ty: fixed, home }
     }
 
+    pub fn fix_homes(&self, t: ty::Ty<'tcx>, home: Home<Region<'tcx>>, span: Span) -> CreusotResult<Ty<'tcx>> {
+        let mut t = t;
+        if home.is_ref {
+            if t.ref_mutability() != Some(Mutability::Not) {
+                return Err(Error::new(
+                    span,
+                    format!("{t} isn't a shared reference"),
+                ));
+            }
+            t = t.peel_refs()
+        }
+        Ok(self.fix_regions(t, home.data))
+    }
+
     pub(super) fn parsed_home_to_region(
         &self,
-        home: Home,
+        home: Symbol,
         lifetimes: &FxHashMap<Symbol, Region<'tcx>>,
     ) -> Region<'tcx> {
         lifetimes.get(&home).copied().unwrap_or_else(|| dummy_region(self.owner_id, self.tcx, home))
+    }
+
+    pub(super) fn map_parsed_home(
+        &self,
+        home: Home,
+        lifetimes: &FxHashMap<Symbol, Region<'tcx>>,
+    ) -> Home<Region<'tcx>> {
+        Home { data: self.parsed_home_to_region(home.data, lifetimes), is_ref: home.is_ref }
     }
 
     pub(super) fn param_env(&self) -> ParamEnv<'tcx> {

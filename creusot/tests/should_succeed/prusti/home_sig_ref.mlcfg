@@ -1,0 +1,196 @@
+
+module HomeSigRef_Test_Type
+  use mach.int.Int
+  use mach.int.UInt32
+  type t_test  =
+    | C_Test uint32
+    
+  let function test_x (self : t_test) : uint32 = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Test a -> a
+      end
+end
+module HomeSigRef_Test_Stub
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test [#"../home_sig_ref.rs" 7 0 7 31] (arg : HomeSigRef_Test_Type.t_test) : uint32
+end
+module HomeSigRef_Test_Interface
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test [#"../home_sig_ref.rs" 7 0 7 31] (arg : HomeSigRef_Test_Type.t_test) : uint32
+end
+module HomeSigRef_Test
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test [#"../home_sig_ref.rs" 7 0 7 31] (arg : HomeSigRef_Test_Type.t_test) : uint32 =
+    [#"../home_sig_ref.rs" 6 0 6 22] let HomeSigRef_Test_Type.C_Test x = arg in x
+  val test [#"../home_sig_ref.rs" 7 0 7 31] (arg : HomeSigRef_Test_Type.t_test) : uint32
+    ensures { result = test arg }
+    
+end
+module HomeSigRef_Test2_Stub
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test2 [#"../home_sig_ref.rs" 13 0 13 32] (arg : HomeSigRef_Test_Type.t_test) : uint32
+end
+module HomeSigRef_Test2_Interface
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test2 [#"../home_sig_ref.rs" 13 0 13 32] (arg : HomeSigRef_Test_Type.t_test) : uint32
+end
+module HomeSigRef_Test2
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  clone HomeSigRef_Test_Stub as Test1
+  function test2 [#"../home_sig_ref.rs" 13 0 13 32] (arg : HomeSigRef_Test_Type.t_test) : uint32 =
+    [#"../home_sig_ref.rs" 14 4 14 13] Test1.test arg
+  val test2 [#"../home_sig_ref.rs" 13 0 13 32] (arg : HomeSigRef_Test_Type.t_test) : uint32
+    ensures { result = test2 arg }
+    
+end
+module HomeSigRef_Test3_Interface
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  clone HomeSigRef_Test2_Stub as Test20
+  val test3 [@cfg:stackify] [#"../home_sig_ref.rs" 18 0 18 32] (arg : HomeSigRef_Test_Type.t_test) : uint32
+    ensures { [#"../home_sig_ref.rs" 17 10 17 30] result = Test20.test2 arg }
+    
+end
+module HomeSigRef_Test3
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  clone HomeSigRef_Test as Test1
+  clone HomeSigRef_Test2 as Test20 with
+    function Test1.test = Test1.test
+  let rec cfg test3 [@cfg:stackify] [#"../home_sig_ref.rs" 18 0 18 32] (arg : HomeSigRef_Test_Type.t_test) : uint32
+    ensures { [#"../home_sig_ref.rs" 17 10 17 30] result = Test20.test2 arg }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : uint32;
+  var arg_1 : HomeSigRef_Test_Type.t_test;
+  var _3 : uint32;
+  {
+    arg_1 <- arg;
+    goto BB0
+  }
+  BB0 {
+    _3 <- HomeSigRef_Test_Type.test_x arg_1;
+    _0 <- _3;
+    return _0
+  }
+  
+end
+module HomeSigRef_Test4_Stub
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test4 [#"../home_sig_ref.rs" 23 0 23 31] (arg : HomeSigRef_Test_Type.t_test) : uint32
+end
+module HomeSigRef_Test4_Interface
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test4 [#"../home_sig_ref.rs" 23 0 23 31] (arg : HomeSigRef_Test_Type.t_test) : uint32
+end
+module HomeSigRef_Test4
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test4 [#"../home_sig_ref.rs" 23 0 23 31] (arg : HomeSigRef_Test_Type.t_test) : uint32 =
+    [#"../home_sig_ref.rs" 24 4 24 9] HomeSigRef_Test_Type.test_x arg
+  val test4 [#"../home_sig_ref.rs" 23 0 23 31] (arg : HomeSigRef_Test_Type.t_test) : uint32
+    ensures { result = test4 arg }
+    
+end
+module HomeSigRef_Test5_Stub
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test5 [#"../home_sig_ref.rs" 28 0 28 31] (arg : HomeSigRef_Test_Type.t_test) : uint32
+end
+module HomeSigRef_Test5_Interface
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test5 [#"../home_sig_ref.rs" 28 0 28 31] (arg : HomeSigRef_Test_Type.t_test) : uint32
+end
+module HomeSigRef_Test5
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test5 [#"../home_sig_ref.rs" 28 0 28 31] (arg : HomeSigRef_Test_Type.t_test) : uint32 =
+    [#"../home_sig_ref.rs" 29 4 29 9] HomeSigRef_Test_Type.test_x arg
+  val test5 [#"../home_sig_ref.rs" 28 0 28 31] (arg : HomeSigRef_Test_Type.t_test) : uint32
+    ensures { result = test5 arg }
+    
+end
+module HomeSigRef_FakeRef_MakeRef_Stub
+  type self
+  use prelude.Borrow
+  function make_ref [#"../home_sig_ref.rs" 34 4 34 31] (self : self) : self
+end
+module HomeSigRef_FakeRef_MakeRef_Interface
+  type self
+  use prelude.Borrow
+  function make_ref [#"../home_sig_ref.rs" 34 4 34 31] (self : self) : self
+end
+module HomeSigRef_FakeRef_MakeRef
+  type self
+  use prelude.Borrow
+  function make_ref [#"../home_sig_ref.rs" 34 4 34 31] (self : self) : self =
+    [#"../home_sig_ref.rs" 35 8 35 12] self
+  val make_ref [#"../home_sig_ref.rs" 34 4 34 31] (self : self) : self
+    ensures { result = make_ref self }
+    
+end
+module HomeSigRef_Test6_Stub
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test6 [#"../home_sig_ref.rs" 42 0 42 30] (arg : HomeSigRef_Test_Type.t_test) : uint32
+end
+module HomeSigRef_Test6_Interface
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  function test6 [#"../home_sig_ref.rs" 42 0 42 30] (arg : HomeSigRef_Test_Type.t_test) : uint32
+end
+module HomeSigRef_Test6
+  use mach.int.Int
+  use mach.int.UInt32
+  use HomeSigRef_Test_Type as HomeSigRef_Test_Type
+  clone HomeSigRef_Test4_Stub as Test40
+  clone HomeSigRef_FakeRef_MakeRef_Stub as MakeRef0 with
+    type self = HomeSigRef_Test_Type.t_test
+  function test6 [#"../home_sig_ref.rs" 42 0 42 30] (arg : HomeSigRef_Test_Type.t_test) : uint32 =
+    [#"../home_sig_ref.rs" 43 4 43 25] Test40.test4 (MakeRef0.make_ref arg)
+  val test6 [#"../home_sig_ref.rs" 42 0 42 30] (arg : HomeSigRef_Test_Type.t_test) : uint32
+    ensures { result = test6 arg }
+    
+end
+module HomeSigRef_Impl0
+  type x
+end

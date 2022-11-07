@@ -138,7 +138,7 @@ pub mod prusti_macros {
     pub use base_macros::{
         ghost, invariant, law, pearlite, proof_assert, prusti_ensures as ensures,
         prusti_ensures_expiry as after_expiry, prusti_logic as logic, prusti_requires as requires,
-        trusted,
+        trusted, variant,
     };
 
     #[cfg(feature = "contracts")]
