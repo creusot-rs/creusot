@@ -6,14 +6,14 @@ pub struct Mapping<A, B>(std::marker::PhantomData<(A, B)>);
 
 impl<A, B> Mapping<A, B> {
     #[trusted]
-    #[prusti_logic(('x, 'x) -> 'x)]
+    #[prusti_logic(('x, '_) -> 'x)]
     #[creusot::builtins = "map.Map.get"]
     pub fn get(self, _: A) -> B {
         absurd
     }
 
     #[trusted]
-    #[prusti_logic(('x, 'x, 'x) -> 'x)]
+    #[prusti_logic(('x, '_, 'x) -> 'x)]
     #[creusot::builtins = "map.Map.set"]
     pub fn set(self, _: A, _: B) -> Self {
         absurd

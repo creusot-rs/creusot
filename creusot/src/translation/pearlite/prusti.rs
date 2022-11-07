@@ -9,7 +9,7 @@ use creusot_rustc::{
     hir::def_id::DefId,
     middle::{
         mir::Mutability::{Mut, Not},
-        ty::{self, Binder, FnSig, FreeRegion, GenericParamDefKind, Generics, Region, RegionKind},
+        ty::{self, Binder, FnSig, FreeRegion, InternalSubsts, Region, RegionKind},
     },
     span::{
         symbol::{Ident, Symbol},
@@ -257,20 +257,13 @@ fn full_signature<'a, 'tcx>(
     let tcx = ctx.tcx;
     let sig: Binder<FnSig> = tcx.fn_sig(owner_id);
     let bound_vars = sig.bound_vars();
-    let generics: &Generics = tcx.generics_of(owner_id);
     let lifetimes1 = bound_vars.iter().map(|bvk| {
         tcx.mk_region(RegionKind::ReFree(FreeRegion {
             scope: owner_id,
             bound_region: bvk.expect_region(),
         }))
     });
-    let lifetimes2 = generics.params.iter().filter_map(|x| match x.kind {
-        GenericParamDefKind::Lifetime => {
-            let data = x.to_early_bound_region_data();
-            Some(tcx.mk_region(RegionKind::ReEarlyBound(data)))
-        }
-        _ => None,
-    });
+    let lifetimes2 = InternalSubsts::identity_for_item(tcx, owner_id).regions();
     let lifetimes = lifetimes1.chain(lifetimes2);
 
     let sig = tcx.liberate_late_bound_regions(owner_id, sig);
