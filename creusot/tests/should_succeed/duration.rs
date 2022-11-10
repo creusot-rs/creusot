@@ -46,4 +46,9 @@ pub fn test_duration() {
 
     assert!(d_secs.checked_div(0).is_none());
     assert!(d_secs.checked_div(10).is_some());
+
+    let sum = d_millis + d_micros;
+    let difference = d_millis - d_micros;
+    proof_assert!(@sum == 1_001_000);
+    proof_assert!(@difference == 999000);
 }

@@ -1,12 +1,15 @@
 use crate::*;
-pub use ::std::time::*;
+pub use ::std::{
+    ops::{Add, Sub},
+    time::*,
+};
 
 impl ShallowModel for Duration {
     type ShallowModelTy = Int;
 
     #[logic]
     #[trusted]
-    #[ensures(result >= 0 && result <= @u128::MAX)]
+    #[ensures(result >= 0 && result <= secs_to_nanos(@u64::MAX) + 999_999_999)]
     fn shallow_model(self) -> Self::ShallowModelTy {
         pearlite! { absurd }
     }
@@ -17,7 +20,7 @@ impl DeepModel for Duration {
 
     #[logic]
     #[trusted]
-    #[ensures(result >= 0 && result <= @u128::MAX)]
+    #[ensures(result >= 0 && result <= secs_to_nanos(@u64::MAX) + 999_999_999)]
     #[ensures(result == self.shallow_model())]
     fn deep_model(self) -> Self::DeepModelTy {
         pearlite! { absurd }
@@ -41,6 +44,29 @@ fn nanos_to_secs(nanos: Int) -> Int {
 #[logic]
 fn secs_to_nanos(secs: Int) -> Int {
     secs * 1_000_000_000
+}
+
+impl ShallowModel for Instant {
+    type ShallowModelTy = Int;
+
+    #[logic]
+    #[trusted]
+    #[ensures(result >= 0)]
+    fn shallow_model(self) -> Self::ShallowModelTy {
+        pearlite! { absurd }
+    }
+}
+
+impl DeepModel for Instant {
+    type DeepModelTy = Int;
+
+    #[logic]
+    #[trusted]
+    #[ensures(result >= 0)]
+    #[ensures(result == self.shallow_model())]
+    fn deep_model(self) -> Self::DeepModelTy {
+        pearlite! { absurd }
+    }
 }
 
 extern_spec! {
@@ -89,6 +115,7 @@ extern_spec! {
                 fn as_micros(&self) -> u128;
 
                 #[ensures(@result == @self)]
+                #[ensures(@result <= secs_to_nanos(@u64::MAX) + 999_999_999)]
                 fn as_nanos(&self) -> u128;
 
                 #[ensures(nanos_to_secs(@self + @rhs) > @u64::MAX ==> result == None)]
@@ -107,6 +134,66 @@ extern_spec! {
                 #[ensures(rhs != 0u32 ==> result.deep_model() == Some(@self / @rhs))]
                 fn checked_div(self, rhs: u32) -> Option<Duration>;
             }
+
+            impl Instant {
+                #[ensures(@result >= 0)]
+                fn now() -> Instant;
+
+                #[ensures(@result >= 0)]
+                fn elapsed(&self) -> Duration;
+
+                #[ensures(@self > @earlier ==> @result > 0)]
+                #[ensures(@self <= @earlier ==> @result == 0)]
+                fn duration_since(&self, earlier: Instant) -> Duration;
+
+                #[ensures(@self >= @earlier ==> result != None)]
+                #[ensures(@self < @earlier ==> result == None)]
+                fn checked_duration_since(&self, earlier: Instant) -> Option<Duration>;
+
+                #[ensures(@self > @earlier ==> @result > 0)]
+                #[ensures(@self <= @earlier ==> @result == 0)]
+                fn saturating_duration_since(&self, earlier: Instant) -> Duration;
+
+                #[ensures(@duration == 0 ==> result.deep_model() == Some(@self))]
+                #[ensures(@duration > 0 && result != None ==> Some(@self) < result.deep_model())]
+                fn checked_add(&self, duration: Duration) -> Option<Instant>;
+
+                #[ensures(@duration == 0 ==> result.deep_model() == Some(@self))]
+                #[ensures(@duration > 0 && result != None ==> Some(@self) > result.deep_model())]
+                fn checked_sub(&self, duration: Duration) -> Option<Instant>;
+            }
         }
+    }
+}
+
+extern_spec! {
+    impl Add<Duration> for Duration {
+        #[requires(@self + @rhs <= secs_to_nanos(@u64::MAX) + 999_999_999)]
+        #[ensures(@self + @rhs == @result)]
+        fn add(self, rhs: Duration) -> Duration;
+    }
+
+    impl Sub<Duration> for Duration {
+        #[requires(@self - @rhs >= 0)]
+        #[ensures(@self - @rhs == @result)]
+        fn sub(self, rhs: Duration) -> Duration;
+    }
+
+    impl Add<Duration> for Instant {
+        #[ensures(@rhs == 0 ==> @self == @result)]
+        #[ensures(@rhs > 0 ==> @self < @result)]
+        fn add(self, rhs: Duration) -> Instant;
+    }
+
+    impl Sub<Duration> for Instant {
+        #[ensures(@rhs == 0 ==> @self == @result)]
+        #[ensures(@rhs > 0 ==> @self > @result)]
+        fn sub(self, rhs: Duration) -> Instant;
+    }
+
+    impl Sub<Instant> for Instant {
+        #[ensures(@self > @other ==> @result > 0)]
+        #[ensures(@self <= @other ==> @result == 0)]
+        fn sub(self, other: Instant) -> Duration;
     }
 }
