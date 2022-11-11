@@ -130,3 +130,15 @@ impl<T: DeepModel> DeepModel for Option<T> {
         }
     }
 }
+
+impl<T: DeepModel, E: DeepModel> DeepModel for Result<T, E> {
+    type DeepModelTy = Result<T::DeepModelTy, E::DeepModelTy>;
+
+    #[logic]
+    fn deep_model(self) -> Self::DeepModelTy {
+        match self {
+            Ok(t) => Ok(t.deep_model()),
+            Err(e) => Err(e.deep_model()),
+        }
+    }
+}
