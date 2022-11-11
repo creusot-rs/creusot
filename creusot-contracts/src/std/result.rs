@@ -1,7 +1,6 @@
-use crate as creusot_contracts;
-use crate::{std::default::DefaultSpec, Resolve};
-use creusot_contracts_proc::*;
-use std::fmt::Debug;
+use crate::*;
+
+use ::std::fmt::Debug;
 
 extern_spec! {
     mod std {
@@ -60,10 +59,10 @@ extern_spec! {
                 fn unwrap_or(self, default: T) -> T;
 
                 #[ensures(forall<t: T> self == Ok(t) ==> result == t)]
-                #[ensures((exists<e: E> self == Err(e)) ==> result == T::default_log())]
+                #[ensures((exists<e: E> self == Err(e)) ==> result.is_default())]
                 fn unwrap_or_default(self) -> T
                 where
-                    T: DefaultSpec;
+                    T: Default;
 
                 #[ensures((exists<t: T> self == Ok(t)) ==> result == res)]
                 #[ensures(forall<e: E> self == Err(e) ==> result == Err(e))]
