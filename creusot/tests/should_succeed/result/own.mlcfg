@@ -1,0 +1,1525 @@
+
+module Own_OwnResult_Type
+  type t_ownresult 't 'e =
+    | C_Ok 't
+    | C_Err 'e
+    
+  let function err_0 (self : t_ownresult 't 'e) : 'e = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Ok _ -> any 'e
+      | C_Err a -> a
+      end
+  let function ok_0 (self : t_ownresult 't 'e) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_Ok a -> a
+      | C_Err _ -> any 't
+      end
+end
+module CreusotContracts_Resolve_Resolve_Resolve_Stub
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Resolve_Resolve_Resolve_Interface
+  type self
+  predicate resolve (self : self)
+end
+module CreusotContracts_Resolve_Resolve_Resolve
+  type self
+  predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
+end
+module Own_Impl0_IsOk_Interface
+  type t
+  type e
+  use prelude.Borrow
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val is_ok [@cfg:stackify] [#"../own.rs" 12 4 12 31] (self : Own_OwnResult_Type.t_ownresult t e) : bool
+    ensures { [#"../own.rs" 11 14 11 62] result = (exists t : t . self = Own_OwnResult_Type.C_Ok t) }
+    
+end
+module Own_Impl0_IsOk
+  type t
+  type e
+  use prelude.Borrow
+  use mach.int.Int
+  use prelude.IntSize
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg is_ok [@cfg:stackify] [#"../own.rs" 12 4 12 31] (self : Own_OwnResult_Type.t_ownresult t e) : bool
+    ensures { [#"../own.rs" 11 14 11 62] result = (exists t : t . self = Own_OwnResult_Type.C_Ok t) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : bool;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var _3 : isize;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    assume { Resolve0.resolve self_1 };
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB2
+      | _ -> goto BB1
+      end
+  }
+  BB1 {
+    _0 <- false;
+    goto BB3
+  }
+  BB2 {
+    _0 <- true;
+    goto BB3
+  }
+  BB3 {
+    return _0
+  }
+  
+end
+module Own_Impl0_IsErr_Interface
+  type t
+  type e
+  use prelude.Borrow
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val is_err [@cfg:stackify] [#"../own.rs" 17 4 17 32] (self : Own_OwnResult_Type.t_ownresult t e) : bool
+    ensures { [#"../own.rs" 16 14 16 63] result = (exists e : e . self = Own_OwnResult_Type.C_Err e) }
+    
+end
+module Own_Impl0_IsErr
+  type t
+  type e
+  use prelude.Borrow
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone Own_Impl0_IsOk_Interface as IsOk0 with
+    type t = t,
+    type e = e
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg is_err [@cfg:stackify] [#"../own.rs" 17 4 17 32] (self : Own_OwnResult_Type.t_ownresult t e) : bool
+    ensures { [#"../own.rs" 16 14 16 63] result = (exists e : e . self = Own_OwnResult_Type.C_Err e) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : bool;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var _3 : bool;
+  var _4 : Own_OwnResult_Type.t_ownresult t e;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    _4 <- self_1;
+    assume { Resolve0.resolve self_1 };
+    _3 <- ([#"../own.rs" 18 9 18 21] IsOk0.is_ok _4);
+    goto BB1
+  }
+  BB1 {
+    _0 <- not _3;
+    return _0
+  }
+  
+end
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
+    
+  let function some_0 (self : t_option 't) : 't = [@vc:do_not_keep_trace] [@vc:sp]
+    match (self) with
+      | C_None -> any 't
+      | C_Some a -> a
+      end
+end
+module Own_Impl0_Ok_Interface
+  type t
+  type e
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val ok [@cfg:stackify] [#"../own.rs" 23 4 23 32] (self : Own_OwnResult_Type.t_ownresult t e) : Core_Option_Option_Type.t_option t
+    ensures { [#"../own.rs" 21 4 21 75] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = Core_Option_Option_Type.C_Some t }
+    ensures { [#"../own.rs" 22 4 22 75] (exists e : e . self = Own_OwnResult_Type.C_Err e) -> result = Core_Option_Option_Type.C_None }
+    
+end
+module Own_Impl0_Ok
+  type t
+  type e
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  let rec cfg ok [@cfg:stackify] [#"../own.rs" 23 4 23 32] (self : Own_OwnResult_Type.t_ownresult t e) : Core_Option_Option_Type.t_option t
+    ensures { [#"../own.rs" 21 4 21 75] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = Core_Option_Option_Type.C_Some t }
+    ensures { [#"../own.rs" 22 4 22 75] (exists e : e . self = Own_OwnResult_Type.C_Err e) -> result = Core_Option_Option_Type.C_None }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : Core_Option_Option_Type.t_option t;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var _4 : isize;
+  var x_5 : t;
+  var _6 : t;
+  var x_7 : e;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { Resolve1.resolve x_7 };
+    x_7 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    _0 <- Core_Option_Option_Type.C_None;
+    goto BB8
+  }
+  BB4 {
+    assume { Resolve0.resolve self_1 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve2.resolve x_5 };
+    x_5 <- Own_OwnResult_Type.ok_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Ok a = self_1 in Own_OwnResult_Type.C_Ok (any t));
+    assume { Resolve2.resolve _6 };
+    _6 <- x_5;
+    x_5 <- any t;
+    _0 <- Core_Option_Option_Type.C_Some _6;
+    goto BB6
+  }
+  BB6 {
+    goto BB7
+  }
+  BB7 {
+    goto BB9
+  }
+  BB8 {
+    assume { Resolve1.resolve x_7 };
+    goto BB9
+  }
+  BB9 {
+    goto BB10
+  }
+  BB10 {
+    assume { Resolve0.resolve self_1 };
+    return _0
+  }
+  
+end
+module Own_Impl0_Err_Interface
+  type t
+  type e
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val err [@cfg:stackify] [#"../own.rs" 33 4 33 33] (self : Own_OwnResult_Type.t_ownresult t e) : Core_Option_Option_Type.t_option e
+    ensures { [#"../own.rs" 31 4 31 74] (exists t : t . self = Own_OwnResult_Type.C_Ok t) -> result = Core_Option_Option_Type.C_None }
+    ensures { [#"../own.rs" 32 4 32 76] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Core_Option_Option_Type.C_Some e }
+    
+end
+module Own_Impl0_Err
+  type t
+  type e
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  let rec cfg err [@cfg:stackify] [#"../own.rs" 33 4 33 33] (self : Own_OwnResult_Type.t_ownresult t e) : Core_Option_Option_Type.t_option e
+    ensures { [#"../own.rs" 31 4 31 74] (exists t : t . self = Own_OwnResult_Type.C_Ok t) -> result = Core_Option_Option_Type.C_None }
+    ensures { [#"../own.rs" 32 4 32 76] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Core_Option_Option_Type.C_Some e }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : Core_Option_Option_Type.t_option e;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var _4 : isize;
+  var x_5 : t;
+  var x_6 : e;
+  var _7 : e;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { Resolve1.resolve x_6 };
+    x_6 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    assume { Resolve1.resolve _7 };
+    _7 <- x_6;
+    x_6 <- any e;
+    _0 <- Core_Option_Option_Type.C_Some _7;
+    goto BB7
+  }
+  BB4 {
+    assume { Resolve0.resolve self_1 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve2.resolve x_5 };
+    x_5 <- Own_OwnResult_Type.ok_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Ok a = self_1 in Own_OwnResult_Type.C_Ok (any t));
+    _0 <- Core_Option_Option_Type.C_None;
+    goto BB6
+  }
+  BB6 {
+    assume { Resolve2.resolve x_5 };
+    goto BB9
+  }
+  BB7 {
+    goto BB8
+  }
+  BB8 {
+    goto BB9
+  }
+  BB9 {
+    goto BB10
+  }
+  BB10 {
+    assume { Resolve0.resolve self_1 };
+    return _0
+  }
+  
+end
+module Own_Impl0_AsRef_Interface
+  type t
+  type e
+  use prelude.Borrow
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val as_ref [@cfg:stackify] [#"../own.rs" 44 4 44 45] (self : Own_OwnResult_Type.t_ownresult t e) : Own_OwnResult_Type.t_ownresult t e
+    ensures { [#"../own.rs" 41 4 41 87] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = Own_OwnResult_Type.C_Ok t }
+    ensures { [#"../own.rs" 42 4 42 89] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
+    ensures { [#"../own.rs" 43 14 43 102] (exists t : t . self = Own_OwnResult_Type.C_Ok t) \/ (exists e : e . self = Own_OwnResult_Type.C_Err e) }
+    
+end
+module Own_Impl0_AsRef
+  type t
+  type e
+  use prelude.Borrow
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg as_ref [@cfg:stackify] [#"../own.rs" 44 4 44 45] (self : Own_OwnResult_Type.t_ownresult t e) : Own_OwnResult_Type.t_ownresult t e
+    ensures { [#"../own.rs" 41 4 41 87] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = Own_OwnResult_Type.C_Ok t }
+    ensures { [#"../own.rs" 42 4 42 89] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
+    ensures { [#"../own.rs" 43 14 43 102] (exists t : t . self = Own_OwnResult_Type.C_Ok t) \/ (exists e : e . self = Own_OwnResult_Type.C_Err e) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : Own_OwnResult_Type.t_ownresult t e;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var _5 : isize;
+  var x_6 : t;
+  var _7 : t;
+  var x_8 : e;
+  var _9 : e;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB3
+      | Own_OwnResult_Type.C_Err _ -> goto BB1
+      end
+  }
+  BB1 {
+    x_8 <- Own_OwnResult_Type.err_0 self_1;
+    assume { Resolve0.resolve self_1 };
+    _9 <- x_8;
+    assume { Resolve1.resolve x_8 };
+    _0 <- Own_OwnResult_Type.C_Err _9;
+    goto BB4
+  }
+  BB2 {
+    assume { Resolve0.resolve self_1 };
+    absurd
+  }
+  BB3 {
+    x_6 <- Own_OwnResult_Type.ok_0 self_1;
+    assume { Resolve0.resolve self_1 };
+    _7 <- x_6;
+    assume { Resolve2.resolve x_6 };
+    _0 <- Own_OwnResult_Type.C_Ok _7;
+    goto BB4
+  }
+  BB4 {
+    return _0
+  }
+  
+end
+module CreusotContracts_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
+module Own_Impl0_AsMut_Interface
+  type t
+  type e
+  use prelude.Borrow
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val as_mut [@cfg:stackify] [#"../own.rs" 60 4 60 57] (self : borrowed (Own_OwnResult_Type.t_ownresult t e)) : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e)
+    ensures { [#"../own.rs" 51 4 53 6] forall t : borrowed t .  * self = Own_OwnResult_Type.C_Ok ( * t) ->  ^ self = Own_OwnResult_Type.C_Ok ( ^ t) /\ result = Own_OwnResult_Type.C_Ok t }
+    ensures { [#"../own.rs" 54 4 56 6] forall e : borrowed e .  * self = Own_OwnResult_Type.C_Err ( * e) ->  ^ self = Own_OwnResult_Type.C_Err ( ^ e) /\ result = Own_OwnResult_Type.C_Err e }
+    ensures { [#"../own.rs" 58 8 58 104] (exists t : borrowed t .  * self = Own_OwnResult_Type.C_Ok ( * t)) \/ (exists e : borrowed e .  * self = Own_OwnResult_Type.C_Err ( * e)) }
+    
+end
+module Own_Impl0_AsMut
+  type t
+  type e
+  use prelude.Borrow
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
+    type t = t
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
+    type t = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg as_mut [@cfg:stackify] [#"../own.rs" 60 4 60 57] (self : borrowed (Own_OwnResult_Type.t_ownresult t e)) : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e)
+    ensures { [#"../own.rs" 51 4 53 6] forall t : borrowed t .  * self = Own_OwnResult_Type.C_Ok ( * t) ->  ^ self = Own_OwnResult_Type.C_Ok ( ^ t) /\ result = Own_OwnResult_Type.C_Ok t }
+    ensures { [#"../own.rs" 54 4 56 6] forall e : borrowed e .  * self = Own_OwnResult_Type.C_Err ( * e) ->  ^ self = Own_OwnResult_Type.C_Err ( ^ e) /\ result = Own_OwnResult_Type.C_Err e }
+    ensures { [#"../own.rs" 58 8 58 104] (exists t : borrowed t .  * self = Own_OwnResult_Type.C_Ok ( * t)) \/ (exists e : borrowed e .  * self = Own_OwnResult_Type.C_Err ( * e)) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : Own_OwnResult_Type.t_ownresult (borrowed t) (borrowed e);
+  var self_1 : borrowed (Own_OwnResult_Type.t_ownresult t e);
+  var _5 : isize;
+  var x_6 : borrowed t;
+  var _7 : borrowed t;
+  var x_8 : borrowed e;
+  var _9 : borrowed e;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    switch ( * self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB3
+      | Own_OwnResult_Type.C_Err _ -> goto BB1
+      end
+  }
+  BB1 {
+    x_8 <- borrow_mut (Own_OwnResult_Type.err_0 ( * self_1));
+    self_1 <- { self_1 with current = (let Own_OwnResult_Type.C_Err a =  * self_1 in Own_OwnResult_Type.C_Err ( ^ x_8)) };
+    assume { Resolve0.resolve self_1 };
+    _9 <- borrow_mut ( * x_8);
+    x_8 <- { x_8 with current = ( ^ _9) };
+    _0 <- Own_OwnResult_Type.C_Err _9;
+    assume { Resolve1.resolve x_8 };
+    goto BB4
+  }
+  BB2 {
+    assume { Resolve0.resolve self_1 };
+    absurd
+  }
+  BB3 {
+    x_6 <- borrow_mut (Own_OwnResult_Type.ok_0 ( * self_1));
+    self_1 <- { self_1 with current = (let Own_OwnResult_Type.C_Ok a =  * self_1 in Own_OwnResult_Type.C_Ok ( ^ x_6)) };
+    assume { Resolve0.resolve self_1 };
+    _7 <- borrow_mut ( * x_6);
+    x_6 <- { x_6 with current = ( ^ _7) };
+    _0 <- Own_OwnResult_Type.C_Ok _7;
+    assume { Resolve2.resolve x_6 };
+    goto BB4
+  }
+  BB4 {
+    return _0
+  }
+  
+end
+module Own_Impl0_Unwrap_Interface
+  type t
+  type e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val unwrap [@cfg:stackify] [#"../own.rs" 69 4 71 29] (self : Own_OwnResult_Type.t_ownresult t e) : t
+    requires {[#"../own.rs" 67 4 67 54] exists t : t . self = Own_OwnResult_Type.C_Ok t}
+    ensures { [#"../own.rs" 68 14 68 43] Own_OwnResult_Type.C_Ok result = self }
+    
+end
+module Own_Impl0_Unwrap
+  type t
+  type e
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg unwrap [@cfg:stackify] [#"../own.rs" 69 4 71 29] (self : Own_OwnResult_Type.t_ownresult t e) : t
+    requires {[#"../own.rs" 67 4 67 54] exists t : t . self = Own_OwnResult_Type.C_Ok t}
+    ensures { [#"../own.rs" 68 14 68 43] Own_OwnResult_Type.C_Ok result = self }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : t;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var _4 : isize;
+  var t_5 : t;
+  var _e_6 : e;
+  var _7 : ();
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { Resolve1.resolve _e_6 };
+    _e_6 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    absurd
+  }
+  BB4 {
+    assume { Resolve0.resolve self_1 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve2.resolve t_5 };
+    t_5 <- Own_OwnResult_Type.ok_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Ok a = self_1 in Own_OwnResult_Type.C_Ok (any t));
+    assume { Resolve2.resolve _0 };
+    _0 <- t_5;
+    t_5 <- any t;
+    goto BB6
+  }
+  BB6 {
+    goto BB7
+  }
+  BB7 {
+    assume { Resolve0.resolve self_1 };
+    return _0
+  }
+  
+end
+module Own_Impl0_Expect_Interface
+  type t
+  type e
+  use prelude.Borrow
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val expect [@cfg:stackify] [#"../own.rs" 81 4 83 29] (self : Own_OwnResult_Type.t_ownresult t e) (msg : string) : t
+    requires {[#"../own.rs" 79 4 79 54] exists t : t . self = Own_OwnResult_Type.C_Ok t}
+    ensures { [#"../own.rs" 80 14 80 43] Own_OwnResult_Type.C_Ok result = self }
+    
+end
+module Own_Impl0_Expect
+  type t
+  type e
+  use prelude.Borrow
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg expect [@cfg:stackify] [#"../own.rs" 81 4 83 29] (self : Own_OwnResult_Type.t_ownresult t e) (msg : string) : t
+    requires {[#"../own.rs" 79 4 79 54] exists t : t . self = Own_OwnResult_Type.C_Ok t}
+    ensures { [#"../own.rs" 80 14 80 43] Own_OwnResult_Type.C_Ok result = self }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : t;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var msg_2 : string;
+  var _5 : isize;
+  var t_6 : t;
+  var _e_7 : e;
+  var _8 : ();
+  {
+    self_1 <- self;
+    msg_2 <- msg;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { Resolve1.resolve _e_7 };
+    _e_7 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    absurd
+  }
+  BB4 {
+    assume { Resolve0.resolve self_1 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve2.resolve t_6 };
+    t_6 <- Own_OwnResult_Type.ok_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Ok a = self_1 in Own_OwnResult_Type.C_Ok (any t));
+    assume { Resolve2.resolve _0 };
+    _0 <- t_6;
+    t_6 <- any t;
+    goto BB6
+  }
+  BB6 {
+    goto BB7
+  }
+  BB7 {
+    assume { Resolve0.resolve self_1 };
+    return _0
+  }
+  
+end
+module Own_Impl0_UnwrapErr_Interface
+  type t
+  type e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val unwrap_err [@cfg:stackify] [#"../own.rs" 93 4 95 29] (self : Own_OwnResult_Type.t_ownresult t e) : e
+    requires {[#"../own.rs" 91 4 91 55] exists e : e . self = Own_OwnResult_Type.C_Err e}
+    ensures { [#"../own.rs" 92 14 92 44] Own_OwnResult_Type.C_Err result = self }
+    
+end
+module Own_Impl0_UnwrapErr
+  type t
+  type e
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg unwrap_err [@cfg:stackify] [#"../own.rs" 93 4 95 29] (self : Own_OwnResult_Type.t_ownresult t e) : e
+    requires {[#"../own.rs" 91 4 91 55] exists e : e . self = Own_OwnResult_Type.C_Err e}
+    ensures { [#"../own.rs" 92 14 92 44] Own_OwnResult_Type.C_Err result = self }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : e;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var _4 : isize;
+  var _t_5 : t;
+  var _6 : ();
+  var e_7 : e;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { Resolve1.resolve e_7 };
+    e_7 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    assume { Resolve1.resolve _0 };
+    _0 <- e_7;
+    e_7 <- any e;
+    goto BB6
+  }
+  BB4 {
+    assume { Resolve0.resolve self_1 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve2.resolve _t_5 };
+    _t_5 <- Own_OwnResult_Type.ok_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Ok a = self_1 in Own_OwnResult_Type.C_Ok (any t));
+    absurd
+  }
+  BB6 {
+    goto BB7
+  }
+  BB7 {
+    assume { Resolve0.resolve self_1 };
+    return _0
+  }
+  
+end
+module Own_Impl0_UnwrapOr_Interface
+  type t
+  type e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val unwrap_or [@cfg:stackify] [#"../own.rs" 105 4 105 43] (self : Own_OwnResult_Type.t_ownresult t e) (default : t) : t
+    ensures { [#"../own.rs" 103 4 103 69] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = t }
+    ensures { [#"../own.rs" 104 4 104 78] (exists e : e . self = Own_OwnResult_Type.C_Err e) -> result = default }
+    
+end
+module Own_Impl0_UnwrapOr
+  type t
+  type e
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = e
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = t
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg unwrap_or [@cfg:stackify] [#"../own.rs" 105 4 105 43] (self : Own_OwnResult_Type.t_ownresult t e) (default : t) : t
+    ensures { [#"../own.rs" 103 4 103 69] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = t }
+    ensures { [#"../own.rs" 104 4 104 78] (exists e : e . self = Own_OwnResult_Type.C_Err e) -> result = default }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : t;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var default_2 : t;
+  var _5 : isize;
+  var t_6 : t;
+  var e_7 : e;
+  {
+    self_1 <- self;
+    default_2 <- default;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { Resolve2.resolve e_7 };
+    e_7 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    assume { Resolve1.resolve _0 };
+    _0 <- default_2;
+    default_2 <- any t;
+    goto BB7
+  }
+  BB4 {
+    assume { Resolve0.resolve self_1 };
+    assume { Resolve1.resolve default_2 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve1.resolve t_6 };
+    t_6 <- Own_OwnResult_Type.ok_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Ok a = self_1 in Own_OwnResult_Type.C_Ok (any t));
+    assume { Resolve1.resolve _0 };
+    _0 <- t_6;
+    t_6 <- any t;
+    goto BB6
+  }
+  BB6 {
+    goto BB8
+  }
+  BB7 {
+    assume { Resolve2.resolve e_7 };
+    goto BB8
+  }
+  BB8 {
+    goto BB9
+  }
+  BB9 {
+    goto BB10
+  }
+  BB10 {
+    assume { Resolve0.resolve self_1 };
+    return _0
+  }
+  
+end
+module Own_Impl0_And_Interface
+  type t
+  type e
+  type u
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val and [@cfg:stackify] [#"../own.rs" 127 4 127 64] (self : Own_OwnResult_Type.t_ownresult t e) (res : Own_OwnResult_Type.t_ownresult u e) : Own_OwnResult_Type.t_ownresult u e
+    ensures { [#"../own.rs" 125 4 125 73] (exists t : t . self = Own_OwnResult_Type.C_Ok t) -> result = res }
+    ensures { [#"../own.rs" 126 4 126 86] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
+    
+end
+module Own_Impl0_And
+  type t
+  type e
+  type u
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = Own_OwnResult_Type.t_ownresult u e
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg and [@cfg:stackify] [#"../own.rs" 127 4 127 64] (self : Own_OwnResult_Type.t_ownresult t e) (res : Own_OwnResult_Type.t_ownresult u e) : Own_OwnResult_Type.t_ownresult u e
+    ensures { [#"../own.rs" 125 4 125 73] (exists t : t . self = Own_OwnResult_Type.C_Ok t) -> result = res }
+    ensures { [#"../own.rs" 126 4 126 86] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : Own_OwnResult_Type.t_ownresult u e;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var res_2 : Own_OwnResult_Type.t_ownresult u e;
+  var _5 : isize;
+  var x_6 : t;
+  var e_7 : e;
+  var _8 : e;
+  {
+    self_1 <- self;
+    res_2 <- res;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { Resolve2.resolve e_7 };
+    e_7 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    assume { Resolve2.resolve _8 };
+    _8 <- e_7;
+    e_7 <- any e;
+    _0 <- Own_OwnResult_Type.C_Err _8;
+    goto BB7
+  }
+  BB4 {
+    assume { Resolve0.resolve self_1 };
+    assume { Resolve1.resolve res_2 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve3.resolve x_6 };
+    x_6 <- Own_OwnResult_Type.ok_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Ok a = self_1 in Own_OwnResult_Type.C_Ok (any t));
+    assume { Resolve1.resolve _0 };
+    _0 <- res_2;
+    res_2 <- any Own_OwnResult_Type.t_ownresult u e;
+    goto BB6
+  }
+  BB6 {
+    assume { Resolve3.resolve x_6 };
+    goto BB9
+  }
+  BB7 {
+    goto BB8
+  }
+  BB8 {
+    goto BB9
+  }
+  BB9 {
+    goto BB10
+  }
+  BB10 {
+    goto BB11
+  }
+  BB11 {
+    assume { Resolve0.resolve self_1 };
+    return _0
+  }
+  
+end
+module Own_Impl0_Or_Interface
+  type t
+  type e
+  type f
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val or [@cfg:stackify] [#"../own.rs" 137 4 137 63] (self : Own_OwnResult_Type.t_ownresult t e) (res : Own_OwnResult_Type.t_ownresult t f) : Own_OwnResult_Type.t_ownresult t f
+    ensures { [#"../own.rs" 135 4 135 84] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = Own_OwnResult_Type.C_Ok t }
+    ensures { [#"../own.rs" 136 4 136 74] (exists e : e . self = Own_OwnResult_Type.C_Err e) -> result = res }
+    
+end
+module Own_Impl0_Or
+  type t
+  type e
+  type f
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = Own_OwnResult_Type.t_ownresult t f
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg or [@cfg:stackify] [#"../own.rs" 137 4 137 63] (self : Own_OwnResult_Type.t_ownresult t e) (res : Own_OwnResult_Type.t_ownresult t f) : Own_OwnResult_Type.t_ownresult t f
+    ensures { [#"../own.rs" 135 4 135 84] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = Own_OwnResult_Type.C_Ok t }
+    ensures { [#"../own.rs" 136 4 136 74] (exists e : e . self = Own_OwnResult_Type.C_Err e) -> result = res }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : Own_OwnResult_Type.t_ownresult t f;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var res_2 : Own_OwnResult_Type.t_ownresult t f;
+  var _5 : isize;
+  var v_6 : t;
+  var _7 : t;
+  var e_8 : e;
+  {
+    self_1 <- self;
+    res_2 <- res;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { Resolve2.resolve e_8 };
+    e_8 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    assume { Resolve1.resolve _0 };
+    _0 <- res_2;
+    res_2 <- any Own_OwnResult_Type.t_ownresult t f;
+    goto BB8
+  }
+  BB4 {
+    assume { Resolve0.resolve self_1 };
+    assume { Resolve1.resolve res_2 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve3.resolve v_6 };
+    v_6 <- Own_OwnResult_Type.ok_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Ok a = self_1 in Own_OwnResult_Type.C_Ok (any t));
+    assume { Resolve3.resolve _7 };
+    _7 <- v_6;
+    v_6 <- any t;
+    _0 <- Own_OwnResult_Type.C_Ok _7;
+    goto BB6
+  }
+  BB6 {
+    goto BB7
+  }
+  BB7 {
+    goto BB9
+  }
+  BB8 {
+    assume { Resolve2.resolve e_8 };
+    goto BB9
+  }
+  BB9 {
+    goto BB10
+  }
+  BB10 {
+    goto BB11
+  }
+  BB11 {
+    assume { Resolve0.resolve self_1 };
+    return _0
+  }
+  
+end
+module Own_Impl1_Copied_Interface
+  type t
+  type e
+  use prelude.Borrow
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val copied [@cfg:stackify] [#"../own.rs" 149 4 151 16] (self : Own_OwnResult_Type.t_ownresult t e) : Own_OwnResult_Type.t_ownresult t e
+    ensures { [#"../own.rs" 147 4 147 86] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = Own_OwnResult_Type.C_Ok t }
+    ensures { [#"../own.rs" 148 4 148 86] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
+    
+end
+module Own_Impl1_Copied
+  type t
+  type e
+  use prelude.Borrow
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg copied [@cfg:stackify] [#"../own.rs" 149 4 151 16] (self : Own_OwnResult_Type.t_ownresult t e) : Own_OwnResult_Type.t_ownresult t e
+    ensures { [#"../own.rs" 147 4 147 86] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = Own_OwnResult_Type.C_Ok t }
+    ensures { [#"../own.rs" 148 4 148 86] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : Own_OwnResult_Type.t_ownresult t e;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var _4 : isize;
+  var t_5 : t;
+  var _6 : t;
+  var e_7 : e;
+  var _8 : e;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { Resolve1.resolve e_7 };
+    e_7 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    assume { Resolve1.resolve _8 };
+    _8 <- e_7;
+    e_7 <- any e;
+    _0 <- Own_OwnResult_Type.C_Err _8;
+    goto BB6
+  }
+  BB4 {
+    assume { Resolve0.resolve self_1 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve2.resolve t_5 };
+    t_5 <- Own_OwnResult_Type.ok_0 self_1;
+    assume { Resolve3.resolve _6 };
+    _6 <- t_5;
+    assume { Resolve2.resolve t_5 };
+    _0 <- Own_OwnResult_Type.C_Ok _6;
+    goto BB8
+  }
+  BB6 {
+    goto BB7
+  }
+  BB7 {
+    goto BB8
+  }
+  BB8 {
+    goto BB9
+  }
+  BB9 {
+    assume { Resolve0.resolve self_1 };
+    return _0
+  }
+  
+end
+module Core_Clone_Clone_Clone_Interface
+  type self
+  use prelude.Borrow
+  val clone' [@cfg:stackify] (self : self) : self
+    ensures { result = self }
+    
+end
+module Core_Clone_Clone_Clone
+  type self
+  use prelude.Borrow
+  val clone' [@cfg:stackify] (self : self) : self
+    ensures { result = self }
+    
+end
+module Own_Impl1_Cloned_Interface
+  type t
+  type e
+  use prelude.Borrow
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val cloned [@cfg:stackify] [#"../own.rs" 162 4 164 17] (self : Own_OwnResult_Type.t_ownresult t e) : Own_OwnResult_Type.t_ownresult t e
+    ensures { [#"../own.rs" 160 4 160 86] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = Own_OwnResult_Type.C_Ok t }
+    ensures { [#"../own.rs" 161 4 161 86] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
+    
+end
+module Own_Impl1_Cloned
+  type t
+  type e
+  use prelude.Borrow
+  use mach.int.Int
+  use prelude.IntSize
+  clone Core_Clone_Clone_Clone_Interface as Clone0 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg cloned [@cfg:stackify] [#"../own.rs" 162 4 164 17] (self : Own_OwnResult_Type.t_ownresult t e) : Own_OwnResult_Type.t_ownresult t e
+    ensures { [#"../own.rs" 160 4 160 86] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = Own_OwnResult_Type.C_Ok t }
+    ensures { [#"../own.rs" 161 4 161 86] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : Own_OwnResult_Type.t_ownresult t e;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var _4 : isize;
+  var t_5 : t;
+  var _6 : t;
+  var _7 : t;
+  var e_8 : e;
+  var _9 : e;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { Resolve1.resolve e_8 };
+    e_8 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    assume { Resolve1.resolve _9 };
+    _9 <- e_8;
+    e_8 <- any e;
+    _0 <- Own_OwnResult_Type.C_Err _9;
+    goto BB8
+  }
+  BB4 {
+    assume { Resolve0.resolve self_1 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve2.resolve t_5 };
+    t_5 <- Own_OwnResult_Type.ok_0 self_1;
+    _7 <- t_5;
+    assume { Resolve2.resolve t_5 };
+    _6 <- ([#"../own.rs" 168 46 168 55] Clone0.clone' _7);
+    goto BB6
+  }
+  BB6 {
+    _0 <- Own_OwnResult_Type.C_Ok _6;
+    goto BB7
+  }
+  BB7 {
+    goto BB10
+  }
+  BB8 {
+    goto BB9
+  }
+  BB9 {
+    goto BB10
+  }
+  BB10 {
+    goto BB11
+  }
+  BB11 {
+    assume { Resolve0.resolve self_1 };
+    return _0
+  }
+  
+end
+module Own_Impl2_Copied_Interface
+  type t
+  type e
+  use prelude.Borrow
+  clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
+    type t = t
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val copied [@cfg:stackify] [#"../own.rs" 177 4 179 16] (self : Own_OwnResult_Type.t_ownresult (borrowed t) e) : Own_OwnResult_Type.t_ownresult t e
+    ensures { [#"../own.rs" 175 4 175 105] forall t : borrowed t . self = Own_OwnResult_Type.C_Ok t -> result = Own_OwnResult_Type.C_Ok ( * t) /\ Resolve0.resolve t }
+    ensures { [#"../own.rs" 176 4 176 86] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
+    
+end
+module Own_Impl2_Copied
+  type t
+  type e
+  use prelude.Borrow
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = Own_OwnResult_Type.t_ownresult (borrowed t) e
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = t
+  let rec cfg copied [@cfg:stackify] [#"../own.rs" 177 4 179 16] (self : Own_OwnResult_Type.t_ownresult (borrowed t) e) : Own_OwnResult_Type.t_ownresult t e
+    ensures { [#"../own.rs" 175 4 175 105] forall t : borrowed t . self = Own_OwnResult_Type.C_Ok t -> result = Own_OwnResult_Type.C_Ok ( * t) /\ Resolve0.resolve t }
+    ensures { [#"../own.rs" 176 4 176 86] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : Own_OwnResult_Type.t_ownresult t e;
+  var self_1 : Own_OwnResult_Type.t_ownresult (borrowed t) e;
+  var _4 : isize;
+  var t_5 : borrowed t;
+  var _6 : t;
+  var e_7 : e;
+  var _8 : e;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { Resolve2.resolve e_7 };
+    e_7 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    assume { Resolve2.resolve _8 };
+    _8 <- e_7;
+    e_7 <- any e;
+    _0 <- Own_OwnResult_Type.C_Err _8;
+    goto BB6
+  }
+  BB4 {
+    assume { Resolve1.resolve self_1 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve0.resolve t_5 };
+    t_5 <- Own_OwnResult_Type.ok_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Ok a = self_1 in Own_OwnResult_Type.C_Ok (any borrowed t));
+    assume { Resolve3.resolve _6 };
+    _6 <-  * t_5;
+    assume { Resolve0.resolve t_5 };
+    _0 <- Own_OwnResult_Type.C_Ok _6;
+    goto BB8
+  }
+  BB6 {
+    goto BB7
+  }
+  BB7 {
+    goto BB8
+  }
+  BB8 {
+    goto BB9
+  }
+  BB9 {
+    assume { Resolve1.resolve self_1 };
+    return _0
+  }
+  
+end
+module Own_Impl2_Cloned_Interface
+  type t
+  type e
+  use prelude.Borrow
+  clone CreusotContracts_Resolve_Impl1_Resolve_Stub as Resolve0 with
+    type t = t
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val cloned [@cfg:stackify] [#"../own.rs" 190 4 192 17] (self : Own_OwnResult_Type.t_ownresult (borrowed t) e) : Own_OwnResult_Type.t_ownresult t e
+    ensures { [#"../own.rs" 188 4 188 105] forall t : borrowed t . self = Own_OwnResult_Type.C_Ok t -> result = Own_OwnResult_Type.C_Ok ( * t) /\ Resolve0.resolve t }
+    ensures { [#"../own.rs" 189 4 189 86] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
+    
+end
+module Own_Impl2_Cloned
+  type t
+  type e
+  use prelude.Borrow
+  use mach.int.Int
+  use prelude.IntSize
+  clone Core_Clone_Clone_Clone_Interface as Clone0 with
+    type self = t
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = Own_OwnResult_Type.t_ownresult (borrowed t) e
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = t
+  let rec cfg cloned [@cfg:stackify] [#"../own.rs" 190 4 192 17] (self : Own_OwnResult_Type.t_ownresult (borrowed t) e) : Own_OwnResult_Type.t_ownresult t e
+    ensures { [#"../own.rs" 188 4 188 105] forall t : borrowed t . self = Own_OwnResult_Type.C_Ok t -> result = Own_OwnResult_Type.C_Ok ( * t) /\ Resolve0.resolve t }
+    ensures { [#"../own.rs" 189 4 189 86] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Own_OwnResult_Type.C_Err e }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : Own_OwnResult_Type.t_ownresult t e;
+  var self_1 : Own_OwnResult_Type.t_ownresult (borrowed t) e;
+  var _4 : isize;
+  var t_5 : borrowed t;
+  var _6 : t;
+  var _7 : t;
+  var e_8 : e;
+  var _9 : e;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    assume { Resolve2.resolve e_8 };
+    e_8 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    assume { Resolve2.resolve _9 };
+    _9 <- e_8;
+    e_8 <- any e;
+    _0 <- Own_OwnResult_Type.C_Err _9;
+    goto BB8
+  }
+  BB4 {
+    assume { Resolve1.resolve self_1 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve0.resolve t_5 };
+    t_5 <- Own_OwnResult_Type.ok_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Ok a = self_1 in Own_OwnResult_Type.C_Ok (any borrowed t));
+    _7 <-  * t_5;
+    assume { Resolve0.resolve t_5 };
+    _6 <- ([#"../own.rs" 196 46 196 55] Clone0.clone' _7);
+    goto BB6
+  }
+  BB6 {
+    _0 <- Own_OwnResult_Type.C_Ok _6;
+    goto BB7
+  }
+  BB7 {
+    goto BB10
+  }
+  BB8 {
+    goto BB9
+  }
+  BB9 {
+    goto BB10
+  }
+  BB10 {
+    goto BB11
+  }
+  BB11 {
+    assume { Resolve1.resolve self_1 };
+    return _0
+  }
+  
+end
+module Own_Impl3_Transpose_Interface
+  type t
+  type e
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  val transpose [@cfg:stackify] [#"../own.rs" 206 4 206 53] (self : Own_OwnResult_Type.t_ownresult (Core_Option_Option_Type.t_option t) e) : Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e)
+    ensures { [#"../own.rs" 203 4 203 62] self = Own_OwnResult_Type.C_Ok (Core_Option_Option_Type.C_None) -> result = Core_Option_Option_Type.C_None }
+    ensures { [#"../own.rs" 204 4 204 96] forall t : t . self = Own_OwnResult_Type.C_Ok (Core_Option_Option_Type.C_Some t) -> result = Core_Option_Option_Type.C_Some (Own_OwnResult_Type.C_Ok t) }
+    ensures { [#"../own.rs" 205 4 205 92] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Core_Option_Option_Type.C_Some (Own_OwnResult_Type.C_Err e) }
+    
+end
+module Own_Impl3_Transpose
+  type t
+  type e
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
+    type self = t
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = Own_OwnResult_Type.t_ownresult (Core_Option_Option_Type.t_option t) e
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = e
+  let rec cfg transpose [@cfg:stackify] [#"../own.rs" 206 4 206 53] (self : Own_OwnResult_Type.t_ownresult (Core_Option_Option_Type.t_option t) e) : Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e)
+    ensures { [#"../own.rs" 203 4 203 62] self = Own_OwnResult_Type.C_Ok (Core_Option_Option_Type.C_None) -> result = Core_Option_Option_Type.C_None }
+    ensures { [#"../own.rs" 204 4 204 96] forall t : t . self = Own_OwnResult_Type.C_Ok (Core_Option_Option_Type.C_Some t) -> result = Core_Option_Option_Type.C_Some (Own_OwnResult_Type.C_Ok t) }
+    ensures { [#"../own.rs" 205 4 205 92] forall e : e . self = Own_OwnResult_Type.C_Err e -> result = Core_Option_Option_Type.C_Some (Own_OwnResult_Type.C_Err e) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : Core_Option_Option_Type.t_option (Own_OwnResult_Type.t_ownresult t e);
+  var self_1 : Own_OwnResult_Type.t_ownresult (Core_Option_Option_Type.t_option t) e;
+  var _5 : isize;
+  var _6 : isize;
+  var x_7 : t;
+  var _8 : Own_OwnResult_Type.t_ownresult t e;
+  var _9 : t;
+  var e_10 : e;
+  var _11 : Own_OwnResult_Type.t_ownresult t e;
+  var _12 : e;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    goto BB3
+  }
+  BB3 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB4
+      | Own_OwnResult_Type.C_Err _ -> goto BB6
+      end
+  }
+  BB4 {
+    switch (Own_OwnResult_Type.ok_0 self_1)
+      | Core_Option_Option_Type.C_None -> goto BB11
+      | Core_Option_Option_Type.C_Some _ -> goto BB7
+      end
+  }
+  BB5 {
+    assume { Resolve1.resolve self_1 };
+    absurd
+  }
+  BB6 {
+    assume { Resolve0.resolve e_10 };
+    e_10 <- Own_OwnResult_Type.err_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Err a = self_1 in Own_OwnResult_Type.C_Err (any e));
+    assume { Resolve0.resolve _12 };
+    _12 <- e_10;
+    e_10 <- any e;
+    _11 <- Own_OwnResult_Type.C_Err _12;
+    goto BB12
+  }
+  BB7 {
+    assume { Resolve2.resolve x_7 };
+    x_7 <- Core_Option_Option_Type.some_0 (Own_OwnResult_Type.ok_0 self_1);
+    self_1 <- (let Own_OwnResult_Type.C_Ok a = self_1 in Own_OwnResult_Type.C_Ok (let Core_Option_Option_Type.C_Some a = Own_OwnResult_Type.ok_0 self_1 in Core_Option_Option_Type.C_Some (any t)));
+    assume { Resolve2.resolve _9 };
+    _9 <- x_7;
+    x_7 <- any t;
+    _8 <- Own_OwnResult_Type.C_Ok _9;
+    goto BB8
+  }
+  BB8 {
+    _0 <- Core_Option_Option_Type.C_Some _8;
+    goto BB9
+  }
+  BB9 {
+    goto BB10
+  }
+  BB10 {
+    goto BB15
+  }
+  BB11 {
+    _0 <- Core_Option_Option_Type.C_None;
+    goto BB15
+  }
+  BB12 {
+    _0 <- Core_Option_Option_Type.C_Some _11;
+    goto BB13
+  }
+  BB13 {
+    goto BB14
+  }
+  BB14 {
+    goto BB15
+  }
+  BB15 {
+    goto BB16
+  }
+  BB16 {
+    assume { Resolve1.resolve self_1 };
+    return _0
+  }
+  
+end
