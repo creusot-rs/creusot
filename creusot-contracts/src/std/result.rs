@@ -26,13 +26,8 @@ extern_spec! {
                 fn as_ref(&self) -> Result<&T, &E>;
 
                 #[ensures(
-                    forall<t: &mut T> *self == Ok(*t) ==> ^self == Ok(^t) && result == Ok(t)
-                )]
-                #[ensures(
-                    forall<e: &mut E> *self == Err(*e) ==> ^self == Err(^e) && result == Err(e)
-                )]
-                #[ensures(
-                    (exists<t: &mut T> *self == Ok(*t))|| (exists<e: &mut E> *self == Err(*e))
+                    exists<t: &mut T> *self == Ok(*t) && ^self == Ok(^t) && result == Ok(t) ||
+                    exists<e: &mut E> *self == Err(*e) && ^self == Err(^e) && result == Err(e)
                 )]
                 fn as_mut(&mut self) -> Result<&mut T, &mut E>;
 

@@ -49,13 +49,12 @@ impl<T, E> OwnResult<T, E> {
     }
 
     #[ensures(
-        forall<t: &mut T> *self == OwnResult::Ok(*t) ==> ^self == OwnResult::Ok(^t) && result == OwnResult::Ok(t)
-    )]
-    #[ensures(
-        forall<e: &mut E> *self == OwnResult::Err(*e) ==> ^self == OwnResult::Err(^e) && result == OwnResult::Err(e)
-    )]
-    #[ensures(
-        (exists<t: &mut T> *self == OwnResult::Ok(*t))|| (exists<e: &mut E> *self == OwnResult::Err(*e))
+        exists<t: &mut T> *self == OwnResult::Ok(*t) &&
+            ^self == OwnResult::Ok(^t) &&
+            result == OwnResult::Ok(t) ||
+        exists<e: &mut E> *self == OwnResult::Err(*e) &&
+            ^self == OwnResult::Err(^e) &&
+            result == OwnResult::Err(e)
     )]
     pub fn as_mut(&mut self) -> OwnResult<&mut T, &mut E> {
         match *self {
