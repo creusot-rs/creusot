@@ -803,6 +803,117 @@ module Own_Impl0_UnwrapOr
   }
   
 end
+module CreusotContracts_Std1_Default_Default_IsDefault_Stub
+  type self
+  predicate is_default (self : self)
+end
+module CreusotContracts_Std1_Default_Default_IsDefault_Interface
+  type self
+  predicate is_default (self : self)
+end
+module CreusotContracts_Std1_Default_Default_IsDefault
+  type self
+  predicate is_default (self : self)
+  val is_default (self : self) : bool
+    ensures { result = is_default self }
+    
+end
+module Core_Default_Default_Default_Interface
+  type self
+  clone CreusotContracts_Std1_Default_Default_IsDefault_Stub as IsDefault0 with
+    type self = self
+  val default [@cfg:stackify] (_1' : ()) : self
+    ensures { IsDefault0.is_default result }
+    
+end
+module Core_Default_Default_Default
+  type self
+  clone CreusotContracts_Std1_Default_Default_IsDefault_Interface as IsDefault0 with
+    type self = self
+  val default [@cfg:stackify] (_1' : ()) : self
+    ensures { IsDefault0.is_default result }
+    
+end
+module Own_Impl0_UnwrapOrDefault_Interface
+  type t
+  type e
+  clone CreusotContracts_Std1_Default_Default_IsDefault_Stub as IsDefault0 with
+    type self = t
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  val unwrap_or_default [@cfg:stackify] [#"../own.rs" 115 4 117 19] (self : Own_OwnResult_Type.t_ownresult t e) : t
+    ensures { [#"../own.rs" 113 4 113 69] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = t }
+    ensures { [#"../own.rs" 114 4 114 80] (exists e : e . self = Own_OwnResult_Type.C_Err e) -> IsDefault0.is_default result }
+    
+end
+module Own_Impl0_UnwrapOrDefault
+  type t
+  type e
+  use mach.int.Int
+  use prelude.IntSize
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
+    type self = t
+  clone CreusotContracts_Std1_Default_Default_IsDefault_Interface as IsDefault0 with
+    type self = t
+  clone Core_Default_Default_Default_Interface as Default0 with
+    type self = t,
+    predicate IsDefault0.is_default = IsDefault0.is_default
+  use Own_OwnResult_Type as Own_OwnResult_Type
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = Own_OwnResult_Type.t_ownresult t e
+  let rec cfg unwrap_or_default [@cfg:stackify] [#"../own.rs" 115 4 117 19] (self : Own_OwnResult_Type.t_ownresult t e) : t
+    ensures { [#"../own.rs" 113 4 113 69] forall t : t . self = Own_OwnResult_Type.C_Ok t -> result = t }
+    ensures { [#"../own.rs" 114 4 114 80] (exists e : e . self = Own_OwnResult_Type.C_Err e) -> IsDefault0.is_default result }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : t;
+  var self_1 : Own_OwnResult_Type.t_ownresult t e;
+  var _4 : isize;
+  var x_5 : t;
+  {
+    self_1 <- self;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    switch (self_1)
+      | Own_OwnResult_Type.C_Ok _ -> goto BB5
+      | Own_OwnResult_Type.C_Err _ -> goto BB3
+      end
+  }
+  BB3 {
+    _0 <- ([#"../own.rs" 121 33 121 45] Default0.default ());
+    goto BB7
+  }
+  BB4 {
+    assume { Resolve0.resolve self_1 };
+    absurd
+  }
+  BB5 {
+    assume { Resolve1.resolve x_5 };
+    x_5 <- Own_OwnResult_Type.ok_0 self_1;
+    self_1 <- (let Own_OwnResult_Type.C_Ok a = self_1 in Own_OwnResult_Type.C_Ok (any t));
+    assume { Resolve1.resolve _0 };
+    _0 <- x_5;
+    x_5 <- any t;
+    goto BB6
+  }
+  BB6 {
+    goto BB7
+  }
+  BB7 {
+    goto BB8
+  }
+  BB8 {
+    assume { Resolve0.resolve self_1 };
+    return _0
+  }
+  
+end
 module Own_Impl0_And_Interface
   type t
   type e

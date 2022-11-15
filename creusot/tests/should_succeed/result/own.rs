@@ -110,17 +110,17 @@ impl<T, E> OwnResult<T, E> {
         }
     }
 
-    //#[ensures(forall<t: T> self == OwnResult::Ok(t) ==> result == t)]
-    //#[ensures((exists<e: E> self == OwnResult::Err(e)) ==> result.is_default())]
-    //pub fn unwrap_or_default(self) -> T
-    //where
-    //    T: Default,
-    //{
-    //    match self {
-    //        OwnResult::Ok(x) => x,
-    //        OwnResult::Err(_) => Default::default(),
-    //    }
-    //}
+    #[ensures(forall<t: T> self == OwnResult::Ok(t) ==> result == t)]
+    #[ensures((exists<e: E> self == OwnResult::Err(e)) ==> result.is_default())]
+    pub fn unwrap_or_default(self) -> T
+    where
+        T: Default,
+    {
+        match self {
+            OwnResult::Ok(x) => x,
+            OwnResult::Err(_) => T::default(),
+        }
+    }
 
     #[ensures((exists<t: T> self == OwnResult::Ok(t)) ==> result == res)]
     #[ensures(forall<e: E> self == OwnResult::Err(e) ==> result == OwnResult::Err(e))]
