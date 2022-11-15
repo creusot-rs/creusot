@@ -32,7 +32,7 @@ pub fn test_result() {
     // Test `unwrap`
     assert!(ok.unwrap() == 1);
     // Test `expect`
-    assert!(ok.expect("failed") == 1);
+    // assert!(ok.expect("failed") == 1);
     // Test `unwrap_err`
     assert!(err.unwrap_err() == -1);
 
