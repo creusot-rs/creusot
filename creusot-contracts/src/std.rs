@@ -10,6 +10,7 @@ pub mod mem;
 pub mod num;
 pub mod ops;
 pub mod option;
+pub mod result;
 pub mod slice;
 pub mod time;
 pub mod vec;
