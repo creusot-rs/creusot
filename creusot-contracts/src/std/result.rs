@@ -22,7 +22,6 @@ extern_spec! {
 
                 #[ensures(forall<t: &T> *self == Ok(*t) ==> result == Ok(t))]
                 #[ensures(forall<e: &E> *self == Err(*e) ==> result == Err(e))]
-                #[ensures((exists<t: &T> *self == Ok(*t))|| (exists<e: &E> *self == Err(*e)))]
                 fn as_ref(&self) -> Result<&T, &E>;
 
                 #[ensures(

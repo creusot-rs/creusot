@@ -1,3 +1,4 @@
+#![feature(min_specialization)]
 extern crate creusot_contracts;
 
 use creusot_contracts::*;
@@ -5,6 +6,17 @@ use creusot_contracts::*;
 pub enum OwnResult<T, E> {
     Ok(T),
     Err(E),
+}
+
+#[trusted]
+impl<T, E> Resolve for OwnResult<T, E> {
+    #[predicate]
+    fn resolve(self) -> bool {
+        match self {
+            OwnResult::Ok(t) => t.resolve(),
+            OwnResult::Err(e) => e.resolve(),
+        }
+    }
 }
 
 impl<T, E> OwnResult<T, E> {
@@ -40,7 +52,6 @@ impl<T, E> OwnResult<T, E> {
 
     #[ensures(forall<t: &T> *self == OwnResult::Ok(*t) ==> result == OwnResult::Ok(t))]
     #[ensures(forall<e: &E> *self == OwnResult::Err(*e) ==> result == OwnResult::Err(e))]
-    #[ensures((exists<t: &T> *self == OwnResult::Ok(*t))|| (exists<e: &E> *self == OwnResult::Err(*e)))]
     pub fn as_ref(&self) -> OwnResult<&T, &E> {
         match *self {
             OwnResult::Ok(ref x) => OwnResult::Ok(x),
