@@ -50,6 +50,7 @@ impl<T: DeepModel + ?Sized> DeepModel for &mut T {
 impl<T: ShallowModel + ?Sized> ShallowModel for &mut T {
     type ShallowModelTy = T::ShallowModelTy;
     #[logic]
+    #[creusot::prusti::home_sig="('curr) -> 'curr"] // hack to force this to be used properly
     fn shallow_model(self) -> Self::ShallowModelTy {
         (*self).shallow_model()
     }
