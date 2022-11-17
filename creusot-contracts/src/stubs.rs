@@ -75,6 +75,6 @@ pub fn curr<T>(_: T) -> T {
 #[logic] // avoid triggering error since this is prusti specific
 #[creusot::no_translate]
 #[rustc_diagnostic_item = "prusti_expiry"]
-pub fn at_expiry<'a, T>(_: T) -> T {
+pub fn at_expiry<'a: 'a, T>(_: T) -> T {
     absurd
 }
