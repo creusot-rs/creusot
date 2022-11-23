@@ -25,10 +25,7 @@ use creusot_rustc::{
 use indexmap::IndexSet;
 use why3::declaration::{Decl, Module};
 
-pub(crate) fn default_decl<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> (Module, CloneSummary<'tcx>) {
+pub(crate) fn default_decl<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
     info!("generating default declaration for def_id={:?}", def_id);
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Interface);
 
@@ -53,31 +50,27 @@ pub(crate) fn default_decl<'tcx>(
     };
     decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
 
-    (Module { name, decls }, names.summary())
+    Module { name, decls }
 }
 
-pub(crate) fn extern_module<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> (
-    Module,
-    Option<CloneSummary<'tcx>>, // None is used to refer to dependencies that should be fetched from metadata
-) {
+pub(crate) fn extern_module<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module
+// Option<CloneSummary<'tcx>>, // None is used to refer to dependencies that should be fetched from metadata
+{
     match ctx.externs.term(def_id) {
         Some(_) => {
             match item_type(ctx.tcx, def_id) {
                 // the dependencies should be what was already stored in the metadata...
                 ItemType::Logic | ItemType::Predicate => {
-                    (translate_logic_or_predicate(ctx, def_id).0, None)
+                    translate_logic_or_predicate(ctx, def_id).0
                 }
                 _ => unreachable!("extern_module: unexpected term for {:?}", def_id),
             }
         }
         None => {
-            let (modl, deps) = default_decl(ctx, def_id);
+            let modl = default_decl(ctx, def_id);
             // Why do we ever want to return `Err` shouldn't `deps` already be correct?
-            let deps = if ctx.externs.dependencies(def_id).is_some() { None } else { Some(deps) };
-            (modl, deps)
+            // let deps = if ctx.externs.dependencies(def_id).is_some() { None } else { Some(deps) };
+            modl
         }
     }
 }

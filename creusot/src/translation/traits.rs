@@ -45,13 +45,13 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.translate_trait(trait_ref.def_id);
 
         // Impl Refinement module
-        let mut decls: Vec<_> = own_generic_decls_for(self.tcx, impl_id).collect();
         let mut names = CloneMap::new(self.tcx, impl_id, CloneLevel::Body);
 
         // names.param_env(param_env);
         let mut laws = Vec::new();
         let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
 
+        let mut impl_decls = Vec::new();
         for (&trait_item, &impl_item) in implementor_map {
             if is_law(self.tcx, trait_item) {
                 laws.push(impl_item);
@@ -72,7 +72,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             let subst = InternalSubsts::identity_for_item(self.tcx, impl_item);
             names.insert(impl_item, subst);
 
-            decls.extend(own_generic_decls_for(self.tcx, impl_item));
+            impl_decls.extend(own_generic_decls_for(self.tcx, impl_item));
 
             let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
 
@@ -110,17 +110,19 @@ impl<'tcx> TranslationCtx<'tcx> {
                 if !contract.is_empty() {
                     let axiom =
                         logic_refinement(self, &mut names, impl_item, trait_item, refn_subst);
-                    decls.extend(names.to_clones(self));
-                    decls.push(Decl::Goal(axiom));
+                    impl_decls.push(Decl::Goal(axiom));
                 }
             }
         }
 
+        let mut decls: Vec<_> = own_generic_decls_for(self.tcx, impl_id).collect();
         decls.extend(names.to_clones(self));
+        decls.extend(impl_decls);
+
         TranslatedItem::Impl { modl: Module { name: module_name(self, impl_id), decls } }
     }
 
-    pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
+    pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> Module {
         assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
 
         let mut names = CloneMap::new(self.tcx, def_id, CloneLevel::Interface);
@@ -145,7 +147,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         decls.extend(names.to_clones(self));
         decls.push(Decl::TyDecl(ty_decl));
 
-        (Module { name: module_name(self, def_id), decls }, names.summary())
+        Module { name: module_name(self, def_id), decls }
     }
 }
 

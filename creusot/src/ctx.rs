@@ -123,9 +123,10 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             }
             ItemType::AssocTy => {
                 self.start(def_id);
-                let (modl, dependencies) = self.translate_assoc_ty(def_id);
+                let modl = self.translate_assoc_ty(def_id);
                 self.finish(def_id);
-                self.dependencies.insert(def_id, dependencies);
+                // FIXME
+                self.dependencies.insert(def_id, CloneSummary::new());
                 self.functions.insert(def_id, TranslatedItem::AssocTy { modl });
             }
             ItemType::Constant => {
@@ -198,28 +199,29 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             return;
         }
 
-        let (interface, deps) = interface_for(self, def_id);
+        let interface = interface_for(self, def_id);
 
         let translated = if util::is_logic(self.tcx, def_id) || util::is_predicate(self.tcx, def_id)
         {
             debug!("translating {:?} as logical", def_id);
-            let (stub, modl, proof_modl, has_axioms, deps) =
+            let (stub, modl, proof_modl, has_axioms) =
                 crate::backend::logic::translate_logic_or_predicate(self, def_id);
-            self.dependencies.insert(def_id, deps);
+            // self.dependencies.insert(def_id, deps);
             TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
         } else if !def_id.is_local() {
             debug!("translating {:?} as extern", def_id);
 
-            let (body, extern_deps) = external::extern_module(self, def_id);
+            let body = external::extern_module(self, def_id);
 
-            if let Some(deps) = extern_deps {
-                self.dependencies.insert(def_id, deps);
-            }
+            // if let Some(deps) = extern_deps {
+            //     self.dependencies.insert(def_id, deps);
+            // }
             TranslatedItem::Extern { interface, body }
         } else {
             debug!("translating {def_id:?} as program");
 
-            self.dependencies.insert(def_id, deps.summary());
+            // FIXME
+            self.dependencies.insert(def_id, CloneSummary::new());
             let modl = crate::translation::translate_function(self, def_id);
             TranslatedItem::Program { interface, modl, has_axioms: self.tcx.is_closure(def_id) }
         };

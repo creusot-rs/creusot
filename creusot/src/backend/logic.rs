@@ -46,22 +46,19 @@ pub(crate) fn binders_to_args(
 pub(crate) fn translate_logic_or_predicate<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
-) -> (Module, Module, Option<Module>, bool, CloneSummary<'tcx>) {
+) -> (Module, Module, Option<Module>, bool) {
     let has_axioms = !pre_sig_of(ctx, def_id).contract.is_empty();
 
-    let (body_modl, deps) = if get_builtin(ctx.tcx, def_id).is_some() {
+    let body_modl = if get_builtin(ctx.tcx, def_id).is_some() {
         builtin_body(ctx, def_id)
     } else {
         body_module(ctx, def_id)
     };
     let proof_modl = if def_id.is_local() { proof_module(ctx, def_id) } else { None };
-    (stub_module(ctx, def_id), body_modl, proof_modl, has_axioms, deps)
+    (stub_module(ctx, def_id), body_modl, proof_modl, has_axioms)
 }
 
-fn builtin_body<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> (Module, CloneSummary<'tcx>) {
+fn builtin_body<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
     let (val_args, val_binders) = binders_to_args(ctx, sig.args);
@@ -108,13 +105,10 @@ fn builtin_body<'tcx>(
 
     let name = module_name(ctx, def_id);
 
-    (Module { name, decls }, names.summary())
+    Module { name, decls }
 }
 
-fn body_module<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> (Module, CloneSummary<'tcx>) {
+fn body_module<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
 
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
@@ -137,7 +131,8 @@ fn body_module<'tcx>(
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-    decls.extend(names.to_clones(ctx));
+    // FIXME
+    // decls.extend(names.to_clones(ctx));
 
     if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         let val = util::item_type(ctx.tcx, def_id).val(sig.clone());
@@ -146,7 +141,8 @@ fn body_module<'tcx>(
     } else {
         let term = ctx.term(def_id).unwrap().clone();
         let body = specification::lower_pure(ctx, &mut names, term);
-        decls.extend(names.to_clones(ctx));
+        // FIXME
+        // decls.extend(names.to_clones(ctx));
 
         if sig_contract.contract.variant.is_empty() {
             let decl = match util::item_type(ctx.tcx, def_id) {
@@ -191,7 +187,7 @@ fn body_module<'tcx>(
 
     let name = module_name(ctx, def_id);
 
-    (Module { name, decls }, names.summary())
+    Module { name, decls }
 }
 
 pub(crate) fn stub_module(ctx: &mut TranslationCtx, def_id: DefId) -> Module {

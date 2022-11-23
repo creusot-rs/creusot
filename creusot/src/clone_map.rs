@@ -584,7 +584,7 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
-    pub(crate) fn to_clones(&mut self, ctx: &mut ctx::TranslationCtx<'tcx>) -> Vec<Decl> {
+    pub(crate) fn to_clones(mut self, ctx: &mut ctx::TranslationCtx<'tcx>) -> Vec<Decl> {
         trace!("emitting clones for {:?}", self.self_id);
         let mut decls = Vec::new();
 
@@ -610,8 +610,9 @@ impl<'tcx> CloneMap<'tcx> {
             let DepNode::Dep(node @ (def_id, subst)) = node else { continue };
             trace!("processing node {:?}", self.names[&node].kind);
 
+            let param_env = ctx.param_env(self.self_id);
             // Though we pass in a &mut ref, it shouldn't actually be possible to add any new entries..
-            let mut clone_subst = base_subst(ctx, self, ctx.param_env(self.self_id), def_id, subst);
+            let mut clone_subst = base_subst(ctx, &mut self, param_env, def_id, subst);
 
             if self.names[&node].cloned {
                 continue;
@@ -657,7 +658,7 @@ impl<'tcx> CloneMap<'tcx> {
                         let (nm, sym) = syms.iter().next().unwrap(); // Type nodes only have have exactly one symbol
 
                         let ty_name = nm.qname_ident(sym.ident());
-                        let ty = super::ty::translate_ty(ctx, self, DUMMY_SP, ty);
+                        let ty = super::ty::translate_ty(ctx, &mut self, DUMMY_SP, ty);
                         clone_subst.push(CloneSubst::Type(ty_name, ty))
                     }
                     DepNode::Dep(dep) => {

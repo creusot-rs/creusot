@@ -70,35 +70,36 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     let mut decls = Vec::new();
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
 
-    if ctx.tcx.is_closure(def_id) {
-        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-            let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
-            let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
-            decls.extend(names.to_clones(ctx));
-            decls.push(env_ty);
-            decls.extend(accessors);
+    // FIXME
+    // if ctx.tcx.is_closure(def_id) {
+    //     if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
+    //         let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
+    //         let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
+    //         decls.extend(names.to_clones(ctx));
+    //         decls.push(env_ty);
+    //         decls.extend(accessors);
 
-            let contracts = closure_contract(ctx, &mut names, def_id);
-            decls.extend(names.to_clones(ctx));
-            decls.extend(contracts);
-        }
-    }
+    //         let contracts = closure_contract(ctx, &mut names, def_id);
+    //         decls.extend(names.to_clones(ctx));
+    //         decls.extend(contracts);
+    //     }
+    // }
 
-    let param_env = ctx.param_env(def_id);
-    for p in promoted.borrow().iter_enumerated() {
-        if is_ghost_closure(ctx.tcx, p.1.return_ty()).is_some() {
-            continue;
-        }
+    // let param_env = ctx.param_env(def_id);
+    // for p in promoted.borrow().iter_enumerated() {
+    //     if is_ghost_closure(ctx.tcx, p.1.return_ty()).is_some() {
+    //         continue;
+    //     }
 
-        let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p, def_id);
-        decls.extend(names.to_clones(ctx));
-        let promoted = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
+    //     let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p, def_id);
+    //     decls.extend(names.to_clones(ctx));
+    //     let promoted = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
 
-        decls.push(promoted);
-    }
+    //     decls.push(promoted);
+    // }
 
     let fmir = ctx.fmir_body(def_id).unwrap().clone();
-    decls.extend(to_why(ctx, &mut names, fmir, &body, def_id));
+    decls.extend(to_why(ctx, names, fmir, &body, def_id));
     let name = module_name(ctx, def_id);
     Module { name, decls }
 }
@@ -136,7 +137,7 @@ pub(crate) fn translate_trusted<'tcx>(
 
 fn to_why<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    mut names: CloneMap<'tcx>,
     body: fmir::Body<'tcx>,
     mir: &Body<'tcx>,
     def_id: DefId,
@@ -146,7 +147,7 @@ fn to_why<'tcx>(
     let vars: Vec<_> = body
         .locals
         .into_iter()
-        .map(|(id, sp, ty)| (false, id, ty::translate_ty(ctx, names, sp, ty)))
+        .map(|(id, sp, ty)| (false, id, ty::translate_ty(ctx, &mut names, sp, ty)))
         .collect();
 
     let entry = Block {
@@ -162,7 +163,7 @@ fn to_why<'tcx>(
         terminator: Terminator::Goto(BlockId(0)),
     };
 
-    let sig = signature_of(ctx, names, def_id);
+    let sig = signature_of(ctx, &mut names, def_id);
 
     let func = Decl::CfgDecl(CfgFunction {
         sig,
@@ -173,7 +174,7 @@ fn to_why<'tcx>(
         blocks: body
             .blocks
             .into_iter()
-            .map(|(bb, bbd)| (BlockId(bb.into()), bbd.to_why(ctx, names, mir)))
+            .map(|(bb, bbd)| (BlockId(bb.into()), bbd.to_why(ctx, &mut names, mir)))
             .collect(),
     });
     decls.extend(names.to_clones(ctx));
