@@ -20,7 +20,10 @@ use why3::{
 
 use crate::{
     ctx::{self, *},
-    translation::{interface, traits},
+    translation::{
+        interface, traits,
+        ty::{closure_accessor_name, variant_accessor_name},
+    },
     util::{self, get_builtin, ident_of, ident_of_ty, item_name},
 };
 
@@ -221,14 +224,14 @@ impl<'tcx> CloneInfo<'tcx> {
     }
 
     // TODO: When traits stop holding all functions we can remove the last two arguments
-    pub(crate) fn qname(&self, tcx: TyCtxt, def_id: DefId) -> QName {
+    fn qname(&self, tcx: TyCtxt, def_id: DefId) -> QName {
         self.qname_ident(match tcx.def_kind(def_id) {
             // DefKind::Closure => Ident::build("closure"),
             _ => item_name(tcx, def_id, Namespace::ValueNS),
         })
     }
 
-    pub(crate) fn qname_ident(&self, method: Ident) -> QName {
+    fn qname_ident(&self, method: Ident) -> QName {
         self.kind.qname_ident(method)
     }
 }
@@ -299,6 +302,36 @@ impl<'tcx> CloneMap<'tcx> {
                 CloneInfo::from_name(Symbol::intern(&format!("{}{}", base, count)), self.public);
             info
         })
+    }
+
+    pub(crate) fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let tcx = self.tcx;
+        self.insert(def_id, subst).qname(tcx, def_id)
+    }
+
+    pub(crate) fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let tcx = self.tcx;
+        let name = item_name(self.tcx, def_id, Namespace::TypeNS).to_string().to_lowercase();
+        self.insert(def_id, subst).qname_ident(name.into())
+    }
+
+    // UGH neeed ctx because of `item_qname`
+    pub(crate) fn accessor(
+        &mut self,
+        def_id: DefId,
+        subst: SubstsRef<'tcx>,
+        variant: usize,
+        ix: usize,
+    ) -> QName {
+        let tcx = self.tcx;
+        let clone = self.insert(def_id, subst);
+        let name = match util::item_type(tcx, def_id) {
+            ItemType::Closure => closure_accessor_name(tcx, def_id, ix),
+            ItemType::Type => variant_accessor_name(tcx, def_id, variant, ix),
+            _ => panic!("accessor: invalid item kind"),
+        };
+
+        clone.qname_ident(name.into())
     }
 
     fn self_key(&self) -> (DefId, SubstsRef<'tcx>) {

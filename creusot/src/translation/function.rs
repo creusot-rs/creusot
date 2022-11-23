@@ -671,7 +671,7 @@ fn closure_resolve<'tcx>(
     let csubst = subst.as_closure();
     for (ix, ty) in csubst.upvar_tys().enumerate() {
         let acc_name = ty::closure_accessor_name(ctx.tcx, def_id, ix);
-        let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
+        let acc = Exp::impure_qvar(names.accessor(def_id, subst, 0, ix));
         let self_ = Exp::pure_var(Ident::build("_1'"));
 
         let param_env = ctx.param_env(def_id);
@@ -712,8 +712,7 @@ pub(crate) fn closure_unnest<'tcx>(
             // if we captured by value we get no unnesting predicate
             UpvarCapture::ByValue => continue,
             UpvarCapture::ByRef(is_mut) => {
-                let acc_name = ty::closure_accessor_name(tcx, def_id, ix);
-                let acc = Exp::impure_qvar(names.insert(def_id, subst).qname_ident(acc_name));
+                let acc = Exp::impure_qvar(names.accessor(def_id, subst, 0, ix));
                 let cur = Exp::pure_var(Ident::build("self"));
                 let fin = Exp::pure_var(Ident::build("_2'"));
 
@@ -782,19 +781,11 @@ fn resolve_predicate_of<'tcx>(
             }
             ctx.translate(method.0);
 
-            ResolveStmt {
-                exp: Some(Exp::impure_qvar(
-                    names.insert(method.0, method.1).qname(ctx.tcx, method.0),
-                )),
-            }
+            ResolveStmt { exp: Some(Exp::impure_qvar(names.value(method.0, method.1))) }
         }
         None => {
             ctx.translate(trait_id);
-            ResolveStmt {
-                exp: Some(Exp::impure_qvar(
-                    names.insert(trait_meth_id, subst).qname(ctx.tcx, trait_meth_id),
-                )),
-            }
+            ResolveStmt { exp: Some(Exp::impure_qvar(names.value(trait_meth_id, subst))) }
         }
     }
 }

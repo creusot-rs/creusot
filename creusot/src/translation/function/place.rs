@@ -184,11 +184,11 @@ pub(crate) fn translate_rplace_inner<'tcx>(
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                     let variant = &def.variants()[variant_id];
 
-                    names.insert(def.did(), subst);
                     ctx.translate_accessor(def.variants()[variant_id].fields[ix.as_usize()].did);
-                    let accessor_name =
-                        variant_accessor_name(ctx, def.did(), variant, ix.as_usize());
-                    inner = Call(box Exp::impure_qvar(accessor_name), vec![inner]);
+
+                    let acc =
+                        names.accessor(def.did(), subst, variant_id.as_usize(), ix.as_usize());
+                    inner = Call(box Exp::impure_qvar(acc), vec![inner]);
                 }
                 TyKind::Tuple(fields) => {
                     let mut pat = vec![Wildcard; fields.len()];
@@ -203,7 +203,7 @@ pub(crate) fn translate_rplace_inner<'tcx>(
                 TyKind::Closure(id, subst) => {
                     let accessor_name = closure_accessor_name(ctx.tcx, *id, ix.as_usize());
                     inner = Call(
-                        box Exp::impure_qvar(names.insert(*id, subst).qname_ident(accessor_name)),
+                        box Exp::impure_qvar(names.accessor(*id, subst, 0, ix.as_usize())),
                         vec![inner],
                     );
                 }

@@ -64,10 +64,10 @@ impl<'tcx> Lower<'_, 'tcx> {
                 debug!("resolved_method={:?}", method);
                 self.lookup_builtin(method, &mut Vec::new()).unwrap_or_else(|| {
                     // eprintln!("{id:?} {subst:?}");
-                    let clone = self.names.insert(id, subst);
+                    let clone = self.names.value(id, subst);
                     match self.ctx.type_of(id).kind() {
                         TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
-                        _ => Exp::pure_qvar(clone.qname(self.ctx.tcx, id)),
+                        _ => Exp::pure_qvar(clone),
                     }
                 })
             }
@@ -150,14 +150,11 @@ impl<'tcx> Lower<'_, 'tcx> {
                 self.lookup_builtin(method, &mut args).unwrap_or_else(|| {
                     self.ctx.translate(method.0);
 
-                    let clone = self.names.insert(method.0, method.1);
+                    let clone = self.names.value(method.0, method.1);
                     if self.pure == Purity::Program {
-                        mk_binders(Exp::QVar(clone.qname(self.ctx.tcx, method.0), self.pure), args)
+                        mk_binders(Exp::QVar(clone, self.pure), args)
                     } else {
-                        Exp::Call(
-                            box Exp::QVar(clone.qname(self.ctx.tcx, method.0), self.pure),
-                            args,
-                        )
+                        Exp::Call(box Exp::QVar(clone, self.pure), args)
                     }
                 })
             }
@@ -238,22 +235,14 @@ impl<'tcx> Lower<'_, 'tcx> {
                 let accessor = match util::item_type(self.ctx.tcx, did) {
                     ItemType::Closure => {
                         let TyKind::Closure(did, subst) = self.ctx.type_of(did).kind() else { unreachable!() };
-                        let proj = closure_accessor_name(self.ctx.tcx, *did, name.as_usize());
-                        let acc = self.names.insert(*did, subst).qname_ident(proj);
-                        acc
+                        self.names.accessor(*did, subst, 0, name.as_usize())
                     }
                     _ => {
-                        self.names.insert(did, substs);
                         let def = self.ctx.tcx.adt_def(did);
                         self.ctx.translate_accessor(
                             def.variants()[0u32.into()].fields[name.as_usize()].did,
                         );
-                        variant_accessor_name(
-                            self.ctx,
-                            did,
-                            &def.variants()[0u32.into()],
-                            name.as_usize(),
-                        )
+                        self.names.accessor(did, substs, 0, name.as_usize())
                     }
                 };
                 Exp::Call(box Exp::pure_qvar(accessor), vec![lhs])

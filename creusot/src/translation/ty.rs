@@ -158,7 +158,7 @@ fn translate_ty_inner<'tcx>(
             }
 
             let name = item_name(ctx.tcx, *id, Namespace::TypeNS).to_string().to_lowercase();
-            let cons = MlT::TConstructor(names.insert(*id, subst).qname_ident(name.into()));
+            let cons = MlT::TConstructor(names.ty(*id, subst));
 
             cons
         }
@@ -182,7 +182,7 @@ pub(crate) fn translate_projection_ty<'tcx>(
     pty: &ProjectionTy<'tcx>,
 ) -> MlT {
     // ctx.translate(pty.trait_def_id(ctx.tcx));
-    let name = names.insert(pty.item_def_id, pty.substs).qname(ctx.tcx, pty.item_def_id);
+    let name = names.ty(pty.item_def_id, pty.substs);
     MlT::TConstructor(name)
 }
 
@@ -521,21 +521,14 @@ pub(crate) fn closure_accessor_name(tcx: TyCtxt, def: DefId, ix: usize) -> Ident
 }
 
 pub(crate) fn variant_accessor_name(
-    ctx: &TranslationCtx,
+    tcx: TyCtxt,
     def: DefId,
-    variant: &VariantDef,
+    variant: usize,
     field: usize,
-) -> QName {
-    let qname = item_qname(ctx, def, Namespace::ValueNS);
-    QName {
-        module: qname.module,
-        name: format!(
-            "{}_{}",
-            variant.name.as_str().to_ascii_lowercase(),
-            variant.fields[field].name
-        )
-        .into(),
-    }
+) -> Ident {
+    let variant_def = &tcx.adt_def(def).variants()[variant.into()];
+    let variant = variant_def;
+    format!("{}_{}", variant.name.as_str().to_ascii_lowercase(), variant.fields[field].name).into()
 }
 
 pub(crate) fn intty_to_ty(names: &mut CloneMap<'_>, ity: &creusot_rustc::middle::ty::IntTy) -> MlT {

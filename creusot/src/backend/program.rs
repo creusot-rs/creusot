@@ -80,7 +80,7 @@ impl<'tcx> Expr<'tcx> {
                     DefKind::Closure => {
                         let mut cons_name = item_name(ctx.tcx, id, Namespace::ValueNS);
                         cons_name.capitalize();
-                        let ctor = names.insert(id, subst).qname_ident(cons_name);
+                        let ctor = names.value(id, subst);
                         Exp::Constructor { ctor, args }
                     }
                     _ => {
@@ -92,7 +92,7 @@ impl<'tcx> Expr<'tcx> {
             Expr::Call(id, subst, args) => {
                 let mut args: Vec<_> =
                     args.into_iter().map(|a| a.to_why(ctx, names, body)).collect();
-                let fname = names.insert(id, subst).qname(ctx.tcx, id);
+                let fname = names.value(id, subst);
 
                 let exp = if ctx.is_closure(id) {
                     assert!(args.len() == 2, "closures should only have two arguments (env, args)");
@@ -375,7 +375,7 @@ impl<'tcx> Statement<'tcx> {
             Statement::Resolve(id, subst, pl) => {
                 ctx.translate(id);
 
-                let rp = Exp::impure_qvar(names.insert(id, subst).qname(ctx.tcx, id));
+                let rp = Exp::impure_qvar(names.value(id, subst));
 
                 let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, Some(body)));
                 vec![mlcfg::Statement::Assume(assume)]
