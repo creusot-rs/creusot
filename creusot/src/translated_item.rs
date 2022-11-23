@@ -5,6 +5,7 @@ use indexmap::IndexMap;
 
 use why3::declaration::{Decl, Module};
 
+#[derive(Clone)]
 pub enum TranslatedItem {
     Logic {
         // A module which contains the contract with an opaque function symbol

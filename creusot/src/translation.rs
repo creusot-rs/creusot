@@ -10,6 +10,7 @@ pub(crate) mod traits;
 pub(crate) mod ty;
 
 use crate::{
+    backend::clone_map2::{Dependency, MonoGraph},
     ctx,
     ctx::load_extern_specs,
     error::CrErr,
@@ -22,7 +23,7 @@ use ctx::TranslationCtx;
 pub(crate) use function::{translate_function, LocalIdent};
 use heck::ToUpperCamelCase;
 use rustc_middle::ty::Ty;
-use std::{error::Error, io::Write};
+use std::{error::Error, fs::File, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
@@ -56,6 +57,7 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
     }
 
     let start = Instant::now();
+    let mut graph = MonoGraph::new();
     for def_id in ctx.tcx.hir().body_owners() {
         let def_id = def_id.to_def_id();
 
@@ -70,11 +72,13 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
 
         info!("Translating body {:?}", def_id);
         ctx.translate(def_id);
+        graph.add_root(&mut ctx, def_id);
     }
 
     for impls in ctx.tcx.all_local_trait_impls(()).values() {
         for impl_id in impls {
             ctx.translate(impl_id.to_def_id());
+            graph.add_root(&mut ctx, impl_id.to_def_id());
         }
     }
 
@@ -90,48 +94,58 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
     }
 
     if ctx.should_compile() {
-        use std::fs::File;
-        let mut out: Box<dyn Write> = match ctx.opts.output_file {
-            Some(OutputFile::File(ref f)) => Box::new(std::io::BufWriter::new(File::create(f)?)),
-            Some(OutputFile::Stdout) => Box::new(std::io::stdout()),
-            None => {
-                let outputs = ctx.tcx.output_filenames(());
-                let crate_name = ctx.tcx.crate_name(LOCAL_CRATE);
-
-                let libname =
-                    format!("{}-{}.mlcfg", crate_name.as_str(), ctx.sess.crate_types()[0]);
-
-                let directory = if ctx.opts.in_cargo {
-                    let mut dir = outputs.out_directory.clone();
-                    dir.pop();
-                    dir
-                } else {
-                    outputs.out_directory.clone()
-                };
-                let out_path = directory.join(&libname);
-                Box::new(std::io::BufWriter::new(File::create(out_path)?))
-            }
-        };
+        let mut out = output_writer(&ctx)?;
 
         let matcher = ctx.opts.match_str.clone();
         let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
         let tcx = ctx.tcx;
-        let modules = ctx.modules().flat_map(|(id, item)| {
-            if tcx.def_path_str(id).contains(matcher) {
+
+        let mut modules = Vec::new();
+        for dep in graph.iter() {
+            let Dependency::Item(id, _) = dep else { continue };
+            let Some(item) = ctx.item(id) else { continue };
+            let item = item.clone();
+            let output = if tcx.def_path_str(id).contains(matcher) {
                 item.modules()
             } else {
                 item.interface()
-            }
-        });
+            };
+
+            modules.extend(output);
+        }
 
         let crate_name = tcx.crate_name(LOCAL_CRATE).to_string().to_upper_camel_case();
-        print_crate(&mut out, crate_name, modules)?;
+        print_crate(&mut out, crate_name, modules.into_iter())?;
     }
     debug!("after_analysis_dump: {:?}", start.elapsed());
 
     Ok(())
 }
 use creusot_rustc::smir::mir;
+
+fn output_writer(ctx: &TranslationCtx) -> Result<impl Write, Box<dyn Error>> {
+    let out: Box<dyn Write> = match ctx.opts.output_file {
+        Some(OutputFile::File(ref f)) => Box::new(std::io::BufWriter::new(File::create(f)?)),
+        Some(OutputFile::Stdout) => Box::new(std::io::stdout()),
+        None => {
+            let outputs = ctx.tcx.output_filenames(());
+            let crate_name = ctx.tcx.crate_name(LOCAL_CRATE);
+
+            let libname = format!("{}-{}.mlcfg", crate_name.as_str(), ctx.sess.crate_types()[0]);
+
+            let directory = if ctx.opts.in_cargo {
+                let mut dir = outputs.out_directory.clone();
+                dir.pop();
+                dir
+            } else {
+                outputs.out_directory.clone()
+            };
+            let out_path = directory.join(&libname);
+            Box::new(std::io::BufWriter::new(File::create(out_path)?))
+        }
+    };
+    Ok(out)
+}
 
 pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -> why3::exp::BinOp {
     use why3::exp::BinOp;

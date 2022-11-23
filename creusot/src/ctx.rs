@@ -7,8 +7,9 @@ use crate::{
     metadata::{BinaryMetadata, Metadata},
     options::{Options, SpanMode},
     translation::{
-        external,
+        self, external,
         external::{extract_extern_specs_from_item, ExternSpec},
+        fmir,
         interface::interface_for,
         pearlite::{self, Term},
         specification::ContractClauses,
@@ -45,6 +46,7 @@ pub struct TranslationCtx<'tcx> {
     functions: IndexMap<DefId, TranslatedItem>,
     dependencies: IndexMap<DefId, CloneSummary<'tcx>>,
     laws: IndexMap<DefId, Vec<DefId>>,
+    fmir_body: IndexMap<DefId, fmir::Body<'tcx>>,
     terms: IndexMap<DefId, Term<'tcx>>,
     pub externs: Metadata<'tcx>,
     pub(crate) opts: Options,
@@ -79,6 +81,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             ty_binding_groups: Default::default(),
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
+            fmir_body: Default::default(),
         }
     }
 
@@ -247,6 +250,18 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             accessors.entry(variant_did).or_default().insert(field_id, accessor);
         }
         // self.types[&repr_id].accessors;
+    }
+
+    pub(crate) fn fmir_body(&mut self, def_id: DefId) -> Option<&fmir::Body<'tcx>> {
+        if util::has_body(self, def_id) && def_id.is_local() {
+            if !self.fmir_body.contains_key(&def_id) {
+                let fmir = translation::function::fmir(self, def_id);
+                self.fmir_body.insert(def_id, fmir);
+            }
+            self.fmir_body.get(&def_id)
+        } else {
+            None
+        }
     }
 
     pub(crate) fn term(&mut self, def_id: DefId) -> Option<&Term<'tcx>> {
