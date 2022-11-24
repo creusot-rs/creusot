@@ -411,9 +411,20 @@ pub struct Names<'tcx> {
 }
 
 impl<'tcx> Names<'tcx> {
-    pub(crate) fn get(&self, tgt: (DefId, SubstsRef<'tcx>)) -> QName {
+    fn get(&self, tgt: (DefId, SubstsRef<'tcx>)) -> QName {
         self.names.get(&tgt).unwrap_or_else(|| panic!("Could not find {:?}", tgt)).clone()
     }
+
+    // FIXME
+    pub(crate) fn ty(&self, id: DefId, sub: SubstsRef<'tcx>) -> QName {
+        self.get((id, sub))
+    }
+
+    //FIXME
+    pub(crate) fn value(&self, id: DefId, sub: SubstsRef<'tcx>) -> QName {
+        self.get((id, sub))
+    }
+
 }
 
 pub(crate) fn name_clones<'tcx>(
