@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use creusot_rustc::{
     hir::def_id::DefId,
@@ -290,7 +290,7 @@ type MonoGraphInner<'tcx> =
 pub struct MonoGraph<'tcx> {
     graph: MonoGraphInner<'tcx>,
     level: IndexMap<Dependency<'tcx>, DepLevel>,
-    roots: Vec<Dependency<'tcx>>,
+    roots: HashMap<DefId, Dependency<'tcx>>,
     // roots?
 }
 
@@ -301,7 +301,7 @@ impl<'tcx> MonoGraph<'tcx> {
 
     pub fn add_root(&mut self, ctx: &mut TranslationCtx<'tcx>, def_id: DefId) {
         let root = Dependency::Item(def_id, InternalSubsts::identity_for_item(ctx.tcx, def_id));
-        self.roots.push(root);
+        self.roots.insert(def_id, root);
         let mut to_visit = vec![root];
         let mut finished = HashSet::new();
         let param_env = ctx.param_env(def_id);
@@ -346,25 +346,30 @@ impl<'tcx> MonoGraph<'tcx> {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = Dependency<'tcx>> + '_ {
-        MonoGraphIter { walker: DfsPostOrder::empty(&self.graph), roots: &*self.roots }
-            .iter(&self.graph)
+        MonoGraphIter {
+            walker: DfsPostOrder::empty(&self.graph),
+            roots: self.roots.values().cloned(),
+        }
+        .iter(&self.graph)
     }
 }
 
-struct MonoGraphIter<'a, 'tcx> {
+struct MonoGraphIter<'tcx, I> {
     walker: DfsPostOrder<Dependency<'tcx>, HashSet<Dependency<'tcx>>>,
-    roots: &'a [Dependency<'tcx>],
+    roots: I,
 }
 
-impl<'a, 'tcx> Walker<&MonoGraphInner<'tcx>> for MonoGraphIter<'a, 'tcx> {
+impl<'tcx, I: Iterator<Item = Dependency<'tcx>>> Walker<&MonoGraphInner<'tcx>>
+    for MonoGraphIter<'tcx, I>
+{
     type Item = Dependency<'tcx>;
 
     fn walk_next(&mut self, context: &MonoGraphInner<'tcx>) -> Option<Self::Item> {
         match self.walker.walk_next(context) {
             Some(x) => Some(x),
             None => {
-                let next_root = self.roots.take_first()?;
-                self.walker.move_to(*next_root);
+                let next_root = self.roots.next()?;
+                self.walker.move_to(next_root);
                 self.walker.walk_next(context)
             }
         }
@@ -424,16 +429,18 @@ impl<'tcx> Names<'tcx> {
     pub(crate) fn value(&self, id: DefId, sub: SubstsRef<'tcx>) -> QName {
         self.get((id, sub))
     }
-
 }
 
 pub(crate) fn name_clones<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     graph: &MonoGraph<'tcx>,
+    def_id: DefId,
 ) -> Names<'tcx> {
     let mut names = IndexMap::new();
     let mut assigned = IndexMap::new();
-    for node in graph.graph.nodes() {
+    let mut walk = DfsPostOrder::new(&graph.graph, graph.roots[&def_id]);
+
+    for node in walk.iter(&graph.graph) {
         let Dependency::Item(def_id, subst) = node else { continue };
 
         let count = assigned.entry(def_id).or_insert(0);
@@ -454,140 +461,174 @@ pub(crate) fn name_clones<'tcx>(
             },
         );
     }
+
+    // for node in graph.graph.nodes() {
+    //     let Dependency::Item(def_id, subst) = node else { continue };
+
+    //     let count = assigned.entry(def_id).or_insert(0);
+
+    //     let base_sym = match util::item_type(ctx.tcx, def_id) {
+    //         ItemType::Impl => ctx.tcx.item_name(ctx.tcx.trait_id_of_impl(def_id).unwrap()),
+    //         ItemType::Closure => Symbol::intern(&format!(
+    //             "closure{}",
+    //             ctx.tcx.def_path(def_id).data.last().unwrap().disambiguator
+    //         )),
+    //         _ => ctx.tcx.item_name(def_id),
+    //     };
+    //     names.insert(
+    //         (def_id, subst),
+    //         QName {
+    //             module: vec![format!("{}{}", base_sym.as_str().to_upper_camel_case(), count).into()],
+    //             name: item_name(ctx.tcx, def_id, Namespace::ValueNS),
+    //         },
+    //     );
+    // }
     Names { names }
 }
 
-// // Temporary, eventually provided via a cached query
-// // A map of the public clones in each definition
-// pub struct PriorClones<'tcx> {
-//     prior: IndexMap<DefId, IndexMap<(DefId, SubstsRef<'tcx>), QName>>,
-// }
+// Temporary, eventually provided via a cached query
+// A map of the public clones in each definition
+pub struct PriorClones<'a, 'tcx> {
+    prior: IndexMap<DefId, Names<'tcx>>,
+    graph: &'a MonoGraph<'tcx>,
+}
 
-// impl<'tcx> PriorClones<'tcx> {
-//     pub(crate) fn from_deps(ctx: &TranslationCtx<'tcx>) -> Self {
-//         let mut prior = IndexMap::new();
+impl<'a, 'tcx> PriorClones<'a, 'tcx> {
+    //     pub(crate) fn from_deps(ctx: &TranslationCtx<'tcx>) -> Self {
+    //         let mut prior = IndexMap::new();
 
-//         for (id, summ) in &ctx.dependencies {
-//             let mut clones = IndexMap::new();
-//             for (k, info) in summ {
-//                 clones.insert(*k, info.qname(ctx.tcx, k.0));
-//             }
-//             prior.insert(*id, clones);
-//         }
+    //         for (id, summ) in &ctx.dependencies {
+    //             let mut clones = IndexMap::new();
+    //             for (k, info) in summ {
+    //                 clones.insert(*k, info.qname(ctx.tcx, k.0));
+    //             }
+    //             prior.insert(*id, clones);
+    //         }
 
-//         PriorClones { prior }
-//     }
+    //         PriorClones { prior }
+    //     }
 
-//     pub(crate) fn get(&self, inside: DefId, tgt: (DefId, SubstsRef<'tcx>)) -> QName {
-//         self.prior
-//             .get(&inside)
-//             .and_then(|c| c.get(&tgt))
-//             .map(|q| q.clone())
-//             .unwrap_or_else(|| QName::from_string("INVALID.prior").unwrap())
-//     }
-// }
+    pub(crate) fn from_graph(ctx: &mut TranslationCtx<'tcx>, graph: &'a MonoGraph<'tcx>) -> Self {
+        let mut clones = IndexMap::new();
 
-// // Transform a graph into a set of clones
-// pub fn make_clones<'tcx>(
-//     ctx: &mut TranslationCtx<'tcx>,
-//     graph: MonoGraph<'tcx>,
-//     priors: &PriorClones<'tcx>,
-//     level: CloneLevel,
-//     root: DefId,
-// ) -> Vec<Decl> {
-//     let root = Dependency::Item(root, InternalSubsts::identity_for_item(ctx.tcx, root));
-//     let mut topo = DfsPostOrder::new(&graph.graph, root);
+        for node in graph.graph.nodes() {
+            let Dependency::Item(def_id, subst) = node else { continue };
 
-//     let names = &name_clones(ctx, &graph);
+            if !clones.contains_key(&def_id) {
+                clones.insert(def_id, name_clones(ctx, graph, def_id));
+            }
+        }
 
-//     let desired_dep_level = match level {
-//         CloneLevel::Stub => DepLevel::Body, // Stub clones need a separate, shallow traversal of the graph
-//         CloneLevel::Interface => DepLevel::Signature,
-//         CloneLevel::Body => DepLevel::Body,
-//     };
+        PriorClones { graph, prior: clones }
+    }
 
-//     let mut clones = Vec::new();
-//     let mut uses = Vec::new();
+    pub(crate) fn get(&self, inside: DefId) -> Option<&Names<'tcx>> {
+        self.prior.get(&inside)
+        // .map(|q| q.clone())
+        //             .unwrap_or_else(|| QName::from_string("INVALID.prior").unwrap())
+    }
+}
 
-//     while let Some(node) = topo.walk_next(&graph.graph) {
-//         if node == root {
-//             continue;
-//         }
-//         if graph.level[&node] < desired_dep_level {
-//             continue;
-//         };
-//         eprintln!("cloning {node:?} at level {:?}", graph.level[&node]);
+// Transform a graph into a set of clones
+pub fn make_clones<'tcx, 'a>(
+    ctx: &mut TranslationCtx<'tcx>,
+    priors: &PriorClones<'a, 'tcx>,
+    level: CloneLevel,
+    root: DefId,
+) -> Vec<Decl> {
+    let names = priors.get(root).unwrap();
+    let root = Dependency::Item(root, InternalSubsts::identity_for_item(ctx.tcx, root));
+    let mut topo = DfsPostOrder::new(&priors.graph.graph, root);
 
-//         let Dependency::Item(id, subst) = node else {continue };
+    let desired_dep_level = match level {
+        CloneLevel::Stub => DepLevel::Body, // Stub clones need a separate, shallow traversal of the graph
+        CloneLevel::Interface => DepLevel::Signature,
+        CloneLevel::Body => DepLevel::Body,
+    };
 
-//         if item_type(ctx.tcx, id) == ItemType::Type {
-//             let name = item_qname(ctx, id, Namespace::TypeNS).module_qname();
-//             uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(name) }));
-//             continue;
-//         };
+    let mut clones = Vec::new();
+    let mut uses = Vec::new();
 
-//         let mut clone_subst = base_subst(ctx, names, id, subst);
+    while let Some(node) = topo.walk_next(&priors.graph.graph) {
+        if node == root {
+            continue;
+        }
+        if priors.graph.level[&node] < desired_dep_level {
+            continue;
+        };
+        eprintln!("cloning {node:?} at level {:?}", priors.graph.level[&node]);
 
-//         for dep in graph.graph.neighbors_directed(node, Outgoing) {
-//             let (_, orig) = graph.graph[(node, dep)];
-//             if graph.level[&dep] < desired_dep_level {
-//                 continue;
-//             };
+        let Dependency::Item(id, subst) = node else {continue };
 
-//             let Dependency::Item(id, subst) = dep else {continue };
-//             let orig = orig.unwrap();
-//             // FIXME: Not really correct
-//             if item_type(ctx.tcx, orig.0) == ItemType::Type {
-//                 continue;
-//             }
+        if item_type(ctx.tcx, id) == ItemType::Type {
+            let name = item_qname(ctx, id, Namespace::TypeNS).module_qname();
+            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(name) }));
+            continue;
+        };
 
-//             clone_subst.push(CloneSubst::Val(priors.get(id, orig), names.get((id, subst))))
-//         }
+        let mut clone_subst = base_subst(ctx, names, id, subst);
 
-//         let clone = DeclClone {
-//             name: cloneable_name(ctx, id, level),
-//             subst: clone_subst,
-//             kind: CloneKind::Named(names.get((id, subst)).module_ident().unwrap().clone()),
-//         };
-//         clones.push(Decl::Clone(clone));
-//     }
+        for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
+            let (_, orig) = priors.graph.graph[(node, dep)];
+            if priors.graph.level[&dep] < desired_dep_level {
+                continue;
+            };
 
-//     uses.into_iter().chain(clones).collect()
-// }
+            let Dependency::Item(id, subst) = dep else {continue };
+            let orig = orig.unwrap();
+            // FIXME: Not really correct
+            if item_type(ctx.tcx, orig.0) == ItemType::Type {
+                continue;
+            }
 
-// pub fn base_subst<'tcx>(
-//     ctx: &mut TranslationCtx<'tcx>,
-//     names: &Names<'tcx>,
-//     mut def_id: DefId,
-//     subst: SubstsRef<'tcx>,
-// ) -> Vec<CloneSubst> {
-//     use creusot_rustc::middle::ty::GenericParamDefKind;
-//     use heck::ToUpperCamelCase;
-//     loop {
-//         if ctx.tcx.is_closure(def_id) {
-//             def_id = ctx.tcx.parent(def_id);
-//         } else {
-//             break;
-//         }
-//     }
-//     let trait_params = ctx.tcx.generics_of(def_id);
-//     let mut clone_subst = Vec::new();
+            clone_subst
+                .push(CloneSubst::Val(priors.get(id).unwrap().get(orig), names.get((id, subst))))
+        }
 
-//     if subst.is_empty() {
-//         return Vec::new();
-//     }
+        let clone = DeclClone {
+            name: cloneable_name(ctx, id, level),
+            subst: clone_subst,
+            kind: CloneKind::Named(names.get((id, subst)).module_ident().unwrap().clone()),
+        };
+        clones.push(Decl::Clone(clone));
+    }
 
-//     for ix in 0..trait_params.count() {
-//         let p = trait_params.param_at(ix, ctx.tcx);
-//         let ty = subst[ix];
-//         if let GenericParamDefKind::Type { .. } = p.kind {
-//             let ty = crate::translation::ty::translate_ty(ctx, names, DUMMY_SP, ty.expect_ty());
-//             clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
-//         }
-//     }
+    uses.into_iter().chain(clones).collect()
+}
 
-//     clone_subst
-// }
+pub fn base_subst<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    names: &Names<'tcx>,
+    mut def_id: DefId,
+    subst: SubstsRef<'tcx>,
+) -> Vec<CloneSubst> {
+    use creusot_rustc::middle::ty::GenericParamDefKind;
+    use heck::ToSnakeCase;
+    loop {
+        if ctx.tcx.is_closure(def_id) {
+            def_id = ctx.tcx.parent(def_id);
+        } else {
+            break;
+        }
+    }
+    let trait_params = ctx.tcx.generics_of(def_id);
+    let mut clone_subst = Vec::new();
+
+    if subst.is_empty() {
+        return Vec::new();
+    }
+
+    for ix in 0..trait_params.count() {
+        let p = trait_params.param_at(ix, ctx.tcx);
+        let ty = subst[ix];
+        if let GenericParamDefKind::Type { .. } = p.kind {
+            let ty = crate::backend::ty::translate_ty(ctx, names, DUMMY_SP, ty.expect_ty());
+            clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
+        }
+    }
+
+    clone_subst
+}
 
 // Which kind of module should we clone
 // TODO: Unify with `CloneOpacity`

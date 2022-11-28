@@ -204,29 +204,29 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         let translated = if util::is_logic(self.tcx, def_id) || util::is_predicate(self.tcx, def_id)
         {
             debug!("translating {:?} as logical", def_id);
-            let (stub, modl, proof_modl, has_axioms) =
-                crate::backend::logic::translate_logic_or_predicate(self, def_id);
-            // self.dependencies.insert(def_id, deps);
-            TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
+            // let (stub, modl, proof_modl, has_axioms) =
+            //     crate::backend::logic::translate_logic_or_predicate(self, def_id);
+            // // self.dependencies.insert(def_id, deps);
+            // TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
         } else if !def_id.is_local() {
             debug!("translating {:?} as extern", def_id);
 
-            let body = external::extern_module(self, def_id);
+            // let body = external::extern_module(self, def_id);
 
-            // if let Some(deps) = extern_deps {
-            //     self.dependencies.insert(def_id, deps);
-            // }
-            TranslatedItem::Extern { interface, body }
+            // // if let Some(deps) = extern_deps {
+            // //     self.dependencies.insert(def_id, deps);
+            // // }
+            // TranslatedItem::Extern { interface, body }
         } else {
             debug!("translating {def_id:?} as program");
 
-            // FIXME
-            self.dependencies.insert(def_id, CloneSummary::new());
-            let modl = crate::translation::translate_function(self, def_id);
-            TranslatedItem::Program { interface, modl, has_axioms: self.tcx.is_closure(def_id) }
+            // // FIXME
+            // self.dependencies.insert(def_id, CloneSummary::new());
+            // let modl = crate::translation::translate_function(self, def_id);
+            // TranslatedItem::Program { interface, modl, has_axioms: self.tcx.is_closure(def_id) }
         };
 
-        self.functions.insert(def_id, translated);
+        // self.functions.insert(def_id, translated);
     }
 
     pub(crate) fn translate_accessor(&mut self, field_id: DefId) {

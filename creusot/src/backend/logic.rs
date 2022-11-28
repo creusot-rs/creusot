@@ -14,6 +14,8 @@ use why3::{
     Ident, QName,
 };
 
+use super::clone_map2::{self, make_clones, PriorClones};
+
 pub(crate) fn binders_to_args(
     ctx: &mut TranslationCtx,
     binders: Vec<Binder>,
@@ -45,12 +47,13 @@ pub(crate) fn binders_to_args(
 
 pub(crate) fn translate_logic_or_predicate<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
+    priors: &PriorClones<'_, 'tcx>,
     def_id: DefId,
 ) -> (Module, Module, Option<Module>, bool) {
     let has_axioms = !pre_sig_of(ctx, def_id).contract.is_empty();
 
     let body_modl = if get_builtin(ctx.tcx, def_id).is_some() {
-        builtin_body(ctx, def_id)
+        builtin_body(ctx, priors, def_id)
     } else {
         body_module(ctx, def_id)
     };
@@ -58,7 +61,11 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
     (stub_module(ctx, def_id), body_modl, proof_modl, has_axioms)
 }
 
-fn builtin_body<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
+fn builtin_body<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    priors: &PriorClones<'_, 'tcx>,
+    def_id: DefId,
+) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
     let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
     let (val_args, val_binders) = binders_to_args(ctx, sig.args);
@@ -90,7 +97,7 @@ fn builtin_body<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
         names.import_builtin_module(builtin.clone().module_qname());
     }
 
-    let mut decls = names.to_clones(ctx);
+    let mut decls = make_clones(ctx, priors, clone_map2::CloneLevel::Stub, def_id);
     if !builtin.module.is_empty() {
         let body = Exp::Call(box Exp::pure_qvar(builtin.without_search_path()), val_args);
 
