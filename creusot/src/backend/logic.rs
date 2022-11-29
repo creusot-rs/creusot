@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, iter::once};
 
 use crate::{
     ctx::*,
@@ -14,7 +14,10 @@ use why3::{
     Ident, QName,
 };
 
-use super::clone_map2::{self, make_clones, PriorClones};
+use super::{
+    clone_map2::{self, make_clones, Namer, Names, PriorClones},
+    signature_of, Cloner,
+};
 
 pub(crate) fn binders_to_args(
     ctx: &mut TranslationCtx,
@@ -47,23 +50,21 @@ pub(crate) fn binders_to_args(
 
 pub(crate) fn translate_logic_or_predicate<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    priors: &PriorClones<'_, 'tcx>,
+    priors: Namer<'_, 'tcx>,
     def_id: DefId,
-) -> (Module, Module, Option<Module>, bool) {
-    let has_axioms = !pre_sig_of(ctx, def_id).contract.is_empty();
-
+) -> Vec<Module> {
     let body_modl = if get_builtin(ctx.tcx, def_id).is_some() {
         builtin_body(ctx, priors, def_id)
     } else {
-        body_module(ctx, def_id)
+        body_module(ctx, priors, def_id)
     };
     let proof_modl = if def_id.is_local() { proof_module(ctx, def_id) } else { None };
-    (stub_module(ctx, def_id), body_modl, proof_modl, has_axioms)
+    once(stub_module(ctx, def_id)).chain(once(body_modl)).chain(proof_modl.into_iter()).collect()
 }
 
 fn builtin_body<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    priors: &PriorClones<'_, 'tcx>,
+    priors: Namer<'_, 'tcx>,
     def_id: DefId,
 ) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
@@ -115,10 +116,12 @@ fn builtin_body<'tcx>(
     Module { name, decls }
 }
 
-fn body_module<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
-
-    let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
+fn body_module<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    mut priors: Namer<'_, 'tcx>,
+    def_id: DefId,
+) -> Module {
+    let mut sig = signature_of(ctx, &mut priors, def_id);
     let mut val_sig = sig.clone();
     val_sig.contract.variant = Vec::new();
     let (val_args, val_binders) = binders_to_args(ctx, val_sig.args);
@@ -138,6 +141,7 @@ fn body_module<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
+    decls.extend(priors.to_clones(ctx, clone_map2::CloneLevel::Body));
     // FIXME
     // decls.extend(names.to_clones(ctx));
 
@@ -147,7 +151,7 @@ fn body_module<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
         decls.push(Decl::ValDecl(ValDecl { sig: val_sig, ghost: false, val: true, kind: None }));
     } else {
         let term = ctx.term(def_id).unwrap().clone();
-        let body = specification::lower_pure(ctx, &mut names, term);
+        let body = specification::lower_pure(ctx, &mut priors, term);
         // FIXME
         // decls.extend(names.to_clones(ctx));
 

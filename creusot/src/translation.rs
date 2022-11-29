@@ -10,7 +10,10 @@ pub(crate) mod traits;
 pub(crate) mod ty;
 
 use crate::{
-    backend::clone_map2::{Dependency, MonoGraph},
+    backend::{
+        clone_map2::{Dependency, MonoGraph, PriorClones},
+        to_why3,
+    },
     ctx,
     ctx::load_extern_specs,
     error::CrErr,
@@ -100,14 +103,15 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
         let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
         let tcx = ctx.tcx;
 
+        let priors = PriorClones::from_graph(&mut ctx, &graph);
         let mut modules = Vec::new();
         for dep in graph.iter() {
             let Dependency::Item(id, _) = dep else { continue };
-            let Some(item) = ctx.item(id) else { continue };
-            let item = item.clone();
             let output = if tcx.def_path_str(id).contains(matcher) {
-                item.modules()
+                box to_why3(&mut ctx, &priors, id).into_iter()
             } else {
+                let Some(item) = ctx.item(id) else { continue };
+                let item = item.clone();
                 item.interface()
             };
 

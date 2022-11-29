@@ -130,58 +130,58 @@ mod macros {
 #[path = "stubs.rs"]
 pub mod __stubs;
 
-pub mod logic;
+// pub mod logic;
 
-#[cfg_attr(not(feature = "contracts"), allow(unused))]
-pub mod std;
+// #[cfg_attr(not(feature = "contracts"), allow(unused))]
+// pub mod std;
 
-#[cfg(feature = "contracts")]
-pub mod ghost;
+// #[cfg(feature = "contracts")]
+// pub mod ghost;
 
-#[cfg(not(feature = "contracts"))]
-pub mod ghost {
-    pub struct Ghost<T>(std::marker::PhantomData<T>)
-    where
-        T: ?Sized;
+// #[cfg(not(feature = "contracts"))]
+// pub mod ghost {
+//     pub struct Ghost<T>(std::marker::PhantomData<T>)
+//     where
+//         T: ?Sized;
 
-    impl<T> Ghost<T> {
-        pub fn new() -> Ghost<T> {
-            Ghost(std::marker::PhantomData)
-        }
-    }
-}
+//     impl<T> Ghost<T> {
+//         pub fn new() -> Ghost<T> {
+//             Ghost(std::marker::PhantomData)
+//         }
+//     }
+// }
 
-pub mod invariant;
-pub mod model;
-pub mod resolve;
-pub mod well_founded;
+// pub mod invariant;
+// pub mod model;
+// pub mod resolve;
+// pub mod well_founded;
 
-// We add some common things at the root of the creusot-contracts library
-pub use crate::{
-    ghost::Ghost,
-    logic::{Int, OrdLogic, Seq},
-    macros::*,
-    model::{DeepModel, ShallowModel},
-    resolve::Resolve,
-    std::{
-        // Shadow std::prelude by our version.
-        // For Clone and PartialEq, this is important for the derive macro.
-        // If the user write the glob pattern "use creusot_contracts::*", then
-        // rustc will either shadow the old identifier or complain about the
-        // ambiguïty (ex: for the derive macros Clone and PartialEq, a glob
-        // pattern is not enough to force rustc to use our version, but at least
-        // we get an error message).
-        clone::Clone,
-        cmp::PartialEq,
-        default::Default,
-        iter::{FromIterator, IntoIterator, Iterator},
-    },
-    well_founded::WellFounded,
-};
+// // We add some common things at the root of the creusot-contracts library
+// pub use crate::{
+//     ghost::Ghost,
+//     logic::{Int, OrdLogic, Seq},
+//     macros::*,
+//     model::{DeepModel, ShallowModel},
+//     resolve::Resolve,
+//     std::{
+//         // Shadow std::prelude by our version.
+//         // For Clone and PartialEq, this is important for the derive macro.
+//         // If the user write the glob pattern "use creusot_contracts::*", then
+//         // rustc will either shadow the old identifier or complain about the
+//         // ambiguïty (ex: for the derive macros Clone and PartialEq, a glob
+//         // pattern is not enough to force rustc to use our version, but at least
+//         // we get an error message).
+//         clone::Clone,
+//         cmp::PartialEq,
+//         default::Default,
+//         iter::{FromIterator, IntoIterator, Iterator},
+//     },
+//     well_founded::WellFounded,
+// };
 
-// Export extension traits anonymously
-pub use crate::std::{
-    iter::{SkipExt as _, TakeExt as _},
-    ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
-    slice::SliceExt as _,
-};
+// // Export extension traits anonymously
+// pub use crate::std::{
+//     iter::{SkipExt as _, TakeExt as _},
+//     ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
+//     slice::SliceExt as _,
+// };

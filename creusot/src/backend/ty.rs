@@ -27,7 +27,7 @@ use crate::{
     util::{self, constructor_qname, get_builtin, item_name, item_qname},
 };
 
-use super::clone_map2::Names;
+use super::{clone_map2::Names, Cloner};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 enum TyTranslation {
@@ -36,19 +36,19 @@ enum TyTranslation {
 }
 
 // Translate a type usage
-pub(crate) fn translate_ty<'tcx>(
+pub(crate) fn translate_ty<'tcx, C: Cloner<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &Names<'tcx>,
+    names: &mut C,
     span: Span,
     ty: Ty<'tcx>,
 ) -> MlT {
     translate_ty_inner(TyTranslation::Usage, ctx, names, span, ty)
 }
 
-fn translate_ty_inner<'tcx>(
+fn translate_ty_inner<'tcx, C: Cloner<'tcx>>(
     trans: TyTranslation,
     ctx: &mut TranslationCtx<'tcx>,
-    names: &Names<'tcx>,
+    names: &mut C,
     span: Span,
     ty: Ty<'tcx>,
 ) -> MlT {
@@ -147,9 +147,9 @@ fn translate_ty_inner<'tcx>(
     }
 }
 
-pub(crate) fn translate_projection_ty<'tcx>(
+pub(crate) fn translate_projection_ty<'tcx, C: Cloner<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &Names<'tcx>,
+    names: &mut C,
     pty: &ProjectionTy<'tcx>,
 ) -> MlT {
     // ctx.translate(pty.trait_def_id(ctx.tcx));

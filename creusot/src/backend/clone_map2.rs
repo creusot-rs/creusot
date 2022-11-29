@@ -39,6 +39,8 @@ use crate::{
     util::{self, item_name, item_qname, item_type, module_name, pre_sig_of, PreSignature},
 };
 
+use super::Cloner;
+
 // The clone wars are over
 // Implements a simpler version of CloneMap, split as two operations: gathering all the 'monomorphic' instances of functions / types used
 // and a second why3 specific pass turning that into clones (and later not into clones!)
@@ -338,10 +340,9 @@ impl<'tcx> MonoGraph<'tcx> {
         }
 
         // Color the nodes
-        let mut level: IndexMap<_, DepLevel> = IndexMap::default();
         for (_, tgt, (lvl, _)) in self.graph.all_edges() {
             debug!("{tgt:?} to {lvl:?}");
-            level.entry(tgt).and_modify(|a| *a = (*a).max(*lvl)).or_insert(*lvl);
+            self.level.entry(tgt).and_modify(|a| *a = (*a).max(*lvl)).or_insert(*lvl);
         }
     }
 
@@ -416,7 +417,7 @@ pub struct Names<'tcx> {
 }
 
 impl<'tcx> Names<'tcx> {
-    fn get(&self, tgt: (DefId, SubstsRef<'tcx>)) -> QName {
+    pub(super) fn get(&self, tgt: (DefId, SubstsRef<'tcx>)) -> QName {
         self.names.get(&tgt).unwrap_or_else(|| panic!("Could not find {:?}", tgt)).clone()
     }
 
@@ -493,6 +494,40 @@ pub struct PriorClones<'a, 'tcx> {
     graph: &'a MonoGraph<'tcx>,
 }
 
+#[derive(Clone, Copy)]
+pub struct Namer<'a, 'tcx> {
+    priors: &'a PriorClones<'a, 'tcx>,
+    id: DefId,
+}
+
+impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
+    fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        self.priors.prior.get(&self.id).unwrap().get((def_id, subst))
+    }
+
+    fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        self.priors.prior.get(&self.id).unwrap().get((def_id, subst))
+    }
+
+    fn accessor(
+        &mut self,
+        def_id: DefId,
+        subst: SubstsRef<'tcx>,
+        variant: usize,
+        ix: usize,
+    ) -> QName {
+        self.priors.prior.get(&self.id).unwrap().get((def_id, subst))
+    }
+
+    fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>, variant: usize) -> QName {
+        self.priors.prior.get(&self.id).unwrap().get((def_id, subst))
+    }
+
+    fn to_clones(&mut self, ctx: &mut TranslationCtx<'tcx>, clone_level: CloneLevel) -> Vec<Decl> {
+        make_clones(ctx, *self, clone_level, self.id)
+    }
+}
+
 impl<'a, 'tcx> PriorClones<'a, 'tcx> {
     //     pub(crate) fn from_deps(ctx: &TranslationCtx<'tcx>) -> Self {
     //         let mut prior = IndexMap::new();
@@ -522,21 +557,26 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
         PriorClones { graph, prior: clones }
     }
 
-    pub(crate) fn get(&self, inside: DefId) -> Option<&Names<'tcx>> {
-        self.prior.get(&inside)
-        // .map(|q| q.clone())
-        //             .unwrap_or_else(|| QName::from_string("INVALID.prior").unwrap())
+    // pub(crate) fn get(&self, inside: DefId) -> Option<&Names<'tcx>> {
+    //     self.prior.get(&inside)
+    //     // .map(|q| q.clone())
+    //     //             .unwrap_or_else(|| QName::from_string("INVALID.prior").unwrap())
+    // }
+
+    pub(crate) fn get(&'a self, inside: DefId) -> Namer<'a, 'tcx> {
+        Namer { priors: self, id: inside }
     }
 }
 
 // Transform a graph into a set of clones
 pub fn make_clones<'tcx, 'a>(
     ctx: &mut TranslationCtx<'tcx>,
-    priors: &PriorClones<'a, 'tcx>,
+    priors: Namer<'a, 'tcx>,
     level: CloneLevel,
     root: DefId,
 ) -> Vec<Decl> {
-    let names = priors.get(root).unwrap();
+    let Namer { priors, id } = priors;
+    let mut names = priors.get(root);
     let root = Dependency::Item(root, InternalSubsts::identity_for_item(ctx.tcx, root));
     let mut topo = DfsPostOrder::new(&priors.graph.graph, root);
 
@@ -553,6 +593,7 @@ pub fn make_clones<'tcx, 'a>(
         if node == root {
             continue;
         }
+        eprintln!("{node:?} {:?}", priors.graph.level);
         if priors.graph.level[&node] < desired_dep_level {
             continue;
         };
@@ -566,7 +607,7 @@ pub fn make_clones<'tcx, 'a>(
             continue;
         };
 
-        let mut clone_subst = base_subst(ctx, names, id, subst);
+        let mut clone_subst = base_subst(ctx, priors, id, subst);
 
         for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
             let (_, orig) = priors.graph.graph[(node, dep)];
@@ -582,13 +623,13 @@ pub fn make_clones<'tcx, 'a>(
             }
 
             clone_subst
-                .push(CloneSubst::Val(priors.get(id).unwrap().get(orig), names.get((id, subst))))
+                .push(CloneSubst::Val(priors.get(id).value(orig.0, orig.1), names.value(id, subst)))
         }
 
         let clone = DeclClone {
             name: cloneable_name(ctx, id, level),
             subst: clone_subst,
-            kind: CloneKind::Named(names.get((id, subst)).module_ident().unwrap().clone()),
+            kind: CloneKind::Named(names.value(id, subst).module_ident().unwrap().clone()),
         };
         clones.push(Decl::Clone(clone));
     }
@@ -598,7 +639,7 @@ pub fn make_clones<'tcx, 'a>(
 
 pub fn base_subst<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &Names<'tcx>,
+    names: &PriorClones<'_, 'tcx>,
     mut def_id: DefId,
     subst: SubstsRef<'tcx>,
 ) -> Vec<CloneSubst> {
@@ -622,7 +663,12 @@ pub fn base_subst<'tcx>(
         let p = trait_params.param_at(ix, ctx.tcx);
         let ty = subst[ix];
         if let GenericParamDefKind::Type { .. } = p.kind {
-            let ty = crate::backend::ty::translate_ty(ctx, names, DUMMY_SP, ty.expect_ty());
+            let ty = crate::backend::ty::translate_ty(
+                ctx,
+                &mut names.get(def_id),
+                DUMMY_SP,
+                ty.expect_ty(),
+            );
             clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
         }
     }

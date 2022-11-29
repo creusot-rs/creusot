@@ -1,13 +1,17 @@
+use super::{
+    ty::{intty_to_ty, translate_ty, uintty_to_ty},
+    Cloner,
+};
 use crate::{
     ctx::*,
     pearlite::{self, Literal, Pattern, Term, TermKind},
-    translation::ty::{
-        closure_accessor_name, intty_to_ty, translate_ty, uintty_to_ty, variant_accessor_name,
-    },
     util,
     util::{constructor_qname, get_builtin},
 };
-use creusot_rustc::{hir::Unsafety, middle::ty::EarlyBinder};
+use creusot_rustc::{
+    hir::{def_id::DefId, Unsafety},
+    middle::ty::{subst::SubstsRef, EarlyBinder, TyCtxt},
+};
 use rustc_middle::ty::{Ty, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
@@ -15,9 +19,9 @@ use why3::{
     Ident, QName,
 };
 
-pub(crate) fn lower_pure<'tcx>(
+pub(crate) fn lower_pure<'tcx, C: Cloner<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut C,
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
@@ -45,13 +49,13 @@ pub(crate) fn lower_impure<'tcx>(
     term
 }
 
-pub(super) struct Lower<'a, 'tcx> {
+pub(super) struct Lower<'a, 'tcx, C: Cloner<'tcx>> {
     pub(super) ctx: &'a mut TranslationCtx<'tcx>,
-    pub(super) names: &'a mut CloneMap<'tcx>,
+    pub(super) names: &'a mut C,
     // true when we are translating a purely logical term
     pub(super) pure: Purity,
 }
-impl<'tcx> Lower<'_, 'tcx> {
+impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
     pub(crate) fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
         match term.kind {
             TermKind::Lit(l) => {
@@ -77,9 +81,6 @@ impl<'tcx> Lower<'_, 'tcx> {
                 let rhs = self.lower_term(rhs);
 
                 use pearlite::BinOp::*;
-                if matches!(op, Add | Sub | Mul | Div | Rem | Le | Ge | Lt | Gt) {
-                    self.names.import_prelude_module(PreludeModule::Int);
-                }
 
                 match (op, self.pure) {
                     (Div, _) => Exp::Call(box Exp::pure_var("div".into()), vec![lhs, rhs]),
@@ -175,7 +176,7 @@ impl<'tcx> Lower<'_, 'tcx> {
             TermKind::Constructor { adt, variant, fields } => {
                 self.ctx.translate(adt.did());
                 if let TyKind::Adt(_, subst) = term.ty.kind() {
-                    self.names.insert(adt.did(), subst);
+                    self.names.ty(adt.did(), subst);
                 };
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
@@ -183,14 +184,8 @@ impl<'tcx> Lower<'_, 'tcx> {
                 self.ctx.translate(adt.did());
                 Exp::Constructor { ctor, args }
             }
-            TermKind::Cur { box term } => {
-                self.names.import_prelude_module(PreludeModule::Borrow);
-                Exp::Current(box self.lower_term(term))
-            }
-            TermKind::Fin { box term } => {
-                self.names.import_prelude_module(PreludeModule::Borrow);
-                Exp::Final(box self.lower_term(term))
-            }
+            TermKind::Cur { box term } => Exp::Current(box self.lower_term(term)),
+            TermKind::Fin { box term } => Exp::Final(box self.lower_term(term)),
             TermKind::Impl { box lhs, box rhs } => {
                 self.pure_exp(|this| Exp::Impl(box this.lower_term(lhs), box this.lower_term(rhs)))
             }
@@ -309,10 +304,9 @@ impl<'tcx> Lower<'_, 'tcx> {
     fn lower_pat(&mut self, pat: Pattern<'tcx>) -> Pat {
         match pat {
             Pattern::Constructor { adt, variant, fields, substs } => {
-                let variant = &adt.variants()[variant];
+                // let variant = &adt.variants()[variant];
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
-                self.names.insert(adt.did(), substs);
-                Pat::ConsP(constructor_qname(self.ctx, variant), fields)
+                Pat::ConsP(self.names.constructor(adt.did(), substs, variant.as_usize()), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => Pat::VarP(name.to_string().into()),
@@ -345,7 +339,7 @@ impl<'tcx> Lower<'_, 'tcx> {
         let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
 
         if let Some(builtin) = builtin_attr.and_then(|a| QName::from_string(&a.as_str())) {
-            self.names.import_builtin_module(builtin.clone().module_qname());
+            // self.names.import_builtin_module(builtin.clone().module_qname());
 
             if let Purity::Program = self.pure {
                 return Some(mk_binders(
@@ -363,24 +357,19 @@ impl<'tcx> Lower<'_, 'tcx> {
     }
 }
 
-use creusot_rustc::{
-    hir::def_id::DefId,
-    middle::ty::{subst::SubstsRef, TyCtxt},
-};
-
-pub(crate) fn lower_literal<'tcx>(
+pub(crate) fn lower_literal<'tcx, C: Cloner<'tcx>>(
     _ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut C,
     lit: Literal<'tcx>,
 ) -> Exp {
     match lit {
         Literal::Integer(i) => Constant::Int(i, None).into(),
         Literal::MachSigned(u, intty) => {
-            let why_ty = intty_to_ty(names, &intty);
+            let why_ty = intty_to_ty(&intty);
             Constant::Int(u, Some(why_ty)).into()
         }
         Literal::MachUnsigned(u, uty) => {
-            let why_ty = uintty_to_ty(names, &uty);
+            let why_ty = uintty_to_ty(&uty);
 
             Constant::Uint(u, Some(why_ty)).into()
         }
@@ -391,10 +380,7 @@ pub(crate) fn lower_literal<'tcx>(
                 Constant::const_false().into()
             }
         }
-        Literal::Function(id, subst) => {
-            names.insert(id, subst);
-            Exp::Tuple(Vec::new())
-        }
+        Literal::Function(id, subst) => Exp::Tuple(Vec::new()),
         Literal::Float(f) => Constant::Float(f).into(),
         Literal::ZST => Exp::Tuple(Vec::new()),
         Literal::String(string) => Constant::String(string).into(),

@@ -2,7 +2,7 @@ use super::{
     pearlite::{normalize, pearlite_stub, Term, TermKind},
     LocalIdent,
 };
-use crate::{ctx::*, util};
+use crate::{backend::Cloner, ctx::*, util};
 use creusot_rustc::{
     ast::ast::{AttrArgs, AttrArgsEq},
     hir::def_id::DefId,
@@ -46,10 +46,10 @@ impl<'tcx> PreContract<'tcx> {
         self
     }
 
-    pub(crate) fn to_exp(
+    pub(crate) fn to_exp<C: Cloner<'tcx>>(
         self,
         ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut C,
     ) -> Contract {
         let mut out = Contract::new();
         for term in self.requires {
