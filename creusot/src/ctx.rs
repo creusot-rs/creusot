@@ -13,8 +13,7 @@ use crate::{
         interface::interface_for,
         pearlite::{self, Term},
         specification::ContractClauses,
-        ty,
-        ty::translate_tydecl,
+        ty::{self, translate_tydecl, ty_binding_group},
     },
     util,
     util::item_type,
@@ -42,7 +41,8 @@ pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
     translated_items: IndexSet<DefId>,
     in_translation: Vec<IndexSet<DefId>>,
-    ty_binding_groups: HashMap<DefId, DefId>, // maps type ids to their 'representative type'
+    ty_binding_groups: HashMap<DefId, IndexSet<DefId>>,
+    repr_elem: HashMap<DefId, DefId>,
     functions: IndexMap<DefId, TranslatedItem>,
     dependencies: IndexMap<DefId, CloneSummary<'tcx>>,
     laws: IndexMap<DefId, Vec<DefId>>,
@@ -82,6 +82,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
             fmir_body: Default::default(),
+            repr_elem: Default::default(),
         }
     }
 
@@ -137,7 +138,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 // self.functions.insert(def_id, constant);
             }
             ItemType::Type => {
-                translate_tydecl(self, def_id);
+                // translate_tydecl(self, def_id);
             }
             ItemType::Unsupported(dk) => self.crash_and_error(
                 self.tcx.def_span(def_id),
@@ -247,7 +248,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.translate(adt_did);
 
         let accessor = ty::translate_accessor(self, adt_did, variant_did, field_id);
-        let repr_id = self.ty_binding_groups[&adt_did];
+        let repr_id = self.repr_elem[&adt_did];
         if let TranslatedItem::Type { ref mut accessors, .. } = &mut self.functions[&repr_id] {
             accessors.entry(variant_did).or_default().insert(field_id, accessor);
         }
@@ -313,13 +314,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         )
     }
 
-    pub(crate) fn add_binding_group(&mut self, def_ids: &IndexSet<DefId>) {
-        let repr = *def_ids.first().unwrap();
-        for i in def_ids {
-            self.ty_binding_groups.insert(*i, repr);
-        }
-    }
-
     pub(crate) fn add_type(&mut self, def_id: DefId, modl: Module) {
         let repr = self.representative_type(def_id);
         self.functions.insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
@@ -332,14 +326,14 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
-        let def_id = self.ty_binding_groups.get(&def_id).unwrap_or(&def_id);
+        let def_id = self.repr_elem.get(&def_id).unwrap_or(&def_id);
         self.functions.get(def_id)
     }
 
     // Get the id of the type which represents a binding groups
     // Panics a type hasn't yet been translated
     pub(crate) fn representative_type(&self, def_id: DefId) -> DefId {
-        *self.ty_binding_groups.get(&def_id).unwrap_or_else(|| panic!("no key for {:?}", def_id))
+        *self.repr_elem.get(&def_id).unwrap_or_else(|| panic!("no key for {:?}", def_id))
     }
 
     pub(crate) fn laws(&mut self, trait_or_impl: DefId) -> &[DefId] {
@@ -465,6 +459,21 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         } else {
             Exp::Attr(self.span_attr(span).unwrap(), box exp)
         }
+    }
+
+    pub(crate) fn binding_group(&mut self, did: DefId) -> &IndexSet<DefId> {
+        if !self.repr_elem.contains_key(&did) {
+            let bg = ty_binding_group(self.tcx, did);
+            let repr = bg.first().unwrap();
+
+            bg.iter().for_each(|did| {
+                self.repr_elem.insert(*did, *repr);
+            });
+
+            self.ty_binding_groups.insert(*repr, bg);
+        }
+
+        &self.ty_binding_groups[&self.repr_elem[&did]]
     }
 }
 

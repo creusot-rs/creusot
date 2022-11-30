@@ -27,7 +27,10 @@ use crate::{
     util::{self, constructor_qname, get_builtin, item_name, item_qname},
 };
 
-use super::{clone_map2::Names, Cloner};
+use super::{
+    clone_map2::{self, Names},
+    Cloner,
+};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 enum TyTranslation {
@@ -145,6 +148,123 @@ fn translate_ty_inner<'tcx, C: Cloner<'tcx>>(
         // Foreign(_) => todo!(),
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
+}
+
+pub(crate) fn translate_tydecl<'tcx, C: Cloner<'tcx>>(
+    ctx: &mut TranslationCtx<'tcx>,
+    names: &mut C,
+    did: DefId,
+) -> Option<Module> {
+    let span = ctx.def_span(did);
+
+    if let Some(_) = get_builtin(ctx.tcx, did) {
+        return None;
+    }
+
+    let bg = ctx.binding_group(did).clone();
+
+    let repr = *bg.first().unwrap();
+
+    let name = module_name(ctx, did);
+
+    // Trusted types (opaque)
+    if util::is_trusted(ctx.tcx, did) {
+        if bg.len() > 1 {
+            ctx.crash_and_error(span, "cannot mark mutually recursive types as trusted");
+        }
+        let ty_name = translate_ty_name(ctx, did).name;
+
+        let ty_params: Vec<_> = ty_param_names(ctx.tcx, did).collect();
+        let modl = Module {
+            name,
+            decls: vec![Decl::TyDecl(TyDecl::Opaque {
+                ty_name: ty_name.clone(),
+                ty_params: ty_params.clone(),
+            })],
+        };
+
+        return Some(modl);
+    }
+
+    let mut tys = Vec::new();
+    for did in bg.iter() {
+        tys.push(build_ty_decl(ctx, names, *did));
+    }
+
+    let mut decls = names.to_clones(ctx, clone_map2::CloneLevel::Body);
+    decls.push(Decl::TyDecl(TyDecl::Adt { tys: tys.clone() }));
+    let modl = Module { name, decls };
+    Some(modl)
+}
+
+fn build_ty_decl<'tcx, C: Cloner<'tcx>>(
+    ctx: &mut TranslationCtx<'tcx>,
+    names: &mut C,
+    did: DefId,
+) -> AdtDecl {
+    let adt = ctx.tcx.adt_def(did);
+
+    // HACK(xavier): Clean up
+    let ty_name = translate_ty_name(ctx, did).name;
+
+    // Collect type variables of declaration
+    let ty_args: Vec<_> = ty_param_names(ctx.tcx, did).collect();
+
+    let kind = {
+        let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
+        let mut ml_ty_def = Vec::new();
+
+        for var_def in adt.variants().iter() {
+            let field_tys: Vec<_> = var_def
+                .fields
+                .iter()
+                .map(|f| {
+                    let (ty, ghost) = field_ty(ctx, names, f, substs);
+                    Field { ty, ghost }
+                })
+                .collect();
+            let var_name = constructor_qname(ctx, var_def).name;
+
+            ml_ty_def.push(ConstructorDecl { name: var_name, fields: field_tys });
+        }
+
+        AdtDecl { ty_name, ty_params: ty_args, constrs: ml_ty_def }
+    };
+
+    kind
+}
+
+fn field_ty<'tcx, C: Cloner<'tcx>>(
+    ctx: &mut TranslationCtx<'tcx>,
+    names: &mut C,
+    field: &FieldDef,
+    substs: SubstsRef<'tcx>,
+) -> (MlT, bool) {
+    (
+        translate_ty_inner(
+            TyTranslation::Declaration,
+            ctx,
+            names,
+            ctx.def_span(field.did),
+            field.ty(ctx.tcx, substs),
+        ),
+        false,
+    )
+}
+
+fn ty_param_names(tcx: TyCtxt<'_>, def_id: DefId) -> impl Iterator<Item = Ident> + '_ {
+    let gens = tcx.generics_of(def_id);
+    gens.params
+        .iter()
+        .filter_map(|param| match param.kind {
+            ty::GenericParamDefKind::Type { .. } => Some(translate_ty_param(param.name)),
+            _ => None,
+        })
+        .map(Ident::from)
+}
+
+fn translate_ty_name(ctx: &TranslationCtx<'_>, did: DefId) -> QName {
+    item_qname(ctx, did, Namespace::TypeNS)
 }
 
 pub(crate) fn translate_projection_ty<'tcx, C: Cloner<'tcx>>(

@@ -248,7 +248,7 @@ pub(crate) fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
     let bg = ty_binding_group(ctx.tcx, did);
 
     ctx.start_group(bg.clone());
-    ctx.add_binding_group(&bg);
+    // ctx.add_binding_group(&bg);
 
     if let Some(_) = get_builtin(ctx.tcx, did) {
         for did in bg {

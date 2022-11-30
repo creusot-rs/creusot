@@ -437,11 +437,11 @@ impl<'tcx> Names<'tcx> {
 pub(crate) fn name_clones<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     graph: &MonoGraph<'tcx>,
-    def_id: DefId,
+    root: Dependency<'tcx>,
 ) -> Names<'tcx> {
     let mut names = IndexMap::new();
     let mut assigned = IndexMap::new();
-    let mut walk = DfsPostOrder::new(&graph.graph, graph.roots[&def_id]);
+    let mut walk = DfsPostOrder::new(&graph.graph, root);
 
     for node in walk.iter(&graph.graph) {
         let Dependency::Item(def_id, subst) = node else { continue };
@@ -552,7 +552,7 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
             let Dependency::Item(def_id, subst) = node else { continue };
 
             if !clones.contains_key(&def_id) {
-                clones.insert(def_id, name_clones(ctx, graph, def_id));
+                clones.insert(def_id, name_clones(ctx, graph, node));
             }
         }
 

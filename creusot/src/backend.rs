@@ -19,6 +19,7 @@ use self::{
     clone_map2::{CloneLevel, Namer, Names, PriorClones},
     logic::translate_logic_or_predicate,
     program::to_why,
+    ty::translate_tydecl,
 };
 
 pub(crate) mod clone_map2;
@@ -42,12 +43,14 @@ pub(crate) fn to_why3<'tcx>(
             vec![Module { name, decls }]
         }
         ItemType::Closure => todo!(),
-        ItemType::Trait => todo!(),
+        ItemType::Trait => Vec::new(),
         ItemType::Impl => todo!(),
-        ItemType::Type => todo!(),
+        ItemType::Type => {
+            translate_tydecl(ctx, &mut priors.get(def_id), def_id).into_iter().collect()
+        }
         ItemType::AssocTy => todo!(),
         ItemType::Constant => todo!(),
-        ItemType::Unsupported(_) => todo!(),
+        ItemType::Unsupported(_) => panic!("unsupported declaration"),
     }
 }
 
