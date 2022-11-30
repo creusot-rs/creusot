@@ -54,52 +54,52 @@ pub(crate) fn promoted_signature<'tcx>(
 // instead of cfgs
 //
 // We use a custom translation because if we use `any` inside a `constant` / `function` its body is marked as opaque, and `mlcfg` heavily uses `any`.
-pub(crate) fn translate_promoted<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    _: ParamEnv<'tcx>,
-    (promoted, body): (Promoted, &Body<'tcx>),
-    parent: DefId,
-) -> CreusotResult<Decl> {
-    let mut previous_block = None;
-    let mut exp = Exp::impure_var("_0".into());
+// pub(crate) fn translate_promoted<'tcx>(
+//     ctx: &mut TranslationCtx<'tcx>,
+//     names: &mut CloneMap<'tcx>,
+//     _: ParamEnv<'tcx>,
+//     (promoted, body): (Promoted, &Body<'tcx>),
+//     parent: DefId,
+// ) -> CreusotResult<Decl> {
+//     let mut previous_block = None;
+//     let mut exp = Exp::impure_var("_0".into());
 
-    let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, parent);
-    let fmir = func_translator.translate();
+//     let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, parent);
+//     let fmir = func_translator.translate();
 
-    for (id, bbd) in fmir.blocks.into_iter().rev() {
-        // Safety check
-        match bbd.terminator {
-            fmir::Terminator::Goto(prev) => {
-                assert!(previous_block == Some(prev))
-            }
-            fmir::Terminator::Return => {
-                assert!(previous_block == None);
-            }
-            _ => {}
-        };
+//     for (id, bbd) in fmir.blocks.into_iter().rev() {
+//         // Safety check
+//         match bbd.terminator {
+//             fmir::Terminator::Goto(prev) => {
+//                 assert!(previous_block == Some(prev))
+//             }
+//             fmir::Terminator::Return => {
+//                 assert!(previous_block == None);
+//             }
+//             _ => {}
+//         };
 
-        previous_block = Some(id);
+//         previous_block = Some(id);
 
-        let exps: Vec<_> =
-            bbd.stmts.into_iter().map(|s| s.to_why(ctx, names, body)).flatten().collect();
-        exp = exps.into_iter().rfold(exp, |acc, asgn| match asgn {
-            why3::mlcfg::Statement::Assign { lhs, rhs } => {
-                Exp::Let { pattern: Pattern::VarP(lhs), arg: box rhs, body: box acc }
-            }
-            why3::mlcfg::Statement::Assume(_) => acc,
-            why3::mlcfg::Statement::Invariant(_, _) => todo!(),
-            why3::mlcfg::Statement::Assert(_) => {
-                ctx.crash_and_error(ctx.def_span(parent), "unsupported promoted constant")
-            }
-        });
-    }
-    let sig = promoted_signature(ctx, names, (promoted, body));
-    Ok(Decl::Let(LetDecl {
-        sig,
-        rec: false,
-        kind: Some(LetKind::Constant),
-        body: exp,
-        ghost: false,
-    }))
-}
+//         let exps: Vec<_> =
+//             bbd.stmts.into_iter().map(|s| s.to_why(ctx, names, body)).flatten().collect();
+//         exp = exps.into_iter().rfold(exp, |acc, asgn| match asgn {
+//             why3::mlcfg::Statement::Assign { lhs, rhs } => {
+//                 Exp::Let { pattern: Pattern::VarP(lhs), arg: box rhs, body: box acc }
+//             }
+//             why3::mlcfg::Statement::Assume(_) => acc,
+//             why3::mlcfg::Statement::Invariant(_, _) => todo!(),
+//             why3::mlcfg::Statement::Assert(_) => {
+//                 ctx.crash_and_error(ctx.def_span(parent), "unsupported promoted constant")
+//             }
+//         });
+//     }
+//     let sig = promoted_signature(ctx, names, (promoted, body));
+//     Ok(Decl::Let(LetDecl {
+//         sig,
+//         rec: false,
+//         kind: Some(LetKind::Constant),
+//         body: exp,
+//         ghost: false,
+//     }))
+// }

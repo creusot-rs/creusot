@@ -18,9 +18,10 @@ use rustc_middle::{
     middle::dependency_format::Dependencies,
     ty::{
         subst::{GenericArgKind, InternalSubsts},
-        DefIdTree, Ty, TyCtxt, TyKind, TypeVisitor,
+        DefIdTree, FloatTy, Ty, TyCtxt, TyKind, TypeVisitor, UintTy,
     },
 };
+use rustc_type_ir::IntTy;
 use util::ItemType;
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
@@ -116,23 +117,23 @@ struct TermDep<F> {
 
 // Dumb wrapper trait for syntax
 trait VisitDeps<'tcx> {
-    fn deps<F: FnMut(DefId, SubstsRef<'tcx>)>(&self, f: &mut F);
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F);
 }
 
 impl<'tcx> VisitDeps<'tcx> for Term<'tcx> {
-    fn deps<F: FnMut(DefId, SubstsRef<'tcx>)>(&self, f: &mut F) {
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F) {
         TermDep { f }.visit_term(self)
     }
 }
 
 impl<'tcx> VisitDeps<'tcx> for Ty<'tcx> {
-    fn deps<F: FnMut(DefId, SubstsRef<'tcx>)>(&self, f: &mut F) {
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F) {
         TermDep { f }.visit_ty(*self);
     }
 }
 
 impl<'tcx> VisitDeps<'tcx> for PreSignature<'tcx> {
-    fn deps<F: FnMut(DefId, SubstsRef<'tcx>)>(&self, f: &mut F) {
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F) {
         self.contract.terms().for_each(|t| {
             t.deps(f);
         });
@@ -142,7 +143,7 @@ impl<'tcx> VisitDeps<'tcx> for PreSignature<'tcx> {
 }
 
 impl<'tcx> VisitDeps<'tcx> for Expr<'tcx> {
-    fn deps<F: FnMut(DefId, SubstsRef<'tcx>)>(&self, f: &mut F) {
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F) {
         match self {
             Expr::Place(_) => {}
             Expr::Move(_) => {}
@@ -153,11 +154,11 @@ impl<'tcx> VisitDeps<'tcx> for Expr<'tcx> {
             }
             Expr::UnaryOp(_, e) => e.deps(f),
             Expr::Constructor(id, sub, args) => {
-                (f)(*id, sub);
+                (f)(Dependency::Item(*id, sub));
                 args.iter().for_each(|a| a.deps(f))
             }
             Expr::Call(id, sub, args) => {
-                (f)(*id, sub);
+                (f)(Dependency::Item(*id, sub));
                 args.iter().for_each(|a| a.deps(f))
             }
             Expr::Constant(_) => {}
@@ -170,7 +171,7 @@ impl<'tcx> VisitDeps<'tcx> for Expr<'tcx> {
 }
 
 impl<'tcx> VisitDeps<'tcx> for RValue<'tcx> {
-    fn deps<F: FnMut(DefId, SubstsRef<'tcx>)>(&self, f: &mut F) {
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F) {
         match self {
             RValue::Ghost(t) => t.deps(f),
             RValue::Borrow(_) => {}
@@ -180,10 +181,10 @@ impl<'tcx> VisitDeps<'tcx> for RValue<'tcx> {
 }
 
 impl<'tcx> VisitDeps<'tcx> for Statement<'tcx> {
-    fn deps<F: FnMut(DefId, SubstsRef<'tcx>)>(&self, f: &mut F) {
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F) {
         match self {
             Statement::Assignment(_, r) => r.deps(f),
-            Statement::Resolve(id, sub, _) => (f)(*id, sub),
+            Statement::Resolve(id, sub, _) => (f)(Dependency::Item(*id, sub)),
             Statement::Assertion(t) => t.deps(f),
             Statement::Invariant(_, t) => t.deps(f),
         }
@@ -191,7 +192,7 @@ impl<'tcx> VisitDeps<'tcx> for Statement<'tcx> {
 }
 
 impl<'tcx> VisitDeps<'tcx> for Terminator<'tcx> {
-    fn deps<F: FnMut(DefId, SubstsRef<'tcx>)>(&self, f: &mut F) {
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F) {
         match self {
             Terminator::Switch(e, b) => {
                 e.deps(f);
@@ -203,16 +204,16 @@ impl<'tcx> VisitDeps<'tcx> for Terminator<'tcx> {
 }
 
 impl<'tcx> VisitDeps<'tcx> for Branches<'tcx> {
-    fn deps<F: FnMut(DefId, SubstsRef<'tcx>)>(&self, f: &mut F) {
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F) {
         match self {
-            Branches::Constructor(adt, sub, _, _) => (f)(adt.did(), sub),
+            Branches::Constructor(adt, sub, _, _) => (f)(Dependency::Item(adt.did(), sub)),
             _ => {}
         }
     }
 }
 
 impl<'tcx> VisitDeps<'tcx> for Block<'tcx> {
-    fn deps<F: FnMut(DefId, SubstsRef<'tcx>)>(&self, f: &mut F) {
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F) {
         self.stmts.iter().for_each(|s| s.deps(f));
 
         self.terminator.deps(f)
@@ -220,21 +221,21 @@ impl<'tcx> VisitDeps<'tcx> for Block<'tcx> {
 }
 
 impl<'tcx> VisitDeps<'tcx> for Body<'tcx> {
-    fn deps<F: FnMut(DefId, SubstsRef<'tcx>)>(&self, f: &mut F) {
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F) {
         self.locals.iter().for_each(|(_, _, t)| t.deps(f));
 
         self.blocks.values().for_each(|b| b.deps(f));
     }
 }
 
-impl<'tcx, F: FnMut(DefId, SubstsRef<'tcx>)> TermVisitor<'tcx> for TermDep<F> {
+impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<F> {
     fn visit_term(&mut self, term: &Term<'tcx>) {
         match &term.kind {
-            TermKind::Item(id, subst) => (self.f)(*id, subst),
-            TermKind::Call { id, subst, fun: _, args: _ } => (self.f)(*id, subst),
+            TermKind::Item(id, subst) => (self.f)(Dependency::Item(*id, subst)),
+            TermKind::Call { id, subst, fun: _, args: _ } => (self.f)(Dependency::Item(*id, subst)),
             TermKind::Constructor { adt: _, variant: _, fields: _ } => {
                 if let TyKind::Adt(def, subst) = term.ty.kind() {
-                    (self.f)(def.did(), subst)
+                    (self.f)(Dependency::Item(def.did(), subst))
                 } else {
                     unreachable!()
                 }
@@ -245,11 +246,12 @@ impl<'tcx, F: FnMut(DefId, SubstsRef<'tcx>)> TermVisitor<'tcx> for TermDep<F> {
     }
 }
 
-impl<'tcx, F: FnMut(DefId, SubstsRef<'tcx>)> TypeVisitor<'tcx> for TermDep<F> {
+impl<'tcx, F: FnMut(Dependency<'tcx>)> TypeVisitor<'tcx> for TermDep<F> {
     fn visit_ty(&mut self, t: Ty<'tcx>) -> std::ops::ControlFlow<Self::BreakTy> {
         match t.kind() {
-            TyKind::Adt(def, sub) => (self.f)(def.did(), *sub),
-            TyKind::Projection(pty) => (self.f)(pty.item_def_id, pty.substs),
+            TyKind::Adt(def, sub) => (self.f)(Dependency::Item(def.did(), *sub)),
+            TyKind::Projection(pty) => (self.f)(Dependency::Item(pty.item_def_id, pty.substs)),
+            TyKind::Int(_) | TyKind::Uint(_) => (self.f)(Dependency::BaseTy(t)),
             _ => {}
         };
         std::ops::ControlFlow::Continue(())
@@ -263,10 +265,10 @@ fn term_dependencies<'tcx>(
     let mut deps = Vec::new();
 
     let sig = pre_sig_of(ctx, def_id);
-    sig.deps(&mut |id, subst| deps.push((DepLevel::Signature, Dependency::Item(id, subst))));
+    sig.deps(&mut |dep| deps.push((DepLevel::Signature, dep)));
 
     if let Some(term) = ctx.term(def_id) {
-        term.deps(&mut |id, subst| deps.push((DepLevel::Body, Dependency::Item(id, subst))));
+        term.deps(&mut |dep| deps.push((DepLevel::Body, dep)));
     }
     deps
 }
@@ -278,10 +280,10 @@ fn program_dependencies<'tcx>(
     let mut deps = Vec::new();
 
     let sig = pre_sig_of(ctx, def_id);
-    sig.deps(&mut |id, subst| deps.push((DepLevel::Signature, Dependency::Item(id, subst))));
+    sig.deps(&mut |dep| deps.push((DepLevel::Signature, dep)));
 
     if let Some(body) = ctx.fmir_body(def_id) {
-        body.deps(&mut |id, subst| deps.push((DepLevel::Body, Dependency::Item(id, subst))));
+        body.deps(&mut |dep| deps.push((DepLevel::Body, dep)));
     }
     deps
 }
@@ -593,13 +595,20 @@ pub fn make_clones<'tcx, 'a>(
         if node == root {
             continue;
         }
-        eprintln!("{node:?} {:?}", priors.graph.level);
+
         if priors.graph.level[&node] < desired_dep_level {
             continue;
         };
+
         eprintln!("cloning {node:?} at level {:?}", priors.graph.level[&node]);
 
-        let Dependency::Item(id, subst) = node else {continue };
+        let (id, subst) = match node {
+            Dependency::Item(id, subst) => (id, subst),
+            Dependency::BaseTy(ty) => {
+                uses.push(Decl::UseDecl(Use { name: base_ty_name(ty), as_: None }));
+                continue;
+            }
+        };
 
         if item_type(ctx.tcx, id) == ItemType::Type {
             let name = item_qname(ctx, id, Namespace::TypeNS).module_qname();
@@ -636,6 +645,38 @@ pub fn make_clones<'tcx, 'a>(
 
     uses.into_iter().chain(clones).collect()
 }
+
+fn base_ty_name(ty: Ty) -> QName {
+    match ty.kind() {
+        TyKind::Bool => QName::from_string("prelude.Bool").unwrap(),
+        TyKind::Char => QName::from_string("prelude.Char").unwrap(),
+        TyKind::Int(IntTy::I8) => QName::from_string("prelude.Int8").unwrap(),
+        TyKind::Int(IntTy::I16) => QName::from_string("prelude.Int16").unwrap(),
+        TyKind::Int(IntTy::I32) => QName::from_string("mach.int.Int32").unwrap(),
+        TyKind::Int(IntTy::I64) => QName::from_string("mach.int.Int64").unwrap(),
+        TyKind::Int(IntTy::I128) => QName::from_string("prelude.Int128").unwrap(),
+        TyKind::Uint(UintTy::U8) => QName::from_string("prelude.UInt8").unwrap(),
+        TyKind::Uint(UintTy::U16) => QName::from_string("prelude.UInt16").unwrap(),
+        TyKind::Uint(UintTy::U32) => QName::from_string("mach.int.UInt32").unwrap(),
+        TyKind::Uint(UintTy::U64) => QName::from_string("mach.int.UInt64").unwrap(),
+        TyKind::Uint(UintTy::U128) => QName::from_string("prelude.UInt128").unwrap(),
+        TyKind::Int(IntTy::Isize) => QName::from_string("prelude.IntSize").unwrap(),
+        TyKind::Uint(UintTy::Usize) => QName::from_string("prelude.UIntSize").unwrap(),
+        TyKind::Float(FloatTy::F32) => QName::from_string("ieee_float.Float32").unwrap(),
+        TyKind::Float(FloatTy::F64) => QName::from_string("ieee_float.Float64").unwrap(),
+        TyKind::Str => todo!(),
+        TyKind::Slice(_) => QName::from_string("prelude.Slice").unwrap(),
+        TyKind::RawPtr(_) => todo!(),
+        TyKind::Ref(_, _, _) => QName::from_string("prelude.Borrow").unwrap(),
+        TyKind::Never => todo!(),
+        TyKind::Tuple(_) => todo!(),
+        _ => panic!("base_ty_name: can only be called on basic types. {ty:?}"),
+    }
+}
+// PreludeModule::Int => QName::from_string("mach.int.Int").unwrap(),
+// PreludeModule::Opaque => QName::from_string("prelude.Opaque").unwrap(),
+// PreludeModule::Ref => QName::from_string("Ref").unwrap(),
+// PreludeModule::Seq => QName::from_string("seq.Seq").unwrap(),
 
 pub fn base_subst<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,

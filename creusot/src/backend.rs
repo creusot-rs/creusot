@@ -10,14 +10,15 @@ use crate::{
     clone_map::CloneMap,
     ctx::TranslationCtx,
     util::{
-        self, ident_of, item_name, item_type, pre_sig_of, why3_attrs, AnonymousParamName, ItemType,
-        PreSignature,
+        self, ident_of, item_name, item_type, module_name, pre_sig_of, why3_attrs,
+        AnonymousParamName, ItemType, PreSignature,
     },
 };
 
 use self::{
     clone_map2::{CloneLevel, Namer, Names, PriorClones},
     logic::translate_logic_or_predicate,
+    program::to_why,
 };
 
 pub(crate) mod clone_map2;
@@ -35,7 +36,11 @@ pub(crate) fn to_why3<'tcx>(
         ItemType::Logic | ItemType::Predicate => {
             translate_logic_or_predicate(ctx, priors.get(def_id), def_id)
         }
-        ItemType::Program => todo!(),
+        ItemType::Program => {
+            let decls = to_why(ctx, priors.get(def_id), def_id);
+            let name = module_name(ctx, def_id);
+            vec![Module { name, decls }]
+        }
         ItemType::Closure => todo!(),
         ItemType::Trait => todo!(),
         ItemType::Impl => todo!(),

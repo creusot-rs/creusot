@@ -11,3 +11,7 @@ fn omg() -> bool {
 fn call_function() -> bool {
     omg()
 }
+
+fn omgomg() {
+    1 + 1;
+}

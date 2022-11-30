@@ -34,9 +34,9 @@ pub(crate) fn lower_pure<'tcx, C: Cloner<'tcx>>(
     term
 }
 
-pub(crate) fn lower_impure<'tcx>(
+pub(crate) fn lower_impure<'tcx, C: Cloner<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut C,
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;

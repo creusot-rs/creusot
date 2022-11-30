@@ -3,10 +3,9 @@ use crate::{
     ctx::{item_name, CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
-        fmir::{Block, Branches, Expr, RValue, Statement, Terminator},
-        function::{place, place::translate_rplace_inner},
+        fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
+        function::{closure_generic_decls, place, place::translate_rplace_inner},
         specification::{lower_impure, lower_pure},
-        ty::translate_ty,
         unop_to_unop,
     },
     util::item_qname,
@@ -19,19 +18,80 @@ use creusot_rustc::{
     span::DUMMY_SP,
 };
 
+use creusot_rustc::hir::def_id::DefId;
+use rustc_middle::{mir::Body, ty::WithOptConstParam};
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
+    declaration::{CfgFunction, Decl},
     exp::{Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
     QName,
 };
 
+use super::{
+    clone_map2::{CloneLevel, Namer},
+    signature_of,
+    ty::{self, translate_ty},
+    Cloner,
+};
+
+pub(crate) fn to_why<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    mut names: Namer<'_, 'tcx>,
+    def_id: DefId,
+) -> Vec<Decl> {
+    // let mir = ctx.
+    let (mir, _) = ctx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
+    let mir = mir.borrow().clone();
+
+    let mut decls: Vec<_> = Vec::new();
+    decls.extend(closure_generic_decls(ctx.tcx, def_id));
+    decls.extend(names.to_clones(ctx, CloneLevel::Body));
+    let body = ctx.fmir_body(def_id).unwrap().clone();
+
+    let vars: Vec<_> = body
+        .locals
+        .into_iter()
+        .map(|(id, sp, ty)| (false, id, ty::translate_ty(ctx, &mut names, sp, ty)))
+        .collect();
+
+    let entry = mlcfg::Block {
+        statements: vars
+            .iter()
+            .skip(1)
+            .take(body.arg_count)
+            .map(|(_, id, _)| {
+                let rhs = id.arg_name();
+                mlcfg::Statement::Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
+            })
+            .collect(),
+        terminator: mlcfg::Terminator::Goto(BlockId(0)),
+    };
+
+    let sig = signature_of(ctx, &mut names, def_id);
+
+    let func = Decl::CfgDecl(CfgFunction {
+        sig,
+        rec: true,
+        constant: false,
+        vars: vars.into_iter().map(|i| (i.0, i.1.ident(), i.2)).collect(),
+        entry,
+        blocks: body
+            .blocks
+            .into_iter()
+            .map(|(bb, bbd)| (BlockId(bb.into()), bbd.to_why(ctx, &mut names, &mir)))
+            .collect(),
+    });
+    decls.push(func);
+    decls
+}
+
 impl<'tcx> Expr<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Namer<'_, 'tcx>,
         // TODO: Get rid of this by introducing an intermediate `Place` type
         body: Option<&mir::Body<'tcx>>,
     ) -> Exp {
@@ -52,14 +112,14 @@ impl<'tcx> Expr<'tcx> {
                 box r.to_why(ctx, names, body),
             ),
             Expr::BinOp(BinOp::Eq, ty, l, r) if ty.is_bool() => {
-                names.import_prelude_module(PreludeModule::Bool);
+                // names.import_prelude_module(PreludeModule::Bool);
                 Exp::Call(
                     box Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap()),
                     vec![l.to_why(ctx, names, body), r.to_why(ctx, names, body)],
                 )
             }
             Expr::BinOp(BinOp::Ne, ty, l, r) if ty.is_bool() => {
-                names.import_prelude_module(PreludeModule::Bool);
+                // names.import_prelude_module(PreludeModule::Bool);
                 Exp::Call(
                     box Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap()),
                     vec![l.to_why(ctx, names, body), r.to_why(ctx, names, body)],
@@ -132,7 +192,7 @@ impl<'tcx> Expr<'tcx> {
                     TyKind::Int(ity) => int_to_int(ity),
                     TyKind::Uint(uty) => uint_to_int(uty),
                     TyKind::Bool => {
-                        names.import_prelude_module(PreludeModule::Bool);
+                        // names.import_prelude_module(PreludeModule::Bool);
                         Exp::impure_qvar(QName::from_string("Bool.to_int").unwrap())
                     }
                     _ => ctx
@@ -143,7 +203,7 @@ impl<'tcx> Expr<'tcx> {
                     TyKind::Int(ity) => int_from_int(ity),
                     TyKind::Uint(uty) => uint_from_int(uty),
                     TyKind::Char => {
-                        names.import_prelude_module(PreludeModule::Char);
+                        // names.import_prelude_module(PreludeModule::Char);
                         Exp::impure_qvar(QName::from_string("Char.chr").unwrap())
                     }
                     _ => ctx
@@ -238,7 +298,7 @@ impl<'tcx> Terminator<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Namer<'_, 'tcx>,
         // TODO: Get rid of this by introducing an intermediate `Place` type
         body: Option<&mir::Body<'tcx>>,
     ) -> why3::mlcfg::Terminator {
@@ -259,7 +319,7 @@ impl<'tcx> Branches<'tcx> {
     fn to_why(
         self,
         ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Namer<'_, 'tcx>,
         discr: Exp,
     ) -> mlcfg::Terminator {
         use why3::mlcfg::Terminator::*;
@@ -298,7 +358,7 @@ impl<'tcx> Branches<'tcx> {
             Branches::Constructor(adt, substs, vars, def) => {
                 use crate::util::constructor_qname;
                 let count = adt.variants().len();
-                names.insert(adt.did(), substs);
+                // names.insert(adt.did(), substs);
                 let brs = vars
                     .into_iter()
                     .map(|(var, bb)| {
@@ -327,7 +387,7 @@ impl<'tcx> Block<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Namer<'_, 'tcx>,
         // TODO: Get rid of this by introducing an intermediate `Place` type
         body: &mir::Body<'tcx>,
     ) -> why3::mlcfg::Block {
@@ -342,7 +402,7 @@ impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Namer<'_, 'tcx>,
         // TODO: Get rid of this by introducing an intermediate `Place` type
         body: &mir::Body<'tcx>,
     ) -> Vec<mlcfg::Statement> {

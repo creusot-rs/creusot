@@ -130,11 +130,11 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 self.functions.insert(def_id, TranslatedItem::AssocTy { modl });
             }
             ItemType::Constant => {
-                self.start(def_id);
-                let (constant, dependencies) = self.translate_constant(def_id);
-                self.finish(def_id);
-                self.dependencies.insert(def_id, dependencies);
-                self.functions.insert(def_id, constant);
+                // self.start(def_id);
+                // let (constant, dependencies) = self.translate_constant(def_id);
+                // self.finish(def_id);
+                // self.dependencies.insert(def_id, dependencies);
+                // self.functions.insert(def_id, constant);
             }
             ItemType::Type => {
                 translate_tydecl(self, def_id);

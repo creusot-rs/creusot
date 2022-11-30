@@ -1,6 +1,6 @@
 use super::LocalIdent;
 use crate::{
-    backend::program::uint_to_int,
+    backend::{program::uint_to_int, Cloner},
     ctx::{CloneMap, TranslationCtx},
     translation::ty::{closure_accessor_name, variant_accessor_name},
     util::{constructor_qname, item_qname},
@@ -30,9 +30,9 @@ use why3::{
 
 /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-pub(crate) fn create_assign_inner<'tcx>(
+pub(crate) fn create_assign_inner<'tcx, C: Cloner<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut C,
     body: &Body<'tcx>,
     lhs: &Place<'tcx>,
     rhs: Exp,
@@ -84,7 +84,7 @@ pub(crate) fn create_assign_inner<'tcx>(
 
                     let tyname = constructor_qname(ctx, variant);
 
-                    names.insert(def.did(), subst);
+                    // names.insert(def.did(), subst);
                     inner = Let {
                         pattern: ConsP(tyname.clone(), field_pats),
                         arg: box translate_rplace_inner(ctx, names, body, lhs.local, stump),
@@ -159,9 +159,9 @@ pub(crate) fn create_assign_inner<'tcx>(
 // [(P as Some)]   ---> [_1]
 // [(P as Some).0] ---> let Some(a) = [_1] in a
 // [(* P)] ---> * [P]
-pub(crate) fn translate_rplace_inner<'tcx>(
+pub(crate) fn translate_rplace_inner<'tcx, C: Cloner<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut C,
     body: &Body<'tcx>,
     loc: Local,
     proj: &[creusot_rustc::middle::mir::PlaceElem<'tcx>],

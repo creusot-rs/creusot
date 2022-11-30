@@ -23,7 +23,7 @@ use crate::{
 };
 use creusot_rustc::hir::{def::DefKind, def_id::LOCAL_CRATE};
 use ctx::TranslationCtx;
-pub(crate) use function::{translate_function, LocalIdent};
+pub(crate) use function::LocalIdent;
 use heck::ToUpperCamelCase;
 use rustc_middle::ty::Ty;
 use std::{error::Error, fs::File, io::Write};
