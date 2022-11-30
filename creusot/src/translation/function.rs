@@ -221,9 +221,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let mut clean_body = body.clone();
 
-        tcx.infer_ctxt().enter(|infcx| {
-            renumber::renumber_mir(&infcx, &mut clean_body, &mut Default::default());
-        });
+        let infcx = tcx.infer_ctxt().build();
+        renumber::renumber_mir(&infcx, &mut clean_body, &mut Default::default());
+
         let (_, move_paths) = MoveData::gather_moves(&clean_body, tcx, tcx.param_env(def_id))
             .unwrap_or_else(|_| ctx.crash_and_error(ctx.def_span(def_id), "illegal move"));
         let borrows = BorrowSet::build(tcx, &clean_body, true, &move_paths);

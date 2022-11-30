@@ -8,7 +8,7 @@ use crate::{
 };
 use creusot_rustc::{
     ast::{
-        ast::{MacArgs, MacArgsEq},
+        ast::{AttrArgs, AttrArgsEq},
         AttrItem, AttrKind, Attribute,
     },
     hir::{def::DefKind, def_id::DefId, Unsafety},
@@ -48,7 +48,7 @@ pub(crate) fn is_spec(tcx: TyCtxt, def_id: DefId) -> bool {
 pub(crate) fn invariant_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"]).and_then(|a| {
         match &a.args {
-            MacArgs::Eq(_, MacArgsEq::Hir(l)) => Some(l.token_lit.symbol),
+            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.token_lit.symbol),
             _ => None,
         }
     })
@@ -136,7 +136,7 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
 pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).and_then(|a| {
         match &a.args {
-            MacArgs::Eq(_, MacArgsEq::Hir(l)) => Some(l.token_lit.symbol),
+            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.token_lit.symbol),
             _ => None,
         }
     })
@@ -682,7 +682,7 @@ pub(crate) fn closure_capture_subst<'tcx>(
     ck: ty::ClosureKind,
     self_name: Symbol,
     is_post: bool,
-) -> ClosureSubst {
+) -> ClosureSubst<'tcx> {
     let mut fun_def_id = def_id;
     while tcx.is_closure(fun_def_id) {
         fun_def_id = tcx.parent(fun_def_id);

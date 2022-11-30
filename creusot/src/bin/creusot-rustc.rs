@@ -44,6 +44,7 @@ fn report_panic(info: &PanicInfo) {
         false,
         None,
         false,
+        false,
     );
     let handler = rustc_errors::Handler::with_emitter(true, None, emitter);
 

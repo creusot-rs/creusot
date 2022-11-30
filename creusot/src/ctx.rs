@@ -379,21 +379,18 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             {
                 // Only add predicates which don't already hold
                 use creusot_rustc::infer::infer::TyCtxtInferExt;
-                self.tcx.infer_ctxt().enter(|infcx| {
-                    let mut selcx = SelectionContext::new(&infcx);
-                    let param_env = self.tcx.param_env(def_id);
-                    for pred in es.predicates_for(self.tcx, subst) {
-                        let obligation_cause = ObligationCause::dummy();
-                        let obligation = Obligation::new(obligation_cause, param_env, pred);
-                        if !selcx.predicate_may_hold_fatal(&obligation) {
-                            additional_predicates.push(
-                                self.tcx
-                                    .try_normalize_erasing_regions(base_env, pred)
-                                    .unwrap_or(pred),
-                            )
-                        }
+                let infcx = self.tcx.infer_ctxt().build();
+                let mut selcx = SelectionContext::new(&infcx);
+                let param_env = self.tcx.param_env(def_id);
+                for pred in es.predicates_for(self.tcx, subst) {
+                    let obligation_cause = ObligationCause::dummy();
+                    let obligation = Obligation::new(self.tcx, obligation_cause, param_env, pred);
+                    if !selcx.predicate_may_hold_fatal(&obligation) {
+                        additional_predicates.push(
+                            self.tcx.try_normalize_erasing_regions(base_env, pred).unwrap_or(pred),
+                        )
                     }
-                });
+                }
             }
 
             additional_predicates.extend(base_env.caller_bounds());

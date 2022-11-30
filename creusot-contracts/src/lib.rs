@@ -5,7 +5,7 @@
     feature(slice_take)
 )]
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns, box_syntax))]
-#![feature(step_trait, allocator_api, unboxed_closures)]
+#![feature(step_trait, allocator_api, unboxed_closures, tuple_trait)]
 #![cfg_attr(not(feature = "contracts"), feature(rustc_attrs))]
 
 extern crate self as creusot_contracts;
