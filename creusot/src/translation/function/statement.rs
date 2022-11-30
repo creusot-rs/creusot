@@ -167,7 +167,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             }
             Rvalue::Len(pl) => Expr::Len(box Expr::Place(*pl)),
-            Rvalue::Cast(CastKind::Misc, op, ty) => {
+            Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, ty) => {
                 let op_ty = op.ty(self.body, self.tcx);
                 Expr::Cast(box self.translate_operand(op), op_ty, *ty)
             }
@@ -175,7 +175,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 CastKind::Pointer(_)
                 | CastKind::PointerExposeAddress
                 | CastKind::PointerFromExposedAddress
-                | CastKind::DynStar,
+                | CastKind::DynStar
+                | CastKind::IntToFloat
+                | CastKind::FloatToInt
+                | CastKind::FnPtrToPtr
+                | CastKind::FloatToFloat,
                 _,
                 _,
             ) => self.ctx.crash_and_error(si.span, "Pointer casts are currently unsupported"),

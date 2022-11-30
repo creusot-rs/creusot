@@ -1,27 +1,26 @@
-use std::collections::HashMap;
-
+use crate::{
+    ctx::*,
+    rustc_extensions,
+    translation::{
+        function::terminator::evaluate_additional_predicates,
+        ty::{self, translate_ty},
+    },
+    util,
+    util::{ident_of, inputs_and_output, is_law, is_spec, item_type},
+};
 use creusot_rustc::{
     hir::def_id::DefId,
+    infer::infer::TyCtxtInferExt,
     middle::ty::{
         subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, TraitRef, TyCtxt,
     },
     resolve::Namespace,
     trait_selection::traits::ImplSource,
 };
-
+use std::collections::HashMap;
 use why3::{
     declaration::{Decl, Goal, Module, TyDecl},
     exp::Exp,
-};
-
-use crate::{
-    rustc_extensions, translation::function::terminator::evaluate_additional_predicates, util,
-};
-
-use crate::{
-    ctx::*,
-    translation::ty::{self, translate_ty},
-    util::{ident_of, inputs_and_output, is_law, is_spec, item_type},
 };
 
 impl<'tcx> TranslationCtx<'tcx> {
@@ -83,23 +82,20 @@ impl<'tcx> TranslationCtx<'tcx> {
                 .map(|p| p.predicates_for(self.tcx, refn_subst))
                 .unwrap_or_else(Vec::new);
 
-            use creusot_rustc::{
-                infer::infer::TyCtxtInferExt,
-                trait_selection::traits::error_reporting::InferCtxtExt,
-            };
-            self.tcx.infer_ctxt().enter(|infcx| {
-                let res = evaluate_additional_predicates(
-                    &infcx,
-                    predicates,
-                    self.param_env(impl_item),
-                    self.def_span(impl_item),
-                );
-                if let Err(errs) = res {
-                    let body_id = self.tcx.hir().body_owned_by(impl_item.expect_local());
-                    infcx.report_fulfillment_errors(&errs, Some(body_id), false);
-                    self.crash_and_error(creusot_rustc::span::DUMMY_SP, "error above");
-                }
-            });
+            let infcx = self.tcx.infer_ctxt().build();
+
+            let res = evaluate_additional_predicates(
+                &infcx,
+                predicates,
+                self.param_env(impl_item),
+                self.def_span(impl_item),
+            );
+            use creusot_rustc::trait_selection::traits::error_reporting::TypeErrCtxtExt;
+            if let Err(errs) = res {
+                let body_id = self.tcx.hir().body_owned_by(impl_item.expect_local());
+                infcx.err_ctxt().report_fulfillment_errors(&errs, Some(body_id));
+                self.crash_and_error(creusot_rustc::span::DUMMY_SP, "error above");
+            }
 
             let refinement = names.insert(trait_item, refn_subst);
 
@@ -337,24 +333,24 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
                 .unwrap_or_else(|| {
                     panic!("{:?} not found in {:?}", assoc, impl_data.impl_def_id);
                 });
-            use creusot_rustc::trait_selection::infer::TyCtxtInferExt;
 
             if !leaf_def.is_final() && trait_ref.still_further_specializable() {
                 return Some((def_id, substs));
             }
+
             // Translate the original substitution into one on the selected impl method
-            let leaf_substs = tcx.infer_ctxt().enter(|infcx| {
-                let param_env = param_env.with_reveal_all_normalized(tcx);
-                let substs = substs.rebase_onto(tcx, trait_def_id, impl_data.substs);
-                let substs = creusot_rustc::trait_selection::traits::translate_substs(
-                    &infcx,
-                    param_env,
-                    impl_data.impl_def_id,
-                    substs,
-                    leaf_def.defining_node,
-                );
-                infcx.tcx.erase_regions(substs)
-            });
+            let infcx = tcx.infer_ctxt().build();
+
+            let param_env = param_env.with_reveal_all_normalized(tcx);
+            let substs = substs.rebase_onto(tcx, trait_def_id, impl_data.substs);
+            let substs = creusot_rustc::trait_selection::traits::translate_substs(
+                &infcx,
+                param_env,
+                impl_data.impl_def_id,
+                substs,
+                leaf_def.defining_node,
+            );
+            let leaf_substs = infcx.tcx.erase_regions(substs);
 
             Some((leaf_def.item.def_id, leaf_substs))
         }

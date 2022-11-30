@@ -1,10 +1,11 @@
 use crate::{invariant::Invariant, *};
+use ::std::marker::Tuple;
 pub use ::std::ops::*;
 
 /// `FnOnceExt` is an extension trait for the `FnOnce` trait, used for
 /// adding a specification to closures. It should not be used directly.
 #[rustc_diagnostic_item = "fn_once_spec"]
-pub trait FnOnceExt<Args>: FnOnce<Args> {
+pub trait FnOnceExt<Args: Tuple>: FnOnce<Args> {
     #[predicate]
     fn precondition(self, a: Args) -> bool;
 
@@ -15,7 +16,7 @@ pub trait FnOnceExt<Args>: FnOnce<Args> {
 /// `FnMutExt` is an extension trait for the `FnMut` trait, used for
 /// adding a specification to closures. It should not be used directly.
 #[rustc_diagnostic_item = "fn_mut_spec"]
-pub trait FnMutExt<Args>: FnMut<Args> + FnOnceExt<Args> {
+pub trait FnMutExt<Args: Tuple>: FnMut<Args> + FnOnceExt<Args> {
     #[predicate]
     fn postcondition_mut(&mut self, _: Args, _: Self::Output) -> bool;
 
@@ -47,7 +48,7 @@ pub trait FnMutExt<Args>: FnMut<Args> + FnOnceExt<Args> {
 /// `FnExt` is an extension trait for the `Fn` trait, used for
 /// adding a specification to closures. It should not be used directly.
 #[rustc_diagnostic_item = "fn_spec"]
-pub trait FnExt<Args>: Fn<Args> + FnMutExt<Args> {
+pub trait FnExt<Args: Tuple>: Fn<Args> + FnMutExt<Args> {
     #[predicate]
     fn postcondition(&self, _: Args, _: Self::Output) -> bool;
 
@@ -62,7 +63,7 @@ pub trait FnExt<Args>: Fn<Args> + FnMutExt<Args> {
         Self: Sized;
 }
 
-impl<Args, F: FnOnce<Args>> FnOnceExt<Args> for F {
+impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
     #[predicate]
     #[trusted]
     #[rustc_diagnostic_item = "fn_once_impl_precond"]
@@ -78,7 +79,7 @@ impl<Args, F: FnOnce<Args>> FnOnceExt<Args> for F {
     }
 }
 
-impl<Args, F: FnMut<Args>> FnMutExt<Args> for F {
+impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     #[predicate]
     #[trusted]
     #[rustc_diagnostic_item = "fn_mut_impl_postcond"]
@@ -114,7 +115,7 @@ impl<Args, F: FnMut<Args>> FnMutExt<Args> for F {
     fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 
-impl<Args, F: Fn<Args>> FnExt<Args> for F {
+impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
     #[predicate]
     #[trusted]
     #[rustc_diagnostic_item = "fn_impl_postcond"]
@@ -138,19 +139,19 @@ extern_spec! {
         mod ops {
             // FIXME: we should not need the `Self :` bounds, because they are implied by the main trait bound.
             // But if we remove them, some test fail.
-            trait FnOnce<Args> where Self : FnOnceExt<Args> {
+            trait FnOnce<Args> where Self : FnOnceExt<Args>, Args : Tuple {
                 #[requires(self.precondition(arg))]
                 #[ensures(self.postcondition_once(arg, result))]
                 fn call_once(self, arg: Args) -> Self::Output;
             }
 
-            trait FnMut<Args> where Self : FnMutExt<Args> {
+            trait FnMut<Args> where Self : FnMutExt<Args>, Args : Tuple {
                 #[requires((*self).precondition(arg))]
                 #[ensures(self.postcondition_mut(arg, result))]
                 fn call_mut(&mut self, arg: Args) -> Self::Output;
             }
 
-            trait Fn<Args> where Self : FnExt<Args> {
+            trait Fn<Args> where Self : FnExt<Args>, Args : Tuple {
                 #[requires((*self).precondition(arg))]
                 #[ensures(self.postcondition(arg, result))]
                 fn call(&self, arg: Args) -> Self::Output;

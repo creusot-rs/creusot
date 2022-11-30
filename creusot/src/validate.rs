@@ -14,10 +14,10 @@ pub(crate) fn validate_traits(ctx: &mut TranslationCtx) {
     for trait_item_id in ctx.hir_crate_items(()).trait_items() {
         let trait_item = ctx.hir().trait_item(trait_item_id);
 
-        if is_law(ctx.tcx, trait_item.def_id.to_def_id())
-            && !ctx.generics_of(trait_item.def_id).params.is_empty()
+        if is_law(ctx.tcx, trait_item.owner_id.def_id.to_def_id())
+            && !ctx.generics_of(trait_item.owner_id.def_id).params.is_empty()
         {
-            law_violations.push((trait_item.def_id, trait_item.span))
+            law_violations.push((trait_item.owner_id.def_id, trait_item.span))
         }
     }
 

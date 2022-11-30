@@ -11,7 +11,7 @@ use creusot_rustc::{
 /// Replaces all free regions appearing in the MIR with fresh
 /// inference variables, returning the number of variables created.
 pub(crate) fn renumber_mir<'tcx>(
-    infcx: &InferCtxt<'_, 'tcx>,
+    infcx: &InferCtxt<'tcx>,
     body: &mut Body<'tcx>,
     promoted: &mut IndexVec<Promoted, Body<'tcx>>,
 ) {
@@ -26,7 +26,7 @@ pub(crate) fn renumber_mir<'tcx>(
 
 /// Replaces all regions appearing in `value` with fresh inference
 /// variables.
-pub(crate) fn renumber_regions<'tcx, T>(infcx: &InferCtxt<'_, 'tcx>, value: T) -> T
+pub(crate) fn renumber_regions<'tcx, T>(infcx: &InferCtxt<'tcx>, value: T) -> T
 where
     T: TypeFoldable<'tcx>,
 {
@@ -37,7 +37,7 @@ where
 }
 
 struct NllVisitor<'a, 'tcx> {
-    infcx: &'a InferCtxt<'a, 'tcx>,
+    infcx: &'a InferCtxt<'tcx>,
 }
 
 impl<'a, 'tcx> NllVisitor<'a, 'tcx> {

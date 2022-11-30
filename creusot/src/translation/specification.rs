@@ -4,6 +4,7 @@ use super::{
 };
 use crate::{ctx::*, util};
 use creusot_rustc::{
+    ast::ast::{AttrArgs, AttrArgsEq},
     hir::def_id::DefId,
     macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
     middle::{
@@ -239,13 +240,12 @@ pub(crate) fn contract_clauses_of(
         }
 
         let attr = attr.get_normal_item();
-        use creusot_rustc::ast::ast::{MacArgs, MacArgsEq};
 
         // Stop using diagnostic item.
         // Use a custom HIR visitor which walks the attributes
         let get_creusot_item = || {
             let predicate_name = match &attr.args {
-                MacArgs::Eq(_, MacArgsEq::Hir(l)) => l.token_lit.symbol,
+                AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => l.token_lit.symbol,
                 _ => return Err(InvalidTokens { id: def_id }),
             };
             ctx.creusot_item(predicate_name).ok_or(InvalidTerm { id: def_id })

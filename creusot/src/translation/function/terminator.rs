@@ -26,7 +26,7 @@ use creusot_rustc::{
         BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo, StatementKind,
     },
     span::Span,
-    trait_selection::traits::FulfillmentContext,
+    trait_selection::traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt},
 };
 use itertools::Itertools;
 use std::collections::HashMap;
@@ -91,15 +91,13 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     .map(|p| p.predicates_for(self.tcx, subst))
                     .unwrap_or_else(Vec::new);
 
-                use creusot_rustc::trait_selection::traits::error_reporting::InferCtxtExt;
-                self.tcx.infer_ctxt().enter(|infcx| {
-                    let res =
-                        evaluate_additional_predicates(&infcx, predicates, self.param_env(), span);
-                    if let Err(errs) = res {
-                        let body_id = self.tcx.hir().body_owned_by(self.def_id.expect_local());
-                        infcx.report_fulfillment_errors(&errs, Some(body_id), false);
-                    }
-                });
+                let infcx = self.tcx.infer_ctxt().build();
+                let res =
+                    evaluate_additional_predicates(&infcx, predicates, self.param_env(), span);
+                if let Err(errs) = res {
+                    let body_id = self.tcx.hir().body_owned_by(self.def_id.expect_local());
+                    infcx.err_ctxt().report_fulfillment_errors(&errs, Some(body_id));
+                }
 
                 let mut func_args: Vec<_> =
                     args.iter().map(|arg| self.translate_operand(arg)).collect();
@@ -233,12 +231,12 @@ fn func_defid<'tcx>(op: &Operand<'tcx>) -> Option<(DefId, SubstsRef<'tcx>)> {
 }
 
 pub(crate) fn evaluate_additional_predicates<'tcx>(
-    infcx: &InferCtxt<'_, 'tcx>,
+    infcx: &InferCtxt<'tcx>,
     p: Vec<Predicate<'tcx>>,
     param_env: ParamEnv<'tcx>,
     sp: Span,
 ) -> Result<(), Vec<FulfillmentError<'tcx>>> {
-    let mut fulfill_cx = FulfillmentContext::new();
+    let mut fulfill_cx = <dyn TraitEngine<'tcx>>::new(infcx.tcx);
     for predicate in p {
         let cause = ObligationCause::dummy_with_span(sp);
         let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };

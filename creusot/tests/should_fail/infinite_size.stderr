@@ -1,29 +1,17 @@
-error[E0072]: recursive type `Node2` has infinite size
+error[E0072]: recursive types `Node2` and `Tree2` have infinite size
  --> infinite_size.rs:1:1
   |
 1 | struct Node2(Tree2);
   | ^^^^^^^^^^^^ ----- recursive without indirection
-  | |
-  | recursive type has infinite size
-  |
-help: insert some indirection (e.g., a `Box`, `Rc`, or `&`) to make `Node2` representable
-  |
-1 | struct Node2(Box<Tree2>);
-  |              ++++     +
-
-error[E0072]: recursive type `Tree2` has infinite size
- --> infinite_size.rs:2:1
-  |
 2 | struct Tree2(Node2);
   | ^^^^^^^^^^^^ ----- recursive without indirection
-  | |
-  | recursive type has infinite size
   |
-help: insert some indirection (e.g., a `Box`, `Rc`, or `&`) to make `Tree2` representable
+help: insert some indirection (e.g., a `Box`, `Rc`, or `&`) to break the cycle
   |
-2 | struct Tree2(Box<Node2>);
-  |              ++++     +
+1 ~ struct Node2(Box<Tree2>);
+2 ~ struct Tree2(Box<Node2>);
+  |
 
-error: aborting due to 2 previous errors
+error: aborting due to previous error
 
 For more information about this error, try `rustc --explain E0072`.
