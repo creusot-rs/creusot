@@ -415,23 +415,23 @@ fn can_resolve<'tcx>(ctx: &mut TranslationCtx<'tcx>, dep: (DefId, SubstsRef<'tcx
 
 #[derive(Debug)]
 pub struct Names<'tcx> {
-    names: IndexMap<(DefId, SubstsRef<'tcx>), QName>,
+    names: IndexMap<(DefId, SubstsRef<'tcx>), why3::Ident>,
 }
 
 impl<'tcx> Names<'tcx> {
-    pub(super) fn get(&self, tgt: (DefId, SubstsRef<'tcx>)) -> QName {
+    pub(super) fn get(&self, tgt: (DefId, SubstsRef<'tcx>)) -> why3::Ident {
         self.names.get(&tgt).unwrap_or_else(|| panic!("Could not find {:?}", tgt)).clone()
     }
 
-    // FIXME
-    pub(crate) fn ty(&self, id: DefId, sub: SubstsRef<'tcx>) -> QName {
-        self.get((id, sub))
-    }
+    // // FIXME
+    // pub(crate) fn ty(&self, id: DefId, sub: SubstsRef<'tcx>) -> QName {
+    //     self.get((id, sub))
+    // }
 
-    //FIXME
-    pub(crate) fn value(&self, id: DefId, sub: SubstsRef<'tcx>) -> QName {
-        self.get((id, sub))
-    }
+    // //FIXME
+    // pub(crate) fn value(&self, id: DefId, sub: SubstsRef<'tcx>) -> QName {
+    //     self.get((id, sub))
+    // }
 }
 
 pub(crate) fn name_clones<'tcx>(
@@ -441,7 +441,7 @@ pub(crate) fn name_clones<'tcx>(
 ) -> Names<'tcx> {
     let mut names = IndexMap::new();
     let mut assigned = IndexMap::new();
-    let mut walk = DfsPostOrder::new(&graph.graph, root);
+    let walk = DfsPostOrder::new(&graph.graph, root);
 
     for node in walk.iter(&graph.graph) {
         let Dependency::Item(def_id, subst) = node else { continue };
@@ -458,10 +458,7 @@ pub(crate) fn name_clones<'tcx>(
         };
         names.insert(
             (def_id, subst),
-            QName {
-                module: vec![format!("{}{}", base_sym.as_str().to_upper_camel_case(), count).into()],
-                name: item_name(ctx.tcx, def_id, Namespace::ValueNS),
-            },
+            format!("{}{}", base_sym.as_str().to_upper_camel_case(), count).into(),
         );
     }
 
@@ -500,15 +497,18 @@ pub struct PriorClones<'a, 'tcx> {
 pub struct Namer<'a, 'tcx> {
     priors: &'a PriorClones<'a, 'tcx>,
     id: DefId,
+    tcx: TyCtxt<'tcx>,
 }
 
 impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
     fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        self.priors.prior.get(&self.id).unwrap().get((def_id, subst))
+        let base = self.priors.prior.get(&self.id).unwrap().get((def_id, subst));
+        QName { module: vec![base], name: item_name(self.tcx, def_id, Namespace::ValueNS) }
     }
 
     fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        self.priors.prior.get(&self.id).unwrap().get((def_id, subst))
+        let base = self.priors.prior.get(&self.id).unwrap().get((def_id, subst));
+        QName { module: vec![base], name: item_name(self.tcx, def_id, Namespace::TypeNS) }
     }
 
     fn accessor(
@@ -518,11 +518,13 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
         variant: usize,
         ix: usize,
     ) -> QName {
-        self.priors.prior.get(&self.id).unwrap().get((def_id, subst))
+        let base = self.priors.prior.get(&self.id).unwrap().get((def_id, subst));
+        QName { module: vec![base], name: item_name(self.tcx, def_id, Namespace::ValueNS) }
     }
 
     fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>, variant: usize) -> QName {
-        self.priors.prior.get(&self.id).unwrap().get((def_id, subst))
+        let base = self.priors.prior.get(&self.id).unwrap().get((def_id, subst));
+        QName { module: vec![base], name: item_name(self.tcx, def_id, Namespace::ValueNS) }
     }
 
     fn to_clones(&mut self, ctx: &mut TranslationCtx<'tcx>, clone_level: CloneLevel) -> Vec<Decl> {
@@ -565,8 +567,8 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
     //     //             .unwrap_or_else(|| QName::from_string("INVALID.prior").unwrap())
     // }
 
-    pub(crate) fn get(&'a self, inside: DefId) -> Namer<'a, 'tcx> {
-        Namer { priors: self, id: inside }
+    pub(crate) fn get(&'a self, tcx: TyCtxt<'tcx>, inside: DefId) -> Namer<'a, 'tcx> {
+        Namer { priors: self, id: inside, tcx }
     }
 }
 
@@ -577,8 +579,8 @@ pub fn make_clones<'tcx, 'a>(
     level: CloneLevel,
     root: DefId,
 ) -> Vec<Decl> {
-    let Namer { priors, id } = priors;
-    let mut names = priors.get(root);
+    let Namer { priors, id, .. } = priors;
+    let mut names = priors.get(ctx.tcx, root);
     let root = Dependency::Item(root, InternalSubsts::identity_for_item(ctx.tcx, root));
     let mut topo = DfsPostOrder::new(&priors.graph.graph, root);
 
@@ -631,8 +633,10 @@ pub fn make_clones<'tcx, 'a>(
                 continue;
             }
 
-            clone_subst
-                .push(CloneSubst::Val(priors.get(id).value(orig.0, orig.1), names.value(id, subst)))
+            clone_subst.push(CloneSubst::Val(
+                priors.get(ctx.tcx, id).value(orig.0, orig.1),
+                names.value(id, subst),
+            ))
         }
 
         let clone = DeclClone {
@@ -706,7 +710,7 @@ pub fn base_subst<'tcx>(
         if let GenericParamDefKind::Type { .. } = p.kind {
             let ty = crate::backend::ty::translate_ty(
                 ctx,
-                &mut names.get(def_id),
+                &mut names.get(ctx.tcx, def_id),
                 DUMMY_SP,
                 ty.expect_ty(),
             );

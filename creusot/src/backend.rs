@@ -26,6 +26,7 @@ pub(crate) mod clone_map2;
 pub(crate) mod logic;
 pub(crate) mod program;
 pub(crate) mod term;
+pub(crate) mod traits;
 pub(crate) mod ty;
 
 pub(crate) fn to_why3<'tcx>(
@@ -35,10 +36,10 @@ pub(crate) fn to_why3<'tcx>(
 ) -> Vec<Module> {
     match util::item_type(ctx.tcx, def_id) {
         ItemType::Logic | ItemType::Predicate => {
-            translate_logic_or_predicate(ctx, priors.get(def_id), def_id)
+            translate_logic_or_predicate(ctx, priors.get(ctx.tcx, def_id), def_id)
         }
         ItemType::Program => {
-            let decls = to_why(ctx, priors.get(def_id), def_id);
+            let decls = to_why(ctx, priors.get(ctx.tcx, def_id), def_id);
             let name = module_name(ctx, def_id);
             vec![Module { name, decls }]
         }
@@ -46,7 +47,7 @@ pub(crate) fn to_why3<'tcx>(
         ItemType::Trait => Vec::new(),
         ItemType::Impl => todo!(),
         ItemType::Type => {
-            translate_tydecl(ctx, &mut priors.get(def_id), def_id).into_iter().collect()
+            translate_tydecl(ctx, &mut priors.get(ctx.tcx, def_id), def_id).into_iter().collect()
         }
         ItemType::AssocTy => todo!(),
         ItemType::Constant => todo!(),

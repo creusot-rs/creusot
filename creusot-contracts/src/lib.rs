@@ -154,30 +154,30 @@ pub mod __stubs;
 // pub mod invariant;
 // pub mod model;
 // pub mod resolve;
-// pub mod well_founded;
+pub mod well_founded;
 
-// // We add some common things at the root of the creusot-contracts library
-// pub use crate::{
-//     ghost::Ghost,
-//     logic::{Int, OrdLogic, Seq},
-//     macros::*,
-//     model::{DeepModel, ShallowModel},
-//     resolve::Resolve,
-//     std::{
-//         // Shadow std::prelude by our version.
-//         // For Clone and PartialEq, this is important for the derive macro.
-//         // If the user write the glob pattern "use creusot_contracts::*", then
-//         // rustc will either shadow the old identifier or complain about the
-//         // ambiguïty (ex: for the derive macros Clone and PartialEq, a glob
-//         // pattern is not enough to force rustc to use our version, but at least
-//         // we get an error message).
-//         clone::Clone,
-//         cmp::PartialEq,
-//         default::Default,
-//         iter::{FromIterator, IntoIterator, Iterator},
-//     },
-//     well_founded::WellFounded,
-// };
+// We add some common things at the root of the creusot-contracts library
+pub use crate::{
+    // ghost::Ghost,
+    // logic::{Int, OrdLogic, Seq},
+    macros::*,
+    // model::{DeepModel, ShallowModel},
+    // resolve::Resolve,
+    // std::{
+    //     // Shadow std::prelude by our version.
+    //     // For Clone and PartialEq, this is important for the derive macro.
+    //     // If the user write the glob pattern "use creusot_contracts::*", then
+    //     // rustc will either shadow the old identifier or complain about the
+    //     // ambiguïty (ex: for the derive macros Clone and PartialEq, a glob
+    //     // pattern is not enough to force rustc to use our version, but at least
+    //     // we get an error message).
+    //     clone::Clone,
+    //     cmp::PartialEq,
+    //     default::Default,
+    //     iter::{FromIterator, IntoIterator, Iterator},
+    // },
+    well_founded::WellFounded,
+};
 
 // // Export extension traits anonymously
 // pub use crate::std::{

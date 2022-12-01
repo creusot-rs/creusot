@@ -13,6 +13,7 @@ use crate::{
         interface::interface_for,
         pearlite::{self, Term},
         specification::ContractClauses,
+        traits::TraitImpl,
         ty::{self, translate_tydecl, ty_binding_group},
     },
     util,
@@ -38,21 +39,22 @@ pub(crate) use crate::translated_item::*;
 
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
-    pub tcx: TyCtxt<'tcx>,
-    translated_items: IndexSet<DefId>,
-    in_translation: Vec<IndexSet<DefId>>,
-    ty_binding_groups: HashMap<DefId, IndexSet<DefId>>,
-    repr_elem: HashMap<DefId, DefId>,
-    functions: IndexMap<DefId, TranslatedItem>,
-    dependencies: IndexMap<DefId, CloneSummary<'tcx>>,
-    laws: IndexMap<DefId, Vec<DefId>>,
-    fmir_body: IndexMap<DefId, fmir::Body<'tcx>>,
-    terms: IndexMap<DefId, Term<'tcx>>,
-    pub externs: Metadata<'tcx>,
-    pub(crate) opts: Options,
     creusot_items: CreusotItems,
-    extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
+    dependencies: IndexMap<DefId, CloneSummary<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
+    extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
+    pub(crate) externs: Metadata<'tcx>,
+    fmir_body: IndexMap<DefId, fmir::Body<'tcx>>,
+    functions: IndexMap<DefId, TranslatedItem>,
+    impl_data: HashMap<DefId, TraitImpl<'tcx>>,
+    in_translation: Vec<IndexSet<DefId>>,
+    laws: IndexMap<DefId, Vec<DefId>>,
+    pub(crate) opts: Options,
+    repr_elem: HashMap<DefId, DefId>,
+    pub(crate) tcx: TyCtxt<'tcx>,
+    terms: IndexMap<DefId, Term<'tcx>>,
+    translated_items: IndexSet<DefId>,
+    ty_binding_groups: HashMap<DefId, IndexSet<DefId>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -83,6 +85,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             extern_spec_items: Default::default(),
             fmir_body: Default::default(),
             repr_elem: Default::default(),
+            impl_data: Default::default(),
         }
     }
 
@@ -109,10 +112,10 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             ItemType::Impl => {
                 if self.tcx.impl_trait_ref(def_id).is_some() {
                     self.start(def_id);
-                    let impl_ = self.translate_impl(def_id);
+                    // let impl_ = self.translate_impl(def_id);
 
                     self.dependencies.insert(def_id, CloneSummary::new());
-                    self.functions.insert(def_id, impl_);
+                    // self.functions.insert(def_id, impl_);
                     self.finish(def_id);
                 }
             }
@@ -253,6 +256,15 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             accessors.entry(variant_did).or_default().insert(field_id, accessor);
         }
         // self.types[&repr_id].accessors;
+    }
+
+    pub(crate) fn trait_impl(&mut self, def_id: DefId) -> &TraitImpl<'tcx> {
+        if !self.impl_data.contains_key(&def_id) {
+            let trait_impl = self.translate_impl2(def_id);
+            self.impl_data.insert(def_id, trait_impl);
+        }
+
+        &self.impl_data[&def_id]
     }
 
     pub(crate) fn fmir_body(&mut self, def_id: DefId) -> Option<&fmir::Body<'tcx>> {
