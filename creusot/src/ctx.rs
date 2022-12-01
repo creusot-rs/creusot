@@ -141,6 +141,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 // self.functions.insert(def_id, constant);
             }
             ItemType::Type => {
+                self.binding_group(def_id);
                 // translate_tydecl(self, def_id);
             }
             ItemType::Unsupported(dk) => self.crash_and_error(

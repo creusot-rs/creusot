@@ -24,16 +24,17 @@ use why3::{
     exp::Exp,
 };
 
-
+#[derive(Clone)]
 pub(crate) struct Refinement<'tcx> {
-    trait_: (DefId, SubstsRef<'tcx>),
-    impl_: (DefId, SubstsRef<'tcx>),
-    refn: Term<'tcx>,
+    pub(crate) trait_: (DefId, SubstsRef<'tcx>),
+    pub(crate) impl_: (DefId, SubstsRef<'tcx>),
+    pub(crate) refn: Term<'tcx>,
 }
 
+#[derive(Clone)]
 pub(crate) struct TraitImpl<'tcx> {
-    laws: Vec<DefId>,
-    refinements: Vec<Refinement<'tcx>>,
+    pub(crate) laws: Vec<DefId>,
+    pub(crate) refinements: Vec<Refinement<'tcx>>,
 }
 
 impl<'tcx> TranslationCtx<'tcx> {

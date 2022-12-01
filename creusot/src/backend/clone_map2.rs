@@ -35,7 +35,7 @@ use crate::{
         fmir::{Block, Body, Branches, Expr, RValue, Statement, Terminator},
         interface,
         pearlite::{Term, TermKind, TermVisitor},
-        traits::resolve_opt,
+        traits::{resolve_opt, TraitImpl},
     },
     util::{self, item_name, item_qname, item_type, module_name, pre_sig_of, PreSignature},
 };
@@ -106,7 +106,11 @@ fn get_immediate_deps<'tcx>(
         // Fill out
         ItemType::AssocTy => Vec::new(),
         ItemType::Constant => Vec::new(),
-        ItemType::Impl => Vec::new(),
+        ItemType::Impl => {
+            let mut deps = Vec::new();
+            ctx.trait_impl(def_id).deps(&mut |d| deps.push((DepLevel::Body, d)));
+            deps
+        }
         e => todo!("{e:?}"),
     }
 }
@@ -118,6 +122,14 @@ struct TermDep<F> {
 // Dumb wrapper trait for syntax
 trait VisitDeps<'tcx> {
     fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F);
+}
+
+impl<'tcx> VisitDeps<'tcx> for TraitImpl<'tcx> {
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, f: &mut F) {
+        self.refinements.iter().for_each(|r| {
+            r.refn.deps(f);
+        })
+    }
 }
 
 impl<'tcx> VisitDeps<'tcx> for Term<'tcx> {

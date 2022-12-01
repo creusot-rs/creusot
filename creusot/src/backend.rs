@@ -19,6 +19,7 @@ use self::{
     clone_map2::{CloneLevel, Namer, Names, PriorClones},
     logic::translate_logic_or_predicate,
     program::to_why,
+    traits::lower_impl,
     ty::translate_tydecl,
 };
 
@@ -45,7 +46,7 @@ pub(crate) fn to_why3<'tcx>(
         }
         ItemType::Closure => todo!(),
         ItemType::Trait => Vec::new(),
-        ItemType::Impl => todo!(),
+        ItemType::Impl => vec![lower_impl(ctx, priors.get(ctx.tcx, def_id), def_id)],
         ItemType::Type => {
             translate_tydecl(ctx, &mut priors.get(ctx.tcx, def_id), def_id).into_iter().collect()
         }
@@ -75,7 +76,7 @@ pub(crate) trait Cloner<'tcx> {
 
 impl<'tcx> Cloner<'tcx> for CloneMap<'tcx> {
     fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        todo!()
+        self.value(def_id, subst)
     }
 
     fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
