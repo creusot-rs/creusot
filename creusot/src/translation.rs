@@ -61,8 +61,10 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
 
     let start = Instant::now();
     let mut graph = MonoGraph::new();
-    for item_id in ctx.hir().items() {
-        let def_id = ctx.hir().local_def_id(item_id.hir_id()).to_def_id();
+
+    for def_id in ctx.hir().body_owners() {
+        // let def_id = ctx.hir().local_def_id(item_id.hir_id()).to_def_id();
+        let def_id = def_id.to_def_id();
 
         if !crate::util::should_translate(ctx.tcx, def_id) {
             info!("Skipping {:?}", def_id);
@@ -79,7 +81,7 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
             continue;
         }
 
-        info!("Translating item {:?}", def_id);
+        debug!("Translating item {:?}", def_id);
         ctx.translate(def_id);
         graph.add_root(&mut ctx, def_id);
     }
