@@ -19,7 +19,7 @@ use self::{
     clone_map2::{CloneLevel, Namer, Names, PriorClones},
     logic::translate_logic_or_predicate,
     program::to_why,
-    traits::lower_impl,
+    traits::{lower_impl, translate_assoc_ty},
     ty::translate_tydecl,
 };
 
@@ -44,14 +44,14 @@ pub(crate) fn to_why3<'tcx>(
             let name = module_name(ctx, def_id);
             vec![Module { name, decls }]
         }
-        ItemType::Closure => todo!(),
+        ItemType::Closure => todo!("closure: {def_id:?}"),
         ItemType::Trait => Vec::new(),
         ItemType::Impl => vec![lower_impl(ctx, priors.get(ctx.tcx, def_id), def_id)],
         ItemType::Type => {
             translate_tydecl(ctx, &mut priors.get(ctx.tcx, def_id), def_id).into_iter().collect()
         }
-        ItemType::AssocTy => todo!(),
-        ItemType::Constant => todo!(),
+        ItemType::AssocTy => vec![translate_assoc_ty(ctx, priors.get(ctx.tcx, def_id), def_id)],
+        ItemType::Constant => todo!("constant: {def_id:?}"),
         ItemType::Unsupported(_) => panic!("unsupported declaration"),
     }
 }
@@ -80,7 +80,7 @@ impl<'tcx> Cloner<'tcx> for CloneMap<'tcx> {
     }
 
     fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        todo!()
+        self.ty(def_id, subst)
     }
 
     fn accessor(

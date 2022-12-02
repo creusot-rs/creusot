@@ -5,8 +5,8 @@ use crate::*;
 pub trait WellFounded {}
 
 // FIXME: Int is NOT well-founded. But this is required for induction over integers
-// #[trusted]
-// impl WellFounded for Int {}
+#[trusted]
+impl WellFounded for Int {}
 
 #[trusted]
 impl WellFounded for u8 {}

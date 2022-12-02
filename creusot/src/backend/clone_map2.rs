@@ -104,13 +104,21 @@ fn get_immediate_deps<'tcx>(
         }
         ItemType::Program => program_dependencies(ctx, def_id),
         // Fill out
-        ItemType::AssocTy => Vec::new(),
+        ItemType::AssocTy => {let mut deps = Vec::new();
+            if ctx.impl_of_method(def_id).is_some() {
+                ctx.type_of(def_id).deps(&mut |d| deps.push((DepLevel::Signature, d)));
+
+            }
+
+            deps
+        },
         ItemType::Constant => Vec::new(),
         ItemType::Impl => {
             let mut deps = Vec::new();
             ctx.trait_impl(def_id).deps(&mut |d| deps.push((DepLevel::Body, d)));
             deps
         }
+        ItemType::Trait => Vec::new(),
         e => todo!("{e:?}"),
     }
 }
@@ -614,7 +622,7 @@ pub fn make_clones<'tcx, 'a>(
             continue;
         };
 
-        eprintln!("cloning {node:?} at level {:?}", priors.graph.level[&node]);
+        // eprintln!("cloning {node:?} at level {:?}", priors.graph.level[&node]);
 
         let (id, subst) = match node {
             Dependency::Item(id, subst) => (id, subst),

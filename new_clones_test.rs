@@ -12,45 +12,59 @@ use creusot_contracts::*;
 //     omg()
 // }
 
-fn omgomg() {
-    1 + 1;
+pub trait DeepModel {
+    type DeepModelTy;
+    #[logic]
+    fn deep_model(self) -> Self::DeepModelTy;
 }
 
-struct Test {}
-
-fn omg_2() {
-    Test {};
-}
-
-enum Option<T> {
-    Some(T),
-    None,
-}
-use Option::*;
-
-fn inexhaustive_match(x: Option<()>) {
-    match x {
-        None => (),
-        Some(_) => (),
+impl<T: DeepModel + ?Sized> DeepModel for &T {
+    type DeepModelTy = T::DeepModelTy;
+    #[logic]
+    fn deep_model(self) -> Self::DeepModelTy {
+        (*self).deep_model()
     }
 }
 
-trait BinOp {
-    #[logic]
-    fn op(self, _: Self) -> Self;
+// fn omgomg() {
+//     1 + 1;
+// }
 
-    #[logic]
-    #[ensures(self.op(b) == b.op(self))]
-    fn symm(self, b: Self);
-}
+// struct Test {}
 
-impl BinOp for () {
-    #[logic]
-    fn op(self, _: Self) -> Self {
-        ()
-    }
+// fn omg_2() {
+//     Test {};
+// }
 
-    #[logic]
-    #[ensures(self.op(b) == b.op(self))]
-    fn symm(self, b: Self) {}
-}
+// enum Option<T> {
+//     Some(T),
+//     None,
+// }
+// use Option::*;
+
+// fn inexhaustive_match(x: Option<()>) {
+//     match x {
+//         None => (),
+//         Some(_) => (),
+//     }
+// }
+
+// trait BinOp {
+//     #[logic]
+//     fn op(self, _: Self) -> Self;
+
+//     #[logic]
+//     #[ensures(self.op(b) == b.op(self))]
+//     fn symm(self, b: Self);
+// }
+
+// impl BinOp for () {
+//     #[logic]
+//     fn op(self, _: Self) -> Self {
+//         ()
+//     }
+
+//     #[logic]
+//     #[ensures(self.op(b) == b.op(self))]
+//     fn symm(self, b: Self) {}
+// }

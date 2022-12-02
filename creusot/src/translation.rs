@@ -14,11 +14,11 @@ use crate::{
         clone_map2::{Dependency, MonoGraph, PriorClones},
         to_why3,
     },
-    ctx,
-    ctx::load_extern_specs,
+    ctx::{self, load_extern_specs, ItemType},
     error::CrErr,
     metadata,
     options::OutputFile,
+    util,
     validate::{validate_impls, validate_traits},
 };
 use creusot_rustc::hir::{def::DefKind, def_id::LOCAL_CRATE};
@@ -61,19 +61,25 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
 
     let start = Instant::now();
     let mut graph = MonoGraph::new();
-    for def_id in ctx.tcx.hir().body_owners() {
-        let def_id = def_id.to_def_id();
+    for item_id in ctx.hir().items() {
+        let def_id = ctx.hir().local_def_id(item_id.hir_id()).to_def_id();
 
         if !crate::util::should_translate(ctx.tcx, def_id) {
             info!("Skipping {:?}", def_id);
             continue;
         }
 
-        if ctx.def_kind(def_id) == DefKind::AnonConst {
+        let item_type = util::item_type(ctx.tcx, def_id);
+
+        if matches!(item_type, ItemType::Unsupported(_)) {
             continue;
         }
 
-        info!("Translating body {:?}", def_id);
+        if matches!(item_type, ItemType::Impl) && ctx.trait_id_of_impl(def_id).is_none() {
+            continue;
+        }
+
+        info!("Translating item {:?}", def_id);
         ctx.translate(def_id);
         graph.add_root(&mut ctx, def_id);
     }

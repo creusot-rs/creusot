@@ -55,6 +55,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn translate_impl2(&mut self, impl_id: DefId) -> TraitImpl<'tcx> {
+        assert!(self.trait_id_of_impl(impl_id).is_some(), "{impl_id:?} is not a trait impl");
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
 
         let mut laws = Vec::new();

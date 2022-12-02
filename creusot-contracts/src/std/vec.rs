@@ -80,16 +80,16 @@ extern_spec! {
                 fn insert(&mut self, index: usize, element: T);
             }
 
-            impl<T, A : Allocator> Extend<T> for Vec<T, A> {
-                #[requires(iter.invariant())]
-                #[ensures(exists<done_ : &mut I, prod: Seq<I::Item>>
-                    done_.completed() && iter.produces(prod, *done_) && @^self == (@self).concat(prod)
-                )]
-                fn extend<I>(&mut self, iter: I)
-                where
-                    // TODO: Investigate why ::std::iter::Iterator<Item = T> is needed... shouldn't it be implied?
-                    I : Iterator<Item = T> + Invariant + ::std::iter::Iterator<Item = T>;
-            }
+            // impl<T, A : Allocator> Extend<T> for Vec<T, A> {
+            //     #[requires(iter.invariant())]
+            //     #[ensures(exists<done_ : &mut I, prod: Seq<I::Item>>
+            //         done_.completed() && iter.produces(prod, *done_) && @^self == (@self).concat(prod)
+            //     )]
+            //     fn extend<I>(&mut self, iter: I)
+            //     where
+            //         // TODO: Investigate why ::std::iter::Iterator<Item = T> is needed... shouldn't it be implied?
+            //         I : Iterator<Item = T> + Invariant + ::std::iter::Iterator<Item = T>;
+            // }
 
             impl<T, I : SliceIndex<[T]>, A : Allocator> IndexMut<I> for Vec<T, A> {
                 #[requires(ix.in_bounds(@self))]
@@ -124,41 +124,41 @@ extern_spec! {
     }
 }
 
-impl<T, A: Allocator> IntoIterator for Vec<T, A> {
-    #[predicate]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
+// impl<T, A: Allocator> IntoIterator for Vec<T, A> {
+//     #[predicate]
+//     fn into_iter_pre(self) -> bool {
+//         pearlite! { true }
+//     }
 
-    #[predicate]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { @self == @res }
-    }
-}
+//     #[predicate]
+//     fn into_iter_post(self, res: Self::IntoIter) -> bool {
+//         pearlite! { @self == @res }
+//     }
+// }
 
-impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
-    #[predicate]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
+// impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
+//     #[predicate]
+//     fn into_iter_pre(self) -> bool {
+//         pearlite! { true }
+//     }
 
-    #[predicate]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { @self == @@res }
-    }
-}
+//     #[predicate]
+//     fn into_iter_post(self, res: Self::IntoIter) -> bool {
+//         pearlite! { @self == @@res }
+//     }
+// }
 
-impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
-    #[predicate]
-    fn into_iter_pre(self) -> bool {
-        pearlite! { true }
-    }
+// impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
+//     #[predicate]
+//     fn into_iter_pre(self) -> bool {
+//         pearlite! { true }
+//     }
 
-    #[predicate]
-    fn into_iter_post(self, res: Self::IntoIter) -> bool {
-        pearlite! { @self == @@res }
-    }
-}
+//     #[predicate]
+//     fn into_iter_post(self, res: Self::IntoIter) -> bool {
+//         pearlite! { @self == @@res }
+//     }
+// }
 
 impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
     type ShallowModelTy = Seq<T>;
@@ -185,33 +185,33 @@ impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {
     }
 }
 
-impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
-    #[predicate]
-    fn completed(&mut self) -> bool {
-        pearlite! { self.resolve() && @self == Seq::EMPTY }
-    }
+// impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
+//     #[predicate]
+//     fn completed(&mut self) -> bool {
+//         pearlite! { self.resolve() && @self == Seq::EMPTY }
+//     }
 
-    #[predicate]
-    fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
-        pearlite! {
-            @self == visited.concat(@rhs)
-        }
-    }
+//     #[predicate]
+//     fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
+//         pearlite! {
+//             @self == visited.concat(@rhs)
+//         }
+//     }
 
-    #[law]
-    #[ensures(a.produces(Seq::EMPTY, a))]
-    fn produces_refl(a: Self) {}
+//     #[law]
+//     #[ensures(a.produces(Seq::EMPTY, a))]
+//     fn produces_refl(a: Self) {}
 
-    #[law]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
-    fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
-}
+//     #[law]
+//     #[requires(a.produces(ab, b))]
+//     #[requires(b.produces(bc, c))]
+//     #[ensures(a.produces(ab.concat(bc), c))]
+//     fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
+// }
 
-impl<T> FromIterator<T> for Vec<T> {
-    #[predicate]
-    fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
-        pearlite! { prod == @res }
-    }
-}
+// impl<T> FromIterator<T> for Vec<T> {
+//     #[predicate]
+//     fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
+//         pearlite! { prod == @res }
+//     }
+// }
