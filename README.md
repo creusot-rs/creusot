@@ -41,13 +41,9 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
 
 # Installing Creusot as a user
 
-0. Clone the [creusot](https://github.com/xldenis/creusot/) repo at any directory you like
-    - Below, we write `REPO` for the (relative or absolute) path to the directory of the repo
-1. Set up **Rust**
+. Set up **Rust**
     - [Install `rustup`](https://www.rust-lang.org/tools/install), to get the suitable Rust toolchain
-2. Build **Creusot**
-    - Run `$ cargo install --path creusot`, this will build the `cargo-creusot` and `creusot-rustc` executables and place them in `~/.cargo/bin`.
-3. Set up **Why3**
+1. Set up **Why3**
     - [Get `opam`](https://opam.ocaml.org/doc/Install.html), the package manager for OCaml
     - Pin `why3` to `master` : 
     ```
@@ -60,6 +56,10 @@ More examples are found in [creusot/tests/should_succeed](creusot/tests/should_s
       * Troubleshoot:
         When your `z3` is a bit too new (e.g., Why3 supports up to ver. 4.8.10 but yours is 4.8.12), Why3 refuses `z3`.
         Then you can try hacking Why3 to make it consider your `z3` be of an older version (e.g., 4.8.10), by updating the relevant field of `~/.why3.conf`.
+2. Clone the [creusot](https://github.com/xldenis/creusot/) repo at any directory you like
+3. Build **Creusot**
+    - Enter the cloned directory and run `$ cargo install --path creusot`, this will build the `cargo-creusot` and `creusot-rustc` executables and place them in `~/.cargo/bin`.
+
 
 # Verifying with Creusot and Why3
 
