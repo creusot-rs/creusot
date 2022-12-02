@@ -135,21 +135,21 @@ pub mod logic;
 #[cfg_attr(not(feature = "contracts"), allow(unused))]
 pub mod std;
 
-// #[cfg(feature = "contracts")]
-// pub mod ghost;
+#[cfg(feature = "contracts")]
+pub mod ghost;
 
-// #[cfg(not(feature = "contracts"))]
-// pub mod ghost {
-//     pub struct Ghost<T>(std::marker::PhantomData<T>)
-//     where
-//         T: ?Sized;
+#[cfg(not(feature = "contracts"))]
+pub mod ghost {
+    pub struct Ghost<T>(std::marker::PhantomData<T>)
+    where
+        T: ?Sized;
 
-//     impl<T> Ghost<T> {
-//         pub fn new() -> Ghost<T> {
-//             Ghost(std::marker::PhantomData)
-//         }
-//     }
-// }
+    impl<T> Ghost<T> {
+        pub fn new() -> Ghost<T> {
+            Ghost(std::marker::PhantomData)
+        }
+    }
+}
 
 pub mod invariant;
 pub mod model;
@@ -158,7 +158,7 @@ pub mod well_founded;
 
 // We add some common things at the root of the creusot-contracts library
 pub use crate::{
-    // ghost::Ghost,
+    ghost::Ghost,
     logic::{Int, OrdLogic, Seq},
     macros::*,
     model::{DeepModel, ShallowModel},
