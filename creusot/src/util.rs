@@ -248,6 +248,7 @@ pub enum ItemType {
     Type,
     AssocTy,
     Constant,
+    Field,
     Unsupported(DefKind),
 }
 
@@ -281,6 +282,7 @@ impl ItemType {
             ItemType::Type => "type declaration",
             ItemType::AssocTy => "associated type",
             ItemType::Constant => "constant",
+            ItemType::Field => "field",
             ItemType::Unsupported(_) => "[OTHER]",
         }
     }
@@ -299,6 +301,7 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
                 ItemType::Program
             }
         }
+        DefKind::Field => ItemType::Field,
         DefKind::AssocConst | DefKind::Const => ItemType::Constant,
         DefKind::Closure => ItemType::Closure,
         DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,

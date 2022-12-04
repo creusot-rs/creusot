@@ -785,7 +785,7 @@ fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel) ->
             QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
         }
         Trait | Type | AssocTy => module_name(ctx, def_id).into(),
-        Unsupported(_) => unreachable!(),
+        _ => unreachable!(),
     }
 }
 

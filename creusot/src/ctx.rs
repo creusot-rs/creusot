@@ -148,6 +148,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 self.tcx.def_span(def_id),
                 &format!("unsupported definition kind {:?} {:?}", def_id, dk),
             ),
+            ItemType::Field => {}
         }
     }
 
@@ -232,31 +233,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         };
 
         // self.functions.insert(def_id, translated);
-    }
-
-    pub(crate) fn translate_accessor(&mut self, field_id: DefId) {
-        use creusot_rustc::middle::ty::DefIdTree;
-
-        if !self.translated_items.insert(field_id) {
-            return;
-        }
-
-        let parent = self.tcx.parent(field_id);
-        let (adt_did, variant_did) = match self.tcx.def_kind(parent) {
-            DefKind::Variant => (self.tcx.parent(parent), parent),
-            DefKind::Struct | DefKind::Enum | DefKind::Union => {
-                (parent, self.tcx.adt_def(parent).variants()[0u32.into()].def_id)
-            }
-            _ => unreachable!(),
-        };
-        self.translate(adt_did);
-
-        let accessor = ty::translate_accessor(self, adt_did, variant_did, field_id);
-        let repr_id = self.repr_elem[&adt_did];
-        if let TranslatedItem::Type { ref mut accessors, .. } = &mut self.functions[&repr_id] {
-            accessors.entry(variant_did).or_default().insert(field_id, accessor);
-        }
-        // self.types[&repr_id].accessors;
     }
 
     pub(crate) fn trait_impl(&mut self, def_id: DefId) -> &TraitImpl<'tcx> {

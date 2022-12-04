@@ -75,6 +75,7 @@ pub struct Term<'tcx> {
 
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum TermKind<'tcx> {
+    Any,
     Var(Symbol),
     Lit(Literal<'tcx>),
     Item(DefId, SubstsRef<'tcx>),
@@ -853,6 +854,7 @@ pub trait TermVisitor<'tcx> {
 #[allow(dead_code)]
 pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: &mut V) {
     match &term.kind {
+        TermKind::Any => {}
         TermKind::Var(_) => {}
         TermKind::Lit(_) => {}
         TermKind::Item(_, _) => {}
@@ -905,6 +907,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
     visitor: &mut V,
 ) {
     match &mut term.kind {
+        TermKind::Any => {}
         TermKind::Var(_) => {}
         TermKind::Lit(_) => {}
         TermKind::Item(_, _) => {}
@@ -993,6 +996,7 @@ impl<'tcx> Term<'tcx> {
         inv_subst: &std::collections::HashMap<Symbol, Term<'tcx>>,
     ) {
         match &mut self.kind {
+            TermKind::Any => {}
             TermKind::Var(v) => {
                 if bound.contains(v) {
                     return;

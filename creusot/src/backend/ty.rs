@@ -23,12 +23,14 @@ use why3::{declaration::TyDecl, ty::Type as MlT, QName};
 
 use crate::{
     ctx::*,
-    translation::ty::translate_ty_param,
-    util::{self, constructor_qname, get_builtin, item_name, item_qname},
+    translation::{pearlite::Term, specification::PreContract, ty::translate_ty_param},
+    util::{self, constructor_qname, get_builtin, item_name, item_qname, PreSignature},
 };
 
 use super::{
-    clone_map2::{self, Names},
+    clone_map2::{self, Namer, Names},
+    sig_to_why3,
+    term::lower_pure,
     Cloner,
 };
 
@@ -275,6 +277,85 @@ pub(crate) fn translate_projection_ty<'tcx, C: Cloner<'tcx>>(
     // ctx.translate(pty.trait_def_id(ctx.tcx));
     let name = names.ty(pty.item_def_id, pty.substs);
     MlT::TConstructor(name)
+}
+
+use creusot_rustc::hir::def::DefKind;
+use rustc_middle::ty::DefIdTree;
+
+pub(crate) fn lower_accessor<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    mut priors: Namer<'_, 'tcx>,
+    def_id: DefId,
+) -> Module {
+    let parent = ctx.parent(def_id);
+    let (adt_did, variant_id) = match ctx.def_kind(parent) {
+        DefKind::Variant => (ctx.parent(parent), parent),
+        DefKind::Struct | DefKind::Enum | DefKind::Union => {
+            (parent, ctx.adt_def(parent).variants()[0u32.into()].def_id)
+        }
+        _ => unreachable!(),
+    };
+
+    let field_def = ctx.adt_def(adt_did).all_fields().filter(|f| f.did == def_id).nth(0).unwrap();
+    let (sig, acc) = build_accessor(ctx, adt_did, &field_def);
+    let acc = lower_pure(ctx, &mut priors, acc);
+
+    let mut decls = priors.to_clones(ctx, clone_map2::CloneLevel::Body);
+
+    decls.push(Decl::Let(LetDecl {
+        sig: sig_to_why3(ctx, &mut priors, sig, def_id),
+        rec: false,
+        ghost: false,
+        body: acc,
+        kind: Some(LetKind::Function),
+    }));
+
+    Module { name: module_name(ctx, def_id), decls }
+}
+
+pub(crate) fn build_accessor<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    adt_did: DefId,
+    field: &FieldDef,
+) -> (PreSignature<'tcx>, Term<'tcx>) {
+    let def = ctx.adt_def(adt_did);
+    let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
+    let ty = field.ty(ctx.tcx, substs);
+
+    let pre_sig = PreSignature {
+        inputs: vec![(Symbol::intern("self"), DUMMY_SP, ctx.type_of(adt_did))],
+        output: ty,
+        contract: PreContract::new(),
+    };
+
+    let mut arms = Vec::new();
+
+    use crate::pearlite::{self, TermKind};
+    for (ix, v) in def.variants().iter_enumerated() {
+        let mut pats = Vec::new();
+        let mut exp = Term { kind: TermKind::Any, span: DUMMY_SP, ty };
+        for f in &v.fields {
+            if f.did == field.did {
+                let v = Symbol::intern("a");
+                pats.push(pearlite::Pattern::Binder(v));
+                exp = Term { kind: TermKind::Var(v), span: DUMMY_SP, ty };
+            } else {
+                pats.push(pearlite::Pattern::Wildcard)
+            }
+        }
+        let p = pearlite::Pattern::Constructor { adt: def, substs, variant: ix, fields: pats };
+        arms.push((p, exp))
+    }
+
+    let scrutinee = Term {
+        ty: ctx.type_of(adt_did),
+        kind: TermKind::Var(Symbol::intern("self")),
+        span: DUMMY_SP,
+    };
+
+    let exp = Term { ty, kind: TermKind::Match { scrutinee: box scrutinee, arms }, span: DUMMY_SP };
+
+    (pre_sig, exp)
 }
 
 pub(crate) fn intty_to_ty(ity: &creusot_rustc::middle::ty::IntTy) -> MlT {

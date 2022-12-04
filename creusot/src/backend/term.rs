@@ -58,6 +58,7 @@ pub(super) struct Lower<'a, 'tcx, C: Cloner<'tcx>> {
 impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
     pub(crate) fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
         match term.kind {
+            TermKind::Any => Exp::Any(translate_ty(self.ctx, self.names, term.span, term.ty)),
             TermKind::Lit(l) => {
                 let c = lower_literal(self.ctx, self.names, l);
                 c
@@ -234,9 +235,9 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
                     }
                     _ => {
                         let def = self.ctx.tcx.adt_def(did);
-                        self.ctx.translate_accessor(
-                            def.variants()[0u32.into()].fields[name.as_usize()].did,
-                        );
+                        // self.ctx.translate_accessor(
+                        //     def.variants()[0u32.into()].fields[name.as_usize()].did,
+                        // );
                         self.names.accessor(did, substs, 0, name.as_usize())
                     }
                 };

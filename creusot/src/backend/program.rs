@@ -8,7 +8,7 @@ use crate::{
         specification::{lower_impure, lower_pure},
         unop_to_unop,
     },
-    util::item_qname,
+    util::{item_qname, module_name},
 };
 use creusot_rustc::{
     hir::{def::DefKind, Unsafety},
@@ -22,7 +22,7 @@ use creusot_rustc::hir::def_id::DefId;
 use rustc_middle::{mir::Body, ty::WithOptConstParam};
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    declaration::{CfgFunction, Decl},
+    declaration::{CfgFunction, Decl, Module},
     exp::{Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
@@ -40,8 +40,11 @@ pub(crate) fn to_why<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     mut names: Namer<'_, 'tcx>,
     def_id: DefId,
-) -> Vec<Decl> {
-    // let mir = ctx.
+) -> Option<Module> {
+    if !def_id.is_local() {
+        return None;
+    }
+
     let (mir, _) = ctx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mir = mir.borrow().clone();
 
@@ -84,7 +87,9 @@ pub(crate) fn to_why<'tcx>(
             .collect(),
     });
     decls.push(func);
-    decls
+
+    let name = module_name(ctx, def_id);
+    Some(Module { name, decls })
 }
 
 impl<'tcx> Expr<'tcx> {
@@ -221,7 +226,7 @@ impl<'tcx> Expr<'tcx> {
         }
     }
 
-    fn invalidated_places(&self, places: &mut Vec<Place<'tcx>>) {
+    fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
         match self {
             Expr::Place(_) => {}
             Expr::Move(p) => places.push(*p),
@@ -427,7 +432,7 @@ impl<'tcx> Statement<'tcx> {
                 let rhs = rhs.to_why(ctx, names, Some(body));
                 let mut exps = vec![place::create_assign_inner(ctx, names, body, &lhs, rhs)];
                 for pl in invalid {
-                    let ty = translate_ty(ctx, names, DUMMY_SP, pl.ty(body, ctx.tcx).ty);
+                    let ty = translate_ty(ctx, names, DUMMY_SP, pl.ty(ctx.tcx).ty);
                     exps.push(place::create_assign_inner(ctx, names, body, &pl, Exp::Any(ty)));
                 }
                 exps

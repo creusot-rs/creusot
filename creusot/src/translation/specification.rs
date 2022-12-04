@@ -33,6 +33,10 @@ pub struct PreContract<'tcx> {
 }
 
 impl<'tcx> PreContract<'tcx> {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
     pub(crate) fn subst(&mut self, subst: &HashMap<Symbol, Term<'tcx>>) {
         for term in self.terms_mut() {
             term.subst(subst);

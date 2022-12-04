@@ -1,4 +1,4 @@
-use super::LocalIdent;
+use super::{fmir, LocalIdent};
 use crate::{
     backend::{program::uint_to_int, Cloner},
     ctx::{CloneMap, TranslationCtx},
@@ -34,7 +34,7 @@ pub(crate) fn create_assign_inner<'tcx, C: Cloner<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut C,
     body: &Body<'tcx>,
-    lhs: &Place<'tcx>,
+    lhs: &fmir::Place<'tcx>,
     rhs: Exp,
 ) -> mlcfg::Statement {
     // Translation happens inside to outside, which means we scan projection elements in reverse
@@ -48,8 +48,8 @@ pub(crate) fn create_assign_inner<'tcx, C: Cloner<'tcx>>(
     let mut stump: &[_] = lhs.projection;
 
     use rustc_middle::mir::ProjectionElem::*;
-
-    for (proj, elem) in lhs.iter_projections().rev() {
+    let temp = Place { local: lhs.local, projection: lhs.projection };
+    for (proj, elem) in temp.iter_projections().rev() {
         // twisted stuff
         stump = &stump[0..stump.len() - 1];
         let place_ty = proj.ty(body, ctx.tcx);
@@ -182,9 +182,8 @@ pub(crate) fn translate_rplace_inner<'tcx, C: Cloner<'tcx>>(
             Field(ix, _) => match place_ty.ty.kind() {
                 TyKind::Adt(def, subst) => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
-                    let variant = &def.variants()[variant_id];
 
-                    ctx.translate_accessor(def.variants()[variant_id].fields[ix.as_usize()].did);
+                    // ctx.translate_accessor(variant.fields[ix.as_usize()].did);
 
                     let acc =
                         names.accessor(def.did(), subst, variant_id.as_usize(), ix.as_usize());
@@ -201,7 +200,6 @@ pub(crate) fn translate_rplace_inner<'tcx, C: Cloner<'tcx>>(
                     }
                 }
                 TyKind::Closure(id, subst) => {
-                    let accessor_name = closure_accessor_name(ctx.tcx, *id, ix.as_usize());
                     inner = Call(
                         box Exp::impure_qvar(names.accessor(*id, subst, 0, ix.as_usize())),
                         vec![inner],

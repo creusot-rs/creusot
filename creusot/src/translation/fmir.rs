@@ -3,11 +3,30 @@ use crate::{ctx::TranslationCtx, pearlite::Term};
 use creusot_rustc::{
     hir::def_id::DefId,
     middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TypeVisitable},
-    smir::mir::{BasicBlock, BinOp, Place, UnOp},
+    smir::mir::{BasicBlock, BinOp, UnOp},
     span::{Span, Symbol, DUMMY_SP},
     target::abi::VariantIdx,
 };
 use indexmap::IndexMap;
+use rustc_middle::{
+    mir::{tcx::PlaceTy, Local, PlaceElem},
+    ty::{List, TyCtxt},
+};
+
+#[derive(Clone, Copy)]
+pub struct Place<'tcx> {
+    pub local: Local,
+    pub ty: Ty<'tcx>,
+    pub projection: &'tcx List<PlaceElem<'tcx>>,
+}
+
+impl<'tcx> Place<'tcx> {
+    pub(crate) fn ty(self, tcx: TyCtxt<'tcx>) -> PlaceTy<'tcx> {
+        self.projection
+            .iter()
+            .fold(PlaceTy::from_ty(self.ty), |acc, elem| acc.projection_ty(tcx, elem))
+    }
+}
 
 #[derive(Clone)]
 pub enum Statement<'tcx> {

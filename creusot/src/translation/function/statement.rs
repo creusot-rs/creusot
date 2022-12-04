@@ -51,11 +51,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Rvalue::Use(rval) => match rval {
                 Move(pl) => {
                     self.emit_resolve(*place);
-                    Expr::Move(*pl)
+                    Expr::Move(self.translate_place(*pl))
                 }
                 Copy(pl) => {
                     self.emit_resolve(*place);
-                    Expr::Copy(*pl)
+                    Expr::Copy(self.translate_place(*pl))
                 }
                 Constant(box c) => {
                     if is_ghost_closure(self.tcx, c.literal.ty()).is_some() {
@@ -101,9 +101,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         .nth(0);
                     if let Some(two_phase) = two_phase {
                         let place = self.borrows[*two_phase].assigned_place.clone();
-                        Expr::Place(self.ctx.mk_place_deref(place))
+                        Expr::Place(self.translate_place(self.ctx.mk_place_deref(place)))
                     } else {
-                        Expr::Place(*pl)
+                        Expr::Place(self.translate_place(*pl))
                     }
                 }
                 Mut { .. } => {
@@ -166,7 +166,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     ),
                 }
             }
-            Rvalue::Len(pl) => Expr::Len(box Expr::Place(*pl)),
+            Rvalue::Len(pl) => Expr::Len(box Expr::Place(self.translate_place(*pl))),
             Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, ty) => {
                 let op_ty = op.ty(self.body, self.tcx);
                 Expr::Cast(box self.translate_operand(op), op_ty, *ty)

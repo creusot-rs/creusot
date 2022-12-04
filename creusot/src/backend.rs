@@ -17,13 +17,15 @@ use crate::{
 
 use self::{
     clone_map2::{CloneLevel, Namer, Names, PriorClones},
+    constant::translate_constant,
     logic::translate_logic_or_predicate,
     program::to_why,
     traits::{lower_impl, translate_assoc_ty},
-    ty::translate_tydecl,
+    ty::{lower_accessor, translate_tydecl},
 };
 
 pub(crate) mod clone_map2;
+pub(crate) mod constant;
 pub(crate) mod logic;
 pub(crate) mod program;
 pub(crate) mod term;
@@ -39,11 +41,7 @@ pub(crate) fn to_why3<'tcx>(
         ItemType::Logic | ItemType::Predicate => {
             translate_logic_or_predicate(ctx, priors.get(ctx.tcx, def_id), def_id)
         }
-        ItemType::Program => {
-            let decls = to_why(ctx, priors.get(ctx.tcx, def_id), def_id);
-            let name = module_name(ctx, def_id);
-            vec![Module { name, decls }]
-        }
+        ItemType::Program => to_why(ctx, priors.get(ctx.tcx, def_id), def_id).into_iter().collect(),
         ItemType::Closure => todo!("closure: {def_id:?}"),
         ItemType::Trait => Vec::new(),
         ItemType::Impl => vec![lower_impl(ctx, priors.get(ctx.tcx, def_id), def_id)],
@@ -51,7 +49,8 @@ pub(crate) fn to_why3<'tcx>(
             translate_tydecl(ctx, &mut priors.get(ctx.tcx, def_id), def_id).into_iter().collect()
         }
         ItemType::AssocTy => vec![translate_assoc_ty(ctx, priors.get(ctx.tcx, def_id), def_id)],
-        ItemType::Constant => todo!("constant: {def_id:?}"),
+        ItemType::Constant => translate_constant(ctx, priors.get(ctx.tcx, def_id), def_id),
+        ItemType::Field => vec![lower_accessor(ctx, priors.get(ctx.tcx, def_id), def_id)],
         ItemType::Unsupported(_) => panic!("unsupported declaration"),
     }
 }
