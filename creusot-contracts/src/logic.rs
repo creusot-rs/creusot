@@ -1,15 +1,15 @@
 #![cfg_attr(not(feature = "contracts"), allow(unused_imports))]
 
-// mod fset;
+mod fset;
 mod int;
-// mod mapping;
+mod mapping;
 mod ord;
 mod seq;
-// mod set;
+mod set;
 
-// pub use fset::FSet;
+pub use fset::FSet;
 pub use int::Int;
-// pub use mapping::Mapping;
+pub use mapping::Mapping;
 pub use ord::OrdLogic;
 pub use seq::Seq;
-// pub use set::Set;
+pub use set::Set;

@@ -4,15 +4,15 @@ use crate::{std::ops::Index, *};
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T> Seq<T> {
-    // #[cfg(feature = "contracts")]
-    // #[trusted]
-    // #[creusot::builtins = "seq.Seq.empty"]
-    // pub const EMPTY: Self = { Seq(std::marker::PhantomData) };
+    #[cfg(feature = "contracts")]
+    #[trusted]
+    #[creusot::builtins = "seq.Seq.empty"]
+    pub const EMPTY: Self = { Seq(std::marker::PhantomData) };
 
-    // #[logic]
-    // pub fn new() -> Self {
-    //     Self::EMPTY
-    // }
+    #[logic]
+    pub fn new() -> Self {
+        Self::EMPTY
+    }
 
     #[logic]
     pub fn get(self, ix: Int) -> Option<T> {
