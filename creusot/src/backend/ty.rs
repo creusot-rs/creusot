@@ -75,8 +75,7 @@ fn translate_ty_inner<'tcx, C: Cloner<'tcx>>(
             {
                 MlT::TConstructor(builtin.without_search_path())
             } else {
-                ctx.translate(def.did());
-                MlT::TConstructor(item_qname(ctx, def.did(), Namespace::TypeNS))
+                MlT::TConstructor(names.ty(def.did(), s))
             };
 
             let args = s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();

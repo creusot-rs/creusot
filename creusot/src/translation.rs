@@ -77,10 +77,6 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
             continue;
         }
 
-        if matches!(item_type, ItemType::Impl) && ctx.trait_id_of_impl(def_id).is_none() {
-            continue;
-        }
-
         debug!("Translating item {:?}", def_id);
         ctx.translate(def_id);
         graph.add_root(&mut ctx, def_id);

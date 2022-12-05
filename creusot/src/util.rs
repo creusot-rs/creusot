@@ -165,6 +165,7 @@ pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
         Variant | Struct | Enum | Union => {
             format!("t_{}", tcx.item_name(def_id).as_str().to_ascii_lowercase()).into()
         }
+        Field => format!("field_{}", tcx.item_name(def_id).as_str().to_ascii_lowercase()).into(),
         Closure => {
             let mut id = ident_path(tcx, def_id);
             if ns == Namespace::TypeNS {

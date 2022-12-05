@@ -372,7 +372,7 @@ type MonoGraphInner<'tcx> =
 pub struct MonoGraph<'tcx> {
     graph: MonoGraphInner<'tcx>,
     level: IndexMap<Dependency<'tcx>, DepLevel>,
-    roots: IndexMap<DefId, Dependency<'tcx>>,
+    pub roots: IndexMap<DefId, Dependency<'tcx>>,
     // roots?
 }
 
@@ -468,7 +468,7 @@ impl<'tcx, I: Iterator<Item = Dependency<'tcx>>> Walker<&MonoGraphInner<'tcx>>
             None => {
                 let next_root = self.roots.next()?;
                 self.walker.move_to(next_root);
-                self.walker.walk_next(context)
+                self.walk_next(context)
             }
         }
     }
@@ -514,8 +514,8 @@ pub struct Names<'tcx> {
 }
 
 impl<'tcx> Names<'tcx> {
-    pub(super) fn get(&self, tgt: (DefId, SubstsRef<'tcx>)) -> why3::Ident {
-        self.names.get(&tgt).unwrap_or_else(|| panic!("Could not find {:?}", tgt)).clone()
+    pub(super) fn get(&self, tgt: (DefId, SubstsRef<'tcx>)) -> Option<why3::Ident> {
+        self.names.get(&tgt).cloned()
     }
 
     // // FIXME
@@ -549,7 +549,7 @@ pub(crate) fn name_clones<'tcx>(
                 "closure{}",
                 ctx.tcx.def_path(def_id).data.last().unwrap().disambiguator
             )),
-            _ => ctx.tcx.item_name(def_id),
+            _ => Symbol::intern(&*util::item_name(ctx.tcx, def_id, Namespace::ValueNS)),
         };
 
         names.insert(
@@ -596,14 +596,22 @@ pub struct Namer<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
 }
 
+impl<'a, 'tcx> Namer<'a, 'tcx> {
+    fn ident(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> why3::Ident {
+        self.priors.prior.get(&self.id).unwrap().get((def_id, subst)).unwrap_or_else(|| {
+            panic!("Could not find {:?} in dependencies of {:?}", def_id, self.id)
+        })
+    }
+}
+
 impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
     fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        let base = self.priors.prior.get(&self.id).unwrap().get((def_id, subst));
+        let base = self.ident(def_id, subst);
         QName { module: vec![base], name: item_name(self.tcx, def_id, Namespace::ValueNS) }
     }
 
     fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        let base = self.priors.prior.get(&self.id).unwrap().get((def_id, subst));
+        let base = self.ident(def_id, subst);
         QName { module: vec![base], name: item_name(self.tcx, def_id, Namespace::TypeNS) }
     }
 
@@ -616,13 +624,14 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
     ) -> QName {
         let field = &self.tcx.adt_def(def_id).variants()[variant.into()].fields[ix];
 
-        let base = self.priors.prior.get(&self.id).unwrap().get((field.did, subst));
+        let base = self.ident(field.did, subst);
+
         QName { module: vec![base], name: item_name(self.tcx, field.did, Namespace::ValueNS) }
     }
 
     fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>, variant: usize) -> QName {
         let variant = &self.tcx.adt_def(def_id).variants()[variant.into()];
-        let base = self.priors.prior.get(&self.id).unwrap().get((variant.def_id, subst));
+        let base = self.ident(variant.def_id, subst);
         QName { module: vec![base], name: item_name(self.tcx, variant.def_id, Namespace::ValueNS) }
     }
 
@@ -720,7 +729,7 @@ pub fn make_clones<'tcx, 'a>(
             continue;
         };
 
-        let mut clone_subst = base_subst(ctx, priors, id, subst);
+        let mut clone_subst = base_subst(ctx, names, id, subst);
 
         let mut node_names = priors.get(ctx.tcx, id);
         // eprintln!("{:?}", priors.prior[&id]);
@@ -789,7 +798,7 @@ fn base_ty_name(ty: Ty) -> QName {
 
 pub fn base_subst<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &PriorClones<'_, 'tcx>,
+    mut names: Namer<'_, 'tcx>,
     mut def_id: DefId,
     subst: SubstsRef<'tcx>,
 ) -> Vec<CloneSubst> {
@@ -813,12 +822,7 @@ pub fn base_subst<'tcx>(
         let p = trait_params.param_at(ix, ctx.tcx);
         let ty = subst[ix];
         if let GenericParamDefKind::Type { .. } = p.kind {
-            let ty = crate::backend::ty::translate_ty(
-                ctx,
-                &mut names.get(ctx.tcx, def_id),
-                DUMMY_SP,
-                ty.expect_ty(),
-            );
+            let ty = crate::backend::ty::translate_ty(ctx, &mut names, DUMMY_SP, ty.expect_ty());
             clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
         }
     }
