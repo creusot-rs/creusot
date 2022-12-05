@@ -18,7 +18,7 @@ use rustc_middle::{
     mir::{tcx::PlaceTy, PlaceElem},
     ty::{
         subst::{GenericArgKind, InternalSubsts},
-        DefIdTree, FloatTy, Ty, TyCtxt, TyKind, TypeVisitor, UintTy,
+        DefIdTree, FloatTy, ParamEnv, Ty, TyCtxt, TyKind, TypeVisitor, UintTy,
     },
 };
 use rustc_type_ir::IntTy;
@@ -332,7 +332,10 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<'tcx, F> {
 impl<'tcx, F: FnMut(Dependency<'tcx>)> TypeVisitor<'tcx> for TermDep<'tcx, F> {
     fn visit_ty(&mut self, t: Ty<'tcx>) -> std::ops::ControlFlow<Self::BreakTy> {
         match t.kind() {
-            TyKind::Adt(def, sub) => (self.f)(Dependency::Item(def.did(), *sub)),
+            TyKind::Adt(def, sub) => {
+                sub.visit_with(self);
+                (self.f)(Dependency::Item(def.did(), *sub))
+            }
             TyKind::Projection(pty) => (self.f)(Dependency::Item(pty.item_def_id, pty.substs)),
             TyKind::Int(_) | TyKind::Uint(_) => (self.f)(Dependency::BaseTy(t)),
             _ => {}
@@ -584,6 +587,7 @@ pub struct Namer<'a, 'tcx> {
 
 impl<'a, 'tcx> Namer<'a, 'tcx> {
     fn ident(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> why3::Ident {
+        let (def_id, subst) = self.tcx.erase_regions((def_id, subst));
         self.priors.prior.get(&self.id).unwrap().get((def_id, subst)).unwrap_or_else(|| {
             panic!("Could not find {:?} in dependencies of {:?}", def_id, self.id)
         })
