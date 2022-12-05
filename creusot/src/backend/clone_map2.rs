@@ -37,7 +37,9 @@ use crate::{
         pearlite::{Term, TermKind, TermVisitor},
         traits::{resolve_opt, TraitImpl},
     },
-    util::{self, item_name, item_qname, item_type, module_name, pre_sig_of, PreSignature},
+    util::{
+        self, get_builtin, item_name, item_qname, item_type, module_name, pre_sig_of, PreSignature,
+    },
 };
 
 use super::Cloner;
@@ -95,6 +97,7 @@ fn get_immediate_deps<'tcx>(
                         }
                         TyKind::Int(_) => { v.push((DepLevel::Body, Dependency::BaseTy(ty))) }
                         TyKind::Uint(_) => { v.push((DepLevel::Body, Dependency::BaseTy(ty))) }
+                        TyKind::RawPtr(_) => { v.push((DepLevel::Body, Dependency::BaseTy(ty))) }
                         _ => {}
                     },
                     GenericArgKind::Lifetime(_) => {}
@@ -121,7 +124,11 @@ fn get_immediate_deps<'tcx>(
 
             deps
         },
-        ItemType::Constant => Vec::new(),
+        ItemType::Constant => {
+            let mut deps = Vec::new();
+            ctx.type_of(def_id).deps(tcx, &mut |d| deps.push((DepLevel::Signature, d)));
+            deps
+        },
         ItemType::Impl => {
             let mut deps = Vec::new();
             ctx.trait_impl(def_id).deps(tcx, &mut |d| deps.push((DepLevel::Body, d)));
@@ -722,10 +729,17 @@ pub fn make_clones<'tcx, 'a>(
             }
         };
 
+        if let Some(builtin) = get_builtin(ctx.tcx, id) {
+            let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
+            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: None }));
+            continue;
+        };
+
         if matches!(item_type(ctx.tcx, id), ItemType::Type | ItemType::Field) {
             let name = item_qname(ctx, id, Namespace::TypeNS).module_qname();
             let as_name = names.value(id, subst).module_ident().unwrap().clone();
             uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(as_name) }));
+
             continue;
         };
 
@@ -784,7 +798,7 @@ fn base_ty_name(ty: Ty) -> QName {
         TyKind::Float(FloatTy::F64) => QName::from_string("ieee_float.Float64").unwrap(),
         TyKind::Str => todo!(),
         TyKind::Slice(_) => QName::from_string("prelude.Slice").unwrap(),
-        TyKind::RawPtr(_) => todo!(),
+        TyKind::RawPtr(_) => QName::from_string("prelude.Opaque").unwrap(),
         TyKind::Ref(_, _, _) => QName::from_string("prelude.Borrow").unwrap(),
         TyKind::Never => todo!(),
         TyKind::Tuple(_) => todo!(),
