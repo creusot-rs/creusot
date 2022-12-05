@@ -2,6 +2,13 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
+fn x<T>(a: Option<T>) {
+    match a {
+        None => (),
+        Some(x) => (),
+    }
+}
+
 pub struct A(Vec<usize>);
 
 #[logic]

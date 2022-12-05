@@ -15,7 +15,7 @@ use why3::{
 };
 
 use super::{
-    clone_map2::{self, make_clones, Namer},
+    clone_map2::{self, make_clones, CloneDepth, CloneVisibility, Namer},
     signature_of, Cloner,
 };
 
@@ -95,7 +95,9 @@ fn builtin_body<'tcx>(
     }
 
     let builtin = QName::from_string(get_builtin(ctx.tcx, def_id).unwrap().as_str()).unwrap();
-    let mut decls = make_clones(ctx, names, clone_map2::CloneLevel::Stub, def_id);
+    let mut decls: Vec<_> = Vec::new();
+    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
+    decls.extend(names.to_clones(ctx, CloneVisibility::Interface, CloneDepth::Shallow));
     decls.push(Decl::UseDecl(Use { name: builtin.clone().module_qname(), as_: None }));
     // ???
     if !builtin.module.is_empty() {
@@ -141,7 +143,7 @@ fn body_module<'tcx>(
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-    decls.extend(priors.to_clones(ctx, clone_map2::CloneLevel::Body));
+    decls.extend(priors.to_clones(ctx, CloneVisibility::Body, CloneDepth::Shallow));
     // FIXME
     // decls.extend(names.to_clones(ctx));
 
@@ -220,7 +222,7 @@ pub(crate) fn stub_module<'tcx>(
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-    decls.extend(names.to_clones(ctx, clone_map2::CloneLevel::Stub));
+    decls.extend(names.to_clones(ctx, CloneVisibility::Interface, CloneDepth::Shallow));
     decls.push(decl);
 
     Module { name, decls }
@@ -244,7 +246,7 @@ fn proof_module<'tcx>(
     }
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-    decls.extend(names.to_clones(ctx, clone_map2::CloneLevel::Body));
+    decls.extend(names.to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep));
 
     let term = ctx.term(def_id).unwrap().clone();
     let body = specification::lower_impure(ctx, &mut names, term);

@@ -2,11 +2,9 @@ use super::{fmir, LocalIdent};
 use crate::{
     backend::{program::uint_to_int, Cloner},
     ctx::TranslationCtx,
-    util::{constructor_qname, item_qname},
 };
 use creusot_rustc::{
     middle::ty::{TyKind, UintTy},
-    resolve::Namespace,
     smir::mir::{Body, Local, Place},
 };
 use why3::{
@@ -67,7 +65,7 @@ pub(crate) fn create_assign_inner<'tcx, C: Cloner<'tcx>>(
                 }
             }
             Field(ix, _) => match place_ty.ty.kind() {
-                TyKind::Adt(def, _) => {
+                TyKind::Adt(def, subst) => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                     let variant = &def.variants()[variant_id];
                     let var_size = variant.fields.len();
@@ -81,7 +79,7 @@ pub(crate) fn create_assign_inner<'tcx, C: Cloner<'tcx>>(
 
                     varexps[ix.as_usize()] = inner;
 
-                    let tyname = constructor_qname(ctx, variant);
+                    let tyname = names.constructor(def.did(), subst, variant_id.as_usize());
 
                     // names.insert(def.did(), subst);
                     inner = Let {
@@ -119,8 +117,8 @@ pub(crate) fn create_assign_inner<'tcx, C: Cloner<'tcx>>(
                         .collect();
 
                     varexps[ix.as_usize()] = inner;
-                    let mut cons = item_qname(ctx, *id, Namespace::ValueNS);
-                    cons.name.capitalize();
+
+                    let cons = names.constructor(*id, subst, 0);
 
                     inner = Let {
                         pattern: ConsP(cons.clone(), field_pats),

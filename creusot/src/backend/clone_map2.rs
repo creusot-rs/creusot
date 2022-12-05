@@ -146,7 +146,7 @@ fn get_immediate_deps<'tcx>(
                 _ => unreachable!(),
             };
 
-            vec![(DepLevel::Body, Dependency::Item(adt_did, InternalSubsts::identity_for_item(ctx.tcx, adt_did)))]
+            vec![(DepLevel::Signature, Dependency::Item(adt_did, InternalSubsts::identity_for_item(ctx.tcx, adt_did)))]
         }
         e => todo!("{e:?}"),
     }
@@ -548,8 +548,6 @@ pub(crate) fn name_clones<'tcx>(
     for node in walk.iter(&graph.graph) {
         let Dependency::Item(def_id, subst) = node else { continue };
 
-        let count = assigned.entry(def_id).or_insert(0);
-
         let base_sym = match util::item_type(ctx.tcx, def_id) {
             ItemType::Impl => ctx.tcx.item_name(ctx.tcx.trait_id_of_impl(def_id).unwrap()),
             ItemType::Closure => Symbol::intern(&format!(
@@ -558,34 +556,15 @@ pub(crate) fn name_clones<'tcx>(
             )),
             _ => Symbol::intern(&*util::item_name(ctx.tcx, def_id, Namespace::ValueNS)),
         };
+        let count = assigned.entry(base_sym).or_insert(0);
 
         names.insert(
             (def_id, subst),
             format!("{}{}", base_sym.as_str().to_upper_camel_case(), count).into(),
         );
+        *count += 1;
     }
 
-    // for node in graph.graph.nodes() {
-    //     let Dependency::Item(def_id, subst) = node else { continue };
-
-    //     let count = assigned.entry(def_id).or_insert(0);
-
-    //     let base_sym = match util::item_type(ctx.tcx, def_id) {
-    //         ItemType::Impl => ctx.tcx.item_name(ctx.tcx.trait_id_of_impl(def_id).unwrap()),
-    //         ItemType::Closure => Symbol::intern(&format!(
-    //             "closure{}",
-    //             ctx.tcx.def_path(def_id).data.last().unwrap().disambiguator
-    //         )),
-    //         _ => ctx.tcx.item_name(def_id),
-    //     };
-    //     names.insert(
-    //         (def_id, subst),
-    //         QName {
-    //             module: vec![format!("{}{}", base_sym.as_str().to_upper_camel_case(), count).into()],
-    //             name: item_name(ctx.tcx, def_id, Namespace::ValueNS),
-    //         },
-    //     );
-    // }
     Names { names }
 }
 
@@ -638,12 +617,17 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
 
     fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>, variant: usize) -> QName {
         let variant = &self.tcx.adt_def(def_id).variants()[variant.into()];
-        let base = self.ident(variant.def_id, subst);
+        let base = self.ident(def_id, subst);
         QName { module: vec![base], name: item_name(self.tcx, variant.def_id, Namespace::ValueNS) }
     }
 
-    fn to_clones(&mut self, ctx: &mut TranslationCtx<'tcx>, clone_level: CloneLevel) -> Vec<Decl> {
-        make_clones(ctx, *self, clone_level, self.id)
+    fn to_clones(
+        &mut self,
+        ctx: &mut TranslationCtx<'tcx>,
+        vis: CloneVisibility,
+        depth: CloneDepth,
+    ) -> Vec<Decl> {
+        make_clones(ctx, *self, vis, depth, self.id)
     }
 }
 
@@ -693,7 +677,8 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
 pub fn make_clones<'tcx, 'a>(
     ctx: &mut TranslationCtx<'tcx>,
     priors: Namer<'a, 'tcx>,
-    level: CloneLevel,
+    vis: CloneVisibility,
+    depth: CloneDepth,
     root: DefId,
 ) -> Vec<Decl> {
     let Namer { priors, .. } = priors;
@@ -701,10 +686,10 @@ pub fn make_clones<'tcx, 'a>(
     let root = Dependency::Item(root, InternalSubsts::identity_for_item(ctx.tcx, root));
     let mut topo = DfsPostOrder::new(&priors.graph.graph, root);
 
-    let desired_dep_level = match level {
-        CloneLevel::Stub => DepLevel::Body, // Stub clones need a separate, shallow traversal of the graph
-        CloneLevel::Interface => DepLevel::Signature,
-        CloneLevel::Body => DepLevel::Body,
+    // Unify
+    let desired_dep_level = match vis {
+        CloneVisibility::Interface => DepLevel::Signature,
+        CloneVisibility::Body => DepLevel::Body,
     };
 
     let mut clones = Vec::new();
@@ -735,7 +720,7 @@ pub fn make_clones<'tcx, 'a>(
             continue;
         };
 
-        if matches!(item_type(ctx.tcx, id), ItemType::Type | ItemType::Field) {
+        if matches!(item_type(ctx.tcx, id), ItemType::Type) {
             let name = item_qname(ctx, id, Namespace::TypeNS).module_qname();
             let as_name = names.value(id, subst).module_ident().unwrap().clone();
             uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(as_name) }));
@@ -749,12 +734,21 @@ pub fn make_clones<'tcx, 'a>(
         // eprintln!("{:?}", priors.prior[&id]);
         // eprintln!("{:?}", priors.graph.graph);
         for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
+            if depth == CloneDepth::Shallow {
+                continue;
+            }
+
             let (_, orig) = priors.graph.graph[(node, dep)];
             if priors.graph.level[&dep] < desired_dep_level {
                 continue;
             };
 
             let Dependency::Item(id, subst) = dep else {continue };
+
+            if get_builtin(ctx.tcx, id).is_some() {
+                continue;
+            };
+
             let orig = orig.unwrap();
             // FIXME: Not really correct
             if item_type(ctx.tcx, orig.0) == ItemType::Type {
@@ -763,12 +757,20 @@ pub fn make_clones<'tcx, 'a>(
 
             // eprintln!("{:?} depends on {:?}", node, dep);
             // eprintln!("getting name for {:?} originally called {:?}", (dep), priors.graph.graph[(node, dep)]);
-            clone_subst
-                .push(CloneSubst::Val(node_names.value(orig.0, orig.1), names.value(id, subst)))
+
+            let src = node_names.value(orig.0, orig.1);
+            let tgt = names.value(id, subst);
+            let sub = match item_type(ctx.tcx, orig.0) {
+                ItemType::Logic => CloneSubst::Function(src, tgt),
+                ItemType::Predicate => CloneSubst::Predicate(src, tgt),
+                ItemType::Constant => CloneSubst::Val(src, tgt),
+                _ => CloneSubst::Val(src, tgt),
+            };
+            clone_subst.push(sub)
         }
 
         let clone = DeclClone {
-            name: cloneable_name(ctx, id, level),
+            name: cloneable_name(ctx, id, depth),
             subst: clone_subst,
             kind: CloneKind::Named(names.value(id, subst).module_ident().unwrap().clone()),
         };
@@ -847,30 +849,34 @@ pub fn base_subst<'tcx>(
 // Which kind of module should we clone
 // TODO: Unify with `CloneOpacity`
 #[derive(Copy, Clone, PartialEq, Eq)]
-pub enum CloneLevel {
-    Stub,
+pub enum CloneVisibility {
     Interface,
     Body,
 }
 
-fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel) -> QName {
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum CloneDepth {
+    Shallow,
+    Deep,
+}
+
+fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneDepth) -> QName {
     use util::ItemType::*;
 
     // TODO: Refactor.
     match util::item_type(ctx.tcx, def_id) {
-        Logic | Predicate | Impl => match interface {
-            CloneLevel::Stub => QName {
+        Logic | Predicate | Impl | Constant | Field => match interface {
+            CloneDepth::Shallow => QName {
                 module: Vec::new(),
                 name: format!("{}_Stub", &*module_name(ctx, def_id)).into(),
             },
-            CloneLevel::Interface => interface::interface_name(ctx, def_id).into(),
-            CloneLevel::Body => module_name(ctx, def_id).into(),
+            CloneDepth::Deep => module_name(ctx, def_id).into(),
         },
         Program | Closure => {
             QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
         }
-        Constant | Trait | Type | AssocTy => module_name(ctx, def_id).into(),
-        Field => panic!(),
+        Trait | Type | AssocTy => module_name(ctx, def_id).into(),
+        // Field => panic!(),
         Unsupported(_) => unreachable!(),
     }
 }

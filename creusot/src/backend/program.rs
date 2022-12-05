@@ -29,7 +29,7 @@ use why3::{
 };
 
 use super::{
-    clone_map2::{CloneLevel, Namer},
+    clone_map2::{CloneDepth, CloneVisibility, Namer},
     signature_of,
     ty::{self, translate_ty},
     Cloner,
@@ -49,7 +49,7 @@ pub(crate) fn to_why<'tcx>(
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
-    decls.extend(names.to_clones(ctx, CloneLevel::Body));
+    decls.extend(names.to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep));
     let body = ctx.fmir_body(def_id).unwrap().clone();
 
     let vars: Vec<_> = body

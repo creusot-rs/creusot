@@ -1,5 +1,5 @@
 use super::{
-    clone_map2::{CloneLevel, Namer},
+    clone_map2::{CloneDepth, CloneVisibility, Namer},
     term::lower_pure,
     Cloner,
 };
@@ -20,7 +20,7 @@ pub(crate) fn lower_impl<'tcx>(
     let tcx = ctx.tcx;
     let data = ctx.trait_impl(def_id).clone();
 
-    let mut decls = priors.to_clones(ctx, CloneLevel::Body);
+    let mut decls = priors.to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep);
 
     for refn in &data.refinements {
         let name = item_name(tcx, refn.impl_.0, Namespace::ValueNS);
@@ -61,7 +61,7 @@ pub(crate) fn translate_assoc_ty<'tcx>(
         }
     };
 
-    decls.extend(priors.to_clones(ctx, CloneLevel::Interface));
+    decls.extend(priors.to_clones(ctx, CloneVisibility::Interface, CloneDepth::Shallow));
     decls.push(Decl::TyDecl(ty_decl));
 
     Module { name: module_name(ctx, def_id), decls }

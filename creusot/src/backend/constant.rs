@@ -5,7 +5,7 @@ use why3::declaration::{Decl, LetDecl, LetKind, Module};
 use crate::{ctx::TranslationCtx, translation::constant::from_ty_const, util::module_name};
 
 use super::{
-    clone_map2::{CloneLevel, Namer},
+    clone_map2::{CloneDepth, CloneVisibility, Namer},
     logic::stub_module,
     signature_of, Cloner,
 };
@@ -22,7 +22,7 @@ pub(crate) fn translate_constant<'tcx>(
 
     let res = res.to_why(ctx, &mut names, None);
     let sig = signature_of(ctx, &mut names, def_id);
-    let mut decls = names.to_clones(ctx, CloneLevel::Body);
+    let mut decls = names.to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep);
     decls.push(Decl::Let(LetDecl {
         kind: Some(LetKind::Constant),
         sig: sig.clone(),

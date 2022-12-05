@@ -10,7 +10,9 @@ use creusot_rustc::{
     type_ir::sty::TyKind::*,
 };
 use why3::{
-    declaration::{AdtDecl, ConstructorDecl, Decl, Field, LetDecl, LetKind, Module},
+    declaration::{
+        AdtDecl, ConstructorDecl, Decl, Field, LetDecl, LetKind, Module, ValDecl, ValKind,
+    },
     Ident,
 };
 
@@ -18,12 +20,15 @@ use why3::{declaration::TyDecl, ty::Type as MlT, QName};
 
 use crate::{
     ctx::*,
-    translation::{pearlite::Term, specification::PreContract, ty::translate_ty_param},
+    translation::{
+        function::all_generic_decls_for, pearlite::Term, specification::PreContract,
+        ty::translate_ty_param,
+    },
     util::{self, constructor_qname, get_builtin, item_qname, PreSignature},
 };
 
 use super::{
-    clone_map2::{self, Namer},
+    clone_map2::{self, CloneDepth, CloneVisibility, Namer},
     sig_to_why3,
     term::lower_pure,
     Cloner,
@@ -185,7 +190,7 @@ pub(crate) fn translate_tydecl<'tcx, C: Cloner<'tcx>>(
         tys.push(build_ty_decl(ctx, names, *did));
     }
 
-    let mut decls = names.to_clones(ctx, clone_map2::CloneLevel::Body);
+    let mut decls = names.to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep);
     decls.push(Decl::TyDecl(TyDecl::Adt { tys: tys.clone() }));
     let modl = Module { name, decls };
     Some(modl)
@@ -276,7 +281,7 @@ pub(crate) fn lower_accessor<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     mut priors: Namer<'_, 'tcx>,
     def_id: DefId,
-) -> Module {
+) -> Vec<Module> {
     let parent = ctx.parent(def_id);
     let (adt_did, _) = match ctx.def_kind(parent) {
         DefKind::Variant => (ctx.parent(parent), parent),
@@ -290,17 +295,34 @@ pub(crate) fn lower_accessor<'tcx>(
     let (sig, acc) = build_accessor(ctx, adt_did, &field_def);
     let acc = lower_pure(ctx, &mut priors, acc);
 
-    let mut decls = priors.to_clones(ctx, clone_map2::CloneLevel::Body);
+    let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, adt_did).collect();
 
+    decls.extend(priors.to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep));
     decls.push(Decl::Let(LetDecl {
-        sig: sig_to_why3(ctx, &mut priors, sig, def_id),
+        sig: sig_to_why3(ctx, &mut priors, sig.clone(), def_id),
         rec: false,
         ghost: false,
         body: acc,
         kind: Some(LetKind::Function),
     }));
 
-    Module { name: module_name(ctx, def_id), decls }
+    let stub = {
+        let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, adt_did).collect();
+        decls.extend(priors.to_clones(ctx, CloneVisibility::Interface, CloneDepth::Shallow));
+        let name = module_name(ctx, def_id);
+        let name = format!("{}_Stub", &*name).into();
+
+        decls.push(Decl::ValDecl(ValDecl {
+            ghost: false,
+            val: true,
+            kind: Some(LetKind::Function),
+            sig: sig_to_why3(ctx, &mut priors, sig, def_id),
+        }));
+
+        Module { name, decls }
+    };
+
+    vec![stub, Module { name: module_name(ctx, def_id), decls }]
 }
 
 pub(crate) fn build_accessor<'tcx>(

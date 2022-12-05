@@ -16,7 +16,7 @@ use crate::{
 };
 
 use self::{
-    clone_map2::{CloneLevel, PriorClones},
+    clone_map2::{CloneDepth, CloneVisibility, PriorClones},
     constant::translate_constant,
     logic::translate_logic_or_predicate,
     program::to_why,
@@ -50,7 +50,7 @@ pub(crate) fn to_why3<'tcx>(
         }
         ItemType::AssocTy => vec![translate_assoc_ty(ctx, priors.get(ctx.tcx, def_id), def_id)],
         ItemType::Constant => translate_constant(ctx, priors.get(ctx.tcx, def_id), def_id),
-        ItemType::Field => vec![lower_accessor(ctx, priors.get(ctx.tcx, def_id), def_id)],
+        ItemType::Field => lower_accessor(ctx, priors.get(ctx.tcx, def_id), def_id),
         ItemType::Unsupported(_) => panic!("unsupported declaration"),
     }
 }
@@ -70,7 +70,12 @@ pub(crate) trait Cloner<'tcx> {
 
     fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>, variant: usize) -> QName;
 
-    fn to_clones(&mut self, ctx: &mut TranslationCtx<'tcx>, clone_level: CloneLevel) -> Vec<Decl>;
+    fn to_clones(
+        &mut self,
+        ctx: &mut TranslationCtx<'tcx>,
+        vis: CloneVisibility,
+        depth: CloneDepth,
+    ) -> Vec<Decl>;
 }
 
 impl<'tcx> Cloner<'tcx> for CloneMap<'tcx> {
@@ -90,7 +95,12 @@ impl<'tcx> Cloner<'tcx> for CloneMap<'tcx> {
         todo!()
     }
 
-    fn to_clones(&mut self, _: &mut TranslationCtx<'tcx>, _: CloneLevel) -> Vec<Decl> {
+    fn to_clones(
+        &mut self,
+        _: &mut TranslationCtx<'tcx>,
+        _: CloneVisibility,
+        _: CloneDepth,
+    ) -> Vec<Decl> {
         todo!()
     }
 }

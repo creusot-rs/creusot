@@ -26,7 +26,7 @@ use ctx::TranslationCtx;
 pub(crate) use function::LocalIdent;
 use heck::ToUpperCamelCase;
 use rustc_middle::ty::Ty;
-use std::{error::Error, fs::File, io::Write};
+use std::{collections::HashSet, error::Error, fs::File, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
 
 pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Error>> {
@@ -109,8 +109,12 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
 
         let priors = PriorClones::from_graph(&mut ctx, &graph);
         let mut modules = Vec::new();
+        let mut visited = HashSet::new();
         for dep in graph.iter() {
             let Dependency::Item(id, _) = dep else { continue };
+            if !visited.insert(id) {
+                continue;
+            };
             let output = if tcx.def_path_str(id).contains(matcher) {
                 box to_why3(&mut ctx, &priors, id).into_iter()
             } else {
