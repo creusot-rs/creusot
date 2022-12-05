@@ -94,6 +94,8 @@ fn get_immediate_deps<'tcx>(
                         TyKind::Adt(def, sub) => {
                             v.push((DepLevel::Body, Dependency::Item(def.did(), *sub)))
                         }
+                        TyKind::Int(_) => { v.push((DepLevel::Body, Dependency::BaseTy(ty))) }
+                        TyKind::Uint(_) => { v.push((DepLevel::Body, Dependency::BaseTy(ty))) }
                         _ => {}
                     },
                     GenericArgKind::Lifetime(_) => {}
@@ -607,13 +609,16 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
         variant: usize,
         ix: usize,
     ) -> QName {
-        let base = self.priors.prior.get(&self.id).unwrap().get((def_id, subst));
-        QName { module: vec![base], name: item_name(self.tcx, def_id, Namespace::ValueNS) }
+        let field = &self.tcx.adt_def(def_id).variants()[variant.into()].fields[ix];
+
+        let base = self.priors.prior.get(&self.id).unwrap().get((field.did, subst));
+        QName { module: vec![base], name: item_name(self.tcx, field.did, Namespace::ValueNS) }
     }
 
     fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>, variant: usize) -> QName {
-        let base = self.priors.prior.get(&self.id).unwrap().get((def_id, subst));
-        QName { module: vec![base], name: item_name(self.tcx, def_id, Namespace::ValueNS) }
+        let variant = &self.tcx.adt_def(def_id).variants()[variant.into()];
+        let base = self.priors.prior.get(&self.id).unwrap().get((variant.def_id, subst));
+        QName { module: vec![base], name: item_name(self.tcx, variant.def_id, Namespace::ValueNS) }
     }
 
     fn to_clones(&mut self, ctx: &mut TranslationCtx<'tcx>, clone_level: CloneLevel) -> Vec<Decl> {
@@ -705,7 +710,8 @@ pub fn make_clones<'tcx, 'a>(
 
         if matches!(item_type(ctx.tcx, id), ItemType::Type | ItemType::Field) {
             let name = item_qname(ctx, id, Namespace::TypeNS).module_qname();
-            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(name) }));
+            let as_name = names.value(id, subst).module_ident().unwrap().clone();
+            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(as_name) }));
             continue;
         };
 

@@ -637,7 +637,10 @@ impl<'tcx> CloneMap<'tcx> {
                         Decl::UseDecl(Use { name: name.clone(), as_: None })
                     } else {
                         let name = cloneable_name(ctx, def_id, CloneLevel::Body);
-                        Decl::UseDecl(Use { name: name.clone(), as_: Some(name) })
+                        Decl::UseDecl(Use {
+                            name: name.clone(),
+                            as_: Some(name.module_ident().unwrap().clone()),
+                        })
                     };
                     // self.import_builtin_module(name.clone());
                     decls.push(name);

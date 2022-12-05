@@ -281,7 +281,7 @@ pub struct ValDecl {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub struct Use {
     pub name: QName,
-    pub as_: Option<QName>,
+    pub as_: Option<Ident>,
 }
 
 #[derive(Debug, Clone)]
