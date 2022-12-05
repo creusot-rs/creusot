@@ -21,7 +21,7 @@ use crate::{
     util,
     validate::{validate_impls, validate_traits},
 };
-use creusot_rustc::hir::{def::DefKind, def_id::LOCAL_CRATE};
+use creusot_rustc::hir::def_id::LOCAL_CRATE;
 use ctx::TranslationCtx;
 pub(crate) use function::LocalIdent;
 use heck::ToUpperCamelCase;

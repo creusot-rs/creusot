@@ -1,8 +1,7 @@
 use super::{fmir, LocalIdent};
 use crate::{
     backend::{program::uint_to_int, Cloner},
-    ctx::{CloneMap, TranslationCtx},
-    translation::ty::{closure_accessor_name, variant_accessor_name},
+    ctx::TranslationCtx,
     util::{constructor_qname, item_qname},
 };
 use creusot_rustc::{
@@ -68,7 +67,7 @@ pub(crate) fn create_assign_inner<'tcx, C: Cloner<'tcx>>(
                 }
             }
             Field(ix, _) => match place_ty.ty.kind() {
-                TyKind::Adt(def, subst) => {
+                TyKind::Adt(def, _) => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                     let variant = &def.variants()[variant_id];
                     let var_size = variant.fields.len();

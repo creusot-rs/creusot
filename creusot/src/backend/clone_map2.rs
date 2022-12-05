@@ -1,8 +1,8 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use creusot_rustc::{
     hir::def_id::DefId,
-    macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
+    macros::{TypeFoldable, TypeVisitable},
     middle::ty::{subst::SubstsRef, EarlyBinder, TypeVisitable},
     resolve::Namespace,
     span::{Symbol, DUMMY_SP},
@@ -15,7 +15,6 @@ use petgraph::{
     EdgeDirection::Outgoing,
 };
 use rustc_middle::{
-    middle::dependency_format::Dependencies,
     mir::{tcx::PlaceTy, PlaceElem},
     ty::{
         subst::{GenericArgKind, InternalSubsts},
@@ -312,7 +311,7 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<'tcx, F> {
                     unreachable!()
                 }
             }
-            TermKind::Projection { lhs, name, def, substs } => {
+            TermKind::Projection { name, def, substs, .. } => {
                 let adt = self.tcx.adt_def(def);
                 let field = &adt.variants()[0u32.into()].fields[name.as_usize()];
                 (self.f)(Dependency::Item(field.did, substs))
@@ -681,7 +680,7 @@ pub fn make_clones<'tcx, 'a>(
     level: CloneLevel,
     root: DefId,
 ) -> Vec<Decl> {
-    let Namer { priors, id, .. } = priors;
+    let Namer { priors, .. } = priors;
     let mut names = priors.get(ctx.tcx, root);
     let root = Dependency::Item(root, InternalSubsts::identity_for_item(ctx.tcx, root));
     let mut topo = DfsPostOrder::new(&priors.graph.graph, root);

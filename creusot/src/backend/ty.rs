@@ -3,19 +3,14 @@ use creusot_rustc::{
     middle::ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
-        ClosureSubsts, FieldDef, ProjectionTy, Ty, TyCtxt, VariantDef,
+        FieldDef, ProjectionTy, Ty, TyCtxt,
     },
     resolve::Namespace,
     span::{Span, Symbol, DUMMY_SP},
     type_ir::sty::TyKind::*,
 };
-use indexmap::IndexSet;
-use std::collections::VecDeque;
 use why3::{
-    declaration::{
-        AdtDecl, ConstructorDecl, Contract, Decl, Field, LetDecl, LetKind, Module, Signature,
-    },
-    exp::{Binder, Exp, Pattern},
+    declaration::{AdtDecl, ConstructorDecl, Decl, Field, LetDecl, LetKind, Module},
     Ident,
 };
 
@@ -24,11 +19,11 @@ use why3::{declaration::TyDecl, ty::Type as MlT, QName};
 use crate::{
     ctx::*,
     translation::{pearlite::Term, specification::PreContract, ty::translate_ty_param},
-    util::{self, constructor_qname, get_builtin, item_name, item_qname, PreSignature},
+    util::{self, constructor_qname, get_builtin, item_qname, PreSignature},
 };
 
 use super::{
-    clone_map2::{self, Namer, Names},
+    clone_map2::{self, Namer},
     sig_to_why3,
     term::lower_pure,
     Cloner,
@@ -104,7 +99,7 @@ fn translate_ty_inner<'tcx, C: Cloner<'tcx>>(
             if matches!(trans, TyTranslation::Declaration) {
                 ctx.crash_and_error(span, "associated types are unsupported in type declarations")
             } else {
-                translate_projection_ty(ctx, names, pty)
+                translate_projection_ty(names, pty)
             }
         }
         Ref(_, ty, borkind) => {
@@ -136,10 +131,7 @@ fn translate_ty_inner<'tcx, C: Cloner<'tcx>>(
                 return MlT::Tuple(Vec::new());
             }
 
-            let name = item_name(ctx.tcx, *id, Namespace::TypeNS).to_string().to_lowercase();
-            let cons = MlT::TConstructor(names.ty(*id, subst));
-
-            cons
+            MlT::TConstructor(names.ty(*id, subst))
         }
         FnDef(_, _) =>
         /* FnDef types are effectively singleton types, so it is sound to translate to unit. */
@@ -165,7 +157,8 @@ pub(crate) fn translate_tydecl<'tcx, C: Cloner<'tcx>>(
 
     let bg = ctx.binding_group(did).clone();
 
-    let repr = *bg.first().unwrap();
+    // Use the representative element of the binding group as the primary identifier
+    let did = *bg.first().unwrap();
 
     let name = module_name(ctx, did);
 
@@ -270,11 +263,9 @@ fn translate_ty_name(ctx: &TranslationCtx<'_>, did: DefId) -> QName {
 }
 
 pub(crate) fn translate_projection_ty<'tcx, C: Cloner<'tcx>>(
-    ctx: &mut TranslationCtx<'tcx>,
     names: &mut C,
     pty: &ProjectionTy<'tcx>,
 ) -> MlT {
-    // ctx.translate(pty.trait_def_id(ctx.tcx));
     let name = names.ty(pty.item_def_id, pty.substs);
     MlT::TConstructor(name)
 }
@@ -288,7 +279,7 @@ pub(crate) fn lower_accessor<'tcx>(
     def_id: DefId,
 ) -> Module {
     let parent = ctx.parent(def_id);
-    let (adt_did, variant_id) = match ctx.def_kind(parent) {
+    let (adt_did, _) = match ctx.def_kind(parent) {
         DefKind::Variant => (ctx.parent(parent), parent),
         DefKind::Struct | DefKind::Enum | DefKind::Union => {
             (parent, ctx.adt_def(parent).variants()[0u32.into()].def_id)

@@ -3,7 +3,7 @@ use creusot_rustc::{
     middle::ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
-        ClosureSubsts, FieldDef, ProjectionTy, Ty, TyCtxt, VariantDef,
+        ClosureSubsts, FieldDef, ProjectionTy, Ty, TyCtxt,
     },
     resolve::Namespace,
     span::{Span, Symbol, DUMMY_SP},
@@ -157,7 +157,6 @@ fn translate_ty_inner<'tcx>(
                 return MlT::Tuple(Vec::new());
             }
 
-            let name = item_name(ctx.tcx, *id, Namespace::TypeNS).to_string().to_lowercase();
             let cons = MlT::TConstructor(names.ty(*id, subst));
 
             cons
@@ -177,7 +176,7 @@ fn translate_ty_inner<'tcx>(
 }
 
 pub(crate) fn translate_projection_ty<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    _: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     pty: &ProjectionTy<'tcx>,
 ) -> MlT {

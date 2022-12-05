@@ -286,7 +286,7 @@ pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item
         .filter(move |item| !is_spec(tcx, item.def_id))
 }
 
-use crate::function::{all_generic_decls_for, own_generic_decls_for};
+use crate::function::all_generic_decls_for;
 use creusot_rustc::middle::ty::{subst::InternalSubsts, AssocItem, Binder};
 
 pub(crate) fn resolve_impl_source_opt<'tcx>(

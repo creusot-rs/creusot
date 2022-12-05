@@ -1,6 +1,5 @@
 use crate::{
-    clone_map::PreludeModule,
-    ctx::{item_name, CloneMap, TranslationCtx},
+    ctx::{item_name, TranslationCtx},
     translation::{
         binop_to_binop,
         fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
@@ -14,12 +13,12 @@ use creusot_rustc::{
     hir::{def::DefKind, Unsafety},
     middle::ty::TyKind,
     resolve::Namespace,
-    smir::mir::{self, BasicBlock, BinOp, Place},
+    smir::mir::{self, BasicBlock, BinOp},
     span::DUMMY_SP,
 };
 
 use creusot_rustc::hir::def_id::DefId;
-use rustc_middle::{mir::Body, ty::WithOptConstParam};
+use rustc_middle::ty::WithOptConstParam;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     declaration::{CfgFunction, Decl, Module},
@@ -369,7 +368,10 @@ impl<'tcx> Branches<'tcx> {
                     .map(|(var, bb)| {
                         let variant = &adt.variant(var);
                         let wilds = variant.fields.iter().map(|_| Pattern::Wildcard).collect();
-                        let cons_name = constructor_qname(ctx, variant);
+
+                        let cons_name = names.constructor(adt.did(), substs, var.as_usize());
+
+                        constructor_qname(ctx, variant);
                         (Pattern::ConsP(cons_name, wilds), Goto(BlockId(bb.into())))
                     })
                     .chain(std::iter::once((Pattern::Wildcard, Goto(BlockId(def.into())))))

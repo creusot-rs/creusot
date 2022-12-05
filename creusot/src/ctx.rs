@@ -7,14 +7,13 @@ use crate::{
     metadata::{BinaryMetadata, Metadata},
     options::{Options, SpanMode},
     translation::{
-        self, external,
+        self,
         external::{extract_extern_specs_from_item, ExternSpec},
         fmir,
-        interface::interface_for,
         pearlite::{self, Term},
         specification::ContractClauses,
         traits::TraitImpl,
-        ty::{self, translate_tydecl, ty_binding_group},
+        ty::ty_binding_group,
     },
     util,
     util::item_type,
@@ -22,10 +21,7 @@ use crate::{
 use creusot_rustc::{
     data_structures::captures::Captures,
     errors::{DiagnosticBuilder, DiagnosticId},
-    hir::{
-        def::DefKind,
-        def_id::{DefId, LocalDefId},
-    },
+    hir::def_id::{DefId, LocalDefId},
     infer::traits::{Obligation, ObligationCause},
     middle::ty::{subst::InternalSubsts, ParamEnv, TyCtxt},
     span::{Span, Symbol, DUMMY_SP},
@@ -194,7 +190,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     // Generic entry point for function translation
-    fn translate_function(&mut self, def_id: DefId) {}
+    fn translate_function(&mut self, _: DefId) {}
 
     pub(crate) fn trait_impl(&mut self, def_id: DefId) -> &TraitImpl<'tcx> {
         if !self.impl_data.contains_key(&def_id) {

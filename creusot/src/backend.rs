@@ -10,13 +10,13 @@ use crate::{
     clone_map::CloneMap,
     ctx::TranslationCtx,
     util::{
-        self, ident_of, item_name, item_type, module_name, pre_sig_of, why3_attrs,
-        AnonymousParamName, ItemType, PreSignature,
+        self, ident_of, item_name, item_type, pre_sig_of, why3_attrs, AnonymousParamName, ItemType,
+        PreSignature,
     },
 };
 
 use self::{
-    clone_map2::{CloneLevel, Namer, Names, PriorClones},
+    clone_map2::{CloneLevel, PriorClones},
     constant::translate_constant,
     logic::translate_logic_or_predicate,
     program::to_why,
@@ -82,21 +82,15 @@ impl<'tcx> Cloner<'tcx> for CloneMap<'tcx> {
         self.ty(def_id, subst)
     }
 
-    fn accessor(
-        &mut self,
-        def_id: DefId,
-        subst: SubstsRef<'tcx>,
-        variant: usize,
-        ix: usize,
-    ) -> QName {
+    fn accessor(&mut self, _: DefId, _: SubstsRef<'tcx>, _: usize, _: usize) -> QName {
         todo!()
     }
 
-    fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>, variant: usize) -> QName {
+    fn constructor(&mut self, _: DefId, _: SubstsRef<'tcx>, _: usize) -> QName {
         todo!()
     }
 
-    fn to_clones(&mut self, ctx: &mut TranslationCtx<'tcx>, clone_level: CloneLevel) -> Vec<Decl> {
+    fn to_clones(&mut self, _: &mut TranslationCtx<'tcx>, _: CloneLevel) -> Vec<Decl> {
         todo!()
     }
 }

@@ -1,27 +1,19 @@
 use crate::{
-    backend::logic::stub_module,
-    clone_map::CloneMap,
-    ctx::{module_name, CloneSummary, TranslatedItem, TranslationCtx},
-    traits::resolve_assoc_item_opt,
-    translation::pearlite::Literal,
-    util::{get_builtin, signature_of},
+    ctx::TranslationCtx, traits::resolve_assoc_item_opt, translation::pearlite::Literal,
+    util::get_builtin,
 };
 use creusot_rustc::{
-    hir::def_id::DefId,
     middle::{
         mir::{
             interpret::{AllocRange, ConstValue},
             UnevaluatedConst,
         },
-        ty,
         ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
     },
     smir::mir::ConstantKind,
     span::{Span, Symbol},
     target::abi::Size,
 };
-use rustc_middle::ty::subst::InternalSubsts;
-use why3::declaration::{Decl, LetDecl, LetKind, Module};
 
 use super::{
     fmir::Expr,

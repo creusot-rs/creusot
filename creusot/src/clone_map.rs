@@ -310,7 +310,6 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     pub(crate) fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        let tcx = self.tcx;
         let name = item_name(self.tcx, def_id, Namespace::TypeNS).to_string().to_lowercase();
         self.insert(def_id, subst).qname_ident(name.into())
     }

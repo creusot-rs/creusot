@@ -38,9 +38,10 @@ use creusot_rustc::{
 use indexmap::IndexMap;
 use rustc_middle::{mir, ty::UpvarCapture};
 use std::rc::Rc;
-use why3::{declaration::*, exp::*, mlcfg::*, ty::Type, Ident};
+use why3::{declaration::*, exp::*, ty::Type, Ident};
 
 pub(crate) mod place;
+#[allow(dead_code, unused_imports)]
 mod promoted;
 mod statement;
 pub(crate) mod terminator;
@@ -679,7 +680,6 @@ fn closure_resolve<'tcx>(
 
     let csubst = subst.as_closure();
     for (ix, ty) in csubst.upvar_tys().enumerate() {
-        let acc_name = ty::closure_accessor_name(ctx.tcx, def_id, ix);
         let acc = Exp::impure_qvar(names.accessor(def_id, subst, 0, ix));
         let self_ = Exp::pure_var(Ident::build("_1'"));
 

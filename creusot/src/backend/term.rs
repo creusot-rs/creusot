@@ -233,13 +233,7 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
                         let TyKind::Closure(did, subst) = self.ctx.type_of(did).kind() else { unreachable!() };
                         self.names.accessor(*did, subst, 0, name.as_usize())
                     }
-                    _ => {
-                        let def = self.ctx.tcx.adt_def(did);
-                        // self.ctx.translate_accessor(
-                        //     def.variants()[0u32.into()].fields[name.as_usize()].did,
-                        // );
-                        self.names.accessor(did, substs, 0, name.as_usize())
-                    }
+                    _ => self.names.accessor(did, substs, 0, name.as_usize()),
                 };
                 Exp::Call(box Exp::pure_qvar(accessor), vec![lhs])
             }
@@ -360,7 +354,7 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
 
 pub(crate) fn lower_literal<'tcx, C: Cloner<'tcx>>(
     _ctx: &mut TranslationCtx<'tcx>,
-    names: &mut C,
+    _: &mut C,
     lit: Literal<'tcx>,
 ) -> Exp {
     match lit {
@@ -381,7 +375,7 @@ pub(crate) fn lower_literal<'tcx, C: Cloner<'tcx>>(
                 Constant::const_false().into()
             }
         }
-        Literal::Function(id, subst) => Exp::Tuple(Vec::new()),
+        Literal::Function(_, _) => Exp::Tuple(Vec::new()),
         Literal::Float(f) => Constant::Float(f).into(),
         Literal::ZST => Exp::Tuple(Vec::new()),
         Literal::String(string) => Constant::String(string).into(),
