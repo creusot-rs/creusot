@@ -31,7 +31,7 @@ pub(crate) fn translate_constant<'tcx>(
         body: res,
     }));
 
-    let stub = stub_module(ctx, def_id);
+    let stub = stub_module(ctx, names, def_id);
 
     let modl = Module { name: module_name(ctx, def_id), decls };
     vec![stub, modl]

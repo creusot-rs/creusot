@@ -146,8 +146,9 @@ fn get_immediate_deps<'tcx>(
     }
 }
 
-struct TermDep<F> {
+struct TermDep<'tcx, F> {
     f: F,
+    tcx: TyCtxt<'tcx>,
 }
 
 // Dumb wrapper trait for syntax
@@ -165,14 +166,14 @@ impl<'tcx> VisitDeps<'tcx> for TraitImpl<'tcx> {
 }
 
 impl<'tcx> VisitDeps<'tcx> for Term<'tcx> {
-    fn deps<F: FnMut(Dependency<'tcx>)>(&self, _: TyCtxt<'tcx>, f: &mut F) {
-        TermDep { f }.visit_term(self)
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, tcx: TyCtxt<'tcx>, f: &mut F) {
+        TermDep { f, tcx }.visit_term(self)
     }
 }
 
 impl<'tcx> VisitDeps<'tcx> for Ty<'tcx> {
-    fn deps<F: FnMut(Dependency<'tcx>)>(&self, _: TyCtxt<'tcx>, f: &mut F) {
-        TermDep { f }.visit_ty(*self);
+    fn deps<F: FnMut(Dependency<'tcx>)>(&self, tcx: TyCtxt<'tcx>, f: &mut F) {
+        TermDep { f, tcx }.visit_ty(*self);
     }
 }
 
@@ -182,7 +183,7 @@ impl<'tcx> VisitDeps<'tcx> for PreSignature<'tcx> {
             t.deps(tcx, f);
         });
 
-        self.visit_with(&mut TermDep { f });
+        self.visit_with(&mut TermDep { f, tcx });
     }
 }
 
@@ -299,7 +300,7 @@ impl<'tcx> VisitDeps<'tcx> for Place<'tcx> {
     }
 }
 
-impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<F> {
+impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<'tcx, F> {
     fn visit_term(&mut self, term: &Term<'tcx>) {
         match &term.kind {
             TermKind::Item(id, subst) => (self.f)(Dependency::Item(*id, subst)),
@@ -311,13 +312,18 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<F> {
                     unreachable!()
                 }
             }
+            TermKind::Projection { lhs, name, def, substs } => {
+                let adt = self.tcx.adt_def(def);
+                let field = &adt.variants()[0u32.into()].fields[name.as_usize()];
+                (self.f)(Dependency::Item(field.did, substs))
+            }
             _ => {}
         };
         super_visit_term(term, self)
     }
 }
 
-impl<'tcx, F: FnMut(Dependency<'tcx>)> TypeVisitor<'tcx> for TermDep<F> {
+impl<'tcx, F: FnMut(Dependency<'tcx>)> TypeVisitor<'tcx> for TermDep<'tcx, F> {
     fn visit_ty(&mut self, t: Ty<'tcx>) -> std::ops::ControlFlow<Self::BreakTy> {
         match t.kind() {
             TyKind::Adt(def, sub) => (self.f)(Dependency::Item(def.did(), *sub)),

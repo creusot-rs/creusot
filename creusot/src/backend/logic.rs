@@ -58,17 +58,19 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
     } else {
         body_module(ctx, priors, def_id)
     };
-    let proof_modl = if def_id.is_local() { proof_module(ctx, def_id) } else { None };
-    once(stub_module(ctx, def_id)).chain(once(body_modl)).chain(proof_modl.into_iter()).collect()
+    let proof_modl = if def_id.is_local() { proof_module(ctx, priors, def_id) } else { None };
+    once(stub_module(ctx, priors, def_id))
+        .chain(once(body_modl))
+        .chain(proof_modl.into_iter())
+        .collect()
 }
 
 fn builtin_body<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    priors: Namer<'_, 'tcx>,
+    mut names: Namer<'_, 'tcx>,
     def_id: DefId,
 ) -> Module {
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
-    let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
+    let mut sig = signature_of(ctx, &mut names, def_id);
     let (val_args, val_binders) = binders_to_args(ctx, sig.args);
     sig.args = val_binders;
 
@@ -93,12 +95,9 @@ fn builtin_body<'tcx>(
     }
 
     let builtin = QName::from_string(get_builtin(ctx.tcx, def_id).unwrap().as_str()).unwrap();
-
-    if !builtin.module.is_empty() {
-        names.import_builtin_module(builtin.clone().module_qname());
-    }
-
-    let mut decls = make_clones(ctx, priors, clone_map2::CloneLevel::Stub, def_id);
+    let mut decls = make_clones(ctx, names, clone_map2::CloneLevel::Stub, def_id);
+    decls.push(Decl::UseDecl(Use { name: builtin.clone().module_qname(), as_: None }));
+    // ???
     if !builtin.module.is_empty() {
         let body = Exp::Call(box Exp::pure_qvar(builtin.without_search_path()), val_args);
 
@@ -121,6 +120,7 @@ fn body_module<'tcx>(
     mut priors: Namer<'_, 'tcx>,
     def_id: DefId,
 ) -> Module {
+    // BOOM
     let mut sig = signature_of(ctx, &mut priors, def_id);
     let mut val_sig = sig.clone();
     val_sig.contract.variant = Vec::new();
@@ -201,9 +201,12 @@ fn body_module<'tcx>(
     Module { name, decls }
 }
 
-pub(crate) fn stub_module(ctx: &mut TranslationCtx, def_id: DefId) -> Module {
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
-    let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
+pub(crate) fn stub_module<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    mut names: Namer<'_, 'tcx>,
+    def_id: DefId,
+) -> Module {
+    let mut sig = signature_of(ctx, &mut names, def_id);
 
     if util::is_predicate(ctx.tcx, def_id) {
         sig.retty = None;
@@ -217,31 +220,34 @@ pub(crate) fn stub_module(ctx: &mut TranslationCtx, def_id: DefId) -> Module {
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-    decls.extend(names.to_clones(ctx));
+    decls.extend(names.to_clones(ctx, clone_map2::CloneLevel::Stub));
     decls.push(decl);
 
     Module { name, decls }
 }
 
-fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
+fn proof_module<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    mut names: Namer<'_, 'tcx>,
+    def_id: DefId,
+) -> Option<Module> {
     if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         return None;
     }
 
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
+    // let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
 
-    let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
+    let mut sig = signature_of(ctx, &mut names, def_id);
 
     if sig.contract.is_empty() {
-        let _ = names.to_clones(ctx);
         return None;
     }
-    let term = ctx.term(def_id).unwrap().clone();
-    let body = specification::lower_impure(ctx, &mut names, term);
-
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-    decls.extend(names.to_clones(ctx));
+    decls.extend(names.to_clones(ctx, clone_map2::CloneLevel::Body));
+
+    let term = ctx.term(def_id).unwrap().clone();
+    let body = specification::lower_impure(ctx, &mut names, term);
 
     let kind = match util::item_type(ctx.tcx, def_id) {
         ItemType::Predicate => {
