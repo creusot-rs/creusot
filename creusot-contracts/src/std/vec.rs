@@ -185,33 +185,33 @@ impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {
     }
 }
 
-// impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
-//     #[predicate]
-//     fn completed(&mut self) -> bool {
-//         pearlite! { self.resolve() && @self == Seq::EMPTY }
-//     }
+impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
+    #[predicate]
+    fn completed(&mut self) -> bool {
+        pearlite! { self.resolve() && @self == Seq::EMPTY }
+    }
 
-//     #[predicate]
-//     fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
-//         pearlite! {
-//             @self == visited.concat(@rhs)
-//         }
-//     }
+    #[predicate]
+    fn produces(self, visited: Seq<T>, rhs: Self) -> bool {
+        pearlite! {
+            @self == visited.concat(@rhs)
+        }
+    }
 
-//     #[law]
-//     #[ensures(a.produces(Seq::EMPTY, a))]
-//     fn produces_refl(a: Self) {}
+    #[law]
+    #[ensures(a.produces(Seq::EMPTY, a))]
+    fn produces_refl(a: Self) {}
 
-//     #[law]
-//     #[requires(a.produces(ab, b))]
-//     #[requires(b.produces(bc, c))]
-//     #[ensures(a.produces(ab.concat(bc), c))]
-//     fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
-// }
+    #[law]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<T>, b: Self, bc: Seq<T>, c: Self) {}
+}
 
-// impl<T> FromIterator<T> for Vec<T> {
-//     #[predicate]
-//     fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
-//         pearlite! { prod == @res }
-//     }
-// }
+impl<T> FromIterator<T> for Vec<T> {
+    #[predicate]
+    fn from_iter_post(prod: Seq<T>, res: Self) -> bool {
+        pearlite! { prod == @res }
+    }
+}

@@ -174,7 +174,7 @@ pub use crate::{
         clone::Clone,
         cmp::PartialEq,
         default::Default,
-        //     iter::{FromIterator, IntoIterator, Iterator},
+        iter::{FromIterator, IntoIterator, Iterator},
     },
     well_founded::WellFounded,
 };

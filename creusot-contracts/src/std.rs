@@ -5,7 +5,7 @@ pub mod clone;
 pub mod cmp;
 pub mod default;
 // pub mod deque;
-// pub mod iter;
+pub mod iter;
 pub mod mem;
 pub mod num;
 pub mod ops;

@@ -40,16 +40,14 @@ fn slice_model<T>(_: [T]) -> Seq<T> {
 impl<T> Default for &mut [T] {
     #[predicate]
     fn is_default(self) -> bool {
-        true
-        // pearlite! { @self == Seq::EMPTY && @^self == Seq::EMPTY }
+        pearlite! { @self == Seq::EMPTY && @^self == Seq::EMPTY }
     }
 }
 
 impl<T> Default for &[T] {
     #[predicate]
     fn is_default(self) -> bool {
-        true
-        // pearlite! { @self == Seq::EMPTY }
+        pearlite! { @self == Seq::EMPTY }
     }
 }
 
