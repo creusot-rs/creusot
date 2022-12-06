@@ -1,5 +1,5 @@
 use super::{
-    function::{closure_contract, closure_generic_decls},
+    function::closure_generic_decls,
     ty::{closure_accessors, translate_closure_ty},
 };
 use crate::{backend::logic::spec_axiom, clone_map::CloneMap, ctx::*, util};
@@ -23,24 +23,25 @@ pub(crate) fn interface_for<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId)
     let mut iface_decls = Vec::new();
 
     if ctx.tcx.is_closure(def_id) {
-        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-            let tydecl = translate_closure_ty(ctx, &mut names, def_id, subst);
+        // if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
+        //     let tydecl = translate_closure_ty(ctx, &mut names, def_id, subst);
 
-            let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
-            iface_decls.push(Decl::TyDecl(tydecl));
-            iface_decls.extend(accessors);
+        //     let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
+        //     iface_decls.push(Decl::TyDecl(tydecl));
+        //     iface_decls.extend(accessors);
 
-            let contracts = closure_contract(ctx, &mut names, def_id);
-            iface_decls.extend(contracts);
+        //     let contracts = closure_contract(ctx, &mut names, def_id);
+        //     iface_decls.extend(contracts);
 
-            if subst.as_closure().kind() == ClosureKind::FnMut {
-                sig.contract.ensures.push(
-                    Exp::pure_var("unnest".into())
-                        .app_to(Exp::Current(box Exp::pure_var("_1'".into())))
-                        .app_to(Exp::Final(box Exp::pure_var("_1'".into()))),
-                )
-            }
-        }
+        //     if subst.as_closure().kind() == ClosureKind::FnMut {
+        //         sig.contract.ensures.push(
+        //             Exp::pure_var("unnest".into())
+        //                 .app_to(Exp::Current(box Exp::pure_var("_1'".into())))
+        //                 .app_to(Exp::Final(box Exp::pure_var("_1'".into()))),
+        //         )
+        //     }
+        // }
+        panic!()
     }
 
     match util::item_type(ctx.tcx, def_id) {

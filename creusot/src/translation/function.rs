@@ -15,7 +15,7 @@ use crate::{
         traits, ty,
         ty::{closure_accessors, translate_closure_ty, translate_ty},
     },
-    util::{self, ident_of, is_ghost_closure, pre_sig_of, sig_to_why3, signature_of},
+    util::{self, ident_of, is_ghost_closure, pre_sig_of, sig_to_why3, signature_of, PreSignature},
 };
 use creusot_rustc::{
     borrowck::borrow_set::BorrowSet,
@@ -36,7 +36,10 @@ use creusot_rustc::{
     transform::{remove_false_edges::*, simplify::*},
 };
 use indexmap::IndexMap;
-use rustc_middle::{mir, ty::UpvarCapture};
+use rustc_middle::{
+    mir,
+    ty::{InternalSubsts, RegionKind, UpvarCapture},
+};
 use std::rc::Rc;
 use why3::{declaration::*, exp::*, ty::Type, Ident};
 
@@ -487,26 +490,22 @@ impl LocalIdent {
     }
 }
 
-pub(crate) fn closure_contract<'tcx>(
+type ClosureContract<'tcx> = Vec<(Symbol, PreSignature<'tcx>, Term<'tcx>)>;
+
+pub(crate) fn closure_contract2<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
     def_id: DefId,
-) -> Vec<Decl> {
+) -> ClosureContract<'tcx> {
     use creusot_rustc::middle::ty::{self, ClosureKind::*};
     let TyKind::Closure(_, subst) =  ctx.tcx.type_of(def_id).kind() else { unreachable!() };
 
     let kind = subst.as_closure().kind();
-
     let mut pre_clos_sig = pre_sig_of(ctx, def_id);
-    // let mut clos_sig = signature_of(ctx, names, def_id);
 
-    // Get the raw contracts
-    let contract = contract_of(ctx, def_id);
+    let mut postcondition: Term<'_> = pre_clos_sig.contract.ensures_conj(ctx.tcx);
+    let mut precondition: Term<'_> = pre_clos_sig.contract.requires_conj(ctx.tcx);
 
-    let mut postcondition: Term<'_> = contract.ensures_conj(ctx.tcx);
-    let mut precondition: Term<'_> = contract.requires_conj(ctx.tcx);
-
-    let result_ty = translate_ty(ctx, names, DUMMY_SP, pre_clos_sig.output);
+    let result_ty = pre_clos_sig.output;
     pre_clos_sig.contract = PreContract::default();
 
     let args: Vec<_> = pre_clos_sig.inputs.drain(1..).collect();
@@ -552,24 +551,23 @@ pub(crate) fn closure_contract<'tcx>(
         };
     }
 
-    // Build the signatures for the pre and post conditions
-    let mut post_sig = sig_to_why3(ctx, names, pre_clos_sig.clone(), def_id);
-    let mut pre_sig = sig_to_why3(ctx, names, pre_clos_sig, def_id);
+    let mut post_sig = pre_clos_sig.clone();
+    let mut pre_sig = pre_clos_sig;
 
-    post_sig.retty = None;
-    pre_sig.retty = None;
-    post_sig.args.push(Binder::typed(Ident::build("result"), result_ty));
+    post_sig.inputs.push((Symbol::intern("result"), DUMMY_SP, result_ty));
 
     let mut contracts = Vec::new();
     let env_ty =
         ctx.tcx.closure_env_ty(def_id, subst, ty::RegionKind::ReErased).unwrap().peel_refs();
-    let self_ty = translate_ty(ctx, names, DUMMY_SP, env_ty);
+    let self_ty = env_ty;
 
     {
         // Preconditions are the same for every kind of closure
         let mut pre_sig = pre_sig;
-        pre_sig.name = Ident::build("precondition");
-        pre_sig.args[0] = Binder::typed("self".into(), self_ty.clone());
+
+        pre_sig.inputs[0].0 = Symbol::intern("self");
+        pre_sig.inputs[0].2 = self_ty;
+
         let mut subst = util::closure_capture_subst(
             ctx.tcx,
             def_id,
@@ -581,33 +579,30 @@ pub(crate) fn closure_contract<'tcx>(
 
         let mut precondition = precondition.clone();
         subst.visit_mut_term(&mut precondition);
-        let precondition: Exp =
-            names.with_public_clones(|names| lower_pure(ctx, names, precondition));
 
-        contracts.push(Decl::PredDecl(Predicate { sig: pre_sig, body: precondition }));
+        contracts.push((Symbol::intern("precondition"), pre_sig, precondition));
     }
 
     if kind <= Fn {
         let mut post_sig = post_sig.clone();
-        post_sig.name = Ident::build("postcondition");
-        post_sig.args[0] = Binder::typed("self".into(), self_ty.clone());
 
+        post_sig.inputs[0].0 = Symbol::intern("self");
+        post_sig.inputs[0].2 = self_ty;
         let mut csubst =
             util::closure_capture_subst(ctx.tcx, def_id, subst, Fn, Symbol::intern("self"), true);
         let mut postcondition = postcondition.clone();
 
         csubst.visit_mut_term(&mut postcondition);
-        let postcondition: Exp =
-            names.with_public_clones(|names| lower_pure(ctx, names, postcondition));
-        contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
+
+        contracts.push((Symbol::intern("postcondition"), post_sig, postcondition));
     }
 
     if kind <= FnMut {
         let mut post_sig = post_sig.clone();
-        post_sig.name = Ident::build("postcondition_mut");
+        // post_sig.name = Ident::build("postcondition_mut");
 
-        let self_ty = Type::MutableBorrow(Box::new(self_ty.clone()));
-        post_sig.args[0] = Binder::typed("self".into(), self_ty);
+        post_sig.inputs[0].0 = Symbol::intern("self");
+        post_sig.inputs[0].2 = ctx.mk_mut_ref(ctx.mk_region(RegionKind::ReErased), self_ty);
 
         let mut csubst = util::closure_capture_subst(
             ctx.tcx,
@@ -621,33 +616,66 @@ pub(crate) fn closure_contract<'tcx>(
         let mut postcondition = postcondition.clone();
         csubst.visit_mut_term(&mut postcondition);
 
-        let mut postcondition: Exp =
-            names.with_public_clones(|names| lower_pure(ctx, names, postcondition));
-        postcondition = postcondition.lazy_and(
-            Exp::pure_var("unnest".into())
-                .app_to(Exp::Current(box Exp::pure_var("self".into())))
-                .app_to(Exp::Final(box Exp::pure_var("self".into()))),
-        );
-
         let args = subst.as_closure().sig().inputs().skip_binder()[0];
         let unnest_subst = ctx.mk_substs([GenericArg::from(args), GenericArg::from(env_ty)].iter());
 
         let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
-        let unnest_sig = EarlyBinder(pre_sig_of(ctx, unnest_id)).subst(ctx.tcx, unnest_subst);
-        let mut unnest_sig = sig_to_why3(ctx, names, unnest_sig, unnest_id);
-        unnest_sig.retty = None;
 
-        contracts.push(Decl::PredDecl(Predicate {
-            sig: unnest_sig,
-            body: closure_unnest(ctx.tcx, names, def_id, subst),
-        }));
-        contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
+        let mut postcondition: Term<'tcx> = postcondition;
+        // let mut postcondition: Exp =
+        //     names.with_public_clones(|names| lower_pure(ctx, names, postcondition));
+        postcondition = postcondition.conj(Term {
+            ty: ctx.types.bool,
+            kind: TermKind::Call {
+                id: unnest_id,
+                subst: unnest_subst,
+                fun: Box::new(Term {
+                    ty: EarlyBinder(ctx.type_of(unnest_id)).subst(ctx.tcx, unnest_subst),
+                    kind: TermKind::Item(unnest_id, unnest_subst),
+                    span: DUMMY_SP,
+                }),
+                args: vec![
+                    Term {
+                        ty: self_ty,
+                        kind: TermKind::Cur {
+                            term: box Term {
+                                ty: self_ty,
+                                kind: TermKind::Var(Symbol::intern("self")),
+                                span: DUMMY_SP,
+                            },
+                        },
+                        span: DUMMY_SP,
+                    },
+                    Term {
+                        ty: self_ty,
+                        kind: TermKind::Fin {
+                            term: box Term {
+                                ty: self_ty,
+                                kind: TermKind::Var(Symbol::intern("self")),
+                                span: DUMMY_SP,
+                            },
+                        },
+                        span: DUMMY_SP,
+                    },
+                ],
+            },
+            span: DUMMY_SP,
+        });
+        contracts.push((Symbol::intern("postcondition_mut"), post_sig, postcondition));
+
+        let unnest_sig = EarlyBinder(pre_sig_of(ctx, unnest_id)).subst(ctx.tcx, unnest_subst);
+
+        contracts.push((
+            Symbol::intern("unnest"),
+            unnest_sig,
+            closure_unnest2(ctx.tcx, def_id, subst),
+        ));
     }
 
     if kind <= FnOnce {
         let mut post_sig = post_sig.clone();
-        post_sig.name = Ident::build("postcondition_once");
-        post_sig.args[0] = Binder::typed("self".into(), self_ty.clone());
+        post_sig.inputs[0].0 = Symbol::intern("self");
+        post_sig.inputs[0].2 = self_ty;
 
         let mut csubst = util::closure_capture_subst(
             ctx.tcx,
@@ -660,86 +688,134 @@ pub(crate) fn closure_contract<'tcx>(
 
         let mut postcondition = postcondition.clone();
         csubst.visit_mut_term(&mut postcondition);
-        let postcondition: Exp =
-            names.with_public_clones(|names| lower_pure(ctx, names, postcondition));
-        contracts.push(Decl::PredDecl(Predicate { sig: post_sig, body: postcondition }));
+
+        contracts.push((Symbol::intern("postcondition_once"), post_sig, postcondition));
     }
 
-    contracts.push(closure_resolve(ctx, names, def_id, subst));
+    contracts.push(closure_resolve2(ctx, def_id, subst));
 
     return contracts;
 }
 
-fn closure_resolve<'tcx>(
+fn closure_resolve2<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
     def_id: DefId,
     subst: SubstsRef<'tcx>,
-) -> Decl {
-    let mut resolve = Exp::mk_true();
+) -> (Symbol, PreSignature<'tcx>, Term<'tcx>) {
+    let mut resolve = Term::mk_true(ctx.tcx);
 
+    let self_ = Term {
+        ty: ctx.type_of(def_id),
+        kind: TermKind::Var(Symbol::intern("_1'")),
+        span: DUMMY_SP,
+    };
     let csubst = subst.as_closure();
+    let param_env = ctx.param_env(def_id);
     for (ix, ty) in csubst.upvar_tys().enumerate() {
-        let acc = Exp::impure_qvar(names.accessor(def_id, subst, 0, ix));
-        let self_ = Exp::pure_var(Ident::build("_1'"));
-
-        let param_env = ctx.param_env(def_id);
-        let resolve_one = resolve_predicate_of(ctx, names, param_env, ty).exp(acc.app_to(self_));
-        resolve = resolve_one.log_and(resolve);
+        let proj = Term {
+            ty,
+            kind: TermKind::Projection {
+                lhs: box self_.clone(),
+                name: ix.into(),
+                def: def_id,
+                substs: InternalSubsts::identity_for_item(ctx.tcx, def_id),
+            },
+            span: DUMMY_SP,
+        };
+        // let acc = Exp::impure_qvar(names.accessor(def_id, subst, 0, ix));
+        // let self_ = Exp::pure_var(Ident::build("_1'"));
+        if let Some((id, subst)) = resolve_predicate_of2(ctx, param_env, ty) {
+            resolve = Term {
+                ty: ctx.types.bool,
+                kind: TermKind::Call {
+                    id,
+                    subst,
+                    fun: box Term {
+                        ty: ctx.type_of(id),
+                        kind: TermKind::Item(id, subst),
+                        span: DUMMY_SP,
+                    },
+                    args: vec![proj],
+                },
+                span: DUMMY_SP,
+            }
+            .conj(resolve);
+        }
     }
 
-    let sig = Signature {
-        attrs: Vec::new(),
-        contract: Contract::new(),
-        retty: None,
-        name: Ident::build("resolve"),
-        args: vec![Binder::typed(
-            Ident::build("_1'"),
-            translate_ty(ctx, names, ctx.def_span(def_id), ctx.type_of(def_id)),
-        )],
+    let sig = PreSignature {
+        inputs: vec![(Symbol::intern("_1'"), ctx.def_span(def_id), ctx.type_of(def_id))],
+        output: ctx.types.bool,
+        contract: PreContract::default(),
     };
 
-    Decl::PredDecl(Predicate { sig, body: resolve })
+    (Symbol::intern("resolve"), sig, resolve)
 }
 
-pub(crate) fn closure_unnest<'tcx>(
+pub(crate) fn closure_unnest2<'tcx>(
     tcx: TyCtxt<'tcx>,
-    names: &mut CloneMap<'tcx>,
     def_id: DefId,
     subst: SubstsRef<'tcx>,
-) -> Exp {
-    // FIXME: does not work with move closures
-    // (problem is: how to detect a move closure).
+) -> Term<'tcx> {
+    let env_ty = tcx.closure_env_ty(def_id, subst, RegionKind::ReErased).unwrap().peel_refs();
 
+    let self_ = Term { ty: env_ty, kind: TermKind::Var(Symbol::intern("_1'")), span: DUMMY_SP };
     let captures =
         tcx.typeck(def_id.expect_local()).closure_min_captures_flattened(def_id.expect_local());
 
-    let mut unnest = Exp::mk_true();
+    let mut unnest = Term::mk_true(tcx);
 
     for (ix, capture) in captures.enumerate() {
         match capture.info.capture_kind {
             // if we captured by value we get no unnesting predicate
             UpvarCapture::ByValue => continue,
             UpvarCapture::ByRef(is_mut) => {
-                let acc = Exp::impure_qvar(names.accessor(def_id, subst, 0, ix));
-                let cur = Exp::pure_var(Ident::build("self"));
-                let fin = Exp::pure_var(Ident::build("_2'"));
+                let acc = |lhs: Term<'tcx>| Term {
+                    ty: capture.place.ty(),
+                    kind: TermKind::Projection {
+                        lhs: box lhs,
+                        name: ix.into(),
+                        def: def_id,
+                        substs: InternalSubsts::identity_for_item(tcx, def_id),
+                    },
+                    span: DUMMY_SP,
+                };
+                let cur = self_.clone();
+                let fin =
+                    Term { ty: env_ty, kind: TermKind::Var(Symbol::intern("_2'")), span: DUMMY_SP };
 
                 use rustc_middle::ty::BorrowKind;
                 let unnest_one = match is_mut {
-                    BorrowKind::ImmBorrow => Exp::BinaryOp(
-                        BinOp::Eq,
-                        box acc.clone().app_to(fin.clone()),
-                        box acc.app_to(cur),
-                    ),
-                    _ => Exp::BinaryOp(
-                        BinOp::Eq,
-                        box Exp::Final(box acc.clone().app_to(fin.clone())),
-                        box Exp::Final(box acc.app_to(cur)),
-                    ),
+                    BorrowKind::ImmBorrow => Term {
+                        ty: tcx.types.bool,
+                        kind: TermKind::Binary {
+                            op: pearlite::BinOp::Eq,
+                            lhs: box (acc)(fin),
+                            rhs: box (acc)(cur),
+                        },
+                        span: DUMMY_SP,
+                    },
+
+                    _ => Term {
+                        ty: tcx.types.bool,
+                        kind: TermKind::Binary {
+                            op: pearlite::BinOp::Eq,
+                            lhs: box Term {
+                                ty: capture.place.ty().builtin_deref(true).unwrap().ty,
+                                kind: TermKind::Fin { term: box (acc)(fin) },
+                                span: DUMMY_SP,
+                            },
+                            rhs: box Term {
+                                ty: capture.place.ty().builtin_deref(true).unwrap().ty,
+                                kind: TermKind::Fin { term: box (acc)(cur) },
+                                span: DUMMY_SP,
+                            },
+                        },
+                        span: DUMMY_SP,
+                    },
                 };
 
-                unnest = unnest_one.log_and(unnest);
+                unnest = unnest_one.conj(unnest);
             }
         }
     }
