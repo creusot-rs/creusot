@@ -124,41 +124,41 @@ extern_spec! {
     }
 }
 
-// impl<T, A: Allocator> IntoIterator for Vec<T, A> {
-//     #[predicate]
-//     fn into_iter_pre(self) -> bool {
-//         pearlite! { true }
-//     }
+impl<T, A: Allocator> IntoIterator for Vec<T, A> {
+    #[predicate]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
 
-//     #[predicate]
-//     fn into_iter_post(self, res: Self::IntoIter) -> bool {
-//         pearlite! { @self == @res }
-//     }
-// }
+    #[predicate]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { @self == @res }
+    }
+}
 
-// impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
-//     #[predicate]
-//     fn into_iter_pre(self) -> bool {
-//         pearlite! { true }
-//     }
+impl<T, A: Allocator> IntoIterator for &Vec<T, A> {
+    #[predicate]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
 
-//     #[predicate]
-//     fn into_iter_post(self, res: Self::IntoIter) -> bool {
-//         pearlite! { @self == @@res }
-//     }
-// }
+    #[predicate]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { @self == @@res }
+    }
+}
 
-// impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
-//     #[predicate]
-//     fn into_iter_pre(self) -> bool {
-//         pearlite! { true }
-//     }
+impl<T, A: Allocator> IntoIterator for &mut Vec<T, A> {
+    #[predicate]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
 
-//     #[predicate]
-//     fn into_iter_post(self, res: Self::IntoIter) -> bool {
-//         pearlite! { @self == @@res }
-//     }
-// }
+    #[predicate]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { @self == @@res }
+    }
+}
 
 impl<T, A: Allocator> ShallowModel for std::vec::IntoIter<T, A> {
     type ShallowModelTy = Seq<T>;

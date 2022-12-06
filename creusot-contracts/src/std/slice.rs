@@ -283,29 +283,29 @@ extern_spec! {
     }
 }
 
-// impl<T> IntoIterator for &[T] {
-//     #[predicate]
-//     fn into_iter_pre(self) -> bool {
-//         pearlite! { true }
-//     }
+impl<T> IntoIterator for &[T] {
+    #[predicate]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
 
-//     #[predicate]
-//     fn into_iter_post(self, res: Self::IntoIter) -> bool {
-//         pearlite! { self == @res }
-//     }
-// }
+    #[predicate]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { self == @res }
+    }
+}
 
-// impl<T> IntoIterator for &mut [T] {
-//     #[predicate]
-//     fn into_iter_pre(self) -> bool {
-//         pearlite! { true }
-//     }
+impl<T> IntoIterator for &mut [T] {
+    #[predicate]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
 
-//     #[predicate]
-//     fn into_iter_post(self, res: Self::IntoIter) -> bool {
-//         pearlite! { self == @res }
-//     }
-// }
+    #[predicate]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! { self == @res }
+    }
+}
 
 impl<'a, T> ShallowModel for Iter<'a, T> {
     type ShallowModelTy = &'a [T];
@@ -324,29 +324,29 @@ impl<'a, T> Invariant for Iter<'a, T> {
     }
 }
 
-// impl<'a, T> Iterator for Iter<'a, T> {
-//     #[predicate]
-//     fn completed(&mut self) -> bool {
-//         pearlite! { self.resolve() && @*@self == Seq::EMPTY }
-//     }
+impl<'a, T> Iterator for Iter<'a, T> {
+    #[predicate]
+    fn completed(&mut self) -> bool {
+        pearlite! { self.resolve() && @*@self == Seq::EMPTY }
+    }
 
-//     #[predicate]
-//     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
-//         pearlite! {
-//             (@self).to_ref_seq() == visited.concat((@tl).to_ref_seq())
-//         }
-//     }
+    #[predicate]
+    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
+        pearlite! {
+            (@self).to_ref_seq() == visited.concat((@tl).to_ref_seq())
+        }
+    }
 
-//     #[law]
-//     #[ensures(a.produces(Seq::EMPTY, a))]
-//     fn produces_refl(a: Self) {}
+    #[law]
+    #[ensures(a.produces(Seq::EMPTY, a))]
+    fn produces_refl(a: Self) {}
 
-//     #[law]
-//     #[requires(a.produces(ab, b))]
-//     #[requires(b.produces(bc, c))]
-//     #[ensures(a.produces(ab.concat(bc), c))]
-//     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
-// }
+    #[law]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
 
 impl<'a, T> ShallowModel for IterMut<'a, T> {
     type ShallowModelTy = &'a mut [T];
@@ -375,26 +375,26 @@ impl<'a, T> Invariant for IterMut<'a, T> {
     }
 }
 
-// impl<'a, T> Iterator for IterMut<'a, T> {
-//     #[predicate]
-//     fn completed(&mut self) -> bool {
-//         pearlite! { self.resolve() && @*@self == Seq::EMPTY }
-//     }
+impl<'a, T> Iterator for IterMut<'a, T> {
+    #[predicate]
+    fn completed(&mut self) -> bool {
+        pearlite! { self.resolve() && @*@self == Seq::EMPTY }
+    }
 
-//     #[predicate]
-//     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
-//         pearlite! {
-//             (@self).to_mut_seq() == visited.concat((@tl).to_mut_seq())
-//         }
-//     }
+    #[predicate]
+    fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
+        pearlite! {
+            (@self).to_mut_seq() == visited.concat((@tl).to_mut_seq())
+        }
+    }
 
-//     #[law]
-//     #[ensures(a.produces(Seq::EMPTY, a))]
-//     fn produces_refl(a: Self) {}
+    #[law]
+    #[ensures(a.produces(Seq::EMPTY, a))]
+    fn produces_refl(a: Self) {}
 
-//     #[law]
-//     #[requires(a.produces(ab, b))]
-//     #[requires(b.produces(bc, c))]
-//     #[ensures(a.produces(ab.concat(bc), c))]
-//     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
-// }
+    #[law]
+    #[requires(a.produces(ab, b))]
+    #[requires(b.produces(bc, c))]
+    #[ensures(a.produces(ab.concat(bc), c))]
+    fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}

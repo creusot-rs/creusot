@@ -211,20 +211,20 @@ impl<'a, T> Iterator for Iter<'a, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-// impl<'a, T> IntoIterator for &'a Option<T> {
-//     #[predicate]
-//     fn into_iter_pre(self) -> bool {
-//         pearlite! { true }
-//     }
+impl<'a, T> IntoIterator for &'a Option<T> {
+    #[predicate]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
 
-//     #[predicate]
-//     fn into_iter_post(self, res: Self::IntoIter) -> bool {
-//         pearlite! {
-//             (*self == None ==> @res == None) &&
-//             (*self == None || exists<r: &T> @res == Some(r) && *self == Some(*r))
-//         }
-//     }
-// }
+    #[predicate]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! {
+            (*self == None ==> @res == None) &&
+            (*self == None || exists<r: &T> @res == Some(r) && *self == Some(*r))
+        }
+    }
+}
 
 impl<'a, T> ShallowModel for IterMut<'a, T> {
     type ShallowModelTy = Option<&'a mut T>;
@@ -272,17 +272,17 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
-// impl<'a, T> IntoIterator for &'a mut Option<T> {
-//     #[predicate]
-//     fn into_iter_pre(self) -> bool {
-//         pearlite! { true }
-//     }
+impl<'a, T> IntoIterator for &'a mut Option<T> {
+    #[predicate]
+    fn into_iter_pre(self) -> bool {
+        pearlite! { true }
+    }
 
-//     #[predicate]
-//     fn into_iter_post(self, res: Self::IntoIter) -> bool {
-//         pearlite! {
-//             (*self == None ==> @res == None && ^self == None) &&
-//             (*self == None || exists<r: &mut T> @res == Some(r) && *self == Some(*r) && ^self == Some(^r))
-//         }
-//     }
-// }
+    #[predicate]
+    fn into_iter_post(self, res: Self::IntoIter) -> bool {
+        pearlite! {
+            (*self == None ==> @res == None && ^self == None) &&
+            (*self == None || exists<r: &mut T> @res == Some(r) && *self == Some(*r) && ^self == Some(^r))
+        }
+    }
+}

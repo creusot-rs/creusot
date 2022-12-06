@@ -18,7 +18,7 @@ use rustc_middle::{
     mir::{tcx::PlaceTy, PlaceElem},
     ty::{
         subst::{GenericArgKind, InternalSubsts},
-        DefIdTree, FloatTy, ParamEnv, Ty, TyCtxt, TyKind, TypeVisitor, UintTy,
+        DefIdTree, FloatTy, ParamEnv, Ty, TyCtxt, TyKind, TypeSuperVisitable, TypeVisitor, UintTy,
     },
 };
 use rustc_type_ir::IntTy;
@@ -340,7 +340,7 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TypeVisitor<'tcx> for TermDep<'tcx, F> {
             TyKind::Int(_) | TyKind::Uint(_) => (self.f)(Dependency::BaseTy(t)),
             _ => {}
         };
-        std::ops::ControlFlow::Continue(())
+        t.super_visit_with(self)
     }
 }
 
