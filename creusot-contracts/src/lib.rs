@@ -179,9 +179,9 @@ pub use crate::{
     well_founded::WellFounded,
 };
 
-// // Export extension traits anonymously
-// pub use crate::std::{
-//     iter::{SkipExt as _, TakeExt as _},
-//     ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
-//     slice::SliceExt as _,
-// };
+// Export extension traits anonymously
+pub use crate::std::{
+    iter::{SkipExt as _, TakeExt as _},
+    ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
+    slice::SliceExt as _,
+};

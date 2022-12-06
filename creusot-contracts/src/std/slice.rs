@@ -227,7 +227,7 @@ extern_spec! {
         })]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 
-        // #[ensures(result == None ==> (@self).len() == 0 && ^self == *self && @self == Seq::EMPTY)]
+        #[ensures(result == None ==> (@self).len() == 0 && ^self == *self && @self == Seq::EMPTY)]
         #[ensures(forall<first: &mut T, tail: &mut [T]>
                   result == Some((first, tail))
                 && *first == (@self)[0] && ^first == (@^self)[0]
