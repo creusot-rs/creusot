@@ -2,25 +2,16 @@ extern crate creusot_contracts;
 
 use creusot_contracts::*;
 
-struct Item<A> {
-    opt: Option<A>,
-}
+// #[logic]
+// fn b<T>(x: T) -> bool { x == x }
 
-// pub struct IterMut<'a, A: 'a> {
-//     blah: &'a mut A,
-//     inner: Item<&'a mut A>,
-// }
+// #[logic]
+// fn a<T>(c: T) -> bool { b(c) }
 
-// fn omg<'a, T>(t: IterMut<'a, T>) {}
+// #[ensures(a(z))]
+fn omg<T>(z: T) {}
 
-trait T {
-    #[logic]
-    fn omg(self) -> bool;
-}
-
-impl<A> T for &mut Item<A> {
-    #[logic]
-    fn omg(self) -> bool {
-        true
-    }
+// #[requires(a(0u32))]
+fn omg2() {
+    omg(0u32);
 }

@@ -3,11 +3,14 @@ use crate::{
     translation::{
         binop_to_binop,
         fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
-        function::{closure_generic_decls, place, place::translate_rplace_inner},
+        function::{
+            all_generic_decls_for, closure_contract2, closure_generic_decls, place,
+            place::translate_rplace_inner,
+        },
         specification::{lower_impure, lower_pure},
         unop_to_unop,
     },
-    util::{item_qname, module_name},
+    util::{self, item_qname, module_name},
 };
 use creusot_rustc::{
     hir::{def::DefKind, Unsafety},
@@ -21,19 +24,71 @@ use creusot_rustc::hir::def_id::DefId;
 use rustc_middle::ty::WithOptConstParam;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    declaration::{CfgFunction, Decl, Module},
+    declaration::{CfgFunction, Decl, Module, Predicate},
     exp::{Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
-    QName,
+    Ident, QName,
 };
 
 use super::{
     clone_map2::{CloneDepth, CloneVisibility, Namer},
-    signature_of,
+    sig_to_why3, signature_of,
     ty::{self, translate_ty},
     Cloner,
 };
+
+pub(crate) fn stub_module<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    mut names: Namer<'_, 'tcx>,
+    def_id: DefId,
+) -> Module {
+    let sig = signature_of(ctx, &mut names, def_id);
+
+    let decl = Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig));
+
+    let name = module_name(ctx, def_id);
+    let name = format!("{}_Stub", &*name).into();
+
+    let mut decls: Vec<_> = Vec::new();
+    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
+    decls.extend(names.to_clones(ctx, CloneVisibility::Interface, CloneDepth::Shallow));
+    decls.push(decl);
+
+    Module { name, decls }
+}
+
+pub(crate) fn lower_closure<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    mut names: Namer<'_, 'tcx>,
+    def_id: DefId,
+) -> Vec<Module> {
+    let Some(Module { name, mut decls }) = to_why(ctx, names, def_id) else { return Vec::new() };
+
+    let fn_spec_traits: Vec<Decl> = closure_contract2(ctx, def_id)
+        .into_iter()
+        .map(|(sym, sig, body)| {
+            let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
+            sig.name = Ident::build(sym.as_str());
+
+            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, &mut names, body) })
+        })
+        .collect();
+
+    decls.extend(fn_spec_traits);
+
+    vec![stub_module(ctx, names, def_id), Module { name, decls }]
+}
+
+pub(crate) fn lower_function<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    names: Namer<'_, 'tcx>,
+    def_id: DefId,
+) -> Vec<Module> {
+    let Some(Module { name, mut decls }) = to_why(ctx, names, def_id)  else { return Vec::new() };
+
+    vec![stub_module(ctx, names, def_id), Module { name, decls }]
+}
 
 pub(crate) fn to_why<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,

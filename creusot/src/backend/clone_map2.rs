@@ -212,7 +212,10 @@ impl<'tcx> VisitDeps<'tcx> for Expr<'tcx> {
                 (f)(Dependency::Item(*id, sub));
                 args.iter().for_each(|a| a.deps(tcx, f))
             }
-            Expr::Constant(_) => {}
+            Expr::Constant(e) => {
+                eprintln!("{e:?}");
+                e.deps(tcx, f)
+            }
             Expr::Cast(e, _, _) => e.deps(tcx, f),
             Expr::Tuple(args) => args.iter().for_each(|a| a.deps(tcx, f)),
             Expr::Span(_, e) => e.deps(tcx, f),
@@ -273,6 +276,7 @@ impl<'tcx> VisitDeps<'tcx> for Block<'tcx> {
 
 impl<'tcx> VisitDeps<'tcx> for Body<'tcx> {
     fn deps<F: FnMut(Dependency<'tcx>)>(&self, tcx: TyCtxt<'tcx>, f: &mut F) {
+        eprintln!("locals: {:?}", self.locals);
         self.locals.iter().for_each(|(_, _, t)| t.deps(tcx, f));
 
         self.blocks.values().for_each(|b| b.deps(tcx, f));
@@ -322,6 +326,9 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<'tcx, F> {
                 let adt = self.tcx.adt_def(def);
                 let field = &adt.variants()[0u32.into()].fields[name.as_usize()];
                 (self.f)(Dependency::Item(field.did, substs))
+            }
+            TermKind::Lit(_) => {
+                self.visit_ty(term.ty);
             }
             _ => {}
         };
@@ -876,9 +883,10 @@ fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneDepth) ->
             },
             CloneDepth::Deep => module_name(ctx, def_id).into(),
         },
-        Program | Closure => {
-            QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
-        }
+        Program | Closure => QName {
+            module: Vec::new(),
+            name: format!("{}_Stub", &*module_name(ctx, def_id)).into(),
+        },
         Trait | Type | AssocTy => module_name(ctx, def_id).into(),
         // Field => panic!(),
         Unsupported(_) => unreachable!(),

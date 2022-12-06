@@ -19,7 +19,7 @@ use self::{
     clone_map2::{CloneDepth, CloneVisibility, PriorClones},
     constant::translate_constant,
     logic::translate_logic_or_predicate,
-    program::to_why,
+    program::{lower_closure, lower_function, to_why},
     traits::{lower_impl, translate_assoc_ty},
     ty::{lower_accessor, translate_tydecl},
 };
@@ -41,8 +41,8 @@ pub(crate) fn to_why3<'tcx>(
         ItemType::Logic | ItemType::Predicate => {
             translate_logic_or_predicate(ctx, priors.get(ctx.tcx, def_id), def_id)
         }
-        ItemType::Program => to_why(ctx, priors.get(ctx.tcx, def_id), def_id).into_iter().collect(),
-        ItemType::Closure => todo!("closure: {def_id:?}"),
+        ItemType::Program => lower_function(ctx, priors.get(ctx.tcx, def_id), def_id),
+        ItemType::Closure => lower_closure(ctx, priors.get(ctx.tcx, def_id), def_id),
         ItemType::Trait => Vec::new(),
         ItemType::Impl => vec![lower_impl(ctx, priors.get(ctx.tcx, def_id), def_id)],
         ItemType::Type => {
