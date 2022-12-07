@@ -10,6 +10,7 @@ use creusot_rustc::{
 use heck::ToUpperCamelCase;
 use indexmap::IndexMap;
 use petgraph::{
+    data::Build,
     graphmap::DiGraphMap,
     visit::{DfsPostOrder, Walker},
     EdgeDirection::Outgoing,
@@ -314,7 +315,10 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<'tcx, F> {
     fn visit_term(&mut self, term: &Term<'tcx>) {
         match &term.kind {
             TermKind::Item(id, subst) => (self.f)(Dependency::Item(*id, subst)),
-            TermKind::Call { id, subst, fun: _, args: _ } => (self.f)(Dependency::Item(*id, subst)),
+            TermKind::Call { id, subst, fun: _, args: _ } => {
+                subst.visit_with(self);
+                (self.f)(Dependency::Item(*id, subst))
+            }
             TermKind::Constructor { adt: _, variant: _, fields: _ } => {
                 if let TyKind::Adt(def, subst) = term.ty.kind() {
                     (self.f)(Dependency::Item(def.did(), subst))
@@ -426,7 +430,7 @@ impl<'tcx> MonoGraph<'tcx> {
 
             for (lvl, dep) in to_add {
                 let Dependency::Item(id, orig_subst) = dep else {
-                    self.graph.add_edge(next, EarlyBinder(dep).subst(ctx.tcx, subst), (lvl, None));
+                    self.add_edge(next, EarlyBinder(dep).subst(ctx.tcx, subst), (lvl, None));
                     continue
                 };
 
@@ -443,19 +447,15 @@ impl<'tcx> MonoGraph<'tcx> {
 
                 // eprintln!("{:?} -> {:?} weight {:?}", next, tgt, (lvl, Some((id, orig_subst))));
 
-                self.graph.add_edge(
-                    next,
-                    Dependency::Item(tgt.0, tgt.1),
-                    (lvl, Some((id, orig_subst))),
-                );
+                self.add_edge(next, Dependency::Item(tgt.0, tgt.1), (lvl, Some((id, orig_subst))));
 
                 to_visit.push(Dependency::Item(tgt.0, tgt.1));
             }
         }
 
         // Color the nodes
-        for (_, tgt, (lvl, _)) in self.graph.all_edges() {
-            debug!("{tgt:?} to {lvl:?}");
+        for (src, tgt, (lvl, _)) in self.graph.all_edges() {
+            debug!("{src:?} -> {tgt:?} at {lvl:?}");
             self.level.entry(tgt).and_modify(|a| *a = (*a).max(*lvl)).or_insert(*lvl);
         }
     }
@@ -466,6 +466,24 @@ impl<'tcx> MonoGraph<'tcx> {
             roots: self.roots.values().cloned(),
         }
         .iter(&self.graph)
+    }
+
+    fn add_edge(
+        &mut self,
+        src: Dependency<'tcx>,
+        tgt: Dependency<'tcx>,
+        weight: (DepLevel, Option<(DefId, SubstsRef<'tcx>)>),
+    ) {
+        if !self.graph.contains_edge(src, tgt) {
+            self.graph.add_edge(src, tgt, weight);
+        } else {
+            let mut edge_weight = self.graph[(src, tgt)];
+
+            assert_eq!(edge_weight.1, weight.1);
+
+            edge_weight.0 = edge_weight.0.max(weight.0);
+            self.graph.update_edge(src, tgt, edge_weight);
+        }
     }
 }
 
@@ -643,27 +661,12 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
 }
 
 impl<'a, 'tcx> PriorClones<'a, 'tcx> {
-    //     pub(crate) fn from_deps(ctx: &TranslationCtx<'tcx>) -> Self {
-    //         let mut prior = IndexMap::new();
-
-    //         for (id, summ) in &ctx.dependencies {
-    //             let mut clones = IndexMap::new();
-    //             for (k, info) in summ {
-    //                 clones.insert(*k, info.qname(ctx.tcx, k.0));
-    //             }
-    //             prior.insert(*id, clones);
-    //         }
-
-    //         PriorClones { prior }
-    //     }
-
     pub(crate) fn from_graph(ctx: &mut TranslationCtx<'tcx>, graph: &'a MonoGraph<'tcx>) -> Self {
         let mut clones = IndexMap::new();
 
         for node in graph.roots.values() {
             let Dependency::Item(def_id, _) = node else { continue };
 
-            // eprintln!("naming for {node:?}");
             if !clones.contains_key(def_id) {
                 clones.insert(*def_id, name_clones(ctx, graph, *node));
             }
@@ -672,14 +675,7 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
         PriorClones { graph, prior: clones }
     }
 
-    // pub(crate) fn get(&self, inside: DefId) -> Option<&Names<'tcx>> {
-    //     self.prior.get(&inside)
-    //     // .map(|q| q.clone())
-    //     //             .unwrap_or_else(|| QName::from_string("INVALID.prior").unwrap())
-    // }
-
     pub(crate) fn get(&'a self, tcx: TyCtxt<'tcx>, inside: DefId) -> Namer<'a, 'tcx> {
-        // eprintln!("cloning {inside:?}");
         Namer { priors: self, id: inside, tcx }
     }
 }
@@ -707,6 +703,7 @@ pub fn make_clones<'tcx, 'a>(
     let mut uses = Vec::new();
 
     while let Some(node) = topo.walk_next(&priors.graph.graph) {
+        // eprintln!("{root:?} {node:?}");
         if node == root {
             continue;
         }
@@ -745,21 +742,28 @@ pub fn make_clones<'tcx, 'a>(
         // eprintln!("{:?}", priors.prior[&id]);
         // eprintln!("{:?}", priors.graph.graph);
         for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
+            // eprintln!("{:?} -> {:?}", node, dep);
             if depth == CloneDepth::Shallow {
                 continue;
             }
 
-            let (_, orig) = priors.graph.graph[(node, dep)];
             if priors.graph.level[&dep] < desired_dep_level {
                 continue;
             };
 
-            let Dependency::Item(id, subst) = dep else {continue };
+            // TODO: introduce a notion of opacity to address this
+            if item_type(ctx.tcx, id) == ItemType::Program
+                && priors.graph.level[&dep] == DepLevel::Body
+            {
+                continue;
+            }
+            let Dependency::Item(id, subst) = dep else { continue };
 
             if get_builtin(ctx.tcx, id).is_some() {
                 continue;
             };
 
+            let (_, orig) = priors.graph.graph[(node, dep)];
             let orig = orig.unwrap();
             // FIXME: Not really correct
             if item_type(ctx.tcx, orig.0) == ItemType::Type {
