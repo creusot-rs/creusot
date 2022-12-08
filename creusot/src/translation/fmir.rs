@@ -13,7 +13,7 @@ use rustc_middle::{
     ty::{List, TyCtxt},
 };
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Place<'tcx> {
     pub local: Local,
     pub ty: Ty<'tcx>,

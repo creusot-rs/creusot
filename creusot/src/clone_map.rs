@@ -30,7 +30,7 @@ use crate::{
 // Prelude modules
 #[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum PreludeModule {
+pub(crate) enum PreludeModule {
     Float32,
     Float64,
     Int,
@@ -91,13 +91,13 @@ impl PreludeModule {
 }
 
 type CloneNode<'tcx> = (DefId, SubstsRef<'tcx>);
-pub type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo<'tcx>>;
+pub(crate) type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo<'tcx>>;
 
 #[derive(Clone)]
-pub struct CloneMap<'tcx> {
+pub(crate) struct CloneMap<'tcx> {
     tcx: TyCtxt<'tcx>,
     prelude: IndexMap<QName, bool>,
-    pub names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
+    pub(crate) names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
 
     // Track how many instances of a name already exist
     name_counts: IndexMap<Symbol, usize>,
@@ -170,7 +170,7 @@ enum CloneOpacity {
 }
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
-pub struct CloneInfo<'tcx> {
+pub(crate) struct CloneInfo<'tcx> {
     kind: Kind,
     additional_deps: Vec<(Symbol, (DefId, SubstsRef<'tcx>))>,
     cloned: bool,

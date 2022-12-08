@@ -1,6 +1,3 @@
-use std::{collections::HashMap, ops::Deref};
-
-pub(crate) use crate::clone_map::*;
 use crate::{
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
@@ -28,6 +25,7 @@ use creusot_rustc::{
     trait_selection::traits::SelectionContext,
 };
 use indexmap::{IndexMap, IndexSet};
+use std::{collections::HashMap, ops::Deref};
 pub(crate) use util::{item_name, module_name, ItemType};
 use why3::{declaration::Module, exp::Exp};
 

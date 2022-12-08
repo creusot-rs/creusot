@@ -1,16 +1,11 @@
 extern crate creusot_contracts;
-
 use creusot_contracts::*;
-
-#[logic]
-fn a<T>(c: T) -> bool {
-    true
-}
-
-#[ensures(a(z))]
-fn omg<T>(z: T) {}
-
-#[requires(a(0u32))]
-fn omg2() {
-    omg(0u32);
+pub fn test() {
+    let c = {
+        // #[requires(@x < 1000)]
+        // #[ensures(@result == @x + 1)]
+        |x: usize| x + 1
+    };
+    // let y = c(2);
+    // proof_assert!(@y == 3)
 }

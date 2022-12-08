@@ -8,6 +8,7 @@ use crate::{
             place::translate_rplace_inner,
         },
         specification::{lower_impure, lower_pure},
+        ty::closure_accessors,
         unop_to_unop,
     },
     util::{self, item_qname, module_name},
@@ -21,10 +22,10 @@ use creusot_rustc::{
 };
 
 use creusot_rustc::hir::def_id::DefId;
-use rustc_middle::ty::WithOptConstParam;
+use rustc_middle::ty::{SubstsRef, WithOptConstParam};
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    declaration::{CfgFunction, Decl, Module, Predicate},
+    declaration::{AdtDecl, CfgFunction, ConstructorDecl, Decl, Field, Module, Predicate, TyDecl},
     exp::{Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
@@ -51,11 +52,43 @@ pub(crate) fn stub_module<'tcx>(
     let name = format!("{}_Stub", &*name).into();
 
     let mut decls: Vec<_> = Vec::new();
-    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
+    decls.extend(closure_generic_decls(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx, CloneVisibility::Interface, CloneDepth::Shallow));
+    if ctx.tcx.is_closure(def_id) {
+        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
+            let env_ty = Decl::TyDecl(translate_closure_ty(ctx, names, def_id, subst));
+            // let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
+            decls.push(env_ty);
+            // decls.extend(accessors);
+        }
+    }
+
     decls.push(decl);
 
     Module { name, decls }
+}
+
+pub(crate) fn translate_closure_ty<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    mut names: Namer<'_, 'tcx>,
+    did: DefId,
+    subst: SubstsRef<'tcx>,
+) -> TyDecl {
+    let ty_name = names.ty(did, subst).name;
+    let closure_subst = subst.as_closure();
+    let fields: Vec<_> = closure_subst
+        .upvar_tys()
+        .map(|uv| Field { ty: translate_ty(ctx, &mut names, DUMMY_SP, uv), ghost: false })
+        .collect();
+
+    let cons_name = names.constructor(did, subst, 0).name;
+    let kind = AdtDecl {
+        ty_name,
+        ty_params: vec![],
+        constrs: vec![ConstructorDecl { name: cons_name, fields }],
+    };
+
+    TyDecl::Adt { tys: vec![kind] }
 }
 
 pub(crate) fn lower_closure<'tcx>(
@@ -63,7 +96,19 @@ pub(crate) fn lower_closure<'tcx>(
     mut names: Namer<'_, 'tcx>,
     def_id: DefId,
 ) -> Vec<Module> {
-    let Some(Module { name, mut decls }) = to_why(ctx, names, def_id) else { return Vec::new() };
+    let Some(func) = to_why(ctx, names, def_id)  else { return Vec::new() };
+    let mut decls: Vec<_> = Vec::new();
+    decls.extend(closure_generic_decls(ctx.tcx, def_id));
+    decls.extend(names.to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep));
+
+    if ctx.tcx.is_closure(def_id) {
+        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
+            let env_ty = Decl::TyDecl(translate_closure_ty(ctx, names, def_id, subst));
+            // let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
+            decls.push(env_ty);
+            // decls.extend(accessors);
+        }
+    }
 
     let fn_spec_traits: Vec<Decl> = closure_contract2(ctx, def_id)
         .into_iter()
@@ -76,25 +121,35 @@ pub(crate) fn lower_closure<'tcx>(
         .collect();
 
     decls.extend(fn_spec_traits);
+    decls.push(func);
 
-    vec![stub_module(ctx, names, def_id), Module { name, decls }]
+    let modl = Module { name: module_name(ctx, def_id), decls };
+
+    vec![stub_module(ctx, names, def_id), modl]
 }
 
 pub(crate) fn lower_function<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: Namer<'_, 'tcx>,
+    mut names: Namer<'_, 'tcx>,
     def_id: DefId,
 ) -> Vec<Module> {
-    let Some(Module { name, mut decls }) = to_why(ctx, names, def_id)  else { return Vec::new() };
+    let Some(func) = to_why(ctx, names, def_id)  else { return Vec::new() };
 
-    vec![stub_module(ctx, names, def_id), Module { name, decls }]
+    let mut decls: Vec<_> = Vec::new();
+    decls.extend(closure_generic_decls(ctx.tcx, def_id));
+    decls.extend(names.to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep));
+    decls.push(func);
+
+    let modl = Module { name: module_name(ctx, def_id), decls };
+
+    vec![stub_module(ctx, names, def_id), modl]
 }
 
 pub(crate) fn to_why<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     mut names: Namer<'_, 'tcx>,
     def_id: DefId,
-) -> Option<Module> {
+) -> Option<Decl> {
     if !def_id.is_local() {
         return None;
     }
@@ -102,9 +157,6 @@ pub(crate) fn to_why<'tcx>(
     let (mir, _) = ctx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mir = mir.borrow().clone();
 
-    let mut decls: Vec<_> = Vec::new();
-    decls.extend(closure_generic_decls(ctx.tcx, def_id));
-    decls.extend(names.to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep));
     let body = ctx.fmir_body(def_id).unwrap().clone();
 
     let vars: Vec<_> = body
@@ -140,10 +192,7 @@ pub(crate) fn to_why<'tcx>(
             .map(|(bb, bbd)| (BlockId(bb.into()), bbd.to_why(ctx, &mut names, &mir)))
             .collect(),
     });
-    decls.push(func);
-
-    let name = module_name(ctx, def_id);
-    Some(Module { name, decls })
+    Some(func)
 }
 
 impl<'tcx> Expr<'tcx> {

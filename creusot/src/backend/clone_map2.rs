@@ -1,14 +1,14 @@
 use std::collections::HashSet;
 
 use creusot_rustc::{
-    hir::def_id::DefId,
+    hir::{def::DefKind, def_id::DefId},
     macros::{TypeFoldable, TypeVisitable},
     middle::ty::{subst::SubstsRef, EarlyBinder, TypeVisitable},
     resolve::Namespace,
     span::{Symbol, DUMMY_SP},
 };
 use heck::ToUpperCamelCase;
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use petgraph::{
     data::Build,
     graphmap::DiGraphMap,
@@ -34,6 +34,7 @@ use crate::{
     pearlite::super_visit_term,
     translation::{
         fmir::{Block, Body, Branches, Expr, Place, RValue, Statement, Terminator},
+        function::closure_contract2,
         interface,
         pearlite::{Term, TermKind, TermVisitor},
         traits::{resolve_opt, TraitImpl},
@@ -115,7 +116,7 @@ fn get_immediate_deps<'tcx>(
         {
             term_dependencies(ctx, def_id)
         }
-        ItemType::Program => program_dependencies(ctx, def_id),
+        ItemType::Closure | ItemType::Program => program_dependencies(ctx, def_id),
         // Fill out
         ItemType::AssocTy => {let mut deps = Vec::new();
             if ctx.impl_of_method(def_id).is_some() {
@@ -137,7 +138,6 @@ fn get_immediate_deps<'tcx>(
         }
         ItemType::Trait => Vec::new(),
         ItemType::Field => {
-            use creusot_rustc::hir::def::DefKind;
             let parent = ctx.parent(def_id);
             let adt_did = match ctx.def_kind(parent) {
                 DefKind::Variant => ctx.parent(parent),
@@ -206,17 +206,21 @@ impl<'tcx> VisitDeps<'tcx> for Expr<'tcx> {
             }
             Expr::UnaryOp(_, e) => e.deps(tcx, f),
             Expr::Constructor(id, sub, args) => {
-                (f)(Dependency::Item(*id, sub));
+                // NOTE: we actually insert a dependency on the type and not hte constructor itself
+                // in the interest of coherence we may want ot change that.. idk
+
+                let id = match tcx.def_kind(id) {
+                    DefKind::Variant => tcx.parent(*id),
+                    _ => *id,
+                };
+                (f)(Dependency::Item(id, sub));
                 args.iter().for_each(|a| a.deps(tcx, f))
             }
             Expr::Call(id, sub, args) => {
                 (f)(Dependency::Item(*id, sub));
                 args.iter().for_each(|a| a.deps(tcx, f))
             }
-            Expr::Constant(e) => {
-                eprintln!("{e:?}");
-                e.deps(tcx, f)
-            }
+            Expr::Constant(e) => e.deps(tcx, f),
             Expr::Cast(e, _, _) => e.deps(tcx, f),
             Expr::Tuple(args) => args.iter().for_each(|a| a.deps(tcx, f)),
             Expr::Span(_, e) => e.deps(tcx, f),
@@ -238,7 +242,10 @@ impl<'tcx> VisitDeps<'tcx> for RValue<'tcx> {
 impl<'tcx> VisitDeps<'tcx> for Statement<'tcx> {
     fn deps<F: FnMut(Dependency<'tcx>)>(&self, tcx: TyCtxt<'tcx>, f: &mut F) {
         match self {
-            Statement::Assignment(_, r) => r.deps(tcx, f),
+            Statement::Assignment(p, r) => {
+                p.deps(tcx, f);
+                r.deps(tcx, f)
+            }
             Statement::Resolve(id, sub, _) => (f)(Dependency::Item(*id, sub)),
             Statement::Assertion(t) => t.deps(tcx, f),
             Statement::Invariant(_, t) => t.deps(tcx, f),
@@ -277,7 +284,6 @@ impl<'tcx> VisitDeps<'tcx> for Block<'tcx> {
 
 impl<'tcx> VisitDeps<'tcx> for Body<'tcx> {
     fn deps<F: FnMut(Dependency<'tcx>)>(&self, tcx: TyCtxt<'tcx>, f: &mut F) {
-        eprintln!("locals: {:?}", self.locals);
         self.locals.iter().for_each(|(_, _, t)| t.deps(tcx, f));
 
         self.blocks.values().for_each(|b| b.deps(tcx, f));
@@ -287,7 +293,6 @@ impl<'tcx> VisitDeps<'tcx> for Body<'tcx> {
 impl<'tcx> VisitDeps<'tcx> for Place<'tcx> {
     fn deps<F: FnMut(Dependency<'tcx>)>(&self, tcx: TyCtxt<'tcx>, f: &mut F) {
         let mut ty = PlaceTy::from_ty(self.ty);
-
         for elem in self.projection {
             match elem {
                 PlaceElem::Field(ix, _) => {
@@ -342,10 +347,14 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<'tcx, F> {
 
 impl<'tcx, F: FnMut(Dependency<'tcx>)> TypeVisitor<'tcx> for TermDep<'tcx, F> {
     fn visit_ty(&mut self, t: Ty<'tcx>) -> std::ops::ControlFlow<Self::BreakTy> {
+        // eprintln!("{t:?}");
         match t.kind() {
             TyKind::Adt(def, sub) => {
                 sub.visit_with(self);
                 (self.f)(Dependency::Item(def.did(), *sub))
+            }
+            TyKind::Closure(def, sub) => {
+                (self.f)(Dependency::Item(*def, sub));
             }
             TyKind::Projection(pty) => (self.f)(Dependency::Item(pty.item_def_id, pty.substs)),
             TyKind::Int(_) | TyKind::Uint(_) => (self.f)(Dependency::BaseTy(t)),
@@ -375,16 +384,32 @@ fn program_dependencies<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> Vec<(DepLevel, Dependency<'tcx>)> {
-    let mut deps = Vec::new();
+    let mut deps = IndexSet::new();
 
     let sig = pre_sig_of(ctx, def_id);
-    sig.deps(ctx.tcx, &mut |dep| deps.push((DepLevel::Signature, dep)));
+    sig.deps(ctx.tcx, &mut |dep| {
+        deps.insert((DepLevel::Signature, dep));
+    });
+
+    // if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
+    //     closure_contract2(ctx, def_id).iter().for_each(|(_, s, t)| {
+    //         eprintln!("CLOSURE CONTRACT");
+    //         s.deps(ctx.tcx, &mut |dep| {
+    //             deps.insert((DepLevel::Signature, dep));
+    //         });
+    //         t.deps(ctx.tcx, &mut |dep| {
+    //             deps.insert((DepLevel::Signature, dep));
+    //         })
+    //     });
+    // };
 
     let tcx = ctx.tcx;
     if let Some(body) = ctx.fmir_body(def_id) {
-        body.deps(tcx, &mut |dep| deps.push((DepLevel::Body, dep)));
+        body.deps(tcx, &mut |dep| {
+            deps.insert((DepLevel::Body, dep));
+        });
     }
-    deps
+    deps.into_iter().collect()
 }
 type MonoGraphInner<'tcx> =
     DiGraphMap<Dependency<'tcx>, (DepLevel, Option<(DefId, SubstsRef<'tcx>)>)>;
@@ -426,7 +451,7 @@ impl<'tcx> MonoGraph<'tcx> {
             ctx.translate(id);
 
             let to_add = get_immediate_deps(ctx, id);
-            // eprintln!("deps_of({id:?}) :- {to_add:?}\n");
+            eprintln!("deps_of({id:?}) :- {to_add:?}\n");
 
             for (lvl, dep) in to_add {
                 let Dependency::Item(id, orig_subst) = dep else {
@@ -479,7 +504,8 @@ impl<'tcx> MonoGraph<'tcx> {
         } else {
             let mut edge_weight = self.graph[(src, tgt)];
 
-            assert_eq!(edge_weight.1, weight.1);
+            // SKETCHY that this should work...
+            // assert_eq!(edge_weight.1, weight.1, "{src:?} ->{tgt:?} ({weight:?})");
 
             edge_weight.0 = edge_weight.0.max(weight.0);
             self.graph.update_edge(src, tgt, edge_weight);
@@ -645,9 +671,13 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
     }
 
     fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>, variant: usize) -> QName {
-        let variant = &self.tcx.adt_def(def_id).variants()[variant.into()];
+        let variant_id = match util::item_type(self.tcx, def_id) {
+            ItemType::Closure => def_id,
+            ItemType::Type => self.tcx.adt_def(def_id).variants()[variant.into()].def_id,
+            _ => unreachable!(),
+        };
         let base = self.ident(def_id, subst);
-        QName { module: vec![base], name: item_name(self.tcx, variant.def_id, Namespace::ValueNS) }
+        QName { module: vec![base], name: item_name(self.tcx, variant_id, Namespace::ValueNS) }
     }
 
     fn to_clones(
