@@ -263,6 +263,16 @@ extern_spec! {
         #[ensures(result == None ==> (@self).len() == 0)]
         #[ensures(forall<x : _> result == Some(x) ==> (@self)[0] == *x)]
         fn first(&self) -> Option<&T>;
+
+
+        #[requires(self.deep_model().sorted())]
+        #[ensures(forall<i:usize> result == Ok(i) ==> (*self).deep_model()[@i] == x.deep_model())]
+        #[ensures(forall<i:usize> result == Err(i) ==>
+            forall<j:usize>  j < i ==> self.deep_model()[@j] <= x.deep_model())]
+        #[ensures(forall<i:usize> result == Err(i) ==>
+            forall<j:usize> i <= j && @j < (@self).len() ==> x.deep_model() < self.deep_model()[@j])]
+        fn binary_search(&self, x : &T) -> Result<usize, usize>
+            where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
     }
 
     impl<T, I> IndexMut<I> for [T]
