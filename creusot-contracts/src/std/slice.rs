@@ -266,9 +266,11 @@ extern_spec! {
 
 
         #[requires(self.deep_model().sorted())]
-        #[ensures(forall<i:usize> result == Ok(i) ==> (*self).deep_model()[@i] == x.deep_model())]
+        #[ensures(forall<i:usize> result == Ok(i) ==> @i < (@self).len() && (*self).deep_model()[@i] == x.deep_model())]
         #[ensures(forall<i:usize> result == Err(i) ==>
-            forall<j:usize>  j < i ==> self.deep_model()[@j] <= x.deep_model())]
+            forall<j : _> 0 <= j && j < (@self).len() ==> self.deep_model()[j] != x.deep_model())]
+        #[ensures(forall<i:usize> result == Err(i) ==>
+            forall<j:usize> j < i ==> self.deep_model()[@j] < x.deep_model())]
         #[ensures(forall<i:usize> result == Err(i) ==>
             forall<j:usize> i <= j && @j < (@self).len() ==> x.deep_model() < self.deep_model()[@j])]
         fn binary_search(&self, x : &T) -> Result<usize, usize>
