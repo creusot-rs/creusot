@@ -105,6 +105,24 @@ impl<T> Seq<T> {
     #[logic]
     #[creusot::builtins = "seq.FreeMonoid.left_neutral"]
     pub fn left_neutral(self) {}
+
+    #[predicate]
+    pub fn sorted_range(self, l: Int, u: Int) -> bool
+    where
+        T: OrdLogic,
+    {
+        pearlite! {
+            forall<i : Int, j : Int> l <= i && i <= j && j < u ==> self[i] <= self[j]
+        }
+    }
+
+    #[predicate]
+    pub fn sorted(self) -> bool
+    where
+        T: OrdLogic,
+    {
+        self.sorted_range(0, self.len())
+    }
 }
 
 // A hack which allows us to use [..] notation for sequences.
