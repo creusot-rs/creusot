@@ -20,7 +20,7 @@ use rustc_middle::{
     mir::{tcx::PlaceTy, PlaceElem},
     ty::{
         subst::{GenericArgKind, InternalSubsts},
-        DefIdTree, FloatTy, GenericArg, Ty, TyCtxt, TyKind, TypeSuperVisitable, TypeVisitor,
+        DefIdTree, FloatTy, GenericArg, List, Ty, TyCtxt, TyKind, TypeSuperVisitable, TypeVisitor,
         UintTy,
     },
 };
@@ -62,7 +62,7 @@ pub enum Dependency<'tcx> {
 
 impl<'tcx> Dependency<'tcx> {
     fn identity(tcx: TyCtxt<'tcx>, id: DefId) -> Self {
-        Dependency::Item(id, identity_substs_for(tcx, id))
+        Dependency::Item(id, tcx.erase_regions(identity_substs_for(tcx, id)))
     }
 
     fn as_item(&self) -> (DefId, SubstsRef<'tcx>) {
@@ -453,7 +453,7 @@ impl<'tcx> MonoGraph<'tcx> {
                 continue;
             }
 
-            self.graph.add_node(next);
+            // self.graph.add_node(next);
             let Dependency::Item(id, subst) = next else { continue };
             self.add_root(ctx, id);
             ctx.translate(id);
@@ -463,7 +463,7 @@ impl<'tcx> MonoGraph<'tcx> {
 
             for (lvl, dep) in to_add {
                 let Dependency::Item(id, orig_subst) = dep else {
-                    self.add_edge(next, EarlyBinder(dep).subst(ctx.tcx, subst), (lvl, None));
+                    self.add_edge(ctx.tcx, next, EarlyBinder(dep).subst(ctx.tcx, subst), (lvl, None));
                     continue
                 };
 
@@ -480,7 +480,12 @@ impl<'tcx> MonoGraph<'tcx> {
 
                 // eprintln!("{:?} -> {:?} weight {:?}", next, tgt, (lvl, Some((id, orig_subst))));
 
-                self.add_edge(next, Dependency::Item(tgt.0, tgt.1), (lvl, Some((id, orig_subst))));
+                self.add_edge(
+                    ctx.tcx,
+                    next,
+                    Dependency::Item(tgt.0, tgt.1),
+                    (lvl, Some((id, orig_subst))),
+                );
 
                 to_visit.push(Dependency::Item(tgt.0, tgt.1));
             }
@@ -503,10 +508,13 @@ impl<'tcx> MonoGraph<'tcx> {
 
     fn add_edge(
         &mut self,
+        tcx: TyCtxt<'tcx>,
         src: Dependency<'tcx>,
         tgt: Dependency<'tcx>,
         weight: (DepLevel, Option<(DefId, SubstsRef<'tcx>)>),
     ) {
+        let src = tcx.erase_regions(src);
+        let tgt = tcx.erase_regions(tgt);
         if !self.graph.contains_edge(src, tgt) {
             self.graph.add_edge(src, tgt, weight);
         } else {
@@ -769,10 +777,14 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
 }
 
 fn identity_substs_for<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> SubstsRef<'tcx> {
-    match tcx.type_of(def_id).kind() {
-        TyKind::Closure(_, subst) => subst,
-        _ => InternalSubsts::identity_for_item(tcx, def_id),
-    }
+    if tcx.is_closure(def_id) {
+        match tcx.type_of(def_id).kind() {
+            TyKind::Closure(_, subst) => return subst,
+            _ => unreachable!(),
+        }
+    };
+
+    InternalSubsts::identity_for_item(tcx, def_id)
 }
 
 // Transform a graph into a set of clones
