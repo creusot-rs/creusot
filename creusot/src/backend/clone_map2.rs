@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use creusot_rustc::{
+    ast::Mutability,
     hir::{def::DefKind, def_id::DefId},
     macros::{TypeFoldable, TypeVisitable},
     middle::ty::{subst::SubstsRef, EarlyBinder, TypeVisitable},
@@ -367,6 +368,7 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TypeVisitor<'tcx> for TermDep<'tcx, F> {
             }
             TyKind::Projection(pty) => (self.f)(Dependency::Item(pty.item_def_id, pty.substs)),
             TyKind::Int(_) | TyKind::Uint(_) => (self.f)(Dependency::BaseTy(t)),
+            TyKind::Ref(_, _, Mutability::Mut) => (self.f)(Dependency::BaseTy(t)),
             _ => {}
         };
         t.super_visit_with(self)
@@ -400,17 +402,17 @@ fn program_dependencies<'tcx>(
         deps.insert((DepLevel::Signature, dep));
     });
 
-    // if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
-    //     closure_contract2(ctx, def_id).iter().for_each(|(_, s, t)| {
-    //         eprintln!("CLOSURE CONTRACT");
-    //         s.deps(ctx.tcx, &mut |dep| {
-    //             deps.insert((DepLevel::Signature, dep));
-    //         });
-    //         t.deps(ctx.tcx, &mut |dep| {
-    //             deps.insert((DepLevel::Signature, dep));
-    //         })
-    //     });
-    // };
+    if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
+        closure_contract2(ctx, def_id).iter().for_each(|(_, s, t)| {
+            eprintln!("CLOSURE CONTRACT");
+            s.deps(ctx.tcx, &mut |dep| {
+                deps.insert((DepLevel::Signature, dep));
+            });
+            // t.deps(ctx.tcx, &mut |dep| {
+            //     deps.insert((DepLevel::Signature, dep));
+            // })
+        });
+    };
 
     let tcx = ctx.tcx;
     if let Some(body) = ctx.fmir_body(def_id) {

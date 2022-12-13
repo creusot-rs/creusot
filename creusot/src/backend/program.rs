@@ -56,6 +56,18 @@ pub(crate) fn stub_module<'tcx>(
             let env_ty = Decl::TyDecl(translate_closure_ty(ctx, names, def_id, subst));
             // let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
             decls.push(env_ty);
+
+            let fn_spec_traits: Vec<Decl> = closure_contract2(ctx, def_id)
+                .into_iter()
+                .map(|(sym, sig, body)| {
+                    let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
+                    sig.name = Ident::build(sym.as_str());
+                    sig.retty = None;
+                    Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, &mut names, body) })
+                })
+                .collect();
+
+            decls.extend(fn_spec_traits);
             // decls.extend(accessors);
         }
     }
