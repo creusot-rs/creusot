@@ -137,9 +137,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     Tuple => Expr::Tuple(fields),
                     Adt(adt, varix, subst, _, _) => {
                         self.ctx.translate(*adt);
-                        let variant = self.tcx.adt_def(*adt).variant(*varix).def_id;
 
-                        Expr::Constructor(variant, subst, fields)
+                        Expr::Constructor(*adt, *varix, subst, fields)
                     }
                     Closure(def_id, subst) => {
                         let def_id = def_id.to_def_id();
@@ -157,7 +156,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         } else if util::is_spec(self.tcx, def_id) {
                             return;
                         } else {
-                            Expr::Constructor(def_id, subst, fields)
+                            Expr::Constructor(def_id, 0u32.into(), subst, fields)
                         }
                     }
                     _ => self.ctx.crash_and_error(

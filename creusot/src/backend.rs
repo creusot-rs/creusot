@@ -19,7 +19,7 @@ use self::{
     clone_map2::{CloneDepth, CloneVisibility, PriorClones},
     constant::translate_constant,
     logic::translate_logic_or_predicate,
-    program::{lower_closure, lower_function, to_why},
+    program::{lower_closure, lower_function},
     traits::{lower_impl, translate_assoc_ty},
     ty::{lower_accessor, translate_tydecl},
 };

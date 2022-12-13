@@ -1,22 +1,19 @@
 use crate::{
-    ctx::{item_name, TranslationCtx},
+    ctx::TranslationCtx,
     translation::{
         binop_to_binop,
         fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
         function::{
-            all_generic_decls_for, closure_contract2, closure_generic_decls, place,
-            place::translate_rplace_inner,
+            closure_contract2, closure_generic_decls, place, place::translate_rplace_inner,
         },
         specification::{lower_impure, lower_pure},
-        ty::closure_accessors,
         unop_to_unop,
     },
-    util::{self, item_qname, module_name},
+    util::{self, module_name},
 };
 use creusot_rustc::{
-    hir::{def::DefKind, Unsafety},
+    hir::Unsafety,
     middle::ty::TyKind,
-    resolve::Namespace,
     smir::mir::{self, BasicBlock, BinOp},
     span::DUMMY_SP,
 };
@@ -115,7 +112,7 @@ pub(crate) fn lower_closure<'tcx>(
         .map(|(sym, sig, body)| {
             let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
             sig.name = Ident::build(sym.as_str());
-
+            sig.retty = None;
             Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, &mut names, body) })
         })
         .collect();
@@ -241,21 +238,11 @@ impl<'tcx> Expr<'tcx> {
             Expr::UnaryOp(op, arg) => {
                 Exp::UnaryOp(unop_to_unop(op), box arg.to_why(ctx, names, body))
             }
-            Expr::Constructor(id, subst, args) => {
+            Expr::Constructor(id, ix, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, body)).collect();
 
-                match ctx.def_kind(id) {
-                    DefKind::Closure => {
-                        let mut cons_name = item_name(ctx.tcx, id, Namespace::ValueNS);
-                        cons_name.capitalize();
-                        let ctor = names.value(id, subst);
-                        Exp::Constructor { ctor, args }
-                    }
-                    _ => {
-                        let ctor = item_qname(ctx, id, Namespace::ValueNS);
-                        Exp::Constructor { ctor, args }
-                    }
-                }
+                let ctor = names.constructor(id, subst, ix.as_usize());
+                Exp::Constructor { ctor, args }
             }
             Expr::Call(id, subst, args) => {
                 let mut args: Vec<_> =
@@ -339,7 +326,7 @@ impl<'tcx> Expr<'tcx> {
                 r.invalidated_places(places)
             }
             Expr::UnaryOp(_, e) => e.invalidated_places(places),
-            Expr::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
+            Expr::Constructor(_, _, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
             Expr::Call(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
             Expr::Constant(_) => {}
             Expr::Cast(e, _, _) => e.invalidated_places(places),
@@ -464,9 +451,7 @@ impl<'tcx> Branches<'tcx> {
                 })
             }
             Branches::Constructor(adt, substs, vars, def) => {
-                use crate::util::constructor_qname;
                 let count = adt.variants().len();
-                // names.insert(adt.did(), substs);
                 let brs = vars
                     .into_iter()
                     .map(|(var, bb)| {
@@ -474,8 +459,6 @@ impl<'tcx> Branches<'tcx> {
                         let wilds = variant.fields.iter().map(|_| Pattern::Wildcard).collect();
 
                         let cons_name = names.constructor(adt.did(), substs, var.as_usize());
-
-                        constructor_qname(ctx, variant);
                         (Pattern::ConsP(cons_name, wilds), Goto(BlockId(bb.into())))
                     })
                     .chain(std::iter::once((Pattern::Wildcard, Goto(BlockId(def.into())))))

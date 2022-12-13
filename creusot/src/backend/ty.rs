@@ -10,9 +10,7 @@ use creusot_rustc::{
     type_ir::sty::TyKind::*,
 };
 use why3::{
-    declaration::{
-        AdtDecl, ConstructorDecl, Decl, Field, LetDecl, LetKind, Module, ValDecl, ValKind,
-    },
+    declaration::{AdtDecl, ConstructorDecl, Decl, Field, LetDecl, LetKind, Module, ValDecl},
     Ident,
 };
 
@@ -24,11 +22,11 @@ use crate::{
         function::all_generic_decls_for, pearlite::Term, specification::PreContract,
         ty::translate_ty_param,
     },
-    util::{self, constructor_qname, get_builtin, item_qname, PreSignature},
+    util::{self, get_builtin, item_qname, PreSignature},
 };
 
 use super::{
-    clone_map2::{self, CloneDepth, CloneVisibility, Namer},
+    clone_map2::{CloneDepth, CloneVisibility, Namer},
     sig_to_why3,
     term::lower_pure,
     Cloner,
@@ -196,7 +194,7 @@ pub(crate) fn translate_tydecl<'tcx, C: Cloner<'tcx>>(
     Some(modl)
 }
 
-fn build_ty_decl<'tcx, C: Cloner<'tcx>>(
+pub(super) fn build_ty_decl<'tcx, C: Cloner<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut C,
     did: DefId,
@@ -213,7 +211,7 @@ fn build_ty_decl<'tcx, C: Cloner<'tcx>>(
         let substs = InternalSubsts::identity_for_item(ctx.tcx, did);
         let mut ml_ty_def = Vec::new();
 
-        for var_def in adt.variants().iter() {
+        for (ix, var_def) in adt.variants().iter_enumerated() {
             let field_tys: Vec<_> = var_def
                 .fields
                 .iter()
@@ -222,7 +220,7 @@ fn build_ty_decl<'tcx, C: Cloner<'tcx>>(
                     Field { ty, ghost }
                 })
                 .collect();
-            let var_name = constructor_qname(ctx, var_def).name;
+            let var_name = names.constructor(adt.did(), substs, ix.as_usize()).name;
 
             ml_ty_def.push(ConstructorDecl { name: var_name, fields: field_tys });
         }

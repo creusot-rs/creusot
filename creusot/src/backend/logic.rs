@@ -15,7 +15,7 @@ use why3::{
 };
 
 use super::{
-    clone_map2::{self, make_clones, CloneDepth, CloneVisibility, Namer},
+    clone_map2::{CloneDepth, CloneVisibility, Namer},
     signature_of, Cloner,
 };
 

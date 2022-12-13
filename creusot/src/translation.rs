@@ -2,7 +2,9 @@ pub(crate) mod constant;
 pub(crate) mod external;
 #[allow(dead_code)]
 pub(crate) mod fmir;
+#[allow(unused_imports)]
 pub(crate) mod function;
+#[allow(unused_imports)]
 pub(crate) mod interface;
 pub(crate) mod pearlite;
 pub(crate) mod specification;

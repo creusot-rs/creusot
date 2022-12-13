@@ -13,16 +13,18 @@ use petgraph::{
     data::Build,
     graphmap::DiGraphMap,
     visit::{DfsPostOrder, Walker},
+    Direction::Incoming,
     EdgeDirection::Outgoing,
 };
 use rustc_middle::{
     mir::{tcx::PlaceTy, PlaceElem},
     ty::{
         subst::{GenericArgKind, InternalSubsts},
-        DefIdTree, FloatTy, ParamEnv, Ty, TyCtxt, TyKind, TypeSuperVisitable, TypeVisitor, UintTy,
+        DefIdTree, FloatTy, GenericArg, Ty, TyCtxt, TyKind, TypeSuperVisitable, TypeVisitor,
+        UintTy,
     },
 };
-use rustc_type_ir::IntTy;
+use rustc_type_ir::{IntTy, RegionKind};
 use util::ItemType;
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
@@ -61,7 +63,14 @@ pub enum Dependency<'tcx> {
 
 impl<'tcx> Dependency<'tcx> {
     fn identity(tcx: TyCtxt<'tcx>, id: DefId) -> Self {
-        Dependency::Item(id, InternalSubsts::identity_for_item(tcx, id))
+        Dependency::Item(id, identity_substs_for(tcx, id))
+    }
+
+    fn as_item(&self) -> (DefId, SubstsRef<'tcx>) {
+        match self {
+            Dependency::Item(id, s) => (*id, s),
+            Dependency::BaseTy(_) => unreachable!(),
+        }
     }
 }
 
@@ -205,7 +214,7 @@ impl<'tcx> VisitDeps<'tcx> for Expr<'tcx> {
                 r.deps(tcx, f)
             }
             Expr::UnaryOp(_, e) => e.deps(tcx, f),
-            Expr::Constructor(id, sub, args) => {
+            Expr::Constructor(id, _, sub, args) => {
                 // NOTE: we actually insert a dependency on the type and not hte constructor itself
                 // in the interest of coherence we may want ot change that.. idk
 
@@ -451,7 +460,7 @@ impl<'tcx> MonoGraph<'tcx> {
             ctx.translate(id);
 
             let to_add = get_immediate_deps(ctx, id);
-            eprintln!("deps_of({id:?}) :- {to_add:?}\n");
+            // eprintln!("deps_of({id:?}) :- {to_add:?}\n");
 
             for (lvl, dep) in to_add {
                 let Dependency::Item(id, orig_subst) = dep else {
@@ -461,7 +470,7 @@ impl<'tcx> MonoGraph<'tcx> {
 
                 let subst = EarlyBinder(orig_subst).subst(ctx.tcx, subst);
 
-                let tgt = if let Some(tgt) = closure_hack(ctx.tcx, def_id, subst) {
+                let tgt = if let Some(tgt) = is_closure_hack(ctx.tcx, id, subst) {
                     tgt
                 } else if can_resolve(ctx, (id, subst)) {
                     resolve_opt(ctx.tcx, param_env, id, subst)
@@ -472,6 +481,7 @@ impl<'tcx> MonoGraph<'tcx> {
 
                 // eprintln!("{:?} -> {:?} weight {:?}", next, tgt, (lvl, Some((id, orig_subst))));
 
+                eprintln!("{tgt:?} {id:?} {orig_subst:?}");
                 self.add_edge(next, Dependency::Item(tgt.0, tgt.1), (lvl, Some((id, orig_subst))));
 
                 to_visit.push(Dependency::Item(tgt.0, tgt.1));
@@ -535,7 +545,7 @@ impl<'tcx, I: Iterator<Item = Dependency<'tcx>>> Walker<&MonoGraphInner<'tcx>>
     }
 }
 
-fn closure_hack<'tcx>(
+fn is_closure_hack<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
     subst: SubstsRef<'tcx>,
@@ -544,9 +554,8 @@ fn closure_hack<'tcx>(
         || tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id)
         || tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id)
         || tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id)
-        || tcx.is_diagnostic_item(Symbol::intern("fn_impl_resolve"), def_id)
     {
-        debug!("closure_hack: {:?}", def_id);
+        debug!("is_closure_hack: {:?}", def_id);
         let self_ty = subst.types().nth(1).unwrap();
         if let TyKind::Closure(id, csubst) = self_ty.kind() {
             return Some((*id, csubst));
@@ -565,17 +574,44 @@ fn closure_hack<'tcx>(
     None
 }
 
+fn hacked_closure_ids<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Vec<(DefId, SubstsRef<'tcx>)> {
+    let subst = match tcx.type_of(def_id).kind() {
+        TyKind::Closure(_, subst) => subst,
+        // probably should panic instead
+        _ => return Vec::new(),
+    };
+
+    let env_ty = tcx.closure_env_ty(def_id, subst, RegionKind::ReErased).unwrap().peel_refs();
+
+    let args = subst.as_closure().sig().inputs().skip_binder()[0];
+    let fn_trait_subst = tcx.mk_substs([GenericArg::from(args), GenericArg::from(env_ty)].iter());
+
+    vec![
+        (tcx.get_diagnostic_item(Symbol::intern("fn_once_impl_precond")).unwrap(), fn_trait_subst),
+        (tcx.get_diagnostic_item(Symbol::intern("fn_mut_impl_postcond")).unwrap(), fn_trait_subst),
+        (tcx.get_diagnostic_item(Symbol::intern("fn_impl_postcond")).unwrap(), fn_trait_subst),
+        (
+            tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_default")).unwrap(),
+            tcx.mk_substs([GenericArg::from(env_ty)].iter()),
+        ),
+        (
+            tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap(),
+            tcx.mk_substs([GenericArg::from(env_ty)].iter()),
+        ),
+    ]
+}
+
 fn can_resolve<'tcx>(ctx: &mut TranslationCtx<'tcx>, dep: (DefId, SubstsRef<'tcx>)) -> bool {
     ctx.trait_of_item(dep.0).is_some()
 }
 
 #[derive(Debug)]
 pub struct Names<'tcx> {
-    names: IndexMap<(DefId, SubstsRef<'tcx>), why3::Ident>,
+    names: IndexMap<(DefId, SubstsRef<'tcx>), Option<why3::Ident>>,
 }
 
 impl<'tcx> Names<'tcx> {
-    pub(super) fn get(&self, tgt: (DefId, SubstsRef<'tcx>)) -> Option<why3::Ident> {
+    pub(super) fn get(&self, tgt: (DefId, SubstsRef<'tcx>)) -> Option<Option<why3::Ident>> {
         self.names.get(&tgt).cloned()
     }
 
@@ -599,8 +635,19 @@ pub(crate) fn name_clones<'tcx>(
     let mut assigned = IndexMap::new();
     let walk = DfsPostOrder::new(&graph.graph, root);
 
+    let item = root.as_item();
+    // name the self-clone
+    names.insert(item, None);
+
+    eprintln!("naming clones for {root:?}");
     for node in walk.iter(&graph.graph) {
         let Dependency::Item(def_id, subst) = node else { continue };
+
+        if names.contains_key(&(def_id, subst)) {
+            continue;
+        }
+
+        eprintln!("edges of {node:?} : {:?}", graph.graph.edges(node));
 
         let base_sym = match util::item_type(ctx.tcx, def_id) {
             ItemType::Impl => ctx.tcx.item_name(ctx.tcx.trait_id_of_impl(def_id).unwrap()),
@@ -612,10 +659,15 @@ pub(crate) fn name_clones<'tcx>(
         };
         let count = assigned.entry(base_sym).or_insert(0);
 
-        names.insert(
-            (def_id, subst),
-            format!("{}{}", base_sym.as_str().to_upper_camel_case(), count).into(),
-        );
+        let clone_name: why3::Ident =
+            format!("{}{}", base_sym.as_str().to_upper_camel_case(), count).into();
+        if ctx.is_closure(def_id) {
+            hacked_closure_ids(ctx.tcx, def_id).into_iter().for_each(|e| {
+                names.insert(e, Some(clone_name.clone()));
+            });
+        };
+
+        names.insert((def_id, subst), Some(clone_name));
         *count += 1;
     }
 
@@ -637,7 +689,7 @@ pub struct Namer<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> Namer<'a, 'tcx> {
-    fn ident(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> why3::Ident {
+    fn ident(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> Option<why3::Ident> {
         let (def_id, subst) = self.tcx.erase_regions((def_id, subst));
         self.priors.prior.get(&self.id).unwrap().get((def_id, subst)).unwrap_or_else(|| {
             panic!("Could not find {:?} in dependencies of {:?}", def_id, self.id)
@@ -648,12 +700,18 @@ impl<'a, 'tcx> Namer<'a, 'tcx> {
 impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
     fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
         let base = self.ident(def_id, subst);
-        QName { module: vec![base], name: item_name(self.tcx, def_id, Namespace::ValueNS) }
+        QName {
+            module: base.into_iter().collect(),
+            name: item_name(self.tcx, def_id, Namespace::ValueNS),
+        }
     }
 
     fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
         let base = self.ident(def_id, subst);
-        QName { module: vec![base], name: item_name(self.tcx, def_id, Namespace::TypeNS) }
+        QName {
+            module: base.into_iter().collect(),
+            name: item_name(self.tcx, def_id, Namespace::TypeNS),
+        }
     }
 
     fn accessor(
@@ -667,7 +725,10 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
 
         let base = self.ident(field.did, subst);
 
-        QName { module: vec![base], name: item_name(self.tcx, field.did, Namespace::ValueNS) }
+        QName {
+            module: base.into_iter().collect(),
+            name: item_name(self.tcx, field.did, Namespace::ValueNS),
+        }
     }
 
     fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>, variant: usize) -> QName {
@@ -677,7 +738,9 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
             _ => unreachable!(),
         };
         let base = self.ident(def_id, subst);
-        QName { module: vec![base], name: item_name(self.tcx, variant_id, Namespace::ValueNS) }
+        let mut name = item_name(self.tcx, variant_id, Namespace::ValueNS);
+        name.capitalize();
+        QName { module: base.into_iter().collect(), name }
     }
 
     fn to_clones(
@@ -710,6 +773,13 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
     }
 }
 
+fn identity_substs_for<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> SubstsRef<'tcx> {
+    match tcx.type_of(def_id).kind() {
+        TyKind::Closure(_, subst) => subst,
+        _ => InternalSubsts::identity_for_item(tcx, def_id),
+    }
+}
+
 // Transform a graph into a set of clones
 pub fn make_clones<'tcx, 'a>(
     ctx: &mut TranslationCtx<'tcx>,
@@ -720,7 +790,7 @@ pub fn make_clones<'tcx, 'a>(
 ) -> Vec<Decl> {
     let Namer { priors, .. } = priors;
     let mut names = priors.get(ctx.tcx, root);
-    let root = Dependency::Item(root, InternalSubsts::identity_for_item(ctx.tcx, root));
+    let root = Dependency::Item(root, identity_substs_for(ctx.tcx, root));
     let mut topo = DfsPostOrder::new(&priors.graph.graph, root);
 
     // Unify
@@ -778,6 +848,10 @@ pub fn make_clones<'tcx, 'a>(
             }
 
             if priors.graph.level[&dep] < desired_dep_level {
+                continue;
+            };
+
+            if dep == node {
                 continue;
             };
 

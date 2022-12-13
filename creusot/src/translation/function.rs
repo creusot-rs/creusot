@@ -3,7 +3,6 @@ use super::{
     pearlite::Term,
 };
 use crate::{
-    backend::term::lower_pure,
     ctx::*,
     fmir::{self, Expr},
     gather_spec_closures::corrected_invariant_names_and_locations,
@@ -11,11 +10,11 @@ use crate::{
     rustc_extensions::renumber,
     translation::{
         pearlite::{self, TermKind, TermVisitorMut},
-        specification::{contract_of, PreContract},
-        traits, ty,
-        ty::{closure_accessors, translate_closure_ty, translate_ty},
+        specification::PreContract,
+        traits,
+        ty::closure_accessors,
     },
-    util::{self, ident_of, is_ghost_closure, pre_sig_of, sig_to_why3, signature_of, PreSignature},
+    util::{self, ident_of, is_ghost_closure, pre_sig_of, signature_of, PreSignature},
 };
 use creusot_rustc::{
     borrowck::borrow_set::BorrowSet,
@@ -506,6 +505,8 @@ pub(crate) fn closure_contract2<'tcx>(
     let mut precondition: Term<'_> = pre_clos_sig.contract.requires_conj(ctx.tcx);
 
     let result_ty = pre_clos_sig.output;
+    pre_clos_sig.output = ctx.types.bool;
+
     pre_clos_sig.contract = PreContract::default();
 
     let args: Vec<_> = pre_clos_sig.inputs.drain(1..).collect();
