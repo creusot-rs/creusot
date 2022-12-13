@@ -28,6 +28,7 @@ use rustc_type_ir::{IntTy, RegionKind};
 use util::ItemType;
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
+    ty::Type,
     QName,
 };
 
@@ -71,6 +72,15 @@ impl<'tcx> Dependency<'tcx> {
             Dependency::BaseTy(_) => unreachable!(),
         }
     }
+
+    fn from_ty(ty: Ty<'tcx>) -> Option<Self> {
+        match ty.kind() {
+            TyKind::Adt(adt, subst) => Some(Self::Item(adt.did(), subst)),
+            TyKind::Closure(id, subst) => Some(Self::Item(*id, subst)),
+            TyKind::Param(_) => None,
+            _ => Some(Self::BaseTy(ty)),
+        }
+    }
 }
 
 // Depending on where we are cloning from we will only want to keep
@@ -101,44 +111,31 @@ fn get_immediate_deps<'tcx>(
 
             for arg in tys {
                 match arg.unpack() {
-                    GenericArgKind::Type(ty) => match ty.kind() {
-                        TyKind::Adt(def, sub) => {
-                            v.push((DepLevel::Body, Dependency::Item(def.did(), *sub)))
-                        }
-                        TyKind::Int(_) => { v.push((DepLevel::Body, Dependency::BaseTy(ty))) }
-                        TyKind::Uint(_) => { v.push((DepLevel::Body, Dependency::BaseTy(ty))) }
-                        TyKind::RawPtr(_) => { v.push((DepLevel::Body, Dependency::BaseTy(ty))) }
-                        _ => {}
-                    },
+                    GenericArgKind::Type(ty) => {
+                        ty.deps(tcx, &mut |dep| v.push((DepLevel::Body, dep)));
+                    }
                     GenericArgKind::Lifetime(_) => {}
                     a => panic!("{a:?}"),
                 }
             }
             v
         }
-        ItemType::Logic | ItemType::Predicate
-            // if def_id.is_local()
-            //     && !util::is_trusted(ctx.tcx, def_id)
-            //     && util::has_body(ctx, def_id)
-                =>
-        {
-            term_dependencies(ctx, def_id)
-        }
+        ItemType::Logic | ItemType::Predicate => term_dependencies(ctx, def_id),
         ItemType::Closure | ItemType::Program => program_dependencies(ctx, def_id),
         // Fill out
-        ItemType::AssocTy => {let mut deps = Vec::new();
+        ItemType::AssocTy => {
+            let mut deps = Vec::new();
             if ctx.impl_of_method(def_id).is_some() {
                 ctx.type_of(def_id).deps(tcx, &mut |d| deps.push((DepLevel::Signature, d)));
-
             }
 
             deps
-        },
+        }
         ItemType::Constant => {
             let mut deps = Vec::new();
             ctx.type_of(def_id).deps(tcx, &mut |d| deps.push((DepLevel::Signature, d)));
             deps
-        },
+        }
         ItemType::Impl => {
             let mut deps = Vec::new();
             ctx.trait_impl(def_id).deps(tcx, &mut |d| deps.push((DepLevel::Body, d)));
@@ -147,15 +144,19 @@ fn get_immediate_deps<'tcx>(
         ItemType::Trait => Vec::new(),
         ItemType::Field => {
             let parent = ctx.parent(def_id);
-            let adt_did = match ctx.def_kind(parent) {
+            let type_id = match ctx.def_kind(parent) {
                 DefKind::Variant => ctx.parent(parent),
-                DefKind::Struct | DefKind::Enum | DefKind::Union => {
-                    parent
-                }
+                DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::Closure => parent,
                 _ => unreachable!(),
             };
 
-            vec![(DepLevel::Signature, Dependency::Item(adt_did, InternalSubsts::identity_for_item(ctx.tcx, adt_did)))]
+            let mut v =
+                vec![(DepLevel::Signature, Dependency::from_ty(ctx.type_of(type_id)).unwrap())];
+            if let Some(dep) = Dependency::from_ty(ctx.type_of(def_id)) {
+                v.push((DepLevel::Signature, dep));
+            }
+
+            v
         }
         e => todo!("{e:?}"),
     }
@@ -327,6 +328,10 @@ impl<'tcx> VisitDeps<'tcx> for Place<'tcx> {
 impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<'tcx, F> {
     fn visit_term(&mut self, term: &Term<'tcx>) {
         match &term.kind {
+            TermKind::Binary { .. } => (self.f)(Dependency::Item(
+                self.tcx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap(),
+                List::empty(),
+            )),
             TermKind::Item(id, subst) => (self.f)(Dependency::Item(*id, subst)),
             TermKind::Call { id, subst, fun: _, args: _ } => {
                 subst.visit_with(self);
@@ -367,6 +372,9 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TypeVisitor<'tcx> for TermDep<'tcx, F> {
             TyKind::Projection(pty) => (self.f)(Dependency::Item(pty.item_def_id, pty.substs)),
             TyKind::Int(_) | TyKind::Uint(_) => (self.f)(Dependency::BaseTy(t)),
             TyKind::Ref(_, _, Mutability::Mut) => (self.f)(Dependency::BaseTy(t)),
+            TyKind::RawPtr(_) => (self.f)(Dependency::BaseTy(t)),
+            TyKind::Bool => (self.f)(Dependency::BaseTy(t)),
+            TyKind::Char => (self.f)(Dependency::BaseTy(t)),
             _ => {}
         };
         t.super_visit_with(self)
@@ -377,16 +385,20 @@ fn term_dependencies<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> Vec<(DepLevel, Dependency<'tcx>)> {
-    let mut deps = Vec::new();
+    let mut deps = IndexSet::new();
 
     let sig = pre_sig_of(ctx, def_id);
-    sig.deps(ctx.tcx, &mut |dep| deps.push((DepLevel::Signature, dep)));
+    sig.deps(ctx.tcx, &mut |dep| {
+        deps.insert((DepLevel::Signature, dep));
+    });
 
     let tcx = ctx.tcx;
     if let Some(term) = ctx.term(def_id) {
-        term.deps(tcx, &mut |dep| deps.push((DepLevel::Body, dep)));
+        term.deps(tcx, &mut |dep| {
+            deps.insert((DepLevel::Body, dep));
+        });
     }
-    deps
+    deps.into_iter().collect()
 }
 
 fn program_dependencies<'tcx>(
@@ -445,6 +457,7 @@ impl<'tcx> MonoGraph<'tcx> {
         let mut to_visit = vec![root];
         let mut finished = HashSet::new();
         let param_env = ctx.param_env(def_id);
+        eprintln!("{param_env:?}");
         // eprintln!("adding root {def_id:?}");
         while let Some(next) = to_visit.pop() {
             // eprintln!("visiting {:?}", next);
@@ -670,6 +683,7 @@ pub(crate) fn name_clones<'tcx>(
             });
         };
 
+        // eprintln!("root={:?} node={:?} name={:?}", root, (def_id, subst), clone_name);
         names.insert((def_id, subst), clone_name);
     }
 
@@ -797,7 +811,7 @@ pub fn make_clones<'tcx, 'a>(
 ) -> Vec<Decl> {
     let Namer { priors, .. } = priors;
     let mut names = priors.get(ctx.tcx, root);
-    let root = Dependency::Item(root, identity_substs_for(ctx.tcx, root));
+    let root = Dependency::identity(ctx.tcx, root);
     let mut topo = DfsPostOrder::new(&priors.graph.graph, root);
 
     // Unify
@@ -810,7 +824,6 @@ pub fn make_clones<'tcx, 'a>(
     let mut uses = Vec::new();
 
     while let Some(node) = topo.walk_next(&priors.graph.graph) {
-        // eprintln!("{root:?} {node:?}");
         if node == root {
             continue;
         }
@@ -846,18 +859,13 @@ pub fn make_clones<'tcx, 'a>(
         let mut clone_subst = base_subst(ctx, names, id, subst);
 
         let mut node_names = priors.get(ctx.tcx, id);
-        // eprintln!("{:?}", priors.prior[&id]);
-        // eprintln!("{:?}", priors.graph.graph);
+
         for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
             // eprintln!("{:?} -> {:?}", node, dep);
-            if depth == CloneDepth::Shallow {
-                continue;
-            }
 
             if priors.graph.level[&dep] < desired_dep_level {
                 continue;
             };
-
             if dep == node {
                 continue;
             };
@@ -870,6 +878,9 @@ pub fn make_clones<'tcx, 'a>(
             }
             let Dependency::Item(id, subst) = dep else { continue };
 
+            if depth == CloneDepth::Shallow && item_type(ctx.tcx, id) != ItemType::AssocTy {
+                continue;
+            }
             if get_builtin(ctx.tcx, id).is_some() {
                 continue;
             };
@@ -880,16 +891,17 @@ pub fn make_clones<'tcx, 'a>(
             if item_type(ctx.tcx, orig.0) == ItemType::Type {
                 continue;
             }
-
             // eprintln!("{:?} depends on {:?}", node, dep);
             // eprintln!("getting name for {:?} originally called {:?}", (dep), priors.graph.graph[(node, dep)]);
 
             let src = node_names.value(orig.0, orig.1);
             let tgt = names.value(id, subst);
+
             let sub = match item_type(ctx.tcx, orig.0) {
                 ItemType::Logic => CloneSubst::Function(src, tgt),
                 ItemType::Predicate => CloneSubst::Predicate(src, tgt),
                 ItemType::Constant => CloneSubst::Val(src, tgt),
+                ItemType::AssocTy => CloneSubst::Type(src, Type::TConstructor(tgt)),
                 _ => CloneSubst::Val(src, tgt),
             };
             clone_subst.push(sub)

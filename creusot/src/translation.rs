@@ -114,6 +114,9 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
         let mut visited = HashSet::new();
         for dep in graph.iter() {
             let Dependency::Item(id, _) = dep else { continue };
+            if tcx.def_path_str(id).contains("eq") {
+                eprintln!("Translating {dep:?}");
+            }
             if !visited.insert(id) {
                 continue;
             };

@@ -105,7 +105,7 @@ pub(crate) fn lower_closure<'tcx>(
     mut names: Namer<'_, 'tcx>,
     def_id: DefId,
 ) -> Vec<Module> {
-    let Some(func) = to_why(ctx, names, def_id)  else { return Vec::new() };
+    let Some(func) = to_why(ctx, names, def_id)  else { return vec![stub_module(ctx, names, def_id)] };
     let mut decls: Vec<_> = Vec::new();
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep));
@@ -142,7 +142,7 @@ pub(crate) fn lower_function<'tcx>(
     mut names: Namer<'_, 'tcx>,
     def_id: DefId,
 ) -> Vec<Module> {
-    let Some(func) = to_why(ctx, names, def_id)  else { return Vec::new() };
+    let Some(func) = to_why(ctx, names, def_id)  else { return vec![stub_module(ctx, names, def_id)] };
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(closure_generic_decls(ctx.tcx, def_id));

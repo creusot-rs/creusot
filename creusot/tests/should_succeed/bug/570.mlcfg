@@ -1,88 +1,115 @@
 
 module C570_S1_Type
-  use mach.int.Int
   use mach.int.Int32
   type t_s1  =
     | C_S1 int32
     
-  let function s1_f (self : t_s1) : int32 = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_S1 a -> a
+end
+module C570_S1_F_Stub
+  use mach.int.Int32
+  use C570_S1_Type as CS10
+  val function field_f [#"../570.rs" 5 4 5 14] (self : CS10.t_s1) : int32
+end
+module C570_S1_F
+  use mach.int.Int32
+  use C570_S1_Type as CS10
+  let function field_f [#"../570.rs" 5 4 5 14] (self : CS10.t_s1) : int32 = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../570.rs" 1 0 1 0] match (self) with
+      | CS10.C_S1 a -> a
       end
 end
 module C570_S2_Type
-  use C570_S1_Type as C570_S1_Type
+  use mach.int.Int32
+  use C570_S1_Type as CS10
   type t_s2  =
-    | C_S2 (C570_S1_Type.t_s1)
+    | C_S2 (CS10.t_s1)
     
-  let function s2_s1 (self : t_s2) : C570_S1_Type.t_s1 = [@vc:do_not_keep_trace] [@vc:sp]
-    match (self) with
-      | C_S2 a -> a
+end
+module C570_S2_S1_Stub
+  use mach.int.Int32
+  use C570_S1_Type as CS10
+  use C570_S2_Type as CS20
+  val function field_s1 [#"../570.rs" 9 4 9 14] (self : CS20.t_s2) : CS10.t_s1
+end
+module C570_S2_S1
+  use mach.int.Int32
+  use C570_S1_Type as CS10
+  use C570_S2_Type as CS20
+  let function field_s1 [#"../570.rs" 9 4 9 14] (self : CS20.t_s2) : CS10.t_s1 = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../570.rs" 1 0 1 0] match (self) with
+      | CS20.C_S2 a -> a
       end
 end
-module C570_TestProgram_Interface
-  use C570_S2_Type as C570_S2_Type
-  val test_program [@cfg:stackify] [#"../570.rs" 12 0 12 26] (s : C570_S2_Type.t_s2) : ()
+module C570_TestProgram_Stub
+  use mach.int.Int32
+  use C570_S1_Type as CS10
+  use C570_S2_Type as CS20
+  val test_program [@cfg:stackify] [#"../570.rs" 12 0 12 26] (s : CS20.t_s2) : ()
 end
 module C570_TestProgram
-  use mach.int.Int
   use mach.int.Int32
-  use C570_S1_Type as C570_S1_Type
-  use C570_S2_Type as C570_S2_Type
-  let rec cfg test_program [@cfg:stackify] [#"../570.rs" 12 0 12 26] (s : C570_S2_Type.t_s2) : ()
+  use C570_S1_Type as CS10
+  use C570_S2_Type as CS20
+  clone C570_S1_F as FieldF0
+  clone C570_S2_S1 as FieldS10
+  let rec cfg test_program [@cfg:stackify] [#"../570.rs" 12 0 12 26] (s : CS20.t_s2) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var s_1 : C570_S2_Type.t_s2;
+  var s_1 : CS20.t_s2;
   var _2 : int32;
   {
     s_1 <- s;
     goto BB0
   }
   BB0 {
-    _2 <- C570_S1_Type.s1_f (C570_S2_Type.s2_s1 s_1);
+    _2 <- FieldF0.field_f (FieldS10.field_s1 s_1);
     _0 <- ();
     return _0
   }
   
 end
-module C570_TestAssign_Interface
-  use C570_S2_Type as C570_S2_Type
-  val test_assign [@cfg:stackify] [#"../570.rs" 16 0 16 29] (s : C570_S2_Type.t_s2) : ()
+module C570_TestAssign_Stub
+  use mach.int.Int32
+  use C570_S1_Type as CS10
+  use C570_S2_Type as CS20
+  val test_assign [@cfg:stackify] [#"../570.rs" 16 0 16 29] (s : CS20.t_s2) : ()
 end
 module C570_TestAssign
-  use mach.int.Int
   use mach.int.Int32
-  use C570_S1_Type as C570_S1_Type
-  use C570_S2_Type as C570_S2_Type
-  let rec cfg test_assign [@cfg:stackify] [#"../570.rs" 16 0 16 29] (s : C570_S2_Type.t_s2) : ()
+  use C570_S1_Type as CS10
+  use C570_S2_Type as CS20
+  clone C570_S1_F as FieldF0
+  clone C570_S2_S1 as FieldS10
+  let rec cfg test_assign [@cfg:stackify] [#"../570.rs" 16 0 16 29] (s : CS20.t_s2) : ()
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
-  var s_1 : C570_S2_Type.t_s2;
+  var s_1 : CS20.t_s2;
   {
     s_1 <- s;
     goto BB0
   }
   BB0 {
-    s_1 <- (let C570_S2_Type.C_S2 a = s_1 in C570_S2_Type.C_S2 (let C570_S1_Type.C_S1 a = C570_S2_Type.s2_s1 s_1 in C570_S1_Type.C_S1 ([#"../570.rs" 17 13 17 14] (2 : int32))));
+    s_1 <- (let CS20.C_S2 a = s_1 in CS20.C_S2 (let CS10.C_S1 a = FieldS10.field_s1 s_1 in CS10.C_S1 ([#"../570.rs" 17 13 17 14] (2 : int32))));
     _0 <- ();
     return _0
   }
   
 end
 module C570_TestLogic_Stub
-  use C570_S2_Type as C570_S2_Type
-  function test_logic [#"../570.rs" 21 0 21 24] (s : C570_S2_Type.t_s2) : ()
-end
-module C570_TestLogic_Interface
-  use C570_S2_Type as C570_S2_Type
-  function test_logic [#"../570.rs" 21 0 21 24] (s : C570_S2_Type.t_s2) : ()
+  use mach.int.Int32
+  use C570_S1_Type as CS10
+  use C570_S2_Type as CS20
+  function test_logic [#"../570.rs" 21 0 21 24] (s : CS20.t_s2) : ()
 end
 module C570_TestLogic
-  use C570_S2_Type as C570_S2_Type
-  use C570_S1_Type as C570_S1_Type
-  function test_logic [#"../570.rs" 21 0 21 24] (s : C570_S2_Type.t_s2) : () =
-    [#"../570.rs" 20 0 20 8] let _ = C570_S1_Type.s1_f (C570_S2_Type.s2_s1 s) in ()
-  val test_logic [#"../570.rs" 21 0 21 24] (s : C570_S2_Type.t_s2) : ()
+  use mach.int.Int32
+  use C570_S1_Type as CS10
+  use C570_S2_Type as CS20
+  clone C570_S2_S1_Stub as FieldS10
+  clone C570_S1_F_Stub as FieldF0
+  function test_logic [#"../570.rs" 21 0 21 24] (s : CS20.t_s2) : () =
+    [#"../570.rs" 20 0 20 8] let _ = FieldF0.field_f (FieldS10.field_s1 s) in ()
+  val test_logic [#"../570.rs" 21 0 21 24] (s : CS20.t_s2) : ()
     ensures { result = test_logic s }
     
 end

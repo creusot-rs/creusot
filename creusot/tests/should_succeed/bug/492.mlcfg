@@ -1,16 +1,16 @@
 
 module CreusotContracts_Resolve_Impl1_Resolve_Stub
   type t
-  use prelude.Borrow
-  predicate resolve (self : borrowed t)
-end
-module CreusotContracts_Resolve_Impl1_Resolve_Interface
-  type t
+  use mach.int.Int
+  use prelude.Bool
   use prelude.Borrow
   predicate resolve (self : borrowed t)
 end
 module CreusotContracts_Resolve_Impl1_Resolve
   type t
+  use prelude.Opaque
+  use mach.int.Int
+  use prelude.Bool
   use prelude.Borrow
   predicate resolve (self : borrowed t) =
      ^ self =  * self
@@ -18,10 +18,11 @@ module CreusotContracts_Resolve_Impl1_Resolve
     ensures { result = resolve self }
     
 end
-module C492_ReborrowTuple_Interface
+module C492_ReborrowTuple_Stub
   type t
-  use prelude.Borrow
   use mach.int.Int
+  use prelude.Bool
+  use prelude.Borrow
   use mach.int.UInt32
   val reborrow_tuple [@cfg:stackify] [#"../492.rs" 5 0 5 52] (x : borrowed t) : (borrowed t, uint32)
     ensures { [#"../492.rs" 4 10 4 27]  * (let (a, _) = result in a) =  * x }
@@ -29,8 +30,10 @@ module C492_ReborrowTuple_Interface
 end
 module C492_ReborrowTuple
   type t
-  use prelude.Borrow
+  use prelude.Opaque
   use mach.int.Int
+  use prelude.Bool
+  use prelude.Borrow
   use mach.int.UInt32
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = t
@@ -54,80 +57,69 @@ module C492_ReborrowTuple
   }
   
 end
-module CreusotContracts_Resolve_Resolve_Resolve_Stub
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Interface
-  type self
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve
-  type self
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
-end
-module CreusotContracts_Resolve_Impl0_Resolve_Stub
-  type t1
-  type t2
-  predicate resolve (self : (t1, t2))
-end
-module CreusotContracts_Resolve_Impl0_Resolve_Interface
-  type t1
-  type t2
-  predicate resolve (self : (t1, t2))
-end
-module CreusotContracts_Resolve_Impl0_Resolve
-  type t1
-  type t2
-  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve1 with
-    type self = t2
-  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
-    type self = t1
-  predicate resolve (self : (t1, t2)) =
-    Resolve0.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
-  val resolve (self : (t1, t2)) : bool
-    ensures { result = resolve self }
-    
-end
 module CreusotContracts_Resolve_Impl2_Resolve_Stub
   type t
-  predicate resolve (self : t)
-end
-module CreusotContracts_Resolve_Impl2_Resolve_Interface
-  type t
+  use prelude.Bool
   predicate resolve (self : t)
 end
 module CreusotContracts_Resolve_Impl2_Resolve
   type t
+  use prelude.Bool
   predicate resolve (self : t) =
     true
   val resolve (self : t) : bool
     ensures { result = resolve self }
     
 end
-module C492_Test_Interface
+module CreusotContracts_Resolve_Impl0_Resolve_Stub
+  type t1
+  type t2
+  use prelude.Bool
+  use mach.int.Int
+  predicate resolve (self : (t1, t2))
+end
+module CreusotContracts_Resolve_Impl0_Resolve
+  type t1
+  type t2
+  use prelude.Bool
+  use prelude.Opaque
+  use mach.int.Int
+  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
+    type self = t2
+  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve1 with
+    type self = t1
+  predicate resolve (self : (t1, t2)) =
+    Resolve1.resolve (let (a, _) = self in a) /\ Resolve0.resolve (let (_, a) = self in a)
+  val resolve (self : (t1, t2)) : bool
+    ensures { result = resolve self }
+    
+end
+module C492_Test_Stub
+  use mach.int.Int
+  use prelude.Bool
+  use prelude.Borrow
+  use mach.int.UInt32
   val test [@cfg:stackify] [#"../492.rs" 10 0 10 13] (_1' : ()) : ()
     ensures { [#"../492.rs" 9 10 9 15] false }
     
 end
 module C492_Test
+  use prelude.Opaque
   use mach.int.Int
-  use mach.int.Int32
+  use prelude.Bool
   use prelude.Borrow
   use mach.int.UInt32
-  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve2 with
+  use mach.int.Int32
+  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve0 with
     type t = uint32
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = int32
-  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve1 with
+  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve2 with
     type t1 = borrowed int32,
     type t2 = uint32,
-    predicate Resolve0.resolve = Resolve0.resolve,
-    predicate Resolve1.resolve = Resolve2.resolve
-  clone C492_ReborrowTuple_Interface as ReborrowTuple0 with
+    predicate Resolve1.resolve = Resolve1.resolve,
+    predicate Resolve0.resolve = Resolve0.resolve
+  clone C492_ReborrowTuple_Stub as ReborrowTuple0 with
     type t = int32
   let rec cfg test [@cfg:stackify] [#"../492.rs" 10 0 10 13] (_1' : ()) : ()
     ensures { [#"../492.rs" 9 10 9 15] false }
@@ -153,17 +145,30 @@ module C492_Test
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve _6 };
-    assume { Resolve0.resolve res_3 };
+    assume { Resolve1.resolve _6 };
+    assume { Resolve1.resolve res_3 };
     res_3 <- (let (a, _) = _4 in a);
     _4 <- (let (a, b) = _4 in (any borrowed int32, b));
-    assume { Resolve1.resolve _4 };
+    assume { Resolve2.resolve _4 };
     assert { [#"../492.rs" 13 18 13 30]  ^ res_3 = (5 : int32) };
     _7 <- ();
     res_3 <- { res_3 with current = ([#"../492.rs" 14 11 14 13] (10 : int32)) };
-    assume { Resolve0.resolve res_3 };
+    assume { Resolve1.resolve res_3 };
     _0 <- ();
     return _0
   }
   
+end
+module CreusotContracts_Resolve_Resolve_Resolve_Stub
+  type self
+  use prelude.Bool
+  predicate resolve (self : self)
+end
+module CreusotContracts_Resolve_Resolve_Resolve
+  type self
+  use prelude.Bool
+  predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
 end

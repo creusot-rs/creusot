@@ -3,11 +3,8 @@ module C181Ident_MaxInt_Stub
   use mach.int.Int
   function max_int [#"../181_ident.rs" 7 0 7 37] (a : int) (b : int) : int
 end
-module C181Ident_MaxInt_Interface
-  use mach.int.Int
-  function max_int [#"../181_ident.rs" 7 0 7 37] (a : int) (b : int) : int
-end
 module C181Ident_MaxInt
+  use prelude.Opaque
   use mach.int.Int
   function max_int [#"../181_ident.rs" 7 0 7 37] (a : int) (b : int) : int =
     [#"../181_ident.rs" 6 0 6 8] if a < b then b else a
@@ -15,21 +12,72 @@ module C181Ident_MaxInt
     ensures { result = max_int a b }
     
 end
-module C181Ident_MaxUsize_Interface
-  use mach.int.UInt64
+module CreusotContracts_Logic_Int_Impl17_ShallowModel_Stub
   use mach.int.Int
   use prelude.UIntSize
+  function shallow_model (self : usize) : int
+end
+module CreusotContracts_Logic_Int_Impl17_ShallowModel
+  use mach.int.Int
+  use prelude.UIntSize
+  use mach.int.UInt64
+  function shallow_model (self : usize) : int =
+    UInt64.to_int self
+  val shallow_model (self : usize) : int
+    ensures { result = shallow_model self }
+    
+end
+module C181Ident_MaxUsize_Stub
+  use prelude.Bool
+  use prelude.UIntSize
+  use mach.int.Int
+  use mach.int.UInt64
   clone C181Ident_MaxInt_Stub as MaxInt0
   val max_usize [@cfg:stackify] [#"../181_ident.rs" 17 0 17 45] (a : usize) (b : usize) : usize
     ensures { [#"../181_ident.rs" 16 10 16 36] UInt64.to_int result = MaxInt0.max_int (UInt64.to_int a) (UInt64.to_int b) }
     
 end
 module C181Ident_MaxUsize
-  use mach.int.UInt64
-  use mach.int.Int
+  use prelude.Bool
   use prelude.UIntSize
-  clone C181Ident_MaxInt_Interface as MaxInt0
-  val max_usize [@cfg:stackify] [#"../181_ident.rs" 17 0 17 45] (a : usize) (b : usize) : usize
+  use prelude.Opaque
+  use mach.int.Int
+  use mach.int.UInt64
+  clone C181Ident_MaxInt as MaxInt0
+  let rec cfg max_usize [@cfg:stackify] [#"../181_ident.rs" 17 0 17 45] (a : usize) (b : usize) : usize
     ensures { [#"../181_ident.rs" 16 10 16 36] UInt64.to_int result = MaxInt0.max_int (UInt64.to_int a) (UInt64.to_int b) }
     
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : usize;
+  var a_1 : usize;
+  var b_2 : usize;
+  var _4 : bool;
+  var _5 : usize;
+  var _6 : usize;
+  {
+    a_1 <- a;
+    b_2 <- b;
+    goto BB0
+  }
+  BB0 {
+    _5 <- a_1;
+    _6 <- b_2;
+    _4 <- ([#"../181_ident.rs" 18 7 18 12] _5 < _6);
+    switch (_4)
+      | False -> goto BB2
+      | True -> goto BB1
+      end
+  }
+  BB1 {
+    _0 <- b_2;
+    goto BB3
+  }
+  BB2 {
+    _0 <- a_1;
+    goto BB3
+  }
+  BB3 {
+    return _0
+  }
+  
 end
