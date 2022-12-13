@@ -14,7 +14,6 @@ use petgraph::{
     data::Build,
     graphmap::DiGraphMap,
     visit::{DfsPostOrder, Walker},
-    Direction::Incoming,
     EdgeDirection::Outgoing,
 };
 use rustc_middle::{
@@ -38,7 +37,6 @@ use crate::{
     translation::{
         fmir::{Block, Body, Branches, Expr, Place, RValue, Statement, Terminator},
         function::closure_contract2,
-        interface,
         pearlite::{Term, TermKind, TermVisitor},
         traits::{resolve_opt, TraitImpl},
     },
@@ -403,8 +401,7 @@ fn program_dependencies<'tcx>(
     });
 
     if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
-        closure_contract2(ctx, def_id).iter().for_each(|(_, s, t)| {
-            eprintln!("CLOSURE CONTRACT");
+        closure_contract2(ctx, def_id).iter().for_each(|(_, s, _)| {
             s.deps(ctx.tcx, &mut |dep| {
                 deps.insert((DepLevel::Signature, dep));
             });
@@ -483,7 +480,6 @@ impl<'tcx> MonoGraph<'tcx> {
 
                 // eprintln!("{:?} -> {:?} weight {:?}", next, tgt, (lvl, Some((id, orig_subst))));
 
-                eprintln!("{tgt:?} {id:?} {orig_subst:?}");
                 self.add_edge(next, Dependency::Item(tgt.0, tgt.1), (lvl, Some((id, orig_subst))));
 
                 to_visit.push(Dependency::Item(tgt.0, tgt.1));
@@ -556,6 +552,7 @@ fn is_closure_hack<'tcx>(
         || tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id)
         || tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id)
         || tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id)
+        || tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id)
     {
         debug!("is_closure_hack: {:?}", def_id);
         let self_ty = subst.types().nth(1).unwrap();
@@ -576,6 +573,7 @@ fn is_closure_hack<'tcx>(
     None
 }
 
+// With `is_closure_hack`, we are doing redundant work, which should be cleaned up..
 fn hacked_closure_ids<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Vec<(DefId, SubstsRef<'tcx>)> {
     let subst = match tcx.type_of(def_id).kind() {
         TyKind::Closure(_, subst) => subst,
@@ -590,8 +588,10 @@ fn hacked_closure_ids<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Vec<(DefId, Sub
 
     vec![
         (tcx.get_diagnostic_item(Symbol::intern("fn_once_impl_precond")).unwrap(), fn_trait_subst),
+        (tcx.get_diagnostic_item(Symbol::intern("fn_once_impl_postcond")).unwrap(), fn_trait_subst),
         (tcx.get_diagnostic_item(Symbol::intern("fn_mut_impl_postcond")).unwrap(), fn_trait_subst),
         (tcx.get_diagnostic_item(Symbol::intern("fn_impl_postcond")).unwrap(), fn_trait_subst),
+        (tcx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap(), fn_trait_subst),
         (
             tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_default")).unwrap(),
             tcx.mk_substs([GenericArg::from(env_ty)].iter()),
@@ -637,40 +637,32 @@ pub(crate) fn name_clones<'tcx>(
     let mut assigned = IndexMap::new();
     let walk = DfsPostOrder::new(&graph.graph, root);
 
-    let item = root.as_item();
-    // name the self-clone
-    names.insert(item, None);
-
-    eprintln!("naming clones for {root:?}");
     for node in walk.iter(&graph.graph) {
         let Dependency::Item(def_id, subst) = node else { continue };
 
-        if names.contains_key(&(def_id, subst)) {
-            continue;
-        }
+        let clone_name: Option<why3::Ident> = if node == root {
+            None
+        } else {
+            let base_sym = match util::item_type(ctx.tcx, def_id) {
+                ItemType::Impl => ctx.tcx.item_name(ctx.tcx.trait_id_of_impl(def_id).unwrap()),
+                ItemType::Closure => Symbol::intern(&format!(
+                    "closure{}",
+                    ctx.tcx.def_path(def_id).data.last().unwrap().disambiguator
+                )),
+                _ => Symbol::intern(&*util::item_name(ctx.tcx, def_id, Namespace::ValueNS)),
+            };
+            let count = assigned.entry(base_sym).and_modify(|c| *c += 1).or_insert(0);
 
-        eprintln!("edges of {node:?} : {:?}", graph.graph.edges(node));
-
-        let base_sym = match util::item_type(ctx.tcx, def_id) {
-            ItemType::Impl => ctx.tcx.item_name(ctx.tcx.trait_id_of_impl(def_id).unwrap()),
-            ItemType::Closure => Symbol::intern(&format!(
-                "closure{}",
-                ctx.tcx.def_path(def_id).data.last().unwrap().disambiguator
-            )),
-            _ => Symbol::intern(&*util::item_name(ctx.tcx, def_id, Namespace::ValueNS)),
+            Some(format!("{}{}", base_sym.as_str().to_upper_camel_case(), count).into())
         };
-        let count = assigned.entry(base_sym).or_insert(0);
 
-        let clone_name: why3::Ident =
-            format!("{}{}", base_sym.as_str().to_upper_camel_case(), count).into();
         if ctx.is_closure(def_id) {
             hacked_closure_ids(ctx.tcx, def_id).into_iter().for_each(|e| {
-                names.insert(e, Some(clone_name.clone()));
+                names.insert(e, clone_name.clone());
             });
         };
 
-        names.insert((def_id, subst), Some(clone_name));
-        *count += 1;
+        names.insert((def_id, subst), clone_name);
     }
 
     Names { names }
@@ -694,7 +686,8 @@ impl<'a, 'tcx> Namer<'a, 'tcx> {
     fn ident(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> Option<why3::Ident> {
         let (def_id, subst) = self.tcx.erase_regions((def_id, subst));
         self.priors.prior.get(&self.id).unwrap().get((def_id, subst)).unwrap_or_else(|| {
-            panic!("Could not find {:?} in dependencies of {:?}", def_id, self.id)
+            eprintln!("{:?}", self.priors.prior.get(&self.id).unwrap());
+            panic!("Could not find ({:?},{:?}) in dependencies of {:?}", def_id, subst, self.id)
         })
     }
 }

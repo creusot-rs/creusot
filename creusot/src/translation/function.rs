@@ -553,7 +553,7 @@ pub(crate) fn closure_contract2<'tcx>(
     }
 
     let mut post_sig = pre_clos_sig.clone();
-    let mut pre_sig = pre_clos_sig;
+    let pre_sig = pre_clos_sig;
 
     // TODO: Fix body of expression which uses `result` as identifier
     post_sig.inputs.push((Symbol::intern("result'"), DUMMY_SP, result_ty));
@@ -624,54 +624,52 @@ pub(crate) fn closure_contract2<'tcx>(
         let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
 
         let mut postcondition: Term<'tcx> = postcondition;
-        // let mut postcondition: Exp =
-        //     names.with_public_clones(|names| lower_pure(ctx, names, postcondition));
-        // postcondition = postcondition.conj(Term {
-        //     ty: ctx.types.bool,
-        //     kind: TermKind::Call {
-        //         id: unnest_id,
-        //         subst: unnest_subst,
-        //         fun: Box::new(Term {
-        //             ty: EarlyBinder(ctx.type_of(unnest_id)).subst(ctx.tcx, unnest_subst),
-        //             kind: TermKind::Item(unnest_id, unnest_subst),
-        //             span: DUMMY_SP,
-        //         }),
-        //         args: vec![
-        //             Term {
-        //                 ty: self_ty,
-        //                 kind: TermKind::Cur {
-        //                     term: box Term {
-        //                         ty: self_ty,
-        //                         kind: TermKind::Var(Symbol::intern("self")),
-        //                         span: DUMMY_SP,
-        //                     },
-        //                 },
-        //                 span: DUMMY_SP,
-        //             },
-        //             Term {
-        //                 ty: self_ty,
-        //                 kind: TermKind::Fin {
-        //                     term: box Term {
-        //                         ty: self_ty,
-        //                         kind: TermKind::Var(Symbol::intern("self")),
-        //                         span: DUMMY_SP,
-        //                     },
-        //                 },
-        //                 span: DUMMY_SP,
-        //             },
-        //         ],
-        //     },
-        //     span: DUMMY_SP,
-        // });
-        contracts.push((Symbol::intern("postcondition_mut"), post_sig, postcondition));
+        postcondition = postcondition.conj(Term {
+            ty: ctx.types.bool,
+            kind: TermKind::Call {
+                id: unnest_id,
+                subst: unnest_subst,
+                fun: Box::new(Term {
+                    ty: EarlyBinder(ctx.type_of(unnest_id)).subst(ctx.tcx, unnest_subst),
+                    kind: TermKind::Item(unnest_id, unnest_subst),
+                    span: DUMMY_SP,
+                }),
+                args: vec![
+                    Term {
+                        ty: self_ty,
+                        kind: TermKind::Cur {
+                            term: box Term {
+                                ty: self_ty,
+                                kind: TermKind::Var(Symbol::intern("self")),
+                                span: DUMMY_SP,
+                            },
+                        },
+                        span: DUMMY_SP,
+                    },
+                    Term {
+                        ty: self_ty,
+                        kind: TermKind::Fin {
+                            term: box Term {
+                                ty: self_ty,
+                                kind: TermKind::Var(Symbol::intern("self")),
+                                span: DUMMY_SP,
+                            },
+                        },
+                        span: DUMMY_SP,
+                    },
+                ],
+            },
+            span: DUMMY_SP,
+        });
 
         let unnest_sig = EarlyBinder(pre_sig_of(ctx, unnest_id)).subst(ctx.tcx, unnest_subst);
 
-        // contracts.push((
-        //     Symbol::intern("unnest"),
-        //     unnest_sig,
-        //     closure_unnest2(ctx.tcx, def_id, subst),
-        // ));
+        contracts.push((
+            Symbol::intern("unnest"),
+            unnest_sig,
+            closure_unnest2(ctx.tcx, def_id, subst),
+        ));
+        contracts.push((Symbol::intern("postcondition_mut"), post_sig, postcondition));
     }
 
     if kind <= FnOnce {
