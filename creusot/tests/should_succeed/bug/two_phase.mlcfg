@@ -135,13 +135,6 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
     
   axiom shallow_model_spec : forall self : CVec0.t_vec t a . Seq.length (shallow_model self) <= UInt64.to_int MAx0.mAX'
 end
-module CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type
-  type t
-  type a
-  use seq.Seq
-  type shallowModelTy  =
-    Seq.seq t
-end
 module CreusotContracts_Model_Impl3_ShallowModel_Stub
   type t
   use prelude.Borrow
@@ -178,6 +171,28 @@ module CreusotContracts_Logic_Seq_Impl0_Push
     ensures { result = push self _2' }
     
 end
+module Alloc_Vec_Impl1_Push_Stub
+  type t
+  type a
+  use seq.Seq
+  use prelude.Bool
+  use prelude.Borrow
+  use prelude.UIntSize
+  use Alloc_Vec_Vec_Type as CVec0
+  use mach.int.Int
+  use mach.int.UInt64
+  use seq.Seq
+  use seq.Seq
+  clone Core_Num_Impl12_Max_Stub as MAx0
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel1 with
+    type t = t,
+    type a = a
+  clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel2 with
+    type t = CVec0.t_vec t a
+  val push [@cfg:stackify] (self : borrowed (CVec0.t_vec t a)) (value : t) : ()
+    ensures { ShallowModel1.shallow_model ( ^ self) = Seq.snoc (ShallowModel2.shallow_model self) value }
+    
+end
 module CreusotContracts_Model_Impl1_ShallowModel_Stub
   type t
   clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
@@ -195,6 +210,26 @@ module CreusotContracts_Model_Impl1_ShallowModel
     ShallowModel0.shallow_model self
   val shallow_model (self : t) : ShallowModelTy0.shallowModelTy
     ensures { result = shallow_model self }
+    
+end
+module Alloc_Vec_Impl1_Len_Stub
+  type t
+  type a
+  use seq.Seq
+  use prelude.Bool
+  use prelude.UIntSize
+  use Alloc_Vec_Vec_Type as CVec0
+  use mach.int.Int
+  use mach.int.UInt64
+  use seq.Seq
+  clone Core_Num_Impl12_Max_Stub as MAx0
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel1 with
+    type t = t,
+    type a = a
+  clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel2 with
+    type t = CVec0.t_vec t a
+  val len [@cfg:stackify] (self : CVec0.t_vec t a) : usize
+    ensures { UInt64.to_int result = Seq.length (ShallowModel2.shallow_model self) }
     
 end
 module Alloc_Alloc_Global_Type
@@ -235,15 +270,10 @@ module TwoPhase_Test_Stub
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel1 with
     type t = usize,
     type a = CGlobal0.t_global
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = usize,
-    type a = CGlobal0.t_global
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel2 with
-    type t = CVec0.t_vec usize (CGlobal0.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type t = CVec0.t_vec usize (CGlobal0.t_global)
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel3 with
-    type t = CVec0.t_vec usize (CGlobal0.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type t = CVec0.t_vec usize (CGlobal0.t_global)
   val test [@cfg:stackify] [#"../two_phase.rs" 6 0 6 31] (v : borrowed (CVec0.t_vec usize (CGlobal0.t_global))) : ()
     ensures { [#"../two_phase.rs" 5 10 5 42] UInt64.to_int (Seq.get (ShallowModel1.shallow_model ( ^ v)) (Seq.length (ShallowModel2.shallow_model v))) = Seq.length (ShallowModel2.shallow_model v) }
     
@@ -273,12 +303,8 @@ module TwoPhase_Test
     type t = usize,
     type a = CGlobal0.t_global,
     val MAx0.mAX' = MAx0.mAX'
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = usize,
-    type a = CGlobal0.t_global
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel2 with
     type t = CVec0.t_vec usize (CGlobal0.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone Alloc_Vec_Impl1_Push_Stub as Push1 with
     type t = usize,
@@ -287,7 +313,6 @@ module TwoPhase_Test
     function ShallowModel2.shallow_model = ShallowModel2.shallow_model
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel3 with
     type t = CVec0.t_vec usize (CGlobal0.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone Alloc_Vec_Impl1_Len_Stub as Len1 with
     type t = usize,

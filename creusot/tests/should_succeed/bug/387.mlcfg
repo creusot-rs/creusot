@@ -177,10 +177,29 @@ module CreusotContracts_Logic_Ord_Impl2_GeLog
     ensures { result = ge_log self _2' }
     
 end
-module CreusotContracts_Logic_Int_Impl14_DeepModelTy_Type
+module Core_Cmp_Ord_Max_Stub
+  type self
+  use prelude.Bool
+  use Core_Cmp_Ordering_Type as TOrdering0
   use mach.int.Int
-  type deepModelTy  =
-    int
+  clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog0 with
+    type self = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with
+    type self = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
+    type self = self
+  clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
+    type self = self,
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Stub as GeLog0 with
+    type self = DeepModelTy0.deepModelTy
+  val max [@cfg:stackify] (self : self) (other : self) : self
+    ensures { GeLog0.ge_log (DeepModel0.deep_model result) (DeepModel0.deep_model self) }
+    ensures { GeLog0.ge_log (DeepModel0.deep_model result) (DeepModel0.deep_model other) }
+    ensures { result = self \/ result = other }
+    ensures { LeLog0.le_log (DeepModel0.deep_model self) (DeepModel0.deep_model other) -> result = other }
+    ensures { LtLog0.lt_log (DeepModel0.deep_model other) (DeepModel0.deep_model self) -> result = self }
+    
 end
 module C387_Node_Right_Stub
   use Core_Option_Option_Type as TOption0
@@ -276,7 +295,6 @@ module C387_Impl0_Height_Stub
   use C387_Node_Type as CNode0
   use C387_Node_Type as CTree0
   clone CreusotContracts_Logic_Int_Impl14_DeepModel_Stub as DeepModel0
-  clone CreusotContracts_Logic_Int_Impl14_DeepModelTy_Type as DeepModelTy0
   val height [@cfg:stackify] [#"../387.rs" 16 4 16 31] (self : CTree0.t_tree) : uint64
 end
 module C387_Impl0_Height
@@ -300,10 +318,8 @@ module C387_Impl0_Height
   use C387_Node_Type as CTree0
   use prelude.IntSize
   clone CreusotContracts_Logic_Int_Impl14_DeepModel as DeepModel0
-  clone CreusotContracts_Logic_Int_Impl14_DeepModelTy_Type as DeepModelTy0
   clone Core_Cmp_Ord_Max_Stub as Max0 with
     type self = uint64,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     function DeepModel0.deep_model = DeepModel0.deep_model
   clone C387_Node_Right as FieldRight0
   clone C387_Node_Left as FieldLeft0

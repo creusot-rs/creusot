@@ -113,13 +113,17 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
         let mut modules = Vec::new();
         let mut visited = HashSet::new();
         for dep in graph.iter() {
+            eprintln!("Printing {dep:?}");
             let Dependency::Item(id, _) = dep else { continue };
-            if tcx.def_path_str(id).contains("eq") {
-                eprintln!("Translating {dep:?}");
-            }
+            // if dep != Dependency::identity(tcx, id) { continue };
+            // if tcx.def_path_str(id).contains("impl#3") {
+            //     eprintln!("{:?}", graph.graph.edges(dep));
+            // }
+
             if !visited.insert(id) {
                 continue;
             };
+
             let output = if tcx.def_path_str(id).contains(matcher) {
                 box to_why3(&mut ctx, &priors, id).into_iter()
             } else {
