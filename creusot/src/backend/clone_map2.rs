@@ -33,6 +33,7 @@ use why3::{
 };
 
 use crate::{
+    backend::ty::translate_ty,
     ctx::TranslationCtx,
     pearlite::super_visit_term,
     translation::{
@@ -66,10 +67,21 @@ impl<'tcx> Dependency<'tcx> {
         Dependency::Item(id, tcx.erase_regions(identity_substs_for(tcx, id)))
     }
 
-    fn as_item(&self) -> (DefId, SubstsRef<'tcx>) {
+    fn as_ty(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
         match self {
-            Dependency::Item(id, s) => (*id, s),
-            Dependency::BaseTy(_) => unreachable!(),
+            Self::BaseTy(ty) => ty,
+            Self::Item(id, substs) => match util::item_type(tcx, id) {
+                ItemType::AssocTy => tcx.mk_projection(id, substs),
+                ItemType::Type => tcx.mk_adt(tcx.adt_def(id), substs),
+                _ => unreachable!(),
+            },
+        }
+    }
+
+    fn as_item(&self) -> Option<(DefId, SubstsRef<'tcx>)> {
+        match self {
+            Dependency::Item(id, s) => Some((*id, s)),
+            Dependency::BaseTy(_) => None,
         }
     }
 
@@ -944,38 +956,36 @@ pub fn make_clones<'tcx, 'a>(
                 eprintln!("got here {node:?} -> {dep:?} : {orig:?}");
             }
 
+            let EdgeType::Refinement(orig_id, orig_subst) = orig else { continue };
+            eprintln!("got there");
 
-            let Dependency::Item(id, subst) = dep else { continue };
-
-
-            if depth == CloneDepth::Shallow && item_type(ctx.tcx, id) != ItemType::AssocTy {
+            if depth == CloneDepth::Shallow && item_type(ctx.tcx, orig_id) != ItemType::AssocTy {
                 continue;
             }
 
-            // if get_builtin(ctx.tcx, id).is_some() {
-            //     continue;
-            // };
-
-            let EdgeType::Refinement(orig_id, orig_subst) = orig else { continue };
-            eprintln!("got there");
             // FIXME: Not really correct
-            // if item_type(ctx.tcx, orig_id) == ItemType::Type {
-            //     continue;
-            // }
+            if item_type(ctx.tcx, orig_id) == ItemType::Type {
+                continue;
+            }
 
+            if get_builtin(ctx.tcx, orig_id).is_some() {
+                continue;
+            };
 
             // eprintln!("{:?} depends on {:?}", node, dep);
             // eprintln!("getting name for {:?} originally called {:?}", (dep), priors.graph.graph[(node, dep)]);
-
             let src = node_names.value(orig_id, orig_subst);
-            let tgt = names.value(id, subst);
+            let tgt = dep.as_item().map(|(id, subst)| names.value(id, subst));
 
             let sub = match item_type(ctx.tcx, orig_id) {
-                ItemType::Logic => CloneSubst::Function(src, tgt),
-                ItemType::Predicate => CloneSubst::Predicate(src, tgt),
-                ItemType::Constant => CloneSubst::Val(src, tgt),
-                ItemType::AssocTy => CloneSubst::Type(src, Type::TConstructor(tgt)),
-                _ => CloneSubst::Val(src, tgt),
+                ItemType::Logic => CloneSubst::Function(src, tgt.unwrap()),
+                ItemType::Predicate => CloneSubst::Predicate(src, tgt.unwrap()),
+                ItemType::Constant => CloneSubst::Val(src, tgt.unwrap()),
+                ItemType::AssocTy => CloneSubst::Type(
+                    src,
+                    translate_ty(ctx, &mut names, DUMMY_SP, dep.as_ty(ctx.tcx)),
+                ),
+                _ => CloneSubst::Val(src, tgt.unwrap()),
             };
             clone_subst.push(sub)
         }
@@ -1049,7 +1059,7 @@ pub fn base_subst<'tcx>(
         let p = trait_params.param_at(ix, ctx.tcx);
         let ty = subst[ix];
         if let GenericParamDefKind::Type { .. } = p.kind {
-            let ty = crate::backend::ty::translate_ty(ctx, &mut names, DUMMY_SP, ty.expect_ty());
+            let ty = translate_ty(ctx, &mut names, DUMMY_SP, ty.expect_ty());
             clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
         }
     }

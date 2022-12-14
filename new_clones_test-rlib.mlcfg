@@ -16,18 +16,18 @@ module CreusotContracts_Resolve_Impl1_Resolve
      ^ self =  * self
   val resolve (self : borrowed t) : bool
     ensures { result = resolve self }
-
+    
 end
 module Core_Marker_PhantomData_Type
   type t_phantomdata 't =
     | C_PhantomData
-
+    
 end
 module Core_Ptr_NonNull_NonNull_Type
   use prelude.Opaque
   type t_nonnull 't =
     | C_NonNull opaque_ptr
-
+    
 end
 module Core_Ptr_Unique_Unique_Type
   use Core_Marker_PhantomData_Type as CPhantomData0
@@ -35,7 +35,7 @@ module Core_Ptr_Unique_Unique_Type
   use Core_Ptr_NonNull_NonNull_Type as CNonNull0
   type t_unique 't =
     | C_Unique (CNonNull0.t_nonnull 't) (CPhantomData0.t_phantomdata 't)
-
+    
 end
 module Alloc_RawVec_RawVec_Type
   use prelude.UIntSize
@@ -45,7 +45,7 @@ module Alloc_RawVec_RawVec_Type
   use Core_Ptr_Unique_Unique_Type as CUnique0
   type t_rawvec 't 'a =
     | C_RawVec (CUnique0.t_unique 't) usize 'a
-
+    
 end
 module Alloc_Vec_Vec_Type
   use prelude.UIntSize
@@ -56,7 +56,7 @@ module Alloc_Vec_Vec_Type
   use Alloc_RawVec_RawVec_Type as CRawVec0
   type t_vec 't 'a =
     | C_Vec (CRawVec0.t_rawvec 't 'a) usize
-
+    
 end
 module Core_Num_Impl12_Max_Stub
   use prelude.UIntSize
@@ -80,7 +80,7 @@ module CreusotContracts_Logic_Int_Impl17_ShallowModel
     UInt64.to_int self
   val shallow_model (self : usize) : int
     ensures { result = shallow_model self }
-
+    
 end
 module CreusotContracts_Logic_Seq_Impl0_Len_Stub
   type t
@@ -97,7 +97,7 @@ module CreusotContracts_Logic_Seq_Impl0_Len
     Seq.length self
   val len (self : Seq.seq t) : int
     ensures { result = len self }
-
+    
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub
   type t
@@ -132,7 +132,7 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   function shallow_model (self : CVec0.t_vec t a) : Seq.seq t
   val shallow_model (self : CVec0.t_vec t a) : Seq.seq t
     ensures { result = shallow_model self }
-
+    
   axiom shallow_model_spec : forall self : CVec0.t_vec t a . Seq.length (shallow_model self) <= UInt64.to_int MAx0.mAX'
 end
 module CreusotContracts_Model_ShallowModel_ShallowModelTy_Type
@@ -152,7 +152,7 @@ module CreusotContracts_Model_ShallowModel_ShallowModel
   function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
   val shallow_model (self : self) : ShallowModelTy0.shallowModelTy
     ensures { result = shallow_model self }
-
+    
 end
 module CreusotContracts_Model_Impl3_ShallowModel_Stub
   type t
@@ -173,12 +173,12 @@ module CreusotContracts_Model_Impl3_ShallowModel
     ShallowModel0.shallow_model ( * self)
   val shallow_model (self : borrowed t) : ShallowModelTy0.shallowModelTy
     ensures { result = shallow_model self }
-
+    
 end
 module Alloc_Alloc_Global_Type
   type t_global  =
     | C_Global
-
+    
 end
 module NewClonesTest_Test_Stub
   use mach.int.Int
@@ -192,10 +192,11 @@ module NewClonesTest_Test_Stub
   use Alloc_Alloc_Global_Type as CGlobal0
   clone Core_Num_Impl12_Max_Stub as MAx0
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel3 with
-    type t = CVec0.t_vec usize (CGlobal0.t_global)
+    type t = CVec0.t_vec usize (CGlobal0.t_global),
+    type ShallowModelTy0.shallowModelTy = Seq.seq usize
   val test [@cfg:stackify] [#"..//Users/xavier/Code/creusot/new_clones_test.rs" 6 0 6 31] (v : borrowed (CVec0.t_vec usize (CGlobal0.t_global))) : ()
     ensures { [#"..//Users/xavier/Code/creusot/new_clones_test.rs" 5 10 5 22] ShallowModel3.shallow_model v = ShallowModel3.shallow_model v }
-
+    
 end
 module NewClonesTest_Test
   use prelude.Opaque
@@ -222,11 +223,11 @@ module NewClonesTest_Test
     val MAx0.mAX' = MAx0.mAX'
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel3 with
     type t = CVec0.t_vec usize (CGlobal0.t_global),
-    type ShallowModelTy0.shallowModelTy = seq usize,
+    type ShallowModelTy0.shallowModelTy = Seq.seq usize,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   let rec cfg test [@cfg:stackify] [#"..//Users/xavier/Code/creusot/new_clones_test.rs" 6 0 6 31] (v : borrowed (CVec0.t_vec usize (CGlobal0.t_global))) : ()
     ensures { [#"..//Users/xavier/Code/creusot/new_clones_test.rs" 5 10 5 22] ShallowModel3.shallow_model v = ShallowModel3.shallow_model v }
-
+    
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : ();
   var v_1 : borrowed (CVec0.t_vec usize (CGlobal0.t_global));
