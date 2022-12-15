@@ -1,6 +1,10 @@
 use clap::*;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, error::Error};
+use std::{
+    collections::HashMap,
+    error::Error,
+    path::{Path, PathBuf},
+};
 
 #[derive(Parser, Serialize, Deserialize)]
 pub struct CreusotArgs {
@@ -24,7 +28,7 @@ pub struct CreusotArgs {
     #[clap(group = "output", long)]
     stdout: bool,
     /// Print to a file.
-    #[clap(group = "output", long)]
+    #[clap(group = "output", long, env)]
     output_file: Option<String>,
     /// Specify locations of metadata for external crates. The format is the same as rustc's `--extern` flag.
     #[clap(long = "creusot-extern", value_parser= parse_key_val::<String, String>, required=false)]
@@ -100,5 +104,31 @@ impl Options {
             span_mode: args.span_mode,
             match_str: args.focus_on,
         }
+    }
+
+    pub fn relative_to_output(&self, p: &Path) -> PathBuf {
+        let mut other = std::env::current_dir().unwrap();
+        match &self.output_file {
+            Some(OutputFile::File(s)) => {
+                if Path::new(s).is_relative() {
+                    other.push(s);
+                }
+            }
+            _ => {
+                other.push("dummy.mlcfg");
+            }
+        };
+
+        let two = other.components();
+        let one = p.components();
+
+        let mut same = 0;
+        one.zip(two).take_while(|(l, r)| l == r).for_each(|_| same += 1);
+        let output_components = other.components().count();
+        let mut buf = PathBuf::new();
+
+        (0..(output_components - same)).for_each(|_| buf.push(".."));
+        buf.extend(p.components().skip(same));
+        buf
     }
 }
