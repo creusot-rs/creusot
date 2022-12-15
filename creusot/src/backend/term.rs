@@ -175,14 +175,12 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
                 })
             }
             TermKind::Constructor { adt, variant, fields } => {
-                self.ctx.translate(adt.did());
-                if let TyKind::Adt(_, subst) = term.ty.kind() {
-                    self.names.ty(adt.did(), subst);
-                };
+                let TyKind::Adt(_, subst) = term.ty.kind() else { unreachable!() };
+
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
-                let ctor = constructor_qname(self.ctx, &adt.variants()[variant]);
-                self.ctx.translate(adt.did());
+                // let ctor = constructor_qname(self.ctx, &adt.variants()[variant]);
+                let ctor = self.names.constructor(adt.did(), subst, variant.as_usize());
                 Exp::Constructor { ctor, args }
             }
             TermKind::Cur { box term } => Exp::Current(box self.lower_term(term)),

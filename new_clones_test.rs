@@ -1,8 +1,22 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+pub struct Tree(Option<Box<Node>>);
 
-#[ensures((@v) == (@v))]
-pub fn test(v: &mut Vec<usize>) {
-    // v.push(v.len());
+#[allow(dead_code)]
+struct Node {
+    left: Tree,
+    val: u32,
+    right: Tree,
+}
+
+// To force the translation of `Tree`
+pub fn use_tree(_: &Tree) {}
+
+impl Tree {
+    pub fn height(&self) -> u64 {
+        match self {
+            Tree(None) => 0,
+            Tree(Some(n)) => n.left.height().max(n.right.height()) + 1,
+        }
+    }
 }

@@ -35,7 +35,7 @@ module C492_ReborrowTuple
   use prelude.Bool
   use prelude.Borrow
   use mach.int.UInt32
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = t
   let rec cfg reborrow_tuple [@cfg:stackify] [#"../492.rs" 5 0 5 52] (x : borrowed t) : (borrowed t, uint32)
     ensures { [#"../492.rs" 4 10 4 27]  * (let (a, _) = result in a) =  * x }
@@ -51,11 +51,24 @@ module C492_ReborrowTuple
   BB0 {
     _3 <- borrow_mut ( * x_1);
     x_1 <- { x_1 with current = ( ^ _3) };
-    assume { Resolve0.resolve x_1 };
+    assume { Resolve1.resolve x_1 };
     _0 <- (_3, [#"../492.rs" 6 8 6 10] (32 : uint32));
     return _0
   }
   
+end
+module CreusotContracts_Resolve_Resolve_Resolve_Stub
+  type self
+  use prelude.Bool
+  predicate resolve (self : self)
+end
+module CreusotContracts_Resolve_Resolve_Resolve
+  type self
+  use prelude.Bool
+  predicate resolve (self : self)
+  val resolve (self : self) : bool
+    ensures { result = resolve self }
+    
 end
 module CreusotContracts_Resolve_Impl2_Resolve_Stub
   type t
@@ -84,12 +97,12 @@ module CreusotContracts_Resolve_Impl0_Resolve
   use prelude.Bool
   use prelude.Opaque
   use mach.int.Int
-  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve0 with
-    type self = t2
   clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve1 with
+    type self = t2
+  clone CreusotContracts_Resolve_Resolve_Resolve_Stub as Resolve2 with
     type self = t1
   predicate resolve (self : (t1, t2)) =
-    Resolve1.resolve (let (a, _) = self in a) /\ Resolve0.resolve (let (_, a) = self in a)
+    Resolve2.resolve (let (a, _) = self in a) /\ Resolve1.resolve (let (_, a) = self in a)
   val resolve (self : (t1, t2)) : bool
     ensures { result = resolve self }
     
@@ -110,16 +123,16 @@ module C492_Test
   use prelude.Borrow
   use mach.int.UInt32
   use mach.int.Int32
-  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve0 with
+  clone CreusotContracts_Resolve_Impl2_Resolve as Resolve1 with
     type t = uint32
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
     type t = int32
-  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve2 with
+  clone CreusotContracts_Resolve_Impl0_Resolve as Resolve7 with
     type t1 = borrowed int32,
     type t2 = uint32,
-    predicate Resolve1.resolve = Resolve1.resolve,
-    predicate Resolve0.resolve = Resolve0.resolve
-  clone C492_ReborrowTuple_Stub as ReborrowTuple0 with
+    predicate Resolve2.resolve = Resolve3.resolve,
+    predicate Resolve1.resolve = Resolve1.resolve
+  clone C492_ReborrowTuple_Stub as ReborrowTuple1 with
     type t = int32
   let rec cfg test [@cfg:stackify] [#"../492.rs" 10 0 10 13] (_1' : ()) : ()
     ensures { [#"../492.rs" 9 10 9 15] false }
@@ -141,34 +154,21 @@ module C492_Test
     x_2 <-  ^ _6;
     _5 <- borrow_mut ( * _6);
     _6 <- { _6 with current = ( ^ _5) };
-    _4 <- ([#"../492.rs" 12 19 12 41] ReborrowTuple0.reborrow_tuple _5);
+    _4 <- ([#"../492.rs" 12 19 12 41] ReborrowTuple1.reborrow_tuple _5);
     goto BB1
   }
   BB1 {
-    assume { Resolve1.resolve _6 };
-    assume { Resolve1.resolve res_3 };
+    assume { Resolve3.resolve _6 };
+    assume { Resolve3.resolve res_3 };
     res_3 <- (let (a, _) = _4 in a);
     _4 <- (let (a, b) = _4 in (any borrowed int32, b));
-    assume { Resolve2.resolve _4 };
+    assume { Resolve7.resolve _4 };
     assert { [#"../492.rs" 13 18 13 30]  ^ res_3 = (5 : int32) };
     _7 <- ();
     res_3 <- { res_3 with current = ([#"../492.rs" 14 11 14 13] (10 : int32)) };
-    assume { Resolve1.resolve res_3 };
+    assume { Resolve3.resolve res_3 };
     _0 <- ();
     return _0
   }
   
-end
-module CreusotContracts_Resolve_Resolve_Resolve_Stub
-  type self
-  use prelude.Bool
-  predicate resolve (self : self)
-end
-module CreusotContracts_Resolve_Resolve_Resolve
-  type self
-  use prelude.Bool
-  predicate resolve (self : self)
-  val resolve (self : self) : bool
-    ensures { result = resolve self }
-    
 end

@@ -18,6 +18,45 @@ module C464_Impl0_Invariant
     ensures { result = invariant' self }
     
 end
+module C464_Trait_Assoc_Type
+  type self
+  type assoc
+end
+module C464_AssocTrait_Invariant_Stub
+  type self
+  use prelude.Bool
+  predicate invariant' [#"../464.rs" 6 4 6 31] (self : self)
+end
+module C464_AssocTrait_Invariant
+  type self
+  use prelude.Bool
+  predicate invariant' [#"../464.rs" 6 4 6 31] (self : self)
+  val invariant' [#"../464.rs" 6 4 6 31] (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
+module C464_Trait_Invariant_Stub
+  type self
+  use prelude.Bool
+  clone C464_Trait_Assoc_Type as Assoc0 with
+    type self = self
+  clone C464_AssocTrait_Invariant_Stub as Invariant1 with
+    type self = Assoc0.assoc
+  predicate invariant' [#"../464.rs" 14 4 14 51] (self : self) (assoc : Assoc0.assoc)
+end
+module C464_Trait_Invariant
+  type self
+  use prelude.Bool
+  clone C464_Trait_Assoc_Type as Assoc0 with
+    type self = self
+  clone C464_AssocTrait_Invariant_Stub as Invariant1 with
+    type self = Assoc0.assoc
+  predicate invariant' [#"../464.rs" 14 4 14 51] (self : self) (assoc : Assoc0.assoc)
+  val invariant' [#"../464.rs" 14 4 14 51] (self : self) (assoc : Assoc0.assoc) : bool
+    ensures { result = invariant' self assoc }
+    
+  axiom invariant'_spec : forall self : self, assoc : Assoc0.assoc . [#"../464.rs" 13 4 13 44] invariant' self assoc -> Invariant1.invariant' assoc
+end
 module C464_Struct_Type
   type t_struct  =
     | C_Struct
@@ -27,28 +66,28 @@ module C464_Impl1_Invariant_Stub
   use prelude.Bool
   use C464_AssocStruct_Type as CAssocStruct0
   use C464_Struct_Type as CStruct0
-  clone C464_Impl0_Invariant_Stub as Invariant0
+  clone C464_Impl0_Invariant_Stub as Invariant3
   predicate invariant' [#"../464.rs" 32 4 32 50] (self : CStruct0.t_struct) (assoc : CAssocStruct0.t_assocstruct)
 end
 module C464_Impl1_Invariant
   use prelude.Bool
   use C464_AssocStruct_Type as CAssocStruct0
   use C464_Struct_Type as CStruct0
-  clone C464_Impl0_Invariant_Stub as Invariant0
+  clone C464_Impl0_Invariant_Stub as Invariant3
   predicate invariant' [#"../464.rs" 32 4 32 50] (self : CStruct0.t_struct) (assoc : CAssocStruct0.t_assocstruct) =
     [#"../464.rs" 33 8 33 12] true
   val invariant' [#"../464.rs" 32 4 32 50] (self : CStruct0.t_struct) (assoc : CAssocStruct0.t_assocstruct) : bool
     ensures { result = invariant' self assoc }
     
-  axiom invariant'_spec : forall self : CStruct0.t_struct, assoc : CAssocStruct0.t_assocstruct . [#"../464.rs" 31 4 31 44] invariant' self assoc -> Invariant0.invariant' assoc
+  axiom invariant'_spec : forall self : CStruct0.t_struct, assoc : CAssocStruct0.t_assocstruct . [#"../464.rs" 31 4 31 44] invariant' self assoc -> Invariant3.invariant' assoc
 end
 module C464_Impl1_Invariant_Impl
   use prelude.Bool
   use C464_AssocStruct_Type as CAssocStruct0
   use C464_Struct_Type as CStruct0
-  clone C464_Impl0_Invariant as Invariant0
+  clone C464_Impl0_Invariant as Invariant3
   let rec ghost predicate invariant' [#"../464.rs" 32 4 32 50] (self : CStruct0.t_struct) (assoc : CAssocStruct0.t_assocstruct)
-    ensures { [#"../464.rs" 31 4 31 44] result -> Invariant0.invariant' assoc }
+    ensures { [#"../464.rs" 31 4 31 44] result -> Invariant3.invariant' assoc }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
     [#"../464.rs" 33 8 33 12] true
@@ -61,7 +100,7 @@ module C464_Impl1
   use C464_AssocStruct_Type as CAssocStruct0
   use C464_Struct_Type as CStruct0
   clone C464_Impl0_Invariant as Invariant0
-  clone C464_Impl1_Invariant as Invariant1 with
-    predicate Invariant0.invariant' = Invariant0.invariant'
+  clone C464_Impl1_Invariant as Invariant4 with
+    predicate Invariant3.invariant' = Invariant0.invariant'
   goal invariant'_spec : [#"../464.rs" 32 4 32 50] forall self : CStruct0.t_struct . forall assoc : CAssocStruct0.t_assocstruct . forall result : bool . result -> Invariant0.invariant' assoc -> result -> Invariant0.invariant' assoc
 end

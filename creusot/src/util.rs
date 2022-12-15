@@ -631,6 +631,11 @@ impl<'tcx> TermVisitorMut<'tcx> for ClosureSubst<'tcx> {
                 }
             }
             TermKind::Var(x) => {
+                if x.as_str() == "result" {
+                    term.kind = TermKind::Var(Symbol::intern("result'"));
+                    return;
+                }
+
                 if !self.bound.contains(&x) {
                     if let Some(v) = self.var(*x) {
                         *term = v;

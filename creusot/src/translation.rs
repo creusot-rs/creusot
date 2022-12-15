@@ -110,15 +110,11 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
         let tcx = ctx.tcx;
 
         let priors = PriorClones::from_graph(&mut ctx, &graph);
+        // priors.debug(ctx.tcx);
         let mut modules = Vec::new();
         let mut visited = HashSet::new();
         for dep in graph.iter() {
-            eprintln!("Printing {dep:?}");
             let Dependency::Item(id, _) = dep else { continue };
-            // if dep != Dependency::identity(tcx, id) { continue };
-            // if tcx.def_path_str(id).contains("impl#3") {
-            //     eprintln!("{:?}", graph.graph.edges(dep));
-            // }
 
             if !visited.insert(id) {
                 continue;

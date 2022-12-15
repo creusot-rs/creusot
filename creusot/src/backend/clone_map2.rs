@@ -12,6 +12,7 @@ use heck::ToUpperCamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{
     data::Build,
+    dot::{Config, Dot},
     graphmap::DiGraphMap,
     visit::{DfsPostOrder, EdgeFiltered, Walker},
     EdgeDirection::Outgoing,
@@ -20,8 +21,8 @@ use rustc_middle::{
     mir::{tcx::PlaceTy, PlaceElem},
     ty::{
         subst::{GenericArgKind, InternalSubsts},
-        DefIdTree, FloatTy, GenericArg, List, ProjectionTy, Ty, TyCtxt, TyKind, TypeSuperVisitable,
-        TypeVisitor, UintTy,
+        DefIdTree, FloatTy, GenericArg, List, ProjectionTy, Ty, TyCtxt, TyKind, TypeFoldable,
+        TypeSuperVisitable, TypeVisitor, UintTy,
     },
 };
 use rustc_type_ir::{IntTy, RegionKind};
@@ -59,6 +60,7 @@ pub enum Dependency<'tcx> {
     Item(DefId, SubstsRef<'tcx>),
     // Cannot be a tuple, adt or other composite type.
     // Can be, &mut, &, *mut, [T], [T; N], u32, i32, bool, etc..
+    // TODO: Probably should relax this restriction and allow aggregate types and typarams in here
     BaseTy(Ty<'tcx>),
 }
 
@@ -92,7 +94,10 @@ impl<'tcx> Dependency<'tcx> {
             TyKind::Projection(ProjectionTy { substs, item_def_id }) => {
                 Some(Self::Item(*item_def_id, substs))
             }
-            _ => Some(Self::BaseTy(ty)),
+            TyKind::Int(_) | TyKind::Uint(_) | TyKind::Ref(_, _, _) => Some(Self::BaseTy(ty)),
+            TyKind::Param(_) => None,
+            _ => unreachable!("{ty:?}"),
+            // _ => Some(Self::BaseTy(ty)),
         }
     }
 }
@@ -374,7 +379,6 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<'tcx, F> {
 
 impl<'tcx, F: FnMut(Dependency<'tcx>)> TypeVisitor<'tcx> for TermDep<'tcx, F> {
     fn visit_ty(&mut self, t: Ty<'tcx>) -> std::ops::ControlFlow<Self::BreakTy> {
-        // eprintln!("{t:?}");
         match t.kind() {
             TyKind::Adt(def, sub) => {
                 sub.visit_with(self);
@@ -493,7 +497,7 @@ impl<'tcx> MonoGraph<'tcx> {
         let mut to_visit = vec![root];
         let mut finished = HashSet::new();
         let param_env = ctx.erase_regions(ctx.param_env(def_id));
-        // eprintln!("adding root {def_id:?}");
+
         while let Some(next) = to_visit.pop() {
             // eprintln!("visiting {:?}", next);
 
@@ -506,8 +510,17 @@ impl<'tcx> MonoGraph<'tcx> {
             self.add_root(ctx, id);
             ctx.translate(id);
 
+            walk_projections(subst, |ty| {
+                self.add_edge(
+                    ctx.tcx,
+                    next,
+                    Dependency::from_ty(ty).unwrap(),
+                    (DepLevel::Body, EdgeType::Type),
+                );
+            });
+
             let to_add = get_immediate_deps(ctx, id);
-            eprintln!("deps_of({id:?}) :- {to_add:?}\n");
+            // eprintln!("deps_of({id:?}, {subst:?}) :- {to_add:?}\n");
 
             for (lvl, dep) in to_add {
                 let Dependency::Item(id, orig_subst) = dep else {
@@ -519,7 +532,7 @@ impl<'tcx> MonoGraph<'tcx> {
 
                 // TODO: clean up
                 let tgt = if let Some(tgt) = is_closure_hack(ctx.tcx, id, subst) {
-                    Dependency::Item(tgt.0, tgt.1)
+                    Some(Dependency::Item(tgt.0, tgt.1))
                 } else if util::item_type(ctx.tcx, id) == ItemType::AssocTy {
                     let proj_ty = ProjectionTy { item_def_id: id, substs: subst };
                     let ty = ctx.mk_ty(TyKind::Projection(proj_ty));
@@ -528,34 +541,35 @@ impl<'tcx> MonoGraph<'tcx> {
                     trace!("normed {ty:?} into {normed:?}");
                     if let Ok(normed) = normed && ty != normed {
                         match normed.kind() {
-                            TyKind::Projection(pty) => Dependency::Item(pty.item_def_id, pty.substs),
-                            _ => Dependency::from_ty(normed).unwrap(),
+                            TyKind::Projection(pty) => Some(Dependency::Item(pty.item_def_id, pty.substs)),
+                            _ => Dependency::from_ty(normed),
                         }
                     } else {
-                        Dependency::from_ty(ty).unwrap()
+                        Dependency::from_ty(ty)
                     }
                 } else if can_resolve(ctx, (id, subst)) {
                     let tgt = resolve_opt(ctx.tcx, param_env, id, subst)
                         .unwrap_or_else(|| panic!("could not resolve {id:?} {subst:?}"));
-                    Dependency::Item(tgt.0, tgt.1)
+                    Some(Dependency::Item(tgt.0, tgt.1))
                 } else {
                     let tgt = ctx.normalize_erasing_regions(param_env, (id, subst));
-                    Dependency::Item(tgt.0, tgt.1)
+                    Some(Dependency::Item(tgt.0, tgt.1))
                 };
 
-                eprintln!("{:?} -> {:?} weight {:?}", next, tgt, (lvl, Some((id, orig_subst))));
-                // self.add_edge(ctx.tcx, tgt, Dependency::identity(ctx.tcx, tgt.as_item().0), (lvl, None));
-
                 // TODO: why `next` and not `tgt`.
-                self.add_edge(
-                    ctx.tcx,
-                    next,
-                    Dependency::Item(id, orig_subst),
-                    (lvl, EdgeType::Fake),
-                );
-                self.add_edge(ctx.tcx, next, tgt, (lvl, EdgeType::Refinement(id, orig_subst)));
+                if let Some(tgt) = tgt {
+                    self.add_edge(
+                        ctx.tcx,
+                        tgt,
+                        Dependency::identity(ctx.tcx, id),
+                        (lvl, EdgeType::Fake),
+                    );
+                    self.add_root(ctx, id);
 
-                to_visit.push(tgt);
+                    self.add_edge(ctx.tcx, next, tgt, (lvl, EdgeType::Refinement(id, orig_subst)));
+
+                    to_visit.push(tgt);
+                }
             }
         }
 
@@ -583,6 +597,7 @@ impl<'tcx> MonoGraph<'tcx> {
     ) {
         let src = tcx.erase_regions(src);
         let tgt = tcx.erase_regions(tgt);
+
         if !self.graph.contains_edge(src, tgt) {
             self.graph.add_edge(src, tgt, weight);
         } else {
@@ -742,7 +757,6 @@ pub(crate) fn name_clones<'tcx>(
             });
         };
 
-        // eprintln!("root={:?} node={:?} name={:?}", root, (def_id, subst), clone_name);
         names.insert((def_id, subst), clone_name);
     }
 
@@ -766,15 +780,24 @@ pub struct Namer<'a, 'tcx> {
 impl<'a, 'tcx> Namer<'a, 'tcx> {
     fn ident(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> Option<why3::Ident> {
         let (def_id, subst) = self.tcx.erase_regions((def_id, subst));
-        self.priors.prior.get(&self.id).unwrap().get((def_id, subst)).unwrap_or_else(|| {
-            eprintln!("{:?}", self.priors.prior.get(&self.id).unwrap());
-            panic!("Could not find ({:?},{:?}) in dependencies of {:?}", def_id, subst, self.id)
-        })
+        self.priors
+            .prior
+            .get(&self.id)
+            .unwrap_or_else(|| panic!("no names for {:?}", self.id))
+            .get((def_id, subst))
+            .unwrap_or_else(|| {
+                eprintln!("{:?}", self.priors.prior.get(&self.id).unwrap());
+                panic!("Could not find ({:?},{:?}) in dependencies of {:?}", def_id, subst, self.id)
+            })
     }
 }
 
 impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
     fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        if let Some(b) = get_builtin(self.tcx, def_id) {
+            return QName::from_string(&b.as_str()).unwrap().without_search_path();
+        }
+
         let base = self.ident(def_id, subst);
         QName {
             module: base.into_iter().collect(),
@@ -844,6 +867,40 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
         PriorClones { graph, prior: clones }
     }
 
+    pub(crate) fn debug(&self, tcx: TyCtxt<'tcx>) {
+        println!(
+            "{:?}",
+            Dot::with_attr_getters(
+                &self.graph.graph,
+                &[Config::EdgeNoLabel, Config::NodeNoLabel],
+                &|_, (src, tgt, (_, typ))| {
+                    let (id, _) = src.as_item().unwrap();
+                    let x = if let Some((tgt, subst)) = tgt.as_item() &&
+                        let Some(Some(idnt)) = self.prior[&id].get((tgt, subst)) {
+                        idnt.to_string()
+                    } else {
+                        String::new()
+                    };
+
+                    let color = match typ {
+                        EdgeType::Refinement(_, _) => "black",
+                        EdgeType::Fake => "green",
+                        EdgeType::Type => "blue",
+                    };
+                    format!("label = \"{x}\", color=\"{color}\"")
+                },
+                &|_, n| {
+                    match n.0 {
+                        Dependency::Item(id, s) => {
+                            format!("label = \"{}, {:?}\"", tcx.item_name(id), s)
+                        }
+                        Dependency::BaseTy(ty) => format!("label = \"{:?}\"", ty),
+                    }
+                }
+            )
+        );
+    }
+
     pub(crate) fn get(&'a self, tcx: TyCtxt<'tcx>, inside: DefId) -> Namer<'a, 'tcx> {
         Namer { priors: self, id: inside, tcx }
     }
@@ -885,7 +942,6 @@ pub fn make_clones<'tcx, 'a>(
     let fgraph =
         EdgeFiltered::from_fn(&priors.graph.graph, |(_, _, (_, ek))| ek != &EdgeType::Fake);
     while let Some(node) = topo.walk_next(&fgraph) {
-        eprintln!("cloning {node:?}");
         if node == root {
             continue;
         }
@@ -894,19 +950,13 @@ pub fn make_clones<'tcx, 'a>(
             continue;
         };
 
-        // if matches!(priors.graph.graph.edge_weight(root, node), Some((_, EdgeType::Fake))) {
-        //     eprintln!("HI");
-        //     continue
-        // }
-
-        // eprintln!("cloning {node:?} at level {:?}", priors.graph.level[&node]);
-
         let (id, subst) = match node {
             Dependency::Item(id, subst) => (id, subst),
             Dependency::BaseTy(ty) => {
                 if matches!(ty.kind(), TyKind::Param(_)) {
                     continue;
                 }
+
                 uses.push(Decl::UseDecl(Use { name: base_ty_name(ty), as_: None }));
                 continue;
             }
@@ -931,11 +981,6 @@ pub fn make_clones<'tcx, 'a>(
         let mut node_names = priors.get(ctx.tcx, id);
 
         for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
-            if ctx.def_path_str(id).contains("shallow_model") {
-                eprintln!("root: {root:?}");
-                eprintln!("{:?} -> {:?}", node, dep);
-            }
-
             if priors.graph.level[&dep] < desired_dep_level {
                 continue;
             };
@@ -952,12 +997,8 @@ pub fn make_clones<'tcx, 'a>(
             }
 
             let (_, orig) = priors.graph.graph[(node, dep)];
-            if ctx.def_path_str(id).contains("shallow_model") {
-                eprintln!("got here {node:?} -> {dep:?} : {orig:?}");
-            }
 
             let EdgeType::Refinement(orig_id, orig_subst) = orig else { continue };
-            eprintln!("got there");
 
             if depth == CloneDepth::Shallow && item_type(ctx.tcx, orig_id) != ItemType::AssocTy {
                 continue;
@@ -972,8 +1013,6 @@ pub fn make_clones<'tcx, 'a>(
                 continue;
             };
 
-            // eprintln!("{:?} depends on {:?}", node, dep);
-            // eprintln!("getting name for {:?} originally called {:?}", (dep), priors.graph.graph[(node, dep)]);
             let src = node_names.value(orig_id, orig_subst);
             let tgt = dep.as_item().map(|(id, subst)| names.value(id, subst));
 
@@ -995,6 +1034,7 @@ pub fn make_clones<'tcx, 'a>(
             subst: clone_subst,
             kind: CloneKind::Named(names.value(id, subst).module_ident().unwrap().clone()),
         };
+
         clones.push(Decl::Clone(clone));
     }
 
@@ -1025,7 +1065,7 @@ fn base_ty_name(ty: Ty) -> QName {
         TyKind::Ref(_, _, _) => QName::from_string("prelude.Borrow").unwrap(),
         TyKind::Never => todo!(),
         TyKind::Tuple(_) => todo!(),
-        _ => panic!("base_ty_name: can only be called on basic types. {ty:?}"),
+        _ => panic!("base_ty_name: can only be called on basic types. [{ty:?}]"),
     }
 }
 // PreludeModule::Int => QName::from_string("mach.int.Int").unwrap(),
@@ -1100,5 +1140,27 @@ fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneDepth) ->
         Trait | Type | AssocTy => module_name(ctx, def_id).into(),
         // Field => panic!(),
         Unsupported(_) => unreachable!(),
+    }
+}
+
+// Walk all the projections in a substitution so we can add dependencies on them
+fn walk_projections<'tcx, T: TypeFoldable<'tcx>, F: FnMut(Ty<'tcx>)>(s: T, f: F) {
+    s.visit_with(&mut ProjectionTyVisitor { f, p: std::marker::PhantomData });
+}
+
+struct ProjectionTyVisitor<'tcx, F: FnMut(Ty<'tcx>)> {
+    f: F,
+    p: std::marker::PhantomData<&'tcx ()>,
+}
+
+impl<'tcx, F: FnMut(Ty<'tcx>)> TypeVisitor<'tcx> for ProjectionTyVisitor<'tcx, F> {
+    fn visit_ty(&mut self, t: Ty<'tcx>) -> std::ops::ControlFlow<Self::BreakTy> {
+        match t.kind() {
+            TyKind::Projection(pty) => {
+                (self.f)(t);
+                t.super_visit_with(self)
+            }
+            _ => t.super_visit_with(self),
+        }
     }
 }
