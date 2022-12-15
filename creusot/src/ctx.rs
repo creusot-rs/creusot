@@ -408,27 +408,23 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         let lo = self.sess.source_map().lookup_char_pos(span.lo());
         let hi = self.sess.source_map().lookup_char_pos(span.hi());
 
-        let filename = match self.opts.span_mode {
-            SpanMode::Absolute if lo.file.name.is_real() => {
-                if let creusot_rustc::span::FileName::Real(path) = &lo.file.name {
-                    let path = path.local_path_if_available();
-                    let mut buf;
-                    let path = if path.is_relative() {
-                        buf = std::env::current_dir().unwrap();
-                        buf.push(path);
-                        buf.as_path()
-                    } else {
-                        path
-                    };
+        let creusot_rustc::span::FileName::Real(path) = &lo.file.name else { return None };
 
-                    path.to_string_lossy().into_owned()
-                } else {
-                    return None;
-                }
-            }
+        let path = path.local_path_if_available();
+        let mut buf;
+        let path = if path.is_relative() {
+            buf = std::env::current_dir().unwrap();
+            buf.push(path);
+            buf.as_path()
+        } else {
+            path
+        };
+
+        let filename = match self.opts.span_mode {
+            SpanMode::Absolute => path.to_string_lossy().into_owned(),
             SpanMode::Relative => {
-                // Should really be relative to the source file the location is in
-                format!("../{}", self.sess.source_map().filename_for_diagnostics(&lo.file.name))
+                // Why3 treats the spans as relative to the session not the source file??
+                format!("{}", self.opts.relative_to_output(&path).to_string_lossy())
             }
             _ => return None,
         };
