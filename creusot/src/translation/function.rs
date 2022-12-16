@@ -12,7 +12,6 @@ use crate::{
         pearlite::{self, TermKind, TermVisitorMut},
         specification::PreContract,
         traits,
-        ty::closure_accessors,
     },
     util::{self, ident_of, is_ghost_closure, pre_sig_of, signature_of, PreSignature},
 };
@@ -48,65 +47,6 @@ mod promoted;
 mod statement;
 pub(crate) mod terminator;
 
-// pub(crate) fn translate_function<'tcx, 'sess>(
-//     ctx: &mut TranslationCtx<'tcx>,
-//     def_id: DefId,
-// ) -> Module {
-//     let tcx = ctx.tcx;
-//     let mut names = CloneMap::new(tcx, def_id, CloneLevel::Body);
-
-//     assert!(def_id.is_local(), "translate_function: expected local DefId");
-
-//     if util::is_trusted(tcx, def_id) || !util::has_body(ctx, def_id) {
-//         let _ = names.to_clones(ctx);
-//         return translate_trusted(tcx, ctx, def_id);
-//     }
-
-//     // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
-//     let (body, promoted) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
-//     let mut body = body.borrow().clone();
-//     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
-//     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
-//     RemoveFalseEdges.run_pass(tcx, &mut body);
-//     SimplifyCfg::new("verify").run_pass(tcx, &mut body);
-
-//     let mut decls = Vec::new();
-//     decls.extend(closure_generic_decls(ctx.tcx, def_id));
-
-//     // FIXME
-//     // if ctx.tcx.is_closure(def_id) {
-//     //     if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-//     //         let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
-//     //         let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
-//     //         decls.extend(names.to_clones(ctx));
-//     //         decls.push(env_ty);
-//     //         decls.extend(accessors);
-
-//     //         let contracts = closure_contract(ctx, &mut names, def_id);
-//     //         decls.extend(names.to_clones(ctx));
-//     //         decls.extend(contracts);
-//     //     }
-//     // }
-
-//     // let param_env = ctx.param_env(def_id);
-//     // for p in promoted.borrow().iter_enumerated() {
-//     //     if is_ghost_closure(ctx.tcx, p.1.return_ty()).is_some() {
-//     //         continue;
-//     //     }
-
-//     //     let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p, def_id);
-//     //     decls.extend(names.to_clones(ctx));
-//     //     let promoted = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
-
-//     //     decls.push(promoted);
-//     // }
-
-//     let fmir = ctx.fmir_body(def_id).unwrap().clone();
-//     decls.extend(to_why(ctx, names, fmir, &body, def_id));
-//     let name = module_name(ctx, def_id);
-//     Module { name, decls }
-// }
-
 pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> fmir::Body<'tcx> {
     // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
     let (body, _) = ctx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
@@ -137,53 +77,6 @@ pub(crate) fn translate_trusted<'tcx>(
     decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
     return Module { name, decls };
 }
-
-// fn to_why<'tcx>(
-//     ctx: &mut TranslationCtx<'tcx>,
-//     mut names: CloneMap<'tcx>,
-//     body: fmir::Body<'tcx>,
-//     mir: &Body<'tcx>,
-//     def_id: DefId,
-// ) -> Vec<Decl> {
-//     let mut decls: Vec<_> = Vec::new();
-
-//     let vars: Vec<_> = body
-//         .locals
-//         .into_iter()
-//         .map(|(id, sp, ty)| (false, id, ty::translate_ty(ctx, &mut names, sp, ty)))
-//         .collect();
-
-//     let entry = Block {
-//         statements: vars
-//             .iter()
-//             .skip(1)
-//             .take(body.arg_count)
-//             .map(|(_, id, _)| {
-//                 let rhs = id.arg_name();
-//                 Statement::Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
-//             })
-//             .collect(),
-//         terminator: Terminator::Goto(BlockId(0)),
-//     };
-
-//     let sig = signature_of(ctx, &mut names, def_id);
-
-//     let func = Decl::CfgDecl(CfgFunction {
-//         sig,
-//         rec: true,
-//         constant: false,
-//         vars: vars.into_iter().map(|i| (i.0, i.1.ident(), i.2)).collect(),
-//         entry,
-//         blocks: body
-//             .blocks
-//             .into_iter()
-//             .map(|(bb, bbd)| (BlockId(bb.into()), bbd.to_why(ctx, &mut names, mir)))
-//             .collect(),
-//     });
-//     decls.extend(names.to_clones(ctx));
-//     decls.push(func);
-//     decls
-// }
 
 // Split this into several sub-contexts: Core, Analysis, Results?
 pub struct BodyTranslator<'body, 'tcx> {

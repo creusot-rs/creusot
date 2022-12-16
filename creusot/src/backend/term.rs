@@ -6,7 +6,6 @@ use crate::{
     ctx::*,
     pearlite::{self, Literal, Pattern, Term, TermKind},
     util,
-    util::{constructor_qname, get_builtin},
 };
 use creusot_rustc::{
     hir::{def_id::DefId, Unsafety},
@@ -150,8 +149,6 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
                 }
 
                 self.lookup_builtin(method, &mut args).unwrap_or_else(|| {
-                    self.ctx.translate(method.0);
-
                     let clone = self.names.value(method.0, method.1);
                     if self.pure == Purity::Program {
                         mk_binders(Exp::QVar(clone, self.pure), args)
@@ -179,7 +176,6 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
 
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
-                // let ctor = constructor_qname(self.ctx, &adt.variants()[variant]);
                 let ctor = self.names.constructor(adt.did(), subst, variant.as_usize());
                 Exp::Constructor { ctor, args }
             }
@@ -329,11 +325,9 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
         let _substs = method.1;
 
         let def_id = Some(def_id);
-        let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
+        let builtin_attr = util::get_builtin(self.ctx.tcx, def_id.unwrap());
 
         if let Some(builtin) = builtin_attr.and_then(|a| QName::from_string(&a.as_str())) {
-            // self.names.import_builtin_module(builtin.clone().module_qname());
-
             if let Purity::Program = self.pure {
                 return Some(mk_binders(
                     Exp::pure_qvar(builtin.without_search_path()),

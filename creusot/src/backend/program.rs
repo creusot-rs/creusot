@@ -539,8 +539,6 @@ impl<'tcx> Statement<'tcx> {
                 exps
             }
             Statement::Resolve(id, subst, pl) => {
-                ctx.translate(id);
-
                 let rp = Exp::impure_qvar(names.value(id, subst));
 
                 let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, Some(body)));

@@ -505,10 +505,8 @@ impl<'tcx> MonoGraph<'tcx> {
                 continue;
             }
 
-            // self.graph.add_node(next);
             let Dependency::Item(id, subst) = next else { continue };
             self.add_root(ctx, id);
-            ctx.translate(id);
 
             walk_projections(subst, |ty| {
                 self.add_edge(
@@ -867,6 +865,7 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
         PriorClones { graph, prior: clones }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn debug(&self, tcx: TyCtxt<'tcx>) {
         println!(
             "{:?}",

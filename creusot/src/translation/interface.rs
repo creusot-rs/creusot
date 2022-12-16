@@ -1,6 +1,5 @@
 use super::{
     function::closure_generic_decls,
-    ty::{closure_accessors, translate_closure_ty},
 };
 use crate::{backend::logic::spec_axiom, clone_map::CloneMap, ctx::*, util};
 use creusot_rustc::{
@@ -12,77 +11,6 @@ use why3::{
     declaration::{Contract, Decl, Module},
     Exp, Ident,
 };
-
-pub(crate) fn interface_for<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
-    debug!("interface_for: {def_id:?}");
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
-    let mut sig = util::signature_of(ctx, &mut names, def_id);
-
-    sig.contract.variant = Vec::new();
-
-    let mut iface_decls = Vec::new();
-
-    if ctx.tcx.is_closure(def_id) {
-        // if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-        //     let tydecl = translate_closure_ty(ctx, &mut names, def_id, subst);
-
-        //     let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
-        //     iface_decls.push(Decl::TyDecl(tydecl));
-        //     iface_decls.extend(accessors);
-
-        //     let contracts = closure_contract(ctx, &mut names, def_id);
-        //     iface_decls.extend(contracts);
-
-        //     if subst.as_closure().kind() == ClosureKind::FnMut {
-        //         sig.contract.ensures.push(
-        //             Exp::pure_var("unnest".into())
-        //                 .app_to(Exp::Current(box Exp::pure_var("_1'".into())))
-        //                 .app_to(Exp::Final(box Exp::pure_var("_1'".into()))),
-        //         )
-        //     }
-        // }
-        panic!()
-    }
-
-    match util::item_type(ctx.tcx, def_id) {
-        ItemType::Predicate => {
-            let sig_contract = sig.clone();
-            sig.retty = None;
-            sig.contract = Contract::new();
-            iface_decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
-
-            let has_axioms = !sig_contract.contract.is_empty();
-            if has_axioms {
-                iface_decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
-            }
-        }
-        ItemType::Logic => {
-            let sig_contract = sig.clone();
-            sig.contract = Contract::new();
-            iface_decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
-
-            let has_axioms = !sig_contract.contract.is_empty();
-            if has_axioms {
-                iface_decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
-            }
-        }
-        _ => {
-            if !def_id.is_local() && !ctx.externs.verified(def_id) && sig.contract.is_empty() {
-                sig.contract.requires.push(why3::exp::Exp::mk_false());
-            }
-
-            iface_decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
-        }
-    }
-
-    let mut decls: Vec<_> = closure_generic_decls(ctx.tcx, def_id).collect();
-    decls.extend(names.to_clones(ctx));
-    decls.extend(iface_decls);
-
-    let name = interface_name(ctx, def_id);
-
-    Module { name, decls }
-}
 
 pub(crate) fn interface_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
     format!("{}_Interface", Cow::from(&*module_name(ctx, def_id))).into()

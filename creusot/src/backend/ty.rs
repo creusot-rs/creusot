@@ -127,8 +127,6 @@ fn translate_ty_inner<'tcx, C: Cloner<'tcx>>(
         Never => MlT::Tuple(vec![]),
         RawPtr(_) => MlT::TConstructor(QName::from_string("opaque_ptr").unwrap()),
         Closure(id, subst) => {
-            ctx.translate(*id);
-
             if util::is_logic(ctx.tcx, *id) {
                 return MlT::Tuple(Vec::new());
             }

@@ -26,7 +26,7 @@ pub mod options;
 mod resolve;
 // #[allow(dead_code)]
 mod rustc_extensions;
-#[allow(dead_code)]
+// #[allow(dead_code)]
 mod translation;
 pub(crate) mod util;
 use translation::*;

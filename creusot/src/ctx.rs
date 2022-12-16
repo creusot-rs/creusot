@@ -97,35 +97,35 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
         match item_type(self.tcx, def_id) {
             ItemType::Trait => {
-                self.start(def_id);
-                let tr = self.translate_trait(def_id);
-                self.dependencies.insert(def_id, CloneSummary::new());
-                self.functions.insert(def_id, tr);
-                self.finish(def_id);
+                // self.start(def_id);
+                // let tr = self.translate_trait(def_id);
+                // self.dependencies.insert(def_id, CloneSummary::new());
+                // self.functions.insert(def_id, tr);
+                // self.finish(def_id);
             }
             ItemType::Impl => {
                 if self.tcx.impl_trait_ref(def_id).is_some() {
-                    self.start(def_id);
+                    // self.start(def_id);
                     // let impl_ = self.translate_impl(def_id);
 
-                    self.dependencies.insert(def_id, CloneSummary::new());
+                    // self.dependencies.insert(def_id, CloneSummary::new());
                     // self.functions.insert(def_id, impl_);
-                    self.finish(def_id);
+                    // self.finish(def_id);
                 }
             }
 
             ItemType::Logic | ItemType::Predicate | ItemType::Program | ItemType::Closure => {
-                self.start(def_id);
-                self.translate_function(def_id);
-                self.finish(def_id);
+                // self.start(def_id);
+                // self.translate_function(def_id);
+                // self.finish(def_id);
             }
             ItemType::AssocTy => {
-                self.start(def_id);
-                let modl = self.translate_assoc_ty(def_id);
-                self.finish(def_id);
+                // self.start(def_id);
+                // let modl = self.translate_assoc_ty(def_id);
+                // self.finish(def_id);
                 // FIXME
-                self.dependencies.insert(def_id, CloneSummary::new());
-                self.functions.insert(def_id, TranslatedItem::AssocTy { modl });
+                // self.dependencies.insert(def_id, CloneSummary::new());
+                // self.functions.insert(def_id, TranslatedItem::AssocTy { modl });
             }
             ItemType::Constant => {
                 // self.start(def_id);
