@@ -407,14 +407,19 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
     pub(crate) fn binding_group(&mut self, did: DefId) -> &IndexSet<DefId> {
         if !self.repr_elem.contains_key(&did) {
-            let bg = ty_binding_group(self.tcx, did);
-            let repr = bg.first().unwrap();
+            if item_type(self.tcx, did) != ItemType::Type {
+                self.repr_elem.insert(did, did);
+                self.ty_binding_groups.insert(did, [did].into());
+            } else {
+                let bg = ty_binding_group(self.tcx, did);
+                let repr = bg.first().unwrap();
 
-            bg.iter().for_each(|did| {
-                self.repr_elem.insert(*did, *repr);
-            });
+                bg.iter().for_each(|did| {
+                    self.repr_elem.insert(*did, *repr);
+                });
 
-            self.ty_binding_groups.insert(*repr, bg);
+                self.ty_binding_groups.insert(*repr, bg);
+            }
         }
 
         &self.ty_binding_groups[&self.repr_elem[&did]]

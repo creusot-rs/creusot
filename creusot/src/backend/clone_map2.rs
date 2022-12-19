@@ -729,10 +729,11 @@ pub(crate) fn name_clones<'tcx>(
     let mut assigned = IndexMap::new();
     let walk = DfsPostOrder::new(&graph.graph, root);
 
+    let root_id = root.as_item().unwrap().0;
     for node in walk.iter(&graph.graph) {
         let Dependency::Item(def_id, subst) = node else { continue };
 
-        let clone_name: Option<why3::Ident> = if node == root {
+        let clone_name: Option<why3::Ident> = if ctx.binding_group(root_id).contains(&def_id) {
             None
         } else {
             let base_sym = match util::item_type(ctx.tcx, def_id) {
@@ -921,11 +922,11 @@ pub fn make_clones<'tcx, 'a>(
     priors: Namer<'a, 'tcx>,
     vis: CloneVisibility,
     depth: CloneDepth,
-    root: DefId,
+    root_id: DefId,
 ) -> Vec<Decl> {
     let Namer { priors, .. } = priors;
-    let mut names = priors.get(ctx.tcx, root);
-    let root = Dependency::identity(ctx.tcx, root);
+    let mut names = priors.get(ctx.tcx, root_id);
+    let root = Dependency::identity(ctx.tcx, root_id);
     let mut topo = DfsPostOrder::new(&priors.graph.graph, root);
 
     // Unify
@@ -959,6 +960,10 @@ pub fn make_clones<'tcx, 'a>(
                 continue;
             }
         };
+
+        if ctx.binding_group(root_id).contains(&id) {
+            continue;
+        }
 
         if let Some(builtin) = get_builtin(ctx.tcx, id) {
             let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
