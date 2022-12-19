@@ -1,12 +1,8 @@
 use crate::{
     ctx::*,
     rustc_extensions,
-    translation::{
-        function::terminator::evaluate_additional_predicates,
-        ty::{self, translate_ty},
-    },
-    util,
-    util::{ident_of, inputs_and_output, is_law, is_spec, item_type},
+    translation::function::terminator::evaluate_additional_predicates,
+    util::{inputs_and_output, is_law, is_spec, item_type},
 };
 use creusot_rustc::{
     hir::def_id::DefId,
@@ -14,15 +10,10 @@ use creusot_rustc::{
     middle::ty::{
         subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, TraitRef, TyCtxt,
     },
-    resolve::Namespace,
     span::Symbol,
     trait_selection::traits::ImplSource,
 };
 use std::collections::HashMap;
-use why3::{
-    declaration::{Decl, Goal, Module, TyDecl},
-    exp::Exp,
-};
 
 #[derive(Clone)]
 pub(crate) struct Refinement<'tcx> {
@@ -31,6 +22,7 @@ pub(crate) struct Refinement<'tcx> {
     pub(crate) refn: Term<'tcx>,
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub(crate) struct TraitImpl<'tcx> {
     pub(crate) laws: Vec<DefId>,
@@ -120,34 +112,6 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         TraitImpl { laws, refinements }
     }
-
-    pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> Module {
-        assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
-
-        let mut names = CloneMap::new(self.tcx, def_id, CloneLevel::Interface);
-
-        let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
-        let name = item_name(self.tcx, def_id, Namespace::TypeNS);
-
-        let ty_decl = match self.tcx.associated_item(def_id).container {
-            creusot_rustc::middle::ty::ImplContainer => names.with_public_clones(|names| {
-                let assoc_ty = self.tcx.type_of(def_id);
-                TyDecl::Alias {
-                    ty_name: name.clone(),
-                    ty_params: vec![],
-                    alias: ty::translate_ty(self, names, creusot_rustc::span::DUMMY_SP, assoc_ty),
-                }
-            }),
-            creusot_rustc::middle::ty::TraitContainer => {
-                TyDecl::Opaque { ty_name: name.clone(), ty_params: vec![] }
-            }
-        };
-
-        decls.extend(names.to_clones(self));
-        decls.push(Decl::TyDecl(ty_decl));
-
-        Module { name: module_name(self, def_id), decls }
-    }
 }
 
 fn logic_refinement_term<'tcx>(
@@ -216,77 +180,12 @@ fn logic_refinement_term<'tcx>(
     // Goal { name: format!("{}_spec", &*name).into(), goal: refn }
 }
 
-fn logic_refinement<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    impl_item_id: DefId,
-    trait_item_id: DefId,
-    refn_subst: SubstsRef<'tcx>,
-) -> Goal {
-    // Get the contract of the trait version
-    let trait_contract = names.with_public_clones(|names| {
-        let pre_contract = crate::specification::contract_of(ctx, trait_item_id);
-        let param_env = ctx.param_env(impl_item_id);
-        EarlyBinder(pre_contract)
-            .subst(ctx.tcx, refn_subst)
-            .normalize(ctx.tcx, param_env)
-            .to_exp(ctx, names)
-    });
-
-    let impl_contract = names.with_public_clones(|names| {
-        let pre_contract = crate::specification::contract_of(ctx, impl_item_id);
-        pre_contract.to_exp(ctx, names)
-    });
-
-    let (trait_inps, _) = inputs_and_output(ctx.tcx, trait_item_id);
-    let (impl_inps, output) = inputs_and_output(ctx.tcx, impl_item_id);
-
-    let span = ctx.tcx.def_span(impl_item_id);
-    let mut args = Vec::new();
-    let mut subst = HashMap::new();
-    names.with_public_clones(|names| {
-        for (ix, ((id, _), (id2, ty))) in trait_inps.zip(impl_inps).enumerate() {
-            let ty = translate_ty(ctx, names, span, ty);
-            let id =
-                if id.name.is_empty() { format!("_{}'", ix + 1).into() } else { ident_of(id.name) };
-            let id2 = if id2.name.is_empty() {
-                format!("_{}'", ix + 1).into()
-            } else {
-                ident_of(id2.name)
-            };
-            args.push((id.clone(), ty));
-            subst.insert(id2, Exp::pure_var(id));
-        }
-    });
-
-    let mut impl_precond = impl_contract.requires_conj();
-    impl_precond.subst(&subst);
-    let trait_precond = trait_contract.requires_conj();
-
-    let mut impl_postcond = impl_contract.ensures_conj();
-    impl_postcond.subst(&subst);
-    let trait_postcond = trait_contract.ensures_conj();
-
-    let retty = names.with_public_clones(|names| translate_ty(ctx, names, span, output));
-    let post_refn =
-        Exp::Forall(vec![("result".into(), retty)], box impl_postcond.implies(trait_postcond));
-
-    let mut refn = trait_precond.implies(impl_precond).log_and(post_refn);
-    refn = if args.is_empty() { refn } else { Exp::Forall(args, box refn) };
-
-    // Don't use `item_name` here
-    let name = item_name(ctx.tcx, impl_item_id, Namespace::ValueNS);
-
-    Goal { name: format!("{}_spec", &*name).into(), goal: refn }
-}
-
 pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &AssocItem> {
     tcx.associated_items(def_id)
         .in_definition_order()
         .filter(move |item| !is_spec(tcx, item.def_id))
 }
 
-use crate::function::all_generic_decls_for;
 use creusot_rustc::middle::ty::{subst::InternalSubsts, AssocItem, Binder};
 
 pub(crate) fn resolve_impl_source_opt<'tcx>(

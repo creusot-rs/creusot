@@ -1,29 +1,19 @@
 use creusot_rustc::{
     hir::def_id::DefId,
-    middle::ty::{
-        self,
-        subst::{InternalSubsts, SubstsRef},
-        ClosureSubsts, FieldDef, ProjectionTy, Ty, TyCtxt,
-    },
+    middle::ty::{subst::InternalSubsts, ProjectionTy, Ty, TyCtxt},
     resolve::Namespace,
-    span::{Span, Symbol, DUMMY_SP},
+    span::{Span, Symbol},
     type_ir::sty::TyKind::*,
 };
 use indexmap::IndexSet;
 use std::collections::VecDeque;
-use why3::{
-    declaration::{
-        AdtDecl, ConstructorDecl, Contract, Decl, Field, LetDecl, LetKind, Module, Signature,
-    },
-    exp::{Binder, Exp, Pattern},
-    Ident,
-};
+use why3::Ident;
 
-use why3::{declaration::TyDecl, ty::Type as MlT, QName};
+use why3::{ty::Type as MlT, QName};
 
 use crate::{
     ctx::*,
-    util::{self, constructor_qname, get_builtin, item_name, item_qname},
+    util::{self, get_builtin, item_name, item_qname},
 };
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:
@@ -38,6 +28,7 @@ use crate::{
 /// This enum selects the two behaviors
 /// TODO: perhaps a cleaner solution would be to carry a substitution which chooses how to replace
 /// tyvars with us. Do this if we change the tyvars again.
+#[allow(dead_code)]
 #[derive(Copy, Clone, PartialEq, Eq)]
 enum TyTranslation {
     Declaration,
@@ -226,39 +217,8 @@ pub(crate) fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSe
     group
 }
 
-fn translate_ty_name(ctx: &TranslationCtx<'_>, did: DefId) -> QName {
-    item_qname(ctx, did, Namespace::TypeNS)
-}
-
 pub(crate) fn translate_ty_param(p: Symbol) -> Ident {
     Ident::build(&p.to_string().to_lowercase())
-}
-
-pub(crate) fn translate_closure_ty<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    did: DefId,
-    subst: SubstsRef<'tcx>,
-) -> TyDecl {
-    let ty_name = translate_ty_name(ctx, did).name;
-    let closure_subst = subst.as_closure();
-    let fields: Vec<_> = closure_subst
-        .upvar_tys()
-        .map(|uv| Field {
-            ty: translate_ty_inner(TyTranslation::Usage, ctx, names, DUMMY_SP, uv),
-            ghost: false,
-        })
-        .collect();
-
-    let mut cons_name = item_name(ctx.tcx, did, Namespace::ValueNS);
-    cons_name.capitalize();
-    let kind = AdtDecl {
-        ty_name,
-        ty_params: vec![],
-        constrs: vec![ConstructorDecl { name: cons_name, fields }],
-    };
-
-    TyDecl::Adt { tys: vec![kind] }
 }
 
 pub(crate) fn closure_accessor_name(tcx: TyCtxt, def: DefId, ix: usize) -> Ident {

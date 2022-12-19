@@ -13,7 +13,7 @@ use crate::{
         specification::PreContract,
         traits,
     },
-    util::{self, ident_of, is_ghost_closure, pre_sig_of, signature_of, PreSignature},
+    util::{self, ident_of, is_ghost_closure, pre_sig_of, PreSignature},
 };
 use creusot_rustc::{
     borrowck::borrow_set::BorrowSet,
@@ -58,24 +58,6 @@ pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> fmir:
 
     let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, def_id);
     func_translator.translate()
-}
-
-pub(crate) fn translate_trusted<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> Module {
-    let mut names = CloneMap::new(tcx, def_id, CloneLevel::Interface);
-    let mut decls = Vec::new();
-    decls.extend(all_generic_decls_for(tcx, def_id));
-
-    let sig = signature_of(ctx, &mut names, def_id);
-    let name = module_name(ctx, def_id);
-
-    decls.extend(names.to_clones(ctx));
-
-    decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
-    return Module { name, decls };
 }
 
 // Split this into several sub-contexts: Core, Analysis, Results?
@@ -714,58 +696,6 @@ pub(crate) fn closure_unnest2<'tcx>(
     }
 
     unnest
-}
-
-struct ResolveStmt {
-    exp: Option<Exp>,
-}
-
-impl ResolveStmt {
-    fn exp(self, to: Exp) -> Exp {
-        match self.exp {
-            None => Exp::mk_true(),
-            Some(e) => e.app_to(to),
-        }
-    }
-}
-
-fn resolve_predicate_of<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    ty: Ty<'tcx>,
-) -> ResolveStmt {
-    if !resolve_trait_loaded(ctx.tcx) {
-        ctx.warn(
-            creusot_rustc::span::DUMMY_SP,
-            "load the `creusot_contract` crate to enable resolution of mutable borrows.",
-        );
-        return ResolveStmt { exp: None };
-    }
-
-    let trait_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve")).unwrap();
-    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
-    let subst = ctx.mk_substs([GenericArg::from(ty)].iter());
-
-    let resolve_impl = traits::resolve_assoc_item_opt(ctx.tcx, param_env, trait_meth_id, subst);
-
-    match resolve_impl {
-        Some(method) => {
-            if !ty.still_further_specializable()
-                && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), method.0)
-                && !method.1.type_at(0).is_closure()
-            {
-                return ResolveStmt { exp: None };
-            }
-            ctx.translate(method.0);
-
-            ResolveStmt { exp: Some(Exp::impure_qvar(names.value(method.0, method.1))) }
-        }
-        None => {
-            ctx.translate(trait_id);
-            ResolveStmt { exp: Some(Exp::impure_qvar(names.value(trait_meth_id, subst))) }
-        }
-    }
 }
 
 pub(crate) fn resolve_trait_loaded(tcx: TyCtxt) -> bool {

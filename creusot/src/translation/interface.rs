@@ -1,6 +1,4 @@
-use super::{
-    function::closure_generic_decls,
-};
+use super::function::closure_generic_decls;
 use crate::{backend::logic::spec_axiom, clone_map::CloneMap, ctx::*, util};
 use creusot_rustc::{
     hir::def_id::DefId,

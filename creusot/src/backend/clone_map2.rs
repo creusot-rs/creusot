@@ -29,7 +29,6 @@ use rustc_type_ir::{IntTy, RegionKind};
 use util::ItemType;
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
-    ty::Type,
     QName,
 };
 
@@ -1155,7 +1154,7 @@ struct ProjectionTyVisitor<'tcx, F: FnMut(Ty<'tcx>)> {
 impl<'tcx, F: FnMut(Ty<'tcx>)> TypeVisitor<'tcx> for ProjectionTyVisitor<'tcx, F> {
     fn visit_ty(&mut self, t: Ty<'tcx>) -> std::ops::ControlFlow<Self::BreakTy> {
         match t.kind() {
-            TyKind::Projection(pty) => {
+            TyKind::Projection(_pty) => {
                 (self.f)(t);
                 t.super_visit_with(self)
             }

@@ -425,7 +425,7 @@ impl<'tcx> Terminator<'tcx> {
 impl<'tcx> Branches<'tcx> {
     fn to_why(
         self,
-        ctx: &mut TranslationCtx<'tcx>,
+        _: &mut TranslationCtx<'tcx>,
         names: &mut Namer<'_, 'tcx>,
         discr: Exp,
     ) -> mlcfg::Terminator {

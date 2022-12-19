@@ -26,7 +26,7 @@ use creusot_rustc::{
 };
 use indexmap::{IndexMap, IndexSet};
 use std::{collections::HashMap, ops::Deref};
-pub(crate) use util::{item_name, module_name, ItemType};
+pub(crate) use util::{module_name, ItemType};
 use why3::{declaration::Module, exp::Exp};
 
 pub(crate) use crate::translated_item::*;

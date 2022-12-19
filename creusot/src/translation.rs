@@ -23,11 +23,10 @@ use crate::{
     util,
     validate::{validate_impls, validate_traits},
 };
-use creusot_rustc::hir::def_id::LOCAL_CRATE;
+use creusot_rustc::hir::def_id::{DefId, LOCAL_CRATE};
 use ctx::TranslationCtx;
 pub(crate) use function::LocalIdent;
 use heck::ToUpperCamelCase;
-use creusot_rustc::hir::def_id::DefId;
 use rustc_middle::ty::Ty;
 use std::{collections::HashSet, error::Error, fs::File, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
@@ -113,7 +112,7 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
         let priors = PriorClones::from_graph(&mut ctx, &graph);
         // priors.debug(ctx.tcx);
         let mut modules = Vec::new();
-        let mut visited : HashSet<DefId> = HashSet::new();
+        let mut visited: HashSet<DefId> = HashSet::new();
         for dep in graph.iter() {
             let Dependency::Item(id, _) = dep else { continue };
             if visited.contains(&id) {
