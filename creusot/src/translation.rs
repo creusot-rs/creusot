@@ -57,8 +57,9 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
 use std::time::Instant;
 // TODO: Move the main loop out of `translation.rs`
 pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Error>> {
-    for tr in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
-        ctx.translate_trait(*tr);
+    for _ in ctx.tcx.traits_in_crate(LOCAL_CRATE) {
+        // TODO: FIX
+        // ctx.translate_trait(*tr);
     }
 
     let start = Instant::now();
@@ -105,8 +106,8 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
     if ctx.should_compile() {
         let mut out = output_writer(&ctx)?;
 
-        let matcher = ctx.opts.match_str.clone();
-        let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
+        // let matcher = ctx.opts.match_str.clone();
+        // let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
         let tcx = ctx.tcx;
 
         let priors = PriorClones::from_graph(&mut ctx, &graph);
@@ -120,14 +121,15 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
             };
 
             visited.extend(ctx.binding_group(id));
-
-            let output = if tcx.def_path_str(id).contains(matcher) {
-                box to_why3(&mut ctx, &priors, id).into_iter()
-            } else {
-                let Some(item) = ctx.item(id) else { continue };
-                let item = item.clone();
-                item.interface()
-            };
+            // TODO: restore filtering functionality
+            let output = box to_why3(&mut ctx, &priors, id).into_iter();
+            // let output = if tcx.def_path_str(id).contains(matcher) {
+            //
+            // } else {
+            //     let Some(item) = ctx.item(id) else { continue };
+            //     let item = item.clone();
+            //     item.interface()
+            // };
 
             modules.extend(output);
         }

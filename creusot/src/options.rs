@@ -67,6 +67,7 @@ pub struct Options {
     pub(crate) output_file: Option<OutputFile>,
     pub(crate) in_cargo: bool,
     pub(crate) span_mode: SpanMode,
+    #[allow(dead_code)]
     pub(crate) match_str: Option<String>,
 }
 

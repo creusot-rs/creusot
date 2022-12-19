@@ -13,7 +13,7 @@ use why3::{ty::Type as MlT, QName};
 
 use crate::{
     ctx::*,
-    util::{self, get_builtin, item_name, item_qname},
+    util::{self, get_builtin, item_qname},
 };
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:
@@ -219,23 +219,6 @@ pub(crate) fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSe
 
 pub(crate) fn translate_ty_param(p: Symbol) -> Ident {
     Ident::build(&p.to_string().to_lowercase())
-}
-
-pub(crate) fn closure_accessor_name(tcx: TyCtxt, def: DefId, ix: usize) -> Ident {
-    let ty_name = item_name(tcx, def, Namespace::TypeNS).to_string().to_lowercase();
-
-    format!("{}_{}", &*ty_name, ix).into()
-}
-
-pub(crate) fn variant_accessor_name(
-    tcx: TyCtxt,
-    def: DefId,
-    variant: usize,
-    field: usize,
-) -> Ident {
-    let variant_def = &tcx.adt_def(def).variants()[variant.into()];
-    let variant = variant_def;
-    format!("{}_{}", variant.name.as_str().to_ascii_lowercase(), variant.fields[field].name).into()
 }
 
 pub(crate) fn intty_to_ty(names: &mut CloneMap<'_>, ity: &creusot_rustc::middle::ty::IntTy) -> MlT {

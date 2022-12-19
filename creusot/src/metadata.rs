@@ -13,7 +13,7 @@ use creusot_rustc::{
     span::Symbol,
 };
 use indexmap::IndexMap;
-use rustc_smir::very_unstable::middle::ty::{subst::SubstsRef, TyCtxt, Visibility};
+use rustc_smir::very_unstable::middle::ty::{subst::SubstsRef, TyCtxt};
 use std::{
     collections::HashMap,
     fs::File,
@@ -46,10 +46,11 @@ impl<'tcx> Metadata<'tcx> {
         self.crates.get(&def_id.krate).map_or(false, |meta| meta.dependencies.contains_key(&def_id))
     }
 
-    pub(crate) fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
-        assert!(!def_id.is_local());
-        self.get(def_id.krate)?.dependencies(def_id)
-    }
+    // TODO: Add dependencies
+    // pub(crate) fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
+    //     assert!(!def_id.is_local());
+    //     self.get(def_id.krate)?.dependencies(def_id)
+    // }
 
     pub(crate) fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
         assert!(!def_id.is_local());
@@ -101,6 +102,7 @@ impl<'tcx> CrateMetadata<'tcx> {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
         assert!(!def_id.is_local());
         self.dependencies.get(&def_id)
@@ -164,28 +166,25 @@ pub(crate) struct BinaryMetadata<'tcx> {
 
 impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
-        tcx: TyCtxt<'tcx>,
-        functions: &IndexMap<DefId, TranslatedItem>,
-        dependencies: &IndexMap<DefId, CloneSummary<'tcx>>,
         terms: &IndexMap<DefId, Term<'tcx>>,
         items: &CreusotItems,
         extern_specs: &HashMap<DefId, ExternSpec<'tcx>>,
     ) -> Self {
-        let dependencies = functions
-            .keys()
-            .filter(|def_id| tcx.visibility(**def_id) == Visibility::Public && def_id.is_local())
-            .map(|def_id| {
-                (
-                    *def_id,
-                    dependencies
-                        .get(def_id)
-                        .map(Clone::clone)
-                        .unwrap_or_default()
-                        .into_iter()
-                        .collect(),
-                )
-            })
-            .collect();
+        // let dependencies = functions
+        //     .keys()
+        //     .filter(|def_id| tcx.visibility(**def_id) == Visibility::Public && def_id.is_local())
+        //     .map(|def_id| {
+        //         (
+        //             *def_id,
+        //             dependencies
+        //                 .get(def_id)
+        //                 .map(Clone::clone)
+        //                 .unwrap_or_default()
+        //                 .into_iter()
+        //                 .collect(),
+        //         )
+        //     })
+        //     .collect();
 
         let terms = terms
             .iter()
@@ -194,7 +193,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
             .collect();
 
         BinaryMetadata {
-            dependencies,
+            dependencies: HashMap::new(),
             terms,
             creusot_items: items.clone(),
             extern_specs: extern_specs.clone(),
