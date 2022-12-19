@@ -1,10 +1,9 @@
 use crate::{
     backend::program::uint_from_int,
-    ctx::{CloneMap, TranslationCtx},
+    ctx::TranslationCtx,
     error::Error,
     translation::{
-        binop_to_binop, constant::from_mir_constant, fmir, function::LocalIdent, ty::translate_ty,
-        unop_to_unop,
+        binop_to_binop, constant::from_mir_constant, fmir, function::LocalIdent, unop_to_unop,
     },
     util::{self, constructor_qname},
 };
@@ -23,30 +22,30 @@ use crate::error::CreusotResult;
 
 use super::{place::translate_rplace_inner, BodyTranslator};
 
-pub(crate) fn promoted_signature<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    (promoted, body): (Promoted, &Body<'tcx>),
-) -> Signature {
-    let args = body
-        .args_iter()
-        .map(|arg| {
-            let info = &body.local_decls[arg];
-            let ty = translate_ty(ctx, names, info.source_info.span, info.ty);
-            Binder::typed(LocalIdent::anon(arg).ident(), ty)
-        })
-        .collect();
-    let retty =
-        translate_ty(ctx, names, body.local_decls[0u32.into()].source_info.span, body.return_ty());
+// pub(crate) fn promoted_signature<'tcx>(
+//     ctx: &mut TranslationCtx<'tcx>,
+//     names: &mut CloneMap<'tcx>,
+//     (promoted, body): (Promoted, &Body<'tcx>),
+// ) -> Signature {
+//     let args = body
+//         .args_iter()
+//         .map(|arg| {
+//             let info = &body.local_decls[arg];
+//             let ty = translate_ty(ctx, names, info.source_info.span, info.ty);
+//             Binder::typed(LocalIdent::anon(arg).ident(), ty)
+//         })
+//         .collect();
+//     let retty =
+//         translate_ty(ctx, names, body.local_decls[0u32.into()].source_info.span, body.return_ty());
 
-    Signature {
-        name: format!("promoted{:?}", promoted.as_usize()).into(),
-        attrs: Vec::new(),
-        retty: Some(retty),
-        args,
-        contract: Contract::new(),
-    }
-}
+//     Signature {
+//         name: format!("promoted{:?}", promoted.as_usize()).into(),
+//         attrs: Vec::new(),
+//         retty: Some(retty),
+//         args,
+//         contract: Contract::new(),
+//     }
+// }
 
 // According to @oli-obk, promoted bodies are:
 // > it's completely linear, not even conditions or asserts inside. we should probably document all that with validation

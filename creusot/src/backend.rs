@@ -7,7 +7,6 @@ use why3::{
 };
 
 use crate::{
-    clone_map::CloneMap,
     ctx::TranslationCtx,
     util::{
         self, ident_of, item_name, item_type, pre_sig_of, why3_attrs, AnonymousParamName, ItemType,
@@ -76,33 +75,6 @@ pub(crate) trait Cloner<'tcx> {
         vis: CloneVisibility,
         depth: CloneDepth,
     ) -> Vec<Decl>;
-}
-
-impl<'tcx> Cloner<'tcx> for CloneMap<'tcx> {
-    fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        self.value(def_id, subst)
-    }
-
-    fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        self.ty(def_id, subst)
-    }
-
-    fn accessor(&mut self, _: DefId, _: SubstsRef<'tcx>, _: usize, _: usize) -> QName {
-        todo!()
-    }
-
-    fn constructor(&mut self, _: DefId, _: SubstsRef<'tcx>, _: usize) -> QName {
-        todo!()
-    }
-
-    fn to_clones(
-        &mut self,
-        _: &mut TranslationCtx<'tcx>,
-        _: CloneVisibility,
-        _: CloneDepth,
-    ) -> Vec<Decl> {
-        todo!()
-    }
 }
 
 pub(crate) fn sig_to_why3<'tcx, C: Cloner<'tcx>>(
