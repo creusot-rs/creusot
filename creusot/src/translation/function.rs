@@ -320,7 +320,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     pub(crate) fn translate_place(&self, place: mir::Place<'tcx>) -> fmir::Place<'tcx> {
-        eprintln!("place: {place:?}");
         fmir::Place {
             local: place.local,
             ty: self.body.local_decls[place.local].ty,
@@ -642,19 +641,19 @@ pub(crate) fn closure_unnest2<'tcx>(
 ) -> Term<'tcx> {
     let env_ty = tcx.closure_env_ty(def_id, subst, RegionKind::ReErased).unwrap().peel_refs();
 
-    let self_ = Term { ty: env_ty, kind: TermKind::Var(Symbol::intern("_1'")), span: DUMMY_SP };
+    let self_ = Term { ty: env_ty, kind: TermKind::Var(Symbol::intern("self")), span: DUMMY_SP };
     let captures =
         tcx.typeck(def_id.expect_local()).closure_min_captures_flattened(def_id.expect_local());
 
     let mut unnest = Term::mk_true(tcx);
 
-    for (ix, capture) in captures.enumerate() {
+    for (ix, (capture, ty)) in captures.zip(subst.as_closure().upvar_tys()).enumerate() {
         match capture.info.capture_kind {
             // if we captured by value we get no unnesting predicate
             UpvarCapture::ByValue => continue,
             UpvarCapture::ByRef(is_mut) => {
                 let acc = |lhs: Term<'tcx>| Term {
-                    ty: capture.place.ty(),
+                    ty,
                     kind: TermKind::Projection {
                         lhs: box lhs,
                         name: ix.into(),
@@ -668,8 +667,6 @@ pub(crate) fn closure_unnest2<'tcx>(
                     Term { ty: env_ty, kind: TermKind::Var(Symbol::intern("_2'")), span: DUMMY_SP };
 
                 use rustc_middle::ty::BorrowKind;
-                eprintln!("capture: {capture:?}");
-                // eprintln!("capture: {:?}", capture.place.ty());
 
                 let unnest_one = match is_mut {
                     BorrowKind::ImmBorrow => Term {
@@ -687,12 +684,12 @@ pub(crate) fn closure_unnest2<'tcx>(
                         kind: TermKind::Binary {
                             op: pearlite::BinOp::Eq,
                             lhs: box Term {
-                                ty: capture.place.ty().builtin_deref(true).unwrap().ty,
+                                ty: ty.builtin_deref(false).unwrap().ty,
                                 kind: TermKind::Fin { term: box (acc)(fin) },
                                 span: DUMMY_SP,
                             },
                             rhs: box Term {
-                                ty: capture.place.ty().builtin_deref(true).unwrap().ty,
+                                ty: ty.builtin_deref(false).unwrap().ty,
                                 kind: TermKind::Fin { term: box (acc)(cur) },
                                 span: DUMMY_SP,
                             },

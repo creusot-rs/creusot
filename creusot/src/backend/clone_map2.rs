@@ -139,8 +139,7 @@ fn get_immediate_deps<'tcx>(
                     }
                     GenericArgKind::Lifetime(_) => {}
                     // TODO: slightly wrong if there are const args
-                    GenericArgKind::Const(_) => {}
-                    a => panic!("{a:?}"),
+                    GenericArgKind::Const(_) => {} // a => panic!("{a:?}"),
                 }
             }
             v
@@ -230,7 +229,6 @@ impl<'tcx> VisitDeps<'tcx> for PreSignature<'tcx> {
 
 impl<'tcx> VisitDeps<'tcx> for Expr<'tcx> {
     fn deps<F: FnMut(Dependency<'tcx>)>(&self, tcx: TyCtxt<'tcx>, f: &mut F) {
-        eprintln!("deps for {self:?}");
         match self {
             Expr::Place(p) => p.deps(tcx, f),
             Expr::Move(p) => p.deps(tcx, f),
@@ -331,7 +329,6 @@ impl<'tcx> VisitDeps<'tcx> for Body<'tcx> {
 impl<'tcx> VisitDeps<'tcx> for Place<'tcx> {
     fn deps<F: FnMut(Dependency<'tcx>)>(&self, tcx: TyCtxt<'tcx>, f: &mut F) {
         let mut ty = PlaceTy::from_ty(self.ty);
-        eprintln!("deps for {self:?}");
         for elem in self.projection {
             match elem {
                 PlaceElem::Field(ix, _) => {
@@ -375,9 +372,13 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<'tcx, F> {
                 }
             }
             TermKind::Projection { name, def, substs, .. } => {
-                let adt = self.tcx.adt_def(def);
-                let field = &adt.variants()[0u32.into()].fields[name.as_usize()];
-                (self.f)(Dependency::Item(field.did, substs))
+                if self.tcx.is_closure(*def) {
+                    (self.f)(Dependency::Item(*def, substs))
+                } else {
+                    let adt = self.tcx.adt_def(def);
+                    let field = &adt.variants()[0u32.into()].fields[name.as_usize()];
+                    (self.f)(Dependency::Item(field.did, substs))
+                }
             }
             TermKind::Lit(_) => {
                 self.visit_ty(term.ty);
@@ -442,13 +443,13 @@ fn program_dependencies<'tcx>(
     });
 
     if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
-        closure_contract2(ctx, def_id).iter().for_each(|(_, s, _)| {
+        closure_contract2(ctx, def_id).iter().for_each(|(_, s, t)| {
             s.deps(ctx.tcx, &mut |dep| {
                 deps.insert((DepLevel::Signature, dep));
             });
-            // t.deps(ctx.tcx, &mut |dep| {
-            //     deps.insert((DepLevel::Signature, dep));
-            // })
+            t.deps(ctx.tcx, &mut |dep| {
+                deps.insert((DepLevel::Signature, dep));
+            })
         });
     };
 
@@ -749,10 +750,10 @@ pub(crate) fn name_clones<'tcx>(
             None
         } else {
             let base_sym = match util::item_type(ctx.tcx, def_id) {
-                ItemType::Impl => ctx.tcx.item_name(ctx.tcx.trait_id_of_impl(def_id).unwrap()),
+                ItemType::Impl => ctx.item_name(ctx.trait_id_of_impl(def_id).unwrap()),
                 ItemType::Closure => Symbol::intern(&format!(
                     "closure{}",
-                    ctx.tcx.def_path(def_id).data.last().unwrap().disambiguator
+                    ctx.def_path(def_id).data.last().unwrap().disambiguator
                 )),
                 _ => Symbol::intern(&*util::item_name(ctx.tcx, def_id, Namespace::ValueNS)),
             };
@@ -796,7 +797,8 @@ impl<'a, 'tcx> Namer<'a, 'tcx> {
             .unwrap_or_else(|| panic!("no names for {:?}", self.id))
             .get((def_id, subst))
             .unwrap_or_else(|| {
-                eprintln!("{:?}", self.priors.prior.get(&self.id).unwrap());
+                // self.priors.prior.get(&self.id).unwrap().names.iter().for_each(|k| { eprintln!("{k:?}")});
+                // eprintln!("{:?}", self.priors.prior.get(&self.id).unwrap());
                 panic!("Could not find ({:?},{:?}) in dependencies of {:?}", def_id, subst, self.id)
             })
     }
@@ -830,18 +832,19 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
         variant: usize,
         ix: usize,
     ) -> QName {
-        let field = if util::item_type(self.tcx, def_id) == ItemType::Closure {
-            todo!()
-            // subst.as_closure().upvar_tys().nth(ix).unwrap()
+        if util::item_type(self.tcx, def_id) == ItemType::Closure {
+            QName {
+                module: self.ident(def_id, subst).into_iter().collect(),
+                name: format!("field_{}", ix).into(),
+            }
         } else {
-            &self.tcx.adt_def(def_id).variants()[variant.into()].fields[ix]
-        };
+            let field = &self.tcx.adt_def(def_id).variants()[variant.into()].fields[ix];
+            let base = self.ident(field.did, subst);
 
-        let base = self.ident(field.did, subst);
-
-        QName {
-            module: base.into_iter().collect(),
-            name: item_name(self.tcx, field.did, Namespace::ValueNS),
+            QName {
+                module: base.into_iter().collect(),
+                name: item_name(self.tcx, field.did, Namespace::ValueNS),
+            }
         }
     }
 
@@ -1103,13 +1106,13 @@ pub fn base_subst<'tcx>(
     use creusot_rustc::middle::ty::GenericParamDefKind;
     use heck::ToSnakeCase;
     loop {
-        if ctx.tcx.is_closure(def_id) {
-            def_id = ctx.tcx.parent(def_id);
+        if ctx.is_closure(def_id) {
+            def_id = ctx.parent(def_id);
         } else {
             break;
         }
     }
-    let trait_params = ctx.tcx.generics_of(def_id);
+    let trait_params = ctx.generics_of(def_id);
     let mut clone_subst = Vec::new();
 
     if subst.is_empty() {

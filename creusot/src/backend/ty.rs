@@ -19,7 +19,9 @@ use why3::{declaration::TyDecl, ty::Type as MlT, QName};
 use crate::{
     ctx::*,
     translation::{
-        function::all_generic_decls_for, pearlite::Term, specification::PreContract,
+        function::all_generic_decls_for,
+        pearlite::{Pattern, Term, TermKind},
+        specification::PreContract,
         ty::translate_ty_param,
     },
     util::{self, get_builtin, item_qname, PreSignature},
@@ -271,7 +273,7 @@ pub(crate) fn translate_projection_ty<'tcx, C: Cloner<'tcx>>(
 }
 
 use creusot_rustc::hir::def::DefKind;
-use rustc_middle::ty::DefIdTree;
+use rustc_middle::ty::{DefIdTree, TyKind};
 
 pub(crate) fn lower_accessor<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
@@ -351,7 +353,8 @@ pub(crate) fn build_accessor<'tcx>(
                 pats.push(pearlite::Pattern::Wildcard)
             }
         }
-        let p = pearlite::Pattern::Constructor { adt: def, substs, variant: ix, fields: pats };
+        let p =
+            pearlite::Pattern::Constructor { def_id: def.did(), substs, variant: ix, fields: pats };
         arms.push((p, exp))
     }
 
@@ -364,6 +367,63 @@ pub(crate) fn build_accessor<'tcx>(
     let exp = Term { ty, kind: TermKind::Match { scrutinee: box scrutinee, arms }, span: DUMMY_SP };
 
     (pre_sig, exp)
+}
+
+pub(crate) fn closure_accessors<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    closure: DefId,
+) -> Vec<(Symbol, PreSignature<'tcx>, Term<'tcx>)> {
+    let TyKind::Closure(_, substs) = ctx.type_of(closure).kind() else { unreachable!() };
+
+    let count = substs.as_closure().upvar_tys().count();
+
+    (0..count)
+        .map(|i| {
+            let (sig, term) = build_closure_accessor(ctx, closure, i);
+            (Symbol::intern(&format!("field_{i}")), sig, term)
+        })
+        .collect()
+}
+
+pub(crate) fn build_closure_accessor<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    closure: DefId,
+    ix: usize,
+) -> (PreSignature<'tcx>, Term<'tcx>) {
+    let TyKind::Closure(_, substs) = ctx.type_of(closure).kind() else { unreachable!() };
+
+    // let env_ty = ctx.closure_env_ty(closure, substs, ty::RegionKind::ReErased).unwrap().peel_refs();
+
+    let out_ty = substs.as_closure().upvar_tys().nth(ix).unwrap();
+
+    let pre_sig = PreSignature {
+        inputs: vec![(Symbol::intern("self"), DUMMY_SP, ctx.type_of(closure))],
+        output: out_ty,
+        contract: PreContract::new(),
+    };
+
+    let self_ = Term {
+        ty: ctx.type_of(closure),
+        kind: TermKind::Var(Symbol::intern("self")),
+        span: DUMMY_SP,
+    };
+
+    let res = Term { ty: out_ty, kind: TermKind::Var(Symbol::intern("a")), span: DUMMY_SP };
+
+    let mut fields: Vec<_> = substs.as_closure().upvar_tys().map(|_| Pattern::Wildcard).collect();
+    fields[ix] = Pattern::Binder(Symbol::intern("a"));
+
+    let term = Term {
+        ty: out_ty,
+        kind: TermKind::Let {
+            pattern: Pattern::Constructor { def_id: closure, substs, variant: 0u32.into(), fields },
+            arg: box self_,
+            body: box res,
+        },
+        span: DUMMY_SP,
+    };
+
+    (pre_sig, term)
 }
 
 pub(crate) fn intty_to_ty(ity: &creusot_rustc::middle::ty::IntTy) -> MlT {

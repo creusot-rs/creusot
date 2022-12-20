@@ -292,10 +292,10 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
 
     fn lower_pat(&mut self, pat: Pattern<'tcx>) -> Pat {
         match pat {
-            Pattern::Constructor { adt, variant, fields, substs } => {
+            Pattern::Constructor { def_id, variant, fields, substs } => {
                 // let variant = &adt.variants()[variant];
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
-                Pat::ConsP(self.names.constructor(adt.did(), substs, variant.as_usize()), fields)
+                Pat::ConsP(self.names.constructor(def_id, substs, variant.as_usize()), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => Pat::VarP(name.to_string().into()),

@@ -133,7 +133,7 @@ pub enum Literal<'tcx> {
 #[derive(Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]
 pub enum Pattern<'tcx> {
     Constructor {
-        adt: AdtDef<'tcx>,
+        def_id: DefId,
         substs: SubstsRef<'tcx>,
         variant: VariantIdx,
         fields: Vec<Pattern<'tcx>>,
@@ -507,7 +507,12 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     .map(|el| el.reduce(|_, a| a).1)
                     .collect();
 
-                Ok(Pattern::Constructor { adt: *adt_def, substs, variant: *variant_index, fields })
+                Ok(Pattern::Constructor {
+                    def_id: adt_def.did(),
+                    substs,
+                    variant: *variant_index,
+                    fields,
+                })
             }
             PatKind::Leaf { subpatterns } => {
                 let mut fields: Vec<_> = subpatterns
@@ -533,7 +538,12 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         .merge_join_by(fields, |i: &(Field, _), j: &(Field, _)| i.0.cmp(&j.0))
                         .map(|el| el.reduce(|_, a| a).1)
                         .collect();
-                    Ok(Pattern::Constructor { adt: *adt_def, substs, variant: 0u32.into(), fields })
+                    Ok(Pattern::Constructor {
+                        def_id: adt_def.did(),
+                        substs,
+                        variant: 0u32.into(),
+                        fields,
+                    })
                 }
             }
             PatKind::Deref { subpattern } => {
@@ -781,7 +791,7 @@ fn field_pattern(ty: Ty, field: Field) -> Option<Pattern> {
             let mut fields: Vec<_> = (0..variant.fields.len()).map(|_| Pattern::Wildcard).collect();
             fields[field.as_usize()] = Pattern::Binder(Symbol::intern("a"));
 
-            Some(Pattern::Constructor { adt: *adt, substs, variant: 0usize.into(), fields })
+            Some(Pattern::Constructor { def_id: adt.did(), substs, variant: 0usize.into(), fields })
         }
         _ => unreachable!("field_pattern: {:?}", ty),
     }

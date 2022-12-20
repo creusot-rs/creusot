@@ -22,7 +22,10 @@ use creusot_rustc::hir::def_id::DefId;
 use rustc_middle::ty::{SubstsRef, WithOptConstParam};
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    declaration::{AdtDecl, CfgFunction, ConstructorDecl, Decl, Field, Module, Predicate, TyDecl},
+    declaration::{
+        AdtDecl, CfgFunction, ConstructorDecl, Decl, Field, LetDecl, LetKind, Logic, Module,
+        Predicate, TyDecl, ValDecl,
+    },
     exp::{Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
@@ -32,7 +35,7 @@ use why3::{
 use super::{
     clone_map2::{CloneDepth, CloneVisibility, Namer},
     sig_to_why3, signature_of,
-    ty::{self, translate_ty},
+    ty::{self, closure_accessors, translate_ty},
     Cloner,
 };
 
@@ -56,6 +59,19 @@ pub(crate) fn stub_module<'tcx>(
             let env_ty = Decl::TyDecl(translate_closure_ty(ctx, names, def_id, subst));
             // let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
             decls.push(env_ty);
+
+            let acc = closure_accessors(ctx, def_id).into_iter().map(|(sym, sig, body)| -> Decl {
+                let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
+                sig.name = Ident::build(sym.as_str());
+                Decl::Let(LetDecl {
+                    kind: Some(LetKind::Function),
+                    sig,
+                    rec: false,
+                    ghost: false,
+                    body: lower_pure(ctx, &mut names, body),
+                })
+            });
+            decls.extend(acc);
 
             let fn_spec_traits: Vec<Decl> = closure_contract2(ctx, def_id)
                 .into_iter()
@@ -113,23 +129,26 @@ pub(crate) fn lower_closure<'tcx>(
     if ctx.tcx.is_closure(def_id) {
         if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
             let env_ty = Decl::TyDecl(translate_closure_ty(ctx, names, def_id, subst));
-            // let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
             decls.push(env_ty);
-            // decls.extend(accessors);
+
+            let acc = closure_accessors(ctx, def_id).into_iter().map(|(sym, sig, body)| -> Decl {
+                let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
+                sig.name = Ident::build(sym.as_str());
+                Decl::LogicDefn(Logic { sig, body: lower_pure(ctx, &mut names, body) })
+            });
+            decls.extend(acc);
+
+            let fn_spec_traits =
+                closure_contract2(ctx, def_id).into_iter().map(|(sym, sig, body)| {
+                    let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
+                    sig.name = Ident::build(sym.as_str());
+                    sig.retty = None;
+                    Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, &mut names, body) })
+                });
+            decls.extend(fn_spec_traits);
         }
     }
 
-    let fn_spec_traits: Vec<Decl> = closure_contract2(ctx, def_id)
-        .into_iter()
-        .map(|(sym, sig, body)| {
-            let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
-            sig.name = Ident::build(sym.as_str());
-            sig.retty = None;
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, &mut names, body) })
-        })
-        .collect();
-
-    decls.extend(fn_spec_traits);
     decls.push(func);
 
     let modl = Module { name: module_name(ctx, def_id), decls };
