@@ -180,8 +180,6 @@ pub(crate) fn translate_rplace_inner<'tcx, C: Cloner<'tcx>>(
                 TyKind::Adt(def, subst) => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
 
-                    // ctx.translate_accessor(variant.fields[ix.as_usize()].did);
-
                     let acc =
                         names.accessor(def.did(), subst, variant_id.as_usize(), ix.as_usize());
                     inner = Call(box Exp::impure_qvar(acc), vec![inner]);

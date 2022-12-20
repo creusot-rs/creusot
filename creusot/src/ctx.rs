@@ -36,7 +36,7 @@ pub struct TranslationCtx<'tcx> {
     extern_spec_items: HashMap<LocalDefId, DefId>,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     pub(crate) externs: Metadata<'tcx>,
-    fmir_body: IndexMap<DefId, fmir::Body<'tcx>>,
+    fmir_body: IndexMap<DefId, Option<fmir::Body<'tcx>>>,
     impl_data: HashMap<DefId, TraitImpl<'tcx>>,
     in_translation: Vec<IndexSet<DefId>>,
     laws: IndexMap<DefId, Vec<DefId>>,
@@ -161,7 +161,10 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 let fmir = translation::function::fmir(self, def_id);
                 self.fmir_body.insert(def_id, fmir);
             }
-            self.fmir_body.get(&def_id)
+            match self.fmir_body.get(&def_id) {
+                Some(o) => o.as_ref(),
+                None => None,
+            }
         } else {
             None
         }

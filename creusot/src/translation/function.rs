@@ -47,7 +47,14 @@ mod promoted;
 mod statement;
 pub(crate) mod terminator;
 
-pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> fmir::Body<'tcx> {
+pub(crate) fn fmir<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    def_id: DefId,
+) -> Option<fmir::Body<'tcx>> {
+    if !def_id.is_local() || !util::has_body(ctx, def_id) || util::is_trusted(ctx.tcx, def_id) {
+        return None;
+    }
+
     // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
     let (body, _) = ctx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
@@ -57,7 +64,7 @@ pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> fmir:
     SimplifyCfg::new("verify").run_pass(ctx.tcx, &mut body);
 
     let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, def_id);
-    func_translator.translate()
+    Some(func_translator.translate())
 }
 
 // Split this into several sub-contexts: Core, Analysis, Results?
@@ -313,6 +320,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     pub(crate) fn translate_place(&self, place: mir::Place<'tcx>) -> fmir::Place<'tcx> {
+        eprintln!("place: {place:?}");
         fmir::Place {
             local: place.local,
             ty: self.body.local_decls[place.local].ty,
@@ -660,6 +668,9 @@ pub(crate) fn closure_unnest2<'tcx>(
                     Term { ty: env_ty, kind: TermKind::Var(Symbol::intern("_2'")), span: DUMMY_SP };
 
                 use rustc_middle::ty::BorrowKind;
+                eprintln!("capture: {capture:?}");
+                // eprintln!("capture: {:?}", capture.place.ty());
+
                 let unnest_one = match is_mut {
                     BorrowKind::ImmBorrow => Term {
                         ty: tcx.types.bool,

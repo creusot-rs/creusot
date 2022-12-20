@@ -403,7 +403,8 @@ pub(crate) fn pre_sig_of<'tcx>(
         inputs.push((kw::Empty, DUMMY_SP, ctx.tcx.types.unit));
     };
 
-    PreSignature { inputs, output, contract }
+    let sig = PreSignature { inputs, output, contract };
+    ctx.try_normalize_erasing_regions(ctx.param_env(def_id), sig.clone()).unwrap_or(sig)
 }
 
 pub(crate) fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a AttrItem> {

@@ -159,7 +159,7 @@ pub(crate) fn to_why<'tcx>(
     mut names: Namer<'_, 'tcx>,
     def_id: DefId,
 ) -> Option<Decl> {
-    if !def_id.is_local() || !util::has_body(ctx, def_id) {
+    if !def_id.is_local() || !util::has_body(ctx, def_id) || util::is_trusted(ctx.tcx, def_id) {
         return None;
     }
 

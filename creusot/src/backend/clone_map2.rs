@@ -93,8 +93,13 @@ impl<'tcx> Dependency<'tcx> {
             TyKind::Projection(ProjectionTy { substs, item_def_id }) => {
                 Some(Self::Item(*item_def_id, substs))
             }
-            TyKind::Int(_) | TyKind::Uint(_) | TyKind::Ref(_, _, _) => Some(Self::BaseTy(ty)),
-            TyKind::Param(_) => None,
+            TyKind::Int(_)
+            | TyKind::Uint(_)
+            | TyKind::Ref(_, _, _)
+            | TyKind::Bool
+            | TyKind::Array(_, _) => Some(Self::BaseTy(ty)),
+            // Should this be tuple?
+            TyKind::Tuple(_) | TyKind::Param(_) => None,
             _ => unreachable!("{ty:?}"),
             // _ => Some(Self::BaseTy(ty)),
         }
@@ -133,6 +138,8 @@ fn get_immediate_deps<'tcx>(
                         ty.deps(tcx, &mut |dep| v.push((DepLevel::Body, dep)));
                     }
                     GenericArgKind::Lifetime(_) => {}
+                    // TODO: slightly wrong if there are const args
+                    GenericArgKind::Const(_) => {}
                     a => panic!("{a:?}"),
                 }
             }
@@ -223,6 +230,7 @@ impl<'tcx> VisitDeps<'tcx> for PreSignature<'tcx> {
 
 impl<'tcx> VisitDeps<'tcx> for Expr<'tcx> {
     fn deps<F: FnMut(Dependency<'tcx>)>(&self, tcx: TyCtxt<'tcx>, f: &mut F) {
+        eprintln!("deps for {self:?}");
         match self {
             Expr::Place(p) => p.deps(tcx, f),
             Expr::Move(p) => p.deps(tcx, f),
@@ -260,7 +268,7 @@ impl<'tcx> VisitDeps<'tcx> for RValue<'tcx> {
     fn deps<F: FnMut(Dependency<'tcx>)>(&self, tcx: TyCtxt<'tcx>, f: &mut F) {
         match self {
             RValue::Ghost(t) => t.deps(tcx, f),
-            RValue::Borrow(_) => {}
+            RValue::Borrow(p) => p.deps(tcx, f),
             RValue::Expr(e) => e.deps(tcx, f),
         }
     }
@@ -273,7 +281,10 @@ impl<'tcx> VisitDeps<'tcx> for Statement<'tcx> {
                 p.deps(tcx, f);
                 r.deps(tcx, f)
             }
-            Statement::Resolve(id, sub, _) => (f)(Dependency::Item(*id, sub)),
+            Statement::Resolve(id, sub, pl) => {
+                (f)(Dependency::Item(*id, sub));
+                pl.deps(tcx, f)
+            }
             Statement::Assertion(t) => t.deps(tcx, f),
             Statement::Invariant(_, t) => t.deps(tcx, f),
         }
@@ -320,6 +331,7 @@ impl<'tcx> VisitDeps<'tcx> for Body<'tcx> {
 impl<'tcx> VisitDeps<'tcx> for Place<'tcx> {
     fn deps<F: FnMut(Dependency<'tcx>)>(&self, tcx: TyCtxt<'tcx>, f: &mut F) {
         let mut ty = PlaceTy::from_ty(self.ty);
+        eprintln!("deps for {self:?}");
         for elem in self.projection {
             match elem {
                 PlaceElem::Field(ix, _) => {
@@ -818,7 +830,12 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
         variant: usize,
         ix: usize,
     ) -> QName {
-        let field = &self.tcx.adt_def(def_id).variants()[variant.into()].fields[ix];
+        let field = if util::item_type(self.tcx, def_id) == ItemType::Closure {
+            todo!()
+            // subst.as_closure().upvar_tys().nth(ix).unwrap()
+        } else {
+            &self.tcx.adt_def(def_id).variants()[variant.into()].fields[ix]
+        };
 
         let base = self.ident(field.did, subst);
 
@@ -1068,6 +1085,7 @@ fn base_ty_name(ty: Ty) -> QName {
         TyKind::Ref(_, _, _) => QName::from_string("prelude.Borrow").unwrap(),
         TyKind::Never => todo!(),
         TyKind::Tuple(_) => todo!(),
+        TyKind::Array(_, _) => QName::from_string("seq.Seq").unwrap(),
         _ => panic!("base_ty_name: can only be called on basic types. [{ty:?}]"),
     }
 }

@@ -1,7 +1,11 @@
 extern crate creusot_contracts;
+use creusot_contracts::*;
 
 fn omg() {
-    let mut v = Vec::new();
-    v.push(());
-    // v.push(0);
+    let mut a = 0;
+
+    (|| {
+        a += 1;
+        0
+    })();
 }

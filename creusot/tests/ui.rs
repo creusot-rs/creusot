@@ -153,17 +153,24 @@ where
             if success {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
                 writeln!(&mut out, "ok").unwrap();
+            } else if output.status.success() {
+                out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
+                writeln!(&mut out, "stale").unwrap();
+
+                // let wrt = BufferWriter::stdout(ColorChoice::Always);
+                // wrt.print(&buf).unwrap();
+                test_failures += 1;
             } else {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
                 writeln!(&mut out, "failure").unwrap();
+                // let wrt = BufferWriter::stdout(ColorChoice::Always);
+                // wrt.print(&buf).unwrap();
 
                 test_failures += 1;
             };
             out.reset().unwrap();
 
             buf.reset().unwrap();
-            let wrt = BufferWriter::stdout(ColorChoice::Always);
-            wrt.print(&buf).unwrap();
         }
     }
 

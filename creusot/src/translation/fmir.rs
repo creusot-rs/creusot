@@ -47,7 +47,7 @@ pub enum RValue<'tcx> {
     Expr(Expr<'tcx>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Expr<'tcx> {
     Place(Place<'tcx>),
     Move(Place<'tcx>),
