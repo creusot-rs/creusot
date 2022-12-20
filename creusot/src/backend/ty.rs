@@ -340,7 +340,7 @@ pub(crate) fn build_accessor<'tcx>(
 
     let mut arms = Vec::new();
 
-    use crate::pearlite::{self, TermKind};
+    use crate::pearlite;
     for (ix, v) in def.variants().iter_enumerated() {
         let mut pats = Vec::new();
         let mut exp = Term { kind: TermKind::Any, span: DUMMY_SP, ty };

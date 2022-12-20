@@ -24,7 +24,7 @@ use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     declaration::{
         AdtDecl, CfgFunction, ConstructorDecl, Decl, Field, LetDecl, LetKind, Logic, Module,
-        Predicate, TyDecl, ValDecl,
+        Predicate, TyDecl,
     },
     exp::{Exp, Pattern},
     mlcfg,

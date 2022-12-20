@@ -97,7 +97,8 @@ impl<'tcx> Dependency<'tcx> {
             | TyKind::Uint(_)
             | TyKind::Ref(_, _, _)
             | TyKind::Bool
-            | TyKind::Array(_, _) => Some(Self::BaseTy(ty)),
+            | TyKind::Array(_, _)
+            | TyKind::Slice(_) => Some(Self::BaseTy(ty)),
             // Should this be tuple?
             TyKind::Tuple(_) | TyKind::Param(_) => None,
             _ => unreachable!("{ty:?}"),
@@ -123,6 +124,10 @@ fn get_immediate_deps<'tcx>(
     let tcx = ctx.tcx;
     match item_type(ctx.tcx, def_id) {
         ItemType::Type => {
+            if util::is_trusted(tcx, def_id) {
+                return Vec::new();
+            }
+
             let substs = InternalSubsts::identity_for_item(ctx.tcx, def_id);
             let tys = ctx
                 .adt_def(def_id)
@@ -530,7 +535,9 @@ impl<'tcx> MonoGraph<'tcx> {
             });
 
             let to_add = get_immediate_deps(ctx, id);
-            // eprintln!("deps_of({id:?}, {subst:?}) :- {to_add:?}\n");
+            // if ctx.def_path_str(id).contains("counter") {
+            //     eprintln!("deps_of({id:?}, {subst:?}) :- {to_add:?}\n");
+            // }
 
             for (lvl, dep) in to_add {
                 let Dependency::Item(id, orig_subst) = dep else {
@@ -560,6 +567,7 @@ impl<'tcx> MonoGraph<'tcx> {
                 } else if can_resolve(ctx, (id, subst)) {
                     let tgt = resolve_opt(ctx.tcx, param_env, id, subst)
                         .unwrap_or_else(|| panic!("could not resolve {id:?} {subst:?}"));
+                    let tgt = ctx.try_normalize_erasing_regions(param_env, tgt).unwrap_or(tgt);
                     Some(Dependency::Item(tgt.0, tgt.1))
                 } else {
                     let tgt = ctx.normalize_erasing_regions(param_env, (id, subst));
@@ -797,7 +805,12 @@ impl<'a, 'tcx> Namer<'a, 'tcx> {
             .unwrap_or_else(|| panic!("no names for {:?}", self.id))
             .get((def_id, subst))
             .unwrap_or_else(|| {
-                // self.priors.prior.get(&self.id).unwrap().names.iter().for_each(|k| { eprintln!("{k:?}")});
+                // self.priors.prior.get(&self.id).unwrap().names.iter().for_each(|k| {
+                //     if self.tcx.def_path_str(k.0.0).contains("collect") {
+                //         eprintln!("{k:?}");
+                //     }
+
+                // });
                 // eprintln!("{:?}", self.priors.prior.get(&self.id).unwrap());
                 panic!("Could not find ({:?},{:?}) in dependencies of {:?}", def_id, subst, self.id)
             })
