@@ -13,7 +13,7 @@ pub(crate) mod ty;
 
 use crate::{
     backend::{
-        clone_map2::{Dependency, MonoGraph, PriorClones},
+        clone_map2::{Dependency, Id, MonoGraph, PriorClones},
         to_why3,
     },
     ctx::{self, load_extern_specs, ItemType},
@@ -82,13 +82,13 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
 
         debug!("Translating item {:?}", def_id);
         ctx.translate(def_id);
-        graph.add_root(&mut ctx, def_id);
+        graph.add_root(&mut ctx, def_id.into());
     }
 
     for impls in ctx.tcx.all_local_trait_impls(()).values() {
         for impl_id in impls {
             ctx.translate(impl_id.to_def_id());
-            graph.add_root(&mut ctx, impl_id.to_def_id());
+            graph.add_root(&mut ctx, impl_id.to_def_id().into());
         }
     }
 
@@ -113,14 +113,14 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
         let priors = PriorClones::from_graph(&mut ctx, &graph);
         // priors.debug(ctx.tcx);
         let mut modules = Vec::new();
-        let mut visited: HashSet<DefId> = HashSet::new();
+        let mut visited: HashSet<Id> = HashSet::new();
         for dep in graph.iter() {
             let Dependency::Item(id, _) = dep else { continue };
             if visited.contains(&id) {
                 continue;
             };
 
-            visited.extend(ctx.binding_group(id));
+            visited.extend(ctx.binding_group(id.0).into_iter().map(|b| Id::from(b)));
             // TODO: restore filtering functionality
             let output = box to_why3(&mut ctx, &priors, id).into_iter();
             // let output = if tcx.def_path_str(id).contains(matcher) {

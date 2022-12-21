@@ -46,6 +46,7 @@ use crate::{
         self, get_builtin, item_name, item_qname, item_type, module_name, pre_sig_of, PreSignature,
     },
 };
+use creusot_rustc::macros::{TyDecodable, TyEncodable};
 
 use super::Cloner;
 
@@ -53,10 +54,62 @@ use super::Cloner;
 // Implements a simpler version of CloneMap, split as two operations: gathering all the 'monomorphic' instances of functions / types used
 // and a second why3 specific pass turning that into clones (and later not into clones!)
 
+#[derive(
+    Clone,
+    Copy,
+    Hash,
+    PartialEq,
+    Eq,
+    Debug,
+    PartialOrd,
+    Ord,
+    TyEncodable,
+    TyDecodable,
+    TypeFoldable,
+    TypeVisitable,
+)]
+pub(crate) enum ClosureId {
+    Type,
+    Unnest,
+    Resolve,
+    Precondition,
+    PostconditionOnce,
+    PostconditionMut,
+    Postcondition,
+}
+
+#[derive(
+    Clone,
+    Copy,
+    Hash,
+    PartialEq,
+    Eq,
+    Debug,
+    PartialOrd,
+    Ord,
+    TyEncodable,
+    TyDecodable,
+    TypeFoldable,
+    TypeVisitable,
+)]
+pub struct Id(pub(crate) DefId, Option<ClosureId>);
+
+impl From<DefId> for Id {
+    fn from(value: DefId) -> Self {
+        Id(value, None)
+    }
+}
+
+impl From<&DefId> for Id {
+    fn from(value: &DefId) -> Self {
+        Id(*value, None)
+    }
+}
+
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug, PartialOrd, Ord, TypeFoldable, TypeVisitable)]
-pub enum Dependency<'tcx> {
+pub(crate) enum Dependency<'tcx> {
     // A normal, good Rust function or type
-    Item(DefId, SubstsRef<'tcx>),
+    Item(Id, SubstsRef<'tcx>),
     // Cannot be a tuple, adt or other composite type.
     // Can be, &mut, &, *mut, [T], [T; N], u32, i32, bool, etc..
     // TODO: Probably should relax this restriction and allow aggregate types and typarams in here
@@ -64,16 +117,16 @@ pub enum Dependency<'tcx> {
 }
 
 impl<'tcx> Dependency<'tcx> {
-    pub fn identity(tcx: TyCtxt<'tcx>, id: DefId) -> Self {
-        Dependency::Item(id, tcx.erase_regions(identity_substs_for(tcx, id)))
+    pub(crate) fn identity(tcx: TyCtxt<'tcx>, id: DefId) -> Self {
+        Dependency::Item(id.into(), tcx.erase_regions(identity_substs_for(tcx, id)))
     }
 
     fn as_ty(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
         match self {
             Self::BaseTy(ty) => ty,
-            Self::Item(id, substs) => match util::item_type(tcx, id) {
-                ItemType::AssocTy => tcx.mk_projection(id, substs),
-                ItemType::Type => tcx.mk_adt(tcx.adt_def(id), substs),
+            Self::Item(id, substs) => match util::item_type(tcx, id.0) {
+                ItemType::AssocTy => tcx.mk_projection(id.0, substs),
+                ItemType::Type => tcx.mk_adt(tcx.adt_def(id.0), substs),
                 _ => unreachable!(),
             },
         }
@@ -81,17 +134,17 @@ impl<'tcx> Dependency<'tcx> {
 
     fn as_item(&self) -> Option<(DefId, SubstsRef<'tcx>)> {
         match self {
-            Dependency::Item(id, s) => Some((*id, s)),
+            Dependency::Item(id, s) => Some((id.0, s)),
             Dependency::BaseTy(_) => None,
         }
     }
 
     fn from_ty(ty: Ty<'tcx>) -> Option<Self> {
         match ty.kind() {
-            TyKind::Adt(adt, subst) => Some(Self::Item(adt.did(), subst)),
-            TyKind::Closure(id, subst) => Some(Self::Item(*id, subst)),
+            TyKind::Adt(adt, subst) => Some(Self::Item(adt.did().into(), subst)),
+            TyKind::Closure(id, subst) => Some(Self::Item(Id(*id, Some(ClosureId::Type)), subst)),
             TyKind::Projection(ProjectionTy { substs, item_def_id }) => {
-                Some(Self::Item(*item_def_id, substs))
+                Some(Self::Item(item_def_id.into(), substs))
             }
             TyKind::Int(_)
             | TyKind::Uint(_)
@@ -119,9 +172,10 @@ pub enum DepLevel {
 // Eventually dependency tracking should probably move into main part of crate?
 fn get_immediate_deps<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
+    id: Id,
 ) -> Vec<(DepLevel, Dependency<'tcx>)> {
     let tcx = ctx.tcx;
+    let def_id = id.0;
     match item_type(ctx.tcx, def_id) {
         ItemType::Type => {
             if util::is_trusted(tcx, def_id) {
@@ -150,7 +204,12 @@ fn get_immediate_deps<'tcx>(
             v
         }
         ItemType::Logic | ItemType::Predicate => term_dependencies(ctx, def_id),
-        ItemType::Closure | ItemType::Program => program_dependencies(ctx, def_id),
+        ItemType::Closure => match id.1 {
+            Some(ClosureId::Type) => Vec::new(),
+            Some(_) => Vec::new(),
+            None => program_dependencies(ctx, def_id),
+        },
+        ItemType::Program => program_dependencies(ctx, def_id),
         // Fill out
         ItemType::AssocTy => {
             let mut deps = Vec::new();
@@ -204,7 +263,7 @@ trait VisitDeps<'tcx> {
 impl<'tcx> VisitDeps<'tcx> for TraitImpl<'tcx> {
     fn deps<F: FnMut(Dependency<'tcx>)>(&self, tcx: TyCtxt<'tcx>, f: &mut F) {
         self.refinements.iter().for_each(|r| {
-            (f)(Dependency::Item(r.trait_.0, r.trait_.1));
+            (f)(Dependency::Item(r.trait_.0.into(), r.trait_.1));
             r.refn.deps(tcx, f);
         })
     }
@@ -251,11 +310,11 @@ impl<'tcx> VisitDeps<'tcx> for Expr<'tcx> {
                     DefKind::Variant => tcx.parent(*id),
                     _ => *id,
                 };
-                (f)(Dependency::Item(id, sub));
+                (f)(Dependency::Item(id.into(), sub));
                 args.iter().for_each(|a| a.deps(tcx, f))
             }
             Expr::Call(id, sub, args) => {
-                (f)(Dependency::Item(*id, sub));
+                (f)(Dependency::Item(id.into(), sub));
                 args.iter().for_each(|a| a.deps(tcx, f))
             }
             Expr::Constant(e) => e.deps(tcx, f),
@@ -285,7 +344,7 @@ impl<'tcx> VisitDeps<'tcx> for Statement<'tcx> {
                 r.deps(tcx, f)
             }
             Statement::Resolve(id, sub, pl) => {
-                (f)(Dependency::Item(*id, sub));
+                (f)(Dependency::Item(id.into(), sub));
                 pl.deps(tcx, f)
             }
             Statement::Assertion(t) => t.deps(tcx, f),
@@ -309,7 +368,7 @@ impl<'tcx> VisitDeps<'tcx> for Terminator<'tcx> {
 impl<'tcx> VisitDeps<'tcx> for Branches<'tcx> {
     fn deps<F: FnMut(Dependency<'tcx>)>(&self, _: TyCtxt<'tcx>, f: &mut F) {
         match self {
-            Branches::Constructor(adt, sub, _, _) => (f)(Dependency::Item(adt.did(), sub)),
+            Branches::Constructor(adt, sub, _, _) => (f)(Dependency::Item(adt.did().into(), sub)),
             _ => {}
         }
     }
@@ -343,7 +402,7 @@ impl<'tcx> VisitDeps<'tcx> for Place<'tcx> {
                             let variant = &def.variants()[variant_id];
                             let field = &variant.fields[ix.as_usize()];
 
-                            (f)(Dependency::Item(field.did, subst))
+                            (f)(Dependency::Item(field.did.into(), subst))
                             // eprintln!("{:?}", field);
                         }
                         _ => {}
@@ -361,7 +420,7 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<'tcx, F> {
     fn visit_term(&mut self, term: &Term<'tcx>) {
         match &term.kind {
             TermKind::Binary { .. } => (self.f)(Dependency::Item(
-                self.tcx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap(),
+                self.tcx.get_diagnostic_item(Symbol::intern("creusot_int")).unwrap().into(),
                 List::empty(),
             )),
             TermKind::Item(id, subst) => (self.f)(Dependency::Item(*id, subst)),
@@ -371,18 +430,18 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<'tcx, F> {
             }
             TermKind::Constructor { adt: _, variant: _, fields: _ } => {
                 if let TyKind::Adt(def, subst) = term.ty.kind() {
-                    (self.f)(Dependency::Item(def.did(), subst))
+                    (self.f)(Dependency::Item(def.did().into(), subst))
                 } else {
                     unreachable!()
                 }
             }
             TermKind::Projection { name, def, substs, .. } => {
-                if self.tcx.is_closure(*def) {
+                if self.tcx.is_closure(def.0) {
                     (self.f)(Dependency::Item(*def, substs))
                 } else {
-                    let adt = self.tcx.adt_def(def);
+                    let adt = self.tcx.adt_def(def.0);
                     let field = &adt.variants()[0u32.into()].fields[name.as_usize()];
-                    (self.f)(Dependency::Item(field.did, substs))
+                    (self.f)(Dependency::Item(field.did.into(), substs))
                 }
             }
             TermKind::Lit(_) => {
@@ -399,12 +458,14 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TypeVisitor<'tcx> for TermDep<'tcx, F> {
         match t.kind() {
             TyKind::Adt(def, sub) => {
                 sub.visit_with(self);
-                (self.f)(Dependency::Item(def.did(), *sub))
+                (self.f)(Dependency::Item(def.did().into(), *sub))
             }
             TyKind::Closure(def, sub) => {
-                (self.f)(Dependency::Item(*def, sub));
+                (self.f)(Dependency::Item(Id(*def, Some(ClosureId::Type)), sub));
             }
-            TyKind::Projection(pty) => (self.f)(Dependency::Item(pty.item_def_id, pty.substs)),
+            TyKind::Projection(pty) => {
+                (self.f)(Dependency::Item(pty.item_def_id.into(), pty.substs))
+            }
             TyKind::Int(_) | TyKind::Uint(_) => (self.f)(Dependency::BaseTy(t)),
             TyKind::Ref(_, _, Mutability::Mut) => (self.f)(Dependency::BaseTy(t)),
             TyKind::RawPtr(_) => (self.f)(Dependency::BaseTy(t)),
@@ -479,9 +540,9 @@ type MonoGraphInner<'tcx> = DiGraphMap<Dependency<'tcx>, (DepLevel, EdgeType<'tc
 
 #[derive(Default)]
 pub struct MonoGraph<'tcx> {
-    pub graph: MonoGraphInner<'tcx>,
+    pub(crate) graph: MonoGraphInner<'tcx>,
     level: IndexMap<Dependency<'tcx>, DepLevel>,
-    pub roots: IndexMap<DefId, Dependency<'tcx>>,
+    pub(crate) roots: IndexMap<DefId, Dependency<'tcx>>,
     // roots?
 }
 
@@ -500,20 +561,21 @@ impl<'tcx> TypeVisitor<'tcx> for PrintParam {
     }
 }
 impl<'tcx> MonoGraph<'tcx> {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         MonoGraph { ..Default::default() }
     }
 
     // FIXME: Make `finished` a part of the graph state. Currently, we will do a bunch of work retraversing the graph over and over again.
-    pub fn add_root(&mut self, ctx: &mut TranslationCtx<'tcx>, def_id: DefId) {
-        let root = Dependency::identity(ctx.tcx, def_id);
-        if self.roots.insert(def_id, root).is_some() {
+    pub(crate) fn add_root(&mut self, ctx: &mut TranslationCtx<'tcx>, def_id: Id) {
+        // FIXME: WRONG
+        let root = Dependency::identity(ctx.tcx, def_id.0);
+        if self.roots.insert(def_id.0, root).is_some() {
             return;
         }
 
         let mut to_visit = vec![root];
         let mut finished = HashSet::new();
-        let param_env = ctx.erase_regions(ctx.param_env(def_id));
+        let param_env = ctx.erase_regions(ctx.param_env(def_id.0));
 
         while let Some(next) = to_visit.pop() {
             // eprintln!("visiting {:?}", next);
@@ -548,27 +610,27 @@ impl<'tcx> MonoGraph<'tcx> {
                 let subst = EarlyBinder(orig_subst).subst(ctx.tcx, subst);
 
                 // TODO: clean up
-                let tgt = if let Some(tgt) = is_closure_hack(ctx.tcx, id, subst) {
+                let tgt = if let Some(tgt) = is_closure_hack(ctx.tcx, id.0, subst) {
                     Some(Dependency::Item(tgt.0, tgt.1))
-                } else if util::item_type(ctx.tcx, id) == ItemType::AssocTy {
-                    let proj_ty = ProjectionTy { item_def_id: id, substs: subst };
+                } else if util::item_type(ctx.tcx, id.0) == ItemType::AssocTy {
+                    let proj_ty = ProjectionTy { item_def_id: id.0, substs: subst };
                     let ty = ctx.mk_ty(TyKind::Projection(proj_ty));
 
                     let normed = ctx.try_normalize_erasing_regions(param_env, ty);
                     trace!("normed {ty:?} into {normed:?}");
                     if let Ok(normed) = normed && ty != normed {
                         match normed.kind() {
-                            TyKind::Projection(pty) => Some(Dependency::Item(pty.item_def_id, pty.substs)),
+                            TyKind::Projection(pty) => Some(Dependency::Item(pty.item_def_id.into(), pty.substs)),
                             _ => Dependency::from_ty(normed),
                         }
                     } else {
                         Dependency::from_ty(ty)
                     }
-                } else if can_resolve(ctx, (id, subst)) {
-                    let tgt = resolve_opt(ctx.tcx, param_env, id, subst)
+                } else if can_resolve(ctx, (id.0, subst)) {
+                    let tgt = resolve_opt(ctx.tcx, param_env, id.0, subst)
                         .unwrap_or_else(|| panic!("could not resolve {id:?} {subst:?}"));
                     let tgt = ctx.try_normalize_erasing_regions(param_env, tgt).unwrap_or(tgt);
-                    Some(Dependency::Item(tgt.0, tgt.1))
+                    Some(Dependency::Item(tgt.0.into(), tgt.1))
                 } else {
                     let tgt = ctx.normalize_erasing_regions(param_env, (id, subst));
                     Some(Dependency::Item(tgt.0, tgt.1))
@@ -579,12 +641,17 @@ impl<'tcx> MonoGraph<'tcx> {
                     self.add_edge(
                         ctx.tcx,
                         tgt,
-                        Dependency::identity(ctx.tcx, id),
+                        Dependency::identity(ctx.tcx, id.0),
                         (lvl, EdgeType::Fake),
                     );
                     self.add_root(ctx, id);
 
-                    self.add_edge(ctx.tcx, next, tgt, (lvl, EdgeType::Refinement(id, orig_subst)));
+                    self.add_edge(
+                        ctx.tcx,
+                        next,
+                        tgt,
+                        (lvl, EdgeType::Refinement(id.0, orig_subst)),
+                    );
 
                     to_visit.push(tgt);
                 }
@@ -598,7 +665,7 @@ impl<'tcx> MonoGraph<'tcx> {
         }
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = Dependency<'tcx>> + '_ {
+    pub(crate) fn iter(&self) -> impl Iterator<Item = Dependency<'tcx>> + '_ {
         MonoGraphIter {
             walker: DfsPostOrder::empty(&self.graph),
             roots: self.roots.values().cloned(),
@@ -660,17 +727,20 @@ fn is_closure_hack<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
     subst: SubstsRef<'tcx>,
-) -> Option<(DefId, SubstsRef<'tcx>)> {
-    if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), def_id)
-        || tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id)
-        || tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id)
-        || tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id)
-        || tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id)
-    {
+) -> Option<(Id, SubstsRef<'tcx>)> {
+    if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), def_id) {
+        return Some((Id(def_id, Some(ClosureId::Precondition)), subst));
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id) {
+        return Some((Id(def_id, Some(ClosureId::PostconditionOnce)), subst));
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id) {
+        return Some((Id(def_id, Some(ClosureId::PostconditionMut)), subst));
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id) {
+        return Some((Id(def_id, Some(ClosureId::Postcondition)), subst));
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id) {
         debug!("is_closure_hack: {:?}", def_id);
         let self_ty = subst.types().nth(1).unwrap();
         if let TyKind::Closure(id, csubst) = self_ty.kind() {
-            return Some((*id, csubst));
+            return Some((Id(*id, Some(ClosureId::Unnest)), csubst));
         }
     };
 
@@ -679,42 +749,57 @@ fn is_closure_hack<'tcx>(
     {
         let self_ty = subst.types().nth(0).unwrap();
         if let TyKind::Closure(id, csubst) = self_ty.kind() {
-            return Some((*id, csubst));
+            return Some((Id(*id, Some(ClosureId::Resolve)), csubst));
         }
     }
 
     None
 }
 
-// With `is_closure_hack`, we are doing redundant work, which should be cleaned up..
-fn hacked_closure_ids<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Vec<(DefId, SubstsRef<'tcx>)> {
-    let subst = match tcx.type_of(def_id).kind() {
-        TyKind::Closure(_, subst) => subst,
-        // probably should panic instead
-        _ => return Vec::new(),
-    };
+// // With `is_closure_hack`, we are doing redundant work, which should be cleaned up..
+// fn hacked_closure_ids<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Vec<(Id, SubstsRef<'tcx>)> {
+//     let subst = match tcx.type_of(def_id).kind() {
+//         TyKind::Closure(_, subst) => subst,
+//         // probably should panic instead
+//         _ => return Vec::new(),
+//     };
 
-    let env_ty = tcx.closure_env_ty(def_id, subst, RegionKind::ReErased).unwrap().peel_refs();
+//     let env_ty = tcx.closure_env_ty(def_id, subst, RegionKind::ReErased).unwrap().peel_refs();
 
-    let args = subst.as_closure().sig().inputs().skip_binder()[0];
-    let fn_trait_subst = tcx.mk_substs([GenericArg::from(args), GenericArg::from(env_ty)].iter());
+//     let args = subst.as_closure().sig().inputs().skip_binder()[0];
+//     let fn_trait_subst = tcx.mk_substs([GenericArg::from(args), GenericArg::from(env_ty)].iter());
 
-    vec![
-        (tcx.get_diagnostic_item(Symbol::intern("fn_once_impl_precond")).unwrap(), fn_trait_subst),
-        (tcx.get_diagnostic_item(Symbol::intern("fn_once_impl_postcond")).unwrap(), fn_trait_subst),
-        (tcx.get_diagnostic_item(Symbol::intern("fn_mut_impl_postcond")).unwrap(), fn_trait_subst),
-        (tcx.get_diagnostic_item(Symbol::intern("fn_impl_postcond")).unwrap(), fn_trait_subst),
-        (tcx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap(), fn_trait_subst),
-        (
-            tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_default")).unwrap(),
-            tcx.mk_substs([GenericArg::from(env_ty)].iter()),
-        ),
-        (
-            tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap(),
-            tcx.mk_substs([GenericArg::from(env_ty)].iter()),
-        ),
-    ]
-}
+//     vec![
+//         (
+//             Id(tcx.get_diagnostic_item(Symbol::intern("fn_once_impl_precond")).unwrap(), None),
+//             fn_trait_subst,
+//         ),
+//         (
+//             Id(tcx.get_diagnostic_item(Symbol::intern("fn_once_impl_postcond")).unwrap(), None),
+//             fn_trait_subst,
+//         ),
+//         (
+//             Id(tcx.get_diagnostic_item(Symbol::intern("fn_mut_impl_postcond")).unwrap(), None),
+//             fn_trait_subst,
+//         ),
+//         (
+//             Id(tcx.get_diagnostic_item(Symbol::intern("fn_impl_postcond")).unwrap(), None),
+//             fn_trait_subst,
+//         ),
+//         (
+//             Id(tcx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap(), None),
+//             fn_trait_subst,
+//         ),
+//         (
+//             Id(tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_default")).unwrap(), None),
+//             tcx.mk_substs([GenericArg::from(env_ty)].iter()),
+//         ),
+//         (
+//             Id(tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap(), None),
+//             tcx.mk_substs([GenericArg::from(env_ty)].iter()),
+//         ),
+//     ]
+// }
 
 fn can_resolve<'tcx>(ctx: &mut TranslationCtx<'tcx>, dep: (DefId, SubstsRef<'tcx>)) -> bool {
     ctx.trait_of_item(dep.0).is_some()
@@ -722,11 +807,11 @@ fn can_resolve<'tcx>(ctx: &mut TranslationCtx<'tcx>, dep: (DefId, SubstsRef<'tcx
 
 #[derive(Debug)]
 pub struct Names<'tcx> {
-    names: IndexMap<(DefId, SubstsRef<'tcx>), Option<why3::Ident>>,
+    names: IndexMap<(Id, SubstsRef<'tcx>), Option<why3::Ident>>,
 }
 
 impl<'tcx> Names<'tcx> {
-    pub(super) fn get(&self, tgt: (DefId, SubstsRef<'tcx>)) -> Option<Option<why3::Ident>> {
+    pub(super) fn get(&self, tgt: (Id, SubstsRef<'tcx>)) -> Option<Option<why3::Ident>> {
         self.names.get(&tgt).cloned()
     }
 
@@ -746,7 +831,7 @@ pub(crate) fn name_clones<'tcx>(
     graph: &MonoGraph<'tcx>,
     root: Dependency<'tcx>,
 ) -> Names<'tcx> {
-    let mut names = IndexMap::new();
+    let mut names: IndexMap<(Id, _), _> = IndexMap::new();
     let mut assigned = IndexMap::new();
     let walk = DfsPostOrder::new(&graph.graph, root);
 
@@ -754,29 +839,29 @@ pub(crate) fn name_clones<'tcx>(
     for node in walk.iter(&graph.graph) {
         let Dependency::Item(def_id, subst) = node else { continue };
 
-        let clone_name: Option<why3::Ident> = if ctx.binding_group(root_id).contains(&def_id) {
+        let clone_name: Option<why3::Ident> = if ctx.binding_group(root_id).contains(&def_id.0) {
             None
         } else {
-            let base_sym = match util::item_type(ctx.tcx, def_id) {
-                ItemType::Impl => ctx.item_name(ctx.trait_id_of_impl(def_id).unwrap()),
+            let base_sym = match util::item_type(ctx.tcx, def_id.0) {
+                ItemType::Impl => ctx.item_name(ctx.trait_id_of_impl(def_id.0).unwrap()),
                 ItemType::Closure => Symbol::intern(&format!(
                     "closure{}",
-                    ctx.def_path(def_id).data.last().unwrap().disambiguator
+                    ctx.def_path(def_id.0).data.last().unwrap().disambiguator
                 )),
-                _ => Symbol::intern(&*util::item_name(ctx.tcx, def_id, Namespace::ValueNS)),
+                _ => Symbol::intern(&*util::item_name(ctx.tcx, def_id.0, Namespace::ValueNS)),
             };
             let count = assigned.entry(base_sym).and_modify(|c| *c += 1).or_insert(0);
 
             Some(format!("{}{}", base_sym.as_str().to_upper_camel_case(), count).into())
         };
 
-        if ctx.is_closure(def_id) {
-            hacked_closure_ids(ctx.tcx, def_id).into_iter().for_each(|e| {
-                names.insert(e, clone_name.clone());
-            });
-        };
+        // if ctx.is_closure(def_id.0) {
+        //     hacked_closure_ids(ctx.tcx, def_id.0).into_iter().for_each(|e| {
+        //         names.insert(e, clone_name.clone());
+        //     });
+        // };
 
-        names.insert((def_id, subst), clone_name);
+        names.insert((def_id.0.into(), subst), clone_name);
     }
 
     Names { names }
@@ -785,19 +870,19 @@ pub(crate) fn name_clones<'tcx>(
 // Temporary, eventually provided via a cached query
 // A map of the public clones in each definition
 pub struct PriorClones<'a, 'tcx> {
-    prior: IndexMap<DefId, Names<'tcx>>,
+    prior: IndexMap<Id, Names<'tcx>>,
     graph: &'a MonoGraph<'tcx>,
 }
 
 #[derive(Clone, Copy)]
 pub struct Namer<'a, 'tcx> {
     priors: &'a PriorClones<'a, 'tcx>,
-    id: DefId,
+    id: Id,
     tcx: TyCtxt<'tcx>,
 }
 
 impl<'a, 'tcx> Namer<'a, 'tcx> {
-    fn ident(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> Option<why3::Ident> {
+    fn ident(&mut self, def_id: Id, subst: SubstsRef<'tcx>) -> Option<why3::Ident> {
         let (def_id, subst) = self.tcx.erase_regions((def_id, subst));
         self.priors
             .prior
@@ -805,12 +890,11 @@ impl<'a, 'tcx> Namer<'a, 'tcx> {
             .unwrap_or_else(|| panic!("no names for {:?}", self.id))
             .get((def_id, subst))
             .unwrap_or_else(|| {
-                // self.priors.prior.get(&self.id).unwrap().names.iter().for_each(|k| {
-                //     if self.tcx.def_path_str(k.0.0).contains("collect") {
-                //         eprintln!("{k:?}");
-                //     }
-
-                // });
+                self.priors.prior.get(&self.id).unwrap().names.iter().for_each(|k| {
+                    // if self.tcx.def_path_str(k.0.0).contains("collect") {
+                    eprintln!("{k:?}");
+                    // }
+                });
                 // eprintln!("{:?}", self.priors.prior.get(&self.id).unwrap());
                 panic!("Could not find ({:?},{:?}) in dependencies of {:?}", def_id, subst, self.id)
             })
@@ -818,41 +902,35 @@ impl<'a, 'tcx> Namer<'a, 'tcx> {
 }
 
 impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
-    fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
-        if let Some(b) = get_builtin(self.tcx, def_id) {
+    fn value(&mut self, def_id: Id, subst: SubstsRef<'tcx>) -> QName {
+        if let Some(b) = get_builtin(self.tcx, def_id.0) {
             return QName::from_string(&b.as_str()).unwrap().without_search_path();
         }
 
         let base = self.ident(def_id, subst);
         QName {
             module: base.into_iter().collect(),
-            name: item_name(self.tcx, def_id, Namespace::ValueNS),
+            name: item_name(self.tcx, def_id.0, Namespace::ValueNS),
         }
     }
 
-    fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+    fn ty(&mut self, def_id: Id, subst: SubstsRef<'tcx>) -> QName {
         let base = self.ident(def_id, subst);
         QName {
             module: base.into_iter().collect(),
-            name: item_name(self.tcx, def_id, Namespace::TypeNS),
+            name: item_name(self.tcx, def_id.0, Namespace::TypeNS),
         }
     }
 
-    fn accessor(
-        &mut self,
-        def_id: DefId,
-        subst: SubstsRef<'tcx>,
-        variant: usize,
-        ix: usize,
-    ) -> QName {
-        if util::item_type(self.tcx, def_id) == ItemType::Closure {
+    fn accessor(&mut self, def_id: Id, subst: SubstsRef<'tcx>, variant: usize, ix: usize) -> QName {
+        if util::item_type(self.tcx, def_id.0) == ItemType::Closure {
             QName {
-                module: self.ident(def_id, subst).into_iter().collect(),
+                module: self.ident(def_id.into(), subst).into_iter().collect(),
                 name: format!("field_{}", ix).into(),
             }
         } else {
-            let field = &self.tcx.adt_def(def_id).variants()[variant.into()].fields[ix];
-            let base = self.ident(field.did, subst);
+            let field = &self.tcx.adt_def(def_id.0).variants()[variant.into()].fields[ix];
+            let base = self.ident(field.did.into(), subst);
 
             QName {
                 module: base.into_iter().collect(),
@@ -861,13 +939,13 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
         }
     }
 
-    fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>, variant: usize) -> QName {
-        let variant_id = match util::item_type(self.tcx, def_id) {
-            ItemType::Closure => def_id,
-            ItemType::Type => self.tcx.adt_def(def_id).variants()[variant.into()].def_id,
+    fn constructor(&mut self, def_id: Id, subst: SubstsRef<'tcx>, variant: usize) -> QName {
+        let variant_id = match util::item_type(self.tcx, def_id.0) {
+            ItemType::Closure => def_id.0,
+            ItemType::Type => self.tcx.adt_def(def_id.0).variants()[variant.into()].def_id,
             _ => unreachable!(),
         };
-        let base = self.ident(def_id, subst);
+        let base = self.ident(def_id.into(), subst);
         let mut name = item_name(self.tcx, variant_id, Namespace::ValueNS);
         name.capitalize();
         QName { module: base.into_iter().collect(), name }
@@ -879,7 +957,7 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
         vis: CloneVisibility,
         depth: CloneDepth,
     ) -> Vec<Decl> {
-        make_clones(ctx, *self, vis, depth, self.id)
+        make_clones(ctx, *self, vis, depth, self.id.0)
     }
 }
 
@@ -908,7 +986,7 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
                 &|_, (src, tgt, (_, typ))| {
                     let (id, _) = src.as_item().unwrap();
                     let x = if let Some((tgt, subst)) = tgt.as_item() &&
-                        let Some(Some(idnt)) = self.prior[&id].get((tgt, subst)) {
+                        let Some(Some(idnt)) = self.prior[&Id::from(id)].get((tgt.into(), subst)) {
                         idnt.to_string()
                     } else {
                         String::new()
@@ -924,7 +1002,7 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
                 &|_, n| {
                     match n.0 {
                         Dependency::Item(id, s) => {
-                            format!("label = \"{}, {:?}\"", tcx.item_name(id), s)
+                            format!("label = \"{}, {:?}\"", tcx.item_name(id.0), s)
                         }
                         Dependency::BaseTy(ty) => format!("label = \"{:?}\"", ty),
                     }
@@ -934,7 +1012,7 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
     }
 
     pub(crate) fn get(&'a self, tcx: TyCtxt<'tcx>, inside: DefId) -> Namer<'a, 'tcx> {
-        Namer { priors: self, id: inside, tcx }
+        Namer { priors: self, id: inside.into(), tcx }
     }
 }
 
@@ -950,7 +1028,7 @@ fn identity_substs_for<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> SubstsRef<'tcx
 }
 
 // Transform a graph into a set of clones
-pub fn make_clones<'tcx, 'a>(
+pub(crate) fn make_clones<'tcx, 'a>(
     ctx: &mut TranslationCtx<'tcx>,
     priors: Namer<'a, 'tcx>,
     vis: CloneVisibility,
@@ -994,27 +1072,27 @@ pub fn make_clones<'tcx, 'a>(
             }
         };
 
-        if ctx.binding_group(root_id).contains(&id) {
+        if ctx.binding_group(root_id).contains(&id.0) {
             continue;
         }
 
-        if let Some(builtin) = get_builtin(ctx.tcx, id) {
+        if let Some(builtin) = get_builtin(ctx.tcx, id.0) {
             let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
             uses.push(Decl::UseDecl(Use { name: name.clone(), as_: None }));
             continue;
         };
 
-        if matches!(item_type(ctx.tcx, id), ItemType::Type) {
-            let name = item_qname(ctx, id, Namespace::TypeNS).module_qname();
-            let as_name = names.value(id, subst).module_ident().unwrap().clone();
+        if matches!(item_type(ctx.tcx, id.0), ItemType::Type) {
+            let name = item_qname(ctx, id.0, Namespace::TypeNS).module_qname();
+            let as_name = names.value(id.0.into(), subst).module_ident().unwrap().clone();
             uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(as_name) }));
 
             continue;
         };
 
-        let mut clone_subst = base_subst(ctx, names, id, subst);
+        let mut clone_subst = base_subst(ctx, names, id.0, subst);
 
-        let mut node_names = priors.get(ctx.tcx, id);
+        let mut node_names = priors.get(ctx.tcx, id.0);
 
         for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
             if priors.graph.level[&dep] < desired_dep_level {
@@ -1026,7 +1104,7 @@ pub fn make_clones<'tcx, 'a>(
             };
 
             // TODO: introduce a notion of opacity to address this
-            if item_type(ctx.tcx, id) == ItemType::Program
+            if item_type(ctx.tcx, id.0) == ItemType::Program
                 && priors.graph.level[&dep] == DepLevel::Body
             {
                 continue;
@@ -1049,8 +1127,8 @@ pub fn make_clones<'tcx, 'a>(
                 continue;
             };
 
-            let src = node_names.value(orig_id, orig_subst);
-            let tgt = dep.as_item().map(|(id, subst)| names.value(id, subst));
+            let src = node_names.value(orig_id.into(), orig_subst);
+            let tgt = dep.as_item().map(|(id, subst)| names.value(id.into(), subst));
 
             let sub = match item_type(ctx.tcx, orig_id) {
                 ItemType::Logic => CloneSubst::Function(src, tgt.unwrap()),
@@ -1066,9 +1144,9 @@ pub fn make_clones<'tcx, 'a>(
         }
 
         let clone = DeclClone {
-            name: cloneable_name(ctx, id, depth),
+            name: cloneable_name(ctx, id.0, depth),
             subst: clone_subst,
-            kind: CloneKind::Named(names.value(id, subst).module_ident().unwrap().clone()),
+            kind: CloneKind::Named(names.value(id.0.into(), subst).module_ident().unwrap().clone()),
         };
 
         clones.push(Decl::Clone(clone));
@@ -1110,7 +1188,7 @@ fn base_ty_name(ty: Ty) -> QName {
 // PreludeModule::Ref => QName::from_string("Ref").unwrap(),
 // PreludeModule::Seq => QName::from_string("seq.Seq").unwrap(),
 
-pub fn base_subst<'tcx>(
+pub(crate) fn base_subst<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     mut names: Namer<'_, 'tcx>,
     mut def_id: DefId,

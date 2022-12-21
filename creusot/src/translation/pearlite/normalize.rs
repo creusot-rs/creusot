@@ -33,26 +33,26 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
                 *id = *fid;
                 *subst = fsubst;
 
-                if self.tcx.def_path_str(*id) == "std::boxed::Box::<T>::new" {
+                if self.tcx.def_path_str(id.0) == "std::boxed::Box::<T>::new" {
                     let arg = args.remove(0);
                     *term = arg;
                     return;
                 }
 
-                if let Some(opt) = optimize_builtin(self.tcx, *id, args) {
+                if let Some(opt) = optimize_builtin(self.tcx, id.0, args) {
                     term.kind = opt;
                 }
             }
             TermKind::Item(id, subst) => {
-                let method = if self.tcx.trait_of_item(*id).is_some() {
-                    resolve_opt(self.tcx, self.param_env, *id, subst).unwrap_or_else(|| {
+                let method = if self.tcx.trait_of_item(id.0).is_some() {
+                    resolve_opt(self.tcx, self.param_env, id.0, subst).unwrap_or_else(|| {
                         panic!("could not resolve trait instance {:?}", (*id, *subst))
                     })
                 } else {
                     // TODO dont' do this
-                    (*id, *subst)
+                    (id.0, *subst)
                 };
-                *id = method.0;
+                *id = method.0.into();
                 *subst = method.1;
             }
             _ => {}

@@ -64,12 +64,12 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
             }
             // FIXME: this is a weird dance.
             TermKind::Item(id, subst) => {
-                let method = (id, subst);
+                let method = (id.0, subst);
                 debug!("resolved_method={:?}", method);
                 self.lookup_builtin(method, &mut Vec::new()).unwrap_or_else(|| {
                     // eprintln!("{id:?} {subst:?}");
                     let clone = self.names.value(id, subst);
-                    match self.ctx.type_of(id).kind() {
+                    match self.ctx.type_of(id.0).kind() {
                         TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
                         _ => Exp::pure_qvar(clone),
                     }
@@ -142,14 +142,14 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
                     args = vec![Exp::Tuple(vec![])];
                 }
 
-                let method = (id, subst);
+                let method = (id.0, subst);
 
-                if is_identity_from(self.ctx.tcx, id, method.1) {
+                if is_identity_from(self.ctx.tcx, id.0, method.1) {
                     return args.remove(0);
                 }
 
                 self.lookup_builtin(method, &mut args).unwrap_or_else(|| {
-                    let clone = self.names.value(method.0, method.1);
+                    let clone = self.names.value(method.0.into(), method.1);
                     if self.pure == Purity::Program {
                         mk_binders(Exp::QVar(clone, self.pure), args)
                     } else {
@@ -176,7 +176,7 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
 
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
-                let ctor = self.names.constructor(adt.did(), subst, variant.as_usize());
+                let ctor = self.names.constructor(adt.did().into(), subst, variant.as_usize());
                 Exp::Constructor { ctor, args }
             }
             TermKind::Cur { box term } => Exp::Current(box self.lower_term(term)),
@@ -222,10 +222,10 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
             }
             TermKind::Projection { box lhs, name, def: did, substs } => {
                 let lhs = self.lower_term(lhs);
-                let accessor = match util::item_type(self.ctx.tcx, did) {
+                let accessor = match util::item_type(self.ctx.tcx, did.0) {
                     ItemType::Closure => {
-                        let TyKind::Closure(did, subst) = self.ctx.type_of(did).kind() else { unreachable!() };
-                        self.names.accessor(*did, subst, 0, name.as_usize())
+                        let TyKind::Closure(did, subst) = self.ctx.type_of(did.0).kind() else { unreachable!() };
+                        self.names.accessor(did.into(), subst, 0, name.as_usize())
                     }
                     _ => self.names.accessor(did, substs, 0, name.as_usize()),
                 };
@@ -295,7 +295,10 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
             Pattern::Constructor { def_id, variant, fields, substs } => {
                 // let variant = &adt.variants()[variant];
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
-                Pat::ConsP(self.names.constructor(def_id, substs, variant.as_usize()), fields)
+                Pat::ConsP(
+                    self.names.constructor(def_id.into(), substs, variant.as_usize()),
+                    fields,
+                )
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => Pat::VarP(name.to_string().into()),

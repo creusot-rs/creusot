@@ -99,14 +99,14 @@ pub(crate) fn translate_closure_ty<'tcx>(
     did: DefId,
     subst: SubstsRef<'tcx>,
 ) -> TyDecl {
-    let ty_name = names.ty(did, subst).name;
+    let ty_name = names.ty(did.into(), subst).name;
     let closure_subst = subst.as_closure();
     let fields: Vec<_> = closure_subst
         .upvar_tys()
         .map(|uv| Field { ty: translate_ty(ctx, &mut names, DUMMY_SP, uv), ghost: false })
         .collect();
 
-    let cons_name = names.constructor(did, subst, 0).name;
+    let cons_name = names.constructor(did.into(), subst, 0).name;
     let kind = AdtDecl {
         ty_name,
         ty_params: vec![],
@@ -272,13 +272,13 @@ impl<'tcx> Expr<'tcx> {
             Expr::Constructor(id, ix, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, body)).collect();
 
-                let ctor = names.constructor(id, subst, ix.as_usize());
+                let ctor = names.constructor(id.into(), subst, ix.as_usize());
                 Exp::Constructor { ctor, args }
             }
             Expr::Call(id, subst, args) => {
                 let mut args: Vec<_> =
                     args.into_iter().map(|a| a.to_why(ctx, names, body)).collect();
-                let fname = names.value(id, subst);
+                let fname = names.value(id.into(), subst);
 
                 let exp = if ctx.is_closure(id) {
                     assert!(args.len() == 2, "closures should only have two arguments (env, args)");
@@ -489,7 +489,7 @@ impl<'tcx> Branches<'tcx> {
                         let variant = &adt.variant(var);
                         let wilds = variant.fields.iter().map(|_| Pattern::Wildcard).collect();
 
-                        let cons_name = names.constructor(adt.did(), substs, var.as_usize());
+                        let cons_name = names.constructor(adt.did().into(), substs, var.as_usize());
                         (Pattern::ConsP(cons_name, wilds), Goto(BlockId(bb.into())))
                     })
                     .chain(std::iter::once((Pattern::Wildcard, Goto(BlockId(def.into())))))
@@ -558,7 +558,7 @@ impl<'tcx> Statement<'tcx> {
                 exps
             }
             Statement::Resolve(id, subst, pl) => {
-                let rp = Exp::impure_qvar(names.value(id, subst));
+                let rp = Exp::impure_qvar(names.value(id.into(), subst));
 
                 let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, Some(body)));
                 vec![mlcfg::Statement::Assume(assume)]

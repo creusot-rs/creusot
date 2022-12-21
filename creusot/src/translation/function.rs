@@ -509,11 +509,11 @@ pub(crate) fn closure_contract2<'tcx>(
         postcondition = postcondition.conj(Term {
             ty: ctx.types.bool,
             kind: TermKind::Call {
-                id: unnest_id,
+                id: unnest_id.into(),
                 subst: unnest_subst,
                 fun: Box::new(Term {
                     ty: EarlyBinder(ctx.type_of(unnest_id)).subst(ctx.tcx, unnest_subst),
-                    kind: TermKind::Item(unnest_id, unnest_subst),
+                    kind: TermKind::Item(unnest_id.into(), unnest_subst),
                     span: DUMMY_SP,
                 }),
                 args: vec![
@@ -599,7 +599,7 @@ fn closure_resolve2<'tcx>(
             kind: TermKind::Projection {
                 lhs: box self_.clone(),
                 name: ix.into(),
-                def: def_id,
+                def: def_id.into(),
                 substs: InternalSubsts::identity_for_item(ctx.tcx, def_id),
             },
             span: DUMMY_SP,
@@ -610,11 +610,11 @@ fn closure_resolve2<'tcx>(
             resolve = Term {
                 ty: ctx.types.bool,
                 kind: TermKind::Call {
-                    id,
+                    id: id.into(),
                     subst,
                     fun: box Term {
                         ty: ctx.type_of(id),
-                        kind: TermKind::Item(id, subst),
+                        kind: TermKind::Item(id.into(), subst),
                         span: DUMMY_SP,
                     },
                     args: vec![proj],
@@ -657,7 +657,7 @@ pub(crate) fn closure_unnest2<'tcx>(
                     kind: TermKind::Projection {
                         lhs: box lhs,
                         name: ix.into(),
-                        def: def_id,
+                        def: def_id.into(),
                         substs: InternalSubsts::identity_for_item(tcx, def_id),
                     },
                     span: DUMMY_SP,

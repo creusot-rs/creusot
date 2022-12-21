@@ -80,7 +80,7 @@ fn translate_ty_inner<'tcx, C: Cloner<'tcx>>(
             {
                 MlT::TConstructor(builtin.without_search_path())
             } else {
-                MlT::TConstructor(names.ty(def.did(), s))
+                MlT::TConstructor(names.ty(def.did().into(), s))
             };
 
             let args = s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
@@ -133,7 +133,7 @@ fn translate_ty_inner<'tcx, C: Cloner<'tcx>>(
                 return MlT::Tuple(Vec::new());
             }
 
-            MlT::TConstructor(names.ty(*id, subst))
+            MlT::TConstructor(names.ty(id.into(), subst))
         }
         FnDef(_, _) =>
         /* FnDef types are effectively singleton types, so it is sound to translate to unit. */
@@ -220,7 +220,7 @@ pub(super) fn build_ty_decl<'tcx, C: Cloner<'tcx>>(
                     Field { ty, ghost }
                 })
                 .collect();
-            let var_name = names.constructor(adt.did(), substs, ix.as_usize()).name;
+            let var_name = names.constructor(adt.did().into(), substs, ix.as_usize()).name;
 
             ml_ty_def.push(ConstructorDecl { name: var_name, fields: field_tys });
         }
@@ -268,7 +268,7 @@ pub(crate) fn translate_projection_ty<'tcx, C: Cloner<'tcx>>(
     names: &mut C,
     pty: &ProjectionTy<'tcx>,
 ) -> MlT {
-    let name = names.ty(pty.item_def_id, pty.substs);
+    let name = names.ty(pty.item_def_id.into(), pty.substs);
     MlT::TConstructor(name)
 }
 

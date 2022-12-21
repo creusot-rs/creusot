@@ -8,6 +8,7 @@
 use std::collections::HashSet;
 
 use crate::{
+    backend::clone_map2::Id,
     error::{CrErr, CreusotResult, Error},
     translation::specification::PurityVisitor,
     util,
@@ -78,13 +79,13 @@ pub enum TermKind<'tcx> {
     Any,
     Var(Symbol),
     Lit(Literal<'tcx>),
-    Item(DefId, SubstsRef<'tcx>),
+    Item(Id, SubstsRef<'tcx>),
     Binary { op: BinOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Unary { op: UnOp, arg: Box<Term<'tcx>> },
     Forall { binder: (Symbol, Ty<'tcx>), body: Box<Term<'tcx>> },
     Exists { binder: (Symbol, Ty<'tcx>), body: Box<Term<'tcx>> },
     // TODO: Get rid of (id, subst).
-    Call { id: DefId, subst: SubstsRef<'tcx>, fun: Box<Term<'tcx>>, args: Vec<Term<'tcx>> },
+    Call { id: Id, subst: SubstsRef<'tcx>, fun: Box<Term<'tcx>>, args: Vec<Term<'tcx>> },
     Constructor { adt: AdtDef<'tcx>, variant: VariantIdx, fields: Vec<Term<'tcx>> },
     Tuple { fields: Vec<Term<'tcx>> },
     Cur { term: Box<Term<'tcx>> },
@@ -92,7 +93,7 @@ pub enum TermKind<'tcx> {
     Impl { lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
     Match { scrutinee: Box<Term<'tcx>>, arms: Vec<(Pattern<'tcx>, Term<'tcx>)> },
     Let { pattern: Pattern<'tcx>, arg: Box<Term<'tcx>>, body: Box<Term<'tcx>> },
-    Projection { lhs: Box<Term<'tcx>>, name: Field, def: DefId, substs: SubstsRef<'tcx> },
+    Projection { lhs: Box<Term<'tcx>>, name: Field, def: Id, substs: SubstsRef<'tcx> },
     Old { term: Box<Term<'tcx>> },
     Closure { args: Vec<Pattern<'tcx>>, body: Box<Term<'tcx>> },
     Reborrow { cur: Box<Term<'tcx>>, fin: Box<Term<'tcx>> },
@@ -375,7 +376,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                         Ok(Term {
                             ty,
                             span,
-                            kind: TermKind::Call { id, subst, fun: box fun, args },
+                            kind: TermKind::Call { id: id.into(), subst, fun: box fun, args },
                         })
                     }
                 }
@@ -450,16 +451,16 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             // ExprKind::Array { ref fields } => todo!("Array {:?}", fields),
             ExprKind::NonHirLiteral { .. } => match ty.kind() {
                 TyKind::FnDef(id, substs) => {
-                    Ok(Term { ty, span, kind: TermKind::Item(*id, substs) })
+                    Ok(Term { ty, span, kind: TermKind::Item(id.into(), substs) })
                 }
                 _ => Err(Error::new(thir_term.span, "unhandled literal expression")),
             },
             ExprKind::NamedConst { def_id, substs, .. } => {
-                Ok(Term { ty, span, kind: TermKind::Item(def_id, substs) })
+                Ok(Term { ty, span, kind: TermKind::Item(def_id.into(), substs) })
             }
             ExprKind::ZstLiteral { .. } => match ty.kind() {
                 TyKind::FnDef(def_id, subst) => {
-                    Ok(Term { ty, span, kind: TermKind::Item(*def_id, subst) })
+                    Ok(Term { ty, span, kind: TermKind::Item(def_id.into(), subst) })
                 }
                 _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             },
@@ -696,7 +697,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
         match &lhs.ty.kind() {
             TyKind::Adt(def, substs) => {
-                Ok(TermKind::Projection { lhs: box lhs, name, def: def.did(), substs })
+                Ok(TermKind::Projection { lhs: box lhs, name, def: def.did().into(), substs })
             }
             TyKind::Tuple(_) => {
                 Ok(TermKind::Let {

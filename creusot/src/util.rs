@@ -506,7 +506,7 @@ impl<'tcx> ClosureSubst<'tcx> {
             kind: TermKind::Projection {
                 lhs: box self_,
                 name: ix,
-                def: self.def_id,
+                def: self.def_id.into(),
                 substs: self.substs,
             },
             span: DUMMY_SP,
@@ -541,7 +541,7 @@ impl<'tcx> ClosureSubst<'tcx> {
             kind: TermKind::Projection {
                 lhs: box self_,
                 name: ix,
-                def: self.def_id,
+                def: self.def_id.into(),
                 substs: self.substs,
             },
             span: DUMMY_SP,

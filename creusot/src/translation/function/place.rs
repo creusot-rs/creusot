@@ -79,7 +79,7 @@ pub(crate) fn create_assign_inner<'tcx, C: Cloner<'tcx>>(
 
                     varexps[ix.as_usize()] = inner;
 
-                    let tyname = names.constructor(def.did(), subst, variant_id.as_usize());
+                    let tyname = names.constructor(def.did().into(), subst, variant_id.as_usize());
 
                     // names.insert(def.did(), subst);
                     inner = Let {
@@ -118,7 +118,7 @@ pub(crate) fn create_assign_inner<'tcx, C: Cloner<'tcx>>(
 
                     varexps[ix.as_usize()] = inner;
 
-                    let cons = names.constructor(*id, subst, 0);
+                    let cons = names.constructor(id.into(), subst, 0);
 
                     inner = Let {
                         pattern: ConsP(cons.clone(), field_pats),
@@ -180,8 +180,12 @@ pub(crate) fn translate_rplace_inner<'tcx, C: Cloner<'tcx>>(
                 TyKind::Adt(def, subst) => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
 
-                    let acc =
-                        names.accessor(def.did(), subst, variant_id.as_usize(), ix.as_usize());
+                    let acc = names.accessor(
+                        def.did().into(),
+                        subst,
+                        variant_id.as_usize(),
+                        ix.as_usize(),
+                    );
                     inner = Call(box Exp::impure_qvar(acc), vec![inner]);
                 }
                 TyKind::Tuple(fields) => {
@@ -196,7 +200,7 @@ pub(crate) fn translate_rplace_inner<'tcx, C: Cloner<'tcx>>(
                 }
                 TyKind::Closure(id, subst) => {
                     inner = Call(
-                        box Exp::impure_qvar(names.accessor(*id, subst, 0, ix.as_usize())),
+                        box Exp::impure_qvar(names.accessor(id.into(), subst, 0, ix.as_usize())),
                         vec![inner],
                     );
                 }

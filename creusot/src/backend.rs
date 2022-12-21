@@ -15,7 +15,7 @@ use crate::{
 };
 
 use self::{
-    clone_map2::{CloneDepth, CloneVisibility, PriorClones},
+    clone_map2::{CloneDepth, CloneVisibility, Id, PriorClones},
     constant::translate_constant,
     logic::translate_logic_or_predicate,
     program::{lower_closure, lower_function},
@@ -34,40 +34,34 @@ pub(crate) mod ty;
 pub(crate) fn to_why3<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     priors: &PriorClones<'_, 'tcx>,
-    def_id: DefId,
+    id: Id,
 ) -> Vec<Module> {
-    match util::item_type(ctx.tcx, def_id) {
+    match util::item_type(ctx.tcx, id.0) {
         ItemType::Logic | ItemType::Predicate => {
-            translate_logic_or_predicate(ctx, priors.get(ctx.tcx, def_id), def_id)
+            translate_logic_or_predicate(ctx, priors.get(ctx.tcx, id.0), id.0)
         }
-        ItemType::Program => lower_function(ctx, priors.get(ctx.tcx, def_id), def_id),
-        ItemType::Closure => lower_closure(ctx, priors.get(ctx.tcx, def_id), def_id),
+        ItemType::Program => lower_function(ctx, priors.get(ctx.tcx, id.0), id.0),
+        ItemType::Closure => lower_closure(ctx, priors.get(ctx.tcx, id.0), id.0),
         ItemType::Trait => Vec::new(),
-        ItemType::Impl => vec![lower_impl(ctx, priors.get(ctx.tcx, def_id), def_id)],
+        ItemType::Impl => vec![lower_impl(ctx, priors.get(ctx.tcx, id.0), id.0)],
         ItemType::Type => {
-            translate_tydecl(ctx, &mut priors.get(ctx.tcx, def_id), def_id).into_iter().collect()
+            translate_tydecl(ctx, &mut priors.get(ctx.tcx, id.0), id.0).into_iter().collect()
         }
-        ItemType::AssocTy => vec![translate_assoc_ty(ctx, priors.get(ctx.tcx, def_id), def_id)],
-        ItemType::Constant => translate_constant(ctx, priors.get(ctx.tcx, def_id), def_id),
-        ItemType::Field => lower_accessor(ctx, priors.get(ctx.tcx, def_id), def_id),
+        ItemType::AssocTy => vec![translate_assoc_ty(ctx, priors.get(ctx.tcx, id.0), id.0)],
+        ItemType::Constant => translate_constant(ctx, priors.get(ctx.tcx, id.0), id.0),
+        ItemType::Field => lower_accessor(ctx, priors.get(ctx.tcx, id.0), id.0),
         ItemType::Unsupported(_) => panic!("unsupported declaration"),
     }
 }
 
 pub(crate) trait Cloner<'tcx> {
-    fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName;
+    fn value(&mut self, def_id: Id, subst: SubstsRef<'tcx>) -> QName;
 
-    fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName;
+    fn ty(&mut self, def_id: Id, subst: SubstsRef<'tcx>) -> QName;
 
-    fn accessor(
-        &mut self,
-        def_id: DefId,
-        subst: SubstsRef<'tcx>,
-        variant: usize,
-        ix: usize,
-    ) -> QName;
+    fn accessor(&mut self, def_id: Id, subst: SubstsRef<'tcx>, variant: usize, ix: usize) -> QName;
 
-    fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>, variant: usize) -> QName;
+    fn constructor(&mut self, def_id: Id, subst: SubstsRef<'tcx>, variant: usize) -> QName;
 
     fn to_clones(
         &mut self,
