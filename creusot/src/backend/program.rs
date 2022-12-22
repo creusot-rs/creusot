@@ -54,66 +54,9 @@ pub(crate) fn stub_module<'tcx>(
     let mut decls: Vec<_> = Vec::new();
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx, CloneVisibility::Interface, CloneDepth::Shallow));
-    if ctx.tcx.is_closure(def_id) {
-        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-            let env_ty = Decl::TyDecl(translate_closure_ty(ctx, names, def_id, subst));
-            // let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
-            decls.push(env_ty);
-
-            let acc = closure_accessors(ctx, def_id).into_iter().map(|(sym, sig, body)| -> Decl {
-                let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
-                sig.name = Ident::build(sym.as_str());
-                Decl::Let(LetDecl {
-                    kind: Some(LetKind::Function),
-                    sig,
-                    rec: false,
-                    ghost: false,
-                    body: lower_pure(ctx, &mut names, body),
-                })
-            });
-            decls.extend(acc);
-
-            let fn_spec_traits: Vec<Decl> = closure_contract2(ctx, def_id)
-                .into_iter()
-                .map(|(sym, sig, body)| {
-                    let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
-                    sig.name = Ident::build(sym.as_str());
-                    sig.retty = None;
-                    Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, &mut names, body) })
-                })
-                .collect();
-
-            decls.extend(fn_spec_traits);
-            // decls.extend(accessors);
-        }
-    }
-
     decls.push(decl);
 
     Module { name, decls }
-}
-
-pub(crate) fn translate_closure_ty<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    mut names: Namer<'_, 'tcx>,
-    did: DefId,
-    subst: SubstsRef<'tcx>,
-) -> TyDecl {
-    let ty_name = names.ty(did.into(), subst).name;
-    let closure_subst = subst.as_closure();
-    let fields: Vec<_> = closure_subst
-        .upvar_tys()
-        .map(|uv| Field { ty: translate_ty(ctx, &mut names, DUMMY_SP, uv), ghost: false })
-        .collect();
-
-    let cons_name = names.constructor(did.into(), subst, 0).name;
-    let kind = AdtDecl {
-        ty_name,
-        ty_params: vec![],
-        constrs: vec![ConstructorDecl { name: cons_name, fields }],
-    };
-
-    TyDecl::Adt { tys: vec![kind] }
 }
 
 pub(crate) fn lower_closure<'tcx>(
@@ -125,30 +68,6 @@ pub(crate) fn lower_closure<'tcx>(
     let mut decls: Vec<_> = Vec::new();
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep));
-
-    if ctx.tcx.is_closure(def_id) {
-        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-            let env_ty = Decl::TyDecl(translate_closure_ty(ctx, names, def_id, subst));
-            decls.push(env_ty);
-
-            let acc = closure_accessors(ctx, def_id).into_iter().map(|(sym, sig, body)| -> Decl {
-                let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
-                sig.name = Ident::build(sym.as_str());
-                Decl::LogicDefn(Logic { sig, body: lower_pure(ctx, &mut names, body) })
-            });
-            decls.extend(acc);
-
-            let fn_spec_traits =
-                closure_contract2(ctx, def_id).into_iter().map(|(sym, sig, body)| {
-                    let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
-                    sig.name = Ident::build(sym.as_str());
-                    sig.retty = None;
-                    Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, &mut names, body) })
-                });
-            decls.extend(fn_spec_traits);
-        }
-    }
-
     decls.push(func);
 
     let modl = Module { name: module_name(ctx, def_id), decls };

@@ -1,7 +1,8 @@
 use crate::{
+    backend::clone_map2::is_closure_hack,
     pearlite::{self, Literal, Term, TermKind},
     translation::traits::resolve_opt,
-    util::get_builtin,
+    util::{get_builtin, PreSignature},
 };
 use creusot_rustc::{
     hir::def_id::DefId,
@@ -11,8 +12,18 @@ use creusot_rustc::{
 
 use super::{super_visit_mut_term, BinOp, TermVisitorMut};
 
+// Need `TermVisitable` trait?
+
 pub(crate) fn normalize<'tcx>(tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>, term: &mut Term<'tcx>) {
     NormalizeTerm { param_env, tcx }.visit_mut_term(term);
+}
+
+pub(crate) fn normalize_sig<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    sig: &mut PreSignature<'tcx>,
+) {
+    sig.contract = sig.contract.clone().normalize(tcx, param_env);
 }
 
 struct NormalizeTerm<'tcx> {
@@ -44,15 +55,20 @@ impl<'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'tcx> {
                 }
             }
             TermKind::Item(id, subst) => {
-                let method = if self.tcx.trait_of_item(id.0).is_some() {
-                    resolve_opt(self.tcx, self.param_env, id.0, subst).unwrap_or_else(|| {
-                        panic!("could not resolve trait instance {:?}", (*id, *subst))
+                let method: (_, _) = self
+                    .tcx
+                    .trait_of_item(id.0)
+                    .map(|_| {
+                        let (id, subst) = resolve_opt(self.tcx, self.param_env, id.0, subst)
+                            .unwrap_or_else(|| {
+                                panic!("could not resolve trait instance {:?}", (*id, *subst))
+                            });
+                        (id.into(), subst)
                     })
-                } else {
-                    // TODO dont' do this
-                    (id.0, *subst)
-                };
-                *id = method.0.into();
+                    .unwrap_or((*id, *subst));
+
+                let method = is_closure_hack(self.tcx, method.0, method.1).unwrap_or(method);
+                *id = method.0;
                 *subst = method.1;
             }
             _ => {}

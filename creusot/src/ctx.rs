@@ -12,8 +12,7 @@ use crate::{
         traits::TraitImpl,
         ty::ty_binding_group,
     },
-    util,
-    util::item_type,
+    util::{self, item_type, pre_sig_of, PreSignature},
 };
 use creusot_rustc::{
     errors::{DiagnosticBuilder, DiagnosticId},
@@ -44,6 +43,7 @@ pub struct TranslationCtx<'tcx> {
     repr_elem: HashMap<DefId, DefId>,
     pub(crate) tcx: TyCtxt<'tcx>,
     terms: IndexMap<DefId, Term<'tcx>>,
+    sigs: HashMap<DefId, PreSignature<'tcx>>,
     translated_items: IndexSet<DefId>,
     ty_binding_groups: HashMap<DefId, IndexSet<DefId>>,
 }
@@ -75,6 +75,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             fmir_body: Default::default(),
             repr_elem: Default::default(),
             impl_data: Default::default(),
+            sigs: Default::default(),
         }
     }
 
@@ -187,6 +188,16 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         } else {
             None
         }
+    }
+
+    pub(crate) fn sig(&mut self, def_id: DefId) -> &PreSignature<'tcx> {
+        if !self.sigs.contains_key(&def_id) {
+            let mut term = pre_sig_of(self, def_id);
+            pearlite::normalize_sig(self.tcx, self.param_env(def_id), &mut term);
+
+            self.sigs.insert(def_id, term);
+        };
+        self.sigs.get(&def_id).unwrap()
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {

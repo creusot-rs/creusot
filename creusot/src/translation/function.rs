@@ -13,7 +13,7 @@ use crate::{
         specification::PreContract,
         traits,
     },
-    util::{self, ident_of, is_ghost_closure, pre_sig_of, PreSignature},
+    util::{self, ident_of, is_ghost_closure, PreSignature},
 };
 use creusot_rustc::{
     borrowck::borrow_set::BorrowSet,
@@ -371,7 +371,14 @@ impl LocalIdent {
     }
 }
 
-type ClosureContract<'tcx> = Vec<(Symbol, PreSignature<'tcx>, Term<'tcx>)>;
+pub(crate) struct ClosureContract<'tcx> {
+    pub(crate) resolve: (PreSignature<'tcx>, Term<'tcx>),
+    pub(crate) precond: (PreSignature<'tcx>, Term<'tcx>),
+    pub(crate) postcond_once: Option<(PreSignature<'tcx>, Term<'tcx>)>,
+    pub(crate) postcond_mut: Option<(PreSignature<'tcx>, Term<'tcx>)>,
+    pub(crate) postcond: Option<(PreSignature<'tcx>, Term<'tcx>)>,
+    pub(crate) unnest: Option<(PreSignature<'tcx>, Term<'tcx>)>,
+}
 
 pub(crate) fn closure_contract2<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
@@ -381,7 +388,7 @@ pub(crate) fn closure_contract2<'tcx>(
     let TyKind::Closure(_, subst) =  ctx.tcx.type_of(def_id).kind() else { unreachable!() };
 
     let kind = subst.as_closure().kind();
-    let mut pre_clos_sig = pre_sig_of(ctx, def_id);
+    let mut pre_clos_sig = ctx.sig(def_id).clone();
 
     let mut postcondition: Term<'_> = pre_clos_sig.contract.ensures_conj(ctx.tcx);
     let mut precondition: Term<'_> = pre_clos_sig.contract.requires_conj(ctx.tcx);
@@ -440,12 +447,11 @@ pub(crate) fn closure_contract2<'tcx>(
     // TODO: Fix body of expression which uses `result` as identifier
     post_sig.inputs.push((Symbol::intern("result'"), DUMMY_SP, result_ty));
 
-    let mut contracts = Vec::new();
     let env_ty =
         ctx.tcx.closure_env_ty(def_id, subst, ty::RegionKind::ReErased).unwrap().peel_refs();
     let self_ty = env_ty;
 
-    {
+    let precond = {
         // Preconditions are the same for every kind of closure
         let mut pre_sig = pre_sig;
 
@@ -464,8 +470,17 @@ pub(crate) fn closure_contract2<'tcx>(
         let mut precondition = precondition.clone();
         subst.visit_mut_term(&mut precondition);
 
-        contracts.push((Symbol::intern("precondition"), pre_sig, precondition));
-    }
+        (pre_sig, precondition)
+    };
+
+    let mut contracts = ClosureContract {
+        resolve: closure_resolve2(ctx, def_id, subst),
+        precond,
+        postcond: None,
+        postcond_once: None,
+        postcond_mut: None,
+        unnest: None,
+    };
 
     if kind <= Fn {
         let mut post_sig = post_sig.clone();
@@ -478,7 +493,7 @@ pub(crate) fn closure_contract2<'tcx>(
 
         csubst.visit_mut_term(&mut postcondition);
 
-        contracts.push((Symbol::intern("postcondition"), post_sig, postcondition));
+        contracts.postcond = Some((post_sig, postcondition));
     }
 
     if kind <= FnMut {
@@ -544,14 +559,10 @@ pub(crate) fn closure_contract2<'tcx>(
             span: DUMMY_SP,
         });
 
-        let unnest_sig = EarlyBinder(pre_sig_of(ctx, unnest_id)).subst(ctx.tcx, unnest_subst);
+        let unnest_sig = EarlyBinder(ctx.sig(unnest_id).clone()).subst(ctx.tcx, unnest_subst);
 
-        contracts.push((
-            Symbol::intern("unnest"),
-            unnest_sig,
-            closure_unnest2(ctx.tcx, def_id, subst),
-        ));
-        contracts.push((Symbol::intern("postcondition_mut"), post_sig, postcondition));
+        contracts.unnest = Some((unnest_sig, closure_unnest2(ctx.tcx, def_id, subst)));
+        contracts.postcond_mut = Some((post_sig, postcondition));
     }
 
     if kind <= FnOnce {
@@ -571,10 +582,8 @@ pub(crate) fn closure_contract2<'tcx>(
         let mut postcondition = postcondition.clone();
         csubst.visit_mut_term(&mut postcondition);
 
-        contracts.push((Symbol::intern("postcondition_once"), post_sig, postcondition));
+        contracts.postcond_once = Some((post_sig, postcondition));
     }
-
-    contracts.push(closure_resolve2(ctx, def_id, subst));
 
     return contracts;
 }
@@ -583,7 +592,7 @@ fn closure_resolve2<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
     subst: SubstsRef<'tcx>,
-) -> (Symbol, PreSignature<'tcx>, Term<'tcx>) {
+) -> (PreSignature<'tcx>, Term<'tcx>) {
     let mut resolve = Term::mk_true(ctx.tcx);
 
     let self_ = Term {
@@ -604,8 +613,7 @@ fn closure_resolve2<'tcx>(
             },
             span: DUMMY_SP,
         };
-        // let acc = Exp::impure_qvar(names.accessor(def_id, subst, 0, ix));
-        // let self_ = Exp::pure_var(Ident::build("_1'"));
+
         if let Some((id, subst)) = resolve_predicate_of2(ctx, param_env, ty) {
             resolve = Term {
                 ty: ctx.types.bool,
@@ -613,7 +621,7 @@ fn closure_resolve2<'tcx>(
                     id: id.into(),
                     subst,
                     fun: box Term {
-                        ty: ctx.type_of(id),
+                        ty: ctx.type_of(id.0),
                         kind: TermKind::Item(id.into(), subst),
                         span: DUMMY_SP,
                     },
@@ -631,7 +639,7 @@ fn closure_resolve2<'tcx>(
         contract: PreContract::default(),
     };
 
-    (Symbol::intern("resolve"), sig, resolve)
+    (sig, resolve)
 }
 
 pub(crate) fn closure_unnest2<'tcx>(

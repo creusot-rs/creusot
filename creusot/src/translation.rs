@@ -23,7 +23,7 @@ use crate::{
     util,
     validate::{validate_impls, validate_traits},
 };
-use creusot_rustc::hir::def_id::{DefId, LOCAL_CRATE};
+use creusot_rustc::hir::def_id::LOCAL_CRATE;
 use ctx::TranslationCtx;
 pub(crate) use function::LocalIdent;
 use heck::ToUpperCamelCase;
@@ -111,7 +111,7 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
         let tcx = ctx.tcx;
 
         let priors = PriorClones::from_graph(&mut ctx, &graph);
-        // priors.debug(ctx.tcx);
+        priors.debug(ctx.tcx);
         let mut modules = Vec::new();
         let mut visited: HashSet<Id> = HashSet::new();
         for dep in graph.iter() {
@@ -120,9 +120,14 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
                 continue;
             };
 
-            visited.extend(ctx.binding_group(id.0).into_iter().map(|b| Id::from(b)));
+            if id.1.is_some() {
+                visited.insert(id);
+            } else {
+                visited.extend(ctx.binding_group(id.0).into_iter().map(Id::from));
+            }
             // TODO: restore filtering functionality
             let output = box to_why3(&mut ctx, &priors, id).into_iter();
+
             // let output = if tcx.def_path_str(id).contains(matcher) {
             //
             // } else {

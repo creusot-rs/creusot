@@ -24,11 +24,11 @@ use crate::{
         specification::PreContract,
         ty::translate_ty_param,
     },
-    util::{self, get_builtin, item_qname, PreSignature},
+    util::{self, get_builtin, item_qname, module_name_id, PreSignature},
 };
 
 use super::{
-    clone_map2::{CloneDepth, CloneVisibility, Namer},
+    clone_map2::{make_clones, CloneDepth, CloneVisibility, ClosureId, Id, Namer},
     sig_to_why3,
     term::lower_pure,
     Cloner,
@@ -133,7 +133,7 @@ fn translate_ty_inner<'tcx, C: Cloner<'tcx>>(
                 return MlT::Tuple(Vec::new());
             }
 
-            MlT::TConstructor(names.ty(id.into(), subst))
+            MlT::TConstructor(names.ty(Id(*id, Some(ClosureId::Type)), subst))
         }
         FnDef(_, _) =>
         /* FnDef types are effectively singleton types, so it is sound to translate to unit. */
@@ -270,6 +270,33 @@ pub(crate) fn translate_projection_ty<'tcx, C: Cloner<'tcx>>(
 ) -> MlT {
     let name = names.ty(pty.item_def_id.into(), pty.substs);
     MlT::TConstructor(name)
+}
+
+pub(crate) fn lower_closure_ty<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    mut names: Namer<'_, 'tcx>,
+    id: Id,
+) -> Module {
+    let TyKind::Closure(_, subst) = ctx.tcx.type_of(id.0).kind()  else { unreachable!() };
+
+    let ty_name = names.ty(id.into(), subst).name;
+    let closure_subst = subst.as_closure();
+    let fields: Vec<_> = closure_subst
+        .upvar_tys()
+        .map(|uv| Field { ty: translate_ty(ctx, &mut names, DUMMY_SP, uv), ghost: false })
+        .collect();
+
+    let cons_name = names.constructor(id.into(), subst, 0).name;
+    let kind = AdtDecl {
+        ty_name,
+        ty_params: vec![],
+        constrs: vec![ConstructorDecl { name: cons_name, fields }],
+    };
+
+    let mut decls = make_clones(ctx, names, CloneVisibility::Body, CloneDepth::Deep, id);
+    decls.push(Decl::TyDecl(TyDecl::Adt { tys: vec![kind] }));
+
+    Module { name: module_name_id(ctx, id), decls }
 }
 
 use creusot_rustc::hir::def::DefKind;

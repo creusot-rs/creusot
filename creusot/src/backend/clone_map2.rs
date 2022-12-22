@@ -6,7 +6,7 @@ use creusot_rustc::{
     macros::{TypeFoldable, TypeVisitable},
     middle::ty::{subst::SubstsRef, EarlyBinder, TypeVisitable},
     resolve::Namespace,
-    span::{Symbol, DUMMY_SP},
+    span::{symbol::kw, Symbol, DUMMY_SP},
 };
 use heck::ToUpperCamelCase;
 use indexmap::{IndexMap, IndexSet};
@@ -21,11 +21,11 @@ use rustc_middle::{
     mir::{tcx::PlaceTy, PlaceElem},
     ty::{
         subst::{GenericArgKind, InternalSubsts},
-        DefIdTree, FloatTy, GenericArg, List, ProjectionTy, Ty, TyCtxt, TyKind, TypeFoldable,
+        DefIdTree, FloatTy, List, ProjectionTy, Ty, TyCtxt, TyKind, TypeFoldable,
         TypeSuperVisitable, TypeVisitor, UintTy,
     },
 };
-use rustc_type_ir::{IntTy, RegionKind};
+use rustc_type_ir::IntTy;
 use util::ItemType;
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
@@ -42,9 +42,7 @@ use crate::{
         pearlite::{Term, TermKind, TermVisitor},
         traits::{resolve_opt, TraitImpl},
     },
-    util::{
-        self, get_builtin, item_name, item_qname, item_type, module_name, pre_sig_of, PreSignature,
-    },
+    util::{self, get_builtin, item_name, item_qname, item_type, module_name, PreSignature},
 };
 use creusot_rustc::macros::{TyDecodable, TyEncodable};
 
@@ -92,7 +90,21 @@ pub(crate) enum ClosureId {
     TypeFoldable,
     TypeVisitable,
 )]
-pub struct Id(pub(crate) DefId, Option<ClosureId>);
+pub struct Id(pub(crate) DefId, pub(crate) Option<ClosureId>);
+
+impl ClosureId {
+    pub(crate) fn name(&self) -> &str {
+        match self {
+            ClosureId::Type => "Type",
+            ClosureId::Unnest => "Unnest",
+            ClosureId::Resolve => "Resolve",
+            ClosureId::Precondition => "Precondition",
+            ClosureId::PostconditionOnce => "PostconditionOnce",
+            ClosureId::PostconditionMut => "PostconditionMut",
+            ClosureId::Postcondition => "Postcondition",
+        }
+    }
+}
 
 impl From<DefId> for Id {
     fn from(value: DefId) -> Self {
@@ -117,8 +129,8 @@ pub(crate) enum Dependency<'tcx> {
 }
 
 impl<'tcx> Dependency<'tcx> {
-    pub(crate) fn identity(tcx: TyCtxt<'tcx>, id: DefId) -> Self {
-        Dependency::Item(id.into(), tcx.erase_regions(identity_substs_for(tcx, id)))
+    pub(crate) fn identity(tcx: TyCtxt<'tcx>, id: Id) -> Self {
+        Dependency::Item(id, tcx.erase_regions(identity_substs_for(tcx, id.0)))
     }
 
     fn as_ty(self, tcx: TyCtxt<'tcx>) -> Ty<'tcx> {
@@ -132,9 +144,9 @@ impl<'tcx> Dependency<'tcx> {
         }
     }
 
-    fn as_item(&self) -> Option<(DefId, SubstsRef<'tcx>)> {
+    fn as_item(&self) -> Option<(Id, SubstsRef<'tcx>)> {
         match self {
-            Dependency::Item(id, s) => Some((id.0, s)),
+            Dependency::Item(id, s) => Some((*id, s)),
             Dependency::BaseTy(_) => None,
         }
     }
@@ -154,6 +166,7 @@ impl<'tcx> Dependency<'tcx> {
             | TyKind::Slice(_) => Some(Self::BaseTy(ty)),
             // Should this be tuple?
             TyKind::Tuple(_) | TyKind::Param(_) => None,
+            TyKind::FnPtr(_) | TyKind::FnDef(_, _) => None,
             _ => unreachable!("{ty:?}"),
             // _ => Some(Self::BaseTy(ty)),
         }
@@ -205,7 +218,25 @@ fn get_immediate_deps<'tcx>(
         }
         ItemType::Logic | ItemType::Predicate => term_dependencies(ctx, def_id),
         ItemType::Closure => match id.1 {
-            Some(ClosureId::Type) => Vec::new(),
+            Some(ClosureId::Type) => {
+                let TyKind::Closure(_, subst) = ctx.type_of(id.0).kind() else { unreachable!() };
+
+                let mut v = Vec::new();
+
+                subst
+                    .as_closure()
+                    .upvar_tys()
+                    .for_each(|ty| ty.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Body, dep))));
+                v
+            }
+            Some(ClosureId::Resolve) => {
+                let mut v = Vec::new();
+
+                let contracts = closure_contract2(ctx, id.0);
+                contracts.resolve.0.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Signature, dep)));
+                contracts.resolve.1.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Body, dep)));
+                v
+            }
             Some(_) => Vec::new(),
             None => program_dependencies(ctx, def_id),
         },
@@ -344,7 +375,8 @@ impl<'tcx> VisitDeps<'tcx> for Statement<'tcx> {
                 r.deps(tcx, f)
             }
             Statement::Resolve(id, sub, pl) => {
-                (f)(Dependency::Item(id.into(), sub));
+                (f)(Dependency::Item(*id, sub));
+
                 pl.deps(tcx, f)
             }
             Statement::Assertion(t) => t.deps(tcx, f),
@@ -482,9 +514,9 @@ fn term_dependencies<'tcx>(
     def_id: DefId,
 ) -> Vec<(DepLevel, Dependency<'tcx>)> {
     let mut deps = IndexSet::new();
-
-    let sig = pre_sig_of(ctx, def_id);
-    sig.deps(ctx.tcx, &mut |dep| {
+    let tcx = ctx.tcx;
+    let sig = ctx.sig(def_id);
+    sig.deps(tcx, &mut |dep| {
         deps.insert((DepLevel::Signature, dep));
     });
 
@@ -502,22 +534,22 @@ fn program_dependencies<'tcx>(
     def_id: DefId,
 ) -> Vec<(DepLevel, Dependency<'tcx>)> {
     let mut deps = IndexSet::new();
-
-    let sig = pre_sig_of(ctx, def_id);
-    sig.deps(ctx.tcx, &mut |dep| {
+    let tcx = ctx.tcx;
+    let sig = ctx.sig(def_id);
+    sig.deps(tcx, &mut |dep| {
         deps.insert((DepLevel::Signature, dep));
     });
 
-    if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
-        closure_contract2(ctx, def_id).iter().for_each(|(_, s, t)| {
-            s.deps(ctx.tcx, &mut |dep| {
-                deps.insert((DepLevel::Signature, dep));
-            });
-            t.deps(ctx.tcx, &mut |dep| {
-                deps.insert((DepLevel::Signature, dep));
-            })
-        });
-    };
+    // if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
+    //     closure_contract2(ctx, def_id).iter().for_each(|(_, s, t)| {
+    //         s.deps(ctx.tcx, &mut |dep| {
+    //             deps.insert((DepLevel::Signature, dep));
+    //         });
+    //         t.deps(ctx.tcx, &mut |dep| {
+    //             deps.insert((DepLevel::Signature, dep));
+    //         })
+    //     });
+    // };
 
     let tcx = ctx.tcx;
     if let Some(body) = ctx.fmir_body(def_id) {
@@ -530,7 +562,7 @@ fn program_dependencies<'tcx>(
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum EdgeType<'tcx> {
-    Refinement(DefId, SubstsRef<'tcx>),
+    Refinement(Id, SubstsRef<'tcx>),
     Fake,
     Type,
 }
@@ -542,7 +574,7 @@ type MonoGraphInner<'tcx> = DiGraphMap<Dependency<'tcx>, (DepLevel, EdgeType<'tc
 pub struct MonoGraph<'tcx> {
     pub(crate) graph: MonoGraphInner<'tcx>,
     level: IndexMap<Dependency<'tcx>, DepLevel>,
-    pub(crate) roots: IndexMap<DefId, Dependency<'tcx>>,
+    pub(crate) roots: IndexMap<Id, Dependency<'tcx>>,
     // roots?
 }
 
@@ -568,8 +600,8 @@ impl<'tcx> MonoGraph<'tcx> {
     // FIXME: Make `finished` a part of the graph state. Currently, we will do a bunch of work retraversing the graph over and over again.
     pub(crate) fn add_root(&mut self, ctx: &mut TranslationCtx<'tcx>, def_id: Id) {
         // FIXME: WRONG
-        let root = Dependency::identity(ctx.tcx, def_id.0);
-        if self.roots.insert(def_id.0, root).is_some() {
+        let root = Dependency::identity(ctx.tcx, def_id);
+        if self.roots.insert(def_id, root).is_some() {
             return;
         }
 
@@ -595,10 +627,16 @@ impl<'tcx> MonoGraph<'tcx> {
                     (DepLevel::Body, EdgeType::Type),
                 );
             });
+            subst.types().filter_map(Dependency::from_ty).for_each(|dep| {
+                // eprintln!("subst_edge: {next:?} {dep:?}");
+                self.add_edge(ctx.tcx, next, dep, (DepLevel::Signature, EdgeType::Type));
+            });
 
             let to_add = get_immediate_deps(ctx, id);
+
+            // to_add.extend(subst.types().filter_map(|ty| Some((DepLevel::Signature, Dependency::from_ty(ty)?)) ));
             // if ctx.def_path_str(id).contains("counter") {
-            //     eprintln!("deps_of({id:?}, {subst:?}) :- {to_add:?}\n");
+            // eprintln!("deps_of({id:?}, {subst:?}) :- {to_add:?}\n");
             // }
 
             for (lvl, dep) in to_add {
@@ -610,7 +648,7 @@ impl<'tcx> MonoGraph<'tcx> {
                 let subst = EarlyBinder(orig_subst).subst(ctx.tcx, subst);
 
                 // TODO: clean up
-                let tgt = if let Some(tgt) = is_closure_hack(ctx.tcx, id.0, subst) {
+                let tgt = if let Some(tgt) = is_closure_hack(ctx.tcx, id, subst) {
                     Some(Dependency::Item(tgt.0, tgt.1))
                 } else if util::item_type(ctx.tcx, id.0) == ItemType::AssocTy {
                     let proj_ty = ProjectionTy { item_def_id: id.0, substs: subst };
@@ -636,22 +674,16 @@ impl<'tcx> MonoGraph<'tcx> {
                     Some(Dependency::Item(tgt.0, tgt.1))
                 };
 
-                // TODO: why `next` and not `tgt`.
                 if let Some(tgt) = tgt {
                     self.add_edge(
                         ctx.tcx,
                         tgt,
-                        Dependency::identity(ctx.tcx, id.0),
+                        Dependency::identity(ctx.tcx, id),
                         (lvl, EdgeType::Fake),
                     );
                     self.add_root(ctx, id);
 
-                    self.add_edge(
-                        ctx.tcx,
-                        next,
-                        tgt,
-                        (lvl, EdgeType::Refinement(id.0, orig_subst)),
-                    );
+                    self.add_edge(ctx.tcx, next, tgt, (lvl, EdgeType::Refinement(id, orig_subst)));
 
                     to_visit.push(tgt);
                 }
@@ -723,20 +755,24 @@ impl<'tcx, I: Iterator<Item = Dependency<'tcx>>> Walker<&MonoGraphInner<'tcx>>
     }
 }
 
-fn is_closure_hack<'tcx>(
+pub(crate) fn is_closure_hack<'tcx>(
     tcx: TyCtxt<'tcx>,
-    def_id: DefId,
+    def_id: Id,
     subst: SubstsRef<'tcx>,
 ) -> Option<(Id, SubstsRef<'tcx>)> {
-    if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), def_id) {
-        return Some((Id(def_id, Some(ClosureId::Precondition)), subst));
-    } else if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id) {
-        return Some((Id(def_id, Some(ClosureId::PostconditionOnce)), subst));
-    } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id) {
-        return Some((Id(def_id, Some(ClosureId::PostconditionMut)), subst));
-    } else if tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id) {
-        return Some((Id(def_id, Some(ClosureId::Postcondition)), subst));
-    } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id) {
+    if def_id.1.is_some() {
+        return Some((def_id, subst));
+    }
+
+    if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), def_id.0) {
+        return Some((Id(def_id.0, Some(ClosureId::Precondition)), subst));
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id.0) {
+        return Some((Id(def_id.0, Some(ClosureId::PostconditionOnce)), subst));
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id.0) {
+        return Some((Id(def_id.0, Some(ClosureId::PostconditionMut)), subst));
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id.0) {
+        return Some((Id(def_id.0, Some(ClosureId::Postcondition)), subst));
+    } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id.0) {
         debug!("is_closure_hack: {:?}", def_id);
         let self_ty = subst.types().nth(1).unwrap();
         if let TyKind::Closure(id, csubst) = self_ty.kind() {
@@ -744,8 +780,8 @@ fn is_closure_hack<'tcx>(
         }
     };
 
-    if tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), def_id)
-        || tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), def_id)
+    if tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), def_id.0)
+        || tcx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), def_id.0)
     {
         let self_ty = subst.types().nth(0).unwrap();
         if let TyKind::Closure(id, csubst) = self_ty.kind() {
@@ -755,51 +791,6 @@ fn is_closure_hack<'tcx>(
 
     None
 }
-
-// // With `is_closure_hack`, we are doing redundant work, which should be cleaned up..
-// fn hacked_closure_ids<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Vec<(Id, SubstsRef<'tcx>)> {
-//     let subst = match tcx.type_of(def_id).kind() {
-//         TyKind::Closure(_, subst) => subst,
-//         // probably should panic instead
-//         _ => return Vec::new(),
-//     };
-
-//     let env_ty = tcx.closure_env_ty(def_id, subst, RegionKind::ReErased).unwrap().peel_refs();
-
-//     let args = subst.as_closure().sig().inputs().skip_binder()[0];
-//     let fn_trait_subst = tcx.mk_substs([GenericArg::from(args), GenericArg::from(env_ty)].iter());
-
-//     vec![
-//         (
-//             Id(tcx.get_diagnostic_item(Symbol::intern("fn_once_impl_precond")).unwrap(), None),
-//             fn_trait_subst,
-//         ),
-//         (
-//             Id(tcx.get_diagnostic_item(Symbol::intern("fn_once_impl_postcond")).unwrap(), None),
-//             fn_trait_subst,
-//         ),
-//         (
-//             Id(tcx.get_diagnostic_item(Symbol::intern("fn_mut_impl_postcond")).unwrap(), None),
-//             fn_trait_subst,
-//         ),
-//         (
-//             Id(tcx.get_diagnostic_item(Symbol::intern("fn_impl_postcond")).unwrap(), None),
-//             fn_trait_subst,
-//         ),
-//         (
-//             Id(tcx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap(), None),
-//             fn_trait_subst,
-//         ),
-//         (
-//             Id(tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_default")).unwrap(), None),
-//             tcx.mk_substs([GenericArg::from(env_ty)].iter()),
-//         ),
-//         (
-//             Id(tcx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap(), None),
-//             tcx.mk_substs([GenericArg::from(env_ty)].iter()),
-//         ),
-//     ]
-// }
 
 fn can_resolve<'tcx>(ctx: &mut TranslationCtx<'tcx>, dep: (DefId, SubstsRef<'tcx>)) -> bool {
     ctx.trait_of_item(dep.0).is_some()
@@ -814,16 +805,6 @@ impl<'tcx> Names<'tcx> {
     pub(super) fn get(&self, tgt: (Id, SubstsRef<'tcx>)) -> Option<Option<why3::Ident>> {
         self.names.get(&tgt).cloned()
     }
-
-    // // FIXME
-    // pub(crate) fn ty(&self, id: DefId, sub: SubstsRef<'tcx>) -> QName {
-    //     self.get((id, sub))
-    // }
-
-    // //FIXME
-    // pub(crate) fn value(&self, id: DefId, sub: SubstsRef<'tcx>) -> QName {
-    //     self.get((id, sub))
-    // }
 }
 
 pub(crate) fn name_clones<'tcx>(
@@ -839,7 +820,9 @@ pub(crate) fn name_clones<'tcx>(
     for node in walk.iter(&graph.graph) {
         let Dependency::Item(def_id, subst) = node else { continue };
 
-        let clone_name: Option<why3::Ident> = if ctx.binding_group(root_id).contains(&def_id.0) {
+        let clone_name: Option<why3::Ident> = if ctx.is_closure(root_id.0) && root_id == def_id {
+            None
+        } else if !ctx.is_closure(root_id.0) && ctx.binding_group(root_id.0).contains(&def_id.0) {
             None
         } else {
             let base_sym = match util::item_type(ctx.tcx, def_id.0) {
@@ -855,13 +838,7 @@ pub(crate) fn name_clones<'tcx>(
             Some(format!("{}{}", base_sym.as_str().to_upper_camel_case(), count).into())
         };
 
-        // if ctx.is_closure(def_id.0) {
-        //     hacked_closure_ids(ctx.tcx, def_id.0).into_iter().for_each(|e| {
-        //         names.insert(e, clone_name.clone());
-        //     });
-        // };
-
-        names.insert((def_id.0.into(), subst), clone_name);
+        names.insert((def_id, subst), clone_name);
     }
 
     Names { names }
@@ -925,7 +902,7 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
     fn accessor(&mut self, def_id: Id, subst: SubstsRef<'tcx>, variant: usize, ix: usize) -> QName {
         if util::item_type(self.tcx, def_id.0) == ItemType::Closure {
             QName {
-                module: self.ident(def_id.into(), subst).into_iter().collect(),
+                module: self.ident(def_id, subst).into_iter().collect(),
                 name: format!("field_{}", ix).into(),
             }
         } else {
@@ -945,7 +922,7 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
             ItemType::Type => self.tcx.adt_def(def_id.0).variants()[variant.into()].def_id,
             _ => unreachable!(),
         };
-        let base = self.ident(def_id.into(), subst);
+        let base = self.ident(def_id, subst);
         let mut name = item_name(self.tcx, variant_id, Namespace::ValueNS);
         name.capitalize();
         QName { module: base.into_iter().collect(), name }
@@ -957,7 +934,7 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
         vis: CloneVisibility,
         depth: CloneDepth,
     ) -> Vec<Decl> {
-        make_clones(ctx, *self, vis, depth, self.id.0)
+        make_clones(ctx, *self, vis, depth, self.id)
     }
 }
 
@@ -1002,7 +979,16 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
                 &|_, n| {
                     match n.0 {
                         Dependency::Item(id, s) => {
-                            format!("label = \"{}, {:?}\"", tcx.item_name(id.0), s)
+                            let name = if let Some(i) = tcx.opt_item_name(id.0) {
+                                format!("{}", i)
+                            } else {
+                                if let Some(cid) = id.1 {
+                                    format!("closure({})", cid.name())
+                                } else {
+                                    format!("closure")
+                                }
+                            };
+                            format!("label = \"{}, {}\"", name, format!("{:?}", s).escape_debug())
                         }
                         Dependency::BaseTy(ty) => format!("label = \"{:?}\"", ty),
                     }
@@ -1011,8 +997,8 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
         );
     }
 
-    pub(crate) fn get(&'a self, tcx: TyCtxt<'tcx>, inside: DefId) -> Namer<'a, 'tcx> {
-        Namer { priors: self, id: inside.into(), tcx }
+    pub(crate) fn get(&'a self, tcx: TyCtxt<'tcx>, inside: Id) -> Namer<'a, 'tcx> {
+        Namer { priors: self, id: inside, tcx }
     }
 }
 
@@ -1033,7 +1019,7 @@ pub(crate) fn make_clones<'tcx, 'a>(
     priors: Namer<'a, 'tcx>,
     vis: CloneVisibility,
     depth: CloneDepth,
-    root_id: DefId,
+    root_id: Id,
 ) -> Vec<Decl> {
     let Namer { priors, .. } = priors;
     let mut names = priors.get(ctx.tcx, root_id);
@@ -1047,7 +1033,7 @@ pub(crate) fn make_clones<'tcx, 'a>(
     };
 
     let mut clones = Vec::new();
-    let mut uses = Vec::new();
+    let mut uses = IndexSet::new();
 
     let fgraph =
         EdgeFiltered::from_fn(&priors.graph.graph, |(_, _, (_, ek))| ek != &EdgeType::Fake);
@@ -1067,32 +1053,32 @@ pub(crate) fn make_clones<'tcx, 'a>(
                     continue;
                 }
 
-                uses.push(Decl::UseDecl(Use { name: base_ty_name(ty), as_: None }));
+                uses.insert(Use { name: base_ty_name(ty), as_: None });
                 continue;
             }
         };
 
-        if ctx.binding_group(root_id).contains(&id.0) {
+        if !ctx.is_closure(root_id.0) && ctx.binding_group(root_id.0).contains(&id.0) {
             continue;
         }
 
         if let Some(builtin) = get_builtin(ctx.tcx, id.0) {
             let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
-            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: None }));
+            uses.insert(Use { name: name.clone(), as_: None });
             continue;
         };
 
         if matches!(item_type(ctx.tcx, id.0), ItemType::Type) {
             let name = item_qname(ctx, id.0, Namespace::TypeNS).module_qname();
-            let as_name = names.value(id.0.into(), subst).module_ident().unwrap().clone();
-            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(as_name) }));
+            let as_name = names.value(id, subst).module_ident().unwrap().clone();
+            uses.insert(Use { name: name.clone(), as_: Some(as_name) });
 
             continue;
         };
 
         let mut clone_subst = base_subst(ctx, names, id.0, subst);
 
-        let mut node_names = priors.get(ctx.tcx, id.0);
+        let mut node_names = priors.get(ctx.tcx, id);
 
         for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
             if priors.graph.level[&dep] < desired_dep_level {
@@ -1114,23 +1100,23 @@ pub(crate) fn make_clones<'tcx, 'a>(
 
             let EdgeType::Refinement(orig_id, orig_subst) = orig else { continue };
 
-            if depth == CloneDepth::Shallow && item_type(ctx.tcx, orig_id) != ItemType::AssocTy {
+            if depth == CloneDepth::Shallow && item_type(ctx.tcx, orig_id.0) != ItemType::AssocTy {
                 continue;
             }
 
             // FIXME: Not really correct
-            if item_type(ctx.tcx, orig_id) == ItemType::Type {
+            if item_type(ctx.tcx, orig_id.0) == ItemType::Type {
                 continue;
             }
 
-            if get_builtin(ctx.tcx, orig_id).is_some() {
+            if get_builtin(ctx.tcx, orig_id.0).is_some() {
                 continue;
             };
 
-            let src = node_names.value(orig_id.into(), orig_subst);
+            let src = node_names.value(orig_id, orig_subst);
             let tgt = dep.as_item().map(|(id, subst)| names.value(id.into(), subst));
 
-            let sub = match item_type(ctx.tcx, orig_id) {
+            let sub = match item_type(ctx.tcx, orig_id.0) {
                 ItemType::Logic => CloneSubst::Function(src, tgt.unwrap()),
                 ItemType::Predicate => CloneSubst::Predicate(src, tgt.unwrap()),
                 ItemType::Constant => CloneSubst::Val(src, tgt.unwrap()),
@@ -1144,15 +1130,15 @@ pub(crate) fn make_clones<'tcx, 'a>(
         }
 
         let clone = DeclClone {
-            name: cloneable_name(ctx, id.0, depth),
+            name: cloneable_name(ctx, id, depth),
             subst: clone_subst,
-            kind: CloneKind::Named(names.value(id.0.into(), subst).module_ident().unwrap().clone()),
+            kind: CloneKind::Named(names.value(id, subst).module_ident().unwrap().clone()),
         };
 
         clones.push(Decl::Clone(clone));
     }
 
-    uses.into_iter().chain(clones).collect()
+    uses.into_iter().map(Decl::UseDecl).chain(clones).collect()
 }
 
 fn base_ty_name(ty: Ty) -> QName {
@@ -1236,23 +1222,51 @@ pub enum CloneDepth {
     Deep,
 }
 
-fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneDepth) -> QName {
+fn cloneable_name(ctx: &TranslationCtx, def_id: Id, interface: CloneDepth) -> QName {
     use util::ItemType::*;
 
     // TODO: Refactor.
-    match util::item_type(ctx.tcx, def_id) {
+    match util::item_type(ctx.tcx, def_id.0) {
         Logic | Predicate | Impl | Constant | Field => match interface {
             CloneDepth::Shallow => QName {
                 module: Vec::new(),
-                name: format!("{}_Stub", &*module_name(ctx, def_id)).into(),
+                name: format!("{}_Stub", &*module_name(ctx, def_id.0)).into(),
             },
-            CloneDepth::Deep => module_name(ctx, def_id).into(),
+            CloneDepth::Deep => module_name(ctx, def_id.0).into(),
         },
-        Program | Closure => QName {
+
+        Program => QName {
             module: Vec::new(),
-            name: format!("{}_Stub", &*module_name(ctx, def_id)).into(),
+            name: format!("{}_Stub", &*module_name(ctx, def_id.0)).into(),
         },
-        Trait | Type | AssocTy => module_name(ctx, def_id).into(),
+        Closure => match def_id.1 {
+            Some(ClosureId::Type) => QName {
+                module: Vec::new(),
+                name: format!("{}_Type", &*module_name(ctx, def_id.0)).into(),
+            },
+            Some(ClosureId::Resolve)
+            | Some(ClosureId::Unnest)
+            | Some(ClosureId::Precondition)
+            | Some(ClosureId::PostconditionOnce)
+            | Some(ClosureId::PostconditionMut) => match interface {
+                CloneDepth::Shallow => QName {
+                    module: Vec::new(),
+                    name: format!(
+                        "{}_{}_Stub",
+                        &*module_name(ctx, def_id.0),
+                        def_id.1.unwrap().name()
+                    )
+                    .into(),
+                },
+                CloneDepth::Deep => module_name(ctx, def_id.0).into(),
+            },
+            Some(ClosureId::Postcondition) => todo!(),
+            None => QName {
+                module: Vec::new(),
+                name: format!("{}_Stub", &*module_name(ctx, def_id.0)).into(),
+            },
+        },
+        Trait | Type | AssocTy => module_name(ctx, def_id.0).into(),
         // Field => panic!(),
         Unsupported(_) => unreachable!(),
     }

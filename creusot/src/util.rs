@@ -1,4 +1,5 @@
 use crate::{
+    backend::clone_map2::Id,
     ctx::*,
     translation::{
         pearlite::{super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
@@ -206,6 +207,21 @@ pub(crate) fn module_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
         Ctor(_, _) | Variant => module_name(ctx, ctx.parent(def_id)),
         Struct | Enum => ident_path(ctx.tcx, ctx.representative_type(def_id)),
         _ => ident_path(ctx.tcx, def_id),
+    }
+}
+
+pub(crate) fn module_name_id(ctx: &TranslationCtx, def_id: Id) -> Ident {
+    let kind = ctx.def_kind(def_id.0);
+    use creusot_rustc::hir::def::DefKind::*;
+
+    let id = match kind {
+        Ctor(_, _) | Variant => module_name(ctx, ctx.parent(def_id.0)),
+        Struct | Enum => ident_path(ctx.tcx, ctx.representative_type(def_id.0)),
+        _ => ident_path(ctx.tcx, def_id.0),
+    };
+    match def_id.1 {
+        Some(x) => format!("{}_{}", &*id, x.name()).into(),
+        None => id,
     }
 }
 

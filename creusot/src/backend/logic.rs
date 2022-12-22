@@ -1,11 +1,7 @@
 use std::{borrow::Cow, iter::once};
 
 use crate::{
-    ctx::*,
-    function::all_generic_decls_for,
-    translation::specification,
-    util,
-    util::{get_builtin, pre_sig_of},
+    ctx::*, function::all_generic_decls_for, translation::specification, util, util::get_builtin,
 };
 use creusot_rustc::hir::def_id::DefId;
 use why3::{
@@ -193,7 +189,7 @@ fn body_module<'tcx>(
         }
     }
 
-    let has_axioms = !pre_sig_of(ctx, def_id).contract.is_empty();
+    let has_axioms = !ctx.sig(def_id).contract.is_empty();
     if has_axioms {
         decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
     }

@@ -33,8 +33,6 @@ pub(crate) fn lower_impl<'tcx>(
     }
 
     Module { name: module_name(ctx, def_id), decls }
-
-    // todo!()
 }
 
 pub(crate) fn translate_assoc_ty<'tcx>(

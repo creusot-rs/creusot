@@ -9,18 +9,18 @@ use why3::{
 use crate::{
     ctx::TranslationCtx,
     util::{
-        self, ident_of, item_name, item_type, pre_sig_of, why3_attrs, AnonymousParamName, ItemType,
+        self, ident_of, item_name, item_type, why3_attrs, AnonymousParamName, ItemType,
         PreSignature,
     },
 };
 
 use self::{
-    clone_map2::{CloneDepth, CloneVisibility, Id, PriorClones},
+    clone_map2::{CloneDepth, CloneVisibility, ClosureId, Id, PriorClones},
     constant::translate_constant,
     logic::translate_logic_or_predicate,
     program::{lower_closure, lower_function},
     traits::{lower_impl, translate_assoc_ty},
-    ty::{lower_accessor, translate_tydecl},
+    ty::{lower_accessor, lower_closure_ty, translate_tydecl},
 };
 
 pub(crate) mod clone_map2;
@@ -38,18 +38,27 @@ pub(crate) fn to_why3<'tcx>(
 ) -> Vec<Module> {
     match util::item_type(ctx.tcx, id.0) {
         ItemType::Logic | ItemType::Predicate => {
-            translate_logic_or_predicate(ctx, priors.get(ctx.tcx, id.0), id.0)
+            translate_logic_or_predicate(ctx, priors.get(ctx.tcx, id), id.0)
         }
-        ItemType::Program => lower_function(ctx, priors.get(ctx.tcx, id.0), id.0),
-        ItemType::Closure => lower_closure(ctx, priors.get(ctx.tcx, id.0), id.0),
+        ItemType::Program => lower_function(ctx, priors.get(ctx.tcx, id), id.0),
+        ItemType::Closure => match id.1 {
+            Some(ClosureId::Type) => vec![lower_closure_ty(ctx, priors.get(ctx.tcx, id), id)],
+            Some(ClosureId::Unnest) => todo!(),
+            Some(ClosureId::Resolve) => todo!(),
+            Some(ClosureId::Precondition) => todo!(),
+            Some(ClosureId::PostconditionOnce) => todo!(),
+            Some(ClosureId::PostconditionMut) => todo!(),
+            Some(ClosureId::Postcondition) => todo!(),
+            None => lower_closure(ctx, priors.get(ctx.tcx, id), id.0),
+        },
         ItemType::Trait => Vec::new(),
-        ItemType::Impl => vec![lower_impl(ctx, priors.get(ctx.tcx, id.0), id.0)],
+        ItemType::Impl => vec![lower_impl(ctx, priors.get(ctx.tcx, id), id.0)],
         ItemType::Type => {
-            translate_tydecl(ctx, &mut priors.get(ctx.tcx, id.0), id.0).into_iter().collect()
+            translate_tydecl(ctx, &mut priors.get(ctx.tcx, id), id.0).into_iter().collect()
         }
-        ItemType::AssocTy => vec![translate_assoc_ty(ctx, priors.get(ctx.tcx, id.0), id.0)],
-        ItemType::Constant => translate_constant(ctx, priors.get(ctx.tcx, id.0), id.0),
-        ItemType::Field => lower_accessor(ctx, priors.get(ctx.tcx, id.0), id.0),
+        ItemType::AssocTy => vec![translate_assoc_ty(ctx, priors.get(ctx.tcx, id), id.0)],
+        ItemType::Constant => translate_constant(ctx, priors.get(ctx.tcx, id), id.0),
+        ItemType::Field => lower_accessor(ctx, priors.get(ctx.tcx, id), id.0),
         ItemType::Unsupported(_) => panic!("unsupported declaration"),
     }
 }
@@ -122,6 +131,6 @@ pub(crate) fn signature_of<'tcx, C: Cloner<'tcx>>(
     def_id: DefId,
 ) -> Signature {
     debug!("signature_of {def_id:?}");
-    let pre_sig = pre_sig_of(ctx, def_id);
+    let pre_sig = ctx.sig(def_id).clone();
     sig_to_why3(ctx, names, pre_sig, def_id)
 }

@@ -1,5 +1,9 @@
 use super::{function::LocalIdent, traits};
-use crate::{ctx::TranslationCtx, pearlite::Term};
+use crate::{
+    backend::clone_map2::{ClosureId, Id},
+    ctx::TranslationCtx,
+    pearlite::Term,
+};
 use creusot_rustc::{
     hir::def_id::DefId,
     middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TypeVisitable},
@@ -33,7 +37,7 @@ pub enum Statement<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>),
     // TODO: Remove `Resolve` and replace it with `Assume`.
     // The reason I have not done this yet is that it would require transforming a `Place` to a `Term`.
-    Resolve(DefId, SubstsRef<'tcx>, Place<'tcx>),
+    Resolve(Id, SubstsRef<'tcx>, Place<'tcx>),
     Assertion(Term<'tcx>),
     Invariant(Symbol, Term<'tcx>),
 }
@@ -99,7 +103,7 @@ pub(crate) fn resolve_predicate_of2<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
-) -> Option<(DefId, SubstsRef<'tcx>)> {
+) -> Option<(Id, SubstsRef<'tcx>)> {
     if !super::function::resolve_trait_loaded(ctx.tcx) {
         ctx.warn(
             DUMMY_SP,
@@ -111,14 +115,21 @@ pub(crate) fn resolve_predicate_of2<'tcx>(
     let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
     let subst = ctx.mk_substs([GenericArg::from(ty)].iter());
 
-    let resolve_impl = traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
+    let (resolve_id, resolve_subst) =
+        traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
+
+    if ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_id)
+        && resolve_subst.type_at(0).is_closure()
+    {
+        return Some((Id(resolve_id, Some(ClosureId::Resolve)), resolve_subst));
+    };
 
     if !ty.still_further_specializable()
-        && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_impl.0)
-        && !resolve_impl.1.type_at(0).is_closure()
+        && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_id)
+        && !resolve_subst.type_at(0).is_closure()
     {
         return None;
     }
 
-    Some(resolve_impl)
+    Some((resolve_id.into(), resolve_subst))
 }
