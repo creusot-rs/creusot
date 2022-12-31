@@ -78,6 +78,24 @@ extern_spec! {
                 #[ensures((@^self)[@index] == element)]
                 #[ensures(forall<i: Int> @index < i && i < (@^self).len() ==> (@^self)[i] == (@self)[i - 1])]
                 fn insert(&mut self, index: usize, element: T);
+
+                #[ensures(@result >= (@self).len())]
+                fn capacity(&self) -> usize;
+
+                #[ensures(@^self == @self)]
+                fn reserve(&mut self, additional: usize);
+
+                #[ensures(@^self == @self)]
+                fn reserve_exact(&mut self, additional: usize);
+
+                #[ensures(@^self == @self)]
+                fn shrink_to_fit(&mut self);
+
+                #[ensures(@^self == @self)]
+                fn shrink_to(&mut self, min_capacity: usize);
+
+                #[ensures((@^self).len() == 0)]
+                fn clear(&mut self);
             }
 
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
