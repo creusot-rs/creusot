@@ -157,8 +157,8 @@ where
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
                 writeln!(&mut out, "stale").unwrap();
 
-                // let wrt = BufferWriter::stdout(ColorChoice::Always);
-                // wrt.print(&buf).unwrap();
+                let wrt = BufferWriter::stdout(ColorChoice::Always);
+                wrt.print(&buf).unwrap();
                 test_failures += 1;
             } else {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();

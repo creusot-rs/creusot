@@ -1,10 +1,7 @@
 extern crate creusot_contracts;
-use creusot_contracts::{std::iter::*, *};
 
-pub fn counter() {
-    let mut a = 0;
-    let x = (|| {
-        a += 1;
-        0 + 0
-    })();
+use creusot_contracts::{logic::Int, *};
+
+pub fn all_zero() {
+    (0..5).next();
 }

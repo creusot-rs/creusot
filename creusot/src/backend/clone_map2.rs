@@ -165,7 +165,7 @@ impl<'tcx> Dependency<'tcx> {
             | TyKind::Array(_, _)
             | TyKind::Slice(_) => Some(Self::BaseTy(ty)),
             // Should this be tuple?
-            TyKind::Tuple(_) | TyKind::Param(_) => None,
+            TyKind::Tuple(_) | TyKind::Param(_) => Some(Self::BaseTy(ty)),
             TyKind::FnPtr(_) | TyKind::FnDef(_, _) => None,
             _ => unreachable!("{ty:?}"),
             // _ => Some(Self::BaseTy(ty)),
@@ -540,17 +540,6 @@ fn program_dependencies<'tcx>(
         deps.insert((DepLevel::Signature, dep));
     });
 
-    // if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
-    //     closure_contract2(ctx, def_id).iter().for_each(|(_, s, t)| {
-    //         s.deps(ctx.tcx, &mut |dep| {
-    //             deps.insert((DepLevel::Signature, dep));
-    //         });
-    //         t.deps(ctx.tcx, &mut |dep| {
-    //             deps.insert((DepLevel::Signature, dep));
-    //         })
-    //     });
-    // };
-
     let tcx = ctx.tcx;
     if let Some(body) = ctx.fmir_body(def_id) {
         body.deps(tcx, &mut |dep| {
@@ -635,8 +624,8 @@ impl<'tcx> MonoGraph<'tcx> {
             let to_add = get_immediate_deps(ctx, id);
 
             // to_add.extend(subst.types().filter_map(|ty| Some((DepLevel::Signature, Dependency::from_ty(ty)?)) ));
-            // if ctx.def_path_str(id).contains("counter") {
-            // eprintln!("deps_of({id:?}, {subst:?}) :- {to_add:?}\n");
+            // if ctx.def_path_str(id.0).contains("produces") {
+            //     eprintln!("deps_of({id:?}, {subst:?}) :- {to_add:?}\n");
             // }
 
             for (lvl, dep) in to_add {
@@ -961,8 +950,8 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
                 &self.graph.graph,
                 &[Config::EdgeNoLabel, Config::NodeNoLabel],
                 &|_, (src, tgt, (_, typ))| {
-                    let (id, _) = src.as_item().unwrap();
-                    let x = if let Some((tgt, subst)) = tgt.as_item() &&
+                    let x = if let (id, _) = src.as_item().unwrap() &&
+                    let Some((tgt, subst)) = tgt.as_item() &&
                         let Some(Some(idnt)) = self.prior[&Id::from(id)].get((tgt.into(), subst)) {
                         idnt.to_string()
                     } else {
@@ -1080,6 +1069,14 @@ pub(crate) fn make_clones<'tcx, 'a>(
 
         let mut node_names = priors.get(ctx.tcx, id);
 
+        // if ctx.item_name(root_id.0).as_str().contains("next") && ctx.item_name(id.0).as_str().contains("produces") {
+        //     eprintln!("{:?} {:?}", root_id.0, id.0);
+        // }
+
+        // if ctx.item_name(root_id.0).as_str().contains("produces") {
+        //     eprintln!("{:?} {:?}", root_id.0, id.0);
+        //     eprintln!("{:?}", priors.graph.graph.neighbors_directed(node, Outgoing));
+        // }
         for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
             if priors.graph.level[&dep] < desired_dep_level {
                 continue;

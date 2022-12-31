@@ -111,7 +111,7 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
         let tcx = ctx.tcx;
 
         let priors = PriorClones::from_graph(&mut ctx, &graph);
-        priors.debug(ctx.tcx);
+        // priors.debug(ctx.tcx);
         let mut modules = Vec::new();
         let mut visited: HashSet<Id> = HashSet::new();
         for dep in graph.iter() {
