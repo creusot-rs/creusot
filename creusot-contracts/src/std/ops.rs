@@ -38,11 +38,11 @@ pub trait FnMutExt<Args: Tuple>: FnMut<Args> + FnOnceExt<Args> {
     #[ensures(self.unnest(c))]
     fn unnest_trans(self, b: Self, c: Self);
 
-    #[law]
-    #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && (^s).resolve())]
-    fn fn_mut_once(self, args: Args, res: Self::Output)
-    where
-        Self: Sized;
+    // #[law]
+    // #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && (^s).resolve())]
+    // fn fn_mut_once(self, args: Args, res: Self::Output)
+    // where
+    //     Self: Sized;
 }
 
 /// `FnExt` is an extension trait for the `Fn` trait, used for
@@ -52,15 +52,15 @@ pub trait FnExt<Args: Tuple>: Fn<Args> + FnMutExt<Args> {
     #[predicate]
     fn postcondition(&self, _: Args, _: Self::Output) -> bool;
 
-    #[law]
-    #[ensures(self.postcondition_mut(args, res) == self.resolve() && self.postcondition(args, res))]
-    fn fn_mut(&mut self, args: Args, res: Self::Output);
+    // #[law]
+    // #[ensures(self.postcondition_mut(args, res) == self.resolve() && self.postcondition(args, res))]
+    // fn fn_mut(&mut self, args: Args, res: Self::Output);
 
-    #[law]
-    #[ensures(self.postcondition_once(args, res) == self.resolve() && self.postcondition(args, res))]
-    fn fn_once(self, args: Args, res: Self::Output)
-    where
-        Self: Sized;
+    // #[law]
+    // #[ensures(self.postcondition_once(args, res) == self.resolve() && self.postcondition(args, res))]
+    // fn fn_once(self, args: Args, res: Self::Output)
+    // where
+    //     Self: Sized;
 }
 
 impl<Args: Tuple, F: FnOnce<Args>> FnOnceExt<Args> for F {
@@ -109,10 +109,10 @@ impl<Args: Tuple, F: FnMut<Args>> FnMutExt<Args> for F {
     #[ensures(self.unnest(c))]
     fn unnest_trans(self, b: Self, c: Self) {}
 
-    #[law]
-    #[trusted]
-    #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && (^s).resolve())]
-    fn fn_mut_once(self, args: Args, res: Self::Output) {}
+    // #[law]
+    // #[trusted]
+    // #[ensures(self.postcondition_once(args, res) == exists<s: &mut Self> *s == self && s.postcondition_mut(args, res) && (^s).resolve())]
+    // fn fn_mut_once(self, args: Args, res: Self::Output) {}
 }
 
 impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
@@ -123,15 +123,15 @@ impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
         absurd
     }
 
-    #[law]
-    #[trusted]
-    #[ensures(self.postcondition_mut(args, res) == self.resolve() && self.postcondition(args, res))]
-    fn fn_mut(&mut self, args: Args, res: Self::Output) {}
+    // #[law]
+    // #[trusted]
+    // #[ensures(self.postcondition_mut(args, res) == self.resolve() && self.postcondition(args, res))]
+    // fn fn_mut(&mut self, args: Args, res: Self::Output) {}
 
-    #[law]
-    #[trusted]
-    #[ensures(self.postcondition_once(args, res) == self.resolve() && self.postcondition(args, res))]
-    fn fn_once(self, args: Args, res: Self::Output) {}
+    // #[law]
+    // #[trusted]
+    // #[ensures(self.postcondition_once(args, res) == self.resolve() && self.postcondition(args, res))]
+    // fn fn_once(self, args: Args, res: Self::Output) {}
 }
 
 extern_spec! {

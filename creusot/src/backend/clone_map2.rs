@@ -753,18 +753,28 @@ pub(crate) fn is_closure_hack<'tcx>(
         return Some((def_id, subst));
     }
 
+    debug!("is_closure_hack: {:?}", def_id);
+
+    let self_ty = subst.types().nth(1);
+
     if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_precond"), def_id.0) {
-        return Some((Id(def_id.0, Some(ClosureId::Precondition)), subst));
+        if let TyKind::Closure(id, csubst) = self_ty.unwrap().kind() {
+            return Some((Id(*id, Some(ClosureId::Precondition)), csubst));
+        }
     } else if tcx.is_diagnostic_item(Symbol::intern("fn_once_impl_postcond"), def_id.0) {
-        return Some((Id(def_id.0, Some(ClosureId::PostconditionOnce)), subst));
+        if let TyKind::Closure(id, csubst) = self_ty.unwrap().kind() {
+            return Some((Id(*id, Some(ClosureId::PostconditionOnce)), csubst));
+        }
     } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_postcond"), def_id.0) {
-        return Some((Id(def_id.0, Some(ClosureId::PostconditionMut)), subst));
+        if let TyKind::Closure(id, csubst) = self_ty.unwrap().kind() {
+            return Some((Id(*id, Some(ClosureId::PostconditionMut)), csubst));
+        }
     } else if tcx.is_diagnostic_item(Symbol::intern("fn_impl_postcond"), def_id.0) {
-        return Some((Id(def_id.0, Some(ClosureId::Postcondition)), subst));
+        if let TyKind::Closure(id, csubst) = self_ty.unwrap().kind() {
+            return Some((Id(*id, Some(ClosureId::Postcondition)), csubst));
+        }
     } else if tcx.is_diagnostic_item(Symbol::intern("fn_mut_impl_unnest"), def_id.0) {
-        debug!("is_closure_hack: {:?}", def_id);
-        let self_ty = subst.types().nth(1).unwrap();
-        if let TyKind::Closure(id, csubst) = self_ty.kind() {
+        if let TyKind::Closure(id, csubst) = self_ty.unwrap().kind() {
             return Some((Id(*id, Some(ClosureId::Unnest)), csubst));
         }
     };
@@ -1038,11 +1048,9 @@ pub(crate) fn make_clones<'tcx, 'a>(
         let (id, subst) = match node {
             Dependency::Item(id, subst) => (id, subst),
             Dependency::BaseTy(ty) => {
-                if matches!(ty.kind(), TyKind::Param(_)) {
-                    continue;
+                if let Some(nm) = base_ty_name(ty) {
+                    uses.insert(Use { name: nm, as_: None });
                 }
-
-                uses.insert(Use { name: base_ty_name(ty), as_: None });
                 continue;
             }
         };
@@ -1138,32 +1146,32 @@ pub(crate) fn make_clones<'tcx, 'a>(
     uses.into_iter().map(Decl::UseDecl).chain(clones).collect()
 }
 
-fn base_ty_name(ty: Ty) -> QName {
+fn base_ty_name(ty: Ty) -> Option<QName> {
     match ty.kind() {
-        TyKind::Bool => QName::from_string("prelude.Bool").unwrap(),
-        TyKind::Char => QName::from_string("prelude.Char").unwrap(),
-        TyKind::Int(IntTy::I8) => QName::from_string("prelude.Int8").unwrap(),
-        TyKind::Int(IntTy::I16) => QName::from_string("prelude.Int16").unwrap(),
-        TyKind::Int(IntTy::I32) => QName::from_string("mach.int.Int32").unwrap(),
-        TyKind::Int(IntTy::I64) => QName::from_string("mach.int.Int64").unwrap(),
-        TyKind::Int(IntTy::I128) => QName::from_string("prelude.Int128").unwrap(),
-        TyKind::Uint(UintTy::U8) => QName::from_string("prelude.UInt8").unwrap(),
-        TyKind::Uint(UintTy::U16) => QName::from_string("prelude.UInt16").unwrap(),
-        TyKind::Uint(UintTy::U32) => QName::from_string("mach.int.UInt32").unwrap(),
-        TyKind::Uint(UintTy::U64) => QName::from_string("mach.int.UInt64").unwrap(),
-        TyKind::Uint(UintTy::U128) => QName::from_string("prelude.UInt128").unwrap(),
-        TyKind::Int(IntTy::Isize) => QName::from_string("prelude.IntSize").unwrap(),
-        TyKind::Uint(UintTy::Usize) => QName::from_string("prelude.UIntSize").unwrap(),
-        TyKind::Float(FloatTy::F32) => QName::from_string("ieee_float.Float32").unwrap(),
-        TyKind::Float(FloatTy::F64) => QName::from_string("ieee_float.Float64").unwrap(),
+        TyKind::Bool => QName::from_string("prelude.Bool"),
+        TyKind::Char => QName::from_string("prelude.Char"),
+        TyKind::Int(IntTy::I8) => QName::from_string("prelude.Int8"),
+        TyKind::Int(IntTy::I16) => QName::from_string("prelude.Int16"),
+        TyKind::Int(IntTy::I32) => QName::from_string("mach.int.Int32"),
+        TyKind::Int(IntTy::I64) => QName::from_string("mach.int.Int64"),
+        TyKind::Int(IntTy::I128) => QName::from_string("prelude.Int128"),
+        TyKind::Uint(UintTy::U8) => QName::from_string("prelude.UInt8"),
+        TyKind::Uint(UintTy::U16) => QName::from_string("prelude.UInt16"),
+        TyKind::Uint(UintTy::U32) => QName::from_string("mach.int.UInt32"),
+        TyKind::Uint(UintTy::U64) => QName::from_string("mach.int.UInt64"),
+        TyKind::Uint(UintTy::U128) => QName::from_string("prelude.UInt128"),
+        TyKind::Int(IntTy::Isize) => QName::from_string("prelude.IntSize"),
+        TyKind::Uint(UintTy::Usize) => QName::from_string("prelude.UIntSize"),
+        TyKind::Float(FloatTy::F32) => QName::from_string("ieee_float.Float32"),
+        TyKind::Float(FloatTy::F64) => QName::from_string("ieee_float.Float64"),
         TyKind::Str => todo!(),
-        TyKind::Slice(_) => QName::from_string("prelude.Slice").unwrap(),
-        TyKind::RawPtr(_) => QName::from_string("prelude.Opaque").unwrap(),
-        TyKind::Ref(_, _, _) => QName::from_string("prelude.Borrow").unwrap(),
-        TyKind::Never => todo!(),
-        TyKind::Tuple(_) => todo!(),
-        TyKind::Array(_, _) => QName::from_string("seq.Seq").unwrap(),
-        _ => panic!("base_ty_name: can only be called on basic types. [{ty:?}]"),
+        TyKind::Slice(_) => QName::from_string("prelude.Slice"),
+        TyKind::RawPtr(_) => QName::from_string("prelude.Opaque"),
+        TyKind::Ref(_, _, _) => QName::from_string("prelude.Borrow"),
+        TyKind::Never => None,
+        TyKind::Tuple(_) => None,
+        TyKind::Array(_, _) => QName::from_string("seq.Seq"),
+        _ => None,
     }
 }
 // PreludeModule::Int => QName::from_string("mach.int.Int").unwrap(),
