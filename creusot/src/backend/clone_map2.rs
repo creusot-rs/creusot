@@ -625,7 +625,7 @@ impl<'tcx> MonoGraph<'tcx> {
 
             // to_add.extend(subst.types().filter_map(|ty| Some((DepLevel::Signature, Dependency::from_ty(ty)?)) ));
             // if ctx.def_path_str(id.0).contains("produces") {
-            //     eprintln!("deps_of({id:?}, {subst:?}) :- {to_add:?}\n");
+            // eprintln!("deps_of({id:?}, {subst:?}) :- {to_add:?}\n");
             // }
 
             for (lvl, dep) in to_add {
@@ -644,7 +644,9 @@ impl<'tcx> MonoGraph<'tcx> {
                     let ty = ctx.mk_ty(TyKind::Projection(proj_ty));
 
                     let normed = ctx.try_normalize_erasing_regions(param_env, ty);
-                    trace!("normed {ty:?} into {normed:?}");
+                    let res = resolve_opt(ctx.tcx, param_env, id.0, subst);
+                    eprintln!("resolved {ty:?} into {res:?}");
+                    eprintln!("normed {ty:?} into {normed:?}");
                     if let Ok(normed) = normed && ty != normed {
                         match normed.kind() {
                             TyKind::Projection(pty) => Some(Dependency::Item(pty.item_def_id.into(), pty.substs)),
@@ -715,7 +717,11 @@ impl<'tcx> MonoGraph<'tcx> {
             edge_weight.0 = edge_weight.0.max(weight.0);
             edge_weight.1 = match (edge_weight.1, weight.1) {
                 (EdgeType::Fake, b) => b,
-                (a, _) => a,
+                (EdgeType::Type, b) => b,
+                (a, b) => {
+                    assert_eq!(a, b);
+                    a
+                }
             };
             self.graph.update_edge(src, tgt, edge_weight);
         }
@@ -960,7 +966,7 @@ impl<'a, 'tcx> PriorClones<'a, 'tcx> {
                 &self.graph.graph,
                 &[Config::EdgeNoLabel, Config::NodeNoLabel],
                 &|_, (src, tgt, (_, typ))| {
-                    let x = if let (id, _) = src.as_item().unwrap() &&
+                    let x = if let Some((id, _)) = src.as_item() &&
                     let Some((tgt, subst)) = tgt.as_item() &&
                         let Some(Some(idnt)) = self.prior[&Id::from(id)].get((tgt.into(), subst)) {
                         idnt.to_string()
@@ -1081,10 +1087,13 @@ pub(crate) fn make_clones<'tcx, 'a>(
         //     eprintln!("{:?} {:?}", root_id.0, id.0);
         // }
 
-        // if ctx.item_name(root_id.0).as_str().contains("produces") {
-        //     eprintln!("{:?} {:?}", root_id.0, id.0);
-        //     eprintln!("{:?}", priors.graph.graph.neighbors_directed(node, Outgoing));
-        // }
+        if ctx.item_name(root_id.0).as_str() == ("into_iter") {
+            eprintln!("{:?} {:?}", root_id.0, id.0);
+            eprintln!(
+                "{:?}",
+                priors.graph.graph.neighbors_directed(node, Outgoing).collect::<Vec<_>>()
+            );
+        }
         for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
             if priors.graph.level[&dep] < desired_dep_level {
                 continue;
@@ -1103,13 +1112,17 @@ pub(crate) fn make_clones<'tcx, 'a>(
 
             let (_, orig) = priors.graph.graph[(node, dep)];
 
+            if ctx.item_name(root_id.0).as_str() == ("into_iter") {
+                eprintln!("Depdency {dep:?} orig {orig:?}");
+            }
+
             let EdgeType::Refinement(orig_id, orig_subst) = orig else { continue };
 
             if depth == CloneDepth::Shallow && item_type(ctx.tcx, orig_id.0) != ItemType::AssocTy {
                 continue;
             }
 
-            // FIXME: Not really correct
+            // // FIXME: Not really correct
             if item_type(ctx.tcx, orig_id.0) == ItemType::Type {
                 continue;
             }
