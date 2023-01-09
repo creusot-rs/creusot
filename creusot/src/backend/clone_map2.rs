@@ -6,7 +6,7 @@ use creusot_rustc::{
     macros::{TypeFoldable, TypeVisitable},
     middle::ty::{subst::SubstsRef, EarlyBinder, TypeVisitable},
     resolve::Namespace,
-    span::{symbol::kw, Symbol, DUMMY_SP},
+    span::{Symbol, DUMMY_SP},
 };
 use heck::ToUpperCamelCase;
 use indexmap::{IndexMap, IndexSet};
@@ -691,7 +691,7 @@ impl<'tcx> MonoGraph<'tcx> {
                     let ty = ctx.mk_ty(TyKind::Projection(proj_ty));
 
                     let normed = ctx.try_normalize_erasing_regions(param_env, ty);
-                    let res = resolve_opt(ctx.tcx, param_env, id.0, subst);
+                    let _res = resolve_opt(ctx.tcx, param_env, id.0, subst);
 
                     if let Ok(normed) = normed && ty != normed {
                         match normed.kind() {
@@ -764,7 +764,7 @@ impl<'tcx> MonoGraph<'tcx> {
             edge_weight.1 = match (edge_weight.1, weight.1) {
                 (EdgeType::Fake, b) => b,
                 (EdgeType::Type, b) => b,
-                (a, b) => {
+                (a, _b) => {
                     // assert_eq!(a, b);
                     a
                 }

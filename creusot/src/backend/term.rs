@@ -1,5 +1,4 @@
 use super::{
-    clone_map2::Id,
     ty::{intty_to_ty, translate_ty, uintty_to_ty},
     Cloner,
 };

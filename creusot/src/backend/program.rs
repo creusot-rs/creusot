@@ -4,7 +4,7 @@ use crate::{
         binop_to_binop,
         fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
         function::{
-            closure_contract2, closure_generic_decls, place, place::translate_rplace_inner,
+            closure_generic_decls, place, place::translate_rplace_inner,
         },
         pearlite::Term,
         specification::{lower_impure, lower_pure},
@@ -19,24 +19,22 @@ use creusot_rustc::{
     span::DUMMY_SP,
 };
 
-use creusot_rustc::{hir::def_id::DefId, span::Symbol};
-use rustc_middle::ty::{SubstsRef, WithOptConstParam};
+use creusot_rustc::{hir::def_id::DefId};
+use rustc_middle::ty::{WithOptConstParam};
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     declaration::{
-        AdtDecl, CfgFunction, ConstructorDecl, Decl, Field, LetDecl, LetKind, Logic, Module,
-        Predicate, TyDecl,
+        CfgFunction, Decl, LetDecl, LetKind, Module,
     },
     exp::{Exp, Pattern},
     mlcfg,
-    mlcfg::BlockId,
-    Ident, QName,
+    mlcfg::BlockId, QName,
 };
 
 use super::{
     clone_map2::{cloneable_name, CloneDepth, CloneVisibility, Id, Namer},
     sig_to_why3, signature_of,
-    ty::{self, closure_accessors, translate_ty},
+    ty::{self, translate_ty},
     Cloner,
 };
 
