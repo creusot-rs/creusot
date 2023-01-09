@@ -3,9 +3,7 @@ use crate::{
     translation::{
         binop_to_binop,
         fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
-        function::{
-            closure_generic_decls, place, place::translate_rplace_inner,
-        },
+        function::{closure_generic_decls, place, place::translate_rplace_inner},
         pearlite::Term,
         specification::{lower_impure, lower_pure},
         unop_to_unop,
@@ -19,20 +17,19 @@ use creusot_rustc::{
     span::DUMMY_SP,
 };
 
-use creusot_rustc::{hir::def_id::DefId};
-use rustc_middle::ty::{WithOptConstParam};
+use creusot_rustc::hir::def_id::DefId;
+use rustc_middle::ty::WithOptConstParam;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    declaration::{
-        CfgFunction, Decl, LetDecl, LetKind, Module,
-    },
+    declaration::{CfgFunction, Decl, LetDecl, LetKind, Logic, Module},
     exp::{Exp, Pattern},
     mlcfg,
-    mlcfg::BlockId, QName,
+    mlcfg::BlockId,
+    QName,
 };
 
 use super::{
-    clone_map2::{cloneable_name, CloneDepth, CloneVisibility, Id, Namer},
+    clone_map2::{cloneable_name, CloneDepth, CloneVisibility, ClosureId, Id, Namer},
     sig_to_why3, signature_of,
     ty::{self, translate_ty},
     Cloner,
@@ -85,19 +82,17 @@ pub(crate) fn lower_closure_aux<'tcx>(
 ) -> Vec<Module> {
     let term = lower_pure(ctx, &mut names, item.1);
     let mut sig = sig_to_why3(ctx, &mut names, item.0, id.0);
-    sig.name = cloneable_name(ctx, id, CloneDepth::Deep).name;
+    sig.name = id.1.unwrap().name().to_ascii_lowercase().into();
 
     let name = cloneable_name(ctx, id, CloneDepth::Deep).name.clone();
 
     vec![Module {
         name,
-        decls: vec![Decl::Let(LetDecl {
-            kind: Some(LetKind::Function),
-            sig,
-            rec: false,
-            ghost: false,
-            body: term,
-        })],
+        decls: names
+            .to_clones(ctx, CloneVisibility::Body, CloneDepth::Shallow)
+            .into_iter()
+            .chain(std::iter::once(Decl::LogicDefn(Logic { sig, body: term })))
+            .collect(),
     }]
 }
 
@@ -217,7 +212,8 @@ impl<'tcx> Expr<'tcx> {
             Expr::Constructor(id, ix, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, body)).collect();
 
-                let ctor = names.constructor(id.into(), subst, ix.as_usize());
+                let id = if ctx.is_closure(id) { Id(id, Some(ClosureId::Type)) } else { id.into() };
+                let ctor = names.constructor(id, subst, ix.as_usize());
                 Exp::Constructor { ctor, args }
             }
             Expr::Call(id, subst, args) => {

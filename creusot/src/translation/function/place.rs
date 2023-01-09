@@ -1,6 +1,10 @@
 use super::{fmir, LocalIdent};
 use crate::{
-    backend::{program::uint_to_int, Cloner},
+    backend::{
+        clone_map2::{ClosureId, Id},
+        program::uint_to_int,
+        Cloner,
+    },
     ctx::TranslationCtx,
 };
 use creusot_rustc::{
@@ -118,7 +122,7 @@ pub(crate) fn create_assign_inner<'tcx, C: Cloner<'tcx>>(
 
                     varexps[ix.as_usize()] = inner;
 
-                    let cons = names.constructor(id.into(), subst, 0);
+                    let cons = names.constructor(Id(*id, Some(ClosureId::Type)), subst, 0);
 
                     inner = Let {
                         pattern: ConsP(cons.clone(), field_pats),

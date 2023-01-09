@@ -42,7 +42,7 @@ use crate::{
         pearlite::{Term, TermKind, TermVisitor},
         traits::{resolve_opt, TraitImpl},
     },
-    util::{self, get_builtin, item_name, item_qname, item_type, module_name, PreSignature},
+    util::{self, get_builtin, item_name, item_type, module_name, PreSignature},
 };
 use creusot_rustc::macros::{TyDecodable, TyEncodable};
 
@@ -74,7 +74,6 @@ pub(crate) enum ClosureId {
     PostconditionOnce,
     PostconditionMut,
     Postcondition,
-    Field,
 }
 
 #[derive(
@@ -103,7 +102,6 @@ impl ClosureId {
             ClosureId::PostconditionOnce => "PostconditionOnce",
             ClosureId::PostconditionMut => "PostconditionMut",
             ClosureId::Postcondition => "Postcondition",
-            ClosureId::Field => "Field",
         }
     }
 }
@@ -286,9 +284,6 @@ fn get_immediate_deps<'tcx>(
                     unnest.1.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Body, dep)));
                 });
                 v
-            }
-            Some(ClosureId::Field) => {
-                todo!()
             }
             None => program_dependencies(ctx, def_id),
         },
@@ -1123,8 +1118,8 @@ pub(crate) fn make_clones<'tcx, 'a>(
             continue;
         };
 
-        if matches!(item_type(ctx.tcx, id.0), ItemType::Type) {
-            let name = item_qname(ctx, id.0, Namespace::TypeNS).module_qname();
+        if matches!(item_type(ctx.tcx, id.0), ItemType::Type) || id.1 == Some(ClosureId::Type) {
+            let name = cloneable_name(ctx, id, depth);
             let as_name = names.value(id, subst).module_ident().unwrap().clone();
             uses.insert(Use { name: name.clone(), as_: Some(as_name) });
 
@@ -1135,17 +1130,6 @@ pub(crate) fn make_clones<'tcx, 'a>(
 
         let mut node_names = priors.get(ctx.tcx, id);
 
-        // if ctx.item_name(root_id.0).as_str().contains("next") && ctx.item_name(id.0).as_str().contains("produces") {
-        //     eprintln!("{:?} {:?}", root_id.0, id.0);
-        // }
-
-        // if ctx.item_name(root_id.0).as_str() == ("into_iter") {
-        //     eprintln!("{:?} {:?}", root_id.0, id.0);
-        //     eprintln!(
-        //         "{:?}",
-        //         priors.graph.graph.neighbors_directed(node, Outgoing).collect::<Vec<_>>()
-        //     );
-        // }
         for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
             if priors.graph.level[&dep] < desired_dep_level {
                 continue;
@@ -1156,18 +1140,14 @@ pub(crate) fn make_clones<'tcx, 'a>(
             };
 
             // TODO: introduce a notion of opacity to address this
-            if item_type(ctx.tcx, id.0) == ItemType::Program
+            if (item_type(ctx.tcx, id.0) == ItemType::Program
+                || (ctx.is_closure(id.0) && id.1.is_none()))
                 && priors.graph.level[&dep] == DepLevel::Body
             {
                 continue;
             }
 
             let (_, orig) = priors.graph.graph[(node, dep)];
-
-            // if ctx.item_name(root_id.0).as_str() == ("into_iter") {
-            //     eprintln!("Depdency {dep:?} orig {orig:?}");
-            // }
-
             let EdgeType::Refinement(orig_id, orig_subst) = orig else { continue };
 
             if depth == CloneDepth::Shallow && item_type(ctx.tcx, orig_id.0) != ItemType::AssocTy {
@@ -1175,7 +1155,8 @@ pub(crate) fn make_clones<'tcx, 'a>(
             }
 
             // // FIXME: Not really correct
-            if item_type(ctx.tcx, orig_id.0) == ItemType::Type {
+            if item_type(ctx.tcx, orig_id.0) == ItemType::Type || orig_id.1 == Some(ClosureId::Type)
+            {
                 continue;
             }
 
@@ -1194,6 +1175,7 @@ pub(crate) fn make_clones<'tcx, 'a>(
                     src,
                     translate_ty(ctx, &mut names, DUMMY_SP, dep.as_ty(ctx.tcx)),
                 ),
+                ItemType::Type => panic!(),
                 _ => CloneSubst::Val(src, tgt.unwrap()),
             };
             clone_subst.push(sub)
@@ -1319,7 +1301,6 @@ pub(super) fn cloneable_name(ctx: &TranslationCtx, def_id: Id, interface: CloneD
             | Some(ClosureId::Precondition)
             | Some(ClosureId::Postcondition)
             | Some(ClosureId::PostconditionOnce)
-            | Some(ClosureId::Field)
             | Some(ClosureId::PostconditionMut) => match interface {
                 CloneDepth::Shallow => QName {
                     module: Vec::new(),
@@ -1330,7 +1311,11 @@ pub(super) fn cloneable_name(ctx: &TranslationCtx, def_id: Id, interface: CloneD
                     )
                     .into(),
                 },
-                CloneDepth::Deep => module_name(ctx, def_id.0).into(),
+                CloneDepth::Deep => QName {
+                    module: Vec::new(),
+                    name: format!("{}_{}", &*module_name(ctx, def_id.0), def_id.1.unwrap().name())
+                        .into(),
+                },
             },
             None => QName {
                 module: Vec::new(),

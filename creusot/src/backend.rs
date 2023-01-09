@@ -76,7 +76,6 @@ pub(crate) fn to_why3<'tcx>(
                     id,
                     contract.postcond.expect("closure has no immutable   postcondition"),
                 ),
-                Some(ClosureId::Field) => todo!("closure field"),
                 None => lower_closure(ctx, priors.get(ctx.tcx, id), id.0),
             }
         }

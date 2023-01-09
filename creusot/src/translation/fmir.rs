@@ -6,7 +6,7 @@ use crate::{
 };
 use creusot_rustc::{
     hir::def_id::DefId,
-    middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TypeVisitable},
+    middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TyKind, TypeVisitable},
     smir::mir::{BasicBlock, BinOp, UnOp},
     span::{Span, Symbol, DUMMY_SP},
     target::abi::VariantIdx,
@@ -118,11 +118,12 @@ pub(crate) fn resolve_predicate_of2<'tcx>(
     let (resolve_id, resolve_subst) =
         traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
 
-if (ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), resolve_id)
-    || ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_id))
+    if (ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_method"), resolve_id)
+        || ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_id))
         && resolve_subst.type_at(0).is_closure()
     {
-        return Some((Id(resolve_id, Some(ClosureId::Resolve)), resolve_subst));
+        let TyKind::Closure(def_id, substs) = resolve_subst.type_at(0).kind() else { return None };
+        return Some((Id(*def_id, Some(ClosureId::Resolve)), substs));
     };
 
     if !ty.still_further_specializable()

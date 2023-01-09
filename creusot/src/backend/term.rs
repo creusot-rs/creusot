@@ -1,6 +1,7 @@
 use super::{
+    clone_map2::{ClosureId, Id},
     ty::{intty_to_ty, translate_ty, uintty_to_ty},
-    Cloner, clone_map2::{Id, ClosureId},
+    Cloner,
 };
 use crate::{
     ctx::*,
