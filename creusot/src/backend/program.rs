@@ -34,7 +34,7 @@ use why3::{
 };
 
 use super::{
-    clone_map2::{CloneDepth, CloneVisibility, Id, Namer, cloneable_name},
+    clone_map2::{cloneable_name, CloneDepth, CloneVisibility, Id, Namer},
     sig_to_why3, signature_of,
     ty::{self, closure_accessors, translate_ty},
     Cloner,
@@ -91,14 +91,16 @@ pub(crate) fn lower_closure_aux<'tcx>(
 
     let name = cloneable_name(ctx, id, CloneDepth::Deep).name.clone();
 
-    vec![
-        Module {
-            name,
-            decls: vec![
-                Decl::Let(LetDecl { kind: Some(LetKind::Function), sig, rec: false, ghost: false, body: term })
-            ]
-        }
-    ]
+    vec![Module {
+        name,
+        decls: vec![Decl::Let(LetDecl {
+            kind: Some(LetKind::Function),
+            sig,
+            rec: false,
+            ghost: false,
+            body: term,
+        })],
+    }]
 }
 
 pub(crate) fn lower_function<'tcx>(

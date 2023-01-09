@@ -473,8 +473,10 @@ pub(crate) fn closure_contract2<'tcx>(
         (pre_sig, precondition)
     };
 
+    let mut resolve = closure_resolve2(ctx, def_id, subst);
+    normalize(ctx.tcx, ctx.param_env(def_id), &mut resolve.1);
     let mut contracts = ClosureContract {
-        resolve: closure_resolve2(ctx, def_id, subst),
+        resolve,
         precond,
         postcond: None,
         postcond_once: None,

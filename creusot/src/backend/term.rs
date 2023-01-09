@@ -1,4 +1,5 @@
 use super::{
+    clone_map2::Id,
     ty::{intty_to_ty, translate_ty, uintty_to_ty},
     Cloner,
 };
@@ -142,14 +143,12 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
                     args = vec![Exp::Tuple(vec![])];
                 }
 
-                let method = (id.0, subst);
-
-                if is_identity_from(self.ctx.tcx, id.0, method.1) {
+                if is_identity_from(self.ctx.tcx, id.0, subst) {
                     return args.remove(0);
                 }
 
-                self.lookup_builtin(method, &mut args).unwrap_or_else(|| {
-                    let clone = self.names.value(method.0.into(), method.1);
+                self.lookup_builtin((id.0, subst), &mut args).unwrap_or_else(|| {
+                    let clone = self.names.value(id, subst);
                     if self.pure == Purity::Program {
                         mk_binders(Exp::QVar(clone, self.pure), args)
                     } else {
