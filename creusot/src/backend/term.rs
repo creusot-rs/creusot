@@ -1,6 +1,6 @@
 use super::{
     ty::{intty_to_ty, translate_ty, uintty_to_ty},
-    Cloner,
+    Cloner, clone_map2::{Id, ClosureId},
 };
 use crate::{
     ctx::*,
@@ -293,10 +293,12 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
             Pattern::Constructor { def_id, variant, fields, substs } => {
                 // let variant = &adt.variants()[variant];
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
-                Pat::ConsP(
-                    self.names.constructor(def_id.into(), substs, variant.as_usize()),
-                    fields,
-                )
+                let id = if self.ctx.is_closure(def_id) {
+                    Id(def_id, Some(ClosureId::Type))
+                } else {
+                    def_id.into()
+                };
+                Pat::ConsP(self.names.constructor(id, substs, variant.as_usize()), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => Pat::VarP(name.to_string().into()),

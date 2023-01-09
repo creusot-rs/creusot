@@ -74,6 +74,7 @@ pub(crate) enum ClosureId {
     PostconditionOnce,
     PostconditionMut,
     Postcondition,
+    Field,
 }
 
 #[derive(
@@ -102,6 +103,7 @@ impl ClosureId {
             ClosureId::PostconditionOnce => "PostconditionOnce",
             ClosureId::PostconditionMut => "PostconditionMut",
             ClosureId::Postcondition => "Postcondition",
+            ClosureId::Field => "Field",
         }
     }
 }
@@ -284,6 +286,9 @@ fn get_immediate_deps<'tcx>(
                     unnest.1.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Body, dep)));
                 });
                 v
+            }
+            Some(ClosureId::Field) => {
+                todo!()
             }
             None => program_dependencies(ctx, def_id),
         },
@@ -952,8 +957,9 @@ impl<'tcx> Cloner<'tcx> for Namer<'_, 'tcx> {
 
     fn accessor(&mut self, def_id: Id, subst: SubstsRef<'tcx>, variant: usize, ix: usize) -> QName {
         if util::item_type(self.tcx, def_id.0) == ItemType::Closure {
+            let id = Id(def_id.0, Some(ClosureId::Type));
             QName {
-                module: self.ident(def_id, subst).into_iter().collect(),
+                module: self.ident(id, subst).into_iter().collect(),
                 name: format!("field_{}", ix).into(),
             }
         } else {
@@ -1313,6 +1319,7 @@ pub(super) fn cloneable_name(ctx: &TranslationCtx, def_id: Id, interface: CloneD
             | Some(ClosureId::Precondition)
             | Some(ClosureId::Postcondition)
             | Some(ClosureId::PostconditionOnce)
+            | Some(ClosureId::Field)
             | Some(ClosureId::PostconditionMut) => match interface {
                 CloneDepth::Shallow => QName {
                     module: Vec::new(),

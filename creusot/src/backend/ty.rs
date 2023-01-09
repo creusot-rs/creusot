@@ -296,6 +296,18 @@ pub(crate) fn lower_closure_ty<'tcx>(
     let mut decls = make_clones(ctx, names, CloneVisibility::Body, CloneDepth::Deep, id);
     decls.push(Decl::TyDecl(TyDecl::Adt { tys: vec![kind] }));
 
+    decls.extend(closure_accessors(ctx, id.0).into_iter().map(|(nm, sig, body)| {
+        let mut sig = sig_to_why3(ctx, &mut names, sig, id.0);
+        sig.name = Ident::from(nm.as_str());
+        Decl::Let(LetDecl {
+            kind: Some(LetKind::Function),
+            sig,
+            rec: false,
+            ghost: false,
+            body: lower_pure(ctx, &mut names, body),
+        })
+    }));
+
     Module { name: module_name_id(ctx, id), decls }
 }
 
