@@ -117,7 +117,10 @@ pub(crate) fn resolve_predicate_of2<'tcx>(
 
     let (resolve_id, resolve_subst) =
         traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
+    // eprintln!("before {:?}", (trait_meth_id, subst));
+    // eprintln!("after {:?}", (resolve_id, resolve_subst));
 
+    // eprintln!("{:?} {:?}", ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_id), resolve_subst.type_at(0).is_closure());
     if ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_id)
         && resolve_subst.type_at(0).is_closure()
     {
@@ -130,6 +133,7 @@ pub(crate) fn resolve_predicate_of2<'tcx>(
     {
         return None;
     }
+    eprintln!("resolve {:?}", (resolve_id, resolve_subst));
 
     Some((resolve_id.into(), resolve_subst))
 }

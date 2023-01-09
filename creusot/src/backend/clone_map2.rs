@@ -237,7 +237,54 @@ fn get_immediate_deps<'tcx>(
                 contracts.resolve.1.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Body, dep)));
                 v
             }
-            Some(_) => Vec::new(),
+            Some(ClosureId::Precondition) => {
+                let mut v = Vec::new();
+
+                let contracts = closure_contract2(ctx, id.0);
+                contracts.precond.0.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Signature, dep)));
+                contracts.precond.1.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Body, dep)));
+                v
+            }
+            Some(ClosureId::PostconditionOnce) => {
+                let mut v = Vec::new();
+
+                let contracts = closure_contract2(ctx, id.0);
+                contracts.postcond_once.map(|post| {
+                    post.0.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Signature, dep)));
+                    post.1.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Body, dep)));
+                });
+                v
+            }
+            Some(ClosureId::PostconditionMut) => {
+                let mut v = Vec::new();
+
+                let contracts = closure_contract2(ctx, id.0);
+                contracts.postcond_mut.map(|post| {
+                    post.0.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Signature, dep)));
+                    post.1.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Body, dep)));
+                });
+                v
+            }
+            Some(ClosureId::Postcondition) => {
+                let mut v = Vec::new();
+
+                let contracts = closure_contract2(ctx, id.0);
+                contracts.postcond.map(|post| {
+                    post.0.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Signature, dep)));
+                    post.1.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Body, dep)));
+                });
+                v
+            }
+            Some(ClosureId::Unnest) => {
+                let mut v = Vec::new();
+
+                let contracts = closure_contract2(ctx, id.0);
+                contracts.unnest.map(|unnest| {
+                    unnest.0.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Signature, dep)));
+                    unnest.1.deps(ctx.tcx, &mut |dep| v.push((DepLevel::Body, dep)));
+                });
+                v
+            }
             None => program_dependencies(ctx, def_id),
         },
         ItemType::Program => program_dependencies(ctx, def_id),
@@ -645,8 +692,7 @@ impl<'tcx> MonoGraph<'tcx> {
 
                     let normed = ctx.try_normalize_erasing_regions(param_env, ty);
                     let res = resolve_opt(ctx.tcx, param_env, id.0, subst);
-                    eprintln!("resolved {ty:?} into {res:?}");
-                    eprintln!("normed {ty:?} into {normed:?}");
+
                     if let Ok(normed) = normed && ty != normed {
                         match normed.kind() {
                             TyKind::Projection(pty) => Some(Dependency::Item(pty.item_def_id.into(), pty.substs)),
@@ -719,7 +765,7 @@ impl<'tcx> MonoGraph<'tcx> {
                 (EdgeType::Fake, b) => b,
                 (EdgeType::Type, b) => b,
                 (a, b) => {
-                    assert_eq!(a, b);
+                    // assert_eq!(a, b);
                     a
                 }
             };
@@ -1087,13 +1133,13 @@ pub(crate) fn make_clones<'tcx, 'a>(
         //     eprintln!("{:?} {:?}", root_id.0, id.0);
         // }
 
-        if ctx.item_name(root_id.0).as_str() == ("into_iter") {
-            eprintln!("{:?} {:?}", root_id.0, id.0);
-            eprintln!(
-                "{:?}",
-                priors.graph.graph.neighbors_directed(node, Outgoing).collect::<Vec<_>>()
-            );
-        }
+        // if ctx.item_name(root_id.0).as_str() == ("into_iter") {
+        //     eprintln!("{:?} {:?}", root_id.0, id.0);
+        //     eprintln!(
+        //         "{:?}",
+        //         priors.graph.graph.neighbors_directed(node, Outgoing).collect::<Vec<_>>()
+        //     );
+        // }
         for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
             if priors.graph.level[&dep] < desired_dep_level {
                 continue;
@@ -1112,9 +1158,9 @@ pub(crate) fn make_clones<'tcx, 'a>(
 
             let (_, orig) = priors.graph.graph[(node, dep)];
 
-            if ctx.item_name(root_id.0).as_str() == ("into_iter") {
-                eprintln!("Depdency {dep:?} orig {orig:?}");
-            }
+            // if ctx.item_name(root_id.0).as_str() == ("into_iter") {
+            //     eprintln!("Depdency {dep:?} orig {orig:?}");
+            // }
 
             let EdgeType::Refinement(orig_id, orig_subst) = orig else { continue };
 
@@ -1240,7 +1286,7 @@ pub enum CloneDepth {
     Deep,
 }
 
-fn cloneable_name(ctx: &TranslationCtx, def_id: Id, interface: CloneDepth) -> QName {
+pub(super) fn cloneable_name(ctx: &TranslationCtx, def_id: Id, interface: CloneDepth) -> QName {
     use util::ItemType::*;
 
     // TODO: Refactor.
@@ -1265,6 +1311,7 @@ fn cloneable_name(ctx: &TranslationCtx, def_id: Id, interface: CloneDepth) -> QN
             Some(ClosureId::Resolve)
             | Some(ClosureId::Unnest)
             | Some(ClosureId::Precondition)
+            | Some(ClosureId::Postcondition)
             | Some(ClosureId::PostconditionOnce)
             | Some(ClosureId::PostconditionMut) => match interface {
                 CloneDepth::Shallow => QName {
@@ -1278,7 +1325,6 @@ fn cloneable_name(ctx: &TranslationCtx, def_id: Id, interface: CloneDepth) -> QN
                 },
                 CloneDepth::Deep => module_name(ctx, def_id.0).into(),
             },
-            Some(ClosureId::Postcondition) => todo!(),
             None => QName {
                 module: Vec::new(),
                 name: format!("{}_Stub", &*module_name(ctx, def_id.0)).into(),

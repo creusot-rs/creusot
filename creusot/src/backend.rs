@@ -8,6 +8,7 @@ use why3::{
 
 use crate::{
     ctx::TranslationCtx,
+    translation::function::closure_contract2,
     util::{
         self, ident_of, item_name, item_type, why3_attrs, AnonymousParamName, ItemType,
         PreSignature,
@@ -18,7 +19,7 @@ use self::{
     clone_map2::{CloneDepth, CloneVisibility, ClosureId, Id, PriorClones},
     constant::translate_constant,
     logic::translate_logic_or_predicate,
-    program::{lower_closure, lower_function},
+    program::{lower_closure, lower_closure_aux, lower_function},
     traits::{lower_impl, translate_assoc_ty},
     ty::{lower_accessor, lower_closure_ty, translate_tydecl},
 };
@@ -41,16 +42,43 @@ pub(crate) fn to_why3<'tcx>(
             translate_logic_or_predicate(ctx, priors.get(ctx.tcx, id), id.0)
         }
         ItemType::Program => lower_function(ctx, priors.get(ctx.tcx, id), id.0),
-        ItemType::Closure => match id.1 {
-            Some(ClosureId::Type) => vec![lower_closure_ty(ctx, priors.get(ctx.tcx, id), id)],
-            Some(ClosureId::Unnest) => todo!(),
-            Some(ClosureId::Resolve) => todo!(),
-            Some(ClosureId::Precondition) => todo!(),
-            Some(ClosureId::PostconditionOnce) => todo!(),
-            Some(ClosureId::PostconditionMut) => todo!(),
-            Some(ClosureId::Postcondition) => todo!(),
-            None => lower_closure(ctx, priors.get(ctx.tcx, id), id.0),
-        },
+        ItemType::Closure => {
+            let contract = closure_contract2(ctx, id.0);
+            match id.1 {
+                Some(ClosureId::Type) => vec![lower_closure_ty(ctx, priors.get(ctx.tcx, id), id)],
+                Some(ClosureId::Unnest) => lower_closure_aux(
+                    ctx,
+                    priors.get(ctx.tcx, id),
+                    id,
+                    contract.unnest.expect("closure has no unnest"),
+                ),
+                Some(ClosureId::Resolve) => {
+                    lower_closure_aux(ctx, priors.get(ctx.tcx, id), id, contract.resolve)
+                }
+                Some(ClosureId::Precondition) => {
+                    lower_closure_aux(ctx, priors.get(ctx.tcx, id), id, contract.precond)
+                }
+                Some(ClosureId::PostconditionOnce) => lower_closure_aux(
+                    ctx,
+                    priors.get(ctx.tcx, id),
+                    id,
+                    contract.postcond_once.expect("closure has no move postcondition"),
+                ),
+                Some(ClosureId::PostconditionMut) => lower_closure_aux(
+                    ctx,
+                    priors.get(ctx.tcx, id),
+                    id,
+                    contract.postcond_mut.expect("closure has no mutable postcondition"),
+                ),
+                Some(ClosureId::Postcondition) => lower_closure_aux(
+                    ctx,
+                    priors.get(ctx.tcx, id),
+                    id,
+                    contract.postcond.expect("closure has no immutable   postcondition"),
+                ),
+                None => lower_closure(ctx, priors.get(ctx.tcx, id), id.0),
+            }
+        }
         ItemType::Trait => Vec::new(),
         ItemType::Impl => vec![lower_impl(ctx, priors.get(ctx.tcx, id), id.0)],
         ItemType::Type => {

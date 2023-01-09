@@ -2,14 +2,14 @@ use crate::{invariant::Invariant, *};
 pub use ::std::iter::*;
 
 mod empty;
-// mod map_inv;
+mod map_inv;
 mod once;
 mod range;
 mod repeat;
 mod skip;
 mod take;
 
-// pub use map_inv::MapInv;
+pub use map_inv::MapInv;
 pub use skip::SkipExt;
 pub use take::TakeExt;
 
@@ -34,19 +34,19 @@ pub trait Iterator: ::std::iter::Iterator + Invariant {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
 
-    // #[requires(forall<e : Self::Item, i2 : Self> i2.invariant() ==> self.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
-    // #[requires(MapInv::<Self, _, F>::reinitialize())]
-    // #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
-    // #[requires(self.invariant())]
-    // #[ensures(result.invariant())]
-    // #[ensures(result == MapInv { iter: self, func, produced: Ghost::new(Seq::EMPTY) })]
-    // fn map_inv<B, F>(self, func: F) -> MapInv<Self, Self::Item, F>
-    // where
-    //     Self: Sized,
-    //     F: FnMut(Self::Item, Ghost<Seq<Self::Item>>) -> B,
-    // {
-    //     MapInv { iter: self, func, produced: ghost! {Seq::EMPTY} }
-    // }
+    #[requires(forall<e : Self::Item, i2 : Self> i2.invariant() ==> self.produces(Seq::singleton(e), i2) ==> func.precondition((e, Ghost::new(Seq::EMPTY))))]
+    #[requires(MapInv::<Self, _, F>::reinitialize())]
+    #[requires(MapInv::<Self, Self::Item, F>::preservation(self, func))]
+    #[requires(self.invariant())]
+    #[ensures(result.invariant())]
+    #[ensures(result == MapInv { iter: self, func, produced: Ghost::new(Seq::EMPTY) })]
+    fn map_inv<B, F>(self, func: F) -> MapInv<Self, Self::Item, F>
+    where
+        Self: Sized,
+        F: FnMut(Self::Item, Ghost<Seq<Self::Item>>) -> B,
+    {
+        MapInv { iter: self, func, produced: ghost! {Seq::EMPTY} }
+    }
 }
 
 pub trait IntoIterator: ::std::iter::IntoIterator {

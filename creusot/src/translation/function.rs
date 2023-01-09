@@ -9,7 +9,7 @@ use crate::{
     resolve::EagerResolver,
     rustc_extensions::renumber,
     translation::{
-        pearlite::{self, TermKind, TermVisitorMut},
+        pearlite::{self, normalize, TermKind, TermVisitorMut},
         specification::PreContract,
         traits,
     },
@@ -559,9 +559,14 @@ pub(crate) fn closure_contract2<'tcx>(
             span: DUMMY_SP,
         });
 
+        normalize(ctx.tcx, ctx.param_env(def_id), &mut postcondition);
+
         let unnest_sig = EarlyBinder(ctx.sig(unnest_id).clone()).subst(ctx.tcx, unnest_subst);
 
-        contracts.unnest = Some((unnest_sig, closure_unnest2(ctx.tcx, def_id, subst)));
+        let mut unnest = closure_unnest2(ctx.tcx, def_id, subst);
+        normalize(ctx.tcx, ctx.param_env(def_id), &mut unnest);
+
+        contracts.unnest = Some((unnest_sig, unnest));
         contracts.postcond_mut = Some((post_sig, postcondition));
     }
 
@@ -609,7 +614,7 @@ fn closure_resolve2<'tcx>(
                 lhs: box self_.clone(),
                 name: ix.into(),
                 def: def_id.into(),
-                substs: InternalSubsts::identity_for_item(ctx.tcx, def_id),
+                substs: subst,
             },
             span: DUMMY_SP,
         };
@@ -666,7 +671,7 @@ pub(crate) fn closure_unnest2<'tcx>(
                         lhs: box lhs,
                         name: ix.into(),
                         def: def_id.into(),
-                        substs: InternalSubsts::identity_for_item(tcx, def_id),
+                        substs: subst,
                     },
                     span: DUMMY_SP,
                 };

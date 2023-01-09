@@ -6,10 +6,11 @@ use crate::{
         function::{
             closure_contract2, closure_generic_decls, place, place::translate_rplace_inner,
         },
+        pearlite::Term,
         specification::{lower_impure, lower_pure},
         unop_to_unop,
     },
-    util::{self, module_name},
+    util::{self, module_name, PreSignature},
 };
 use creusot_rustc::{
     hir::Unsafety,
@@ -18,7 +19,7 @@ use creusot_rustc::{
     span::DUMMY_SP,
 };
 
-use creusot_rustc::hir::def_id::DefId;
+use creusot_rustc::{hir::def_id::DefId, span::Symbol};
 use rustc_middle::ty::{SubstsRef, WithOptConstParam};
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
@@ -33,7 +34,7 @@ use why3::{
 };
 
 use super::{
-    clone_map2::{CloneDepth, CloneVisibility, Namer},
+    clone_map2::{CloneDepth, CloneVisibility, Id, Namer, cloneable_name},
     sig_to_why3, signature_of,
     ty::{self, closure_accessors, translate_ty},
     Cloner,
@@ -73,6 +74,31 @@ pub(crate) fn lower_closure<'tcx>(
     let modl = Module { name: module_name(ctx, def_id), decls };
 
     vec![stub_module(ctx, names, def_id), modl]
+}
+
+// Lower one of the auxiliary definitiosn generated for closures: unnest, post/pre conditions etc..
+// Really is doing the same thing as logic functions, but simplified to this specific pattern
+// Could probably be unified
+pub(crate) fn lower_closure_aux<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    mut names: Namer<'_, 'tcx>,
+    id: Id,
+    item: (PreSignature<'tcx>, Term<'tcx>),
+) -> Vec<Module> {
+    let term = lower_pure(ctx, &mut names, item.1);
+    let mut sig = sig_to_why3(ctx, &mut names, item.0, id.0);
+    sig.name = cloneable_name(ctx, id, CloneDepth::Deep).name;
+
+    let name = cloneable_name(ctx, id, CloneDepth::Deep).name.clone();
+
+    vec![
+        Module {
+            name,
+            decls: vec![
+                Decl::Let(LetDecl { kind: Some(LetKind::Function), sig, rec: false, ghost: false, body: term })
+            ]
+        }
+    ]
 }
 
 pub(crate) fn lower_function<'tcx>(
