@@ -24,7 +24,7 @@ use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     declaration::{
         AdtDecl, CfgFunction, ConstructorDecl, Decl, Field, LetDecl, LetKind, Logic, Module,
-        Predicate, TyDecl,
+        Predicate, TyDecl, Use,
     },
     exp::{Exp, Pattern},
     mlcfg,
@@ -53,39 +53,16 @@ pub(crate) fn stub_module<'tcx>(
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
+    if ctx.tcx.is_closure(def_id) {
+        decls.push(Decl::UseDecl(Use {
+            name: format!("{}_Type", &*module_name(ctx, def_id)).into(),
+            as_: None,
+            export: true,
+        }))
+    }
     decls.extend(names.to_clones(ctx, CloneVisibility::Interface, CloneDepth::Shallow));
     if ctx.tcx.is_closure(def_id) {
-        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-            let env_ty = Decl::TyDecl(translate_closure_ty(ctx, names, def_id, subst));
-            // let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
-            decls.push(env_ty);
-
-            let acc = closure_accessors(ctx, def_id).into_iter().map(|(sym, sig, body)| -> Decl {
-                let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
-                sig.name = Ident::build(sym.as_str());
-                Decl::Let(LetDecl {
-                    kind: Some(LetKind::Function),
-                    sig,
-                    rec: false,
-                    ghost: false,
-                    body: lower_pure(ctx, &mut names, body),
-                })
-            });
-            decls.extend(acc);
-
-            let fn_spec_traits: Vec<Decl> = closure_contract2(ctx, def_id)
-                .into_iter()
-                .map(|(sym, sig, body)| {
-                    let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
-                    sig.name = Ident::build(sym.as_str());
-                    sig.retty = None;
-                    Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, &mut names, body) })
-                })
-                .collect();
-
-            decls.extend(fn_spec_traits);
-            // decls.extend(accessors);
-        }
+        decls.extend(closure_defs(ctx, names, def_id))
     }
 
     decls.push(decl);
@@ -115,6 +92,54 @@ pub(crate) fn translate_closure_ty<'tcx>(
 
     TyDecl::Adt { tys: vec![kind] }
 }
+fn closure_ty<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    mut names: Namer<'_, 'tcx>,
+    def_id: DefId,
+) -> Module {
+    let mut decls = Vec::new();
+    decls.extend(
+        names
+            .to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep)
+            .into_iter()
+            // Definitely a hack but good enough for the moment
+            .filter(|d| matches!(d, Decl::UseDecl(_))),
+    );
+
+    let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() else { unreachable!() };
+    let env_ty = Decl::TyDecl(translate_closure_ty(ctx, names, def_id, subst));
+    decls.push(env_ty);
+    Module { name: format!("{}_Type", &*module_name(ctx, def_id)).into(), decls }
+}
+
+fn closure_defs<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    mut names: Namer<'_, 'tcx>,
+    def_id: DefId,
+) -> Vec<Decl> {
+    let mut decls = Vec::new();
+    let acc = closure_accessors(ctx, def_id).into_iter().map(|(sym, sig, body)| -> Decl {
+        let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
+        sig.name = Ident::build(sym.as_str());
+        Decl::Let(LetDecl {
+            kind: Some(LetKind::Function),
+            rec: false,
+            ghost: false,
+            sig,
+            body: lower_pure(ctx, &mut names, body),
+        })
+    });
+    decls.extend(acc);
+
+    let fn_spec_traits = closure_contract2(ctx, def_id).into_iter().map(|(sym, sig, body)| {
+        let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
+        sig.name = Ident::build(sym.as_str());
+        sig.retty = None;
+        Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, &mut names, body) })
+    });
+    decls.extend(fn_spec_traits);
+    decls
+}
 
 pub(crate) fn lower_closure<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
@@ -124,36 +149,24 @@ pub(crate) fn lower_closure<'tcx>(
     let Some(func) = to_why(ctx, names, def_id)  else { return vec![stub_module(ctx, names, def_id)] };
     let mut decls: Vec<_> = Vec::new();
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
+    if ctx.tcx.is_closure(def_id) {
+        decls.push(Decl::UseDecl(Use {
+            name: format!("{}_Type", &*module_name(ctx, def_id)).into(),
+            as_: None,
+            export: true,
+        }))
+    }
     decls.extend(names.to_clones(ctx, CloneVisibility::Body, CloneDepth::Deep));
 
     if ctx.tcx.is_closure(def_id) {
-        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-            let env_ty = Decl::TyDecl(translate_closure_ty(ctx, names, def_id, subst));
-            decls.push(env_ty);
-
-            let acc = closure_accessors(ctx, def_id).into_iter().map(|(sym, sig, body)| -> Decl {
-                let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
-                sig.name = Ident::build(sym.as_str());
-                Decl::LogicDefn(Logic { sig, body: lower_pure(ctx, &mut names, body) })
-            });
-            decls.extend(acc);
-
-            let fn_spec_traits =
-                closure_contract2(ctx, def_id).into_iter().map(|(sym, sig, body)| {
-                    let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
-                    sig.name = Ident::build(sym.as_str());
-                    sig.retty = None;
-                    Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, &mut names, body) })
-                });
-            decls.extend(fn_spec_traits);
-        }
+        decls.extend(closure_defs(ctx, names, def_id))
     }
 
     decls.push(func);
 
     let modl = Module { name: module_name(ctx, def_id), decls };
 
-    vec![stub_module(ctx, names, def_id), modl]
+    vec![closure_ty(ctx, names, def_id), stub_module(ctx, names, def_id), modl]
 }
 
 pub(crate) fn lower_function<'tcx>(

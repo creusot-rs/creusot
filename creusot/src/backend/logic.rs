@@ -98,7 +98,11 @@ fn builtin_body<'tcx>(
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
     decls.extend(names.to_clones(ctx, CloneVisibility::Interface, CloneDepth::Shallow));
-    decls.push(Decl::UseDecl(Use { name: builtin.clone().module_qname(), as_: None }));
+    decls.push(Decl::UseDecl(Use {
+        name: builtin.clone().module_qname(),
+        as_: None,
+        export: false,
+    }));
     // ???
     if !builtin.module.is_empty() {
         let body = Exp::Call(box Exp::pure_qvar(builtin.without_search_path()), val_args);

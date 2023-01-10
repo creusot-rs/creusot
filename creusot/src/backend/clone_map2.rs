@@ -989,7 +989,7 @@ pub fn make_clones<'tcx, 'a>(
                     continue;
                 }
 
-                uses.push(Decl::UseDecl(Use { name: base_ty_name(ty), as_: None }));
+                uses.push(Decl::UseDecl(Use { name: base_ty_name(ty), as_: None, export: false }));
                 continue;
             }
         };
@@ -1000,14 +1000,14 @@ pub fn make_clones<'tcx, 'a>(
 
         if let Some(builtin) = get_builtin(ctx.tcx, id) {
             let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
-            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: None }));
+            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: None, export: false }));
             continue;
         };
 
         if matches!(item_type(ctx.tcx, id), ItemType::Type) {
             let name = item_qname(ctx, id, Namespace::TypeNS).module_qname();
             let as_name = names.value(id, subst).module_ident().unwrap().clone();
-            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(as_name) }));
+            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(as_name), export: false }));
 
             continue;
         };
@@ -1026,7 +1026,8 @@ pub fn make_clones<'tcx, 'a>(
             };
 
             // TODO: introduce a notion of opacity to address this
-            if item_type(ctx.tcx, id) == ItemType::Program
+            if (item_type(ctx.tcx, id) == ItemType::Program
+                || item_type(ctx.tcx, id) == ItemType::Closure)
                 && priors.graph.level[&dep] == DepLevel::Body
             {
                 continue;
