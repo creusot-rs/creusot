@@ -1,6 +1,17 @@
+#![feature(unboxed_closures, fn_traits, tuple_trait)]
 extern crate creusot_contracts;
-use creusot_contracts::{std::iter::*, *};
+use creusot_contracts::{std::ops::*, *};
+use std::marker::Tuple;
 
-pub fn counter(v: Vec<u32>) {
-    let x: Vec<u32> = v.iter().map_inv(|x, _prod| 0).collect();
+
+#[requires(f.precondition(a))]
+#[ensures(f.postcondition_once(a, result))]
+fn weaken_3<A: Tuple, F: FnOnceExt<A>>(f: F, a: A) -> F::Output {
+    FnOnce::call_once(f, a)
 }
+
+// #[requires(f.precondition(a))]
+// #[ensures(f.postcondition_once(a, result))]
+// fn weaken_3_std<A: Tuple, F: FnOnce<A>>(f: F, a: A) -> F::Output {
+//     FnOnce::call_once(f, a)
+// }

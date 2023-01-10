@@ -100,7 +100,8 @@ impl<'tcx> Dependency<'tcx> {
             | TyKind::Array(_, _)
             | TyKind::Slice(_) => Some(Self::BaseTy(ty)),
             // Should this be tuple?
-            TyKind::Tuple(_) | TyKind::Param(_) => None,
+            TyKind::Tuple(_) | TyKind::Param(_) => Some(Self::BaseTy(ty)),
+            _ => None,
             _ => unreachable!("{ty:?}"),
             // _ => Some(Self::BaseTy(ty)),
         }
@@ -534,9 +535,13 @@ impl<'tcx> MonoGraph<'tcx> {
                 );
             });
 
+            subst.types().filter_map(Dependency::from_ty).for_each(|dep| {
+                self.add_edge(ctx.tcx, next, dep, (DepLevel::Signature, EdgeType::Type));
+            });
+
             let to_add = get_immediate_deps(ctx, id);
             // if ctx.def_path_str(id).contains("counter") {
-            //     eprintln!("deps_of({id:?}, {subst:?}) :- {to_add:?}\n");
+            // eprintln!("deps_of({id:?}, {subst:?}) :- {to_add:?}\n");
             // }
 
             for (lvl, dep) in to_add {
@@ -567,12 +572,15 @@ impl<'tcx> MonoGraph<'tcx> {
                 } else if can_resolve(ctx, (id, subst)) {
                     let tgt = resolve_opt(ctx.tcx, param_env, id, subst)
                         .unwrap_or_else(|| panic!("could not resolve {id:?} {subst:?}"));
+                        eprintln!("{param_env:?}");
                     let tgt = ctx.try_normalize_erasing_regions(param_env, tgt).unwrap_or(tgt);
                     Some(Dependency::Item(tgt.0, tgt.1))
                 } else {
                     let tgt = ctx.normalize_erasing_regions(param_env, (id, subst));
                     Some(Dependency::Item(tgt.0, tgt.1))
                 };
+
+                eprintln!("resolved {dep:?} into {tgt:?}");
 
                 // TODO: why `next` and not `tgt`.
                 if let Some(tgt) = tgt {
@@ -970,9 +978,20 @@ pub fn make_clones<'tcx, 'a>(
 
     let mut clones = Vec::new();
     let mut uses = Vec::new();
+    let tcx = ctx.tcx;
 
     let fgraph =
         EdgeFiltered::from_fn(&priors.graph.graph, |(_, _, (_, ek))| ek != &EdgeType::Fake);
+    let fgraph = EdgeFiltered::from_fn(&fgraph, |(dep, _, (dl, _))| match dl {
+        DepLevel::Signature => true,
+        DepLevel::Body => {
+            (dep == root && desired_dep_level == DepLevel::Body)
+                || dep
+                    .as_item()
+                    .map(|i| !matches!(item_type(tcx, i.0), ItemType::Program | ItemType::Closure))
+                    .unwrap_or(true)
+        }
+    });
     while let Some(node) = topo.walk_next(&fgraph) {
         if node == root {
             continue;
@@ -985,11 +1004,10 @@ pub fn make_clones<'tcx, 'a>(
         let (id, subst) = match node {
             Dependency::Item(id, subst) => (id, subst),
             Dependency::BaseTy(ty) => {
-                if matches!(ty.kind(), TyKind::Param(_)) {
-                    continue;
+                if let Some(name) = base_ty_name(ty) {
+                    uses.push(Decl::UseDecl(Use { name, as_: None, export: false }));
                 }
 
-                uses.push(Decl::UseDecl(Use { name: base_ty_name(ty), as_: None, export: false }));
                 continue;
             }
         };
@@ -1016,8 +1034,8 @@ pub fn make_clones<'tcx, 'a>(
 
         let mut node_names = priors.get(ctx.tcx, id);
 
-        for dep in priors.graph.graph.neighbors_directed(node, Outgoing) {
-            if priors.graph.level[&dep] < desired_dep_level {
+        for (_a, dep, weight) in priors.graph.graph.edges_directed(node, Outgoing) {
+            if weight.0 < desired_dep_level {
                 continue;
             };
 
@@ -1028,14 +1046,12 @@ pub fn make_clones<'tcx, 'a>(
             // TODO: introduce a notion of opacity to address this
             if (item_type(ctx.tcx, id) == ItemType::Program
                 || item_type(ctx.tcx, id) == ItemType::Closure)
-                && priors.graph.level[&dep] == DepLevel::Body
+                && weight.0 == DepLevel::Body
             {
                 continue;
             }
 
-            let (_, orig) = priors.graph.graph[(node, dep)];
-
-            let EdgeType::Refinement(orig_id, orig_subst) = orig else { continue };
+            let EdgeType::Refinement(orig_id, orig_subst) = weight.1 else { continue };
 
             if depth == CloneDepth::Shallow && item_type(ctx.tcx, orig_id) != ItemType::AssocTy {
                 continue;
@@ -1061,6 +1077,7 @@ pub fn make_clones<'tcx, 'a>(
                     src,
                     translate_ty(ctx, &mut names, DUMMY_SP, dep.as_ty(ctx.tcx)),
                 ),
+                // a => unreachable!("{a:?} : {node:?} {dep:?}"),
                 _ => CloneSubst::Val(src, tgt.unwrap()),
             };
             clone_subst.push(sub)
@@ -1078,32 +1095,33 @@ pub fn make_clones<'tcx, 'a>(
     uses.into_iter().chain(clones).collect()
 }
 
-fn base_ty_name(ty: Ty) -> QName {
+fn base_ty_name(ty: Ty) -> Option<QName> {
     match ty.kind() {
-        TyKind::Bool => QName::from_string("prelude.Bool").unwrap(),
-        TyKind::Char => QName::from_string("prelude.Char").unwrap(),
-        TyKind::Int(IntTy::I8) => QName::from_string("prelude.Int8").unwrap(),
-        TyKind::Int(IntTy::I16) => QName::from_string("prelude.Int16").unwrap(),
-        TyKind::Int(IntTy::I32) => QName::from_string("mach.int.Int32").unwrap(),
-        TyKind::Int(IntTy::I64) => QName::from_string("mach.int.Int64").unwrap(),
-        TyKind::Int(IntTy::I128) => QName::from_string("prelude.Int128").unwrap(),
-        TyKind::Uint(UintTy::U8) => QName::from_string("prelude.UInt8").unwrap(),
-        TyKind::Uint(UintTy::U16) => QName::from_string("prelude.UInt16").unwrap(),
-        TyKind::Uint(UintTy::U32) => QName::from_string("mach.int.UInt32").unwrap(),
-        TyKind::Uint(UintTy::U64) => QName::from_string("mach.int.UInt64").unwrap(),
-        TyKind::Uint(UintTy::U128) => QName::from_string("prelude.UInt128").unwrap(),
-        TyKind::Int(IntTy::Isize) => QName::from_string("prelude.IntSize").unwrap(),
-        TyKind::Uint(UintTy::Usize) => QName::from_string("prelude.UIntSize").unwrap(),
-        TyKind::Float(FloatTy::F32) => QName::from_string("ieee_float.Float32").unwrap(),
-        TyKind::Float(FloatTy::F64) => QName::from_string("ieee_float.Float64").unwrap(),
-        TyKind::Str => todo!(),
-        TyKind::Slice(_) => QName::from_string("prelude.Slice").unwrap(),
-        TyKind::RawPtr(_) => QName::from_string("prelude.Opaque").unwrap(),
-        TyKind::Ref(_, _, _) => QName::from_string("prelude.Borrow").unwrap(),
-        TyKind::Never => todo!(),
-        TyKind::Tuple(_) => todo!(),
-        TyKind::Array(_, _) => QName::from_string("seq.Seq").unwrap(),
-        _ => panic!("base_ty_name: can only be called on basic types. [{ty:?}]"),
+        TyKind::Bool => QName::from_string("prelude.Bool"),
+        TyKind::Char => QName::from_string("prelude.Char"),
+        TyKind::Int(IntTy::I8) => QName::from_string("prelude.Int8"),
+        TyKind::Int(IntTy::I16) => QName::from_string("prelude.Int16"),
+        TyKind::Int(IntTy::I32) => QName::from_string("mach.int.Int32"),
+        TyKind::Int(IntTy::I64) => QName::from_string("mach.int.Int64"),
+        TyKind::Int(IntTy::I128) => QName::from_string("prelude.Int128"),
+        TyKind::Uint(UintTy::U8) => QName::from_string("prelude.UInt8"),
+        TyKind::Uint(UintTy::U16) => QName::from_string("prelude.UInt16"),
+        TyKind::Uint(UintTy::U32) => QName::from_string("mach.int.UInt32"),
+        TyKind::Uint(UintTy::U64) => QName::from_string("mach.int.UInt64"),
+        TyKind::Uint(UintTy::U128) => QName::from_string("prelude.UInt128"),
+        TyKind::Int(IntTy::Isize) => QName::from_string("prelude.IntSize"),
+        TyKind::Uint(UintTy::Usize) => QName::from_string("prelude.UIntSize"),
+        TyKind::Float(FloatTy::F32) => QName::from_string("ieee_float.Float32"),
+        TyKind::Float(FloatTy::F64) => QName::from_string("ieee_float.Float64"),
+        TyKind::Str => None,
+        TyKind::Slice(_) => QName::from_string("prelude.Slice"),
+        TyKind::RawPtr(_) => QName::from_string("prelude.Opaque"),
+        TyKind::Ref(_, _, _) => QName::from_string("prelude.Borrow"),
+        TyKind::Never => None,
+        TyKind::Tuple(_) => None,
+        TyKind::Array(_, _) => QName::from_string("seq.Seq"),
+        _ => None,
+        // _ => panic!("base_ty_name: can only be called on basic types. [{ty:?}]"),
     }
 }
 // PreludeModule::Int => QName::from_string("mach.int.Int").unwrap(),
