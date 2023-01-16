@@ -1,5 +1,7 @@
+#![allow(deprecated)]
+
 use creusot_rustc::{
-    hir::def_id::DefId,
+    hir::{def::DefKind, def_id::DefId},
     middle::ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
@@ -21,7 +23,7 @@ use why3::{
 use crate::{
     ctx::{self, *},
     translation::{interface, traits},
-    util::{self, get_builtin, ident_of, ident_of_ty, item_name},
+    util::{self, get_builtin, ident_of, ident_of_ty, item_name, module_name},
 };
 
 // Prelude modules
@@ -220,15 +222,7 @@ impl<'tcx> CloneInfo<'tcx> {
         self.opaque = CloneOpacity::Opaque;
     }
 
-    // TODO: When traits stop holding all functions we can remove the last two arguments
-    pub(crate) fn qname(&self, tcx: TyCtxt, def_id: DefId) -> QName {
-        self.qname_ident(match tcx.def_kind(def_id) {
-            // DefKind::Closure => Ident::build("closure"),
-            _ => item_name(tcx, def_id, Namespace::ValueNS),
-        })
-    }
-
-    pub(crate) fn qname_ident(&self, method: Ident) -> QName {
+    fn qname_ident(&self, method: Ident) -> QName {
         self.kind.qname_ident(method)
     }
 }
@@ -273,6 +267,15 @@ impl<'tcx> CloneMap<'tcx> {
         ret
     }
 
+    /// Internal: only meant for mutually recursive type declaration
+    pub(crate) fn insert_hidden(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) {
+        let subst = self.tcx.erase_regions(subst);
+        self.names.insert((def_id, subst), CloneInfo::hidden());
+    }
+
+    #[deprecated(
+        note = "Avoid using this method in favor of one of the more semantic alternatives: `value`, `accessor`, `ty`"
+    )]
     pub(crate) fn insert(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
         let subst = self.tcx.erase_regions(subst);
 
@@ -292,17 +295,70 @@ impl<'tcx> CloneMap<'tcx> {
             let count: usize = *self.name_counts.entry(base).and_modify(|c| *c += 1).or_insert(0);
             trace!("inserting {:?} {:?} as {}{}", def_id, subst, base, count);
 
-            // if base.as_str() == "IntoIter" && count == 1 && self.clone_level == CloneLevel::Interface {
-            //     panic!();
-            // }
-            let info =
-                CloneInfo::from_name(Symbol::intern(&format!("{}{}", base, count)), self.public);
+            let name = if util::item_type(self.tcx, def_id) == ItemType::Type {
+                Symbol::intern(&*module_name(self.tcx, def_id))
+            } else {
+                Symbol::intern(&format!("{}{}", base, count))
+            };
+
+            let info = CloneInfo::from_name(name, self.public);
             info
         })
     }
 
+    pub(crate) fn value(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let name = item_name(self.tcx, def_id, Namespace::ValueNS);
+        self.insert(def_id, subst).qname_ident(name.into())
+    }
+
+    pub(crate) fn ty(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let name = item_name(self.tcx, def_id, Namespace::TypeNS);
+        self.insert(def_id, subst).qname_ident(name.into())
+    }
+
+    pub(crate) fn constructor(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> QName {
+        let type_id = match self.tcx.def_kind(def_id) {
+            DefKind::Closure | DefKind::Struct | DefKind::Enum | DefKind::Union => def_id,
+            DefKind::Variant => self.tcx.parent(def_id),
+            _ => unreachable!("Not a type or constructor"),
+        };
+        let mut name = item_name(self.tcx, def_id, Namespace::ValueNS);
+        name.capitalize();
+        self.insert(type_id, subst).qname_ident(name.into())
+    }
+
+    pub(crate) fn accessor(
+        &mut self,
+        def_id: DefId,
+        subst: SubstsRef<'tcx>,
+        variant: usize,
+        ix: usize,
+    ) -> QName {
+        let tcx = self.tcx;
+        let clone = self.insert(def_id, subst);
+        let name: Ident = match util::item_type(tcx, def_id) {
+            ItemType::Closure => {
+                let ty_name = item_name(tcx, def_id, Namespace::TypeNS).to_string().to_lowercase();
+
+                format!("{}_{}", &*ty_name, ix).into()
+            }
+            ItemType::Type => {
+                let variant_def = &tcx.adt_def(def_id).variants()[variant.into()];
+                let variant = variant_def;
+                format!(
+                    "{}_{}",
+                    variant.name.as_str().to_ascii_lowercase(),
+                    variant.fields[ix].name
+                )
+                .into()
+            }
+            _ => panic!("accessor: invalid item kind"),
+        };
+
+        clone.qname_ident(name.into())
+    }
+
     fn self_key(&self) -> (DefId, SubstsRef<'tcx>) {
-        use creusot_rustc::hir::def::DefKind;
         let subst = match self.tcx.def_kind(self.self_id) {
             DefKind::Closure => match self.tcx.type_of(self.self_id).kind() {
                 TyKind::Closure(_, subst) => subst,
@@ -591,19 +647,19 @@ impl<'tcx> CloneMap<'tcx> {
 
             // Types can't be cloned, but are used (for now).
             if util::item_type(ctx.tcx, def_id) == ItemType::Type {
-                let repr = ctx.representative_type(def_id);
+                let repr = def_id;
                 let hidden = self
                     .names
                     .iter()
                     .any(|((id, _), info)| *id == repr && info.kind == Kind::Hidden);
-                if self.used_types.insert(ctx.representative_type(def_id)) && !hidden {
+                if self.used_types.insert(repr) && !hidden {
                     let name = if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
                         let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
 
-                        Decl::UseDecl(Use { name: name.clone(), as_: None })
+                        Decl::UseDecl(Use { name: name.clone(), as_: None, export: false })
                     } else {
                         let name = cloneable_name(ctx, def_id, CloneLevel::Body);
-                        Decl::UseDecl(Use { name: name.clone(), as_: Some(name) })
+                        Decl::UseDecl(Use { name: name.clone(), as_: Some(name), export: false })
                     };
                     // self.import_builtin_module(name.clone());
                     decls.push(name);
@@ -673,7 +729,7 @@ impl<'tcx> CloneMap<'tcx> {
                 *v = true;
                 p
             })
-            .map(|q| Decl::UseDecl(Use { name: q.clone(), as_: None }))
+            .map(|q| Decl::UseDecl(Use { name: q.clone(), as_: None, export: false }))
             .chain(decls.into_iter())
             .collect()
     }
@@ -733,24 +789,24 @@ fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel) ->
         Logic | Predicate | Impl => match interface {
             CloneLevel::Stub => QName {
                 module: Vec::new(),
-                name: format!("{}_Stub", &*module_name(ctx, def_id)).into(),
+                name: format!("{}_Stub", &*module_name(ctx.tcx, def_id)).into(),
             },
             // Why do we do this? Why not use the stub here as well?
             CloneLevel::Interface => interface::interface_name(ctx, def_id).into(),
-            CloneLevel::Body => module_name(ctx, def_id).into(),
+            CloneLevel::Body => module_name(ctx.tcx, def_id).into(),
         },
         Constant => match interface {
-            CloneLevel::Body => module_name(ctx, def_id).into(),
+            CloneLevel::Body => module_name(ctx.tcx, def_id).into(),
             _ => QName {
                 module: Vec::new(),
-                name: format!("{}_Stub", &*module_name(ctx, def_id)).into(),
+                name: format!("{}_Stub", &*module_name(ctx.tcx, def_id)).into(),
             },
         },
 
         Program | Closure => {
             QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
         }
-        Trait | Type | AssocTy => module_name(ctx, def_id).into(),
+        Trait | Type | AssocTy => module_name(ctx.tcx, def_id).into(),
         Unsupported(_) => unreachable!(),
     }
 }

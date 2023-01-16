@@ -88,5 +88,5 @@ pub(crate) fn interface_for<'tcx>(
 }
 
 pub(crate) fn interface_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
-    format!("{}_Interface", Cow::from(&*module_name(ctx, def_id))).into()
+    format!("{}_Interface", Cow::from(&*module_name(ctx.tcx, def_id))).into()
 }

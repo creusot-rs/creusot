@@ -70,6 +70,8 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.translate(impl_item);
 
             let subst = InternalSubsts::identity_for_item(self.tcx, impl_item);
+
+            #[allow(deprecated)]
             names.insert(impl_item, subst);
 
             decls.extend(own_generic_decls_for(self.tcx, impl_item));
@@ -97,6 +99,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.crash_and_error(creusot_rustc::span::DUMMY_SP, "error above");
             }
 
+            #[allow(deprecated)]
             let refinement = names.insert(trait_item, refn_subst);
 
             refinement.add_dep(self.tcx, self.tcx.item_name(impl_item), (impl_item, subst));
@@ -117,7 +120,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
 
         decls.extend(names.to_clones(self));
-        TranslatedItem::Impl { modl: Module { name: module_name(self, impl_id), decls } }
+        TranslatedItem::Impl { modl: Module { name: module_name(self.tcx, impl_id), decls } }
     }
 
     pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
@@ -145,7 +148,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         decls.extend(names.to_clones(self));
         decls.push(Decl::TyDecl(ty_decl));
 
-        (Module { name: module_name(self, def_id), decls }, names.summary())
+        (Module { name: module_name(self.tcx, def_id), decls }, names.summary())
     }
 }
 
