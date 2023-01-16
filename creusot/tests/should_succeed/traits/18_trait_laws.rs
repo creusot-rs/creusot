@@ -23,7 +23,8 @@ impl Symmetric for () {
     }
 
     #[law]
-    fn reflexive(_: Self, _: Self) {}
+    #[ensures(a.op(b) == b.op(a))]
+    fn reflexive(a: Self, b: Self) {}
 }
 
 #[logic]

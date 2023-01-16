@@ -2,10 +2,10 @@ use crate::{
     ctx::*,
     translation::{
         function::terminator::evaluate_additional_predicates,
-        ty::{self, translate_ty},
+        ty::{self},
     },
     util,
-    util::{ident_of, inputs_and_output, is_law, is_spec, item_type},
+    util::{inputs_and_output, is_law, is_spec, item_type},
 };
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
@@ -16,10 +16,7 @@ use rustc_resolve::Namespace;
 use rustc_span::Symbol;
 use rustc_trait_selection::traits::ImplSource;
 use std::collections::HashMap;
-use why3::{
-    declaration::{Decl, Goal, Module, TyDecl},
-    exp::Exp,
-};
+use why3::declaration::{Decl, Module, TyDecl};
 
 #[derive(Clone)]
 pub(crate) struct Refinement<'tcx> {
@@ -100,19 +97,15 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.crash_and_error(rustc_span::DUMMY_SP, "error above");
             }
 
-            // Since we don't have contracts of logic functions in the interface and we can't substitute the definition in
-            // the implementation module, we must recreate the spec axiom by hand here.
-            if matches!(item_type(self.tcx, trait_item), ItemType::Logic | ItemType::Predicate) {
-                let contract = contract_of(self, trait_item);
+            let contract = contract_of(self, trait_item);
 
-                if !contract.is_empty() {
-                    let axiom = logic_refinement_term(self, impl_item, trait_item, refn_subst);
-                    refinements.push(Refinement {
-                        trait_: (trait_item, refn_subst),
-                        impl_: (impl_item, subst),
-                        refn: axiom,
-                    });
-                }
+            if !contract.is_empty() {
+                let axiom = logic_refinement_term(self, impl_item, trait_item, refn_subst);
+                refinements.push(Refinement {
+                    trait_: (trait_item, refn_subst),
+                    impl_: (impl_item, subst),
+                    refn: axiom,
+                });
             }
         }
 
@@ -196,7 +189,7 @@ fn logic_refinement_term<'tcx>(
         span,
     };
 
-    let mut refn = trait_precond.implies(impl_precond).conj(post_refn);
+    let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
     refn = if args.is_empty() {
         refn
     } else {
@@ -219,7 +212,7 @@ pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item
         .filter(move |item| !is_spec(tcx, item.def_id))
 }
 
-use crate::function::{all_generic_decls_for, own_generic_decls_for};
+use crate::function::all_generic_decls_for;
 use rustc_middle::ty::{subst::InternalSubsts, AssocItem, Binder};
 
 pub(crate) fn resolve_impl_source_opt<'tcx>(
@@ -293,7 +286,10 @@ pub(crate) fn resolve_trait_opt<'tcx>(
 
 use rustc_middle::ty::AssocItemContainer;
 
-use super::{specification::contract_of, pearlite::{Term, TermKind}};
+use super::{
+    pearlite::{Term, TermKind},
+    specification::contract_of,
+};
 
 pub(crate) fn resolve_assoc_item_opt<'tcx>(
     tcx: TyCtxt<'tcx>,

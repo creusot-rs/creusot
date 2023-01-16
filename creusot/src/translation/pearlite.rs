@@ -973,6 +973,17 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
+    pub(crate) fn implies(self, rhs: Self) -> Self {
+        match self.kind {
+            TermKind::Lit(Literal::Bool(true)) => rhs,
+            _ => Term {
+                ty: self.ty,
+                kind: TermKind::Impl { lhs: box self, rhs: box rhs },
+                span: DUMMY_SP,
+            },
+        }
+    }
+
     pub(crate) fn subst(&mut self, inv_subst: &std::collections::HashMap<Symbol, Term<'tcx>>) {
         self.subst_inner(&mut HashSet::new(), inv_subst);
     }

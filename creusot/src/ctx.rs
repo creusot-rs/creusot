@@ -2,6 +2,7 @@ use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::clone_map::*;
 use crate::{
+    backend,
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
@@ -13,6 +14,7 @@ use crate::{
         interface::interface_for,
         pearlite::{self, Term},
         specification::ContractClauses,
+        traits::TraitImpl,
         ty::{self, translate_tydecl, ty_binding_group},
     },
     util,
@@ -51,6 +53,7 @@ pub struct TranslationCtx<'tcx> {
     creusot_items: CreusotItems,
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
+    impl_data: HashMap<DefId, TraitImpl<'tcx>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -72,7 +75,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             in_translation: Default::default(),
             functions: Default::default(),
             dependencies: Default::default(),
-            externs: Metadata::new(tcx),
+            externs: Default::default(),
             terms: Default::default(),
             creusot_items,
             opts,
@@ -81,11 +84,12 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             extern_specs: Default::default(),
             extern_spec_items: Default::default(),
             fmir_body: Default::default(),
+            impl_data: Default::default(),
         }
     }
 
     pub(crate) fn load_metadata(&mut self) {
-        self.externs.load(&self.opts.extern_paths);
+        self.externs.load(self.tcx, &self.opts.extern_paths);
     }
 
     pub(crate) fn translate(&mut self, def_id: DefId) {
@@ -107,10 +111,10 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             ItemType::Impl => {
                 if self.tcx.impl_trait_ref(def_id).is_some() {
                     self.start(def_id);
-                    let impl_ = self.translate_impl(def_id);
+                    let impl_ = backend::traits::lower_impl(self, def_id);
 
                     self.dependencies.insert(def_id, CloneSummary::new());
-                    self.functions.insert(def_id, impl_);
+                    self.functions.insert(def_id, TranslatedItem::Impl { modl: impl_ });
                     self.finish(def_id);
                 }
             }
@@ -147,6 +151,15 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     // Checks if we are allowed to recurse into
     fn safe_cycle(&self, def_id: DefId) -> bool {
         self.in_translation.last().map(|l| l.contains(&def_id)).unwrap_or_default()
+    }
+
+    pub(crate) fn trait_impl(&mut self, def_id: DefId) -> &TraitImpl<'tcx> {
+        if !self.impl_data.contains_key(&def_id) {
+            let trait_impl = self.translate_impl(def_id);
+            self.impl_data.insert(def_id, trait_impl);
+        }
+
+        &self.impl_data[&def_id]
     }
 
     pub(crate) fn start_group(&mut self, ids: IndexSet<DefId>) {
