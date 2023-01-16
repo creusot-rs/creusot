@@ -1,19 +1,17 @@
 #![allow(deprecated)]
 
-use creusot_rustc::{
-    hir::{def::DefKind, def_id::DefId},
-    middle::ty::{
-        self,
-        subst::{InternalSubsts, SubstsRef},
-        DefIdTree, EarlyBinder, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable, TypeVisitor,
-    },
-    resolve::Namespace,
-    span::{Symbol, DUMMY_SP},
-};
 use heck::ToUpperCamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
-use rustc_middle::ty::{subst::GenericArgKind, AliasKind, AliasTy, ParamEnv};
+use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_middle::ty::{
+    self,
+    subst::{GenericArgKind, InternalSubsts, SubstsRef},
+    AliasKind, AliasTy, DefIdTree, EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
+    TypeSuperVisitable, TypeVisitor,
+};
+use rustc_resolve::Namespace;
+use rustc_span::{Symbol, DUMMY_SP};
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
     Ident, QName,
@@ -158,7 +156,7 @@ impl Kind {
     }
 }
 
-use creusot_rustc::macros::{TyDecodable, TyEncodable};
+use rustc_macros::{TyDecodable, TyEncodable};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
 enum CloneOpacity {
@@ -741,8 +739,8 @@ pub(crate) fn base_subst<'tcx>(
     mut def_id: DefId,
     subst: SubstsRef<'tcx>,
 ) -> Vec<CloneSubst> {
-    use creusot_rustc::middle::ty::GenericParamDefKind;
     use heck::ToSnakeCase;
+    use rustc_middle::ty::GenericParamDefKind;
     loop {
         if ctx.tcx.is_closure(def_id) {
             def_id = ctx.tcx.parent(def_id);
@@ -762,7 +760,7 @@ pub(crate) fn base_subst<'tcx>(
         let ty = subst[ix];
         if let GenericParamDefKind::Type { .. } = p.kind {
             let ty = ctx.normalize_erasing_regions(param_env, ty.expect_ty());
-            let ty = super::ty::translate_ty(ctx, names, creusot_rustc::span::DUMMY_SP, ty);
+            let ty = super::ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, ty);
             clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
         }
     }
@@ -883,7 +881,7 @@ fn refineable_symbol<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<SymbolKin
 
 // We consider an item to be further specializable if it is provided by a parameter bound (ie: `I : Iterator`).
 fn still_specializable<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, substs: SubstsRef<'tcx>) -> bool {
-    use creusot_rustc::middle::ty::TypeVisitable;
+    use rustc_middle::ty::TypeVisitable;
     if let Some(trait_id) = tcx.trait_of_item(def_id) {
         let is_final = tcx.impl_defaultness(def_id).is_final();
         let trait_generics = substs.truncate_to(tcx, tcx.generics_of(trait_id));

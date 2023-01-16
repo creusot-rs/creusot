@@ -12,31 +12,31 @@ use crate::{
     translation::specification::PurityVisitor,
     util,
 };
-use creusot_rustc::{
-    ast::{LitIntType, LitKind},
-    hir::{
-        def_id::{DefId, LocalDefId},
-        HirId, OwnerId,
-    },
-    macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
-    middle::{
-        mir::Mutability::*,
-        thir::{
-            visit, AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId,
-            StmtKind, Thir,
-        },
-        ty::{
-            int_ty, subst::SubstsRef, uint_ty, AdtDef, Ty, TyCtxt, TyKind, TypeFoldable,
-            TypeVisitable, UpvarSubsts, WithOptConstParam,
-        },
-    },
-    smir::mir::BorrowKind,
-    span::{Span, Symbol, DUMMY_SP},
-    target::abi::VariantIdx,
-};
-pub(crate) use creusot_rustc::{middle::thir, smir::mir::Field};
 use itertools::Itertools;
 use log::*;
+use rustc_ast::{LitIntType, LitKind};
+use rustc_hir::{
+    self as hir,
+    def_id::{DefId, LocalDefId},
+    HirId, OwnerId,
+};
+use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
+pub(crate) use rustc_middle::thir;
+use rustc_middle::{
+    mir::Mutability::*,
+    thir::{
+        visit, AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId,
+        StmtKind, Thir,
+    },
+    ty::{
+        int_ty, subst::SubstsRef, uint_ty, AdtDef, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
+        UpvarSubsts, WithOptConstParam,
+    },
+};
+use rustc_smir::mir::BorrowKind;
+pub(crate) use rustc_smir::mir::Field;
+use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{IntTy, UintTy};
 
 mod normalize;
@@ -98,7 +98,7 @@ pub enum TermKind<'tcx> {
     Absurd,
 }
 impl<'tcx> TypeFoldable<'tcx> for Literal<'tcx> {
-    fn try_fold_with<F: creusot_rustc::middle::ty::FallibleTypeFolder<'tcx>>(
+    fn try_fold_with<F: rustc_middle::ty::FallibleTypeFolder<'tcx>>(
         self,
         _: &mut F,
     ) -> Result<Self, F::Error> {
@@ -107,7 +107,7 @@ impl<'tcx> TypeFoldable<'tcx> for Literal<'tcx> {
 }
 
 impl<'tcx> TypeVisitable<'tcx> for Literal<'tcx> {
-    fn visit_with<V: creusot_rustc::middle::ty::TypeVisitor<'tcx>>(
+    fn visit_with<V: rustc_middle::ty::TypeVisitor<'tcx>>(
         &self,
         _: &mut V,
     ) -> std::ops::ControlFlow<V::BreakTy> {
@@ -216,7 +216,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let lhs = self.expr_term(lhs)?;
                 let rhs = self.expr_term(rhs)?;
 
-                use creusot_rustc::middle::mir;
+                use rustc_middle::mir;
                 let op = match op {
                     mir::BinOp::Add => BinOp::Add,
                     mir::BinOp::Sub => BinOp::Sub,
@@ -260,8 +260,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             ExprKind::Unary { op, arg } => {
                 let arg = self.expr_term(arg)?;
                 let op = match op {
-                    creusot_rustc::middle::mir::UnOp::Not => UnOp::Not,
-                    creusot_rustc::middle::mir::UnOp::Neg => UnOp::Neg,
+                    rustc_middle::mir::UnOp::Not => UnOp::Not,
+                    rustc_middle::mir::UnOp::Neg => UnOp::Neg,
                 };
                 Ok(Term { ty, span, kind: TermKind::Unary { op, arg: box arg } })
             }
@@ -693,7 +693,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     // this is the wrong type
                     body: box Term {
                         ty: lhs.ty,
-                        span: creusot_rustc::span::DUMMY_SP,
+                        span: rustc_span::DUMMY_SP,
                         kind: TermKind::Var(Symbol::intern("a")),
                     },
                     arg: box lhs,
@@ -815,10 +815,10 @@ fn closure_pattern<'tcx>(tcx: TyCtxt<'tcx>, id: LocalDefId) -> CreusotResult<Vec
 
     body.params.iter().map(|p| lower_hir_pat(tcx, p.pat)).collect()
 }
-use creusot_rustc::hir;
+use rustc_hir;
 
 fn lower_hir_pat<'tcx>(tcx: TyCtxt<'tcx>, pat: &hir::Pat<'tcx>) -> CreusotResult<Pattern<'tcx>> {
-    use creusot_rustc::hir::PatKind;
+    use rustc_hir::PatKind;
     match pat.kind {
         PatKind::Tuple(pats, _) => {
             let pats =

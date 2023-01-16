@@ -1,16 +1,13 @@
-use creusot_rustc::{
-    hir::def_id::DefId,
-    middle::ty::{
-        self,
-        subst::{InternalSubsts, SubstsRef},
-        AliasKind, AliasTy, ClosureSubsts, FieldDef, Ty, TyCtxt,
-    },
-    resolve::Namespace,
-    span::{Span, Symbol, DUMMY_SP},
-    type_ir::sty::TyKind::*,
-};
 use indexmap::IndexSet;
-use rustc_middle::ty::TyKind;
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::{
+    self,
+    subst::{InternalSubsts, SubstsRef},
+    AliasKind, AliasTy, ClosureSubsts, FieldDef, Ty, TyCtxt, TyKind,
+};
+use rustc_resolve::Namespace;
+use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_type_ir::sty::TyKind::*;
 use std::collections::VecDeque;
 use why3::{
     declaration::{
@@ -115,7 +112,7 @@ fn translate_ty_inner<'tcx>(
             }
         }
         Ref(_, ty, borkind) => {
-            use creusot_rustc::ast::Mutability::*;
+            use rustc_ast::Mutability::*;
             names.import_prelude_module(PreludeModule::Borrow);
             match borkind {
                 Mut => MlT::MutableBorrow(box translate_ty_inner(trans, ctx, names, span, *ty)),
@@ -204,7 +201,7 @@ pub(crate) fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSe
             for field in &variant.fields {
                 for ty in field.ty(tcx, substs).walk() {
                     let k = match ty.unpack() {
-                        creusot_rustc::middle::ty::subst::GenericArgKind::Type(ty) => ty,
+                        rustc_middle::ty::subst::GenericArgKind::Type(ty) => ty,
                         _ => continue,
                     };
                     if let Adt(def, _) = k.kind() {
@@ -289,7 +286,7 @@ pub(crate) fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
         for field in ctx.adt_def(did).all_fields() {
             for ty in field.ty(ctx.tcx, substs).walk() {
                 let k = match ty.unpack() {
-                    creusot_rustc::middle::ty::subst::GenericArgKind::Type(ty) => ty,
+                    rustc_middle::ty::subst::GenericArgKind::Type(ty) => ty,
                     _ => continue,
                 };
                 if let Adt(def, sub) = k.kind() {
@@ -438,7 +435,7 @@ pub(crate) fn translate_accessor(
         for field in ctx.adt_def(did).all_fields() {
             for ty in field.ty(ctx.tcx, substs).walk() {
                 let k = match ty.unpack() {
-                    creusot_rustc::middle::ty::subst::GenericArgKind::Type(ty) => ty,
+                    rustc_middle::ty::subst::GenericArgKind::Type(ty) => ty,
                     _ => continue,
                 };
                 if let Adt(def, sub) = k.kind() {
@@ -554,8 +551,8 @@ pub(crate) fn closure_accessors<'tcx>(
     accessors
 }
 
-pub(crate) fn intty_to_ty(names: &mut CloneMap<'_>, ity: &creusot_rustc::middle::ty::IntTy) -> MlT {
-    use creusot_rustc::middle::ty::IntTy::*;
+pub(crate) fn intty_to_ty(names: &mut CloneMap<'_>, ity: &rustc_middle::ty::IntTy) -> MlT {
+    use rustc_middle::ty::IntTy::*;
     names.import_prelude_module(PreludeModule::Int);
 
     match ity {
@@ -586,11 +583,8 @@ pub(crate) fn intty_to_ty(names: &mut CloneMap<'_>, ity: &creusot_rustc::middle:
     }
 }
 
-pub(crate) fn uintty_to_ty(
-    names: &mut CloneMap<'_>,
-    ity: &creusot_rustc::middle::ty::UintTy,
-) -> MlT {
-    use creusot_rustc::middle::ty::UintTy::*;
+pub(crate) fn uintty_to_ty(names: &mut CloneMap<'_>, ity: &rustc_middle::ty::UintTy) -> MlT {
+    use rustc_middle::ty::UintTy::*;
     names.import_prelude_module(PreludeModule::Int);
 
     match ity {
@@ -621,8 +615,8 @@ pub(crate) fn uintty_to_ty(
     }
 }
 
-fn floatty_to_ty(names: &mut CloneMap<'_>, fty: &creusot_rustc::middle::ty::FloatTy) -> MlT {
-    use creusot_rustc::middle::ty::FloatTy::*;
+fn floatty_to_ty(names: &mut CloneMap<'_>, fty: &rustc_middle::ty::FloatTy) -> MlT {
+    use rustc_middle::ty::FloatTy::*;
 
     match fty {
         F32 => {

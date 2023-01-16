@@ -1,7 +1,7 @@
 pub(crate) use crate::clone_map::*;
 use crate::metadata::Metadata;
-use creusot_rustc::hir::def_id::DefId;
 use indexmap::IndexMap;
+use rustc_hir::def_id::DefId;
 
 use why3::declaration::{Decl, Module};
 

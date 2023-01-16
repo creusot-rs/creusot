@@ -7,15 +7,13 @@ use crate::{
     util,
     util::{ident_of, inputs_and_output, is_law, is_spec, item_type},
 };
-use creusot_rustc::{
-    hir::def_id::DefId,
-    infer::infer::TyCtxtInferExt,
-    middle::ty::{
-        subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, TraitRef, TyCtxt,
-    },
-    resolve::Namespace,
-    trait_selection::traits::ImplSource,
+use rustc_hir::def_id::DefId;
+use rustc_infer::infer::TyCtxtInferExt;
+use rustc_middle::ty::{
+    subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, TraitRef, TyCtxt,
 };
+use rustc_resolve::Namespace;
+use rustc_trait_selection::traits::ImplSource;
 use std::collections::HashMap;
 use why3::{
     declaration::{Decl, Goal, Module, TyDecl},
@@ -91,11 +89,11 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.param_env(impl_item),
                 self.def_span(impl_item),
             );
-            use creusot_rustc::trait_selection::traits::error_reporting::TypeErrCtxtExt;
+            use rustc_trait_selection::traits::error_reporting::TypeErrCtxtExt;
             if let Err(errs) = res {
                 let body_id = self.tcx.hir().body_owned_by(impl_item.expect_local());
                 infcx.err_ctxt().report_fulfillment_errors(&errs, Some(body_id));
-                self.crash_and_error(creusot_rustc::span::DUMMY_SP, "error above");
+                self.crash_and_error(rustc_span::DUMMY_SP, "error above");
             }
 
             #[allow(deprecated)]
@@ -131,15 +129,15 @@ impl<'tcx> TranslationCtx<'tcx> {
         let name = item_name(self.tcx, def_id, Namespace::TypeNS);
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
-            creusot_rustc::middle::ty::ImplContainer => names.with_public_clones(|names| {
+            rustc_middle::ty::ImplContainer => names.with_public_clones(|names| {
                 let assoc_ty = self.tcx.type_of(def_id);
                 TyDecl::Alias {
                     ty_name: name.clone(),
                     ty_params: vec![],
-                    alias: ty::translate_ty(self, names, creusot_rustc::span::DUMMY_SP, assoc_ty),
+                    alias: ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty),
                 }
             }),
-            creusot_rustc::middle::ty::TraitContainer => {
+            rustc_middle::ty::TraitContainer => {
                 TyDecl::Opaque { ty_name: name.clone(), ty_params: vec![] }
             }
         };
@@ -222,7 +220,7 @@ pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item
 }
 
 use crate::function::{all_generic_decls_for, own_generic_decls_for};
-use creusot_rustc::middle::ty::{subst::InternalSubsts, AssocItem, Binder};
+use rustc_middle::ty::{subst::InternalSubsts, AssocItem, Binder};
 
 pub(crate) fn resolve_impl_source_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -293,7 +291,7 @@ pub(crate) fn resolve_trait_opt<'tcx>(
     }
 }
 
-use creusot_rustc::middle::ty::AssocItemContainer;
+use rustc_middle::ty::AssocItemContainer;
 
 use super::specification::contract_of;
 
@@ -315,7 +313,7 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
     }
 
     let trait_ref = TraitRef::from_method(tcx, tcx.trait_of_item(def_id).unwrap(), substs);
-    use creusot_rustc::middle::ty::TypeVisitable;
+    use rustc_middle::ty::TypeVisitable;
     let source = resolve_impl_source_opt(tcx, param_env, def_id, substs)?;
     trace!("resolve_assoc_item_opt {source:?}",);
 
@@ -342,7 +340,7 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
 
             let param_env = param_env.with_reveal_all_normalized(tcx);
             let substs = substs.rebase_onto(tcx, trait_def_id, impl_data.substs);
-            let substs = creusot_rustc::trait_selection::traits::translate_substs(
+            let substs = rustc_trait_selection::traits::translate_substs(
                 &infcx,
                 param_env,
                 impl_data.impl_def_id,

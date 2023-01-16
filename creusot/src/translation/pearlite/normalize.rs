@@ -3,11 +3,9 @@ use crate::{
     translation::traits::resolve_opt,
     util::get_builtin,
 };
-use creusot_rustc::{
-    hir::def_id::DefId,
-    middle::ty::{ParamEnv, TyCtxt},
-    span::{symbol::sym, Symbol},
-};
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::{ParamEnv, TyCtxt};
+use rustc_span::{symbol::sym, Symbol};
 
 use super::{super_visit_mut_term, BinOp, TermVisitorMut};
 

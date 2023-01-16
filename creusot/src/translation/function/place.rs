@@ -3,16 +3,17 @@ use crate::{
     backend::program::uint_to_int,
     ctx::{CloneMap, TranslationCtx},
 };
-use creusot_rustc::{
-    middle::ty::{TyKind, UintTy},
-    smir::mir::{Body, Local, Place},
-};
+use rustc_middle::ty::{TyKind, UintTy};
+use rustc_smir::mir::{Body, Local, Place};
 use why3::{
     exp::{
         Exp::{self, *},
         Pattern::*,
     },
-    mlcfg::{self, Statement::*},
+    mlcfg::{
+        Statement::*,
+        {self},
+    },
     QName,
 };
 
@@ -53,7 +54,7 @@ pub(crate) fn create_assign_inner<'tcx>(
 
         match elem {
             Deref => {
-                use creusot_rustc::hir::Mutability::*;
+                use rustc_hir::Mutability::*;
 
                 let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
                 if mutability == Mut {
@@ -158,16 +159,16 @@ pub(crate) fn translate_rplace_inner<'tcx>(
     names: &mut CloneMap<'tcx>,
     body: &Body<'tcx>,
     loc: Local,
-    proj: &[creusot_rustc::middle::mir::PlaceElem<'tcx>],
+    proj: &[rustc_middle::mir::PlaceElem<'tcx>],
 ) -> Exp {
     let mut inner = Exp::impure_var(translate_local(body, loc).ident());
-    use creusot_rustc::smir::mir::ProjectionElem::*;
+    use rustc_smir::mir::ProjectionElem::*;
     let mut place_ty = Place::ty_from(loc, &[], body, ctx.tcx);
 
     for elem in proj {
         match elem {
             Deref => {
-                use creusot_rustc::hir::Mutability::*;
+                use rustc_hir::Mutability::*;
                 let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
                 if mutability == Mut {
                     inner = Current(box inner)

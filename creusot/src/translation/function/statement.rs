@@ -1,9 +1,7 @@
-use creusot_rustc::{
-    borrowck::borrow_set::TwoPhaseActivation,
-    smir::mir::{
-        BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
-        StatementKind,
-    },
+use rustc_borrowck::borrow_set::TwoPhaseActivation;
+use rustc_smir::mir::{
+    BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
+    StatementKind,
 };
 
 use super::BodyTranslator;
@@ -130,7 +128,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             }
             Rvalue::UnaryOp(op, v) => Expr::UnaryOp(*op, box self.translate_operand(v)),
             Rvalue::Aggregate(box kind, ops) => {
-                use creusot_rustc::smir::mir::AggregateKind::*;
+                use rustc_smir::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
 
                 match kind {

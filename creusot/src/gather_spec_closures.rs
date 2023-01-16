@@ -6,16 +6,14 @@ use crate::{
     translation::specification::inv_subst,
     util::{self, is_ghost_closure},
 };
-use creusot_rustc::{
-    data_structures::graph::WithSuccessors,
-    hir::def_id::DefId,
-    middle::{
-        mir::visit::Visitor,
-        ty::{TyCtxt, TyKind},
-    },
-    smir::mir::{AggregateKind, BasicBlock, Body, Location, Operand, Rvalue},
-    span::Symbol,
+use rustc_data_structures::graph::WithSuccessors;
+use rustc_hir::def_id::DefId;
+use rustc_middle::{
+    mir::visit::Visitor,
+    ty::{TyCtxt, TyKind},
 };
+use rustc_smir::mir::{AggregateKind, BasicBlock, Body, Location, Operand, Rvalue};
+use rustc_span::Symbol;
 
 pub(crate) fn corrected_invariant_names_and_locations<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,

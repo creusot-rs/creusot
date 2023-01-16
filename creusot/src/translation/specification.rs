@@ -3,23 +3,20 @@ use super::{
     LocalIdent,
 };
 use crate::{ctx::*, util};
-use creusot_rustc::{
-    ast::ast::{AttrArgs, AttrArgsEq},
-    hir::def_id::DefId,
-    macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable},
-    middle::{
-        mir::OUTERMOST_SOURCE_SCOPE,
-        thir::{self, ExprKind, Thir},
-        ty::{
-            self,
-            subst::{InternalSubsts, SubstsRef},
-            EarlyBinder, TyCtxt,
-        },
+use rustc_ast::ast::{AttrArgs, AttrArgsEq};
+use rustc_hir::def_id::DefId;
+use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
+use rustc_middle::{
+    mir::OUTERMOST_SOURCE_SCOPE,
+    thir::{self, ExprKind, Thir},
+    ty::{
+        self,
+        subst::{InternalSubsts, SubstsRef},
+        EarlyBinder, ParamEnv, TyCtxt,
     },
-    smir::mir::{Body, Local, Location, SourceScope},
-    span::Symbol,
 };
-use rustc_middle::ty::ParamEnv;
+use rustc_smir::mir::{Body, Local, Location, SourceScope};
+use rustc_span::Symbol;
 use std::collections::{HashMap, HashSet};
 use why3::declaration::Contract;
 
@@ -140,7 +137,7 @@ struct ScopeTree(HashMap<SourceScope, (HashSet<(Symbol, Local)>, Option<SourceSc
 
 impl ScopeTree {
     fn build<'tcx>(body: &Body<'tcx>) -> Self {
-        use creusot_rustc::smir::mir::VarDebugInfoContents::Place;
+        use rustc_smir::mir::VarDebugInfoContents::Place;
         let mut scope_tree: HashMap<SourceScope, (HashSet<_>, Option<_>)> = Default::default();
 
         for var_info in &body.var_debug_info {
@@ -348,14 +345,14 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                                 "called impure program function in logical context {:?}",
                                 self.tcx.def_path_str(func_did)
                             ),
-                            creusot_rustc::errors::DiagnosticId::Error(String::from("creusot")),
+                            rustc_errors::DiagnosticId::Error(String::from("creusot")),
                         );
                     }
                 } else {
                     self.tcx.sess.span_fatal_with_code(
                         expr.span,
                         "non function call in logical context",
-                        creusot_rustc::errors::DiagnosticId::Error(String::from("creusot")),
+                        rustc_errors::DiagnosticId::Error(String::from("creusot")),
                     )
                 }
             }

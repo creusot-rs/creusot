@@ -17,10 +17,10 @@ use crate::{
     options::OutputFile,
     validate::{validate_impls, validate_traits},
 };
-use creusot_rustc::hir::{def::DefKind, def_id::LOCAL_CRATE};
 use ctx::TranslationCtx;
 pub(crate) use function::{translate_function, LocalIdent};
 use heck::ToUpperCamelCase;
+use rustc_hir::{def::DefKind, def_id::LOCAL_CRATE};
 use rustc_middle::ty::Ty;
 use std::{error::Error, io::Write};
 use why3::{declaration::Module, mlcfg, Print};
@@ -131,7 +131,7 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
 
     Ok(())
 }
-use creusot_rustc::smir::mir;
+use rustc_smir::mir;
 
 pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -> why3::exp::BinOp {
     use why3::exp::BinOp;
@@ -178,16 +178,16 @@ pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -
         mir::BinOp::Ne => BinOp::Ne,
         mir::BinOp::Rem => BinOp::Mod,
         _ => ctx.crash_and_error(
-            creusot_rustc::span::DUMMY_SP,
+            rustc_span::DUMMY_SP,
             &format!("unsupported binary operation: {:?}", op),
         ),
     }
 }
 
-pub(crate) fn unop_to_unop(op: creusot_rustc::middle::mir::UnOp) -> why3::exp::UnOp {
+pub(crate) fn unop_to_unop(op: rustc_middle::mir::UnOp) -> why3::exp::UnOp {
     match op {
-        creusot_rustc::middle::mir::UnOp::Not => why3::exp::UnOp::Not,
-        creusot_rustc::middle::mir::UnOp::Neg => why3::exp::UnOp::Neg,
+        rustc_middle::mir::UnOp::Not => why3::exp::UnOp::Not,
+        rustc_middle::mir::UnOp::Neg => why3::exp::UnOp::Neg,
     }
 }
 

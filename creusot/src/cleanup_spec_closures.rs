@@ -1,16 +1,14 @@
-use creusot_rustc::{
-    hir::def_id::DefId,
-    index::vec::IndexVec,
-    middle::{
-        mir::{Terminator, TerminatorKind},
-        ty::TyCtxt,
-    },
-    smir::mir::{
-        AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location, MutVisitor, Rvalue,
-        SourceInfo,
-    },
-};
 use indexmap::IndexSet;
+use rustc_hir::def_id::DefId;
+use rustc_index::vec::IndexVec;
+use rustc_middle::{
+    mir::{Terminator, TerminatorKind},
+    ty::TyCtxt,
+};
+use rustc_smir::mir::{
+    AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location, MutVisitor, Rvalue,
+    SourceInfo,
+};
 
 use crate::util;
 
@@ -39,7 +37,7 @@ pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body
 }
 
 fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) {
-    use creusot_rustc::smir::mir::StatementKind;
+    use rustc_smir::mir::StatementKind;
 
     for data in body.basic_blocks_mut() {
         data.statements.retain(|statement| match &statement.kind {
@@ -55,7 +53,7 @@ fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) {
 pub(crate) fn make_loop(_: TyCtxt) -> IndexVec<BasicBlock, BasicBlockData> {
     let mut body = IndexVec::new();
     body.push(BasicBlockData::new(Some(Terminator {
-        source_info: SourceInfo::outermost(creusot_rustc::span::DUMMY_SP),
+        source_info: SourceInfo::outermost(rustc_span::DUMMY_SP),
         kind: TerminatorKind::Return,
     })));
     body
@@ -96,7 +94,7 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
     }
 }
 
-use creusot_rustc::index::vec::Idx;
+use rustc_index::vec::Idx;
 
 pub(crate) fn map_locals<V>(
     local_decls: &mut IndexVec<Local, V>,
@@ -120,7 +118,7 @@ pub(crate) fn map_locals<V>(
     map
 }
 
-use creusot_rustc::middle::mir::visit::PlaceContext;
+use rustc_middle::mir::visit::PlaceContext;
 
 pub struct LocalUpdater<'tcx> {
     pub map: IndexVec<Local, Option<Local>>,

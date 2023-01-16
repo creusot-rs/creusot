@@ -2,11 +2,9 @@ use crate::{
     ctx::{CloneMap, TranslationCtx},
     translation::{fmir, function::LocalIdent, ty::translate_ty},
 };
-use creusot_rustc::{
-    hir::def_id::DefId,
-    middle::ty::ParamEnv,
-    smir::mir::{Body, Promoted},
-};
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::ParamEnv;
+use rustc_smir::mir::{Body, Promoted};
 use why3::{
     declaration::{Contract, Decl, LetDecl, LetKind, Signature},
     exp::{Binder, Exp, Pattern},

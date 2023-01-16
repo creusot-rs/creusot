@@ -10,12 +10,10 @@ use crate::{
         unop_to_unop,
     },
 };
-use creusot_rustc::{
-    hir::{def::DefKind, Unsafety},
-    middle::ty::TyKind,
-    smir::mir::{self, BasicBlock, BinOp, Place},
-    span::DUMMY_SP,
-};
+use rustc_hir::{def::DefKind, Unsafety};
+use rustc_middle::ty::TyKind;
+use rustc_smir::mir::{self, BasicBlock, BinOp, Place};
+use rustc_span::DUMMY_SP;
 
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{

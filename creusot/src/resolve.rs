@@ -1,10 +1,8 @@
 use std::rc::Rc;
 
 use crate::analysis::{MaybeInitializedLocals, MaybeUninitializedLocals};
-use creusot_rustc::{
-    borrowck::borrow_set::{BorrowSet, TwoPhaseActivation},
-    index::bit_set::BitSet,
-};
+use rustc_borrowck::borrow_set::{BorrowSet, TwoPhaseActivation};
+use rustc_index::bit_set::BitSet;
 use rustc_smir::{
     mir::{BasicBlock, Body, Local, Location},
     very_unstable::{

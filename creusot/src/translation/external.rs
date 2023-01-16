@@ -10,19 +10,17 @@ use crate::{
     },
     util::{self, item_type},
 };
-use creusot_rustc::{
-    hir::def_id::{DefId, LocalDefId},
-    macros::{TyDecodable, TyEncodable},
-    middle::{
-        thir::{self, visit::Visitor, Expr, ExprKind, Thir},
-        ty::{
-            subst::{GenericArgKind, InternalSubsts, SubstsRef},
-            EarlyBinder, Predicate, TyCtxt, TyKind, WithOptConstParam,
-        },
-    },
-    span::{Symbol, DUMMY_SP},
-};
 use indexmap::IndexSet;
+use rustc_hir::def_id::{DefId, LocalDefId};
+use rustc_macros::{TyDecodable, TyEncodable};
+use rustc_middle::{
+    thir::{self, visit::Visitor, Expr, ExprKind, Thir},
+    ty::{
+        subst::{GenericArgKind, InternalSubsts, SubstsRef},
+        EarlyBinder, Predicate, TyCtxt, TyKind, WithOptConstParam,
+    },
+};
+use rustc_span::{Symbol, DUMMY_SP};
 use why3::declaration::{Decl, Module};
 
 pub(crate) fn default_decl<'tcx>(

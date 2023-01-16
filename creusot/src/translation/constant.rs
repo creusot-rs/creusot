@@ -6,21 +6,18 @@ use crate::{
     translation::pearlite::Literal,
     util::{get_builtin, signature_of},
 };
-use creusot_rustc::{
-    hir::def_id::DefId,
-    middle::{
-        mir::{
-            interpret::{AllocRange, ConstValue},
-            UnevaluatedConst,
-        },
-        ty,
-        ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
+use rustc_hir::def_id::DefId;
+use rustc_middle::{
+    mir::{
+        interpret::{AllocRange, ConstValue},
+        UnevaluatedConst,
     },
-    smir::mir::ConstantKind,
-    span::{Span, Symbol},
-    target::abi::Size,
+    ty,
+    ty::{subst::InternalSubsts, Const, ConstKind, ParamEnv, Ty, TyCtxt},
 };
-use rustc_middle::ty::subst::InternalSubsts;
+use rustc_smir::mir::ConstantKind;
+use rustc_span::{Span, Symbol};
+use rustc_target::abi::Size;
 use why3::declaration::{Decl, LetDecl, LetKind, Module};
 
 use super::{
@@ -60,7 +57,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
     ctx: &mut TranslationCtx<'tcx>,
-    c: &creusot_rustc::smir::mir::Constant<'tcx>,
+    c: &rustc_smir::mir::Constant<'tcx>,
 ) -> Expr<'tcx> {
     from_mir_constant_kind(ctx, c.literal, env, c.span)
 }

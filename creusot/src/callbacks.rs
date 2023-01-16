@@ -1,7 +1,5 @@
-use creusot_rustc::{
-    driver::{Callbacks, Compilation},
-    interface::{interface::Compiler, Config, Queries},
-};
+use rustc_driver::{Callbacks, Compilation};
+use rustc_interface::{interface::Compiler, Config, Queries};
 
 use crate::{cleanup_spec_closures::*, options::Options};
 
@@ -20,8 +18,7 @@ impl Callbacks for ToWhy {
     fn config(&mut self, config: &mut Config) {
         config.override_queries = Some(|_sess, providers, _external_providers| {
             providers.mir_built = |tcx, def_id| {
-                let mir =
-                    (creusot_rustc::interface::DEFAULT_QUERY_PROVIDERS.mir_built)(tcx, def_id);
+                let mir = (rustc_interface::DEFAULT_QUERY_PROVIDERS.mir_built)(tcx, def_id);
                 let mut mir = mir.steal();
                 cleanup_spec_closures(tcx, def_id.def_id_for_type_of(), &mut mir);
                 tcx.alloc_steal_mir(mir)
