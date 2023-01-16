@@ -245,7 +245,7 @@ pub(crate) fn contract_clauses_of(
         // Use a custom HIR visitor which walks the attributes
         let get_creusot_item = || {
             let predicate_name = match &attr.args {
-                AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => l.token_lit.symbol,
+                AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => l.symbol,
                 _ => return Err(InvalidTokens { id: def_id }),
             };
             ctx.creusot_item(predicate_name).ok_or(InvalidTerm { id: def_id })
@@ -279,7 +279,7 @@ pub(crate) fn inherited_extern_spec<'tcx>(
         if ctx.extern_spec(id).is_none() {
             return None;
         }
-        (id, EarlyBinder(trait_ref.substs).subst(ctx.tcx, subst))
+        (id, trait_ref.subst(ctx.tcx, subst).substs)
     }
 }
 

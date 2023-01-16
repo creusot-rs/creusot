@@ -5,8 +5,7 @@ use creusot_rustc::{
     middle::ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
-        DefIdTree, EarlyBinder, ProjectionTy, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable,
-        TypeVisitor,
+        DefIdTree, EarlyBinder, Ty, TyCtxt, TyKind, TypeFoldable, TypeSuperVisitable, TypeVisitor,
     },
     resolve::Namespace,
     span::{Symbol, DUMMY_SP},
@@ -14,7 +13,7 @@ use creusot_rustc::{
 use heck::ToUpperCamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
-use rustc_middle::ty::{subst::GenericArgKind, ParamEnv};
+use rustc_middle::ty::{subst::GenericArgKind, AliasKind, AliasTy, ParamEnv};
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
     Ident, QName,
@@ -473,8 +472,8 @@ impl<'tcx> CloneMap<'tcx> {
                 _ => {}
             }
         }
-        walk_projections(key.1, |pty: &ProjectionTy<'tcx>| {
-            let dep = self.resolve_dep(ctx, (pty.item_def_id, pty.substs));
+        walk_projections(key.1, |pty: &AliasTy<'tcx>| {
+            let dep = self.resolve_dep(ctx, (pty.def_id, pty.substs));
 
             if let DepNode::Dep((defid, subst)) = dep {
                 self.insert(defid, subst);
@@ -550,14 +549,13 @@ impl<'tcx> CloneMap<'tcx> {
         if util::item_type(self.tcx, resolved.0) == ItemType::AssocTy
             && self.tcx.trait_of_item(resolved.0).is_some()
         {
-            let proj_ty = ProjectionTy { item_def_id: dep.0, substs: dep.1 };
-            let ty = self.tcx.mk_ty(TyKind::Projection(proj_ty));
+            let ty = self.tcx.mk_projection(dep.0, dep.1);
 
             let normed = self.tcx.try_normalize_erasing_regions(param_env, ty);
             trace!("normed {ty:?} into {normed:?}");
             if let Ok(normed) = normed && ty != normed {
                 match normed.kind() {
-                    TyKind::Projection(pty) => return DepNode::Dep((pty.item_def_id, pty.substs)),
+                    TyKind::Alias(AliasKind::Projection, aty) => return DepNode::Dep((aty.def_id, aty.substs)),
                     _ => return DepNode::Type(normed),
                 }
             }
@@ -893,26 +891,26 @@ fn still_specializable<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, substs: SubstsRef
     } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
         let is_final = tcx.impl_defaultness(def_id).is_final();
         let trait_ref = tcx.impl_trait_ref(impl_id).unwrap();
-        !is_final && EarlyBinder(trait_ref).subst(tcx, substs).still_further_specializable()
+        !is_final && trait_ref.subst(tcx, substs).still_further_specializable()
     } else {
         false
     }
 }
 
 // Walk all the projections in a substitution so we can add dependencies on them
-fn walk_projections<'tcx, T: TypeFoldable<'tcx>, F: FnMut(&ProjectionTy<'tcx>)>(s: T, f: F) {
+fn walk_projections<'tcx, T: TypeFoldable<'tcx>, F: FnMut(&AliasTy<'tcx>)>(s: T, f: F) {
     s.visit_with(&mut ProjectionTyVisitor { f, p: std::marker::PhantomData });
 }
 
-struct ProjectionTyVisitor<'tcx, F: FnMut(&ProjectionTy<'tcx>)> {
+struct ProjectionTyVisitor<'tcx, F: FnMut(&AliasTy<'tcx>)> {
     f: F,
     p: std::marker::PhantomData<&'tcx ()>,
 }
 
-impl<'tcx, F: FnMut(&ProjectionTy<'tcx>)> TypeVisitor<'tcx> for ProjectionTyVisitor<'tcx, F> {
+impl<'tcx, F: FnMut(&AliasTy<'tcx>)> TypeVisitor<'tcx> for ProjectionTyVisitor<'tcx, F> {
     fn visit_ty(&mut self, t: Ty<'tcx>) -> std::ops::ControlFlow<Self::BreakTy> {
         match t.kind() {
-            TyKind::Projection(pty) => {
+            TyKind::Alias(AliasKind::Projection, pty) => {
                 (self.f)(pty);
                 t.super_visit_with(self)
             }

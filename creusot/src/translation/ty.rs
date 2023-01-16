@@ -3,7 +3,7 @@ use creusot_rustc::{
     middle::ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
-        ClosureSubsts, FieldDef, ProjectionTy, Ty, TyCtxt,
+        AliasKind, AliasTy, ClosureSubsts, FieldDef, Ty, TyCtxt,
     },
     resolve::Namespace,
     span::{Span, Symbol, DUMMY_SP},
@@ -107,7 +107,7 @@ fn translate_ty_inner<'tcx>(
                 MlT::TConstructor(QName::from_string(&p.to_string().to_lowercase()).unwrap())
             }
         }
-        Projection(pty) => {
+        Alias(AliasKind::Projection, pty) => {
             if matches!(trans, TyTranslation::Declaration) {
                 ctx.crash_and_error(span, "associated types are unsupported in type declarations")
             } else {
@@ -178,10 +178,10 @@ fn translate_ty_inner<'tcx>(
 pub(crate) fn translate_projection_ty<'tcx>(
     _ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
-    pty: &ProjectionTy<'tcx>,
+    pty: &AliasTy<'tcx>,
 ) -> MlT {
     // ctx.translate(pty.trait_def_id(ctx.tcx));
-    let name = names.ty(pty.item_def_id, pty.substs);
+    let name = names.ty(pty.def_id, pty.substs);
     MlT::TConstructor(name)
 }
 

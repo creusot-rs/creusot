@@ -628,7 +628,6 @@ module C04Skip_Impl0_Next
   use seq.Seq
   use prelude.Ghost
   clone CreusotContracts_Std1_Default_Impl2_IsDefault as IsDefault0
-  use C04Skip_Skip_Type as C04Skip_Skip_Type
   clone C04Skip_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
   clone C04Skip_Common_Iterator_Invariant_Interface as Invariant1 with
@@ -648,10 +647,13 @@ module C04Skip_Impl0_Next
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
     axiom .
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve4 with
+    type self = Ghost.ghost_ty (Seq.seq Item0.item)
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve5 with
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
     type self = Core_Option_Option_Type.t_option Item0.item
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve4 with
+  use C04Skip_Skip_Type as C04Skip_Skip_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve2 with
     type t = C04Skip_Skip_Type.t_skip i
   clone C04Skip_Common_Iterator_Next_Interface as Next0 with
     type self = i,
@@ -659,27 +661,23 @@ module C04Skip_Impl0_Next
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed1.completed,
     predicate Produces0.produces = Produces1.produces
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve3 with
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
     type self = Item0.item
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
-    type self = Ghost.ghost_ty (Seq.seq Item0.item)
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = usize
   clone Core_Mem_Take_Interface as Take0 with
     type t = usize,
     predicate IsDefault0.is_default = IsDefault0.is_default
-  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
-    type self = Ghost.ghost_ty (borrowed (C04Skip_Skip_Type.t_skip i))
   clone C04Skip_Impl0_Produces as Produces0 with
     type i = i,
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
-    predicate Resolve0.resolve = Resolve3.resolve
+    predicate Resolve0.resolve = Resolve1.resolve
   clone C04Skip_Impl0_Completed as Completed0 with
     type i = i,
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
-    predicate Resolve0.resolve = Resolve3.resolve,
+    predicate Resolve0.resolve = Resolve1.resolve,
     predicate Completed0.completed = Completed1.completed
   clone C04Skip_Impl0_Invariant as Invariant0 with
     type i = i,
@@ -725,7 +723,6 @@ module C04Skip_Impl0_Next
     goto BB1
   }
   BB1 {
-    assume { Resolve0.resolve old_self_5 };
     _10 <- borrow_mut (C04Skip_Skip_Type.skip_n ( * self_1));
     self_1 <- { self_1 with current = (let C04Skip_Skip_Type.C_Skip a b =  * self_1 in C04Skip_Skip_Type.C_Skip a ( ^ _10)) };
     _9 <- borrow_mut ( * _10);
@@ -734,20 +731,19 @@ module C04Skip_Impl0_Next
     goto BB2
   }
   BB2 {
-    assume { Resolve1.resolve _10 };
+    assume { Resolve0.resolve _10 };
     _14 <- ();
     skipped_11 <- ([#"../04_skip.rs" 72 26 72 47] Ghost.new (Seq.empty ));
     goto BB3
   }
   BB3 {
-    assume { Resolve2.resolve skipped_11 };
     goto BB4
   }
   BB4 {
     invariant proph_const { [#"../04_skip.rs" 73 33 73 59]  ^ self_1 =  ^ Ghost.inner old_self_5 };
     invariant skipped_len { [#"../04_skip.rs" 74 33 74 66] Seq.length (Ghost.inner skipped_11) + UInt64.to_int n_8 = UInt64.to_int (C04Skip_Skip_Type.skip_n ( * Ghost.inner old_self_5)) };
     invariant produces { [#"../04_skip.rs" 73 8 73 61] Produces1.produces (C04Skip_Skip_Type.skip_iter ( * Ghost.inner old_self_5)) (Ghost.inner skipped_11) (C04Skip_Skip_Type.skip_iter ( * self_1)) };
-    invariant skipped_resolve { [#"../04_skip.rs" 73 8 73 61] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner skipped_11) -> Resolve3.resolve (Seq.get (Ghost.inner skipped_11) i) };
+    invariant skipped_resolve { [#"../04_skip.rs" 73 8 73 61] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner skipped_11) -> Resolve1.resolve (Seq.get (Ghost.inner skipped_11) i) };
     invariant n_0 { [#"../04_skip.rs" 77 25 77 40] UInt64.to_int (C04Skip_Skip_Type.skip_n ( * self_1)) = 0 };
     invariant inv { [#"../04_skip.rs" 78 25 78 41] Invariant0.invariant' ( * self_1) };
     _24 <- borrow_mut (C04Skip_Skip_Type.skip_iter ( * self_1));
@@ -764,8 +760,8 @@ module C04Skip_Impl0_Next
       end
   }
   BB6 {
-    assume { Resolve4.resolve self_1 };
-    assume { Resolve5.resolve _0 };
+    assume { Resolve2.resolve self_1 };
+    assume { Resolve3.resolve _0 };
     _0 <- r_23;
     r_23 <- any Core_Option_Option_Type.t_option Item0.item;
     goto BB13
@@ -778,14 +774,14 @@ module C04Skip_Impl0_Next
       end
   }
   BB8 {
-    assume { Resolve4.resolve self_1 };
-    assume { Resolve5.resolve _0 };
+    assume { Resolve2.resolve self_1 };
+    assume { Resolve3.resolve _0 };
     _0 <- r_23;
     r_23 <- any Core_Option_Option_Type.t_option Item0.item;
     goto BB13
   }
   BB9 {
-    assume { Resolve3.resolve x_30 };
+    assume { Resolve1.resolve x_30 };
     x_30 <- Core_Option_Option_Type.some_0 r_23;
     r_23 <- (let Core_Option_Option_Type.C_Some a = r_23 in Core_Option_Option_Type.C_Some (any Item0.item));
     _33 <- ();
@@ -793,7 +789,7 @@ module C04Skip_Impl0_Next
     goto BB10
   }
   BB10 {
-    assume { Resolve2.resolve skipped_11 };
+    assume { Resolve4.resolve skipped_11 };
     skipped_11 <- _31;
     _31 <- any Ghost.ghost_ty (Seq.seq Item0.item);
     n_8 <- ([#"../04_skip.rs" 86 16 86 22] n_8 - ([#"../04_skip.rs" 86 21 86 22] (1 : usize)));
@@ -801,11 +797,11 @@ module C04Skip_Impl0_Next
     goto BB11
   }
   BB11 {
-    assume { Resolve3.resolve x_30 };
+    assume { Resolve1.resolve x_30 };
     goto BB12
   }
   BB12 {
-    assume { Resolve5.resolve r_23 };
+    assume { Resolve3.resolve r_23 };
     goto BB4
   }
   BB13 {
@@ -826,6 +822,8 @@ end
 module C04Skip_Impl0
   type i
   use seq.Seq
+  clone C04Skip_Common_Iterator_Completed_Interface as Completed1 with
+    type self = i
   clone C04Skip_Common_Iterator_Item_Type as Item0 with
     type self = i
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
@@ -839,6 +837,13 @@ module C04Skip_Impl0
     type i = i,
     type Item0.item = Item0.item
   use C04Skip_Skip_Type as C04Skip_Skip_Type
+  clone C04Skip_Impl0_Completed as Completed0 with
+    type i = i,
+    type Item0.item = Item0.item,
+    predicate Produces0.produces = Produces1.produces,
+    predicate Resolve0.resolve = Resolve0.resolve,
+    predicate Completed0.completed = Completed1.completed
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone C04Skip_Impl0_Produces as Produces0 with
     type i = i,
     type Item0.item = Item0.item,
@@ -847,29 +852,6 @@ module C04Skip_Impl0
   clone C04Skip_Impl0_Invariant as Invariant0 with
     type i = i,
     predicate Invariant0.invariant' = Invariant1.invariant'
-  clone C04Skip_Impl0_ProducesTrans as ProducesTrans0 with
-    type i = i,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    predicate Produces0.produces = Produces0.produces,
-    type Item0.item = Item0.item,
-    axiom .
-  clone C04Skip_Common_Iterator_ProducesTrans_Interface as ProducesTrans1 with
-    type self = C04Skip_Skip_Type.t_skip i,
-    function produces_trans = ProducesTrans0.produces_trans,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    predicate Produces0.produces = Produces0.produces,
-    type Item0.item = Item1.item,
-    axiom .
-  goal produces_trans_spec : forall a : C04Skip_Skip_Type.t_skip i, ab : Seq.seq Item0.item, b : C04Skip_Skip_Type.t_skip i, bc : Seq.seq Item0.item, c : C04Skip_Skip_Type.t_skip i . (([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) && ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) && ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) && ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) && ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../04_skip.rs" 55 15 55 32] Produces0.produces b bc c) && ([#"../04_skip.rs" 54 15 54 32] Produces0.produces a ab b) && ([#"../04_skip.rs" 53 15 53 28] Invariant0.invariant' c) && ([#"../04_skip.rs" 52 15 52 28] Invariant0.invariant' b) && ([#"../04_skip.rs" 51 15 51 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../04_skip.rs" 56 14 56 42] Produces0.produces a (Seq.(++) ab bc) c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c))
-  clone C04Skip_Common_Iterator_Completed_Interface as Completed1 with
-    type self = i
-  clone C04Skip_Impl0_Completed as Completed0 with
-    type i = i,
-    type Item0.item = Item0.item,
-    predicate Produces0.produces = Produces1.produces,
-    predicate Resolve0.resolve = Resolve0.resolve,
-    predicate Completed0.completed = Completed1.completed
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone C04Skip_Impl0_ProducesRefl as ProducesRefl0 with
     type i = i,
     predicate Invariant0.invariant' = Invariant0.invariant',
@@ -897,4 +879,18 @@ module C04Skip_Impl0
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces
   goal produces_refl_spec : forall a : C04Skip_Skip_Type.t_skip i . (([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> ([#"../04_skip.rs" 46 15 46 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../04_skip.rs" 47 14 47 39] Produces0.produces a (Seq.empty ) a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a))
+  clone C04Skip_Impl0_ProducesTrans as ProducesTrans0 with
+    type i = i,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item0.item,
+    axiom .
+  clone C04Skip_Common_Iterator_ProducesTrans_Interface as ProducesTrans1 with
+    type self = C04Skip_Skip_Type.t_skip i,
+    function produces_trans = ProducesTrans0.produces_trans,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item1.item,
+    axiom .
+  goal produces_trans_spec : forall a : C04Skip_Skip_Type.t_skip i, ab : Seq.seq Item0.item, b : C04Skip_Skip_Type.t_skip i, bc : Seq.seq Item0.item, c : C04Skip_Skip_Type.t_skip i . (([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) && ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) && ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) && ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) && ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../04_skip.rs" 55 15 55 32] Produces0.produces b bc c) && ([#"../04_skip.rs" 54 15 54 32] Produces0.produces a ab b) && ([#"../04_skip.rs" 53 15 53 28] Invariant0.invariant' c) && ([#"../04_skip.rs" 52 15 52 28] Invariant0.invariant' b) && ([#"../04_skip.rs" 51 15 51 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../04_skip.rs" 56 14 56 42] Produces0.produces a (Seq.(++) ab bc) c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c))
 end

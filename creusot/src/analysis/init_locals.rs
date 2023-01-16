@@ -4,7 +4,7 @@
 //
 use creusot_rustc::{
     dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis},
-    index::bit_set::ChunkedBitSet,
+    index::bit_set::BitSet,
     middle::mir::{
         visit::{PlaceContext, Visitor},
         Terminator,
@@ -12,28 +12,27 @@ use creusot_rustc::{
     smir::mir::{self, BasicBlock, Local, Location},
 };
 
-pub struct MaybeUninitializedLocals;
+pub struct MaybeInitializedLocals;
 
-impl<'tcx> AnalysisDomain<'tcx> for MaybeUninitializedLocals {
-    type Domain = ChunkedBitSet<Local>;
+impl<'tcx> AnalysisDomain<'tcx> for MaybeInitializedLocals {
+    type Domain = BitSet<Local>;
 
-    const NAME: &'static str = "maybe_uninit_locals";
+    const NAME: &'static str = "maybe_init_locals";
 
     fn bottom_value(&self, body: &mir::Body<'tcx>) -> Self::Domain {
-        // bottom = init
-        ChunkedBitSet::new_empty(body.local_decls.len())
+        // bottom = uninit
+        BitSet::new_empty(body.local_decls.len())
     }
 
     fn initialize_start_block(&self, body: &mir::Body<'tcx>, entry_set: &mut Self::Domain) {
-        entry_set.insert_all();
-
+        // Function arguments are initialized to begin with.
         for arg in body.args_iter() {
-            entry_set.remove(arg);
+            entry_set.insert(arg);
         }
     }
 }
 
-impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
+impl<'tcx> GenKillAnalysis<'tcx> for MaybeInitializedLocals {
     type Idx = Local;
 
     fn statement_effect(
@@ -60,11 +59,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
         _block: BasicBlock,
         return_places: dataflow::CallReturnPlaces<'_, 'tcx>,
     ) {
-        return_places.for_each(|place| {
-            if let Some(local) = place.as_local() {
-                trans.kill(local);
-            }
-        });
+        return_places.for_each(|place| trans.gen(place.local));
     }
 
     /// See `Analysis::apply_yield_resume_effect`.
@@ -74,7 +69,7 @@ impl<'tcx> GenKillAnalysis<'tcx> for MaybeUninitializedLocals {
         _resume_block: BasicBlock,
         resume_place: mir::Place<'tcx>,
     ) {
-        trans.kill(resume_place.local)
+        trans.gen(resume_place.local)
     }
 }
 
@@ -82,25 +77,34 @@ struct TransferFunction<'a, T> {
     trans: &'a mut T,
 }
 
-impl<'a, 'tcx, T> Visitor<'tcx> for TransferFunction<'a, T>
+impl<T> Visitor<'_> for TransferFunction<'_, T>
 where
     T: GenKill<Local>,
 {
+    // FIXME: Using `visit_local` here is a bug. For example, on `move _5.field` we mark `_5` as
+    // deinitialized, although clearly it is only partially deinitialized. This analysis is not
+    // actually used anywhere at the moment, so this is not critical, but this does need to be fixed
+    // before it starts being used again.
     fn visit_local(&mut self, local: Local, context: PlaceContext, _: Location) {
-        use creusot_rustc::middle::mir::visit::{
-            MutatingUseContext, NonMutatingUseContext, NonUseContext,
-        };
+        use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, NonUseContext};
         match context {
             // These are handled specially in `call_return_effect` and `yield_resume_effect`.
-            PlaceContext::MutatingUse(MutatingUseContext::Call | MutatingUseContext::Yield) => {}
+            PlaceContext::MutatingUse(
+                MutatingUseContext::Call
+                | MutatingUseContext::AsmOutput
+                | MutatingUseContext::Yield,
+            ) => {}
+
+            // If it's deinitialized, it's no longer init
+            PlaceContext::MutatingUse(MutatingUseContext::Deinit) => self.trans.kill(local),
 
             // Otherwise, when a place is mutated, we must consider it possibly initialized.
-            PlaceContext::MutatingUse(_) => self.trans.kill(local),
+            PlaceContext::MutatingUse(_) => self.trans.gen(local),
 
             // If the local is moved out of, or if it gets marked `StorageDead`, consider it no
             // longer initialized.
             PlaceContext::NonUse(NonUseContext::StorageDead)
-            | PlaceContext::NonMutatingUse(NonMutatingUseContext::Move) => self.trans.gen(local),
+            | PlaceContext::NonMutatingUse(NonMutatingUseContext::Move) => self.trans.kill(local),
 
             // All other uses do not affect this analysis.
             PlaceContext::NonUse(

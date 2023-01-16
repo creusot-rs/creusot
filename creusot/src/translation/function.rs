@@ -31,9 +31,10 @@ use creusot_rustc::{
             TyKind, TypeVisitable, WithOptConstParam,
         },
     },
+    mir_transform::cleanup_post_borrowck::CleanupPostBorrowck,
     smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo},
     span::{Span, Symbol, DUMMY_SP},
-    transform::{remove_false_edges::*, simplify::*},
+    transform::simplify::*,
 };
 use indexmap::IndexMap;
 use rustc_middle::ty::UpvarCapture;
@@ -64,7 +65,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     let mut body = body.borrow().clone();
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
-    RemoveFalseEdges.run_pass(tcx, &mut body);
+    CleanupPostBorrowck.run_pass(tcx, &mut body);
     SimplifyCfg::new("verify").run_pass(tcx, &mut body);
 
     let mut decls = Vec::new();
@@ -109,7 +110,7 @@ pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> fmir:
     let mut body = body.borrow().clone();
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
-    RemoveFalseEdges.run_pass(ctx.tcx, &mut body);
+    CleanupPostBorrowck.run_pass(ctx.tcx, &mut body);
     SimplifyCfg::new("verify").run_pass(ctx.tcx, &mut body);
 
     let func_translator = BodyTranslator::build_context(ctx.tcx, ctx, &body, def_id);

@@ -631,6 +631,11 @@ end
 module C05Take_Impl0
   type i
   use seq.Seq
+  clone C05Take_Common_Iterator_Completed_Interface as Completed1 with
+    type self = i
+  use C05Take_Take_Type as C05Take_Take_Type
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = C05Take_Take_Type.t_take i
   clone C05Take_Common_Iterator_Item_Type as Item0 with
     type self = i
   clone C05Take_Common_Iterator_Produces_Interface as Produces1 with
@@ -641,7 +646,11 @@ module C05Take_Impl0
   clone C05Take_Impl0_Item_Type as Item1 with
     type i = i,
     type Item0.item = Item0.item
-  use C05Take_Take_Type as C05Take_Take_Type
+  clone C05Take_Impl0_Completed as Completed0 with
+    type i = i,
+    predicate Resolve0.resolve = Resolve0.resolve,
+    predicate Completed0.completed = Completed1.completed
+  use Core_Option_Option_Type as Core_Option_Option_Type
   clone C05Take_Impl0_Produces as Produces0 with
     type i = i,
     type Item0.item = Item0.item,
@@ -662,6 +671,19 @@ module C05Take_Impl0
     predicate Produces0.produces = Produces0.produces,
     type Item0.item = Item1.item,
     axiom .
+  clone C05Take_Impl0_Next_Interface as Next0 with
+    type i = i,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    predicate Completed0.completed = Completed0.completed,
+    predicate Produces0.produces = Produces0.produces
+  clone C05Take_Common_Iterator_Next_Interface as Next1 with
+    type self = C05Take_Take_Type.t_take i,
+    val next = Next0.next,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item1.item,
+    predicate Completed0.completed = Completed0.completed,
+    predicate Produces0.produces = Produces0.produces
   goal produces_refl_spec : forall a : C05Take_Take_Type.t_take i . (([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> ([#"../05_take.rs" 43 15 43 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../05_take.rs" 44 14 44 39] Produces0.produces a (Seq.empty ) a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a))
   clone C05Take_Impl0_ProducesTrans as ProducesTrans0 with
     type i = i,
@@ -677,26 +699,4 @@ module C05Take_Impl0
     type Item0.item = Item1.item,
     axiom .
   goal produces_trans_spec : forall a : C05Take_Take_Type.t_take i, ab : Seq.seq Item0.item, b : C05Take_Take_Type.t_take i, bc : Seq.seq Item0.item, c : C05Take_Take_Type.t_take i . (([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) && ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) && ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) && ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) && ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../05_take.rs" 52 15 52 32] Produces0.produces b bc c) && ([#"../05_take.rs" 51 15 51 32] Produces0.produces a ab b) && ([#"../05_take.rs" 50 15 50 28] Invariant0.invariant' c) && ([#"../05_take.rs" 49 15 49 28] Invariant0.invariant' b) && ([#"../05_take.rs" 48 15 48 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../05_take.rs" 53 14 53 42] Produces0.produces a (Seq.(++) ab bc) c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c))
-  clone C05Take_Common_Iterator_Completed_Interface as Completed1 with
-    type self = i
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = C05Take_Take_Type.t_take i
-  clone C05Take_Impl0_Completed as Completed0 with
-    type i = i,
-    predicate Resolve0.resolve = Resolve0.resolve,
-    predicate Completed0.completed = Completed1.completed
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  clone C05Take_Impl0_Next_Interface as Next0 with
-    type i = i,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    type Item0.item = Item0.item,
-    predicate Completed0.completed = Completed0.completed,
-    predicate Produces0.produces = Produces0.produces
-  clone C05Take_Common_Iterator_Next_Interface as Next1 with
-    type self = C05Take_Take_Type.t_take i,
-    val next = Next0.next,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    type Item0.item = Item1.item,
-    predicate Completed0.completed = Completed0.completed,
-    predicate Produces0.produces = Produces0.produces
 end

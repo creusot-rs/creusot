@@ -1,6 +1,5 @@
 use crate::{
     ctx::*,
-    rustc_extensions,
     translation::{
         function::terminator::evaluate_additional_predicates,
         ty::{self, translate_ty},
@@ -42,7 +41,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     pub(crate) fn translate_impl(&mut self, impl_id: DefId) -> TranslatedItem {
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
-        self.translate_trait(trait_ref.def_id);
+        self.translate_trait(trait_ref.0.def_id);
 
         // Impl Refinement module
         let mut decls: Vec<_> = own_generic_decls_for(self.tcx, impl_id).collect();
@@ -76,7 +75,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
             decls.extend(own_generic_decls_for(self.tcx, impl_item));
 
-            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.substs);
+            let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.0.substs);
 
             // TODO: Clean up and abstract
             let predicates = self
@@ -230,33 +229,30 @@ pub(crate) fn resolve_impl_source_opt<'tcx>(
     param_env: ParamEnv<'tcx>,
     def_id: DefId,
     substs: SubstsRef<'tcx>,
-) -> Option<ImplSource<'tcx, ()>> {
+) -> Option<&'tcx ImplSource<'tcx, ()>> {
     trace!("resolve_impl_source_opt={def_id:?} {substs:?}");
     let substs = tcx.normalize_erasing_regions(param_env, substs);
 
     let trait_ref = if let Some(assoc) = tcx.opt_associated_item(def_id) {
         match assoc.container {
-            ImplContainer => {
-                EarlyBinder(tcx.impl_trait_ref(assoc.container_id(tcx))?).subst(tcx, substs)
-            }
-            TraitContainer => TraitRef { def_id: assoc.container_id(tcx), substs },
+            ImplContainer => tcx.impl_trait_ref(assoc.container_id(tcx))?.subst(tcx, substs),
+            TraitContainer => tcx.mk_trait_ref(assoc.container_id(tcx), substs),
         }
     } else {
         if tcx.is_trait(def_id) {
-            TraitRef { def_id, substs }
+            tcx.mk_trait_ref(def_id, substs)
         } else {
             return None;
         }
     };
 
     let trait_ref = Binder::dummy(trait_ref);
-    let source = rustc_extensions::codegen::codegen_fulfill_obligation(tcx, (param_env, trait_ref));
+    let source = tcx.codegen_select_candidate((param_env, trait_ref));
 
     match source {
         Ok(src) => Some(src),
-        Err(err) => {
+        Err(_) => {
             trace!("resolve_impl_source_opt error");
-            err.cancel();
 
             return None;
         }
