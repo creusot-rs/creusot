@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+//
 use creusot_rustc::{
     index::bit_set::BitSet,
     middle::mir::visit::{
@@ -6,7 +10,10 @@ use creusot_rustc::{
     smir::mir::{self, Local, Location},
 };
 
-pub(crate) mod uninit_locals;
+mod init_locals;
+mod uninit_locals;
+pub use init_locals::*;
+pub use uninit_locals::*;
 
 pub struct NeverLive(BitSet<Local>);
 
@@ -51,10 +58,6 @@ impl<'tcx> Visitor<'tcx> for NeverLive {
         }
     }
 }
-
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #[derive(Eq, PartialEq, Clone)]
 pub enum DefUse {

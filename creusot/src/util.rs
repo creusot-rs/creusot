@@ -48,7 +48,7 @@ pub(crate) fn is_spec(tcx: TyCtxt, def_id: DefId) -> bool {
 pub(crate) fn invariant_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "spec", "invariant"]).and_then(|a| {
         match &a.args {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.token_lit.symbol),
+            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
             _ => None,
         }
     })
@@ -136,7 +136,7 @@ pub(crate) fn has_body(ctx: &mut TranslationCtx, def_id: DefId) -> bool {
 pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "builtins"]).and_then(|a| {
         match &a.args {
-            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.token_lit.symbol),
+            AttrArgs::Eq(_, AttrArgsEq::Hir(l)) => Some(l.symbol),
             _ => None,
         }
     })

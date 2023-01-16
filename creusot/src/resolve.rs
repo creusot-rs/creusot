@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::analysis::uninit_locals::MaybeUninitializedLocals;
+use crate::analysis::{MaybeInitializedLocals, MaybeUninitializedLocals};
 use creusot_rustc::{
     borrowck::borrow_set::{BorrowSet, TwoPhaseActivation},
     index::bit_set::BitSet,
@@ -8,10 +8,7 @@ use creusot_rustc::{
 use rustc_smir::{
     mir::{BasicBlock, Body, Local, Location},
     very_unstable::{
-        dataflow::{
-            impls::{MaybeInitializedLocals, MaybeLiveLocals},
-            Analysis, ResultsCursor,
-        },
+        dataflow::{impls::MaybeLiveLocals, Analysis, ResultsCursor},
         middle::ty::TyCtxt,
     },
 };

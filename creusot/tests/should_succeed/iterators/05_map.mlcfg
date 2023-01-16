@@ -2380,6 +2380,12 @@ module C05Map_Impl0
   use seq.Seq
   clone C05Map_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
+  use C05Map_Map_Type as C05Map_Map_Type
+  clone C05Map_Impl0_Completed as Completed0 with
+    type i = i,
+    type b = b,
+    type f = f,
+    predicate Completed0.completed = Completed1.completed
   clone C05Map_Common_Iterator_Item_Type as Item1 with
     type self = i
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut as PostconditionMut0 with
@@ -2407,7 +2413,6 @@ module C05Map_Impl0
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
-  use C05Map_Map_Type as C05Map_Map_Type
   clone C05Map_Impl1_NextPrecondition as NextPrecondition0 with
     type i = i,
     type b = b,
@@ -2428,11 +2433,6 @@ module C05Map_Impl0
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     axiom .
-  clone C05Map_Impl0_Completed as Completed0 with
-    type i = i,
-    type b = b,
-    type f = f,
-    predicate Completed0.completed = Completed1.completed
   clone C05Map_Impl1_Reinitialize as Reinitialize0 with
     type i = i,
     type b = b,
@@ -2454,6 +2454,30 @@ module C05Map_Impl0
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+  clone C05Map_Impl0_Invariant as Invariant0 with
+    type i = i,
+    type b = b,
+    type f = f,
+    predicate Reinitialize0.reinitialize = Reinitialize0.reinitialize,
+    predicate PreservationInv0.preservation_inv = PreservationInv0.preservation_inv,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate NextPrecondition0.next_precondition = NextPrecondition0.next_precondition,
+    predicate Preservation0.preservation = Preservation0.preservation
+  clone C05Map_Impl0_ProducesTrans as ProducesTrans0 with
+    type i = i,
+    type b = b,
+    type f = f,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    axiom .
+  clone C05Map_Common_Iterator_ProducesTrans_Interface as ProducesTrans1 with
+    type self = C05Map_Map_Type.t_map i f,
+    function produces_trans = ProducesTrans0.produces_trans,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item0.item,
+    axiom .
+  goal produces_trans_spec : forall a : C05Map_Map_Type.t_map i f, ab : Seq.seq b, b : C05Map_Map_Type.t_map i f, bc : Seq.seq b, c : C05Map_Map_Type.t_map i f . (([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) && ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) && ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) && ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) && ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../05_map.rs" 34 15 34 32] Produces0.produces b bc c) && ([#"../05_map.rs" 33 15 33 32] Produces0.produces a ab b) && ([#"../05_map.rs" 32 15 32 28] Invariant0.invariant' c) && ([#"../05_map.rs" 31 15 31 28] Invariant0.invariant' b) && ([#"../05_map.rs" 30 15 30 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../05_map.rs" 35 14 35 42] Produces0.produces a (Seq.(++) ab bc) c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c))
   clone C05Map_Impl1_ProducesOne as ProducesOne0 with
     type i = i,
     type b = b,
@@ -2465,15 +2489,6 @@ module C05Map_Impl0
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     axiom .
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone C05Map_Impl0_Invariant as Invariant0 with
-    type i = i,
-    type b = b,
-    type f = f,
-    predicate Reinitialize0.reinitialize = Reinitialize0.reinitialize,
-    predicate PreservationInv0.preservation_inv = PreservationInv0.preservation_inv,
-    predicate Invariant0.invariant' = Invariant1.invariant',
-    predicate NextPrecondition0.next_precondition = NextPrecondition0.next_precondition,
-    predicate Preservation0.preservation = Preservation0.preservation
   clone C05Map_Impl0_ProducesRefl as ProducesRefl0 with
     type i = i,
     type b = b,
@@ -2504,19 +2519,4 @@ module C05Map_Impl0
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces
   goal produces_refl_spec : forall a : C05Map_Map_Type.t_map i f . (([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> ([#"../05_map.rs" 25 15 25 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../05_map.rs" 26 14 26 39] Produces0.produces a (Seq.empty ) a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a))
-  clone C05Map_Impl0_ProducesTrans as ProducesTrans0 with
-    type i = i,
-    type b = b,
-    type f = f,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    predicate Produces0.produces = Produces0.produces,
-    axiom .
-  clone C05Map_Common_Iterator_ProducesTrans_Interface as ProducesTrans1 with
-    type self = C05Map_Map_Type.t_map i f,
-    function produces_trans = ProducesTrans0.produces_trans,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    predicate Produces0.produces = Produces0.produces,
-    type Item0.item = Item0.item,
-    axiom .
-  goal produces_trans_spec : forall a : C05Map_Map_Type.t_map i f, ab : Seq.seq b, b : C05Map_Map_Type.t_map i f, bc : Seq.seq b, c : C05Map_Map_Type.t_map i f . (([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) && ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) && ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) && ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) && ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../05_map.rs" 34 15 34 32] Produces0.produces b bc c) && ([#"../05_map.rs" 33 15 33 32] Produces0.produces a ab b) && ([#"../05_map.rs" 32 15 32 28] Invariant0.invariant' c) && ([#"../05_map.rs" 31 15 31 28] Invariant0.invariant' b) && ([#"../05_map.rs" 30 15 30 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../05_map.rs" 35 14 35 42] Produces0.produces a (Seq.(++) ab bc) c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c))
 end
