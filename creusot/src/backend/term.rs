@@ -5,8 +5,8 @@ use crate::{
     util,
     util::get_builtin,
 };
-use creusot_rustc::{hir::Unsafety, middle::ty::EarlyBinder};
-use rustc_middle::ty::{Ty, TyKind};
+use rustc_hir::Unsafety;
+use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
     ty::Type,
@@ -157,15 +157,13 @@ impl<'tcx> Lower<'_, 'tcx> {
                 })
             }
             TermKind::Forall { binder, box body } => {
-                let ty =
-                    translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, binder.1);
+                let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
                 self.pure_exp(|this| {
                     Exp::Forall(vec![(binder.0.to_string().into(), ty)], box this.lower_term(body))
                 })
             }
             TermKind::Exists { binder, box body } => {
-                let ty =
-                    translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, binder.1);
+                let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
                 self.pure_exp(|this| {
                     Exp::Exists(vec![(binder.0.to_string().into(), ty)], box this.lower_term(body))
                 })
@@ -204,12 +202,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                         box self.lower_term(false_br),
                     )
                 } else {
-                    let _ = translate_ty(
-                        self.ctx,
-                        self.names,
-                        creusot_rustc::span::DUMMY_SP,
-                        scrutinee.ty,
-                    );
+                    let _ = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, scrutinee.ty);
                     let arms = arms
                         .into_iter()
                         .map(|(pat, body)| (self.lower_pat(pat), self.lower_term(body)))
@@ -325,7 +318,7 @@ impl<'tcx> Lower<'_, 'tcx> {
     }
 
     fn lower_ty(&mut self, ty: Ty<'tcx>) -> Type {
-        translate_ty(self.ctx, self.names, creusot_rustc::span::DUMMY_SP, ty)
+        translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty)
     }
 
     pub(crate) fn lookup_builtin(
@@ -358,10 +351,8 @@ impl<'tcx> Lower<'_, 'tcx> {
     }
 }
 
-use creusot_rustc::{
-    hir::def_id::DefId,
-    middle::ty::{subst::SubstsRef, TyCtxt},
-};
+use rustc_hir::def_id::DefId;
+use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 
 pub(crate) fn lower_literal<'tcx>(
     _ctx: &mut TranslationCtx<'tcx>,

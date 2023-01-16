@@ -1,8 +1,6 @@
-use creusot_rustc::{
-    errors::DiagnosticId,
-    session::Session,
-    span::{Span, DUMMY_SP},
-};
+use rustc_errors::DiagnosticId;
+use rustc_session::Session;
+use rustc_span::{Span, DUMMY_SP};
 
 pub type CreusotResult<T> = Result<T, Error>;
 

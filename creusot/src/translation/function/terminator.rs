@@ -8,27 +8,25 @@ use crate::{
     },
     util::is_ghost_closure,
 };
-use creusot_rustc::{
-    hir::def_id::DefId,
-    infer::{
-        infer::{InferCtxt, TyCtxtInferExt},
-        traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
-    },
-    middle::{
-        mir::{self, SwitchTargets, TerminatorKind, TerminatorKind::*},
-        ty::{
-            self,
-            subst::{GenericArgKind, SubstsRef},
-            ParamEnv, Predicate, Ty, TyKind,
-        },
-    },
-    smir::mir::{
-        BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo, StatementKind,
-    },
-    span::Span,
-    trait_selection::traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt},
-};
 use itertools::Itertools;
+use rustc_hir::def_id::DefId;
+use rustc_infer::{
+    infer::{InferCtxt, TyCtxtInferExt},
+    traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
+};
+use rustc_middle::{
+    mir::{self, SwitchTargets, TerminatorKind, TerminatorKind::*},
+    ty::{
+        self,
+        subst::{GenericArgKind, SubstsRef},
+        ParamEnv, Predicate, Ty, TyKind,
+    },
+};
+use rustc_smir::mir::{
+    BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo, StatementKind,
+};
+use rustc_span::Span;
+use rustc_trait_selection::traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt};
 use std::collections::HashMap;
 
 // Translate the terminator of a basic block.

@@ -18,19 +18,17 @@ use crate::{
     util,
     util::item_type,
 };
-use creusot_rustc::{
-    data_structures::captures::Captures,
-    errors::{DiagnosticBuilder, DiagnosticId},
-    hir::{
-        def::DefKind,
-        def_id::{DefId, LocalDefId},
-    },
-    infer::traits::{Obligation, ObligationCause},
-    middle::ty::{subst::InternalSubsts, ParamEnv, TyCtxt},
-    span::{Span, Symbol, DUMMY_SP},
-    trait_selection::traits::SelectionContext,
-};
 use indexmap::{IndexMap, IndexSet};
+use rustc_data_structures::captures::Captures;
+use rustc_errors::{DiagnosticBuilder, DiagnosticId};
+use rustc_hir::{
+    def::DefKind,
+    def_id::{DefId, LocalDefId},
+};
+use rustc_infer::traits::{Obligation, ObligationCause};
+use rustc_middle::ty::{subst::InternalSubsts, ParamEnv, TyCtxt};
+use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{item_name, module_name, ItemType};
 use why3::{declaration::Module, exp::Exp};
 
@@ -229,7 +227,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn translate_accessor(&mut self, field_id: DefId) {
-        use creusot_rustc::middle::ty::DefIdTree;
+        use rustc_middle::ty::DefIdTree;
 
         if !self.translated_items.insert(field_id) {
             return;
@@ -404,7 +402,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             let base_env = self.tcx.param_env(def_id);
             {
                 // Only add predicates which don't already hold
-                use creusot_rustc::infer::infer::TyCtxtInferExt;
+                use rustc_infer::infer::TyCtxtInferExt;
                 let infcx = self.tcx.infer_ctxt().build();
                 let mut selcx = SelectionContext::new(&infcx);
                 let param_env = self.tcx.param_env(def_id);
@@ -422,8 +420,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             additional_predicates.extend(base_env.caller_bounds());
             ParamEnv::new(
                 self.mk_predicates(additional_predicates.into_iter()),
-                creusot_rustc::infer::traits::Reveal::UserFacing,
-                creusot_rustc::hir::Constness::NotConst,
+                rustc_infer::traits::Reveal::UserFacing,
+                rustc_hir::Constness::NotConst,
             )
         } else {
             self.tcx.param_env(def_id)
@@ -434,7 +432,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         let lo = self.sess.source_map().lookup_char_pos(span.lo());
         let hi = self.sess.source_map().lookup_char_pos(span.hi());
 
-        let creusot_rustc::span::FileName::Real(path) = &lo.file.name else { return None };
+        let rustc_span::FileName::Real(path) = &lo.file.name else { return None };
 
         let path = path.local_path_if_available();
         let mut buf;
@@ -514,7 +512,7 @@ pub(crate) fn load_extern_specs(ctx: &mut TranslationCtx) -> CreusotResult<()> {
                 .extend(ctx.extern_spec(item.def_id).unwrap().additional_predicates.clone());
         }
         // let additional_predicates = ctx.arena.alloc_slice(&additional_predicates);
-        // let additional_predicates = creusot_rustc::middle::ty::GenericPredicates { parent: None, predicates: additional_predicates };
+        // let additional_predicates = rustc_middle::ty::GenericPredicates { parent: None, predicates: additional_predicates };
 
         ctx.extern_specs.insert(
             def_id,

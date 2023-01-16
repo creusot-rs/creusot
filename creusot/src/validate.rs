@@ -1,4 +1,4 @@
-use creusot_rustc::hir::def::DefKind;
+use rustc_hir::def::DefKind;
 
 use crate::{
     ctx::TranslationCtx,

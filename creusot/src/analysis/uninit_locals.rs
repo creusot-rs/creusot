@@ -2,15 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-use creusot_rustc::{
-    dataflow::{self, AnalysisDomain, GenKill, GenKillAnalysis},
-    index::bit_set::ChunkedBitSet,
-    middle::mir::{
-        visit::{PlaceContext, Visitor},
-        Terminator,
-    },
-    smir::mir::{self, BasicBlock, Local, Location},
+use rustc_index::bit_set::ChunkedBitSet;
+use rustc_middle::mir::{
+    visit::{PlaceContext, Visitor},
+    Terminator,
 };
+use rustc_mir_dataflow::{self as dataflow, AnalysisDomain, GenKill, GenKillAnalysis};
+use rustc_smir::mir::{self, BasicBlock, Local, Location};
 
 pub struct MaybeUninitializedLocals;
 
@@ -87,9 +85,7 @@ where
     T: GenKill<Local>,
 {
     fn visit_local(&mut self, local: Local, context: PlaceContext, _: Location) {
-        use creusot_rustc::middle::mir::visit::{
-            MutatingUseContext, NonMutatingUseContext, NonUseContext,
-        };
+        use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, NonUseContext};
         match context {
             // These are handled specially in `call_return_effect` and `yield_resume_effect`.
             PlaceContext::MutatingUse(MutatingUseContext::Call | MutatingUseContext::Yield) => {}

@@ -5,15 +5,13 @@ use creusot_metadata::{
     decoder::{Decodable, MetadataBlob, MetadataDecoder},
     encoder::{Encodable, MetadataEncoder},
 };
-use creusot_rustc::{
-    hir::def_id::{CrateNum, DefId, LOCAL_CRATE},
-    macros::{TyDecodable, TyEncodable},
-    metadata::creader::CStore,
-    session::cstore::CrateStore,
-    span::Symbol,
-};
 use indexmap::IndexMap;
+use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
+use rustc_macros::{TyDecodable, TyEncodable};
+use rustc_metadata::creader::CStore;
+use rustc_session::cstore::CrateStore;
 use rustc_smir::very_unstable::middle::ty::{subst::SubstsRef, TyCtxt, Visibility};
+use rustc_span::Symbol;
 use std::{
     collections::HashMap,
     fs::File,

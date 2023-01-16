@@ -17,27 +17,23 @@ use crate::{
     },
     util::{self, ident_of, is_ghost_closure, pre_sig_of, sig_to_why3, signature_of},
 };
-use creusot_rustc::{
-    borrowck::borrow_set::BorrowSet,
-    dataflow::move_paths::MoveData,
-    hir::def_id::DefId,
-    index::bit_set::BitSet,
-    infer::infer::TyCtxtInferExt,
-    middle::{
-        mir::{traversal::reverse_postorder, MirPass},
-        ty::{
-            subst::{GenericArg, SubstsRef},
-            DefIdTree, EarlyBinder, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt,
-            TyKind, TypeVisitable, WithOptConstParam,
-        },
-    },
-    mir_transform::cleanup_post_borrowck::CleanupPostBorrowck,
-    smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo},
-    span::{Span, Symbol, DUMMY_SP},
-    transform::simplify::*,
-};
 use indexmap::IndexMap;
-use rustc_middle::ty::UpvarCapture;
+use rustc_borrowck::borrow_set::BorrowSet;
+use rustc_hir::def_id::DefId;
+use rustc_index::bit_set::BitSet;
+use rustc_infer::infer::TyCtxtInferExt;
+use rustc_middle::{
+    mir::{traversal::reverse_postorder, MirPass},
+    ty::{
+        subst::{GenericArg, SubstsRef},
+        DefIdTree, EarlyBinder, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind,
+        TypeVisitable, UpvarCapture, WithOptConstParam,
+    },
+};
+use rustc_mir_dataflow::move_paths::MoveData;
+use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::*};
+use rustc_smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo};
+use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::rc::Rc;
 use why3::{declaration::*, exp::*, mlcfg::*, ty::Type, Ident};
 
@@ -483,7 +479,10 @@ pub(crate) fn closure_contract<'tcx>(
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Vec<Decl> {
-    use creusot_rustc::middle::ty::{self, ClosureKind::*};
+    use rustc_middle::ty::{
+        ClosureKind::*,
+        {self},
+    };
     let TyKind::Closure(_, subst) =  ctx.tcx.type_of(def_id).kind() else { unreachable!() };
 
     let kind = subst.as_closure().kind();
@@ -759,7 +758,7 @@ fn resolve_predicate_of<'tcx>(
 ) -> ResolveStmt {
     if !resolve_trait_loaded(ctx.tcx) {
         ctx.warn(
-            creusot_rustc::span::DUMMY_SP,
+            rustc_span::DUMMY_SP,
             "load the `creusot_contract` crate to enable resolution of mutable borrows.",
         );
         return ResolveStmt { exp: None };

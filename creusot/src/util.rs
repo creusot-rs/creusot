@@ -1,24 +1,23 @@
 use crate::{
     ctx::*,
     translation::{
-        self,
         pearlite::{super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
         specification::PreContract,
+        {self},
     },
-};
-use creusot_rustc::{
-    ast::{
-        ast::{AttrArgs, AttrArgsEq},
-        AttrItem, AttrKind, Attribute,
-    },
-    hir::{def::DefKind, def_id::DefId, Unsafety},
-    macros::{TypeFoldable, TypeVisitable},
-    middle::ty::{self, subst::SubstsRef, DefIdTree, ReErased, Ty, TyCtxt, TyKind},
-    resolve::Namespace,
-    span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP},
 };
 use indexmap::IndexMap;
-use rustc_middle::ty::{ClosureKind, RegionKind};
+use rustc_ast::{
+    ast::{AttrArgs, AttrArgsEq},
+    AttrItem, AttrKind, Attribute,
+};
+use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
+use rustc_macros::{TypeFoldable, TypeVisitable};
+use rustc_middle::ty::{
+    self, subst::SubstsRef, ClosureKind, DefIdTree, ReErased, RegionKind, Ty, TyCtxt, TyKind,
+};
+use rustc_resolve::Namespace;
+use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
 use std::{
     collections::HashSet,
     fmt::{Display, Formatter},
@@ -147,7 +146,7 @@ pub(crate) fn item_qname(ctx: &TranslationCtx, def_id: DefId, ns: Namespace) -> 
 }
 
 pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
-    use creusot_rustc::hir::def::DefKind::*;
+    use rustc_hir::def::DefKind::*;
 
     match tcx.def_kind(def_id) {
         AssocTy => ident_of_ty(tcx.item_name(def_id)),
@@ -194,7 +193,7 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
 
 pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
     let kind = tcx.def_kind(def_id);
-    use creusot_rustc::hir::def::DefKind::*;
+    use rustc_hir::def::DefKind::*;
 
     match kind {
         Ctor(_, _) | Variant => module_name(tcx, tcx.parent(def_id)),
@@ -304,7 +303,7 @@ pub(crate) fn inputs_and_output<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
 ) -> (impl Iterator<Item = (symbol::Ident, Ty<'tcx>)>, Ty<'tcx>) {
-    let (inputs, output): (Box<dyn Iterator<Item = (creusot_rustc::span::symbol::Ident, _)>>, _) =
+    let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) =
         match tcx.type_of(def_id).kind() {
             TyKind::FnDef(..) => {
                 let gen_sig = tcx.fn_sig(def_id);
@@ -325,7 +324,7 @@ pub(crate) fn inputs_and_output<'tcx>(
                     .fn_arg_names(def_id)
                     .iter()
                     .cloned()
-                    .chain(iter::repeat(creusot_rustc::span::symbol::Ident::empty()));
+                    .chain(iter::repeat(rustc_span::symbol::Ident::empty()));
                 (
                     box iter::once(closure_env).chain(names.zip(sig.inputs().iter().cloned())),
                     sig.output(),
@@ -522,7 +521,8 @@ pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {
     }
 }
 
-use creusot_rustc::{smir::mir::Field, span::def_id::LocalDefId};
+use rustc_smir::mir::Field;
+use rustc_span::def_id::LocalDefId;
 
 pub(crate) struct ClosureSubst<'tcx> {
     def_id: DefId,

@@ -2,13 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-use creusot_rustc::{
-    index::bit_set::BitSet,
-    middle::mir::visit::{
-        MutatingUseContext, NonMutatingUseContext, NonUseContext, PlaceContext, Visitor,
-    },
-    smir::mir::{self, Local, Location},
+use rustc_index::bit_set::BitSet;
+use rustc_middle::mir::visit::{
+    MutatingUseContext, NonMutatingUseContext, NonUseContext, PlaceContext, Visitor,
 };
+use rustc_smir::mir::{self, Local, Location};
 
 mod init_locals;
 mod uninit_locals;

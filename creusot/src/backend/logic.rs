@@ -7,7 +7,7 @@ use crate::{
     util,
     util::{get_builtin, pre_sig_of},
 };
-use creusot_rustc::hir::def_id::DefId;
+use rustc_hir::def_id::DefId;
 use why3::{
     declaration::*,
     exp::{BinOp, Binder, Exp},
