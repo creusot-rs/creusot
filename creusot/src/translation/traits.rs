@@ -117,7 +117,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
 
         decls.extend(names.to_clones(self));
-        TranslatedItem::Impl { modl: Module { name: module_name(self, impl_id), decls } }
+        TranslatedItem::Impl { modl: Module { name: module_name(self.tcx, impl_id), decls } }
     }
 
     pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
@@ -145,7 +145,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         decls.extend(names.to_clones(self));
         decls.push(Decl::TyDecl(ty_decl));
 
-        (Module { name: module_name(self, def_id), decls }, names.summary())
+        (Module { name: module_name(self.tcx, def_id), decls }, names.summary())
     }
 }
 

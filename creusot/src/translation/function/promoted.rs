@@ -1,27 +1,20 @@
 use crate::{
-    backend::program::uint_from_int,
     ctx::{CloneMap, TranslationCtx},
-    error::Error,
-    translation::{
-        binop_to_binop, constant::from_mir_constant, fmir, function::LocalIdent, ty::translate_ty,
-        unop_to_unop,
-    },
-    util::{self, constructor_qname},
+    translation::{fmir, function::LocalIdent, ty::translate_ty},
 };
 use creusot_rustc::{
     hir::def_id::DefId,
-    middle::{mir::TerminatorKind, ty::ParamEnv},
-    smir::mir::{Body, BorrowKind, Operand, Promoted, StatementKind},
+    middle::ty::ParamEnv,
+    smir::mir::{Body, Promoted},
 };
 use why3::{
     declaration::{Contract, Decl, LetDecl, LetKind, Signature},
     exp::{Binder, Exp, Pattern},
-    QName,
 };
 
 use crate::error::CreusotResult;
 
-use super::{place::translate_rplace_inner, BodyTranslator};
+use super::BodyTranslator;
 
 pub(crate) fn promoted_signature<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,

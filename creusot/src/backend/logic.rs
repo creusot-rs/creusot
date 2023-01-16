@@ -106,7 +106,7 @@ fn builtin_body<'tcx>(
 
     decls.push(Decl::ValDecl(ValDecl { ghost: false, val: true, kind: None, sig: val_sig }));
 
-    let name = module_name(ctx, def_id);
+    let name = module_name(ctx.tcx, def_id);
 
     (Module { name, decls }, names.summary())
 }
@@ -189,7 +189,7 @@ fn body_module<'tcx>(
         decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
     }
 
-    let name = module_name(ctx, def_id);
+    let name = module_name(ctx.tcx, def_id);
 
     (Module { name, decls }, names.summary())
 }
@@ -205,7 +205,7 @@ pub(crate) fn stub_module(ctx: &mut TranslationCtx, def_id: DefId) -> Module {
 
     let decl = Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig));
 
-    let name = module_name(ctx, def_id);
+    let name = module_name(ctx.tcx, def_id);
     let name = format!("{}_Stub", &*name).into();
 
     let mut decls: Vec<_> = Vec::new();
@@ -308,5 +308,5 @@ fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
 }
 
 pub(crate) fn impl_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
-    format!("{}_Impl", Cow::from(&*module_name(ctx, def_id))).into()
+    format!("{}_Impl", Cow::from(&*module_name(ctx.tcx, def_id))).into()
 }

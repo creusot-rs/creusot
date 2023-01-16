@@ -3,17 +3,18 @@ use creusot_rustc::{
     middle::ty::{
         self,
         subst::{InternalSubsts, SubstsRef},
-        ClosureSubsts, FieldDef, ProjectionTy, Ty, TyCtxt, VariantDef,
+        ClosureSubsts, FieldDef, ProjectionTy, Ty, TyCtxt,
     },
     resolve::Namespace,
     span::{Span, Symbol, DUMMY_SP},
     type_ir::sty::TyKind::*,
 };
 use indexmap::IndexSet;
+use rustc_middle::ty::TyKind;
 use std::collections::VecDeque;
 use why3::{
     declaration::{
-        AdtDecl, ConstructorDecl, Contract, Decl, Field, LetDecl, LetKind, Module, Signature,
+        AdtDecl, ConstructorDecl, Contract, Decl, Field, LetDecl, LetKind, Module, Signature, Use,
     },
     exp::{Binder, Exp, Pattern},
     Ident,
@@ -23,7 +24,7 @@ use why3::{declaration::TyDecl, ty::Type as MlT, QName};
 
 use crate::{
     ctx::*,
-    util::{self, constructor_qname, get_builtin, item_name, item_qname},
+    util::{self, get_builtin, item_qname, module_name},
 };
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:
@@ -87,8 +88,7 @@ fn translate_ty_inner<'tcx>(
                 MlT::TConstructor(builtin.without_search_path())
             } else {
                 ctx.translate(def.did());
-                names.insert(def.did(), s); // TODO: Overhaul `CloneInfo` so we can use that to build type names
-                MlT::TConstructor(item_qname(ctx, def.did(), Namespace::TypeNS))
+                MlT::TConstructor(names.ty(def.did(), s))
             };
 
             let args = s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
@@ -157,8 +157,7 @@ fn translate_ty_inner<'tcx>(
                 return MlT::Tuple(Vec::new());
             }
 
-            let name = item_name(ctx.tcx, *id, Namespace::TypeNS).to_string().to_lowercase();
-            let cons = MlT::TConstructor(names.insert(*id, subst).qname_ident(name.into()));
+            let cons = MlT::TConstructor(names.ty(*id, subst));
 
             cons
         }
@@ -177,12 +176,12 @@ fn translate_ty_inner<'tcx>(
 }
 
 pub(crate) fn translate_projection_ty<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    _ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     pty: &ProjectionTy<'tcx>,
 ) -> MlT {
     // ctx.translate(pty.trait_def_id(ctx.tcx));
-    let name = names.insert(pty.item_def_id, pty.substs).qname(ctx.tcx, pty.item_def_id);
+    let name = names.ty(pty.item_def_id, pty.substs);
     MlT::TConstructor(name)
 }
 
@@ -245,10 +244,9 @@ fn translate_ty_param(p: Symbol) -> Ident {
 // Results are accumulated and can be collected at once by consuming the `Ctx`
 pub(crate) fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
     let span = ctx.def_span(did);
-    let bg = ty_binding_group(ctx.tcx, did);
+    let bg = ctx.binding_group(did).clone();
 
     ctx.start_group(bg.clone());
-    ctx.add_binding_group(&bg);
 
     if let Some(_) = get_builtin(ctx.tcx, did) {
         for did in bg {
@@ -257,19 +255,19 @@ pub(crate) fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
         return;
     }
 
-    let did = *bg.first().unwrap();
-    let mut names = CloneMap::new(ctx.tcx, did, CloneLevel::Stub);
+    let repr = *bg.first().unwrap();
+    let mut names = CloneMap::new(ctx.tcx, repr, CloneLevel::Stub);
 
-    let name = module_name(ctx, did);
+    let name = module_name(ctx.tcx, repr);
 
     // Trusted types (opaque)
-    if util::is_trusted(ctx.tcx, did) {
+    if util::is_trusted(ctx.tcx, repr) {
         if bg.len() > 1 {
             ctx.crash_and_error(span, "cannot mark mutually recursive types as trusted");
         }
-        let ty_name = translate_ty_name(ctx, did).name;
+        let ty_name = translate_ty_name(ctx, repr).name;
 
-        let ty_params: Vec<_> = ty_param_names(ctx.tcx, did).collect();
+        let ty_params: Vec<_> = ty_param_names(ctx.tcx, repr).collect();
         let modl = Module {
             name,
             decls: vec![Decl::TyDecl(TyDecl::Opaque {
@@ -277,12 +275,30 @@ pub(crate) fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
                 ty_params: ty_params.clone(),
             })],
         };
-        ctx.add_type(did, modl);
+        ctx.add_type(repr, vec![modl]);
         let _ = names.to_clones(ctx);
         for did in bg {
             ctx.finish(did);
         }
         return;
+    }
+
+    // UGLY hack to ensure that we don't explicitly use/clone the members of a binding group
+    for did in &bg {
+        let substs = InternalSubsts::identity_for_item(ctx.tcx, *did);
+        for field in ctx.adt_def(did).all_fields() {
+            for ty in field.ty(ctx.tcx, substs).walk() {
+                let k = match ty.unpack() {
+                    creusot_rustc::middle::ty::subst::GenericArgKind::Type(ty) => ty,
+                    _ => continue,
+                };
+                if let Adt(def, sub) = k.kind() {
+                    if bg.contains(&def.did()) {
+                        names.insert_hidden(def.did(), sub);
+                    }
+                }
+            }
+        }
     }
 
     let mut tys = Vec::new();
@@ -292,13 +308,19 @@ pub(crate) fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
 
     let mut decls = names.to_clones(ctx);
     decls.push(Decl::TyDecl(TyDecl::Adt { tys: tys.clone() }));
-    let modl = Module { name, decls };
-
+    let mut modls = vec![Module { name: name.clone(), decls }];
     for did in &bg {
-        ctx.finish(*did)
+        ctx.finish(*did);
+        if *did == repr {
+            continue;
+        };
+        modls.push(Module {
+            name: module_name(ctx.tcx, *did),
+            decls: vec![Decl::UseDecl(Use { name: name.clone().into(), as_: None, export: true })],
+        });
     }
 
-    ctx.add_type(did, modl);
+    ctx.add_type(did, modls);
 }
 
 fn build_ty_decl<'tcx>(
@@ -327,9 +349,9 @@ fn build_ty_decl<'tcx>(
                     Field { ty, ghost }
                 })
                 .collect();
-            let var_name = constructor_qname(ctx, var_def).name;
+            let var_name = names.constructor(var_def.def_id, substs);
 
-            ml_ty_def.push(ConstructorDecl { name: var_name, fields: field_tys });
+            ml_ty_def.push(ConstructorDecl { name: var_name.name, fields: field_tys });
         }
 
         AdtDecl { ty_name, ty_params: ty_args, constrs: ml_ty_def }
@@ -354,8 +376,7 @@ pub(crate) fn translate_closure_ty<'tcx>(
         })
         .collect();
 
-    let mut cons_name = item_name(ctx.tcx, did, Namespace::ValueNS);
-    cons_name.capitalize();
+    let cons_name = names.constructor(did, subst).name;
     let kind = AdtDecl {
         ty_name,
         ty_params: vec![],
@@ -406,18 +427,38 @@ pub(crate) fn translate_accessor(
     let ix = variant.fields.iter().position(|f| f.did == field_id).unwrap();
     let field = &variant.fields[ix];
 
-    let ty_name = translate_ty_name(ctx, adt_did);
-    let acc_name = format!("{}_{}", variant.name.as_str().to_ascii_lowercase(), field.name);
-
     let substs = InternalSubsts::identity_for_item(ctx.tcx, adt_did);
     let repr = ctx.representative_type(adt_did);
     let mut names = CloneMap::new(ctx.tcx, repr, CloneLevel::Stub);
+
+    // UGLY hack to ensure that we don't explicitly use/clone the members of a binding group
+    let bg = ctx.binding_group(repr).clone();
+    for did in &bg {
+        let substs = InternalSubsts::identity_for_item(ctx.tcx, *did);
+        for field in ctx.adt_def(did).all_fields() {
+            for ty in field.ty(ctx.tcx, substs).walk() {
+                let k = match ty.unpack() {
+                    creusot_rustc::middle::ty::subst::GenericArgKind::Type(ty) => ty,
+                    _ => continue,
+                };
+                if let Adt(def, sub) = k.kind() {
+                    if bg.contains(&def.did()) {
+                        names.insert_hidden(def.did(), sub);
+                    }
+                }
+            }
+        }
+    }
+
+    let ty_name = names.ty(adt_did, substs);
+    let acc_name = format!("{}_{}", variant.name.as_str().to_ascii_lowercase(), field.name);
+
     let (target_ty, ghost) = field_ty(ctx, &mut names, &variant.fields[ix], substs);
 
     let variant_arities: Vec<_> = adt_def
         .variants()
         .iter()
-        .map(|var| (item_qname(ctx, var.def_id, Namespace::ValueNS), var.fields.len()))
+        .map(|var| (names.constructor(var.def_id, substs), var.fields.len()))
         .collect();
 
     let this = MlT::TApp(
@@ -490,9 +531,8 @@ pub(crate) fn closure_accessors<'tcx>(
     let mut fields: Vec<_> =
         subst.upvar_tys().map(|ty| translate_ty(ctx, names, DUMMY_SP, ty)).collect();
 
-    let mut cons_name = item_qname(ctx, ty_id, Namespace::ValueNS);
-    cons_name.name.capitalize();
-    cons_name.module = vec![]; // ugly hack to fix printer
+    let TyKind::Closure(_, substs) = ctx.type_of(ty_id).kind() else { panic!() };
+    let cons_name = names.constructor(ty_id, substs);
 
     let ty_name = translate_ty_name(ctx, ty_id).name;
     let this = MlT::TConstructor(ty_name.into());
@@ -502,7 +542,7 @@ pub(crate) fn closure_accessors<'tcx>(
     let variant_arity = vec![(cons_name, count)];
 
     for tgt in fields.drain(..).enumerate() {
-        let nm = closure_accessor_name(ctx.tcx, ty_id, tgt.0);
+        let nm = names.accessor(ty_id, substs, 0, tgt.0).name;
         accessors.push(build_accessor(
             this.clone(),
             nm,
@@ -512,30 +552,6 @@ pub(crate) fn closure_accessors<'tcx>(
         ));
     }
     accessors
-}
-
-pub(crate) fn closure_accessor_name(tcx: TyCtxt, def: DefId, ix: usize) -> Ident {
-    let ty_name = item_name(tcx, def, Namespace::TypeNS).to_string().to_lowercase();
-
-    format!("{}_{}", &*ty_name, ix).into()
-}
-
-pub(crate) fn variant_accessor_name(
-    ctx: &TranslationCtx,
-    def: DefId,
-    variant: &VariantDef,
-    field: usize,
-) -> QName {
-    let qname = item_qname(ctx, def, Namespace::ValueNS);
-    QName {
-        module: qname.module,
-        name: format!(
-            "{}_{}",
-            variant.name.as_str().to_ascii_lowercase(),
-            variant.fields[field].name
-        )
-        .into(),
-    }
 }
 
 pub(crate) fn intty_to_ty(names: &mut CloneMap<'_>, ity: &creusot_rustc::middle::ty::IntTy) -> MlT {

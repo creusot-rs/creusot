@@ -52,7 +52,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         let stub = stub_module(self, def_id);
 
-        let modl = Module { name: module_name(self, def_id), decls };
+        let modl = Module { name: module_name(self.tcx, def_id), decls };
         (TranslatedItem::Constant { stub, modl }, CloneSummary::new())
     }
 }

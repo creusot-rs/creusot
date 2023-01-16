@@ -13,7 +13,7 @@ use creusot_rustc::{
     },
     hir::{def::DefKind, def_id::DefId, Unsafety},
     macros::{TypeFoldable, TypeVisitable},
-    middle::ty::{self, subst::SubstsRef, DefIdTree, ReErased, Ty, TyCtxt, TyKind, VariantDef},
+    middle::ty::{self, subst::SubstsRef, DefIdTree, ReErased, Ty, TyCtxt, TyKind},
     resolve::Namespace,
     span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP},
 };
@@ -142,15 +142,8 @@ pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     })
 }
 
-pub(crate) fn constructor_qname(ctx: &TranslationCtx, var: &VariantDef) -> QName {
-    QName {
-        module: vec![module_name(ctx, var.def_id)],
-        name: item_name(ctx.tcx, var.def_id, Namespace::ValueNS).to_string().into(),
-    }
-}
-
 pub(crate) fn item_qname(ctx: &TranslationCtx, def_id: DefId, ns: Namespace) -> QName {
-    QName { module: vec![module_name(ctx, def_id)], name: item_name(ctx.tcx, def_id, ns) }
+    QName { module: vec![module_name(ctx.tcx, def_id)], name: item_name(ctx.tcx, def_id, ns) }
 }
 
 pub(crate) fn item_name(tcx: TyCtxt, def_id: DefId, ns: Namespace) -> Ident {
@@ -199,14 +192,13 @@ pub(crate) fn ident_of_ty(sym: Symbol) -> Ident {
     Ident::build(&id)
 }
 
-pub(crate) fn module_name(ctx: &TranslationCtx, def_id: DefId) -> Ident {
-    let kind = ctx.def_kind(def_id);
+pub(crate) fn module_name(tcx: TyCtxt, def_id: DefId) -> Ident {
+    let kind = tcx.def_kind(def_id);
     use creusot_rustc::hir::def::DefKind::*;
 
     match kind {
-        Ctor(_, _) | Variant => module_name(ctx, ctx.parent(def_id)),
-        Struct | Enum => ident_path(ctx.tcx, ctx.representative_type(def_id)),
-        _ => ident_path(ctx.tcx, def_id),
+        Ctor(_, _) | Variant => module_name(tcx, tcx.parent(def_id)),
+        _ => ident_path(tcx, def_id),
     }
 }
 

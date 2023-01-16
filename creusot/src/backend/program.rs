@@ -1,6 +1,6 @@
 use crate::{
     clone_map::PreludeModule,
-    ctx::{item_name, CloneMap, TranslationCtx},
+    ctx::{CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
         fmir::{Block, Branches, Expr, RValue, Statement, Terminator},
@@ -9,12 +9,10 @@ use crate::{
         ty::translate_ty,
         unop_to_unop,
     },
-    util::item_qname,
 };
 use creusot_rustc::{
     hir::{def::DefKind, Unsafety},
     middle::ty::TyKind,
-    resolve::Namespace,
     smir::mir::{self, BasicBlock, BinOp, Place},
     span::DUMMY_SP,
 };
@@ -78,13 +76,11 @@ impl<'tcx> Expr<'tcx> {
 
                 match ctx.def_kind(id) {
                     DefKind::Closure => {
-                        let mut cons_name = item_name(ctx.tcx, id, Namespace::ValueNS);
-                        cons_name.capitalize();
-                        let ctor = names.insert(id, subst).qname_ident(cons_name);
+                        let ctor = names.constructor(id, subst);
                         Exp::Constructor { ctor, args }
                     }
                     _ => {
-                        let ctor = item_qname(ctx, id, Namespace::ValueNS);
+                        let ctor = names.constructor(id, subst);
                         Exp::Constructor { ctor, args }
                     }
                 }
@@ -92,7 +88,7 @@ impl<'tcx> Expr<'tcx> {
             Expr::Call(id, subst, args) => {
                 let mut args: Vec<_> =
                     args.into_iter().map(|a| a.to_why(ctx, names, body)).collect();
-                let fname = names.insert(id, subst).qname(ctx.tcx, id);
+                let fname = names.value(id, subst);
 
                 let exp = if ctx.is_closure(id) {
                     assert!(args.len() == 2, "closures should only have two arguments (env, args)");
@@ -258,7 +254,7 @@ impl<'tcx> Terminator<'tcx> {
 impl<'tcx> Branches<'tcx> {
     fn to_why(
         self,
-        ctx: &mut TranslationCtx<'tcx>,
+        _ctx: &mut TranslationCtx<'tcx>,
         names: &mut CloneMap<'tcx>,
         discr: Exp,
     ) -> mlcfg::Terminator {
@@ -296,15 +292,13 @@ impl<'tcx> Branches<'tcx> {
                 })
             }
             Branches::Constructor(adt, substs, vars, def) => {
-                use crate::util::constructor_qname;
                 let count = adt.variants().len();
-                names.insert(adt.did(), substs);
                 let brs = vars
                     .into_iter()
                     .map(|(var, bb)| {
                         let variant = &adt.variant(var);
                         let wilds = variant.fields.iter().map(|_| Pattern::Wildcard).collect();
-                        let cons_name = constructor_qname(ctx, variant);
+                        let cons_name = names.constructor(variant.def_id, substs);
                         (Pattern::ConsP(cons_name, wilds), Goto(BlockId(bb.into())))
                     })
                     .chain(std::iter::once((Pattern::Wildcard, Goto(BlockId(def.into())))))
@@ -375,7 +369,7 @@ impl<'tcx> Statement<'tcx> {
             Statement::Resolve(id, subst, pl) => {
                 ctx.translate(id);
 
-                let rp = Exp::impure_qvar(names.insert(id, subst).qname(ctx.tcx, id));
+                let rp = Exp::impure_qvar(names.value(id, subst));
 
                 let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, Some(body)));
                 vec![mlcfg::Statement::Assume(assume)]

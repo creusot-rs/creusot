@@ -39,7 +39,7 @@ pub enum TranslatedItem {
     },
     // Types can not have dependencies yet, as Why3 does not yet have applicative clones
     Type {
-        modl: Module,
+        modl: Vec<Module>,
         accessors: IndexMap<DefId, IndexMap<DefId, Decl>>,
     },
 }
@@ -81,9 +81,9 @@ impl<'a> TranslatedItem {
             }
             Extern { interface, body, .. } => box iter::once(interface).chain(iter::once(body)),
             Type { mut modl, accessors, .. } => {
-                modl.decls.extend(accessors.values().flat_map(|v| v.values()).cloned());
+                modl[0].decls.extend(accessors.values().flat_map(|v| v.values()).cloned());
 
-                box iter::once(modl)
+                box modl.into_iter()
             }
         }
     }

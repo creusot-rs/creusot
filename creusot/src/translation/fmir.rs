@@ -9,6 +9,7 @@ use creusot_rustc::{
 };
 use indexmap::IndexMap;
 
+#[derive(Clone)]
 pub enum Statement<'tcx> {
     Assignment(Place<'tcx>, RValue<'tcx>),
     // TODO: Remove `Resolve` and replace it with `Assume`.
@@ -20,12 +21,14 @@ pub enum Statement<'tcx> {
 
 // Re-organize this completely
 // Get rid of Expr and reimpose a more traditional statement-rvalue-operand setup
+#[derive(Clone)]
 pub enum RValue<'tcx> {
     Ghost(Term<'tcx>),
     Borrow(Place<'tcx>),
     Expr(Expr<'tcx>),
 }
 
+#[derive(Clone)]
 pub enum Expr<'tcx> {
     Place(Place<'tcx>),
     Move(Place<'tcx>),
@@ -42,6 +45,7 @@ pub enum Expr<'tcx> {
     Len(Box<Expr<'tcx>>),
 }
 
+#[derive(Clone)]
 pub enum Terminator<'tcx> {
     Goto(BasicBlock),
     Switch(Expr<'tcx>, Branches<'tcx>),
@@ -49,6 +53,7 @@ pub enum Terminator<'tcx> {
     Abort,
 }
 
+#[derive(Clone)]
 pub enum Branches<'tcx> {
     Int(Vec<(i128, BasicBlock)>, BasicBlock),
     Uint(Vec<(u128, BasicBlock)>, BasicBlock),
@@ -56,11 +61,13 @@ pub enum Branches<'tcx> {
     Bool(BasicBlock, BasicBlock),
 }
 
+#[derive(Clone)]
 pub struct Block<'tcx> {
     pub(crate) stmts: Vec<Statement<'tcx>>,
     pub(crate) terminator: Terminator<'tcx>,
 }
 
+#[derive(Clone)]
 pub struct Body<'tcx> {
     // TODO: Split into return local, args, and true locals?
     // TODO: Remove usage of `LocalIdent`.
