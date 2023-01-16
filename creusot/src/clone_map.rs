@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use creusot_rustc::{
     hir::{def::DefKind, def_id::DefId},
     middle::ty::{
@@ -271,6 +273,9 @@ impl<'tcx> CloneMap<'tcx> {
         self.names.insert((def_id, subst), CloneInfo::hidden());
     }
 
+    #[deprecated(
+        note = "Avoid using this method in favor of one of the more semantic alternatives: `value`, `accessor`, `ty`"
+    )]
     pub(crate) fn insert(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
         let subst = self.tcx.erase_regions(subst);
 

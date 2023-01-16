@@ -387,6 +387,7 @@ pub(crate) fn lower_literal<'tcx>(
             }
         }
         Literal::Function(id, subst) => {
+            #[allow(deprecated)]
             names.insert(id, subst);
             Exp::Tuple(Vec::new())
         }

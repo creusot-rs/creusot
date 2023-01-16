@@ -70,6 +70,8 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.translate(impl_item);
 
             let subst = InternalSubsts::identity_for_item(self.tcx, impl_item);
+
+            #[allow(deprecated)]
             names.insert(impl_item, subst);
 
             decls.extend(own_generic_decls_for(self.tcx, impl_item));
@@ -97,6 +99,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.crash_and_error(creusot_rustc::span::DUMMY_SP, "error above");
             }
 
+            #[allow(deprecated)]
             let refinement = names.insert(trait_item, refn_subst);
 
             refinement.add_dep(self.tcx, self.tcx.item_name(impl_item), (impl_item, subst));
