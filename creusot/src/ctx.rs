@@ -2,10 +2,6 @@ use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::clone_map::*;
 use crate::{
-    backend::{
-        self,
-        program::{translate_closure, translate_function},
-    },
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
@@ -14,7 +10,6 @@ use crate::{
         self,
         external::{extract_extern_specs_from_item, ExternSpec},
         fmir,
-        interface::interface_for,
         pearlite::{self, Term},
         specification::ContractClauses,
         traits::TraitImpl,
@@ -106,48 +101,52 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
         match item_type(self.tcx, def_id) {
             ItemType::Trait => {
-                self.start(def_id);
-                let tr = self.translate_trait(def_id);
-                self.dependencies.insert(def_id, CloneSummary::new());
-                self.functions.insert(def_id, tr);
-                self.finish(def_id);
+                // self.start(def_id);
+                // let tr = self.translate_trait(def_id);
+                // self.dependencies.insert(def_id, CloneSummary::new());
+                // self.functions.insert(def_id, tr);
+                // self.finish(def_id);
             }
             ItemType::Impl => {
                 if self.tcx.impl_trait_ref(def_id).is_some() {
-                    self.start(def_id);
-                    let impl_ = backend::traits::lower_impl(self, def_id);
+                    // self.start(def_id);
+                    // let impl_ = self.translate_impl(def_id);
 
-                    self.dependencies.insert(def_id, CloneSummary::new());
-                    self.functions.insert(def_id, TranslatedItem::Impl { modl: impl_ });
-                    self.finish(def_id);
+                    // self.dependencies.insert(def_id, CloneSummary::new());
+                    // self.functions.insert(def_id, impl_);
+                    // self.finish(def_id);
                 }
             }
+
             ItemType::Logic | ItemType::Predicate | ItemType::Program | ItemType::Closure => {
-                self.start(def_id);
-                self.translate_function(def_id);
-                self.finish(def_id);
+                // self.start(def_id);
+                // self.translate_function(def_id);
+                // self.finish(def_id);
             }
             ItemType::AssocTy => {
-                self.start(def_id);
-                let (modl, dependencies) = self.translate_assoc_ty(def_id);
-                self.finish(def_id);
-                self.dependencies.insert(def_id, dependencies);
-                self.functions.insert(def_id, TranslatedItem::AssocTy { modl });
+                // self.start(def_id);
+                // let modl = self.translate_assoc_ty(def_id);
+                // self.finish(def_id);
+                // FIXME
+                // self.dependencies.insert(def_id, CloneSummary::new());
+                // self.functions.insert(def_id, TranslatedItem::AssocTy { modl });
             }
             ItemType::Constant => {
-                self.start(def_id);
-                let (constant, dependencies) = self.translate_constant(def_id);
-                self.finish(def_id);
-                self.dependencies.insert(def_id, dependencies);
-                self.functions.insert(def_id, constant);
+                // self.start(def_id);
+                // let (constant, dependencies) = self.translate_constant(def_id);
+                // self.finish(def_id);
+                // self.dependencies.insert(def_id, dependencies);
+                // self.functions.insert(def_id, constant);
             }
             ItemType::Type => {
-                translate_tydecl(self, def_id);
+                self.binding_group(def_id);
+                // translate_tydecl(self, def_id);
             }
             ItemType::Unsupported(dk) => self.crash_and_error(
                 self.tcx.def_span(def_id),
                 &format!("unsupported definition kind {:?} {:?}", def_id, dk),
             ),
+            ItemType::Field => {}
         }
     }
 
@@ -199,47 +198,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         }
 
         self.translated_items.insert(def_id);
-    }
-
-    // Generic entry point for function translation
-    fn translate_function(&mut self, def_id: DefId) {
-        assert!(matches!(
-            self.tcx.def_kind(def_id),
-            DefKind::Fn | DefKind::Closure | DefKind::AssocFn
-        ));
-
-        if !crate::util::should_translate(self.tcx, def_id) || util::is_spec(self.tcx, def_id) {
-            debug!("Skipping {:?}", def_id);
-            return;
-        }
-
-        let (interface, deps) = interface_for(self, def_id);
-
-        let translated = match util::item_type(self.tcx, def_id) {
-            ItemType::Logic | ItemType::Predicate => {
-                debug!("translating {:?} as logical", def_id);
-                let (stub, modl, proof_modl, has_axioms, deps) =
-                    crate::backend::logic::translate_logic_or_predicate(self, def_id);
-                self.dependencies.insert(def_id, deps);
-                TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
-            }
-            ItemType::Closure => {
-                let (ty_modl, modl) = translate_closure(self, def_id);
-                self.dependencies.insert(def_id, deps.summary());
-
-                TranslatedItem::Closure { interface: vec![ty_modl, interface], modl }
-            }
-            ItemType::Program => {
-                debug!("translating {def_id:?} as program");
-
-                self.dependencies.insert(def_id, deps.summary());
-                let modl = translate_function(self, def_id);
-                TranslatedItem::Program { interface, modl }
-            }
-            _ => unreachable!(),
-        };
-
-        self.functions.insert(def_id, translated);
     }
 
     pub(crate) fn translate_accessor(&mut self, field_id: DefId) {

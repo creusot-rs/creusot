@@ -1,21 +1,23 @@
 use crate::{
+    backend::ty::{intty_to_ty, translate_ty, uintty_to_ty},
     ctx::*,
     pearlite::{self, Literal, Pattern, Term, TermKind},
-    translation::ty::{intty_to_ty, translate_ty, uintty_to_ty},
     util,
-    util::get_builtin,
 };
-use rustc_hir::Unsafety;
-use rustc_middle::ty::{EarlyBinder, Ty, TyKind};
+use rustc_hir::{Unsafety, def_id::DefId};
+use rustc_middle::ty::{EarlyBinder, Ty, TyKind, SubstsRef};
+use rustc_span::DUMMY_SP;
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
     ty::Type,
     Ident, QName,
 };
 
-pub(crate) fn lower_pure<'tcx>(
+use super::Cloner;
+
+pub(crate) fn lower_pure<'tcx, C: Cloner<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut C,
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
@@ -28,9 +30,9 @@ pub(crate) fn lower_pure<'tcx>(
     term
 }
 
-pub(crate) fn lower_impure<'tcx>(
+pub(crate) fn lower_impure<'tcx, C: Cloner<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut C,
     term: Term<'tcx>,
 ) -> Exp {
     let span = term.span;
@@ -43,15 +45,16 @@ pub(crate) fn lower_impure<'tcx>(
     term
 }
 
-pub(super) struct Lower<'a, 'tcx> {
+pub(super) struct Lower<'a, 'tcx, C: Cloner<'tcx>> {
     pub(super) ctx: &'a mut TranslationCtx<'tcx>,
-    pub(super) names: &'a mut CloneMap<'tcx>,
+    pub(super) names: &'a mut C,
     // true when we are translating a purely logical term
     pub(super) pure: Purity,
 }
-impl<'tcx> Lower<'_, 'tcx> {
+impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
     pub(crate) fn lower_term(&mut self, term: Term<'tcx>) -> Exp {
         match term.kind {
+            TermKind::Any => Exp::Any(translate_ty(self.ctx, self.names, term.span, term.ty)),
             TermKind::Lit(l) => {
                 let c = lower_literal(self.ctx, self.names, l);
                 c
@@ -75,9 +78,6 @@ impl<'tcx> Lower<'_, 'tcx> {
                 let rhs = self.lower_term(rhs);
 
                 use pearlite::BinOp::*;
-                if matches!(op, Add | Sub | Mul | Div | Rem | Le | Ge | Lt | Gt) {
-                    self.names.import_prelude_module(PreludeModule::Int);
-                }
 
                 match (op, self.pure) {
                     (Div, _) => Exp::Call(box Exp::pure_var("div".into()), vec![lhs, rhs]),
@@ -146,8 +146,6 @@ impl<'tcx> Lower<'_, 'tcx> {
                 }
 
                 self.lookup_builtin(method, &mut args).unwrap_or_else(|| {
-                    self.ctx.translate(method.0);
-
                     let clone = self.names.value(method.0, method.1);
                     if self.pure == Purity::Program {
                         mk_binders(Exp::QVar(clone, self.pure), args)
@@ -157,37 +155,27 @@ impl<'tcx> Lower<'_, 'tcx> {
                 })
             }
             TermKind::Forall { binder, box body } => {
-                let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
+                let ty = translate_ty(self.ctx, self.names, DUMMY_SP, binder.1);
                 self.pure_exp(|this| {
                     Exp::Forall(vec![(binder.0.to_string().into(), ty)], box this.lower_term(body))
                 })
             }
             TermKind::Exists { binder, box body } => {
-                let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
+                let ty = translate_ty(self.ctx, self.names, DUMMY_SP, binder.1);
                 self.pure_exp(|this| {
                     Exp::Exists(vec![(binder.0.to_string().into(), ty)], box this.lower_term(body))
                 })
             }
             TermKind::Constructor { adt, variant, fields } => {
-                self.ctx.translate(adt.did());
                 let TyKind::Adt(_, subst) = term.ty.kind() else { unreachable!() };
+
                 let args = fields.into_iter().map(|f| self.lower_term(f)).collect();
 
-                let ctor = self.names.constructor(adt.variants()[variant].def_id, subst);
+                let ctor = self.names.constructor(adt.did(), subst, variant.as_usize());
                 Exp::Constructor { ctor, args }
             }
-            TermKind::Cur { box term } => {
-                if term.ty.is_mutable_ptr() {
-                    self.names.import_prelude_module(PreludeModule::Borrow);
-                    Exp::Current(box self.lower_term(term))
-                } else {
-                    self.lower_term(term)
-                }
-            }
-            TermKind::Fin { box term } => {
-                self.names.import_prelude_module(PreludeModule::Borrow);
-                Exp::Final(box self.lower_term(term))
-            }
+            TermKind::Cur { box term } => Exp::Current(box self.lower_term(term)),
+            TermKind::Fin { box term } => Exp::Final(box self.lower_term(term)),
             TermKind::Impl { box lhs, box rhs } => {
                 self.pure_exp(|this| Exp::Impl(box this.lower_term(lhs), box this.lower_term(rhs)))
             }
@@ -206,7 +194,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                         box self.lower_term(false_br),
                     )
                 } else {
-                    let _ = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, scrutinee.ty);
+                    let _ = translate_ty(self.ctx, self.names, DUMMY_SP, scrutinee.ty);
                     let arms = arms
                         .into_iter()
                         .map(|(pat, body)| (self.lower_pat(pat), self.lower_term(body)))
@@ -222,23 +210,15 @@ impl<'tcx> Lower<'_, 'tcx> {
             TermKind::Tuple { fields } => {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
             }
-            TermKind::Projection { box lhs, name } => {
-                let base_ty = lhs.ty;
+            TermKind::Projection { box lhs, name, def: did, substs } => {
                 let lhs = self.lower_term(lhs);
-
-                let accessor = match base_ty.kind() {
-                    TyKind::Closure(did, substs) => {
-                        self.names.accessor(*did, substs, 0, name.as_usize())
+                let accessor = match util::item_type(self.ctx.tcx, did) {
+                    ItemType::Closure => {
+                        let TyKind::Closure(did, subst) = self.ctx.type_of(did).kind() else { unreachable!() };
+                        self.names.accessor(*did, subst, 0, name.as_usize())
                     }
-                    TyKind::Adt(def, substs) => {
-                        self.ctx.translate_accessor(
-                            def.variants()[0u32.into()].fields[name.as_usize()].did,
-                        );
-                        self.names.accessor(def.did(), substs, 0, name.as_usize())
-                    }
-                    k => unreachable!("Projection from {k:?}"),
+                    _ => self.names.accessor(did, substs, 0, name.as_usize()),
                 };
-
                 Exp::Call(box Exp::pure_qvar(accessor), vec![lhs])
             }
             TermKind::Closure { args, body } => {
@@ -302,11 +282,10 @@ impl<'tcx> Lower<'_, 'tcx> {
 
     fn lower_pat(&mut self, pat: Pattern<'tcx>) -> Pat {
         match pat {
-            Pattern::Constructor { adt, variant: _, fields, substs } => {
+            Pattern::Constructor { adt: def_id, variant, fields, substs } => {
                 // let variant = &adt.variants()[variant];
                 let fields = fields.into_iter().map(|pat| self.lower_pat(pat)).collect();
-                // eprintln!("{adt:?}");
-                Pat::ConsP(self.names.constructor(adt, substs), fields)
+                Pat::ConsP(self.names.constructor(def_id, substs, variant.as_usize()), fields)
             }
             Pattern::Wildcard => Pat::Wildcard,
             Pattern::Binder(name) => Pat::VarP(name.to_string().into()),
@@ -324,7 +303,7 @@ impl<'tcx> Lower<'_, 'tcx> {
     }
 
     fn lower_ty(&mut self, ty: Ty<'tcx>) -> Type {
-        translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, ty)
+        translate_ty(self.ctx, self.names, DUMMY_SP, ty)
     }
 
     pub(crate) fn lookup_builtin(
@@ -336,11 +315,9 @@ impl<'tcx> Lower<'_, 'tcx> {
         let _substs = method.1;
 
         let def_id = Some(def_id);
-        let builtin_attr = get_builtin(self.ctx.tcx, def_id.unwrap());
+        let builtin_attr = util::get_builtin(self.ctx.tcx, def_id.unwrap());
 
         if let Some(builtin) = builtin_attr.and_then(|a| QName::from_string(&a.as_str())) {
-            self.names.import_builtin_module(builtin.clone().module_qname());
-
             if let Purity::Program = self.pure {
                 return Some(mk_binders(
                     Exp::pure_qvar(builtin.without_search_path()),
@@ -357,22 +334,19 @@ impl<'tcx> Lower<'_, 'tcx> {
     }
 }
 
-use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
-
-pub(crate) fn lower_literal<'tcx>(
+pub(crate) fn lower_literal<'tcx, C: Cloner<'tcx>>(
     _ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    _: &mut C,
     lit: Literal<'tcx>,
 ) -> Exp {
     match lit {
         Literal::Integer(i) => Constant::Int(i, None).into(),
         Literal::MachSigned(u, intty) => {
-            let why_ty = intty_to_ty(names, &intty);
+            let why_ty = intty_to_ty(&intty);
             Constant::Int(u, Some(why_ty)).into()
         }
         Literal::MachUnsigned(u, uty) => {
-            let why_ty = uintty_to_ty(names, &uty);
+            let why_ty = uintty_to_ty(&uty);
 
             Constant::Uint(u, Some(why_ty)).into()
         }
@@ -383,11 +357,7 @@ pub(crate) fn lower_literal<'tcx>(
                 Constant::const_false().into()
             }
         }
-        Literal::Function(id, subst) => {
-            #[allow(deprecated)]
-            names.insert(id, subst);
-            Exp::Tuple(Vec::new())
-        }
+        Literal::Function(_, _) => Exp::Tuple(Vec::new()),
         Literal::Float(f) => Constant::Float(f).into(),
         Literal::ZST => Exp::Tuple(Vec::new()),
         Literal::String(string) => Constant::String(string).into(),

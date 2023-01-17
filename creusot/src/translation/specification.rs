@@ -2,7 +2,7 @@ use super::{
     pearlite::{normalize, pearlite_stub, Term, TermKind},
     LocalIdent,
 };
-use crate::{ctx::*, util};
+use crate::{ctx::*, util, backend::Cloner};
 use rustc_ast::ast::{AttrArgs, AttrArgsEq};
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
@@ -29,6 +29,10 @@ pub struct PreContract<'tcx> {
 }
 
 impl<'tcx> PreContract<'tcx> {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
     pub(crate) fn subst(&mut self, subst: &HashMap<Symbol, Term<'tcx>>) {
         for term in self.terms_mut() {
             term.subst(subst);
@@ -42,10 +46,10 @@ impl<'tcx> PreContract<'tcx> {
         self
     }
 
-    pub(crate) fn to_exp(
+    pub(crate) fn to_exp<C: Cloner<'tcx>>(
         self,
         ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut C,
     ) -> Contract {
         let mut out = Contract::new();
         for term in self.requires {
@@ -91,6 +95,7 @@ impl<'tcx> PreContract<'tcx> {
         precond
     }
 }
+
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub struct ContractClauses {

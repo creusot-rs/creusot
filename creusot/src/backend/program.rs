@@ -1,22 +1,22 @@
 use crate::{
-    clone_map::{CloneLevel, PreludeModule},
+    clone_map::CloneLevel,
     ctx::{CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
-        fmir::{Block, Branches, Expr, RValue, Statement, Terminator},
+        fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
         function::{
             closure_contract, closure_generic_decls, place, place::translate_rplace_inner, promoted,
         },
         specification::{lower_impure, lower_pure},
-        ty::{self, closure_accessors, translate_closure_ty, translate_ty},
+        ty::{closure_accessors, translate_closure_ty, translate_ty},
         unop_to_unop,
     },
-    util::{self, is_ghost_closure, module_name, sig_to_why3, signature_of},
+    util::{self, is_ghost_closure, module_name},
 };
-use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
+use rustc_hir::{def_id::DefId, Unsafety};
 use rustc_index::vec::IndexVec;
 use rustc_middle::{
-    mir::{self, BasicBlock, BinOp, MirPass, Place},
+    mir::{self, BasicBlock, BinOp, MirPass},
     ty::{TyKind, WithOptConstParam},
 };
 use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::SimplifyCfg};
@@ -30,6 +30,8 @@ use why3::{
     mlcfg::BlockId,
     Ident, QName,
 };
+
+use super::{clone_map2::Namer, sig_to_why3, ty, signature_of};
 
 fn closure_ty<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
@@ -52,7 +54,7 @@ fn closure_ty<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
 
 pub(crate) fn closure_aux_defs<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Namer<'_, 'tcx>,
     def_id: DefId,
 ) -> Vec<Decl> {
     let mut decls = Vec::new();
@@ -77,7 +79,7 @@ pub(crate) fn closure_aux_defs<'tcx>(
         .collect();
     let contract = closure_contract(ctx, def_id).to_why(ctx, def_id, names);
 
-    decls.extend(names.to_clones(ctx));
+    // decls.extend(names.to_clones(ctx));
     decls.extend(acc);
     decls.extend(contract);
     decls
@@ -85,21 +87,21 @@ pub(crate) fn closure_aux_defs<'tcx>(
 
 pub(crate) fn translate_closure<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
+    names: &mut Namer<'_, 'tcx>,
     def_id: DefId,
 ) -> (Module, Option<Module>) {
     assert!(ctx.is_closure(def_id));
 
-    (closure_ty(ctx, def_id), translate_function(ctx, def_id))
+    (closure_ty(ctx, def_id), translate_function(ctx, names, def_id))
 }
 
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &mut TranslationCtx<'tcx>,
+    names: &mut Namer<'_, 'tcx>,
     def_id: DefId,
 ) -> Option<Module> {
     let tcx = ctx.tcx;
-    let mut names = CloneMap::new(tcx, def_id, CloneLevel::Body);
-
-    let body = to_why(ctx, &mut names, def_id)?;
+    let body = to_why(ctx, names, def_id)?;
 
     // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
     let (_, promoted) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
@@ -108,13 +110,13 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
 
     if ctx.tcx.is_closure(def_id) {
-        decls.extend(closure_aux_defs(ctx, &mut names, def_id));
+        decls.extend(closure_aux_defs(ctx, names, def_id));
     }
 
-    let promoteds = lower_promoted(ctx, &mut names, def_id, &*promoted.borrow());
+    // let promoteds = lower_promoted(ctx, names, def_id, &*promoted.borrow());
 
     decls.extend(names.to_clones(ctx));
-    decls.extend(promoteds);
+    // decls.extend(promoteds);
     decls.push(body);
     let name = module_name(ctx.tcx, def_id);
     Some(Module { name, decls })
@@ -145,7 +147,7 @@ fn lower_promoted<'tcx>(
 
 pub fn to_why<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut Namer<'_, 'tcx>,
     def_id: DefId,
 ) -> Option<Decl> {
     if !def_id.is_local() || !util::has_body(ctx, def_id) || util::is_trusted(ctx.tcx, def_id) {
@@ -194,12 +196,11 @@ pub fn to_why<'tcx>(
     });
     Some(func)
 }
-
 impl<'tcx> Expr<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Namer<'_, 'tcx>,
         // TODO: Get rid of this by introducing an intermediate `Place` type
         body: Option<&mir::Body<'tcx>>,
     ) -> Exp {
@@ -220,14 +221,14 @@ impl<'tcx> Expr<'tcx> {
                 box r.to_why(ctx, names, body),
             ),
             Expr::BinOp(BinOp::Eq, ty, l, r) if ty.is_bool() => {
-                names.import_prelude_module(PreludeModule::Bool);
+                // names.import_prelude_module(PreludeModule::Bool);
                 Exp::Call(
                     box Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap()),
                     vec![l.to_why(ctx, names, body), r.to_why(ctx, names, body)],
                 )
             }
             Expr::BinOp(BinOp::Ne, ty, l, r) if ty.is_bool() => {
-                names.import_prelude_module(PreludeModule::Bool);
+                // names.import_prelude_module(PreludeModule::Bool);
                 Exp::Call(
                     box Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap()),
                     vec![l.to_why(ctx, names, body), r.to_why(ctx, names, body)],
@@ -241,19 +242,11 @@ impl<'tcx> Expr<'tcx> {
             Expr::UnaryOp(op, arg) => {
                 Exp::UnaryOp(unop_to_unop(op), box arg.to_why(ctx, names, body))
             }
-            Expr::Constructor(id, subst, args) => {
+            Expr::Constructor(id, ix, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, body)).collect();
 
-                match ctx.def_kind(id) {
-                    DefKind::Closure => {
-                        let ctor = names.constructor(id, subst);
-                        Exp::Constructor { ctor, args }
-                    }
-                    _ => {
-                        let ctor = names.constructor(id, subst);
-                        Exp::Constructor { ctor, args }
-                    }
-                }
+                let ctor = names.constructor(id, subst, ix.as_usize());
+                Exp::Constructor { ctor, args }
             }
             Expr::Call(id, subst, args) => {
                 let mut args: Vec<_> =
@@ -298,7 +291,7 @@ impl<'tcx> Expr<'tcx> {
                     TyKind::Int(ity) => int_to_int(ity),
                     TyKind::Uint(uty) => uint_to_int(uty),
                     TyKind::Bool => {
-                        names.import_prelude_module(PreludeModule::Bool);
+                        // names.import_prelude_module(PreludeModule::Bool);
                         Exp::impure_qvar(QName::from_string("Bool.to_int").unwrap())
                     }
                     _ => ctx
@@ -309,7 +302,7 @@ impl<'tcx> Expr<'tcx> {
                     TyKind::Int(ity) => int_from_int(ity),
                     TyKind::Uint(uty) => uint_from_int(uty),
                     TyKind::Char => {
-                        names.import_prelude_module(PreludeModule::Char);
+                        // names.import_prelude_module(PreludeModule::Char);
                         Exp::impure_qvar(QName::from_string("Char.chr").unwrap())
                     }
                     _ => ctx
@@ -327,7 +320,7 @@ impl<'tcx> Expr<'tcx> {
         }
     }
 
-    fn invalidated_places(&self, places: &mut Vec<Place<'tcx>>) {
+    fn invalidated_places(&self, places: &mut Vec<fmir::Place<'tcx>>) {
         match self {
             Expr::Place(_) => {}
             Expr::Move(p) => places.push(*p),
@@ -337,7 +330,7 @@ impl<'tcx> Expr<'tcx> {
                 r.invalidated_places(places)
             }
             Expr::UnaryOp(_, e) => e.invalidated_places(places),
-            Expr::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
+            Expr::Constructor(_, _, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
             Expr::Call(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
             Expr::Constant(_) => {}
             Expr::Cast(e, _, _) => e.invalidated_places(places),
@@ -404,7 +397,7 @@ impl<'tcx> Terminator<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Namer<'_, 'tcx>,
         // TODO: Get rid of this by introducing an intermediate `Place` type
         body: Option<&mir::Body<'tcx>>,
     ) -> why3::mlcfg::Terminator {
@@ -424,8 +417,8 @@ impl<'tcx> Terminator<'tcx> {
 impl<'tcx> Branches<'tcx> {
     fn to_why(
         self,
-        _ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        _: &mut TranslationCtx<'tcx>,
+        names: &mut Namer<'_, 'tcx>,
         discr: Exp,
     ) -> mlcfg::Terminator {
         use why3::mlcfg::Terminator::*;
@@ -468,7 +461,8 @@ impl<'tcx> Branches<'tcx> {
                     .map(|(var, bb)| {
                         let variant = &adt.variant(var);
                         let wilds = variant.fields.iter().map(|_| Pattern::Wildcard).collect();
-                        let cons_name = names.constructor(variant.def_id, substs);
+
+                        let cons_name = names.constructor(adt.did(), substs, var.as_usize());
                         (Pattern::ConsP(cons_name, wilds), Goto(BlockId(bb.into())))
                     })
                     .chain(std::iter::once((Pattern::Wildcard, Goto(BlockId(def.into())))))
@@ -491,7 +485,7 @@ impl<'tcx> Block<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Namer<'_, 'tcx>,
         // TODO: Get rid of this by introducing an intermediate `Place` type
         body: &mir::Body<'tcx>,
     ) -> why3::mlcfg::Block {
@@ -506,7 +500,7 @@ impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Namer<'_, 'tcx>,
         // TODO: Get rid of this by introducing an intermediate `Place` type
         body: &mir::Body<'tcx>,
     ) -> Vec<mlcfg::Statement> {
@@ -531,14 +525,12 @@ impl<'tcx> Statement<'tcx> {
                 let rhs = rhs.to_why(ctx, names, Some(body));
                 let mut exps = vec![place::create_assign_inner(ctx, names, body, &lhs, rhs)];
                 for pl in invalid {
-                    let ty = translate_ty(ctx, names, DUMMY_SP, pl.ty(body, ctx.tcx).ty);
+                    let ty = translate_ty(ctx, names, DUMMY_SP, pl.ty(ctx.tcx).ty);
                     exps.push(place::create_assign_inner(ctx, names, body, &pl, Exp::Any(ty)));
                 }
                 exps
             }
             Statement::Resolve(id, subst, pl) => {
-                ctx.translate(id);
-
                 let rp = Exp::impure_qvar(names.value(id, subst));
 
                 let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, Some(body)));

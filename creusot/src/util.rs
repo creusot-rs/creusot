@@ -3,7 +3,6 @@ use crate::{
     translation::{
         pearlite::{super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
         specification::PreContract,
-        {self},
     },
 };
 use indexmap::IndexMap;
@@ -26,7 +25,6 @@ use std::{
 use why3::{
     declaration,
     declaration::{LetKind, Signature, ValDecl},
-    exp::Binder,
     Ident, QName,
 };
 
@@ -239,6 +237,7 @@ pub enum ItemType {
     Type,
     AssocTy,
     Constant,
+    Field,
     Unsupported(DefKind),
 }
 
@@ -272,6 +271,7 @@ impl ItemType {
             ItemType::Type => "type declaration",
             ItemType::AssocTy => "associated type",
             ItemType::Constant => "constant",
+            ItemType::Field => "field",
             ItemType::Unsupported(_) => "[OTHER]",
         }
     }
@@ -290,11 +290,11 @@ pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
                 ItemType::Program
             }
         }
+        DefKind::Field => ItemType::Field,
         DefKind::AssocConst | DefKind::Const => ItemType::Constant,
         DefKind::Closure => ItemType::Closure,
         DefKind::Struct | DefKind::Enum | DefKind::Union => ItemType::Type,
         DefKind::AssocTy => ItemType::AssocTy,
-        DefKind::AnonConst => panic!(),
         dk => ItemType::Unsupported(dk),
     }
 }
@@ -402,62 +402,6 @@ pub(crate) fn pre_sig_of<'tcx>(
     };
 
     PreSignature { inputs, output, contract }
-}
-
-pub(crate) fn sig_to_why3<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    pre_sig: PreSignature<'tcx>,
-    // FIXME: Get rid of this def id
-    // The PreSig should have the name and the id should be replaced by a param env (if by anything at all...)
-    def_id: DefId,
-) -> Signature {
-    let contract = names.with_public_clones(|names| pre_sig.contract.to_exp(ctx, names));
-
-    let name = item_name(ctx.tcx, def_id, Namespace::ValueNS);
-
-    let span = ctx.tcx.def_span(def_id);
-    let args: Vec<Binder> = names.with_public_clones(|names| {
-        pre_sig
-            .inputs
-            .into_iter()
-            .enumerate()
-            .map(|(ix, (id, _, ty))| {
-                let ty = translation::ty::translate_ty(ctx, names, span, ty);
-                let id = if id.is_empty() {
-                    format!("{}", AnonymousParamName(ix)).into()
-                } else {
-                    ident_of(id)
-                };
-                Binder::typed(id, ty)
-            })
-            .collect()
-    });
-
-    let mut attrs = why3_attrs(ctx.tcx, def_id);
-    if matches!(item_type(ctx.tcx, def_id), ItemType::Program | ItemType::Closure) {
-        attrs.push(declaration::Attribute::Attr("cfg:stackify".into()))
-    };
-    def_id
-        .as_local()
-        .map(|d| ctx.def_span(d))
-        .and_then(|span| ctx.span_attr(span))
-        .map(|attr| attrs.push(attr));
-
-    let retty = names.with_public_clones(|names| {
-        translation::ty::translate_ty(ctx, names, span, pre_sig.output)
-    });
-    Signature { name, attrs, retty: Some(retty), args, contract }
-}
-
-pub(crate) fn signature_of<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    def_id: DefId,
-) -> Signature {
-    debug!("signature_of {def_id:?}");
-    let pre_sig = ctx.sig(def_id).clone();
-    sig_to_why3(ctx, names, pre_sig, def_id)
 }
 
 pub(crate) fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a AttrItem> {
