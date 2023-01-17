@@ -388,7 +388,15 @@ pub(crate) fn pre_sig_of<'tcx>(
         assert!(contract.variant.is_none());
     }
 
-    let mut inputs: Vec<_> = inputs.map(|(i, ty)| (i.name, i.span, ty)).collect();
+    let mut inputs: Vec<_> = inputs
+        .map(|(i, ty)| {
+            if i.name.as_str() == "result" {
+                ctx.crash_and_error(i.span, "`result` is not allowed as a parameter name")
+            } else {
+                (i.name, i.span, ty)
+            }
+        })
+        .collect();
     if ctx.type_of(def_id).is_fn() && inputs.is_empty() {
         inputs.push((kw::Empty, DUMMY_SP, ctx.tcx.types.unit));
     };
@@ -414,13 +422,10 @@ pub(crate) fn sig_to_why3<'tcx>(
             .inputs
             .into_iter()
             .enumerate()
-            .map(|(ix, (id, sp, ty))| {
+            .map(|(ix, (id, _, ty))| {
                 let ty = translation::ty::translate_ty(ctx, names, span, ty);
-                // I dont like this
                 let id = if id.is_empty() {
                     format!("{}", AnonymousParamName(ix)).into()
-                } else if id == Symbol::intern("result") {
-                    ctx.crash_and_error(sp, "`result` is not allowed as a parameter name");
                 } else {
                     ident_of(id)
                 };
