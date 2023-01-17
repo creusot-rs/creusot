@@ -23,7 +23,10 @@ use rustc_hir::def_id::DefId;
 use rustc_index::bit_set::BitSet;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
-    mir::{traversal::reverse_postorder, MirPass},
+    mir::{
+        traversal::reverse_postorder, BasicBlock, Body, Local, Location, MirPass, Operand, Place,
+        VarDebugInfo,
+    },
     ty::{
         subst::{GenericArg, SubstsRef},
         ClosureKind::*,
@@ -33,7 +36,6 @@ use rustc_middle::{
 };
 use rustc_mir_dataflow::move_paths::MoveData;
 use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::*};
-use rustc_smir::mir::{BasicBlock, Body, Local, Location, Operand, Place, VarDebugInfo};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::rc::Rc;
 use why3::{declaration::*, exp::*, mlcfg::*, Ident};

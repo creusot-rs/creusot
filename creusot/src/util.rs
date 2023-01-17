@@ -526,7 +526,7 @@ pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {
     }
 }
 
-use rustc_smir::mir::Field;
+use rustc_middle::mir::Field;
 use rustc_span::def_id::LocalDefId;
 
 pub(crate) struct ClosureSubst<'tcx> {

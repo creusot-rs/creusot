@@ -3,10 +3,11 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
 use rustc_index::bit_set::BitSet;
-use rustc_middle::mir::visit::{
-    MutatingUseContext, NonMutatingUseContext, NonUseContext, PlaceContext, Visitor,
+use rustc_middle::mir::{
+    self,
+    visit::{MutatingUseContext, NonMutatingUseContext, NonUseContext, PlaceContext, Visitor},
+    Local, Location,
 };
-use rustc_smir::mir::{self, Local, Location};
 
 mod init_locals;
 mod uninit_locals;

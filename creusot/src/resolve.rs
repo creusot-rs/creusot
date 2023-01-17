@@ -3,13 +3,11 @@ use std::rc::Rc;
 use crate::analysis::{MaybeInitializedLocals, MaybeUninitializedLocals};
 use rustc_borrowck::borrow_set::{BorrowSet, TwoPhaseActivation};
 use rustc_index::bit_set::BitSet;
-use rustc_smir::{
+use rustc_middle::{
     mir::{BasicBlock, Body, Local, Location},
-    very_unstable::{
-        dataflow::{impls::MaybeLiveLocals, Analysis, ResultsCursor},
-        middle::ty::TyCtxt,
-    },
+    ty::TyCtxt,
 };
+use rustc_mir_dataflow::{impls::MaybeLiveLocals, Analysis, ResultsCursor};
 
 use crate::extended_location::ExtendedLocation;
 

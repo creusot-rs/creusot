@@ -3,8 +3,10 @@ use crate::{
     backend::program::uint_to_int,
     ctx::{CloneMap, TranslationCtx},
 };
-use rustc_middle::ty::{TyKind, UintTy};
-use rustc_smir::mir::{Body, Local, Place};
+use rustc_middle::{
+    mir::{Body, Local, Place},
+    ty::{TyKind, UintTy},
+};
 use why3::{
     exp::{
         Exp::{self, *},
@@ -162,7 +164,7 @@ pub(crate) fn translate_rplace_inner<'tcx>(
     proj: &[rustc_middle::mir::PlaceElem<'tcx>],
 ) -> Exp {
     let mut inner = Exp::impure_var(translate_local(body, loc).ident());
-    use rustc_smir::mir::ProjectionElem::*;
+    use rustc_middle::mir::ProjectionElem::*;
     let mut place_ty = Place::ty_from(loc, &[], body, ctx.tcx);
 
     for elem in proj {

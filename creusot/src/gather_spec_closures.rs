@@ -9,10 +9,9 @@ use crate::{
 use rustc_data_structures::graph::WithSuccessors;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::visit::Visitor,
+    mir::{visit::Visitor, AggregateKind, BasicBlock, Body, Location, Operand, Rvalue},
     ty::{TyCtxt, TyKind},
 };
-use rustc_smir::mir::{AggregateKind, BasicBlock, Body, Location, Operand, Rvalue};
 use rustc_span::Symbol;
 
 pub(crate) fn corrected_invariant_names_and_locations<'tcx>(

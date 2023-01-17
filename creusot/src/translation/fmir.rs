@@ -2,8 +2,10 @@ use super::{function::LocalIdent, traits};
 use crate::{ctx::TranslationCtx, pearlite::Term};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TypeVisitable};
-use rustc_smir::mir::{BasicBlock, BinOp, Place, UnOp};
+use rustc_middle::{
+    mir::{BasicBlock, BinOp, Place, UnOp},
+    ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TypeVisitable},
+};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 

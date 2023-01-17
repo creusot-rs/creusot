@@ -15,15 +15,15 @@ use rustc_infer::{
     traits::{FulfillmentError, Obligation, ObligationCause, TraitEngine},
 };
 use rustc_middle::{
-    mir::{self, SwitchTargets, TerminatorKind, TerminatorKind::*},
+    mir::{
+        self, BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
+        StatementKind, SwitchTargets, TerminatorKind, TerminatorKind::*,
+    },
     ty::{
         self,
         subst::{GenericArgKind, SubstsRef},
         ParamEnv, Predicate, Ty, TyKind,
     },
-};
-use rustc_smir::mir::{
-    BasicBlock, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo, StatementKind,
 };
 use rustc_span::Span;
 use rustc_trait_selection::traits::{error_reporting::TypeErrCtxtExt, TraitEngineExt};
