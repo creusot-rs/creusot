@@ -1,5 +1,3 @@
-pub(crate) use crate::clone_map::*;
-use crate::metadata::Metadata;
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 
@@ -44,17 +42,6 @@ pub enum TranslatedItem {
 }
 
 impl<'a> TranslatedItem {
-    pub(crate) fn external_dependencies<'tcx>(
-        &'a self,
-        metadata: &'a Metadata<'tcx>,
-        id: DefId,
-    ) -> Option<&'a CloneSummary<'tcx>> {
-        match self {
-            TranslatedItem::Extern { .. } => Some(metadata.dependencies(id).unwrap()),
-            _ => None,
-        }
-    }
-
     pub(crate) fn has_axioms(&self) -> bool {
         match self {
             TranslatedItem::Logic { has_axioms, .. } => *has_axioms,
@@ -78,7 +65,6 @@ impl<'a> TranslatedItem {
             Constant { stub, modl, .. } => {
                 box std::iter::once(stub).chain(box std::iter::once(modl))
             }
-            Extern { interface, body, .. } => box iter::once(interface).chain(iter::once(body)),
             Type { mut modl, accessors, .. } => {
                 modl[0].decls.extend(accessors.values().flat_map(|v| v.values()).cloned());
 
@@ -97,7 +83,6 @@ impl<'a> TranslatedItem {
             TranslatedItem::Trait { .. } => box std::iter::empty(),
             TranslatedItem::Impl { modl, .. } => box std::iter::once(modl),
             TranslatedItem::AssocTy { modl, .. } => box std::iter::once(modl),
-            TranslatedItem::Extern { interface, .. } => box std::iter::once(interface),
             TranslatedItem::Constant { stub, modl, .. } => {
                 box std::iter::once(stub).chain(box std::iter::once(modl))
             }

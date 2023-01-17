@@ -359,9 +359,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
-        self.dependencies.get(&def_id).or_else(|| {
-            self.item(def_id).and_then(|f| f.external_dependencies(&self.externs, def_id))
-        })
+        self.dependencies.get(&def_id)
     }
 
     pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {

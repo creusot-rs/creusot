@@ -50,6 +50,39 @@ fn closure_ty<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
     Module { name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(), decls }
 }
 
+pub(crate) fn closure_aux_defs<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    def_id: DefId,
+) -> Vec<Decl> {
+    let mut decls = Vec::new();
+    decls.push(Decl::UseDecl(Use {
+        name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(),
+        as_: None,
+        export: true,
+    }));
+    let acc: Vec<_> = closure_accessors(ctx, def_id)
+        .into_iter()
+        .map(|(sym, sig, body)| -> Decl {
+            let mut sig = sig_to_why3(ctx, names, sig, def_id);
+            sig.name = Ident::build(sym.as_str());
+            Decl::Let(LetDecl {
+                kind: Some(LetKind::Function),
+                rec: false,
+                ghost: false,
+                sig,
+                body: lower_pure(ctx, names, body),
+            })
+        })
+        .collect();
+    let contract = closure_contract(ctx, def_id).to_why(ctx, def_id, names);
+
+    decls.extend(names.to_clones(ctx));
+    decls.extend(acc);
+    decls.extend(contract);
+    decls
+}
+
 pub(crate) fn translate_closure<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
@@ -75,30 +108,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
 
     if ctx.tcx.is_closure(def_id) {
-        decls.push(Decl::UseDecl(Use {
-            name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(),
-            as_: None,
-            export: false,
-        }));
-        let acc: Vec<_> = closure_accessors(ctx, def_id)
-            .into_iter()
-            .map(|(sym, sig, body)| -> Decl {
-                let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
-                sig.name = Ident::build(sym.as_str());
-                Decl::Let(LetDecl {
-                    kind: Some(LetKind::Function),
-                    rec: false,
-                    ghost: false,
-                    sig,
-                    body: lower_pure(ctx, &mut names, body),
-                })
-            })
-            .collect();
-        let contract = closure_contract(ctx, def_id).to_why(ctx, def_id, &mut names);
-
-        decls.extend(names.to_clones(ctx));
-        decls.extend(acc);
-        decls.extend(contract)
+        decls.extend(closure_aux_defs(ctx, &mut names, def_id));
     }
 
     let promoteds = lower_promoted(ctx, &mut names, def_id, &*promoted.borrow());
