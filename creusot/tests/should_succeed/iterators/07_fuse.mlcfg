@@ -882,9 +882,13 @@ end
 module C07Fuse_Impl1
   type i
   use seq.Seq
+  use prelude.Borrow
   use prelude.Ghost
   clone C07Fuse_Common_Iterator_Item_Type as Item0 with
     type self = i
+  clone C07Fuse_Impl1_Item_Type as Item2 with
+    type i = i,
+    type Item0.item = Item0.item
   clone C07Fuse_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
@@ -895,9 +899,11 @@ module C07Fuse_Impl1
     type i = i
   clone C07Fuse_Common_Iterator_Invariant_Interface as Invariant1 with
     type self = i
-  clone C07Fuse_Impl1_Item_Type as Item1 with
-    type i = i,
-    type Item0.item = Item0.item
+  clone C07Fuse_Common_Iterator_Item_Type as Item1 with
+    type self = C07Fuse_Fuse_Type.t_fuse i
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  clone C07Fuse_Impl1_Completed as Completed0 with
+    type i = i
   clone C07Fuse_Impl1_Produces as Produces0 with
     type i = i,
     type Item0.item = Item0.item,
@@ -906,134 +912,37 @@ module C07Fuse_Impl1
   clone C07Fuse_Impl1_Invariant as Invariant0 with
     type i = i,
     predicate Invariant0.invariant' = Invariant1.invariant'
-  clone C07Fuse_Impl1_ProducesRefl as ProducesRefl0 with
-    type i = i,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    predicate Produces0.produces = Produces0.produces,
-    type Item0.item = Item0.item,
-    axiom .
-  clone C07Fuse_Common_Iterator_ProducesRefl_Interface as ProducesRefl1 with
-    type self = C07Fuse_Fuse_Type.t_fuse i,
-    function produces_refl = ProducesRefl0.produces_refl,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    predicate Produces0.produces = Produces0.produces,
-    type Item0.item = Item1.item,
-    axiom .
-  goal produces_refl_spec : forall a : C07Fuse_Fuse_Type.t_fuse i . (([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> ([#"../07_fuse.rs" 66 15 66 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../07_fuse.rs" 67 14 67 39] Produces0.produces a (Seq.empty ) a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a))
-  clone C07Fuse_Impl1_Completed as Completed0 with
-    type i = i
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  clone C07Fuse_Impl1_ProducesTrans as ProducesTrans0 with
-    type i = i,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    predicate Produces0.produces = Produces0.produces,
-    type Item0.item = Item0.item,
-    axiom .
-  clone C07Fuse_Common_Iterator_ProducesTrans_Interface as ProducesTrans1 with
-    type self = C07Fuse_Fuse_Type.t_fuse i,
-    function produces_trans = ProducesTrans0.produces_trans,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    predicate Produces0.produces = Produces0.produces,
-    type Item0.item = Item1.item,
-    axiom .
-  clone C07Fuse_Impl1_Next_Interface as Next0 with
-    type i = i,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    type Item0.item = Item0.item,
-    predicate Completed0.completed = Completed0.completed,
-    predicate Produces0.produces = Produces0.produces
-  clone C07Fuse_Common_Iterator_Next_Interface as Next1 with
-    type self = C07Fuse_Fuse_Type.t_fuse i,
-    val next = Next0.next,
-    predicate Invariant0.invariant' = Invariant0.invariant',
-    type Item0.item = Item1.item,
-    predicate Completed0.completed = Completed0.completed,
-    predicate Produces0.produces = Produces0.produces
-  goal produces_trans_spec : forall a : C07Fuse_Fuse_Type.t_fuse i, ab : Seq.seq Item0.item, b : C07Fuse_Fuse_Type.t_fuse i, bc : Seq.seq Item0.item, c : C07Fuse_Fuse_Type.t_fuse i . (([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) && ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) && ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) && ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) && ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../07_fuse.rs" 75 15 75 32] Produces0.produces b bc c) && ([#"../07_fuse.rs" 74 15 74 32] Produces0.produces a ab b) && ([#"../07_fuse.rs" 73 15 73 28] Invariant0.invariant' c) && ([#"../07_fuse.rs" 72 15 72 28] Invariant0.invariant' b) && ([#"../07_fuse.rs" 71 15 71 28] Invariant0.invariant' a)) /\ (forall result : () . ([#"../07_fuse.rs" 76 14 76 42] Produces0.produces a (Seq.(++) ab bc) c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c))
-end
-module C07Fuse_FusedIterator_IsFused_Stub
-  type self
-  use prelude.Borrow
-  use seq.Seq
-  clone C07Fuse_Common_Iterator_Item_Type as Item0 with
-    type self = self
-  clone C07Fuse_Common_Iterator_Produces_Stub as Produces0 with
-    type self = self,
-    type Item0.item = Item0.item
-  clone C07Fuse_Common_Iterator_Completed_Stub as Completed0 with
-    type self = self
-  function is_fused [#"../07_fuse.rs" 87 4 87 63] (self : borrowed self) (steps : Seq.seq Item0.item) (next : self) : ()
-end
-module C07Fuse_FusedIterator_IsFused_Interface
-  type self
-  use prelude.Borrow
-  use seq.Seq
-  clone C07Fuse_Common_Iterator_Item_Type as Item0 with
-    type self = self
-  clone C07Fuse_Common_Iterator_Produces_Stub as Produces0 with
-    type self = self,
-    type Item0.item = Item0.item
-  clone C07Fuse_Common_Iterator_Completed_Stub as Completed0 with
-    type self = self
-  function is_fused [#"../07_fuse.rs" 87 4 87 63] (self : borrowed self) (steps : Seq.seq Item0.item) (next : self) : ()
-  axiom is_fused_spec : forall self : borrowed self, steps : Seq.seq Item0.item, next : self . ([#"../07_fuse.rs" 84 15 84 31] Completed0.completed self) -> ([#"../07_fuse.rs" 85 15 85 44] Produces0.produces ( ^ self) steps next) -> ([#"../07_fuse.rs" 86 14 86 50] steps = Seq.empty  /\  ^ self = next)
-end
-module C07Fuse_FusedIterator_IsFused
-  type self
-  use prelude.Borrow
-  use seq.Seq
-  clone C07Fuse_Common_Iterator_Item_Type as Item0 with
-    type self = self
-  clone C07Fuse_Common_Iterator_Produces_Stub as Produces0 with
-    type self = self,
-    type Item0.item = Item0.item
-  clone C07Fuse_Common_Iterator_Completed_Stub as Completed0 with
-    type self = self
-  function is_fused [#"../07_fuse.rs" 87 4 87 63] (self : borrowed self) (steps : Seq.seq Item0.item) (next : self) : ()
-  val is_fused [#"../07_fuse.rs" 87 4 87 63] (self : borrowed self) (steps : Seq.seq Item0.item) (next : self) : ()
-    requires {[#"../07_fuse.rs" 84 15 84 31] Completed0.completed self}
-    requires {[#"../07_fuse.rs" 85 15 85 44] Produces0.produces ( ^ self) steps next}
-    ensures { result = is_fused self steps next }
-    
-  axiom is_fused_spec : forall self : borrowed self, steps : Seq.seq Item0.item, next : self . ([#"../07_fuse.rs" 84 15 84 31] Completed0.completed self) -> ([#"../07_fuse.rs" 85 15 85 44] Produces0.produces ( ^ self) steps next) -> ([#"../07_fuse.rs" 86 14 86 50] steps = Seq.empty  /\  ^ self = next)
+  goal produces_refl_refn : [#"../07_fuse.rs" 68 4 68 29] forall a : C07Fuse_Fuse_Type.t_fuse i . Invariant0.invariant' a -> Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
+  goal next_refn : [#"../07_fuse.rs" 52 4 52 44] forall self : borrowed (C07Fuse_Fuse_Type.t_fuse i) . Invariant0.invariant' ( * self) -> Invariant0.invariant' ( * self) /\ (forall result : Core_Option_Option_Type.t_option Item0.item . match (result) with
+    | Core_Option_Option_Type.C_None -> Completed0.completed self
+    | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
+    end /\ Invariant0.invariant' ( ^ self) -> match (result) with
+    | Core_Option_Option_Type.C_None -> Completed0.completed self
+    | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
+    end /\ Invariant0.invariant' ( ^ self))
+  goal produces_trans_refn : [#"../07_fuse.rs" 77 4 77 90] forall a : C07Fuse_Fuse_Type.t_fuse i . forall ab : Seq.seq Item0.item . forall b : C07Fuse_Fuse_Type.t_fuse i . forall bc : Seq.seq Item0.item . forall c : C07Fuse_Fuse_Type.t_fuse i . Produces0.produces b bc c /\ Produces0.produces a ab b /\ Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a -> Produces0.produces b bc c /\ Produces0.produces a ab b /\ Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C07Fuse_Impl2
   type i
   use prelude.Borrow
   use seq.Seq
   use prelude.Ghost
+  use prelude.Ghost
   clone C07Fuse_Common_Iterator_Item_Type as Item0 with
     type self = i
   clone C07Fuse_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
     type Item0.item = Item0.item
-  use prelude.Ghost
   use Core_Result_Result_Type as Core_Result_Result_Type
   use C07Fuse_Fuse_Type as C07Fuse_Fuse_Type
   clone C07Fuse_Impl0_Inner as Inner0 with
     type i = i
-  clone C07Fuse_Impl1_Item_Type as Item1 with
-    type i = i,
-    type Item0.item = Item0.item
+  clone C07Fuse_Impl1_Completed as Completed0 with
+    type i = i
   clone C07Fuse_Impl1_Produces as Produces0 with
     type i = i,
     type Item0.item = Item0.item,
     function Inner0.inner = Inner0.inner,
     predicate Produces0.produces = Produces1.produces
-  clone C07Fuse_Impl1_Completed as Completed0 with
-    type i = i
-  clone C07Fuse_Impl2_IsFused as IsFused0 with
-    type i = i,
-    predicate Completed0.completed = Completed0.completed,
-    predicate Produces0.produces = Produces0.produces,
-    type Item0.item = Item0.item,
-    axiom .
-  clone C07Fuse_FusedIterator_IsFused_Interface as IsFused1 with
-    type self = C07Fuse_Fuse_Type.t_fuse i,
-    function is_fused = IsFused0.is_fused,
-    predicate Completed0.completed = Completed0.completed,
-    predicate Produces0.produces = Produces0.produces,
-    type Item0.item = Item1.item,
-    axiom .
-  goal is_fused_spec : forall self : borrowed (C07Fuse_Fuse_Type.t_fuse i), steps : Seq.seq Item0.item, next : C07Fuse_Fuse_Type.t_fuse i . (([#"../07_fuse.rs" 85 15 85 44] Produces0.produces ( ^ self) steps next) && ([#"../07_fuse.rs" 84 15 84 31] Completed0.completed self) -> ([#"../07_fuse.rs" 93 15 93 44] Produces0.produces ( ^ self) steps next) && ([#"../07_fuse.rs" 92 15 92 31] Completed0.completed self)) /\ (forall result : () . ([#"../07_fuse.rs" 94 14 94 50] steps = Seq.empty  /\  ^ self = next) -> ([#"../07_fuse.rs" 86 14 86 50] steps = Seq.empty  /\  ^ self = next))
+  goal is_fused_refn : [#"../07_fuse.rs" 95 4 95 62] forall self : borrowed (C07Fuse_Fuse_Type.t_fuse i) . forall steps : Seq.seq Item0.item . forall next : C07Fuse_Fuse_Type.t_fuse i . Produces0.produces ( ^ self) steps next /\ Completed0.completed self -> Produces0.produces ( ^ self) steps next /\ Completed0.completed self /\ (forall result : () . steps = Seq.empty  /\  ^ self = next -> steps = Seq.empty  /\  ^ self = next)
 end

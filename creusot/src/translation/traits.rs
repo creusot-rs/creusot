@@ -2,10 +2,10 @@ use crate::{
     ctx::*,
     translation::{
         function::terminator::evaluate_additional_predicates,
-        ty::{self, translate_ty},
+        ty::{self},
     },
     util,
-    util::{ident_of, inputs_and_output, is_law, is_spec, item_type},
+    util::{inputs_and_output, is_law, is_spec, item_type},
 };
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
@@ -13,12 +13,24 @@ use rustc_middle::ty::{
     subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, TraitRef, TyCtxt,
 };
 use rustc_resolve::Namespace;
+use rustc_span::Symbol;
 use rustc_trait_selection::traits::ImplSource;
 use std::collections::HashMap;
-use why3::{
-    declaration::{Decl, Goal, Module, TyDecl},
-    exp::Exp,
-};
+use why3::declaration::{Decl, Module, TyDecl};
+
+#[derive(Clone)]
+pub(crate) struct Refinement<'tcx> {
+    pub(crate) trait_: (DefId, SubstsRef<'tcx>),
+    pub(crate) impl_: (DefId, SubstsRef<'tcx>),
+    pub(crate) refn: Term<'tcx>,
+}
+
+#[allow(dead_code)]
+#[derive(Clone)]
+pub(crate) struct TraitImpl<'tcx> {
+    pub(crate) laws: Vec<DefId>,
+    pub(crate) refinements: Vec<Refinement<'tcx>>,
+}
 
 impl<'tcx> TranslationCtx<'tcx> {
     // Translate a trait declaration
@@ -37,18 +49,14 @@ impl<'tcx> TranslationCtx<'tcx> {
         laws
     }
 
-    pub(crate) fn translate_impl(&mut self, impl_id: DefId) -> TranslatedItem {
+    pub(crate) fn translate_impl(&mut self, impl_id: DefId) -> TraitImpl<'tcx> {
+        assert!(self.trait_id_of_impl(impl_id).is_some(), "{impl_id:?} is not a trait impl");
         let trait_ref = self.tcx.impl_trait_ref(impl_id).unwrap();
-        self.translate_trait(trait_ref.0.def_id);
 
-        // Impl Refinement module
-        let mut decls: Vec<_> = own_generic_decls_for(self.tcx, impl_id).collect();
-        let mut names = CloneMap::new(self.tcx, impl_id, CloneLevel::Body);
-
-        // names.param_env(param_env);
         let mut laws = Vec::new();
         let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
 
+        let mut refinements = Vec::new();
         for (&trait_item, &impl_item) in implementor_map {
             if is_law(self.tcx, trait_item) {
                 laws.push(impl_item);
@@ -64,14 +72,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 continue;
             }
 
-            self.translate(impl_item);
-
             let subst = InternalSubsts::identity_for_item(self.tcx, impl_item);
-
-            #[allow(deprecated)]
-            names.insert(impl_item, subst);
-
-            decls.extend(own_generic_decls_for(self.tcx, impl_item));
 
             let refn_subst = subst.rebase_onto(self.tcx, impl_id, trait_ref.0.substs);
 
@@ -96,28 +97,19 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.crash_and_error(rustc_span::DUMMY_SP, "error above");
             }
 
-            #[allow(deprecated)]
-            let refinement = names.insert(trait_item, refn_subst);
+            let contract = contract_of(self, trait_item);
 
-            refinement.add_dep(self.tcx, self.tcx.item_name(impl_item), (impl_item, subst));
-            refinement.opaque();
-
-            // Since we don't have contracts of logic functions in the interface and we can't substitute the definition in
-            // the implementation module, we must recreate the spec axiom by hand here.
-            if matches!(item_type(self.tcx, trait_item), ItemType::Logic | ItemType::Predicate) {
-                let contract = contract_of(self, trait_item);
-
-                if !contract.is_empty() {
-                    let axiom =
-                        logic_refinement(self, &mut names, impl_item, trait_item, refn_subst);
-                    decls.extend(names.to_clones(self));
-                    decls.push(Decl::Goal(axiom));
-                }
+            if !contract.is_empty() {
+                let axiom = logic_refinement_term(self, impl_item, trait_item, refn_subst);
+                refinements.push(Refinement {
+                    trait_: (trait_item, refn_subst),
+                    impl_: (impl_item, subst),
+                    refn: axiom,
+                });
             }
         }
 
-        decls.extend(names.to_clones(self));
-        TranslatedItem::Impl { modl: Module { name: module_name(self.tcx, impl_id), decls } }
+        TraitImpl { laws, refinements }
     }
 
     pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
@@ -149,27 +141,20 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 }
 
-fn logic_refinement<'tcx>(
+fn logic_refinement_term<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
     impl_item_id: DefId,
     trait_item_id: DefId,
     refn_subst: SubstsRef<'tcx>,
-) -> Goal {
+) -> Term<'tcx> {
     // Get the contract of the trait version
-    let trait_contract = names.with_public_clones(|names| {
-        let pre_contract = crate::specification::contract_of(ctx, trait_item_id);
+    let trait_contract = {
+        let pre_contract = contract_of(ctx, trait_item_id);
         let param_env = ctx.param_env(impl_item_id);
-        EarlyBinder(pre_contract)
-            .subst(ctx.tcx, refn_subst)
-            .normalize(ctx.tcx, param_env)
-            .to_exp(ctx, names)
-    });
+        EarlyBinder(pre_contract).subst(ctx.tcx, refn_subst).normalize(ctx.tcx, param_env)
+    };
 
-    let impl_contract = names.with_public_clones(|names| {
-        let pre_contract = crate::specification::contract_of(ctx, impl_item_id);
-        pre_contract.to_exp(ctx, names)
-    });
+    let impl_contract = contract_of(ctx, impl_item_id);
 
     let (trait_inps, _) = inputs_and_output(ctx.tcx, trait_item_id);
     let (impl_inps, output) = inputs_and_output(ctx.tcx, impl_item_id);
@@ -177,49 +162,57 @@ fn logic_refinement<'tcx>(
     let span = ctx.tcx.def_span(impl_item_id);
     let mut args = Vec::new();
     let mut subst = HashMap::new();
-    names.with_public_clones(|names| {
-        for (ix, ((id, _), (id2, ty))) in trait_inps.zip(impl_inps).enumerate() {
-            let ty = translate_ty(ctx, names, span, ty);
-            let id =
-                if id.name.is_empty() { format!("_{}'", ix + 1).into() } else { ident_of(id.name) };
-            let id2 = if id2.name.is_empty() {
-                format!("_{}'", ix + 1).into()
-            } else {
-                ident_of(id2.name)
-            };
-            args.push((id.clone(), ty));
-            subst.insert(id2, Exp::pure_var(id));
-        }
-    });
+    for (ix, ((id, _), (id2, ty))) in trait_inps.zip(impl_inps).enumerate() {
+        let id =
+            if id.name.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { id.name };
+        let id2 =
+            if id2.name.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { id2.name };
+        args.push((id.clone(), ty));
+        subst.insert(id2, Term { ty, kind: TermKind::Var(id), span });
+    }
 
-    let mut impl_precond = impl_contract.requires_conj();
+    let mut impl_precond = impl_contract.requires_conj(ctx.tcx);
     impl_precond.subst(&subst);
-    let trait_precond = trait_contract.requires_conj();
+    let trait_precond = trait_contract.requires_conj(ctx.tcx);
 
-    let mut impl_postcond = impl_contract.ensures_conj();
+    let mut impl_postcond = impl_contract.ensures_conj(ctx.tcx);
     impl_postcond.subst(&subst);
-    let trait_postcond = trait_contract.ensures_conj();
+    let trait_postcond = trait_contract.ensures_conj(ctx.tcx);
 
-    let retty = names.with_public_clones(|names| translate_ty(ctx, names, span, output));
-    let post_refn =
-        Exp::Forall(vec![("result".into(), retty)], box impl_postcond.implies(trait_postcond));
+    let retty = output;
+    let post_refn = Term {
+        kind: TermKind::Forall {
+            binder: (Symbol::intern("result"), retty),
+            body: box impl_postcond.implies(trait_postcond),
+        },
+        ty: ctx.tcx.types.bool,
+        span,
+    };
 
-    let mut refn = trait_precond.implies(impl_precond).log_and(post_refn);
-    refn = if args.is_empty() { refn } else { Exp::Forall(args, box refn) };
+    let mut refn = trait_precond.implies(impl_precond.conj(post_refn));
+    refn = if args.is_empty() {
+        refn
+    } else {
+        args.into_iter().rfold(refn, |acc, r| Term {
+            kind: TermKind::Forall { binder: r, body: box acc },
+            ty: ctx.tcx.types.bool,
+            span,
+        })
+    };
 
-    // Don't use `item_name` here
-    let name = item_name(ctx.tcx, impl_item_id, Namespace::ValueNS);
+    refn
+    // // Don't use `item_name` here
+    // let name = item_name(ctx.tcx, impl_item_id, Namespace::ValueNS);
 
-    Goal { name: format!("{}_spec", &*name).into(), goal: refn }
+    // Goal { name: format!("{}_spec", &*name).into(), goal: refn }
 }
-
 pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item = &AssocItem> {
     tcx.associated_items(def_id)
         .in_definition_order()
         .filter(move |item| !is_spec(tcx, item.def_id))
 }
 
-use crate::function::{all_generic_decls_for, own_generic_decls_for};
+use crate::function::all_generic_decls_for;
 use rustc_middle::ty::{subst::InternalSubsts, AssocItem, Binder};
 
 pub(crate) fn resolve_impl_source_opt<'tcx>(
@@ -293,7 +286,10 @@ pub(crate) fn resolve_trait_opt<'tcx>(
 
 use rustc_middle::ty::AssocItemContainer;
 
-use super::specification::contract_of;
+use super::{
+    pearlite::{Term, TermKind},
+    specification::contract_of,
+};
 
 pub(crate) fn resolve_assoc_item_opt<'tcx>(
     tcx: TyCtxt<'tcx>,

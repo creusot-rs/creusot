@@ -23,17 +23,13 @@ type CloneMetadata<'tcx> = HashMap<DefId, CloneSummary<'tcx>>;
 type ExternSpecs<'tcx> = HashMap<DefId, ExternSpec<'tcx>>;
 
 // TODO: this should lazily load the metadata.
+#[derive(Default)]
 pub struct Metadata<'tcx> {
-    tcx: TyCtxt<'tcx>,
     crates: HashMap<CrateNum, CrateMetadata<'tcx>>,
     extern_specs: ExternSpecs<'tcx>,
 }
 
 impl<'tcx> Metadata<'tcx> {
-    pub(crate) fn new(tcx: TyCtxt<'tcx>) -> Self {
-        Metadata { tcx, crates: Default::default(), extern_specs: Default::default() }
-    }
-
     pub(crate) fn get(&self, cnum: CrateNum) -> Option<&CrateMetadata<'tcx>> {
         self.crates.get(&cnum)
     }
@@ -67,10 +63,10 @@ impl<'tcx> Metadata<'tcx> {
         self.extern_specs.get(&id)
     }
 
-    pub(crate) fn load(&mut self, overrides: &HashMap<String, String>) {
-        let cstore = CStore::from_tcx(self.tcx);
-        for cnum in external_crates(self.tcx) {
-            let (cmeta, mut ext_specs) = CrateMetadata::load(self.tcx, cstore, overrides, cnum);
+    pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, String>) {
+        let cstore = CStore::from_tcx(tcx);
+        for cnum in external_crates(tcx) {
+            let (cmeta, mut ext_specs) = CrateMetadata::load(tcx, cstore, overrides, cnum);
             self.crates.insert(cnum, cmeta);
 
             for (id, spec) in ext_specs.drain() {
