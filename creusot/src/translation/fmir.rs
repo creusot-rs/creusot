@@ -3,11 +3,26 @@ use crate::{ctx::TranslationCtx, pearlite::Term};
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
-    mir::{BasicBlock, BinOp, Place, UnOp},
-    ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TypeVisitable},
+    mir::{tcx::PlaceTy, BasicBlock, BinOp, Local, PlaceElem, UnOp},
+    ty::{AdtDef, GenericArg, List, ParamEnv, SubstsRef, Ty, TyCtxt, TypeVisitable},
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
+
+#[derive(Clone, Copy, Debug)]
+pub struct Place<'tcx> {
+    pub local: Local,
+    pub ty: Ty<'tcx>,
+    pub projection: &'tcx List<PlaceElem<'tcx>>,
+}
+
+impl<'tcx> Place<'tcx> {
+    pub(crate) fn ty(self, tcx: TyCtxt<'tcx>) -> PlaceTy<'tcx> {
+        self.projection
+            .iter()
+            .fold(PlaceTy::from_ty(self.ty), |acc, elem| acc.projection_ty(tcx, elem))
+    }
+}
 
 #[derive(Clone)]
 pub enum Statement<'tcx> {
@@ -28,14 +43,14 @@ pub enum RValue<'tcx> {
     Expr(Expr<'tcx>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Expr<'tcx> {
     Place(Place<'tcx>),
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
     BinOp(BinOp, Ty<'tcx>, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
     UnaryOp(UnOp, Box<Expr<'tcx>>),
-    Constructor(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
+    Constructor(DefId, VariantIdx, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
     // Should this be a statement?
     Call(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
     Constant(Term<'tcx>),

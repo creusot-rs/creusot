@@ -5,7 +5,7 @@ use crate::{
     util,
 };
 use rustc_hir::{Unsafety, def_id::DefId};
-use rustc_middle::ty::{EarlyBinder, Ty, TyKind, SubstsRef};
+use rustc_middle::ty::{EarlyBinder, Ty, TyKind, SubstsRef, TyCtxt};
 use rustc_span::DUMMY_SP;
 use why3::{
     exp::{BinOp, Binder, Constant, Exp, Pattern as Pat, Purity},
@@ -210,15 +210,23 @@ impl<'tcx, C: Cloner<'tcx>> Lower<'_, 'tcx, C> {
             TermKind::Tuple { fields } => {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
             }
-            TermKind::Projection { box lhs, name, def: did, substs } => {
+            TermKind::Projection { box lhs, name } => {
+                let base_ty = lhs.ty;
                 let lhs = self.lower_term(lhs);
-                let accessor = match util::item_type(self.ctx.tcx, did) {
-                    ItemType::Closure => {
-                        let TyKind::Closure(did, subst) = self.ctx.type_of(did).kind() else { unreachable!() };
-                        self.names.accessor(*did, subst, 0, name.as_usize())
+
+                let accessor = match base_ty.kind() {
+                    TyKind::Closure(did, substs) => {
+                        self.names.accessor(*did, substs, 0, name.as_usize())
                     }
-                    _ => self.names.accessor(did, substs, 0, name.as_usize()),
+                    TyKind::Adt(def, substs) => {
+                        self.ctx.translate_accessor(
+                            def.variants()[0u32.into()].fields[name.as_usize()].did,
+                        );
+                        self.names.accessor(def.did(), substs, 0, name.as_usize())
+                    }
+                    k => unreachable!("Projection from {k:?}"),
                 };
+
                 Exp::Call(box Exp::pure_qvar(accessor), vec![lhs])
             }
             TermKind::Closure { args, body } => {

@@ -1,5 +1,7 @@
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::SubstsRef;
+use rustc_resolve::Namespace;
+use rustc_span::Symbol;
 use why3::{
     declaration::{self, Decl, Module, Signature},
     exp::Binder,
@@ -18,8 +20,8 @@ use self::{
     clone_map2::{CloneDepth, CloneVisibility, PriorClones},
     constant::translate_constant,
     logic::translate_logic_or_predicate,
-    program::{lower_closure, lower_function},
-    traits::{lower_impl, translate_assoc_ty},
+    program::{translate_closure, translate_function},
+    traits::translate_assoc_ty,
     ty::{lower_accessor, translate_tydecl},
 };
 
@@ -40,8 +42,8 @@ pub(crate) fn to_why3<'tcx>(
         ItemType::Logic | ItemType::Predicate => {
             translate_logic_or_predicate(ctx, priors.get(ctx.tcx, def_id), def_id)
         }
-        ItemType::Program => lower_function(ctx, priors.get(ctx.tcx, def_id), def_id),
-        ItemType::Closure => lower_closure(ctx, priors.get(ctx.tcx, def_id), def_id),
+        ItemType::Program => translate_function(ctx, priors.get(ctx.tcx, def_id), def_id),
+        ItemType::Closure => translate_closure(ctx, priors.get(ctx.tcx, def_id), def_id),
         ItemType::Trait => Vec::new(),
         ItemType::Impl => Vec::new(),
         // vec![lower_impl(ctx, priors.get(ctx.tcx, def_id), def_id)],

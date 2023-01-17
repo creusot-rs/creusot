@@ -5,7 +5,7 @@ use crate::{
     pearlite::super_visit_term,
     rustc_middle::ty::TypeVisitable,
     translation::{
-        fmir::{Block, Body, Branches, Expr, RValue, Statement, Terminator},
+        fmir::{Block, Body, Place, Branches, Expr, RValue, Statement, Terminator},
         function::closure_contract,
         pearlite::{Term, TermKind, TermVisitor},
         traits::{resolve_opt, TraitImpl},
@@ -14,6 +14,7 @@ use crate::{
         self, get_builtin, item_name, item_qname, item_type, module_name, pre_sig_of, PreSignature,
     },
 };
+use rustc_hir::Mutability;
 use heck::ToUpperCamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{
@@ -371,13 +372,14 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TermVisitor<'tcx> for TermDep<'tcx, F> {
                     unreachable!()
                 }
             }
-            TermKind::Projection { name, def, substs, .. } => {
-                if self.tcx.is_closure(*def) {
-                    (self.f)(Dependency::Item(*def, substs))
-                } else {
-                    let adt = self.tcx.adt_def(def);
-                    let field = &adt.variants()[0u32.into()].fields[name.as_usize()];
+            TermKind::Projection { name, .. } => {
+                match term.ty.kind() {
+                    TyKind::Closure(def, substs) => {  (self.f)(Dependency::Item(*def, substs))},
+                    TyKind::Adt(def, substs) => {
+                    let field = &def.variants()[0u32.into()].fields[name.as_usize()];
                     (self.f)(Dependency::Item(field.did, substs))
+                    }
+                    _ => unreachable!(),
                 }
             }
             TermKind::Lit(_) => {
@@ -399,7 +401,7 @@ impl<'tcx, F: FnMut(Dependency<'tcx>)> TypeVisitor<'tcx> for TermDep<'tcx, F> {
             TyKind::Closure(def, sub) => {
                 (self.f)(Dependency::Item(*def, sub));
             }
-            TyKind::Projection(pty) => (self.f)(Dependency::Item(pty.item_def_id, pty.substs)),
+            TyKind::Alias(_, pty) => (self.f)(Dependency::Item(pty.def_id, pty.substs)),
             TyKind::Int(_) | TyKind::Uint(_) => (self.f)(Dependency::BaseTy(t)),
             TyKind::Ref(_, _, Mutability::Mut) => (self.f)(Dependency::BaseTy(t)),
             TyKind::RawPtr(_) => (self.f)(Dependency::BaseTy(t)),
@@ -443,7 +445,7 @@ fn program_dependencies<'tcx>(
     });
 
     if util::item_type(ctx.tcx, def_id) == ItemType::Closure {
-        closure_contract(ctx, def_id).iter().for_each(|(_, s, t)| {
+        closure_contract(ctx, def_id).iter().for_each(|(s, t)| {
             s.deps(ctx.tcx, &mut |dep| {
                 deps.insert((DepLevel::Signature, dep));
             });
@@ -550,14 +552,13 @@ impl<'tcx> MonoGraph<'tcx> {
                 let tgt = if let Some(tgt) = is_closure_hack(ctx.tcx, id, subst) {
                     Some(Dependency::Item(tgt.0, tgt.1))
                 } else if util::item_type(ctx.tcx, id) == ItemType::AssocTy {
-                    let proj_ty = ProjectionTy { item_def_id: id, substs: subst };
-                    let ty = ctx.mk_ty(TyKind::Projection(proj_ty));
+                    let ty = ctx.mk_projection(id, subst);
 
                     let normed = ctx.try_normalize_erasing_regions(param_env, ty);
                     trace!("normed {ty:?} into {normed:?}");
                     if let Ok(normed) = normed && ty != normed {
                         match normed.kind() {
-                            TyKind::Projection(pty) => Some(Dependency::Item(pty.item_def_id, pty.substs)),
+                            TyKind::Alias(_, pty) => Some(Dependency::Item(pty.def_id, pty.substs)),
                             _ => Dependency::from_ty(normed),
                         }
                     } else {
@@ -1019,7 +1020,7 @@ pub fn make_clones<'tcx, 'a>(
         if matches!(item_type(ctx.tcx, id), ItemType::Type) {
             let name = item_qname(ctx, id, Namespace::TypeNS).module_qname();
             let as_name = names.value(id, subst).module_ident().unwrap().clone();
-            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(as_name), export: false }));
+            uses.push(Decl::UseDecl(Use { name: name.clone(), as_: Some(as_name.into()), export: false }));
 
             continue;
         };

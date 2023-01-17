@@ -762,7 +762,7 @@ fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel) ->
                 name: format!("{}_Stub", &*module_name(ctx.tcx, def_id)).into(),
             },
             // Why do we do this? Why not use the stub here as well?
-            CloneLevel::Interface => interface::interface_name(ctx, def_id).into(),
+            CloneLevel::Interface => "".into(),
             CloneLevel::Body => module_name(ctx.tcx, def_id).into(),
         },
         Constant => match interface {
@@ -774,10 +774,10 @@ fn cloneable_name(ctx: &TranslationCtx, def_id: DefId, interface: CloneLevel) ->
         },
 
         Program | Closure => {
-            QName { module: Vec::new(), name: interface::interface_name(ctx, def_id) }
+            QName { module: Vec::new(), name: "".into() }
         }
         Trait | Type | AssocTy => module_name(ctx.tcx, def_id).into(),
-        Unsupported(_) => unreachable!(),
+        Field | Unsupported(_) => unreachable!(),
     }
 }
 

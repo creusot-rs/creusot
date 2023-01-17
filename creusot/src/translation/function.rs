@@ -3,7 +3,7 @@ use super::{
     pearlite::{normalize, Term},
 };
 use crate::{
-    backend::term::lower_pure,
+    backend::{clone_map2::Namer, sig_to_why3, term::lower_pure},
     ctx::*,
     fmir::{self, Expr},
     gather_spec_closures::corrected_invariant_names_and_locations,
@@ -13,7 +13,7 @@ use crate::{
         pearlite::{self, TermKind, TermVisitorMut},
         specification::{contract_of, PreContract},
     },
-    util::{self, ident_of, sig_to_why3, PreSignature},
+    util::{self, ident_of, PreSignature},
 };
 use indexmap::IndexMap;
 use rustc_borrowck::borrow_set::BorrowSet;
@@ -22,8 +22,8 @@ use rustc_index::bit_set::BitSet;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::{
     mir::{
-        traversal::reverse_postorder, BasicBlock, Body, Local, Location, MirPass, Operand, Place,
-        VarDebugInfo,
+        self, traversal::reverse_postorder, BasicBlock, Body, Local, Location, MirPass, Operand,
+        Place, VarDebugInfo,
     },
     ty::{
         subst::{GenericArg, SubstsRef},
@@ -207,7 +207,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             // self.emit_statement(fmir::Statement::Assume(
             //     Term { kind: TermKind::Call { id: id, subst: subst, fun: (), args: () }}
             // ));
-            self.emit_statement(fmir::Statement::Resolve(id, subst, pl));
+            self.emit_statement(fmir::Statement::Resolve(id, subst, self.translate_place(pl)));
         }
     }
 
@@ -218,7 +218,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_borrow(&mut self, lhs: &Place<'tcx>, rhs: &Place<'tcx>) {
-        self.emit_assignment(lhs, fmir::RValue::Borrow(*rhs));
+        self.emit_assignment(lhs, fmir::RValue::Borrow(self.translate_place(*rhs)));
     }
 
     fn emit_ghost_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>) {
@@ -226,7 +226,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>) {
-        self.emit_statement(fmir::Statement::Assignment(*lhs, rhs));
+        self.emit_statement(fmir::Statement::Assignment(self.translate_place(*lhs), rhs));
     }
 
     // Inserts drop statements for variables which died over the course of a goto or switch
@@ -301,15 +301,23 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     // Useful helper to translate an operand
     pub(crate) fn translate_operand(&mut self, operand: &Operand<'tcx>) -> Expr<'tcx> {
         match operand {
-            Operand::Copy(pl) | Operand::Move(pl) => Expr::Place(*pl),
+            Operand::Copy(pl) | Operand::Move(pl) => Expr::Place(self.translate_place(*pl)),
             Operand::Constant(c) => {
                 crate::constant::from_mir_constant(self.param_env(), self.ctx, c)
             }
         }
     }
 
+    pub(crate) fn translate_place(&self, place: mir::Place<'tcx>) -> fmir::Place<'tcx> {
+        fmir::Place {
+            local: place.local,
+            ty: self.body.local_decls[place.local].ty,
+            projection: place.projection,
+        }
+    }
+
     fn translate_local(&self, loc: Local) -> LocalIdent {
-        place::translate_local(&self.body, loc)
+        place::translate_local(self.body, loc)
     }
 }
 
@@ -688,11 +696,19 @@ fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
     })
 }
 impl<'tcx> ClosureContract<'tcx> {
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &(PreSignature<'tcx>, Term<'tcx>)> {
+        std::iter::once(&self.precond)
+            .chain(std::iter::once(&self.resolve))
+            .chain(self.postcond_once.iter())
+            .chain(self.postcond.iter())
+            .chain(self.postcond_mut.iter())
+    }
+
     pub(crate) fn to_why(
         self,
         ctx: &mut TranslationCtx<'tcx>,
         def_id: DefId,
-        names: &mut CloneMap<'tcx>,
+        names: &mut Namer<'_, 'tcx>,
     ) -> impl Iterator<Item = Decl> {
         std::iter::once({
             let mut sig = sig_to_why3(ctx, names, self.resolve.0, def_id);

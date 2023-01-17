@@ -1,21 +1,16 @@
-use super::LocalIdent;
+use super::{fmir, LocalIdent};
 use crate::{
-    backend::program::uint_to_int,
-    ctx::{CloneMap, TranslationCtx},
+    backend::{program::uint_to_int, Cloner},
+    ctx::TranslationCtx,
 };
-use rustc_middle::{
-    mir::{Body, Local, Place},
-    ty::{TyKind, UintTy},
-};
+use rustc_middle::{mir::{Body, Place}, ty::TyKind};
+use rustc_type_ir::UintTy;
 use why3::{
     exp::{
         Exp::{self, *},
         Pattern::*,
     },
-    mlcfg::{
-        Statement::*,
-        {self},
-    },
+    mlcfg::{self, Statement::*},
     QName,
 };
 
@@ -30,11 +25,11 @@ use why3::{
 
 /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
-pub(crate) fn create_assign_inner<'tcx>(
+pub(crate) fn create_assign_inner<'tcx, C: Cloner<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut C,
     body: &Body<'tcx>,
-    lhs: &Place<'tcx>,
+    lhs: &fmir::Place<'tcx>,
     rhs: Exp,
 ) -> mlcfg::Statement {
     // Translation happens inside to outside, which means we scan projection elements in reverse
@@ -48,8 +43,8 @@ pub(crate) fn create_assign_inner<'tcx>(
     let mut stump: &[_] = lhs.projection;
 
     use rustc_middle::mir::ProjectionElem::*;
-
-    for (proj, elem) in lhs.iter_projections().rev() {
+    let temp = Place { local: lhs.local, projection: lhs.projection };
+    for (proj, elem) in temp.iter_projections().rev() {
         // twisted stuff
         stump = &stump[0..stump.len() - 1];
         let place_ty = proj.ty(body, ctx.tcx);
@@ -82,11 +77,13 @@ pub(crate) fn create_assign_inner<'tcx>(
 
                     varexps[ix.as_usize()] = inner;
 
-                    let ctor = names.constructor(variant.def_id, subst);
+                    let tyname = names.constructor(def.did(), subst, variant_id.as_usize());
+
+                    // names.insert(def.did(), subst);
                     inner = Let {
-                        pattern: ConsP(ctor.clone(), field_pats),
+                        pattern: ConsP(tyname.clone(), field_pats),
                         arg: box translate_rplace_inner(ctx, names, body, lhs.local, stump),
-                        body: box Constructor { ctor, args: varexps },
+                        body: box Constructor { ctor: tyname, args: varexps },
                     }
                 }
                 TyKind::Tuple(fields) => {
@@ -118,7 +115,8 @@ pub(crate) fn create_assign_inner<'tcx>(
                         .collect();
 
                     varexps[ix.as_usize()] = inner;
-                    let cons = names.constructor(*id, subst);
+
+                    let cons = names.constructor(*id, subst, 0);
 
                     inner = Let {
                         pattern: ConsP(cons.clone(), field_pats),
@@ -156,9 +154,9 @@ pub(crate) fn create_assign_inner<'tcx>(
 // [(P as Some)]   ---> [_1]
 // [(P as Some).0] ---> let Some(a) = [_1] in a
 // [(* P)] ---> * [P]
-pub(crate) fn translate_rplace_inner<'tcx>(
+pub(crate) fn translate_rplace_inner<'tcx, C: Cloner<'tcx>>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
+    names: &mut C,
     body: &Body<'tcx>,
     loc: Local,
     proj: &[rustc_middle::mir::PlaceElem<'tcx>],
@@ -179,9 +177,6 @@ pub(crate) fn translate_rplace_inner<'tcx>(
             Field(ix, _) => match place_ty.ty.kind() {
                 TyKind::Adt(def, subst) => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
-                    let _variant = &def.variants()[variant_id];
-
-                    ctx.translate_accessor(def.variants()[variant_id].fields[ix.as_usize()].did);
 
                     let acc =
                         names.accessor(def.did(), subst, variant_id.as_usize(), ix.as_usize());
@@ -224,7 +219,7 @@ pub(crate) fn translate_rplace_inner<'tcx>(
 
     inner
 }
-
+use rustc_middle::mir::Local;
 pub(super) fn translate_local(body: &Body, loc: Local) -> LocalIdent {
     use rustc_middle::mir::VarDebugInfoContents::Place;
     let debug_info: Vec<_> = body
