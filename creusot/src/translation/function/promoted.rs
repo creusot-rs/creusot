@@ -3,8 +3,10 @@ use crate::{
     translation::{fmir, function::LocalIdent, ty::translate_ty},
 };
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::ParamEnv;
-use rustc_smir::mir::{Body, Promoted};
+use rustc_middle::{
+    mir::{Body, Promoted},
+    ty::ParamEnv,
+};
 use why3::{
     declaration::{Contract, Decl, LetDecl, LetKind, Signature},
     exp::{Binder, Exp, Pattern},

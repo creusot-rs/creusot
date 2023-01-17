@@ -4,11 +4,11 @@
 //
 use rustc_index::bit_set::ChunkedBitSet;
 use rustc_middle::mir::{
+    self,
     visit::{PlaceContext, Visitor},
-    Terminator,
+    BasicBlock, Local, Location, Terminator,
 };
 use rustc_mir_dataflow::{self as dataflow, AnalysisDomain, GenKill, GenKillAnalysis};
-use rustc_smir::mir::{self, BasicBlock, Local, Location};
 
 pub struct MaybeUninitializedLocals;
 

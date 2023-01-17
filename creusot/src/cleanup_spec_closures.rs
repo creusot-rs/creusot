@@ -2,12 +2,11 @@ use indexmap::IndexSet;
 use rustc_hir::def_id::DefId;
 use rustc_index::vec::IndexVec;
 use rustc_middle::{
-    mir::{Terminator, TerminatorKind},
+    mir::{
+        visit::MutVisitor, AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location,
+        Rvalue, SourceInfo, Terminator, TerminatorKind,
+    },
     ty::TyCtxt,
-};
-use rustc_smir::mir::{
-    AggregateKind, BasicBlock, BasicBlockData, Body, Local, Location, MutVisitor, Rvalue,
-    SourceInfo,
 };
 
 use crate::util;
@@ -37,7 +36,7 @@ pub(crate) fn cleanup_spec_closures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, body
 }
 
 fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) {
-    use rustc_smir::mir::StatementKind;
+    use rustc_middle::mir::StatementKind;
 
     for data in body.basic_blocks_mut() {
         data.statements.retain(|statement| match &statement.kind {

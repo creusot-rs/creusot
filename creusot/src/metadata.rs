@@ -9,8 +9,8 @@ use indexmap::IndexMap;
 use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_metadata::creader::CStore;
+use rustc_middle::ty::{subst::SubstsRef, TyCtxt, Visibility};
 use rustc_session::cstore::CrateStore;
-use rustc_smir::very_unstable::middle::ty::{subst::SubstsRef, TyCtxt, Visibility};
 use rustc_span::Symbol;
 use std::{
     collections::HashMap,

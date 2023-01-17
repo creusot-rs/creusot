@@ -22,7 +22,6 @@ extern crate rustc_mir_transform;
 extern crate rustc_resolve;
 extern crate rustc_serialize;
 extern crate rustc_session;
-extern crate rustc_smir;
 extern crate rustc_span;
 extern crate rustc_target;
 extern crate rustc_trait_selection;

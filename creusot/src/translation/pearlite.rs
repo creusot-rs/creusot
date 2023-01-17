@@ -21,9 +21,9 @@ use rustc_hir::{
     HirId, OwnerId,
 };
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
-pub(crate) use rustc_middle::thir;
+pub(crate) use rustc_middle::{mir::Field, thir};
 use rustc_middle::{
-    mir::Mutability::*,
+    mir::{BorrowKind, Mutability::*},
     thir::{
         visit, AdtExpr, ArmId, Block, ClosureExpr, ExprId, ExprKind, Pat, PatKind, StmtId,
         StmtKind, Thir,
@@ -33,8 +33,6 @@ use rustc_middle::{
         TypeVisitable, UpvarSubsts, WithOptConstParam,
     },
 };
-use rustc_smir::mir::BorrowKind;
-pub(crate) use rustc_smir::mir::Field;
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
 use rustc_type_ir::{IntTy, UintTy};

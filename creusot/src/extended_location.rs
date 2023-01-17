@@ -1,5 +1,5 @@
+use rustc_middle::mir::Location;
 use rustc_mir_dataflow::{self as dataflow, Analysis, Results, ResultsCursor};
-use rustc_smir::mir::Location;
 use std::borrow::Borrow;
 
 // Dataflow locations

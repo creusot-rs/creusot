@@ -1,10 +1,12 @@
 use rustc_index::vec::IndexVec;
 use rustc_infer::infer::{InferCtxt, NllRegionVariableOrigin};
 use rustc_middle::{
-    mir::visit::TyContext,
+    mir::{
+        visit::{MutVisitor, TyContext},
+        Body, Location, Promoted,
+    },
     ty::{self, subst::SubstsRef, Ty, TyCtxt, TypeFoldable},
 };
-use rustc_smir::mir::{Body, Location, MutVisitor, Promoted};
 
 /// Replaces all free regions appearing in the MIR with fresh
 /// inference variables, returning the number of variables created.

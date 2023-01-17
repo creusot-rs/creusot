@@ -7,7 +7,7 @@ use rustc_ast::ast::{AttrArgs, AttrArgsEq};
 use rustc_hir::def_id::DefId;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::OUTERMOST_SOURCE_SCOPE,
+    mir::{Body, Local, Location, SourceScope, OUTERMOST_SOURCE_SCOPE},
     thir::{self, ExprKind, Thir},
     ty::{
         self,
@@ -15,7 +15,6 @@ use rustc_middle::{
         EarlyBinder, ParamEnv, TyCtxt,
     },
 };
-use rustc_smir::mir::{Body, Local, Location, SourceScope};
 use rustc_span::Symbol;
 use std::collections::{HashMap, HashSet};
 use why3::declaration::Contract;
@@ -137,7 +136,7 @@ struct ScopeTree(HashMap<SourceScope, (HashSet<(Symbol, Local)>, Option<SourceSc
 
 impl ScopeTree {
     fn build<'tcx>(body: &Body<'tcx>) -> Self {
-        use rustc_smir::mir::VarDebugInfoContents::Place;
+        use rustc_middle::mir::VarDebugInfoContents::Place;
         let mut scope_tree: HashMap<SourceScope, (HashSet<_>, Option<_>)> = Default::default();
 
         for var_info in &body.var_debug_info {
