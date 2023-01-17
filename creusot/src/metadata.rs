@@ -40,11 +40,6 @@ impl<'tcx> Metadata<'tcx> {
         self.crates.get(&def_id.krate).map_or(false, |meta| meta.dependencies.contains_key(&def_id))
     }
 
-    pub(crate) fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
-        assert!(!def_id.is_local());
-        self.get(def_id.krate)?.dependencies(def_id)
-    }
-
     pub(crate) fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
         assert!(!def_id.is_local());
         self.get(def_id.krate)?.term(def_id)
@@ -93,11 +88,6 @@ impl<'tcx> CrateMetadata<'tcx> {
             creusot_items: Default::default(),
             // extern_specs: Default::default(),
         }
-    }
-
-    pub(crate) fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
-        assert!(!def_id.is_local());
-        self.dependencies.get(&def_id)
     }
 
     pub(crate) fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {

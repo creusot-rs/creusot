@@ -1,5 +1,3 @@
-pub(crate) use crate::clone_map::*;
-use crate::metadata::Metadata;
 use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 
@@ -17,10 +15,13 @@ pub enum TranslatedItem {
         proof_modl: Option<Module>,
         has_axioms: bool,
     },
+    Closure {
+        interface: Vec<Module>,
+        modl: Option<Module>,
+    },
     Program {
         interface: Module,
-        modl: Module,
-        has_axioms: bool,
+        modl: Option<Module>,
     },
     Trait {},
     Impl {
@@ -28,10 +29,6 @@ pub enum TranslatedItem {
     },
     AssocTy {
         modl: Module,
-    },
-    Extern {
-        interface: Module,
-        body: Module,
     },
     Constant {
         stub: Module,
@@ -45,21 +42,10 @@ pub enum TranslatedItem {
 }
 
 impl<'a> TranslatedItem {
-    pub(crate) fn external_dependencies<'tcx>(
-        &'a self,
-        metadata: &'a Metadata<'tcx>,
-        id: DefId,
-    ) -> Option<&'a CloneSummary<'tcx>> {
-        match self {
-            TranslatedItem::Extern { .. } => Some(metadata.dependencies(id).unwrap()),
-            _ => None,
-        }
-    }
-
     pub(crate) fn has_axioms(&self) -> bool {
         match self {
             TranslatedItem::Logic { has_axioms, .. } => *has_axioms,
-            TranslatedItem::Program { has_axioms, .. } => *has_axioms,
+            TranslatedItem::Program { .. } => false,
             _ => false,
         }
     }
@@ -72,19 +58,19 @@ impl<'a> TranslatedItem {
                 .chain(iter::once(interface))
                 .chain(iter::once(modl))
                 .chain(proof_modl.into_iter()),
-            Program { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
+            Program { interface, modl, .. } => box iter::once(interface).chain(modl.into_iter()),
             Trait { .. } => box iter::empty(),
             Impl { modl, .. } => box iter::once(modl),
             AssocTy { modl, .. } => box iter::once(modl),
             Constant { stub, modl, .. } => {
                 box std::iter::once(stub).chain(box std::iter::once(modl))
             }
-            Extern { interface, body, .. } => box iter::once(interface).chain(iter::once(body)),
             Type { mut modl, accessors, .. } => {
                 modl[0].decls.extend(accessors.values().flat_map(|v| v.values()).cloned());
 
                 box modl.into_iter()
             }
+            Closure { interface, modl } => box interface.into_iter().chain(modl.into_iter()),
         }
     }
 
@@ -97,11 +83,11 @@ impl<'a> TranslatedItem {
             TranslatedItem::Trait { .. } => box std::iter::empty(),
             TranslatedItem::Impl { modl, .. } => box std::iter::once(modl),
             TranslatedItem::AssocTy { modl, .. } => box std::iter::once(modl),
-            TranslatedItem::Extern { interface, .. } => box std::iter::once(interface),
             TranslatedItem::Constant { stub, modl, .. } => {
                 box std::iter::once(stub).chain(box std::iter::once(modl))
             }
             TranslatedItem::Type { .. } => self.modules(),
+            TranslatedItem::Closure { interface, modl: _ } => box interface.into_iter(),
         }
     }
 }

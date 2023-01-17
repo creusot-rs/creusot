@@ -2,13 +2,16 @@ use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::clone_map::*;
 use crate::{
-    backend,
+    backend::{
+        self,
+        program::{translate_closure, translate_function},
+    },
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
     options::{Options, SpanMode},
     translation::{
-        self, external,
+        self,
         external::{extract_extern_specs_from_item, ExternSpec},
         fmir,
         interface::interface_for,
@@ -119,7 +122,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                     self.finish(def_id);
                 }
             }
-
             ItemType::Logic | ItemType::Predicate | ItemType::Program | ItemType::Closure => {
                 self.start(def_id);
                 self.translate_function(def_id);
@@ -213,28 +215,28 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
         let (interface, deps) = interface_for(self, def_id);
 
-        let translated = if util::is_logic(self.tcx, def_id) || util::is_predicate(self.tcx, def_id)
-        {
-            debug!("translating {:?} as logical", def_id);
-            let (stub, modl, proof_modl, has_axioms, deps) =
-                crate::backend::logic::translate_logic_or_predicate(self, def_id);
-            self.dependencies.insert(def_id, deps);
-            TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
-        } else if !def_id.is_local() {
-            debug!("translating {:?} as extern", def_id);
-
-            let (body, extern_deps) = external::extern_module(self, def_id);
-
-            if let Some(deps) = extern_deps {
+        let translated = match util::item_type(self.tcx, def_id) {
+            ItemType::Logic | ItemType::Predicate => {
+                debug!("translating {:?} as logical", def_id);
+                let (stub, modl, proof_modl, has_axioms, deps) =
+                    crate::backend::logic::translate_logic_or_predicate(self, def_id);
                 self.dependencies.insert(def_id, deps);
+                TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
             }
-            TranslatedItem::Extern { interface, body }
-        } else {
-            debug!("translating {def_id:?} as program");
+            ItemType::Closure => {
+                let (ty_modl, modl) = translate_closure(self, def_id);
+                self.dependencies.insert(def_id, deps.summary());
 
-            self.dependencies.insert(def_id, deps.summary());
-            let modl = crate::translation::translate_function(self, def_id);
-            TranslatedItem::Program { interface, modl, has_axioms: self.tcx.is_closure(def_id) }
+                TranslatedItem::Closure { interface: vec![ty_modl, interface], modl }
+            }
+            ItemType::Program => {
+                debug!("translating {def_id:?} as program");
+
+                self.dependencies.insert(def_id, deps.summary());
+                let modl = translate_function(self, def_id);
+                TranslatedItem::Program { interface, modl }
+            }
+            _ => unreachable!(),
         };
 
         self.functions.insert(def_id, translated);
@@ -357,9 +359,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
-        self.dependencies.get(&def_id).or_else(|| {
-            self.item(def_id).and_then(|f| f.external_dependencies(&self.externs, def_id))
-        })
+        self.dependencies.get(&def_id)
     }
 
     pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {

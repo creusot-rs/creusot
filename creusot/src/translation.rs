@@ -18,7 +18,7 @@ use crate::{
     validate::{validate_impls, validate_traits},
 };
 use ctx::TranslationCtx;
-pub(crate) use function::{translate_function, LocalIdent};
+pub(crate) use function::LocalIdent;
 use heck::ToUpperCamelCase;
 use rustc_hir::{def::DefKind, def_id::LOCAL_CRATE};
 use rustc_middle::ty::Ty;

@@ -456,7 +456,7 @@ pub(crate) fn signature_of<'tcx>(
     def_id: DefId,
 ) -> Signature {
     debug!("signature_of {def_id:?}");
-    let pre_sig = pre_sig_of(ctx, def_id);
+    let pre_sig = ctx.sig(def_id).clone();
     sig_to_why3(ctx, names, pre_sig, def_id)
 }
 

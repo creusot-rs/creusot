@@ -14,25 +14,7 @@ module Core_Result_Impl0_IsOk_Interface
     ensures { result = (exists t : t . self = Core_Result_Result_Type.C_Ok t) }
     
 end
-module Core_Result_Impl0_IsOk
-  type t
-  type e
-  use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val is_ok [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) : bool
-    ensures { result = (exists t : t . self = Core_Result_Result_Type.C_Ok t) }
-    
-end
 module Core_Result_Impl0_IsErr_Interface
-  type t
-  type e
-  use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val is_err [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) : bool
-    ensures { result = (exists e : e . self = Core_Result_Result_Type.C_Err e) }
-    
-end
-module Core_Result_Impl0_IsErr
   type t
   type e
   use prelude.Borrow
@@ -57,25 +39,7 @@ module Core_Result_Impl0_Ok_Interface
     ensures { (exists e : e . self = Core_Result_Result_Type.C_Err e) -> result = Core_Option_Option_Type.C_None }
     
 end
-module Core_Result_Impl0_Ok
-  type t
-  type e
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val ok [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) : Core_Option_Option_Type.t_option t
-    ensures { forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Option_Option_Type.C_Some t }
-    ensures { (exists e : e . self = Core_Result_Result_Type.C_Err e) -> result = Core_Option_Option_Type.C_None }
-    
-end
 module Core_Option_Impl0_Unwrap_Interface
-  type t
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val unwrap [@cfg:stackify] (self : Core_Option_Option_Type.t_option t) : t
-    requires {self <> Core_Option_Option_Type.C_None}
-    ensures { Core_Option_Option_Type.C_Some result = self }
-    
-end
-module Core_Option_Impl0_Unwrap
   type t
   use Core_Option_Option_Type as Core_Option_Option_Type
   val unwrap [@cfg:stackify] (self : Core_Option_Option_Type.t_option t) : t
@@ -91,25 +55,7 @@ module Core_Option_Impl0_IsNone_Interface
     ensures { result = (self = Core_Option_Option_Type.C_None) }
     
 end
-module Core_Option_Impl0_IsNone
-  type t
-  use prelude.Borrow
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val is_none [@cfg:stackify] (self : Core_Option_Option_Type.t_option t) : bool
-    ensures { result = (self = Core_Option_Option_Type.C_None) }
-    
-end
 module Core_Result_Impl0_Err_Interface
-  type t
-  type e
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val err [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) : Core_Option_Option_Type.t_option e
-    ensures { (exists t : t . self = Core_Result_Result_Type.C_Ok t) -> result = Core_Option_Option_Type.C_None }
-    ensures { forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Option_Option_Type.C_Some e }
-    
-end
-module Core_Result_Impl0_Err
   type t
   type e
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -129,26 +75,7 @@ module Core_Result_Impl0_AsRef_Interface
     ensures { forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
     
 end
-module Core_Result_Impl0_AsRef
-  type t
-  type e
-  use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val as_ref [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) : Core_Result_Result_Type.t_result t e
-    ensures { forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok t }
-    ensures { forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
-    
-end
 module Core_Result_Impl0_Unwrap_Interface
-  type t
-  type e
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val unwrap [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) : t
-    requires {exists t : t . self = Core_Result_Result_Type.C_Ok t}
-    ensures { Core_Result_Result_Type.C_Ok result = self }
-    
-end
-module Core_Result_Impl0_Unwrap
   type t
   type e
   use Core_Result_Result_Type as Core_Result_Result_Type
@@ -166,15 +93,6 @@ module Core_Result_Impl0_UnwrapErr_Interface
     ensures { Core_Result_Result_Type.C_Err result = self }
     
 end
-module Core_Result_Impl0_UnwrapErr
-  type t
-  type e
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val unwrap_err [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) : e
-    requires {exists e : e . self = Core_Result_Result_Type.C_Err e}
-    ensures { Core_Result_Result_Type.C_Err result = self }
-    
-end
 module Core_Result_Impl0_AsMut_Interface
   type t
   type e
@@ -184,25 +102,7 @@ module Core_Result_Impl0_AsMut_Interface
     ensures { exists t : borrowed t .  * self = Core_Result_Result_Type.C_Ok ( * t) /\  ^ self = Core_Result_Result_Type.C_Ok ( ^ t) /\ result = Core_Result_Result_Type.C_Ok t \/ (exists e : borrowed e .  * self = Core_Result_Result_Type.C_Err ( * e) /\  ^ self = Core_Result_Result_Type.C_Err ( ^ e) /\ result = Core_Result_Result_Type.C_Err e) }
     
 end
-module Core_Result_Impl0_AsMut
-  type t
-  type e
-  use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val as_mut [@cfg:stackify] (self : borrowed (Core_Result_Result_Type.t_result t e)) : Core_Result_Result_Type.t_result (borrowed t) (borrowed e)
-    ensures { exists t : borrowed t .  * self = Core_Result_Result_Type.C_Ok ( * t) /\  ^ self = Core_Result_Result_Type.C_Ok ( ^ t) /\ result = Core_Result_Result_Type.C_Ok t \/ (exists e : borrowed e .  * self = Core_Result_Result_Type.C_Err ( * e) /\  ^ self = Core_Result_Result_Type.C_Err ( ^ e) /\ result = Core_Result_Result_Type.C_Err e) }
-    
-end
 module Core_Result_Impl0_UnwrapOr_Interface
-  type t
-  type e
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val unwrap_or [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) (default : t) : t
-    ensures { forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = t }
-    ensures { (exists e : e . self = Core_Result_Result_Type.C_Err e) -> result = default }
-    
-end
-module Core_Result_Impl0_UnwrapOr
   type t
   type e
   use Core_Result_Result_Type as Core_Result_Result_Type
@@ -237,28 +137,7 @@ module Core_Result_Impl0_UnwrapOrDefault_Interface
     ensures { (exists e : e . self = Core_Result_Result_Type.C_Err e) -> IsDefault0.is_default result }
     
 end
-module Core_Result_Impl0_UnwrapOrDefault
-  type t
-  type e
-  clone CreusotContracts_Std1_Default_Default_IsDefault_Interface as IsDefault0 with
-    type self = t
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val unwrap_or_default [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) : t
-    ensures { forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = t }
-    ensures { (exists e : e . self = Core_Result_Result_Type.C_Err e) -> IsDefault0.is_default result }
-    
-end
 module Core_Result_Impl0_And_Interface
-  type t
-  type e
-  type u
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val and [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) (res : Core_Result_Result_Type.t_result u e) : Core_Result_Result_Type.t_result u e
-    ensures { (exists t : t . self = Core_Result_Result_Type.C_Ok t) -> result = res }
-    ensures { forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
-    
-end
-module Core_Result_Impl0_And
   type t
   type e
   type u
@@ -278,27 +157,7 @@ module Core_Result_Impl0_Or_Interface
     ensures { (exists e : e . self = Core_Result_Result_Type.C_Err e) -> result = res }
     
 end
-module Core_Result_Impl0_Or
-  type t
-  type e
-  type f
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val or [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) (res : Core_Result_Result_Type.t_result t f) : Core_Result_Result_Type.t_result t f
-    ensures { forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok t }
-    ensures { (exists e : e . self = Core_Result_Result_Type.C_Err e) -> result = res }
-    
-end
 module Core_Result_Impl1_Copied_Interface
-  type t
-  type e
-  use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val copied [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) : Core_Result_Result_Type.t_result t e
-    ensures { forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok t }
-    ensures { forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
-    
-end
-module Core_Result_Impl1_Copied
   type t
   type e
   use prelude.Borrow
@@ -339,29 +198,7 @@ module Core_Result_Impl2_Copied_Interface
     ensures { forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
     
 end
-module Core_Result_Impl2_Copied
-  type t
-  type e
-  use prelude.Borrow
-  clone CreusotContracts_Resolve_Impl1_Resolve_Interface as Resolve0 with
-    type t = t
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val copied [@cfg:stackify] (self : Core_Result_Result_Type.t_result (borrowed t) e) : Core_Result_Result_Type.t_result t e
-    ensures { forall t : borrowed t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok ( * t) /\ Resolve0.resolve t }
-    ensures { forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
-    
-end
 module Core_Result_Impl1_Cloned_Interface
-  type t
-  type e
-  use prelude.Borrow
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val cloned [@cfg:stackify] (self : Core_Result_Result_Type.t_result t e) : Core_Result_Result_Type.t_result t e
-    ensures { forall t : t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok t }
-    ensures { forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
-    
-end
-module Core_Result_Impl1_Cloned
   type t
   type e
   use prelude.Borrow
@@ -383,30 +220,7 @@ module Core_Result_Impl2_Cloned_Interface
     ensures { forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
     
 end
-module Core_Result_Impl2_Cloned
-  type t
-  type e
-  use prelude.Borrow
-  clone CreusotContracts_Resolve_Impl1_Resolve_Interface as Resolve0 with
-    type t = t
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  val cloned [@cfg:stackify] (self : Core_Result_Result_Type.t_result (borrowed t) e) : Core_Result_Result_Type.t_result t e
-    ensures { forall t : borrowed t . self = Core_Result_Result_Type.C_Ok t -> result = Core_Result_Result_Type.C_Ok ( * t) /\ Resolve0.resolve t }
-    ensures { forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Result_Result_Type.C_Err e }
-    
-end
 module Core_Result_Impl3_Transpose_Interface
-  type t
-  type e
-  use Core_Result_Result_Type as Core_Result_Result_Type
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val transpose [@cfg:stackify] (self : Core_Result_Result_Type.t_result (Core_Option_Option_Type.t_option t) e) : Core_Option_Option_Type.t_option (Core_Result_Result_Type.t_result t e)
-    ensures { self = Core_Result_Result_Type.C_Ok (Core_Option_Option_Type.C_None) -> result = Core_Option_Option_Type.C_None }
-    ensures { forall t : t . self = Core_Result_Result_Type.C_Ok (Core_Option_Option_Type.C_Some t) -> result = Core_Option_Option_Type.C_Some (Core_Result_Result_Type.C_Ok t) }
-    ensures { forall e : e . self = Core_Result_Result_Type.C_Err e -> result = Core_Option_Option_Type.C_Some (Core_Result_Result_Type.C_Err e) }
-    
-end
-module Core_Result_Impl3_Transpose
   type t
   type e
   use Core_Result_Result_Type as Core_Result_Result_Type

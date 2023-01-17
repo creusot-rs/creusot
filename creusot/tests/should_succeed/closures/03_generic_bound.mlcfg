@@ -71,25 +71,6 @@ module Core_Ops_Function_Fn_Call_Interface
     ensures { Postcondition0.postcondition self args result }
     
 end
-module Core_Ops_Function_Fn_Call
-  type self
-  type args
-  use prelude.Borrow
-  clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
-    type self = self,
-    type args = args
-  clone CreusotContracts_Std1_Ops_FnExt_Postcondition_Interface as Postcondition0 with
-    type self = self,
-    type args = args,
-    type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition_Interface as Precondition0 with
-    type args = args,
-    type f = self
-  val call [@cfg:stackify] (self : self) (args : args) : Output0.output
-    requires {Precondition0.precondition self args}
-    ensures { Postcondition0.postcondition self args result }
-    
-end
 module CreusotContracts_Resolve_Resolve_Resolve_Stub
   type self
   predicate resolve (self : self)
@@ -632,13 +613,16 @@ module C03GenericBound_ClosureParam
   }
   
 end
-module C03GenericBound_Caller_Closure0_Interface
-  use prelude.Borrow
-  use mach.int.Int
-  use mach.int.UInt32
+module C03GenericBound_Caller_Closure0_Type
   type c03genericbound_caller_closure0  =
     | C03GenericBound_Caller_Closure0
     
+end
+module C03GenericBound_Caller_Closure0_Interface
+  use export C03GenericBound_Caller_Closure0_Type
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt32
   predicate resolve [@cfg:stackify] [#"../03_generic_bound.rs" 8 18 8 27] (_1' : c03genericbound_caller_closure0) =
     [#"../03_generic_bound.rs" 1 0 1 0] true
   predicate unnest [@cfg:stackify] [#"../03_generic_bound.rs" 8 18 8 27] (self : c03genericbound_caller_closure0) (_2' : c03genericbound_caller_closure0)
@@ -665,12 +649,10 @@ module C03GenericBound_Caller_Closure0_Interface
     
 end
 module C03GenericBound_Caller_Closure0
-  type c03genericbound_caller_closure0  =
-    | C03GenericBound_Caller_Closure0
-    
+  use export C03GenericBound_Caller_Closure0_Type
+  use prelude.Borrow
   use mach.int.Int
   use mach.int.UInt32
-  use prelude.Borrow
   predicate resolve [@cfg:stackify] [#"../03_generic_bound.rs" 8 18 8 27] (_1' : c03genericbound_caller_closure0) =
     [#"../03_generic_bound.rs" 1 0 1 0] true
   predicate unnest [@cfg:stackify] [#"../03_generic_bound.rs" 8 18 8 27] (self : c03genericbound_caller_closure0) (_2' : c03genericbound_caller_closure0)
@@ -714,8 +696,7 @@ module C03GenericBound_Caller_Interface
   val caller [@cfg:stackify] [#"../03_generic_bound.rs" 7 0 7 15] (_1' : ()) : ()
 end
 module C03GenericBound_Caller
-  clone C03GenericBound_Caller_Closure0_Interface as Closure00 with
-    axiom .
+  clone C03GenericBound_Caller_Closure0_Interface as Closure00
   clone C03GenericBound_ClosureParam_Interface as ClosureParam0 with
     type f = Closure00.c03genericbound_caller_closure0
   let rec cfg caller [@cfg:stackify] [#"../03_generic_bound.rs" 7 0 7 15] (_1' : ()) : ()

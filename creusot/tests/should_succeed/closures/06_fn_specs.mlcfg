@@ -142,24 +142,6 @@ module Core_Ops_Function_FnOnce_CallOnce_Interface
     ensures { PostconditionOnce0.postcondition_once self args result }
     
 end
-module Core_Ops_Function_FnOnce_CallOnce
-  type self
-  type args
-  clone Core_Ops_Function_FnOnce_Output_Type as Output0 with
-    type self = self,
-    type args = args
-  clone CreusotContracts_Std1_Ops_FnOnceExt_PostconditionOnce_Interface as PostconditionOnce0 with
-    type self = self,
-    type args = args,
-    type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Ops_FnOnceExt_Precondition_Interface as Precondition0 with
-    type self = self,
-    type args = args
-  val call_once [@cfg:stackify] (self : self) (args : args) : Output0.output
-    requires {Precondition0.precondition self args}
-    ensures { PostconditionOnce0.postcondition_once self args result }
-    
-end
 module C06FnSpecs_Weaken3_Interface
   type a
   type f
@@ -1674,12 +1656,15 @@ module CreusotContracts_Resolve_Impl2_Resolve
     ensures { result = resolve self }
     
 end
-module C06FnSpecs_Caller_Closure0_Interface
-  use mach.int.Int
-  use prelude.UIntSize
+module C06FnSpecs_Caller_Closure0_Type
   type c06fnspecs_caller_closure0  =
     | C06FnSpecs_Caller_Closure0
     
+end
+module C06FnSpecs_Caller_Closure0_Interface
+  use export C06FnSpecs_Caller_Closure0_Type
+  use mach.int.Int
+  use prelude.UIntSize
   predicate resolve [@cfg:stackify] [#"../06_fn_specs.rs" 49 17 49 20] (_1' : c06fnspecs_caller_closure0) =
     [#"../06_fn_specs.rs" 1 0 1 0] true
   predicate precondition [@cfg:stackify] [#"../06_fn_specs.rs" 49 17 49 20] (self : c06fnspecs_caller_closure0) (args : usize)
@@ -1694,9 +1679,7 @@ module C06FnSpecs_Caller_Closure0_Interface
     
 end
 module C06FnSpecs_Caller_Closure0
-  type c06fnspecs_caller_closure0  =
-    | C06FnSpecs_Caller_Closure0
-    
+  use export C06FnSpecs_Caller_Closure0_Type
   use mach.int.Int
   use prelude.UIntSize
   predicate resolve [@cfg:stackify] [#"../06_fn_specs.rs" 49 17 49 20] (_1' : c06fnspecs_caller_closure0) =
@@ -1731,8 +1714,7 @@ module C06FnSpecs_Caller_Interface
   val caller [@cfg:stackify] [#"../06_fn_specs.rs" 48 0 48 15] (_1' : ()) : ()
 end
 module C06FnSpecs_Caller
-  clone C06FnSpecs_Caller_Closure0_Interface as Closure00 with
-    axiom .
+  clone C06FnSpecs_Caller_Closure0_Interface as Closure00
   clone C06FnSpecs_FnOnceUser_Interface as FnOnceUser0 with
     type f = Closure00.c06fnspecs_caller_closure0,
     predicate Precondition0.precondition = Closure00.precondition
