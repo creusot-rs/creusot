@@ -87,13 +87,13 @@ impl PreludeModule {
 }
 
 type CloneNode<'tcx> = (DefId, SubstsRef<'tcx>);
-pub type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo<'tcx>>;
+pub type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo>;
 
 #[derive(Clone)]
 pub struct CloneMap<'tcx> {
     tcx: TyCtxt<'tcx>,
     prelude: IndexMap<QName, bool>,
-    pub names: IndexMap<CloneNode<'tcx>, CloneInfo<'tcx>>,
+    pub names: IndexMap<CloneNode<'tcx>, CloneInfo>,
 
     // Track how many instances of a name already exist
     name_counts: IndexMap<Symbol, usize>,
@@ -166,9 +166,8 @@ enum CloneOpacity {
 }
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
-pub struct CloneInfo<'tcx> {
+pub struct CloneInfo {
     kind: Kind,
-    additional_deps: Vec<(Symbol, (DefId, SubstsRef<'tcx>))>,
     cloned: bool,
     public: bool,
     opaque: CloneOpacity,
@@ -184,35 +183,18 @@ impl Into<CloneKind> for Kind {
     }
 }
 
-impl<'tcx> CloneInfo<'tcx> {
+impl<'tcx> CloneInfo {
     fn from_name(name: Symbol, public: bool) -> Self {
-        CloneInfo {
-            kind: Kind::Named(name),
-            additional_deps: Vec::new(),
-            cloned: false,
-            public,
-            opaque: CloneOpacity::Default,
-        }
+        CloneInfo { kind: Kind::Named(name), cloned: false, public, opaque: CloneOpacity::Default }
     }
 
     fn hidden() -> Self {
         CloneInfo {
             kind: Kind::Hidden,
-            additional_deps: Vec::new(),
             cloned: false,
             public: false,
             opaque: CloneOpacity::Default,
         }
-    }
-
-    pub(crate) fn add_dep(
-        &mut self,
-        tcx: TyCtxt<'tcx>,
-        name: Symbol,
-        mut dep: (DefId, SubstsRef<'tcx>),
-    ) {
-        dep.1 = tcx.erase_regions(dep.1);
-        self.additional_deps.push((name, dep));
     }
 
     pub(crate) fn opaque(&mut self) {
@@ -273,7 +255,7 @@ impl<'tcx> CloneMap<'tcx> {
     #[deprecated(
         note = "Avoid using this method in favor of one of the more semantic alternatives: `value`, `accessor`, `ty`"
     )]
-    pub(crate) fn insert(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo<'tcx> {
+    pub(crate) fn insert(&mut self, def_id: DefId, subst: SubstsRef<'tcx>) -> &mut CloneInfo {
         let subst = self.tcx.erase_regions(subst);
 
         let (def_id, subst) = self.closure_hack(def_id, subst);
@@ -441,7 +423,6 @@ impl<'tcx> CloneMap<'tcx> {
                 ctx.dependencies(key.0).map(|d| d.len())
             );
             self.clone_laws(ctx, key);
-            self.clone_additional_deps(key);
             self.clone_dependencies(ctx, key);
         }
     }
@@ -560,16 +541,6 @@ impl<'tcx> CloneMap<'tcx> {
         };
 
         return DepNode::Dep(resolved);
-    }
-
-    fn clone_additional_deps(&mut self, key: (DefId, SubstsRef<'tcx>)) {
-        let additional_deps = self.names[&key].additional_deps.clone();
-        for (sym, dep) in &additional_deps {
-            self.insert(dep.0, dep.1);
-            let sym = refineable_symbol(self.tcx, key.0).filter(|sk| sk.sym() == *sym).unwrap();
-
-            self.add_graph_edge(DepNode::Dep(key), DepNode::Dep(*dep)).insert((Kind::Hidden, sym));
-        }
     }
 
     fn clone_laws(&mut self, ctx: &mut TranslationCtx<'tcx>, key: (DefId, SubstsRef<'tcx>)) {

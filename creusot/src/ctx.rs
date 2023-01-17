@@ -17,7 +17,7 @@ use crate::{
         traits::TraitImpl,
         ty::{self, translate_tydecl, ty_binding_group},
     },
-    util::{self, item_type, pre_sig_of, PreSignature},
+    util::{self, item_type, PreSignature, pre_sig_of},
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_data_structures::captures::Captures;
@@ -305,6 +305,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         };
         self.sigs.get(&def_id).unwrap()
     }
+
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {
         self.tcx.sess.span_fatal_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
