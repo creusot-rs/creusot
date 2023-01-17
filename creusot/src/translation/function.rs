@@ -15,7 +15,7 @@ use crate::{
         traits, ty,
         ty::{closure_accessors, translate_closure_ty, translate_ty},
     },
-    util::{self, ident_of, is_ghost_closure, pre_sig_of, sig_to_why3, signature_of},
+    util::{self, ident_of, is_ghost_closure, sig_to_why3, signature_of},
 };
 use indexmap::IndexMap;
 use rustc_borrowck::borrow_set::BorrowSet;
@@ -487,7 +487,7 @@ pub(crate) fn closure_contract<'tcx>(
 
     let kind = subst.as_closure().kind();
 
-    let mut pre_clos_sig = pre_sig_of(ctx, def_id);
+    let mut pre_clos_sig = ctx.sig(def_id).clone();
     // let mut clos_sig = signature_of(ctx, names, def_id);
 
     // Get the raw contracts
@@ -623,7 +623,7 @@ pub(crate) fn closure_contract<'tcx>(
         let unnest_subst = ctx.mk_substs([GenericArg::from(args), GenericArg::from(env_ty)].iter());
 
         let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
-        let unnest_sig = EarlyBinder(pre_sig_of(ctx, unnest_id)).subst(ctx.tcx, unnest_subst);
+        let unnest_sig = EarlyBinder(ctx.sig(unnest_id).clone()).subst(ctx.tcx, unnest_subst);
         let mut unnest_sig = sig_to_why3(ctx, names, unnest_sig, unnest_id);
         unnest_sig.retty = None;
 
