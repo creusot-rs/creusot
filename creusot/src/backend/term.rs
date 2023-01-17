@@ -177,8 +177,12 @@ impl<'tcx> Lower<'_, 'tcx> {
                 Exp::Constructor { ctor, args }
             }
             TermKind::Cur { box term } => {
-                self.names.import_prelude_module(PreludeModule::Borrow);
-                Exp::Current(box self.lower_term(term))
+                if term.ty.is_mutable_ptr() {
+                    self.names.import_prelude_module(PreludeModule::Borrow);
+                    Exp::Current(box self.lower_term(term))
+                } else {
+                    self.lower_term(term)
+                }
             }
             TermKind::Fin { box term } => {
                 self.names.import_prelude_module(PreludeModule::Borrow);
@@ -218,21 +222,23 @@ impl<'tcx> Lower<'_, 'tcx> {
             TermKind::Tuple { fields } => {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
             }
-            TermKind::Projection { box lhs, name, def: did, substs } => {
+            TermKind::Projection { box lhs, name } => {
+                let base_ty = lhs.ty;
                 let lhs = self.lower_term(lhs);
-                let accessor = match util::item_type(self.ctx.tcx, did) {
-                    ItemType::Closure => {
-                        let TyKind::Closure(did, subst) = self.ctx.type_of(did).kind() else { unreachable!() };
-                        self.names.accessor(*did, subst, 0, name.as_usize())
+
+                let accessor = match base_ty.kind() {
+                    TyKind::Closure(did, substs) => {
+                        self.names.accessor(*did, substs, 0, name.as_usize())
                     }
-                    _ => {
-                        let def = self.ctx.tcx.adt_def(did);
+                    TyKind::Adt(def, substs) => {
                         self.ctx.translate_accessor(
                             def.variants()[0u32.into()].fields[name.as_usize()].did,
                         );
-                        self.names.accessor(did, substs, 0, name.as_usize())
+                        self.names.accessor(def.did(), substs, 0, name.as_usize())
                     }
+                    k => unreachable!("Projection from {k:?}"),
                 };
+
                 Exp::Call(box Exp::pure_qvar(accessor), vec![lhs])
             }
             TermKind::Closure { args, body } => {

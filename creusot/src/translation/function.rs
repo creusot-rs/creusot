@@ -513,8 +513,7 @@ pub(crate) fn closure_contract<'tcx>(
 
         pre_clos_sig.inputs.push((Symbol::intern("args"), DUMMY_SP, arg_ty));
 
-        let arg_tuple =
-            Term { ty: arg_ty, kind: TermKind::Var(Symbol::intern("args")), span: DUMMY_SP };
+        let arg_tuple = Term::var(Symbol::intern("args"), arg_ty);
 
         let arg_pat = pearlite::Pattern::Tuple(
             args.iter()
@@ -631,34 +630,18 @@ pub(crate) fn closure_contract<'tcx>(
             kind: TermKind::Call {
                 id: unnest_id.into(),
                 subst: unnest_subst,
-                fun: Box::new(Term {
-                    ty: EarlyBinder(ctx.type_of(unnest_id)).subst(ctx.tcx, unnest_subst),
-                    kind: TermKind::Item(unnest_id.into(), unnest_subst),
-                    span: DUMMY_SP,
-                }),
+                fun: Box::new(Term::item(ctx.tcx, unnest_id, unnest_subst)),
                 args: vec![
-                    Term {
-                        ty: self_ty,
-                        kind: TermKind::Cur {
-                            term: box Term {
-                                ty: self_ty,
-                                kind: TermKind::Var(Symbol::intern("self")),
-                                span: DUMMY_SP,
-                            },
-                        },
-                        span: DUMMY_SP,
-                    },
-                    Term {
-                        ty: self_ty,
-                        kind: TermKind::Fin {
-                            term: box Term {
-                                ty: self_ty,
-                                kind: TermKind::Var(Symbol::intern("self")),
-                                span: DUMMY_SP,
-                            },
-                        },
-                        span: DUMMY_SP,
-                    },
+                    Term::var(
+                        Symbol::intern("self"),
+                        ctx.mk_mut_ref(ctx.lifetimes.re_erased, self_ty),
+                    )
+                    .cur(),
+                    Term::var(
+                        Symbol::intern("self"),
+                        ctx.mk_mut_ref(ctx.lifetimes.re_erased, self_ty),
+                    )
+                    .fin(),
                 ],
             },
             span: DUMMY_SP,
@@ -705,22 +688,13 @@ fn closure_resolve<'tcx>(
 ) -> (PreSignature<'tcx>, Term<'tcx>) {
     let mut resolve = Term::mk_true(ctx.tcx);
 
-    let self_ = Term {
-        ty: ctx.type_of(def_id),
-        kind: TermKind::Var(Symbol::intern("_1'")),
-        span: DUMMY_SP,
-    };
+    let self_ = Term::var(Symbol::intern("_1'"), ctx.type_of(def_id));
     let csubst = subst.as_closure();
     let param_env = ctx.param_env(def_id);
     for (ix, ty) in csubst.upvar_tys().enumerate() {
         let proj = Term {
             ty,
-            kind: TermKind::Projection {
-                lhs: box self_.clone(),
-                name: ix.into(),
-                def: def_id.into(),
-                substs: subst,
-            },
+            kind: TermKind::Projection { lhs: box self_.clone(), name: ix.into() },
             span: DUMMY_SP,
         };
 
@@ -730,11 +704,7 @@ fn closure_resolve<'tcx>(
                 kind: TermKind::Call {
                     id: id.into(),
                     subst,
-                    fun: box Term {
-                        ty: ctx.type_of(id),
-                        kind: TermKind::Item(id, subst),
-                        span: DUMMY_SP,
-                    },
+                    fun: box Term::item(ctx.tcx, id, subst),
                     args: vec![proj],
                 },
                 span: DUMMY_SP,
@@ -759,7 +729,8 @@ pub(crate) fn closure_unnest<'tcx>(
 ) -> Term<'tcx> {
     let env_ty = tcx.closure_env_ty(def_id, subst, RegionKind::ReErased).unwrap().peel_refs();
 
-    let self_ = Term { ty: env_ty, kind: TermKind::Var(Symbol::intern("self")), span: DUMMY_SP };
+    let self_ = Term::var(Symbol::intern("self"), env_ty);
+
     let captures =
         tcx.typeck(def_id.expect_local()).closure_min_captures_flattened(def_id.expect_local());
 
@@ -772,48 +743,17 @@ pub(crate) fn closure_unnest<'tcx>(
             UpvarCapture::ByRef(is_mut) => {
                 let acc = |lhs: Term<'tcx>| Term {
                     ty,
-                    kind: TermKind::Projection {
-                        lhs: box lhs,
-                        name: ix.into(),
-                        def: def_id.into(),
-                        substs: subst,
-                    },
+                    kind: TermKind::Projection { lhs: box lhs, name: ix.into() },
                     span: DUMMY_SP,
                 };
                 let cur = self_.clone();
-                let fin =
-                    Term { ty: env_ty, kind: TermKind::Var(Symbol::intern("_2'")), span: DUMMY_SP };
+                let fin = Term::var(Symbol::intern("_2'"), env_ty);
 
                 use rustc_middle::ty::BorrowKind;
 
                 let unnest_one = match is_mut {
-                    BorrowKind::ImmBorrow => Term {
-                        ty: tcx.types.bool,
-                        kind: TermKind::Binary {
-                            op: pearlite::BinOp::Eq,
-                            lhs: box (acc)(fin),
-                            rhs: box (acc)(cur),
-                        },
-                        span: DUMMY_SP,
-                    },
-
-                    _ => Term {
-                        ty: tcx.types.bool,
-                        kind: TermKind::Binary {
-                            op: pearlite::BinOp::Eq,
-                            lhs: box Term {
-                                ty: ty.builtin_deref(false).unwrap().ty,
-                                kind: TermKind::Fin { term: box (acc)(fin) },
-                                span: DUMMY_SP,
-                            },
-                            rhs: box Term {
-                                ty: ty.builtin_deref(false).unwrap().ty,
-                                kind: TermKind::Fin { term: box (acc)(cur) },
-                                span: DUMMY_SP,
-                            },
-                        },
-                        span: DUMMY_SP,
-                    },
+                    BorrowKind::ImmBorrow => Term::eq(tcx, (acc)(fin), (acc)(cur)),
+                    _ => Term::eq(tcx, (acc)(fin).fin(), (acc)(cur).fin()),
                 };
 
                 unnest = unnest_one.conj(unnest);

@@ -530,8 +530,6 @@ use rustc_smir::mir::Field;
 use rustc_span::def_id::LocalDefId;
 
 pub(crate) struct ClosureSubst<'tcx> {
-    def_id: DefId,
-    substs: SubstsRef<'tcx>,
     post: bool,
     self_: Term<'tcx>,
     map: IndexMap<Symbol, (Ty<'tcx>, Field)>,
@@ -543,35 +541,21 @@ impl<'tcx> ClosureSubst<'tcx> {
         let (ty, ix) = *self.map.get(&x)?;
 
         let self_ = if self.self_.ty.is_ref() && self.self_.ty.is_mutable_ptr() {
-            Term {
-                ty: self.self_.ty.peel_refs(),
-                kind: if self.post {
-                    TermKind::Fin { term: box self.self_.clone() }
-                } else {
-                    TermKind::Cur { term: box self.self_.clone() }
-                },
-                span: DUMMY_SP,
+            if self.post {
+                self.self_.clone().fin()
+            } else {
+                self.self_.clone().cur()
             }
+        } else if self.self_.ty.is_ref() {
+            self.self_.clone().cur()
         } else {
             self.self_.clone()
         };
-        let proj = Term {
-            ty,
-            kind: TermKind::Projection {
-                lhs: box self_,
-                name: ix,
-                def: self.def_id,
-                substs: self.substs,
-            },
-            span: DUMMY_SP,
-        };
+        let proj =
+            Term { ty, kind: TermKind::Projection { lhs: box self_, name: ix }, span: DUMMY_SP };
 
         if ty.is_mutable_ptr() {
-            Some(Term {
-                ty: ty.peel_refs(),
-                kind: TermKind::Cur { term: box proj },
-                span: DUMMY_SP,
-            })
+            Some(proj.cur())
         } else {
             Some(proj)
         }
@@ -580,33 +564,14 @@ impl<'tcx> ClosureSubst<'tcx> {
     fn old(&self, x: Symbol) -> Option<Term<'tcx>> {
         let (ty, ix) = *self.map.get(&x)?;
 
-        let self_ = if self.self_.ty.is_ref() && self.self_.ty.is_mutable_ptr() {
-            Term {
-                ty: self.self_.ty.peel_refs(),
-                kind: TermKind::Cur { term: box self.self_.clone() },
-                span: DUMMY_SP,
-            }
-        } else {
-            self.self_.clone()
-        };
+        let self_ =
+            if self.self_.ty.is_ref() { self.self_.clone().cur() } else { self.self_.clone() };
 
-        let proj = Term {
-            ty,
-            kind: TermKind::Projection {
-                lhs: box self_,
-                name: ix,
-                def: self.def_id,
-                substs: self.substs,
-            },
-            span: DUMMY_SP,
-        };
+        let proj =
+            Term { ty, kind: TermKind::Projection { lhs: box self_, name: ix }, span: DUMMY_SP };
 
         if ty.is_mutable_ptr() {
-            Some(Term {
-                ty: ty.peel_refs(),
-                kind: TermKind::Cur { term: box proj },
-                span: DUMMY_SP,
-            })
+            Some(proj.cur())
         } else {
             Some(proj)
         }
@@ -697,12 +662,12 @@ pub(crate) fn closure_capture_subst<'tcx>(
         ClosureKind::FnOnce => tcx.type_of(def_id),
     };
 
-    let self_ = Term { ty, kind: TermKind::Var(self_name), span: DUMMY_SP };
+    let self_ = Term::var(self_name, ty);
 
     let subst =
         captures.into_iter().enumerate().map(|(ix, (nm, ty))| (*nm, (ty, ix.into()))).collect();
-    let TyKind::Closure(_, substs) = tcx.type_of(def_id).kind() else { unreachable!() };
-    ClosureSubst { self_, map: subst, post: is_post, def_id, bound: Default::default(), substs }
+
+    ClosureSubst { self_, map: subst, post: is_post, bound: Default::default() }
 }
 
 pub(crate) struct AnonymousParamName(pub(crate) usize);

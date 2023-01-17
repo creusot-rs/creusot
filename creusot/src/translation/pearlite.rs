@@ -29,8 +29,8 @@ use rustc_middle::{
         StmtKind, Thir,
     },
     ty::{
-        int_ty, subst::SubstsRef, uint_ty, AdtDef, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitable,
-        UpvarSubsts, WithOptConstParam,
+        int_ty, subst::SubstsRef, uint_ty, AdtDef, EarlyBinder, Ty, TyCtxt, TyKind, TypeFoldable,
+        TypeVisitable, UpvarSubsts, WithOptConstParam,
     },
 };
 use rustc_smir::mir::BorrowKind;
@@ -78,23 +78,77 @@ pub enum TermKind<'tcx> {
     Var(Symbol),
     Lit(Literal<'tcx>),
     Item(DefId, SubstsRef<'tcx>),
-    Binary { op: BinOp, lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
-    Unary { op: UnOp, arg: Box<Term<'tcx>> },
-    Forall { binder: (Symbol, Ty<'tcx>), body: Box<Term<'tcx>> },
-    Exists { binder: (Symbol, Ty<'tcx>), body: Box<Term<'tcx>> },
+    Binary {
+        op: BinOp,
+        lhs: Box<Term<'tcx>>,
+        rhs: Box<Term<'tcx>>,
+    },
+    Unary {
+        op: UnOp,
+        arg: Box<Term<'tcx>>,
+    },
+    Forall {
+        binder: (Symbol, Ty<'tcx>),
+        body: Box<Term<'tcx>>,
+    },
+    Exists {
+        binder: (Symbol, Ty<'tcx>),
+        body: Box<Term<'tcx>>,
+    },
     // TODO: Get rid of (id, subst).
-    Call { id: DefId, subst: SubstsRef<'tcx>, fun: Box<Term<'tcx>>, args: Vec<Term<'tcx>> },
-    Constructor { adt: AdtDef<'tcx>, variant: VariantIdx, fields: Vec<Term<'tcx>> },
-    Tuple { fields: Vec<Term<'tcx>> },
-    Cur { term: Box<Term<'tcx>> },
-    Fin { term: Box<Term<'tcx>> },
-    Impl { lhs: Box<Term<'tcx>>, rhs: Box<Term<'tcx>> },
-    Match { scrutinee: Box<Term<'tcx>>, arms: Vec<(Pattern<'tcx>, Term<'tcx>)> },
-    Let { pattern: Pattern<'tcx>, arg: Box<Term<'tcx>>, body: Box<Term<'tcx>> },
-    Projection { lhs: Box<Term<'tcx>>, name: Field, def: DefId, substs: SubstsRef<'tcx> },
-    Old { term: Box<Term<'tcx>> },
-    Closure { args: Vec<Pattern<'tcx>>, body: Box<Term<'tcx>> },
-    Reborrow { cur: Box<Term<'tcx>>, fin: Box<Term<'tcx>> },
+    Call {
+        id: DefId,
+        subst: SubstsRef<'tcx>,
+        fun: Box<Term<'tcx>>,
+        args: Vec<Term<'tcx>>,
+    },
+    Constructor {
+        adt: AdtDef<'tcx>,
+        variant: VariantIdx,
+        fields: Vec<Term<'tcx>>,
+    },
+    Tuple {
+        fields: Vec<Term<'tcx>>,
+    },
+    // FIXME: Rename to Deref
+    Cur {
+        term: Box<Term<'tcx>>,
+    },
+    Fin {
+        term: Box<Term<'tcx>>,
+    },
+    Impl {
+        lhs: Box<Term<'tcx>>,
+        rhs: Box<Term<'tcx>>,
+    },
+    Match {
+        scrutinee: Box<Term<'tcx>>,
+        arms: Vec<(Pattern<'tcx>, Term<'tcx>)>,
+    },
+    Let {
+        pattern: Pattern<'tcx>,
+        arg: Box<Term<'tcx>>,
+        body: Box<Term<'tcx>>,
+    },
+    /// A field projection from a *struct* or *closure*.
+    ///
+    /// Unlike MIR projections this does *not* include projections from enums.
+    /// It corresponds strictly to the syntactic projection f.x
+    Projection {
+        lhs: Box<Term<'tcx>>,
+        name: Field,
+    },
+    Old {
+        term: Box<Term<'tcx>>,
+    },
+    Closure {
+        args: Vec<Pattern<'tcx>>,
+        body: Box<Term<'tcx>>,
+    },
+    Reborrow {
+        cur: Box<Term<'tcx>>,
+        fin: Box<Term<'tcx>>,
+    },
     Absurd,
 }
 impl<'tcx> TypeFoldable<'tcx> for Literal<'tcx> {
@@ -182,8 +236,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             .fold_ok(body, |body, (idx, ty, pattern)| match pattern {
                 Pattern::Binder(_) | Pattern::Wildcard => body,
                 _ => {
-                    let arg_kind = TermKind::Var(util::anonymous_param_symbol(idx));
-                    let arg = Box::new(Term { ty, span: DUMMY_SP, kind: arg_kind });
+                    let arg = box Term::var(util::anonymous_param_symbol(idx), ty);
                     Term {
                         ty: body.ty,
                         span: body.span,
@@ -684,9 +737,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
         let pat = field_pattern(lhs.ty, name).expect("mk_projection: no term for field");
 
         match &lhs.ty.kind() {
-            TyKind::Adt(def, substs) => {
-                Ok(TermKind::Projection { lhs: box lhs, name, def: def.did(), substs })
-            }
+            TyKind::Adt(_def, _substs) => Ok(TermKind::Projection { lhs: box lhs, name }),
             TyKind::Tuple(_) => {
                 Ok(TermKind::Let {
                     pattern: pat,
@@ -885,7 +936,7 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
             visitor.visit_term(&*arg);
             visitor.visit_term(&*body)
         }
-        TermKind::Projection { lhs, name: _, def: _, substs: _ } => visitor.visit_term(&*lhs),
+        TermKind::Projection { lhs, name: _ } => visitor.visit_term(&*lhs),
         TermKind::Old { term } => visitor.visit_term(&*term),
         TermKind::Closure { args: _, body } => visitor.visit_term(&*body),
         TermKind::Absurd => {}
@@ -939,9 +990,7 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
             visitor.visit_mut_term(&mut *arg);
             visitor.visit_mut_term(&mut *body)
         }
-        TermKind::Projection { lhs, name: _, def: _, substs: _ } => {
-            visitor.visit_mut_term(&mut *lhs)
-        }
+        TermKind::Projection { lhs, name: _ } => visitor.visit_mut_term(&mut *lhs),
         TermKind::Old { term } => visitor.visit_mut_term(&mut *term),
         TermKind::Closure { args: _, body } => visitor.visit_mut_term(&mut *body),
         TermKind::Absurd => {}
@@ -961,6 +1010,30 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
+    pub(crate) fn var(sym: Symbol, ty: Ty<'tcx>) -> Self {
+        Term { ty, kind: TermKind::Var(sym), span: DUMMY_SP }
+    }
+
+    pub(crate) fn cur(self) -> Self {
+        assert!(self.ty.is_ref());
+
+        Term {
+            ty: self.ty.builtin_deref(false).unwrap().ty,
+            span: self.span,
+            kind: TermKind::Cur { term: box self },
+        }
+    }
+
+    pub(crate) fn fin(self) -> Self {
+        assert!(self.ty.is_mutable_ptr() && self.ty.is_ref());
+
+        Term {
+            ty: self.ty.builtin_deref(false).unwrap().ty,
+            span: self.span,
+            kind: TermKind::Fin { term: box self },
+        }
+    }
+
     pub(crate) fn conj(self, rhs: Self) -> Self {
         match self.kind {
             TermKind::Lit(Literal::Bool(false)) => self,
@@ -970,6 +1043,22 @@ impl<'tcx> Term<'tcx> {
                 kind: TermKind::Binary { op: BinOp::And, lhs: box self, rhs: box rhs },
                 span: DUMMY_SP,
             },
+        }
+    }
+
+    pub(crate) fn item(tcx: TyCtxt<'tcx>, id: DefId, subst: SubstsRef<'tcx>) -> Self {
+        Term {
+            ty: EarlyBinder(tcx.type_of(id)).subst(tcx, subst),
+            kind: TermKind::Item(id, subst),
+            span: DUMMY_SP,
+        }
+    }
+
+    pub(crate) fn eq(tcx: TyCtxt<'tcx>, lhs: Self, rhs: Self) -> Self {
+        Term {
+            ty: tcx.types.bool,
+            kind: TermKind::Binary { op: BinOp::Eq, lhs: box lhs, rhs: box rhs },
+            span: DUMMY_SP,
         }
     }
 

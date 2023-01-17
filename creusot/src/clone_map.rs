@@ -306,6 +306,13 @@ impl<'tcx> CloneMap<'tcx> {
         self.insert(type_id, subst).qname_ident(name.into())
     }
 
+    /// Creates a name for a type or closure projection ie: x.field1
+    /// This also includes projections from `enum` types
+    ///
+    /// * `def_id` - The id of the type or closure being projected
+    /// * `subst` - Substitution that type is being accessed at
+    /// * `variant` - The constructor being used. For closures this is always 0
+    /// * `ix` - The field in that constructor being accessed.
     pub(crate) fn accessor(
         &mut self,
         def_id: DefId,
