@@ -2,7 +2,7 @@ use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::clone_map::*;
 use crate::{
-    backend,
+    backend::{self, program::translate_function},
     creusot_items::{self, CreusotItems},
     error::CreusotResult,
     metadata::{BinaryMetadata, Metadata},
@@ -233,7 +233,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             debug!("translating {def_id:?} as program");
 
             self.dependencies.insert(def_id, deps.summary());
-            let modl = crate::translation::translate_function(self, def_id);
+            let modl = translate_function(self, def_id);
             TranslatedItem::Program { interface, modl, has_axioms: self.tcx.is_closure(def_id) }
         };
 

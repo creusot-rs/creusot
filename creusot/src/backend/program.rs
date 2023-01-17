@@ -1,29 +1,160 @@
 use crate::{
-    clone_map::PreludeModule,
+    clone_map::{CloneLevel, PreludeModule},
     ctx::{CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
         fmir::{Block, Branches, Expr, RValue, Statement, Terminator},
-        function::{place, place::translate_rplace_inner},
+        function::{
+            all_generic_decls_for, closure_contract, closure_generic_decls, place,
+            place::translate_rplace_inner, promoted,
+        },
         specification::{lower_impure, lower_pure},
-        ty::translate_ty,
+        ty::{self, closure_accessors, translate_closure_ty, translate_ty},
         unop_to_unop,
     },
+    util::{self, is_ghost_closure, module_name, signature_of},
 };
-use rustc_hir::{def::DefKind, Unsafety};
+use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
 use rustc_middle::{
-    mir::{self, BasicBlock, BinOp, Place},
-    ty::TyKind,
+    mir::{self, BasicBlock, BinOp, MirPass, Place},
+    ty::{TyCtxt, TyKind, WithOptConstParam},
 };
+use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::SimplifyCfg};
 use rustc_span::DUMMY_SP;
 
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
+    declaration::{CfgFunction, Decl, Module},
     exp::{Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
     QName,
 };
+
+pub(crate) fn translate_function<'tcx, 'sess>(
+    ctx: &mut TranslationCtx<'tcx>,
+    def_id: DefId,
+) -> Module {
+    let tcx = ctx.tcx;
+    let mut names = CloneMap::new(tcx, def_id, CloneLevel::Body);
+
+    assert!(def_id.is_local(), "translate_function: expected local DefId");
+
+    if util::is_trusted(tcx, def_id) || !util::has_body(ctx, def_id) {
+        let _ = names.to_clones(ctx);
+        return translate_trusted(tcx, ctx, def_id);
+    }
+
+    // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
+    let (_, promoted) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
+
+    let mut decls = Vec::new();
+    decls.extend(closure_generic_decls(ctx.tcx, def_id));
+
+    if ctx.tcx.is_closure(def_id) {
+        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
+            let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
+            let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
+            decls.extend(names.to_clones(ctx));
+            decls.push(env_ty);
+            decls.extend(accessors);
+
+            let contracts = closure_contract(ctx, def_id);
+            let contracts = contracts.to_why(ctx, def_id, &mut names);
+            decls.extend(names.to_clones(ctx));
+            decls.extend(contracts);
+        }
+    }
+
+    let param_env = ctx.param_env(def_id);
+    for p in promoted.borrow().iter_enumerated() {
+        if is_ghost_closure(ctx.tcx, p.1.return_ty()).is_some() {
+            continue;
+        }
+
+        let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p, def_id);
+        decls.extend(names.to_clones(ctx));
+        let promoted = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
+
+        decls.push(promoted);
+    }
+
+    let f_decls = to_why(ctx, &mut names, def_id);
+    decls.extend(names.to_clones(ctx));
+    decls.extend(f_decls);
+    let name = module_name(ctx.tcx, def_id);
+    Module { name, decls }
+}
+
+pub(crate) fn translate_trusted<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    ctx: &mut TranslationCtx<'tcx>,
+    def_id: DefId,
+) -> Module {
+    let mut names = CloneMap::new(tcx, def_id, CloneLevel::Interface);
+    let mut decls = Vec::new();
+    decls.extend(all_generic_decls_for(tcx, def_id));
+
+    let sig = signature_of(ctx, &mut names, def_id);
+    let name = module_name(ctx.tcx, def_id);
+
+    decls.extend(names.to_clones(ctx));
+
+    decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
+    return Module { name, decls };
+}
+
+pub fn to_why<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    def_id: DefId,
+) -> Option<Decl> {
+    if !def_id.is_local() || !util::has_body(ctx, def_id) || util::is_trusted(ctx.tcx, def_id) {
+        return None;
+    }
+
+    let (mir, _) = ctx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
+    let mut mir = mir.borrow().clone();
+    CleanupPostBorrowck.run_pass(ctx.tcx, &mut mir);
+    SimplifyCfg::new("verify").run_pass(ctx.tcx, &mut mir);
+
+    let body = ctx.fmir_body(def_id).unwrap().clone();
+
+    let vars: Vec<_> = body
+        .locals
+        .into_iter()
+        .map(|(id, sp, ty)| (false, id, ty::translate_ty(ctx, names, sp, ty)))
+        .collect();
+
+    let entry = mlcfg::Block {
+        statements: vars
+            .iter()
+            .skip(1)
+            .take(body.arg_count)
+            .map(|(_, id, _)| {
+                let rhs = id.arg_name();
+                mlcfg::Statement::Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
+            })
+            .collect(),
+        terminator: mlcfg::Terminator::Goto(BlockId(0)),
+    };
+
+    let sig = signature_of(ctx, names, def_id);
+
+    let func = Decl::CfgDecl(CfgFunction {
+        sig,
+        rec: true,
+        constant: false,
+        vars: vars.into_iter().map(|i| (i.0, i.1.ident(), i.2)).collect(),
+        entry,
+        blocks: body
+            .blocks
+            .into_iter()
+            .map(|(bb, bbd)| (BlockId(bb.into()), bbd.to_why(ctx, names, &mir)))
+            .collect(),
+    });
+    Some(func)
+}
 
 impl<'tcx> Expr<'tcx> {
     pub(crate) fn to_why(
