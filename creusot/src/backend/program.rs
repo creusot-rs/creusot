@@ -5,45 +5,68 @@ use crate::{
         binop_to_binop,
         fmir::{Block, Branches, Expr, RValue, Statement, Terminator},
         function::{
-            all_generic_decls_for, closure_contract, closure_generic_decls, place,
-            place::translate_rplace_inner, promoted,
+            closure_contract, closure_generic_decls, place, place::translate_rplace_inner, promoted,
         },
         specification::{lower_impure, lower_pure},
         ty::{self, closure_accessors, translate_closure_ty, translate_ty},
         unop_to_unop,
     },
-    util::{self, is_ghost_closure, module_name, signature_of},
+    util::{self, is_ghost_closure, module_name, sig_to_why3, signature_of},
 };
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
+use rustc_index::vec::IndexVec;
 use rustc_middle::{
     mir::{self, BasicBlock, BinOp, MirPass, Place},
-    ty::{TyCtxt, TyKind, WithOptConstParam},
+    ty::{TyKind, WithOptConstParam},
 };
 use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::SimplifyCfg};
 use rustc_span::DUMMY_SP;
 
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    declaration::{CfgFunction, Decl, Module},
+    declaration::{CfgFunction, Decl, LetDecl, LetKind, Module, Use},
     exp::{Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
-    QName,
+    Ident, QName,
 };
+
+fn closure_ty<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
+    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
+    let mut decls = Vec::new();
+
+    let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() else { unreachable!() };
+    let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
+
+    decls.extend(
+        names
+            .to_clones(ctx)
+            .into_iter()
+            // Definitely a hack but good enough for the moment
+            .filter(|d| matches!(d, Decl::UseDecl(_))),
+    );
+    decls.push(env_ty);
+
+    Module { name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(), decls }
+}
+
+pub(crate) fn translate_closure<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    def_id: DefId,
+) -> (Module, Option<Module>) {
+    assert!(ctx.is_closure(def_id));
+
+    (closure_ty(ctx, def_id), translate_function(ctx, def_id))
+}
 
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
-) -> Module {
+) -> Option<Module> {
     let tcx = ctx.tcx;
     let mut names = CloneMap::new(tcx, def_id, CloneLevel::Body);
 
-    assert!(def_id.is_local(), "translate_function: expected local DefId");
-
-    if util::is_trusted(tcx, def_id) || !util::has_body(ctx, def_id) {
-        let _ = names.to_clones(ctx);
-        return translate_trusted(tcx, ctx, def_id);
-    }
+    let body = to_why(ctx, &mut names, def_id)?;
 
     // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
     let (_, promoted) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
@@ -52,56 +75,62 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     decls.extend(closure_generic_decls(ctx.tcx, def_id));
 
     if ctx.tcx.is_closure(def_id) {
-        if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-            let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
-            let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
-            decls.extend(names.to_clones(ctx));
-            decls.push(env_ty);
-            decls.extend(accessors);
+        decls.push(Decl::UseDecl(Use {
+            name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(),
+            as_: None,
+            export: false,
+        }));
+        let acc: Vec<_> = closure_accessors(ctx, def_id)
+            .into_iter()
+            .map(|(sym, sig, body)| -> Decl {
+                let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
+                sig.name = Ident::build(sym.as_str());
+                Decl::Let(LetDecl {
+                    kind: Some(LetKind::Function),
+                    rec: false,
+                    ghost: false,
+                    sig,
+                    body: lower_pure(ctx, &mut names, body),
+                })
+            })
+            .collect();
+        let contract = closure_contract(ctx, def_id).to_why(ctx, def_id, &mut names);
 
-            let contracts = closure_contract(ctx, def_id);
-            let contracts = contracts.to_why(ctx, def_id, &mut names);
-            decls.extend(names.to_clones(ctx));
-            decls.extend(contracts);
-        }
+        decls.extend(names.to_clones(ctx));
+        decls.extend(acc);
+        decls.extend(contract)
     }
 
+    let promoteds = lower_promoted(ctx, &mut names, def_id, &*promoted.borrow());
+
+    decls.extend(names.to_clones(ctx));
+    decls.extend(promoteds);
+    decls.push(body);
+    let name = module_name(ctx.tcx, def_id);
+    Some(Module { name, decls })
+}
+
+fn lower_promoted<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    def_id: DefId,
+    promoted: &IndexVec<mir::Promoted, mir::Body<'tcx>>,
+) -> Vec<Decl> {
     let param_env = ctx.param_env(def_id);
-    for p in promoted.borrow().iter_enumerated() {
+
+    let mut decls = Vec::new();
+    for p in promoted.iter_enumerated() {
         if is_ghost_closure(ctx.tcx, p.1.return_ty()).is_some() {
             continue;
         }
 
-        let promoted = promoted::translate_promoted(ctx, &mut names, param_env, p, def_id);
-        decls.extend(names.to_clones(ctx));
+        let promoted = promoted::translate_promoted(ctx, names, param_env, p, def_id);
         let promoted = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
 
         decls.push(promoted);
     }
 
-    let f_decls = to_why(ctx, &mut names, def_id);
-    decls.extend(names.to_clones(ctx));
-    decls.extend(f_decls);
-    let name = module_name(ctx.tcx, def_id);
-    Module { name, decls }
-}
-
-pub(crate) fn translate_trusted<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> Module {
-    let mut names = CloneMap::new(tcx, def_id, CloneLevel::Interface);
-    let mut decls = Vec::new();
-    decls.extend(all_generic_decls_for(tcx, def_id));
-
-    let sig = signature_of(ctx, &mut names, def_id);
-    let name = module_name(ctx.tcx, def_id);
-
-    decls.extend(names.to_clones(ctx));
-
-    decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
-    return Module { name, decls };
+    decls
 }
 
 pub fn to_why<'tcx>(

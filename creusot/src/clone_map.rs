@@ -323,11 +323,7 @@ impl<'tcx> CloneMap<'tcx> {
         let tcx = self.tcx;
         let clone = self.insert(def_id, subst);
         let name: Ident = match util::item_type(tcx, def_id) {
-            ItemType::Closure => {
-                let ty_name = item_name(tcx, def_id, Namespace::TypeNS).to_string().to_lowercase();
-
-                format!("{}_{}", &*ty_name, ix).into()
-            }
+            ItemType::Closure => format!("field_{}", ix).into(),
             ItemType::Type => {
                 let variant_def = &tcx.adt_def(def_id).variants()[variant.into()];
                 let variant = variant_def;

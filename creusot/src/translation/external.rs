@@ -1,10 +1,7 @@
 use crate::{
-    backend::logic::translate_logic_or_predicate,
     ctx::*,
     error::{CrErr, CreusotResult},
-    function::all_generic_decls_for,
     translation::{pearlite::Term, specification::ContractClauses, traits},
-    util::{self, item_type},
 };
 use indexmap::IndexSet;
 use rustc_hir::def_id::{DefId, LocalDefId};
@@ -17,64 +14,6 @@ use rustc_middle::{
     },
 };
 use rustc_span::Symbol;
-use why3::declaration::{Decl, Module};
-
-pub(crate) fn default_decl<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> (Module, CloneSummary<'tcx>) {
-    info!("generating default declaration for def_id={:?}", def_id);
-    let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Interface);
-
-    let mut decls: Vec<_> = Vec::new();
-    decls.extend(all_generic_decls_for(ctx.tcx, def_id));
-
-    let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
-    let name = module_name(ctx.tcx, def_id);
-
-    decls.extend(names.to_clones(ctx));
-    match item_type(ctx.tcx, def_id) {
-        ItemType::Logic => {}
-        ItemType::Predicate => {
-            sig.retty = None;
-        }
-        ItemType::Program => {
-            if !ctx.externs.verified(def_id) && sig.contract.is_empty() {
-                sig.contract.requires.push(why3::exp::Exp::mk_false());
-            }
-        }
-        _ => unreachable!("default_decl: Expected function"),
-    };
-    decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
-
-    (Module { name, decls }, names.summary())
-}
-
-pub(crate) fn extern_module<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> (
-    Module,
-    Option<CloneSummary<'tcx>>, // None is used to refer to dependencies that should be fetched from metadata
-) {
-    match ctx.externs.term(def_id) {
-        Some(_) => {
-            match item_type(ctx.tcx, def_id) {
-                // the dependencies should be what was already stored in the metadata...
-                ItemType::Logic | ItemType::Predicate => {
-                    (translate_logic_or_predicate(ctx, def_id).0, None)
-                }
-                _ => unreachable!("extern_module: unexpected term for {:?}", def_id),
-            }
-        }
-        None => {
-            let (modl, deps) = default_decl(ctx, def_id);
-            // Why do we ever want to return `Err` shouldn't `deps` already be correct?
-            let deps = if ctx.externs.dependencies(def_id).is_some() { None } else { Some(deps) };
-            (modl, deps)
-        }
-    }
-}
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub(crate) struct ExternSpec<'tcx> {

@@ -38,17 +38,6 @@ module Core_Num_Impl7_CheckedAdd_Interface
     ensures { forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = UInt8.to_int self + UInt8.to_int rhs }
     
 end
-module Core_Num_Impl7_CheckedAdd
-  use prelude.UInt8
-  use mach.int.Int
-  clone Core_Num_Impl7_Max_Stub as Max0
-  clone Core_Num_Impl7_Min_Stub as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val checked_add [@cfg:stackify] (self : uint8) (rhs : uint8) : Core_Option_Option_Type.t_option uint8
-    ensures { (result = Core_Option_Option_Type.C_None) = (UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
-    ensures { forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = UInt8.to_int self + UInt8.to_int rhs }
-    
-end
 module Core_Option_Impl0_Unwrap_Interface
   type t
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -57,23 +46,7 @@ module Core_Option_Impl0_Unwrap_Interface
     ensures { Core_Option_Option_Type.C_Some result = self }
     
 end
-module Core_Option_Impl0_Unwrap
-  type t
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val unwrap [@cfg:stackify] (self : Core_Option_Option_Type.t_option t) : t
-    requires {self <> Core_Option_Option_Type.C_None}
-    ensures { Core_Option_Option_Type.C_Some result = self }
-    
-end
 module Core_Option_Impl0_IsNone_Interface
-  type t
-  use prelude.Borrow
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val is_none [@cfg:stackify] (self : Core_Option_Option_Type.t_option t) : bool
-    ensures { result = (self = Core_Option_Option_Type.C_None) }
-    
-end
-module Core_Option_Impl0_IsNone
   type t
   use prelude.Borrow
   use Core_Option_Option_Type as Core_Option_Option_Type
@@ -108,22 +81,6 @@ module Core_Num_Impl7_WrappingAdd_Interface
     ensures { UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self + UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
     
 end
-module Core_Num_Impl7_WrappingAdd
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.UInt32
-  use int.Power
-  use int.EuclideanDivision
-  clone Core_Num_Impl7_Max_Stub as Max0
-  clone Core_Num_Impl7_Min_Stub as Min0
-  clone Core_Num_Impl7_Bits_Stub as Bits0
-  val wrapping_add [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
-    ensures { UInt8.to_int result = EuclideanDivision.mod (UInt8.to_int self + UInt8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt8.to_int Min0.mIN' }
-    ensures { UInt8.to_int self + UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self + UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int self + UInt8.to_int rhs }
-    ensures { UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self + UInt8.to_int rhs + k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self + UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    
-end
 module Core_Num_Impl7_SaturatingAdd_Interface
   use prelude.UInt8
   use mach.int.Int
@@ -135,35 +92,7 @@ module Core_Num_Impl7_SaturatingAdd_Interface
     ensures { UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int Max0.mAX' }
     
 end
-module Core_Num_Impl7_SaturatingAdd
-  use prelude.UInt8
-  use mach.int.Int
-  clone Core_Num_Impl7_Max_Stub as Max0
-  clone Core_Num_Impl7_Min_Stub as Min0
-  val saturating_add [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
-    ensures { UInt8.to_int self + UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self + UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int self + UInt8.to_int rhs }
-    ensures { UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> UInt8.to_int result = UInt8.to_int Min0.mIN' }
-    ensures { UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int Max0.mAX' }
-    
-end
 module Core_Num_Impl7_OverflowingAdd_Interface
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.UInt32
-  use int.Power
-  use int.EuclideanDivision
-  clone Core_Num_Impl7_Max_Stub as Max0
-  clone Core_Num_Impl7_Min_Stub as Min0
-  clone Core_Num_Impl7_Bits_Stub as Bits0
-  val overflowing_add [@cfg:stackify] (self : uint8) (rhs : uint8) : (uint8, bool)
-    ensures { UInt8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (UInt8.to_int self + UInt8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt8.to_int Min0.mIN' }
-    ensures { UInt8.to_int self + UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self + UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self + UInt8.to_int rhs }
-    ensures { UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self + UInt8.to_int rhs + k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self + UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { (let (_, a) = result in a) = (UInt8.to_int self + UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self + UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
-    
-end
-module Core_Num_Impl7_OverflowingAdd
   use prelude.UInt8
   use mach.int.Int
   use mach.int.UInt32
@@ -883,34 +812,7 @@ module Core_Num_Impl7_CheckedSub_Interface
     ensures { forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = UInt8.to_int self - UInt8.to_int rhs }
     
 end
-module Core_Num_Impl7_CheckedSub
-  use prelude.UInt8
-  use mach.int.Int
-  clone Core_Num_Impl7_Max_Stub as Max0
-  clone Core_Num_Impl7_Min_Stub as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val checked_sub [@cfg:stackify] (self : uint8) (rhs : uint8) : Core_Option_Option_Type.t_option uint8
-    ensures { (result = Core_Option_Option_Type.C_None) = (UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
-    ensures { forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = UInt8.to_int self - UInt8.to_int rhs }
-    
-end
 module Core_Num_Impl7_WrappingSub_Interface
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.UInt32
-  use int.Power
-  use int.EuclideanDivision
-  clone Core_Num_Impl7_Max_Stub as Max0
-  clone Core_Num_Impl7_Min_Stub as Min0
-  clone Core_Num_Impl7_Bits_Stub as Bits0
-  val wrapping_sub [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
-    ensures { UInt8.to_int result = EuclideanDivision.mod (UInt8.to_int self - UInt8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt8.to_int Min0.mIN' }
-    ensures { UInt8.to_int self - UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self - UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int self - UInt8.to_int rhs }
-    ensures { UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self - UInt8.to_int rhs + k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self - UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    
-end
-module Core_Num_Impl7_WrappingSub
   use prelude.UInt8
   use mach.int.Int
   use mach.int.UInt32
@@ -937,35 +839,7 @@ module Core_Num_Impl7_SaturatingSub_Interface
     ensures { UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int Max0.mAX' }
     
 end
-module Core_Num_Impl7_SaturatingSub
-  use prelude.UInt8
-  use mach.int.Int
-  clone Core_Num_Impl7_Max_Stub as Max0
-  clone Core_Num_Impl7_Min_Stub as Min0
-  val saturating_sub [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
-    ensures { UInt8.to_int self - UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self - UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int self - UInt8.to_int rhs }
-    ensures { UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> UInt8.to_int result = UInt8.to_int Min0.mIN' }
-    ensures { UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int Max0.mAX' }
-    
-end
 module Core_Num_Impl7_OverflowingSub_Interface
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.UInt32
-  use int.Power
-  use int.EuclideanDivision
-  clone Core_Num_Impl7_Max_Stub as Max0
-  clone Core_Num_Impl7_Min_Stub as Min0
-  clone Core_Num_Impl7_Bits_Stub as Bits0
-  val overflowing_sub [@cfg:stackify] (self : uint8) (rhs : uint8) : (uint8, bool)
-    ensures { UInt8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (UInt8.to_int self - UInt8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt8.to_int Min0.mIN' }
-    ensures { UInt8.to_int self - UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self - UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self - UInt8.to_int rhs }
-    ensures { UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self - UInt8.to_int rhs + k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self - UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { (let (_, a) = result in a) = (UInt8.to_int self - UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self - UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
-    
-end
-module Core_Num_Impl7_OverflowingSub
   use prelude.UInt8
   use mach.int.Int
   use mach.int.UInt32
@@ -1635,34 +1509,7 @@ module Core_Num_Impl7_CheckedMul_Interface
     ensures { forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = UInt8.to_int self * UInt8.to_int rhs }
     
 end
-module Core_Num_Impl7_CheckedMul
-  use prelude.UInt8
-  use mach.int.Int
-  clone Core_Num_Impl7_Max_Stub as Max0
-  clone Core_Num_Impl7_Min_Stub as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val checked_mul [@cfg:stackify] (self : uint8) (rhs : uint8) : Core_Option_Option_Type.t_option uint8
-    ensures { (result = Core_Option_Option_Type.C_None) = (UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
-    ensures { forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = UInt8.to_int self * UInt8.to_int rhs }
-    
-end
 module Core_Num_Impl7_WrappingMul_Interface
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.UInt32
-  use int.Power
-  use int.EuclideanDivision
-  clone Core_Num_Impl7_Max_Stub as Max0
-  clone Core_Num_Impl7_Min_Stub as Min0
-  clone Core_Num_Impl7_Bits_Stub as Bits0
-  val wrapping_mul [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
-    ensures { UInt8.to_int result = EuclideanDivision.mod (UInt8.to_int self * UInt8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt8.to_int Min0.mIN' }
-    ensures { UInt8.to_int self * UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self * UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int self * UInt8.to_int rhs }
-    ensures { UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self * UInt8.to_int rhs + k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int result = UInt8.to_int self * UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    
-end
-module Core_Num_Impl7_WrappingMul
   use prelude.UInt8
   use mach.int.Int
   use mach.int.UInt32
@@ -1689,35 +1536,7 @@ module Core_Num_Impl7_SaturatingMul_Interface
     ensures { UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int Max0.mAX' }
     
 end
-module Core_Num_Impl7_SaturatingMul
-  use prelude.UInt8
-  use mach.int.Int
-  clone Core_Num_Impl7_Max_Stub as Max0
-  clone Core_Num_Impl7_Min_Stub as Min0
-  val saturating_mul [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
-    ensures { UInt8.to_int self * UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self * UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int self * UInt8.to_int rhs }
-    ensures { UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> UInt8.to_int result = UInt8.to_int Min0.mIN' }
-    ensures { UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> UInt8.to_int result = UInt8.to_int Max0.mAX' }
-    
-end
 module Core_Num_Impl7_OverflowingMul_Interface
-  use prelude.UInt8
-  use mach.int.Int
-  use mach.int.UInt32
-  use int.Power
-  use int.EuclideanDivision
-  clone Core_Num_Impl7_Max_Stub as Max0
-  clone Core_Num_Impl7_Min_Stub as Min0
-  clone Core_Num_Impl7_Bits_Stub as Bits0
-  val overflowing_mul [@cfg:stackify] (self : uint8) (rhs : uint8) : (uint8, bool)
-    ensures { UInt8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (UInt8.to_int self * UInt8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + UInt8.to_int Min0.mIN' }
-    ensures { UInt8.to_int self * UInt8.to_int rhs >= UInt8.to_int Min0.mIN' /\ UInt8.to_int self * UInt8.to_int rhs <= UInt8.to_int Max0.mAX' -> UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self * UInt8.to_int rhs }
-    ensures { UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self * UInt8.to_int rhs + k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self * UInt8.to_int rhs - k * (UInt8.to_int Max0.mAX' - UInt8.to_int Min0.mIN' + 1)) }
-    ensures { (let (_, a) = result in a) = (UInt8.to_int self * UInt8.to_int rhs < UInt8.to_int Min0.mIN' \/ UInt8.to_int self * UInt8.to_int rhs > UInt8.to_int Max0.mAX') }
-    
-end
-module Core_Num_Impl7_OverflowingMul
   use prelude.UInt8
   use mach.int.Int
   use mach.int.UInt32
@@ -2327,27 +2146,7 @@ module Core_Num_Impl7_CheckedDiv_Interface
     ensures { forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = div (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
-module Core_Num_Impl7_CheckedDiv
-  use prelude.UInt8
-  use mach.int.Int
-  clone Core_Num_Impl7_Min_Stub as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val checked_div [@cfg:stackify] (self : uint8) (rhs : uint8) : Core_Option_Option_Type.t_option uint8
-    ensures { (result = Core_Option_Option_Type.C_None) = (UInt8.to_int rhs = 0 \/ UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1) }
-    ensures { forall r : uint8 . result = Core_Option_Option_Type.C_Some r -> UInt8.to_int r = div (UInt8.to_int self) (UInt8.to_int rhs) }
-    
-end
 module Core_Num_Impl7_WrappingDiv_Interface
-  use prelude.UInt8
-  use mach.int.Int
-  clone Core_Num_Impl7_Min_Stub as Min0
-  val wrapping_div [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
-    requires {UInt8.to_int rhs <> 0}
-    ensures { UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 -> UInt8.to_int result = UInt8.to_int self }
-    ensures { UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
-    
-end
-module Core_Num_Impl7_WrappingDiv
   use prelude.UInt8
   use mach.int.Int
   clone Core_Num_Impl7_Min_Stub as Min0
@@ -2367,28 +2166,7 @@ module Core_Num_Impl7_SaturatingDiv_Interface
     ensures { UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
     
 end
-module Core_Num_Impl7_SaturatingDiv
-  use prelude.UInt8
-  use mach.int.Int
-  clone Core_Num_Impl7_Min_Stub as Min0
-  val saturating_div [@cfg:stackify] (self : uint8) (rhs : uint8) : uint8
-    requires {UInt8.to_int rhs <> 0}
-    ensures { UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 -> UInt8.to_int result = UInt8.to_int Min0.mIN' }
-    ensures { UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int result = div (UInt8.to_int self) (UInt8.to_int rhs) }
-    
-end
 module Core_Num_Impl7_OverflowingDiv_Interface
-  use prelude.UInt8
-  use mach.int.Int
-  clone Core_Num_Impl7_Min_Stub as Min0
-  val overflowing_div [@cfg:stackify] (self : uint8) (rhs : uint8) : (uint8, bool)
-    requires {UInt8.to_int rhs <> 0}
-    ensures { UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 -> UInt8.to_int (let (a, _) = result in a) = UInt8.to_int self }
-    ensures { UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1 \/ UInt8.to_int (let (a, _) = result in a) = div (UInt8.to_int self) (UInt8.to_int rhs) }
-    ensures { (let (_, a) = result in a) = (UInt8.to_int self = UInt8.to_int Min0.mIN' /\ UInt8.to_int rhs = - 1) }
-    
-end
-module Core_Num_Impl7_OverflowingDiv
   use prelude.UInt8
   use mach.int.Int
   clone Core_Num_Impl7_Min_Stub as Min0
@@ -2898,17 +2676,6 @@ module Core_Num_Impl1_CheckedAdd_Interface
     ensures { forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int8.to_int self + Int8.to_int rhs }
     
 end
-module Core_Num_Impl1_CheckedAdd
-  use prelude.Int8
-  use mach.int.Int
-  clone Core_Num_Impl1_Max_Stub as Max0
-  clone Core_Num_Impl1_Min_Stub as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val checked_add [@cfg:stackify] (self : int8) (rhs : int8) : Core_Option_Option_Type.t_option int8
-    ensures { (result = Core_Option_Option_Type.C_None) = (Int8.to_int self + Int8.to_int rhs < Int8.to_int Min0.mIN' \/ Int8.to_int self + Int8.to_int rhs > Int8.to_int Max0.mAX') }
-    ensures { forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int8.to_int self + Int8.to_int rhs }
-    
-end
 module Core_Num_Impl1_Bits_Stub
   use mach.int.Int
   use mach.int.UInt32
@@ -2936,22 +2703,6 @@ module Core_Num_Impl1_WrappingAdd_Interface
     ensures { Int8.to_int self + Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self + Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
     
 end
-module Core_Num_Impl1_WrappingAdd
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.UInt32
-  use int.Power
-  use int.EuclideanDivision
-  clone Core_Num_Impl1_Max_Stub as Max0
-  clone Core_Num_Impl1_Min_Stub as Min0
-  clone Core_Num_Impl1_Bits_Stub as Bits0
-  val wrapping_add [@cfg:stackify] (self : int8) (rhs : int8) : int8
-    ensures { Int8.to_int result = EuclideanDivision.mod (Int8.to_int self + Int8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + Int8.to_int Min0.mIN' }
-    ensures { Int8.to_int self + Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int self + Int8.to_int rhs }
-    ensures { Int8.to_int self + Int8.to_int rhs < Int8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self + Int8.to_int rhs + k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { Int8.to_int self + Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self + Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    
-end
 module Core_Num_Impl1_SaturatingAdd_Interface
   use prelude.Int8
   use mach.int.Int
@@ -2963,35 +2714,7 @@ module Core_Num_Impl1_SaturatingAdd_Interface
     ensures { Int8.to_int self + Int8.to_int rhs > Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int Max0.mAX' }
     
 end
-module Core_Num_Impl1_SaturatingAdd
-  use prelude.Int8
-  use mach.int.Int
-  clone Core_Num_Impl1_Max_Stub as Max0
-  clone Core_Num_Impl1_Min_Stub as Min0
-  val saturating_add [@cfg:stackify] (self : int8) (rhs : int8) : int8
-    ensures { Int8.to_int self + Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int self + Int8.to_int rhs }
-    ensures { Int8.to_int self + Int8.to_int rhs < Int8.to_int Min0.mIN' -> Int8.to_int result = Int8.to_int Min0.mIN' }
-    ensures { Int8.to_int self + Int8.to_int rhs > Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int Max0.mAX' }
-    
-end
 module Core_Num_Impl1_OverflowingAdd_Interface
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.UInt32
-  use int.Power
-  use int.EuclideanDivision
-  clone Core_Num_Impl1_Max_Stub as Max0
-  clone Core_Num_Impl1_Min_Stub as Min0
-  clone Core_Num_Impl1_Bits_Stub as Bits0
-  val overflowing_add [@cfg:stackify] (self : int8) (rhs : int8) : (int8, bool)
-    ensures { Int8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (Int8.to_int self + Int8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + Int8.to_int Min0.mIN' }
-    ensures { Int8.to_int self + Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self + Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs }
-    ensures { Int8.to_int self + Int8.to_int rhs < Int8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs + k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { Int8.to_int self + Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self + Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { (let (_, a) = result in a) = (Int8.to_int self + Int8.to_int rhs < Int8.to_int Min0.mIN' \/ Int8.to_int self + Int8.to_int rhs > Int8.to_int Max0.mAX') }
-    
-end
-module Core_Num_Impl1_OverflowingAdd
   use prelude.Int8
   use mach.int.Int
   use mach.int.UInt32
@@ -3964,34 +3687,7 @@ module Core_Num_Impl1_CheckedSub_Interface
     ensures { forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int8.to_int self - Int8.to_int rhs }
     
 end
-module Core_Num_Impl1_CheckedSub
-  use prelude.Int8
-  use mach.int.Int
-  clone Core_Num_Impl1_Max_Stub as Max0
-  clone Core_Num_Impl1_Min_Stub as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val checked_sub [@cfg:stackify] (self : int8) (rhs : int8) : Core_Option_Option_Type.t_option int8
-    ensures { (result = Core_Option_Option_Type.C_None) = (Int8.to_int self - Int8.to_int rhs < Int8.to_int Min0.mIN' \/ Int8.to_int self - Int8.to_int rhs > Int8.to_int Max0.mAX') }
-    ensures { forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int8.to_int self - Int8.to_int rhs }
-    
-end
 module Core_Num_Impl1_WrappingSub_Interface
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.UInt32
-  use int.Power
-  use int.EuclideanDivision
-  clone Core_Num_Impl1_Max_Stub as Max0
-  clone Core_Num_Impl1_Min_Stub as Min0
-  clone Core_Num_Impl1_Bits_Stub as Bits0
-  val wrapping_sub [@cfg:stackify] (self : int8) (rhs : int8) : int8
-    ensures { Int8.to_int result = EuclideanDivision.mod (Int8.to_int self - Int8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + Int8.to_int Min0.mIN' }
-    ensures { Int8.to_int self - Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int self - Int8.to_int rhs }
-    ensures { Int8.to_int self - Int8.to_int rhs < Int8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self - Int8.to_int rhs + k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { Int8.to_int self - Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self - Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    
-end
-module Core_Num_Impl1_WrappingSub
   use prelude.Int8
   use mach.int.Int
   use mach.int.UInt32
@@ -4018,35 +3714,7 @@ module Core_Num_Impl1_SaturatingSub_Interface
     ensures { Int8.to_int self - Int8.to_int rhs > Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int Max0.mAX' }
     
 end
-module Core_Num_Impl1_SaturatingSub
-  use prelude.Int8
-  use mach.int.Int
-  clone Core_Num_Impl1_Max_Stub as Max0
-  clone Core_Num_Impl1_Min_Stub as Min0
-  val saturating_sub [@cfg:stackify] (self : int8) (rhs : int8) : int8
-    ensures { Int8.to_int self - Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int self - Int8.to_int rhs }
-    ensures { Int8.to_int self - Int8.to_int rhs < Int8.to_int Min0.mIN' -> Int8.to_int result = Int8.to_int Min0.mIN' }
-    ensures { Int8.to_int self - Int8.to_int rhs > Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int Max0.mAX' }
-    
-end
 module Core_Num_Impl1_OverflowingSub_Interface
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.UInt32
-  use int.Power
-  use int.EuclideanDivision
-  clone Core_Num_Impl1_Max_Stub as Max0
-  clone Core_Num_Impl1_Min_Stub as Min0
-  clone Core_Num_Impl1_Bits_Stub as Bits0
-  val overflowing_sub [@cfg:stackify] (self : int8) (rhs : int8) : (int8, bool)
-    ensures { Int8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (Int8.to_int self - Int8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + Int8.to_int Min0.mIN' }
-    ensures { Int8.to_int self - Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self - Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs }
-    ensures { Int8.to_int self - Int8.to_int rhs < Int8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs + k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { Int8.to_int self - Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self - Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { (let (_, a) = result in a) = (Int8.to_int self - Int8.to_int rhs < Int8.to_int Min0.mIN' \/ Int8.to_int self - Int8.to_int rhs > Int8.to_int Max0.mAX') }
-    
-end
-module Core_Num_Impl1_OverflowingSub
   use prelude.Int8
   use mach.int.Int
   use mach.int.UInt32
@@ -5023,34 +4691,7 @@ module Core_Num_Impl1_CheckedMul_Interface
     ensures { forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int8.to_int self * Int8.to_int rhs }
     
 end
-module Core_Num_Impl1_CheckedMul
-  use prelude.Int8
-  use mach.int.Int
-  clone Core_Num_Impl1_Max_Stub as Max0
-  clone Core_Num_Impl1_Min_Stub as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val checked_mul [@cfg:stackify] (self : int8) (rhs : int8) : Core_Option_Option_Type.t_option int8
-    ensures { (result = Core_Option_Option_Type.C_None) = (Int8.to_int self * Int8.to_int rhs < Int8.to_int Min0.mIN' \/ Int8.to_int self * Int8.to_int rhs > Int8.to_int Max0.mAX') }
-    ensures { forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = Int8.to_int self * Int8.to_int rhs }
-    
-end
 module Core_Num_Impl1_WrappingMul_Interface
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.UInt32
-  use int.Power
-  use int.EuclideanDivision
-  clone Core_Num_Impl1_Max_Stub as Max0
-  clone Core_Num_Impl1_Min_Stub as Min0
-  clone Core_Num_Impl1_Bits_Stub as Bits0
-  val wrapping_mul [@cfg:stackify] (self : int8) (rhs : int8) : int8
-    ensures { Int8.to_int result = EuclideanDivision.mod (Int8.to_int self * Int8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + Int8.to_int Min0.mIN' }
-    ensures { Int8.to_int self * Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int self * Int8.to_int rhs }
-    ensures { Int8.to_int self * Int8.to_int rhs < Int8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self * Int8.to_int rhs + k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { Int8.to_int self * Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int result = Int8.to_int self * Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    
-end
-module Core_Num_Impl1_WrappingMul
   use prelude.Int8
   use mach.int.Int
   use mach.int.UInt32
@@ -5077,35 +4718,7 @@ module Core_Num_Impl1_SaturatingMul_Interface
     ensures { Int8.to_int self * Int8.to_int rhs > Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int Max0.mAX' }
     
 end
-module Core_Num_Impl1_SaturatingMul
-  use prelude.Int8
-  use mach.int.Int
-  clone Core_Num_Impl1_Max_Stub as Max0
-  clone Core_Num_Impl1_Min_Stub as Min0
-  val saturating_mul [@cfg:stackify] (self : int8) (rhs : int8) : int8
-    ensures { Int8.to_int self * Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int self * Int8.to_int rhs }
-    ensures { Int8.to_int self * Int8.to_int rhs < Int8.to_int Min0.mIN' -> Int8.to_int result = Int8.to_int Min0.mIN' }
-    ensures { Int8.to_int self * Int8.to_int rhs > Int8.to_int Max0.mAX' -> Int8.to_int result = Int8.to_int Max0.mAX' }
-    
-end
 module Core_Num_Impl1_OverflowingMul_Interface
-  use prelude.Int8
-  use mach.int.Int
-  use mach.int.UInt32
-  use int.Power
-  use int.EuclideanDivision
-  clone Core_Num_Impl1_Max_Stub as Max0
-  clone Core_Num_Impl1_Min_Stub as Min0
-  clone Core_Num_Impl1_Bits_Stub as Bits0
-  val overflowing_mul [@cfg:stackify] (self : int8) (rhs : int8) : (int8, bool)
-    ensures { Int8.to_int (let (a, _) = result in a) = EuclideanDivision.mod (Int8.to_int self * Int8.to_int rhs) (Power.power 2 (UInt32.to_int Bits0.bITS')) + Int8.to_int Min0.mIN' }
-    ensures { Int8.to_int self * Int8.to_int rhs >= Int8.to_int Min0.mIN' /\ Int8.to_int self * Int8.to_int rhs <= Int8.to_int Max0.mAX' -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs }
-    ensures { Int8.to_int self * Int8.to_int rhs < Int8.to_int Min0.mIN' -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs + k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { Int8.to_int self * Int8.to_int rhs > Int8.to_int Max0.mAX' -> (exists k : int . k > 0 /\ Int8.to_int (let (a, _) = result in a) = Int8.to_int self * Int8.to_int rhs - k * (Int8.to_int Max0.mAX' - Int8.to_int Min0.mIN' + 1)) }
-    ensures { (let (_, a) = result in a) = (Int8.to_int self * Int8.to_int rhs < Int8.to_int Min0.mIN' \/ Int8.to_int self * Int8.to_int rhs > Int8.to_int Max0.mAX') }
-    
-end
-module Core_Num_Impl1_OverflowingMul
   use prelude.Int8
   use mach.int.Int
   use mach.int.UInt32
@@ -5828,27 +5441,7 @@ module Core_Num_Impl1_CheckedDiv_Interface
     ensures { forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = div (Int8.to_int self) (Int8.to_int rhs) }
     
 end
-module Core_Num_Impl1_CheckedDiv
-  use prelude.Int8
-  use mach.int.Int
-  clone Core_Num_Impl1_Min_Stub as Min0
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  val checked_div [@cfg:stackify] (self : int8) (rhs : int8) : Core_Option_Option_Type.t_option int8
-    ensures { (result = Core_Option_Option_Type.C_None) = (Int8.to_int rhs = 0 \/ Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1) }
-    ensures { forall r : int8 . result = Core_Option_Option_Type.C_Some r -> Int8.to_int r = div (Int8.to_int self) (Int8.to_int rhs) }
-    
-end
 module Core_Num_Impl1_WrappingDiv_Interface
-  use prelude.Int8
-  use mach.int.Int
-  clone Core_Num_Impl1_Min_Stub as Min0
-  val wrapping_div [@cfg:stackify] (self : int8) (rhs : int8) : int8
-    requires {Int8.to_int rhs <> 0}
-    ensures { Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int self }
-    ensures { Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
-    
-end
-module Core_Num_Impl1_WrappingDiv
   use prelude.Int8
   use mach.int.Int
   clone Core_Num_Impl1_Min_Stub as Min0
@@ -5868,28 +5461,7 @@ module Core_Num_Impl1_SaturatingDiv_Interface
     ensures { Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
     
 end
-module Core_Num_Impl1_SaturatingDiv
-  use prelude.Int8
-  use mach.int.Int
-  clone Core_Num_Impl1_Min_Stub as Min0
-  val saturating_div [@cfg:stackify] (self : int8) (rhs : int8) : int8
-    requires {Int8.to_int rhs <> 0}
-    ensures { Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 -> Int8.to_int result = Int8.to_int Min0.mIN' }
-    ensures { Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 \/ Int8.to_int result = div (Int8.to_int self) (Int8.to_int rhs) }
-    
-end
 module Core_Num_Impl1_OverflowingDiv_Interface
-  use prelude.Int8
-  use mach.int.Int
-  clone Core_Num_Impl1_Min_Stub as Min0
-  val overflowing_div [@cfg:stackify] (self : int8) (rhs : int8) : (int8, bool)
-    requires {Int8.to_int rhs <> 0}
-    ensures { Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 -> Int8.to_int (let (a, _) = result in a) = Int8.to_int self }
-    ensures { Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1 \/ Int8.to_int (let (a, _) = result in a) = div (Int8.to_int self) (Int8.to_int rhs) }
-    ensures { (let (_, a) = result in a) = (Int8.to_int self = Int8.to_int Min0.mIN' /\ Int8.to_int rhs = - 1) }
-    
-end
-module Core_Num_Impl1_OverflowingDiv
   use prelude.Int8
   use mach.int.Int
   clone Core_Num_Impl1_Min_Stub as Min0

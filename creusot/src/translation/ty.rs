@@ -3,7 +3,7 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{
     self,
     subst::{InternalSubsts, SubstsRef},
-    AliasKind, AliasTy, ClosureSubsts, FieldDef, Ty, TyCtxt, TyKind,
+    AliasKind, AliasTy, DefIdTree, FieldDef, GenericArgKind, Ty, TyCtxt, TyKind,
 };
 use rustc_resolve::Namespace;
 use rustc_span::{Span, Symbol, DUMMY_SP};
@@ -21,7 +21,7 @@ use why3::{declaration::TyDecl, ty::Type as MlT, QName};
 
 use crate::{
     ctx::*,
-    util::{self, get_builtin, item_qname, module_name},
+    util::{self, get_builtin, item_qname, module_name, PreSignature},
 };
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:
@@ -154,9 +154,19 @@ fn translate_ty_inner<'tcx>(
                 return MlT::Tuple(Vec::new());
             }
 
+            let args = subst
+                .as_closure()
+                .parent_substs()
+                .iter()
+                .filter_map(|t| match t.unpack() {
+                    GenericArgKind::Type(t) => Some(translate_ty_inner(trans, ctx, names, span, t)),
+                    _ => None,
+                })
+                .collect();
+
             let cons = MlT::TConstructor(names.ty(*id, subst));
 
-            cons
+            cons.tapp(args)
         }
         FnDef(_, _) =>
         /* FnDef types are effectively singleton types, so it is sound to translate to unit. */
@@ -182,7 +192,38 @@ pub(crate) fn translate_projection_ty<'tcx>(
     MlT::TConstructor(name)
 }
 
+pub(crate) fn translate_closure_ty<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    did: DefId,
+    subst: SubstsRef<'tcx>,
+) -> TyDecl {
+    let ty_name = names.ty(did, subst).name;
+    let closure_subst = subst.as_closure();
+    let fields: Vec<_> = closure_subst
+        .upvar_tys()
+        .map(|uv| Field {
+            ty: translate_ty_inner(TyTranslation::Declaration, ctx, names, DUMMY_SP, uv),
+            ghost: false,
+        })
+        .collect();
+
+    let cons_name = names.constructor(did, subst).name;
+    let kind = AdtDecl {
+        ty_name,
+        ty_params: ty_param_names(ctx.tcx, did).collect(),
+        constrs: vec![ConstructorDecl { name: cons_name, fields }],
+    };
+
+    TyDecl::Adt { tys: vec![kind] }
+}
+
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
+
+use super::{
+    pearlite::{self, Term, TermKind},
+    specification::PreContract,
+};
 
 pub(crate) fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSet<DefId> {
     let mut graph = DiGraphMap::<_, ()>::new();
@@ -357,33 +398,18 @@ fn build_ty_decl<'tcx>(
     kind
 }
 
-pub(crate) fn translate_closure_ty<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    did: DefId,
-    subst: SubstsRef<'tcx>,
-) -> TyDecl {
-    let ty_name = translate_ty_name(ctx, did).name;
-    let closure_subst = subst.as_closure();
-    let fields: Vec<_> = closure_subst
-        .upvar_tys()
-        .map(|uv| Field {
-            ty: translate_ty_inner(TyTranslation::Usage, ctx, names, DUMMY_SP, uv),
-            ghost: false,
-        })
-        .collect();
+pub(crate) fn ty_param_names(
+    tcx: TyCtxt<'_>,
+    mut def_id: DefId,
+) -> impl Iterator<Item = Ident> + '_ {
+    loop {
+        if tcx.is_closure(def_id) {
+            def_id = tcx.parent(def_id);
+        } else {
+            break;
+        }
+    }
 
-    let cons_name = names.constructor(did, subst).name;
-    let kind = AdtDecl {
-        ty_name,
-        ty_params: vec![],
-        constrs: vec![ConstructorDecl { name: cons_name, fields }],
-    };
-
-    TyDecl::Adt { tys: vec![kind] }
-}
-
-fn ty_param_names(tcx: TyCtxt<'_>, def_id: DefId) -> impl Iterator<Item = Ident> + '_ {
     let gens = tcx.generics_of(def_id);
     gens.params
         .iter()
@@ -519,36 +545,59 @@ pub(crate) fn build_accessor(
 
 pub(crate) fn closure_accessors<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    ty_id: DefId,
-    subst: ClosureSubsts<'tcx>,
-) -> Vec<Decl> {
-    let count = subst.upvar_tys().count();
+    closure: DefId,
+) -> Vec<(Symbol, PreSignature<'tcx>, Term<'tcx>)> {
+    let TyKind::Closure(_, substs) = ctx.type_of(closure).kind() else { unreachable!() };
+
+    let count = substs.as_closure().upvar_tys().count();
+
+    (0..count)
+        .map(|i| {
+            let (sig, term) = build_closure_accessor(ctx, closure, i);
+            (Symbol::intern(&format!("field_{i}")), sig, term)
+        })
+        .collect()
+}
+
+pub(crate) fn build_closure_accessor<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    closure: DefId,
+    ix: usize,
+) -> (PreSignature<'tcx>, Term<'tcx>) {
+    let TyKind::Closure(_, substs) = ctx.type_of(closure).kind() else { unreachable!() };
+
+    let out_ty = substs.as_closure().upvar_tys().nth(ix).unwrap();
+
+    let self_ = Term::var(Symbol::intern("self"), ctx.type_of(closure));
+
+    let pre_sig = PreSignature {
+        inputs: vec![(Symbol::intern("self"), DUMMY_SP, ctx.type_of(closure))],
+        output: out_ty,
+        contract: PreContract::default(),
+    };
+
+    let res = Term::var(Symbol::intern("a"), out_ty);
 
     let mut fields: Vec<_> =
-        subst.upvar_tys().map(|ty| translate_ty(ctx, names, DUMMY_SP, ty)).collect();
+        substs.as_closure().upvar_tys().map(|_| pearlite::Pattern::Wildcard).collect();
+    fields[ix] = pearlite::Pattern::Binder(Symbol::intern("a"));
 
-    let TyKind::Closure(_, substs) = ctx.type_of(ty_id).kind() else { panic!() };
-    let cons_name = names.constructor(ty_id, substs);
+    let term = Term {
+        ty: out_ty,
+        kind: TermKind::Let {
+            pattern: pearlite::Pattern::Constructor {
+                adt: closure,
+                substs,
+                variant: 0u32.into(),
+                fields,
+            },
+            arg: box self_,
+            body: box res,
+        },
+        span: DUMMY_SP,
+    };
 
-    let ty_name = translate_ty_name(ctx, ty_id).name;
-    let this = MlT::TConstructor(ty_name.into());
-
-    let mut accessors = Vec::new();
-
-    let variant_arity = vec![(cons_name, count)];
-
-    for tgt in fields.drain(..).enumerate() {
-        let nm = names.accessor(ty_id, substs, 0, tgt.0).name;
-        accessors.push(build_accessor(
-            this.clone(),
-            nm,
-            tgt.0,
-            &variant_arity,
-            (tgt.0, tgt.1, false),
-        ));
-    }
-    accessors
+    (pre_sig, term)
 }
 
 pub(crate) fn intty_to_ty(names: &mut CloneMap<'_>, ity: &rustc_middle::ty::IntTy) -> MlT {

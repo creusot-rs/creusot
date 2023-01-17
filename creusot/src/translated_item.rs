@@ -17,10 +17,13 @@ pub enum TranslatedItem {
         proof_modl: Option<Module>,
         has_axioms: bool,
     },
+    Closure {
+        interface: Vec<Module>,
+        modl: Option<Module>,
+    },
     Program {
         interface: Module,
-        modl: Module,
-        has_axioms: bool,
+        modl: Option<Module>,
     },
     Trait {},
     Impl {
@@ -28,10 +31,6 @@ pub enum TranslatedItem {
     },
     AssocTy {
         modl: Module,
-    },
-    Extern {
-        interface: Module,
-        body: Module,
     },
     Constant {
         stub: Module,
@@ -59,7 +58,7 @@ impl<'a> TranslatedItem {
     pub(crate) fn has_axioms(&self) -> bool {
         match self {
             TranslatedItem::Logic { has_axioms, .. } => *has_axioms,
-            TranslatedItem::Program { has_axioms, .. } => *has_axioms,
+            TranslatedItem::Program { .. } => false,
             _ => false,
         }
     }
@@ -72,7 +71,7 @@ impl<'a> TranslatedItem {
                 .chain(iter::once(interface))
                 .chain(iter::once(modl))
                 .chain(proof_modl.into_iter()),
-            Program { interface, modl, .. } => box iter::once(interface).chain(iter::once(modl)),
+            Program { interface, modl, .. } => box iter::once(interface).chain(modl.into_iter()),
             Trait { .. } => box iter::empty(),
             Impl { modl, .. } => box iter::once(modl),
             AssocTy { modl, .. } => box iter::once(modl),
@@ -85,6 +84,7 @@ impl<'a> TranslatedItem {
 
                 box modl.into_iter()
             }
+            Closure { interface, modl } => box interface.into_iter().chain(modl.into_iter()),
         }
     }
 
@@ -102,6 +102,7 @@ impl<'a> TranslatedItem {
                 box std::iter::once(stub).chain(box std::iter::once(modl))
             }
             TranslatedItem::Type { .. } => self.modules(),
+            TranslatedItem::Closure { interface, modl: _ } => box interface.into_iter(),
         }
     }
 }

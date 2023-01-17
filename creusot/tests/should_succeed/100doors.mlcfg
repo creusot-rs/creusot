@@ -103,25 +103,6 @@ module Alloc_Vec_FromElem_Interface
     ensures { forall i : int . 0 <= i /\ i < UInt64.to_int n -> Seq.get (ShallowModel0.shallow_model result) i = elem }
     
 end
-module Alloc_Vec_FromElem
-  type t
-  use seq.Seq
-  use mach.int.UInt64
-  use mach.int.Int
-  use prelude.UIntSize
-  clone Core_Num_Impl12_Max_Stub as Max0
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel0 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global,
-    val Max0.mAX' = Max0.mAX',
-    axiom .
-  val from_elem [@cfg:stackify] (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
-    ensures { Seq.length (ShallowModel0.shallow_model result) = UInt64.to_int n }
-    ensures { forall i : int . 0 <= i /\ i < UInt64.to_int n -> Seq.get (ShallowModel0.shallow_model result) i = elem }
-    
-end
 module Core_Ops_Range_Range_Type
   type t_range 'idx =
     | C_Range 'idx 'idx
@@ -206,23 +187,6 @@ module Core_Iter_Traits_Collect_Impl0_IntoIter_Interface
     type self = i,
     type IntoIter0.intoIter = IntoIter0.intoIter
   clone CreusotContracts_Std1_Iter_IntoIterator_IntoIterPre_Stub as IntoIterPre0 with
-    type self = i
-  val into_iter [@cfg:stackify] (self : i) : i
-    requires {IntoIterPre0.into_iter_pre self}
-    ensures { IntoIterPost0.into_iter_post self result }
-    ensures { Invariant0.invariant' result }
-    
-end
-module Core_Iter_Traits_Collect_Impl0_IntoIter
-  type i
-  clone Core_Iter_Traits_Collect_Impl0_IntoIter_Type as IntoIter0 with
-    type i = i
-  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
-    type self = i
-  clone CreusotContracts_Std1_Iter_IntoIterator_IntoIterPost_Interface as IntoIterPost0 with
-    type self = i,
-    type IntoIter0.intoIter = IntoIter0.intoIter
-  clone CreusotContracts_Std1_Iter_IntoIterator_IntoIterPre_Interface as IntoIterPre0 with
     type self = i
   val into_iter [@cfg:stackify] (self : i) : i
     requires {IntoIterPre0.into_iter_pre self}
@@ -327,32 +291,6 @@ module Core_Iter_Range_Impl3_Next_Interface
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = Core_Ops_Range_Range_Type.t_range a
   clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
-    type idx = a
-  val next [@cfg:stackify] (self : borrowed (Core_Ops_Range_Range_Type.t_range a)) : Core_Option_Option_Type.t_option a
-    requires {Invariant0.invariant' ( * self)}
-    ensures { Invariant0.invariant' ( ^ self) }
-    ensures { match (result) with
-      | Core_Option_Option_Type.C_None -> Completed0.completed self
-      | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
-      end }
-    
-end
-module Core_Iter_Range_Impl3_Next
-  type a
-  use prelude.Borrow
-  use seq.Seq
-  clone Core_Iter_Range_Impl3_Item_Type as Item1 with
-    type a = a
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
-  clone CreusotContracts_Std1_Iter_Iterator_Produces_Interface as Produces0 with
-    type self = Core_Ops_Range_Range_Type.t_range a,
-    type Item0.item = Item1.item
-  clone CreusotContracts_Std1_Iter_Iterator_Completed_Interface as Completed0 with
-    type self = Core_Ops_Range_Range_Type.t_range a
-  clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
-    type self = Core_Ops_Range_Range_Type.t_range a
-  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Interface as Invariant0 with
     type idx = a
   val next [@cfg:stackify] (self : borrowed (Core_Ops_Range_Range_Type.t_range a)) : Core_Option_Option_Type.t_option a
     requires {Invariant0.invariant' ( * self)}
@@ -524,39 +462,6 @@ module Alloc_Vec_Impl15_Index_Interface
     ensures { HasValue0.has_value index (ShallowModel0.shallow_model self) result }
     
 end
-module Alloc_Vec_Impl15_Index
-  type t
-  type i
-  type a
-  use prelude.Borrow
-  use prelude.Slice
-  use seq.Seq
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
-    type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t,
-    type a = a
-  clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with
-    type self = i,
-    type t = seq t
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Slice_SliceIndex_HasValue_Interface as HasValue0 with
-    type self = i,
-    type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
-    type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Slice_SliceIndex_InBounds_Interface as InBounds0 with
-    type self = i,
-    type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy
-  clone CreusotContracts_Model_Impl1_ShallowModel_Interface as ShallowModel0 with
-    type t = Alloc_Vec_Vec_Type.t_vec t a,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
-    requires {InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
-    ensures { HasValue0.has_value index (ShallowModel0.shallow_model self) result }
-    
-end
 module CreusotContracts_Model_Impl3_ShallowModel_Stub
   type t
   use prelude.Borrow
@@ -648,52 +553,6 @@ module Alloc_Vec_Impl16_IndexMut_Interface
     type t = seq t,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
-    type t = Alloc_Vec_Vec_Type.t_vec t a,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
-    requires {InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
-    ensures { HasValue0.has_value index (ShallowModel0.shallow_model self) ( * result) }
-    ensures { HasValue0.has_value index (ShallowModel1.shallow_model ( ^ self)) ( ^ result) }
-    ensures { ResolveElswhere0.resolve_elswhere index (ShallowModel0.shallow_model self) (ShallowModel1.shallow_model ( ^ self)) }
-    ensures { Seq.length (ShallowModel1.shallow_model ( ^ self)) = Seq.length (ShallowModel0.shallow_model self) }
-    
-end
-module Alloc_Vec_Impl16_IndexMut
-  type t
-  type i
-  type a
-  use prelude.Borrow
-  use seq.Seq
-  use prelude.Slice
-  clone Core_Num_Impl12_Max_Stub as Max0
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
-    type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t,
-    type a = a
-  clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with
-    type self = i,
-    type t = seq t
-  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
-  clone CreusotContracts_Std1_Slice_SliceIndex_ResolveElswhere_Interface as ResolveElswhere0 with
-    type self = i,
-    type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface as ShallowModel1 with
-    type t = t,
-    type a = a,
-    val Max0.mAX' = Max0.mAX',
-    axiom .
-  clone CreusotContracts_Std1_Slice_SliceIndex_HasValue_Interface as HasValue0 with
-    type self = i,
-    type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
-    type Output0.output = Output0.output
-  clone CreusotContracts_Std1_Slice_SliceIndex_InBounds_Interface as InBounds0 with
-    type self = i,
-    type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy
-  clone CreusotContracts_Model_Impl3_ShallowModel_Interface as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
   val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output

@@ -25,6 +25,20 @@ impl Type {
         Self::TFun(box ty, box Self::Bool)
     }
 
+    pub fn tapp(mut self, args: Vec<Self>) -> Self {
+        if args.is_empty() {
+            self
+        } else {
+            match self {
+                Self::TApp(_, ref mut args1) => {
+                    args1.extend(args);
+                    self
+                }
+                _ => Self::TApp(box self, args),
+            }
+        }
+    }
+
     pub(crate) fn complex(&self) -> bool {
         use Type::*;
         !matches!(self, Bool | Char | Integer | TVar(_) | Tuple(_) | TConstructor(_))

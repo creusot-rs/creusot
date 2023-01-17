@@ -1,13 +1,16 @@
-use super::{
-    function::{closure_contract, closure_generic_decls},
-    ty::{closure_accessors, translate_closure_ty},
+use super::function::closure_generic_decls;
+use crate::{
+    backend::{logic::spec_axiom, term::lower_pure},
+    clone_map::CloneMap,
+    ctx::*,
+    translation::{function::closure_contract, ty::closure_accessors},
+    util::{self, sig_to_why3},
 };
-use crate::{backend::logic::spec_axiom, clone_map::CloneMap, ctx::*, util};
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{ClosureKind, TyKind};
 use std::borrow::Cow;
 use why3::{
-    declaration::{Contract, Decl, Module},
+    declaration::{Contract, Decl, LetDecl, LetKind, Module, Use},
     Exp, Ident,
 };
 
@@ -24,19 +27,32 @@ pub(crate) fn interface_for<'tcx>(
     let mut decls: Vec<_> = closure_generic_decls(ctx.tcx, def_id).collect();
 
     if ctx.tcx.is_closure(def_id) {
+        decls.push(Decl::UseDecl(Use {
+            name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(),
+            as_: None,
+            export: true,
+        }));
+        let acc: Vec<_> = closure_accessors(ctx, def_id)
+            .into_iter()
+            .map(|(sym, sig, body)| -> Decl {
+                let mut sig = sig_to_why3(ctx, &mut names, sig, def_id);
+                sig.name = Ident::build(sym.as_str());
+                Decl::Let(LetDecl {
+                    kind: Some(LetKind::Function),
+                    rec: false,
+                    ghost: false,
+                    sig,
+                    body: lower_pure(ctx, &mut names, body),
+                })
+            })
+            .collect();
+        let contract = closure_contract(ctx, def_id).to_why(ctx, def_id, &mut names);
+
+        decls.extend(names.to_clones(ctx));
+        decls.extend(acc);
+        decls.extend(contract);
+
         if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-            let tydecl = translate_closure_ty(ctx, &mut names, def_id, subst);
-            decls.extend(names.to_clones(ctx));
-
-            let accessors = closure_accessors(ctx, &mut names, def_id, subst.as_closure());
-            decls.extend(names.to_clones(ctx));
-            decls.push(Decl::TyDecl(tydecl));
-            decls.extend(accessors);
-
-            let contracts = closure_contract(ctx, def_id).to_why(ctx, def_id, &mut names);
-            decls.extend(names.to_clones(ctx));
-            decls.extend(contracts);
-
             if subst.as_closure().kind() == ClosureKind::FnMut {
                 sig.contract.ensures.push(
                     Exp::pure_var("unnest".into())
