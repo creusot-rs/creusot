@@ -3,11 +3,7 @@ use crate::{
     ctx::*,
     error::{CrErr, CreusotResult},
     function::all_generic_decls_for,
-    translation::{
-        pearlite::{Term, TermKind},
-        specification::ContractClauses,
-        traits,
-    },
+    translation::{pearlite::Term, specification::ContractClauses, traits},
     util::{self, item_type},
 };
 use indexmap::IndexSet;
@@ -20,7 +16,7 @@ use rustc_middle::{
         EarlyBinder, Predicate, TyCtxt, TyKind, WithOptConstParam,
     },
 };
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::Symbol;
 use why3::declaration::{Decl, Module};
 
 pub(crate) fn default_decl<'tcx>(
@@ -181,9 +177,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         .fn_arg_names(def_id)
         .iter()
         .zip(ctx.tcx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).skip_binder().inputs()))
-        .map(|(i, (i2, ty))| {
-            (i.name, Term { ty: *ty, kind: TermKind::Var(i2.name), span: DUMMY_SP })
-        })
+        .map(|(i, (i2, ty))| (i.name, Term::var(i2.name, *ty)))
         .collect();
     Ok((id, ExternSpec { contract, additional_predicates, subst, arg_subst }))
 }

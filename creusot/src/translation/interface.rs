@@ -33,7 +33,7 @@ pub(crate) fn interface_for<'tcx>(
             decls.push(Decl::TyDecl(tydecl));
             decls.extend(accessors);
 
-            let contracts = closure_contract(ctx, &mut names, def_id);
+            let contracts = closure_contract(ctx, def_id).to_why(ctx, def_id, &mut names);
             decls.extend(names.to_clones(ctx));
             decls.extend(contracts);
 

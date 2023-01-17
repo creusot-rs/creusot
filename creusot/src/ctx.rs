@@ -17,8 +17,7 @@ use crate::{
         traits::TraitImpl,
         ty::{self, translate_tydecl, ty_binding_group},
     },
-    util,
-    util::item_type,
+    util::{self, item_type, pre_sig_of, PreSignature},
 };
 use indexmap::{IndexMap, IndexSet};
 use rustc_data_structures::captures::Captures;
@@ -54,6 +53,7 @@ pub struct TranslationCtx<'tcx> {
     extern_specs: HashMap<DefId, ExternSpec<'tcx>>,
     extern_spec_items: HashMap<LocalDefId, DefId>,
     impl_data: HashMap<DefId, TraitImpl<'tcx>>,
+    sigs: HashMap<DefId, PreSignature<'tcx>>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -85,6 +85,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             extern_spec_items: Default::default(),
             fmir_body: Default::default(),
             impl_data: Default::default(),
+            sigs: Default::default(),
         }
     }
 
@@ -293,6 +294,16 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         } else {
             None
         }
+    }
+
+    pub(crate) fn sig(&mut self, def_id: DefId) -> &PreSignature<'tcx> {
+        if !self.sigs.contains_key(&def_id) {
+            let mut term = pre_sig_of(self, def_id);
+            pearlite::normalize_sig(self.tcx, self.param_env(def_id), &mut term);
+
+            self.sigs.insert(def_id, term);
+        };
+        self.sigs.get(&def_id).unwrap()
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {

@@ -1,11 +1,7 @@
 use std::borrow::Cow;
 
 use crate::{
-    ctx::*,
-    function::all_generic_decls_for,
-    translation::specification,
-    util,
-    util::{get_builtin, pre_sig_of},
+    ctx::*, function::all_generic_decls_for, translation::specification, util, util::get_builtin,
 };
 use rustc_hir::def_id::DefId;
 use why3::{
@@ -47,7 +43,7 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> (Module, Module, Option<Module>, bool, CloneSummary<'tcx>) {
-    let has_axioms = !pre_sig_of(ctx, def_id).contract.is_empty();
+    let has_axioms = !ctx.sig(def_id).contract.is_empty();
 
     let (body_modl, deps) = if get_builtin(ctx.tcx, def_id).is_some() {
         builtin_body(ctx, def_id)
@@ -184,7 +180,7 @@ fn body_module<'tcx>(
         }
     }
 
-    let has_axioms = !pre_sig_of(ctx, def_id).contract.is_empty();
+    let has_axioms = !ctx.sig(def_id).contract.is_empty();
     if has_axioms {
         decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
     }

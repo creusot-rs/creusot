@@ -5,7 +5,7 @@ use crate::{
         ty::{self},
     },
     util,
-    util::{inputs_and_output, is_law, is_spec, item_type},
+    util::{inputs_and_output, is_law, is_spec},
 };
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
@@ -20,6 +20,7 @@ use why3::declaration::{Decl, Module, TyDecl};
 
 #[derive(Clone)]
 pub(crate) struct Refinement<'tcx> {
+    #[allow(dead_code)]
     pub(crate) trait_: (DefId, SubstsRef<'tcx>),
     pub(crate) impl_: (DefId, SubstsRef<'tcx>),
     pub(crate) refn: Term<'tcx>,

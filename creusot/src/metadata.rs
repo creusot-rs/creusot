@@ -147,7 +147,7 @@ impl<'tcx> CrateMetadata<'tcx> {
 #[derive(TyDecodable, TyEncodable)]
 pub(crate) struct BinaryMetadata<'tcx> {
     // Flatten the index map into a vector
-    dependencies: HashMap<DefId, Vec<((DefId, SubstsRef<'tcx>), CloneInfo<'tcx>)>>,
+    dependencies: HashMap<DefId, Vec<((DefId, SubstsRef<'tcx>), CloneInfo)>>,
 
     terms: Vec<(DefId, Term<'tcx>)>,
 
