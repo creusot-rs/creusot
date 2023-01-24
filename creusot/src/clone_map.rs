@@ -603,12 +603,7 @@ impl<'tcx> CloneMap<'tcx> {
             }
         }
 
-        let use_axioms = match self.names[&node].opaque {
-            CloneOpacity::Opaque | CloneOpacity::Default => {
-                ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false)
-            }
-            _ => false,
-        };
+        let use_axioms = ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false);
         if use_axioms {
             clone_subst.push(CloneSubst::Axiom(None))
         }
@@ -631,7 +626,10 @@ impl<'tcx> CloneMap<'tcx> {
         }))
     }
 
-    pub(crate) fn to_clones(&mut self, ctx: &mut ctx::TranslationCtx<'tcx>) -> Vec<Decl> {
+    pub(crate) fn to_clones(
+        mut self,
+        ctx: &mut ctx::TranslationCtx<'tcx>,
+    ) -> (Vec<Decl>, CloneSummary<'tcx>) {
         trace!("emitting clones for {:?}", self.self_id);
         let mut decls = Vec::new();
 
@@ -657,10 +655,9 @@ impl<'tcx> CloneMap<'tcx> {
             let Some(item) = node.cloneable_id() else { continue };
             trace!("processing node {:?}", self.names[&item].kind);
 
-            if self.names[&item].cloned {
+            if std::mem::replace(&mut self.names[&item].cloned, true) {
                 continue;
             }
-            self.names[&item].cloned = true;
 
             if self.names[&item].kind == Kind::Hidden {
                 continue;
@@ -672,7 +669,8 @@ impl<'tcx> CloneMap<'tcx> {
 
         // debug_assert!(topo.finished.len() >= self.names.len(), "missed a clone in {:?}", self.self_id);
 
-        self.prelude
+        let clones = self
+            .prelude
             .iter_mut()
             .filter(|(_, v)| !(**v))
             .map(|(p, v)| {
@@ -681,7 +679,8 @@ impl<'tcx> CloneMap<'tcx> {
             })
             .map(|q| Decl::UseDecl(Use { name: q.clone(), as_: None, export: false }))
             .chain(decls.into_iter())
-            .collect()
+            .collect();
+        (clones, self.summary())
     }
 }
 

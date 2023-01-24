@@ -28,7 +28,8 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) ->
     }
 
     let mut decls: Vec<_> = own_generic_decls_for(ctx.tcx, def_id).collect();
-    decls.extend(names.to_clones(ctx));
+    let (clones, _) = names.to_clones(ctx);
+    decls.extend(clones);
     decls.extend(impl_decls);
 
     Module { name: module_name(ctx.tcx, def_id), decls }

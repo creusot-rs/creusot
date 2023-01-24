@@ -37,7 +37,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         let mut names = CloneMap::new(self.tcx, def_id, crate::clone_map::CloneLevel::Body);
         let res = res.to_why(self, &mut names, None);
         let sig = signature_of(self, &mut names, def_id);
-        let mut decls = names.to_clones(self);
+        let (mut decls, summary) = names.to_clones(self);
         decls.push(Decl::Let(LetDecl {
             kind: Some(LetKind::Constant),
             sig: sig.clone(),
@@ -49,7 +49,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         let stub = stub_module(self, def_id);
 
         let modl = Module { name: module_name(self.tcx, def_id), decls };
-        (TranslatedItem::Constant { stub, modl }, CloneSummary::new())
+        (TranslatedItem::Constant { stub, modl }, summary)
     }
 }
 

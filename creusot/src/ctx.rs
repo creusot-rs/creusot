@@ -225,14 +225,14 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             }
             ItemType::Closure => {
                 let (ty_modl, modl) = translate_closure(self, def_id);
-                self.dependencies.insert(def_id, deps.summary());
+                self.dependencies.insert(def_id, deps);
 
                 TranslatedItem::Closure { interface: vec![ty_modl, interface], modl }
             }
             ItemType::Program => {
                 debug!("translating {def_id:?} as program");
 
-                self.dependencies.insert(def_id, deps.summary());
+                self.dependencies.insert(def_id, deps);
                 let modl = translate_function(self, def_id);
                 TranslatedItem::Program { interface, modl }
             }
