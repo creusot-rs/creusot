@@ -557,6 +557,80 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
+    fn build_clone(&mut self, ctx: &mut TranslationCtx<'tcx>, item: DepNode<'tcx>) -> Option<Decl> {
+        let node @ (def_id, subst) = item.cloneable_id()?;
+
+        // Types can't be cloned, but are used (for now).
+        if util::item_type(ctx.tcx, def_id) == ItemType::Type {
+            if self.used_types.insert(def_id) {
+                let name = if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
+                    let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
+
+                    Decl::UseDecl(Use { name: name.clone(), as_: None, export: false })
+                } else {
+                    let name = cloneable_name(ctx, def_id, CloneLevel::Body);
+                    Decl::UseDecl(Use { name: name.clone(), as_: Some(name), export: false })
+                };
+                return Some(name);
+            }
+            return None;
+        }
+
+        let mut clone_subst = base_subst(ctx, self, ctx.param_env(self.self_id), def_id, subst);
+
+        let outbound: Vec<_> =
+            self.clone_graph.neighbors_directed(DepNode::Item(node), Outgoing).collect();
+
+        // Grab definitions from all of our dependencies
+        for dep in outbound {
+            let syms = &self.clone_graph[(DepNode::Item(node), dep)];
+            trace!("s={:?} t={:?} e={:?}", dep, node, syms);
+
+            match dep {
+                DepNode::Type(ty) => {
+                    for (nm, sym) in syms.clone() {
+                        let ty_name = nm.qname_ident(sym.ident());
+                        let ty = super::ty::translate_ty(ctx, self, DUMMY_SP, ty);
+                        clone_subst.push(CloneSubst::Type(ty_name, ty))
+                    }
+                }
+                DepNode::Item(dep) => {
+                    for (nm, sym) in syms {
+                        let elem = sym.to_subst(*nm, self.names[&dep].kind);
+                        clone_subst.push(elem);
+                    }
+                }
+            }
+        }
+
+        let use_axioms = match self.names[&node].opaque {
+            CloneOpacity::Opaque | CloneOpacity::Default => {
+                ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false)
+            }
+            _ => false,
+        };
+        if use_axioms {
+            clone_subst.push(CloneSubst::Axiom(None))
+        }
+
+        let interface = match (self.clone_level, self.names[&node].opaque) {
+            (CloneLevel::Body, CloneOpacity::Opaque) => CloneLevel::Interface,
+            (x, _) => x,
+        };
+
+        trace!(
+            "emit clone node={node:?} name={:?} as={:?}",
+            cloneable_name(ctx, def_id, interface),
+            self.names[&node].kind.clone()
+        );
+
+        Some(Decl::Clone(DeclClone {
+            name: cloneable_name(ctx, def_id, interface),
+            subst: clone_subst,
+            kind: self.names[&node].kind.clone().into(),
+        }))
+    }
+
     pub(crate) fn to_clones(&mut self, ctx: &mut ctx::TranslationCtx<'tcx>) -> Vec<Decl> {
         trace!("emitting clones for {:?}", self.self_id);
         let mut decls = Vec::new();
@@ -580,95 +654,20 @@ impl<'tcx> CloneMap<'tcx> {
 
         let mut topo = DfsPostOrder::new(&self.clone_graph, DepNode::Item(self.self_key()));
         while let Some(node) = topo.walk_next(&self.clone_graph) {
-            let Some(node @ (def_id, subst)) = node.cloneable_id() else { continue };
-            trace!("processing node {:?}", self.names[&node].kind);
+            let Some(item) = node.cloneable_id() else { continue };
+            trace!("processing node {:?}", self.names[&item].kind);
 
-            // if util::item_type(ctx.tcx, def_id)  == ItemType::Type { continue }
-            // Though we pass in a &mut ref, it shouldn't actually be possible to add any new entries..
-            let mut clone_subst = base_subst(ctx, self, ctx.param_env(self.self_id), def_id, subst);
-
-            if self.names[&node].cloned {
+            if self.names[&item].cloned {
                 continue;
             }
-            self.names[&node].cloned = true;
+            self.names[&item].cloned = true;
 
-            if self.names[&node].kind == Kind::Hidden {
+            if self.names[&item].kind == Kind::Hidden {
                 continue;
             }
 
-            // Types can't be cloned, but are used (for now).
-            if util::item_type(ctx.tcx, def_id) == ItemType::Type {
-                let repr = def_id;
-                let hidden = self
-                    .names
-                    .iter()
-                    .any(|((id, _), info)| *id == repr && info.kind == Kind::Hidden);
-                if self.used_types.insert(repr) && !hidden {
-                    let name = if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
-                        let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
-
-                        Decl::UseDecl(Use { name: name.clone(), as_: None, export: false })
-                    } else {
-                        let name = cloneable_name(ctx, def_id, CloneLevel::Body);
-                        Decl::UseDecl(Use { name: name.clone(), as_: Some(name), export: false })
-                    };
-                    // self.import_builtin_module(name.clone());
-                    decls.push(name);
-                }
-                continue;
-            }
-
-            let outbound: Vec<_> =
-                self.clone_graph.neighbors_directed(DepNode::Item(node), Outgoing).collect();
-
-            // Grab definitions from all of our dependencies
-            for dep in outbound {
-                let syms = &self.clone_graph[(DepNode::Item(node), dep)];
-                trace!("s={:?} t={:?} e={:?}", dep, node, syms);
-
-                match dep {
-                    DepNode::Type(ty) => {
-                        for (nm, sym) in syms.clone() {
-                            let ty_name = nm.qname_ident(sym.ident());
-                            let ty = super::ty::translate_ty(ctx, self, DUMMY_SP, ty);
-                            clone_subst.push(CloneSubst::Type(ty_name, ty))
-                        }
-                    }
-                    DepNode::Item(dep) => {
-                        for (nm, sym) in syms {
-                            let elem = sym.to_subst(*nm, self.names[&dep].kind);
-                            clone_subst.push(elem);
-                        }
-                    }
-                }
-            }
-
-            let use_axioms = match self.names[&node].opaque {
-                CloneOpacity::Opaque | CloneOpacity::Default => {
-                    ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false)
-                }
-                _ => false,
-            };
-            if use_axioms {
-                clone_subst.push(CloneSubst::Axiom(None))
-            }
-
-            let interface = match (self.clone_level, self.names[&node].opaque) {
-                (CloneLevel::Body, CloneOpacity::Opaque) => CloneLevel::Interface,
-                (x, _) => x,
-            };
-
-            trace!(
-                "emit clone node={node:?} name={:?} as={:?}",
-                cloneable_name(ctx, def_id, interface),
-                self.names[&node].kind.clone()
-            );
-
-            decls.push(Decl::Clone(DeclClone {
-                name: cloneable_name(ctx, def_id, interface),
-                subst: clone_subst,
-                kind: self.names[&node].kind.clone().into(),
-            }));
+            let Some(decl) = self.build_clone(ctx, node) else { continue };
+            decls.push(decl);
         }
 
         // debug_assert!(topo.finished.len() >= self.names.len(), "missed a clone in {:?}", self.self_id);
