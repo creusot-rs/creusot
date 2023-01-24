@@ -125,16 +125,6 @@ module CreusotContracts_Model_Impl0_DeepModel
     ensures { result = deep_model self }
     
 end
-module IteNormalize_Impl2_ShallowModelTy_Type
-  type k
-  type v
-  use map.Map
-  use Core_Option_Option_Type as Core_Option_Option_Type
-  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
-    type self = k
-  type shallowModelTy  =
-    Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v)
-end
 module IteNormalize_Impl0_Get_Interface
   type k
   type v
@@ -143,17 +133,14 @@ module IteNormalize_Impl0_Get_Interface
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = k
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone IteNormalize_Impl2_ShallowModelTy_Type as ShallowModelTy0 with
-    type k = k,
-    type v = v,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  use map.Map
   use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
   clone CreusotContracts_Model_Impl0_DeepModel_Stub as DeepModel0 with
     type t = k,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = IteNormalize_BTreeMap_Type.t_btreemap k v,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v)
   val get [#"../ite_normalize.rs" 19 4 21 15] (self : IteNormalize_BTreeMap_Type.t_btreemap k v) (key : k) : Core_Option_Option_Type.t_option v
     ensures { [#"../ite_normalize.rs" 17 4 17 72] result = Core_Option_Option_Type.C_None -> Map.get (ShallowModel0.shallow_model self) (DeepModel0.deep_model key) = Core_Option_Option_Type.C_None }
     ensures { [#"../ite_normalize.rs" 18 4 18 93] forall v : v . result = Core_Option_Option_Type.C_Some v -> Map.get (ShallowModel0.shallow_model self) (DeepModel0.deep_model key) = Core_Option_Option_Type.C_Some v }
@@ -228,17 +215,14 @@ module IteNormalize_Impl0_Insert_Interface
   type v
   use prelude.Borrow
   use map.Map
-  use Core_Option_Option_Type as Core_Option_Option_Type
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = k
-  clone IteNormalize_Impl2_ShallowModelTy_Type as ShallowModelTy0 with
-    type k = k,
-    type v = v,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  use Core_Option_Option_Type as Core_Option_Option_Type
+  use map.Map
   use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel1 with
     type t = IteNormalize_BTreeMap_Type.t_btreemap k v,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Map.map DeepModelTy0.deepModelTy (Core_Option_Option_Type.t_option v)
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = k,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
@@ -971,11 +955,6 @@ module IteNormalize_Impl5_IsSimplified
     ensures { result = is_simplified self }
     
 end
-module CreusotContracts_Logic_Int_Impl18_DeepModelTy_Type
-  use prelude.Int
-  type deepModelTy  =
-    int
-end
 module CreusotContracts_Logic_Int_Impl18_DeepModel_Stub
   use prelude.Int
   use prelude.UIntSize
@@ -1001,7 +980,7 @@ module IteNormalize_Impl5_SimplifyHelper_Interface
   use prelude.UIntSize
   use mach.int.UInt64
   use map.Map
-  clone CreusotContracts_Logic_Int_Impl18_DeepModelTy_Type as DeepModelTy0
+  use mach.int.Int
   use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
   use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   clone IteNormalize_Impl5_IsSimplified_Stub as IsSimplified0
@@ -1010,7 +989,7 @@ module IteNormalize_Impl5_SimplifyHelper_Interface
   clone IteNormalize_Impl2_ShallowModel_Stub as ShallowModel0 with
     type k = usize,
     type v = bool,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+    type DeepModelTy0.deepModelTy = int
   clone IteNormalize_Impl5_IsNormalized_Stub as IsNormalized0
   val simplify_helper [#"../ite_normalize.rs" 188 4 188 66] (self : IteNormalize_Expr_Type.t_expr) (state : IteNormalize_BTreeMap_Type.t_btreemap usize bool) : IteNormalize_Expr_Type.t_expr
     requires {[#"../ite_normalize.rs" 184 15 184 35] IsNormalized0.is_normalized self}
@@ -1026,33 +1005,30 @@ module IteNormalize_Impl5_SimplifyHelper
   use mach.int.UInt64
   use map.Map
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone CreusotContracts_Logic_Int_Impl18_DeepModelTy_Type as DeepModelTy0
+  use mach.int.Int
   use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
   clone IteNormalize_Impl2_ShallowModel as ShallowModel0 with
     type k = usize,
     type v = bool,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
-  clone IteNormalize_Impl2_ShallowModelTy_Type as ShallowModelTy0 with
-    type k = usize,
-    type v = bool,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+    type DeepModelTy0.deepModelTy = int
+  use map.Map
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel2 with
     type t = IteNormalize_BTreeMap_Type.t_btreemap usize bool,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
+    type ShallowModelTy0.shallowModelTy = Map.map int (Core_Option_Option_Type.t_option bool),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Logic_Int_Impl18_DeepModel as DeepModel1
   clone CreusotContracts_Model_Impl0_DeepModel as DeepModel0 with
     type t = usize,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
+    type DeepModelTy0.deepModelTy = int,
     function DeepModel0.deep_model = DeepModel1.deep_model
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel1 with
     type t = IteNormalize_BTreeMap_Type.t_btreemap usize bool,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
+    type ShallowModelTy0.shallowModelTy = Map.map int (Core_Option_Option_Type.t_option bool),
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone IteNormalize_Impl0_Insert_Interface as Insert0 with
     type k = usize,
     type v = bool,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
+    type DeepModelTy0.deepModelTy = int,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     function DeepModel0.deep_model = DeepModel1.deep_model,
     function ShallowModel1.shallow_model = ShallowModel2.shallow_model
@@ -1064,7 +1040,7 @@ module IteNormalize_Impl5_SimplifyHelper
     type v = bool,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
     function DeepModel0.deep_model = DeepModel0.deep_model,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+    type DeepModelTy0.deepModelTy = int
   use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   clone IteNormalize_Impl5_DoesNotContain as DoesNotContain0
   clone IteNormalize_Impl5_IsSimplified as IsSimplified0 with
@@ -1395,13 +1371,13 @@ end
 module IteNormalize_Impl5_Simplify
   use prelude.Int
   use prelude.UIntSize
-  clone CreusotContracts_Logic_Int_Impl18_DeepModelTy_Type as DeepModelTy0
+  use mach.int.Int
   use Core_Option_Option_Type as Core_Option_Option_Type
   use IteNormalize_BTreeMap_Type as IteNormalize_BTreeMap_Type
   clone IteNormalize_Impl2_ShallowModel as ShallowModel0 with
     type k = usize,
     type v = bool,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+    type DeepModelTy0.deepModelTy = int
   use IteNormalize_Expr_Type as IteNormalize_Expr_Type
   clone IteNormalize_Impl5_DoesNotContain as DoesNotContain0
   clone IteNormalize_Impl5_IsSimplified as IsSimplified0 with

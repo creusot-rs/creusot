@@ -269,22 +269,6 @@ module Core_Num_Impl12_Max
   let constant mAX'  : usize = [@vc:do_not_keep_trace] [@vc:sp]
     (18446744073709551615 : usize)
 end
-module CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type
-  type t
-  type a
-  use seq.Seq
-  type shallowModelTy  =
-    Seq.seq t
-end
-module CreusotContracts_Std1_Vec_Impl1_DeepModelTy_Type
-  type t
-  type a
-  use seq.Seq
-  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
-    type self = t
-  type deepModelTy  =
-    Seq.seq DeepModelTy0.deepModelTy
-end
 module Alloc_Vec_Impl1_Len_Interface
   type t
   type a
@@ -293,13 +277,11 @@ module Alloc_Vec_Impl1_Len_Interface
   use prelude.Borrow
   use prelude.Int
   use prelude.UIntSize
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t,
-    type a = a
+  use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   val len (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (ShallowModel0.shallow_model self) }
     
@@ -366,12 +348,6 @@ module CreusotContracts_Std1_Slice_SliceIndex_HasValue
     ensures { result = has_value self seq out }
     
 end
-module CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type
-  type t
-  use seq.Seq
-  type shallowModelTy  =
-    Seq.seq t
-end
 module Alloc_Vec_Impl15_Index_Interface
   type t
   type i
@@ -379,11 +355,8 @@ module Alloc_Vec_Impl15_Index_Interface
   use prelude.Borrow
   use prelude.Slice
   use prelude.Seq
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
-    type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t,
-    type a = a
+  use seq.Seq
+  use seq.Seq
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with
     type self = i,
     type t = seq t
@@ -391,15 +364,15 @@ module Alloc_Vec_Impl15_Index_Interface
   clone CreusotContracts_Std1_Slice_SliceIndex_HasValue_Stub as HasValue0 with
     type self = i,
     type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
     type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndex_InBounds_Stub as InBounds0 with
     type self = i,
     type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   val index (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
     ensures { HasValue0.has_value index (ShallowModel0.shallow_model self) result }
@@ -902,11 +875,6 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue
     ensures { result = has_value self seq out }
     
 end
-module Core_Slice_Index_Impl2_Output_Type
-  type t
-  type output  =
-    t
-end
 module C05BinarySearchGeneric_BinarySearch_Interface
   type t
   use seq.Seq
@@ -914,34 +882,28 @@ module C05BinarySearchGeneric_BinarySearch_Interface
   use prelude.Int
   use prelude.UIntSize
   use prelude.Borrow
-  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy1 with
+  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
+  use seq.Seq
   use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  clone CreusotContracts_Std1_Vec_Impl1_DeepModelTy_Type as DeepModelTy0 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global,
-    type DeepModelTy0.deepModelTy = DeepModelTy1.deepModelTy
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Stub as LtLog0 with
-    type self = DeepModelTy1.deepModelTy
+    type self = DeepModelTy0.deepModelTy
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Stub as LeLog0 with
-    type self = DeepModelTy1.deepModelTy
+    type self = DeepModelTy0.deepModelTy
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel1 with
     type self = t,
-    type DeepModelTy0.deepModelTy = DeepModelTy1.deepModelTy
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   use Core_Result_Result_Type as Core_Result_Result_Type
   clone C05BinarySearchGeneric_Sorted_Stub as Sorted0 with
-    type t = DeepModelTy1.deepModelTy
+    type t = DeepModelTy0.deepModelTy
   clone CreusotContracts_Model_Impl0_DeepModel_Stub as DeepModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+    type DeepModelTy0.deepModelTy = Seq.seq DeepModelTy0.deepModelTy
   clone Core_Num_Impl12_Max_Stub as Max0
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   val binary_search [#"../05_binary_search_generic.rs" 27 0 29 29] (arr : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (elem : t) : Core_Result_Result_Type.t_result usize usize
     requires {[#"../05_binary_search_generic.rs" 20 11 20 38] Seq.length (ShallowModel0.shallow_model arr) <= UInt64.to_int Max0.mAX'}
     requires {[#"../05_binary_search_generic.rs" 21 11 21 35] Sorted0.sorted (DeepModel0.deep_model arr)}
@@ -958,80 +920,76 @@ module C05BinarySearchGeneric_BinarySearch
   use prelude.Int8
   use seq.Seq
   use mach.int.UInt64
-  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy1 with
+  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with
-    type self = DeepModelTy1.deepModelTy
+    type self = DeepModelTy0.deepModelTy
   use Core_Cmp_Ordering_Type as Core_Cmp_Ordering_Type
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLog_Interface as CmpLog0 with
-    type self = DeepModelTy1.deepModelTy
+    type self = DeepModelTy0.deepModelTy
   clone CreusotContracts_Logic_Ord_OrdLogic_GtLog_Interface as GtLog0 with
-    type self = DeepModelTy1.deepModelTy
+    type self = DeepModelTy0.deepModelTy
   clone CreusotContracts_Model_DeepModel_DeepModel_Interface as DeepModel1 with
     type self = t,
-    type DeepModelTy0.deepModelTy = DeepModelTy1.deepModelTy
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   clone CreusotContracts_Model_Impl0_DeepModel as DeepModel3 with
     type t = t,
-    type DeepModelTy0.deepModelTy = DeepModelTy1.deepModelTy,
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     function DeepModel0.deep_model = DeepModel1.deep_model
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
-    type t = t
-  clone Core_Slice_Index_Impl2_Output_Type as Output0 with
-    type t = t
   clone CreusotContracts_Std1_Slice_Impl5_HasValue as HasValue0 with
     type t = t
   clone CreusotContracts_Std1_Slice_Impl5_InBounds as InBounds0 with
     type t = t
   clone CreusotContracts_Logic_Ord_OrdLogic_EqCmp_Interface as EqCmp0 with
-    type self = DeepModelTy1.deepModelTy,
+    type self = DeepModelTy0.deepModelTy,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym2_Interface as Antisym20 with
-    type self = DeepModelTy1.deepModelTy,
+    type self = DeepModelTy0.deepModelTy,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Antisym1_Interface as Antisym10 with
-    type self = DeepModelTy1.deepModelTy,
+    type self = DeepModelTy0.deepModelTy,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Trans_Interface as Trans0 with
-    type self = DeepModelTy1.deepModelTy,
+    type self = DeepModelTy0.deepModelTy,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_Refl_Interface as Refl0 with
-    type self = DeepModelTy1.deepModelTy,
+    type self = DeepModelTy0.deepModelTy,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpGtLog_Interface as CmpGtLog0 with
-    type self = DeepModelTy1.deepModelTy,
+    type self = DeepModelTy0.deepModelTy,
     predicate GtLog0.gt_log = GtLog0.gt_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpGeLog_Interface as CmpGeLog0 with
-    type self = DeepModelTy1.deepModelTy,
+    type self = DeepModelTy0.deepModelTy,
     predicate GeLog0.ge_log = GeLog0.ge_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with
-    type self = DeepModelTy1.deepModelTy
+    type self = DeepModelTy0.deepModelTy
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLtLog_Interface as CmpLtLog0 with
-    type self = DeepModelTy1.deepModelTy,
+    type self = DeepModelTy0.deepModelTy,
     predicate LtLog0.lt_log = LtLog0.lt_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone CreusotContracts_Logic_Ord_OrdLogic_LeLog_Interface as LeLog0 with
-    type self = DeepModelTy1.deepModelTy
+    type self = DeepModelTy0.deepModelTy
   clone CreusotContracts_Logic_Ord_OrdLogic_CmpLeLog_Interface as CmpLeLog0 with
-    type self = DeepModelTy1.deepModelTy,
+    type self = DeepModelTy0.deepModelTy,
     predicate LeLog0.le_log = LeLog0.le_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
   clone C05BinarySearchGeneric_SortedRange as SortedRange0 with
-    type t = DeepModelTy1.deepModelTy,
+    type t = DeepModelTy0.deepModelTy,
     predicate LeLog0.le_log = LeLog0.le_log
   clone Core_Num_Impl12_Max as Max0
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel1 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -1042,35 +1000,29 @@ module C05BinarySearchGeneric_BinarySearch
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
     function DeepModel0.deep_model = DeepModel1.deep_model,
-    type DeepModelTy0.deepModelTy = DeepModelTy1.deepModelTy,
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  clone CreusotContracts_Std1_Vec_Impl1_DeepModelTy_Type as DeepModelTy0 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global,
-    type DeepModelTy0.deepModelTy = DeepModelTy1.deepModelTy
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global
+  use seq.Seq
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve2 with
     type self = t
   clone Core_Cmp_Ord_Cmp_Interface as Cmp0 with
     type self = t,
     function DeepModel0.deep_model = DeepModel1.deep_model,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
-    type DeepModelTy0.deepModelTy = DeepModelTy1.deepModelTy
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   clone Core_Cmp_PartialOrd_Gt_Interface as Gt0 with
     type self = t,
     type rhs = t,
     function DeepModel0.deep_model = DeepModel3.deep_model,
     function DeepModel1.deep_model = DeepModel3.deep_model,
     predicate GtLog0.gt_log = GtLog0.gt_log,
-    type DeepModelTy0.deepModelTy = DeepModelTy1.deepModelTy
+    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
     type self = t
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone Alloc_Vec_Impl15_Index_Interface as Index0 with
     type t = t,
@@ -1079,7 +1031,7 @@ module C05BinarySearchGeneric_BinarySearch
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
     predicate InBounds0.in_bounds = InBounds0.in_bounds,
     predicate HasValue0.has_value = HasValue0.has_value,
-    type Output0.output = Output0.output
+    type Output0.output = t
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with
@@ -1087,11 +1039,11 @@ module C05BinarySearchGeneric_BinarySearch
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone C05BinarySearchGeneric_Sorted as Sorted0 with
-    type t = DeepModelTy1.deepModelTy,
+    type t = DeepModelTy0.deepModelTy,
     predicate SortedRange0.sorted_range = SortedRange0.sorted_range
   clone CreusotContracts_Model_Impl0_DeepModel as DeepModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
+    type DeepModelTy0.deepModelTy = Seq.seq DeepModelTy0.deepModelTy,
     function DeepModel0.deep_model = DeepModel2.deep_model
   use Core_Result_Result_Type as Core_Result_Result_Type
   let rec cfg binary_search [#"../05_binary_search_generic.rs" 27 0 29 29] [@cfg:stackify] [@cfg:subregion_analysis] (arr : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (elem : t) : Core_Result_Result_Type.t_result usize usize

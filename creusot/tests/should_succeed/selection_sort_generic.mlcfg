@@ -357,13 +357,6 @@ module Alloc_Alloc_Global_Type
     | C_Global
     
 end
-module CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type
-  type t
-  type a
-  use seq.Seq
-  type shallowModelTy  =
-    Seq.seq t
-end
 module CreusotContracts_Model_Impl1_ShallowModel_Stub
   type t
   use prelude.Borrow
@@ -400,13 +393,11 @@ module Alloc_Vec_Impl1_Len_Interface
   use prelude.Borrow
   use prelude.Int
   use prelude.UIntSize
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t,
-    type a = a
+  use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   val len (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (ShallowModel0.shallow_model self) }
     
@@ -480,20 +471,13 @@ module CreusotContracts_Invariant_Invariant_Invariant
     ensures { result = invariant' self }
     
 end
-module Core_Iter_Traits_Collect_Impl0_IntoIter_Type
-  type i
-  type intoIter  =
-    i
-end
 module Core_Iter_Traits_Collect_Impl0_IntoIter_Interface
   type i
-  clone Core_Iter_Traits_Collect_Impl0_IntoIter_Type as IntoIter0 with
-    type i = i
   clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
     type self = i
   clone CreusotContracts_Std1_Iter_IntoIterator_IntoIterPost_Stub as IntoIterPost0 with
     type self = i,
-    type IntoIter0.intoIter = IntoIter0.intoIter
+    type IntoIter0.intoIter = i
   clone CreusotContracts_Std1_Iter_IntoIterator_IntoIterPre_Stub as IntoIterPre0 with
     type self = i
   val into_iter (self : i) : i
@@ -578,22 +562,15 @@ module CreusotContracts_Std1_Iter_Iterator_Produces
     ensures { result = produces self visited _3' }
     
 end
-module Core_Iter_Range_Impl3_Item_Type
-  type a
-  type item  =
-    a
-end
 module Core_Iter_Range_Impl3_Next_Interface
   type a
   use prelude.Borrow
   use seq.Seq
-  clone Core_Iter_Range_Impl3_Item_Type as Item1 with
-    type a = a
   use Core_Option_Option_Type as Core_Option_Option_Type
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   clone CreusotContracts_Std1_Iter_Iterator_Produces_Stub as Produces0 with
     type self = Core_Ops_Range_Range_Type.t_range a,
-    type Item0.item = Item1.item
+    type Item0.item = a
   clone CreusotContracts_Std1_Iter_Iterator_Completed_Stub as Completed0 with
     type self = Core_Ops_Range_Range_Type.t_range a
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
@@ -671,12 +648,6 @@ module CreusotContracts_Std1_Slice_SliceIndex_HasValue
     ensures { result = has_value self seq out }
     
 end
-module CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type
-  type t
-  use seq.Seq
-  type shallowModelTy  =
-    Seq.seq t
-end
 module Alloc_Vec_Impl15_Index_Interface
   type t
   type i
@@ -684,11 +655,8 @@ module Alloc_Vec_Impl15_Index_Interface
   use prelude.Borrow
   use prelude.Slice
   use prelude.Seq
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
-    type t = t
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t,
-    type a = a
+  use seq.Seq
+  use seq.Seq
   clone Core_Slice_Index_SliceIndex_Output_Type as Output0 with
     type self = i,
     type t = seq t
@@ -696,15 +664,15 @@ module Alloc_Vec_Impl15_Index_Interface
   clone CreusotContracts_Std1_Slice_SliceIndex_HasValue_Stub as HasValue0 with
     type self = i,
     type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
     type Output0.output = Output0.output
   clone CreusotContracts_Std1_Slice_SliceIndex_InBounds_Stub as InBounds0 with
     type self = i,
     type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   val index (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
     ensures { HasValue0.has_value index (ShallowModel0.shallow_model self) result }
@@ -816,12 +784,9 @@ module Alloc_Vec_Impl10_DerefMut_Interface
   use prelude.Borrow
   use prelude.Slice
   use prelude.Seq
+  use seq.Seq
   clone Core_Num_Impl12_Max_Stub as Max0
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy1 with
-    type t = t,
-    type a = a
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t
+  use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel3 with
     type t = t,
@@ -834,10 +799,10 @@ module Alloc_Vec_Impl10_DerefMut_Interface
     axiom .
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   val deref_mut (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) : borrowed (seq t)
     ensures { ShallowModel0.shallow_model result = ShallowModel1.shallow_model self }
     ensures { ShallowModel2.shallow_model ( ^ result) = ShallowModel3.shallow_model ( ^ self) }
@@ -854,15 +819,14 @@ module Core_Slice_Impl0_Swap_Interface
   use prelude.Seq
   use prelude.UIntSize
   clone Core_Num_Impl12_Max_Stub as Max0
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t
+  use seq.Seq
   clone CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub as ShallowModel1 with
     type t = t,
     val Max0.mAX' = Max0.mAX',
     axiom .
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   val swap (self : borrowed (seq t)) (a : usize) (b : usize) : ()
     requires {UInt64.to_int a < Seq.length (ShallowModel0.shallow_model self)}
     requires {UInt64.to_int b < Seq.length (ShallowModel0.shallow_model self)}
@@ -888,6 +852,7 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Produces
   use seq.Seq
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   use prelude.Int
+  use mach.int.Int
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = idx,
     type DeepModelTy0.deepModelTy = int
@@ -1125,22 +1090,6 @@ module CreusotContracts_Logic_Int_Impl18_DeepModel
     ensures { result = deep_model self }
     
 end
-module CreusotContracts_Model_Impl3_ShallowModelTy_Type
-  type t
-  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
-    type self = t
-  type shallowModelTy  =
-    ShallowModelTy0.shallowModelTy
-end
-module CreusotContracts_Std1_Vec_Impl1_DeepModelTy_Type
-  type t
-  type a
-  use seq.Seq
-  clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
-    type self = t
-  type deepModelTy  =
-    Seq.seq DeepModelTy0.deepModelTy
-end
 module CreusotContracts_Std1_Iter_Range_Impl0_Completed_Stub
   type idx
   use prelude.Borrow
@@ -1158,6 +1107,7 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Completed
   use prelude.Borrow
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   use prelude.Int
+  use mach.int.Int
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel0 with
     type self = idx,
     type DeepModelTy0.deepModelTy = int
@@ -1521,30 +1471,24 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue
     ensures { result = has_value self seq out }
     
 end
-module Core_Slice_Index_Impl2_Output_Type
-  type t
-  type output  =
-    t
-end
 module SelectionSortGeneric_SelectionSort_Interface
   type t
   use prelude.Borrow
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global
+  use seq.Seq
+  use seq.Seq
   clone Core_Num_Impl12_Max_Stub as Max0
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
   clone CreusotContracts_Model_DeepModel_DeepModel_Stub as DeepModel1 with
     type self = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Logic_Seq_Impl0_PermutationOf_Stub as PermutationOf0 with
     type t = t
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
@@ -1590,11 +1534,10 @@ module SelectionSortGeneric_SelectionSort
     type t = t,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  clone CreusotContracts_Std1_Slice_Impl0_ShallowModelTy_Type as ShallowModelTy2 with
-    type t = t
+  use seq.Seq
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel5 with
     type t = seq t,
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy2.shallowModelTy,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel6.shallow_model
   clone CreusotContracts_Logic_Ord_OrdLogic_LtLog_Interface as LtLog0 with
     type self = DeepModelTy0.deepModelTy
@@ -1605,8 +1548,6 @@ module SelectionSortGeneric_SelectionSort
     type t = t,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     function DeepModel0.deep_model = DeepModel2.deep_model
-  clone Core_Slice_Index_Impl2_Output_Type as Output0 with
-    type t = t
   clone CreusotContracts_Std1_Slice_Impl5_HasValue as HasValue0 with
     type t = t
   clone CreusotContracts_Std1_Slice_Impl5_InBounds as InBounds0 with
@@ -1653,6 +1594,7 @@ module SelectionSortGeneric_SelectionSort
     predicate LeLog0.le_log = LeLog0.le_log,
     function CmpLog0.cmp_log = CmpLog0.cmp_log,
     axiom .
+  use mach.int.Int
   clone CreusotContracts_Logic_Int_Impl18_DeepModel as DeepModel3
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
@@ -1661,32 +1603,20 @@ module SelectionSortGeneric_SelectionSort
     type idx = usize,
     predicate Resolve0.resolve = Resolve0.resolve,
     function DeepModel0.deep_model = DeepModel3.deep_model
-  clone Core_Iter_Range_Impl3_Item_Type as Item0 with
-    type a = usize
-  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
-  clone CreusotContracts_Std1_Vec_Impl1_DeepModelTy_Type as DeepModelTy1 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global,
-    type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
   clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  clone CreusotContracts_Std1_Vec_Impl0_ShallowModelTy_Type as ShallowModelTy0 with
-    type t = t,
-    type a = Alloc_Alloc_Global_Type.t_global
   clone CreusotContracts_Model_Impl3_ShallowModel as ShallowModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
-  clone CreusotContracts_Model_Impl3_ShallowModelTy_Type as ShallowModelTy1 with
-    type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel4 with
     type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces as Produces0 with
     type idx = usize,
@@ -1703,8 +1633,6 @@ module SelectionSortGeneric_SelectionSort
     predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  clone Core_Iter_Traits_Collect_Impl0_IntoIter_Type as IntoIter1 with
-    type i = Core_Ops_Range_Range_Type.t_range usize
   clone CreusotContracts_Std1_Iter_Impl0_IntoIterPost as IntoIterPost0 with
     type i = Core_Ops_Range_Range_Type.t_range usize
   clone CreusotContracts_Std1_Iter_Impl0_IntoIterPre as IntoIterPre0 with
@@ -1712,7 +1640,7 @@ module SelectionSortGeneric_SelectionSort
     predicate Invariant0.invariant' = Invariant0.invariant'
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel3 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel0.shallow_model
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve3 with
     type t = seq t
@@ -1745,14 +1673,14 @@ module SelectionSortGeneric_SelectionSort
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model,
     predicate InBounds0.in_bounds = InBounds0.in_bounds,
     predicate HasValue0.has_value = HasValue0.has_value,
-    type Output0.output = Output0.output
+    type Output0.output = t
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve1 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
   use Core_Option_Option_Type as Core_Option_Option_Type
   clone Core_Iter_Range_Impl3_Next_Interface as Next0 with
     type a = usize,
     predicate Invariant0.invariant' = Invariant0.invariant',
-    type Item0.item = Item0.item,
+    type Item0.item = usize,
     predicate Completed0.completed = Completed0.completed,
     predicate Produces0.produces = Produces0.produces
   clone SelectionSortGeneric_Partition as Partition0 with
@@ -1771,11 +1699,11 @@ module SelectionSortGeneric_SelectionSort
     axiom .
   clone CreusotContracts_Model_Impl2_DeepModel as DeepModel1 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
-    type DeepModelTy0.deepModelTy = DeepModelTy1.deepModelTy,
+    type DeepModelTy0.deepModelTy = Seq.seq DeepModelTy0.deepModelTy,
     function DeepModel0.deep_model = DeepModel0.deep_model
   clone CreusotContracts_Ghost_Impl1_ShallowModel as ShallowModel2 with
     type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
-    type ShallowModelTy0.shallowModelTy = ShallowModelTy1.shallowModelTy,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel4.shallow_model
   clone Core_Iter_Traits_Collect_Impl0_IntoIter_Interface as IntoIter0 with
     type i = Core_Ops_Range_Range_Type.t_range usize,
