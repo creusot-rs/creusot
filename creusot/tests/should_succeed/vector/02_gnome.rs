@@ -26,7 +26,6 @@ where
     let old_v = ghost! { v };
     let mut i = 0;
     #[invariant(sorted, sorted_range(v.deep_model(), 0, @i))]
-    #[invariant(proph_const, ^v == ^old_v.inner())]
     #[invariant(permutation, (@v).permutation_of(@old_v))]
     while i < v.len() {
         if i == 0 || v[i - 1].le(&v[i]) {

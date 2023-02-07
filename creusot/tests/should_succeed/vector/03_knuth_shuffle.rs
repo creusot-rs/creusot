@@ -14,7 +14,6 @@ pub fn knuth_shuffle<T>(v: &mut Vec<T>) {
     let old_v = ghost! { v };
 
     #[invariant(permutation, (@v).permutation_of(@old_v))]
-    #[invariant(proph_const, ^v == ^old_v.inner())]
     for n in 0..v.len() {
         // We assign the length to a variable to work around a limitation with two-phase borrows
         // where we forget the value stored in the reference.

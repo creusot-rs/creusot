@@ -45,7 +45,6 @@ where
     let old_v = ghost! { v };
     let mut i = start;
 
-    #[invariant(proph_const, ^v == ^old_v.inner())]
     #[invariant(permutation, (@v).permutation_of(@old_v))]
     #[invariant(i_bounds, @start <= @i && @i < @end)]
     #[invariant(unchanged, forall<j: Int> 0 <= j && j < @start || @end <= j && j < (@v).len()
@@ -99,7 +98,6 @@ where
 
     let mut start = v.len() / 2;
     #[invariant(permutation, (@v).permutation_of(@old_v))]
-    #[invariant(proph_const, ^v == ^old_v.inner())]
     #[invariant(heap, heap_frag(v.deep_model(), @start, (@v).len()))]
     #[invariant(start_bound, @start <= (@v).len()/2)]
     while start > 0 {
@@ -110,7 +108,6 @@ where
     let mut end = v.len();
     #[invariant(end_bound, @end <= (@v).len())]
     #[invariant(permutation, (@v).permutation_of(@old_v))]
-    #[invariant(proph_const, ^v == ^old_v.inner())]
     #[invariant(heap, heap_frag(v.deep_model(), 0, @end))]
     #[invariant(sorted, sorted_range(v.deep_model(), @end, (@v).len()))]
     #[invariant(heap_le, forall<i : Int, j : Int> 0 <= i && i < @end && @end <= j && j < (@v).len() ==>

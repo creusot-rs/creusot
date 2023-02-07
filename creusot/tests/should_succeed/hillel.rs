@@ -16,7 +16,6 @@ use creusot_contracts::{
 fn right_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = ghost! { str };
 
-    #[invariant(proph_const, ^str == ^*old_str)]
     #[invariant(old_str_bound, (@old_str).len() <= (@str).len())]
     #[invariant(len_bound, (@old_str).len() < @len ==> (@str).len() <= @len)]
     #[invariant(len_bound, (@str).len() > @len ==> (@str).len() == (@old_str).len())]
@@ -35,7 +34,6 @@ fn left_pad<T: Copy>(str: &mut Vec<T>, len: usize, pad: T) {
     let old_str = ghost! { str };
     let mut c: Ghost<usize> = ghost! { 0 };
 
-    #[invariant(proph_const, ^str == ^*old_str)]
     #[invariant(old_str_bound, (@old_str).len() <= (@str).len())]
     #[invariant(len_bound, (@old_str).len() < @len ==> (@str).len() <= @len)]
     #[invariant(len_bound, (@str).len() > @len ==> (@str).len() == (@old_str).len())]
