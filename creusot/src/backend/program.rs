@@ -11,7 +11,7 @@ use crate::{
         ty::{self, closure_accessors, translate_closure_ty, translate_ty},
         unop_to_unop,
     },
-    util::{self, is_ghost_closure, module_name, sig_to_why3, signature_of},
+    util::{self, is_ghost_closure, module_name, sig_to_why3, signature_of, ItemType},
 };
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
 use rustc_index::vec::IndexVec;
@@ -24,7 +24,7 @@ use rustc_span::DUMMY_SP;
 
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    declaration::{CfgFunction, Decl, LetDecl, LetKind, Module, Use},
+    declaration::{self, CfgFunction, Decl, LetDecl, LetKind, Module, Use},
     exp::{Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
@@ -66,6 +66,7 @@ pub(crate) fn closure_aux_defs<'tcx>(
         .map(|(sym, sig, body)| -> Decl {
             let mut sig = sig_to_why3(ctx, names, sig, def_id);
             sig.name = Ident::build(sym.as_str());
+
             Decl::Let(LetDecl {
                 kind: Some(LetKind::Function),
                 rec: false,
@@ -178,7 +179,11 @@ pub fn to_why<'tcx>(
         terminator: mlcfg::Terminator::Goto(BlockId(0)),
     };
 
-    let sig = signature_of(ctx, names, def_id);
+    let mut sig = signature_of(ctx, names, def_id);
+    if matches!(util::item_type(ctx.tcx, def_id), ItemType::Program | ItemType::Closure) {
+        sig.attrs.push(declaration::Attribute::Attr("cfg:stackify".into()));
+        sig.attrs.push(declaration::Attribute::Attr("cfg:subregion_analysis".into()));
+    };
 
     let func = Decl::CfgDecl(CfgFunction {
         sig,

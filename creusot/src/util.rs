@@ -435,9 +435,7 @@ pub(crate) fn sig_to_why3<'tcx>(
     });
 
     let mut attrs = why3_attrs(ctx.tcx, def_id);
-    if matches!(item_type(ctx.tcx, def_id), ItemType::Program | ItemType::Closure) {
-        attrs.push(declaration::Attribute::Attr("cfg:stackify".into()))
-    };
+
     def_id
         .as_local()
         .map(|d| ctx.def_span(d))
