@@ -39,7 +39,7 @@ end
 module Core_Mem_Replace_Interface
   type t
   use prelude.Borrow
-  val replace [@cfg:stackify] (dest : borrowed t) (src : t) : t
+  val replace (dest : borrowed t) (src : t) : t
     ensures {  ^ dest = src }
     ensures { result =  * dest }
     
@@ -113,7 +113,7 @@ module InplaceListReversal_Rev_Interface
   use InplaceListReversal_List_Type as InplaceListReversal_List_Type
   clone InplaceListReversal_RevAppend_Stub as RevAppend0 with
     type t = t
-  val rev [@cfg:stackify] [#"../inplace_list_reversal.rs" 23 0 23 30] (l : borrowed (InplaceListReversal_List_Type.t_list t)) : ()
+  val rev [#"../inplace_list_reversal.rs" 23 0 23 30] (l : borrowed (InplaceListReversal_List_Type.t_list t)) : ()
     ensures { [#"../inplace_list_reversal.rs" 22 10 22 35]  ^ l = RevAppend0.rev_append ( * l) (InplaceListReversal_List_Type.C_Nil) }
     
 end
@@ -136,7 +136,7 @@ module InplaceListReversal_Rev
     type t = InplaceListReversal_List_Type.t_list t
   clone InplaceListReversal_RevAppend as RevAppend0 with
     type t = t
-  let rec cfg rev [@cfg:stackify] [#"../inplace_list_reversal.rs" 23 0 23 30] (l : borrowed (InplaceListReversal_List_Type.t_list t)) : ()
+  let rec cfg rev [#"../inplace_list_reversal.rs" 23 0 23 30] [@cfg:stackify] [@cfg:subregion_analysis] (l : borrowed (InplaceListReversal_List_Type.t_list t)) : ()
     ensures { [#"../inplace_list_reversal.rs" 22 10 22 35]  ^ l = RevAppend0.rev_append ( * l) (InplaceListReversal_List_Type.C_Nil) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]

@@ -4,7 +4,7 @@ module KnapsackFull_Max_Interface
   use int.MinMax
   use mach.int.Int
   use prelude.UIntSize
-  val max [@cfg:stackify] [#"../knapsack_full.rs" 14 0 14 35] (a : usize) (b : usize) : usize
+  val max [#"../knapsack_full.rs" 14 0 14 35] (a : usize) (b : usize) : usize
     ensures { [#"../knapsack_full.rs" 13 10 13 33] UInt64.to_int result = MinMax.max (UInt64.to_int a) (UInt64.to_int b) }
     
 end
@@ -13,7 +13,7 @@ module KnapsackFull_Max
   use prelude.UIntSize
   use mach.int.UInt64
   use int.MinMax
-  let rec cfg max [@cfg:stackify] [#"../knapsack_full.rs" 14 0 14 35] (a : usize) (b : usize) : usize
+  let rec cfg max [#"../knapsack_full.rs" 14 0 14 35] [@cfg:stackify] [@cfg:subregion_analysis] (a : usize) (b : usize) : usize
     ensures { [#"../knapsack_full.rs" 13 10 13 33] UInt64.to_int result = MinMax.max (UInt64.to_int a) (UInt64.to_int b) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -496,7 +496,7 @@ module Alloc_Vec_FromElem_Interface
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  val from_elem [@cfg:stackify] (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  val from_elem (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (ShallowModel0.shallow_model result) = UInt64.to_int n }
     ensures { forall i : int . 0 <= i /\ i < UInt64.to_int n -> Seq.get (ShallowModel0.shallow_model result) i = elem }
     
@@ -516,7 +516,7 @@ module Alloc_Vec_Impl1_Len_Interface
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
+  val len (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (ShallowModel0.shallow_model self) }
     
 end
@@ -605,7 +605,7 @@ module Core_Iter_Traits_Collect_Impl0_IntoIter_Interface
     type IntoIter0.intoIter = IntoIter0.intoIter
   clone CreusotContracts_Std1_Iter_IntoIterator_IntoIterPre_Stub as IntoIterPre0 with
     type self = i
-  val into_iter [@cfg:stackify] (self : i) : i
+  val into_iter (self : i) : i
     requires {IntoIterPre0.into_iter_pre self}
     ensures { IntoIterPost0.into_iter_post self result }
     ensures { Invariant0.invariant' result }
@@ -709,7 +709,7 @@ module Core_Iter_Range_Impl3_Next_Interface
     type self = Core_Ops_Range_Range_Type.t_range a
   clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
     type idx = a
-  val next [@cfg:stackify] (self : borrowed (Core_Ops_Range_Range_Type.t_range a)) : Core_Option_Option_Type.t_option a
+  val next (self : borrowed (Core_Ops_Range_Range_Type.t_range a)) : Core_Option_Option_Type.t_option a
     requires {Invariant0.invariant' ( * self)}
     ensures { Invariant0.invariant' ( ^ self) }
     ensures { match (result) with
@@ -814,7 +814,7 @@ module Alloc_Vec_Impl15_Index_Interface
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
+  val index (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
     ensures { HasValue0.has_value index (ShallowModel0.shallow_model self) result }
     
@@ -1004,7 +1004,7 @@ module Core_Ops_Range_Impl7_New_Interface
     predicate LeLog0.le_log = LeLog0.le_log,
     type DeepModelTy0.deepModelTy = DeepModelTy0.deepModelTy,
     axiom .
-  val new [@cfg:stackify] (start : idx) (end' : idx) : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx
+  val new (start : idx) (end' : idx) : Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive idx
     ensures { StartLog0.start_log result = start }
     ensures { EndLog0.end_log result = end' }
     ensures { LeLog0.le_log (DeepModel0.deep_model start) (DeepModel0.deep_model end') -> not IsEmptyLog0.is_empty_log result }
@@ -1051,7 +1051,7 @@ module Core_Iter_Range_Impl12_Next_Interface
     type self = Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive a
   clone CreusotContracts_Std1_Ops_Impl4_Invariant_Stub as Invariant0 with
     type idx = a
-  val next [@cfg:stackify] (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive a)) : Core_Option_Option_Type.t_option a
+  val next (self : borrowed (Core_Ops_Range_RangeInclusive_Type.t_rangeinclusive a)) : Core_Option_Option_Type.t_option a
     requires {Invariant0.invariant' ( * self)}
     ensures { Invariant0.invariant' ( ^ self) }
     ensures { match (result) with
@@ -1153,7 +1153,7 @@ module Alloc_Vec_Impl16_IndexMut_Interface
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
+  val index_mut (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
     ensures { HasValue0.has_value index (ShallowModel0.shallow_model self) ( * result) }
     ensures { HasValue0.has_value index (ShallowModel1.shallow_model ( ^ self)) ( ^ result) }
@@ -1174,7 +1174,7 @@ module Alloc_Vec_Impl0_WithCapacity_Interface
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  val with_capacity [@cfg:stackify] (capacity : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  val with_capacity (capacity : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (ShallowModel0.shallow_model result) = 0 }
     
 end
@@ -1196,7 +1196,7 @@ module Alloc_Vec_Impl1_Push_Interface
     type a = a,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
+  val push (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
     ensures { ShallowModel0.shallow_model ( ^ self) = Seq.snoc (ShallowModel1.shallow_model self) value }
     
 end
@@ -1860,7 +1860,7 @@ module KnapsackFull_Knapsack01Dyn_Interface
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val knapsack01_dyn [@cfg:stackify] [#"../knapsack_full.rs" 84 0 84 91] (items : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (max_weight : usize) : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
+  val knapsack01_dyn [#"../knapsack_full.rs" 84 0 84 91] (items : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (max_weight : usize) : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
     requires {[#"../knapsack_full.rs" 76 11 76 36] Seq.length (ShallowModel0.shallow_model items) < 10000000}
     requires {[#"../knapsack_full.rs" 77 11 77 33] UInt64.to_int max_weight < 10000000}
     requires {[#"../knapsack_full.rs" 78 0 78 91] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model items) -> UInt64.to_int (KnapsackFull_Item_Type.item_value (Seq.get (ShallowModel0.shallow_model items) i)) <= 10000000}
@@ -2199,7 +2199,7 @@ module KnapsackFull_Knapsack01Dyn
     type t = usize,
     function ShallowModel0.shallow_model = ShallowModel3.shallow_model,
     val Max0.mAX' = Max1.mAX'
-  let rec cfg knapsack01_dyn [@cfg:stackify] [#"../knapsack_full.rs" 84 0 84 91] (items : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (max_weight : usize) : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
+  let rec cfg knapsack01_dyn [#"../knapsack_full.rs" 84 0 84 91] [@cfg:stackify] [@cfg:subregion_analysis] (items : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (max_weight : usize) : Alloc_Vec_Vec_Type.t_vec (KnapsackFull_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
     requires {[#"../knapsack_full.rs" 76 11 76 36] Seq.length (ShallowModel0.shallow_model items) < 10000000}
     requires {[#"../knapsack_full.rs" 77 11 77 33] UInt64.to_int max_weight < 10000000}
     requires {[#"../knapsack_full.rs" 78 0 78 91] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model items) -> UInt64.to_int (KnapsackFull_Item_Type.item_value (Seq.get (ShallowModel0.shallow_model items) i)) <= 10000000}

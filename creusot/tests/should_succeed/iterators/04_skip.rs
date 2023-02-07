@@ -70,7 +70,6 @@ where
         let old_self = ghost! { self };
         let mut n = std::mem::take(&mut self.n);
         let mut skipped = ghost! { Seq::EMPTY };
-        #[invariant(proph_const, ^self == ^old_self.inner())]
         #[invariant(skipped_len, skipped.len() + @n == @old_self.n)]
         #[invariant(produces, old_self.iter.produces(skipped.inner(), self.iter))]
         #[invariant(skipped_resolve, forall<i: Int> 0 <= i && i < skipped.len() ==> skipped[i].resolve())]

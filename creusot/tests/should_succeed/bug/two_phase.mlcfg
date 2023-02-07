@@ -187,7 +187,7 @@ module Alloc_Vec_Impl1_Len_Interface
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
+  val len (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (ShallowModel0.shallow_model self) }
     
 end
@@ -209,7 +209,7 @@ module Alloc_Vec_Impl1_Push_Interface
     type a = a,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
+  val push (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
     ensures { ShallowModel0.shallow_model ( ^ self) = Seq.snoc (ShallowModel1.shallow_model self) value }
     
 end
@@ -252,7 +252,7 @@ module TwoPhase_Test_Interface
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  val test [@cfg:stackify] [#"../two_phase.rs" 6 0 6 31] (v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : ()
+  val test [#"../two_phase.rs" 6 0 6 31] (v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : ()
     ensures { [#"../two_phase.rs" 5 10 5 42] UInt64.to_int (Seq.get (ShallowModel0.shallow_model ( ^ v)) (Seq.length (ShallowModel1.shallow_model v))) = Seq.length (ShallowModel1.shallow_model v) }
     
 end
@@ -293,7 +293,7 @@ module TwoPhase_Test
     type t = usize,
     type a = Alloc_Alloc_Global_Type.t_global,
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model
-  let rec cfg test [@cfg:stackify] [#"../two_phase.rs" 6 0 6 31] (v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : ()
+  let rec cfg test [#"../two_phase.rs" 6 0 6 31] [@cfg:stackify] [@cfg:subregion_analysis] (v : borrowed (Alloc_Vec_Vec_Type.t_vec usize (Alloc_Alloc_Global_Type.t_global))) : ()
     ensures { [#"../two_phase.rs" 5 10 5 42] UInt64.to_int (Seq.get (ShallowModel0.shallow_model ( ^ v)) (Seq.length (ShallowModel1.shallow_model v))) = Seq.length (ShallowModel1.shallow_model v) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]

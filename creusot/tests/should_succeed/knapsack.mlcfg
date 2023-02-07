@@ -4,7 +4,7 @@ module Knapsack_Max_Interface
   use int.MinMax
   use mach.int.Int
   use prelude.UIntSize
-  val max [@cfg:stackify] [#"../knapsack.rs" 15 0 15 35] (a : usize) (b : usize) : usize
+  val max [#"../knapsack.rs" 15 0 15 35] (a : usize) (b : usize) : usize
     requires {[#"../knapsack.rs" 13 11 13 15] true}
     ensures { [#"../knapsack.rs" 14 10 14 33] UInt64.to_int result = MinMax.max (UInt64.to_int a) (UInt64.to_int b) }
     
@@ -14,7 +14,7 @@ module Knapsack_Max
   use prelude.UIntSize
   use mach.int.UInt64
   use int.MinMax
-  let rec cfg max [@cfg:stackify] [#"../knapsack.rs" 15 0 15 35] (a : usize) (b : usize) : usize
+  let rec cfg max [#"../knapsack.rs" 15 0 15 35] [@cfg:stackify] [@cfg:subregion_analysis] (a : usize) (b : usize) : usize
     requires {[#"../knapsack.rs" 13 11 13 15] true}
     ensures { [#"../knapsack.rs" 14 10 14 33] UInt64.to_int result = MinMax.max (UInt64.to_int a) (UInt64.to_int b) }
     
@@ -289,7 +289,7 @@ module Alloc_Vec_FromElem_Interface
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  val from_elem [@cfg:stackify] (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  val from_elem (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (ShallowModel0.shallow_model result) = UInt64.to_int n }
     ensures { forall i : int . 0 <= i /\ i < UInt64.to_int n -> Seq.get (ShallowModel0.shallow_model result) i = elem }
     
@@ -309,7 +309,7 @@ module Alloc_Vec_Impl1_Len_Interface
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val len [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
+  val len (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
     ensures { UInt64.to_int result = Seq.length (ShallowModel0.shallow_model self) }
     
 end
@@ -409,7 +409,7 @@ module Alloc_Vec_Impl15_Index_Interface
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val index [@cfg:stackify] (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
+  val index (self : Alloc_Vec_Vec_Type.t_vec t a) (index : i) : Output0.output
     requires {InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
     ensures { HasValue0.has_value index (ShallowModel0.shallow_model self) result }
     
@@ -507,7 +507,7 @@ module Alloc_Vec_Impl16_IndexMut_Interface
   clone CreusotContracts_Model_Impl3_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val index_mut [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
+  val index_mut (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (index : i) : borrowed Output0.output
     requires {InBounds0.in_bounds index (ShallowModel0.shallow_model self)}
     ensures { HasValue0.has_value index (ShallowModel0.shallow_model self) ( * result) }
     ensures { HasValue0.has_value index (ShallowModel1.shallow_model ( ^ self)) ( ^ result) }
@@ -528,7 +528,7 @@ module Alloc_Vec_Impl0_WithCapacity_Interface
     type a = Alloc_Alloc_Global_Type.t_global,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  val with_capacity [@cfg:stackify] (capacity : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+  val with_capacity (capacity : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
     ensures { Seq.length (ShallowModel0.shallow_model result) = 0 }
     
 end
@@ -550,7 +550,7 @@ module Alloc_Vec_Impl1_Push_Interface
     type a = a,
     val Max0.mAX' = Max0.mAX',
     axiom .
-  val push [@cfg:stackify] (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
+  val push (self : borrowed (Alloc_Vec_Vec_Type.t_vec t a)) (value : t) : ()
     ensures { ShallowModel0.shallow_model ( ^ self) = Seq.snoc (ShallowModel1.shallow_model self) value }
     
 end
@@ -735,7 +735,7 @@ module Knapsack_Knapsack01Dyn_Interface
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
-  val knapsack01_dyn [@cfg:stackify] [#"../knapsack.rs" 48 0 48 91] (items : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (max_weight : usize) : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
+  val knapsack01_dyn [#"../knapsack.rs" 48 0 48 91] (items : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (max_weight : usize) : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
     requires {[#"../knapsack.rs" 45 11 45 36] Seq.length (ShallowModel0.shallow_model items) < 10000000}
     requires {[#"../knapsack.rs" 46 11 46 33] UInt64.to_int max_weight < 10000000}
     requires {[#"../knapsack.rs" 47 0 47 91] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model items) -> UInt64.to_int (Knapsack_Item_Type.item_value (Seq.get (ShallowModel0.shallow_model items) i)) <= 10000000}
@@ -933,7 +933,7 @@ module Knapsack_Knapsack01Dyn
     type t = usize,
     function ShallowModel0.shallow_model = ShallowModel2.shallow_model,
     val Max0.mAX' = Max1.mAX'
-  let rec cfg knapsack01_dyn [@cfg:stackify] [#"../knapsack.rs" 48 0 48 91] (items : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (max_weight : usize) : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
+  let rec cfg knapsack01_dyn [#"../knapsack.rs" 48 0 48 91] [@cfg:stackify] [@cfg:subregion_analysis] (items : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)) (max_weight : usize) : Alloc_Vec_Vec_Type.t_vec (Knapsack_Item_Type.t_item name) (Alloc_Alloc_Global_Type.t_global)
     requires {[#"../knapsack.rs" 45 11 45 36] Seq.length (ShallowModel0.shallow_model items) < 10000000}
     requires {[#"../knapsack.rs" 46 11 46 33] UInt64.to_int max_weight < 10000000}
     requires {[#"../knapsack.rs" 47 0 47 91] forall i : int . 0 <= i /\ i < Seq.length (ShallowModel0.shallow_model items) -> UInt64.to_int (Knapsack_Item_Type.item_value (Seq.get (ShallowModel0.shallow_model items) i)) <= 10000000}
