@@ -1,0 +1,170 @@
+
+module Core_Num_Impl10_Max_Stub
+  use mach.int.Int
+  use mach.int.UInt64
+  val constant mAX'  : uint64
+end
+module Core_Num_Impl10_Max
+  use mach.int.Int
+  use mach.int.UInt64
+  let constant mAX'  : uint64 = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : uint64)
+end
+module CreusotContracts_Resolve_Impl1_Resolve_Stub
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Resolve_Impl1_Resolve_Interface
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t)
+end
+module CreusotContracts_Resolve_Impl1_Resolve
+  type t
+  use prelude.Borrow
+  predicate resolve (self : borrowed t) =
+     ^ self =  * self
+  val resolve (self : borrowed t) : bool
+    ensures { result = resolve self }
+    
+end
+module C682_AddSome_Interface
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt64
+  clone Core_Num_Impl10_Max_Stub as Max0
+  val add_some [#"../682.rs" 6 0 6 24] (a : borrowed uint64) : ()
+    requires {[#"../682.rs" 4 11 4 32]  * a <= div Max0.mAX' (2 : uint64)}
+    ensures { [#"../682.rs" 5 10 5 17]  ^ a >  * a }
+    
+end
+module C682_AddSome
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt64
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = uint64
+  clone Core_Num_Impl10_Max as Max0
+  let rec cfg add_some [#"../682.rs" 6 0 6 24] [@cfg:stackify] [@cfg:subregion_analysis] (a : borrowed uint64) : ()
+    requires {[#"../682.rs" 4 11 4 32]  * a <= div Max0.mAX' (2 : uint64)}
+    ensures { [#"../682.rs" 5 10 5 17]  ^ a >  * a }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var a_1 : borrowed uint64;
+  {
+    a_1 <- a;
+    goto BB0
+  }
+  BB0 {
+    a_1 <- { a_1 with current = ([#"../682.rs" 7 4 7 11]  * a_1 + ([#"../682.rs" 7 10 7 11] (1 : uint64))) };
+    assume { Resolve0.resolve a_1 };
+    _0 <- ();
+    return _0
+  }
+  
+end
+module CreusotContracts_Ghost_Impl0_Deref_Stub
+  type t
+  use prelude.Borrow
+  use prelude.Ghost
+  function deref (self : Ghost.ghost_ty t) : t
+end
+module CreusotContracts_Ghost_Impl0_Deref_Interface
+  type t
+  use prelude.Borrow
+  use prelude.Ghost
+  function deref (self : Ghost.ghost_ty t) : t
+end
+module CreusotContracts_Ghost_Impl0_Deref
+  type t
+  use prelude.Borrow
+  use prelude.Ghost
+  function deref (self : Ghost.ghost_ty t) : t =
+    Ghost.inner self
+  val deref (self : Ghost.ghost_ty t) : t
+    ensures { result = deref self }
+    
+end
+module C682_Foo_Interface
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt64
+  val foo [#"../682.rs" 12 0 12 23] (a : borrowed uint64) : ()
+    requires {[#"../682.rs" 10 11 10 21]  * a = (3 : uint64)}
+    ensures { [#"../682.rs" 11 10 11 17]  ^ a >  * a }
+    
+end
+module C682_Foo
+  use prelude.Borrow
+  use mach.int.Int
+  use mach.int.UInt64
+  use prelude.Ghost
+  clone Core_Num_Impl10_Max as Max0
+  clone CreusotContracts_Ghost_Impl0_Deref as Deref0 with
+    type t = uint64
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = uint64
+  clone C682_AddSome_Interface as AddSome0 with
+    val Max0.mAX' = Max0.mAX'
+  let rec cfg foo [#"../682.rs" 12 0 12 23] [@cfg:stackify] [@cfg:subregion_analysis] (a : borrowed uint64) : ()
+    requires {[#"../682.rs" 10 11 10 21]  * a = (3 : uint64)}
+    ensures { [#"../682.rs" 11 10 11 17]  ^ a >  * a }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var a_1 : borrowed uint64;
+  var a_p_4 : Ghost.ghost_ty uint64;
+  var _7 : ();
+  var _8 : ();
+  var _9 : borrowed uint64;
+  var _10 : ();
+  var _11 : bool;
+  var _12 : bool;
+  var _13 : uint64;
+  var _14 : uint64;
+  var _15 : uint64;
+  var _16 : Ghost.ghost_ty uint64;
+  var _17 : ();
+  {
+    a_1 <- a;
+    goto BB0
+  }
+  BB0 {
+    _7 <- ();
+    a_p_4 <- ([#"../682.rs" 13 26 13 36] Ghost.new ( * a_1));
+    goto BB1
+  }
+  BB1 {
+    _9 <- borrow_mut ( * a_1);
+    a_1 <- { a_1 with current = ( ^ _9) };
+    _8 <- ([#"../682.rs" 14 4 14 15] AddSome0.add_some _9);
+    goto BB2
+  }
+  BB2 {
+    _13 <-  * a_1;
+    assume { Resolve0.resolve a_1 };
+    _16 <- a_p_4;
+    _15 <- ([#"../682.rs" 15 17 15 21] Deref0.deref _16);
+    goto BB3
+  }
+  BB3 {
+    _14 <- _15;
+    _12 <- ([#"../682.rs" 15 12 15 21] _13 > _14);
+    _11 <- not _12;
+    switch (_11)
+      | False -> goto BB5
+      | True -> goto BB4
+      end
+  }
+  BB4 {
+    absurd
+  }
+  BB5 {
+    _10 <- ();
+    _0 <- ();
+    return _0
+  }
+  
+end

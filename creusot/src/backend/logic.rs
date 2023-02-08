@@ -89,7 +89,9 @@ fn builtin_body<'tcx>(
         names.import_builtin_module(builtin.clone().module_qname());
     }
 
-    let mut decls = names.to_clones(ctx);
+    let mut decls: Vec<_> = all_generic_decls_for(ctx.tcx, def_id).collect();
+
+    decls.extend(names.to_clones(ctx));
     if !builtin.module.is_empty() {
         let body = Exp::Call(box Exp::pure_qvar(builtin.without_search_path()), val_args);
 
