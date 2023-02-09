@@ -153,7 +153,7 @@ fn desugar_for(mut invariants: Vec<Invariant>, f: ExprForLoop) -> TokenStream {
         },
     );
 
-    let elem = Ident::new("i", proc_macro::Span::def_site().into());
+    let elem = Ident::new("__creusot_proc_iter_elem", proc_macro::Span::def_site().into());
 
     quote! { {
         let mut #it = ::std::iter::IntoIterator::into_iter(#iter);
