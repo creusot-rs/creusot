@@ -18,8 +18,9 @@ use why3::{
 };
 
 use crate::{
+    backend::dependency::Dependency,
     ctx::{self, *},
-    translation::{interface, traits},
+    translation::interface,
     util::{self, get_builtin, ident_of, ident_of_ty, item_name, module_name},
 };
 
@@ -128,18 +129,13 @@ impl<'tcx> Drop for CloneMap<'tcx> {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-enum DepNode<'tcx> {
-    Type(Ty<'tcx>),
-    Dep(CloneNode<'tcx>),
-}
+type DepNode<'tcx> = Dependency<'tcx>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable, Hash)]
 enum Kind {
     Named(Symbol),
     Hidden,
     Export,
-    // Use,
 }
 
 impl Kind {
@@ -402,7 +398,7 @@ impl<'tcx> CloneMap<'tcx> {
             trace!("{:?} is public={:?}", key, self.names[&key].public);
 
             if key != self.self_key() {
-                self.add_graph_edge(DepNode::Dep(self.self_key()), DepNode::Dep(key));
+                self.add_graph_edge(DepNode::Item(self.self_key()), DepNode::Item(key));
             }
 
             if self.names[&key].kind == Kind::Hidden {
@@ -441,11 +437,11 @@ impl<'tcx> CloneMap<'tcx> {
                 TyKind::Closure(id, subst) => {
                     self.insert(*id, subst);
                     // Sketchy... shouldn't we need to do something to subst?
-                    self.add_graph_edge(DepNode::Dep(key), DepNode::Dep((*id, subst)));
+                    self.add_graph_edge(DepNode::Item(key), DepNode::Item((*id, subst)));
                 }
                 TyKind::Adt(def, subst) => {
                     self.insert(def.did(), subst);
-                    self.add_graph_edge(DepNode::Dep(key), DepNode::Dep((def.did(), subst)));
+                    self.add_graph_edge(DepNode::Item(key), DepNode::Item((def.did(), subst)));
                 }
                 _ => {}
             }
@@ -453,11 +449,11 @@ impl<'tcx> CloneMap<'tcx> {
         walk_projections(key.1, |pty: &AliasTy<'tcx>| {
             let dep = self.resolve_dep(ctx, (pty.def_id, pty.substs));
 
-            if let DepNode::Dep((defid, subst)) = dep {
+            if let Some((defid, subst)) = dep.cloneable_id() {
                 self.insert(defid, subst);
             }
 
-            self.add_graph_edge(DepNode::Dep(key), dep);
+            self.add_graph_edge(DepNode::Item(key), dep);
         });
 
         let key_public = self.names[&key].public;
@@ -475,18 +471,18 @@ impl<'tcx> CloneMap<'tcx> {
 
             let dep = self.resolve_dep(ctx, (dep.0, EarlyBinder(dep.1).subst(self.tcx, key.1)));
 
-            if let DepNode::Dep((defid, subst)) = dep {
+            if let Some((defid, subst)) = dep.cloneable_id() {
                 trace!("inserting dependency {:?} {:?}", key, dep);
 
                 self.insert(defid, subst).public |= key_public && info.public;
             }
 
             // Skip reflexive edges
-            if dep == DepNode::Dep(key) {
+            if dep == DepNode::Item(key) {
                 continue;
             }
 
-            let edge_set = self.add_graph_edge(DepNode::Dep(key), dep);
+            let edge_set = self.add_graph_edge(DepNode::Item(key), dep);
             if let Some(sym) = refineable_symbol(ctx.tcx, orig.0) {
                 edge_set.insert((info.kind, sym));
             }
@@ -499,8 +495,10 @@ impl<'tcx> CloneMap<'tcx> {
         user: DepNode<'tcx>,
         prov: DepNode<'tcx>,
     ) -> &mut IndexSet<(Kind, SymbolKind)> {
-        let k1 = if let DepNode::Dep(d1) = user { Some(&self.names[&d1].kind) } else { None };
-        let k2 = if let DepNode::Dep(d2) = prov { Some(&self.names[&d2].kind) } else { None };
+        let k1 =
+            if let Some(d1) = user.cloneable_id() { Some(&self.names[&d1].kind) } else { None };
+        let k2 =
+            if let Some(d2) = prov.cloneable_id() { Some(&self.names[&d2].kind) } else { None };
         trace!("{k1:?} = {:?} --> {k2:?} = {:?}", user, prov);
 
         if let None = self.clone_graph.edge_weight_mut(user, prov) {
@@ -519,27 +517,13 @@ impl<'tcx> CloneMap<'tcx> {
         dep: (DefId, SubstsRef<'tcx>),
     ) -> DepNode<'tcx> {
         let param_env = ctx.param_env(self.self_id);
-        let dep = self.tcx.try_normalize_erasing_regions(param_env, dep).unwrap_or(dep);
 
-        let resolved = traits::resolve_opt(ctx.tcx, param_env, dep.0, dep.1).unwrap_or(dep);
-        let resolved = self.closure_hack(resolved.0, resolved.1);
-
-        if util::item_type(self.tcx, resolved.0) == ItemType::AssocTy
-            && self.tcx.trait_of_item(resolved.0).is_some()
-        {
-            let ty = self.tcx.mk_projection(dep.0, dep.1);
-
-            let normed = self.tcx.try_normalize_erasing_regions(param_env, ty);
-            trace!("normed {ty:?} into {normed:?}");
-            if let Ok(normed) = normed && ty != normed {
-                match normed.kind() {
-                    TyKind::Alias(AliasKind::Projection, aty) => return DepNode::Dep((aty.def_id, aty.substs)),
-                    _ => return DepNode::Type(normed),
-                }
-            }
+        let dep = match util::item_type(self.tcx, dep.0) {
+            ItemType::Type => Dependency::Type(ctx.mk_adt(ctx.adt_def(dep.0), dep.1)),
+            ItemType::AssocTy => Dependency::Type(ctx.mk_projection(dep.0, dep.1)),
+            _ => Dependency::Item(dep),
         };
-
-        return DepNode::Dep(resolved);
+        dep.resolve(ctx, param_env).unwrap_or(dep)
     }
 
     fn clone_laws(&mut self, ctx: &mut TranslationCtx<'tcx>, key: (DefId, SubstsRef<'tcx>)) {
@@ -573,7 +557,79 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
-    pub(crate) fn to_clones(&mut self, ctx: &mut ctx::TranslationCtx<'tcx>) -> Vec<Decl> {
+    fn build_clone(&mut self, ctx: &mut TranslationCtx<'tcx>, item: DepNode<'tcx>) -> Option<Decl> {
+        let node @ (def_id, subst) = item.cloneable_id()?;
+
+        // Types can't be cloned, but are used (for now).
+        if util::item_type(ctx.tcx, def_id) == ItemType::Type {
+            if self.used_types.insert(def_id) {
+                let name = if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
+                    let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
+
+                    Decl::UseDecl(Use { name: name.clone(), as_: None, export: false })
+                } else {
+                    let name = cloneable_name(ctx, def_id, CloneLevel::Body);
+                    Decl::UseDecl(Use { name: name.clone(), as_: Some(name), export: false })
+                };
+                return Some(name);
+            }
+            return None;
+        }
+
+        let mut clone_subst = base_subst(ctx, self, ctx.param_env(self.self_id), def_id, subst);
+
+        let outbound: Vec<_> =
+            self.clone_graph.neighbors_directed(DepNode::Item(node), Outgoing).collect();
+
+        // Grab definitions from all of our dependencies
+        for dep in outbound {
+            let syms = &self.clone_graph[(DepNode::Item(node), dep)];
+            trace!("s={:?} t={:?} e={:?}", dep, node, syms);
+
+            match dep {
+                DepNode::Type(ty) => {
+                    for (nm, sym) in syms.clone() {
+                        let ty_name = nm.qname_ident(sym.ident());
+                        let ty = super::ty::translate_ty(ctx, self, DUMMY_SP, ty);
+                        clone_subst.push(CloneSubst::Type(ty_name, ty))
+                    }
+                }
+                DepNode::Item(dep) => {
+                    for (nm, sym) in syms {
+                        let elem = sym.to_subst(*nm, self.names[&dep].kind);
+                        clone_subst.push(elem);
+                    }
+                }
+            }
+        }
+
+        let use_axioms = ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false);
+        if use_axioms {
+            clone_subst.push(CloneSubst::Axiom(None))
+        }
+
+        let interface = match (self.clone_level, self.names[&node].opaque) {
+            (CloneLevel::Body, CloneOpacity::Opaque) => CloneLevel::Interface,
+            (x, _) => x,
+        };
+
+        trace!(
+            "emit clone node={node:?} name={:?} as={:?}",
+            cloneable_name(ctx, def_id, interface),
+            self.names[&node].kind.clone()
+        );
+
+        Some(Decl::Clone(DeclClone {
+            name: cloneable_name(ctx, def_id, interface),
+            subst: clone_subst,
+            kind: self.names[&node].kind.clone().into(),
+        }))
+    }
+
+    pub(crate) fn to_clones(
+        mut self,
+        ctx: &mut ctx::TranslationCtx<'tcx>,
+    ) -> (Vec<Decl>, CloneSummary<'tcx>) {
         trace!("emitting clones for {:?}", self.self_id);
         let mut decls = Vec::new();
 
@@ -594,101 +650,27 @@ impl<'tcx> CloneMap<'tcx> {
         // Broken because of closures which share a defid for the type *and* function
         // debug_assert!(!is_cyclic_directed(&self.clone_graph), "clone graph for {:?} is cyclic", self.self_id );
 
-        let mut topo = DfsPostOrder::new(&self.clone_graph, DepNode::Dep(self.self_key()));
+        let mut topo = DfsPostOrder::new(&self.clone_graph, DepNode::Item(self.self_key()));
         while let Some(node) = topo.walk_next(&self.clone_graph) {
-            let DepNode::Dep(node @ (def_id, subst)) = node else { continue };
-            trace!("processing node {:?}", self.names[&node].kind);
+            let Some(item) = node.cloneable_id() else { continue };
+            trace!("processing node {:?}", self.names[&item].kind);
 
-            // Though we pass in a &mut ref, it shouldn't actually be possible to add any new entries..
-            let mut clone_subst = base_subst(ctx, self, ctx.param_env(self.self_id), def_id, subst);
-
-            if self.names[&node].cloned {
-                continue;
-            }
-            self.names[&node].cloned = true;
-
-            if self.names[&node].kind == Kind::Hidden {
+            if std::mem::replace(&mut self.names[&item].cloned, true) {
                 continue;
             }
 
-            // Types can't be cloned, but are used (for now).
-            if util::item_type(ctx.tcx, def_id) == ItemType::Type {
-                let repr = def_id;
-                let hidden = self
-                    .names
-                    .iter()
-                    .any(|((id, _), info)| *id == repr && info.kind == Kind::Hidden);
-                if self.used_types.insert(repr) && !hidden {
-                    let name = if let Some(builtin) = get_builtin(ctx.tcx, def_id) {
-                        let name = QName::from_string(&builtin.as_str()).unwrap().module_qname();
-
-                        Decl::UseDecl(Use { name: name.clone(), as_: None, export: false })
-                    } else {
-                        let name = cloneable_name(ctx, def_id, CloneLevel::Body);
-                        Decl::UseDecl(Use { name: name.clone(), as_: Some(name), export: false })
-                    };
-                    // self.import_builtin_module(name.clone());
-                    decls.push(name);
-                }
+            if self.names[&item].kind == Kind::Hidden {
                 continue;
             }
 
-            let outbound: Vec<_> =
-                self.clone_graph.neighbors_directed(DepNode::Dep(node), Outgoing).collect();
-
-            // Grab definitions from all of our dependencies
-            for dep in outbound {
-                let syms = &self.clone_graph[(DepNode::Dep(node), dep)];
-                trace!("s={:?} t={:?} e={:?}", dep, node, syms);
-
-                match dep {
-                    DepNode::Type(ty) => {
-                        let (nm, sym) = syms.iter().next().unwrap(); // Type nodes only have have exactly one symbol
-
-                        let ty_name = nm.qname_ident(sym.ident());
-                        let ty = super::ty::translate_ty(ctx, self, DUMMY_SP, ty);
-                        clone_subst.push(CloneSubst::Type(ty_name, ty))
-                    }
-                    DepNode::Dep(dep) => {
-                        for (nm, sym) in syms {
-                            let elem = sym.to_subst(*nm, self.names[&dep].kind);
-                            clone_subst.push(elem);
-                        }
-                    }
-                }
-            }
-
-            let use_axioms = match self.names[&node].opaque {
-                CloneOpacity::Opaque | CloneOpacity::Default => {
-                    ctx.item(def_id).map(|i| i.has_axioms()).unwrap_or(false)
-                }
-                _ => false,
-            };
-            if use_axioms {
-                clone_subst.push(CloneSubst::Axiom(None))
-            }
-
-            let interface = match (self.clone_level, self.names[&node].opaque) {
-                (CloneLevel::Body, CloneOpacity::Opaque) => CloneLevel::Interface,
-                (x, _) => x,
-            };
-
-            trace!(
-                "emit clone node={node:?} name={:?} as={:?}",
-                cloneable_name(ctx, def_id, interface),
-                self.names[&node].kind.clone()
-            );
-
-            decls.push(Decl::Clone(DeclClone {
-                name: cloneable_name(ctx, def_id, interface),
-                subst: clone_subst,
-                kind: self.names[&node].kind.clone().into(),
-            }));
+            let Some(decl) = self.build_clone(ctx, node) else { continue };
+            decls.push(decl);
         }
 
         // debug_assert!(topo.finished.len() >= self.names.len(), "missed a clone in {:?}", self.self_id);
 
-        self.prelude
+        let clones = self
+            .prelude
             .iter_mut()
             .filter(|(_, v)| !(**v))
             .map(|(p, v)| {
@@ -697,7 +679,8 @@ impl<'tcx> CloneMap<'tcx> {
             })
             .map(|q| Decl::UseDecl(Use { name: q.clone(), as_: None, export: false }))
             .chain(decls.into_iter())
-            .collect()
+            .collect();
+        (clones, self.summary())
     }
 }
 

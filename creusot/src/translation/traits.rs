@@ -135,10 +135,11 @@ impl<'tcx> TranslationCtx<'tcx> {
             }
         };
 
-        decls.extend(names.to_clones(self));
+        let (clones, summary) = names.to_clones(self);
+        decls.extend(clones);
         decls.push(Decl::TyDecl(ty_decl));
 
-        (Module { name: module_name(self.tcx, def_id), decls }, names.summary())
+        (Module { name: module_name(self.tcx, def_id), decls }, summary)
     }
 }
 

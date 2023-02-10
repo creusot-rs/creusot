@@ -344,7 +344,7 @@ pub(crate) fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
         tys.push(build_ty_decl(ctx, &mut names, *did));
     }
 
-    let mut decls = names.to_clones(ctx);
+    let (mut decls, _) = names.to_clones(ctx);
     decls.push(Decl::TyDecl(TyDecl::Adt { tys: tys.clone() }));
     let mut modls = vec![Module { name: name.clone(), decls }];
     for did in &bg {

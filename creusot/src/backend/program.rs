@@ -38,16 +38,29 @@ fn closure_ty<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
     let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() else { unreachable!() };
     let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
 
+    let (clones, _) = names.to_clones(ctx);
     decls.extend(
-        names
-            .to_clones(ctx)
-            .into_iter()
-            // Definitely a hack but good enough for the moment
-            .filter(|d| matches!(d, Decl::UseDecl(_))),
+        // Definitely a hack but good enough for the moment
+        clones.into_iter().filter(|d| matches!(d, Decl::UseDecl(_))),
     );
     decls.push(env_ty);
 
     Module { name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(), decls }
+}
+
+pub(crate) fn closure_type_use<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    def_id: DefId,
+) -> Option<Decl> {
+    if !ctx.is_closure(def_id) {
+        return None;
+    }
+
+    Some(Decl::UseDecl(Use {
+        name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(),
+        as_: None,
+        export: true,
+    }))
 }
 
 pub(crate) fn closure_aux_defs<'tcx>(
@@ -55,13 +68,7 @@ pub(crate) fn closure_aux_defs<'tcx>(
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Vec<Decl> {
-    let mut decls = Vec::new();
-    decls.push(Decl::UseDecl(Use {
-        name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(),
-        as_: None,
-        export: true,
-    }));
-    let acc: Vec<_> = closure_accessors(ctx, def_id)
+    let mut decls: Vec<_> = closure_accessors(ctx, def_id)
         .into_iter()
         .map(|(sym, sig, body)| -> Decl {
             let mut sig = sig_to_why3(ctx, names, sig, def_id);
@@ -78,8 +85,6 @@ pub(crate) fn closure_aux_defs<'tcx>(
         .collect();
     let contract = closure_contract(ctx, def_id).to_why(ctx, def_id, names);
 
-    decls.extend(names.to_clones(ctx));
-    decls.extend(acc);
     decls.extend(contract);
     decls
 }
@@ -105,18 +110,24 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
     let (_, promoted) = tcx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
 
-    let mut decls = Vec::new();
-    decls.extend(closure_generic_decls(ctx.tcx, def_id));
-
-    if ctx.tcx.is_closure(def_id) {
-        decls.extend(closure_aux_defs(ctx, &mut names, def_id));
-    }
+    let closure_defs = if ctx.tcx.is_closure(def_id) {
+        closure_aux_defs(ctx, &mut names, def_id)
+    } else {
+        Vec::new()
+    };
 
     let promoteds = lower_promoted(ctx, &mut names, def_id, &*promoted.borrow());
 
-    decls.extend(names.to_clones(ctx));
-    decls.extend(promoteds);
-    decls.push(body);
+    let (clones, _) = names.to_clones(ctx);
+
+    let decls = closure_generic_decls(ctx.tcx, def_id)
+        .chain(closure_type_use(ctx, def_id))
+        .chain(clones)
+        .chain(closure_defs)
+        .chain(promoteds)
+        .chain(std::iter::once(body))
+        .collect();
+
     let name = module_name(ctx.tcx, def_id);
     Some(Module { name, decls })
 }
