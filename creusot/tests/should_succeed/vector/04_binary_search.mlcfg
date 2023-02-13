@@ -156,18 +156,17 @@ end
 module Alloc_Vec_Impl1_Len_Interface
   type t
   type a
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
   use prelude.Borrow
   use prelude.Int
-  use prelude.UIntSize
   use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   val len (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
-    ensures { UInt64.to_int result = Seq.length (ShallowModel0.shallow_model self) }
+    ensures { UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model self) }
     
 end
 module CreusotContracts_Std1_Slice_SliceIndex_InBounds_Stub
@@ -266,7 +265,7 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub
   type t
   type a
   use seq.Seq
-  use mach.int.UInt64
+  use prelude.UIntSize
   use prelude.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl12_Max_Stub as Max0
@@ -276,18 +275,18 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
   type t
   type a
   use seq.Seq
-  use mach.int.UInt64
+  use prelude.UIntSize
   use prelude.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl12_Max_Stub as Max0
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UInt64.to_int Max0.mAX'
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   type t
   type a
   use seq.Seq
-  use mach.int.UInt64
+  use prelude.UIntSize
   use prelude.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl12_Max_Stub as Max0
@@ -295,7 +294,7 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UInt64.to_int Max0.mAX'
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
 end
 module CreusotContracts_Std1_Slice_Impl5_InBounds_Stub
   type t
@@ -316,9 +315,8 @@ module CreusotContracts_Std1_Slice_Impl5_InBounds
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
-  use mach.int.UInt64
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
-    UInt64.to_int self < Seq.length seq
+    UIntSize.to_int self < Seq.length seq
   val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
@@ -342,18 +340,16 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
-  use mach.int.UInt64
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
-    Seq.get seq (UInt64.to_int self) = out
+    Seq.get seq (UIntSize.to_int self) = out
   val has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) : bool
     ensures { result = has_value self seq out }
     
 end
 module C04BinarySearch_BinarySearch_Interface
   use seq.Seq
-  use mach.int.UInt64
-  use prelude.Int
   use prelude.UIntSize
+  use prelude.Int
   use prelude.Borrow
   use prelude.UInt32
   use seq.Seq
@@ -366,11 +362,11 @@ module C04BinarySearch_BinarySearch_Interface
     type t = Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq uint32
   val binary_search [#"../04_binary_search.rs" 26 0 26 71] (arr : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (elem : uint32) : Core_Result_Result_Type.t_result usize usize
-    requires {[#"../04_binary_search.rs" 19 11 19 38] Seq.length (ShallowModel0.shallow_model arr) <= UInt64.to_int Max0.mAX'}
+    requires {[#"../04_binary_search.rs" 19 11 19 38] Seq.length (ShallowModel0.shallow_model arr) <= UIntSize.to_int Max0.mAX'}
     requires {[#"../04_binary_search.rs" 20 11 20 23] Sorted0.sorted (ShallowModel0.shallow_model arr)}
-    ensures { [#"../04_binary_search.rs" 21 0 21 66] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> Seq.get (ShallowModel0.shallow_model arr) (UInt64.to_int x) = elem }
-    ensures { [#"../04_binary_search.rs" 22 0 23 51] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . i < x -> Seq.get (ShallowModel0.shallow_model arr) (UInt64.to_int i) <= elem) }
-    ensures { [#"../04_binary_search.rs" 24 0 25 70] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . x < i /\ UInt64.to_int i < Seq.length (ShallowModel0.shallow_model arr) -> elem < Seq.get (ShallowModel0.shallow_model arr) (UInt64.to_int i)) }
+    ensures { [#"../04_binary_search.rs" 21 0 21 66] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> Seq.get (ShallowModel0.shallow_model arr) (UIntSize.to_int x) = elem }
+    ensures { [#"../04_binary_search.rs" 22 0 23 51] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . i < x -> Seq.get (ShallowModel0.shallow_model arr) (UIntSize.to_int i) <= elem) }
+    ensures { [#"../04_binary_search.rs" 24 0 25 70] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . x < i /\ UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model arr) -> elem < Seq.get (ShallowModel0.shallow_model arr) (UIntSize.to_int i)) }
     
 end
 module C04BinarySearch_BinarySearch
@@ -379,7 +375,6 @@ module C04BinarySearch_BinarySearch
   use prelude.Borrow
   use prelude.UInt32
   use seq.Seq
-  use mach.int.UInt64
   clone CreusotContracts_Std1_Slice_Impl5_HasValue as HasValue0 with
     type t = uint32
   clone CreusotContracts_Std1_Slice_Impl5_InBounds as InBounds0 with
@@ -414,11 +409,11 @@ module C04BinarySearch_BinarySearch
     predicate SortedRange0.sorted_range = SortedRange0.sorted_range
   use Core_Result_Result_Type as Core_Result_Result_Type
   let rec cfg binary_search [#"../04_binary_search.rs" 26 0 26 71] [@cfg:stackify] [@cfg:subregion_analysis] (arr : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global)) (elem : uint32) : Core_Result_Result_Type.t_result usize usize
-    requires {[#"../04_binary_search.rs" 19 11 19 38] Seq.length (ShallowModel0.shallow_model arr) <= UInt64.to_int Max0.mAX'}
+    requires {[#"../04_binary_search.rs" 19 11 19 38] Seq.length (ShallowModel0.shallow_model arr) <= UIntSize.to_int Max0.mAX'}
     requires {[#"../04_binary_search.rs" 20 11 20 23] Sorted0.sorted (ShallowModel0.shallow_model arr)}
-    ensures { [#"../04_binary_search.rs" 21 0 21 66] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> Seq.get (ShallowModel0.shallow_model arr) (UInt64.to_int x) = elem }
-    ensures { [#"../04_binary_search.rs" 22 0 23 51] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . i < x -> Seq.get (ShallowModel0.shallow_model arr) (UInt64.to_int i) <= elem) }
-    ensures { [#"../04_binary_search.rs" 24 0 25 70] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . x < i /\ UInt64.to_int i < Seq.length (ShallowModel0.shallow_model arr) -> elem < Seq.get (ShallowModel0.shallow_model arr) (UInt64.to_int i)) }
+    ensures { [#"../04_binary_search.rs" 21 0 21 66] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> Seq.get (ShallowModel0.shallow_model arr) (UIntSize.to_int x) = elem }
+    ensures { [#"../04_binary_search.rs" 22 0 23 51] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . i < x -> Seq.get (ShallowModel0.shallow_model arr) (UIntSize.to_int i) <= elem) }
+    ensures { [#"../04_binary_search.rs" 24 0 25 70] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . x < i /\ UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model arr) -> elem < Seq.get (ShallowModel0.shallow_model arr) (UIntSize.to_int i)) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Result_Result_Type.t_result usize usize;
@@ -499,9 +494,9 @@ module C04BinarySearch_BinarySearch
     goto BB5
   }
   BB5 {
-    invariant size_valid { [#"../04_binary_search.rs" 33 28 33 70] 0 < UInt64.to_int size_13 /\ UInt64.to_int size_13 + UInt64.to_int base_15 <= Seq.length (ShallowModel0.shallow_model arr_1) };
-    invariant lower_b { [#"../04_binary_search.rs" 33 4 33 72] forall i : usize . i < base_15 -> Seq.get (ShallowModel0.shallow_model arr_1) (UInt64.to_int i) <= elem_2 };
-    invariant lower_b { [#"../04_binary_search.rs" 33 4 33 72] forall i : usize . UInt64.to_int base_15 + UInt64.to_int size_13 < UInt64.to_int i /\ UInt64.to_int i < Seq.length (ShallowModel0.shallow_model arr_1) -> elem_2 < Seq.get (ShallowModel0.shallow_model arr_1) (UInt64.to_int i) };
+    invariant size_valid { [#"../04_binary_search.rs" 33 28 33 70] 0 < UIntSize.to_int size_13 /\ UIntSize.to_int size_13 + UIntSize.to_int base_15 <= Seq.length (ShallowModel0.shallow_model arr_1) };
+    invariant lower_b { [#"../04_binary_search.rs" 33 4 33 72] forall i : usize . i < base_15 -> Seq.get (ShallowModel0.shallow_model arr_1) (UIntSize.to_int i) <= elem_2 };
+    invariant lower_b { [#"../04_binary_search.rs" 33 4 33 72] forall i : usize . UIntSize.to_int base_15 + UIntSize.to_int size_13 < UIntSize.to_int i /\ UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model arr_1) -> elem_2 < Seq.get (ShallowModel0.shallow_model arr_1) (UIntSize.to_int i) };
     _22 <- size_13;
     _21 <- ([#"../04_binary_search.rs" 36 10 36 18] _22 > ([#"../04_binary_search.rs" 36 17 36 18] (1 : usize)));
     switch (_21)

@@ -101,9 +101,9 @@ fn optimize_builtin<'tcx>(
         Some(TermKind::Lit(Literal::Integer(c as i128)))
     } else if builtin_attr == Some(Symbol::intern("prelude.UInt16.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("mach.int.UInt32.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {
+    } else if builtin_attr == Some(Symbol::intern("prelude.UInt32.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("mach.int.UInt64.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {
+    } else if builtin_attr == Some(Symbol::intern("prelude.UInt64.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
     } else if builtin_attr == Some(Symbol::intern("prelude.UInt128.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {
         if c > isize::MAX as u128 {
@@ -114,9 +114,9 @@ fn optimize_builtin<'tcx>(
         Some(TermKind::Lit(Literal::Integer(c as i128)))
     } else if builtin_attr == Some(Symbol::intern("prelude.Int16.to_int")) && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("mach.int.Int32.to_int")) && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind {
+    } else if builtin_attr == Some(Symbol::intern("prelude.Int32.to_int")) && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
-    } else if builtin_attr == Some(Symbol::intern("mach.int.Int64.to_int")) && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind {
+    } else if builtin_attr == Some(Symbol::intern("prelude.Int64.to_int")) && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
     } else if builtin_attr == Some(Symbol::intern("prelude.Int128.to_int")) && let TermKind::Lit(Literal::MachSigned(c, _)) = args[0].kind {
         Some(TermKind::Lit(Literal::Integer(c as i128)))

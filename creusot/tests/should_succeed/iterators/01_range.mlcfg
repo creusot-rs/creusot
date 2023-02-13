@@ -91,12 +91,11 @@ module C01Range_Impl0_Produces
   use seq.Seq
   use prelude.Int
   use prelude.IntSize
-  use mach.int.Int64
   use C01Range_Range_Type as C01Range_Range_Type
   predicate produces [#"../01_range.rs" 28 4 28 64] (self : C01Range_Range_Type.t_range) (visited : Seq.seq isize) (o : C01Range_Range_Type.t_range)
     
    =
-    [#"../01_range.rs" 29 8 35 9] C01Range_Range_Type.range_end self = C01Range_Range_Type.range_end o /\ C01Range_Range_Type.range_start self <= C01Range_Range_Type.range_start o /\ (Seq.length visited > 0 -> C01Range_Range_Type.range_start o <= C01Range_Range_Type.range_end o) /\ Seq.length visited = Int64.to_int (C01Range_Range_Type.range_start o) - Int64.to_int (C01Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> Int64.to_int (Seq.get visited i) = Int64.to_int (C01Range_Range_Type.range_start self) + i)
+    [#"../01_range.rs" 29 8 35 9] C01Range_Range_Type.range_end self = C01Range_Range_Type.range_end o /\ C01Range_Range_Type.range_start self <= C01Range_Range_Type.range_start o /\ (Seq.length visited > 0 -> C01Range_Range_Type.range_start o <= C01Range_Range_Type.range_end o) /\ Seq.length visited = IntSize.to_int (C01Range_Range_Type.range_start o) - IntSize.to_int (C01Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> IntSize.to_int (Seq.get visited i) = IntSize.to_int (C01Range_Range_Type.range_start self) + i)
   val produces [#"../01_range.rs" 28 4 28 64] (self : C01Range_Range_Type.t_range) (visited : Seq.seq isize) (o : C01Range_Range_Type.t_range) : bool
     ensures { result = produces self visited o }
     
@@ -414,11 +413,10 @@ module C01Range_Common_Iterator_ProducesTrans
   axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) -> ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) -> ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) -> ([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C01Range_SumRange_Interface
-  use mach.int.Int64
-  use prelude.Int
   use prelude.IntSize
+  use prelude.Int
   val sum_range [#"../01_range.rs" 72 0 72 35] (n : isize) : isize
-    requires {[#"../01_range.rs" 70 11 70 18] Int64.to_int n >= 0}
+    requires {[#"../01_range.rs" 70 11 70 18] IntSize.to_int n >= 0}
     ensures { [#"../01_range.rs" 71 10 71 21] result = n }
     
 end
@@ -428,7 +426,6 @@ module C01Range_SumRange
   use prelude.Ghost
   use seq.Seq
   use prelude.Borrow
-  use mach.int.Int64
   use C01Range_Range_Type as C01Range_Range_Type
   clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
     type t = C01Range_Range_Type.t_range
@@ -461,7 +458,7 @@ module C01Range_SumRange
     predicate Produces0.produces = Produces0.produces
   clone C01Range_Impl1_IntoIter_Interface as IntoIter0
   let rec cfg sum_range [#"../01_range.rs" 72 0 72 35] [@cfg:stackify] [@cfg:subregion_analysis] (n : isize) : isize
-    requires {[#"../01_range.rs" 70 11 70 18] Int64.to_int n >= 0}
+    requires {[#"../01_range.rs" 70 11 70 18] IntSize.to_int n >= 0}
     ensures { [#"../01_range.rs" 71 10 71 21] result = n }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
@@ -511,7 +508,7 @@ module C01Range_SumRange
   BB4 {
     invariant type_invariant { [#"../01_range.rs" 77 32 77 46] Invariant0.invariant' it_5 };
     invariant structural { [#"../01_range.rs" 78 28 78 67] Produces0.produces (Ghost.inner iter_old_8) (Ghost.inner produced_11) it_5 };
-    invariant user { [#"../01_range.rs" 79 22 79 52] Int64.to_int i_4 = Seq.length (Ghost.inner produced_11) /\ i_4 <= n_1 };
+    invariant user { [#"../01_range.rs" 79 22 79 52] IntSize.to_int i_4 = Seq.length (Ghost.inner produced_11) /\ i_4 <= n_1 };
     _21 <- borrow_mut it_5;
     it_5 <-  ^ _21;
     _20 <- ([#"../01_range.rs" 81 14 81 23] Next0.next _21);
