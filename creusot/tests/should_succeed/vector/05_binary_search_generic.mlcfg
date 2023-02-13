@@ -272,18 +272,17 @@ end
 module Alloc_Vec_Impl1_Len_Interface
   type t
   type a
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
   use prelude.Borrow
   use prelude.Int
-  use prelude.UIntSize
   use seq.Seq
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone CreusotContracts_Model_Impl1_ShallowModel_Stub as ShallowModel0 with
     type t = Alloc_Vec_Vec_Type.t_vec t a,
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   val len (self : Alloc_Vec_Vec_Type.t_vec t a) : usize
-    ensures { UInt64.to_int result = Seq.length (ShallowModel0.shallow_model self) }
+    ensures { UIntSize.to_int result = Seq.length (ShallowModel0.shallow_model self) }
     
 end
 module CreusotContracts_Std1_Slice_SliceIndex_InBounds_Stub
@@ -449,7 +448,7 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub
   type t
   type a
   use seq.Seq
-  use mach.int.UInt64
+  use prelude.UIntSize
   use prelude.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl12_Max_Stub as Max0
@@ -459,18 +458,18 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
   type t
   type a
   use seq.Seq
-  use mach.int.UInt64
+  use prelude.UIntSize
   use prelude.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl12_Max_Stub as Max0
   function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UInt64.to_int Max0.mAX'
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
 end
 module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   type t
   type a
   use seq.Seq
-  use mach.int.UInt64
+  use prelude.UIntSize
   use prelude.Int
   use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
   clone Core_Num_Impl12_Max_Stub as Max0
@@ -478,7 +477,7 @@ module CreusotContracts_Std1_Vec_Impl0_ShallowModel
   val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
     ensures { result = shallow_model self }
     
-  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UInt64.to_int Max0.mAX'
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
 end
 module CreusotContracts_Std1_Vec_Impl1_DeepModel_Stub
   type t
@@ -842,9 +841,8 @@ module CreusotContracts_Std1_Slice_Impl5_InBounds
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
-  use mach.int.UInt64
   predicate in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) =
-    UInt64.to_int self < Seq.length seq
+    UIntSize.to_int self < Seq.length seq
   val in_bounds [@inline:trivial] (self : usize) (seq : Seq.seq t) : bool
     ensures { result = in_bounds self seq }
     
@@ -868,9 +866,8 @@ module CreusotContracts_Std1_Slice_Impl5_HasValue
   use prelude.Int
   use prelude.UIntSize
   use seq.Seq
-  use mach.int.UInt64
   predicate has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) =
-    Seq.get seq (UInt64.to_int self) = out
+    Seq.get seq (UIntSize.to_int self) = out
   val has_value [@inline:trivial] (self : usize) (seq : Seq.seq t) (out : t) : bool
     ensures { result = has_value self seq out }
     
@@ -878,9 +875,8 @@ end
 module C05BinarySearchGeneric_BinarySearch_Interface
   type t
   use seq.Seq
-  use mach.int.UInt64
-  use prelude.Int
   use prelude.UIntSize
+  use prelude.Int
   use prelude.Borrow
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
@@ -905,11 +901,11 @@ module C05BinarySearchGeneric_BinarySearch_Interface
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t
   val binary_search [#"../05_binary_search_generic.rs" 27 0 29 29] (arr : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (elem : t) : Core_Result_Result_Type.t_result usize usize
-    requires {[#"../05_binary_search_generic.rs" 20 11 20 38] Seq.length (ShallowModel0.shallow_model arr) <= UInt64.to_int Max0.mAX'}
+    requires {[#"../05_binary_search_generic.rs" 20 11 20 38] Seq.length (ShallowModel0.shallow_model arr) <= UIntSize.to_int Max0.mAX'}
     requires {[#"../05_binary_search_generic.rs" 21 11 21 35] Sorted0.sorted (DeepModel0.deep_model arr)}
-    ensures { [#"../05_binary_search_generic.rs" 22 0 22 89] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> Seq.get (DeepModel0.deep_model arr) (UInt64.to_int x) = DeepModel1.deep_model elem }
-    ensures { [#"../05_binary_search_generic.rs" 23 0 24 74] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . i < x -> LeLog0.le_log (Seq.get (DeepModel0.deep_model arr) (UInt64.to_int i)) (DeepModel1.deep_model elem)) }
-    ensures { [#"../05_binary_search_generic.rs" 25 0 26 94] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . x <= i /\ UInt64.to_int i < Seq.length (ShallowModel0.shallow_model arr) -> LtLog0.lt_log (DeepModel1.deep_model elem) (Seq.get (DeepModel0.deep_model arr) (UInt64.to_int i))) }
+    ensures { [#"../05_binary_search_generic.rs" 22 0 22 89] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> Seq.get (DeepModel0.deep_model arr) (UIntSize.to_int x) = DeepModel1.deep_model elem }
+    ensures { [#"../05_binary_search_generic.rs" 23 0 24 74] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . i < x -> LeLog0.le_log (Seq.get (DeepModel0.deep_model arr) (UIntSize.to_int i)) (DeepModel1.deep_model elem)) }
+    ensures { [#"../05_binary_search_generic.rs" 25 0 26 94] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . x <= i /\ UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model arr) -> LtLog0.lt_log (DeepModel1.deep_model elem) (Seq.get (DeepModel0.deep_model arr) (UIntSize.to_int i))) }
     
 end
 module C05BinarySearchGeneric_BinarySearch
@@ -919,7 +915,6 @@ module C05BinarySearchGeneric_BinarySearch
   use prelude.Borrow
   use prelude.Int8
   use seq.Seq
-  use mach.int.UInt64
   clone CreusotContracts_Model_DeepModel_DeepModelTy_Type as DeepModelTy0 with
     type self = t
   clone CreusotContracts_Logic_Ord_OrdLogic_GeLog_Interface as GeLog0 with
@@ -1047,11 +1042,11 @@ module C05BinarySearchGeneric_BinarySearch
     function DeepModel0.deep_model = DeepModel2.deep_model
   use Core_Result_Result_Type as Core_Result_Result_Type
   let rec cfg binary_search [#"../05_binary_search_generic.rs" 27 0 29 29] [@cfg:stackify] [@cfg:subregion_analysis] (arr : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)) (elem : t) : Core_Result_Result_Type.t_result usize usize
-    requires {[#"../05_binary_search_generic.rs" 20 11 20 38] Seq.length (ShallowModel0.shallow_model arr) <= UInt64.to_int Max0.mAX'}
+    requires {[#"../05_binary_search_generic.rs" 20 11 20 38] Seq.length (ShallowModel0.shallow_model arr) <= UIntSize.to_int Max0.mAX'}
     requires {[#"../05_binary_search_generic.rs" 21 11 21 35] Sorted0.sorted (DeepModel0.deep_model arr)}
-    ensures { [#"../05_binary_search_generic.rs" 22 0 22 89] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> Seq.get (DeepModel0.deep_model arr) (UInt64.to_int x) = DeepModel1.deep_model elem }
-    ensures { [#"../05_binary_search_generic.rs" 23 0 24 74] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . i < x -> LeLog0.le_log (Seq.get (DeepModel0.deep_model arr) (UInt64.to_int i)) (DeepModel1.deep_model elem)) }
-    ensures { [#"../05_binary_search_generic.rs" 25 0 26 94] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . x <= i /\ UInt64.to_int i < Seq.length (ShallowModel0.shallow_model arr) -> LtLog0.lt_log (DeepModel1.deep_model elem) (Seq.get (DeepModel0.deep_model arr) (UInt64.to_int i))) }
+    ensures { [#"../05_binary_search_generic.rs" 22 0 22 89] forall x : usize . result = Core_Result_Result_Type.C_Ok x -> Seq.get (DeepModel0.deep_model arr) (UIntSize.to_int x) = DeepModel1.deep_model elem }
+    ensures { [#"../05_binary_search_generic.rs" 23 0 24 74] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . i < x -> LeLog0.le_log (Seq.get (DeepModel0.deep_model arr) (UIntSize.to_int i)) (DeepModel1.deep_model elem)) }
+    ensures { [#"../05_binary_search_generic.rs" 25 0 26 94] forall x : usize . result = Core_Result_Result_Type.C_Err x -> (forall i : usize . x <= i /\ UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model arr) -> LtLog0.lt_log (DeepModel1.deep_model elem) (Seq.get (DeepModel0.deep_model arr) (UIntSize.to_int i))) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Result_Result_Type.t_result usize usize;
@@ -1147,9 +1142,9 @@ module C05BinarySearchGeneric_BinarySearch
     goto BB10
   }
   BB10 {
-    invariant size_valid { [#"../05_binary_search_generic.rs" 37 28 37 70] 0 < UInt64.to_int size_13 /\ UInt64.to_int size_13 + UInt64.to_int base_15 <= Seq.length (ShallowModel0.shallow_model arr_1) };
-    invariant lower_b { [#"../05_binary_search_generic.rs" 37 4 37 72] forall i : usize . i < base_15 -> LeLog0.le_log (Seq.get (DeepModel0.deep_model arr_1) (UInt64.to_int i)) (DeepModel1.deep_model elem_2) };
-    invariant lower_b { [#"../05_binary_search_generic.rs" 37 4 37 72] forall i : usize . UInt64.to_int base_15 + UInt64.to_int size_13 <= UInt64.to_int i /\ UInt64.to_int i < Seq.length (ShallowModel0.shallow_model arr_1) -> LtLog0.lt_log (DeepModel1.deep_model elem_2) (Seq.get (DeepModel0.deep_model arr_1) (UInt64.to_int i)) };
+    invariant size_valid { [#"../05_binary_search_generic.rs" 37 28 37 70] 0 < UIntSize.to_int size_13 /\ UIntSize.to_int size_13 + UIntSize.to_int base_15 <= Seq.length (ShallowModel0.shallow_model arr_1) };
+    invariant lower_b { [#"../05_binary_search_generic.rs" 37 4 37 72] forall i : usize . i < base_15 -> LeLog0.le_log (Seq.get (DeepModel0.deep_model arr_1) (UIntSize.to_int i)) (DeepModel1.deep_model elem_2) };
+    invariant lower_b { [#"../05_binary_search_generic.rs" 37 4 37 72] forall i : usize . UIntSize.to_int base_15 + UIntSize.to_int size_13 <= UIntSize.to_int i /\ UIntSize.to_int i < Seq.length (ShallowModel0.shallow_model arr_1) -> LtLog0.lt_log (DeepModel1.deep_model elem_2) (Seq.get (DeepModel0.deep_model arr_1) (UIntSize.to_int i)) };
     _22 <- size_13;
     _21 <- ([#"../05_binary_search_generic.rs" 40 10 40 18] _22 > ([#"../05_binary_search_generic.rs" 40 17 40 18] (1 : usize)));
     switch (_21)

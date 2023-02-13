@@ -106,7 +106,7 @@ end
 module C04Skip_Impl0_Completed
   type i
   use prelude.Borrow
-  use mach.int.UInt64
+  use prelude.UIntSize
   use seq.Seq
   use prelude.Int
   clone C04Skip_Common_Iterator_Completed_Stub as Completed0 with
@@ -120,7 +120,7 @@ module C04Skip_Impl0_Completed
     type Item0.item = Item0.item
   use C04Skip_Skip_Type as C04Skip_Skip_Type
   predicate completed [#"../04_skip.rs" 21 4 21 35] (self : borrowed (C04Skip_Skip_Type.t_skip i)) =
-    [#"../04_skip.rs" 22 8 30 9] UInt64.to_int (C04Skip_Skip_Type.skip_n ( ^ self)) = 0 /\ (exists i : borrowed i . exists s : Seq.seq Item0.item . Seq.length s <= UInt64.to_int (C04Skip_Skip_Type.skip_n ( * self)) /\ Produces0.produces (C04Skip_Skip_Type.skip_iter ( * self)) s ( * i) /\ (forall i : int . 0 <= i /\ i < Seq.length s -> Resolve0.resolve (Seq.get s i)) /\ Completed0.completed i /\  ^ i = C04Skip_Skip_Type.skip_iter ( ^ self))
+    [#"../04_skip.rs" 22 8 30 9] UIntSize.to_int (C04Skip_Skip_Type.skip_n ( ^ self)) = 0 /\ (exists i : borrowed i . exists s : Seq.seq Item0.item . Seq.length s <= UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * self)) /\ Produces0.produces (C04Skip_Skip_Type.skip_iter ( * self)) s ( * i) /\ (forall i : int . 0 <= i /\ i < Seq.length s -> Resolve0.resolve (Seq.get s i)) /\ Completed0.completed i /\  ^ i = C04Skip_Skip_Type.skip_iter ( ^ self))
   val completed [#"../04_skip.rs" 21 4 21 35] (self : borrowed (C04Skip_Skip_Type.t_skip i)) : bool
     ensures { result = completed self }
     
@@ -237,7 +237,7 @@ end
 module C04Skip_Impl0_Produces
   type i
   use seq.Seq
-  use mach.int.UInt64
+  use prelude.UIntSize
   use prelude.Int
   clone C04Skip_Common_Iterator_Item_Type as Item0 with
     type self = i
@@ -250,7 +250,7 @@ module C04Skip_Impl0_Produces
   predicate produces [#"../04_skip.rs" 34 4 34 64] (self : C04Skip_Skip_Type.t_skip i) (visited : Seq.seq Item0.item) (o : C04Skip_Skip_Type.t_skip i)
     
    =
-    [#"../04_skip.rs" 35 8 42 9] visited = Seq.empty  /\ self = o \/ UInt64.to_int (C04Skip_Skip_Type.skip_n o) = 0 /\ Seq.length visited > 0 /\ (exists s : Seq.seq Item0.item . Seq.length s = UInt64.to_int (C04Skip_Skip_Type.skip_n self) /\ Produces0.produces (C04Skip_Skip_Type.skip_iter self) (Seq.(++) s visited) (C04Skip_Skip_Type.skip_iter o) /\ (forall i : int . 0 <= i /\ i < Seq.length s -> Resolve0.resolve (Seq.get s i)))
+    [#"../04_skip.rs" 35 8 42 9] visited = Seq.empty  /\ self = o \/ UIntSize.to_int (C04Skip_Skip_Type.skip_n o) = 0 /\ Seq.length visited > 0 /\ (exists s : Seq.seq Item0.item . Seq.length s = UIntSize.to_int (C04Skip_Skip_Type.skip_n self) /\ Produces0.produces (C04Skip_Skip_Type.skip_iter self) (Seq.(++) s visited) (C04Skip_Skip_Type.skip_iter o) /\ (forall i : int . 0 <= i /\ i < Seq.length s -> Resolve0.resolve (Seq.get s i)))
   val produces [#"../04_skip.rs" 34 4 34 64] (self : C04Skip_Skip_Type.t_skip i) (visited : Seq.seq Item0.item) (o : C04Skip_Skip_Type.t_skip i) : bool
     ensures { result = produces self visited o }
     
@@ -589,7 +589,6 @@ module C04Skip_Impl0_Next
   use prelude.UIntSize
   use seq.Seq
   use prelude.IntSize
-  use mach.int.UInt64
   clone C04Skip_Common_Iterator_Item_Type as Item0 with
     type self = i
   use seq.Seq
@@ -707,10 +706,10 @@ module C04Skip_Impl0_Next
     goto BB4
   }
   BB4 {
-    invariant skipped_len { [#"../04_skip.rs" 73 33 73 66] Seq.length (Ghost.inner skipped_11) + UInt64.to_int n_8 = UInt64.to_int (C04Skip_Skip_Type.skip_n ( * Ghost.inner old_self_5)) };
+    invariant skipped_len { [#"../04_skip.rs" 73 33 73 66] Seq.length (Ghost.inner skipped_11) + UIntSize.to_int n_8 = UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * Ghost.inner old_self_5)) };
     invariant produces { [#"../04_skip.rs" 73 8 73 68] Produces1.produces (C04Skip_Skip_Type.skip_iter ( * Ghost.inner old_self_5)) (Ghost.inner skipped_11) (C04Skip_Skip_Type.skip_iter ( * self_1)) };
     invariant skipped_resolve { [#"../04_skip.rs" 73 8 73 68] forall i : int . 0 <= i /\ i < Seq.length (Ghost.inner skipped_11) -> Resolve1.resolve (Seq.get (Ghost.inner skipped_11) i) };
-    invariant n_0 { [#"../04_skip.rs" 76 25 76 40] UInt64.to_int (C04Skip_Skip_Type.skip_n ( * self_1)) = 0 };
+    invariant n_0 { [#"../04_skip.rs" 76 25 76 40] UIntSize.to_int (C04Skip_Skip_Type.skip_n ( * self_1)) = 0 };
     invariant inv { [#"../04_skip.rs" 77 25 77 41] Invariant0.invariant' ( * self_1) };
     _23 <- borrow_mut (C04Skip_Skip_Type.skip_iter ( * self_1));
     self_1 <- { self_1 with current = (let C04Skip_Skip_Type.C_Skip a b =  * self_1 in C04Skip_Skip_Type.C_Skip ( ^ _23) b) };

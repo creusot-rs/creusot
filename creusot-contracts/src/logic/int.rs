@@ -6,7 +6,7 @@ use crate::{
 #[cfg_attr(
     feature = "contracts",
     rustc_diagnostic_item = "creusot_int",
-    creusot::builtins = "mach.int.Int.int"
+    creusot::builtins = "prelude.Int.int"
 )]
 pub struct Int(*mut ());
 
@@ -80,17 +80,17 @@ macro_rules! mach_int {
 
 mach_int!(u8, "prelude.UInt8");
 mach_int!(u16, "prelude.UInt16");
-mach_int!(u32, "mach.int.UInt32");
-mach_int!(u64, "mach.int.UInt64");
+mach_int!(u32, "prelude.UInt32");
+mach_int!(u64, "prelude.UInt64");
 mach_int!(u128, "prelude.UInt128");
-mach_int!(usize, "mach.int.UInt64");
+mach_int!(usize, "prelude.UIntSize");
 
 mach_int!(i8, "prelude.Int8");
 mach_int!(i16, "prelude.Int16");
-mach_int!(i32, "mach.int.Int32");
-mach_int!(i64, "mach.int.Int64");
+mach_int!(i32, "prelude.Int32");
+mach_int!(i64, "prelude.Int64");
 mach_int!(i128, "prelude.Int128");
-mach_int!(isize, "mach.int.Int64");
+mach_int!(isize, "prelude.IntSize");
 
 #[cfg(feature = "contracts")]
 impl Add<Int> for Int {
