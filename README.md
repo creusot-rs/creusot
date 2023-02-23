@@ -71,7 +71,14 @@ This may only work if you're using the same rust toolchain that was used to buil
 you can copy the [`rust-toolchain`](./rust-toolchain) file into the root of your project to
 make sure the correct toolchain is selected.
 
-To add contracts to your programs you will need to use the `creusot-contracts` crate, and enable the `contracts` feature.
+To add contracts to your programs you will need to use the `creusot-contracts` crate by adding it as a dependency:
+```toml
+# Cargo.toml
+
+[dependencies]
+creusot-contracts = { path = "/path/to/creusot/creusot-contracts" }
+```
+and enabling the `contracts` feature through running with `cargo creusot -- --features=contracts`.
 When that feature is enabled `rustc` cannot successfully compile your programs, so we recommend adding a feature to your program which conditionally enables the `contracts` feature like so:
 
 ```toml
