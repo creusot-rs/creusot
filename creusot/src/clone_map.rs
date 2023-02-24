@@ -20,7 +20,7 @@ use why3::{
 use crate::{
     backend::dependency::Dependency,
     ctx::{self, *},
-    translation::interface,
+    translation::{interface, ty::translate_ty_param},
     util::{self, get_builtin, ident_of, ident_of_ty, item_name, module_name},
 };
 
@@ -692,7 +692,6 @@ pub(crate) fn base_subst<'tcx>(
     mut def_id: DefId,
     subst: SubstsRef<'tcx>,
 ) -> Vec<CloneSubst> {
-    use heck::ToSnakeCase;
     use rustc_middle::ty::GenericParamDefKind;
     loop {
         if ctx.tcx.is_closure(def_id) {
@@ -714,7 +713,7 @@ pub(crate) fn base_subst<'tcx>(
         if let GenericParamDefKind::Type { .. } = p.kind {
             let ty = ctx.normalize_erasing_regions(param_env, ty.expect_ty());
             let ty = super::ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, ty);
-            clone_subst.push(CloneSubst::Type(p.name.to_string().to_snake_case().into(), ty));
+            clone_subst.push(CloneSubst::Type(translate_ty_param(p.name).into(), ty));
         }
     }
 
