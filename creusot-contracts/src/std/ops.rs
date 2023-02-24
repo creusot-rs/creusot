@@ -53,11 +53,11 @@ pub trait FnExt<Args: Tuple>: Fn<Args> + FnMutExt<Args> {
     fn postcondition(&self, _: Args, _: Self::Output) -> bool;
 
     #[law]
-    #[ensures(self.postcondition_mut(args, res) == self.resolve() && self.postcondition(args, res))]
+    #[ensures(self.postcondition_mut(args, res) == (self.resolve() && self.postcondition(args, res)))]
     fn fn_mut(&mut self, args: Args, res: Self::Output);
 
     #[law]
-    #[ensures(self.postcondition_once(args, res) == self.resolve() && self.postcondition(args, res))]
+    #[ensures(self.postcondition_once(args, res) == (self.resolve() && self.postcondition(args, res)))]
     fn fn_once(self, args: Args, res: Self::Output)
     where
         Self: Sized;
@@ -125,12 +125,12 @@ impl<Args: Tuple, F: Fn<Args>> FnExt<Args> for F {
 
     #[law]
     #[trusted]
-    #[ensures(self.postcondition_mut(args, res) == self.resolve() && self.postcondition(args, res))]
+    #[ensures(self.postcondition_mut(args, res) == (self.resolve() && self.postcondition(args, res)))]
     fn fn_mut(&mut self, args: Args, res: Self::Output) {}
 
     #[law]
     #[trusted]
-    #[ensures(self.postcondition_once(args, res) == self.resolve() && self.postcondition(args, res))]
+    #[ensures(self.postcondition_once(args, res) == (self.resolve() && self.postcondition(args, res)))]
     fn fn_once(self, args: Args, res: Self::Output) {}
 }
 

@@ -268,7 +268,7 @@ fn translate_ty_name(ctx: &TranslationCtx<'_>, did: DefId) -> QName {
     item_qname(ctx, did, Namespace::TypeNS)
 }
 
-fn translate_ty_param(p: Symbol) -> Ident {
+pub(crate) fn translate_ty_param(p: Symbol) -> Ident {
     Ident::build(&p.to_string().to_lowercase())
 }
 
