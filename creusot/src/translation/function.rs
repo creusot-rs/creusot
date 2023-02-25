@@ -442,7 +442,7 @@ pub(crate) fn closure_contract<'tcx>(
             subst,
             FnOnce,
             Symbol::intern("self"),
-            false,
+            true,
         );
 
         let mut precondition = precondition.clone();
