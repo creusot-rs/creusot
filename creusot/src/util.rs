@@ -530,6 +530,7 @@ use rustc_span::def_id::LocalDefId;
 pub(crate) struct ClosureSubst<'tcx> {
     post: bool,
     self_: Term<'tcx>,
+    kind: ClosureKind,
     map: IndexMap<Symbol, (Ty<'tcx>, Field)>,
     bound: HashSet<Symbol>,
 }
@@ -538,32 +539,42 @@ impl<'tcx> ClosureSubst<'tcx> {
     fn var(&self, x: Symbol) -> Option<Term<'tcx>> {
         let (ty, ix) = *self.map.get(&x)?;
 
-        let self_ = if self.self_.ty.is_ref() && self.self_.ty.is_mutable_ptr() {
-            if self.post {
-                self.self_.clone().fin()
-            } else {
-                self.self_.clone().cur()
+        let self_ = match self.kind {
+            ClosureKind::Fn => self.self_.clone().cur(),
+            ClosureKind::FnMut => {
+                if self.post {
+                    self.self_.clone().fin()
+                } else {
+                    self.self_.clone().cur()
+                }
             }
-        } else if self.self_.ty.is_ref() {
-            self.self_.clone().cur()
-        } else {
-            self.self_.clone()
+            ClosureKind::FnOnce => self.self_.clone(),
         };
+
         let proj =
             Term { ty, kind: TermKind::Projection { lhs: box self_, name: ix }, span: DUMMY_SP };
 
-        if ty.is_mutable_ptr() {
-            Some(proj.cur())
-        } else {
-            Some(proj)
+        match self.kind {
+            ClosureKind::FnOnce => {
+                if ty.is_mutable_ptr() && self.post {
+                    Some(proj.fin())
+                } else {
+                    Some(proj.cur())
+                }
+            }
+            ClosureKind::FnMut => Some(proj.cur()),
+            _ => Some(proj),
         }
     }
 
     fn old(&self, x: Symbol) -> Option<Term<'tcx>> {
         let (ty, ix) = *self.map.get(&x)?;
 
-        let self_ =
-            if self.self_.ty.is_ref() { self.self_.clone().cur() } else { self.self_.clone() };
+        let self_ = match self.kind {
+            ClosureKind::Fn => self.self_.clone().cur(),
+            ClosureKind::FnMut => self.self_.clone().cur(),
+            ClosureKind::FnOnce => self.self_.clone(),
+        };
 
         let proj =
             Term { ty, kind: TermKind::Projection { lhs: box self_, name: ix }, span: DUMMY_SP };
@@ -665,7 +676,7 @@ pub(crate) fn closure_capture_subst<'tcx>(
     let subst =
         captures.into_iter().enumerate().map(|(ix, (nm, ty))| (*nm, (ty, ix.into()))).collect();
 
-    ClosureSubst { self_, map: subst, post: is_post, bound: Default::default() }
+    ClosureSubst { self_, kind: ck, map: subst, post: is_post, bound: Default::default() }
 }
 
 pub(crate) struct AnonymousParamName(pub(crate) usize);
