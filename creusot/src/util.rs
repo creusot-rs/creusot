@@ -19,7 +19,7 @@ use rustc_middle::ty::{
 use rustc_resolve::Namespace;
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fmt::{Display, Formatter},
     iter,
 };
@@ -361,26 +361,23 @@ pub(crate) fn pre_sig_of<'tcx>(
     }
 
     if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
-        let mut pre_subst = closure_capture_subst(
-            ctx.tcx,
-            def_id,
-            subst,
-            subst.as_closure().kind(),
-            Symbol::intern("_1'"),
-            false,
+        let self_ = Symbol::intern("_1'");
+        let mut pre_subst = closure_capture_subst(ctx.tcx, def_id, subst, None, self_);
+
+        let mut s = HashMap::new();
+        let env_ty = ctx.closure_env_ty(def_id, subst, ReErased).unwrap();
+        s.insert(
+            self_,
+            if env_ty.is_ref() { Term::var(self_, env_ty).cur() } else { Term::var(self_, env_ty) },
         );
         for pre in &mut contract.requires {
             pre_subst.visit_mut_term(pre);
+
+            pre.subst(&s);
         }
 
-        let mut post_subst = closure_capture_subst(
-            ctx.tcx,
-            def_id,
-            subst,
-            subst.as_closure().kind(),
-            Symbol::intern("_1'"),
-            true,
-        );
+        let mut post_subst =
+            closure_capture_subst(ctx.tcx, def_id, subst, Some(subst.as_closure().kind()), self_);
         for post in &mut contract.ensures {
             post_subst.visit_mut_term(post);
         }
@@ -528,8 +525,8 @@ use rustc_middle::mir::Field;
 use rustc_span::def_id::LocalDefId;
 
 pub(crate) struct ClosureSubst<'tcx> {
-    post: bool,
     self_: Term<'tcx>,
+    kind: Option<ClosureKind>,
     map: IndexMap<Symbol, (Ty<'tcx>, Field)>,
     bound: HashSet<Symbol>,
 }
@@ -538,32 +535,32 @@ impl<'tcx> ClosureSubst<'tcx> {
     fn var(&self, x: Symbol) -> Option<Term<'tcx>> {
         let (ty, ix) = *self.map.get(&x)?;
 
-        let self_ = if self.self_.ty.is_ref() && self.self_.ty.is_mutable_ptr() {
-            if self.post {
-                self.self_.clone().fin()
-            } else {
-                self.self_.clone().cur()
-            }
-        } else if self.self_.ty.is_ref() {
-            self.self_.clone().cur()
-        } else {
-            self.self_.clone()
+        let self_ = match self.kind {
+            None => self.self_.clone(),
+            Some(ClosureKind::Fn) => self.self_.clone().cur(),
+            Some(ClosureKind::FnMut) => self.self_.clone().fin(),
+            Some(ClosureKind::FnOnce) => self.self_.clone(),
         };
         let proj =
             Term { ty, kind: TermKind::Projection { lhs: box self_, name: ix }, span: DUMMY_SP };
 
-        if ty.is_mutable_ptr() {
-            Some(proj.cur())
-        } else {
-            Some(proj)
+        match self.kind {
+            Some(ClosureKind::FnOnce) if ty.is_mutable_ptr() => Some(proj.fin()),
+            None if ty.is_mutable_ptr() => Some(proj.cur()),
+            Some(ClosureKind::FnMut) | Some(ClosureKind::Fn) => Some(proj.cur()),
+            _ => Some(proj),
         }
     }
 
     fn old(&self, x: Symbol) -> Option<Term<'tcx>> {
         let (ty, ix) = *self.map.get(&x)?;
 
-        let self_ =
-            if self.self_.ty.is_ref() { self.self_.clone().cur() } else { self.self_.clone() };
+        let self_ = match self.kind {
+            Some(ClosureKind::Fn) => self.self_.clone().cur(),
+            Some(ClosureKind::FnMut) => self.self_.clone().cur(),
+            Some(ClosureKind::FnOnce) => self.self_.clone(),
+            None => unreachable!(),
+        };
 
         let proj =
             Term { ty, kind: TermKind::Projection { lhs: box self_, name: ix }, span: DUMMY_SP };
@@ -639,9 +636,8 @@ pub(crate) fn closure_capture_subst<'tcx>(
     def_id: DefId,
     cs: SubstsRef<'tcx>,
     // What kind of substitution we should generate. The same precondition can be used in several ways
-    ck: ty::ClosureKind,
+    ck: Option<ty::ClosureKind>,
     self_name: Symbol,
-    is_post: bool,
 ) -> ClosureSubst<'tcx> {
     let mut fun_def_id = def_id;
     while tcx.is_closure(fun_def_id) {
@@ -653,11 +649,13 @@ pub(crate) fn closure_capture_subst<'tcx>(
     let captures = capture_names.iter().zip(cs.as_closure().upvar_tys());
 
     let ty = match ck {
-        ClosureKind::Fn => tcx.mk_imm_ref(tcx.mk_region(RegionKind::ReErased), tcx.type_of(def_id)),
-        ClosureKind::FnMut => {
+        Some(ClosureKind::Fn) => {
+            tcx.mk_imm_ref(tcx.mk_region(RegionKind::ReErased), tcx.type_of(def_id))
+        }
+        Some(ClosureKind::FnMut) => {
             tcx.mk_mut_ref(tcx.mk_region(RegionKind::ReErased), tcx.type_of(def_id))
         }
-        ClosureKind::FnOnce => tcx.type_of(def_id),
+        Some(ClosureKind::FnOnce) | None => tcx.type_of(def_id),
     };
 
     let self_ = Term::var(self_name, ty);
@@ -665,7 +663,7 @@ pub(crate) fn closure_capture_subst<'tcx>(
     let subst =
         captures.into_iter().enumerate().map(|(ix, (nm, ty))| (*nm, (ty, ix.into()))).collect();
 
-    ClosureSubst { self_, map: subst, post: is_post, bound: Default::default() }
+    ClosureSubst { self_, kind: ck, map: subst, bound: Default::default() }
 }
 
 pub(crate) struct AnonymousParamName(pub(crate) usize);
