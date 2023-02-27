@@ -515,7 +515,6 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             },
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
                 let term = pearlite(self.tcx, closure_id)?;
-                // eprintln!("{term:?}");
                 let pats = closure_pattern(self.tcx, closure_id)?;
 
                 Ok(Term { ty, span, kind: TermKind::Closure { args: pats, body: box term } })
@@ -1028,7 +1027,7 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn cur(self) -> Self {
-        assert!(self.ty.is_ref(), "{:?}", self.ty);
+        assert!(self.ty.is_ref(), "cannot dereference type {:?}", self.ty);
 
         Term {
             ty: self.ty.builtin_deref(false).unwrap().ty,
@@ -1038,7 +1037,7 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn fin(self) -> Self {
-        assert!(self.ty.is_mutable_ptr() && self.ty.is_ref());
+        assert!(self.ty.is_mutable_ptr() && self.ty.is_ref(), "cannot final type {:?}", self.ty);
 
         Term {
             ty: self.ty.builtin_deref(false).unwrap().ty,

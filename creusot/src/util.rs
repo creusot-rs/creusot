@@ -7,6 +7,7 @@ use crate::{
     },
 };
 use indexmap::IndexMap;
+use itertools::izip;
 use rustc_ast::{
     ast::{AttrArgs, AttrArgsEq},
     AttrItem, AttrKind, Attribute,
@@ -14,7 +15,8 @@ use rustc_ast::{
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    self, subst::SubstsRef, ClosureKind, DefIdTree, ReErased, RegionKind, Ty, TyCtxt, TyKind,
+    self, subst::SubstsRef, BorrowKind, ClosureKind, DefIdTree, ReErased, RegionKind, Ty, TyCtxt,
+    TyKind, UpvarCapture,
 };
 use rustc_resolve::Namespace;
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
@@ -524,16 +526,20 @@ pub(crate) fn is_attr(attr: &Attribute, str: &str) -> bool {
 use rustc_middle::mir::Field;
 use rustc_span::def_id::LocalDefId;
 
+// Responsible for replacing occurences of captured variables with projections from the closure environment.
+// Must also account for the *kind* of capture and the *kind* of closure involved each time.
 pub(crate) struct ClosureSubst<'tcx> {
     self_: Term<'tcx>,
     kind: Option<ClosureKind>,
-    map: IndexMap<Symbol, (Ty<'tcx>, Field)>,
+
+    map: IndexMap<Symbol, (UpvarCapture, Ty<'tcx>, Field)>,
     bound: HashSet<Symbol>,
 }
 
 impl<'tcx> ClosureSubst<'tcx> {
+    // TODO: Simplify this logic.
     fn var(&self, x: Symbol) -> Option<Term<'tcx>> {
-        let (ty, ix) = *self.map.get(&x)?;
+        let (ck, ty, ix) = *self.map.get(&x)?;
 
         let self_ = match self.kind {
             None => self.self_.clone(),
@@ -541,19 +547,23 @@ impl<'tcx> ClosureSubst<'tcx> {
             Some(ClosureKind::FnMut) => self.self_.clone().fin(),
             Some(ClosureKind::FnOnce) => self.self_.clone(),
         };
+
         let proj =
             Term { ty, kind: TermKind::Projection { lhs: box self_, name: ix }, span: DUMMY_SP };
 
-        match self.kind {
-            Some(ClosureKind::FnOnce) if ty.is_mutable_ptr() => Some(proj.fin()),
-            None if ty.is_mutable_ptr() => Some(proj.cur()),
-            Some(ClosureKind::FnMut) | Some(ClosureKind::Fn) => Some(proj.cur()),
-            _ => Some(proj),
+        match ck {
+            UpvarCapture::ByValue => Some(proj),
+            UpvarCapture::ByRef(BorrowKind::MutBorrow | BorrowKind::UniqueImmBorrow)
+                if self.kind == Some(ClosureKind::FnOnce) =>
+            {
+                Some(proj.fin())
+            }
+            UpvarCapture::ByRef(_) => Some(proj.cur()),
         }
     }
 
     fn old(&self, x: Symbol) -> Option<Term<'tcx>> {
-        let (ty, ix) = *self.map.get(&x)?;
+        let (ck, ty, ix) = *self.map.get(&x)?;
 
         let self_ = match self.kind {
             Some(ClosureKind::Fn) => self.self_.clone().cur(),
@@ -565,10 +575,9 @@ impl<'tcx> ClosureSubst<'tcx> {
         let proj =
             Term { ty, kind: TermKind::Projection { lhs: box self_, name: ix }, span: DUMMY_SP };
 
-        if ty.is_mutable_ptr() {
-            Some(proj.cur())
-        } else {
-            Some(proj)
+        match ck {
+            UpvarCapture::ByValue => Some(proj),
+            UpvarCapture::ByRef(_) => Some(proj.cur()),
         }
     }
 }
@@ -646,7 +655,6 @@ pub(crate) fn closure_capture_subst<'tcx>(
 
     let capture_names =
         tcx.symbols_for_closure_captures((fun_def_id.expect_local(), def_id.expect_local()));
-    let captures = capture_names.iter().zip(cs.as_closure().upvar_tys());
 
     let ty = match ck {
         Some(ClosureKind::Fn) => {
@@ -660,8 +668,13 @@ pub(crate) fn closure_capture_subst<'tcx>(
 
     let self_ = Term::var(self_name, ty);
 
-    let subst =
-        captures.into_iter().enumerate().map(|(ix, (nm, ty))| (*nm, (ty, ix.into()))).collect();
+    let captures =
+        tcx.typeck(def_id.expect_local()).closure_min_captures_flattened(def_id.expect_local());
+
+    let subst = izip!(captures, capture_names, cs.as_closure().upvar_tys())
+        .enumerate()
+        .map(|(ix, (cap, name, ty))| (*name, (cap.info.capture_kind, ty, ix.into())))
+        .collect();
 
     ClosureSubst { self_, kind: ck, map: subst, bound: Default::default() }
 }
