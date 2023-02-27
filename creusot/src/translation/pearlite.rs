@@ -1028,7 +1028,7 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn cur(self) -> Self {
-        assert!(self.ty.is_ref());
+        assert!(self.ty.is_ref(), "{:?}", self.ty);
 
         Term {
             ty: self.ty.builtin_deref(false).unwrap().ty,

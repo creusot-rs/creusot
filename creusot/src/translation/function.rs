@@ -436,14 +436,8 @@ pub(crate) fn closure_contract<'tcx>(
         pre_sig.inputs[0].0 = Symbol::intern("self");
         pre_sig.inputs[0].2 = self_ty;
 
-        let mut subst = util::closure_capture_subst(
-            ctx.tcx,
-            def_id,
-            subst,
-            FnOnce,
-            Symbol::intern("self"),
-            true,
-        );
+        let mut subst =
+            util::closure_capture_subst(ctx.tcx, def_id, subst, None, Symbol::intern("self"));
 
         let mut precondition = precondition.clone();
         subst.visit_mut_term(&mut precondition);
@@ -468,7 +462,7 @@ pub(crate) fn closure_contract<'tcx>(
         post_sig.inputs[0].0 = Symbol::intern("self");
         post_sig.inputs[0].2 = self_ty;
         let mut csubst =
-            util::closure_capture_subst(ctx.tcx, def_id, subst, Fn, Symbol::intern("self"), true);
+            util::closure_capture_subst(ctx.tcx, def_id, subst, Some(Fn), Symbol::intern("self"));
         let mut postcondition = postcondition.clone();
 
         csubst.visit_mut_term(&mut postcondition);
@@ -487,9 +481,8 @@ pub(crate) fn closure_contract<'tcx>(
             ctx.tcx,
             def_id,
             subst,
-            FnMut,
+            Some(FnMut),
             Symbol::intern("self"),
-            true,
         );
 
         let mut postcondition = postcondition.clone();
@@ -543,9 +536,8 @@ pub(crate) fn closure_contract<'tcx>(
             ctx.tcx,
             def_id,
             subst,
-            FnOnce,
+            Some(FnOnce),
             Symbol::intern("self"),
-            true,
         );
 
         let mut postcondition = postcondition.clone();
