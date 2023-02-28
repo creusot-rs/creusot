@@ -5,7 +5,7 @@ use crate::{
         ops::{Deref, DerefMut, Index, IndexMut},
         slice::SliceIndex,
     },
-    *,
+    Default, *,
 };
 pub use ::std::vec::*;
 
@@ -33,6 +33,13 @@ impl<T: DeepModel, A: Allocator> DeepModel for Vec<T, A> {
     }
 }
 
+impl<T> Default for Vec<T> {
+    #[predicate]
+    fn is_default(self) -> bool {
+        pearlite! { self.shallow_model().len() == 0 }
+    }
+}
+
 #[trusted]
 impl<T> Resolve for Vec<T> {
     #[predicate]
@@ -51,7 +58,6 @@ extern_spec! {
                 #[ensures((@result).len() == 0)]
                 fn with_capacity(capacity: usize) -> Vec<T>;
             }
-
             impl<T, A : Allocator> Vec<T, A> {
                 #[ensures(@result == (@self).len())]
                 fn len(&self) -> usize;
