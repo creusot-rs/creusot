@@ -115,7 +115,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             .unwrap_or_else(|_| ctx.crash_and_error(ctx.def_span(def_id), "illegal move"));
         let borrows = BorrowSet::build(tcx, &clean_body, true, &move_paths);
         let borrows = Rc::new(borrows);
-        let resolver = EagerResolver::new(tcx, body, borrows.clone());
+        let resolver = EagerResolver::new(tcx, body);
 
         BodyTranslator {
             tcx,
