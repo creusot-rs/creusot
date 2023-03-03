@@ -1,18 +1,15 @@
-use std::rc::Rc;
-
-use crate::analysis::{MaybeInitializedLocals, MaybeUninitializedLocals};
-use rustc_borrowck::borrow_set::{BorrowSet, TwoPhaseActivation};
+use crate::analysis::{MaybeInitializedLocals, MaybeLiveExceptDrop, MaybeUninitializedLocals};
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
     mir::{BasicBlock, Body, Local, Location},
     ty::TyCtxt,
 };
-use rustc_mir_dataflow::{impls::MaybeLiveLocals, Analysis, ResultsCursor};
+use rustc_mir_dataflow::{Analysis, ResultsCursor};
 
 use crate::extended_location::ExtendedLocation;
 
 pub struct EagerResolver<'body, 'tcx> {
-    local_live: ResultsCursor<'body, 'tcx, MaybeLiveLocals>,
+    local_live: ResultsCursor<'body, 'tcx, MaybeLiveExceptDrop>,
 
     // Whether a local is initialized or not at a location
     local_init: ResultsCursor<'body, 'tcx, MaybeInitializedLocals>,
@@ -23,16 +20,10 @@ pub struct EagerResolver<'body, 'tcx> {
     never_live: BitSet<Local>,
 
     body: &'body Body<'tcx>,
-
-    borrows: Rc<BorrowSet<'tcx>>,
 }
 
 impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
-    pub(crate) fn new(
-        tcx: TyCtxt<'tcx>,
-        body: &'body Body<'tcx>,
-        borrows: Rc<BorrowSet<'tcx>>,
-    ) -> Self {
+    pub(crate) fn new(tcx: TyCtxt<'tcx>, body: &'body Body<'tcx>) -> Self {
         let local_init = MaybeInitializedLocals
             .into_engine(tcx, body)
             .iterate_to_fixpoint()
@@ -43,55 +34,18 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        // This is called MaybeLiveLocals because pointers don't keep their referees alive.
-        // TODO: Defensive check.
-        let local_live =
-            MaybeLiveLocals.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
+        // MaybeLiveExceptDrop ignores `drop` for the purpose of resolve liveness... unclear that this can
+        // be sound.
+        let local_live = MaybeLiveExceptDrop
+            .into_engine(tcx, body)
+            .iterate_to_fixpoint()
+            .into_results_cursor(body);
         let never_live = crate::analysis::NeverLive::for_body(body);
-        EagerResolver { local_live, local_init, local_uninit, never_live, body, borrows }
-    }
-
-    fn unactivated_borrows(&self, loc: Location) -> BitSet<Local> {
-        let dom = self.body.basic_blocks.dominators();
-
-        let mut bits = BitSet::new_empty(self.body.local_decls.len());
-
-        self.borrows
-            .location_map
-            .iter()
-            .filter(|(_, bd)| {
-                let res_loc = bd.reserve_location;
-                if res_loc.block == loc.block {
-                    res_loc.statement_index <= loc.statement_index
-                } else {
-                    dom.is_dominated_by(loc.block, res_loc.block)
-                }
-            })
-            .filter(|(_, bd)| {
-                if let TwoPhaseActivation::ActivatedAt(act_loc) = bd.activation_location {
-                    if act_loc.block == loc.block {
-                        loc.statement_index <= act_loc.statement_index
-                    } else {
-                        dom.is_dominated_by(act_loc.block, loc.block)
-                    }
-                } else {
-                    false
-                }
-            })
-            .for_each(|(_, bd)| {
-                bits.insert(bd.borrowed_place.local);
-            });
-
-        bits
+        EagerResolver { local_live, local_init, local_uninit, never_live, body }
     }
 
     pub(crate) fn locals_resolved_at_loc(&mut self, loc: Location) -> BitSet<Local> {
-        self.locals_resolved_between(
-            ExtendedLocation::Start(loc),
-            ExtendedLocation::Mid(loc),
-            loc,
-            loc.successor_within_block(),
-        )
+        self.locals_resolved_between(ExtendedLocation::Start(loc), ExtendedLocation::Mid(loc))
     }
 
     pub(crate) fn locals_resolved_between_blocks(
@@ -102,20 +56,13 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
         let term = self.body.terminator_loc(from);
         let start = to.start_location();
 
-        self.locals_resolved_between(
-            ExtendedLocation::Start(term),
-            ExtendedLocation::Start(start),
-            term,
-            start,
-        )
+        self.locals_resolved_between(ExtendedLocation::Start(term), ExtendedLocation::Start(start))
     }
 
     fn locals_resolved_between(
         &mut self,
         start: ExtendedLocation,
         end: ExtendedLocation,
-        two_phase_start: Location,
-        two_phase_end: Location,
     ) -> BitSet<Local> {
         start.seek_to(&mut self.local_live);
         let mut live_at_start: BitSet<_> = BitSet::new_empty(self.local_live.get().domain_size());
@@ -125,12 +72,9 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             live_at_start.union(&self.never_live.to_hybrid());
         }
 
-        live_at_start.union(&self.unactivated_borrows(two_phase_start).to_hybrid());
-
         end.seek_to(&mut self.local_live);
         let mut live_at_end: BitSet<_> = BitSet::new_empty(self.local_live.get().domain_size());
         live_at_end.union(self.local_live.get());
-        live_at_end.union(&self.unactivated_borrows(two_phase_end).to_hybrid());
 
         start.seek_to(&mut self.local_init);
         let init_at_start = self.local_init.get().clone();

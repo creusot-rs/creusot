@@ -47,6 +47,9 @@ pub(crate) fn fmir<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> fmir:
     // We use `mir_promoted` as it is the MIR required by borrowck which we will have run by this point
     let (body, _) = ctx.mir_promoted(WithOptConstParam::unknown(def_id.expect_local()));
     let mut body = body.borrow().clone();
+
+    // crate::debug::debug(ctx.tcx, ctx.tcx.optimized_mir(def_id));
+    // crate::debug::debug(ctx.tcx, &body);
     // Basic clean up, replace FalseEdges with Gotos. Could potentially also replace other statement with Nops.
     // Investigate if existing MIR passes do this as part of 'post borrowck cleanup'.
     CleanupPostBorrowck.run_pass(ctx.tcx, &mut body);
@@ -115,8 +118,9 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             .unwrap_or_else(|_| ctx.crash_and_error(ctx.def_span(def_id), "illegal move"));
         let borrows = BorrowSet::build(tcx, &clean_body, true, &move_paths);
         let borrows = Rc::new(borrows);
-        let resolver = EagerResolver::new(tcx, body, borrows.clone());
+        let resolver = EagerResolver::new(tcx, body);
 
+        // crate::debug::debug(tcx, body);
         BodyTranslator {
             tcx,
             body,
@@ -239,7 +243,6 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
         let dying_in_first = self.resolver.locals_resolved_between_blocks(pred_blocks[0], bb);
         let mut same_deaths = true;
-
         // If we have multiple predecessors (join point) but all of them agree on the deaths, then don't introduce a dedicated block.
         for pred in pred_blocks {
             let dying = self.resolver.locals_resolved_between_blocks(*pred, bb);

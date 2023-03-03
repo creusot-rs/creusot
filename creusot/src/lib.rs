@@ -35,6 +35,9 @@ pub(crate) mod clone_map;
 pub(crate) mod creusot_items;
 pub(crate) mod ctx;
 
+#[allow(dead_code)]
+pub(crate) mod debug;
+
 mod extended_location;
 mod gather_spec_closures;
 pub mod options;
