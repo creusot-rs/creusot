@@ -10,8 +10,11 @@ use rustc_middle::mir::{
 };
 
 mod init_locals;
+mod liveness_no_drop;
 mod uninit_locals;
+
 pub use init_locals::*;
+pub use liveness_no_drop::*;
 pub use uninit_locals::*;
 
 pub struct NeverLive(BitSet<Local>);

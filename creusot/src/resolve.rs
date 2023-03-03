@@ -1,15 +1,15 @@
-use crate::analysis::{MaybeInitializedLocals, MaybeUninitializedLocals};
+use crate::analysis::{MaybeInitializedLocals, MaybeLiveExceptDrop, MaybeUninitializedLocals};
 use rustc_index::bit_set::BitSet;
 use rustc_middle::{
     mir::{BasicBlock, Body, Local, Location},
     ty::TyCtxt,
 };
-use rustc_mir_dataflow::{impls::MaybeLiveLocals, Analysis, ResultsCursor};
+use rustc_mir_dataflow::{Analysis, ResultsCursor};
 
 use crate::extended_location::ExtendedLocation;
 
 pub struct EagerResolver<'body, 'tcx> {
-    local_live: ResultsCursor<'body, 'tcx, MaybeLiveLocals>,
+    local_live: ResultsCursor<'body, 'tcx, MaybeLiveExceptDrop>,
 
     // Whether a local is initialized or not at a location
     local_init: ResultsCursor<'body, 'tcx, MaybeInitializedLocals>,
@@ -34,10 +34,12 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             .iterate_to_fixpoint()
             .into_results_cursor(body);
 
-        // This is called MaybeLiveLocals because pointers don't keep their referees alive.
-        // TODO: Defensive check.
-        let local_live =
-            MaybeLiveLocals.into_engine(tcx, body).iterate_to_fixpoint().into_results_cursor(body);
+        // MaybeLiveExceptDrop ignores `drop` for the purpose of resolve liveness... unclear that this can
+        // be sound.
+        let local_live = MaybeLiveExceptDrop
+            .into_engine(tcx, body)
+            .iterate_to_fixpoint()
+            .into_results_cursor(body);
         let never_live = crate::analysis::NeverLive::for_body(body);
         EagerResolver { local_live, local_init, local_uninit, never_live, body }
     }
@@ -70,12 +72,9 @@ impl<'body, 'tcx> EagerResolver<'body, 'tcx> {
             live_at_start.union(&self.never_live.to_hybrid());
         }
 
-        // live_at_start.union(&self.unactivated_borrows(two_phase_start).to_hybrid());
-
         end.seek_to(&mut self.local_live);
         let mut live_at_end: BitSet<_> = BitSet::new_empty(self.local_live.get().domain_size());
         live_at_end.union(self.local_live.get());
-        // live_at_end.union(&self.unactivated_borrows(two_phase_end).to_hybrid());
 
         start.seek_to(&mut self.local_init);
         let init_at_start = self.local_init.get().clone();
