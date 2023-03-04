@@ -63,6 +63,7 @@ fn translate_ty_inner<'tcx>(
         Bool => MlT::Bool,
         Char => {
             ctx.warn(span, "support for string types is partial and experimental, expect to encounter limitations.");
+            names.import_prelude_module(PreludeModule::Char);
             MlT::Char
         }
         Int(ity) => intty_to_ty(names, ity),
@@ -133,7 +134,7 @@ fn translate_ty_inner<'tcx>(
             names.import_prelude_module(PreludeModule::Seq);
 
             MlT::TApp(
-                box MlT::TConstructor("rust_array".into()),
+                box MlT::TConstructor("array".into()),
                 vec![translate_ty_inner(trans, ctx, names, span, *ty)],
             )
         }
@@ -177,7 +178,15 @@ fn translate_ty_inner<'tcx>(
             names.import_prelude_module(PreludeModule::Opaque);
             MlT::TConstructor(QName::from_string("opaque_ptr").unwrap())
         }
-        // Foreign(_) => todo!(),
+        Dynamic(_, _, _) => {
+            names.import_prelude_module(PreludeModule::Opaque);
+            MlT::TConstructor(QName::from_string("dyn").unwrap())
+        }
+
+        Foreign(_) => {
+            names.import_prelude_module(PreludeModule::Opaque);
+            MlT::TConstructor(QName::from_string("foreign").unwrap())
+        }
         _ => ctx.crash_and_error(span, &format!("unsupported type {:?}", ty)),
     }
 }

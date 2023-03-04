@@ -43,6 +43,7 @@ pub enum Expr<'tcx> {
     Tuple(Vec<Expr<'tcx>>),
     Span(Span, Box<Expr<'tcx>>),
     Len(Box<Expr<'tcx>>),
+    Array(Vec<Expr<'tcx>>),
 }
 
 #[derive(Clone)]

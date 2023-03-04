@@ -25,7 +25,7 @@ use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     declaration::{self, CfgFunction, Decl, LetDecl, LetKind, Module, Use},
-    exp::{Exp, Pattern},
+    exp::{Exp, Pattern, Constant},
     mlcfg,
     mlcfg::BlockId,
     Ident, QName,
@@ -340,6 +340,11 @@ impl<'tcx> Expr<'tcx> {
                     .app_to(pl.to_why(ctx, names, body));
                 int_conversion.app_to(len_call)
             }
+            Expr::Array(fields) => Exp::impure_qvar(QName::from_string("Seq.create").unwrap())
+                .app_to(Exp::Const(Constant::Int(fields.len() as i128, None)))
+                .app_to(Exp::Sequence(
+                    fields.into_iter().map(|f| f.to_why(ctx, names, body)).collect(),
+                )),
         }
     }
 
@@ -360,6 +365,7 @@ impl<'tcx> Expr<'tcx> {
             Expr::Tuple(es) => es.iter().for_each(|e| e.invalidated_places(places)),
             Expr::Span(_, e) => e.invalidated_places(places),
             Expr::Len(e) => e.invalidated_places(places),
+            Expr::Array(f) => f.iter().for_each(|f| f.invalidated_places(places)),
         }
     }
 }
