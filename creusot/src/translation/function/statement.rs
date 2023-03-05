@@ -1,8 +1,11 @@
 use rustc_borrowck::borrow_set::TwoPhaseActivation;
-use rustc_middle::{mir::{
-    BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
-    StatementKind,
-}, ty::adjustment::PointerCast};
+use rustc_middle::{
+    mir::{
+        BinOp, BorrowKind::*, CastKind, Location, Operand::*, Place, Rvalue, SourceInfo, Statement,
+        StatementKind,
+    },
+    ty::adjustment::PointerCast,
+};
 
 use super::BodyTranslator;
 use crate::{
@@ -158,9 +161,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             Expr::Constructor(def_id, subst, fields)
                         }
                     }
-                    Array(_) => {
-                        Expr::Array(fields)
-                    }
+                    Array(_) => Expr::Array(fields),
                     _ => self.ctx.crash_and_error(
                         si.span,
                         &format!("the rvalue {:?} is not currently supported", kind),
@@ -172,8 +173,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 let op_ty = op.ty(self.body, self.tcx);
                 Expr::Cast(box self.translate_operand(op), op_ty, *ty)
             }
-            Rvalue::Cast(CastKind::Pointer(PointerCast::Unsize), op, _) => {
-                self.translate_operand(op)
+            Rvalue::Cast(CastKind::Pointer(PointerCast::Unsize), _, _) => {
+                // TODO: Since we don't do anything with casts into `dyn` objects, just ignore them
+                return;
             }
             Rvalue::Cast(
                 CastKind::Pointer(_)
@@ -186,7 +188,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 | CastKind::FloatToFloat,
                 _,
                 _,
-            ) => self.ctx.crash_and_error(si.span, &format!("Pointer casts are currently unsupported {rvalue:?}")),
+            ) => self.ctx.crash_and_error(
+                si.span,
+                &format!("Pointer casts are currently unsupported {rvalue:?}"),
+            ),
             Rvalue::CopyForDeref(_) => panic!(),
             Rvalue::ShallowInitBox(_, _)
             | Rvalue::NullaryOp(_, _)

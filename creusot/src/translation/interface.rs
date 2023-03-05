@@ -65,6 +65,7 @@ pub(crate) fn interface_for<'tcx>(
             }
         }
         _ => {
+            // TODO: Push this into `contract_of`
             if !def_id.is_local() && !ctx.externs.verified(def_id) && sig.contract.is_empty() {
                 sig.contract.requires.push(why3::exp::Exp::mk_false());
             }

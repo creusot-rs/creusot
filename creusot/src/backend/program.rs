@@ -25,7 +25,7 @@ use rustc_span::DUMMY_SP;
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     declaration::{self, CfgFunction, Decl, LetDecl, LetKind, Module, Use},
-    exp::{Exp, Pattern, Constant},
+    exp::{Constant, Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
     Ident, QName,
