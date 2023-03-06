@@ -119,6 +119,7 @@ pub enum Exp {
     Impl(Box<Exp>, Box<Exp>),
     Forall(Vec<(Ident, Type)>, Box<Exp>),
     Exists(Vec<(Ident, Type)>, Box<Exp>),
+    Sequence(Vec<Exp>),
 }
 
 #[derive(Debug, Clone)]
@@ -189,6 +190,7 @@ pub fn super_visit_mut<T: ExpMutVisitor>(f: &mut T, exp: &mut Exp) {
         Exp::Attr(_, e) => f.visit_mut(e),
         Exp::Ghost(e) => f.visit_mut(e),
         Exp::Record { fields } => fields.iter_mut().for_each(|(_, e)| f.visit_mut(e)),
+        Exp::Sequence(fields) => fields.iter_mut().for_each(|e| f.visit_mut(e)),
     }
 }
 
@@ -251,6 +253,7 @@ pub fn super_visit<T: ExpVisitor>(f: &mut T, exp: &Exp) {
         Exp::Attr(_, e) => f.visit(e),
         Exp::Ghost(e) => f.visit(e),
         Exp::Record { fields } => fields.iter().for_each(|(_, e)| f.visit(e)),
+        Exp::Sequence(fields) => fields.iter().for_each(|e| f.visit(e)),
     }
 }
 
@@ -527,6 +530,7 @@ impl Exp {
             Exp::Attr(_, _) => Attr,
             Exp::Ghost(_) => App,
             Exp::Record { fields: _ } => Atom,
+            Exp::Sequence(_) => Atom,
             // _ => unimplemented!("{:?}", self),
         }
     }

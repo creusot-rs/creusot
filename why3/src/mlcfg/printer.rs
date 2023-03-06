@@ -601,9 +601,9 @@ impl Print for Type {
                 }
             }
             Tuple(tys) if tys.len() == 1 => tys[0].pretty(alloc, env),
-            Tuple(tys) => alloc
-                .intersperse(tys.iter().map(|ty| ty.pretty(alloc, env)), alloc.text(", "))
-                .parens(),
+            Tuple(tys) => {
+                alloc.intersperse(tys.iter().map(|ty| ty.pretty(alloc, env)), ", ").parens()
+            }
         }
     }
 }
@@ -735,7 +735,7 @@ impl Print for Exp {
                     binders.iter().map(|(b, t)| {
                         b.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env))
                     }),
-                    alloc.text(", "),
+                    ", ",
                 ))
                 .append(" . ")
                 .append(exp.pretty(alloc, env)),
@@ -745,7 +745,7 @@ impl Print for Exp {
                     binders.iter().map(|(b, t)| {
                         b.pretty(alloc, env).append(" : ").append(t.pretty(alloc, env))
                     }),
-                    alloc.text(", "),
+                    ", ",
                 ))
                 .append(" . ")
                 .append(exp.pretty(alloc, env)),
@@ -769,6 +769,9 @@ impl Print for Exp {
                     "; ",
                 )
                 .braces(),
+            Exp::Sequence(fields) => alloc
+                .intersperse(fields.iter().map(|f| f.pretty(alloc, env)), "; ")
+                .enclose("[|", "|]"),
         }
     }
 }
@@ -889,9 +892,9 @@ impl Print for Pattern {
         match self {
             Pattern::Wildcard => alloc.text("_"),
             Pattern::VarP(v) => v.pretty(alloc, env),
-            Pattern::TupleP(pats) => alloc
-                .intersperse(pats.iter().map(|p| p.pretty(alloc, env)), alloc.text(", "))
-                .parens(),
+            Pattern::TupleP(pats) => {
+                alloc.intersperse(pats.iter().map(|p| p.pretty(alloc, env)), ", ").parens()
+            }
             Pattern::ConsP(c, pats) => {
                 let mut doc = c.pretty(alloc, env);
 
@@ -904,7 +907,7 @@ impl Print for Pattern {
                                 p.pretty(alloc, env)
                             }
                         }),
-                        alloc.text(" "),
+                        " ",
                     ))
                 }
                 doc
@@ -1020,7 +1023,7 @@ impl Print for Constant {
             Constant::Uint(i, Some(t)) => {
                 alloc.as_string(i).append(" : ").append(t.pretty(alloc, env)).parens()
             }
-            Constant::String(s) => alloc.text(s).double_quotes(),
+            Constant::String(s) => alloc.text(format!("{s:?}")),
             Constant::Uint(i, None) => alloc.as_string(i),
             Constant::Float(f) => alloc.text(format!("{f:.64}")),
         }
@@ -1120,10 +1123,9 @@ impl Print for ConstructorDecl {
         let mut cons_doc = self.name.pretty(alloc, env);
 
         if !self.fields.is_empty() {
-            cons_doc = cons_doc.append(alloc.space()).append(alloc.intersperse(
-                self.fields.iter().map(|ty_arg| ty_arg.pretty(alloc, env)),
-                alloc.text(" "),
-            ));
+            cons_doc = cons_doc.append(alloc.space()).append(
+                alloc.intersperse(self.fields.iter().map(|ty_arg| ty_arg.pretty(alloc, env)), " "),
+            );
         }
 
         cons_doc
@@ -1190,9 +1192,6 @@ impl Print for QName {
             // TODO investigate if this clone can be removed :/
             .map(|t| alloc.text(t.0.clone()));
 
-        alloc.intersperse(
-            module_path.chain(std::iter::once(alloc.text(self.name().0))),
-            alloc.text("."),
-        )
+        alloc.intersperse(module_path.chain(std::iter::once(alloc.text(self.name().0))), ".")
     }
 }

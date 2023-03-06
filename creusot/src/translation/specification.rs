@@ -287,16 +287,14 @@ pub(crate) fn contract_of<'tcx>(
         let mut contract = extern_spec.contract.get_pre(ctx).subst(ctx.tcx, extern_spec.subst);
         contract.subst(&extern_spec.arg_subst.iter().cloned().collect());
         contract.normalize(ctx.tcx, ctx.param_env(def_id))
+    } else if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
+        let spec = ctx.extern_spec(parent_id).cloned().unwrap();
+        let mut contract = spec.contract.get_pre(ctx).subst(ctx.tcx, subst);
+        contract.subst(&spec.arg_subst.iter().cloned().collect());
+        contract.normalize(ctx.tcx, ctx.param_env(def_id))
     } else {
-        if let Some((parent_id, subst)) = inherited_extern_spec(ctx, def_id) {
-            let spec = ctx.extern_spec(parent_id).cloned().unwrap();
-            let mut contract = spec.contract.get_pre(ctx).subst(ctx.tcx, subst);
-            contract.subst(&spec.arg_subst.iter().cloned().collect());
-            contract.normalize(ctx.tcx, ctx.param_env(def_id))
-        } else {
-            let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
-            contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst)
-        }
+        let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
+        contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst)
     }
 }
 
