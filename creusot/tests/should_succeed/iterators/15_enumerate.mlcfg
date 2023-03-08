@@ -292,7 +292,7 @@ module C15Enumerate_Impl1_Invariant
   clone C15Enumerate_Impl0_InvariantAux_Stub as InvariantAux0 with
     type i = i
   predicate invariant' [#"../15_enumerate.rs" 46 4 46 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) =
-    [#"../15_enumerate.rs" 47 8 50 9] InvariantAux0.invariant_aux self /\ (forall reset : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i) . Completed0.completed reset -> InvariantAux0.invariant_aux ( ^ reset))
+    [#"../15_enumerate.rs" 47 8 50 9] InvariantAux0.invariant_aux self /\ (forall reset : borrowed (C15Enumerate_Enumerate_Type.t_enumerate i) . InvariantAux0.invariant_aux ( * reset) -> Completed0.completed reset -> InvariantAux0.invariant_aux ( ^ reset))
   val invariant' [#"../15_enumerate.rs" 46 4 46 30] (self : C15Enumerate_Enumerate_Type.t_enumerate i) : bool
     ensures { result = invariant' self }
     
@@ -740,6 +740,129 @@ module C15Enumerate_Impl1_Next
     goto BB9
   }
   BB9 {
+    return _0
+  }
+  
+end
+module C15Enumerate_Enumerate_Interface
+  type i
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
+    type self = i
+  use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
+  clone C15Enumerate_Impl1_Produces_Stub as Produces1 with
+    type i = i,
+    type Item0.item = Item0.item
+  clone C15Enumerate_Impl1_Invariant_Stub as Invariant1 with
+    type i = i
+  clone Core_Usize_Max_Stub as Max0
+  clone C15Enumerate_Common_Iterator_Produces_Stub as Produces0 with
+    type self = i,
+    type Item0.item = Item0.item
+  clone C15Enumerate_Common_Iterator_Invariant_Stub as Invariant0 with
+    type self = i
+  val enumerate [#"../15_enumerate.rs" 95 0 95 54] (iter : i) : C15Enumerate_Enumerate_Type.t_enumerate i
+    requires {[#"../15_enumerate.rs" 85 11 85 27] Invariant0.invariant' iter}
+    requires {[#"../15_enumerate.rs" 86 0 86 111] forall i : i . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Produces0.produces iter s i -> Seq.length s < UIntSize.to_int Max0.mAX'}
+    ensures { [#"../15_enumerate.rs" 87 10 87 28] Invariant1.invariant' result }
+    ensures { [#"../15_enumerate.rs" 88 0 93 2] forall i : i . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Produces0.produces iter s i -> (exists ie : C15Enumerate_Enumerate_Type.t_enumerate i . exists se : Seq.seq (usize, Item0.item) . Invariant1.invariant' ie -> Produces1.produces result se ie /\ Seq.length s = Seq.length se /\ (forall j : int . 0 <= j /\ j < Seq.length s -> UIntSize.to_int (let (a, _) = Seq.get se j in a) = j /\ (let (_, a) = Seq.get se j in a) = Seq.get s j)) }
+    
+end
+module C15Enumerate_Enumerate
+  type i
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  clone C15Enumerate_Common_Iterator_Completed_Interface as Completed1 with
+    type self = i
+  use C15Enumerate_Enumerate_Type as C15Enumerate_Enumerate_Type
+  clone C15Enumerate_Impl1_Completed as Completed0 with
+    type i = i,
+    predicate Completed0.completed = Completed1.completed
+  clone Core_Usize_Max as Max0
+  clone C15Enumerate_Common_Iterator_Item_Type as Item0 with
+    type self = i
+  clone C15Enumerate_Common_Iterator_Produces_Interface as Produces0 with
+    type self = i,
+    type Item0.item = Item0.item
+  clone C15Enumerate_Common_Iterator_Invariant_Interface as Invariant0 with
+    type self = i
+  clone C15Enumerate_Impl0_InvariantAux as InvariantAux0 with
+    type i = i,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    predicate Produces0.produces = Produces0.produces,
+    val Max0.mAX' = Max0.mAX'
+  clone C15Enumerate_Impl1_Produces as Produces1 with
+    type i = i,
+    type Item0.item = Item0.item,
+    predicate Produces0.produces = Produces0.produces
+  clone C15Enumerate_Impl1_Invariant as Invariant1 with
+    type i = i,
+    predicate InvariantAux0.invariant_aux = InvariantAux0.invariant_aux,
+    predicate Completed0.completed = Completed0.completed
+  clone C15Enumerate_Impl1_ProducesTrans as ProducesTrans1 with
+    type i = i,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item,
+    axiom .
+  clone C15Enumerate_Impl1_ProducesRefl as ProducesRefl1 with
+    type i = i,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item,
+    axiom .
+  clone C15Enumerate_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item0.item,
+    axiom .
+  clone C15Enumerate_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item0.item,
+    axiom .
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = i
+  let rec cfg enumerate [#"../15_enumerate.rs" 95 0 95 54] [@cfg:stackify] [@cfg:subregion_analysis] (iter : i) : C15Enumerate_Enumerate_Type.t_enumerate i
+    requires {[#"../15_enumerate.rs" 85 11 85 27] Invariant0.invariant' iter}
+    requires {[#"../15_enumerate.rs" 86 0 86 111] forall i : i . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Produces0.produces iter s i -> Seq.length s < UIntSize.to_int Max0.mAX'}
+    ensures { [#"../15_enumerate.rs" 87 10 87 28] Invariant1.invariant' result }
+    ensures { [#"../15_enumerate.rs" 88 0 93 2] forall i : i . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Produces0.produces iter s i -> (exists ie : C15Enumerate_Enumerate_Type.t_enumerate i . exists se : Seq.seq (usize, Item0.item) . Invariant1.invariant' ie -> Produces1.produces result se ie /\ Seq.length s = Seq.length se /\ (forall j : int . 0 <= j /\ j < Seq.length s -> UIntSize.to_int (let (a, _) = Seq.get se j in a) = j /\ (let (_, a) = Seq.get se j in a) = Seq.get s j)) }
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : C15Enumerate_Enumerate_Type.t_enumerate i;
+  var iter_1 : i;
+  var _6 : i;
+  {
+    iter_1 <- iter;
+    goto BB0
+  }
+  BB0 {
+    goto BB1
+  }
+  BB1 {
+    goto BB2
+  }
+  BB2 {
+    goto BB3
+  }
+  BB3 {
+    assume { Resolve0.resolve _6 };
+    _6 <- iter_1;
+    iter_1 <- any i;
+    _0 <- C15Enumerate_Enumerate_Type.C_Enumerate _6 ([#"../15_enumerate.rs" 96 29 96 30] (0 : usize));
+    goto BB4
+  }
+  BB4 {
+    goto BB5
+  }
+  BB5 {
     return _0
   }
   

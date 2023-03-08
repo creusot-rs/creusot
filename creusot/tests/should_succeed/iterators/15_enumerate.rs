@@ -46,7 +46,7 @@ where
     fn invariant(self) -> bool {
         pearlite! {
             self.invariant_aux()
-            && forall<reset : &mut Enumerate<I>> reset.completed() ==> (^reset).invariant_aux()
+            && forall<reset : &mut Enumerate<I>> (*reset).invariant_aux() ==> reset.completed() ==> (^reset).invariant_aux()
         }
     }
 
@@ -80,4 +80,18 @@ where
             }
         }
     }
+}
+
+#[requires(iter.invariant())]
+#[requires(forall<s: Seq<I::Item>, i: I> i.invariant() ==> iter.produces(s, i) ==> s.len() < @std::usize::MAX)]
+#[ensures(result.invariant())]
+#[ensures(
+    forall<s: Seq<I::Item>, i: I> i.invariant() ==> iter.produces(s, i)
+        ==> exists<se: Seq<(usize, I::Item)>, ie: Enumerate<I>> ie.invariant() ==> result.produces(se, ie)
+            && s.len() == se.len()
+            && forall<j: Int> 0 <= j && j < s.len() ==> @se[j].0 == j && se[j].1 == s[j]
+)]
+//#[ensures(iter.completed() ==> result.completed())]
+pub fn enumerate<I: Iterator>(iter: I) -> Enumerate<I> {
+    Enumerate { iter, count: 0 }
 }
