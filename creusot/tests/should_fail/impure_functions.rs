@@ -5,3 +5,7 @@ use creusot_contracts::{logic::*, *};
 fn x<T>(v: &Vec<T>) -> Int {
     pearlite! { @v.len() }
 }
+
+fn y() {
+    let _ = x(&Vec::<()>::new());
+}

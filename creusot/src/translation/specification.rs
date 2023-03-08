@@ -319,6 +319,17 @@ pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
 pub(crate) struct PurityVisitor<'a, 'tcx> {
     pub(crate) tcx: TyCtxt<'tcx>,
     pub(crate) thir: &'a Thir<'tcx>,
+    pub(crate) in_pure_ctx: bool,
+}
+
+impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
+    fn is_pure(&self, fun: thir::ExprId, func_did: DefId) -> bool {
+        util::is_predicate(self.tcx, func_did)
+            || util::is_logic(self.tcx, func_did)
+            || util::get_builtin(self.tcx, func_did).is_some()
+            || pearlite_stub(self.tcx, self.thir[fun].ty).is_some()
+            || is_overloaded_item(self.tcx, func_did)
+    }
 }
 
 impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
@@ -330,22 +341,20 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
         match expr.kind {
             ExprKind::Call { fun, .. } => {
                 if let &ty::FnDef(func_did, _) = self.thir[fun].ty.kind() {
-                    if !util::is_predicate(self.tcx, func_did)
-                        && !util::is_logic(self.tcx, func_did)
-                        && !util::get_builtin(self.tcx, func_did).is_some()
-                        && !pearlite_stub(self.tcx, self.thir[fun].ty).is_some()
-                        && !is_overloaded_item(self.tcx, func_did)
-                    {
+                    if self.in_pure_ctx != self.is_pure(fun, func_did) {
+                        let msg = if self.in_pure_ctx {
+                            "called impure program function in logical context"
+                        } else {
+                            "called logical function in impure context"
+                        };
+
                         self.tcx.sess.span_err_with_code(
                             self.thir[fun].span,
-                            &format!(
-                                "called impure program function in logical context {:?}",
-                                self.tcx.def_path_str(func_did)
-                            ),
+                            &format!("{} {:?}", msg, self.tcx.def_path_str(func_did)),
                             rustc_errors::DiagnosticId::Error(String::from("creusot")),
                         );
                     }
-                } else {
+                } else if self.in_pure_ctx {
                     self.tcx.sess.span_fatal_with_code(
                         expr.span,
                         "non function call in logical context",

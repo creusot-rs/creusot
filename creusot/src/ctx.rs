@@ -7,7 +7,7 @@ use crate::{
         program::{translate_closure, translate_function},
     },
     creusot_items::{self, CreusotItems},
-    error::CreusotResult,
+    error::{CrErr, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
     options::{Options, SpanMode},
     translation::{
@@ -16,7 +16,7 @@ use crate::{
         fmir,
         interface::interface_for,
         pearlite::{self, Term},
-        specification::ContractClauses,
+        specification::{ContractClauses, PurityVisitor},
         traits::TraitImpl,
         ty::{self, translate_tydecl, ty_binding_group},
     },
@@ -30,7 +30,10 @@ use rustc_hir::{
     def_id::{DefId, LocalDefId},
 };
 use rustc_infer::traits::{Obligation, ObligationCause};
-use rustc_middle::ty::{subst::InternalSubsts, ParamEnv, TyCtxt};
+use rustc_middle::{
+    thir,
+    ty::{subst::InternalSubsts, ParamEnv, TyCtxt, WithOptConstParam},
+};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{item_name, module_name, ItemType};
@@ -492,6 +495,27 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         } else {
             Exp::Attr(self.span_attr(span).unwrap(), box exp)
         }
+    }
+
+    pub(crate) fn check_impure(&mut self, def_id: DefId) {
+        if !def_id.is_local() || !util::has_body(self, def_id) {
+            return;
+        }
+
+        let local_id = def_id.expect_local();
+        let (thir, expr) = self
+            .tcx
+            .thir_body(WithOptConstParam::unknown(local_id))
+            .unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx.sess));
+        let thir = thir.borrow();
+        if thir.exprs.is_empty() {
+            Error::new(self.tcx.def_span(local_id), "type checking failed").emit(self.tcx.sess);
+        }
+
+        thir::visit::walk_expr(
+            &mut PurityVisitor { tcx: self.tcx, thir: &thir, in_pure_ctx: false },
+            &thir[expr],
+        );
     }
 }
 

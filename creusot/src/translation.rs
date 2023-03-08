@@ -37,6 +37,8 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
             || crate::util::is_predicate(ctx.tcx, def_id)
         {
             let _ = ctx.term(def_id);
+        } else {
+            ctx.check_impure(def_id);
         }
     }
 
