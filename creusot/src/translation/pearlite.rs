@@ -9,7 +9,7 @@ use std::collections::HashSet;
 
 use crate::{
     error::{CrErr, CreusotResult, Error},
-    translation::specification::PurityVisitor,
+    translation::{specification::PurityVisitor, TranslationCtx},
     util,
 };
 use itertools::Itertools;
@@ -759,6 +759,30 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             _ => unreachable!(),
         }
+    }
+}
+
+pub(crate) fn type_invariant_term<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    name: Symbol,
+    span: Span,
+    ty: Ty<'tcx>,
+) -> Option<Term<'tcx>> {
+    let args = vec![Term { ty, span, kind: TermKind::Var(name) }];
+    let inv_fn_did = ctx.type_invariant(ty)?;
+    let inv_fn_ty = ctx.tcx.type_of(inv_fn_did);
+
+    match inv_fn_ty.kind() {
+        TyKind::FnDef(def_id, subst) => {
+            let fun = Term { ty: inv_fn_ty, span, kind: TermKind::Item(*def_id, subst) };
+
+            Some(Term {
+                ty: ctx.tcx.fn_sig(inv_fn_did).skip_binder().output(),
+                span,
+                kind: TermKind::Call { id: *def_id, subst, fun: box fun, args },
+            })
+        }
+        _ => unreachable!(),
     }
 }
 

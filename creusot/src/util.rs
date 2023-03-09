@@ -15,8 +15,8 @@ use rustc_ast::{
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    self, subst::SubstsRef, BorrowKind, ClosureKind, DefIdTree, ReErased, RegionKind, Ty, TyCtxt,
-    TyKind, UpvarCapture,
+    self, subst::SubstsRef, BorrowKind, ClosureKind, DefIdTree, EarlyBinder, InternalSubsts,
+    ReErased, RegionKind, Ty, TyCtxt, TyKind, UpvarCapture,
 };
 use rustc_resolve::Namespace;
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
@@ -90,6 +90,10 @@ pub(crate) fn is_law(tcx: TyCtxt, def_id: DefId) -> bool {
 
 pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "extern_spec"]).is_some()
+}
+
+pub(crate) fn is_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "type_invariant"]).is_some()
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
@@ -399,7 +403,33 @@ pub(crate) fn pre_sig_of<'tcx>(
         inputs.push((kw::Empty, DUMMY_SP, ctx.tcx.types.unit));
     };
 
-    PreSignature { inputs, output, contract }
+    let mut pre_sig = PreSignature { inputs, output, contract };
+    elaborate_type_invariants(ctx, def_id, &mut pre_sig);
+    pre_sig
+}
+
+fn elaborate_type_invariants<'tcx>(
+    ctx: &mut TranslationCtx<'tcx>,
+    def_id: DefId,
+    pre_sig: &mut PreSignature<'tcx>,
+) {
+    let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
+    for (name, span, ty) in pre_sig.inputs.iter() {
+        if let Some(term) = translation::pearlite::type_invariant_term(ctx, *name, *span, *ty) {
+            let term = EarlyBinder(term).subst(ctx.tcx, subst);
+            pre_sig.contract.requires.push(term);
+        }
+    }
+
+    if let Some(term) = translation::pearlite::type_invariant_term(
+        ctx,
+        Symbol::intern("result"),
+        ctx.tcx.def_span(def_id),
+        pre_sig.output,
+    ) {
+        let term = EarlyBinder(term).subst(ctx.tcx, subst);
+        pre_sig.contract.ensures.push(term);
+    }
 }
 
 pub(crate) fn signature_of<'tcx>(

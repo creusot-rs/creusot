@@ -30,10 +30,7 @@ use rustc_hir::{
     def_id::{DefId, LocalDefId},
 };
 use rustc_infer::traits::{Obligation, ObligationCause};
-use rustc_middle::{
-    thir,
-    ty::{subst::InternalSubsts, ParamEnv, TyCtxt, WithOptConstParam},
-};
+use rustc_middle::ty::{subst::InternalSubsts, ImplSubject, ParamEnv, Ty, TyCtxt, WithOptConstParam};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{module_name, ItemType};
@@ -60,6 +57,7 @@ pub struct TranslationCtx<'tcx> {
     extern_spec_items: HashMap<LocalDefId, DefId>,
     impl_data: HashMap<DefId, TraitImpl<'tcx>>,
     sigs: HashMap<DefId, PreSignature<'tcx>>,
+    ty_invariants: HashMap<Ty<'tcx>, DefId>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -92,6 +90,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             fmir_body: Default::default(),
             impl_data: Default::default(),
             sigs: Default::default(),
+            ty_invariants: Default::default(),
         }
     }
 
@@ -224,6 +223,11 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 let (stub, modl, proof_modl, has_axioms, deps) =
                     crate::backend::logic::translate_logic_or_predicate(self, def_id);
                 self.dependencies.insert(def_id, deps);
+
+                if util::is_type_invariant(self.tcx, def_id) {
+                    self.add_type_invariant(def_id);
+                }
+
                 TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
             }
             ItemType::Closure => {
@@ -311,6 +315,10 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.sigs.get(&def_id).unwrap()
     }
 
+    pub(crate) fn type_invariant(&self, ty: Ty<'tcx>) -> Option<DefId> {
+        self.ty_invariants.get(&ty).copied()
+    }
+
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {
         self.tcx.sess.span_fatal_with_code(span, msg, DiagnosticId::Error(String::from("creusot")))
     }
@@ -337,6 +345,21 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 is_force_warn: false,
             },
         )
+    }
+
+    fn add_type_invariant(&mut self, def_id: DefId) {
+        // TODO check signature of method (Self -> bool)
+
+        let Some(impl_id) = self.tcx.impl_of_method(def_id) else {
+            self.error(self.tcx.def_span(def_id), "type invariants must be methods");
+            return;
+        };
+
+        if let ImplSubject::Inherent(ty) = self.tcx.impl_subject(impl_id) {
+            self.ty_invariants.insert(ty, def_id);
+        } else {
+            self.error(self.tcx.def_span(def_id), "type invariants cannot be trait methods");
+        }
     }
 
     fn add_binding_group(&mut self, def_ids: &IndexSet<DefId>) {
