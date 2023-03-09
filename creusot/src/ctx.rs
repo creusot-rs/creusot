@@ -497,23 +497,27 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         }
     }
 
-    pub(crate) fn check_impure(&mut self, def_id: DefId) {
-        if !def_id.is_local() || !util::has_body(self, def_id) {
-            return;
-        }
-
-        let local_id = def_id.expect_local();
+    pub(crate) fn check_purity(&mut self, def_id: LocalDefId) {
         let (thir, expr) = self
             .tcx
-            .thir_body(WithOptConstParam::unknown(local_id))
+            .thir_body(WithOptConstParam::unknown(def_id))
             .unwrap_or_else(|_| Error::from(CrErr).emit(self.tcx.sess));
         let thir = thir.borrow();
         if thir.exprs.is_empty() {
-            Error::new(self.tcx.def_span(local_id), "type checking failed").emit(self.tcx.sess);
+            Error::new(self.tcx.def_span(def_id), "type checking failed").emit(self.tcx.sess);
+        }
+
+        let def_id = def_id.to_def_id();
+        let in_pure_ctx = crate::util::is_spec(self.tcx, def_id)
+            || crate::util::is_logic(self.tcx, def_id)
+            || crate::util::is_predicate(self.tcx, def_id);
+
+        if !in_pure_ctx && crate::util::is_no_translate(self.tcx, def_id) {
+            return;
         }
 
         thir::visit::walk_expr(
-            &mut PurityVisitor { tcx: self.tcx, thir: &thir, in_pure_ctx: false },
+            &mut PurityVisitor { tcx: self.tcx, thir: &thir, in_pure_ctx },
             &thir[expr],
         );
     }

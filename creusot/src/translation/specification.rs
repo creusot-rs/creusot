@@ -328,7 +328,6 @@ impl<'a, 'tcx> PurityVisitor<'a, 'tcx> {
             || util::is_logic(self.tcx, func_did)
             || util::get_builtin(self.tcx, func_did).is_some()
             || pearlite_stub(self.tcx, self.thir[fun].ty).is_some()
-            || is_overloaded_item(self.tcx, func_did)
     }
 }
 
@@ -341,7 +340,9 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
         match expr.kind {
             ExprKind::Call { fun, .. } => {
                 if let &ty::FnDef(func_did, _) = self.thir[fun].ty.kind() {
-                    if self.in_pure_ctx != self.is_pure(fun, func_did) {
+                    if (self.in_pure_ctx != self.is_pure(fun, func_did))
+                        && !is_overloaded_item(self.tcx, func_did)
+                    {
                         let msg = if self.in_pure_ctx {
                             "called impure program function in logical context"
                         } else {

@@ -31,14 +31,14 @@ pub(crate) fn before_analysis(ctx: &mut TranslationCtx) -> Result<(), Box<dyn Er
     load_extern_specs(ctx).map_err(|_| Box::new(CrErr))?;
 
     for def_id in ctx.tcx.hir().body_owners() {
+        ctx.check_purity(def_id);
+
         let def_id = def_id.to_def_id();
         if crate::util::is_spec(ctx.tcx, def_id)
             || crate::util::is_logic(ctx.tcx, def_id)
             || crate::util::is_predicate(ctx.tcx, def_id)
         {
             let _ = ctx.term(def_id);
-        } else {
-            ctx.check_impure(def_id);
         }
     }
 
