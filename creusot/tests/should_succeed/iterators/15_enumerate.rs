@@ -11,16 +11,6 @@ pub struct Enumerate<I> {
     count: usize,
 }
 
-impl<I: Iterator> Enumerate<I> {
-    #[predicate]
-    fn invariant_aux(self) -> bool {
-        pearlite! {
-            self.iter.invariant()
-            && forall<s: Seq<I::Item>, i: I> i.invariant() ==> self.iter.produces(s, i) ==> @self.count + s.len() < @std::usize::MAX
-        }
-    }
-}
-
 impl<I> Iterator for Enumerate<I>
 where
     I: Iterator,
@@ -45,8 +35,9 @@ where
     #[predicate]
     fn invariant(self) -> bool {
         pearlite! {
-            self.invariant_aux()
-            && forall<reset : &mut Enumerate<I>> (*reset).invariant_aux() ==> reset.completed() ==> (^reset).invariant_aux()
+            self.iter.invariant()
+            && (forall<s: Seq<I::Item>, i: I> i.invariant() ==> self.iter.produces(s, i) ==> @self.count + s.len() < @std::usize::MAX)
+            && (forall<i: &mut I> i.invariant() ==> i.completed() ==> i.produces(Seq::EMPTY, ^i))
         }
     }
 
@@ -83,6 +74,7 @@ where
 }
 
 #[requires(iter.invariant())]
+#[requires(forall<i: &mut I> i.invariant() ==> i.completed() ==> i.produces(Seq::EMPTY, ^i))]
 #[requires(forall<s: Seq<I::Item>, i: I> i.invariant() ==> iter.produces(s, i) ==> s.len() < @std::usize::MAX)]
 #[ensures(result.invariant())]
 #[ensures(
