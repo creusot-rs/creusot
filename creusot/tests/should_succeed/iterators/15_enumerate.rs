@@ -56,7 +56,6 @@ where
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[maintains((mut self).invariant())]
-    #[requires(self.completed() ==> (^self).invariant())]
     #[ensures(match result {
       None => self.completed(),
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
@@ -77,13 +76,6 @@ where
 #[requires(forall<i: &mut I> i.invariant() ==> i.completed() ==> i.produces(Seq::EMPTY, ^i))]
 #[requires(forall<s: Seq<I::Item>, i: I> i.invariant() ==> iter.produces(s, i) ==> s.len() < @std::usize::MAX)]
 #[ensures(result.invariant())]
-#[ensures(
-    forall<s: Seq<I::Item>, i: I> i.invariant() ==> iter.produces(s, i)
-        ==> exists<se: Seq<(usize, I::Item)>, ie: Enumerate<I>> ie.invariant() ==> result.produces(se, ie)
-            && s.len() == se.len()
-            && forall<j: Int> 0 <= j && j < s.len() ==> @se[j].0 == j && se[j].1 == s[j]
-)]
-//#[ensures(iter.completed() ==> result.completed())]
 pub fn enumerate<I: Iterator>(iter: I) -> Enumerate<I> {
     Enumerate { iter, count: 0 }
 }
