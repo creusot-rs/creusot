@@ -7,6 +7,13 @@ impl Invariant for WithInvariant {
     #[predicate]
     #[creusot::type_invariant]
     fn invariant(self) -> bool {
+        self.pred()
+    }
+}
+
+impl WithInvariant {
+    #[predicate]
+    fn pred(self) -> bool {
         true
     }
 }

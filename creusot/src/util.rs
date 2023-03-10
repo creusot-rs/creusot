@@ -413,9 +413,15 @@ fn elaborate_type_invariants<'tcx>(
     def_id: DefId,
     pre_sig: &mut PreSignature<'tcx>,
 ) {
+    if is_type_invariant(ctx.tcx, def_id) {
+        return;
+    }
+
     let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
     for (name, span, ty) in pre_sig.inputs.iter() {
-        if let Some(term) = translation::pearlite::type_invariant_term(ctx, *name, *span, *ty) {
+        if let Some(term) =
+            translation::pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty)
+        {
             let term = EarlyBinder(term).subst(ctx.tcx, subst);
             pre_sig.contract.requires.push(term);
         }
@@ -423,6 +429,7 @@ fn elaborate_type_invariants<'tcx>(
 
     if let Some(term) = translation::pearlite::type_invariant_term(
         ctx,
+        def_id,
         Symbol::intern("result"),
         ctx.tcx.def_span(def_id),
         pre_sig.output,

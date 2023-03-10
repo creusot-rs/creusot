@@ -17,7 +17,7 @@ use crate::{
         fmir,
         pearlite::{self, Term},
         specification::{ContractClauses, PurityVisitor},
-        traits::TraitImpl,
+        traits::{self, TraitImpl},
         ty::{self, translate_tydecl, ty_binding_group},
     },
     util::{self, item_type, pre_sig_of, PreSignature},
@@ -30,7 +30,10 @@ use rustc_hir::{
     def_id::{DefId, LocalDefId},
 };
 use rustc_infer::traits::{Obligation, ObligationCause};
-use rustc_middle::ty::{subst::InternalSubsts, ImplSubject, ParamEnv, Ty, TyCtxt, WithOptConstParam};
+use rustc_middle::{
+    thir,
+    ty::{subst::InternalSubsts, GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, WithOptConstParam},
+};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{module_name, ItemType};
@@ -57,7 +60,6 @@ pub struct TranslationCtx<'tcx> {
     extern_spec_items: HashMap<LocalDefId, DefId>,
     impl_data: HashMap<DefId, TraitImpl<'tcx>>,
     sigs: HashMap<DefId, PreSignature<'tcx>>,
-    ty_invariants: HashMap<Ty<'tcx>, DefId>,
 }
 
 impl<'tcx> Deref for TranslationCtx<'tcx> {
@@ -90,7 +92,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             fmir_body: Default::default(),
             impl_data: Default::default(),
             sigs: Default::default(),
-            ty_invariants: Default::default(),
         }
     }
 
@@ -224,10 +225,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                     crate::backend::logic::translate_logic_or_predicate(self, def_id);
                 self.dependencies.insert(def_id, deps);
 
-                if util::is_type_invariant(self.tcx, def_id) {
-                    self.add_type_invariant(def_id);
-                }
-
                 TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
             }
             ItemType::Closure => {
@@ -315,8 +312,17 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.sigs.get(&def_id).unwrap()
     }
 
-    pub(crate) fn type_invariant(&self, ty: Ty<'tcx>) -> Option<DefId> {
-        self.ty_invariants.get(&ty).copied()
+    pub(crate) fn type_invariant(
+        &self,
+        def_id: DefId,
+        ty: Ty<'tcx>,
+    ) -> Option<(DefId, SubstsRef<'tcx>)> {
+        let param_env = self.param_env(def_id);
+        let trait_did =
+            self.get_diagnostic_item(Symbol::intern("creusot_invariant_method")).unwrap();
+        let substs = self.mk_substs(std::iter::once(GenericArg::from(ty)));
+        traits::resolve_opt(self.tcx, param_env, trait_did, substs)
+            .filter(|(inv_did, _)| util::is_type_invariant(self.tcx, *inv_did))
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {
@@ -345,21 +351,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 is_force_warn: false,
             },
         )
-    }
-
-    fn add_type_invariant(&mut self, def_id: DefId) {
-        // TODO check signature of method (Self -> bool)
-
-        let Some(impl_id) = self.tcx.impl_of_method(def_id) else {
-            self.error(self.tcx.def_span(def_id), "type invariants must be methods");
-            return;
-        };
-
-        if let ImplSubject::Inherent(ty) = self.tcx.impl_subject(impl_id) {
-            self.ty_invariants.insert(ty, def_id);
-        } else {
-            self.error(self.tcx.def_span(def_id), "type invariants cannot be trait methods");
-        }
     }
 
     fn add_binding_group(&mut self, def_ids: &IndexSet<DefId>) {

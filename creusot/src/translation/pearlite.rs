@@ -672,6 +672,7 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
                 let name = self.tcx.fn_arg_names(closure_id)[0];
                 let ty = sig.input(0).skip_binder();
+                // TODO: type invariants for bound vars
 
                 Ok(((name.name, ty), pearlite(self.tcx, closure_id)?))
             }
@@ -764,26 +765,22 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
 
 pub(crate) fn type_invariant_term<'tcx>(
     ctx: &TranslationCtx<'tcx>,
+    env_did: DefId,
     name: Symbol,
     span: Span,
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     let args = vec![Term { ty, span, kind: TermKind::Var(name) }];
-    let inv_fn_did = ctx.type_invariant(ty)?;
-    let inv_fn_ty = ctx.tcx.type_of(inv_fn_did);
+    let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(env_did, ty)?;
+    let inv_fn_ty = EarlyBinder(ctx.tcx.type_of(inv_fn_did)).subst(ctx.tcx, inv_fn_substs);
+    assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if *id == inv_fn_did));
 
-    match inv_fn_ty.kind() {
-        TyKind::FnDef(def_id, subst) => {
-            let fun = Term { ty: inv_fn_ty, span, kind: TermKind::Item(*def_id, subst) };
-
-            Some(Term {
-                ty: ctx.tcx.fn_sig(inv_fn_did).skip_binder().output(),
-                span,
-                kind: TermKind::Call { id: *def_id, subst, fun: box fun, args },
-            })
-        }
-        _ => unreachable!(),
-    }
+    let fun = Term { ty: inv_fn_ty, span, kind: TermKind::Item(inv_fn_did, inv_fn_substs) };
+    Some(Term {
+        ty: ctx.tcx.fn_sig(inv_fn_did).skip_binder().output(),
+        span,
+        kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, fun: box fun, args },
+    })
 }
 
 #[derive(Debug)]
