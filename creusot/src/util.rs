@@ -409,7 +409,7 @@ pub(crate) fn pre_sig_of<'tcx>(
 }
 
 fn elaborate_type_invariants<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &TranslationCtx<'tcx>,
     def_id: DefId,
     pre_sig: &mut PreSignature<'tcx>,
 ) {

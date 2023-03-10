@@ -195,34 +195,40 @@ pub enum Pattern<'tcx> {
     Boolean(bool),
 }
 
-pub(crate) fn pearlite(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
-    let (thir, expr) = tcx.thir_body(WithOptConstParam::unknown(id)).map_err(|_| CrErr)?;
+pub(crate) fn pearlite<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    id: LocalDefId,
+) -> CreusotResult<Term<'tcx>> {
+    let (thir, expr) = ctx.tcx.thir_body(WithOptConstParam::unknown(id)).map_err(|_| CrErr)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
-        return Err(Error::new(tcx.def_span(id), "type checking failed"));
+        return Err(Error::new(ctx.tcx.def_span(id), "type checking failed"));
     };
 
-    visit::walk_expr(&mut PurityVisitor { tcx, thir: &thir, in_pure_ctx: true }, &thir[expr]);
+    visit::walk_expr(
+        &mut PurityVisitor { tcx: ctx.tcx, thir: &thir, in_pure_ctx: true },
+        &thir[expr],
+    );
 
-    let lower = ThirTerm { tcx, item_id: id, thir: &thir };
+    let lower = ThirTerm { ctx, item_id: id, thir: &thir };
 
     lower.body_term(expr)
 }
 
-struct ThirTerm<'a, 'tcx> {
-    tcx: TyCtxt<'tcx>,
+struct ThirTerm<'a, 'b, 'tcx> {
+    ctx: &'b TranslationCtx<'tcx>,
     item_id: LocalDefId,
     thir: &'a Thir<'tcx>,
 }
 
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
-impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
+impl<'a, 'b, 'tcx> ThirTerm<'a, 'b, 'tcx> {
     fn body_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
         let body = self.expr_term(expr)?;
-        let owner_id = util::param_def_id(self.tcx, self.item_id.into());
+        let owner_id = util::param_def_id(self.ctx.tcx, self.item_id.into());
         let id_wcp = WithOptConstParam::unknown(owner_id);
-        let (thir, _) = self.tcx.thir_body(id_wcp).map_err(|_| CrErr)?;
+        let (thir, _) = self.ctx.tcx.thir_body(id_wcp).map_err(|_| CrErr)?;
         let thir: &Thir = &thir.borrow();
         let res = thir
             .params
@@ -258,7 +264,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     None => Term { ty, span, kind: TermKind::Tuple { fields: vec![] } },
                 };
 
-                for stmt in stmts.iter().rev().filter(|id| not_spec(self.tcx, self.thir, **id)) {
+                for stmt in stmts.iter().rev().filter(|id| not_spec(self.ctx.tcx, self.thir, **id))
+                {
                     inner = self.stmt_term(*stmt, inner)?;
                 }
                 Ok(inner)
@@ -317,13 +324,13 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 Ok(Term { ty, span, kind: TermKind::Unary { op, arg: box arg } })
             }
             ExprKind::VarRef { id } => {
-                let map = self.tcx.hir();
+                let map = self.ctx.tcx.hir();
                 let name = map.name(id.0);
                 Ok(Term { ty, span, kind: TermKind::Var(name) })
             }
             // TODO: confirm this works
             ExprKind::UpvarRef { var_hir_id: id, .. } => {
-                let map = self.tcx.hir();
+                let map = self.ctx.tcx.hir();
                 let name = map.name(id.0);
 
                 Ok(Term { ty, span, kind: TermKind::Var(name) })
@@ -352,13 +359,47 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
             }
             ExprKind::Call { ty: f_ty, fun, ref args, .. } => {
                 use Stub::*;
-                match pearlite_stub(self.tcx, f_ty) {
+                match pearlite_stub(self.ctx.tcx, f_ty) {
                     Some(Forall) => {
                         let (binder, body) = self.quant_term(args[0])?;
+                        let body = match type_invariant_term(
+                            self.ctx,
+                            self.item_id.to_def_id(),
+                            binder.0,
+                            span,
+                            binder.1.tuple_fields()[0],
+                        ) {
+                            Some(inv_term) => Term {
+                                ty,
+                                span,
+                                kind: TermKind::Impl { lhs: box inv_term, rhs: box body },
+                            },
+                            None => body,
+                        };
+
                         Ok(Term { ty, span, kind: TermKind::Forall { binder, body: box body } })
                     }
                     Some(Exists) => {
                         let (binder, body) = self.quant_term(args[0])?;
+                        let body = match type_invariant_term(
+                            self.ctx,
+                            self.item_id.to_def_id(),
+                            binder.0,
+                            span,
+                            binder.1.tuple_fields()[0],
+                        ) {
+                            Some(inv_term) => Term {
+                                ty,
+                                span,
+                                kind: TermKind::Binary {
+                                    op: BinOp::And,
+                                    lhs: box inv_term,
+                                    rhs: box body,
+                                },
+                            },
+                            None => body,
+                        };
+
                         Ok(Term { ty, span, kind: TermKind::Exists { binder, body: box body } })
                     }
                     Some(Fin) => {
@@ -473,7 +514,11 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let els = if let Some(els) = else_opt {
                     self.expr_term(els)?
                 } else {
-                    Term { span, ty: self.tcx.types.unit, kind: TermKind::Tuple { fields: vec![] } }
+                    Term {
+                        span,
+                        ty: self.ctx.tcx.types.unit,
+                        kind: TermKind::Tuple { fields: vec![] },
+                    }
                 };
                 Ok(Term {
                     ty,
@@ -514,8 +559,8 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 _ => Ok(Term { ty, span, kind: TermKind::Lit(Literal::ZST) }),
             },
             ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
-                let term = pearlite(self.tcx, closure_id)?;
-                let pats = closure_pattern(self.tcx, closure_id)?;
+                let term = pearlite(self.ctx, closure_id)?;
+                let pats = closure_pattern(self.ctx.tcx, closure_id)?;
 
                 Ok(Term { ty, span, kind: TermKind::Closure { args: pats, body: box term } })
             }
@@ -643,14 +688,15 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                 let pattern = self.pattern_term(pattern)?;
                 if let Some(initializer) = initializer {
                     let initializer = self.expr_term(*initializer)?;
-                    let span = init_scope.span(self.tcx, self.tcx.region_scope_tree(self.item_id));
+                    let span =
+                        init_scope.span(self.ctx.tcx, self.ctx.tcx.region_scope_tree(self.item_id));
                     Ok(Term {
                         ty: inner.ty,
                         span,
                         kind: TermKind::Let { pattern, arg: box initializer, body: box inner },
                     })
                 } else {
-                    let span = self.tcx.hir().span(HirId {
+                    let span = self.ctx.tcx.hir().span(HirId {
                         owner: OwnerId { def_id: self.item_id },
                         local_id: init_scope.id,
                     });
@@ -670,11 +716,10 @@ impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
                     _ => unreachable!(),
                 };
 
-                let name = self.tcx.fn_arg_names(closure_id)[0];
+                let name = self.ctx.tcx.fn_arg_names(closure_id)[0];
                 let ty = sig.input(0).skip_binder();
-                // TODO: type invariants for bound vars
 
-                Ok(((name.name, ty), pearlite(self.tcx, closure_id)?))
+                Ok(((name.name, ty), pearlite(self.ctx, closure_id)?))
             }
             _ => Err(Error::new(self.thir[body].span, "unexpected error in quantifier")),
         }
