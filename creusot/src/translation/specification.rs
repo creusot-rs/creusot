@@ -17,7 +17,6 @@ use rustc_middle::{
 };
 use rustc_span::Symbol;
 use std::collections::{HashMap, HashSet};
-use why3::declaration::Contract;
 
 pub(crate) use crate::backend::term::*;
 
@@ -40,26 +39,6 @@ impl<'tcx> PreContract<'tcx> {
             normalize(tcx, param_env, term);
         }
         self
-    }
-
-    pub(crate) fn to_exp(
-        self,
-        ctx: &mut TranslationCtx<'tcx>,
-        names: &mut CloneMap<'tcx>,
-    ) -> Contract {
-        let mut out = Contract::new();
-        for term in self.requires {
-            out.requires.push(lower_pure(ctx, names, term));
-        }
-        for term in self.ensures {
-            out.ensures.push(lower_pure(ctx, names, term));
-        }
-
-        if let Some(term) = self.variant {
-            out.variant = vec![lower_pure(ctx, names, term)];
-        }
-
-        out
     }
 
     pub(crate) fn is_empty(&self) -> bool {

@@ -3,7 +3,6 @@ use super::{
     pearlite::{normalize, Term},
 };
 use crate::{
-    backend::term::lower_pure,
     ctx::*,
     fmir::{self, Expr},
     gather_spec_closures::corrected_invariant_names_and_locations,
@@ -13,7 +12,7 @@ use crate::{
         pearlite::{self, TermKind, TermVisitorMut},
         specification::{contract_of, PreContract},
     },
-    util::{self, ident_of, sig_to_why3, PreSignature},
+    util::{self, ident_of, PreSignature},
 };
 use indexmap::IndexMap;
 use rustc_borrowck::borrow_set::BorrowSet;
@@ -36,7 +35,7 @@ use rustc_mir_dataflow::move_paths::MoveData;
 use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::*};
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::rc::Rc;
-use why3::{declaration::*, Ident};
+use why3::declaration::*;
 
 pub(crate) mod place;
 pub(crate) mod promoted;
@@ -681,50 +680,4 @@ fn generic_decls<'tcx, I: Iterator<Item = &'tcx GenericParamDef> + 'tcx>(
             None
         }
     })
-}
-impl<'tcx> ClosureContract<'tcx> {
-    pub(crate) fn to_why(
-        self,
-        ctx: &mut TranslationCtx<'tcx>,
-        def_id: DefId,
-        names: &mut CloneMap<'tcx>,
-    ) -> impl Iterator<Item = Decl> {
-        std::iter::once({
-            let mut sig = sig_to_why3(ctx, names, self.resolve.0, def_id);
-            sig.retty = None;
-            sig.name = Ident::build("resolve");
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, self.resolve.1) })
-        })
-        .chain(self.unnest.map(|(s, t)| {
-            let mut sig = sig_to_why3(ctx, names, s, def_id);
-            sig.retty = None;
-            sig.name = Ident::build("unnest");
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, t) })
-        }))
-        .chain(std::iter::once({
-            let mut sig = sig_to_why3(ctx, names, self.precond.0, def_id);
-            sig.retty = None;
-            sig.name = Ident::build("precondition");
-
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, self.precond.1) })
-        }))
-        .chain(self.postcond_once.map(|(s, t)| {
-            let mut sig = sig_to_why3(ctx, names, s, def_id);
-            sig.retty = None;
-            sig.name = Ident::build("postcondition_once");
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, t) })
-        }))
-        .chain(self.postcond_mut.map(|(s, t)| {
-            let mut sig = sig_to_why3(ctx, names, s, def_id);
-            sig.retty = None;
-            sig.name = Ident::build("postcondition_mut");
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, t) })
-        }))
-        .chain(self.postcond.map(|(s, t)| {
-            let mut sig = sig_to_why3(ctx, names, s, def_id);
-            sig.retty = None;
-            sig.name = Ident::build("postcondition");
-            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, t) })
-        }))
-    }
 }

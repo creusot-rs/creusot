@@ -5,13 +5,14 @@ use crate::{
         binop_to_binop,
         fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
         function::{
-            closure_contract, closure_generic_decls, place, place::translate_rplace_inner, promoted,
+            closure_contract, closure_generic_decls, place, place::translate_rplace_inner,
+            promoted, ClosureContract,
         },
         specification::{lower_impure, lower_pure},
         ty::{self, closure_accessors, translate_closure_ty, translate_ty},
         unop_to_unop,
     },
-    util::{self, is_ghost_closure, module_name, sig_to_why3, signature_of, ItemType},
+    util::{self, is_ghost_closure, module_name, signature_of, ItemType},
 };
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
 use rustc_index::vec::IndexVec;
@@ -24,12 +25,14 @@ use rustc_span::DUMMY_SP;
 
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
-    declaration::{self, CfgFunction, Decl, LetDecl, LetKind, Module, Use},
+    declaration::{self, CfgFunction, Decl, LetDecl, LetKind, Module, Predicate, Use},
     exp::{Constant, Exp, Pattern},
     mlcfg,
     mlcfg::BlockId,
     Ident, QName,
 };
+
+use super::signature::sig_to_why3;
 
 fn closure_ty<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
@@ -98,6 +101,53 @@ pub(crate) fn translate_closure<'tcx>(
     (closure_ty(ctx, def_id), translate_function(ctx, def_id))
 }
 
+impl<'tcx> ClosureContract<'tcx> {
+    pub(crate) fn to_why(
+        self,
+        ctx: &mut TranslationCtx<'tcx>,
+        def_id: DefId,
+        names: &mut CloneMap<'tcx>,
+    ) -> impl Iterator<Item = Decl> {
+        std::iter::once({
+            let mut sig = sig_to_why3(ctx, names, self.resolve.0, def_id);
+            sig.retty = None;
+            sig.name = Ident::build("resolve");
+            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, self.resolve.1) })
+        })
+        .chain(self.unnest.map(|(s, t)| {
+            let mut sig = sig_to_why3(ctx, names, s, def_id);
+            sig.retty = None;
+            sig.name = Ident::build("unnest");
+            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, t) })
+        }))
+        .chain(std::iter::once({
+            let mut sig = sig_to_why3(ctx, names, self.precond.0, def_id);
+            sig.retty = None;
+            sig.name = Ident::build("precondition");
+
+            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, self.precond.1) })
+        }))
+        .chain(self.postcond_once.map(|(s, t)| {
+            let mut sig = sig_to_why3(ctx, names, s, def_id);
+            sig.retty = None;
+            sig.name = Ident::build("postcondition_once");
+            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, t) })
+        }))
+        .chain(self.postcond_mut.map(|(s, t)| {
+            let mut sig = sig_to_why3(ctx, names, s, def_id);
+            sig.retty = None;
+            sig.name = Ident::build("postcondition_mut");
+            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, t) })
+        }))
+        .chain(self.postcond.map(|(s, t)| {
+            let mut sig = sig_to_why3(ctx, names, s, def_id);
+            sig.retty = None;
+            sig.name = Ident::build("postcondition");
+            Decl::PredDecl(Predicate { sig, body: lower_pure(ctx, names, t) })
+        }))
+    }
+}
+
 pub(crate) fn translate_function<'tcx, 'sess>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
@@ -153,7 +203,7 @@ fn lower_promoted<'tcx>(
         let promoted = promoted::translate_promoted(ctx, p.1, def_id);
         let (sig, fmir) = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
 
-        let mut sig = util::sig_to_why3(ctx, names, sig, def_id);
+        let mut sig = sig_to_why3(ctx, names, sig, def_id);
         sig.name = format!("promoted{:?}", p.0.as_usize()).into();
 
         let mut previous_block = None;
