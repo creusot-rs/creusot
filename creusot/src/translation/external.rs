@@ -67,10 +67,25 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
         (id, subst)
     };
 
-    let inner_subst = InternalSubsts::identity_for_item(ctx.tcx, id);
+    let mut inner_subst = InternalSubsts::identity_for_item(ctx.tcx, id).to_vec();
     let outer_subst = InternalSubsts::identity_for_item(ctx.tcx, def_id.to_def_id());
 
     let extra_parameters = inner_subst.len() - outer_subst.len();
+
+    // Move Self_ to the front of the list like rustc does for real trait impls (not expressible in surface rust).
+    // This only matters when we also have lifetime parameters.
+    let self_pos = outer_subst.iter().position(|e| if
+        let GenericArgKind::Type(t) = e.unpack() &&
+        let TyKind::Param(t) = t.kind() &&
+        t.name.as_str().starts_with("Self") { true } else { false }
+    );
+
+    if let Some(ix) = self_pos {
+        let self_ = inner_subst.remove(ix + extra_parameters);
+        inner_subst.insert(0, self_);
+    };
+
+
 
     let mut subst = Vec::new();
     let mut errors = Vec::new();
@@ -98,6 +113,15 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
                     errors.push(err);
                 }
             }
+            (GenericArgKind::Lifetime(l1), GenericArgKind::Lifetime(l2)) => {
+                if l1.get_name() == l2.get_name() {
+                    subst.push(inner_subst[i + extra_parameters]);
+                } else {
+                    let mut err = ctx.fatal_error(span, "mismatched parameters in `extern_spec!`");
+                    err.warn(&format!("expected parameter `{:?}` to be called `{:?}`", l2, l1));
+                    errors.push(err);
+                }
+            }
             _ => {}
         }
     }
@@ -109,13 +133,12 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let contract = crate::specification::contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
 
     let additional_predicates =
-        ctx.tcx.predicates_of(def_id).instantiate(ctx.tcx, subst).predicates.into_iter().collect();
+        ctx.predicates_of(def_id).instantiate(ctx.tcx, subst).predicates.into_iter().collect();
 
     let arg_subst = ctx
-        .tcx
         .fn_arg_names(def_id)
         .iter()
-        .zip(ctx.tcx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).skip_binder().inputs()))
+        .zip(ctx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).skip_binder().inputs()))
         .map(|(i, (i2, ty))| (i.name, Term::var(i2.name, *ty)))
         .collect();
     Ok((id, ExternSpec { contract, additional_predicates, subst, arg_subst }))
