@@ -202,7 +202,7 @@ pub(crate) fn pearlite(tcx: TyCtxt, id: LocalDefId) -> CreusotResult<Term> {
         return Err(Error::new(tcx.def_span(id), "type checking failed"));
     };
 
-    visit::walk_expr(&mut PurityVisitor { tcx, thir: &thir }, &thir[expr]);
+    visit::walk_expr(&mut PurityVisitor { tcx, thir: &thir, in_pure_ctx: true }, &thir[expr]);
 
     let lower = ThirTerm { tcx, item_id: id, thir: &thir };
 
