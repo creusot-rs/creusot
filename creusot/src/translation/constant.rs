@@ -1,69 +1,18 @@
 use crate::{
-    backend::logic::stub_module,
-    clone_map::CloneMap,
-    ctx::{module_name, CloneSummary, TranslatedItem, TranslationCtx},
-    traits::resolve_assoc_item_opt,
-    translation::pearlite::Literal,
-    util::{self, get_builtin, signature_of},
+    ctx::TranslationCtx, traits::resolve_assoc_item_opt, translation::pearlite::Literal,
+    util::get_builtin,
 };
-use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{
         interpret::{AllocRange, ConstValue},
         ConstantKind, UnevaluatedConst,
     },
-    ty,
-    ty::{subst::InternalSubsts, Const, ConstKind, ParamEnv, Ty, TyCtxt},
+    ty::{Const, ConstKind, ParamEnv, Ty, TyCtxt},
 };
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::Size;
-use why3::declaration::{Decl, LetDecl, LetKind, Module, ValDecl};
 
-use super::{
-    fmir::Expr,
-    function::closure_generic_decls,
-    pearlite::{Term, TermKind},
-};
-
-impl<'tcx> TranslationCtx<'tcx> {
-    pub(crate) fn translate_constant(
-        &mut self,
-        def_id: DefId,
-    ) -> (TranslatedItem, CloneSummary<'tcx>) {
-        let subst = InternalSubsts::identity_for_item(self.tcx, def_id);
-        let uneval = ty::UnevaluatedConst::new(ty::WithOptConstParam::unknown(def_id), subst);
-        let constant = self.mk_const(ty::ConstKind::Unevaluated(uneval), self.type_of(def_id));
-
-        let res = from_ty_const(self, constant, self.param_env(def_id), self.def_span(def_id));
-        let mut names = CloneMap::new(self.tcx, def_id, crate::clone_map::CloneLevel::Body);
-        let res = res.to_why(self, &mut names, None);
-        let sig = signature_of(self, &mut names, def_id);
-        let mut decls: Vec<_> = closure_generic_decls(self.tcx, def_id).collect();
-        let (clones, summary) = names.to_clones(self);
-        decls.extend(clones);
-        if !util::is_trusted(self.tcx, def_id) {
-            decls.push(Decl::Let(LetDecl {
-                kind: Some(LetKind::Constant),
-                sig: sig.clone(),
-                rec: false,
-                ghost: false,
-                body: res,
-            }));
-        } else {
-            decls.push(Decl::ValDecl(ValDecl {
-                ghost: false,
-                val: true,
-                kind: Some(LetKind::Constant),
-                sig,
-            }))
-        }
-
-        let stub = stub_module(self, def_id);
-
-        let modl = Module { name: module_name(self.tcx, def_id), decls };
-        (TranslatedItem::Constant { stub, modl }, summary)
-    }
-}
+use super::{fmir::Expr, pearlite::{TermKind, Term}};
 
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
