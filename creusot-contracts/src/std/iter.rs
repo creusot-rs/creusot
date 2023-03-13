@@ -1,7 +1,10 @@
 use crate::{invariant::Invariant, *};
 pub use ::std::iter::*;
 
+mod cloned;
+mod copied;
 mod empty;
+mod enumerate;
 mod map_inv;
 mod once;
 mod range;
@@ -9,6 +12,9 @@ mod repeat;
 mod skip;
 mod take;
 
+pub use cloned::ClonedExt;
+pub use copied::CopiedExt;
+pub use enumerate::EnumerateExt;
 pub use map_inv::MapInv;
 pub use skip::SkipExt;
 pub use take::TakeExt;
@@ -99,6 +105,25 @@ extern_spec! {
                 #[ensures(result.invariant())]
                 #[ensures(result.iter() == self && result.n() == @n)]
                 fn take(self, n: usize) -> Take<Self>;
+
+                #[requires(self.invariant())]
+                #[ensures(result.invariant())]
+                #[ensures(result.iter() == self)]
+                fn cloned<'a, T>(self) -> Cloned<Self>
+                    where T : 'a + Clone,
+                        Self: Sized + Iterator<Item = &'a T>;
+
+                #[requires(self.invariant())]
+                #[ensures(result.invariant())]
+                #[ensures(result.iter() == self)]
+                fn copied<'a, T>(self) -> Copied<Self>
+                    where T : 'a + Copy,
+                        Self: Sized + Iterator<Item = &'a T>;
+
+                #[requires(self.invariant())]
+                #[ensures(result.invariant())]
+                #[ensures(result.iter() == self && result.n() == 0)]
+                fn enumerate(self) -> Enumerate<Self>;
 
                 #[requires(self.invariant())]
                 // TODO: Investigate why Self_ needed

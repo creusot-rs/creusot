@@ -69,3 +69,10 @@ pub fn sum_range(n: isize) -> isize {
     }
     i
 }
+
+pub fn enumerate_range() {
+    #[invariant(id, forall<i : _> 0 <= i && i < produced.len() ==> produced[i].0 == produced[i].1 )]
+    for (ix, x) in (0..10).enumerate() {
+        let _ = (ix, x);
+    }
+}
