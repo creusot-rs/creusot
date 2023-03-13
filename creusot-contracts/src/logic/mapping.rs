@@ -25,6 +25,7 @@ impl<A, B> Mapping<A, B> {
         absurd
     }
 
+    #[cfg_attr(feature = "contracts", creusot::no_translate)]
     #[trusted]
     #[logic]
     #[creusot::builtins = "prelude.Mapping.from_fn"]
