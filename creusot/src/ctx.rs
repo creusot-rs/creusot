@@ -4,6 +4,7 @@ pub(crate) use crate::clone_map::*;
 use crate::{
     backend::{
         self,
+        interface::interface_for,
         program::{translate_closure, translate_function},
     },
     creusot_items::{self, CreusotItems},
@@ -14,7 +15,6 @@ use crate::{
         self,
         external::{extract_extern_specs_from_item, ExternSpec},
         fmir,
-        interface::interface_for,
         pearlite::{self, Term},
         specification::{ContractClauses, PurityVisitor},
         traits::TraitImpl,
