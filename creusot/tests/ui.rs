@@ -31,7 +31,6 @@ fn main() {
             "--output-file=/dev/null".as_ref(),
         ])
         .args(&["--", "--package", "creusot-contracts", "--features=contracts"])
-        .env("RUST_BACKTRACE", "1")
         .env("CREUSOT_CONTINUE", "true");
 
     if !metadata_file.status().expect("could not dump metadata for `creusot_contracts`").success() {

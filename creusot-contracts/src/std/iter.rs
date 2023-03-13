@@ -10,12 +10,14 @@ mod skip;
 mod take;
 mod cloned;
 mod copied;
+mod enumerate;
 
 pub use map_inv::MapInv;
 pub use skip::SkipExt;
 pub use take::TakeExt;
 pub use cloned::ClonedExt;
 pub use copied::CopiedExt;
+pub use enumerate::EnumerateExt;
 
 pub trait Iterator: ::std::iter::Iterator + Invariant {
     #[predicate]
@@ -117,6 +119,11 @@ extern_spec! {
                 fn copied<'a, T>(self) -> Copied<Self>
                     where T : 'a + Copy,
                         Self: Sized + Iterator<Item = &'a T>;
+
+                #[requires(self.invariant())]
+                #[ensures(result.invariant())]
+                #[ensures(result.iter() == self && result.n() == 0)]
+                fn enumerate(self) -> Enumerate<Self>;
 
                 #[requires(self.invariant())]
                 // TODO: Investigate why Self_ needed
