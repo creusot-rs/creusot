@@ -3,7 +3,7 @@ use crate::{
     ctx::{CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
-        fmir::{Block, Branches, Expr, RValue, Statement, Terminator},
+        fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
         function::{
             closure_contract, closure_generic_decls, place, place::translate_rplace_inner, promoted,
         },
@@ -132,23 +132,67 @@ pub(crate) fn translate_function<'tcx, 'sess>(
     Some(Module { name, decls })
 }
 
+// According to @oli-obk, promoted bodies are:
+// > it's completely linear, not even conditions or asserts inside. we should probably document all that with validation
+// On this supposition we can simplify the translation *dramatically* and produce why3 constants
+// instead of cfgs
+//
+// We use a custom translation because if we use `any` inside a `constant` / `function` its body is marked as opaque, and `mlcfg` heavily uses `any`.
 fn lower_promoted<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
     promoted: &IndexVec<mir::Promoted, mir::Body<'tcx>>,
 ) -> Vec<Decl> {
-    let param_env = ctx.param_env(def_id);
-
     let mut decls = Vec::new();
     for p in promoted.iter_enumerated() {
         if is_ghost_closure(ctx.tcx, p.1.return_ty()).is_some() {
             continue;
         }
 
-        let promoted = promoted::translate_promoted(ctx, names, param_env, p, def_id);
-        let promoted = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
+        let promoted = promoted::translate_promoted(ctx, p.1, def_id);
+        let (sig, fmir) = promoted.unwrap_or_else(|e| e.emit(ctx.tcx.sess));
 
+        let mut sig = util::sig_to_why3(ctx, names, sig, def_id);
+        sig.name = format!("promoted{:?}", p.0.as_usize()).into();
+
+        let mut previous_block = None;
+        let mut exp = Exp::impure_var("_0".into());
+        for (id, bbd) in fmir.blocks.into_iter().rev() {
+            // Safety check
+            match bbd.terminator {
+                fmir::Terminator::Goto(prev) => {
+                    assert!(previous_block == Some(prev))
+                }
+                fmir::Terminator::Return => {
+                    assert!(previous_block == None);
+                }
+                _ => {}
+            };
+
+            previous_block = Some(id);
+
+            let exps: Vec<_> =
+                bbd.stmts.into_iter().map(|s| s.to_why(ctx, names, p.1)).flatten().collect();
+            exp = exps.into_iter().rfold(exp, |acc, asgn| match asgn {
+                why3::mlcfg::Statement::Assign { lhs, rhs } => {
+                    Exp::Let { pattern: Pattern::VarP(lhs), arg: box rhs, body: box acc }
+                }
+                why3::mlcfg::Statement::Assume(_) => acc,
+                why3::mlcfg::Statement::Invariant(_, _) => todo!(),
+                why3::mlcfg::Statement::Assert(_) => {
+                    ctx.crash_and_error(ctx.def_span(def_id), "unsupported promoted constant")
+                }
+            });
+        }
+
+        let promoted = Decl::Let(LetDecl {
+            sig,
+            rec: false,
+            kind: Some(LetKind::Constant),
+            body: exp,
+            ghost: false,
+        });
         decls.push(promoted);
     }
 
