@@ -36,7 +36,7 @@ use rustc_middle::{
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
-pub(crate) use util::{item_name, module_name, ItemType};
+pub(crate) use util::{module_name, ItemType};
 use why3::{declaration::Module, exp::Exp};
 
 pub(crate) use crate::translated_item::*;
