@@ -18,9 +18,9 @@ use why3::{
 };
 
 use crate::{
-    backend::dependency::Dependency,
+    backend::{dependency::Dependency, interface},
     ctx::{self, *},
-    translation::{interface, ty::translate_ty_param},
+    translation::ty::translate_ty_param,
     util::{self, get_builtin, ident_of, ident_of_ty, item_name, module_name},
 };
 

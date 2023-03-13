@@ -3,7 +3,6 @@ pub(crate) mod external;
 #[allow(dead_code)]
 pub(crate) mod fmir;
 pub(crate) mod function;
-pub(crate) mod interface;
 pub(crate) mod pearlite;
 pub(crate) mod specification;
 pub(crate) mod traits;

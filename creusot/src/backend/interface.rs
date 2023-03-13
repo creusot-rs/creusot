@@ -1,4 +1,3 @@
-use super::function::closure_generic_decls;
 use crate::{
     backend::{
         logic::spec_axiom,
@@ -6,6 +5,7 @@ use crate::{
     },
     clone_map::CloneMap,
     ctx::*,
+    translation::function::closure_generic_decls,
     util,
 };
 use rustc_hir::def_id::DefId;

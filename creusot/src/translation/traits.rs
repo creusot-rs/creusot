@@ -1,22 +1,23 @@
+use super::{
+    pearlite::{Term, TermKind},
+    specification::contract_of,
+};
 use crate::{
     ctx::*,
-    translation::{
-        function::terminator::evaluate_additional_predicates,
-        ty::{self},
-    },
-    util,
+    translation::function::terminator::evaluate_additional_predicates,
     util::{inputs_and_output, is_law, is_spec},
 };
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_middle::ty::{
-    subst::SubstsRef, AssocItemContainer::*, EarlyBinder, ParamEnv, TraitRef, TyCtxt,
+    subst::{InternalSubsts, SubstsRef},
+    AssocItem, AssocItemContainer,
+    AssocItemContainer::*,
+    Binder, EarlyBinder, ParamEnv, TraitRef, TyCtxt,
 };
-use rustc_resolve::Namespace;
 use rustc_span::Symbol;
 use rustc_trait_selection::traits::ImplSource;
 use std::collections::HashMap;
-use why3::declaration::{Decl, Module, TyDecl};
 
 #[derive(Clone)]
 pub(crate) struct Refinement<'tcx> {
@@ -112,35 +113,6 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         TraitImpl { laws, refinements }
     }
-
-    pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
-        assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
-
-        let mut names = CloneMap::new(self.tcx, def_id, CloneLevel::Interface);
-
-        let mut decls: Vec<_> = all_generic_decls_for(self.tcx, def_id).collect();
-        let name = item_name(self.tcx, def_id, Namespace::TypeNS);
-
-        let ty_decl = match self.tcx.associated_item(def_id).container {
-            rustc_middle::ty::ImplContainer => names.with_public_clones(|names| {
-                let assoc_ty = self.tcx.type_of(def_id);
-                TyDecl::Alias {
-                    ty_name: name.clone(),
-                    ty_params: vec![],
-                    alias: ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty),
-                }
-            }),
-            rustc_middle::ty::TraitContainer => {
-                TyDecl::Opaque { ty_name: name.clone(), ty_params: vec![] }
-            }
-        };
-
-        let (clones, summary) = names.to_clones(self);
-        decls.extend(clones);
-        decls.push(Decl::TyDecl(ty_decl));
-
-        (Module { name: module_name(self.tcx, def_id), decls }, summary)
-    }
 }
 
 fn logic_refinement_term<'tcx>(
@@ -214,9 +186,6 @@ pub(crate) fn associated_items(tcx: TyCtxt, def_id: DefId) -> impl Iterator<Item
         .filter(move |item| !is_spec(tcx, item.def_id))
 }
 
-use crate::function::all_generic_decls_for;
-use rustc_middle::ty::{subst::InternalSubsts, AssocItem, Binder};
-
 pub(crate) fn resolve_impl_source_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
     param_env: ParamEnv<'tcx>,
@@ -285,13 +254,6 @@ pub(crate) fn resolve_trait_opt<'tcx>(
         None
     }
 }
-
-use rustc_middle::ty::AssocItemContainer;
-
-use super::{
-    pearlite::{Term, TermKind},
-    specification::contract_of,
-};
 
 pub(crate) fn resolve_assoc_item_opt<'tcx>(
     tcx: TyCtxt<'tcx>,
