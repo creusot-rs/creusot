@@ -4,7 +4,7 @@ use crate::{
     ctx::{module_name, CloneSummary, TranslatedItem, TranslationCtx},
     traits::resolve_assoc_item_opt,
     translation::pearlite::Literal,
-    util::{get_builtin, signature_of},
+    util::{self, get_builtin, signature_of},
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
@@ -17,10 +17,11 @@ use rustc_middle::{
 };
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::Size;
-use why3::declaration::{Decl, LetDecl, LetKind, Module};
+use why3::declaration::{Decl, LetDecl, LetKind, Module, ValDecl};
 
 use super::{
     fmir::Expr,
+    function::closure_generic_decls,
     pearlite::{Term, TermKind},
 };
 
@@ -37,14 +38,25 @@ impl<'tcx> TranslationCtx<'tcx> {
         let mut names = CloneMap::new(self.tcx, def_id, crate::clone_map::CloneLevel::Body);
         let res = res.to_why(self, &mut names, None);
         let sig = signature_of(self, &mut names, def_id);
-        let (mut decls, summary) = names.to_clones(self);
-        decls.push(Decl::Let(LetDecl {
-            kind: Some(LetKind::Constant),
-            sig: sig.clone(),
-            rec: false,
-            ghost: false,
-            body: res,
-        }));
+        let mut decls: Vec<_> = closure_generic_decls(self.tcx, def_id).collect();
+        let (clones, summary) = names.to_clones(self);
+        decls.extend(clones);
+        if !util::is_trusted(self.tcx, def_id) {
+            decls.push(Decl::Let(LetDecl {
+                kind: Some(LetKind::Constant),
+                sig: sig.clone(),
+                rec: false,
+                ghost: false,
+                body: res,
+            }));
+        } else {
+            decls.push(Decl::ValDecl(ValDecl {
+                ghost: false,
+                val: true,
+                kind: Some(LetKind::Constant),
+                sig,
+            }))
+        }
 
         let stub = stub_module(self, def_id);
 
