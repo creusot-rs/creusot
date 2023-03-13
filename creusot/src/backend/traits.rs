@@ -1,9 +1,12 @@
 use super::term::lower_pure;
 use crate::{
     clone_map::{CloneLevel, CloneMap, CloneSummary},
-    ctx::{TranslationCtx, ItemType},
-    translation::{function::{own_generic_decls_for, all_generic_decls_for}, ty},
-    util::{item_name, module_name, self},
+    ctx::{ItemType, TranslationCtx},
+    translation::{
+        function::{all_generic_decls_for, own_generic_decls_for},
+        ty,
+    },
+    util::{self, item_name, module_name},
 };
 use rustc_hir::def_id::DefId;
 

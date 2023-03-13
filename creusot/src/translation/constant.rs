@@ -12,7 +12,10 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::Size;
 
-use super::{fmir::Expr, pearlite::{TermKind, Term}};
+use super::{
+    fmir::Expr,
+    pearlite::{Term, TermKind},
+};
 
 pub(crate) fn from_mir_constant<'tcx>(
     env: ParamEnv<'tcx>,
