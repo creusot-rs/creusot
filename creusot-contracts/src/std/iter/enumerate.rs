@@ -9,9 +9,17 @@ pub trait EnumerateExt<I> {
 }
 
 impl<I> EnumerateExt<I> for Enumerate<I> {
-    #[trusted] #[logic] fn iter(self) -> I { absurd }
+    #[trusted]
+    #[logic]
+    fn iter(self) -> I {
+        absurd
+    }
 
-    #[trusted] #[logic] fn n(self) -> Int { absurd }
+    #[trusted]
+    #[logic]
+    fn n(self) -> Int {
+        absurd
+    }
 }
 
 #[trusted]
@@ -33,7 +41,6 @@ impl<I: Invariant + Iterator> Invariant for Enumerate<I> {
             && (forall<i: &mut I> i.invariant() ==> i.completed() ==> i.produces(Seq::EMPTY, ^i))
         }
     }
-
 }
 
 impl<I> Iterator for Enumerate<I>
@@ -68,5 +75,4 @@ where
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
-
 }

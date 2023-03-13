@@ -5,7 +5,6 @@ pub trait ClonedExt<I> {
     fn iter(self) -> I;
 }
 
-
 impl<I> ClonedExt<I> for Cloned<I> {
     #[logic]
     #[trusted]
@@ -13,7 +12,6 @@ impl<I> ClonedExt<I> for Cloned<I> {
         pearlite! { absurd }
     }
 }
-
 
 #[trusted]
 impl<I> Resolve for Cloned<I> {

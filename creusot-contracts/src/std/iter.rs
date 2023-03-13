@@ -1,23 +1,23 @@
 use crate::{invariant::Invariant, *};
 pub use ::std::iter::*;
 
+mod cloned;
+mod copied;
 mod empty;
+mod enumerate;
 mod map_inv;
 mod once;
 mod range;
 mod repeat;
 mod skip;
 mod take;
-mod cloned;
-mod copied;
-mod enumerate;
 
-pub use map_inv::MapInv;
-pub use skip::SkipExt;
-pub use take::TakeExt;
 pub use cloned::ClonedExt;
 pub use copied::CopiedExt;
 pub use enumerate::EnumerateExt;
+pub use map_inv::MapInv;
+pub use skip::SkipExt;
+pub use take::TakeExt;
 
 pub trait Iterator: ::std::iter::Iterator + Invariant {
     #[predicate]

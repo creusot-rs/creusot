@@ -5,7 +5,6 @@ pub trait CopiedExt<I> {
     fn iter(self) -> I;
 }
 
-
 impl<I> CopiedExt<I> for Copied<I> {
     #[logic]
     #[trusted]
@@ -13,7 +12,6 @@ impl<I> CopiedExt<I> for Copied<I> {
         pearlite! { absurd }
     }
 }
-
 
 #[trusted]
 impl<I> Resolve for Copied<I> {

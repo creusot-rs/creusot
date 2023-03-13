@@ -74,18 +74,17 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     // Move Self_ to the front of the list like rustc does for real trait impls (not expressible in surface rust).
     // This only matters when we also have lifetime parameters.
-    let self_pos = outer_subst.iter().position(|e| if
+    let self_pos = outer_subst.iter().position(|e| {
+        if
         let GenericArgKind::Type(t) = e.unpack() &&
         let TyKind::Param(t) = t.kind() &&
         t.name.as_str().starts_with("Self") { true } else { false }
-    );
+    });
 
     if let Some(ix) = self_pos {
         let self_ = inner_subst.remove(ix + extra_parameters);
         inner_subst.insert(0, self_);
     };
-
-
 
     let mut subst = Vec::new();
     let mut errors = Vec::new();
