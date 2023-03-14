@@ -815,10 +815,12 @@ pub(crate) fn type_invariant_term<'tcx>(
     span: Span,
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
-    let args = vec![Term { ty, span, kind: TermKind::Var(name) }];
     let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(env_did, ty)?;
     let inv_fn_ty = EarlyBinder(ctx.tcx.type_of(inv_fn_did)).subst(ctx.tcx, inv_fn_substs);
     assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if *id == inv_fn_did));
+
+    assert!(name.to_string().len() > 0, "name has len 0, env={env_did:?}, ty={ty:?}");
+    let args = vec![Term { ty, span, kind: TermKind::Var(name) }];
 
     let fun = Term { ty: inv_fn_ty, span, kind: TermKind::Item(inv_fn_did, inv_fn_substs) };
     Some(Term {

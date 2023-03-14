@@ -2,7 +2,7 @@ use crate::{
     backend::signature::sig_to_why3,
     ctx::*,
     translation::{
-        pearlite::{super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
+        pearlite::{self, super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
         specification::PreContract,
     },
 };
@@ -350,6 +350,13 @@ pub struct PreSignature<'tcx> {
     // program: bool,
 }
 
+impl<'tcx> PreSignature<'tcx> {
+    pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, param_env: ty::ParamEnv<'tcx>) -> Self {
+        self.contract = self.contract.normalize(tcx, param_env);
+        self
+    }
+}
+
 pub(crate) fn pre_sig_of<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
@@ -419,15 +426,13 @@ fn elaborate_type_invariants<'tcx>(
 
     let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
     for (name, span, ty) in pre_sig.inputs.iter() {
-        if let Some(term) =
-            translation::pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty)
-        {
+        if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
             let term = EarlyBinder(term).subst(ctx.tcx, subst);
             pre_sig.contract.requires.push(term);
         }
     }
 
-    if let Some(term) = translation::pearlite::type_invariant_term(
+    if let Some(term) = pearlite::type_invariant_term(
         ctx,
         def_id,
         Symbol::intern("result"),

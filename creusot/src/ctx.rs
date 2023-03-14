@@ -305,7 +305,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     pub(crate) fn sig(&mut self, def_id: DefId) -> &PreSignature<'tcx> {
         if !self.sigs.contains_key(&def_id) {
             let mut term = pre_sig_of(self, def_id);
-            pearlite::normalize_sig(self.tcx, self.param_env(def_id), &mut term);
+            term = term.normalize(self.tcx, self.param_env(def_id));
 
             self.sigs.insert(def_id, term);
         };
