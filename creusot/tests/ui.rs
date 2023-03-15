@@ -82,20 +82,19 @@ fn should_succeed<B>(s: &str, b: B)
 where
     B: Fn(&Path) -> Option<std::process::Command>,
 {
-    glob_runner(s, b, should_succeed_case);
+    glob_runner(s, b, true);
 }
 
 fn should_fail<B>(s: &str, b: B)
 where
     B: Fn(&Path) -> Option<std::process::Command>,
 {
-    glob_runner(s, b, should_fail_case);
+    glob_runner(s, b, false);
 }
 
-fn glob_runner<B, C>(s: &str, command_builder: B, differ: C)
+fn glob_runner<B>(s: &str, command_builder: B, should_succeed: bool)
 where
     B: Fn(&Path) -> Option<std::process::Command>,
-    C: Fn(std::process::Output, &Path, &Path) -> Result<(bool, Buffer), Box<dyn Error>>,
 {
     let mut out = StandardStream::stdout(ColorChoice::Always);
 
@@ -127,7 +126,7 @@ where
             out.set_color(ColorSpec::new().set_fg(Some(Color::Blue))).unwrap();
             writeln!(&mut out, "blessed").unwrap();
             out.reset().unwrap();
-            let (success, _) = differ(output.clone(), &stdout, &stderr).unwrap();
+            let (success, _) = differ(output.clone(), &stdout, &stderr, should_succeed).unwrap();
 
             if !success {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
@@ -147,7 +146,8 @@ where
                 std::fs::write(stderr, &output.stderr).unwrap();
             }
         } else {
-            let (success, mut buf) = differ(output.clone(), &stdout, &stderr).unwrap();
+            let (success, mut buf) =
+                differ(output.clone(), &stdout, &stderr, should_succeed).unwrap();
 
             if success {
                 out.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
@@ -213,10 +213,11 @@ fn normalize_file_path(input: impl Into<String>) -> String {
     input
 }
 
-fn should_succeed_case(
+fn differ(
     output: std::process::Output,
     stdout: &Path,
     stderr: &Path,
+    should_succeed: bool,
 ) -> Result<(bool, Buffer), Box<dyn Error>> {
     let mut buf = Buffer::ansi();
     use std::str::from_utf8;
@@ -232,26 +233,13 @@ fn should_succeed_case(
 
             Ok((success_out && success_err, buf))
         }
-        Err(err) => {
+        Err(err) if should_succeed => {
             let output = err.as_output().unwrap();
 
             write!(buf, "{}", from_utf8(&output.stderr)?)?;
             // let success = compare_str(&mut buf, from_utf8(&output.stderr)?, from_utf8(expect_err)?);
             Ok((false, buf))
         }
-    }
-}
-
-fn should_fail_case(
-    output: std::process::Output,
-    _stdout: &Path,
-    stderr: &Path,
-) -> Result<(bool, Buffer), Box<dyn Error>> {
-    let mut buf = Buffer::ansi();
-    use std::str::from_utf8;
-
-    match output.clone().ok() {
-        Ok(_) => Ok((false, buf)),
         Err(err) => {
             let expect_err = &std::fs::read(stderr).unwrap_or_else(|_| Vec::new());
 
