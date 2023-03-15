@@ -16,7 +16,6 @@ struct IterMut<'a, T> {
 
 impl<'a, T> Invariant for IterMut<'a, T> {
     #[predicate]
-    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         // Property that is always true but we must carry around..
         pearlite! { (@^self.inner).len() == (@*self.inner).len() }

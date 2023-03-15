@@ -45,7 +45,6 @@ impl<T> Iterator for Once<T> {
 
 impl<T> Invariant for Once<T> {
     #[predicate]
-    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         true
     }

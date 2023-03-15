@@ -322,7 +322,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         let trait_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))?;
         let substs = self.mk_substs(std::iter::once(GenericArg::from(ty)));
         traits::resolve_opt(self.tcx, param_env, trait_did, substs)
-            .filter(|(inv_did, _)| util::is_type_invariant(self.tcx, *inv_did))
+            .filter(|(inv_did, _)| !util::ignore_type_invariant(self.tcx, *inv_did))
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {

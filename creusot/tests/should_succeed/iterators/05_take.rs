@@ -62,7 +62,6 @@ where
     I: Iterator,
 {
     #[predicate]
-    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         pearlite! {
             self.iter.invariant()

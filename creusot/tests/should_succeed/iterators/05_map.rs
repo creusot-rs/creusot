@@ -136,6 +136,7 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Map<I, F> {
 impl<I: Iterator, B, F: FnMut(I::Item) -> B> Invariant for Map<I, F> {
     // Should not quantify over self or the `invariant` cannot be made into a type invariant
     #[predicate]
+    #[creusot::ignore_type_invariant]
     fn invariant(self) -> bool {
         pearlite! {
             Self::reinitialize() &&

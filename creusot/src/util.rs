@@ -93,7 +93,19 @@ pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
 }
 
 pub(crate) fn is_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "type_invariant"]).is_some()
+    let Some(assoc_item) = tcx.opt_associated_item(def_id) else { return false };
+    let Some(trait_item_did) = (match assoc_item.container {
+        ty::AssocItemContainer::TraitContainer => Some(def_id),
+        ty::AssocItemContainer::ImplContainer => assoc_item.trait_item_def_id,
+    }) else { return false };
+
+    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))
+        .map(|inv_did| inv_did == trait_item_did)
+        .unwrap_or(false)
+}
+
+pub(crate) fn ignore_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "ignore_type_invariant"]).is_some()
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {

@@ -35,7 +35,6 @@ impl<I> Resolve for Skip<I> {
 
 impl<I: Invariant> Invariant for Skip<I> {
     #[predicate]
-    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         self.iter().invariant()
     }

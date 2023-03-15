@@ -45,7 +45,6 @@ impl<I> Resolve for Take<I> {
 
 impl<I: Invariant> Invariant for Take<I> {
     #[predicate]
-    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         self.iter().invariant()
     }

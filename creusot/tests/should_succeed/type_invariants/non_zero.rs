@@ -5,7 +5,6 @@ pub struct NonZeroU32(u32);
 
 impl Invariant for NonZeroU32 {
     #[predicate]
-    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         pearlite! { @self.0 > 0 }
     }

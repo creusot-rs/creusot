@@ -59,6 +59,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant
 {
     // Should not quantify over self or the `invariant` cannot be made into a type invariant
     #[predicate]
+    #[creusot::ignore_type_invariant]
     fn invariant(self) -> bool {
         pearlite! {
             Self::reinitialize() &&

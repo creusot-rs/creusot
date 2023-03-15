@@ -67,7 +67,6 @@ impl<I: Iterator> Iterator for Fuse<I> {
 
 impl<I: Iterator> Invariant for Fuse<I> {
     #[predicate]
-    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         match self.iter {
             Ok(i) => i.invariant(),

@@ -375,6 +375,7 @@ impl<'a, T> Resolve for IterMut<'a, T> {
 
 impl<'a, T> Invariant for IterMut<'a, T> {
     #[predicate]
+    #[creusot::ignore_type_invariant]
     fn invariant(self) -> bool {
         // Property that is always true but we must carry around..
         pearlite! { (@^@self).len() == (@*@self).len() }

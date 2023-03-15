@@ -54,7 +54,6 @@ impl<I: Iterator, J: Iterator> Iterator for Zip<I, J> {
 
 impl<I: Iterator, J: Iterator> Invariant for Zip<I, J> {
     #[predicate]
-    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         self.iter1.invariant() && self.iter2.invariant()
     }

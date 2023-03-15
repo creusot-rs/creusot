@@ -16,7 +16,6 @@ where
     I: Iterator,
 {
     #[predicate]
-    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         self.iter.invariant()
     }
