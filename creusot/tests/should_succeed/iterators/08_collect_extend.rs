@@ -40,6 +40,7 @@ pub fn extend<T, I: Iterator<Item = T> + Invariant>(vec: &mut Vec<T>, iter: I) {
 #[requires(iter.invariant())]
 #[ensures(
   exists<done_ : &mut I, prod: Seq<_>>
+    done_.invariant() &&
     done_.completed() && iter.produces(prod, *done_) && @result == prod
 )]
 pub fn collect<I: Iterator>(iter: I) -> Vec<I::Item> {

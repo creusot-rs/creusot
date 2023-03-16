@@ -16,6 +16,7 @@ struct IterMut<'a, T> {
 
 impl<'a, T> Invariant for IterMut<'a, T> {
     #[predicate]
+    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         // Property that is always true but we must carry around..
         pearlite! { (@^self.inner).len() == (@*self.inner).len() }
@@ -36,14 +37,10 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     }
 
     #[law]
-    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -69,7 +66,6 @@ impl<'a, T> IterMut<'a, T> {
 #[ensures(@result.inner == @v)]
 #[ensures(@^result.inner == @^v)]
 #[ensures((@^v).len() == (@v).len())]
-#[ensures(result.invariant())]
 fn iter_mut<'a, T>(v: &'a mut Vec<T>) -> IterMut<'a, T> {
     IterMut { inner: &mut v[..] }
 }

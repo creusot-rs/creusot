@@ -105,7 +105,6 @@ extern_spec! {
             }
 
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
-                #[requires(iter.invariant())]
                 #[ensures(exists<done_ : &mut I, prod: Seq<I::Item>>
                     done_.completed() && iter.produces(prod, *done_) && @^self == (@self).concat(prod)
                 )]

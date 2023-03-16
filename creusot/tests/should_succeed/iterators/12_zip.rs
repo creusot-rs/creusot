@@ -30,14 +30,10 @@ impl<I: Iterator, J: Iterator> Iterator for Zip<I, J> {
     }
 
     #[law]
-    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -58,6 +54,7 @@ impl<I: Iterator, J: Iterator> Iterator for Zip<I, J> {
 
 impl<I: Iterator, J: Iterator> Invariant for Zip<I, J> {
     #[predicate]
+    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         self.iter1.invariant() && self.iter2.invariant()
     }

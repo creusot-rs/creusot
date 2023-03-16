@@ -249,7 +249,6 @@ extern_spec! {
         fn take_first_mut<'a>(self_: &mut &'a mut [T]) -> Option<&'a mut T>;
 
         #[ensures(@result == self)]
-        #[ensures(result.invariant())]
         fn iter(&self) -> Iter<'_, T>;
 
         #[ensures(@result == self)]

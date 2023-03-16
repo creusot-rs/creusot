@@ -4,6 +4,7 @@ use crate::*;
 pub trait Invariant {
     #[predicate]
     #[rustc_diagnostic_item = "creusot_invariant_method"]
+    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         true
     }

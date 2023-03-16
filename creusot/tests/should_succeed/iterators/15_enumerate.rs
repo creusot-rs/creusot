@@ -33,14 +33,10 @@ where
     }
 
     #[law]
-    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -68,19 +64,18 @@ where
     I: Iterator,
 {
     #[predicate]
+    #[creusot::type_invariant]
     fn invariant(self) -> bool {
         pearlite! {
             self.iter.invariant()
-            && (forall<s: Seq<I::Item>, i: I> i.invariant() ==> self.iter.produces(s, i) ==> @self.count + s.len() < @std::usize::MAX)
+            && (forall<s: Seq<I::Item>, i: I> self.iter.produces(s, i) ==> @self.count + s.len() < @std::usize::MAX)
             && (forall<i: &mut I> i.invariant() ==> i.completed() ==> i.produces(Seq::EMPTY, ^i))
         }
     }
 }
 
-#[requires(iter.invariant())]
 #[requires(forall<i: &mut I> i.invariant() ==> i.completed() ==> i.produces(Seq::EMPTY, ^i))]
-#[requires(forall<s: Seq<I::Item>, i: I> i.invariant() ==> iter.produces(s, i) ==> s.len() < @std::usize::MAX)]
-#[ensures(result.invariant())]
+#[requires(forall<s: Seq<I::Item>, i: I> iter.produces(s, i) ==> s.len() < @std::usize::MAX)]
 pub fn enumerate<I: Iterator>(iter: I) -> Enumerate<I> {
     Enumerate { iter, count: 0 }
 }
