@@ -42,11 +42,11 @@ where
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
-    #[maintains((mut self).invariant())]
     #[ensures(match result {
       None => self.completed(),
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
+    #[ensures((^self).invariant())]
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
             None => None,
@@ -68,12 +68,12 @@ where
         pearlite! {
             self.iter.invariant()
             && (forall<s: Seq<I::Item>, i: I> self.iter.produces(s, i) ==> @self.count + s.len() < @std::usize::MAX)
-            && (forall<i: &mut I> i.invariant() ==> i.completed() ==> i.produces(Seq::EMPTY, ^i))
+            && (forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))
         }
     }
 }
 
-#[requires(forall<i: &mut I> i.invariant() ==> i.completed() ==> i.produces(Seq::EMPTY, ^i))]
+#[requires(forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))]
 #[requires(forall<s: Seq<I::Item>, i: I> iter.produces(s, i) ==> s.len() < @std::usize::MAX)]
 pub fn enumerate<I: Iterator>(iter: I) -> Enumerate<I> {
     Enumerate { iter, count: 0 }
