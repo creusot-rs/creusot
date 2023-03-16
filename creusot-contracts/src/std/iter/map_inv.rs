@@ -79,7 +79,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> ::std::iter::I
       None => self.completed(),
       Some(v) => (*self).produces_one(v, ^self)
     })]
-    #[maintains((mut self).invariant())]
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
             Some(v) => {

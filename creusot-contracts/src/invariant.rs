@@ -18,3 +18,10 @@ pub trait Invariant {
         true
     }
 }
+
+impl<'a, T: Invariant> Invariant for &'a mut T {
+    #[predicate]
+    fn invariant(self) -> bool {
+        pearlite! { (*self).invariant() && (^self).invariant() }
+    }
+}

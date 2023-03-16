@@ -204,9 +204,12 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_resolve(&mut self, pl: Place<'tcx>) {
-        if let Some((id, subst)) =
-            resolve_predicate_of2(self.ctx, self.param_env(), pl.ty(self.body, self.ctx.tcx).ty)
-        {
+        let pl_ty = pl.ty(self.body, self.ctx.tcx).ty;
+        if let Some((id, subst)) = resolve_predicate_of2(self.ctx, self.param_env(), pl_ty) {
+            if let Some((id, substs)) = self.ctx.type_invariant(self.def_id, pl_ty) {
+                self.emit_statement(fmir::Statement::AssertTyInv(id, substs, pl));
+            }
+
             // self.emit_statement(fmir::Statement::Assume(
             //     Term { kind: TermKind::Call { id: id, subst: subst, fun: (), args: () }}
             // ));
@@ -222,6 +225,11 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
 
     fn emit_borrow(&mut self, lhs: &Place<'tcx>, rhs: &Place<'tcx>) {
         self.emit_assignment(lhs, fmir::RValue::Borrow(*rhs));
+
+        let rhs_ty = rhs.ty(self.body, self.ctx.tcx).ty;
+        if let Some((id, substs)) = self.ctx.type_invariant(self.def_id, rhs_ty) {
+            self.emit_statement(fmir::Statement::AssumeTyInv(id, substs, *lhs));
+        }
     }
 
     fn emit_ghost_assign(&mut self, lhs: Place<'tcx>, rhs: Term<'tcx>) {
@@ -229,6 +237,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>) {
+        // TODO assume ty inv
         self.emit_statement(fmir::Statement::Assignment(*lhs, rhs));
     }
 

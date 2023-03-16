@@ -660,6 +660,22 @@ impl<'tcx> Statement<'tcx> {
                 let assume = rp.app_to(Expr::Place(pl).to_why(ctx, names, Some(body)));
                 vec![mlcfg::Statement::Assume(assume)]
             }
+            Statement::AssumeTyInv(id, substs, pl) => {
+                ctx.translate(id);
+
+                let inv_fun = Exp::impure_qvar(names.value(id, substs));
+                let arg = Exp::Final(box Expr::Place(pl).to_why(ctx, names, Some(body)));
+
+                vec![mlcfg::Statement::Assume(inv_fun.app_to(arg))]
+            }
+            Statement::AssertTyInv(id, substs, pl) => {
+                ctx.translate(id);
+
+                let inv_fun = Exp::impure_qvar(names.value(id, substs));
+                let arg = Expr::Place(pl).to_why(ctx, names, Some(body));
+
+                vec![mlcfg::Statement::Assert(inv_fun.app_to(arg))]
+            }
             Statement::Assertion(a) => {
                 vec![mlcfg::Statement::Assert(lower_pure(ctx, names, a))]
             }
