@@ -117,12 +117,7 @@ impl<T> ShallowModel for IntoIter<T> {
     }
 }
 
-impl<T> Invariant for IntoIter<T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<T> Invariant for IntoIter<T> {}
 
 impl<T> Iterator for IntoIter<T> {
     #[predicate]
@@ -175,12 +170,7 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
     }
 }
 
-impl<'a, T> Invariant for Iter<'a, T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<'a, T> Invariant for Iter<'a, T> {}
 
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]
@@ -236,12 +226,7 @@ impl<'a, T> ShallowModel for IterMut<'a, T> {
     }
 }
 
-impl<'a, T> Invariant for IterMut<'a, T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<'a, T> Invariant for IterMut<'a, T> {}
 
 impl<'a, T> Iterator for IterMut<'a, T> {
     #[predicate]

@@ -1,7 +1,7 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{invariant::Invariant, *};
 
 mod common;
 use common::Iterator;
@@ -32,15 +32,6 @@ where
         }
     }
 
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! {
-            self.iter.invariant()
-            && (forall<s: Seq<I::Item>, i: I> i.invariant() ==> self.iter.produces(s, i) ==> @self.count + s.len() < @std::usize::MAX)
-            && (forall<i: &mut I> i.invariant() ==> i.completed() ==> i.produces(Seq::EMPTY, ^i))
-        }
-    }
-
     #[law]
     #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
@@ -68,6 +59,20 @@ where
                 self.count += 1;
                 Some((n, x))
             }
+        }
+    }
+}
+
+impl<I> Invariant for Enumerate<I>
+where
+    I: Iterator,
+{
+    #[predicate]
+    fn invariant(self) -> bool {
+        pearlite! {
+            self.iter.invariant()
+            && (forall<s: Seq<I::Item>, i: I> i.invariant() ==> self.iter.produces(s, i) ==> @self.count + s.len() < @std::usize::MAX)
+            && (forall<i: &mut I> i.invariant() ==> i.completed() ==> i.produces(Seq::EMPTY, ^i))
         }
     }
 }

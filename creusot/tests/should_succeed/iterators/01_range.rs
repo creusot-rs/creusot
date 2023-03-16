@@ -2,6 +2,7 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::{
+    invariant::Invariant,
     logic::{Int, Seq},
     *,
 };
@@ -13,6 +14,8 @@ struct Range {
     start: isize,
     end: isize,
 }
+
+impl Invariant for Range {}
 
 impl Iterator for Range {
     type Item = isize;

@@ -1,7 +1,7 @@
 // UISKIP WHY3SKIP
-use creusot_contracts::{logic::Seq, *};
+use creusot_contracts::{invariant::Invariant, logic::Seq, *};
 
-pub trait Iterator {
+pub trait Iterator: Invariant {
     type Item;
 
     #[predicate]
@@ -23,11 +23,6 @@ pub trait Iterator {
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self);
-
-    #[predicate]
-    fn invariant(self) -> bool {
-        true
-    }
 
     #[maintains((mut self).invariant())]
     #[ensures(match result {

@@ -317,9 +317,9 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         def_id: DefId,
         ty: Ty<'tcx>,
     ) -> Option<(DefId, SubstsRef<'tcx>)> {
+        debug!("resolving type invariant of {ty:?} in {def_id:?}");
         let param_env = self.param_env(def_id);
-        let trait_did =
-            self.get_diagnostic_item(Symbol::intern("creusot_invariant_method")).unwrap();
+        let trait_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))?;
         let substs = self.mk_substs(std::iter::once(GenericArg::from(ty)));
         traits::resolve_opt(self.tcx, param_env, trait_did, substs)
             .filter(|(inv_did, _)| util::is_type_invariant(self.tcx, *inv_did))

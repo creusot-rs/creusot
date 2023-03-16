@@ -2,6 +2,7 @@
 extern crate creusot_contracts;
 
 use creusot_contracts::{
+    invariant::Invariant,
     logic::{Int, Seq},
     *,
 };
@@ -11,6 +12,14 @@ use common::Iterator;
 
 struct IterMut<'a, T> {
     inner: &'a mut [T],
+}
+
+impl<'a, T> Invariant for IterMut<'a, T> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        // Property that is always true but we must carry around..
+        pearlite! { (@^self.inner).len() == (@*self.inner).len() }
+    }
 }
 
 impl<'a, T> Iterator for IterMut<'a, T> {
@@ -24,12 +33,6 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, tl: Self) -> bool {
         self.inner.to_mut_seq().ext_eq(visited.concat(tl.inner.to_mut_seq()))
-    }
-
-    #[predicate]
-    fn invariant(self) -> bool {
-        // Property that is always true but we must carry around..
-        pearlite! { (@^self.inner).len() == (@*self.inner).len() }
     }
 
     #[law]

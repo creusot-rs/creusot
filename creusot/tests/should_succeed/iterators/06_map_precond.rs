@@ -1,7 +1,7 @@
 #![feature(unboxed_closures)]
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{invariant::Invariant, *};
 
 mod common;
 use common::Iterator;
@@ -52,17 +52,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator for M
                  self.func.unnest(*fs[i])
                  && (*fs[i]).precondition((s[i], Ghost::new(self.produced.concat(s.subsequence(0, i)))))
                  && fs[i].postcondition_mut((s[i], Ghost::new(self.produced.concat(s.subsequence(0, i)))), visited[i])
-        }
-    }
-
-    // Should not quantify over self or the `invariant` cannot be made into a type invariant
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! {
-            Self::reinitialize() &&
-            self.preservation_inv() &&
-            self.iter.invariant() &&
-            self.next_precondition()
         }
     }
 
@@ -154,6 +143,19 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
                  && succ.produced.inner() == self.produced.push(e)
                  && (*f).precondition((e, self.produced))
                  && f.postcondition_mut((e, self.produced), visited) }
+        }
+    }
+}
+
+impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant for Map<I, I::Item, F> {
+    // Should not quantify over self or the `invariant` cannot be made into a type invariant
+    #[predicate]
+    fn invariant(self) -> bool {
+        pearlite! {
+            Self::reinitialize() &&
+            self.preservation_inv() &&
+            self.iter.invariant() &&
+            self.next_precondition()
         }
     }
 }

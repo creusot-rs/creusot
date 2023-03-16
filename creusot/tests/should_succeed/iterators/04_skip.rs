@@ -1,7 +1,7 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{invariant::Invariant, *};
 
 mod common;
 use common::Iterator;
@@ -9,6 +9,16 @@ use common::Iterator;
 pub struct Skip<I> {
     iter: I,
     n: usize,
+}
+
+impl<I> Invariant for Skip<I>
+where
+    I: Iterator,
+{
+    #[predicate]
+    fn invariant(self) -> bool {
+        self.iter.invariant()
+    }
 }
 
 impl<I> Iterator for Skip<I>
@@ -55,11 +65,6 @@ where
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
-
-    #[predicate]
-    fn invariant(self) -> bool {
-        self.iter.invariant()
-    }
 
     #[maintains((mut self).invariant())]
     #[ensures(match result {

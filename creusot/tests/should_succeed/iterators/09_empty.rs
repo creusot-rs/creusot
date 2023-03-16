@@ -1,6 +1,6 @@
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{invariant::Invariant, *};
 
 mod common;
 use common::Iterator;
@@ -34,11 +34,6 @@ impl<T> Iterator for Empty<T> {
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-
     #[maintains((mut self).invariant())]
     #[ensures(match result {
       None => self.completed(),
@@ -48,3 +43,5 @@ impl<T> Iterator for Empty<T> {
         None
     }
 }
+
+impl<T> Invariant for Empty<T> {}

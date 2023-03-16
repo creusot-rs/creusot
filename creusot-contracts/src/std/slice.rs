@@ -329,12 +329,7 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
     }
 }
 
-impl<'a, T> Invariant for Iter<'a, T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        true
-    }
-}
+impl<'a, T> Invariant for Iter<'a, T> {}
 
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]

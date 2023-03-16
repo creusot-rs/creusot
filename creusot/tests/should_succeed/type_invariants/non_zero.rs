@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{*, invariant::Invariant};
+use creusot_contracts::{invariant::Invariant, *};
 
 pub struct NonZeroU32(u32);
 
@@ -8,6 +8,16 @@ impl Invariant for NonZeroU32 {
     #[creusot::type_invariant]
     fn invariant(self) -> bool {
         pearlite! { @self.0 > 0 }
+    }
+
+    #[law]
+    #[ensures(exists<x: Self> x.invariant())]
+    #[ensures(result)]
+    fn is_inhabited() -> bool
+    where
+        Self: Sized,
+    {
+        NonZeroU32(1_u32).invariant()
     }
 }
 

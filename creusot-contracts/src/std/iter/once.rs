@@ -10,12 +10,7 @@ impl<T> ShallowModel for Once<T> {
     }
 }
 
-impl<T> Invariant for Once<T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<T> Invariant for Once<T> {}
 
 impl<T> Iterator for Once<T> {
     #[predicate]

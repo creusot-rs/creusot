@@ -1,11 +1,6 @@
 use crate::{invariant::Invariant, std::iter::Empty, *};
 
-impl<T> Invariant for Empty<T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<T> Invariant for Empty<T> {}
 
 impl<T> Iterator for Empty<T> {
     #[predicate]

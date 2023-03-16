@@ -10,12 +10,7 @@ impl<T> ShallowModel for Repeat<T> {
     }
 }
 
-impl<T> Invariant for Repeat<T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<T> Invariant for Repeat<T> {}
 
 impl<T: Clone> Iterator for Repeat<T> {
     #[predicate]
