@@ -199,10 +199,10 @@ pub(crate) fn pearlite<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: LocalDefId,
 ) -> CreusotResult<Term<'tcx>> {
-    let (thir, expr) = ctx.tcx.thir_body(WithOptConstParam::unknown(id)).map_err(|_| CrErr)?;
+    let (thir, expr) = ctx.thir_body(WithOptConstParam::unknown(id)).map_err(|_| CrErr)?;
     let thir = thir.borrow();
     if thir.exprs.is_empty() {
-        return Err(Error::new(ctx.tcx.def_span(id), "type checking failed"));
+        return Err(Error::new(ctx.def_span(id), "type checking failed"));
     };
 
     visit::walk_expr(
@@ -215,20 +215,20 @@ pub(crate) fn pearlite<'tcx>(
     lower.body_term(expr)
 }
 
-struct ThirTerm<'a, 'b, 'tcx> {
-    ctx: &'b TranslationCtx<'tcx>,
+struct ThirTerm<'a, 'tcx> {
+    ctx: &'a TranslationCtx<'tcx>,
     item_id: LocalDefId,
     thir: &'a Thir<'tcx>,
 }
 
 // TODO: Ensure that types are correct during this translation, in particular
 // - Box, & and &mut
-impl<'a, 'b, 'tcx> ThirTerm<'a, 'b, 'tcx> {
+impl<'a, 'tcx> ThirTerm<'a, 'tcx> {
     fn body_term(&self, expr: ExprId) -> CreusotResult<Term<'tcx>> {
         let body = self.expr_term(expr)?;
         let owner_id = util::param_def_id(self.ctx.tcx, self.item_id.into());
         let id_wcp = WithOptConstParam::unknown(owner_id);
-        let (thir, _) = self.ctx.tcx.thir_body(id_wcp).map_err(|_| CrErr)?;
+        let (thir, _) = self.ctx.thir_body(id_wcp).map_err(|_| CrErr)?;
         let thir: &Thir = &thir.borrow();
         let res = thir
             .params
@@ -324,13 +324,13 @@ impl<'a, 'b, 'tcx> ThirTerm<'a, 'b, 'tcx> {
                 Ok(Term { ty, span, kind: TermKind::Unary { op, arg: box arg } })
             }
             ExprKind::VarRef { id } => {
-                let map = self.ctx.tcx.hir();
+                let map = self.ctx.hir();
                 let name = map.name(id.0);
                 Ok(Term { ty, span, kind: TermKind::Var(name) })
             }
             // TODO: confirm this works
             ExprKind::UpvarRef { var_hir_id: id, .. } => {
-                let map = self.ctx.tcx.hir();
+                let map = self.ctx.hir();
                 let name = map.name(id.0);
 
                 Ok(Term { ty, span, kind: TermKind::Var(name) })
@@ -514,11 +514,7 @@ impl<'a, 'b, 'tcx> ThirTerm<'a, 'b, 'tcx> {
                 let els = if let Some(els) = else_opt {
                     self.expr_term(els)?
                 } else {
-                    Term {
-                        span,
-                        ty: self.ctx.tcx.types.unit,
-                        kind: TermKind::Tuple { fields: vec![] },
-                    }
+                    Term { span, ty: self.ctx.types.unit, kind: TermKind::Tuple { fields: vec![] } }
                 };
                 Ok(Term {
                     ty,
@@ -689,14 +685,14 @@ impl<'a, 'b, 'tcx> ThirTerm<'a, 'b, 'tcx> {
                 if let Some(initializer) = initializer {
                     let initializer = self.expr_term(*initializer)?;
                     let span =
-                        init_scope.span(self.ctx.tcx, self.ctx.tcx.region_scope_tree(self.item_id));
+                        init_scope.span(self.ctx.tcx, self.ctx.region_scope_tree(self.item_id));
                     Ok(Term {
                         ty: inner.ty,
                         span,
                         kind: TermKind::Let { pattern, arg: box initializer, body: box inner },
                     })
                 } else {
-                    let span = self.ctx.tcx.hir().span(HirId {
+                    let span = self.ctx.hir().span(HirId {
                         owner: OwnerId { def_id: self.item_id },
                         local_id: init_scope.id,
                     });
@@ -716,7 +712,7 @@ impl<'a, 'b, 'tcx> ThirTerm<'a, 'b, 'tcx> {
                     _ => unreachable!(),
                 };
 
-                let name = self.ctx.tcx.fn_arg_names(closure_id)[0];
+                let name = self.ctx.fn_arg_names(closure_id)[0];
                 let ty = sig.input(0).skip_binder();
 
                 Ok(((name.name, ty), pearlite(self.ctx, closure_id)?))
@@ -816,15 +812,15 @@ pub(crate) fn type_invariant_term<'tcx>(
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
     let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(env_did, ty)?;
-    let inv_fn_ty = EarlyBinder(ctx.tcx.type_of(inv_fn_did)).subst(ctx.tcx, inv_fn_substs);
+    let inv_fn_ty = EarlyBinder(ctx.type_of(inv_fn_did)).subst(ctx.tcx, inv_fn_substs);
     assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if *id == inv_fn_did));
 
-    assert!(name.to_string().len() > 0, "name has len 0, env={env_did:?}, ty={ty:?}");
+    assert!(!name.as_str().is_empty(), "name has len 0, env={env_did:?}, ty={ty:?}");
     let args = vec![Term { ty, span, kind: TermKind::Var(name) }];
 
     let fun = Term { ty: inv_fn_ty, span, kind: TermKind::Item(inv_fn_did, inv_fn_substs) };
     Some(Term {
-        ty: ctx.tcx.fn_sig(inv_fn_did).skip_binder().output(),
+        ty: ctx.fn_sig(inv_fn_did).skip_binder().output(),
         span,
         kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, fun: box fun, args },
     })

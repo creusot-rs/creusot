@@ -410,12 +410,18 @@ pub(crate) fn pre_sig_of<'tcx>(
     }
 
     let mut inputs: Vec<_> = inputs
-        .map(|(i, ty)| {
-            if i.name.as_str() == "result" {
-                ctx.crash_and_error(i.span, "`result` is not allowed as a parameter name")
-            } else {
-                (i.name, i.span, ty)
+        .enumerate()
+        .map(|(idx, (ident, ty))| {
+            if ident.name.as_str() == "result" {
+                ctx.crash_and_error(ident.span, "`result` is not allowed as a parameter name")
             }
+
+            let name = if ident.name.as_str().is_empty() {
+                anonymous_param_symbol(idx)
+            } else {
+                ident.name
+            };
+            (name, ident.span, ty)
         })
         .collect();
     if ctx.type_of(def_id).is_fn() && inputs.is_empty() {
