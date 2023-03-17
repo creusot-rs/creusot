@@ -1,20 +1,4 @@
 
-module C05Map_Common_Iterator_Invariant_Stub
-  type self
-  predicate invariant' [#"../common.rs" 28 4 28 30] (self : self)
-end
-module C05Map_Common_Iterator_Invariant_Interface
-  type self
-  predicate invariant' [#"../common.rs" 28 4 28 30] (self : self)
-end
-module C05Map_Common_Iterator_Invariant
-  type self
-  predicate invariant' [#"../common.rs" 28 4 28 30] (self : self) =
-    [#"../common.rs" 29 8 29 12] true
-  val invariant' [#"../common.rs" 28 4 28 30] (self : self) : bool
-    ensures { result = invariant' self }
-    
-end
 module C05Map_Map_Type
   type t_map 'i 'f =
     | C_Map 'i 'f
@@ -76,6 +60,22 @@ module C05Map_Impl0_Completed
     ensures { result = completed self }
     
 end
+module CreusotContracts_Invariant_Invariant_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant
+  type self
+  predicate invariant' (self : self) =
+    true
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
 module C05Map_Common_Iterator_Item_Type
   type self
   type item
@@ -85,24 +85,34 @@ module C05Map_Common_Iterator_Produces_Stub
   use seq.Seq
   clone C05Map_Common_Iterator_Item_Type as Item0 with
     type self = self
-  predicate produces [#"../common.rs" 8 4 8 65] (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  predicate produces [#"../common.rs" 8 4 8 66] (self : self) (visited : Seq.seq Item0.item) (_o : self)
 end
 module C05Map_Common_Iterator_Produces_Interface
   type self
   use seq.Seq
   clone C05Map_Common_Iterator_Item_Type as Item0 with
     type self = self
-  predicate produces [#"../common.rs" 8 4 8 65] (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  predicate produces [#"../common.rs" 8 4 8 66] (self : self) (visited : Seq.seq Item0.item) (_o : self)
+  axiom produces_spec : forall self : self, visited : Seq.seq Item0.item, _o : self . ([#"../common.rs" 8 16 8 20] Invariant0.invariant' self) -> ([#"../common.rs" 8 48 8 50] Invariant0.invariant' _o) -> true
 end
 module C05Map_Common_Iterator_Produces
   type self
   use seq.Seq
   clone C05Map_Common_Iterator_Item_Type as Item0 with
     type self = self
-  predicate produces [#"../common.rs" 8 4 8 65] (self : self) (visited : Seq.seq Item0.item) (_3' : self)
-  val produces [#"../common.rs" 8 4 8 65] (self : self) (visited : Seq.seq Item0.item) (_3' : self) : bool
-    ensures { result = produces self visited _3' }
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  predicate produces [#"../common.rs" 8 4 8 66] (self : self) (visited : Seq.seq Item0.item) (_o : self)
+  val produces [#"../common.rs" 8 4 8 66] (self : self) (visited : Seq.seq Item0.item) (_o : self) : bool
+    requires {[#"../common.rs" 8 16 8 20] Invariant0.invariant' self}
+    requires {[#"../common.rs" 8 48 8 50] Invariant0.invariant' _o}
+    ensures { result = produces self visited _o }
     
+  axiom produces_spec : forall self : self, visited : Seq.seq Item0.item, _o : self . ([#"../common.rs" 8 16 8 20] Invariant0.invariant' self) -> ([#"../common.rs" 8 48 8 50] Invariant0.invariant' _o) -> true
 end
 module CreusotContracts_Std1_Ops_Impl0_Precondition_Stub
   type args
@@ -127,14 +137,14 @@ module C05Map_Impl1_NextPrecondition_Stub
   type b
   type f
   use C05Map_Map_Type as C05Map_Map_Type
-  predicate next_precondition [#"../05_map.rs" 86 4 86 38] (self : C05Map_Map_Type.t_map i f)
+  predicate next_precondition [#"../05_map.rs" 75 4 75 38] (self : C05Map_Map_Type.t_map i f)
 end
 module C05Map_Impl1_NextPrecondition_Interface
   type i
   type b
   type f
   use C05Map_Map_Type as C05Map_Map_Type
-  predicate next_precondition [#"../05_map.rs" 86 4 86 38] (self : C05Map_Map_Type.t_map i f)
+  predicate next_precondition [#"../05_map.rs" 75 4 75 38] (self : C05Map_Map_Type.t_map i f)
 end
 module C05Map_Impl1_NextPrecondition
   type i
@@ -146,15 +156,17 @@ module C05Map_Impl1_NextPrecondition
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
     type args = Item0.item,
     type f = f
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
     type self = i,
-    type Item0.item = Item0.item
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = i
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
   use C05Map_Map_Type as C05Map_Map_Type
-  predicate next_precondition [#"../05_map.rs" 86 4 86 38] (self : C05Map_Map_Type.t_map i f) =
-    [#"../05_map.rs" 87 8 90 9] forall i : i . forall e : Item0.item . Invariant0.invariant' i -> Produces0.produces (C05Map_Map_Type.map_iter self) (Seq.singleton e) i -> Precondition0.precondition (C05Map_Map_Type.map_func self) (e)
-  val next_precondition [#"../05_map.rs" 86 4 86 38] (self : C05Map_Map_Type.t_map i f) : bool
+  predicate next_precondition [#"../05_map.rs" 75 4 75 38] (self : C05Map_Map_Type.t_map i f) =
+    [#"../05_map.rs" 76 8 79 9] forall i : i . Invariant0.invariant' i -> (forall e : Item0.item . Invariant0.invariant' i -> Produces0.produces (C05Map_Map_Type.map_iter self) (Seq.singleton e) i -> Precondition0.precondition (C05Map_Map_Type.map_func self) (e))
+  val next_precondition [#"../05_map.rs" 75 4 75 38] (self : C05Map_Map_Type.t_map i f) : bool
     ensures { result = next_precondition self }
     
 end
@@ -211,138 +223,91 @@ module CreusotContracts_Std1_Ops_Impl1_PostconditionMut
     ensures { result = postcondition_mut self _2' _3' }
     
 end
-module C05Map_Impl1_Preservation_Stub
-  type i
-  type b
-  type f
-  predicate preservation [#"../05_map.rs" 116 4 116 45] (iter : i) (func : f)
+module CreusotContracts_Invariant_Invariant_IsInhabited_Stub
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  function is_inhabited (_1' : ()) : bool
 end
-module C05Map_Impl1_Preservation_Interface
-  type i
-  type b
-  type f
-  predicate preservation [#"../05_map.rs" 116 4 116 45] (iter : i) (func : f)
+module CreusotContracts_Invariant_Invariant_IsInhabited_Interface
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  function is_inhabited (_1' : ()) : bool
+  axiom is_inhabited_spec : forall _1' : () . is_inhabited _1' && (exists x : self . Invariant0.invariant' x /\ Invariant0.invariant' x)
 end
-module C05Map_Impl1_Preservation
-  type i
-  type b
-  type f
-  use prelude.Borrow
-  use seq.Seq
-  clone C05Map_Common_Iterator_Item_Type as Item0 with
-    type self = i
-  clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut_Stub as PostconditionMut0 with
-    type args = Item0.item,
-    type f = f,
-    type Output0.output = b
-  clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
-    type args = Item0.item,
-    type f = f
-  clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
-    type self = i,
-    type Item0.item = Item0.item
-  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
-    type args = Item0.item,
-    type f = f
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = i
-  predicate preservation [#"../05_map.rs" 116 4 116 45] (iter : i) (func : f) =
-    [#"../05_map.rs" 117 8 125 9] forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Unnest0.unnest func ( * f) -> Produces0.produces iter (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1) -> PostconditionMut0.postcondition_mut f (e1) b -> Precondition0.precondition ( ^ f) (e2)
-  val preservation [#"../05_map.rs" 116 4 116 45] (iter : i) (func : f) : bool
-    ensures { result = preservation iter func }
+module CreusotContracts_Invariant_Invariant_IsInhabited
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  function is_inhabited (_1' : ()) : bool =
+    true
+  val is_inhabited (_1' : ()) : bool
+    ensures { result = is_inhabited _1' }
     
-end
-module C05Map_Impl1_Reinitialize_Stub
-  type i
-  type b
-  type f
-  predicate reinitialize [#"../05_map.rs" 94 4 94 29] (_1' : ())
-end
-module C05Map_Impl1_Reinitialize_Interface
-  type i
-  type b
-  type f
-  predicate reinitialize [#"../05_map.rs" 94 4 94 29] (_1' : ())
-end
-module C05Map_Impl1_Reinitialize
-  type i
-  type b
-  type f
-  use prelude.Borrow
-  clone C05Map_Impl1_Preservation_Stub as Preservation0 with
-    type i = i,
-    type b = b,
-    type f = f
-  use C05Map_Map_Type as C05Map_Map_Type
-  clone C05Map_Impl1_NextPrecondition_Stub as NextPrecondition0 with
-    type i = i,
-    type b = b,
-    type f = f
-  clone C05Map_Impl0_Completed_Stub as Completed0 with
-    type i = i,
-    type b = b,
-    type f = f
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = i
-  predicate reinitialize [#"../05_map.rs" 94 4 94 29] (_1' : ()) =
-    [#"../05_map.rs" 95 8 98 9] forall reset : borrowed (C05Map_Map_Type.t_map i f) . Invariant0.invariant' (C05Map_Map_Type.map_iter ( ^ reset)) -> Completed0.completed reset -> NextPrecondition0.next_precondition ( ^ reset) /\ Preservation0.preservation (C05Map_Map_Type.map_iter ( ^ reset)) (C05Map_Map_Type.map_func ( ^ reset))
-  val reinitialize [#"../05_map.rs" 94 4 94 29] (_1' : ()) : bool
-    ensures { result = reinitialize _1' }
-    
+  axiom is_inhabited_spec : forall _1' : () . is_inhabited _1' && (exists x : self . Invariant0.invariant' x /\ Invariant0.invariant' x)
 end
 module C05Map_Common_Iterator_ProducesRefl_Stub
   type self
   use seq.Seq
   clone C05Map_Common_Iterator_Item_Type as Item0 with
     type self = self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
   clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
     type self = self,
-    type Item0.item = Item0.item
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = self
-  function produces_refl [#"../common.rs" 16 4 16 30] (a : self) : ()
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  function produces_refl [#"../common.rs" 15 4 15 30] (a : self) : ()
 end
 module C05Map_Common_Iterator_ProducesRefl_Interface
   type self
   use seq.Seq
   clone C05Map_Common_Iterator_Item_Type as Item0 with
     type self = self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
   clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
     type self = self,
-    type Item0.item = Item0.item
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = self
-  function produces_refl [#"../common.rs" 16 4 16 30] (a : self) : ()
-  axiom produces_refl_spec : forall a : self . ([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a)
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  function produces_refl [#"../common.rs" 15 4 15 30] (a : self) : ()
+  axiom produces_refl_spec : forall a : self . ([#"../common.rs" 15 21 15 22] Invariant0.invariant' a) -> ([#"../common.rs" 14 14 14 39] Produces0.produces a (Seq.empty ) a)
 end
 module C05Map_Common_Iterator_ProducesRefl
   type self
   use seq.Seq
   clone C05Map_Common_Iterator_Item_Type as Item0 with
     type self = self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
   clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
     type self = self,
-    type Item0.item = Item0.item
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = self
-  function produces_refl [#"../common.rs" 16 4 16 30] (a : self) : ()
-  val produces_refl [#"../common.rs" 16 4 16 30] (a : self) : ()
-    requires {[#"../common.rs" 14 15 14 28] Invariant0.invariant' a}
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  function produces_refl [#"../common.rs" 15 4 15 30] (a : self) : ()
+  val produces_refl [#"../common.rs" 15 4 15 30] (a : self) : ()
+    requires {[#"../common.rs" 15 21 15 22] Invariant0.invariant' a}
     ensures { result = produces_refl a }
     
-  axiom produces_refl_spec : forall a : self . ([#"../common.rs" 14 15 14 28] Invariant0.invariant' a) -> ([#"../common.rs" 15 14 15 39] Produces0.produces a (Seq.empty ) a)
+  axiom produces_refl_spec : forall a : self . ([#"../common.rs" 15 21 15 22] Invariant0.invariant' a) -> ([#"../common.rs" 14 14 14 39] Produces0.produces a (Seq.empty ) a)
 end
 module C05Map_Common_Iterator_ProducesTrans_Stub
   type self
   use seq.Seq
   clone C05Map_Common_Iterator_Item_Type as Item0 with
     type self = self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
   clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
     type self = self,
-    type Item0.item = Item0.item
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = self
-  function produces_trans [#"../common.rs" 25 4 25 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  function produces_trans [#"../common.rs" 21 4 21 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
     
 end
 module C05Map_Common_Iterator_ProducesTrans_Interface
@@ -350,36 +315,40 @@ module C05Map_Common_Iterator_ProducesTrans_Interface
   use seq.Seq
   clone C05Map_Common_Iterator_Item_Type as Item0 with
     type self = self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
   clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
     type self = self,
-    type Item0.item = Item0.item
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = self
-  function produces_trans [#"../common.rs" 25 4 25 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  function produces_trans [#"../common.rs" 21 4 21 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
     
-  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) -> ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) -> ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) -> ([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 18 15 18 32] Produces0.produces a ab b) -> ([#"../common.rs" 19 15 19 32] Produces0.produces b bc c) -> ([#"../common.rs" 21 22 21 23] Invariant0.invariant' a) -> ([#"../common.rs" 21 52 21 53] Invariant0.invariant' b) -> ([#"../common.rs" 21 82 21 83] Invariant0.invariant' c) -> ([#"../common.rs" 20 14 20 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C05Map_Common_Iterator_ProducesTrans
   type self
   use seq.Seq
   clone C05Map_Common_Iterator_Item_Type as Item0 with
     type self = self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
   clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
     type self = self,
-    type Item0.item = Item0.item
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = self
-  function produces_trans [#"../common.rs" 25 4 25 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  function produces_trans [#"../common.rs" 21 4 21 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
     
-  val produces_trans [#"../common.rs" 25 4 25 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
-    requires {[#"../common.rs" 19 15 19 28] Invariant0.invariant' a}
-    requires {[#"../common.rs" 20 15 20 28] Invariant0.invariant' b}
-    requires {[#"../common.rs" 21 15 21 28] Invariant0.invariant' c}
-    requires {[#"../common.rs" 22 15 22 32] Produces0.produces a ab b}
-    requires {[#"../common.rs" 23 15 23 32] Produces0.produces b bc c}
+  val produces_trans [#"../common.rs" 21 4 21 91] (a : self) (ab : Seq.seq Item0.item) (b : self) (bc : Seq.seq Item0.item) (c : self) : ()
+    requires {[#"../common.rs" 18 15 18 32] Produces0.produces a ab b}
+    requires {[#"../common.rs" 19 15 19 32] Produces0.produces b bc c}
+    requires {[#"../common.rs" 21 22 21 23] Invariant0.invariant' a}
+    requires {[#"../common.rs" 21 52 21 53] Invariant0.invariant' b}
+    requires {[#"../common.rs" 21 82 21 83] Invariant0.invariant' c}
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 19 15 19 28] Invariant0.invariant' a) -> ([#"../common.rs" 20 15 20 28] Invariant0.invariant' b) -> ([#"../common.rs" 21 15 21 28] Invariant0.invariant' c) -> ([#"../common.rs" 22 15 22 32] Produces0.produces a ab b) -> ([#"../common.rs" 23 15 23 32] Produces0.produces b bc c) -> ([#"../common.rs" 24 14 24 42] Produces0.produces a (Seq.(++) ab bc) c)
+  axiom produces_trans_spec : forall a : self, ab : Seq.seq Item0.item, b : self, bc : Seq.seq Item0.item, c : self . ([#"../common.rs" 18 15 18 32] Produces0.produces a ab b) -> ([#"../common.rs" 19 15 19 32] Produces0.produces b bc c) -> ([#"../common.rs" 21 22 21 23] Invariant0.invariant' a) -> ([#"../common.rs" 21 52 21 53] Invariant0.invariant' b) -> ([#"../common.rs" 21 82 21 83] Invariant0.invariant' c) -> ([#"../common.rs" 20 14 20 42] Produces0.produces a (Seq.(++) ab bc) c)
 end
 module CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest_Stub
   type args
@@ -602,28 +571,204 @@ module CreusotContracts_Std1_Ops_Impl1_FnMutOnce
     
   axiom fn_mut_once_spec : forall self : f, args : args, res : Output0.output . PostconditionOnce0.postcondition_once self args res = (exists s : borrowed f .  * s = self /\ PostconditionMut0.postcondition_mut s args res /\ Resolve0.resolve ( ^ s))
 end
+module C05Map_Impl1_Preservation_Stub
+  type i
+  type b
+  type f
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
+  predicate preservation [#"../05_map.rs" 105 4 105 45] (iter : i) (func : f)
+end
+module C05Map_Impl1_Preservation_Interface
+  type i
+  type b
+  type f
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
+  predicate preservation [#"../05_map.rs" 105 4 105 45] (iter : i) (func : f)
+  axiom preservation_spec : forall iter : i, func : f . ([#"../05_map.rs" 105 20 105 24] Invariant0.invariant' iter) -> true
+end
+module C05Map_Impl1_Preservation
+  type i
+  type b
+  type f
+  use prelude.Borrow
+  use seq.Seq
+  clone C05Map_Common_Iterator_Item_Type as Item0 with
+    type self = i
+  clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut_Stub as PostconditionMut0 with
+    type args = Item0.item,
+    type f = f,
+    type Output0.output = b
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
+    type args = Item0.item,
+    type f = f
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
+  clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
+    type args = Item0.item,
+    type f = f
+  predicate preservation [#"../05_map.rs" 105 4 105 45] (iter : i) (func : f) =
+    [#"../05_map.rs" 106 8 114 9] forall i : i . Invariant0.invariant' i -> (forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Unnest0.unnest func ( * f) -> Produces0.produces iter (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1) -> PostconditionMut0.postcondition_mut f (e1) b -> Precondition0.precondition ( ^ f) (e2))
+  val preservation [#"../05_map.rs" 105 4 105 45] (iter : i) (func : f) : bool
+    requires {[#"../05_map.rs" 105 20 105 24] Invariant0.invariant' iter}
+    ensures { result = preservation iter func }
+    
+  axiom preservation_spec : forall iter : i, func : f . ([#"../05_map.rs" 105 20 105 24] Invariant0.invariant' iter) -> true
+end
+module C05Map_Impl1_Preservation_Impl
+  type i
+  type b
+  type f
+  use prelude.Borrow
+  use seq.Seq
+  clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
+    type self = f
+  clone C05Map_Common_Iterator_Item_Type as Item0 with
+    type self = i
+  clone CreusotContracts_Std1_Ops_Impl0_PostconditionOnce as PostconditionOnce0 with
+    type args = Item0.item,
+    type f = f,
+    type Output0.output = b
+  clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut as PostconditionMut0 with
+    type args = Item0.item,
+    type f = f,
+    type Output0.output = b
+  clone CreusotContracts_Std1_Ops_Impl1_FnMutOnce as FnMutOnce0 with
+    type args = Item0.item,
+    type f = f,
+    predicate PostconditionOnce0.postcondition_once = PostconditionOnce0.postcondition_once,
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Resolve0.resolve = Resolve0.resolve,
+    type Output0.output = b,
+    axiom .
+  clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
+    type args = Item0.item,
+    type f = f
+  clone CreusotContracts_Std1_Ops_Impl1_UnnestTrans as UnnestTrans0 with
+    type args = Item0.item,
+    type f = f,
+    predicate Unnest0.unnest = Unnest0.unnest,
+    axiom .
+  clone CreusotContracts_Std1_Ops_Impl1_UnnestRefl as UnnestRefl0 with
+    type args = Item0.item,
+    type f = f,
+    predicate Unnest0.unnest = Unnest0.unnest,
+    axiom .
+  clone CreusotContracts_Std1_Ops_Impl1_PostconditionMutUnnest as PostconditionMutUnnest0 with
+    type args = Item0.item,
+    type f = f,
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Unnest0.unnest = Unnest0.unnest,
+    type Output0.output = b,
+    axiom .
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
+    type self = i
+  clone C05Map_Common_Iterator_Produces_Interface as Produces0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  clone C05Map_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
+    type self = i,
+    predicate Produces0.produces = Produces0.produces,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  clone C05Map_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Produces0.produces = Produces0.produces,
+    type Item0.item = Item0.item,
+    axiom .
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
+    type args = Item0.item,
+    type f = f
+  let rec ghost predicate preservation [#"../05_map.rs" 105 4 105 45] (iter : i) (func : f)
+    requires {[#"../05_map.rs" 105 20 105 24] Invariant0.invariant' iter}
+    
+   = [@vc:do_not_keep_trace] [@vc:sp]
+    [#"../05_map.rs" 106 8 114 9] pure {forall i : i . Invariant0.invariant' i -> (forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Unnest0.unnest func ( * f) -> Produces0.produces iter (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1) -> PostconditionMut0.postcondition_mut f (e1) b -> Precondition0.precondition ( ^ f) (e2))}
+end
+module C05Map_Impl1_Reinitialize_Stub
+  type i
+  type b
+  type f
+  predicate reinitialize [#"../05_map.rs" 83 4 83 29] (_1' : ())
+end
+module C05Map_Impl1_Reinitialize_Interface
+  type i
+  type b
+  type f
+  predicate reinitialize [#"../05_map.rs" 83 4 83 29] (_1' : ())
+end
+module C05Map_Impl1_Reinitialize
+  type i
+  type b
+  type f
+  use prelude.Borrow
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
+  clone C05Map_Impl1_Preservation_Stub as Preservation0 with
+    type i = i,
+    type b = b,
+    type f = f,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  use C05Map_Map_Type as C05Map_Map_Type
+  clone C05Map_Impl1_NextPrecondition_Stub as NextPrecondition0 with
+    type i = i,
+    type b = b,
+    type f = f
+  clone C05Map_Impl0_Completed_Stub as Completed0 with
+    type i = i,
+    type b = b,
+    type f = f
+  predicate reinitialize [#"../05_map.rs" 83 4 83 29] (_1' : ()) =
+    [#"../05_map.rs" 84 8 87 9] forall reset : borrowed (C05Map_Map_Type.t_map i f) . Invariant0.invariant' (C05Map_Map_Type.map_iter ( ^ reset)) -> Completed0.completed reset -> NextPrecondition0.next_precondition ( ^ reset) /\ Preservation0.preservation (C05Map_Map_Type.map_iter ( ^ reset)) (C05Map_Map_Type.map_func ( ^ reset))
+  val reinitialize [#"../05_map.rs" 83 4 83 29] (_1' : ()) : bool
+    ensures { result = reinitialize _1' }
+    
+end
 module C05Map_Impl1_PreservationInv_Stub
   type i
   type b
   type f
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   clone C05Map_Impl1_Preservation_Stub as Preservation0 with
     type i = i,
     type b = b,
-    type f = f
+    type f = f,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   use C05Map_Map_Type as C05Map_Map_Type
-  predicate preservation_inv [#"../05_map.rs" 103 4 103 37] (self : C05Map_Map_Type.t_map i f)
+  predicate preservation_inv [#"../05_map.rs" 92 4 92 37] (self : C05Map_Map_Type.t_map i f)
 end
 module C05Map_Impl1_PreservationInv_Interface
   type i
   type b
   type f
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   clone C05Map_Impl1_Preservation_Stub as Preservation0 with
     type i = i,
     type b = b,
-    type f = f
+    type f = f,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   use C05Map_Map_Type as C05Map_Map_Type
-  predicate preservation_inv [#"../05_map.rs" 103 4 103 37] (self : C05Map_Map_Type.t_map i f)
-  axiom preservation_inv_spec : forall self : C05Map_Map_Type.t_map i f . [#"../05_map.rs" 102 14 102 64] preservation_inv self = Preservation0.preservation (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+  predicate preservation_inv [#"../05_map.rs" 92 4 92 37] (self : C05Map_Map_Type.t_map i f)
+  axiom preservation_inv_spec : forall self : C05Map_Map_Type.t_map i f . [#"../05_map.rs" 91 14 91 64] preservation_inv self = Preservation0.preservation (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
 end
 module C05Map_Impl1_PreservationInv
   type i
@@ -640,25 +785,29 @@ module C05Map_Impl1_PreservationInv
   clone CreusotContracts_Std1_Ops_Impl0_Precondition_Stub as Precondition0 with
     type args = Item0.item,
     type f = f
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
     type self = i,
-    type Item0.item = Item0.item
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
     type args = Item0.item,
     type f = f
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = i
   clone C05Map_Impl1_Preservation_Stub as Preservation0 with
     type i = i,
     type b = b,
-    type f = f
+    type f = f,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   use C05Map_Map_Type as C05Map_Map_Type
-  predicate preservation_inv [#"../05_map.rs" 103 4 103 37] (self : C05Map_Map_Type.t_map i f) =
-    [#"../05_map.rs" 104 8 112 9] forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Unnest0.unnest (C05Map_Map_Type.map_func self) ( * f) -> Produces0.produces (C05Map_Map_Type.map_iter self) (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1) -> PostconditionMut0.postcondition_mut f (e1) b -> Precondition0.precondition ( ^ f) (e2)
-  val preservation_inv [#"../05_map.rs" 103 4 103 37] (self : C05Map_Map_Type.t_map i f) : bool
+  predicate preservation_inv [#"../05_map.rs" 92 4 92 37] (self : C05Map_Map_Type.t_map i f) =
+    [#"../05_map.rs" 93 8 101 9] forall i : i . Invariant0.invariant' i -> (forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Unnest0.unnest (C05Map_Map_Type.map_func self) ( * f) -> Produces0.produces (C05Map_Map_Type.map_iter self) (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1) -> PostconditionMut0.postcondition_mut f (e1) b -> Precondition0.precondition ( ^ f) (e2))
+  val preservation_inv [#"../05_map.rs" 92 4 92 37] (self : C05Map_Map_Type.t_map i f) : bool
     ensures { result = preservation_inv self }
     
-  axiom preservation_inv_spec : forall self : C05Map_Map_Type.t_map i f . [#"../05_map.rs" 102 14 102 64] preservation_inv self = Preservation0.preservation (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
+  axiom preservation_inv_spec : forall self : C05Map_Map_Type.t_map i f . [#"../05_map.rs" 91 14 91 64] preservation_inv self = Preservation0.preservation (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self)
 end
 module C05Map_Impl1_PreservationInv_Impl
   type i
@@ -706,15 +855,17 @@ module C05Map_Impl1_PreservationInv_Impl
     predicate Unnest0.unnest = Unnest0.unnest,
     type Output0.output = b,
     axiom .
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
+    type self = i
   clone C05Map_Common_Iterator_Produces_Interface as Produces0 with
     type self = i,
-    type Item0.item = Item0.item
-  clone C05Map_Common_Iterator_Invariant_Interface as Invariant0 with
-    type self = i
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
   clone C05Map_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
     type self = i,
-    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     type Item0.item = Item0.item,
     axiom .
   clone C05Map_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
@@ -723,6 +874,10 @@ module C05Map_Impl1_PreservationInv_Impl
     predicate Produces0.produces = Produces0.produces,
     type Item0.item = Item0.item,
     axiom .
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
     type args = Item0.item,
     type f = f
@@ -730,61 +885,65 @@ module C05Map_Impl1_PreservationInv_Impl
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces0.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    axiom .
   use C05Map_Map_Type as C05Map_Map_Type
-  let rec ghost predicate preservation_inv [#"../05_map.rs" 103 4 103 37] (self : C05Map_Map_Type.t_map i f)
-    ensures { [#"../05_map.rs" 102 14 102 64] result = Preservation0.preservation (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self) }
+  let rec ghost predicate preservation_inv [#"../05_map.rs" 92 4 92 37] (self : C05Map_Map_Type.t_map i f)
+    ensures { [#"../05_map.rs" 91 14 91 64] result = Preservation0.preservation (C05Map_Map_Type.map_iter self) (C05Map_Map_Type.map_func self) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../05_map.rs" 104 8 112 9] pure {forall i : i . forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Unnest0.unnest (C05Map_Map_Type.map_func self) ( * f) -> Produces0.produces (C05Map_Map_Type.map_iter self) (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1) -> PostconditionMut0.postcondition_mut f (e1) b -> Precondition0.precondition ( ^ f) (e2)}
+    [#"../05_map.rs" 93 8 101 9] pure {forall i : i . Invariant0.invariant' i -> (forall b : b . forall f : borrowed f . forall e2 : Item0.item . forall e1 : Item0.item . forall s : Seq.seq Item0.item . Invariant0.invariant' i -> Unnest0.unnest (C05Map_Map_Type.map_func self) ( * f) -> Produces0.produces (C05Map_Map_Type.map_iter self) (Seq.snoc (Seq.snoc s e1) e2) i -> Precondition0.precondition ( * f) (e1) -> PostconditionMut0.postcondition_mut f (e1) b -> Precondition0.precondition ( ^ f) (e2))}
 end
-module C05Map_Impl0_Invariant_Stub
+module C05Map_Impl2_Invariant_Stub
   type i
   type b
   type f
   use C05Map_Map_Type as C05Map_Map_Type
-  predicate invariant' [#"../05_map.rs" 57 4 57 30] (self : C05Map_Map_Type.t_map i f)
+  predicate invariant' [#"../05_map.rs" 140 4 140 30] (self : C05Map_Map_Type.t_map i f)
 end
-module C05Map_Impl0_Invariant_Interface
+module C05Map_Impl2_Invariant_Interface
   type i
   type b
   type f
   use C05Map_Map_Type as C05Map_Map_Type
-  predicate invariant' [#"../05_map.rs" 57 4 57 30] (self : C05Map_Map_Type.t_map i f)
+  predicate invariant' [#"../05_map.rs" 140 4 140 30] (self : C05Map_Map_Type.t_map i f)
 end
-module C05Map_Impl0_Invariant
+module C05Map_Impl2_Invariant
   type i
   type b
   type f
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   clone C05Map_Impl1_Preservation_Stub as Preservation0 with
     type i = i,
     type b = b,
-    type f = f
+    type f = f,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   use C05Map_Map_Type as C05Map_Map_Type
   clone C05Map_Impl1_NextPrecondition_Stub as NextPrecondition0 with
     type i = i,
     type b = b,
     type f = f
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = i
   clone C05Map_Impl1_PreservationInv_Stub as PreservationInv0 with
     type i = i,
     type b = b,
     type f = f,
     predicate Preservation0.preservation = Preservation0.preservation,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     axiom .
   clone C05Map_Impl1_Reinitialize_Stub as Reinitialize0 with
     type i = i,
     type b = b,
     type f = f
-  predicate invariant' [#"../05_map.rs" 57 4 57 30] (self : C05Map_Map_Type.t_map i f) =
-    [#"../05_map.rs" 58 8 63 9] Reinitialize0.reinitialize () /\ PreservationInv0.preservation_inv self /\ Invariant0.invariant' (C05Map_Map_Type.map_iter self) /\ NextPrecondition0.next_precondition self
-  val invariant' [#"../05_map.rs" 57 4 57 30] (self : C05Map_Map_Type.t_map i f) : bool
+  predicate invariant' [#"../05_map.rs" 140 4 140 30] (self : C05Map_Map_Type.t_map i f) =
+    [#"../05_map.rs" 141 8 146 9] Reinitialize0.reinitialize () /\ PreservationInv0.preservation_inv self /\ Invariant0.invariant' (C05Map_Map_Type.map_iter self) /\ NextPrecondition0.next_precondition self
+  val invariant' [#"../05_map.rs" 140 4 140 30] (self : C05Map_Map_Type.t_map i f) : bool
     ensures { result = invariant' self }
     
 end
@@ -813,6 +972,8 @@ module C05Map_Impl0_Produces
   use seq.Seq
   use prelude.Borrow
   use prelude.Int
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   clone C05Map_Common_Iterator_Item_Type as Item0 with
     type self = i
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut_Stub as PostconditionMut0 with
@@ -824,7 +985,9 @@ module C05Map_Impl0_Produces
     type f = f
   clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
     type self = i,
-    type Item0.item = Item0.item
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
   clone CreusotContracts_Std1_Ops_Impl1_Unnest_Stub as Unnest0 with
     type args = Item0.item,
     type f = f
@@ -851,7 +1014,7 @@ module C05Map_Impl0_ProducesRefl_Stub
     type i = i,
     type b = b,
     type f = f
-  clone C05Map_Impl0_Invariant_Stub as Invariant0 with
+  clone C05Map_Impl2_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f
@@ -867,7 +1030,7 @@ module C05Map_Impl0_ProducesRefl_Interface
     type i = i,
     type b = b,
     type f = f
-  clone C05Map_Impl0_Invariant_Stub as Invariant0 with
+  clone C05Map_Impl2_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f
@@ -884,7 +1047,7 @@ module C05Map_Impl0_ProducesRefl
     type i = i,
     type b = b,
     type f = f
-  clone C05Map_Impl0_Invariant_Stub as Invariant0 with
+  clone C05Map_Impl2_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f
@@ -911,6 +1074,25 @@ module C05Map_Impl0_ProducesRefl_Impl
     type Output0.output = b
   clone C05Map_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
+    type self = i
+  clone C05Map_Common_Iterator_Produces_Interface as Produces1 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  clone C05Map_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
+    type self = i,
+    predicate Produces0.produces = Produces1.produces,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  clone C05Map_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item,
+    axiom .
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut as PostconditionMut0 with
     type args = Item0.item,
     type f = f,
@@ -943,22 +1125,9 @@ module C05Map_Impl0_ProducesRefl_Impl
     predicate Unnest0.unnest = Unnest0.unnest,
     type Output0.output = b,
     axiom .
-  clone C05Map_Common_Iterator_Produces_Interface as Produces1 with
-    type self = i,
-    type Item0.item = Item0.item
-  clone C05Map_Common_Iterator_Invariant_Interface as Invariant1 with
-    type self = i
-  clone C05Map_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
     type self = i,
     predicate Invariant0.invariant' = Invariant1.invariant',
-    predicate Produces0.produces = Produces1.produces,
-    type Item0.item = Item0.item,
-    axiom .
-  clone C05Map_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
-    type self = i,
-    predicate Invariant0.invariant' = Invariant1.invariant',
-    predicate Produces0.produces = Produces1.produces,
-    type Item0.item = Item0.item,
     axiom .
   use C05Map_Map_Type as C05Map_Map_Type
   clone C05Map_Impl0_Completed as Completed0 with
@@ -973,18 +1142,19 @@ module C05Map_Impl0_ProducesRefl_Impl
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    axiom .
   clone C05Map_Impl1_NextPrecondition as NextPrecondition0 with
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition
   clone C05Map_Impl1_PreservationInv as PreservationInv0 with
@@ -992,8 +1162,8 @@ module C05Map_Impl0_ProducesRefl_Impl
     type b = b,
     type f = f,
     predicate Preservation0.preservation = Preservation0.preservation,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
@@ -1015,8 +1185,9 @@ module C05Map_Impl0_ProducesRefl_Impl
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
-  clone C05Map_Impl0_Invariant as Invariant0 with
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Invariant0.invariant' = Invariant1.invariant'
+  clone C05Map_Impl2_Invariant as Invariant0 with
     type i = i,
     type b = b,
     type f = f,
@@ -1042,7 +1213,7 @@ module C05Map_Impl0_ProducesTrans_Stub
     type i = i,
     type b = b,
     type f = f
-  clone C05Map_Impl0_Invariant_Stub as Invariant0 with
+  clone C05Map_Impl2_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f
@@ -1059,7 +1230,7 @@ module C05Map_Impl0_ProducesTrans_Interface
     type i = i,
     type b = b,
     type f = f
-  clone C05Map_Impl0_Invariant_Stub as Invariant0 with
+  clone C05Map_Impl2_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f
@@ -1077,7 +1248,7 @@ module C05Map_Impl0_ProducesTrans
     type i = i,
     type b = b,
     type f = f
-  clone C05Map_Impl0_Invariant_Stub as Invariant0 with
+  clone C05Map_Impl2_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f
@@ -1110,6 +1281,25 @@ module C05Map_Impl0_ProducesTrans_Impl
     type Output0.output = b
   clone C05Map_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
+    type self = i
+  clone C05Map_Common_Iterator_Produces_Interface as Produces1 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  clone C05Map_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
+    type self = i,
+    predicate Produces0.produces = Produces1.produces,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  clone C05Map_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Produces0.produces = Produces1.produces,
+    type Item0.item = Item0.item,
+    axiom .
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut as PostconditionMut0 with
     type args = Item0.item,
     type f = f,
@@ -1142,22 +1332,9 @@ module C05Map_Impl0_ProducesTrans_Impl
     predicate Unnest0.unnest = Unnest0.unnest,
     type Output0.output = b,
     axiom .
-  clone C05Map_Common_Iterator_Produces_Interface as Produces1 with
-    type self = i,
-    type Item0.item = Item0.item
-  clone C05Map_Common_Iterator_Invariant_Interface as Invariant1 with
-    type self = i
-  clone C05Map_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
     type self = i,
     predicate Invariant0.invariant' = Invariant1.invariant',
-    predicate Produces0.produces = Produces1.produces,
-    type Item0.item = Item0.item,
-    axiom .
-  clone C05Map_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
-    type self = i,
-    predicate Invariant0.invariant' = Invariant1.invariant',
-    predicate Produces0.produces = Produces1.produces,
-    type Item0.item = Item0.item,
     axiom .
   use C05Map_Map_Type as C05Map_Map_Type
   clone C05Map_Impl0_Completed as Completed0 with
@@ -1172,18 +1349,19 @@ module C05Map_Impl0_ProducesTrans_Impl
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    axiom .
   clone C05Map_Impl1_NextPrecondition as NextPrecondition0 with
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition
   clone C05Map_Impl1_PreservationInv as PreservationInv0 with
@@ -1191,8 +1369,8 @@ module C05Map_Impl0_ProducesTrans_Impl
     type b = b,
     type f = f,
     predicate Preservation0.preservation = Preservation0.preservation,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
@@ -1214,8 +1392,9 @@ module C05Map_Impl0_ProducesTrans_Impl
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
-  clone C05Map_Impl0_Invariant as Invariant0 with
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Invariant0.invariant' = Invariant1.invariant'
+  clone C05Map_Impl2_Invariant as Invariant0 with
     type i = i,
     type b = b,
     type f = f,
@@ -1256,7 +1435,7 @@ module C05Map_Impl1_ProducesOne_Stub
     type i = i,
     type b = b,
     type f = f
-  predicate produces_one [#"../05_map.rs" 137 4 137 57] (self : C05Map_Map_Type.t_map i f) (visited : b) (succ : C05Map_Map_Type.t_map i f)
+  predicate produces_one [#"../05_map.rs" 126 4 126 57] (self : C05Map_Map_Type.t_map i f) (visited : b) (succ : C05Map_Map_Type.t_map i f)
     
 end
 module C05Map_Impl1_ProducesOne_Interface
@@ -1269,9 +1448,9 @@ module C05Map_Impl1_ProducesOne_Interface
     type i = i,
     type b = b,
     type f = f
-  predicate produces_one [#"../05_map.rs" 137 4 137 57] (self : C05Map_Map_Type.t_map i f) (visited : b) (succ : C05Map_Map_Type.t_map i f)
+  predicate produces_one [#"../05_map.rs" 126 4 126 57] (self : C05Map_Map_Type.t_map i f) (visited : b) (succ : C05Map_Map_Type.t_map i f)
     
-  axiom produces_one_spec : forall self : C05Map_Map_Type.t_map i f, visited : b, succ : C05Map_Map_Type.t_map i f . [#"../05_map.rs" 136 14 136 68] produces_one self visited succ = Produces0.produces self (Seq.singleton visited) succ
+  axiom produces_one_spec : forall self : C05Map_Map_Type.t_map i f, visited : b, succ : C05Map_Map_Type.t_map i f . [#"../05_map.rs" 125 14 125 68] produces_one self visited succ = Produces0.produces self (Seq.singleton visited) succ
 end
 module C05Map_Impl1_ProducesOne
   type i
@@ -1279,6 +1458,8 @@ module C05Map_Impl1_ProducesOne
   type f
   use seq.Seq
   use prelude.Borrow
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   clone C05Map_Common_Iterator_Item_Type as Item0 with
     type self = i
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut_Stub as PostconditionMut0 with
@@ -1290,20 +1471,22 @@ module C05Map_Impl1_ProducesOne
     type f = f
   clone C05Map_Common_Iterator_Produces_Stub as Produces1 with
     type self = i,
-    type Item0.item = Item0.item
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
   use C05Map_Map_Type as C05Map_Map_Type
   clone C05Map_Impl0_Produces_Stub as Produces0 with
     type i = i,
     type b = b,
     type f = f
-  predicate produces_one [#"../05_map.rs" 137 4 137 57] (self : C05Map_Map_Type.t_map i f) (visited : b) (succ : C05Map_Map_Type.t_map i f)
+  predicate produces_one [#"../05_map.rs" 126 4 126 57] (self : C05Map_Map_Type.t_map i f) (visited : b) (succ : C05Map_Map_Type.t_map i f)
     
    =
-    [#"../05_map.rs" 138 8 143 9] exists f : borrowed f .  * f = C05Map_Map_Type.map_func self /\  ^ f = C05Map_Map_Type.map_func succ /\ (exists e : Item0.item . Produces1.produces (C05Map_Map_Type.map_iter self) (Seq.singleton e) (C05Map_Map_Type.map_iter succ) /\ Precondition0.precondition ( * f) (e) /\ PostconditionMut0.postcondition_mut f (e) visited)
-  val produces_one [#"../05_map.rs" 137 4 137 57] (self : C05Map_Map_Type.t_map i f) (visited : b) (succ : C05Map_Map_Type.t_map i f) : bool
+    [#"../05_map.rs" 127 8 132 9] exists f : borrowed f .  * f = C05Map_Map_Type.map_func self /\  ^ f = C05Map_Map_Type.map_func succ /\ (exists e : Item0.item . Produces1.produces (C05Map_Map_Type.map_iter self) (Seq.singleton e) (C05Map_Map_Type.map_iter succ) /\ Precondition0.precondition ( * f) (e) /\ PostconditionMut0.postcondition_mut f (e) visited)
+  val produces_one [#"../05_map.rs" 126 4 126 57] (self : C05Map_Map_Type.t_map i f) (visited : b) (succ : C05Map_Map_Type.t_map i f) : bool
     ensures { result = produces_one self visited succ }
     
-  axiom produces_one_spec : forall self : C05Map_Map_Type.t_map i f, visited : b, succ : C05Map_Map_Type.t_map i f . [#"../05_map.rs" 136 14 136 68] produces_one self visited succ = Produces0.produces self (Seq.singleton visited) succ
+  axiom produces_one_spec : forall self : C05Map_Map_Type.t_map i f, visited : b, succ : C05Map_Map_Type.t_map i f . [#"../05_map.rs" 125 14 125 68] produces_one self visited succ = Produces0.produces self (Seq.singleton visited) succ
 end
 module C05Map_Impl1_ProducesOne_Impl
   type i
@@ -1328,30 +1511,33 @@ module C05Map_Impl1_ProducesOne_Impl
   clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
     type args = Item0.item,
     type f = f
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
+    type self = i
   clone C05Map_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
-    type Item0.item = Item0.item
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
   clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
     type args = Item0.item,
     type f = f
-  clone C05Map_Common_Iterator_Invariant_Interface as Invariant1 with
-    type self = i
   clone C05Map_Impl1_Preservation as Preservation0 with
     type i = i,
     type b = b,
     type f = f,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     type Item0.item = Item0.item,
-    predicate Invariant0.invariant' = Invariant1.invariant',
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    axiom .
   clone C05Map_Impl1_NextPrecondition as NextPrecondition0 with
     type i = i,
     type b = b,
     type f = f,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     type Item0.item = Item0.item,
-    predicate Invariant0.invariant' = Invariant1.invariant',
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition
   clone C05Map_Impl1_PreservationInv as PreservationInv0 with
@@ -1359,8 +1545,8 @@ module C05Map_Impl1_ProducesOne_Impl
     type b = b,
     type f = f,
     predicate Preservation0.preservation = Preservation0.preservation,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     type Item0.item = Item0.item,
-    predicate Invariant0.invariant' = Invariant1.invariant',
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
@@ -1370,7 +1556,7 @@ module C05Map_Impl1_ProducesOne_Impl
     type i = i,
     type b = b,
     type f = f,
-    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Completed0.completed = Completed0.completed,
     predicate NextPrecondition0.next_precondition = NextPrecondition0.next_precondition,
     predicate Preservation0.preservation = Preservation0.preservation
@@ -1380,13 +1566,17 @@ module C05Map_Impl1_ProducesOne_Impl
     type args = Item0.item,
     type f = f,
     type Output0.output = b
-  clone C05Map_Impl0_Invariant as Invariant0 with
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
+  clone C05Map_Impl2_Invariant as Invariant1 with
     type i = i,
     type b = b,
     type f = f,
     predicate Reinitialize0.reinitialize = Reinitialize0.reinitialize,
     predicate PreservationInv0.preservation_inv = PreservationInv0.preservation_inv,
-    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate NextPrecondition0.next_precondition = NextPrecondition0.next_precondition,
     predicate Preservation0.preservation = Preservation0.preservation
   clone CreusotContracts_Std1_Ops_Impl1_FnMutOnce as FnMutOnce0 with
@@ -1416,13 +1606,13 @@ module C05Map_Impl1_ProducesOne_Impl
     axiom .
   clone C05Map_Common_Iterator_ProducesTrans_Interface as ProducesTrans1 with
     type self = i,
-    predicate Invariant0.invariant' = Invariant1.invariant',
     predicate Produces0.produces = Produces1.produces,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     type Item0.item = Item0.item,
     axiom .
   clone C05Map_Common_Iterator_ProducesRefl_Interface as ProducesRefl1 with
     type self = i,
-    predicate Invariant0.invariant' = Invariant1.invariant',
+    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
     axiom .
@@ -1434,26 +1624,27 @@ module C05Map_Impl1_ProducesOne_Impl
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Invariant0.invariant' = Invariant0.invariant'
   clone C05Map_Impl0_ProducesTrans as ProducesTrans0 with
     type i = i,
     type b = b,
     type f = f,
-    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Invariant0.invariant' = Invariant1.invariant',
     predicate Produces0.produces = Produces0.produces,
     axiom .
   clone C05Map_Impl0_ProducesRefl as ProducesRefl0 with
     type i = i,
     type b = b,
     type f = f,
-    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate Invariant0.invariant' = Invariant1.invariant',
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  let rec ghost predicate produces_one [#"../05_map.rs" 137 4 137 57] (self : C05Map_Map_Type.t_map i f) (visited : b) (succ : C05Map_Map_Type.t_map i f)
-    ensures { [#"../05_map.rs" 136 14 136 68] result = Produces0.produces self (Seq.singleton visited) succ }
+  let rec ghost predicate produces_one [#"../05_map.rs" 126 4 126 57] (self : C05Map_Map_Type.t_map i f) (visited : b) (succ : C05Map_Map_Type.t_map i f)
+    ensures { [#"../05_map.rs" 125 14 125 68] result = Produces0.produces self (Seq.singleton visited) succ }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../05_map.rs" 138 8 143 9] pure {exists f : borrowed f .  * f = C05Map_Map_Type.map_func self /\  ^ f = C05Map_Map_Type.map_func succ /\ (exists e : Item0.item . Produces1.produces (C05Map_Map_Type.map_iter self) (Seq.singleton e) (C05Map_Map_Type.map_iter succ) /\ Precondition0.precondition ( * f) (e) /\ PostconditionMut0.postcondition_mut f (e) visited)}
+    [#"../05_map.rs" 127 8 132 9] pure {exists f : borrowed f .  * f = C05Map_Map_Type.map_func self /\  ^ f = C05Map_Map_Type.map_func succ /\ (exists e : Item0.item . Produces1.produces (C05Map_Map_Type.map_iter self) (Seq.singleton e) (C05Map_Map_Type.map_iter succ) /\ Precondition0.precondition ( * f) (e) /\ PostconditionMut0.postcondition_mut f (e) visited)}
 end
 module C05Map_Common_Iterator_Next_Interface
   type self
@@ -1461,18 +1652,20 @@ module C05Map_Common_Iterator_Next_Interface
   use seq.Seq
   clone C05Map_Common_Iterator_Item_Type as Item0 with
     type self = self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
   clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
     type self = self,
-    type Item0.item = Item0.item
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
   clone C05Map_Common_Iterator_Completed_Stub as Completed0 with
     type self = self
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = self
-  val next [#"../common.rs" 37 4 37 45] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
-    requires {[#"../common.rs" 32 4 32 40] Invariant0.invariant' ( * self)}
-    ensures { [#"../common.rs" 32 4 32 40] Invariant0.invariant' ( ^ self) }
-    ensures { [#"../common.rs" 33 14 36 5] match (result) with
+  val next [#"../common.rs" 28 4 28 45] (self : borrowed self) : Core_Option_Option_Type.t_option Item0.item
+    requires {[#"../common.rs" 23 4 23 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../common.rs" 23 4 23 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../common.rs" 24 14 27 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
       end }
@@ -1555,7 +1748,7 @@ module C05Map_Impl1_ProducesOneInvariant_Stub
     type i = i,
     type b = b,
     type f = f
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant1 with
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant1 with
     type self = i
   clone C05Map_Impl1_ProducesOne_Stub as ProducesOne0 with
     type i = i,
@@ -1563,11 +1756,11 @@ module C05Map_Impl1_ProducesOneInvariant_Stub
     type f = f,
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  clone C05Map_Impl0_Invariant_Stub as Invariant0 with
+  clone C05Map_Impl2_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f
-  function produces_one_invariant [#"../05_map.rs" 133 4 133 54] (self : C05Map_Map_Type.t_map i f) (e : b) (other : C05Map_Map_Type.t_map i f) : ()
+  function produces_one_invariant [#"../05_map.rs" 122 4 122 54] (self : C05Map_Map_Type.t_map i f) (e : b) (other : C05Map_Map_Type.t_map i f) : ()
     
 end
 module C05Map_Impl1_ProducesOneInvariant_Interface
@@ -1579,7 +1772,7 @@ module C05Map_Impl1_ProducesOneInvariant_Interface
     type i = i,
     type b = b,
     type f = f
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant1 with
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant1 with
     type self = i
   clone C05Map_Impl1_ProducesOne_Stub as ProducesOne0 with
     type i = i,
@@ -1587,13 +1780,13 @@ module C05Map_Impl1_ProducesOneInvariant_Interface
     type f = f,
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  clone C05Map_Impl0_Invariant_Stub as Invariant0 with
+  clone C05Map_Impl2_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f
-  function produces_one_invariant [#"../05_map.rs" 133 4 133 54] (self : C05Map_Map_Type.t_map i f) (e : b) (other : C05Map_Map_Type.t_map i f) : ()
+  function produces_one_invariant [#"../05_map.rs" 122 4 122 54] (self : C05Map_Map_Type.t_map i f) (e : b) (other : C05Map_Map_Type.t_map i f) : ()
     
-  axiom produces_one_invariant_spec : forall self : C05Map_Map_Type.t_map i f, e : b, other : C05Map_Map_Type.t_map i f . ([#"../05_map.rs" 129 15 129 31] Invariant0.invariant' self) -> ([#"../05_map.rs" 130 15 130 42] ProducesOne0.produces_one self e other) -> ([#"../05_map.rs" 131 4 131 39] Invariant1.invariant' (C05Map_Map_Type.map_iter other)) -> ([#"../05_map.rs" 132 14 132 31] Invariant0.invariant' other)
+  axiom produces_one_invariant_spec : forall self : C05Map_Map_Type.t_map i f, e : b, other : C05Map_Map_Type.t_map i f . ([#"../05_map.rs" 118 15 118 31] Invariant0.invariant' self) -> ([#"../05_map.rs" 119 15 119 42] ProducesOne0.produces_one self e other) -> ([#"../05_map.rs" 120 4 120 39] Invariant1.invariant' (C05Map_Map_Type.map_iter other)) -> ([#"../05_map.rs" 121 14 121 31] Invariant0.invariant' other)
 end
 module C05Map_Impl1_ProducesOneInvariant
   type i
@@ -1604,7 +1797,7 @@ module C05Map_Impl1_ProducesOneInvariant
     type i = i,
     type b = b,
     type f = f
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant1 with
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant1 with
     type self = i
   clone C05Map_Impl1_ProducesOne_Stub as ProducesOne0 with
     type i = i,
@@ -1612,21 +1805,21 @@ module C05Map_Impl1_ProducesOneInvariant
     type f = f,
     predicate Produces0.produces = Produces0.produces,
     axiom .
-  clone C05Map_Impl0_Invariant_Stub as Invariant0 with
+  clone C05Map_Impl2_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f
-  function produces_one_invariant [#"../05_map.rs" 133 4 133 54] (self : C05Map_Map_Type.t_map i f) (e : b) (other : C05Map_Map_Type.t_map i f) : ()
+  function produces_one_invariant [#"../05_map.rs" 122 4 122 54] (self : C05Map_Map_Type.t_map i f) (e : b) (other : C05Map_Map_Type.t_map i f) : ()
     
    =
-    [#"../05_map.rs" 128 4 128 12] ()
-  val produces_one_invariant [#"../05_map.rs" 133 4 133 54] (self : C05Map_Map_Type.t_map i f) (e : b) (other : C05Map_Map_Type.t_map i f) : ()
-    requires {[#"../05_map.rs" 129 15 129 31] Invariant0.invariant' self}
-    requires {[#"../05_map.rs" 130 15 130 42] ProducesOne0.produces_one self e other}
-    requires {[#"../05_map.rs" 131 4 131 39] Invariant1.invariant' (C05Map_Map_Type.map_iter other)}
+    [#"../05_map.rs" 117 4 117 12] ()
+  val produces_one_invariant [#"../05_map.rs" 122 4 122 54] (self : C05Map_Map_Type.t_map i f) (e : b) (other : C05Map_Map_Type.t_map i f) : ()
+    requires {[#"../05_map.rs" 118 15 118 31] Invariant0.invariant' self}
+    requires {[#"../05_map.rs" 119 15 119 42] ProducesOne0.produces_one self e other}
+    requires {[#"../05_map.rs" 120 4 120 39] Invariant1.invariant' (C05Map_Map_Type.map_iter other)}
     ensures { result = produces_one_invariant self e other }
     
-  axiom produces_one_invariant_spec : forall self : C05Map_Map_Type.t_map i f, e : b, other : C05Map_Map_Type.t_map i f . ([#"../05_map.rs" 129 15 129 31] Invariant0.invariant' self) -> ([#"../05_map.rs" 130 15 130 42] ProducesOne0.produces_one self e other) -> ([#"../05_map.rs" 131 4 131 39] Invariant1.invariant' (C05Map_Map_Type.map_iter other)) -> ([#"../05_map.rs" 132 14 132 31] Invariant0.invariant' other)
+  axiom produces_one_invariant_spec : forall self : C05Map_Map_Type.t_map i f, e : b, other : C05Map_Map_Type.t_map i f . ([#"../05_map.rs" 118 15 118 31] Invariant0.invariant' self) -> ([#"../05_map.rs" 119 15 119 42] ProducesOne0.produces_one self e other) -> ([#"../05_map.rs" 120 4 120 39] Invariant1.invariant' (C05Map_Map_Type.map_iter other)) -> ([#"../05_map.rs" 121 14 121 31] Invariant0.invariant' other)
 end
 module C05Map_Impl1_ProducesOneInvariant_Impl
   type i
@@ -1674,21 +1867,17 @@ module C05Map_Impl1_ProducesOneInvariant_Impl
     predicate Unnest0.unnest = Unnest0.unnest,
     type Output0.output = b,
     axiom .
-  use C05Map_Map_Type as C05Map_Map_Type
-  clone C05Map_Impl0_Completed as Completed0 with
-    type i = i,
-    type b = b,
-    type f = f,
-    predicate Completed0.completed = Completed1.completed
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
+    type self = i
   clone C05Map_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
-    type Item0.item = Item0.item
-  clone C05Map_Common_Iterator_Invariant_Interface as Invariant1 with
-    type self = i
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
+    axiom .
   clone C05Map_Common_Iterator_ProducesTrans_Interface as ProducesTrans1 with
     type self = i,
-    predicate Invariant0.invariant' = Invariant1.invariant',
     predicate Produces0.produces = Produces1.produces,
+    predicate Invariant0.invariant' = Invariant1.invariant',
     type Item0.item = Item0.item,
     axiom .
   clone C05Map_Common_Iterator_ProducesRefl_Interface as ProducesRefl1 with
@@ -1697,6 +1886,7 @@ module C05Map_Impl1_ProducesOneInvariant_Impl
     predicate Produces0.produces = Produces1.produces,
     type Item0.item = Item0.item,
     axiom .
+  use C05Map_Map_Type as C05Map_Map_Type
   clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
     type args = Item0.item,
     type f = f
@@ -1708,23 +1898,25 @@ module C05Map_Impl1_ProducesOneInvariant_Impl
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Invariant0.invariant' = Invariant1.invariant'
   clone C05Map_Impl1_Preservation as Preservation0 with
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    axiom .
   clone C05Map_Impl1_NextPrecondition as NextPrecondition0 with
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition
   clone C05Map_Impl1_PreservationInv as PreservationInv0 with
@@ -1732,13 +1924,18 @@ module C05Map_Impl1_ProducesOneInvariant_Impl
     type b = b,
     type f = f,
     predicate Preservation0.preservation = Preservation0.preservation,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
     axiom .
+  clone C05Map_Impl0_Completed as Completed0 with
+    type i = i,
+    type b = b,
+    type f = f,
+    predicate Completed0.completed = Completed1.completed
   clone C05Map_Impl1_Reinitialize as Reinitialize0 with
     type i = i,
     type b = b,
@@ -1747,7 +1944,7 @@ module C05Map_Impl1_ProducesOneInvariant_Impl
     predicate Completed0.completed = Completed0.completed,
     predicate NextPrecondition0.next_precondition = NextPrecondition0.next_precondition,
     predicate Preservation0.preservation = Preservation0.preservation
-  clone C05Map_Impl0_Invariant as Invariant0 with
+  clone C05Map_Impl2_Invariant as Invariant0 with
     type i = i,
     type b = b,
     type f = f,
@@ -1770,6 +1967,10 @@ module C05Map_Impl1_ProducesOneInvariant_Impl
     predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces,
     axiom .
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
   clone C05Map_Impl1_ProducesOne as ProducesOne0 with
     type i = i,
     type b = b,
@@ -1779,15 +1980,16 @@ module C05Map_Impl1_ProducesOneInvariant_Impl
     predicate Produces1.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Invariant0.invariant' = Invariant1.invariant',
     axiom .
-  let rec ghost function produces_one_invariant [#"../05_map.rs" 133 4 133 54] (self : C05Map_Map_Type.t_map i f) (e : b) (other : C05Map_Map_Type.t_map i f) : ()
-    requires {[#"../05_map.rs" 129 15 129 31] Invariant0.invariant' self}
-    requires {[#"../05_map.rs" 130 15 130 42] ProducesOne0.produces_one self e other}
-    requires {[#"../05_map.rs" 131 4 131 39] Invariant1.invariant' (C05Map_Map_Type.map_iter other)}
-    ensures { [#"../05_map.rs" 132 14 132 31] Invariant0.invariant' other }
+  let rec ghost function produces_one_invariant [#"../05_map.rs" 122 4 122 54] (self : C05Map_Map_Type.t_map i f) (e : b) (other : C05Map_Map_Type.t_map i f) : ()
+    requires {[#"../05_map.rs" 118 15 118 31] Invariant0.invariant' self}
+    requires {[#"../05_map.rs" 119 15 119 42] ProducesOne0.produces_one self e other}
+    requires {[#"../05_map.rs" 120 4 120 39] Invariant1.invariant' (C05Map_Map_Type.map_iter other)}
+    ensures { [#"../05_map.rs" 121 14 121 31] Invariant0.invariant' other }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
-    [#"../05_map.rs" 128 4 128 12] ()
+    [#"../05_map.rs" 117 4 117 12] ()
 end
 module C05Map_Impl0_Next_Interface
   type i
@@ -1810,17 +2012,17 @@ module C05Map_Impl0_Next_Interface
     type b = b,
     type f = f
   use Core_Option_Option_Type as Core_Option_Option_Type
-  clone C05Map_Impl0_Invariant_Stub as Invariant0 with
+  clone C05Map_Impl2_Invariant_Stub as Invariant0 with
     type i = i,
     type b = b,
     type f = f
-  val next [#"../05_map.rs" 71 4 71 44] (self : borrowed (C05Map_Map_Type.t_map i f)) : Core_Option_Option_Type.t_option b
-    requires {[#"../05_map.rs" 70 4 70 40] Invariant0.invariant' ( * self)}
-    ensures { [#"../05_map.rs" 66 14 69 5] match (result) with
+  val next [#"../05_map.rs" 60 4 60 44] (self : borrowed (C05Map_Map_Type.t_map i f)) : Core_Option_Option_Type.t_option b
+    requires {[#"../05_map.rs" 59 4 59 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../05_map.rs" 55 14 58 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> ProducesOne0.produces_one ( * self) v ( ^ self)
       end }
-    ensures { [#"../05_map.rs" 70 4 70 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../05_map.rs" 59 4 59 40] Invariant0.invariant' ( ^ self) }
     
 end
 module C05Map_Impl0_Next
@@ -1871,9 +2073,17 @@ module C05Map_Impl0_Next
     predicate Unnest0.unnest = Unnest0.unnest,
     type Output0.output = b,
     axiom .
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
+    type self = i
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    axiom .
   clone C05Map_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
-    type Item0.item = Item0.item
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
+    axiom .
   clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
     type args = Item0.item,
     type f = f
@@ -1886,27 +2096,27 @@ module C05Map_Impl0_Next
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Invariant0.invariant' = Invariant1.invariant'
   clone C05Map_Common_Iterator_Completed_Interface as Completed1 with
-    type self = i
-  clone C05Map_Common_Iterator_Invariant_Interface as Invariant1 with
     type self = i
   clone C05Map_Impl1_Preservation as Preservation0 with
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    axiom .
   clone C05Map_Impl1_NextPrecondition as NextPrecondition0 with
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition
   clone C05Map_Impl1_PreservationInv as PreservationInv0 with
@@ -1914,8 +2124,8 @@ module C05Map_Impl0_Next
     type b = b,
     type f = f,
     predicate Preservation0.preservation = Preservation0.preservation,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item0.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
@@ -1936,8 +2146,8 @@ module C05Map_Impl0_Next
     predicate Preservation0.preservation = Preservation0.preservation
   clone C05Map_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
     type self = i,
-    predicate Invariant0.invariant' = Invariant1.invariant',
     predicate Produces0.produces = Produces1.produces,
+    predicate Invariant0.invariant' = Invariant1.invariant',
     type Item0.item = Item0.item,
     axiom .
   clone C05Map_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
@@ -1961,8 +2171,9 @@ module C05Map_Impl0_Next
     predicate Produces1.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Invariant0.invariant' = Invariant1.invariant',
     axiom .
-  clone C05Map_Impl0_Invariant as Invariant0 with
+  clone C05Map_Impl2_Invariant as Invariant0 with
     type i = i,
     type b = b,
     type f = f,
@@ -1993,13 +2204,13 @@ module C05Map_Impl0_Next
     type Item0.item = Item0.item,
     predicate Completed0.completed = Completed1.completed,
     predicate Produces0.produces = Produces1.produces
-  let rec cfg next [#"../05_map.rs" 71 4 71 44] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C05Map_Map_Type.t_map i f)) : Core_Option_Option_Type.t_option b
-    requires {[#"../05_map.rs" 70 4 70 40] Invariant0.invariant' ( * self)}
-    ensures { [#"../05_map.rs" 66 14 69 5] match (result) with
+  let rec cfg next [#"../05_map.rs" 60 4 60 44] [@cfg:stackify] [@cfg:subregion_analysis] (self : borrowed (C05Map_Map_Type.t_map i f)) : Core_Option_Option_Type.t_option b
+    requires {[#"../05_map.rs" 59 4 59 40] Invariant0.invariant' ( * self)}
+    ensures { [#"../05_map.rs" 55 14 58 5] match (result) with
       | Core_Option_Option_Type.C_None -> Completed0.completed self
       | Core_Option_Option_Type.C_Some v -> ProducesOne0.produces_one ( * self) v ( ^ self)
       end }
-    ensures { [#"../05_map.rs" 70 4 70 40] Invariant0.invariant' ( ^ self) }
+    ensures { [#"../05_map.rs" 59 4 59 40] Invariant0.invariant' ( ^ self) }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : Core_Option_Option_Type.t_option b;
@@ -2022,7 +2233,7 @@ module C05Map_Impl0_Next
   BB0 {
     _6 <- borrow_mut (C05Map_Map_Type.map_iter ( * self_1));
     self_1 <- { self_1 with current = (let C05Map_Map_Type.C_Map a b =  * self_1 in C05Map_Map_Type.C_Map ( ^ _6) b) };
-    _5 <- ([#"../05_map.rs" 72 14 72 30] Next0.next _6);
+    _5 <- ([#"../05_map.rs" 61 14 61 30] Next0.next _6);
     goto BB1
   }
   BB1 {
@@ -2047,13 +2258,13 @@ module C05Map_Impl0_Next
     v_8 <- Core_Option_Option_Type.some_0 _5;
     _5 <- (let Core_Option_Option_Type.C_Some a = _5 in Core_Option_Option_Type.C_Some (any Item0.item));
     assume { Resolve1.resolve _5 };
-    assert { [#"../05_map.rs" 74 16 74 62] Precondition0.precondition (C05Map_Map_Type.map_func ( * self_1)) (v_8) };
+    assert { [#"../05_map.rs" 63 16 63 62] Precondition0.precondition (C05Map_Map_Type.map_func ( * self_1)) (v_8) };
     goto BB5
   }
   BB5 {
     _9 <- ();
     _14 <- ();
-    _11 <- ([#"../05_map.rs" 75 16 75 55] Ghost.new ());
+    _11 <- ([#"../05_map.rs" 64 16 64 55] Ghost.new ());
     goto BB6
   }
   BB6 {
@@ -2064,7 +2275,7 @@ module C05Map_Impl0_Next
     _18 <- v_8;
     v_8 <- any Item0.item;
     _17 <- (_18);
-    _15 <- ([#"../05_map.rs" 77 21 77 35] CallMut0.call_mut _16 _17);
+    _15 <- ([#"../05_map.rs" 66 21 66 35] CallMut0.call_mut _16 _17);
     goto BB7
   }
   BB7 {
@@ -2094,14 +2305,18 @@ module C05Map_Map_Interface
   type f
   use seq.Seq
   use C05Map_Map_Type as C05Map_Map_Type
-  clone C05Map_Impl0_Invariant_Stub as Invariant1 with
+  clone C05Map_Impl2_Invariant_Stub as Invariant1 with
     type i = i,
     type b = b,
     type f = f
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   clone C05Map_Impl1_Preservation_Stub as Preservation0 with
     type i = i,
     type b = b,
-    type f = f
+    type f = f,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   clone C05Map_Impl1_Reinitialize_Stub as Reinitialize0 with
     type i = i,
     type b = b,
@@ -2113,16 +2328,17 @@ module C05Map_Map_Interface
     type f = f
   clone C05Map_Common_Iterator_Produces_Stub as Produces0 with
     type self = i,
-    type Item0.item = Item0.item
-  clone C05Map_Common_Iterator_Invariant_Stub as Invariant0 with
-    type self = i
-  val map [#"../05_map.rs" 153 0 153 81] (iter : i) (func : f) : C05Map_Map_Type.t_map i f
-    requires {[#"../05_map.rs" 147 0 147 124] forall i2 : i . forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces iter (Seq.singleton e) i2 -> Precondition0.precondition func (e)}
-    requires {[#"../05_map.rs" 148 11 148 38] Reinitialize0.reinitialize ()}
-    requires {[#"../05_map.rs" 149 11 149 27] Invariant0.invariant' iter}
-    requires {[#"../05_map.rs" 150 11 150 48] Preservation0.preservation iter func}
-    ensures { [#"../05_map.rs" 151 10 151 28] Invariant1.invariant' result }
-    ensures { [#"../05_map.rs" 152 10 152 38] result = C05Map_Map_Type.C_Map iter func }
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
+  val map [#"../05_map.rs" 156 0 156 81] (iter : i) (func : f) : C05Map_Map_Type.t_map i f
+    requires {[#"../05_map.rs" 150 0 150 124] forall i2 : i . Invariant0.invariant' i2 -> (forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces iter (Seq.singleton e) i2 -> Precondition0.precondition func (e))}
+    requires {[#"../05_map.rs" 151 11 151 38] Reinitialize0.reinitialize ()}
+    requires {[#"../05_map.rs" 152 11 152 27] Invariant0.invariant' iter}
+    requires {[#"../05_map.rs" 153 11 153 48] Preservation0.preservation iter func}
+    requires {[#"../05_map.rs" 156 51 156 55] Invariant0.invariant' iter}
+    ensures { [#"../05_map.rs" 154 10 154 28] Invariant1.invariant' result }
+    ensures { [#"../05_map.rs" 155 10 155 38] result = C05Map_Map_Type.C_Map iter func }
     
 end
 module C05Map_Map
@@ -2136,6 +2352,8 @@ module C05Map_Map
     type args = Item0.item,
     type f = f,
     type Output0.output = b
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant0 with
+    type self = i
   clone CreusotContracts_Std1_Ops_Impl1_PostconditionMut as PostconditionMut0 with
     type args = Item0.item,
     type f = f,
@@ -2145,7 +2363,9 @@ module C05Map_Map
     type f = f
   clone C05Map_Common_Iterator_Produces_Interface as Produces0 with
     type self = i,
-    type Item0.item = Item0.item
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    axiom .
   clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
     type args = Item0.item,
     type f = f
@@ -2158,7 +2378,8 @@ module C05Map_Map
     type Item0.item = Item0.item,
     predicate Produces0.produces = Produces0.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Invariant0.invariant' = Invariant0.invariant'
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve1 with
     type self = f
   clone CreusotContracts_Std1_Ops_Impl1_FnMutOnce as FnMutOnce0 with
@@ -2188,25 +2409,12 @@ module C05Map_Map
     axiom .
   clone C05Map_Common_Iterator_Completed_Interface as Completed1 with
     type self = i
-  clone C05Map_Common_Iterator_Invariant_Interface as Invariant0 with
-    type self = i
   clone C05Map_Impl1_Preservation as Preservation0 with
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant0.invariant',
-    predicate Unnest0.unnest = Unnest0.unnest,
-    predicate Produces0.produces = Produces0.produces,
-    predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
-  clone C05Map_Impl1_PreservationInv as PreservationInv0 with
-    type i = i,
-    type b = b,
-    type f = f,
-    predicate Preservation0.preservation = Preservation0.preservation,
     type Item0.item = Item0.item,
-    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces0.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
@@ -2216,10 +2424,22 @@ module C05Map_Map
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item0.item,
     predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
     predicate Produces0.produces = Produces0.produces,
     predicate Precondition0.precondition = Precondition0.precondition
+  clone C05Map_Impl1_PreservationInv as PreservationInv0 with
+    type i = i,
+    type b = b,
+    type f = f,
+    predicate Preservation0.preservation = Preservation0.preservation,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = Item0.item,
+    predicate Unnest0.unnest = Unnest0.unnest,
+    predicate Produces0.produces = Produces0.produces,
+    predicate Precondition0.precondition = Precondition0.precondition,
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    axiom .
   clone C05Map_Impl0_Completed as Completed0 with
     type i = i,
     type b = b,
@@ -2233,7 +2453,7 @@ module C05Map_Map
     predicate Completed0.completed = Completed0.completed,
     predicate NextPrecondition0.next_precondition = NextPrecondition0.next_precondition,
     predicate Preservation0.preservation = Preservation0.preservation
-  clone C05Map_Impl0_Invariant as Invariant1 with
+  clone C05Map_Impl2_Invariant as Invariant1 with
     type i = i,
     type b = b,
     type f = f,
@@ -2258,8 +2478,8 @@ module C05Map_Map
     axiom .
   clone C05Map_Common_Iterator_ProducesTrans_Interface as ProducesTrans0 with
     type self = i,
-    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     type Item0.item = Item0.item,
     axiom .
   clone C05Map_Common_Iterator_ProducesRefl_Interface as ProducesRefl0 with
@@ -2268,15 +2488,20 @@ module C05Map_Map
     predicate Produces0.produces = Produces0.produces,
     type Item0.item = Item0.item,
     axiom .
+  clone CreusotContracts_Invariant_Invariant_IsInhabited_Interface as IsInhabited0 with
+    type self = i,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   clone CreusotContracts_Resolve_Resolve_Resolve_Interface as Resolve0 with
     type self = i
-  let rec cfg map [#"../05_map.rs" 153 0 153 81] [@cfg:stackify] [@cfg:subregion_analysis] (iter : i) (func : f) : C05Map_Map_Type.t_map i f
-    requires {[#"../05_map.rs" 147 0 147 124] forall i2 : i . forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces iter (Seq.singleton e) i2 -> Precondition0.precondition func (e)}
-    requires {[#"../05_map.rs" 148 11 148 38] Reinitialize0.reinitialize ()}
-    requires {[#"../05_map.rs" 149 11 149 27] Invariant0.invariant' iter}
-    requires {[#"../05_map.rs" 150 11 150 48] Preservation0.preservation iter func}
-    ensures { [#"../05_map.rs" 151 10 151 28] Invariant1.invariant' result }
-    ensures { [#"../05_map.rs" 152 10 152 38] result = C05Map_Map_Type.C_Map iter func }
+  let rec cfg map [#"../05_map.rs" 156 0 156 81] [@cfg:stackify] [@cfg:subregion_analysis] (iter : i) (func : f) : C05Map_Map_Type.t_map i f
+    requires {[#"../05_map.rs" 150 0 150 124] forall i2 : i . Invariant0.invariant' i2 -> (forall e : Item0.item . Invariant0.invariant' i2 -> Produces0.produces iter (Seq.singleton e) i2 -> Precondition0.precondition func (e))}
+    requires {[#"../05_map.rs" 151 11 151 38] Reinitialize0.reinitialize ()}
+    requires {[#"../05_map.rs" 152 11 152 27] Invariant0.invariant' iter}
+    requires {[#"../05_map.rs" 153 11 153 48] Preservation0.preservation iter func}
+    requires {[#"../05_map.rs" 156 51 156 55] Invariant0.invariant' iter}
+    ensures { [#"../05_map.rs" 154 10 154 28] Invariant1.invariant' result }
+    ensures { [#"../05_map.rs" 155 10 155 38] result = C05Map_Map_Type.C_Map iter func }
     
    = [@vc:do_not_keep_trace] [@vc:sp]
   var _0 : C05Map_Map_Type.t_map i f;
@@ -2342,31 +2567,34 @@ module C05Map_Impl0
   clone CreusotContracts_Std1_Ops_Impl0_Precondition as Precondition0 with
     type args = Item1.item,
     type f = f
+  clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
+    type self = i
   clone C05Map_Common_Iterator_Produces_Interface as Produces1 with
     type self = i,
-    type Item0.item = Item1.item
+    predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item1.item,
+    axiom .
   clone CreusotContracts_Std1_Ops_Impl1_Unnest as Unnest0 with
     type args = Item1.item,
     type f = f
-  clone C05Map_Common_Iterator_Invariant_Interface as Invariant1 with
-    type self = i
   clone C05Map_Impl1_Preservation as Preservation0 with
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item1.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item1.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    axiom .
   use C05Map_Map_Type as C05Map_Map_Type
   clone C05Map_Impl1_NextPrecondition as NextPrecondition0 with
     type i = i,
     type b = b,
     type f = f,
-    type Item0.item = Item1.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item1.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition
   clone C05Map_Impl1_PreservationInv as PreservationInv0 with
@@ -2374,8 +2602,8 @@ module C05Map_Impl0
     type b = b,
     type f = f,
     predicate Preservation0.preservation = Preservation0.preservation,
-    type Item0.item = Item1.item,
     predicate Invariant0.invariant' = Invariant1.invariant',
+    type Item0.item = Item1.item,
     predicate Unnest0.unnest = Unnest0.unnest,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
@@ -2405,7 +2633,8 @@ module C05Map_Impl0
     type Item0.item = Item1.item,
     predicate Produces0.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
-    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut
+    predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Invariant0.invariant' = Invariant1.invariant'
   clone C05Map_Impl1_ProducesOne as ProducesOne0 with
     type i = i,
     type b = b,
@@ -2415,8 +2644,9 @@ module C05Map_Impl0
     predicate Produces1.produces = Produces1.produces,
     predicate Precondition0.precondition = Precondition0.precondition,
     predicate PostconditionMut0.postcondition_mut = PostconditionMut0.postcondition_mut,
+    predicate Invariant0.invariant' = Invariant1.invariant',
     axiom .
-  clone C05Map_Impl0_Invariant as Invariant0 with
+  clone C05Map_Impl2_Invariant as Invariant0 with
     type i = i,
     type b = b,
     type f = f,
@@ -2425,13 +2655,19 @@ module C05Map_Impl0
     predicate Invariant0.invariant' = Invariant1.invariant',
     predicate NextPrecondition0.next_precondition = NextPrecondition0.next_precondition,
     predicate Preservation0.preservation = Preservation0.preservation
-  goal produces_trans_refn : [#"../05_map.rs" 36 4 36 90] forall a : C05Map_Map_Type.t_map i f . forall ab : Seq.seq b . forall b : C05Map_Map_Type.t_map i f . forall bc : Seq.seq b . forall c : C05Map_Map_Type.t_map i f . Produces0.produces b bc c /\ Produces0.produces a ab b /\ Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a -> Produces0.produces b bc c /\ Produces0.produces a ab b /\ Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
-  goal next_refn : [#"../05_map.rs" 71 4 71 44] forall self : borrowed (C05Map_Map_Type.t_map i f) . Invariant0.invariant' ( * self) -> Invariant0.invariant' ( * self) /\ (forall result : Core_Option_Option_Type.t_option b . Invariant0.invariant' ( ^ self) /\ match (result) with
+  goal produces_trans_refn : [#"../05_map.rs" 36 4 36 90] forall a : C05Map_Map_Type.t_map i f . forall ab : Seq.seq b . forall b : C05Map_Map_Type.t_map i f . forall bc : Seq.seq b . forall c : C05Map_Map_Type.t_map i f . Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Produces0.produces b bc c /\ Produces0.produces a ab b /\ Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
+  goal produces_refl_refn : [#"../05_map.rs" 27 4 27 29] forall a : C05Map_Map_Type.t_map i f . Invariant0.invariant' a -> Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
+  goal produces_refn : [#"../05_map.rs" 40 4 40 67] forall self : C05Map_Map_Type.t_map i f . forall visited : Seq.seq b . forall _o : C05Map_Map_Type.t_map i f . Invariant0.invariant' _o /\ Invariant0.invariant' self -> (forall result : bool . true)
+  goal next_refn : [#"../05_map.rs" 60 4 60 44] forall self : borrowed (C05Map_Map_Type.t_map i f) . Invariant0.invariant' ( * self) -> Invariant0.invariant' ( * self) /\ (forall result : Core_Option_Option_Type.t_option b . Invariant0.invariant' ( ^ self) /\ match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> ProducesOne0.produces_one ( * self) v ( ^ self)
     end -> match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end /\ Invariant0.invariant' ( ^ self))
-  goal produces_refl_refn : [#"../05_map.rs" 27 4 27 29] forall a : C05Map_Map_Type.t_map i f . Invariant0.invariant' a -> Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
+end
+module C05Map_Impl2
+  type i
+  type b
+  type f
 end
