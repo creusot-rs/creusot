@@ -17,7 +17,7 @@ use crate::{
         fmir,
         pearlite::{self, Term},
         specification::{ContractClauses, PurityVisitor},
-        traits::TraitImpl,
+        traits::{self, TraitImpl},
         ty::{self, translate_tydecl, ty_binding_group},
     },
     util::{self, item_type, pre_sig_of, PreSignature},
@@ -32,7 +32,7 @@ use rustc_hir::{
 use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     thir,
-    ty::{subst::InternalSubsts, ParamEnv, TyCtxt, WithOptConstParam},
+    ty::{subst::InternalSubsts, GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, WithOptConstParam},
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
@@ -224,6 +224,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
                 let (stub, modl, proof_modl, has_axioms, deps) =
                     crate::backend::logic::translate_logic_or_predicate(self, def_id);
                 self.dependencies.insert(def_id, deps);
+
                 TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
             }
             ItemType::Closure => {
@@ -289,7 +290,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
         if util::has_body(self, def_id) {
             if !self.terms.contains_key(&def_id) {
-                let mut term = pearlite::pearlite(self.tcx, def_id.expect_local())
+                let mut term = pearlite::pearlite(self, def_id.expect_local())
                     .unwrap_or_else(|e| e.emit(self.tcx.sess));
                 pearlite::normalize(self.tcx, self.param_env(def_id), &mut term);
 
@@ -304,11 +305,24 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     pub(crate) fn sig(&mut self, def_id: DefId) -> &PreSignature<'tcx> {
         if !self.sigs.contains_key(&def_id) {
             let mut term = pre_sig_of(self, def_id);
-            pearlite::normalize_sig(self.tcx, self.param_env(def_id), &mut term);
+            term = term.normalize(self.tcx, self.param_env(def_id));
 
             self.sigs.insert(def_id, term);
         };
         self.sigs.get(&def_id).unwrap()
+    }
+
+    pub(crate) fn type_invariant(
+        &self,
+        def_id: DefId,
+        ty: Ty<'tcx>,
+    ) -> Option<(DefId, SubstsRef<'tcx>)> {
+        debug!("resolving type invariant of {ty:?} in {def_id:?}");
+        let param_env = self.param_env(def_id);
+        let trait_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))?;
+        let substs = self.mk_substs(std::iter::once(GenericArg::from(ty)));
+        traits::resolve_opt(self.tcx, param_env, trait_did, substs)
+            .filter(|(inv_did, _)| !util::ignore_type_invariant(self.tcx, *inv_did))
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {

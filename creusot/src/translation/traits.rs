@@ -1,11 +1,8 @@
-use super::{
-    pearlite::{Term, TermKind},
-    specification::contract_of,
-};
+use super::pearlite::{Term, TermKind};
 use crate::{
     ctx::*,
     translation::function::terminator::evaluate_additional_predicates,
-    util::{inputs_and_output, is_law, is_spec},
+    util::{is_law, is_spec},
 };
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::TyCtxtInferExt;
@@ -70,7 +67,9 @@ impl<'tcx> TranslationCtx<'tcx> {
             }
 
             // If there is no contract to refine, skip this item
-            if contract_of(self, trait_item).is_empty() {
+            if !self.tcx.def_kind(trait_item).is_fn_like()
+                || self.sig(trait_item).contract.is_empty()
+            {
                 continue;
             }
 
@@ -99,16 +98,12 @@ impl<'tcx> TranslationCtx<'tcx> {
                 self.crash_and_error(rustc_span::DUMMY_SP, "error above");
             }
 
-            let contract = contract_of(self, trait_item);
-
-            if !contract.is_empty() {
-                let axiom = logic_refinement_term(self, impl_item, trait_item, refn_subst);
-                refinements.push(Refinement {
-                    trait_: (trait_item, refn_subst),
-                    impl_: (impl_item, subst),
-                    refn: axiom,
-                });
-            }
+            let axiom = logic_refinement_term(self, impl_item, trait_item, refn_subst);
+            refinements.push(Refinement {
+                trait_: (trait_item, refn_subst),
+                impl_: (impl_item, subst),
+                refn: axiom,
+            });
         }
 
         TraitImpl { laws, refinements }
@@ -122,38 +117,35 @@ fn logic_refinement_term<'tcx>(
     refn_subst: SubstsRef<'tcx>,
 ) -> Term<'tcx> {
     // Get the contract of the trait version
-    let trait_contract = {
-        let pre_contract = contract_of(ctx, trait_item_id);
+    let trait_sig = {
+        let pre_sig = ctx.sig(trait_item_id).clone();
         let param_env = ctx.param_env(impl_item_id);
-        EarlyBinder(pre_contract).subst(ctx.tcx, refn_subst).normalize(ctx.tcx, param_env)
+        EarlyBinder(pre_sig).subst(ctx.tcx, refn_subst).normalize(ctx.tcx, param_env)
     };
 
-    let impl_contract = contract_of(ctx, impl_item_id);
-
-    let (trait_inps, _) = inputs_and_output(ctx.tcx, trait_item_id);
-    let (impl_inps, output) = inputs_and_output(ctx.tcx, impl_item_id);
+    let impl_sig = ctx.sig(impl_item_id).clone();
 
     let span = ctx.tcx.def_span(impl_item_id);
     let mut args = Vec::new();
     let mut subst = HashMap::new();
-    for (ix, ((id, _), (id2, ty))) in trait_inps.zip(impl_inps).enumerate() {
-        let id =
-            if id.name.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { id.name };
-        let id2 =
-            if id2.name.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { id2.name };
-        args.push((id.clone(), ty));
-        subst.insert(id2, Term { ty, kind: TermKind::Var(id), span });
+    for (ix, ((id, _, _), (id2, _, ty))) in
+        trait_sig.inputs.iter().zip(impl_sig.inputs.iter()).enumerate()
+    {
+        let id = if id.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { *id };
+        let id2 = if id2.is_empty() { Symbol::intern(&format!("_{}'", ix + 1)) } else { *id2 };
+        args.push((id.clone(), *ty));
+        subst.insert(id2, Term { ty: *ty, kind: TermKind::Var(id), span });
     }
 
-    let mut impl_precond = impl_contract.requires_conj(ctx.tcx);
+    let mut impl_precond = impl_sig.contract.requires_conj(ctx.tcx);
     impl_precond.subst(&subst);
-    let trait_precond = trait_contract.requires_conj(ctx.tcx);
+    let trait_precond = trait_sig.contract.requires_conj(ctx.tcx);
 
-    let mut impl_postcond = impl_contract.ensures_conj(ctx.tcx);
+    let mut impl_postcond = impl_sig.contract.ensures_conj(ctx.tcx);
     impl_postcond.subst(&subst);
-    let trait_postcond = trait_contract.ensures_conj(ctx.tcx);
+    let trait_postcond = trait_sig.contract.ensures_conj(ctx.tcx);
 
-    let retty = output;
+    let retty = impl_sig.output;
     let post_refn = Term {
         kind: TermKind::Forall {
             binder: (Symbol::intern("result"), retty),

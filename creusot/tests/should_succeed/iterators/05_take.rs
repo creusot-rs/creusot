@@ -1,7 +1,7 @@
 #![feature(slice_take)]
 extern crate creusot_contracts;
 
-use creusot_contracts::*;
+use creusot_contracts::{invariant::Invariant, *};
 
 mod common;
 use common::Iterator;
@@ -32,22 +32,11 @@ where
         }
     }
 
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! {
-            self.iter.invariant()
-        }
-    }
-
     #[law]
-    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -64,6 +53,18 @@ where
             self.iter.next()
         } else {
             None
+        }
+    }
+}
+
+impl<I> Invariant for Take<I>
+where
+    I: Iterator,
+{
+    #[predicate]
+    fn invariant(self) -> bool {
+        pearlite! {
+            self.iter.invariant()
         }
     }
 }

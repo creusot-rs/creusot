@@ -32,7 +32,6 @@ pub fn all_zero(v: &mut Vec<usize>) {
     }
 }
 
-#[requires(iter.invariant())]
 pub fn skip_take<I: Iterator>(iter: I, n: usize) {
     let res = iter.take(n).skip(n).next();
 

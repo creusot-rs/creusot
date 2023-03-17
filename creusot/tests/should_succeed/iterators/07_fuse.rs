@@ -1,5 +1,5 @@
 extern crate creusot_contracts;
-use creusot_contracts::{logic::Seq, *};
+use creusot_contracts::{invariant::Invariant, logic::Seq, *};
 
 mod common;
 use common::Iterator;
@@ -36,14 +36,6 @@ impl<I: Iterator> Iterator for Fuse<I> {
         }
     }
 
-    #[predicate]
-    fn invariant(self) -> bool {
-        match self.iter {
-            Ok(i) => i.invariant(),
-            Err(gi) => gi.invariant(),
-        }
-    }
-
     #[maintains((mut self).invariant())]
     #[ensures(match result {
       None => self.completed(),
@@ -63,18 +55,24 @@ impl<I: Iterator> Iterator for Fuse<I> {
     }
 
     #[law]
-    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
+}
+
+impl<I: Iterator> Invariant for Fuse<I> {
+    #[predicate]
+    fn invariant(self) -> bool {
+        match self.iter {
+            Ok(i) => i.invariant(),
+            Err(gi) => gi.invariant(),
+        }
+    }
 }
 
 // Not a subtrait of `FusedIterator` here for type inference reasons.

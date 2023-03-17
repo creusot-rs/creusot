@@ -117,12 +117,7 @@ impl<T> ShallowModel for IntoIter<T> {
     }
 }
 
-impl<T> Invariant for IntoIter<T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<T> Invariant for IntoIter<T> {}
 
 impl<T> Iterator for IntoIter<T> {
     #[predicate]
@@ -139,14 +134,10 @@ impl<T> Iterator for IntoIter<T> {
     }
 
     #[law]
-    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -175,12 +166,7 @@ impl<'a, T> ShallowModel for Iter<'a, T> {
     }
 }
 
-impl<'a, T> Invariant for Iter<'a, T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<'a, T> Invariant for Iter<'a, T> {}
 
 impl<'a, T> Iterator for Iter<'a, T> {
     #[predicate]
@@ -197,14 +183,10 @@ impl<'a, T> Iterator for Iter<'a, T> {
     }
 
     #[law]
-    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -236,12 +218,7 @@ impl<'a, T> ShallowModel for IterMut<'a, T> {
     }
 }
 
-impl<'a, T> Invariant for IterMut<'a, T> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<'a, T> Invariant for IterMut<'a, T> {}
 
 impl<'a, T> Iterator for IterMut<'a, T> {
     #[predicate]
@@ -258,14 +235,10 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     }
 
     #[law]
-    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

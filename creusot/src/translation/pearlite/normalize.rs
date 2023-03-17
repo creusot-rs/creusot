@@ -1,7 +1,7 @@
 use crate::{
     pearlite::{self, Literal, Term, TermKind},
     translation::traits::resolve_opt,
-    util::{get_builtin, PreSignature},
+    util::get_builtin,
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{ParamEnv, TyCtxt};
@@ -11,14 +11,6 @@ use super::{super_visit_mut_term, BinOp, TermVisitorMut};
 
 pub(crate) fn normalize<'tcx>(tcx: TyCtxt<'tcx>, param_env: ParamEnv<'tcx>, term: &mut Term<'tcx>) {
     NormalizeTerm { param_env, tcx }.visit_mut_term(term);
-}
-
-pub(crate) fn normalize_sig<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    sig: &mut PreSignature<'tcx>,
-) {
-    sig.contract = sig.contract.clone().normalize(tcx, param_env);
 }
 
 struct NormalizeTerm<'tcx> {

@@ -18,14 +18,10 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Iterator
     }
 
     #[law]
-    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]
@@ -63,6 +59,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Invariant
 {
     // Should not quantify over self or the `invariant` cannot be made into a type invariant
     #[predicate]
+    #[creusot::ignore_type_invariant]
     fn invariant(self) -> bool {
         pearlite! {
             Self::reinitialize() &&
@@ -107,7 +104,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
     pub fn next_precondition(self) -> bool {
         pearlite! {
             forall<e: I::Item, i: I>
-                i.invariant() ==>
                 self.iter.produces(Seq::singleton(e), i) ==>
                 self.func.precondition((e, self.produced))
         }
@@ -129,7 +125,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
     pub fn preservation_inv(self) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                i.invariant() ==>
                 self.func.unnest(*f) ==>
                 self.iter.produces(s.push(e1).push(e2), i) ==>
                 (*f).precondition((e1, Ghost::new(self.produced.concat(s)))) ==>
@@ -142,7 +137,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
     pub fn preservation(iter: I, func: F) -> bool {
         pearlite! {
             forall<s: Seq<I::Item>, e1: I::Item, e2: I::Item, f: &mut F, b: B, i: I>
-                i.invariant() ==>
                 func.unnest(*f) ==>
                 iter.produces(s.push(e1).push(e2), i) ==>
                 (*f).precondition((e1, Ghost::new(s))) ==>
@@ -152,7 +146,6 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> MapInv<I, I::I
     }
 
     #[logic]
-    #[requires(self.invariant())]
     #[requires(self.produces_one(e, other))]
     #[requires(other.iter.invariant())]
     #[ensures(other.invariant())]

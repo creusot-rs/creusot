@@ -430,6 +430,22 @@ module CreusotContracts_Std1_Iter_IntoIterator_IntoIterPre
     ensures { result = into_iter_pre self }
     
 end
+module CreusotContracts_Invariant_Invariant_Invariant_Stub
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant_Interface
+  type self
+  predicate invariant' (self : self)
+end
+module CreusotContracts_Invariant_Invariant_Invariant
+  type self
+  predicate invariant' (self : self) =
+    true
+  val invariant' (self : self) : bool
+    ensures { result = invariant' self }
+    
+end
 module Core_Iter_Traits_Collect_IntoIterator_IntoIter_Type
   type self
   type intoIter
@@ -455,53 +471,20 @@ module CreusotContracts_Std1_Iter_IntoIterator_IntoIterPost
     ensures { result = into_iter_post self res }
     
 end
-module CreusotContracts_Invariant_Invariant_Invariant_Stub
-  type self
-  predicate invariant' (self : self)
-end
-module CreusotContracts_Invariant_Invariant_Invariant_Interface
-  type self
-  predicate invariant' (self : self)
-end
-module CreusotContracts_Invariant_Invariant_Invariant
-  type self
-  predicate invariant' (self : self)
-  val invariant' (self : self) : bool
-    ensures { result = invariant' self }
-    
-end
 module Core_Iter_Traits_Collect_Impl0_IntoIter_Interface
   type i
-  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
-    type self = i
   clone CreusotContracts_Std1_Iter_IntoIterator_IntoIterPost_Stub as IntoIterPost0 with
     type self = i,
     type IntoIter0.intoIter = i
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   clone CreusotContracts_Std1_Iter_IntoIterator_IntoIterPre_Stub as IntoIterPre0 with
     type self = i
   val into_iter (self : i) : i
     requires {IntoIterPre0.into_iter_pre self}
+    requires {Invariant0.invariant' self}
     ensures { IntoIterPost0.into_iter_post self result }
     ensures { Invariant0.invariant' result }
-    
-end
-module CreusotContracts_Std1_Ops_Impl3_Invariant_Stub
-  type idx
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
-  predicate invariant' (self : Core_Ops_Range_Range_Type.t_range idx)
-end
-module CreusotContracts_Std1_Ops_Impl3_Invariant_Interface
-  type idx
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
-  predicate invariant' (self : Core_Ops_Range_Range_Type.t_range idx)
-end
-module CreusotContracts_Std1_Ops_Impl3_Invariant
-  type idx
-  use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
-  predicate invariant' (self : Core_Ops_Range_Range_Type.t_range idx) =
-    true
-  val invariant' (self : Core_Ops_Range_Range_Type.t_range idx) : bool
-    ensures { result = invariant' self }
     
 end
 module Core_Option_Option_Type
@@ -542,24 +525,34 @@ module CreusotContracts_Std1_Iter_Iterator_Produces_Stub
   use seq.Seq
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = self
-  predicate produces (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  predicate produces (self : self) (visited : Seq.seq Item0.item) (_o : self)
 end
 module CreusotContracts_Std1_Iter_Iterator_Produces_Interface
   type self
   use seq.Seq
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = self
-  predicate produces (self : self) (visited : Seq.seq Item0.item) (_3' : self)
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  predicate produces (self : self) (visited : Seq.seq Item0.item) (_o : self)
+  axiom produces_spec : forall self : self, visited : Seq.seq Item0.item, _o : self . Invariant0.invariant' self -> Invariant0.invariant' _o -> true
 end
 module CreusotContracts_Std1_Iter_Iterator_Produces
   type self
   use seq.Seq
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = self
-  predicate produces (self : self) (visited : Seq.seq Item0.item) (_3' : self)
-  val produces (self : self) (visited : Seq.seq Item0.item) (_3' : self) : bool
-    ensures { result = produces self visited _3' }
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  predicate produces (self : self) (visited : Seq.seq Item0.item) (_o : self)
+  val produces (self : self) (visited : Seq.seq Item0.item) (_o : self) : bool
+    requires {Invariant0.invariant' self}
+    requires {Invariant0.invariant' _o}
+    ensures { result = produces self visited _o }
     
+  axiom produces_spec : forall self : self, visited : Seq.seq Item0.item, _o : self . Invariant0.invariant' self -> Invariant0.invariant' _o -> true
 end
 module Core_Iter_Range_Impl3_Next_Interface
   type a
@@ -567,15 +560,17 @@ module Core_Iter_Range_Impl3_Next_Interface
   use seq.Seq
   use Core_Option_Option_Type as Core_Option_Option_Type
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ops_Range_Range_Type.t_range a
   clone CreusotContracts_Std1_Iter_Iterator_Produces_Stub as Produces0 with
     type self = Core_Ops_Range_Range_Type.t_range a,
-    type Item0.item = a
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    type Item0.item = a,
+    axiom .
   clone CreusotContracts_Std1_Iter_Iterator_Completed_Stub as Completed0 with
     type self = Core_Ops_Range_Range_Type.t_range a
   clone Core_Iter_Traits_Iterator_Iterator_Item_Type as Item0 with
     type self = Core_Ops_Range_Range_Type.t_range a
-  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
-    type idx = a
   val next (self : borrowed (Core_Ops_Range_Range_Type.t_range a)) : Core_Option_Option_Type.t_option a
     requires {Invariant0.invariant' ( * self)}
     ensures { Invariant0.invariant' ( ^ self) }
@@ -835,6 +830,8 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub
   type idx
   use seq.Seq
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ops_Range_Range_Type.t_range idx
   predicate produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx)
     
 end
@@ -842,8 +839,11 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Produces_Interface
   type idx
   use seq.Seq
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ops_Range_Range_Type.t_range idx
   predicate produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx)
     
+  axiom produces_spec : forall self : Core_Ops_Range_Range_Type.t_range idx, visited : Seq.seq idx, o : Core_Ops_Range_Range_Type.t_range idx . Invariant0.invariant' self -> Invariant0.invariant' o -> true
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_Produces
   type idx
@@ -854,13 +854,18 @@ module CreusotContracts_Std1_Iter_Range_Impl0_Produces
     type self = idx,
     type DeepModelTy0.deepModelTy = int
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ops_Range_Range_Type.t_range idx
   predicate produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx)
     
    =
     Core_Ops_Range_Range_Type.range_end self = Core_Ops_Range_Range_Type.range_end o /\ DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) <= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) /\ (Seq.length visited > 0 -> DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) <= DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_end o)) /\ Seq.length visited = DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start o) - DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) /\ (forall i : int . 0 <= i /\ i < Seq.length visited -> DeepModel0.deep_model (Seq.get visited i) = DeepModel0.deep_model (Core_Ops_Range_Range_Type.range_start self) + i)
   val produces (self : Core_Ops_Range_Range_Type.t_range idx) (visited : Seq.seq idx) (o : Core_Ops_Range_Range_Type.t_range idx) : bool
+    requires {Invariant0.invariant' self}
+    requires {Invariant0.invariant' o}
     ensures { result = produces self visited o }
     
+  axiom produces_spec : forall self : Core_Ops_Range_Range_Type.t_range idx, visited : Seq.seq idx, o : Core_Ops_Range_Range_Type.t_range idx . Invariant0.invariant' self -> Invariant0.invariant' o -> true
 end
 module CreusotContracts_Ghost_Impl1_ShallowModel_Stub
   type t
@@ -954,11 +959,16 @@ module CreusotContracts_Resolve_Resolve_Resolve
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPre_Stub
   type i
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   predicate into_iter_pre (self : i)
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPre_Interface
   type i
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   predicate into_iter_pre (self : i)
+  axiom into_iter_pre_spec : forall self : i . Invariant0.invariant' self -> true
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPre
   type i
@@ -967,43 +977,83 @@ module CreusotContracts_Std1_Iter_Impl0_IntoIterPre
   predicate into_iter_pre (self : i) =
     Invariant0.invariant' self
   val into_iter_pre (self : i) : bool
+    requires {Invariant0.invariant' self}
     ensures { result = into_iter_pre self }
     
+  axiom into_iter_pre_spec : forall self : i . Invariant0.invariant' self -> true
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPost_Stub
   type i
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   predicate into_iter_post (self : i) (res : i)
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPost_Interface
   type i
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   predicate into_iter_post (self : i) (res : i)
+  axiom into_iter_post_spec : forall self : i, res : i . Invariant0.invariant' self -> Invariant0.invariant' res -> true
 end
 module CreusotContracts_Std1_Iter_Impl0_IntoIterPost
   type i
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = i
   predicate into_iter_post (self : i) (res : i) =
     self = res
   val into_iter_post (self : i) (res : i) : bool
+    requires {Invariant0.invariant' self}
+    requires {Invariant0.invariant' res}
     ensures { result = into_iter_post self res }
     
+  axiom into_iter_post_spec : forall self : i, res : i . Invariant0.invariant' self -> Invariant0.invariant' res -> true
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited_Stub
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  function is_inhabited (_1' : ()) : bool
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited_Interface
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  function is_inhabited (_1' : ()) : bool
+  axiom is_inhabited_spec : forall _1' : () . is_inhabited _1' && (exists x : self . Invariant0.invariant' x /\ Invariant0.invariant' x)
+end
+module CreusotContracts_Invariant_Invariant_IsInhabited
+  type self
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = self
+  function is_inhabited (_1' : ()) : bool =
+    true
+  val is_inhabited (_1' : ()) : bool
+    ensures { result = is_inhabited _1' }
+    
+  axiom is_inhabited_spec : forall _1' : () . is_inhabited _1' && (exists x : self . Invariant0.invariant' x /\ Invariant0.invariant' x)
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl_Stub
   type idx
   use seq.Seq
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ops_Range_Range_Type.t_range idx
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
-    type idx = idx
-  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
-    type idx = idx
+    type idx = idx,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   function produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl_Interface
   type idx
   use seq.Seq
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ops_Range_Range_Type.t_range idx
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
-    type idx = idx
-  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
-    type idx = idx
+    type idx = idx,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   function produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
   axiom produces_refl_spec : forall a : Core_Ops_Range_Range_Type.t_range idx . Invariant0.invariant' a -> Produces0.produces a (Seq.empty ) a
 end
@@ -1011,10 +1061,12 @@ module CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl
   type idx
   use seq.Seq
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ops_Range_Range_Type.t_range idx
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
-    type idx = idx
-  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
-    type idx = idx
+    type idx = idx,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   function produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : () =
     ()
   val produces_refl (a : Core_Ops_Range_Range_Type.t_range idx) : ()
@@ -1027,10 +1079,12 @@ module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans_Stub
   type idx
   use seq.Seq
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ops_Range_Range_Type.t_range idx
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
-    type idx = idx
-  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
-    type idx = idx
+    type idx = idx,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   function produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
     
 end
@@ -1038,35 +1092,39 @@ module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans_Interface
   type idx
   use seq.Seq
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ops_Range_Range_Type.t_range idx
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
-    type idx = idx
-  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
-    type idx = idx
+    type idx = idx,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   function produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
     
-  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . Invariant0.invariant' a -> Invariant0.invariant' b -> Invariant0.invariant' c -> Produces0.produces a ab b -> Produces0.produces b bc c -> Produces0.produces a (Seq.(++) ab bc) c
+  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . Produces0.produces a ab b -> Produces0.produces b bc c -> Invariant0.invariant' a -> Invariant0.invariant' b -> Invariant0.invariant' c -> Produces0.produces a (Seq.(++) ab bc) c
 end
 module CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans
   type idx
   use seq.Seq
   use Core_Ops_Range_Range_Type as Core_Ops_Range_Range_Type
+  clone CreusotContracts_Invariant_Invariant_Invariant_Stub as Invariant0 with
+    type self = Core_Ops_Range_Range_Type.t_range idx
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces_Stub as Produces0 with
-    type idx = idx
-  clone CreusotContracts_Std1_Ops_Impl3_Invariant_Stub as Invariant0 with
-    type idx = idx
+    type idx = idx,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   function produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
     
    =
     ()
   val produces_trans (a : Core_Ops_Range_Range_Type.t_range idx) (ab : Seq.seq idx) (b : Core_Ops_Range_Range_Type.t_range idx) (bc : Seq.seq idx) (c : Core_Ops_Range_Range_Type.t_range idx) : ()
+    requires {Produces0.produces a ab b}
+    requires {Produces0.produces b bc c}
     requires {Invariant0.invariant' a}
     requires {Invariant0.invariant' b}
     requires {Invariant0.invariant' c}
-    requires {Produces0.produces a ab b}
-    requires {Produces0.produces b bc c}
     ensures { result = produces_trans a ab b bc c }
     
-  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . Invariant0.invariant' a -> Invariant0.invariant' b -> Invariant0.invariant' c -> Produces0.produces a ab b -> Produces0.produces b bc c -> Produces0.produces a (Seq.(++) ab bc) c
+  axiom produces_trans_spec : forall a : Core_Ops_Range_Range_Type.t_range idx, ab : Seq.seq idx, b : Core_Ops_Range_Range_Type.t_range idx, bc : Seq.seq idx, c : Core_Ops_Range_Range_Type.t_range idx . Produces0.produces a ab b -> Produces0.produces b bc c -> Invariant0.invariant' a -> Invariant0.invariant' b -> Invariant0.invariant' c -> Produces0.produces a (Seq.(++) ab bc) c
 end
 module CreusotContracts_Logic_Int_Impl18_DeepModel_Stub
   use prelude.Int
@@ -1612,26 +1670,35 @@ module SelectionSortGeneric_SelectionSort
     type t = borrowed (Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
     function ShallowModel0.shallow_model = ShallowModel1.shallow_model
+  clone CreusotContracts_Invariant_Invariant_Invariant as Invariant0 with
+    type self = Core_Ops_Range_Range_Type.t_range usize
   clone CreusotContracts_Std1_Iter_Range_Impl0_Produces as Produces0 with
     type idx = usize,
-    function DeepModel0.deep_model = DeepModel3.deep_model
-  clone CreusotContracts_Std1_Ops_Impl3_Invariant as Invariant0 with
-    type idx = usize
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    function DeepModel0.deep_model = DeepModel3.deep_model,
+    axiom .
   clone CreusotContracts_Std1_Iter_Range_Impl0_ProducesTrans as ProducesTrans0 with
     type idx = usize,
-    predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces,
+    predicate Invariant0.invariant' = Invariant0.invariant',
     axiom .
   clone CreusotContracts_Std1_Iter_Range_Impl0_ProducesRefl as ProducesRefl0 with
     type idx = usize,
     predicate Invariant0.invariant' = Invariant0.invariant',
     predicate Produces0.produces = Produces0.produces,
     axiom .
+  clone CreusotContracts_Invariant_Invariant_IsInhabited as IsInhabited0 with
+    type self = Core_Ops_Range_Range_Type.t_range usize,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   clone CreusotContracts_Std1_Iter_Impl0_IntoIterPost as IntoIterPost0 with
-    type i = Core_Ops_Range_Range_Type.t_range usize
+    type i = Core_Ops_Range_Range_Type.t_range usize,
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   clone CreusotContracts_Std1_Iter_Impl0_IntoIterPre as IntoIterPre0 with
     type i = Core_Ops_Range_Range_Type.t_range usize,
-    predicate Invariant0.invariant' = Invariant0.invariant'
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    axiom .
   clone CreusotContracts_Model_Impl1_ShallowModel as ShallowModel3 with
     type t = Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global),
     type ShallowModelTy0.shallowModelTy = Seq.seq t,
@@ -1702,8 +1769,8 @@ module SelectionSortGeneric_SelectionSort
   clone Core_Iter_Traits_Collect_Impl0_IntoIter_Interface as IntoIter0 with
     type i = Core_Ops_Range_Range_Type.t_range usize,
     predicate IntoIterPre0.into_iter_pre = IntoIterPre0.into_iter_pre,
-    predicate IntoIterPost0.into_iter_post = IntoIterPost0.into_iter_post,
-    predicate Invariant0.invariant' = Invariant0.invariant'
+    predicate Invariant0.invariant' = Invariant0.invariant',
+    predicate IntoIterPost0.into_iter_post = IntoIterPost0.into_iter_post
   clone Alloc_Vec_Impl1_Len_Interface as Len0 with
     type t = t,
     type a = Alloc_Alloc_Global_Type.t_global,

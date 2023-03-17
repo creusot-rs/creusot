@@ -160,19 +160,9 @@ extern_spec! {
     }
 }
 
-impl<Idx> Invariant for Range<Idx> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<Idx> Invariant for Range<Idx> {}
 
-impl<Idx> Invariant for RangeInclusive<Idx> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        pearlite! { true }
-    }
-}
+impl<Idx> Invariant for RangeInclusive<Idx> {}
 
 pub trait RangeInclusiveExt<Idx> {
     #[logic]

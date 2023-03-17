@@ -2,7 +2,7 @@ use crate::{
     backend::signature::sig_to_why3,
     ctx::*,
     translation::{
-        pearlite::{super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
+        pearlite::{self, super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
         specification::PreContract,
     },
 };
@@ -15,8 +15,8 @@ use rustc_ast::{
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    self, subst::SubstsRef, BorrowKind, ClosureKind, DefIdTree, ReErased, RegionKind, Ty, TyCtxt,
-    TyKind, UpvarCapture,
+    self, subst::SubstsRef, BorrowKind, ClosureKind, DefIdTree, EarlyBinder, InternalSubsts,
+    ReErased, RegionKind, Ty, TyCtxt, TyKind, UpvarCapture,
 };
 use rustc_resolve::Namespace;
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
@@ -90,6 +90,22 @@ pub(crate) fn is_law(tcx: TyCtxt, def_id: DefId) -> bool {
 
 pub(crate) fn is_extern_spec(tcx: TyCtxt, def_id: DefId) -> bool {
     get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "extern_spec"]).is_some()
+}
+
+pub(crate) fn is_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
+    let Some(assoc_item) = tcx.opt_associated_item(def_id) else { return false };
+    let Some(trait_item_did) = (match assoc_item.container {
+        ty::AssocItemContainer::TraitContainer => Some(def_id),
+        ty::AssocItemContainer::ImplContainer => assoc_item.trait_item_def_id,
+    }) else { return false };
+
+    tcx.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))
+        .map(|inv_did| inv_did == trait_item_did)
+        .unwrap_or(false)
+}
+
+pub(crate) fn ignore_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
+    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "ignore_type_invariant"]).is_some()
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
@@ -346,6 +362,13 @@ pub struct PreSignature<'tcx> {
     // program: bool,
 }
 
+impl<'tcx> PreSignature<'tcx> {
+    pub(crate) fn normalize(mut self, tcx: TyCtxt<'tcx>, param_env: ty::ParamEnv<'tcx>) -> Self {
+        self.contract = self.contract.normalize(tcx, param_env);
+        self
+    }
+}
+
 pub(crate) fn pre_sig_of<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
@@ -387,19 +410,56 @@ pub(crate) fn pre_sig_of<'tcx>(
     }
 
     let mut inputs: Vec<_> = inputs
-        .map(|(i, ty)| {
-            if i.name.as_str() == "result" {
-                ctx.crash_and_error(i.span, "`result` is not allowed as a parameter name")
-            } else {
-                (i.name, i.span, ty)
+        .enumerate()
+        .map(|(idx, (ident, ty))| {
+            if ident.name.as_str() == "result" {
+                ctx.crash_and_error(ident.span, "`result` is not allowed as a parameter name")
             }
+
+            let name = if ident.name.as_str().is_empty() {
+                anonymous_param_symbol(idx)
+            } else {
+                ident.name
+            };
+            (name, ident.span, ty)
         })
         .collect();
     if ctx.type_of(def_id).is_fn() && inputs.is_empty() {
         inputs.push((kw::Empty, DUMMY_SP, ctx.tcx.types.unit));
     };
 
-    PreSignature { inputs, output, contract }
+    let mut pre_sig = PreSignature { inputs, output, contract };
+    elaborate_type_invariants(ctx, def_id, &mut pre_sig);
+    pre_sig
+}
+
+fn elaborate_type_invariants<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    def_id: DefId,
+    pre_sig: &mut PreSignature<'tcx>,
+) {
+    if is_type_invariant(ctx.tcx, def_id) {
+        return;
+    }
+
+    let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
+    for (name, span, ty) in pre_sig.inputs.iter() {
+        if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
+            let term = EarlyBinder(term).subst(ctx.tcx, subst);
+            pre_sig.contract.requires.push(term);
+        }
+    }
+
+    if let Some(term) = pearlite::type_invariant_term(
+        ctx,
+        def_id,
+        Symbol::intern("result"),
+        ctx.tcx.def_span(def_id),
+        pre_sig.output,
+    ) {
+        let term = EarlyBinder(term).subst(ctx.tcx, subst);
+        pre_sig.contract.ensures.push(term);
+    }
 }
 
 pub(crate) fn signature_of<'tcx>(

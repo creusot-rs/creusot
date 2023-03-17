@@ -105,7 +105,6 @@ extern_spec! {
             }
 
             impl<T, A : Allocator> Extend<T> for Vec<T, A> {
-                #[requires(iter.invariant())]
                 #[ensures(exists<done_ : &mut I, prod: Seq<I::Item>>
                     done_.completed() && iter.produces(prod, *done_) && @^self == (@self).concat(prod)
                 )]
@@ -202,12 +201,7 @@ impl<T, A: Allocator> Resolve for std::vec::IntoIter<T, A> {
     }
 }
 
-impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {
-    #[predicate]
-    fn invariant(self) -> bool {
-        true
-    }
-}
+impl<T, A: Allocator> Invariant for std::vec::IntoIter<T, A> {}
 
 impl<T, A: Allocator> Iterator for std::vec::IntoIter<T, A> {
     #[predicate]
