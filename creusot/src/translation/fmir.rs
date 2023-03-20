@@ -6,7 +6,7 @@ use rustc_middle::{
     mir::{BasicBlock, BinOp, Place, UnOp},
     ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TypeVisitable},
 };
-use rustc_span::{Span, Symbol, DUMMY_SP};
+use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
 
 #[derive(Clone)]
@@ -82,15 +82,7 @@ pub(crate) fn resolve_predicate_of2<'tcx>(
     param_env: ParamEnv<'tcx>,
     ty: Ty<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
-    if !super::function::resolve_trait_loaded(ctx.tcx) {
-        ctx.warn(
-            DUMMY_SP,
-            "load the `creusot_contract` crate to enable resolution of mutable borrows.",
-        );
-        return None;
-    }
-
-    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method")).unwrap();
+    let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method"))?;
     let subst = ctx.mk_substs([GenericArg::from(ty)].iter());
 
     let resolve_impl = traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;

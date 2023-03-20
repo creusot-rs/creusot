@@ -62,7 +62,6 @@ fn translate_ty_inner<'tcx>(
     match ty.kind() {
         Bool => MlT::Bool,
         Char => {
-            ctx.warn(span, "support for string types is partial and experimental, expect to encounter limitations.");
             names.import_prelude_module(PreludeModule::Char);
             MlT::Char
         }
@@ -138,10 +137,7 @@ fn translate_ty_inner<'tcx>(
                 vec![translate_ty_inner(trans, ctx, names, span, *ty)],
             )
         }
-        Str => {
-            ctx.warn(span, "support for string types is partial and experimental, expect to encounter limitations.");
-            MlT::TConstructor("string".into())
-        }
+        Str => MlT::TConstructor("string".into()),
         // Slice()
         Never => MlT::Tuple(vec![]),
         RawPtr(_) => {
