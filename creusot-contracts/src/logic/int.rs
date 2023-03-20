@@ -3,11 +3,7 @@ use crate::{
     *,
 };
 
-#[cfg_attr(
-    creusot,
-    rustc_diagnostic_item = "creusot_int",
-    creusot::builtins = "prelude.Int.int"
-)]
+#[cfg_attr(creusot, rustc_diagnostic_item = "creusot_int", creusot::builtins = "prelude.Int.int")]
 pub struct Int(*mut ());
 
 impl Int {
