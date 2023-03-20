@@ -1,6 +1,6 @@
 use crate::{std::ops::Deref, *};
 
-#[cfg_attr(feature = "contracts", creusot::builtins = "prelude.Ghost.ghost_ty")]
+#[cfg_attr(creusot, creusot::builtins = "prelude.Ghost.ghost_ty")]
 pub struct Ghost<T>(std::marker::PhantomData<T>)
 where
     T: ?Sized;

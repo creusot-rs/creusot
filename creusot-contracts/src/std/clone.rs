@@ -1,7 +1,7 @@
 use crate::*;
 pub use ::std::clone::*;
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 pub use creusot_contracts_proc::Clone;
 
 extern_spec! {

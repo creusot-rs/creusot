@@ -1,10 +1,10 @@
 use crate::*;
 
-#[cfg_attr(feature = "contracts", creusot::builtins = "set.Set.set")]
+#[cfg_attr(creusot, creusot::builtins = "set.Set.set")]
 pub struct Set<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T: ?Sized> Set<T> {
-    #[cfg(feature = "contracts")]
+    #[cfg(creusot)]
     #[trusted]
     #[creusot::builtins = "set.Set.empty"]
     pub const EMPTY: Self = { Set(std::marker::PhantomData) };

@@ -1,6 +1,6 @@
 use crate::*;
 
-#[cfg_attr(feature = "contracts", creusot::builtins = "map.Map.map")]
+#[cfg_attr(creusot, creusot::builtins = "map.Map.map")]
 pub struct Mapping<A, B>(std::marker::PhantomData<(A, B)>);
 
 impl<A, B> Mapping<A, B> {
@@ -25,7 +25,7 @@ impl<A, B> Mapping<A, B> {
         absurd
     }
 
-    #[cfg_attr(feature = "contracts", creusot::no_translate)]
+    #[cfg_attr(creusot, creusot::no_translate)]
     #[trusted]
     #[logic]
     #[creusot::builtins = "prelude.Mapping.from_fn"]

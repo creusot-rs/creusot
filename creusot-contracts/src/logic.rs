@@ -1,4 +1,4 @@
-#![cfg_attr(not(feature = "contracts"), allow(unused_imports))]
+#![cfg_attr(not(creusot), allow(unused_imports))]
 
 mod fset;
 mod int;

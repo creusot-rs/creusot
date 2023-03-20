@@ -1,6 +1,6 @@
 use crate::*;
 
-#[cfg_attr(feature = "contracts", rustc_diagnostic_item = "creusot_resolve")]
+#[cfg_attr(creusot, rustc_diagnostic_item = "creusot_resolve")]
 #[trusted]
 pub trait Resolve {
     #[predicate]
@@ -24,7 +24,7 @@ impl<T: ?Sized> Resolve for &mut T {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 #[trusted]
 impl<T> Resolve for T {
     #[predicate]

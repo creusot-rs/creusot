@@ -1,7 +1,7 @@
 use crate::{logic::OrdLogic, *};
 pub use ::std::cmp::*;
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 pub use creusot_contracts_proc::PartialEq;
 
 extern_spec! {
