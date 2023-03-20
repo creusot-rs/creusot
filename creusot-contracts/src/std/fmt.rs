@@ -1,5 +1,5 @@
 use crate::*;
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 use ::std::fmt::{ArgumentV1, Arguments, Debug, Formatter};
 
 extern_spec! {

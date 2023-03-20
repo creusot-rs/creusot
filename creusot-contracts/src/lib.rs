@@ -1,5 +1,5 @@
 #![cfg_attr(
-    feature = "contracts",
+    creusot,
     feature(unsized_locals, fn_traits, min_specialization),
     allow(incomplete_features),
     feature(slice_take),
@@ -7,11 +7,11 @@
 )]
 #![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns, box_syntax))]
 #![feature(step_trait, allocator_api, unboxed_closures, tuple_trait)]
-#![cfg_attr(not(feature = "contracts"), feature(rustc_attrs))]
+#![cfg_attr(not(creusot), feature(rustc_attrs))]
 
 extern crate self as creusot_contracts;
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 mod macros {
     /// A pre-condition of a function or trait item
     pub use creusot_contracts_proc::requires;
@@ -69,7 +69,7 @@ mod macros {
     pub use creusot_contracts_proc::maintains;
 }
 
-#[cfg(not(feature = "contracts"))]
+#[cfg(not(creusot))]
 mod macros {
     /// A pre-condition of a function or trait item
     pub use creusot_contracts_dummy::requires;
@@ -127,19 +127,19 @@ mod macros {
     pub use creusot_contracts_dummy::maintains;
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 #[path = "stubs.rs"]
 pub mod __stubs;
 
 pub mod logic;
 
-#[cfg_attr(not(feature = "contracts"), allow(unused))]
+#[cfg_attr(not(creusot), allow(unused))]
 pub mod std;
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 pub mod ghost;
 
-#[cfg(not(feature = "contracts"))]
+#[cfg(not(creusot))]
 pub mod ghost {
     pub struct Ghost<T>(std::marker::PhantomData<T>)
     where

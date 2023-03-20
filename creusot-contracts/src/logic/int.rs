@@ -4,7 +4,7 @@ use crate::{
 };
 
 #[cfg_attr(
-    feature = "contracts",
+    creusot,
     rustc_diagnostic_item = "creusot_int",
     creusot::builtins = "prelude.Int.int"
 )]
@@ -92,7 +92,7 @@ mach_int!(i64, "prelude.Int64");
 mach_int!(i128, "prelude.Int128");
 mach_int!(isize, "prelude.IntSize");
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl Add<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -102,7 +102,7 @@ impl Add<Int> for Int {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl Sub<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -112,7 +112,7 @@ impl Sub<Int> for Int {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl Mul<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -122,7 +122,7 @@ impl Mul<Int> for Int {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl Div<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -132,7 +132,7 @@ impl Div<Int> for Int {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl Rem<Int> for Int {
     type Output = Int;
     #[creusot::no_translate]
@@ -142,7 +142,7 @@ impl Rem<Int> for Int {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl Neg for Int {
     type Output = Int;
     #[creusot::no_translate]

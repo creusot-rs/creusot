@@ -1,10 +1,10 @@
 use crate::{std::ops::Index, *};
 
-#[cfg_attr(feature = "contracts", creusot::builtins = "seq.Seq.seq")]
+#[cfg_attr(creusot, creusot::builtins = "seq.Seq.seq")]
 pub struct Seq<T: ?Sized>(std::marker::PhantomData<T>);
 
 impl<T> Seq<T> {
-    #[cfg(feature = "contracts")]
+    #[cfg(creusot)]
     #[trusted]
     #[creusot::builtins = "seq.Seq.empty"]
     pub const EMPTY: Self = { Seq(std::marker::PhantomData) };
@@ -124,7 +124,7 @@ impl<T> Seq<T> {
 // Relies on the fact we don't enforce that implementations of traits are of
 // the same function type as the trait signature.. When this is addressed
 // the following instance will error.
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl<T> std::ops::Index<Int> for Seq<T> {
     type Output = T;
 

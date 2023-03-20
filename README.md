@@ -78,7 +78,7 @@ To add contracts to your programs you will need to use the `creusot-contracts` c
 [dependencies]
 creusot-contracts = { path = "/path/to/creusot/creusot-contracts" }
 ```
-and enabling the `contracts` feature through running with `cargo creusot -- --features=contracts`.
+and enabling the `contracts` feature through running with `cargo creusot`.
 When that feature is enabled `rustc` cannot successfully compile your programs, so we recommend adding a feature to your program which conditionally enables the `contracts` feature like so:
 
 ```toml

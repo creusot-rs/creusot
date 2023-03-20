@@ -1,6 +1,6 @@
 use crate::*;
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 use ::std::alloc::Allocator;
 
 /// The shallow model of a type is typically used to specify a data
@@ -55,7 +55,7 @@ impl<T: ShallowModel + ?Sized> ShallowModel for &mut T {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     type DeepModelTy = T::DeepModelTy;
     #[logic]
@@ -64,7 +64,7 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Box<T, A> {
     }
 }
 
-#[cfg(feature = "contracts")]
+#[cfg(creusot)]
 impl<T: ShallowModel + ?Sized, A: Allocator> ShallowModel for Box<T, A> {
     type ShallowModelTy = T::ShallowModelTy;
     #[logic]
