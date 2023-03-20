@@ -281,18 +281,18 @@ pub(crate) fn contract_of<'tcx>(
 pub(crate) fn is_overloaded_item(tcx: TyCtxt, def_id: DefId) -> bool {
     let def_path = tcx.def_path_str(def_id);
 
-    def_path == "std::ops::Index::index"
-        || def_path == "std::convert::Into::into"
-        || def_path == "std::convert::From::from"
-        || def_path == "std::ops::Mul::mul"
-        || def_path == "std::ops::Add::add"
-        || def_path == "std::ops::Sub::sub"
-        || def_path == "std::ops::Div::div"
-        || def_path == "std::ops::Rem::rem"
-        || def_path == "std::ops::Neg::neg"
-        || def_path == "std::boxed::Box::<T>::new"
-        || def_path == "std::ops::Deref::deref"
-        || def_path == "std::clone::Clone::clone"
+    def_path.ends_with("::ops::Index::index")
+        || def_path.ends_with("::convert::Into::into")
+        || def_path.ends_with("::convert::From::from")
+        || def_path.ends_with("::ops::Mul::mul")
+        || def_path.ends_with("::ops::Add::add")
+        || def_path.ends_with("::ops::Sub::sub")
+        || def_path.ends_with("::ops::Div::div")
+        || def_path.ends_with("::ops::Rem::rem")
+        || def_path.ends_with("::ops::Neg::neg")
+        || def_path.ends_with("::boxed::Box::<T>::new")
+        || def_path.ends_with("::ops::Deref::deref")
+        || def_path.ends_with("::clone::Clone::clone")
 }
 
 pub(crate) struct PurityVisitor<'a, 'tcx> {
