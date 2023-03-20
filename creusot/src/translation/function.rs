@@ -634,10 +634,6 @@ pub(crate) fn closure_unnest<'tcx>(
     unnest
 }
 
-pub(crate) fn resolve_trait_loaded(tcx: TyCtxt) -> bool {
-    tcx.get_diagnostic_item(Symbol::intern("creusot_resolve")).is_some()
-}
-
 // Closures inherit the generic parameters of the original function they were defined in, but
 // add 3 'ghost' generics tracking metadata about the closure. We choose to erase those parameters,
 // as they contain a function type along with other irrelevant details (for us).

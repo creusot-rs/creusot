@@ -12,7 +12,7 @@ impl ToWhy {
         ToWhy { opts }
     }
 }
-use crate::ctx;
+use crate::{ctx, lints};
 
 impl Callbacks for ToWhy {
     fn config(&mut self, config: &mut Config) {
@@ -23,7 +23,15 @@ impl Callbacks for ToWhy {
                 cleanup_spec_closures(tcx, def_id.def_id_for_type_of(), &mut mir);
                 tcx.alloc_steal_mir(mir)
             };
-        })
+        });
+
+        let previous = config.register_lints.take();
+        config.register_lints = Some(Box::new(move |sess, lint_store| {
+            if let Some(previous) = &previous {
+                (previous)(sess, lint_store);
+            }
+            lints::register_lints(sess, lint_store)
+        }))
     }
 
     fn after_expansion<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
