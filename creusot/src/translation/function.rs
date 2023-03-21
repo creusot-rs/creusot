@@ -237,7 +237,13 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn emit_assignment(&mut self, lhs: &Place<'tcx>, rhs: RValue<'tcx>) {
-        // TODO assume ty inv
+        if lhs.has_deref() {
+            let local_ty = self.body.local_decls[lhs.local].ty;
+            if let Some((id, substs)) = self.ctx.type_invariant(self.def_id, local_ty) {
+                self.emit_statement(fmir::Statement::AssertTyInv(id, substs, lhs.local.into()));
+            }
+        }
+
         self.emit_statement(fmir::Statement::Assignment(*lhs, rhs));
     }
 
