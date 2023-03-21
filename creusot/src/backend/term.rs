@@ -82,7 +82,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                 match (op, self.pure) {
                     (Div, _) => Exp::Call(box Exp::pure_var("div".into()), vec![lhs, rhs]),
                     (Rem, _) => Exp::Call(box Exp::pure_var("mod".into()), vec![lhs, rhs]),
-                    (Eq | Ne, Purity::Program) => {
+                    (Eq | Ne | Lt | Le | Gt | Ge, Purity::Program) => {
                         let (a, lhs) = if lhs.is_pure() {
                             (lhs, None)
                         } else {
