@@ -82,7 +82,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                 match (op, self.pure) {
                     (Div, _) => Exp::pure_var("div".into()).app(vec![lhs, rhs]),
                     (Rem, _) => Exp::pure_var("mod".into()).app(vec![lhs, rhs]),
-                    (Eq | Ne, Purity::Program) => {
+                    (Eq | Ne | Lt | Le | Gt | Ge, Purity::Program) => {
                         let (a, lhs) = if lhs.is_pure() {
                             (lhs, None)
                         } else {
@@ -95,7 +95,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                             (Exp::Var("b".into(), self.pure), Some(rhs))
                         };
 
-                        let op = if let pearlite::BinOp::Eq = op { BinOp::Eq } else { BinOp::Ne };
+                        let op = binop_to_binop(op, Purity::Logic);
                         let mut inner =
                             Exp::Pure(Box::new(Exp::BinaryOp(op, Box::new(a), Box::new(b))));
 
