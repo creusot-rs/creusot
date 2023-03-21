@@ -10,3 +10,8 @@ pub fn omg(mut x: UsesArray) {
 
     proof_assert! { @(@x.0)[0] == 5};
 }
+
+pub fn call_omg() {
+    let arr = [3_i64; 5];
+    omg(UsesArray(arr))
+}

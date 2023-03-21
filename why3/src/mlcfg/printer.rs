@@ -772,6 +772,7 @@ impl Print for Exp {
             Exp::Sequence(fields) => alloc
                 .intersperse(fields.iter().map(|f| f.pretty(alloc, env)), "; ")
                 .enclose("[|", "|]"),
+            Exp::FnLit(e) => alloc.text("fun _ -> ").append(e.pretty(alloc, env)).parens(),
         }
     }
 }

@@ -44,6 +44,7 @@ pub enum Expr<'tcx> {
     Span(Span, Box<Expr<'tcx>>),
     Len(Box<Expr<'tcx>>),
     Array(Vec<Expr<'tcx>>),
+    Repeat(Box<Expr<'tcx>>, Box<Expr<'tcx>>),
 }
 
 #[derive(Clone)]

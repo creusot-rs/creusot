@@ -173,6 +173,10 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 let op_ty = op.ty(self.body, self.tcx);
                 Expr::Cast(box self.translate_operand(op), op_ty, *ty)
             }
+            Rvalue::Repeat(op, len) => Expr::Repeat(
+                box self.translate_operand(op),
+                box crate::constant::from_ty_const(self.ctx, *len, self.param_env(), si.span),
+            ),
             Rvalue::Cast(CastKind::Pointer(PointerCast::Unsize), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true) && t.ty.is_slice() {
                     // treat &[T; N] to &[T] casts as normal assignments
@@ -197,10 +201,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 si.span,
                 &format!("Pointer casts are currently unsupported {rvalue:?}"),
             ),
-            Rvalue::CopyForDeref(_) => panic!(),
-            Rvalue::ShallowInitBox(_, _)
+            Rvalue::CopyForDeref(_)
+            | Rvalue::ShallowInitBox(_, _)
             | Rvalue::NullaryOp(_, _)
-            | Rvalue::Repeat(_, _)
             | Rvalue::ThreadLocalRef(_)
             | Rvalue::AddressOf(_, _) => self.ctx.crash_and_error(
                 si.span,
