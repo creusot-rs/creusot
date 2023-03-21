@@ -173,9 +173,14 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 let op_ty = op.ty(self.body, self.tcx);
                 Expr::Cast(box self.translate_operand(op), op_ty, *ty)
             }
-            Rvalue::Cast(CastKind::Pointer(PointerCast::Unsize), _, _) => {
-                // TODO: Since we don't do anything with casts into `dyn` objects, just ignore them
-                return;
+            Rvalue::Cast(CastKind::Pointer(PointerCast::Unsize), op, ty) => {
+                if let Some(t) = ty.builtin_deref(true) && t.ty.is_slice() {
+                    // treat &[T; N] to &[T] casts as normal assignments
+                    self.translate_operand(op)
+                } else {
+                    // TODO: Since we don't do anything with casts into `dyn` objects, just ignore them
+                    return;
+                }
             }
             Rvalue::Cast(
                 CastKind::Pointer(_)

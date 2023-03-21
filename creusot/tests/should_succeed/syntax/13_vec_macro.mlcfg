@@ -1,0 +1,343 @@
+
+module Core_Ptr_NonNull_NonNull_Type
+  use prelude.Opaque
+  type t_nonnull 't =
+    | C_NonNull opaque_ptr
+    
+end
+module Core_Marker_PhantomData_Type
+  type t_phantomdata 't =
+    | C_PhantomData
+    
+end
+module Core_Ptr_Unique_Unique_Type
+  use Core_Marker_PhantomData_Type as Core_Marker_PhantomData_Type
+  use Core_Ptr_NonNull_NonNull_Type as Core_Ptr_NonNull_NonNull_Type
+  type t_unique 't =
+    | C_Unique (Core_Ptr_NonNull_NonNull_Type.t_nonnull 't) (Core_Marker_PhantomData_Type.t_phantomdata 't)
+    
+end
+module Alloc_RawVec_RawVec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  use Core_Ptr_Unique_Unique_Type as Core_Ptr_Unique_Unique_Type
+  type t_rawvec 't 'a =
+    | C_RawVec (Core_Ptr_Unique_Unique_Type.t_unique 't) usize 'a
+    
+end
+module Alloc_Vec_Vec_Type
+  use prelude.Int
+  use prelude.UIntSize
+  use Alloc_RawVec_RawVec_Type as Alloc_RawVec_RawVec_Type
+  type t_vec 't 'a =
+    | C_Vec (Alloc_RawVec_RawVec_Type.t_rawvec 't 'a) usize
+    
+end
+module Core_Num_Impl12_Max_Stub
+  use prelude.Int
+  use prelude.UIntSize
+  val constant mAX'  : usize
+end
+module Core_Num_Impl12_Max
+  use prelude.Int
+  use prelude.UIntSize
+  let constant mAX'  : usize = [@vc:do_not_keep_trace] [@vc:sp]
+    (18446744073709551615 : usize)
+end
+module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub
+  type t
+  type a
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl12_Max_Stub as Max0
+  function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+end
+module CreusotContracts_Std1_Vec_Impl0_ShallowModel_Interface
+  type t
+  type a
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl12_Max_Stub as Max0
+  function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+end
+module CreusotContracts_Std1_Vec_Impl0_ShallowModel
+  type t
+  type a
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone Core_Num_Impl12_Max_Stub as Max0
+  function shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+  val shallow_model (self : Alloc_Vec_Vec_Type.t_vec t a) : Seq.seq t
+    ensures { result = shallow_model self }
+    
+  axiom shallow_model_spec : forall self : Alloc_Vec_Vec_Type.t_vec t a . Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+end
+module Alloc_Alloc_Global_Type
+  type t_global  =
+    | C_Global
+    
+end
+module Alloc_Vec_Impl0_New_Interface
+  type t
+  use seq.Seq
+  clone Core_Num_Impl12_Max_Stub as Max0
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  val new (_1' : ()) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+    ensures { Seq.length (ShallowModel0.shallow_model result) = 0 }
+    
+end
+module Alloc_Vec_FromElem_Interface
+  type t
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  clone Core_Num_Impl12_Max_Stub as Max0
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
+    type t = t,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  val from_elem (elem : t) (n : usize) : Alloc_Vec_Vec_Type.t_vec t (Alloc_Alloc_Global_Type.t_global)
+    ensures { Seq.length (ShallowModel0.shallow_model result) = UIntSize.to_int n }
+    ensures { forall i : int . 0 <= i /\ i < UIntSize.to_int n -> Seq.get (ShallowModel0.shallow_model result) i = elem }
+    
+end
+module CreusotContracts_Model_ShallowModel_ShallowModelTy_Type
+  type self
+  type shallowModelTy
+end
+module CreusotContracts_Model_ShallowModel_ShallowModel_Stub
+  type self
+  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
+    type self = self
+  function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+end
+module CreusotContracts_Model_ShallowModel_ShallowModel_Interface
+  type self
+  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
+    type self = self
+  function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+end
+module CreusotContracts_Model_ShallowModel_ShallowModel
+  type self
+  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
+    type self = self
+  function shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+  val shallow_model (self : self) : ShallowModelTy0.shallowModelTy
+    ensures { result = shallow_model self }
+    
+end
+module CreusotContracts_Model_Impl5_ShallowModel_Stub
+  type t
+  type a
+  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
+    type self = t
+  function shallow_model (self : t) : ShallowModelTy0.shallowModelTy
+end
+module CreusotContracts_Model_Impl5_ShallowModel_Interface
+  type t
+  type a
+  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
+    type self = t
+  function shallow_model (self : t) : ShallowModelTy0.shallowModelTy
+end
+module CreusotContracts_Model_Impl5_ShallowModel
+  type t
+  type a
+  clone CreusotContracts_Model_ShallowModel_ShallowModelTy_Type as ShallowModelTy0 with
+    type self = t
+  clone CreusotContracts_Model_ShallowModel_ShallowModel_Stub as ShallowModel0 with
+    type self = t,
+    type ShallowModelTy0.shallowModelTy = ShallowModelTy0.shallowModelTy
+  function shallow_model (self : t) : ShallowModelTy0.shallowModelTy =
+    ShallowModel0.shallow_model self
+  val shallow_model (self : t) : ShallowModelTy0.shallowModelTy
+    ensures { result = shallow_model self }
+    
+end
+module Alloc_Slice_Impl0_IntoVec_Interface
+  type t
+  type a
+  use prelude.Slice
+  use prelude.Seq
+  use seq.Seq
+  use seq.Seq
+  clone Core_Num_Impl12_Max_Stub as Max0
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Model_Impl5_ShallowModel_Stub as ShallowModel1 with
+    type t = seq t,
+    type a = a,
+    type ShallowModelTy0.shallowModelTy = Seq.seq t
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel_Stub as ShallowModel0 with
+    type t = t,
+    type a = a,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  val into_vec (self : seq t) : Alloc_Vec_Vec_Type.t_vec t a
+    ensures { ShallowModel0.shallow_model result = ShallowModel1.shallow_model self }
+    
+end
+module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Stub
+  type t
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use prelude.Slice
+  use prelude.Seq
+  clone Core_Num_Impl12_Max_Stub as Max0
+  function shallow_model (self : seq t) : Seq.seq t
+end
+module CreusotContracts_Std1_Slice_Impl0_ShallowModel_Interface
+  type t
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use prelude.Slice
+  use prelude.Seq
+  clone Core_Num_Impl12_Max_Stub as Max0
+  function shallow_model (self : seq t) : Seq.seq t
+  axiom shallow_model_spec : forall self : seq t . shallow_model self = Slice.id self && Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+end
+module CreusotContracts_Std1_Slice_Impl0_ShallowModel
+  type t
+  use seq.Seq
+  use prelude.UIntSize
+  use prelude.Int
+  use prelude.Slice
+  use prelude.Seq
+  clone Core_Num_Impl12_Max_Stub as Max0
+  function shallow_model (self : seq t) : Seq.seq t
+  val shallow_model (self : seq t) : Seq.seq t
+    ensures { result = shallow_model self }
+    
+  axiom shallow_model_spec : forall self : seq t . shallow_model self = Slice.id self && Seq.length (shallow_model self) <= UIntSize.to_int Max0.mAX'
+end
+module C13VecMacro_X_Interface
+  val x [#"../13_vec_macro.rs" 5 0 5 10] (_1' : ()) : ()
+end
+module C13VecMacro_X
+  use prelude.Int
+  use prelude.UInt32
+  use prelude.Int32
+  use prelude.Slice
+  use prelude.Seq
+  use seq.Seq
+  use prelude.UIntSize
+  clone Core_Num_Impl12_Max as Max0
+  clone CreusotContracts_Std1_Slice_Impl0_ShallowModel as ShallowModel3 with
+    type t = int32,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  use seq.Seq
+  use Alloc_Alloc_Global_Type as Alloc_Alloc_Global_Type
+  clone CreusotContracts_Model_Impl5_ShallowModel as ShallowModel2 with
+    type t = seq int32,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    type ShallowModelTy0.shallowModelTy = Seq.seq int32,
+    function ShallowModel0.shallow_model = ShallowModel3.shallow_model
+  use Alloc_Vec_Vec_Type as Alloc_Vec_Vec_Type
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel1 with
+    type t = int32,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  clone Alloc_Slice_Impl0_IntoVec_Interface as IntoVec0 with
+    type t = int32,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    function ShallowModel1.shallow_model = ShallowModel2.shallow_model,
+    val Max0.mAX' = Max0.mAX'
+  clone Alloc_Vec_FromElem_Interface as FromElem0 with
+    type t = int32,
+    function ShallowModel0.shallow_model = ShallowModel1.shallow_model,
+    val Max0.mAX' = Max0.mAX'
+  clone CreusotContracts_Std1_Vec_Impl0_ShallowModel as ShallowModel0 with
+    type t = uint32,
+    type a = Alloc_Alloc_Global_Type.t_global,
+    val Max0.mAX' = Max0.mAX',
+    axiom .
+  clone Alloc_Vec_Impl0_New_Interface as New0 with
+    type t = uint32,
+    function ShallowModel0.shallow_model = ShallowModel0.shallow_model,
+    val Max0.mAX' = Max0.mAX'
+  let rec cfg x [#"../13_vec_macro.rs" 5 0 5 10] [@cfg:stackify] [@cfg:subregion_analysis] (_1' : ()) : ()
+   = [@vc:do_not_keep_trace] [@vc:sp]
+  var _0 : ();
+  var v0_1 : Alloc_Vec_Vec_Type.t_vec uint32 (Alloc_Alloc_Global_Type.t_global);
+  var _2 : ();
+  var v1_4 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _5 : ();
+  var v2_7 : Alloc_Vec_Vec_Type.t_vec int32 (Alloc_Alloc_Global_Type.t_global);
+  var _8 : seq int32;
+  var _9 : array int32;
+  var _10 : array int32;
+  var _11 : ();
+  {
+    goto BB0
+  }
+  BB0 {
+    v0_1 <- ([#"../13_vec_macro.rs" 6 23 6 29] New0.new ());
+    goto BB1
+  }
+  BB1 {
+    assert { [#"../13_vec_macro.rs" 7 20 7 36] Seq.length (ShallowModel0.shallow_model v0_1) = 0 };
+    goto BB2
+  }
+  BB2 {
+    _2 <- ();
+    v1_4 <- ([#"../13_vec_macro.rs" 9 13 9 23] FromElem0.from_elem ([#"../13_vec_macro.rs" 9 18 9 19] (0 : int32)) ([#"../13_vec_macro.rs" 9 21 9 22] (2 : usize)));
+    goto BB3
+  }
+  BB3 {
+    assert { [#"../13_vec_macro.rs" 10 20 10 36] Seq.length (ShallowModel1.shallow_model v1_4) = 2 };
+    goto BB4
+  }
+  BB4 {
+    _5 <- ();
+    _10 <- Seq.create 3 [|[#"../13_vec_macro.rs" 12 18 12 19] (1 : int32); [#"../13_vec_macro.rs" 12 21 12 22] (2 : int32); [#"../13_vec_macro.rs" 12 24 12 25] (3 : int32)|];
+    _9 <- _10;
+    goto BB5
+  }
+  BB5 {
+    _8 <- _9;
+    goto BB6
+  }
+  BB6 {
+    v2_7 <- ([#"../13_vec_macro.rs" 12 13 12 26] IntoVec0.into_vec _8);
+    goto BB7
+  }
+  BB7 {
+    assert { [#"../13_vec_macro.rs" 13 20 13 36] Seq.length (ShallowModel1.shallow_model v2_7) = 3 };
+    goto BB8
+  }
+  BB8 {
+    _11 <- ();
+    _0 <- ();
+    goto BB9
+  }
+  BB9 {
+    goto BB10
+  }
+  BB10 {
+    goto BB11
+  }
+  BB11 {
+    return _0
+  }
+  
+end
