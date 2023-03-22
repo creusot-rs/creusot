@@ -439,6 +439,12 @@ impl<'tcx> Expr<'tcx> {
                 .app_to(Exp::Sequence(
                     fields.into_iter().map(|f| f.to_why(ctx, names, body)).collect(),
                 )),
+            Expr::Repeat(e, len) => Exp::impure_qvar(QName::from_string("Seq.create").unwrap())
+                .app_to(
+                    Exp::impure_qvar(QName::from_string("UIntSize.to_int").unwrap())
+                        .app_to(len.to_why(ctx, names, body)),
+                )
+                .app_to(Exp::FnLit(box e.to_why(ctx, names, body))),
         }
     }
 
@@ -460,6 +466,10 @@ impl<'tcx> Expr<'tcx> {
             Expr::Span(_, e) => e.invalidated_places(places),
             Expr::Len(e) => e.invalidated_places(places),
             Expr::Array(f) => f.iter().for_each(|f| f.invalidated_places(places)),
+            Expr::Repeat(e, len) => {
+                e.invalidated_places(places);
+                len.invalidated_places(places)
+            }
         }
     }
 }

@@ -1,6 +1,9 @@
 use crate::{
     invariant::Invariant,
-    std::ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
+    std::{
+        alloc::Allocator,
+        ops::{Index, IndexMut, Range, RangeFrom, RangeFull, RangeTo, RangeToInclusive},
+    },
     *,
 };
 pub use ::std::slice::*;
@@ -274,6 +277,9 @@ extern_spec! {
             forall<j:usize> i <= j && @j < (@self).len() ==> x.deep_model() < self.deep_model()[@j])]
         fn binary_search(&self, x : &T) -> Result<usize, usize>
             where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
+
+        #[ensures(@result == @self_)]
+        fn into_vec<A: Allocator>(self_: Box<Self, A>) -> Vec<T, A>;
     }
 
     impl<T, I> IndexMut<I> for [T]

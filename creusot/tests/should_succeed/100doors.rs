@@ -13,7 +13,7 @@
 //! +   Absence of array access out of bounds
 
 extern crate creusot_contracts;
-use creusot_contracts::*;
+use creusot_contracts::{vec, *};
 
 pub fn f() {
     let mut door_open: Vec<bool> = vec![false; 100];

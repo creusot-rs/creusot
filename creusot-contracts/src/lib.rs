@@ -199,3 +199,20 @@ pub use crate::std::{
     ops::{FnExt as _, FnMutExt as _, FnOnceExt as _, RangeInclusiveExt as _},
     slice::SliceExt as _,
 };
+
+// The std vec macro uses special magic to construct the array argument
+// to Box::new directly on the heap. Because the generated MIR is hard
+// to translate, we provide a custom vec macro which does not do this.
+#[macro_export]
+macro_rules! vec {
+    () => (
+        ::std::vec::Vec::new()
+    );
+    ($elem:expr; $n:expr) => (
+        ::std::vec::from_elem($elem, $n)
+    );
+    ($($x:expr),*) => (
+        <[_]>::into_vec(::std::boxed::Box::new([$($x),*]))
+    );
+    ($($x:expr,)*) => (vec![$($x),*])
+}
