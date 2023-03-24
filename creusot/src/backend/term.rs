@@ -189,7 +189,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                 Exp::Final(box self.lower_term(term))
             }
             TermKind::Impl { box lhs, box rhs } => {
-                self.pure_exp(|this| Exp::Impl(box this.lower_term(lhs), box this.lower_term(rhs)))
+                self.pure_exp(|this| this.lower_term(lhs).implies(this.lower_term(rhs)))
             }
             TermKind::Old { box term } => Exp::Old(box self.lower_term(term)),
             TermKind::Match { box scrutinee, mut arms } => {

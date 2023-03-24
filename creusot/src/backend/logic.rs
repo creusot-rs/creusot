@@ -267,7 +267,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
     postcondition.reassociate();
 
     let preconditions = sig.contract.requires.iter().cloned();
-    let mut condition = preconditions.rfold(postcondition, |acc, arg| Exp::Impl(box arg, box acc));
+    let mut condition = preconditions.rfold(postcondition, |acc, arg| arg.implies(acc));
 
     let func_call = function_call(sig);
     condition.subst(&[("result".into(), func_call)].into_iter().collect());
@@ -306,7 +306,7 @@ fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
     let equation = Exp::BinaryOp(BinOp::Eq, box call, box body);
 
     let preconditions = sig.contract.requires.iter().cloned();
-    let condition = preconditions.rfold(equation, |acc, arg| Exp::Impl(box arg, box acc));
+    let condition = preconditions.rfold(equation, |acc, arg| arg.implies(acc));
 
     let args: Vec<_> = sig.args.clone().into_iter().flat_map(|b| b.var_type_pairs()).collect();
 

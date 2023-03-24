@@ -321,6 +321,8 @@ impl Exp {
     pub fn implies(self, other: Self) -> Self {
         if self.is_true() {
             other
+        } else if other.is_true() {
+            other
         } else {
             Exp::Impl(box self, box other)
         }
