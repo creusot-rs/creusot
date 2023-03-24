@@ -3,6 +3,7 @@ use super::{
     pearlite::{normalize, Term},
 };
 use crate::{
+    backend::place,
     ctx::*,
     fmir::{self, Expr},
     gather_spec_closures::corrected_invariant_names_and_locations,
@@ -37,7 +38,6 @@ use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::rc::Rc;
 use why3::declaration::*;
 
-pub(crate) mod place;
 pub(crate) mod promoted;
 mod statement;
 pub(crate) mod terminator;

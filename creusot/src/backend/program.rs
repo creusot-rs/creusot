@@ -1,14 +1,15 @@
 use super::clone_map::{CloneLevel, PreludeModule};
 use crate::{
-    backend::ty::{self, closure_accessors, translate_closure_ty, translate_ty},
+    backend::{
+        place,
+        place::translate_rplace_inner,
+        ty::{self, closure_accessors, translate_closure_ty, translate_ty},
+    },
     ctx::{CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
         fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
-        function::{
-            closure_contract, closure_generic_decls, place, place::translate_rplace_inner,
-            promoted, ClosureContract,
-        },
+        function::{closure_contract, closure_generic_decls, promoted, ClosureContract},
         specification::{lower_impure, lower_pure},
         unop_to_unop,
     },
