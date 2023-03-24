@@ -184,7 +184,7 @@ fn body_module<'tcx>(
         }
     }
 
-    let has_axioms = !ctx.sig(def_id).contract.is_empty();
+    let has_axioms = !ctx.sig(def_id).contract.ensures.is_empty();
     if has_axioms {
         decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
     }

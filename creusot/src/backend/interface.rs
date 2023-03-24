@@ -49,7 +49,7 @@ pub(crate) fn interface_for<'tcx>(
             sig.contract = Contract::new();
             decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
 
-            let has_axioms = !sig_contract.contract.is_empty();
+            let has_axioms = !sig_contract.contract.ensures.is_empty();
             if has_axioms {
                 decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
             }
@@ -59,7 +59,7 @@ pub(crate) fn interface_for<'tcx>(
             sig.contract = Contract::new();
             decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
 
-            let has_axioms = !sig_contract.contract.is_empty();
+            let has_axioms = !sig_contract.contract.ensures.is_empty();
             if has_axioms {
                 decls.push(Decl::Axiom(spec_axiom(&sig_contract)));
             }
