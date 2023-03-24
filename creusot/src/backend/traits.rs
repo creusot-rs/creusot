@@ -3,11 +3,9 @@ use super::{
     term::lower_pure,
 };
 use crate::{
+    backend,
     ctx::{ItemType, TranslationCtx},
-    translation::{
-        function::{all_generic_decls_for, own_generic_decls_for},
-        ty,
-    },
+    translation::function::{all_generic_decls_for, own_generic_decls_for},
     util::{self, item_name, module_name},
 };
 use rustc_hir::{def::Namespace, def_id::DefId};
@@ -53,7 +51,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 TyDecl::Alias {
                     ty_name: name.clone(),
                     ty_params: vec![],
-                    alias: ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty),
+                    alias: backend::ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty),
                 }
             }),
             rustc_middle::ty::TraitContainer => {

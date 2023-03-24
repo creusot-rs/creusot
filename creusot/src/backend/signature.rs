@@ -5,8 +5,9 @@ use why3::{
 };
 
 use crate::{
+    backend,
     ctx::{CloneMap, TranslationCtx},
-    translation::{self, specification::PreContract},
+    translation::specification::PreContract,
     util::{ident_of, item_name, why3_attrs, AnonymousParamName, PreSignature},
 };
 
@@ -31,7 +32,7 @@ pub(crate) fn sig_to_why3<'tcx>(
             .into_iter()
             .enumerate()
             .map(|(ix, (id, _, ty))| {
-                let ty = translation::ty::translate_ty(ctx, names, span, ty);
+                let ty = backend::ty::translate_ty(ctx, names, span, ty);
                 let id = if id.is_empty() {
                     format!("{}", AnonymousParamName(ix)).into()
                 } else {
@@ -50,9 +51,8 @@ pub(crate) fn sig_to_why3<'tcx>(
         .and_then(|span| ctx.span_attr(span))
         .map(|attr| attrs.push(attr));
 
-    let retty = names.with_public_clones(|names| {
-        translation::ty::translate_ty(ctx, names, span, pre_sig.output)
-    });
+    let retty = names
+        .with_public_clones(|names| backend::ty::translate_ty(ctx, names, span, pre_sig.output));
     Signature { name, attrs, retty: Some(retty), args, contract }
 }
 

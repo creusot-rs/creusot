@@ -1,5 +1,6 @@
 use super::clone_map::{CloneLevel, PreludeModule};
 use crate::{
+    backend::ty::{self, closure_accessors, translate_closure_ty, translate_ty},
     ctx::{CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
@@ -9,7 +10,6 @@ use crate::{
             promoted, ClosureContract,
         },
         specification::{lower_impure, lower_pure},
-        ty::{self, closure_accessors, translate_closure_ty, translate_ty},
         unop_to_unop,
     },
     util::{self, is_ghost_closure, module_name, signature_of, ItemType},

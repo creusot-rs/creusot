@@ -6,6 +6,7 @@ use crate::{
         self,
         interface::interface_for,
         program::{translate_closure, translate_function},
+        ty::{self, translate_tydecl, ty_binding_group},
     },
     creusot_items::{self, CreusotItems},
     error::{CrErr, CreusotResult, Error},
@@ -18,7 +19,6 @@ use crate::{
         pearlite::{self, Term},
         specification::{ContractClauses, PurityVisitor},
         traits::{self, TraitImpl},
-        ty::{self, translate_tydecl, ty_binding_group},
     },
     util::{self, item_type, pre_sig_of, PreSignature},
 };
