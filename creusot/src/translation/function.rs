@@ -332,13 +332,6 @@ impl LocalIdent {
         LocalIdent(loc, Some(dbg.name))
     }
 
-    pub(crate) fn arg_name(&self) -> why3::Ident {
-        match &self.1 {
-            None => format!("{:?}'", self.0).into(),
-            Some(h) => ident_of(*h),
-        }
-    }
-
     pub(crate) fn symbol(&self) -> Symbol {
         match &self.1 {
             Some(id) => Symbol::intern(&format!("{}_{}", &*ident_of(*id), self.0.index())),

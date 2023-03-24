@@ -277,9 +277,10 @@ pub fn to_why<'tcx>(
         statements: vars
             .iter()
             .skip(1)
+            .zip(ctx.sig(def_id).inputs.iter().map(|(s, _, _)| s))
             .take(body.arg_count)
-            .map(|(_, id, _)| {
-                let rhs = id.arg_name();
+            .map(|((_, id, _), arg)| {
+                let rhs = arg.to_string().into();
                 mlcfg::Statement::Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
             })
             .collect(),

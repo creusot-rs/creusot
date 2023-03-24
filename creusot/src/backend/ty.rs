@@ -7,8 +7,8 @@ use crate::{
     util::{self, get_builtin, item_qname, module_name, PreSignature},
 };
 use indexmap::IndexSet;
-use rustc_hir::{def::Namespace, def_id::DefId};
 use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
+use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
     self,
     subst::{InternalSubsts, SubstsRef},
