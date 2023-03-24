@@ -1,6 +1,8 @@
-use super::term::lower_pure;
-use crate::{
+use super::{
     clone_map::{CloneLevel, CloneMap, CloneSummary},
+    term::lower_pure,
+};
+use crate::{
     ctx::{ItemType, TranslationCtx},
     translation::{
         function::{all_generic_decls_for, own_generic_decls_for},
@@ -8,9 +10,7 @@ use crate::{
     },
     util::{self, item_name, module_name},
 };
-use rustc_hir::def_id::DefId;
-
-use rustc_hir::def::Namespace;
+use rustc_hir::{def::Namespace, def_id::DefId};
 use why3::declaration::{Decl, Goal, Module, TyDecl};
 
 pub(crate) fn lower_impl<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {

@@ -595,7 +595,7 @@ impl<'tcx> CloneMap<'tcx> {
                 DepNode::Type(ty) => {
                     for (nm, sym) in syms.clone() {
                         let ty_name = nm.qname_ident(sym.ident());
-                        let ty = super::ty::translate_ty(ctx, self, DUMMY_SP, ty);
+                        let ty = crate::translation::ty::translate_ty(ctx, self, DUMMY_SP, ty);
                         clone_subst.push(CloneSubst::Type(ty_name, ty))
                     }
                 }
@@ -717,7 +717,7 @@ pub(crate) fn base_subst<'tcx>(
         let ty = subst[ix];
         if let GenericParamDefKind::Type { .. } = p.kind {
             let ty = ctx.normalize_erasing_regions(param_env, ty.expect_ty());
-            let ty = super::ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, ty);
+            let ty = crate::translation::ty::translate_ty(ctx, names, rustc_span::DUMMY_SP, ty);
             clone_subst.push(CloneSubst::Type(translate_ty_param(p.name).into(), ty));
         }
     }

@@ -1,5 +1,5 @@
+use super::clone_map::{CloneLevel, PreludeModule};
 use crate::{
-    clone_map::{CloneLevel, PreludeModule},
     ctx::{CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
@@ -22,7 +22,6 @@ use rustc_middle::{
 };
 use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::SimplifyCfg};
 use rustc_span::DUMMY_SP;
-
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     declaration::{self, CfgFunction, Decl, LetDecl, LetKind, Module, Predicate, Use},

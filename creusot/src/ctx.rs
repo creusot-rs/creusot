@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ops::Deref};
 
-pub(crate) use crate::clone_map::*;
+pub(crate) use crate::backend::clone_map::*;
 use crate::{
     backend::{
         self,

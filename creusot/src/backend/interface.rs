@@ -1,9 +1,9 @@
+use super::clone_map::CloneMap;
 use crate::{
     backend::{
         logic::spec_axiom,
         program::{closure_aux_defs, closure_type_use},
     },
-    clone_map::CloneMap,
     ctx::*,
     translation::function::closure_generic_decls,
     util,
@@ -15,7 +15,6 @@ use why3::{
     declaration::{Contract, Decl, Module},
     Exp, Ident,
 };
-
 pub(crate) fn interface_for<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,

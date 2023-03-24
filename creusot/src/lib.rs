@@ -32,7 +32,6 @@ mod analysis;
 pub(crate) mod backend;
 pub mod callbacks;
 mod cleanup_spec_closures;
-pub(crate) mod clone_map;
 pub(crate) mod creusot_items;
 pub(crate) mod ctx;
 
