@@ -32,7 +32,10 @@ use rustc_hir::{
 use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     thir,
-    ty::{subst::InternalSubsts, GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, WithOptConstParam},
+    ty::{
+        subst::{GenericArgKind, InternalSubsts},
+        GenericArg, ParamEnv, SubstsRef, Ty, TyCtxt, WithOptConstParam,
+    },
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
@@ -318,9 +321,38 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         debug!("resolving type invariant of {ty:?} in {def_id:?}");
         let param_env = self.param_env(def_id);
         let trait_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))?;
+
         let substs = self.mk_substs(&[GenericArg::from(ty)]);
-        traits::resolve_opt(self.tcx, param_env, trait_did, substs)
-            .filter(|(inv_did, _)| !util::ignore_type_invariant(self.tcx, *inv_did))
+        let inv = traits::resolve_opt(self.tcx, param_env, trait_did, substs)?;
+
+        match util::ignore_type_invariant(self.tcx, inv.0) {
+            util::TypeInvariantAttr::None => return Some(inv),
+            util::TypeInvariantAttr::AlwaysIgnore => return None,
+            util::TypeInvariantAttr::MaybeIgnore => {}
+        }
+
+        let mut walker = ty.walk();
+        walker.next(); // skip root type
+        while let Some(arg) = walker.next() {
+            if !matches!(arg.unpack(), GenericArgKind::Type(_)) {
+                walker.skip_current_subtree();
+                continue;
+            }
+
+            let substs = self.mk_substs(&[arg]);
+            let Some((did, _)) = traits::resolve_opt(self.tcx, param_env, trait_did, substs) else {
+                walker.skip_current_subtree();
+                continue;
+            };
+
+            match util::ignore_type_invariant(self.tcx, did) {
+                util::TypeInvariantAttr::None => return Some(inv),
+                util::TypeInvariantAttr::AlwaysIgnore => walker.skip_current_subtree(),
+                util::TypeInvariantAttr::MaybeIgnore => {}
+            }
+        }
+
+        None
     }
 
     pub(crate) fn crash_and_error(&self, span: Span, msg: &str) -> ! {

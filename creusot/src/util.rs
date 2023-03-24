@@ -107,8 +107,22 @@ pub(crate) fn is_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
         .unwrap_or(false)
 }
 
-pub(crate) fn ignore_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "ignore_type_invariant"]).is_some()
+pub(crate) enum TypeInvariantAttr {
+    None,
+    MaybeIgnore,
+    AlwaysIgnore,
+}
+
+pub(crate) fn ignore_type_invariant(tcx: TyCtxt, def_id: DefId) -> TypeInvariantAttr {
+    match get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "ignore_type_invariant"]) {
+        None => TypeInvariantAttr::None,
+        Some(AttrItem { args: AttrArgs::Eq(_, AttrArgsEq::Hir(v)), .. })
+            if v.symbol.as_str() == "maybe" =>
+        {
+            TypeInvariantAttr::MaybeIgnore
+        }
+        _ => TypeInvariantAttr::AlwaysIgnore,
+    }
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
