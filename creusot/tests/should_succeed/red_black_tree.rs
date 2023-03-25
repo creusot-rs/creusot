@@ -216,7 +216,7 @@ where
 
 enum CP {
     CPL(Color),
-    CPN(Color, Box<CP>, Box<CP>)
+    CPN(Color, Box<CP>, Box<CP>),
 }
 use CP::*;
 
