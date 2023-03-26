@@ -1,7 +1,7 @@
 use crate::{
+    backend::ty::{intty_to_ty, translate_ty, uintty_to_ty},
     ctx::*,
     pearlite::{self, Literal, Pattern, Term, TermKind},
-    translation::ty::{intty_to_ty, translate_ty, uintty_to_ty},
     util,
     util::get_builtin,
 };

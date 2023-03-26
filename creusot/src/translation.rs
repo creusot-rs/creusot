@@ -6,7 +6,6 @@ pub(crate) mod function;
 pub(crate) mod pearlite;
 pub(crate) mod specification;
 pub(crate) mod traits;
-pub(crate) mod ty;
 
 use crate::{
     ctx,

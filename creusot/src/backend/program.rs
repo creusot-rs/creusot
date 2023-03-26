@@ -1,15 +1,16 @@
+use super::clone_map::{CloneLevel, PreludeModule};
 use crate::{
-    clone_map::{CloneLevel, PreludeModule},
+    backend::{
+        place,
+        place::translate_rplace_inner,
+        ty::{self, closure_accessors, translate_closure_ty, translate_ty},
+    },
     ctx::{CloneMap, TranslationCtx},
     translation::{
         binop_to_binop,
         fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
-        function::{
-            closure_contract, closure_generic_decls, place, place::translate_rplace_inner,
-            promoted, ClosureContract,
-        },
+        function::{closure_contract, closure_generic_decls, promoted, ClosureContract},
         specification::{lower_impure, lower_pure},
-        ty::{self, closure_accessors, translate_closure_ty, translate_ty},
         unop_to_unop,
     },
     util::{self, is_ghost_closure, module_name, signature_of, ItemType},
@@ -22,7 +23,6 @@ use rustc_middle::{
 };
 use rustc_mir_transform::{cleanup_post_borrowck::CleanupPostBorrowck, simplify::SimplifyCfg};
 use rustc_span::DUMMY_SP;
-
 use rustc_type_ir::{IntTy, UintTy};
 use why3::{
     declaration::{self, CfgFunction, Decl, LetDecl, LetKind, Module, Predicate, Use},
@@ -277,9 +277,10 @@ pub fn to_why<'tcx>(
         statements: vars
             .iter()
             .skip(1)
+            .zip(ctx.sig(def_id).inputs.iter().map(|(s, _, _)| s))
             .take(body.arg_count)
-            .map(|(_, id, _)| {
-                let rhs = id.arg_name();
+            .map(|((_, id, _), arg)| {
+                let rhs = arg.to_string().into();
                 mlcfg::Statement::Assign { lhs: id.ident(), rhs: Exp::impure_var(rhs) }
             })
             .collect(),

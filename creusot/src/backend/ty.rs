@@ -1,4 +1,13 @@
+use crate::{
+    ctx::*,
+    translation::{
+        pearlite::{self, Term, TermKind},
+        specification::PreContract,
+    },
+    util::{self, get_builtin, item_qname, module_name, PreSignature},
+};
 use indexmap::IndexSet;
+use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
 use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
     self,
@@ -10,17 +19,12 @@ use rustc_type_ir::sty::TyKind::*;
 use std::collections::VecDeque;
 use why3::{
     declaration::{
-        AdtDecl, ConstructorDecl, Contract, Decl, Field, LetDecl, LetKind, Module, Signature, Use,
+        AdtDecl, ConstructorDecl, Contract, Decl, Field, LetDecl, LetKind, Module, Signature,
+        TyDecl, Use,
     },
     exp::{Binder, Exp, Pattern},
-    Ident,
-};
-
-use why3::{declaration::TyDecl, ty::Type as MlT, QName};
-
-use crate::{
-    ctx::*,
-    util::{self, get_builtin, item_qname, module_name, PreSignature},
+    ty::Type as MlT,
+    Ident, QName,
 };
 
 /// When we translate a type declaration, generic parameters should be declared using 't notation:
@@ -223,13 +227,6 @@ pub(crate) fn translate_closure_ty<'tcx>(
 
     TyDecl::Adt { tys: vec![kind] }
 }
-
-use petgraph::{algo::tarjan_scc, graphmap::DiGraphMap};
-
-use super::{
-    pearlite::{self, Term, TermKind},
-    specification::PreContract,
-};
 
 pub(crate) fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSet<DefId> {
     let mut graph = DiGraphMap::<_, ()>::new();

@@ -1,16 +1,14 @@
-use super::term::lower_pure;
-use crate::{
+use super::{
     clone_map::{CloneLevel, CloneMap, CloneSummary},
+    term::lower_pure,
+};
+use crate::{
+    backend,
     ctx::{ItemType, TranslationCtx},
-    translation::{
-        function::{all_generic_decls_for, own_generic_decls_for},
-        ty,
-    },
+    translation::function::{all_generic_decls_for, own_generic_decls_for},
     util::{self, item_name, module_name},
 };
-use rustc_hir::def_id::DefId;
-
-use rustc_hir::def::Namespace;
+use rustc_hir::{def::Namespace, def_id::DefId};
 use why3::declaration::{Decl, Goal, Module, TyDecl};
 
 pub(crate) fn lower_impl<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
@@ -53,7 +51,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                 TyDecl::Alias {
                     ty_name: name.clone(),
                     ty_params: vec![],
-                    alias: ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty),
+                    alias: backend::ty::translate_ty(self, names, rustc_span::DUMMY_SP, assoc_ty),
                 }
             }),
             rustc_middle::ty::TraitContainer => {

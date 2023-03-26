@@ -3,6 +3,7 @@ use super::{
     pearlite::{normalize, Term},
 };
 use crate::{
+    backend::place,
     ctx::*,
     fmir::{self, Expr},
     gather_spec_closures::corrected_invariant_names_and_locations,
@@ -37,7 +38,6 @@ use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::rc::Rc;
 use why3::declaration::*;
 
-pub(crate) mod place;
 pub(crate) mod promoted;
 mod statement;
 pub(crate) mod terminator;
@@ -330,13 +330,6 @@ impl LocalIdent {
 
     pub(crate) fn dbg(loc: Local, dbg: &VarDebugInfo) -> Self {
         LocalIdent(loc, Some(dbg.name))
-    }
-
-    pub(crate) fn arg_name(&self) -> why3::Ident {
-        match &self.1 {
-            None => format!("{:?}'", self.0).into(),
-            Some(h) => ident_of(*h),
-        }
     }
 
     pub(crate) fn symbol(&self) -> Symbol {
