@@ -3,16 +3,19 @@
 use heck::ToUpperCamelCase;
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{graphmap::DiGraphMap, visit::DfsPostOrder, EdgeDirection::Outgoing};
-use rustc_hir::{def::DefKind, def_id::DefId};
+use rustc_hir::{
+    def::{DefKind, Namespace},
+    def_id::DefId,
+};
 use rustc_infer::traits::ImplSource;
 use rustc_middle::ty::{
     self,
     subst::{GenericArgKind, InternalSubsts, SubstsRef},
-    AliasKind, AliasTy, DefIdTree, EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
-    TypeSuperVisitable, TypeVisitor,
+    AliasKind, AliasTy, EarlyBinder, ParamEnv, Ty, TyCtxt, TyKind, TypeFoldable,
+    TypeSuperVisitable, TypeVisitableExt, TypeVisitor,
 };
-use rustc_resolve::Namespace;
 use rustc_span::{Symbol, DUMMY_SP};
+
 use why3::{
     declaration::{CloneKind, CloneSubst, Decl, DeclClone, Use},
     Ident, QName,
@@ -335,7 +338,7 @@ impl<'tcx> CloneMap<'tcx> {
 
     fn self_key(&self) -> (DefId, SubstsRef<'tcx>) {
         let subst = match self.tcx.def_kind(self.self_id) {
-            DefKind::Closure => match self.tcx.type_of(self.self_id).kind() {
+            DefKind::Closure => match self.tcx.type_of(self.self_id).subst_identity().kind() {
                 TyKind::Closure(_, subst) => subst,
                 _ => unreachable!(),
             },
@@ -840,7 +843,6 @@ fn still_specializable<'tcx>(
     def_id: DefId,
     substs: SubstsRef<'tcx>,
 ) -> bool {
-    use rustc_middle::ty::TypeVisitable;
     if let Some(trait_id) = tcx.trait_of_item(def_id) {
         let is_final = if let Some(ImplSource::UserDefined(ud)) = traits::resolve_impl_source_opt(tcx, param_env, def_id, substs) {
             let trait_def =  tcx.trait_def(trait_id);
@@ -863,7 +865,7 @@ fn still_specializable<'tcx>(
 }
 
 // Walk all the projections in a substitution so we can add dependencies on them
-fn walk_projections<'tcx, T: TypeFoldable<'tcx>, F: FnMut(&AliasTy<'tcx>)>(s: T, f: F) {
+fn walk_projections<'tcx, T: TypeFoldable<TyCtxt<'tcx>>, F: FnMut(&AliasTy<'tcx>)>(s: T, f: F) {
     s.visit_with(&mut ProjectionTyVisitor { f, p: std::marker::PhantomData });
 }
 
@@ -872,7 +874,7 @@ struct ProjectionTyVisitor<'tcx, F: FnMut(&AliasTy<'tcx>)> {
     p: std::marker::PhantomData<&'tcx ()>,
 }
 
-impl<'tcx, F: FnMut(&AliasTy<'tcx>)> TypeVisitor<'tcx> for ProjectionTyVisitor<'tcx, F> {
+impl<'tcx, F: FnMut(&AliasTy<'tcx>)> TypeVisitor<TyCtxt<'tcx>> for ProjectionTyVisitor<'tcx, F> {
     fn visit_ty(&mut self, t: Ty<'tcx>) -> std::ops::ControlFlow<Self::BreakTy> {
         match t.kind() {
             TyKind::Alias(AliasKind::Projection, pty) => {

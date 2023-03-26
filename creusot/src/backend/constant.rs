@@ -18,7 +18,8 @@ impl<'tcx> TranslationCtx<'tcx> {
     ) -> (TranslatedItem, CloneSummary<'tcx>) {
         let subst = InternalSubsts::identity_for_item(self.tcx, def_id);
         let uneval = ty::UnevaluatedConst::new(ty::WithOptConstParam::unknown(def_id), subst);
-        let constant = self.mk_const(ty::ConstKind::Unevaluated(uneval), self.type_of(def_id));
+        let constant = self
+            .mk_const(ty::ConstKind::Unevaluated(uneval), self.type_of(def_id).subst_identity());
 
         let res = from_ty_const(self, constant, self.param_env(def_id), self.def_span(def_id));
         let mut names = CloneMap::new(self.tcx, def_id, crate::clone_map::CloneLevel::Body);

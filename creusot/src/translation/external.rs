@@ -127,7 +127,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
 
     errors.into_iter().for_each(|mut e| e.emit());
 
-    let subst = ctx.mk_substs(subst.into_iter());
+    let subst = ctx.mk_substs(&subst);
 
     let contract = crate::specification::contract_clauses_of(ctx, def_id.to_def_id()).unwrap();
 
@@ -137,7 +137,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     let arg_subst = ctx
         .fn_arg_names(def_id)
         .iter()
-        .zip(ctx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).skip_binder().inputs()))
+        .zip(ctx.fn_arg_names(id).iter().zip(ctx.fn_sig(id).skip_binder().inputs().skip_binder()))
         .map(|(i, (i2, ty))| (i.name, Term::var(i2.name, *ty)))
         .collect();
     Ok((id, ExternSpec { contract, additional_predicates, subst, arg_subst }))

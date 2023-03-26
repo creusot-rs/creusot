@@ -22,7 +22,7 @@ impl Type {
     pub const UNIT: Self = Self::Tuple(Vec::new());
 
     pub fn predicate(ty: Self) -> Self {
-        Self::TFun(box ty, box Self::Bool)
+        Self::TFun(Box::new(ty), Box::new(Self::Bool))
     }
 
     pub fn tapp(mut self, args: Vec<Self>) -> Self {
@@ -34,7 +34,7 @@ impl Type {
                     args1.extend(args);
                     self
                 }
-                _ => Self::TApp(box self, args),
+                _ => Self::TApp(Box::new(self), args),
             }
         }
     }

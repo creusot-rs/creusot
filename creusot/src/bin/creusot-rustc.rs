@@ -1,4 +1,4 @@
-#![feature(rustc_private, box_syntax)]
+#![feature(rustc_private)]
 
 extern crate lazy_static;
 extern crate rustc_driver;
@@ -13,7 +13,8 @@ use creusot::{
     callbacks::*,
     options::{Args, CreusotArgs, Options},
 };
-use rustc_driver::RunCompiler;
+use rustc_driver::{RunCompiler, DEFAULT_LOCALE_RESOURCES};
+use rustc_errors::{emitter::EmitterWriter, TerminalUrl};
 use rustc_interface::interface::try_print_query_stack;
 use std::{env, panic, panic::PanicInfo, process::Command};
 
@@ -33,9 +34,9 @@ fn report_panic(info: &PanicInfo) {
     // Separate the output with an empty line
     eprintln!();
     let fallback_bundle =
-        rustc_errors::fallback_fluent_bundle(rustc_errors::DEFAULT_LOCALE_RESOURCES, false);
+        rustc_errors::fallback_fluent_bundle(DEFAULT_LOCALE_RESOURCES.to_vec(), false);
 
-    let emitter = box rustc_errors::emitter::EmitterWriter::stderr(
+    let emitter = Box::new(EmitterWriter::stderr(
         rustc_errors::ColorConfig::Auto,
         None,
         None,
@@ -45,7 +46,8 @@ fn report_panic(info: &PanicInfo) {
         None,
         false,
         false,
-    );
+        TerminalUrl::Auto,
+    ));
     let handler = rustc_errors::Handler::with_emitter(true, None, emitter);
 
     let mut diagnostic = handler.struct_note_without_error("Creusot has panic-ed!");

@@ -93,8 +93,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 let res =
                     evaluate_additional_predicates(&infcx, predicates, self.param_env(), span);
                 if let Err(errs) = res {
-                    let body_id = self.tcx.hir().body_owned_by(self.def_id.expect_local());
-                    infcx.err_ctxt().report_fulfillment_errors(&errs, Some(body_id));
+                    infcx.err_ctxt().report_fulfillment_errors(&errs);
                 }
 
                 let mut func_args: Vec<_> =
@@ -118,7 +117,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
 
                     let exp = Expr::Call(fun_def_id, subst, func_args);
                     let span = span.source_callsite();
-                    Expr::Span(span, box exp)
+                    Expr::Span(span, Box::new(exp))
                 };
 
                 let (loc, bb) = (destination, target.unwrap());
@@ -144,7 +143,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     ass = Term {
                         ty: ass.ty,
                         span: ass.span,
-                        kind: TermKind::Unary { op: UnOp::Not, arg: box ass },
+                        kind: TermKind::Unary { op: UnOp::Not, arg: Box::new(ass) },
                     };
                 }
                 self.emit_statement(fmir::Statement::Assertion(ass));
@@ -157,17 +156,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Drop { target, .. } => self.emit_terminator(mk_goto(*target)),
             FalseUnwind { real_target, .. } => {
                 self.emit_terminator(mk_goto(*real_target));
-            }
-            DropAndReplace { target, place, value, .. } => {
-                // Resolve
-                self.emit_resolve(*place);
-
-                // Assign
-                let rhs = self.translate_operand(value);
-
-                self.emit_assignment(place, RValue::Expr(rhs));
-
-                self.emit_terminator(mk_goto(*target))
             }
             Yield { .. } | GeneratorDrop | InlineAsm { .. } | Resume => {
                 unreachable!("{:?}", terminator.kind)
@@ -241,6 +229,7 @@ pub(crate) fn evaluate_additional_predicates<'tcx>(
         // holds &= infcx.predicate_may_hold(&obligation);
         fulfill_cx.register_predicate_obligation(&infcx, obligation);
     }
+    use rustc_infer::traits::TraitEngineExt;
     let errors = fulfill_cx.select_all_or_error(&infcx);
     if !errors.is_empty() {
         return Err(errors);

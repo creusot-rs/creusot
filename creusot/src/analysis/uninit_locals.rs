@@ -102,7 +102,8 @@ where
             PlaceContext::NonUse(
                 NonUseContext::StorageLive
                 | NonUseContext::AscribeUserTy
-                | NonUseContext::VarDebugInfo,
+                | NonUseContext::VarDebugInfo
+                | NonUseContext::PlaceMention,
             )
             | PlaceContext::NonMutatingUse(
                 NonMutatingUseContext::Inspect

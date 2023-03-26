@@ -10,7 +10,7 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 
-use rustc_resolve::Namespace;
+use rustc_hir::def::Namespace;
 use why3::declaration::{Decl, Goal, Module, TyDecl};
 
 pub(crate) fn lower_impl<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
@@ -49,7 +49,7 @@ impl<'tcx> TranslationCtx<'tcx> {
 
         let ty_decl = match self.tcx.associated_item(def_id).container {
             rustc_middle::ty::ImplContainer => names.with_public_clones(|names| {
-                let assoc_ty = self.tcx.type_of(def_id);
+                let assoc_ty = self.tcx.type_of(def_id).subst_identity();
                 TyDecl::Alias {
                     ty_name: name.clone(),
                     ty_params: vec![],

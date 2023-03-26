@@ -8,9 +8,7 @@ use creusot_metadata::{
 use indexmap::IndexMap;
 use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
 use rustc_macros::{TyDecodable, TyEncodable};
-use rustc_metadata::creader::CStore;
 use rustc_middle::ty::{subst::SubstsRef, TyCtxt, Visibility};
-use rustc_session::cstore::CrateStore;
 use rustc_span::Symbol;
 use std::{
     collections::HashMap,
@@ -59,9 +57,8 @@ impl<'tcx> Metadata<'tcx> {
     }
 
     pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, String>) {
-        let cstore = CStore::from_tcx(tcx);
         for cnum in external_crates(tcx) {
-            let (cmeta, mut ext_specs) = CrateMetadata::load(tcx, cstore, overrides, cnum);
+            let (cmeta, mut ext_specs) = CrateMetadata::load(tcx, overrides, cnum);
             self.crates.insert(cnum, cmeta);
 
             for (id, spec) in ext_specs.drain() {
@@ -101,18 +98,17 @@ impl<'tcx> CrateMetadata<'tcx> {
 
     fn load(
         tcx: TyCtxt<'tcx>,
-        cstore: &CStore,
         overrides: &HashMap<String, String>,
         cnum: CrateNum,
     ) -> (Self, ExternSpecs<'tcx>) {
         let mut meta = CrateMetadata::new();
 
-        let base_path = creusot_metadata_base_path(cstore, overrides, cnum);
+        let base_path = creusot_metadata_base_path(tcx, overrides, cnum);
 
         let binary_path = creusot_metadata_binary_path(base_path.clone());
 
         let mut externs = Default::default();
-        if let Some(metadata) = load_binary_metadata(tcx, cstore, cnum, &binary_path) {
+        if let Some(metadata) = load_binary_metadata(tcx, cnum, &binary_path) {
             for (def_id, summary) in metadata.dependencies.into_iter() {
                 meta.dependencies.insert(def_id, summary.into_iter().collect());
             }
@@ -223,7 +219,6 @@ fn dump_binary_metadata<'tcx>(
 
 fn load_binary_metadata<'tcx>(
     tcx: TyCtxt<'tcx>,
-    cstore: &CStore,
     cnum: CrateNum,
     path: &Path,
 ) -> Option<BinaryMetadata<'tcx>> {
@@ -235,22 +230,22 @@ fn load_binary_metadata<'tcx>(
     match metadata {
         Ok(b) => Some(b),
         Err(e) => {
-            warn!("could not read metadata for crate `{:?}`: {:?}", cstore.crate_name(cnum), e);
+            warn!("could not read metadata for crate `{:?}`: {:?}", tcx.crate_name(cnum), e);
             return None;
         }
     }
 }
 
 fn creusot_metadata_base_path(
-    cstore: &CStore,
+    tcx: TyCtxt,
     overrides: &HashMap<String, String>,
     cnum: CrateNum,
 ) -> PathBuf {
-    if let Some(path) = overrides.get(&cstore.crate_name(cnum).to_string()) {
+    if let Some(path) = overrides.get(&tcx.crate_name(cnum).to_string()) {
         debug!("loading crate {:?} from override path", cnum);
         path.into()
     } else {
-        let cs = cstore.crate_source_untracked(cnum);
+        let cs = tcx.used_crate_source(cnum);
         let x = cs.paths().next().unwrap().clone();
         x
     }

@@ -611,7 +611,7 @@ module C07Fuse_Impl1_Next
     assume { Resolve0.resolve self_1 };
     assume { Resolve1.resolve _5 };
     _0 <- Core_Option_Option_Type.C_None;
-    goto BB13
+    goto BB14
   }
   BB4 {
     switch (_8)
@@ -627,7 +627,7 @@ module C07Fuse_Impl1_Next
     assume { Resolve3.resolve _0 };
     _0 <- x_15;
     x_15 <- any Core_Option_Option_Type.t_option Item0.item;
-    goto BB10
+    goto BB11
   }
   BB6 {
     assume { Resolve3.resolve _8 };
@@ -637,20 +637,18 @@ module C07Fuse_Impl1_Next
   }
   BB7 {
     _11 <- Core_Result_Result_Type.C_Err _12;
-    assume { Resolve4.resolve (C07Fuse_Fuse_Type.fuse_iter ( * self_1)) };
-    self_1 <- { self_1 with current = (let C07Fuse_Fuse_Type.C_Fuse a =  * self_1 in C07Fuse_Fuse_Type.C_Fuse _11) };
     goto BB8
   }
   BB8 {
+    assume { Resolve4.resolve (C07Fuse_Fuse_Type.fuse_iter ( * self_1)) };
+    self_1 <- { self_1 with current = (let C07Fuse_Fuse_Type.C_Fuse a =  * self_1 in C07Fuse_Fuse_Type.C_Fuse _11) };
+    _11 <- any Core_Result_Result_Type.t_result i (Ghost.ghost_ty i);
     assume { Resolve0.resolve self_1 };
-    goto BB9
-  }
-  BB9 {
-    _0 <- Core_Option_Option_Type.C_None;
-    goto BB11
+    goto BB10
   }
   BB10 {
-    goto BB11
+    _0 <- Core_Option_Option_Type.C_None;
+    goto BB12
   }
   BB11 {
     goto BB12
@@ -659,6 +657,9 @@ module C07Fuse_Impl1_Next
     goto BB13
   }
   BB13 {
+    goto BB14
+  }
+  BB14 {
     return _0
   }
   
@@ -1018,8 +1019,8 @@ module C07Fuse_Impl3_IsFused_Impl
 end
 module C07Fuse_Impl1
   type i
-  use prelude.Borrow
   use seq.Seq
+  use prelude.Borrow
   clone C07Fuse_Common_Iterator_Item_Type as Item0 with
     type self = i
   clone CreusotContracts_Invariant_Invariant_Invariant_Interface as Invariant1 with
@@ -1037,6 +1038,8 @@ module C07Fuse_Impl1
   clone C07Fuse_Common_Iterator_Item_Type as Item1 with
     type self = C07Fuse_Fuse_Type.t_fuse i
   use Core_Option_Option_Type as Core_Option_Option_Type
+  clone C07Fuse_Impl1_Completed as Completed0 with
+    type i = i
   clone C07Fuse_Impl2_Invariant as Invariant0 with
     type i = i,
     predicate Invariant0.invariant' = Invariant1.invariant'
@@ -1048,8 +1051,8 @@ module C07Fuse_Impl1
     predicate Produces0.produces = Produces1.produces,
     predicate Invariant1.invariant' = Invariant1.invariant',
     axiom .
-  clone C07Fuse_Impl1_Completed as Completed0 with
-    type i = i
+  goal produces_refl_refn : [#"../07_fuse.rs" 59 4 59 29] forall a : C07Fuse_Fuse_Type.t_fuse i . Invariant0.invariant' a -> Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
+  goal produces_refn : [#"../07_fuse.rs" 32 4 32 65] forall self : C07Fuse_Fuse_Type.t_fuse i . forall visited : Seq.seq Item0.item . forall _o : C07Fuse_Fuse_Type.t_fuse i . Invariant0.invariant' _o /\ Invariant0.invariant' self -> Invariant0.invariant' _o /\ Invariant0.invariant' self /\ (forall result : bool . true)
   goal next_refn : [#"../07_fuse.rs" 44 4 44 44] forall self : borrowed (C07Fuse_Fuse_Type.t_fuse i) . Invariant0.invariant' ( * self) -> Invariant0.invariant' ( * self) /\ (forall result : Core_Option_Option_Type.t_option Item0.item . match (result) with
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
@@ -1057,8 +1060,6 @@ module C07Fuse_Impl1
     | Core_Option_Option_Type.C_None -> Completed0.completed self
     | Core_Option_Option_Type.C_Some v -> Produces0.produces ( * self) (Seq.singleton v) ( ^ self)
     end /\ Invariant0.invariant' ( ^ self))
-  goal produces_refn : [#"../07_fuse.rs" 32 4 32 65] forall self : C07Fuse_Fuse_Type.t_fuse i . forall visited : Seq.seq Item0.item . forall _o : C07Fuse_Fuse_Type.t_fuse i . Invariant0.invariant' _o /\ Invariant0.invariant' self -> Invariant0.invariant' _o /\ Invariant0.invariant' self /\ (forall result : bool . true)
-  goal produces_refl_refn : [#"../07_fuse.rs" 59 4 59 29] forall a : C07Fuse_Fuse_Type.t_fuse i . Invariant0.invariant' a -> Invariant0.invariant' a /\ (forall result : () . Produces0.produces a (Seq.empty ) a -> Produces0.produces a (Seq.empty ) a)
   goal produces_trans_refn : [#"../07_fuse.rs" 65 4 65 90] forall a : C07Fuse_Fuse_Type.t_fuse i . forall ab : Seq.seq Item0.item . forall b : C07Fuse_Fuse_Type.t_fuse i . forall bc : Seq.seq Item0.item . forall c : C07Fuse_Fuse_Type.t_fuse i . Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b -> Invariant0.invariant' c /\ Invariant0.invariant' b /\ Invariant0.invariant' a /\ Produces0.produces b bc c /\ Produces0.produces a ab b /\ (forall result : () . Produces0.produces a (Seq.(++) ab bc) c -> Produces0.produces a (Seq.(++) ab bc) c)
 end
 module C07Fuse_Impl2

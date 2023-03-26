@@ -98,7 +98,7 @@ impl<'tcx> Visitor<'tcx> for InvariantClosures<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) => {
-                self.closures.insert(id.to_def_id());
+                self.closures.insert(*id);
             }
             Rvalue::Use(Operand::Constant(box ck)) => {
                 if let Some(def_id) = is_ghost_closure(self.tcx, ck.literal.ty()) {
@@ -119,7 +119,7 @@ impl<'tcx> Visitor<'tcx> for ClosureLocations {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         match rvalue {
             Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) => {
-                self.locations.insert(id.to_def_id(), loc);
+                self.locations.insert(*id, loc);
             }
             Rvalue::Use(Operand::Constant(box ck)) => {
                 if let TyKind::Closure(def_id, _) = ck.literal.ty().peel_refs().kind() {
@@ -141,8 +141,8 @@ struct InvariantLocations<'tcx> {
 impl<'tcx> Visitor<'tcx> for InvariantLocations<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         if let Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
-            if util::is_invariant(self.tcx, id.to_def_id()) {
-                self.invariants.insert(loc, id.to_def_id());
+            if util::is_invariant(self.tcx, *id) {
+                self.invariants.insert(loc, *id);
             }
         }
         self.super_rvalue(rvalue, loc);
@@ -172,7 +172,7 @@ fn invariant_locations<'tcx>(
             if let Some(preds) = body.basic_blocks.predecessors().get(target) {
                 let is_loop_header = preds
                     .iter()
-                    .any(|pred| body.basic_blocks.dominators().is_dominated_by(*pred, target));
+                    .any(|pred| body.basic_blocks.dominators().dominates(target, *pred));
 
                 if is_loop_header {
                     break;

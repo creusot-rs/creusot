@@ -61,9 +61,11 @@ pub(crate) fn create_assign_inner<'tcx>(
                 let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
                 if mutability == Mut {
                     inner = RecUp {
-                        record: box translate_rplace_inner(ctx, names, body, lhs.local, stump),
+                        record: Box::new(translate_rplace_inner(
+                            ctx, names, body, lhs.local, stump,
+                        )),
                         label: "current".into(),
-                        val: box inner,
+                        val: Box::new(inner),
                     }
                 }
             }
@@ -85,8 +87,8 @@ pub(crate) fn create_assign_inner<'tcx>(
                     let ctor = names.constructor(variant.def_id, subst);
                     inner = Let {
                         pattern: ConsP(ctor.clone(), field_pats),
-                        arg: box translate_rplace_inner(ctx, names, body, lhs.local, stump),
-                        body: box Constructor { ctor, args: varexps },
+                        arg: Box::new(translate_rplace_inner(ctx, names, body, lhs.local, stump)),
+                        body: Box::new(Constructor { ctor, args: varexps }),
                     }
                 }
                 TyKind::Tuple(fields) => {
@@ -103,8 +105,8 @@ pub(crate) fn create_assign_inner<'tcx>(
 
                     inner = Let {
                         pattern: TupleP(field_pats),
-                        arg: box translate_rplace_inner(ctx, names, body, lhs.local, stump),
-                        body: box Tuple(varexps),
+                        arg: Box::new(translate_rplace_inner(ctx, names, body, lhs.local, stump)),
+                        body: Box::new(Tuple(varexps)),
                     }
                 }
                 TyKind::Closure(id, subst) => {
@@ -122,8 +124,8 @@ pub(crate) fn create_assign_inner<'tcx>(
 
                     inner = Let {
                         pattern: ConsP(cons.clone(), field_pats),
-                        arg: box translate_rplace_inner(ctx, names, body, lhs.local, stump),
-                        body: box Exp::Constructor { ctor: cons, args: varexps },
+                        arg: Box::new(translate_rplace_inner(ctx, names, body, lhs.local, stump)),
+                        body: Box::new(Exp::Constructor { ctor: cons, args: varexps }),
                     }
                 }
                 _ => unreachable!(),
@@ -135,7 +137,7 @@ pub(crate) fn create_assign_inner<'tcx>(
                 let ix_exp = Exp::impure_var(translate_local(body, ix).ident());
 
                 inner = Call(
-                    box set,
+                    Box::new(set),
                     vec![
                         translate_rplace_inner(ctx, names, body, lhs.local, stump),
                         conv_func.app_to(ix_exp),
@@ -173,7 +175,7 @@ pub(crate) fn translate_rplace_inner<'tcx>(
                 use rustc_hir::Mutability::*;
                 let mutability = place_ty.ty.builtin_deref(false).expect("raw pointer").mutbl;
                 if mutability == Mut {
-                    inner = Current(box inner)
+                    inner = Current(Box::new(inner))
                 }
             }
             Field(ix, _) => match place_ty.ty.kind() {
@@ -185,7 +187,7 @@ pub(crate) fn translate_rplace_inner<'tcx>(
 
                     let acc =
                         names.accessor(def.did(), subst, variant_id.as_usize(), ix.as_usize());
-                    inner = Call(box Exp::impure_qvar(acc), vec![inner]);
+                    inner = Call(Box::new(Exp::impure_qvar(acc)), vec![inner]);
                 }
                 TyKind::Tuple(fields) => {
                     let mut pat = vec![Wildcard; fields.len()];
@@ -193,13 +195,13 @@ pub(crate) fn translate_rplace_inner<'tcx>(
 
                     inner = Let {
                         pattern: TupleP(pat),
-                        arg: box inner,
-                        body: box Exp::impure_var("a".into()),
+                        arg: Box::new(inner),
+                        body: Box::new(Exp::impure_var("a".into())),
                     }
                 }
                 TyKind::Closure(id, subst) => {
                     inner = Call(
-                        box Exp::impure_qvar(names.accessor(*id, subst, 0, ix.as_usize())),
+                        Box::new(Exp::impure_qvar(names.accessor(*id, subst, 0, ix.as_usize()))),
                         vec![inner],
                     );
                 }
@@ -211,7 +213,7 @@ pub(crate) fn translate_rplace_inner<'tcx>(
                 let ix_exp = Exp::impure_var(translate_local(body, *ix).ident());
                 let conv_func = uint_to_int(&UintTy::Usize);
                 inner = Call(
-                    box Exp::impure_qvar(QName::from_string("Seq.get").unwrap()),
+                    Box::new(Exp::impure_qvar(QName::from_string("Seq.get").unwrap())),
                     vec![inner, conv_func.app_to(ix_exp)],
                 )
             }

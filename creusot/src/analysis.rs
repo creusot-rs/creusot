@@ -135,6 +135,7 @@ pub(crate) fn categorize(context: PlaceContext) -> Option<DefUse> {
 
         PlaceContext::MutatingUse(MutatingUseContext::Deinit | MutatingUseContext::SetDiscriminant) => {
             unreachable!("These statements are not allowed in this MIR phase")
-        }
+        },
+        PlaceContext::NonUse(NonUseContext::PlaceMention) => None,
     }
 }

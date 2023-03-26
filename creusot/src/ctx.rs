@@ -247,8 +247,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn translate_accessor(&mut self, field_id: DefId) {
-        use rustc_middle::ty::DefIdTree;
-
         if !self.translated_items.insert(field_id) {
             return;
         }
@@ -320,7 +318,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         debug!("resolving type invariant of {ty:?} in {def_id:?}");
         let param_env = self.param_env(def_id);
         let trait_did = self.get_diagnostic_item(Symbol::intern("creusot_invariant_method"))?;
-        let substs = self.mk_substs(std::iter::once(GenericArg::from(ty)));
+        let substs = self.mk_substs(&[GenericArg::from(ty)]);
         traits::resolve_opt(self.tcx, param_env, trait_did, substs)
             .filter(|(inv_did, _)| !util::ignore_type_invariant(self.tcx, *inv_did))
     }
@@ -460,7 +458,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
 
             additional_predicates.extend(base_env.caller_bounds());
             ParamEnv::new(
-                self.mk_predicates(additional_predicates.into_iter()),
+                self.mk_predicates(&additional_predicates),
                 rustc_infer::traits::Reveal::UserFacing,
                 rustc_hir::Constness::NotConst,
             )
@@ -507,7 +505,7 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         if let SpanMode::Off = self.opts.span_mode {
             exp
         } else {
-            Exp::Attr(self.span_attr(span).unwrap(), box exp)
+            Exp::Attr(self.span_attr(span).unwrap(), Box::new(exp))
         }
     }
 

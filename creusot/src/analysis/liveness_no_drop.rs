@@ -7,7 +7,7 @@ use rustc_index::bit_set::ChunkedBitSet;
 use rustc_middle::mir::{
     self,
     visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor},
-    Local, Location, Place, TerminatorKind,
+    Local, Location, Place,
 };
 use rustc_mir_dataflow::{self as dataflow, AnalysisDomain, GenKill, GenKillAnalysis};
 
@@ -115,14 +115,6 @@ where
 
     fn visit_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: Location) {
         match &terminator.kind {
-            TerminatorKind::DropAndReplace { place, value, .. } => {
-                self.visit_place(
-                    place,
-                    PlaceContext::MutatingUse(MutatingUseContext::Store),
-                    location,
-                );
-                self.visit_operand(value, location);
-            }
             _ => self.super_terminator(terminator, location),
         }
     }

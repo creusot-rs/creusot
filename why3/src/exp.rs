@@ -282,18 +282,18 @@ impl Exp {
     }
 
     pub fn eq(self, rhs: Self) -> Self {
-        Exp::BinaryOp(BinOp::Eq, box self, box rhs)
+        Exp::BinaryOp(BinOp::Eq, Box::new(self), Box::new(rhs))
     }
 
     pub fn neq(self, rhs: Self) -> Self {
-        Exp::BinaryOp(BinOp::Ne, box self, box rhs)
+        Exp::BinaryOp(BinOp::Ne, Box::new(self), Box::new(rhs))
     }
 
     // Construct an application from this expression and an argument
     pub fn app_to(mut self, arg: Self) -> Self {
         match self {
             Exp::Call(_, ref mut args) => args.push(arg),
-            _ => self = Exp::Call(box self, vec![arg]),
+            _ => self = Exp::Call(Box::new(self), vec![arg]),
         }
         self
     }
@@ -304,7 +304,7 @@ impl Exp {
         } else if let Exp::Const(Constant::Bool(true)) = other {
             self
         } else {
-            Exp::BinaryOp(BinOp::LazyAnd, box self, box other)
+            Exp::BinaryOp(BinOp::LazyAnd, Box::new(self), Box::new(other))
         }
     }
 
@@ -314,7 +314,7 @@ impl Exp {
         } else if let Exp::Const(Constant::Bool(true)) = other {
             self
         } else {
-            Exp::BinaryOp(BinOp::LogAnd, box self, box other)
+            Exp::BinaryOp(BinOp::LogAnd, Box::new(self), Box::new(other))
         }
     }
 
@@ -324,7 +324,7 @@ impl Exp {
         } else if other.is_true() {
             other
         } else {
-            Exp::Impl(box self, box other)
+            Exp::Impl(Box::new(self), Box::new(other))
         }
     }
 

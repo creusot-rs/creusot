@@ -1,6 +1,8 @@
 use crate::*;
 #[cfg(creusot)]
-use ::std::fmt::{ArgumentV1, Arguments, Debug, Formatter};
+use ::core::fmt::ArgumentV1;
+#[cfg(creusot)]
+use ::std::fmt::{Arguments, Debug, Formatter};
 
 extern_spec! {
     mod std {
@@ -8,7 +10,8 @@ extern_spec! {
             #[requires(true)]
             fn _print(fmt: std::fmt::Arguments<'_>);
         }
-
+    }
+    mod core {
         mod fmt {
             impl<'a> ArgumentV1<'a> {
             #[requires(true)]
