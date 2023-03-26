@@ -35,7 +35,6 @@ impl Callbacks for ToWhy {
     }
 
     fn after_expansion<'tcx>(&mut self, c: &Compiler, queries: &'tcx Queries<'tcx>) -> Compilation {
-        queries.prepare_outputs().unwrap();
         queries.global_ctxt().unwrap();
         let _ = queries.global_ctxt().unwrap().enter(|tcx| {
             let mut ctx = ctx::TranslationCtx::new(tcx, self.opts.clone());

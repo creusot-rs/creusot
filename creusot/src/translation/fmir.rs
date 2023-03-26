@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{BasicBlock, BinOp, Place, UnOp},
-    ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty, TypeVisitable},
+    ty::{subst::SubstsRef, AdtDef, GenericArg, ParamEnv, Ty},
 };
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::VariantIdx;
@@ -84,10 +84,10 @@ pub(crate) fn resolve_predicate_of2<'tcx>(
     ty: Ty<'tcx>,
 ) -> Option<(DefId, SubstsRef<'tcx>)> {
     let trait_meth_id = ctx.get_diagnostic_item(Symbol::intern("creusot_resolve_method"))?;
-    let subst = ctx.mk_substs([GenericArg::from(ty)].iter());
+    let subst = ctx.mk_substs(&[GenericArg::from(ty)]);
 
     let resolve_impl = traits::resolve_opt(ctx.tcx, param_env, trait_meth_id, subst)?;
-
+    use rustc_middle::ty::TypeVisitableExt;
     if !ty.still_further_specializable()
         && ctx.is_diagnostic_item(Symbol::intern("creusot_resolve_default"), resolve_impl.0)
         && !resolve_impl.1.type_at(0).is_closure()

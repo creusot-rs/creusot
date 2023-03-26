@@ -1,11 +1,10 @@
 use indexmap::IndexSet;
-use rustc_hir::def_id::DefId;
+use rustc_hir::{def::Namespace, def_id::DefId};
 use rustc_middle::ty::{
     self,
     subst::{InternalSubsts, SubstsRef},
-    AliasKind, AliasTy, DefIdTree, FieldDef, GenericArgKind, Ty, TyCtxt, TyKind,
+    AliasKind, AliasTy, FieldDef, GenericArgKind, Ty, TyCtxt, TyKind,
 };
-use rustc_resolve::Namespace;
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_type_ir::sty::TyKind::*;
 use std::collections::VecDeque;
@@ -90,7 +89,7 @@ fn translate_ty_inner<'tcx>(
 
             let args = s.types().map(|t| translate_ty_inner(trans, ctx, names, span, t)).collect();
 
-            MlT::TApp(box cons, args)
+            MlT::TApp(Box::new(cons), args)
         }
         Tuple(ref args) => {
             let tys =
@@ -115,7 +114,9 @@ fn translate_ty_inner<'tcx>(
             use rustc_ast::Mutability::*;
             names.import_prelude_module(PreludeModule::Borrow);
             match borkind {
-                Mut => MlT::MutableBorrow(box translate_ty_inner(trans, ctx, names, span, *ty)),
+                Mut => {
+                    MlT::MutableBorrow(Box::new(translate_ty_inner(trans, ctx, names, span, *ty)))
+                }
                 Not => translate_ty_inner(trans, ctx, names, span, *ty),
             }
         }
@@ -124,7 +125,7 @@ fn translate_ty_inner<'tcx>(
             names.import_prelude_module(PreludeModule::Seq);
             // names.import_prelude_module(PreludeModule:);
             MlT::TApp(
-                box MlT::TConstructor("seq".into()),
+                Box::new(MlT::TConstructor("seq".into())),
                 vec![translate_ty_inner(trans, ctx, names, span, *ty)],
             )
         }
@@ -133,7 +134,7 @@ fn translate_ty_inner<'tcx>(
             names.import_prelude_module(PreludeModule::Seq);
 
             MlT::TApp(
-                box MlT::TConstructor("array".into()),
+                Box::new(MlT::TConstructor("array".into())),
                 vec![translate_ty_inner(trans, ctx, names, span, *ty)],
             )
         }
@@ -490,7 +491,7 @@ pub(crate) fn translate_accessor(
         .collect();
 
     let this = MlT::TApp(
-        box MlT::TConstructor(ty_name.clone().into()),
+        Box::new(MlT::TConstructor(ty_name.clone().into())),
         ty_param_names(ctx.tcx, adt_did).map(MlT::TVar).collect(),
     );
 
@@ -537,7 +538,7 @@ pub(crate) fn build_accessor(
         })
         .collect();
 
-    let discr_exp = Exp::Match(box Exp::pure_var("self".into()), branches);
+    let discr_exp = Exp::Match(Box::new(Exp::pure_var("self".into())), branches);
 
     Decl::Let(LetDecl {
         sig,
@@ -552,7 +553,7 @@ pub(crate) fn closure_accessors<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     closure: DefId,
 ) -> Vec<(Symbol, PreSignature<'tcx>, Term<'tcx>)> {
-    let TyKind::Closure(_, substs) = ctx.type_of(closure).kind() else { unreachable!() };
+    let TyKind::Closure(_, substs) = ctx.type_of(closure).subst_identity().kind() else { unreachable!() };
 
     let count = substs.as_closure().upvar_tys().count();
 
@@ -569,14 +570,14 @@ pub(crate) fn build_closure_accessor<'tcx>(
     closure: DefId,
     ix: usize,
 ) -> (PreSignature<'tcx>, Term<'tcx>) {
-    let TyKind::Closure(_, substs) = ctx.type_of(closure).kind() else { unreachable!() };
+    let TyKind::Closure(_, substs) = ctx.type_of(closure).subst_identity().kind() else { unreachable!() };
 
     let out_ty = substs.as_closure().upvar_tys().nth(ix).unwrap();
 
-    let self_ = Term::var(Symbol::intern("self"), ctx.type_of(closure));
+    let self_ = Term::var(Symbol::intern("self"), ctx.type_of(closure).subst_identity());
 
     let pre_sig = PreSignature {
-        inputs: vec![(Symbol::intern("self"), DUMMY_SP, ctx.type_of(closure))],
+        inputs: vec![(Symbol::intern("self"), DUMMY_SP, ctx.type_of(closure).subst_identity())],
         output: out_ty,
         contract: PreContract::default(),
     };
@@ -596,8 +597,8 @@ pub(crate) fn build_closure_accessor<'tcx>(
                 variant: 0u32.into(),
                 fields,
             },
-            arg: box self_,
-            body: box res,
+            arg: Box::new(self_),
+            body: Box::new(res),
         },
         span: DUMMY_SP,
     };

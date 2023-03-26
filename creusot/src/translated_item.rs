@@ -54,40 +54,46 @@ impl<'a> TranslatedItem {
         use std::iter;
         use TranslatedItem::*;
         match self {
-            Logic { interface, stub, modl, proof_modl, .. } => box iter::once(stub)
-                .chain(iter::once(interface))
-                .chain(iter::once(modl))
-                .chain(proof_modl.into_iter()),
-            Program { interface, modl, .. } => box iter::once(interface).chain(modl.into_iter()),
-            Trait { .. } => box iter::empty(),
-            Impl { modl, .. } => box iter::once(modl),
-            AssocTy { modl, .. } => box iter::once(modl),
+            Logic { interface, stub, modl, proof_modl, .. } => Box::new(
+                iter::once(stub)
+                    .chain(iter::once(interface))
+                    .chain(iter::once(modl))
+                    .chain(proof_modl.into_iter()),
+            ),
+            Program { interface, modl, .. } => {
+                Box::new(iter::once(interface).chain(modl.into_iter()))
+            }
+            Trait { .. } => Box::new(iter::empty()),
+            Impl { modl, .. } => Box::new(iter::once(modl)),
+            AssocTy { modl, .. } => Box::new(iter::once(modl)),
             Constant { stub, modl, .. } => {
-                box std::iter::once(stub).chain(box std::iter::once(modl))
+                Box::new(std::iter::once(stub).chain(std::iter::once(modl)))
             }
             Type { mut modl, accessors, .. } => {
                 modl[0].decls.extend(accessors.values().flat_map(|v| v.values()).cloned());
 
-                box modl.into_iter()
+                Box::new(modl.into_iter())
             }
-            Closure { interface, modl } => box interface.into_iter().chain(modl.into_iter()),
+            Closure { interface, modl } => Box::new(interface.into_iter().chain(modl.into_iter())),
         }
     }
 
     pub(crate) fn interface(self) -> Box<dyn Iterator<Item = Module>> {
         match self {
-            TranslatedItem::Logic { interface, modl, stub, .. } => box std::iter::once(stub)
-                .chain(std::iter::once(interface))
-                .chain(std::iter::once(modl)),
-            TranslatedItem::Program { interface, .. } => box std::iter::once(interface),
-            TranslatedItem::Trait { .. } => box std::iter::empty(),
-            TranslatedItem::Impl { modl, .. } => box std::iter::once(modl),
-            TranslatedItem::AssocTy { modl, .. } => box std::iter::once(modl),
+            TranslatedItem::Logic { interface, modl, stub, .. } => Box::new(
+                std::iter::once(stub)
+                    .chain(std::iter::once(interface))
+                    .chain(std::iter::once(modl)),
+            ),
+            TranslatedItem::Program { interface, .. } => Box::new(std::iter::once(interface)),
+            TranslatedItem::Trait { .. } => Box::new(std::iter::empty()),
+            TranslatedItem::Impl { modl, .. } => Box::new(std::iter::once(modl)),
+            TranslatedItem::AssocTy { modl, .. } => Box::new(std::iter::once(modl)),
             TranslatedItem::Constant { stub, modl, .. } => {
-                box std::iter::once(stub).chain(box std::iter::once(modl))
+                Box::new(std::iter::once(stub).chain(std::iter::once(modl)))
             }
             TranslatedItem::Type { .. } => self.modules(),
-            TranslatedItem::Closure { interface, modl: _ } => box interface.into_iter(),
+            TranslatedItem::Closure { interface, modl: _ } => Box::new(interface.into_iter()),
         }
     }
 }

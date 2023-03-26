@@ -63,7 +63,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                 self.lookup_builtin(method, &mut Vec::new()).unwrap_or_else(|| {
                     // eprintln!("{id:?} {subst:?}");
                     let clone = self.names.value(id, subst);
-                    match self.ctx.type_of(id).kind() {
+                    match self.ctx.type_of(id).subst_identity().kind() {
                         TyKind::FnDef(_, _) => Exp::Tuple(Vec::new()),
                         _ => Exp::pure_qvar(clone),
                     }
@@ -80,8 +80,8 @@ impl<'tcx> Lower<'_, 'tcx> {
                 }
 
                 match (op, self.pure) {
-                    (Div, _) => Exp::Call(box Exp::pure_var("div".into()), vec![lhs, rhs]),
-                    (Rem, _) => Exp::Call(box Exp::pure_var("mod".into()), vec![lhs, rhs]),
+                    (Div, _) => Exp::Call(Box::new(Exp::pure_var("div".into())), vec![lhs, rhs]),
+                    (Rem, _) => Exp::Call(Box::new(Exp::pure_var("mod".into())), vec![lhs, rhs]),
                     (Eq | Ne, Purity::Program) => {
                         let (a, lhs) = if lhs.is_pure() {
                             (lhs, None)
@@ -96,27 +96,28 @@ impl<'tcx> Lower<'_, 'tcx> {
                         };
 
                         let op = if let pearlite::BinOp::Eq = op { BinOp::Eq } else { BinOp::Ne };
-                        let mut inner = Exp::Pure(box Exp::BinaryOp(op, box a, box b));
+                        let mut inner =
+                            Exp::Pure(Box::new(Exp::BinaryOp(op, Box::new(a), Box::new(b))));
 
                         if let Some(lhs) = lhs {
                             inner = Exp::Let {
                                 pattern: Pat::VarP("a".into()),
-                                arg: box lhs,
-                                body: box inner,
+                                arg: Box::new(lhs),
+                                body: Box::new(inner),
                             }
                         };
 
                         if let Some(rhs) = rhs {
                             inner = Exp::Let {
                                 pattern: Pat::VarP("b".into()),
-                                arg: box rhs,
-                                body: box inner,
+                                arg: Box::new(rhs),
+                                body: Box::new(inner),
                             }
                         };
 
                         inner
                     }
-                    _ => Exp::BinaryOp(binop_to_binop(op, self.pure), box lhs, box rhs),
+                    _ => Exp::BinaryOp(binop_to_binop(op, self.pure), Box::new(lhs), Box::new(rhs)),
                 }
             }
             TermKind::Unary { op, box arg } => {
@@ -124,7 +125,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                     pearlite::UnOp::Not => why3::exp::UnOp::Not,
                     pearlite::UnOp::Neg => why3::exp::UnOp::Neg,
                 };
-                Exp::UnaryOp(op, box self.lower_term(arg))
+                Exp::UnaryOp(op, Box::new(self.lower_term(arg)))
             }
             TermKind::Call {
                 id,
@@ -152,20 +153,26 @@ impl<'tcx> Lower<'_, 'tcx> {
                     if self.pure == Purity::Program {
                         mk_binders(Exp::QVar(clone, self.pure), args)
                     } else {
-                        Exp::Call(box Exp::QVar(clone, self.pure), args)
+                        Exp::Call(Box::new(Exp::QVar(clone, self.pure)), args)
                     }
                 })
             }
             TermKind::Forall { binder, box body } => {
                 let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
                 self.pure_exp(|this| {
-                    Exp::Forall(vec![(binder.0.to_string().into(), ty)], box this.lower_term(body))
+                    Exp::Forall(
+                        vec![(binder.0.to_string().into(), ty)],
+                        Box::new(this.lower_term(body)),
+                    )
                 })
             }
             TermKind::Exists { binder, box body } => {
                 let ty = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, binder.1);
                 self.pure_exp(|this| {
-                    Exp::Exists(vec![(binder.0.to_string().into(), ty)], box this.lower_term(body))
+                    Exp::Exists(
+                        vec![(binder.0.to_string().into(), ty)],
+                        Box::new(this.lower_term(body)),
+                    )
                 })
             }
             TermKind::Constructor { adt, variant, fields } => {
@@ -179,19 +186,19 @@ impl<'tcx> Lower<'_, 'tcx> {
             TermKind::Cur { box term } => {
                 if term.ty.is_mutable_ptr() {
                     self.names.import_prelude_module(PreludeModule::Borrow);
-                    Exp::Current(box self.lower_term(term))
+                    Exp::Current(Box::new(self.lower_term(term)))
                 } else {
                     self.lower_term(term)
                 }
             }
             TermKind::Fin { box term } => {
                 self.names.import_prelude_module(PreludeModule::Borrow);
-                Exp::Final(box self.lower_term(term))
+                Exp::Final(Box::new(self.lower_term(term)))
             }
             TermKind::Impl { box lhs, box rhs } => {
                 self.pure_exp(|this| this.lower_term(lhs).implies(this.lower_term(rhs)))
             }
-            TermKind::Old { box term } => Exp::Old(box self.lower_term(term)),
+            TermKind::Old { box term } => Exp::Old(Box::new(self.lower_term(term))),
             TermKind::Match { box scrutinee, mut arms } => {
                 if scrutinee.ty.peel_refs().is_bool() {
                     let true_br = if let Pattern::Boolean(true) = arms[0].0 {
@@ -201,9 +208,9 @@ impl<'tcx> Lower<'_, 'tcx> {
                     };
                     let false_br = arms.remove(0).1;
                     Exp::IfThenElse(
-                        box self.lower_term(scrutinee),
-                        box self.lower_term(true_br),
-                        box self.lower_term(false_br),
+                        Box::new(self.lower_term(scrutinee)),
+                        Box::new(self.lower_term(true_br)),
+                        Box::new(self.lower_term(false_br)),
                     )
                 } else {
                     let _ = translate_ty(self.ctx, self.names, rustc_span::DUMMY_SP, scrutinee.ty);
@@ -211,13 +218,13 @@ impl<'tcx> Lower<'_, 'tcx> {
                         .into_iter()
                         .map(|(pat, body)| (self.lower_pat(pat), self.lower_term(body)))
                         .collect();
-                    Exp::Match(box self.lower_term(scrutinee), arms)
+                    Exp::Match(Box::new(self.lower_term(scrutinee)), arms)
                 }
             }
             TermKind::Let { pattern, box arg, box body } => Exp::Let {
                 pattern: self.lower_pat(pattern),
-                arg: box self.lower_term(arg),
-                body: box self.lower_term(body),
+                arg: Box::new(self.lower_term(arg)),
+                body: Box::new(self.lower_term(body)),
             },
             TermKind::Tuple { fields } => {
                 Exp::Tuple(fields.into_iter().map(|f| self.lower_term(f)).collect())
@@ -239,7 +246,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                Exp::Call(box Exp::pure_qvar(accessor), vec![lhs])
+                Exp::Call(Box::new(Exp::pure_qvar(accessor)), vec![lhs])
             }
             TermKind::Closure { args, body } => {
                 let mut fresh_vars = 0;
@@ -268,15 +275,15 @@ impl<'tcx> Lower<'_, 'tcx> {
 
                             body = Exp::Let {
                                 pattern: self.lower_pat(arg),
-                                arg: box Exp::pure_var(id.clone()),
-                                body: box body,
+                                arg: Box::new(Exp::pure_var(id.clone())),
+                                body: Box::new(body),
                             };
                             binders.push(Binder::typed(id, self.lower_ty(*ty)))
                         }
                     }
                 }
 
-                Exp::Abs(binders, box body)
+                Exp::Abs(binders, Box::new(body))
             }
             TermKind::Absurd => Exp::Absurd,
             TermKind::Reborrow { cur, fin } => Exp::Record {
@@ -295,7 +302,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                 self.pure = Purity::Logic;
                 let ret = f(self);
                 self.pure = Purity::Program;
-                Exp::Pure(box ret)
+                Exp::Pure(Box::new(ret))
             }
         }
     }
@@ -348,7 +355,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                 ));
             } else {
                 return Some(Exp::Call(
-                    box Exp::pure_qvar(builtin.without_search_path()),
+                    Box::new(Exp::pure_qvar(builtin.without_search_path())),
                     args.clone(),
                 ));
             }
@@ -425,18 +432,18 @@ pub(super) fn mk_binders(func: Exp, args: Vec<Exp>) -> Exp {
         }
     }
 
-    let call = Exp::Call(box func, call_args);
+    let call = Exp::Call(Box::new(func), call_args);
 
     impure_args.into_iter().rfold(call, |acc, arg| Exp::Let {
         pattern: Pat::VarP(arg.0.into()),
-        arg: box arg.1,
-        body: box acc,
+        arg: Box::new(arg.1),
+        body: Box::new(acc),
     })
 }
 
 fn is_identity_from<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, subst: SubstsRef<'tcx>) -> bool {
     if tcx.def_path_str(id) == "std::convert::From::from" && subst.len() == 1 {
-        let out_ty = tcx.fn_sig(id).no_bound_vars().unwrap().output();
+        let out_ty: Ty<'tcx> = tcx.fn_sig(id).no_bound_vars().unwrap().output().skip_binder();
         return subst[0].expect_ty() == EarlyBinder(out_ty).subst(tcx, subst);
     }
     false

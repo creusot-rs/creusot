@@ -12,13 +12,16 @@ use rustc_ast::{
     ast::{AttrArgs, AttrArgsEq},
     AttrItem, AttrKind, Attribute,
 };
-use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
+use rustc_hir::{
+    def::{DefKind, Namespace},
+    def_id::DefId,
+    Unsafety,
+};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    self, subst::SubstsRef, BorrowKind, ClosureKind, DefIdTree, EarlyBinder, InternalSubsts,
-    ReErased, RegionKind, Ty, TyCtxt, TyKind, UpvarCapture,
+    self, subst::SubstsRef, BorrowKind, ClosureKind, EarlyBinder, InternalSubsts, Ty, TyCtxt,
+    TyKind, UpvarCapture,
 };
-use rustc_resolve::Namespace;
 use rustc_span::{symbol, symbol::kw, Span, Symbol, DUMMY_SP};
 use std::{
     collections::{HashMap, HashSet},
@@ -297,7 +300,7 @@ impl ItemType {
 pub(crate) fn item_type(tcx: TyCtxt<'_>, def_id: DefId) -> ItemType {
     match tcx.def_kind(def_id) {
         DefKind::Trait => ItemType::Trait,
-        DefKind::Impl => ItemType::Impl,
+        DefKind::Impl { .. } => ItemType::Impl,
         DefKind::Fn | DefKind::AssocFn => {
             if is_predicate(tcx, def_id) {
                 ItemType::Predicate
@@ -320,35 +323,36 @@ pub(crate) fn inputs_and_output<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
 ) -> (impl Iterator<Item = (symbol::Ident, Ty<'tcx>)>, Ty<'tcx>) {
-    let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) =
-        match tcx.type_of(def_id).kind() {
-            TyKind::FnDef(..) => {
-                let gen_sig = tcx.fn_sig(def_id);
-                let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), gen_sig);
-                let iter =
-                    tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned());
-                (box iter, sig.output())
-            }
-            TyKind::Closure(_, subst) => {
-                let sig = tcx.signature_unclosure(subst.as_closure().sig(), Unsafety::Normal);
-                let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), sig);
-                let env_region = ReErased;
-                let env_ty = tcx.closure_env_ty(def_id, subst, env_region).unwrap();
+    let (inputs, output): (Box<dyn Iterator<Item = (rustc_span::symbol::Ident, _)>>, _) = match tcx
+        .type_of(def_id)
+        .subst_identity()
+        .kind()
+    {
+        TyKind::FnDef(..) => {
+            let gen_sig = tcx.fn_sig(def_id).subst_identity();
+            let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), gen_sig);
+            let iter = tcx.fn_arg_names(def_id).iter().cloned().zip(sig.inputs().iter().cloned());
+            (Box::new(iter), sig.output())
+        }
+        TyKind::Closure(_, subst) => {
+            let sig = tcx.signature_unclosure(subst.as_closure().sig(), Unsafety::Normal);
+            let sig = tcx.normalize_erasing_late_bound_regions(tcx.param_env(def_id), sig);
+            let env_ty = tcx.closure_env_ty(def_id, subst, tcx.lifetimes.re_erased).unwrap();
 
-                // I wish this could be called "self"
-                let closure_env = (symbol::Ident::empty(), env_ty);
-                let names = tcx
-                    .fn_arg_names(def_id)
-                    .iter()
-                    .cloned()
-                    .chain(iter::repeat(rustc_span::symbol::Ident::empty()));
-                (
-                    box iter::once(closure_env).chain(names.zip(sig.inputs().iter().cloned())),
-                    sig.output(),
-                )
-            }
-            _ => (box iter::empty(), tcx.type_of(def_id)),
-        };
+            // I wish this could be called "self"
+            let closure_env = (symbol::Ident::empty(), env_ty);
+            let names = tcx
+                .fn_arg_names(def_id)
+                .iter()
+                .cloned()
+                .chain(iter::repeat(rustc_span::symbol::Ident::empty()));
+            (
+                Box::new(iter::once(closure_env).chain(names.zip(sig.inputs().iter().cloned()))),
+                sig.output(),
+            )
+        }
+        _ => (Box::new(iter::empty()), tcx.type_of(def_id).subst_identity()),
+    };
     (inputs, output)
 }
 
@@ -379,17 +383,17 @@ pub(crate) fn pre_sig_of<'tcx>(
     if output.is_never() {
         contract.ensures.push(Term {
             kind: TermKind::Lit(Literal::Bool(false)),
-            ty: ctx.mk_ty(TyKind::Bool),
+            ty: ctx.types.bool,
             span: DUMMY_SP,
         });
     }
 
-    if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() {
+    if let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).subst_identity().kind() {
         let self_ = Symbol::intern("_1'");
         let mut pre_subst = closure_capture_subst(ctx.tcx, def_id, subst, None, self_);
 
         let mut s = HashMap::new();
-        let env_ty = ctx.closure_env_ty(def_id, subst, ReErased).unwrap();
+        let env_ty = ctx.closure_env_ty(def_id, subst, ctx.lifetimes.re_erased).unwrap();
         s.insert(
             self_,
             if env_ty.is_ref() { Term::var(self_, env_ty).cur() } else { Term::var(self_, env_ty) },
@@ -424,7 +428,7 @@ pub(crate) fn pre_sig_of<'tcx>(
             (name, ident.span, ty)
         })
         .collect();
-    if ctx.type_of(def_id).is_fn() && inputs.is_empty() {
+    if ctx.type_of(def_id).subst_identity().is_fn() && inputs.is_empty() {
         inputs.push((kw::Empty, DUMMY_SP, ctx.tcx.types.unit));
     };
 
@@ -563,8 +567,11 @@ impl<'tcx> ClosureSubst<'tcx> {
             Some(ClosureKind::FnOnce) => self.self_.clone(),
         };
 
-        let proj =
-            Term { ty, kind: TermKind::Projection { lhs: box self_, name: ix }, span: DUMMY_SP };
+        let proj = Term {
+            ty,
+            kind: TermKind::Projection { lhs: Box::new(self_), name: ix },
+            span: DUMMY_SP,
+        };
 
         match ck {
             UpvarCapture::ByValue => Some(proj),
@@ -587,8 +594,11 @@ impl<'tcx> ClosureSubst<'tcx> {
             None => unreachable!(),
         };
 
-        let proj =
-            Term { ty, kind: TermKind::Projection { lhs: box self_, name: ix }, span: DUMMY_SP };
+        let proj = Term {
+            ty,
+            kind: TermKind::Projection { lhs: Box::new(self_), name: ix },
+            span: DUMMY_SP,
+        };
 
         match ck {
             UpvarCapture::ByValue => Some(proj),
@@ -668,27 +678,23 @@ pub(crate) fn closure_capture_subst<'tcx>(
         fun_def_id = tcx.parent(fun_def_id);
     }
 
-    let capture_names =
-        tcx.symbols_for_closure_captures((fun_def_id.expect_local(), def_id.expect_local()));
+    let captures = tcx.closure_captures(def_id.expect_local());
 
     let ty = match ck {
         Some(ClosureKind::Fn) => {
-            tcx.mk_imm_ref(tcx.mk_region(RegionKind::ReErased), tcx.type_of(def_id))
+            tcx.mk_imm_ref(tcx.lifetimes.re_erased, tcx.type_of(def_id).subst_identity())
         }
         Some(ClosureKind::FnMut) => {
-            tcx.mk_mut_ref(tcx.mk_region(RegionKind::ReErased), tcx.type_of(def_id))
+            tcx.mk_mut_ref(tcx.lifetimes.re_erased, tcx.type_of(def_id).subst_identity())
         }
-        Some(ClosureKind::FnOnce) | None => tcx.type_of(def_id),
+        Some(ClosureKind::FnOnce) | None => tcx.type_of(def_id).subst_identity(),
     };
 
     let self_ = Term::var(self_name, ty);
 
-    let captures =
-        tcx.typeck(def_id.expect_local()).closure_min_captures_flattened(def_id.expect_local());
-
-    let subst = izip!(captures, capture_names, cs.as_closure().upvar_tys())
+    let subst = izip!(captures, cs.as_closure().upvar_tys())
         .enumerate()
-        .map(|(ix, (cap, name, ty))| (*name, (cap.info.capture_kind, ty, ix.into())))
+        .map(|(ix, (cap, ty))| (cap.to_symbol(), (cap.info.capture_kind, ty, ix.into())))
         .collect();
 
     ClosureSubst { self_, kind: ck, map: subst, bound: Default::default() }

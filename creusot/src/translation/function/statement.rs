@@ -29,11 +29,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             StorageDead(_) | StorageLive(_) | Nop => {}
             // Not real instructions
             FakeRead(_) | AscribeUserType(_, _) | Retag(_, _) | Coverage(_) => {}
-            Intrinsic(_) => self.ctx.crash_and_error(
-                statement.source_info.span,
-                "intrinsics are not supported",
-            ),
-            Deinit(_) => unreachable!("Deinit unsupported")
+            Intrinsic(_) => {
+                self.ctx.crash_and_error(statement.source_info.span, "intrinsics are not supported")
+            }
+            Deinit(_) => unreachable!("Deinit unsupported"),
+            PlaceMention(_) => {}
+            ConstEvalCounter => {}
             // No assembly!
             // LlvmInlineAsm(_) => self
             //     .ctx
@@ -83,7 +84,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                             if res_loc.block == loc.block {
                                 res_loc.statement_index <= loc.statement_index
                             } else {
-                                dom.is_dominated_by(loc.block, res_loc.block)
+                                dom.dominates(res_loc.block, loc.block)
                             }
                         })
                         .filter(|i| {
@@ -93,7 +94,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                                 if act_loc.block == loc.block {
                                     loc.statement_index < act_loc.statement_index
                                 } else {
-                                    dom.is_dominated_by(act_loc.block, loc.block)
+                                    dom.dominates(loc.block, act_loc.block)
                                 }
                             } else {
                                 false
@@ -124,12 +125,12 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 let exp = Expr::BinOp(
                     *op,
                     l.ty(self.body, self.tcx),
-                    box self.translate_operand(l),
-                    box self.translate_operand(r),
+                    Box::new(self.translate_operand(l)),
+                    Box::new(self.translate_operand(r)),
                 );
-                Expr::Span(si.span, box exp)
+                Expr::Span(si.span, Box::new(exp))
             }
-            Rvalue::UnaryOp(op, v) => Expr::UnaryOp(*op, box self.translate_operand(v)),
+            Rvalue::UnaryOp(op, v) => Expr::UnaryOp(*op, Box::new(self.translate_operand(v))),
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();
@@ -143,22 +144,21 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         Expr::Constructor(variant, subst, fields)
                     }
                     Closure(def_id, subst) => {
-                        let def_id = def_id.to_def_id();
-                        if util::is_invariant(self.tcx, def_id) {
+                        if util::is_invariant(self.tcx, *def_id) {
                             return;
-                        } else if util::is_assertion(self.tcx, def_id) {
+                        } else if util::is_assertion(self.tcx, *def_id) {
                             let assertion = self
                                 .assertions
-                                .remove(&def_id)
+                                .remove(def_id)
                                 .expect("Could not find body of assertion");
                             self.emit_statement(fmir::Statement::Assertion(assertion));
                             return;
-                        } else if util::is_ghost(self.tcx, def_id) {
+                        } else if util::is_ghost(self.tcx, *def_id) {
                             return;
-                        } else if util::is_spec(self.tcx, def_id) {
+                        } else if util::is_spec(self.tcx, *def_id) {
                             return;
                         } else {
-                            Expr::Constructor(def_id, subst, fields)
+                            Expr::Constructor(*def_id, subst, fields)
                         }
                     }
                     Array(_) => Expr::Array(fields),
@@ -168,14 +168,14 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     ),
                 }
             }
-            Rvalue::Len(pl) => Expr::Len(box Expr::Place(*pl)),
+            Rvalue::Len(pl) => Expr::Len(Box::new(Expr::Place(*pl))),
             Rvalue::Cast(CastKind::IntToInt | CastKind::PtrToPtr, op, ty) => {
                 let op_ty = op.ty(self.body, self.tcx);
-                Expr::Cast(box self.translate_operand(op), op_ty, *ty)
+                Expr::Cast(Box::new(self.translate_operand(op)), op_ty, *ty)
             }
             Rvalue::Repeat(op, len) => Expr::Repeat(
-                box self.translate_operand(op),
-                box crate::constant::from_ty_const(self.ctx, *len, self.param_env(), si.span),
+                Box::new(self.translate_operand(op)),
+                Box::new(crate::constant::from_ty_const(self.ctx, *len, self.param_env(), si.span)),
             ),
             Rvalue::Cast(CastKind::Pointer(PointerCast::Unsize), op, ty) => {
                 if let Some(t) = ty.builtin_deref(true) && t.ty.is_slice() {

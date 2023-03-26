@@ -5,7 +5,7 @@
     feature(slice_take),
     feature(print_internals, fmt_internals, fmt_helpers_for_derive)
 )]
-#![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns, box_syntax))]
+#![cfg_attr(feature = "typechecker", feature(rustc_private), feature(box_patterns))]
 #![feature(step_trait, allocator_api, unboxed_closures, tuple_trait)]
 #![cfg_attr(not(creusot), feature(rustc_attrs))]
 

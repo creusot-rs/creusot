@@ -27,8 +27,8 @@ use rustc_middle::{
     ty::{
         subst::{GenericArg, SubstsRef},
         ClosureKind::*,
-        DefIdTree, EarlyBinder, GenericParamDef, GenericParamDefKind, ParamEnv, RegionKind, Ty,
-        TyCtxt, TyKind, UpvarCapture, WithOptConstParam,
+        EarlyBinder, GenericParamDef, GenericParamDefKind, ParamEnv, Ty, TyCtxt, TyKind,
+        UpvarCapture, WithOptConstParam,
     },
 };
 use rustc_mir_dataflow::move_paths::MoveData;
@@ -367,7 +367,7 @@ pub(crate) fn closure_contract<'tcx>(
     ctx: &mut TranslationCtx<'tcx>,
     def_id: DefId,
 ) -> ClosureContract<'tcx> {
-    let TyKind::Closure(_, subst) =  ctx.tcx.type_of(def_id).kind() else { unreachable!() };
+    let TyKind::Closure(_, subst) =  ctx.tcx.type_of(def_id).subst_identity().kind() else { unreachable!() };
 
     let kind = subst.as_closure().kind();
     let mut pre_clos_sig = ctx.sig(def_id).clone();
@@ -386,8 +386,8 @@ pub(crate) fn closure_contract<'tcx>(
     if args.len() == 0 {
         pre_clos_sig.inputs.push((Symbol::intern("_"), DUMMY_SP, ctx.tcx.mk_unit()))
     } else {
-        let arg_tys = args.iter().map(|(_, _, ty)| *ty);
-        let arg_ty = ctx.tcx.mk_tup(arg_tys);
+        let arg_tys: Vec<_> = args.iter().map(|(_, _, ty)| *ty).collect();
+        let arg_ty = ctx.tcx.mk_tup(&arg_tys);
 
         pre_clos_sig.inputs.push((Symbol::intern("args"), DUMMY_SP, arg_ty));
 
@@ -411,15 +411,19 @@ pub(crate) fn closure_contract<'tcx>(
             span: postcondition.span,
             kind: TermKind::Let {
                 pattern: arg_pat.clone(),
-                arg: box arg_tuple.clone(),
-                body: box postcondition,
+                arg: Box::new(arg_tuple.clone()),
+                body: Box::new(postcondition),
             },
-            ty: ctx.tcx.mk_ty(TyKind::Bool),
+            ty: ctx.types.bool,
         };
         precondition = pearlite::Term {
             span: precondition.span,
-            kind: TermKind::Let { pattern: arg_pat, arg: box arg_tuple, body: box precondition },
-            ty: ctx.tcx.mk_ty(TyKind::Bool),
+            kind: TermKind::Let {
+                pattern: arg_pat,
+                arg: Box::new(arg_tuple),
+                body: Box::new(precondition),
+            },
+            ty: ctx.types.bool,
         };
     }
 
@@ -428,7 +432,7 @@ pub(crate) fn closure_contract<'tcx>(
 
     post_sig.inputs.push((Symbol::intern("result"), DUMMY_SP, result_ty));
 
-    let env_ty = ctx.tcx.closure_env_ty(def_id, subst, RegionKind::ReErased).unwrap().peel_refs();
+    let env_ty = ctx.closure_env_ty(def_id, subst, ctx.lifetimes.re_erased).unwrap().peel_refs();
     let self_ty = env_ty;
 
     let precond = {
@@ -477,7 +481,7 @@ pub(crate) fn closure_contract<'tcx>(
         // post_sig.name = Ident::build("postcondition_mut");
 
         post_sig.inputs[0].0 = Symbol::intern("self");
-        post_sig.inputs[0].2 = ctx.mk_mut_ref(ctx.mk_region(RegionKind::ReErased), self_ty);
+        post_sig.inputs[0].2 = ctx.mk_mut_ref(ctx.lifetimes.re_erased, self_ty);
 
         let mut csubst = util::closure_capture_subst(
             ctx.tcx,
@@ -491,7 +495,7 @@ pub(crate) fn closure_contract<'tcx>(
         csubst.visit_mut_term(&mut postcondition);
 
         let args = subst.as_closure().sig().inputs().skip_binder()[0];
-        let unnest_subst = ctx.mk_substs([GenericArg::from(args), GenericArg::from(env_ty)].iter());
+        let unnest_subst = ctx.mk_substs(&[GenericArg::from(args), GenericArg::from(env_ty)]);
 
         let unnest_id = ctx.get_diagnostic_item(Symbol::intern("fn_mut_impl_unnest")).unwrap();
 
@@ -558,13 +562,13 @@ fn closure_resolve<'tcx>(
 ) -> (PreSignature<'tcx>, Term<'tcx>) {
     let mut resolve = Term::mk_true(ctx.tcx);
 
-    let self_ = Term::var(Symbol::intern("_1'"), ctx.type_of(def_id));
+    let self_ = Term::var(Symbol::intern("_1'"), ctx.type_of(def_id).subst_identity());
     let csubst = subst.as_closure();
     let param_env = ctx.param_env(def_id);
     for (ix, ty) in csubst.upvar_tys().enumerate() {
         let proj = Term {
             ty,
-            kind: TermKind::Projection { lhs: box self_.clone(), name: ix.into() },
+            kind: TermKind::Projection { lhs: Box::new(self_.clone()), name: ix.into() },
             span: DUMMY_SP,
         };
 
@@ -574,7 +578,7 @@ fn closure_resolve<'tcx>(
                 kind: TermKind::Call {
                     id: id.into(),
                     subst,
-                    fun: box Term::item(ctx.tcx, id, subst),
+                    fun: Box::new(Term::item(ctx.tcx, id, subst)),
                     args: vec![proj],
                 },
                 span: DUMMY_SP,
@@ -584,7 +588,11 @@ fn closure_resolve<'tcx>(
     }
 
     let sig = PreSignature {
-        inputs: vec![(Symbol::intern("_1'"), ctx.def_span(def_id), ctx.type_of(def_id))],
+        inputs: vec![(
+            Symbol::intern("_1'"),
+            ctx.def_span(def_id),
+            ctx.type_of(def_id).subst_identity(),
+        )],
         output: ctx.types.bool,
         contract: PreContract::default(),
     };
@@ -597,7 +605,7 @@ pub(crate) fn closure_unnest<'tcx>(
     def_id: DefId,
     subst: SubstsRef<'tcx>,
 ) -> Term<'tcx> {
-    let env_ty = tcx.closure_env_ty(def_id, subst, RegionKind::ReErased).unwrap().peel_refs();
+    let env_ty = tcx.closure_env_ty(def_id, subst, tcx.lifetimes.re_erased).unwrap().peel_refs();
 
     let self_ = Term::var(Symbol::intern("self"), env_ty);
 
@@ -613,7 +621,7 @@ pub(crate) fn closure_unnest<'tcx>(
             UpvarCapture::ByRef(is_mut) => {
                 let acc = |lhs: Term<'tcx>| Term {
                     ty,
-                    kind: TermKind::Projection { lhs: box lhs, name: ix.into() },
+                    kind: TermKind::Projection { lhs: Box::new(lhs), name: ix.into() },
                     span: DUMMY_SP,
                 };
                 let cur = self_.clone();

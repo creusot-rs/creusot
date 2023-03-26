@@ -38,7 +38,7 @@ fn closure_ty<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
     let mut decls = Vec::new();
 
-    let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).kind() else { unreachable!() };
+    let TyKind::Closure(_, subst) = ctx.tcx.type_of(def_id).subst_identity().kind() else { unreachable!() };
     let env_ty = Decl::TyDecl(translate_closure_ty(ctx, &mut names, def_id, subst));
 
     let (clones, _) = names.to_clones(ctx);
@@ -225,9 +225,11 @@ fn lower_promoted<'tcx>(
             let exps: Vec<_> =
                 bbd.stmts.into_iter().map(|s| s.to_why(ctx, names, p.1)).flatten().collect();
             exp = exps.into_iter().rfold(exp, |acc, asgn| match asgn {
-                why3::mlcfg::Statement::Assign { lhs, rhs } => {
-                    Exp::Let { pattern: Pattern::VarP(lhs), arg: box rhs, body: box acc }
-                }
+                why3::mlcfg::Statement::Assign { lhs, rhs } => Exp::Let {
+                    pattern: Pattern::VarP(lhs),
+                    arg: Box::new(rhs),
+                    body: Box::new(acc),
+                },
                 why3::mlcfg::Statement::Assume(_) => acc,
                 why3::mlcfg::Statement::Invariant(_, _) => todo!(),
                 why3::mlcfg::Statement::Assert(_) => {
@@ -326,30 +328,30 @@ impl<'tcx> Expr<'tcx> {
             }
             Expr::BinOp(BinOp::BitAnd, ty, l, r) if ty.is_bool() => Exp::BinaryOp(
                 why3::exp::BinOp::LazyAnd,
-                box l.to_why(ctx, names, body),
-                box r.to_why(ctx, names, body),
+                Box::new(l.to_why(ctx, names, body)),
+                Box::new(r.to_why(ctx, names, body)),
             ),
             Expr::BinOp(BinOp::Eq, ty, l, r) if ty.is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::Call(
-                    box Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap()),
+                    Box::new(Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap())),
                     vec![l.to_why(ctx, names, body), r.to_why(ctx, names, body)],
                 )
             }
             Expr::BinOp(BinOp::Ne, ty, l, r) if ty.is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
                 Exp::Call(
-                    box Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap()),
+                    Box::new(Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap())),
                     vec![l.to_why(ctx, names, body), r.to_why(ctx, names, body)],
                 )
             }
             Expr::BinOp(op, ty, l, r) => Exp::BinaryOp(
                 binop_to_binop(ctx, ty, op),
-                box l.to_why(ctx, names, body),
-                box r.to_why(ctx, names, body),
+                Box::new(l.to_why(ctx, names, body)),
+                Box::new(r.to_why(ctx, names, body)),
             ),
             Expr::UnaryOp(op, arg) => {
-                Exp::UnaryOp(unop_to_unop(op), box arg.to_why(ctx, names, body))
+                Exp::UnaryOp(unop_to_unop(op), Box::new(arg.to_why(ctx, names, body)))
             }
             Expr::Constructor(id, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, body)).collect();
@@ -387,11 +389,11 @@ impl<'tcx> Expr<'tcx> {
                         pattern: Pattern::TupleP(
                             names.map(|nm| Pattern::VarP(nm.to_string().into())).collect(),
                         ),
-                        arg: box args.remove(0),
-                        body: box Exp::Call(box Exp::impure_qvar(fname), closure_args),
+                        arg: Box::new(args.remove(0)),
+                        body: Box::new(Exp::Call(Box::new(Exp::impure_qvar(fname)), closure_args)),
                     }
                 } else {
-                    Exp::Call(box Exp::impure_qvar(fname), args)
+                    Exp::Call(Box::new(Exp::impure_qvar(fname)), args)
                 };
                 exp
             }
@@ -444,7 +446,7 @@ impl<'tcx> Expr<'tcx> {
                     Exp::impure_qvar(QName::from_string("UIntSize.to_int").unwrap())
                         .app_to(len.to_why(ctx, names, body)),
                 )
-                .app_to(Exp::FnLit(box e.to_why(ctx, names, body))),
+                .app_to(Exp::FnLit(Box::new(e.to_why(ctx, names, body)))),
         }
     }
 
@@ -562,8 +564,8 @@ impl<'tcx> Branches<'tcx> {
                     Switch(
                         Exp::BinaryOp(
                             why3::exp::BinOp::Eq,
-                            box discr.clone(),
-                            box Exp::Const(why3::exp::Constant::Int(val, None)),
+                            Box::new(discr.clone()),
+                            Box::new(Exp::Const(why3::exp::Constant::Int(val, None))),
                         ),
                         vec![
                             (Pattern::mk_true(), Goto(BlockId(bb.into()))),
@@ -577,8 +579,8 @@ impl<'tcx> Branches<'tcx> {
                     Switch(
                         Exp::BinaryOp(
                             why3::exp::BinOp::Eq,
-                            box discr.clone(),
-                            box Exp::Const(why3::exp::Constant::Uint(val, None)),
+                            Box::new(discr.clone()),
+                            Box::new(Exp::Const(why3::exp::Constant::Uint(val, None))),
                         ),
                         vec![
                             (Pattern::mk_true(), Goto(BlockId(bb.into()))),
@@ -638,8 +640,10 @@ impl<'tcx> Statement<'tcx> {
     ) -> Vec<mlcfg::Statement> {
         match self {
             Statement::Assignment(lhs, RValue::Borrow(rhs)) => {
-                let borrow = Exp::BorrowMut(box Expr::Place(rhs).to_why(ctx, names, Some(body)));
-                let reassign = Exp::Final(box Expr::Place(lhs).to_why(ctx, names, Some(body)));
+                let borrow =
+                    Exp::BorrowMut(Box::new(Expr::Place(rhs).to_why(ctx, names, Some(body))));
+                let reassign =
+                    Exp::Final(Box::new(Expr::Place(lhs).to_why(ctx, names, Some(body))));
 
                 vec![
                     place::create_assign_inner(ctx, names, body, &lhs, borrow),

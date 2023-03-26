@@ -79,8 +79,8 @@ fn builtin_body<'tcx>(
     let mut val_sig = sig.clone();
     val_sig.contract.ensures = vec![Exp::BinaryOp(
         BinOp::Eq,
-        box Exp::pure_var("result".into()),
-        box Exp::Call(box Exp::pure_var(val_sig.name.clone()), val_args.clone()),
+        Box::new(Exp::pure_var("result".into())),
+        Box::new(Exp::Call(Box::new(Exp::pure_var(val_sig.name.clone())), val_args.clone())),
     )];
 
     if util::is_predicate(ctx.tcx, def_id) {
@@ -98,7 +98,7 @@ fn builtin_body<'tcx>(
 
     decls.extend(clones);
     if !builtin.module.is_empty() {
-        let body = Exp::Call(box Exp::pure_qvar(builtin.without_search_path()), val_args);
+        let body = Exp::Call(Box::new(Exp::pure_qvar(builtin.without_search_path())), val_args);
 
         if util::is_predicate(ctx.tcx, def_id) {
             decls.push(Decl::PredDecl(Predicate { sig, body }));
@@ -126,8 +126,8 @@ fn body_module<'tcx>(
     let (val_args, val_binders) = binders_to_args(ctx, val_sig.args);
     val_sig.contract.ensures = vec![Exp::BinaryOp(
         BinOp::Eq,
-        box Exp::pure_var("result".into()),
-        box Exp::Call(box Exp::pure_var(sig.name.clone()), val_args),
+        Box::new(Exp::pure_var("result".into())),
+        Box::new(Exp::Call(Box::new(Exp::pure_var(sig.name.clone())), val_args)),
     )];
     val_sig.args = val_binders;
 
@@ -279,7 +279,7 @@ pub(crate) fn spec_axiom(sig: &Signature) -> Axiom {
         .filter(|arg| &*arg.0 != "_")
         .collect();
 
-    let axiom = if args.is_empty() { condition } else { Exp::Forall(args, box condition) };
+    let axiom = if args.is_empty() { condition } else { Exp::Forall(args, Box::new(condition)) };
 
     Axiom { name: format!("{}_spec", &*sig.name).into(), axiom }
 }
@@ -297,20 +297,20 @@ fn function_call(sig: &Signature) -> Exp {
         args = vec![Exp::Tuple(vec![])];
     }
 
-    Exp::Call(box Exp::pure_var(sig.name.clone()), args)
+    Exp::Call(Box::new(Exp::pure_var(sig.name.clone())), args)
 }
 
 fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {
     let call = function_call(sig);
 
-    let equation = Exp::BinaryOp(BinOp::Eq, box call, box body);
+    let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call), Box::new(body));
 
     let preconditions = sig.contract.requires.iter().cloned();
     let condition = preconditions.rfold(equation, |acc, arg| arg.implies(acc));
 
     let args: Vec<_> = sig.args.clone().into_iter().flat_map(|b| b.var_type_pairs()).collect();
 
-    let axiom = if args.is_empty() { condition } else { Exp::Forall(args, box condition) };
+    let axiom = if args.is_empty() { condition } else { Exp::Forall(args, Box::new(condition)) };
 
     Axiom { name: "def".into(), axiom }
 }

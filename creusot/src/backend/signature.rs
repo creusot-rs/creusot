@@ -1,5 +1,4 @@
-use rustc_hir::def_id::DefId;
-use rustc_resolve::Namespace;
+use rustc_hir::{def::Namespace, def_id::DefId};
 use why3::{
     declaration::{Contract, Signature},
     exp::Binder,

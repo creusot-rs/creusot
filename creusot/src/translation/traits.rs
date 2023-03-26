@@ -10,7 +10,7 @@ use rustc_middle::ty::{
     subst::{InternalSubsts, SubstsRef},
     AssocItem, AssocItemContainer,
     AssocItemContainer::*,
-    Binder, EarlyBinder, ParamEnv, TraitRef, TyCtxt,
+    Binder, EarlyBinder, ParamEnv, TraitRef, TyCtxt, TypeVisitableExt,
 };
 use rustc_span::Symbol;
 use rustc_trait_selection::traits::ImplSource;
@@ -56,6 +56,8 @@ impl<'tcx> TranslationCtx<'tcx> {
         let implementor_map = self.tcx.impl_item_implementor_ids(impl_id);
 
         let mut refinements = Vec::new();
+        let implementor_map =
+            self.with_stable_hashing_context(|hcx| implementor_map.to_sorted(&hcx, true));
         for (&trait_item, &impl_item) in implementor_map {
             if is_law(self.tcx, trait_item) {
                 laws.push(impl_item);
@@ -93,8 +95,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             );
             use rustc_trait_selection::traits::error_reporting::TypeErrCtxtExt;
             if let Err(errs) = res {
-                let body_id = self.tcx.hir().body_owned_by(impl_item.expect_local());
-                infcx.err_ctxt().report_fulfillment_errors(&errs, Some(body_id));
+                infcx.err_ctxt().report_fulfillment_errors(&errs);
                 self.crash_and_error(rustc_span::DUMMY_SP, "error above");
             }
 
@@ -149,7 +150,7 @@ fn logic_refinement_term<'tcx>(
     let post_refn = Term {
         kind: TermKind::Forall {
             binder: (Symbol::intern("result"), retty),
-            body: box impl_postcond.implies(trait_postcond),
+            body: Box::new(impl_postcond.implies(trait_postcond)),
         },
         ty: ctx.tcx.types.bool,
         span,
@@ -160,7 +161,7 @@ fn logic_refinement_term<'tcx>(
         refn
     } else {
         args.into_iter().rfold(refn, |acc, r| Term {
-            kind: TermKind::Forall { binder: r, body: box acc },
+            kind: TermKind::Forall { binder: r, body: Box::new(acc) },
             ty: ctx.tcx.types.bool,
             span,
         })
@@ -265,7 +266,7 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
     }
 
     let trait_ref = TraitRef::from_method(tcx, tcx.trait_of_item(def_id).unwrap(), substs);
-    use rustc_middle::ty::TypeVisitable;
+
     let source = resolve_impl_source_opt(tcx, param_env, def_id, substs)?;
     trace!("resolve_assoc_item_opt {source:?}",);
 

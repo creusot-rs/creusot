@@ -66,29 +66,29 @@ fn optimize_builtin<'tcx>(
     let builtin_attr = get_builtin(tcx, def_id);
 
     if builtin_attr == Some(Symbol::intern("add_int")) {
-        Some(TermKind::Binary { op: BinOp::Add, lhs: box args.remove(0), rhs: box args.remove(0) })
+        Some(TermKind::Binary { op: BinOp::Add, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("sub_int")) {
-        Some(TermKind::Binary { op: BinOp::Sub, lhs: box args.remove(0), rhs: box args.remove(0) })
+        Some(TermKind::Binary { op: BinOp::Sub, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("mul_int")) {
-        Some(TermKind::Binary { op: BinOp::Mul, lhs: box args.remove(0), rhs: box args.remove(0) })
+        Some(TermKind::Binary { op: BinOp::Mul, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("div_int")) {
-        Some(TermKind::Binary { op: BinOp::Div, lhs: box args.remove(0), rhs: box args.remove(0) })
+        Some(TermKind::Binary { op: BinOp::Div, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("rem_int")) {
-        Some(TermKind::Binary { op: BinOp::Rem, lhs: box args.remove(0), rhs: box args.remove(0) })
+        Some(TermKind::Binary { op: BinOp::Rem, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("neg_int")) {
-        Some(TermKind::Unary { op: pearlite::UnOp::Neg, arg: box args.remove(0) })
+        Some(TermKind::Unary { op: pearlite::UnOp::Neg, arg: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("int.Int.(<=)")) {
-        Some(TermKind::Binary { op: BinOp::Le, lhs: box args.remove(0), rhs: box args.remove(0) })
+        Some(TermKind::Binary { op: BinOp::Le, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("int.Int.(<)")) {
-        Some(TermKind::Binary { op: BinOp::Lt, lhs: box args.remove(0), rhs: box args.remove(0) })
+        Some(TermKind::Binary { op: BinOp::Lt, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("int.Int.(>=)")) {
-        Some(TermKind::Binary { op: BinOp::Ge, lhs: box args.remove(0), rhs: box args.remove(0) })
+        Some(TermKind::Binary { op: BinOp::Ge, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("int.Int.(>)")) {
-        Some(TermKind::Binary { op: BinOp::Gt, lhs: box args.remove(0), rhs: box args.remove(0) })
+        Some(TermKind::Binary { op: BinOp::Gt, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("==")) {
-        Some(TermKind::Binary { op: BinOp::Eq, lhs: box args.remove(0), rhs: box args.remove(0) })
+        Some(TermKind::Binary { op: BinOp::Eq, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("!=")) {
-        Some(TermKind::Binary { op: BinOp::Ne, lhs: box args.remove(0), rhs: box args.remove(0) })
+        Some(TermKind::Binary { op: BinOp::Ne, lhs: Box::new(args.remove(0)), rhs: Box::new(args.remove(0)) })
     } else if builtin_attr == Some(Symbol::intern("prelude.UInt8.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {
         Some(TermKind::Lit(Literal::Integer(c as i128)))
     } else if builtin_attr == Some(Symbol::intern("prelude.UInt16.to_int")) && let TermKind::Lit(Literal::MachUnsigned(c, _)) = args[0].kind {

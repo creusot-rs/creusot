@@ -28,7 +28,7 @@ pub(crate) fn validate_traits(ctx: &mut TranslationCtx) {
 
 pub(crate) fn validate_impls(ctx: &TranslationCtx) {
     for impl_id in ctx.all_local_trait_impls(()).values().flat_map(|i| i.iter()) {
-        if ctx.def_kind(*impl_id) != DefKind::Impl {
+        if !matches!(ctx.def_kind(*impl_id), DefKind::Impl { .. }) {
             continue;
         }
 
@@ -54,6 +54,8 @@ pub(crate) fn validate_impls(ctx: &TranslationCtx) {
 
         let implementors = ctx.impl_item_implementor_ids(impl_id.to_def_id());
 
+        let implementors =
+            ctx.with_stable_hashing_context(|hcx| implementors.to_sorted(&hcx, true));
         for (trait_item, impl_item) in implementors {
             if is_overloaded_item(ctx.tcx, *trait_item) {
                 continue;
