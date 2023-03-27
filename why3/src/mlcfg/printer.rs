@@ -690,16 +690,13 @@ impl Print for Exp {
             Exp::Attr(attr, e) => {
                 attr.pretty(alloc, env).append(alloc.space()).append(e.pretty(alloc, env))
             }
-            Exp::Abs(binders, box body) => {
-                alloc
-                    .text("fun ")
-                    .append(alloc.intersperse(
-                        binders.into_iter().map(|b| b.pretty(alloc, env)),
-                        alloc.space(),
-                    ))
-                    .append(" -> ")
-                    .append(body.pretty(alloc, env))
-            }
+            Exp::Abs(binders, box body) => alloc
+                .text("fun ")
+                .append(
+                    alloc.intersperse(binders.iter().map(|b| b.pretty(alloc, env)), alloc.space()),
+                )
+                .append(" -> ")
+                .append(body.pretty(alloc, env)),
 
             Exp::Match(box scrut, brs) => alloc
                 .text("match ")
@@ -794,10 +791,7 @@ impl Print for Binder {
                 (if *ghost { alloc.text("ghost ") } else { alloc.nil() })
                     .append(
                         alloc
-                            .intersperse(
-                                ids.into_iter().map(|id| id.pretty(alloc, env)),
-                                alloc.space(),
-                            )
+                            .intersperse(ids.iter().map(|id| id.pretty(alloc, env)), alloc.space())
                             .append(" : ")
                             .append(ty.pretty(alloc, env)),
                     )
