@@ -456,7 +456,10 @@ fn elaborate_type_invariants<'tcx>(
     def_id: DefId,
     pre_sig: &mut PreSignature<'tcx>,
 ) {
-    if is_type_invariant(ctx.tcx, def_id) {
+    if is_type_invariant(ctx.tcx, def_id)
+        || (is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
+            && pre_sig.contract.ensures.is_empty()
+    {
         return;
     }
 
