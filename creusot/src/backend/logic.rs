@@ -77,11 +77,8 @@ fn builtin_body<'tcx>(
 
     // Program symbol (for proofs)
     let mut val_sig = sig.clone();
-    val_sig.contract.ensures = vec![Exp::BinaryOp(
-        BinOp::Eq,
-        Box::new(Exp::pure_var("result".into())),
-        Box::new(Exp::Call(Box::new(Exp::pure_var(val_sig.name.clone())), val_args.clone())),
-    )];
+    val_sig.contract.ensures = vec![Exp::pure_var("result".into())
+        .eq(Exp::pure_var(val_sig.name.clone()).app(val_args.clone()))];
 
     if util::is_predicate(ctx.tcx, def_id) {
         sig.retty = None;
@@ -98,7 +95,7 @@ fn builtin_body<'tcx>(
 
     decls.extend(clones);
     if !builtin.module.is_empty() {
-        let body = Exp::Call(Box::new(Exp::pure_qvar(builtin.without_search_path())), val_args);
+        let body = Exp::pure_qvar(builtin.without_search_path()).app(val_args);
 
         if util::is_predicate(ctx.tcx, def_id) {
             decls.push(Decl::PredDecl(Predicate { sig, body }));
@@ -124,11 +121,8 @@ fn body_module<'tcx>(
     let mut val_sig = sig.clone();
     val_sig.contract.variant = Vec::new();
     let (val_args, val_binders) = binders_to_args(ctx, val_sig.args);
-    val_sig.contract.ensures = vec![Exp::BinaryOp(
-        BinOp::Eq,
-        Box::new(Exp::pure_var("result".into())),
-        Box::new(Exp::Call(Box::new(Exp::pure_var(sig.name.clone())), val_args)),
-    )];
+    val_sig.contract.ensures =
+        vec![Exp::pure_var("result".into()).eq(Exp::pure_var(sig.name.clone()).app(val_args))];
     val_sig.args = val_binders;
 
     if util::is_predicate(ctx.tcx, def_id) {
@@ -297,7 +291,7 @@ fn function_call(sig: &Signature) -> Exp {
         args = vec![Exp::Tuple(vec![])];
     }
 
-    Exp::Call(Box::new(Exp::pure_var(sig.name.clone())), args)
+    Exp::pure_var(sig.name.clone()).app(args)
 }
 
 fn definition_axiom(sig: &Signature, body: Exp) -> Axiom {

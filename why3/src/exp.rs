@@ -289,6 +289,14 @@ impl Exp {
         Exp::BinaryOp(BinOp::Ne, Box::new(self), Box::new(rhs))
     }
 
+    pub fn app(mut self, arg: Vec<Self>) -> Self {
+        match self {
+            Exp::Call(_, ref mut args) => args.extend(arg),
+            _ => self = Exp::Call(Box::new(self), arg),
+        }
+        self
+    }
+
     // Construct an application from this expression and an argument
     pub fn app_to(mut self, arg: Self) -> Self {
         match self {
@@ -698,7 +706,7 @@ impl Binder {
             Binder::Wild => Vec::new(),
             Binder::UnNamed(_) => Vec::new(),
             Binder::Named(id) => vec![id.clone()],
-            Binder::Typed(_, ids, _) => ids.into_iter().fold(Vec::new(), |mut acc, id| {
+            Binder::Typed(_, ids, _) => ids.iter().fold(Vec::new(), |mut acc, id| {
                 acc.extend(id.fvs());
                 acc
             }),
@@ -749,9 +757,9 @@ pub enum Constant {
     Bool(bool),
 }
 
-impl Into<Exp> for Constant {
-    fn into(self) -> Exp {
-        Exp::Const(self)
+impl From<Constant> for Exp {
+    fn from(val: Constant) -> Self {
+        Exp::Const(val)
     }
 }
 

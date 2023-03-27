@@ -66,19 +66,19 @@ impl<'tcx> Encoder for MetadataEncoder<'tcx> {
 }
 
 impl<'a, 'tcx> Encodable<MetadataEncoder<'tcx>> for DefId {
-    fn encode(&self, s: &mut MetadataEncoder<'tcx>) -> () {
+    fn encode(&self, s: &mut MetadataEncoder<'tcx>) {
         s.tcx.def_path_hash(*self).encode(s)
     }
 }
 
 impl<'a, 'tcx> Encodable<MetadataEncoder<'tcx>> for DefIndex {
-    fn encode(&self, _: &mut MetadataEncoder<'tcx>) -> () {
+    fn encode(&self, _: &mut MetadataEncoder<'tcx>) {
         panic!("encoding `DefIndex` without context");
     }
 }
 
 impl<'tcx> Encodable<MetadataEncoder<'tcx>> for CrateNum {
-    fn encode(&self, s: &mut MetadataEncoder<'tcx>) -> () {
+    fn encode(&self, s: &mut MetadataEncoder<'tcx>) {
         s.tcx.stable_crate_id(*self).encode(s)
     }
 }
@@ -100,7 +100,7 @@ impl<'tcx> TyEncoder for MetadataEncoder<'tcx> {
         &mut self.predicate_shorthands
     }
 
-    fn encode_alloc_id(&mut self, alloc_id: &rustc_middle::mir::interpret::AllocId) -> () {
+    fn encode_alloc_id(&mut self, alloc_id: &rustc_middle::mir::interpret::AllocId) {
         let (index, _) = self.interpret_allocs.insert_full(*alloc_id);
 
         index.encode(self)

@@ -60,7 +60,7 @@ impl<'tcx> Lower<'_, 'tcx> {
             TermKind::Item(id, subst) => {
                 let method = (id, subst);
                 debug!("resolved_method={:?}", method);
-                self.lookup_builtin(method, &mut Vec::new()).unwrap_or_else(|| {
+                self.lookup_builtin(method, &Vec::new()).unwrap_or_else(|| {
                     // eprintln!("{id:?} {subst:?}");
                     let clone = self.names.value(id, subst);
                     match self.ctx.type_of(id).subst_identity().kind() {
@@ -80,8 +80,8 @@ impl<'tcx> Lower<'_, 'tcx> {
                 }
 
                 match (op, self.pure) {
-                    (Div, _) => Exp::Call(Box::new(Exp::pure_var("div".into())), vec![lhs, rhs]),
-                    (Rem, _) => Exp::Call(Box::new(Exp::pure_var("mod".into())), vec![lhs, rhs]),
+                    (Div, _) => Exp::pure_var("div".into()).app(vec![lhs, rhs]),
+                    (Rem, _) => Exp::pure_var("mod".into()).app(vec![lhs, rhs]),
                     (Eq | Ne, Purity::Program) => {
                         let (a, lhs) = if lhs.is_pure() {
                             (lhs, None)
@@ -153,7 +153,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                     if self.pure == Purity::Program {
                         mk_binders(Exp::QVar(clone, self.pure), args)
                     } else {
-                        Exp::Call(Box::new(Exp::QVar(clone, self.pure)), args)
+                        Exp::QVar(clone, self.pure).app(args)
                     }
                 })
             }
@@ -246,7 +246,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                     k => unreachable!("Projection from {k:?}"),
                 };
 
-                Exp::Call(Box::new(Exp::pure_qvar(accessor)), vec![lhs])
+                Exp::pure_qvar(accessor).app(vec![lhs])
             }
             TermKind::Closure { args, body } => {
                 let mut fresh_vars = 0;
@@ -337,7 +337,7 @@ impl<'tcx> Lower<'_, 'tcx> {
     pub(crate) fn lookup_builtin(
         &mut self,
         method: (DefId, SubstsRef<'tcx>),
-        args: &mut Vec<Exp>,
+        args: &Vec<Exp>,
     ) -> Option<Exp> {
         let def_id = method.0;
         let _substs = method.1;
@@ -354,10 +354,7 @@ impl<'tcx> Lower<'_, 'tcx> {
                     args.clone(),
                 ));
             } else {
-                return Some(Exp::Call(
-                    Box::new(Exp::pure_qvar(builtin.without_search_path())),
-                    args.clone(),
-                ));
+                return Some(Exp::pure_qvar(builtin.without_search_path()).app(args.clone()));
             }
         }
         None
@@ -432,7 +429,7 @@ pub(super) fn mk_binders(func: Exp, args: Vec<Exp>) -> Exp {
         }
     }
 
-    let call = Exp::Call(Box::new(func), call_args);
+    let call = func.app(call_args);
 
     impure_args.into_iter().rfold(call, |acc, arg| Exp::Let {
         pattern: Pat::VarP(arg.0.into()),

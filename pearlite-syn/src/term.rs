@@ -892,7 +892,7 @@ pub(crate) mod parsing {
                 let mut rhs = unary_term(input, allow_struct)?;
                 loop {
                     let next = peek_precedence(input);
-                    if next > precedence || next == precedence {
+                    if next >= precedence {
                         rhs = parse_term(input, rhs, allow_struct, next)?;
                     } else {
                         break;

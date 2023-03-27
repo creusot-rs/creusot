@@ -327,24 +327,18 @@ impl<'tcx> Expr<'tcx> {
             Expr::Copy(pl) => {
                 translate_rplace_inner(ctx, names, body.unwrap(), pl.local, pl.projection)
             }
-            Expr::BinOp(BinOp::BitAnd, ty, l, r) if ty.is_bool() => Exp::BinaryOp(
-                why3::exp::BinOp::LazyAnd,
-                Box::new(l.to_why(ctx, names, body)),
-                Box::new(r.to_why(ctx, names, body)),
-            ),
+            Expr::BinOp(BinOp::BitAnd, ty, l, r) if ty.is_bool() => {
+                l.to_why(ctx, names, body).lazy_and(r.to_why(ctx, names, body))
+            }
             Expr::BinOp(BinOp::Eq, ty, l, r) if ty.is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
-                Exp::Call(
-                    Box::new(Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap())),
-                    vec![l.to_why(ctx, names, body), r.to_why(ctx, names, body)],
-                )
+                Exp::impure_qvar(QName::from_string("Bool.eqb").unwrap())
+                    .app(vec![l.to_why(ctx, names, body), r.to_why(ctx, names, body)])
             }
             Expr::BinOp(BinOp::Ne, ty, l, r) if ty.is_bool() => {
                 names.import_prelude_module(PreludeModule::Bool);
-                Exp::Call(
-                    Box::new(Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap())),
-                    vec![l.to_why(ctx, names, body), r.to_why(ctx, names, body)],
-                )
+                Exp::impure_qvar(QName::from_string("Bool.neqb").unwrap())
+                    .app(vec![l.to_why(ctx, names, body), r.to_why(ctx, names, body)])
             }
             Expr::BinOp(op, ty, l, r) => Exp::BinaryOp(
                 binop_to_binop(ctx, ty, op),
@@ -391,10 +385,10 @@ impl<'tcx> Expr<'tcx> {
                             names.map(|nm| Pattern::VarP(nm.to_string().into())).collect(),
                         ),
                         arg: Box::new(args.remove(0)),
-                        body: Box::new(Exp::Call(Box::new(Exp::impure_qvar(fname)), closure_args)),
+                        body: Box::new(Exp::impure_qvar(fname).app(closure_args)),
                     }
                 } else {
-                    Exp::Call(Box::new(Exp::impure_qvar(fname)), args)
+                    Exp::impure_qvar(fname).app(args)
                 };
                 exp
             }
@@ -563,11 +557,7 @@ impl<'tcx> Branches<'tcx> {
             Branches::Int(brs, def) => {
                 brs.into_iter().rfold(Goto(BlockId(def.into())), |acc, (val, bb)| {
                     Switch(
-                        Exp::BinaryOp(
-                            why3::exp::BinOp::Eq,
-                            Box::new(discr.clone()),
-                            Box::new(Exp::Const(why3::exp::Constant::Int(val, None))),
-                        ),
+                        discr.clone().eq(Exp::Const(why3::exp::Constant::Int(val, None))),
                         vec![
                             (Pattern::mk_true(), Goto(BlockId(bb.into()))),
                             (Pattern::mk_false(), acc),
@@ -578,11 +568,7 @@ impl<'tcx> Branches<'tcx> {
             Branches::Uint(brs, def) => {
                 brs.into_iter().rfold(Goto(BlockId(def.into())), |acc, (val, bb)| {
                     Switch(
-                        Exp::BinaryOp(
-                            why3::exp::BinOp::Eq,
-                            Box::new(discr.clone()),
-                            Box::new(Exp::Const(why3::exp::Constant::Uint(val, None))),
-                        ),
+                        discr.clone().eq(Exp::Const(why3::exp::Constant::Uint(val, None))),
                         vec![
                             (Pattern::mk_true(), Goto(BlockId(bb.into()))),
                             (Pattern::mk_false(), acc),
