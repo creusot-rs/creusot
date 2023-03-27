@@ -467,6 +467,17 @@ fn elaborate_type_invariants<'tcx>(
     for (name, span, ty) in pre_sig.inputs.iter() {
         if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
             let term = EarlyBinder(term).subst(ctx.tcx, subst);
+
+            if ty.is_mutable_ptr() {
+                let inner = ty.builtin_deref(true).unwrap().ty;
+                let arg = Term { ty: *ty, span: *span, kind: TermKind::Var(*name) };
+                let arg =
+                    Term { ty: inner, span: *span, kind: TermKind::Fin { term: Box::new(arg) } };
+                let term =
+                    pearlite::type_invariant_term_with_arg(ctx, def_id, arg, *span, inner).unwrap();
+                pre_sig.contract.ensures.push(term);
+            }
+
             pre_sig.contract.requires.push(term);
         }
     }

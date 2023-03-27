@@ -854,18 +854,32 @@ pub(crate) fn type_invariant_term<'tcx>(
     span: Span,
     ty: Ty<'tcx>,
 ) -> Option<Term<'tcx>> {
+    // assert!(!name.as_str().is_empty(), "name has len 0, env={env_did:?}, ty={ty:?}");
+    let arg = Term { ty, span, kind: TermKind::Var(name) };
+    type_invariant_term_with_arg(ctx, env_did, arg, span, ty)
+}
+
+pub(crate) fn type_invariant_term_with_arg<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    env_did: DefId,
+    arg: Term<'tcx>,
+    span: Span,
+    ty: Ty<'tcx>,
+) -> Option<Term<'tcx>> {
     let (inv_fn_did, inv_fn_substs) = ctx.type_invariant(env_did, ty)?;
     let inv_fn_ty = ctx.type_of(inv_fn_did).subst(ctx.tcx, inv_fn_substs);
     assert!(matches!(inv_fn_ty.kind(), TyKind::FnDef(id, _) if id == &inv_fn_did));
-
-    assert!(!name.as_str().is_empty(), "name has len 0, env={env_did:?}, ty={ty:?}");
-    let args = vec![Term { ty, span, kind: TermKind::Var(name) }];
 
     let fun = Term { ty: inv_fn_ty, span, kind: TermKind::Item(inv_fn_did, inv_fn_substs) };
     Some(Term {
         ty: ctx.fn_sig(inv_fn_did).skip_binder().output().skip_binder(),
         span,
-        kind: TermKind::Call { id: inv_fn_did, subst: inv_fn_substs, fun: Box::new(fun), args },
+        kind: TermKind::Call {
+            id: inv_fn_did,
+            subst: inv_fn_substs,
+            fun: Box::new(fun),
+            args: vec![arg],
+        },
     })
 }
 
