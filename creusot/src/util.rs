@@ -482,11 +482,12 @@ fn elaborate_type_invariants<'tcx>(
         }
     }
 
+    let ret_ty_span: Option<Span> = try { ctx.tcx.hir().get_fn_output(def_id.as_local()?)?.span() };
     if let Some(term) = pearlite::type_invariant_term(
         ctx,
         def_id,
         Symbol::intern("result"),
-        ctx.tcx.def_span(def_id),
+        ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
         pre_sig.output,
     ) {
         let term = EarlyBinder(term).subst(ctx.tcx, subst);
