@@ -325,6 +325,11 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         let substs = self.mk_substs(&[GenericArg::from(ty)]);
         let inv = traits::resolve_opt(self.tcx, param_env, trait_did, substs)?;
 
+        // if inv resolved to the default impl and is not specializable, ignore
+        if inv.0 == trait_did && !traits::still_specializable(self.tcx, param_env, inv.0, inv.1) {
+            return None;
+        }
+
         match util::ignore_type_invariant(self.tcx, inv.0) {
             util::TypeInvariantAttr::None => return Some(inv),
             util::TypeInvariantAttr::AlwaysIgnore => return None,
@@ -340,12 +345,19 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
             }
 
             let substs = self.mk_substs(&[arg]);
-            let Some((did, _)) = traits::resolve_opt(self.tcx, param_env, trait_did, substs) else {
+            let Some(arg_inv) = traits::resolve_opt(self.tcx, param_env, trait_did, substs) else {
                 walker.skip_current_subtree();
                 continue;
             };
 
-            match util::ignore_type_invariant(self.tcx, did) {
+            if arg_inv.0 == trait_did
+                && !traits::still_specializable(self.tcx, param_env, arg_inv.0, arg_inv.1)
+            {
+                walker.skip_current_subtree();
+                continue;
+            }
+
+            match util::ignore_type_invariant(self.tcx, arg_inv.0) {
                 util::TypeInvariantAttr::None => return Some(inv),
                 util::TypeInvariantAttr::AlwaysIgnore => walker.skip_current_subtree(),
                 util::TypeInvariantAttr::MaybeIgnore => {}
