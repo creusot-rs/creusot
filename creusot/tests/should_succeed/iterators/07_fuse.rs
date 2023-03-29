@@ -40,7 +40,6 @@ impl<I: Iterator> Iterator for Fuse<I> {
       None => self.completed(),
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
-    #[ensures((^self).invariant())]
     fn next(&mut self) -> Option<Self::Item> {
         match &mut self.iter {
             Err(_) => None,

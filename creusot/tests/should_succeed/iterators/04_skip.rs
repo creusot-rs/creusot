@@ -66,7 +66,6 @@ where
       None => self.completed(),
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
-    #[ensures((^self).invariant())]
     fn next(&mut self) -> Option<I::Item> {
         let old_self = ghost! { self };
         let mut n = std::mem::take(&mut self.n);

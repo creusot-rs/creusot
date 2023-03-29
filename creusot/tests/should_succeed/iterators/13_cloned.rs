@@ -45,7 +45,6 @@ where
       None => self.completed(),
       Some(v) => (*self).produces(Seq::singleton(v), ^self)
     })]
-    #[ensures((^self).invariant())]
     fn next(&mut self) -> Option<T> {
         self.iter.next().cloned()
     }
