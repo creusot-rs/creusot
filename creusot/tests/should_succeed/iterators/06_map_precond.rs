@@ -93,6 +93,7 @@ impl<I: Iterator, B, F: FnMut(I::Item, Ghost<Seq<I::Item>>) -> B> Map<I, I::Item
     fn reinitialize() -> bool {
         pearlite! {
             forall<reset : &mut Map<I, _, F>>
+                (*reset).iter.invariant() ==>
                 reset.completed() ==>
                 (^reset).iter.invariant() ==>
                 (^reset).next_precondition() &&

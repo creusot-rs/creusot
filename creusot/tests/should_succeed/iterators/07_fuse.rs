@@ -36,7 +36,6 @@ impl<I: Iterator> Iterator for Fuse<I> {
         }
     }
 
-    #[maintains((mut self).invariant())]
     #[ensures(match result {
       None => self.completed(),
       Some(v) => (*self).produces(Seq::singleton(v), ^self)

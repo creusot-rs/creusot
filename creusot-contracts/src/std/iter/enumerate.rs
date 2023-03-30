@@ -37,8 +37,8 @@ impl<I: Invariant + Iterator> Invariant for Enumerate<I> {
     fn invariant(self) -> bool {
         pearlite! {
             self.iter().invariant()
-            && (forall<s: Seq<I::Item>, i: I> i.invariant() ==> self.iter().produces(s, i) ==> self.n() + s.len() < @std::usize::MAX)
-            && (forall<i: &mut I> i.invariant() ==> i.completed() ==> i.produces(Seq::EMPTY, ^i))
+            && (forall<s: Seq<I::Item>, i: I> self.iter().produces(s, i) ==> self.n() + s.len() < @std::usize::MAX)
+            && (forall<i: &mut I> i.completed() ==> i.produces(Seq::EMPTY, ^i))
         }
     }
 }
@@ -63,14 +63,10 @@ where
     }
 
     #[law]
-    #[requires(a.invariant())]
     #[ensures(a.produces(Seq::EMPTY, a))]
     fn produces_refl(a: Self) {}
 
     #[law]
-    #[requires(a.invariant())]
-    #[requires(b.invariant())]
-    #[requires(c.invariant())]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

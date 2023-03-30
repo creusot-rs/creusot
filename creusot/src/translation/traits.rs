@@ -309,3 +309,36 @@ pub(crate) fn resolve_assoc_item_opt<'tcx>(
         _ => unimplemented!(),
     }
 }
+
+// | Final | Still Spec (Ty)| Res |
+// | T | _ | F |
+// | F | T | T |
+// | F | F | F |
+
+// We consider an item to be further specializable if it is provided by a parameter bound (ie: `I : Iterator`).
+pub(crate) fn still_specializable<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    param_env: ParamEnv<'tcx>,
+    def_id: DefId,
+    substs: SubstsRef<'tcx>,
+) -> bool {
+    if let Some(trait_id) = tcx.trait_of_item(def_id) {
+        let is_final = if let Some(ImplSource::UserDefined(ud)) = resolve_impl_source_opt(tcx, param_env, def_id, substs) {
+            let trait_def =  tcx.trait_def(trait_id);
+            let leaf = trait_def.ancestors(tcx, ud.impl_def_id).unwrap().leaf_def(tcx, def_id).unwrap();
+
+            leaf.is_final()
+        } else {
+            false
+        };
+
+        let trait_generics = substs.truncate_to(tcx, tcx.generics_of(trait_id));
+        !is_final && trait_generics.still_further_specializable()
+    } else if let Some(impl_id) = tcx.impl_of_method(def_id) && tcx.trait_id_of_impl(impl_id).is_some() {
+        let is_final = tcx.impl_defaultness(def_id).is_final();
+        let trait_ref = tcx.impl_trait_ref(impl_id).unwrap();
+        !is_final && trait_ref.subst(tcx, substs).still_further_specializable()
+    } else {
+        false
+    }
+}

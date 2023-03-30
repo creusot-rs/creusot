@@ -82,8 +82,6 @@ extern_spec! {
             trait Iterator
                 where Self : Iterator + Invariant {
 
-                #[requires((*self).invariant())]
-                #[ensures((^self).invariant())]
                 #[ensures(match result {
                     None => self.completed(),
                     Some(v) => (*self).produces(Seq::singleton(v), ^self)

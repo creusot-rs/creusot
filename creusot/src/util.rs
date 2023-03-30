@@ -107,8 +107,22 @@ pub(crate) fn is_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
         .unwrap_or(false)
 }
 
-pub(crate) fn ignore_type_invariant(tcx: TyCtxt, def_id: DefId) -> bool {
-    get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "ignore_type_invariant"]).is_some()
+pub(crate) enum TypeInvariantAttr {
+    None,
+    MaybeIgnore,
+    AlwaysIgnore,
+}
+
+pub(crate) fn ignore_type_invariant(tcx: TyCtxt, def_id: DefId) -> TypeInvariantAttr {
+    match get_attr(tcx.get_attrs_unchecked(def_id), &["creusot", "ignore_type_invariant"]) {
+        None => TypeInvariantAttr::None,
+        Some(AttrItem { args: AttrArgs::Eq(_, AttrArgsEq::Hir(v)), .. })
+            if v.symbol.as_str() == "maybe" =>
+        {
+            TypeInvariantAttr::MaybeIgnore
+        }
+        _ => TypeInvariantAttr::AlwaysIgnore,
+    }
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<why3::declaration::Attribute> {
@@ -442,7 +456,10 @@ fn elaborate_type_invariants<'tcx>(
     def_id: DefId,
     pre_sig: &mut PreSignature<'tcx>,
 ) {
-    if is_type_invariant(ctx.tcx, def_id) {
+    if is_type_invariant(ctx.tcx, def_id)
+        || (is_predicate(ctx.tcx, def_id) || is_logic(ctx.tcx, def_id))
+            && pre_sig.contract.ensures.is_empty()
+    {
         return;
     }
 
@@ -450,15 +467,27 @@ fn elaborate_type_invariants<'tcx>(
     for (name, span, ty) in pre_sig.inputs.iter() {
         if let Some(term) = pearlite::type_invariant_term(ctx, def_id, *name, *span, *ty) {
             let term = EarlyBinder(term).subst(ctx.tcx, subst);
+
+            if ty.is_mutable_ptr() {
+                let inner = ty.builtin_deref(true).unwrap().ty;
+                let arg = Term { ty: *ty, span: *span, kind: TermKind::Var(*name) };
+                let arg =
+                    Term { ty: inner, span: *span, kind: TermKind::Fin { term: Box::new(arg) } };
+                let term =
+                    pearlite::type_invariant_term_with_arg(ctx, def_id, arg, *span, inner).unwrap();
+                pre_sig.contract.ensures.push(term);
+            }
+
             pre_sig.contract.requires.push(term);
         }
     }
 
+    let ret_ty_span: Option<Span> = try { ctx.tcx.hir().get_fn_output(def_id.as_local()?)?.span() };
     if let Some(term) = pearlite::type_invariant_term(
         ctx,
         def_id,
         Symbol::intern("result"),
-        ctx.tcx.def_span(def_id),
+        ret_ty_span.unwrap_or_else(|| ctx.tcx.def_span(def_id)),
         pre_sig.output,
     ) {
         let term = EarlyBinder(term).subst(ctx.tcx, subst);
