@@ -130,7 +130,9 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 );
                 Expr::Span(si.span, Box::new(exp))
             }
-            Rvalue::UnaryOp(op, v) => Expr::UnaryOp(*op, Box::new(self.translate_operand(v))),
+            Rvalue::UnaryOp(op, v) => {
+                Expr::UnaryOp(*op, v.ty(self.body, self.tcx), Box::new(self.translate_operand(v)))
+            }
             Rvalue::Aggregate(box kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op)).collect();

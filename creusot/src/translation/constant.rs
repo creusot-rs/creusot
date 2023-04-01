@@ -138,7 +138,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
-                Literal::Float(float as f64)
+                Literal::Float(float as f64, FloatTy::F32)
             }
         }
         Float(FloatTy::F64) => {
@@ -147,7 +147,7 @@ fn try_to_bits<'tcx, C: ToBits<'tcx>>(
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
-                Literal::Float(float)
+                Literal::Float(float, FloatTy::F32)
             }
         }
         _ if ty.is_unit() => Literal::ZST,

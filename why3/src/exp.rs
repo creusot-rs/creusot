@@ -25,9 +25,13 @@ pub enum BinOp {
     Eq,
     FloatEq,
     Lt,
+    FloatLt,
     Le,
+    FloatLe,
     Gt,
+    FloatGt,
     Ge,
+    FloatGe,
     Ne,
 }
 
@@ -50,11 +54,15 @@ impl BinOp {
             BinOp::Ne => Infix1,
             BinOp::Ge => Infix1,
             BinOp::Gt => Infix1,
-            BinOp::FloatAdd => Infix4,
-            BinOp::FloatSub => Infix4,
-            BinOp::FloatMul => Infix4,
-            BinOp::FloatDiv => Infix4,
+            BinOp::FloatAdd => Infix5,
+            BinOp::FloatSub => Infix5,
+            BinOp::FloatMul => Infix5,
+            BinOp::FloatDiv => Infix5,
             BinOp::FloatEq => Infix4,
+            BinOp::FloatLt => Infix4,
+            BinOp::FloatLe => Infix4,
+            BinOp::FloatGt => Infix4,
+            BinOp::FloatGe => Infix4,
         }
     }
 
@@ -76,6 +84,7 @@ impl BinOp {
 pub enum UnOp {
     Not,
     Neg,
+    FloatNeg,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -450,6 +459,7 @@ pub(crate) enum Precedence {
     Infix2,   // infix-op level 2 (left-assoc)
     Infix3,   // infix-op level 3 (left-assoc)
     Infix4,   // infix-op level 4 (left-assoc)
+    Infix5,   // infix-op level 5 (left-assoc)
     Prefix,   // prefix-op
     Abs,      // Function abstraction
     App,      // Function application
@@ -478,7 +488,8 @@ impl Precedence {
             Precedence::AtOld => Precedence::Infix2,
             Precedence::Infix2 => Precedence::Infix3,
             Precedence::Infix3 => Precedence::Infix4,
-            Precedence::Infix4 => Precedence::Prefix,
+            Precedence::Infix4 => Precedence::Infix5,
+            Precedence::Infix5 => Precedence::Prefix,
             Precedence::Prefix => Precedence::Abs,
             Precedence::Abs => Precedence::App,
             Precedence::App => Precedence::Brackets,
@@ -526,7 +537,7 @@ impl Exp {
             Exp::IfThenElse(_, _, _) => IfLet,
             Exp::BorrowMut(_) => App,
             Exp::Const(_) => Atom,
-            Exp::UnaryOp(UnOp::Neg, _) => Prefix,
+            Exp::UnaryOp(UnOp::Neg | UnOp::FloatNeg, _) => Prefix,
             Exp::UnaryOp(UnOp::Not, _) => Not,
             Exp::BinaryOp(op, _, _) => op.precedence(),
             Exp::Call(_, _) => App,

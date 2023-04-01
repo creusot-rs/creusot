@@ -34,7 +34,7 @@ pub enum Expr<'tcx> {
     Move(Place<'tcx>),
     Copy(Place<'tcx>),
     BinOp(BinOp, Ty<'tcx>, Box<Expr<'tcx>>, Box<Expr<'tcx>>),
-    UnaryOp(UnOp, Box<Expr<'tcx>>),
+    UnaryOp(UnOp, Ty<'tcx>, Box<Expr<'tcx>>),
     Constructor(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
     // Should this be a statement?
     Call(DefId, SubstsRef<'tcx>, Vec<Expr<'tcx>>),
