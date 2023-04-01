@@ -54,10 +54,10 @@ impl BinOp {
             BinOp::Ne => Infix1,
             BinOp::Ge => Infix1,
             BinOp::Gt => Infix1,
-            BinOp::FloatAdd => Infix5,
-            BinOp::FloatSub => Infix5,
-            BinOp::FloatMul => Infix5,
-            BinOp::FloatDiv => Infix5,
+            BinOp::FloatAdd => Infix4,
+            BinOp::FloatSub => Infix4,
+            BinOp::FloatMul => Infix4,
+            BinOp::FloatDiv => Infix4,
             BinOp::FloatEq => Infix4,
             BinOp::FloatLt => Infix4,
             BinOp::FloatLe => Infix4,
@@ -459,7 +459,6 @@ pub(crate) enum Precedence {
     Infix2,   // infix-op level 2 (left-assoc)
     Infix3,   // infix-op level 3 (left-assoc)
     Infix4,   // infix-op level 4 (left-assoc)
-    Infix5,   // infix-op level 5 (left-assoc)
     Prefix,   // prefix-op
     Abs,      // Function abstraction
     App,      // Function application
@@ -488,8 +487,7 @@ impl Precedence {
             Precedence::AtOld => Precedence::Infix2,
             Precedence::Infix2 => Precedence::Infix3,
             Precedence::Infix3 => Precedence::Infix4,
-            Precedence::Infix4 => Precedence::Infix5,
-            Precedence::Infix5 => Precedence::Prefix,
+            Precedence::Infix4 => Precedence::Prefix,
             Precedence::Prefix => Precedence::Abs,
             Precedence::Abs => Precedence::App,
             Precedence::App => Precedence::Brackets,
