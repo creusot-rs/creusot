@@ -1,5 +1,5 @@
 use crate::{
-    backend::ty::{intty_to_ty, translate_ty, uintty_to_ty},
+    backend::ty::{floatty_to_ty, intty_to_ty, translate_ty, uintty_to_ty},
     ctx::*,
     pearlite::{self, Literal, Pattern, Term, TermKind},
     util,
@@ -392,7 +392,10 @@ pub(crate) fn lower_literal<'tcx>(
             names.insert(id, subst);
             Exp::Tuple(Vec::new())
         }
-        Literal::Float(f) => Constant::Float(f).into(),
+        Literal::Float(f, fty) => {
+            let _why_ty = floatty_to_ty(names, &fty);
+            Constant::Float(f).into()
+        }
         Literal::ZST => Exp::Tuple(Vec::new()),
         Literal::String(string) => Constant::String(string).into(),
     }

@@ -345,8 +345,8 @@ impl<'tcx> Expr<'tcx> {
                 Box::new(l.to_why(ctx, names, body)),
                 Box::new(r.to_why(ctx, names, body)),
             ),
-            Expr::UnaryOp(op, arg) => {
-                Exp::UnaryOp(unop_to_unop(op), Box::new(arg.to_why(ctx, names, body)))
+            Expr::UnaryOp(op, ty, arg) => {
+                Exp::UnaryOp(unop_to_unop(ty, op), Box::new(arg.to_why(ctx, names, body)))
             }
             Expr::Constructor(id, subst, args) => {
                 let args = args.into_iter().map(|a| a.to_why(ctx, names, body)).collect();
@@ -454,7 +454,7 @@ impl<'tcx> Expr<'tcx> {
                 l.invalidated_places(places);
                 r.invalidated_places(places)
             }
-            Expr::UnaryOp(_, e) => e.invalidated_places(places),
+            Expr::UnaryOp(_, _, e) => e.invalidated_places(places),
             Expr::Constructor(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
             Expr::Call(_, _, es) => es.iter().for_each(|e| e.invalidated_places(places)),
             Expr::Constant(_) => {}

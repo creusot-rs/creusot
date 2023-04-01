@@ -668,6 +668,7 @@ impl Print for Exp {
             }
 
             Exp::UnaryOp(UnOp::Neg, box op) => alloc.text("- ").append(op.pretty(alloc, env)),
+            Exp::UnaryOp(UnOp::FloatNeg, box op) => alloc.text(".- ").append(op.pretty(alloc, env)),
             Exp::BinaryOp(op, box l, box r) => match self.associativity() {
                 Some(AssocDir::Left) => parens!(alloc, env, self, l),
                 Some(AssocDir::Right) | None => parens!(alloc, env, self.precedence().next(), l),
@@ -990,6 +991,10 @@ fn bin_op_to_string(op: &BinOp) -> &str {
         FloatMul => ".*",
         FloatDiv => "./",
         FloatEq => ".=",
+        FloatLt => ".<",
+        FloatLe => ".<=",
+        FloatGt => ".>",
+        FloatGe => ".>=",
     }
 }
 

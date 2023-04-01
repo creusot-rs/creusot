@@ -35,7 +35,7 @@ use rustc_middle::{
 };
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_target::abi::VariantIdx;
-use rustc_type_ir::{IntTy, Interner, UintTy};
+use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 
 mod normalize;
 
@@ -175,7 +175,7 @@ pub enum Literal<'tcx> {
     Integer(i128),
     MachSigned(i128, IntTy),
     MachUnsigned(u128, UintTy),
-    Float(f64),
+    Float(f64, FloatTy),
     String(String),
     ZST,
     Function(DefId, SubstsRef<'tcx>),

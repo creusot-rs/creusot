@@ -667,7 +667,7 @@ pub(crate) fn uintty_to_ty(names: &mut CloneMap<'_>, ity: &rustc_middle::ty::Uin
     }
 }
 
-fn floatty_to_ty(names: &mut CloneMap<'_>, fty: &rustc_middle::ty::FloatTy) -> MlT {
+pub(crate) fn floatty_to_ty(names: &mut CloneMap<'_>, fty: &rustc_middle::ty::FloatTy) -> MlT {
     use rustc_middle::ty::FloatTy::*;
 
     match fty {

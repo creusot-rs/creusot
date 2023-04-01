@@ -25,9 +25,13 @@ pub enum BinOp {
     Eq,
     FloatEq,
     Lt,
+    FloatLt,
     Le,
+    FloatLe,
     Gt,
+    FloatGt,
     Ge,
+    FloatGe,
     Ne,
 }
 
@@ -55,6 +59,10 @@ impl BinOp {
             BinOp::FloatMul => Infix4,
             BinOp::FloatDiv => Infix4,
             BinOp::FloatEq => Infix4,
+            BinOp::FloatLt => Infix4,
+            BinOp::FloatLe => Infix4,
+            BinOp::FloatGt => Infix4,
+            BinOp::FloatGe => Infix4,
         }
     }
 
@@ -76,6 +84,7 @@ impl BinOp {
 pub enum UnOp {
     Not,
     Neg,
+    FloatNeg,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -526,7 +535,7 @@ impl Exp {
             Exp::IfThenElse(_, _, _) => IfLet,
             Exp::BorrowMut(_) => App,
             Exp::Const(_) => Atom,
-            Exp::UnaryOp(UnOp::Neg, _) => Prefix,
+            Exp::UnaryOp(UnOp::Neg | UnOp::FloatNeg, _) => Prefix,
             Exp::UnaryOp(UnOp::Not, _) => Not,
             Exp::BinaryOp(op, _, _) => op.precedence(),
             Exp::Call(_, _) => App,

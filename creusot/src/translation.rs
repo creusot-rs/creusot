@@ -171,10 +171,34 @@ pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -
                 BinOp::Eq
             }
         }
-        mir::BinOp::Lt => BinOp::Lt,
-        mir::BinOp::Le => BinOp::Le,
-        mir::BinOp::Gt => BinOp::Gt,
-        mir::BinOp::Ge => BinOp::Ge,
+        mir::BinOp::Lt => {
+            if ty.is_floating_point() {
+                BinOp::FloatLt
+            } else {
+                BinOp::Lt
+            }
+        }
+        mir::BinOp::Le => {
+            if ty.is_floating_point() {
+                BinOp::FloatLe
+            } else {
+                BinOp::Le
+            }
+        }
+        mir::BinOp::Gt => {
+            if ty.is_floating_point() {
+                BinOp::FloatGt
+            } else {
+                BinOp::Gt
+            }
+        }
+        mir::BinOp::Ge => {
+            if ty.is_floating_point() {
+                BinOp::FloatGe
+            } else {
+                BinOp::Ge
+            }
+        }
         mir::BinOp::Ne => BinOp::Ne,
         mir::BinOp::Rem => BinOp::Mod,
         _ => ctx.crash_and_error(
@@ -184,10 +208,16 @@ pub(crate) fn binop_to_binop(ctx: &mut TranslationCtx, ty: Ty, op: mir::BinOp) -
     }
 }
 
-pub(crate) fn unop_to_unop(op: rustc_middle::mir::UnOp) -> why3::exp::UnOp {
+pub(crate) fn unop_to_unop(ty: Ty, op: rustc_middle::mir::UnOp) -> why3::exp::UnOp {
     match op {
         rustc_middle::mir::UnOp::Not => why3::exp::UnOp::Not,
-        rustc_middle::mir::UnOp::Neg => why3::exp::UnOp::Neg,
+        rustc_middle::mir::UnOp::Neg => {
+            if ty.is_floating_point() {
+                why3::exp::UnOp::FloatNeg
+            } else {
+                why3::exp::UnOp::Neg
+            }
+        }
     }
 }
 
