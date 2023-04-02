@@ -65,28 +65,6 @@ module C682_AddSome
   }
   
 end
-module CreusotContracts_Ghost_Impl0_Deref_Stub
-  type t
-  use prelude.Borrow
-  use prelude.Ghost
-  function deref (self : Ghost.ghost_ty t) : t
-end
-module CreusotContracts_Ghost_Impl0_Deref_Interface
-  type t
-  use prelude.Borrow
-  use prelude.Ghost
-  function deref (self : Ghost.ghost_ty t) : t
-end
-module CreusotContracts_Ghost_Impl0_Deref
-  type t
-  use prelude.Borrow
-  use prelude.Ghost
-  function deref (self : Ghost.ghost_ty t) : t =
-    Ghost.inner self
-  val deref (self : Ghost.ghost_ty t) : t
-    ensures { result = deref self }
-    
-end
 module C682_Foo_Interface
   use prelude.Borrow
   use prelude.Int
@@ -102,12 +80,10 @@ module C682_Foo
   use prelude.UInt64
   use prelude.Ghost
   clone Core_Num_Impl9_Max as Max0
-  clone CreusotContracts_Ghost_Impl0_Deref as Deref0 with
-    type t = uint64
-  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
-    type t = uint64
   clone C682_AddSome_Interface as AddSome0 with
     val Max0.mAX' = Max0.mAX'
+  clone CreusotContracts_Resolve_Impl1_Resolve as Resolve0 with
+    type t = uint64
   let rec cfg foo [#"../682.rs" 12 0 12 23] [@cfg:stackify] [@cfg:subregion_analysis] (a : borrowed uint64) : ()
     requires {[#"../682.rs" 10 11 10 21]  * a = (3 : uint64)}
     ensures { [#"../682.rs" 11 10 11 17]  ^ a >  * a }
@@ -120,13 +96,6 @@ module C682_Foo
   var _8 : ();
   var _9 : borrowed uint64;
   var _10 : ();
-  var _11 : bool;
-  var _12 : bool;
-  var _13 : uint64;
-  var _14 : uint64;
-  var _15 : uint64;
-  var _16 : Ghost.ghost_ty uint64;
-  var _17 : ();
   {
     a_1 <- a;
     goto BB0
@@ -139,29 +108,12 @@ module C682_Foo
   BB1 {
     _9 <- borrow_mut ( * a_1);
     a_1 <- { a_1 with current = ( ^ _9) };
+    assume { Resolve0.resolve a_1 };
     _8 <- ([#"../682.rs" 14 4 14 15] AddSome0.add_some _9);
     goto BB2
   }
   BB2 {
-    _13 <-  * a_1;
-    assume { Resolve0.resolve a_1 };
-    _16 <- a_p_4;
-    _15 <- ([#"../682.rs" 15 17 15 21] Deref0.deref _16);
-    goto BB3
-  }
-  BB3 {
-    _14 <- _15;
-    _12 <- ([#"../682.rs" 15 12 15 21] _13 > _14);
-    _11 <- not _12;
-    switch (_11)
-      | False -> goto BB5
-      | True -> goto BB4
-      end
-  }
-  BB4 {
-    absurd
-  }
-  BB5 {
+    assert { [#"../682.rs" 15 18 15 27]  * a_1 > Ghost.inner a_p_4 };
     _10 <- ();
     _0 <- ();
     return _0

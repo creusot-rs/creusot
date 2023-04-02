@@ -8,7 +8,7 @@ use creusot_metadata::{
 use indexmap::IndexMap;
 use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
 use rustc_macros::{TyDecodable, TyEncodable};
-use rustc_middle::ty::{subst::SubstsRef, TyCtxt, Visibility};
+use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
 use rustc_span::Symbol;
 use std::{
     collections::HashMap,
@@ -144,29 +144,10 @@ pub(crate) struct BinaryMetadata<'tcx> {
 
 impl<'tcx> BinaryMetadata<'tcx> {
     pub(crate) fn from_parts(
-        tcx: TyCtxt<'tcx>,
-        functions: &IndexMap<DefId, TranslatedItem>,
-        dependencies: &IndexMap<DefId, CloneSummary<'tcx>>,
         terms: &IndexMap<DefId, Term<'tcx>>,
         items: &CreusotItems,
         extern_specs: &HashMap<DefId, ExternSpec<'tcx>>,
     ) -> Self {
-        let dependencies = functions
-            .keys()
-            .filter(|def_id| tcx.visibility(**def_id) == Visibility::Public && def_id.is_local())
-            .map(|def_id| {
-                (
-                    *def_id,
-                    dependencies
-                        .get(def_id)
-                        .map(Clone::clone)
-                        .unwrap_or_default()
-                        .into_iter()
-                        .collect(),
-                )
-            })
-            .collect();
-
         let terms = terms
             .iter()
             .filter(|(def_id, _)| def_id.is_local())
@@ -174,7 +155,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
             .collect();
 
         BinaryMetadata {
-            dependencies,
+            dependencies: Default::default(),
             terms,
             creusot_items: items.clone(),
             extern_specs: extern_specs.clone(),

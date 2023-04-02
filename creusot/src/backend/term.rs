@@ -14,7 +14,7 @@ use why3::{
 };
 
 pub(crate) fn lower_pure<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     term: Term<'tcx>,
 ) -> Exp {
@@ -29,7 +29,7 @@ pub(crate) fn lower_pure<'tcx>(
 }
 
 pub(crate) fn lower_impure<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     term: Term<'tcx>,
 ) -> Exp {
@@ -44,7 +44,7 @@ pub(crate) fn lower_impure<'tcx>(
 }
 
 pub(super) struct Lower<'a, 'tcx> {
-    pub(super) ctx: &'a mut TranslationCtx<'tcx>,
+    pub(super) ctx: &'a mut Why3Generator<'tcx>,
     pub(super) names: &'a mut CloneMap<'tcx>,
     // true when we are translating a purely logical term
     pub(super) pure: Purity,
@@ -363,6 +363,8 @@ impl<'tcx> Lower<'_, 'tcx> {
 
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
+
+use super::Why3Generator;
 
 pub(crate) fn lower_literal<'tcx>(
     _ctx: &mut TranslationCtx<'tcx>,

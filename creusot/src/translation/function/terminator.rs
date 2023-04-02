@@ -180,14 +180,7 @@ pub(crate) fn resolve_function<'tcx>(
             let method = traits::resolve_assoc_item_opt(ctx.tcx, param_env, def_id, subst)
                 .expect("could not find instance");
 
-            ctx.translate(it.container_id(ctx.tcx));
-            ctx.translate(method.0);
-
-            if !method.0.is_local()
-                && !ctx.externs.verified(method.0)
-                && ctx.extern_spec(method.0).is_none()
-                && ctx.extern_spec(def_id).is_none()
-            {
+            if !method.0.is_local() && ctx.sig(method.0).contract.is_false() {
                 ctx.warn(sp, "calling an external function with no contract will yield an impossible precondition");
             }
 
@@ -195,13 +188,13 @@ pub(crate) fn resolve_function<'tcx>(
         }
     }
 
-    if !def_id.is_local() && !(ctx.extern_spec(def_id).is_some() || ctx.externs.verified(def_id)) {
+    if !def_id.is_local() && ctx.sig(def_id).contract.is_false() {
         ctx.warn(
             sp,
             "calling an external function with no contract will yield an impossible precondition",
         );
     }
-    ctx.translate(def_id);
+    // ctx.translate(def_id);
 
     (def_id, subst)
 }

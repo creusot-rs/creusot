@@ -14,8 +14,10 @@ use why3::{
     Ident, QName,
 };
 
+use super::{signature::signature_of, Why3Generator};
+
 pub(crate) fn binders_to_args(
-    ctx: &mut TranslationCtx,
+    ctx: &mut Why3Generator,
     binders: Vec<Binder>,
 ) -> (Vec<why3::Exp>, Vec<Binder>) {
     let mut args = Vec::new();
@@ -44,7 +46,7 @@ pub(crate) fn binders_to_args(
 }
 
 pub(crate) fn translate_logic_or_predicate<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> (Module, Module, Option<Module>, bool, CloneSummary<'tcx>) {
     let has_axioms = !ctx.sig(def_id).contract.is_empty();
@@ -59,11 +61,11 @@ pub(crate) fn translate_logic_or_predicate<'tcx>(
 }
 
 fn builtin_body<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
-    let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
+    let mut sig = signature_of(ctx, &mut names, def_id);
     let (val_args, val_binders) = binders_to_args(ctx, sig.args);
     sig.args = val_binders;
 
@@ -111,13 +113,10 @@ fn builtin_body<'tcx>(
     (Module { name, decls }, summary)
 }
 
-fn body_module<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> (Module, CloneSummary<'tcx>) {
+fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
 
-    let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
+    let mut sig = signature_of(ctx, &mut names, def_id);
     let mut val_sig = sig.clone();
     val_sig.contract.variant = Vec::new();
     let (val_args, val_binders) = binders_to_args(ctx, val_sig.args);
@@ -194,9 +193,9 @@ fn body_module<'tcx>(
     (Module { name, decls }, summary)
 }
 
-pub(crate) fn stub_module(ctx: &mut TranslationCtx, def_id: DefId) -> Module {
+pub(crate) fn stub_module(ctx: &mut Why3Generator, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
-    let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
+    let mut sig = signature_of(ctx, &mut names, def_id);
 
     if util::is_predicate(ctx.tcx, def_id) {
         sig.retty = None;
@@ -217,14 +216,14 @@ pub(crate) fn stub_module(ctx: &mut TranslationCtx, def_id: DefId) -> Module {
     Module { name, decls }
 }
 
-fn proof_module(ctx: &mut TranslationCtx, def_id: DefId) -> Option<Module> {
+fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
     if util::is_trusted(ctx.tcx, def_id) || !util::has_body(ctx, def_id) {
         return None;
     }
 
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
 
-    let mut sig = crate::util::signature_of(ctx, &mut names, def_id);
+    let mut sig = signature_of(ctx, &mut names, def_id);
 
     if sig.contract.is_empty() {
         let _ = names.to_clones(ctx);

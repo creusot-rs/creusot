@@ -1,3 +1,4 @@
+use super::Why3Generator;
 use crate::{
     ctx::*,
     translation::{
@@ -47,7 +48,7 @@ enum TyTranslation {
 
 // Translate a type usage
 pub(crate) fn translate_ty<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     span: Span,
     ty: Ty<'tcx>,
@@ -57,7 +58,7 @@ pub(crate) fn translate_ty<'tcx>(
 
 fn translate_ty_inner<'tcx>(
     trans: TyTranslation,
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     span: Span,
     ty: Ty<'tcx>,
@@ -193,7 +194,7 @@ fn translate_ty_inner<'tcx>(
 }
 
 pub(crate) fn translate_projection_ty<'tcx>(
-    _ctx: &mut TranslationCtx<'tcx>,
+    _ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     pty: &AliasTy<'tcx>,
 ) -> MlT {
@@ -203,7 +204,7 @@ pub(crate) fn translate_projection_ty<'tcx>(
 }
 
 pub(crate) fn translate_closure_ty<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     did: DefId,
     subst: SubstsRef<'tcx>,
@@ -267,7 +268,7 @@ pub(crate) fn ty_binding_group<'tcx>(tcx: TyCtxt<'tcx>, ty_id: DefId) -> IndexSe
     group
 }
 
-fn translate_ty_name(ctx: &TranslationCtx<'_>, did: DefId) -> QName {
+fn translate_ty_name(ctx: &Why3Generator<'_>, did: DefId) -> QName {
     item_qname(ctx, did, Namespace::TypeNS)
 }
 
@@ -283,7 +284,7 @@ pub(crate) fn translate_ty_param(p: Symbol) -> Ident {
 // Additionally, types are not translated one by one but rather as a *binding group*, so that mutually
 // recursive types are properly translated.
 // Results are accumulated and can be collected at once by consuming the `Ctx`
-pub(crate) fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
+pub(crate) fn translate_tydecl(ctx: &mut Why3Generator<'_>, did: DefId) {
     let span = ctx.def_span(did);
     let bg = ctx.binding_group(did).clone();
 
@@ -365,7 +366,7 @@ pub(crate) fn translate_tydecl(ctx: &mut TranslationCtx<'_>, did: DefId) {
 }
 
 fn build_ty_decl<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     did: DefId,
 ) -> AdtDecl {
@@ -424,7 +425,7 @@ pub(crate) fn ty_param_names(
 }
 
 fn field_ty<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     field: &FieldDef,
     substs: SubstsRef<'tcx>,
@@ -442,7 +443,7 @@ fn field_ty<'tcx>(
 }
 
 pub(crate) fn translate_accessor(
-    ctx: &mut TranslationCtx<'_>,
+    ctx: &mut Why3Generator<'_>,
     adt_did: DefId,
     variant_did: DefId,
     field_id: DefId,
@@ -547,7 +548,7 @@ pub(crate) fn build_accessor(
 }
 
 pub(crate) fn closure_accessors<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     closure: DefId,
 ) -> Vec<(Symbol, PreSignature<'tcx>, Term<'tcx>)> {
     let TyKind::Closure(_, substs) = ctx.type_of(closure).subst_identity().kind() else { unreachable!() };
@@ -563,7 +564,7 @@ pub(crate) fn closure_accessors<'tcx>(
 }
 
 pub(crate) fn build_closure_accessor<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     closure: DefId,
     ix: usize,
 ) -> (PreSignature<'tcx>, Term<'tcx>) {

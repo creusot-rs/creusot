@@ -1,17 +1,18 @@
 use super::{
     clone_map::{CloneLevel, CloneMap, CloneSummary},
     term::lower_pure,
+    Why3Generator,
 };
 use crate::{
     backend,
-    ctx::{ItemType, TranslationCtx},
+    ctx::ItemType,
     translation::function::{all_generic_decls_for, own_generic_decls_for},
     util::{self, item_name, module_name},
 };
 use rustc_hir::{def::Namespace, def_id::DefId};
 use why3::declaration::{Decl, Goal, Module, TyDecl};
 
-pub(crate) fn lower_impl<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
+pub(crate) fn lower_impl<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
     let tcx = ctx.tcx;
     let data = ctx.trait_impl(def_id).clone();
 
@@ -36,7 +37,7 @@ pub(crate) fn lower_impl<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) ->
     Module { name: module_name(ctx.tcx, def_id), decls }
 }
 
-impl<'tcx> TranslationCtx<'tcx> {
+impl<'tcx> Why3Generator<'tcx> {
     pub(crate) fn translate_assoc_ty(&mut self, def_id: DefId) -> (Module, CloneSummary<'tcx>) {
         assert_eq!(util::item_type(self.tcx, def_id), ItemType::AssocTy);
 

@@ -2,12 +2,7 @@ use std::{collections::HashMap, ops::Deref};
 
 pub(crate) use crate::backend::clone_map::*;
 use crate::{
-    backend::{
-        self,
-        interface::interface_for,
-        program::{translate_closure, translate_function},
-        ty::{self, translate_tydecl, ty_binding_group},
-    },
+    backend::ty::ty_binding_group,
     creusot_items::{self, CreusotItems},
     error::{CrErr, CreusotResult, Error},
     metadata::{BinaryMetadata, Metadata},
@@ -20,15 +15,11 @@ use crate::{
         specification::{ContractClauses, PurityVisitor},
         traits::{self, TraitImpl},
     },
-    util::{self, item_type, pre_sig_of, PreSignature},
+    util::{self, pre_sig_of, PreSignature},
 };
 use indexmap::{IndexMap, IndexSet};
-use rustc_data_structures::captures::Captures;
 use rustc_errors::{DiagnosticBuilder, DiagnosticId};
-use rustc_hir::{
-    def::DefKind,
-    def_id::{DefId, LocalDefId},
-};
+use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_infer::traits::{Obligation, ObligationCause};
 use rustc_middle::{
     thir,
@@ -40,19 +31,15 @@ use rustc_middle::{
 use rustc_span::{Span, Symbol, DUMMY_SP};
 use rustc_trait_selection::traits::SelectionContext;
 pub(crate) use util::{module_name, ItemType};
-use why3::{declaration::Module, exp::Exp};
+use why3::exp::Exp;
 
 pub(crate) use crate::translated_item::*;
 
 // TODO: The state in here should be as opaque as possible...
 pub struct TranslationCtx<'tcx> {
     pub tcx: TyCtxt<'tcx>,
-    translated_items: IndexSet<DefId>,
-    in_translation: Vec<IndexSet<DefId>>,
     representative_type: HashMap<DefId, DefId>, // maps type ids to their 'representative type'
     ty_binding_groups: HashMap<DefId, IndexSet<DefId>>,
-    functions: IndexMap<DefId, TranslatedItem>,
-    dependencies: IndexMap<DefId, CloneSummary<'tcx>>,
     laws: IndexMap<DefId, Vec<DefId>>,
     fmir_body: IndexMap<DefId, fmir::Body<'tcx>>,
     terms: IndexMap<DefId, Term<'tcx>>,
@@ -80,10 +67,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         Self {
             tcx,
             laws: Default::default(),
-            translated_items: Default::default(),
-            in_translation: Default::default(),
-            functions: Default::default(),
-            dependencies: Default::default(),
             externs: Default::default(),
             terms: Default::default(),
             creusot_items,
@@ -102,66 +85,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.externs.load(self.tcx, &self.opts.extern_paths);
     }
 
-    pub(crate) fn translate(&mut self, def_id: DefId) {
-        if self.translated_items.contains(&def_id) || self.safe_cycle(def_id) {
-            return;
-        }
-        debug!("translating {:?}", def_id);
-
-        // eprintln!("{:?}", self.param_env(def_id));
-
-        match item_type(self.tcx, def_id) {
-            ItemType::Trait => {
-                self.start(def_id);
-                let tr = self.translate_trait(def_id);
-                self.dependencies.insert(def_id, CloneSummary::new());
-                self.functions.insert(def_id, tr);
-                self.finish(def_id);
-            }
-            ItemType::Impl => {
-                if self.tcx.impl_trait_ref(def_id).is_some() {
-                    self.start(def_id);
-                    let impl_ = backend::traits::lower_impl(self, def_id);
-
-                    self.dependencies.insert(def_id, CloneSummary::new());
-                    self.functions.insert(def_id, TranslatedItem::Impl { modl: impl_ });
-                    self.finish(def_id);
-                }
-            }
-            ItemType::Logic | ItemType::Predicate | ItemType::Program | ItemType::Closure => {
-                self.start(def_id);
-                self.translate_function(def_id);
-                self.finish(def_id);
-            }
-            ItemType::AssocTy => {
-                self.start(def_id);
-                let (modl, dependencies) = self.translate_assoc_ty(def_id);
-                self.finish(def_id);
-                self.dependencies.insert(def_id, dependencies);
-                self.functions.insert(def_id, TranslatedItem::AssocTy { modl });
-            }
-            ItemType::Constant => {
-                self.start(def_id);
-                let (constant, dependencies) = self.translate_constant(def_id);
-                self.finish(def_id);
-                self.dependencies.insert(def_id, dependencies);
-                self.functions.insert(def_id, constant);
-            }
-            ItemType::Type => {
-                translate_tydecl(self, def_id);
-            }
-            ItemType::Unsupported(dk) => self.crash_and_error(
-                self.tcx.def_span(def_id),
-                &format!("unsupported definition kind {:?} {:?}", def_id, dk),
-            ),
-        }
-    }
-
-    // Checks if we are allowed to recurse into
-    fn safe_cycle(&self, def_id: DefId) -> bool {
-        self.in_translation.last().map(|l| l.contains(&def_id)).unwrap_or_default()
-    }
-
     pub(crate) fn trait_impl(&mut self, def_id: DefId) -> &TraitImpl<'tcx> {
         if !self.impl_data.contains_key(&def_id) {
             let trait_impl = self.translate_impl(def_id);
@@ -169,107 +92,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         }
 
         &self.impl_data[&def_id]
-    }
-
-    pub(crate) fn start_group(&mut self, ids: IndexSet<DefId>) {
-        assert!(!ids.is_empty());
-        if self.in_translation.iter().rev().any(|s| !s.is_disjoint(&ids)) {
-            let span = self.def_span(ids.first().unwrap());
-            self.in_translation.push(ids);
-
-            self.crash_and_error(
-                span,
-                &format!("encountered a cycle during translation: {:?}", self.in_translation),
-            );
-        }
-
-        self.in_translation.push(ids);
-    }
-
-    // Mark an id as in translation.
-    pub(crate) fn start(&mut self, def_id: DefId) {
-        self.start_group(IndexSet::from_iter([def_id]));
-    }
-
-    // Indicate we have finished translating a given id
-    pub(crate) fn finish(&mut self, def_id: DefId) {
-        if !self.in_translation.last_mut().unwrap().remove(&def_id) {
-            self.crash_and_error(
-                self.def_span(def_id),
-                &format!("{:?} is not in translation", def_id),
-            );
-        }
-
-        if self.in_translation.last().unwrap().is_empty() {
-            self.in_translation.pop();
-        }
-
-        self.translated_items.insert(def_id);
-    }
-
-    // Generic entry point for function translation
-    fn translate_function(&mut self, def_id: DefId) {
-        assert!(matches!(
-            self.tcx.def_kind(def_id),
-            DefKind::Fn | DefKind::Closure | DefKind::AssocFn
-        ));
-
-        if !crate::util::should_translate(self.tcx, def_id) || util::is_spec(self.tcx, def_id) {
-            debug!("Skipping {:?}", def_id);
-            return;
-        }
-
-        let (interface, deps) = interface_for(self, def_id);
-
-        let translated = match util::item_type(self.tcx, def_id) {
-            ItemType::Logic | ItemType::Predicate => {
-                debug!("translating {:?} as logical", def_id);
-                let (stub, modl, proof_modl, has_axioms, deps) =
-                    crate::backend::logic::translate_logic_or_predicate(self, def_id);
-                self.dependencies.insert(def_id, deps);
-
-                TranslatedItem::Logic { stub, interface, modl, proof_modl, has_axioms }
-            }
-            ItemType::Closure => {
-                let (ty_modl, modl) = translate_closure(self, def_id);
-                self.dependencies.insert(def_id, deps);
-
-                TranslatedItem::Closure { interface: vec![ty_modl, interface], modl }
-            }
-            ItemType::Program => {
-                debug!("translating {def_id:?} as program");
-
-                self.dependencies.insert(def_id, deps);
-                let modl = translate_function(self, def_id);
-                TranslatedItem::Program { interface, modl }
-            }
-            _ => unreachable!(),
-        };
-
-        self.functions.insert(def_id, translated);
-    }
-
-    pub(crate) fn translate_accessor(&mut self, field_id: DefId) {
-        if !self.translated_items.insert(field_id) {
-            return;
-        }
-
-        let parent = self.tcx.parent(field_id);
-        let (adt_did, variant_did) = match self.tcx.def_kind(parent) {
-            DefKind::Variant => (self.tcx.parent(parent), parent),
-            DefKind::Struct | DefKind::Enum | DefKind::Union => {
-                (parent, self.tcx.adt_def(parent).variants()[0u32.into()].def_id)
-            }
-            _ => unreachable!(),
-        };
-        self.translate(adt_did);
-
-        let accessor = ty::translate_accessor(self, adt_did, variant_did, field_id);
-        let repr_id = self.representative_type[&adt_did];
-        if let TranslatedItem::Type { ref mut accessors, .. } = &mut self.functions[&repr_id] {
-            accessors.entry(variant_did).or_default().insert(field_id, accessor);
-        }
-        // self.types[&repr_id].accessors;
     }
 
     pub(crate) fn fmir_body(&mut self, def_id: DefId) -> Option<&fmir::Body<'tcx>> {
@@ -412,20 +234,6 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         &self.ty_binding_groups[&self.representative_type(def_id)]
     }
 
-    pub(crate) fn add_type(&mut self, def_id: DefId, modl: Vec<Module>) {
-        let repr = self.representative_type(def_id);
-        self.functions.insert(repr, TranslatedItem::Type { modl, accessors: Default::default() });
-    }
-
-    pub(crate) fn dependencies(&self, def_id: DefId) -> Option<&CloneSummary<'tcx>> {
-        self.dependencies.get(&def_id)
-    }
-
-    pub(crate) fn item(&self, def_id: DefId) -> Option<&TranslatedItem> {
-        let def_id = self.representative_type.get(&def_id).unwrap_or(&def_id);
-        self.functions.get(def_id)
-    }
-
     // Get the id of the type which represents a binding groups
     // Panics a type hasn't yet been translated
     pub(crate) fn representative_type(&self, def_id: DefId) -> DefId {
@@ -453,19 +261,8 @@ impl<'tcx, 'sess> TranslationCtx<'tcx> {
         self.opts.should_output
     }
 
-    pub(crate) fn modules(self) -> impl Iterator<Item = (DefId, TranslatedItem)> + Captures<'tcx> {
-        self.functions.into_iter()
-    }
-
     pub(crate) fn metadata(&self) -> BinaryMetadata<'tcx> {
-        BinaryMetadata::from_parts(
-            self.tcx,
-            &self.functions,
-            &self.dependencies,
-            &self.terms,
-            &self.creusot_items,
-            &self.extern_specs,
-        )
+        BinaryMetadata::from_parts(&self.terms, &self.creusot_items, &self.extern_specs)
     }
 
     pub(crate) fn creusot_item(&self, name: Symbol) -> Option<DefId> {
