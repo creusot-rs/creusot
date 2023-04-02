@@ -22,7 +22,7 @@ use why3::{
 
 use crate::{
     backend::{self, dependency::Dependency, interface, ty::translate_ty_param},
-    ctx::{self, *},
+    ctx::*,
     translation::traits,
     util::{self, get_builtin, ident_of, ident_of_ty, item_name, module_name},
 };
@@ -87,7 +87,7 @@ impl PreludeModule {
 }
 
 type CloneNode<'tcx> = (DefId, SubstsRef<'tcx>);
-pub type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo>;
+pub(super) type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo>;
 
 #[derive(Clone)]
 pub struct CloneMap<'tcx> {
@@ -152,6 +152,8 @@ impl Kind {
 }
 
 use rustc_macros::{TyDecodable, TyEncodable};
+
+use super::Why3Generator;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, TyEncodable, TyDecodable)]
 enum CloneOpacity {
@@ -384,7 +386,7 @@ impl<'tcx> CloneMap<'tcx> {
     }
 
     // Update the clone graph with new entries
-    fn update_graph(&mut self, ctx: &mut ctx::TranslationCtx<'tcx>) {
+    fn update_graph(&mut self, ctx: &mut Why3Generator<'tcx>) {
         // Construct a maximal sharing graph for all dependencies.
         // We build edges between each (function, subst) pair, following the call graph
         // Additionally, when the substitution refers to an associated type, we construct
@@ -426,11 +428,7 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
-    fn clone_dependencies(
-        &mut self,
-        ctx: &mut TranslationCtx<'tcx>,
-        key: (DefId, SubstsRef<'tcx>),
-    ) {
+    fn clone_dependencies(&mut self, ctx: &mut Why3Generator<'tcx>, key: (DefId, SubstsRef<'tcx>)) {
         // Check the substitution for dependencies on closures
         for ty in key.1.types().flat_map(|t| t.walk()) {
             let ty = match ty.unpack() {
@@ -561,7 +559,7 @@ impl<'tcx> CloneMap<'tcx> {
         }
     }
 
-    fn build_clone(&mut self, ctx: &mut TranslationCtx<'tcx>, item: DepNode<'tcx>) -> Option<Decl> {
+    fn build_clone(&mut self, ctx: &mut Why3Generator<'tcx>, item: DepNode<'tcx>) -> Option<Decl> {
         let node @ (def_id, subst) = item.cloneable_id()?;
 
         // Types can't be cloned, but are used (for now).
@@ -632,7 +630,7 @@ impl<'tcx> CloneMap<'tcx> {
 
     pub(crate) fn to_clones(
         mut self,
-        ctx: &mut ctx::TranslationCtx<'tcx>,
+        ctx: &mut Why3Generator<'tcx>,
     ) -> (Vec<Decl>, CloneSummary<'tcx>) {
         trace!("emitting clones for {:?}", self.self_id);
         let mut decls = Vec::new();
@@ -690,7 +688,7 @@ impl<'tcx> CloneMap<'tcx> {
 
 // Create the substitution used to clone `def_id` with the rustc substitution `subst`.
 pub(crate) fn base_subst<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     param_env: ParamEnv<'tcx>,
     mut def_id: DefId,

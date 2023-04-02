@@ -8,6 +8,7 @@ pub(crate) mod specification;
 pub(crate) mod traits;
 
 use crate::{
+    backend::Why3Generator,
     ctx,
     ctx::load_extern_specs,
     error::CrErr,
@@ -55,53 +56,55 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
         ctx.translate_trait(*tr);
     }
 
+    let mut why3 = Why3Generator::new(ctx);
+
     let start = Instant::now();
-    for def_id in ctx.tcx.hir().body_owners() {
+    for def_id in why3.hir().body_owners() {
         let def_id = def_id.to_def_id();
 
-        if !crate::util::should_translate(ctx.tcx, def_id) {
+        if !crate::util::should_translate(why3.tcx, def_id) {
             info!("Skipping {:?}", def_id);
             continue;
         }
 
-        if ctx.def_kind(def_id) == DefKind::AnonConst {
+        if why3.def_kind(def_id) == DefKind::AnonConst {
             continue;
         }
 
         info!("Translating body {:?}", def_id);
-        ctx.translate(def_id);
+        why3.translate(def_id);
     }
 
-    for impls in ctx.tcx.all_local_trait_impls(()).values() {
+    for impls in why3.all_local_trait_impls(()).values() {
         for impl_id in impls {
-            ctx.translate(impl_id.to_def_id());
+            why3.translate(impl_id.to_def_id());
         }
     }
 
     debug!("after_analysis_translate: {:?}", start.elapsed());
     let start = Instant::now();
 
-    if ctx.tcx.sess.has_errors().is_some() {
+    if why3.sess.has_errors().is_some() {
         return Err(Box::new(CrErr));
     }
 
-    if ctx.should_export() {
-        metadata::dump_exports(&ctx, &ctx.opts.metadata_path);
+    if why3.should_export() {
+        metadata::dump_exports(&why3, &why3.opts.metadata_path);
     }
 
-    if ctx.should_compile() {
+    if why3.should_compile() {
         use std::fs::File;
-        let mut out: Box<dyn Write> = match ctx.opts.output_file {
+        let mut out: Box<dyn Write> = match why3.opts.output_file {
             Some(OutputFile::File(ref f)) => Box::new(std::io::BufWriter::new(File::create(f)?)),
             Some(OutputFile::Stdout) => Box::new(std::io::stdout()),
             None => {
-                let outputs = ctx.tcx.output_filenames(());
-                let crate_name = ctx.tcx.crate_name(LOCAL_CRATE);
+                let outputs = why3.output_filenames(());
+                let crate_name = why3.crate_name(LOCAL_CRATE);
 
                 let libname =
-                    format!("{}-{}.mlcfg", crate_name.as_str(), ctx.sess.crate_types()[0]);
+                    format!("{}-{}.mlcfg", crate_name.as_str(), why3.sess.crate_types()[0]);
 
-                let directory = if ctx.opts.in_cargo {
+                let directory = if why3.opts.in_cargo {
                     let mut dir = outputs.out_directory.clone();
                     dir.pop();
                     dir
@@ -113,10 +116,10 @@ pub(crate) fn after_analysis(mut ctx: TranslationCtx) -> Result<(), Box<dyn Erro
             }
         };
 
-        let matcher = ctx.opts.match_str.clone();
+        let matcher = why3.opts.match_str.clone();
         let matcher: &str = matcher.as_ref().map(|s| &s[..]).unwrap_or("");
-        let tcx = ctx.tcx;
-        let modules = ctx.modules().flat_map(|(id, item)| {
+        let tcx = why3.tcx;
+        let modules = why3.modules().flat_map(|(id, item)| {
             if tcx.def_path_str(id).contains(matcher) {
                 item.modules()
             } else {

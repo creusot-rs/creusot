@@ -12,5 +12,5 @@ fn add_some(a: &mut u64) {
 pub fn foo(a: &mut u64) {
     let a_p: Ghost<u64> = ghost!(*a);
     add_some(a);
-    assert!(*a > *a_p);
+    proof_assert!(*a > *a_p);
 }

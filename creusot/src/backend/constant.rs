@@ -3,17 +3,19 @@ use rustc_middle::ty::{self, InternalSubsts};
 use why3::declaration::{Decl, LetDecl, LetKind, Module, ValDecl};
 
 use crate::{
-    ctx::{TranslatedItem, TranslationCtx},
+    ctx::TranslatedItem,
     translation::{constant::from_ty_const, function::closure_generic_decls},
-    util::{self, module_name, signature_of},
+    util::{self, module_name},
 };
 
 use super::{
     clone_map::{CloneLevel, CloneMap, CloneSummary},
     logic::stub_module,
+    signature::signature_of,
+    Why3Generator,
 };
 
-impl<'tcx> TranslationCtx<'tcx> {
+impl<'tcx> Why3Generator<'tcx> {
     pub(crate) fn translate_constant(
         &mut self,
         def_id: DefId,
@@ -23,7 +25,9 @@ impl<'tcx> TranslationCtx<'tcx> {
         let constant = self
             .mk_const(ty::ConstKind::Unevaluated(uneval), self.type_of(def_id).subst_identity());
 
-        let res = from_ty_const(self, constant, self.param_env(def_id), self.def_span(def_id));
+        let param_env = self.param_env(def_id);
+        let span = self.def_span(def_id);
+        let res = from_ty_const(&mut self.ctx, constant, param_env, span);
         let mut names = CloneMap::new(self.tcx, def_id, CloneLevel::Body);
         let res = res.to_why(self, &mut names, None);
         let sig = signature_of(self, &mut names, def_id);

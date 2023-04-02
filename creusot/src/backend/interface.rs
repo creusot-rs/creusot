@@ -1,8 +1,9 @@
-use super::clone_map::CloneMap;
+use super::{clone_map::CloneMap, CloneSummary, Why3Generator};
 use crate::{
     backend::{
         logic::spec_axiom,
         program::{closure_aux_defs, closure_type_use},
+        signature::signature_of,
     },
     ctx::*,
     translation::function::closure_generic_decls,
@@ -16,12 +17,12 @@ use why3::{
     Exp, Ident,
 };
 pub(crate) fn interface_for<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> (Module, CloneSummary<'tcx>) {
     debug!("interface_for: {def_id:?}");
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Stub);
-    let mut sig = util::signature_of(ctx, &mut names, def_id);
+    let mut sig = signature_of(ctx, &mut names, def_id);
 
     sig.contract.variant = Vec::new();
 
@@ -64,11 +65,6 @@ pub(crate) fn interface_for<'tcx>(
             }
         }
         _ => {
-            // TODO: Push this into `contract_of`
-            if !def_id.is_local() && !ctx.externs.verified(def_id) && sig.contract.is_empty() {
-                sig.contract.requires.push(why3::exp::Exp::mk_false());
-            }
-
             decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
         }
     }

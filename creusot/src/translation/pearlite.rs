@@ -1139,6 +1139,10 @@ impl<'tcx> Term<'tcx> {
         Term { ty: tcx.types.bool, kind: TermKind::Lit(Literal::Bool(true)), span: DUMMY_SP }
     }
 
+    pub(crate) fn mk_false(tcx: TyCtxt<'tcx>) -> Self {
+        Term { ty: tcx.types.bool, kind: TermKind::Lit(Literal::Bool(false)), span: DUMMY_SP }
+    }
+
     pub(crate) fn var(sym: Symbol, ty: Ty<'tcx>) -> Self {
         Term { ty, kind: TermKind::Var(sym), span: DUMMY_SP }
     }

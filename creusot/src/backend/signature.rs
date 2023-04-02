@@ -6,15 +6,25 @@ use why3::{
 
 use crate::{
     backend,
-    ctx::{CloneMap, TranslationCtx},
+    ctx::CloneMap,
     translation::specification::PreContract,
     util::{ident_of, item_name, why3_attrs, AnonymousParamName, PreSignature},
 };
 
-use super::term::lower_pure;
+use super::{term::lower_pure, Why3Generator};
+
+pub(crate) fn signature_of<'tcx>(
+    ctx: &mut Why3Generator<'tcx>,
+    names: &mut CloneMap<'tcx>,
+    def_id: DefId,
+) -> Signature {
+    debug!("signature_of {def_id:?}");
+    let pre_sig = ctx.sig(def_id).clone();
+    sig_to_why3(ctx, names, pre_sig, def_id)
+}
 
 pub(crate) fn sig_to_why3<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     pre_sig: PreSignature<'tcx>,
     // FIXME: Get rid of this def id
@@ -58,7 +68,7 @@ pub(crate) fn sig_to_why3<'tcx>(
 
 fn contract_to_why3<'tcx>(
     pre: PreContract<'tcx>,
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
 ) -> Contract {
     let mut out = Contract::new();

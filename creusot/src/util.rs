@@ -1,5 +1,4 @@
 use crate::{
-    backend::signature::sig_to_why3,
     ctx::*,
     translation::{
         pearlite::{self, super_visit_mut_term, Literal, Term, TermKind, TermVisitorMut},
@@ -493,16 +492,6 @@ fn elaborate_type_invariants<'tcx>(
         let term = EarlyBinder(term).subst(ctx.tcx, subst);
         pre_sig.contract.ensures.push(term);
     }
-}
-
-pub(crate) fn signature_of<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    names: &mut CloneMap<'tcx>,
-    def_id: DefId,
-) -> Signature {
-    debug!("signature_of {def_id:?}");
-    let pre_sig = ctx.sig(def_id).clone();
-    sig_to_why3(ctx, names, pre_sig, def_id)
 }
 
 pub(crate) fn get_attr<'a>(attrs: &'a [Attribute], path: &[&str]) -> Option<&'a AttrItem> {

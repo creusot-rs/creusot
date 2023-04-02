@@ -1,8 +1,4 @@
-use crate::{
-    backend::program::uint_to_int,
-    ctx::{CloneMap, TranslationCtx},
-    translation::LocalIdent,
-};
+use crate::{backend::program::uint_to_int, ctx::CloneMap, translation::LocalIdent};
 use rustc_middle::{
     mir::{Body, Local, Place},
     ty::{TyKind, UintTy},
@@ -19,6 +15,8 @@ use why3::{
     QName,
 };
 
+use super::Why3Generator;
+
 /// Correctly translate an assignment from one place to another. The challenge here is correctly
 /// construction the expression that assigns deep inside a structure.
 /// (_1 as Some) = P      ---> let _1 = P ??
@@ -31,7 +29,7 @@ use why3::{
 /// [(_1 as Some).0] = X   ---> let _1 = (let Some(a) = _1 in Some(X))
 /// (* (* _1).2) = X ---> let _1 = { _1 with current = { * _1 with current = [(**_1).2 = X] }}
 pub(crate) fn create_assign_inner<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     body: &Body<'tcx>,
     lhs: &Place<'tcx>,
@@ -159,7 +157,7 @@ pub(crate) fn create_assign_inner<'tcx>(
 // [(P as Some).0] ---> let Some(a) = [_1] in a
 // [(* P)] ---> * [P]
 pub(crate) fn translate_rplace_inner<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     body: &Body<'tcx>,
     loc: Local,

@@ -1,5 +1,5 @@
 use super::{
-    pearlite::{normalize, pearlite_stub, Term, TermKind},
+    pearlite::{normalize, pearlite_stub, Literal, Term, TermKind},
     LocalIdent,
 };
 use crate::{ctx::*, util};
@@ -17,8 +17,6 @@ use rustc_middle::{
 };
 use rustc_span::Symbol;
 use std::collections::{HashMap, HashSet};
-
-pub(crate) use crate::backend::term::*;
 
 #[derive(Clone, Debug, Default, TypeFoldable, TypeVisitable)]
 pub struct PreContract<'tcx> {
@@ -39,6 +37,12 @@ impl<'tcx> PreContract<'tcx> {
             normalize(tcx, param_env, term);
         }
         self
+    }
+
+    // A bit of a hack used to see if an external function has no contract
+    pub(crate) fn is_false(&self) -> bool {
+        self.requires.len() == 1
+            && matches!(self.requires[0].kind, TermKind::Lit(Literal::Bool(false)))
     }
 
     pub(crate) fn is_empty(&self) -> bool {
@@ -273,7 +277,17 @@ pub(crate) fn contract_of<'tcx>(
         contract.normalize(ctx.tcx, ctx.param_env(def_id))
     } else {
         let subst = InternalSubsts::identity_for_item(ctx.tcx, def_id);
-        contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst)
+        let mut contract =
+            contract_clauses_of(ctx, def_id).unwrap().get_pre(ctx).subst(ctx.tcx, subst);
+
+        if contract.is_empty()
+            && ctx.externs.get(def_id.krate).is_some()
+            && util::item_type(ctx.tcx, def_id) == ItemType::Program
+        {
+            contract.requires.push(Term::mk_false(ctx.tcx));
+        }
+
+        contract
     }
 }
 

@@ -1,18 +1,23 @@
 
-module CreusotContracts_Std1_Time_NanosToSecs_Stub
+module Core_Time_Nanoseconds_Type
   use prelude.Int
-  function nanos_to_secs (nanos : int) : int
+  use prelude.UInt32
+  type t_nanoseconds  =
+    | C_Nanoseconds uint32
+    
 end
-module CreusotContracts_Std1_Time_NanosToSecs_Interface
+module Core_Time_Duration_Type
   use prelude.Int
-  function nanos_to_secs (nanos : int) : int
+  use prelude.UInt64
+  use Core_Time_Nanoseconds_Type as Core_Time_Nanoseconds_Type
+  type t_duration  =
+    | C_Duration uint64 (Core_Time_Nanoseconds_Type.t_nanoseconds)
+    
 end
-module CreusotContracts_Std1_Time_NanosToSecs
-  use prelude.Int
-  function nanos_to_secs (nanos : int) : int =
-    div nanos 1000000000
-  val nanos_to_secs (nanos : int) : int
-    ensures { result = nanos_to_secs nanos }
+module Core_Option_Option_Type
+  type t_option 't =
+    | C_None
+    | C_Some 't
     
 end
 module CreusotContracts_Std1_Time_SecsToNanos_Stub
@@ -29,21 +34,6 @@ module CreusotContracts_Std1_Time_SecsToNanos
     secs * 1000000000
   val secs_to_nanos (secs : int) : int
     ensures { result = secs_to_nanos secs }
-    
-end
-module Core_Time_Nanoseconds_Type
-  use prelude.Int
-  use prelude.UInt32
-  type t_nanoseconds  =
-    | C_Nanoseconds uint32
-    
-end
-module Core_Time_Duration_Type
-  use prelude.Int
-  use prelude.UInt64
-  use Core_Time_Nanoseconds_Type as Core_Time_Nanoseconds_Type
-  type t_duration  =
-    | C_Duration uint64 (Core_Time_Nanoseconds_Type.t_nanoseconds)
     
 end
 module Core_Num_Impl9_Max_Stub
@@ -85,6 +75,22 @@ module CreusotContracts_Std1_Time_Impl0_ShallowModel
     ensures { result = shallow_model self }
     
   axiom shallow_model_spec : forall self : Core_Time_Duration_Type.t_duration . shallow_model self >= 0 /\ shallow_model self <= SecsToNanos0.secs_to_nanos (UInt64.to_int Max0.mAX') + 999999999
+end
+module CreusotContracts_Std1_Time_NanosToSecs_Stub
+  use prelude.Int
+  function nanos_to_secs (nanos : int) : int
+end
+module CreusotContracts_Std1_Time_NanosToSecs_Interface
+  use prelude.Int
+  function nanos_to_secs (nanos : int) : int
+end
+module CreusotContracts_Std1_Time_NanosToSecs
+  use prelude.Int
+  function nanos_to_secs (nanos : int) : int =
+    div nanos 1000000000
+  val nanos_to_secs (nanos : int) : int
+    ensures { result = nanos_to_secs nanos }
+    
 end
 module Core_Time_Impl1_New_Interface
   use prelude.UInt64
@@ -358,12 +364,6 @@ module Core_Time_Impl1_AsMicros_Interface
     type ShallowModelTy0.shallowModelTy = int
   val as_micros (self : Core_Time_Duration_Type.t_duration) : uint128
     ensures { UInt128.to_int result = NanosToMicros0.nanos_to_micros (ShallowModel0.shallow_model self) }
-    
-end
-module Core_Option_Option_Type
-  type t_option 't =
-    | C_None
-    | C_Some 't
     
 end
 module CreusotContracts_Model_DeepModel_DeepModelTy_Type

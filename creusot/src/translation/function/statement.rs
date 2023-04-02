@@ -140,7 +140,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 match kind {
                     Tuple => Expr::Tuple(fields),
                     Adt(adt, varix, subst, _, _) => {
-                        self.ctx.translate(*adt);
+                        // self.ctx.translate(*adt);
                         let variant = self.tcx.adt_def(*adt).variant(*varix).def_id;
 
                         Expr::Constructor(variant, subst, fields)

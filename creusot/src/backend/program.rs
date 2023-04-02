@@ -1,19 +1,23 @@
-use super::clone_map::{CloneLevel, PreludeModule};
+use super::{
+    clone_map::{CloneLevel, PreludeModule},
+    signature::signature_of,
+    term::{lower_impure, lower_pure},
+    Why3Generator,
+};
 use crate::{
     backend::{
         place,
         place::translate_rplace_inner,
         ty::{self, closure_accessors, translate_closure_ty, translate_ty},
     },
-    ctx::{CloneMap, TranslationCtx},
+    ctx::CloneMap,
     translation::{
         binop_to_binop,
         fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
         function::{closure_contract, closure_generic_decls, promoted, ClosureContract},
-        specification::{lower_impure, lower_pure},
         unop_to_unop,
     },
-    util::{self, is_ghost_closure, module_name, signature_of, ItemType},
+    util::{self, is_ghost_closure, module_name, ItemType},
 };
 use rustc_hir::{def::DefKind, def_id::DefId, Unsafety};
 use rustc_index::vec::IndexVec;
@@ -34,7 +38,7 @@ use why3::{
 
 use super::signature::sig_to_why3;
 
-fn closure_ty<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
+fn closure_ty<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Module {
     let mut names = CloneMap::new(ctx.tcx, def_id, CloneLevel::Body);
     let mut decls = Vec::new();
 
@@ -51,10 +55,7 @@ fn closure_ty<'tcx>(ctx: &mut TranslationCtx<'tcx>, def_id: DefId) -> Module {
     Module { name: format!("{}_Type", &*module_name(ctx.tcx, def_id)).into(), decls }
 }
 
-pub(crate) fn closure_type_use<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
-    def_id: DefId,
-) -> Option<Decl> {
+pub(crate) fn closure_type_use<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> Option<Decl> {
     if !ctx.is_closure(def_id) {
         return None;
     }
@@ -67,7 +68,7 @@ pub(crate) fn closure_type_use<'tcx>(
 }
 
 pub(crate) fn closure_aux_defs<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Vec<Decl> {
@@ -93,7 +94,7 @@ pub(crate) fn closure_aux_defs<'tcx>(
 }
 
 pub(crate) fn translate_closure<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> (Module, Option<Module>) {
     assert!(ctx.is_closure(def_id));
@@ -104,7 +105,7 @@ pub(crate) fn translate_closure<'tcx>(
 impl<'tcx> ClosureContract<'tcx> {
     pub(crate) fn to_why(
         self,
-        ctx: &mut TranslationCtx<'tcx>,
+        ctx: &mut Why3Generator<'tcx>,
         def_id: DefId,
         names: &mut CloneMap<'tcx>,
     ) -> impl Iterator<Item = Decl> {
@@ -149,7 +150,7 @@ impl<'tcx> ClosureContract<'tcx> {
 }
 
 pub(crate) fn translate_function<'tcx, 'sess>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     def_id: DefId,
 ) -> Option<Module> {
     let tcx = ctx.tcx;
@@ -189,7 +190,7 @@ pub(crate) fn translate_function<'tcx, 'sess>(
 //
 // We use a custom translation because if we use `any` inside a `constant` / `function` its body is marked as opaque, and `mlcfg` heavily uses `any`.
 fn lower_promoted<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
     promoted: &IndexVec<mir::Promoted, mir::Body<'tcx>>,
@@ -252,7 +253,7 @@ fn lower_promoted<'tcx>(
 }
 
 pub fn to_why<'tcx>(
-    ctx: &mut TranslationCtx<'tcx>,
+    ctx: &mut Why3Generator<'tcx>,
     names: &mut CloneMap<'tcx>,
     def_id: DefId,
 ) -> Option<Decl> {
@@ -311,7 +312,7 @@ pub fn to_why<'tcx>(
 impl<'tcx> Expr<'tcx> {
     pub(crate) fn to_why(
         self,
-        ctx: &mut TranslationCtx<'tcx>,
+        ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
         // TODO: Get rid of this by introducing an intermediate `Place` type
         body: Option<&mir::Body<'tcx>>,
@@ -526,7 +527,7 @@ impl<'tcx> Terminator<'tcx> {
 
     pub(crate) fn to_why(
         self,
-        ctx: &mut TranslationCtx<'tcx>,
+        ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
         // TODO: Get rid of this by introducing an intermediate `Place` type
         body: Option<&mir::Body<'tcx>>,
@@ -547,7 +548,7 @@ impl<'tcx> Terminator<'tcx> {
 impl<'tcx> Branches<'tcx> {
     fn to_why(
         self,
-        _ctx: &mut TranslationCtx<'tcx>,
+        _ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
         discr: Exp,
     ) -> mlcfg::Terminator {
@@ -605,7 +606,7 @@ impl<'tcx> Branches<'tcx> {
 impl<'tcx> Block<'tcx> {
     pub(crate) fn to_why(
         self,
-        ctx: &mut TranslationCtx<'tcx>,
+        ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
         // TODO: Get rid of this by introducing an intermediate `Place` type
         body: &mir::Body<'tcx>,
@@ -620,7 +621,7 @@ impl<'tcx> Block<'tcx> {
 impl<'tcx> Statement<'tcx> {
     pub(crate) fn to_why(
         self,
-        ctx: &mut TranslationCtx<'tcx>,
+        ctx: &mut Why3Generator<'tcx>,
         names: &mut CloneMap<'tcx>,
         // TODO: Get rid of this by introducing an intermediate `Place` type
         body: &mir::Body<'tcx>,
