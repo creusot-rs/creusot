@@ -8,7 +8,7 @@ use crate::{
 };
 use std::ops::{Deref, DerefMut};
 
-use self::clone_map::CloneSummary;
+pub(crate) use clone_map::*;
 
 pub(crate) mod clone_map;
 pub(crate) mod constant;

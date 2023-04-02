@@ -1,6 +1,7 @@
 use super::{
     clone_map::{CloneLevel, PreludeModule},
     signature::signature_of,
+    term::{lower_impure, lower_pure},
     Why3Generator,
 };
 use crate::{
@@ -14,7 +15,6 @@ use crate::{
         binop_to_binop,
         fmir::{self, Block, Branches, Expr, RValue, Statement, Terminator},
         function::{closure_contract, closure_generic_decls, promoted, ClosureContract},
-        specification::{lower_impure, lower_pure},
         unop_to_unop,
     },
     util::{self, is_ghost_closure, module_name, ItemType},

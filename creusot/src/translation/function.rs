@@ -3,7 +3,7 @@ use super::{
     pearlite::{normalize, Term},
 };
 use crate::{
-    backend::place,
+    backend::place::translate_local,
     ctx::*,
     fmir::{self, Expr},
     gather_spec_closures::corrected_invariant_names_and_locations,
@@ -311,7 +311,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     }
 
     fn translate_local(&self, loc: Local) -> LocalIdent {
-        place::translate_local(&self.body, loc)
+        translate_local(&self.body, loc)
     }
 }
 

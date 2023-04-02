@@ -1,4 +1,4 @@
-use super::{clone_map::CloneMap, Why3Generator};
+use super::{clone_map::CloneMap, CloneSummary, Why3Generator};
 use crate::{
     backend::{
         logic::spec_axiom,
@@ -65,11 +65,6 @@ pub(crate) fn interface_for<'tcx>(
             }
         }
         _ => {
-            // TODO: Push this into `contract_of`
-            if !def_id.is_local() && !ctx.externs.verified(def_id) && sig.contract.is_empty() {
-                sig.contract.requires.push(why3::exp::Exp::mk_false());
-            }
-
             decls.push(Decl::ValDecl(util::item_type(ctx.tcx, def_id).val(sig)));
         }
     }

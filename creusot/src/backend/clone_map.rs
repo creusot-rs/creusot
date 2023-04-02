@@ -87,7 +87,7 @@ impl PreludeModule {
 }
 
 type CloneNode<'tcx> = (DefId, SubstsRef<'tcx>);
-pub type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo>;
+pub(super) type CloneSummary<'tcx> = IndexMap<(DefId, SubstsRef<'tcx>), CloneInfo>;
 
 #[derive(Clone)]
 pub struct CloneMap<'tcx> {

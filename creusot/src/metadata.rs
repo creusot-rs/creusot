@@ -8,7 +8,7 @@ use creusot_metadata::{
 use indexmap::IndexMap;
 use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE};
 use rustc_macros::{TyDecodable, TyEncodable};
-use rustc_middle::ty::{subst::SubstsRef, TyCtxt};
+use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 use std::{
     collections::HashMap,
@@ -17,7 +17,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-type CloneMetadata<'tcx> = HashMap<DefId, CloneSummary<'tcx>>;
 type ExternSpecs<'tcx> = HashMap<DefId, ExternSpec<'tcx>>;
 
 // TODO: this should lazily load the metadata.
@@ -30,12 +29,6 @@ pub struct Metadata<'tcx> {
 impl<'tcx> Metadata<'tcx> {
     pub(crate) fn get(&self, cnum: CrateNum) -> Option<&CrateMetadata<'tcx>> {
         self.crates.get(&cnum)
-    }
-
-    /// Determines whether a DefId has been verified by Creusot or not.
-    /// We consider that if we don't have metadata about a crate then it must be unverified
-    pub(crate) fn verified(&self, def_id: DefId) -> bool {
-        self.crates.get(&def_id.krate).map_or(false, |meta| meta.dependencies.contains_key(&def_id))
     }
 
     pub(crate) fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
@@ -72,19 +65,12 @@ impl<'tcx> Metadata<'tcx> {
 
 pub struct CrateMetadata<'tcx> {
     terms: IndexMap<DefId, Term<'tcx>>,
-    dependencies: CloneMetadata<'tcx>,
     creusot_items: CreusotItems,
-    // extern_specs: HashMap<DefId, PreContract>,
 }
 
 impl<'tcx> CrateMetadata<'tcx> {
     pub(crate) fn new() -> Self {
-        Self {
-            dependencies: Default::default(),
-            terms: Default::default(),
-            creusot_items: Default::default(),
-            // extern_specs: Default::default(),
-        }
+        Self { terms: Default::default(), creusot_items: Default::default() }
     }
 
     pub(crate) fn term(&self, def_id: DefId) -> Option<&Term<'tcx>> {
@@ -109,9 +95,9 @@ impl<'tcx> CrateMetadata<'tcx> {
 
         let mut externs = Default::default();
         if let Some(metadata) = load_binary_metadata(tcx, cnum, &binary_path) {
-            for (def_id, summary) in metadata.dependencies.into_iter() {
-                meta.dependencies.insert(def_id, summary.into_iter().collect());
-            }
+            // for (def_id, summary) in metadata.dependencies.into_iter() {
+            // meta.dependencies.insert(def_id, summary.into_iter().collect());
+            // }
 
             for (def_id, summary) in metadata.terms.into_iter() {
                 meta.terms.insert(def_id, summary);
@@ -132,9 +118,6 @@ impl<'tcx> CrateMetadata<'tcx> {
 // a proper index map after parsing.
 #[derive(TyDecodable, TyEncodable)]
 pub(crate) struct BinaryMetadata<'tcx> {
-    // Flatten the index map into a vector
-    dependencies: HashMap<DefId, Vec<((DefId, SubstsRef<'tcx>), CloneInfo)>>,
-
     terms: Vec<(DefId, Term<'tcx>)>,
 
     creusot_items: CreusotItems,
@@ -154,12 +137,7 @@ impl<'tcx> BinaryMetadata<'tcx> {
             .map(|(id, t)| (*id, t.clone()))
             .collect();
 
-        BinaryMetadata {
-            dependencies: Default::default(),
-            terms,
-            creusot_items: items.clone(),
-            extern_specs: extern_specs.clone(),
-        }
+        BinaryMetadata { terms, creusot_items: items.clone(), extern_specs: extern_specs.clone() }
     }
 }
 

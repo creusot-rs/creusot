@@ -18,8 +18,6 @@ use rustc_middle::{
 use rustc_span::Symbol;
 use std::collections::{HashMap, HashSet};
 
-pub(crate) use crate::backend::term::*;
-
 #[derive(Clone, Debug, Default, TypeFoldable, TypeVisitable)]
 pub struct PreContract<'tcx> {
     pub(crate) variant: Option<Term<'tcx>>,

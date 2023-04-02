@@ -1,4 +1,4 @@
-use super::Why3Generator;
+use super::{CloneMap, Why3Generator};
 use crate::{
     ctx::*,
     translation::{

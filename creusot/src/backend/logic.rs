@@ -1,10 +1,7 @@
 use std::borrow::Cow;
 
 use crate::{
-    ctx::*,
-    function::all_generic_decls_for,
-    translation::{function::closure_generic_decls, specification},
-    util,
+    ctx::*, function::all_generic_decls_for, translation::function::closure_generic_decls, util,
     util::get_builtin,
 };
 use rustc_hir::def_id::DefId;
@@ -14,7 +11,11 @@ use why3::{
     Ident, QName,
 };
 
-use super::{signature::signature_of, Why3Generator};
+use super::{
+    signature::signature_of,
+    term::{lower_impure, lower_pure},
+    CloneSummary, Why3Generator,
+};
 
 pub(crate) fn binders_to_args(
     ctx: &mut Why3Generator,
@@ -139,7 +140,7 @@ fn body_module<'tcx>(ctx: &mut Why3Generator<'tcx>, def_id: DefId) -> (Module, C
         decls.push(Decl::ValDecl(ValDecl { sig: val_sig, ghost: false, val: true, kind: None }));
     } else {
         let term = ctx.term(def_id).unwrap().clone();
-        let body = specification::lower_pure(ctx, &mut names, term);
+        let body = lower_pure(ctx, &mut names, term);
 
         if sig_contract.contract.variant.is_empty() {
             let decl = match util::item_type(ctx.tcx, def_id) {
@@ -230,7 +231,7 @@ fn proof_module(ctx: &mut Why3Generator, def_id: DefId) -> Option<Module> {
         return None;
     }
     let term = ctx.term(def_id).unwrap().clone();
-    let body = specification::lower_impure(ctx, &mut names, term);
+    let body = lower_impure(ctx, &mut names, term);
 
     let mut decls: Vec<_> = Vec::new();
     decls.extend(all_generic_decls_for(ctx.tcx, def_id));
