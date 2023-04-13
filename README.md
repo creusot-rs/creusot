@@ -68,7 +68,7 @@ All you need to do is enter your project and run `cargo creusot`!
 This will generate MLCFG files in `target/debug/` which can then be loaded into Why3.
 
 This may only work if you're using the same rust toolchain that was used to build `creusot`:
-you can copy the [`rust-toolchain`](./rust-toolchain) file into the root of your project to
+you can copy the [`rust-toolchain`](./ci/rust-toolchain) file into the root of your project to
 make sure the correct toolchain is selected.
 
 To add contracts to your programs you will need to use the `creusot-contracts` crate by adding it as a dependency:
