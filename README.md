@@ -82,6 +82,14 @@ creusot-contracts = { path = "/path/to/creusot/creusot-contracts" }
 Adding this dependency will make the contract macros available in your code. These macros will erase themselves when compiled with `rustc`.
 To add Creusot-only trait implementations or code, you can use `cfg(creusot)` to toggle.
 
+You must also explicitly use the `creusot_contracts` crate in your code (which should be the case once you actually prove things, but not necessarily when you initially set up a project), such as with the line:
+
+```rust
+use creusot_contracts::*;
+```
+
+or you will get a compilation error complaining that the `creusot_contracts` crate is not loaded.
+
 ## Proving in Why3
 
 To load your files in Why3, we recommend using the [`ide`](./ide) script provided in the Creusot repository.
