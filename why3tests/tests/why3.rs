@@ -94,7 +94,8 @@ fn main() {
 
         let output;
         let mut command = Command::new(why3_path.clone());
-        command.arg("--debug=ignore_unused_vars");
+        command.arg("--warn-off=unused_variable");
+        command.arg("--warn-off=clone_not_abstract");
 
         if sessionfile.is_file() {
             let proved = BufReader::new(File::open(&sessionfile).unwrap())
