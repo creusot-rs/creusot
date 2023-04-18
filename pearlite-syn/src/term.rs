@@ -106,8 +106,11 @@ ast_enum_of_structs! {
         /// The final value of a borrow: `^x`
         Final(TermFinal),
 
-        /// The model of a borrow: `@x`
+        /// The model of a term: `@x`
         Model(TermModel),
+
+        /// The model of a term: `x.@`
+        ModelPost(TermModelPost),
 
         /// Tokens in term position not interpreted by Syn.
         Verbatim(TokenStream),
@@ -424,6 +427,14 @@ ast_struct! {
     pub struct TermModel {
         pub at_token: Token![@],
         pub term: Box<Term>
+    }
+}
+
+ast_struct! {
+    pub struct TermModelPost {
+        pub term: Box<Term>,
+        pub dot_token: Token![.],
+        pub at_token: Token![@],
     }
 }
 
@@ -1016,6 +1027,11 @@ pub(crate) mod parsing {
                     if multi_index(&mut e, &mut dot_token, float_token)? {
                         continue;
                     }
+                }
+
+                if let Some(at_token) = input.parse::<Option<Token![@]>>()? {
+                    e = Term::ModelPost(TermModelPost { term: Box::new(e), dot_token, at_token });
+                    continue;
                 }
 
                 let member: Member = input.parse()?;
@@ -1845,6 +1861,14 @@ pub(crate) mod printing {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.at_token.to_tokens(tokens);
             self.term.to_tokens(tokens);
+        }
+    }
+
+    impl ToTokens for TermModelPost {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            self.term.to_tokens(tokens);
+            self.dot_token.to_tokens(tokens);
+            self.at_token.to_tokens(tokens);
         }
     }
 

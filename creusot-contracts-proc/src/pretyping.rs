@@ -190,7 +190,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 * ::creusot_contracts::__stubs::fin(#term)
             })
         }
-        RT::Model(TermModel { term, .. }) => {
+        RT::Model(TermModel { term, .. }) | RT::ModelPost(TermModelPost { term, .. }) => {
             let term = encode_term(term)?;
             Ok(quote! {
                 ::creusot_contracts::model::ShallowModel::shallow_model(#term)

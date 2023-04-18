@@ -80,6 +80,32 @@ fn test_model() {
 }
 
 #[test]
+fn test_model_post() {
+    snapshot!(quote!(a.@) as Term, @r###"
+    TermModelPost {
+        term: TermPath {
+            inner: ExprPath {
+                attrs: [],
+                qself: None,
+                path: Path {
+                    leading_colon: None,
+                    segments: [
+                        PathSegment {
+                            ident: Ident(
+                                a,
+                            ),
+                            arguments: None,
+                        },
+                    ],
+                },
+            },
+        },
+        dot_token: Dot,
+        at_token: At,
+    }"###);
+}
+
+#[test]
 fn test_forall() {
     snapshot!(quote!(forall<x : u32> true) as Term, @r###"
     TermForall {

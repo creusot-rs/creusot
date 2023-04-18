@@ -358,7 +358,9 @@ fn escape_self_in_term(t: &mut Term) {
             escape_self_in_term(expr);
         }
         Term::Final(TermFinal { term, .. }) => escape_self_in_term(term),
-        Term::Model(TermModel { term, .. }) => escape_self_in_term(term),
+        Term::Model(TermModel { term, .. }) | Term::ModelPost(TermModelPost { term, .. }) => {
+            escape_self_in_term(term)
+        }
         Term::LogEq(TermLogEq { lhs, rhs, .. }) => {
             escape_self_in_term(lhs);
             escape_self_in_term(rhs)
