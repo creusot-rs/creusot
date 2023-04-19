@@ -23,9 +23,9 @@ impl ShallowModel for T {
     }
 }
 
-#[requires( 0 <= @(*t).a )] // otherwise its wrong !
-#[requires( @(*t).a < 1000 )] // to prevent overflow
-#[ensures( (^t)@ == t@.set(@(*t).a,1) )]
+#[requires( 0 <= (*t).a@ )] // otherwise its wrong !
+#[requires( (*t).a@ < 1000 )] // to prevent overflow
+#[ensures( (^t)@ == t@.set((*t).a@,1) )]
 fn incr(t: &mut T) {
     let old_t = ghost! { t };
     (*t).a += 1;

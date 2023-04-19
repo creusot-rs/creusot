@@ -88,9 +88,9 @@ pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&
     #[invariant(weight_len, forall<i: Int> 0 <= i && i < best_value@.len() ==>
                   max_weight@ + 1 == (best_value@[i]@).len())]
     #[invariant(best_value, forall<ii: Int, ww: Int> 0 <= ii && ii <= produced.len() && 0 <= ww && ww <= max_weight@ ==>
-                  @(best_value@[ii]@)[ww] == m(items@, ii, ww))]
+                  (best_value@[ii]@)[ww]@ == m(items@, ii, ww))]
     #[invariant(best_value_bounds, forall<ii: Int, ww: Int> 0 <= ii && ii <= items@.len() && 0 <= ww && ww <= max_weight@ ==>
-                  @(best_value@[ii]@)[ww] <= 10000000 * ii)]
+                  (best_value@[ii]@)[ww]@ <= 10000000 * ii)]
     for i in 0..items.len() {
         let it = &items[i];
 
@@ -99,11 +99,11 @@ pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&
                       max_weight@ + 1 == (best_value@[i]@).len())]
         #[invariant(best_value2, forall<ii: Int, ww: Int>
                       0 <= ii && ii <= i@ && 0 <= ww && ww <= max_weight@ ==>
-                      @(best_value@[ii]@)[ww] == m(items@, ii, ww))]
+                      (best_value@[ii]@)[ww]@ == m(items@, ii, ww))]
         #[invariant(best_value2, forall<ww: Int> 0 <= ww && ww <= produced.len() - 1 ==>
-                      @(best_value@[i@+1]@)[ww] == m(items@, i@+1, ww))]
+                      (best_value@[i@+1]@)[ww]@ == m(items@, i@+1, ww))]
         #[invariant(best_value_bounds, forall<ii: Int, ww: Int> 0 <= ii && ii <= items@.len() && 0 <= ww && ww <= max_weight@ ==>
-                  @(best_value@[ii]@)[ww] <= 10000000 * ii)]
+                  (best_value@[ii]@)[ww]@ <= 10000000 * ii)]
         // Change compared to Rosetta Code: we start at w = 0.
         // This makes it possible to allow 0-weight items, and makes the proof simpler.
         for w in 0..=max_weight {

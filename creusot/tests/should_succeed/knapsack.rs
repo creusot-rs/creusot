@@ -53,9 +53,9 @@ pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&
     #[invariant(weight_len, forall<i: Int> 0 <= i && i < best_value@.len() ==>
                   max_weight@ + 1 == (best_value@[i]@).len())]
     #[invariant(best_value, forall<ii: Int, ww: Int> 0 <= ii && ii <= i@ && 0 <= ww && ww <= max_weight@ ==>
-                  @(best_value@[ii]@)[ww] == m(items@, ii, ww))]
+                  (best_value@[ii]@)[ww]@ == m(items@, ii, ww))]
     #[invariant(best_value_bounds, forall<ii: Int, ww: Int> 0 <= ii && ii <= items@.len() && 0 <= ww && ww <= max_weight@ ==>
-                  @(best_value@[ii]@)[ww] <= 10000000 * ii)]
+                  (best_value@[ii]@)[ww]@ <= 10000000 * ii)]
     while i < items.len() {
         let it = &items[i];
 
@@ -68,11 +68,11 @@ pub fn knapsack01_dyn<Name>(items: &Vec<Item<Name>>, max_weight: usize) -> Vec<&
                       max_weight@ + 1 == (best_value@[i]@).len())]
         #[invariant(best_value2, forall<ii: Int, ww: Int>
                       0 <= ii && ii <= i@ && 0 <= ww && ww <= max_weight@ ==>
-                      @(best_value@[ii]@)[ww] == m(items@, ii, ww))]
+                      (best_value@[ii]@)[ww]@ == m(items@, ii, ww))]
         #[invariant(best_value2, forall<ww: Int> 0 <= ww && ww <= w@-1 ==>
-                      @(best_value@[i@+1]@)[ww] == m(items@, i@+1, ww))]
+                      (best_value@[i@+1]@)[ww]@ == m(items@, i@+1, ww))]
         #[invariant(best_value_bounds, forall<ii: Int, ww: Int> 0 <= ii && ii <= items@.len() && 0 <= ww && ww <= max_weight@ ==>
-                  @(best_value@[ii]@)[ww] <= 10000000 * ii)]
+                  (best_value@[ii]@)[ww]@ <= 10000000 * ii)]
         while w <= max_weight {
             best_value[i + 1][w] = if it.weight > w {
                 best_value[i][w]

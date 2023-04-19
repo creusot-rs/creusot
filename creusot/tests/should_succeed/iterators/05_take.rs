@@ -20,8 +20,8 @@ where
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
-            @(*self).n == 0 && self.resolve() ||
-            @(*self).n > 0 && @(*self).n == @(^self).n + 1 && self.iter.completed()
+            (*self).n@ == 0 && self.resolve() ||
+            (*self).n@ > 0 && (*self).n@ == (^self).n@ + 1 && self.iter.completed()
         }
     }
 

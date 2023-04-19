@@ -18,7 +18,7 @@ impl NonZeroU32 {
     }
 
     #[requires(self.0@ > rhs.0@)]
-    #[ensures(@(^self).0 == @(*self).0 - rhs.0@)]
+    #[ensures((^self).0@ == (*self).0@ - rhs.0@)]
     pub fn sub_mut(&mut self, rhs: Self) {
         self.0 -= rhs.0;
     }

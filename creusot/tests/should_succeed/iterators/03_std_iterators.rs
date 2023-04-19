@@ -24,7 +24,7 @@ pub fn vec_iter<T>(vec: &Vec<T>) -> usize {
 }
 
 #[ensures((^v)@.len() == v@.len())]
-#[ensures(forall<i : _> 0 <= i && i < v@.len() ==> @(^v)@[i] == 0)]
+#[ensures(forall<i : _> 0 <= i && i < v@.len() ==> (^v)@[i]@ == 0)]
 pub fn all_zero(v: &mut Vec<usize>) {
     #[invariant(user, forall<i : Int> 0 <= i && i < produced.len() ==> @^produced[i] == 0)]
     for x in v.iter_mut() {
@@ -45,7 +45,7 @@ pub fn counter(v: Vec<u32>) {
         .iter()
         .map_inv(
             #[requires(cnt@ == (*_prod).len() && cnt < usize::MAX)]
-            #[ensures(cnt@ == @old(cnt) + 1 && cnt@ == (*_prod).len() + 1 && result == *x)]
+            #[ensures(cnt@ == old(cnt)@ + 1 && cnt@ == (*_prod).len() + 1 && result == *x)]
             |x, _prod| {
                 cnt += 1;
                 *x

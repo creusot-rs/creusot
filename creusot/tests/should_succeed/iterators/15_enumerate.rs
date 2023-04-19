@@ -25,7 +25,7 @@ where
     #[predicate]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited.len() == o.count@ - @self.count
+            visited.len() == o.count@ - self.count@
             && exists<s: Seq<I::Item>> self.iter.produces(s, o.iter)
                 && visited.len() == s.len()
                 && forall<i: Int> 0 <= i && i < s.len() ==> visited[i].0@ == self.count@ + i && visited[i].1 == s[i]

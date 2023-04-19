@@ -30,7 +30,7 @@ where
     #[predicate]
     fn completed(&mut self) -> bool {
         pearlite! {
-            @(^self).n == 0 &&
+            (^self).n@ == 0 &&
             exists<s: Seq<Self::Item>, i: &mut I>
                 s.len() <= self.n@ &&
                 self.iter.produces(s, *i) &&
@@ -73,7 +73,7 @@ where
         #[invariant(skipped_len, skipped.len() + n@ == old_self.n@)]
         #[invariant(produces, old_self.iter.produces(skipped.inner(), self.iter))]
         #[invariant(skipped_resolve, forall<i: Int> 0 <= i && i < skipped.len() ==> skipped[i].resolve())]
-        #[invariant(n_0, @(*self).n == 0)]
+        #[invariant(n_0, (*self).n@ == 0)]
         #[invariant(inv, self.invariant())]
         loop {
             let r = self.iter.next();

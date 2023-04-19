@@ -207,7 +207,7 @@ pub fn counter<I: Iterator<Item = u32>>(iter: I) {
     map(
         iter,
         #[requires(cnt@ == (*_prod).len() && cnt < usize::MAX)]
-        #[ensures(cnt@ == @old(cnt) + 1)]
+        #[ensures(cnt@ == old(cnt)@ + 1)]
         |x, _prod: Ghost<Seq<_>>| {
             cnt += 1;
             x

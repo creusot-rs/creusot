@@ -53,9 +53,9 @@ impl<T> Sparse<T> {
      */
     #[predicate]
     fn is_elt(&self, i: Int) -> bool {
-        pearlite! { 0 <= i && i < @self.size
-                    && @(self.idx@)[i] < @self.n
-                    && @(self.back@)[@(self.idx@)[i]] == i
+        pearlite! { 0 <= i && i < self.size@
+                    && (self.idx@)[i]@ < self.n@
+                    && (self.back@)[(self.idx@)[i]@]@ == i
         }
     }
 
@@ -64,15 +64,15 @@ impl<T> Sparse<T> {
     #[predicate]
     fn sparse_inv(&self) -> bool {
         pearlite! {
-            self.n@ <= @self.size
-                && self@.len() == @self.size
-                && (self.values@).len() == @self.size
-                && (self.idx@).len() == @self.size
-                && (self.back@).len() == @self.size
+            self.n@ <= self.size@
+                && self@.len() == self.size@
+                && (self.values@).len() == self.size@
+                && (self.idx@).len() == self.size@
+                && (self.back@).len() == self.size@
                 && forall<i: Int> 0 <= i && i < self.n@ ==>
                 match (self.back@)[i] {
-                    j => 0 <= j@ && j@ < @self.size
-                        && @(self.idx@)[j@] == i
+                    j => 0 <= j@ && j@ < self.size@
+                        && (self.idx@)[j@]@ == i
                 }
         }
     }

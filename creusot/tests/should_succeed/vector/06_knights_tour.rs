@@ -31,7 +31,7 @@ impl Board {
         pearlite! {
             self.size@ <= 1_000 &&
             (self.field@).len() == self.size@ &&
-            forall<i : Int> 0 <= i && i < self.size@ ==> (@(self.field@)[i]).len() == @self.size
+            forall<i : Int> 0 <= i && i < self.size@ ==> ((self.field@)[i]@).len() == self.size@
         }
     }
     #[requires(size@ <= 1000)]
@@ -60,7 +60,7 @@ impl Board {
     #[predicate]
     fn in_bounds(self, p: Point) -> bool {
         pearlite! {
-            0 <= p.x@ && p.x@< self.size@ && 0 <= p.y@ && p.y@ < @self.size
+            0 <= p.x@ && p.x@< self.size@ && 0 <= p.y@ && p.y@ < self.size@
         }
     }
 

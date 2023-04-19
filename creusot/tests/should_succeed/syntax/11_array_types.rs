@@ -8,7 +8,7 @@ pub struct UsesArray([i64; 5]);
 pub fn omg(mut x: UsesArray) {
     x.0[0] = 5;
 
-    proof_assert! { @(x.0@)[0] == 5};
+    proof_assert! { (x.0@)[0]@ == 5};
 }
 
 pub fn call_omg() {
