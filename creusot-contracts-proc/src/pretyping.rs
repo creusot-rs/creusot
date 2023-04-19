@@ -190,7 +190,7 @@ pub fn encode_term(term: &RT) -> Result<TokenStream, EncodeError> {
                 * ::creusot_contracts::__stubs::fin(#term)
             })
         }
-        RT::Model(TermModel { term, .. }) | RT::ModelPost(TermModelPost { term, .. }) => {
+        RT::Model(TermModel { term, .. }) => {
             let term = match &**term {
                 RT::Paren(TermParen { expr, .. }) => &expr,
                 _ => &*term,

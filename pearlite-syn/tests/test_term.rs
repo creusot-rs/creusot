@@ -56,33 +56,8 @@ fn test_final() {
 
 #[test]
 fn test_model() {
-    snapshot!(quote!(@a) as Term, @r###"
-    TermModel {
-        at_token: At,
-        term: TermPath {
-            inner: ExprPath {
-                attrs: [],
-                qself: None,
-                path: Path {
-                    leading_colon: None,
-                    segments: [
-                        PathSegment {
-                            ident: Ident(
-                                a,
-                            ),
-                            arguments: None,
-                        },
-                    ],
-                },
-            },
-        },
-    }"###);
-}
-
-#[test]
-fn test_model_post() {
     snapshot!(quote!(a@) as Term, @r###"
-    TermModelPost {
+    TermModel {
         term: TermPath {
             inner: ExprPath {
                 attrs: [],

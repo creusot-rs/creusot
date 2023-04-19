@@ -106,11 +106,8 @@ ast_enum_of_structs! {
         /// The final value of a borrow: `^x`
         Final(TermFinal),
 
-        /// The model of a term: `@x`
-        Model(TermModel),
-
         /// The model of a term: `x@`
-        ModelPost(TermModelPost),
+        Model(TermModel),
 
         /// Tokens in term position not interpreted by Syn.
         Verbatim(TokenStream),
@@ -425,13 +422,6 @@ ast_struct! {
 
 ast_struct! {
     pub struct TermModel {
-        pub at_token: Token![@],
-        pub term: Box<Term>
-    }
-}
-
-ast_struct! {
-    pub struct TermModelPost {
         pub term: Box<Term>,
         pub at_token: Token![@],
     }
@@ -986,12 +976,6 @@ pub(crate) mod parsing {
                 final_token: input.parse()?,
                 term: Box::new(unary_term(input, allow_struct)?),
             }))
-        } else if input.peek(Token![@]) {
-            // @ <trailer>
-            Ok(Term::Model(TermModel {
-                at_token: input.parse()?,
-                term: Box::new(unary_term(input, allow_struct)?),
-            }))
         } else {
             trailer_term(input, allow_struct)
         }
@@ -1079,7 +1063,7 @@ pub(crate) mod parsing {
                     index: content.parse()?,
                 });
             } else if input.peek(Token![@]) {
-                e = Term::ModelPost(TermModelPost { term: Box::new(e), at_token: input.parse()? });
+                e = Term::Model(TermModel { term: Box::new(e), at_token: input.parse()? });
             } else {
                 break;
             }
@@ -1854,13 +1838,6 @@ pub(crate) mod printing {
     }
 
     impl ToTokens for TermModel {
-        fn to_tokens(&self, tokens: &mut TokenStream) {
-            self.at_token.to_tokens(tokens);
-            self.term.to_tokens(tokens);
-        }
-    }
-
-    impl ToTokens for TermModelPost {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             self.term.to_tokens(tokens);
             self.at_token.to_tokens(tokens);
